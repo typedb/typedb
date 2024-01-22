@@ -20,7 +20,7 @@ pub mod concept {
     use struct_deser::SerializedByteLen;
     use struct_deser_derive::StructDeser;
 
-    use crate::{EncodingSection, WritableKeyFixed};
+    use crate::{EncodingSection, SerialisableKeyFixed};
     use crate::prefix::PrefixID;
 
     const TYPE_ID_SIZE: usize = 2;
@@ -41,7 +41,7 @@ pub mod concept {
         }
     }
 
-    impl WritableKeyFixed for TypeIID {
+    impl SerialisableKeyFixed for TypeIID {
         fn key_section_id(&self) -> u8 {
             EncodingSection::Schema.id()
         }
@@ -90,7 +90,7 @@ pub mod index {
     use struct_deser::SerializedByteLen;
     use struct_deser_derive::StructDeser;
 
-    use crate::{DeserialisableDynamic, DeserialisableFixed, EncodingSection, Serialisable, WritableKeyDynamic, WritableKeyFixed};
+    use crate::{DeserialisableDynamic, DeserialisableFixed, EncodingSection, Serialisable, SerialisableKeyDynamic, SerialisableKeyFixed};
     use crate::prefix::{Prefix, PrefixID};
     use crate::type_::type_encoding::concept::TypeIID;
     use crate::value::StringBytes;
@@ -105,7 +105,7 @@ pub mod index {
         pub fn new(iid: TypeIID, label: &str) -> (TypeIIDLabelIndex, StringBytes) {
             (
                 TypeIIDLabelIndex {
-                    prefix: Prefix::TypeLabelIndex.as_id(),
+                    prefix: Prefix::TypeLabelIndex.type_id(),
                     iid: iid,
                 },
                 StringBytes::encode(label)
@@ -117,7 +117,7 @@ pub mod index {
         }
     }
 
-    impl WritableKeyFixed for TypeIIDLabelIndex {
+    impl SerialisableKeyFixed for TypeIIDLabelIndex {
         fn key_section_id(&self) -> u8 {
             EncodingSection::Schema.id()
         }
@@ -131,7 +131,7 @@ pub mod index {
     impl LabelTypeIIDIndex {
         pub fn new(label: &str) -> LabelTypeIIDIndex {
             LabelTypeIIDIndex {
-                prefix: Prefix::LabelTypeIndex.as_id(),
+                prefix: Prefix::LabelTypeIndex.type_id(),
                 label: StringBytes::encode(label),
             }
         }
@@ -167,7 +167,7 @@ pub mod index {
         }
     }
 
-    impl WritableKeyDynamic for LabelTypeIIDIndex {
+    impl SerialisableKeyDynamic for LabelTypeIIDIndex {
         fn key_section_id(&self) -> u8 {
             EncodingSection::Schema.id()
         }

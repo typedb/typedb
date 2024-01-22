@@ -16,23 +16,17 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_test")
-package(default_visibility = ["//visibility:public",])
+load("@rules_rust//rust:defs.bzl", "rust_library")
 
-rust_test(
-    name = "test-database",
+package(default_visibility = ["//visibility:public"])
+
+rust_library(
+    name = "bytes",
+    crate_root = "bytes.rs",
     srcs = glob([
         "*.rs",
     ]),
-    deps = [
-        "//database",
-        "//encoding",
-        "//common/logger",
-
-        "@crates//:rand",
-        "@crates//:speedb",
-        "@crates//:tracing",
-    ]
+    deps = []
 )
 
 checkstyle_test(

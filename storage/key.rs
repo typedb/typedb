@@ -21,37 +21,37 @@ use std::cmp::Ordering;
 pub const FIXED_KEY_LENGTH_BYTES: usize = 48;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum WriteKey {
-    Fixed(WriteKeyFixed),
-    Dynamic(WriteKeyDynamic),
+pub enum Key {
+    Fixed(KeyFixed),
+    Dynamic(KeyDynamic),
 }
 
-impl WriteKey {
+impl Key {
     pub fn bytes(&self) -> &[u8] {
         match self {
-            WriteKey::Fixed(fixed_key) => fixed_key.bytes(),
-            WriteKey::Dynamic(dynamic_key) => dynamic_key.bytes(),
+            Key::Fixed(fixed_key) => fixed_key.bytes(),
+            Key::Dynamic(dynamic_key) => dynamic_key.bytes(),
         }
     }
 
     pub fn section_id(&self) -> u8 {
         match self {
-            WriteKey::Fixed(fixed_key) => fixed_key.section_id(),
-            WriteKey::Dynamic(dynamic_key) => dynamic_key.section_id(),
+            Key::Fixed(fixed_key) => fixed_key.section_id(),
+            Key::Dynamic(dynamic_key) => dynamic_key.section_id(),
         }
     }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct WriteKeyFixed {
+pub struct KeyFixed {
     section_id: u8,
     key_length: usize,
     data: [u8; FIXED_KEY_LENGTH_BYTES],
 }
 
-impl WriteKeyFixed {
-    pub fn new(section_id: u8, key_length: usize, data: [u8; FIXED_KEY_LENGTH_BYTES]) -> WriteKeyFixed {
-        WriteKeyFixed {
+impl KeyFixed {
+    pub fn new(section_id: u8, key_length: usize, data: [u8; FIXED_KEY_LENGTH_BYTES]) -> KeyFixed {
+        KeyFixed {
             section_id: section_id,
             key_length: key_length,
             data: data,
@@ -68,14 +68,14 @@ impl WriteKeyFixed {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WriteKeyDynamic {
+pub struct KeyDynamic {
     section_id: u8,
     data: Box<[u8]>,
 }
 
-impl WriteKeyDynamic {
-    pub fn new(section_id: u8, data: Box<[u8]>) -> WriteKeyDynamic {
-        WriteKeyDynamic {
+impl KeyDynamic {
+    pub fn new(section_id: u8, data: Box<[u8]>) -> KeyDynamic {
+        KeyDynamic {
             section_id: section_id,
             data: data
         }
@@ -90,53 +90,52 @@ impl WriteKeyDynamic {
     }
 }
 
-impl PartialOrd<Self> for WriteKey {
+impl PartialOrd<Self> for Key {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for WriteKey {
+impl Ord for Key {
     fn cmp(&self, other: &Self) -> Ordering {
         match self {
-            WriteKey::Fixed(fixedKey) => {
+            Key::Fixed(fixedKey) => {
                 match other {
-                    WriteKey::Fixed(otherFixedKey) => fixedKey.cmp(otherFixedKey),
-                    WriteKey::Dynamic(_) => Ordering::Less,
+                    Key::Fixed(otherFixedKey) => fixedKey.cmp(otherFixedKey),
+                    Key::Dynamic(_) => Ordering::Less,
                 }
             }
-            WriteKey::Dynamic(dynamicKey) => {
+            Key::Dynamic(dynamicKey) => {
                 match other {
-                    WriteKey::Fixed(_) => Ordering::Greater,
-                    WriteKey::Dynamic(otherDynamicKey) => dynamicKey.cmp(otherDynamicKey),
+                    Key::Fixed(_) => Ordering::Greater,
+                    Key::Dynamic(otherDynamicKey) => dynamicKey.cmp(otherDynamicKey),
                 }
             }
         }
     }
 }
 
-impl From<(u8, Vec<u8>)> for WriteKeyFixed {
+impl From<(Vec<u8>, u8)> for KeyFixed {
     // For tests
-    fn from((section_id, value): (u8, Vec<u8>)) -> Self {
-        assert!(value.len() < FIXED_KEY_LENGTH_BYTES);
-
+    fn from((bytes, section_id): (Vec<u8>, u8)) -> Self {
+        assert!(bytes.len() < FIXED_KEY_LENGTH_BYTES);
         let mut data = [0; FIXED_KEY_LENGTH_BYTES];
-        data[0..value.len()].copy_from_slice(value.as_slice());
-        WriteKeyFixed {
+        data[0..bytes.len()].copy_from_slice(bytes.as_slice());
+        KeyFixed {
             section_id: section_id,
-            key_length: value.len(),
+            key_length: bytes.len(),
             data: data,
         }
     }
 }
 
-impl PartialOrd<Self> for WriteKeyFixed {
+impl PartialOrd<Self> for KeyFixed {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for WriteKeyFixed {
+impl Ord for KeyFixed {
     fn cmp(&self, other: &Self) -> Ordering {
         let ordering = self.data.partial_cmp(&other.data).unwrap();
         if ordering.is_eq() {
@@ -147,13 +146,13 @@ impl Ord for WriteKeyFixed {
     }
 }
 
-impl PartialOrd<Self> for WriteKeyDynamic {
+impl PartialOrd<Self> for KeyDynamic {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for WriteKeyDynamic {
+impl Ord for KeyDynamic {
     fn cmp(&self, other: &Self) -> Ordering {
         self.data.cmp(&other.data)
     }

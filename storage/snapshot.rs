@@ -25,7 +25,7 @@ use itertools::Itertools;
 use wal::SequenceNumber;
 
 use crate::error::StorageError;
-use crate::key::{WriteKey, WriteKeyFixed};
+use crate::key::{Key, KeyFixed};
 use crate::{key, Storage};
 
 pub enum Snapshot<'storage> {
@@ -34,14 +34,14 @@ pub enum Snapshot<'storage> {
 }
 
 impl<'storage> Snapshot<'storage> {
-    pub fn get<'snapshot>(&'snapshot self, key: &WriteKey) -> Option<Box<[u8]>> {
+    pub fn get<'snapshot>(&'snapshot self, key: &Key) -> Option<Box<[u8]>> {
         match self {
             Snapshot::Read(snapshot) => snapshot.get(key),
             Snapshot::Write(snapshot) => snapshot.get(key),
         }
     }
 
-    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &WriteKey) -> Box<dyn Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 'snapshot> {
+    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &Key) -> Box<dyn Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 'snapshot> {
         match self {
             Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
             Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
@@ -62,19 +62,19 @@ impl<'storage> ReadSnapshot<'storage> {
         }
     }
 
-    fn get<'snapshot>(&self, key: &WriteKey) -> Option<Box<[u8]>> {
-        self.storage.get(key.bytes())
+    fn get<'snapshot>(&self, key: &Key) -> Option<Box<[u8]>> {
+        self.storage.get(key)
     }
 
-    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &WriteKey) -> impl Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 'snapshot {
-        self.storage.iterate_prefix(prefix.bytes())
+    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &Key) -> impl Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 'snapshot {
+        self.storage.iterate_prefix(prefix)
     }
 }
 
 pub struct WriteSnapshot<'storage> {
     storage: &'storage Storage,
     // TODO: replace with BTree Left-Right structure to allow concurrent read/write
-    writes: RwLock<BTreeMap<WriteKey, Option<Box<[u8]>>>>,
+    writes: RwLock<BTreeMap<Key, Option<Box<[u8]>>>>,
     open_sequence_number: SequenceNumber,
 }
 
@@ -87,30 +87,30 @@ impl<'storage> WriteSnapshot<'storage> {
         }
     }
 
-    pub fn put(&self, key: WriteKey) {
+    pub fn put(&self, key: Key) {
         let mut map = self.writes.write().unwrap();
         map.insert(key, None);
     }
 
-    pub fn put_val(&self, key: WriteKey, val: Box<[u8]>) {
+    pub fn put_val(&self, key: Key, val: Box<[u8]>) {
         let mut map = self.writes.write().unwrap();
         map.insert(key, Some(val));
     }
 
-    fn get(&self, key: &WriteKey) -> Option<Box<[u8]>> {
+    fn get(&self, key: &Key) -> Option<Box<[u8]>> {
         // TODO merge with inserts & deletes
-        self.storage.get(key.bytes())
+        self.storage.get(key)
     }
 
-    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &WriteKey) -> impl Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 'snapshot {
-        self.storage.iterate_prefix(prefix.bytes()).merge(self.iterate_prefix_buffered(prefix))
+    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &Key) -> impl Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 'snapshot {
+        self.storage.iterate_prefix(prefix).merge(self.iterate_prefix_buffered(prefix))
     }
 
-    fn iterate_prefix_buffered<'s>(&'s self, prefix: &WriteKey) -> impl Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 's {
+    fn iterate_prefix_buffered<'s>(&'s self, prefix: &Key) -> impl Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 's {
         let map = self.writes.read().unwrap();
         let range = RangeFrom { start: prefix };
         // TODO: hold read lock while iterating so avoid collecting into array
-        map.range::<WriteKey, _>(range).map(|(key, val)| {
+        map.range::<Key, _>(range).map(|(key, val)| {
             // TODO: we can avoid allocation here once we settle on a Key/Value struct
             (key.bytes().into(), val.clone())
         }).collect::<Vec<_>>().into_iter()
@@ -120,7 +120,7 @@ impl<'storage> WriteSnapshot<'storage> {
         self.storage.snapshot_commit(self);
     }
 
-    pub(crate) fn into_data(self) -> (BTreeMap<WriteKey, Option<Box<[u8]>>>, SequenceNumber) {
+    pub(crate) fn into_data(self) -> (BTreeMap<Key, Option<Box<[u8]>>>, SequenceNumber) {
         (self.writes.into_inner().unwrap(), self.open_sequence_number)
     }
 }

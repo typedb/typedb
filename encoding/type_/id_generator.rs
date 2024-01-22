@@ -22,6 +22,7 @@ use crate::prefix::Prefix;
 
 use crate::prefix::Prefix::{AttributeType, EntityType};
 use crate::type_::type_encoding::concept::{TypeID, TypeIID};
+use crate::SerialisableKeyFixed;
 
 pub struct TypeIIDGenerator {
     next_entity_id: AtomicU16,
@@ -38,20 +39,22 @@ impl TypeIIDGenerator {
     }
 
     pub fn load(storage: &Storage) -> TypeIIDGenerator {
-        let next_entity: AtomicU16 = storage.get_prev(&EntityType.as_bytes_next()).map_or_else(
-            || AtomicU16::new(0),
-            |prev| {
-                debug_assert_eq!(prev.len(), 2);
-                let val = u16::from_be_bytes((&prev[0..2]).try_into().unwrap());
-                AtomicU16::new(val)
-            });
-        let next_attribute: AtomicU16 = storage.get_prev(&AttributeType.as_bytes_next()).map_or_else(
-            || AtomicU16::new(0),
-            |prev| {
-                debug_assert_eq!(prev.len(), 2);
-                let val = u16::from_be_bytes((&prev[0..2]).try_into().unwrap());
-                AtomicU16::new(val)
-            });
+        let next_entity: AtomicU16 = storage.get_prev(&EntityType.next_prefix_id().serialise_to_key())
+            .map_or_else(
+                || AtomicU16::new(0),
+                |prev| {
+                    debug_assert_eq!(prev.len(), 2);
+                    let val = u16::from_be_bytes((&prev[0..2]).try_into().unwrap());
+                    AtomicU16::new(val)
+                });
+        let next_attribute: AtomicU16 = storage.get_prev(&AttributeType.next_prefix_id().serialise_to_key())
+            .map_or_else(
+                || AtomicU16::new(0),
+                |prev| {
+                    debug_assert_eq!(prev.len(), 2);
+                    let val = u16::from_be_bytes((&prev[0..2]).try_into().unwrap());
+                    AtomicU16::new(val)
+                });
 
         TypeIIDGenerator {
             next_entity_id: next_entity,
@@ -61,12 +64,12 @@ impl TypeIIDGenerator {
 
     pub fn take_entity_type_iid(&self) -> TypeIID {
         let next = self.next_entity_id.fetch_add(1, Ordering::Relaxed);
-        TypeIID::new(Prefix::EntityType.as_id(), TypeID::new(next.to_be_bytes()))
+        TypeIID::new(Prefix::EntityType.type_id(), TypeID::new(next.to_be_bytes()))
     }
 
     pub fn take_attribute_type_iid(&self) -> TypeIID {
         let next = self.next_attribute_id.fetch_add(1, Ordering::Relaxed);
-        TypeIID::new(Prefix::AttributeType.as_id(), TypeID::new(next.to_be_bytes()))
+        TypeIID::new(Prefix::AttributeType.type_id(), TypeID::new(next.to_be_bytes()))
     }
 }
 

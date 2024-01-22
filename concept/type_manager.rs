@@ -19,7 +19,7 @@
 use std::ops::Deref;
 use std::rc::Rc;
 
-use encoding::{DeserialisableFixed, WritableKeyDynamic, WritableKeyFixed};
+use encoding::{DeserialisableFixed, SerialisableKeyDynamic, SerialisableKeyFixed};
 pub use encoding::label::Label;
 use encoding::prefix::Prefix;
 use encoding::type_::id_generator::TypeIIDGenerator;
@@ -63,19 +63,19 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_iid = self.iid_generator.take_entity_type_iid();
-            let type_iid_key = type_iid.serialise_to_write_key();
+            let type_iid_key = type_iid.serialise_to_key();
             write_snapshot.put(type_iid_key.clone());
             let (iid_label_index_key, value) = TypeIIDLabelIndex::new(type_iid, label);
-            write_snapshot.put_val(iid_label_index_key.serialise_to_write_key(), value.to_bytes());
+            write_snapshot.put_val(iid_label_index_key.serialise_to_key(), value.to_bytes());
             let label_iid_index_key = LabelTypeIIDIndex::new(label);
-            write_snapshot.put_val(label_iid_index_key.serialise_to_write_key(), type_iid_key.bytes().to_vec().into_boxed_slice());
+            write_snapshot.put_val(label_iid_index_key.serialise_to_key(), type_iid_key.bytes().to_vec().into_boxed_slice());
             return EntityType::new(type_iid);
         }
         panic!("Illegal state: create type requires write snapshot")
     }
 
     pub fn get_entity_type(&self, label: &Label) -> Option<EntityType> {
-        let key = LabelTypeIIDIndex::new(label.name()).serialise_to_write_key();
+        let key = LabelTypeIIDIndex::new(label.name()).serialise_to_key();
         self.snapshot.get(&key).map(|value| EntityType::new(TypeIID::deserialise_from(&value)))
     }
 
@@ -84,19 +84,19 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_iid = self.iid_generator.take_attribute_type_iid();
-            let type_iid_key = type_iid.serialise_to_write_key();
+            let type_iid_key = type_iid.serialise_to_key();
             write_snapshot.put(type_iid_key.clone());
             let (iid_label_index_key, value) = TypeIIDLabelIndex::new(type_iid, label);
-            write_snapshot.put_val(iid_label_index_key.serialise_to_write_key(), value.to_bytes());
+            write_snapshot.put_val(iid_label_index_key.serialise_to_key(), value.to_bytes());
             let label_iid_index_key = LabelTypeIIDIndex::new(label);
-            write_snapshot.put_val(label_iid_index_key.serialise_to_write_key(), type_iid_key.bytes().to_vec().into_boxed_slice());
+            write_snapshot.put_val(label_iid_index_key.serialise_to_key(), type_iid_key.bytes().to_vec().into_boxed_slice());
             return AttributeType::new(type_iid);
         }
         panic!("Illegal state: create type requires write snapshot")
     }
 
     pub fn get_attribute_type(&self, label: &Label) -> Option<AttributeType> {
-        let key = LabelTypeIIDIndex::new(label.name()).serialise_to_write_key();
+        let key = LabelTypeIIDIndex::new(label.name()).serialise_to_key();
         self.snapshot.get(&key).map(|value| AttributeType::new(TypeIID::deserialise_from(&value)))
     }
 
@@ -112,8 +112,8 @@ pub struct EntityType {
 
 impl EntityType {
     pub fn new(iid: TypeIID) -> EntityType {
-        if iid.prefix() != Prefix::EntityType.as_id() {
-            panic!("Type IID prefix was expected to be EntityType but was {:?}", iid.prefix())
+        if iid.prefix() != Prefix::EntityType.type_id() {
+            panic!("Type IID prefix was expected to be Prefix::EntityType but was {:?}", iid.prefix())
         }
         EntityType { iid: iid }
     }
@@ -126,8 +126,8 @@ pub struct AttributeType {
 
 impl AttributeType {
     pub fn new(iid: TypeIID) -> AttributeType {
-        if iid.prefix() != Prefix::AttributeType.as_id() {
-            panic!("Type IID prefix was expected to be AttributeType but was {:?}", iid.prefix())
+        if iid.prefix() != Prefix::AttributeType.type_id() {
+            panic!("Type IID prefix was expected to be Prefix::AttributeType but was {:?}", iid.prefix())
         }
         AttributeType { iid: iid }
     }

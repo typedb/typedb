@@ -21,8 +21,8 @@ use std::str::Utf8Error;
 
 use storage::{Section, Storage};
 use storage::error::StorageError;
-pub use storage::key::{FIXED_KEY_LENGTH_BYTES, WriteKey, WriteKeyFixed};
-use storage::key::WriteKeyDynamic;
+pub use storage::key::{FIXED_KEY_LENGTH_BYTES, Key, KeyFixed};
+use storage::key::KeyDynamic;
 use struct_deser::{FromBytes, IntoBytes, SerializedByteLen};
 
 pub mod thing;
@@ -100,24 +100,24 @@ impl<T: FromBytes> DeserialisableFixed for T {
     }
 }
 
-pub trait WritableKeyFixed: Serialisable {
+pub trait SerialisableKeyFixed: Serialisable {
     fn key_section_id(&self) -> u8;
 
-    fn serialise_to_write_key(&self) -> WriteKey {
+    fn serialise_to_key(&self) -> Key {
         let mut bytes = vec![0; self.serialised_size()];
         self.serialise_into(bytes.as_mut_slice());
-        WriteKey::Dynamic(WriteKeyDynamic::new(self.key_section_id(), bytes.into_boxed_slice()))
+        Key::Dynamic(KeyDynamic::new(self.key_section_id(), bytes.into_boxed_slice()))
     }
 }
 
-pub trait WritableKeyDynamic: Serialisable {
+pub trait SerialisableKeyDynamic: Serialisable {
     fn key_section_id(&self) -> u8;
 
-    fn serialise_to_write_key(&self) -> WriteKey {
+    fn serialise_to_key(&self) -> Key {
         debug_assert!(self.serialised_size() < FIXED_KEY_LENGTH_BYTES);
         let mut data = [0; FIXED_KEY_LENGTH_BYTES];
         self.serialise_into(&mut data[0..self.serialised_size()]);
-        WriteKey::Fixed(WriteKeyFixed::new(self.key_section_id(), self.serialised_size(), data))
+        Key::Fixed(KeyFixed::new(self.key_section_id(), self.serialised_size(), data))
     }
 }
 

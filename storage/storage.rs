@@ -24,13 +24,13 @@ use std::rc::Rc;
 
 use logger::error;
 use logger::result::ResultExt;
-use speedb::{DB, Options};
+use speedb::{DB, Options, WriteBatch, WriteBatchWithTransaction};
 use wal::{Record, SequenceNumber, WAL};
 
 use crate::durability_service::DurabilityService;
 use crate::error::{StorageError, StorageErrorKind};
 use crate::isolation_manager::IsolationManager;
-use crate::key::{WriteKey};
+use crate::key::{Key};
 use crate::snapshot::{ReadSnapshot, WriteSnapshot};
 
 pub mod error;
@@ -103,14 +103,14 @@ impl Storage {
                         }
                     },
                 });
-            } else if section.prefix == prefix {
+            } else if section.section_id == prefix {
                 return Err(StorageError {
                     storage_name: self.owner_name.as_ref().to_owned(),
                     kind: StorageErrorKind::SectionError {
                         source: SectionError {
                             section_name: name.to_owned(),
-                            kind: SectionErrorKind::FailedToCreateSectionPrefixExists {
-                                prefix: prefix,
+                            kind: SectionErrorKind::FailedToCreateSectionIDExists {
+                                id: prefix,
                                 existing_section: section.name.to_owned(),
                             },
                         }
@@ -132,6 +132,7 @@ impl Storage {
     pub fn snapshot_commit<'storage>(&'storage self, snapshot: WriteSnapshot<'storage>) {
         let (writes, open_sequence_number) = snapshot.into_data();
         //  1. make durable and get sequence number
+        // TODO: create a set of serialised WriteBatch, one per Section, which are serialised to WAL record directly
         let commit_sequence_number = self.durability_service.sequenced_write(WALRecordCommit::new(&writes));
         //  2. notify committed to isolation manager (must be immediate so waiting txn's don't spin long)
         let writes_shared = Rc::new(writes);
@@ -143,34 +144,34 @@ impl Storage {
         // TODO implement
 
         //  4. write to kv-storage
-        // snapshot_ref
+        // TODO - commit write batches directly to avoid re-creating structures
         writes_shared.iter().for_each(|(key, value)| self.put(key, value));
     }
 
-    pub fn put(&self, key: &WriteKey, value: &Option<Box<[u8]>>) {
+    pub fn put(&self, key: &Key, value: &Option<Box<[u8]>>) {
         // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
         let value_bytes = value.as_ref().map_or_else(|| &self.empty, |v| v);
-        self.get_section(key.bytes()[0]).put(key.bytes(), value_bytes).map_err(|e| StorageError {
+        self.get_section(key.section_id()).put(key.bytes(), value_bytes).map_err(|e| StorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
             kind: StorageErrorKind::SectionError { source: e },
         }).unwrap_or_log()
     }
 
-    pub fn get(&self, key: &[u8]) -> Option<Box<[u8]>> {
-        self.get_section(key[0]).get(key).map_err(|e| StorageError {
+    pub fn get(&self, key: &Key) -> Option<Box<[u8]>> {
+        self.get_section(key.section_id()).get(key.bytes()).map_err(|e| StorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
             kind: StorageErrorKind::SectionError { source: e },
             // TODO: unwrap_or_log may be incorrect: this could trigger if the DB is deleted for example?
         }).unwrap_or_log()
     }
 
-    pub fn get_prev(&self, key: &[u8]) -> Option<Box<[u8]>> {
-        self.get_section(key[0]).get_prev(key)
+    pub fn get_prev(&self, key: &Key) -> Option<Box<[u8]>> {
+        self.get_section(key.section_id()).get_prev(key.bytes())
     }
 
-    pub fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 's {
-        debug_assert!(prefix.len() > 1);
-        self.get_section(prefix[0]).iterate_prefix(prefix)
+    pub fn iterate_prefix<'s>(&'s self, prefix: &Key) -> impl Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 's {
+        debug_assert!(prefix.bytes().len() > 1);
+        self.get_section(prefix.section_id()).iterate_prefix(prefix.bytes())
             .map(|res| {
                 match res {
                     Ok(v) => Ok(v),
@@ -183,8 +184,8 @@ impl Storage {
             })
     }
 
-    fn get_section(&self, prefix: u8) -> &Section {
-        let section_index = self.section_index[prefix as usize];
+    fn get_section(&self, section_id: u8) -> &Section {
+        let section_index = self.section_index[section_id as usize];
         self.sections.get(section_index as usize).unwrap()
     }
 
@@ -225,13 +226,13 @@ impl Storage {
 pub struct Section {
     name: String,
     path: PathBuf,
-    prefix: u8,
+    section_id: u8,
     kv_storage: DB,
     next_checkpoint_id: u64,
 }
 
 impl Section {
-    fn new(name: &str, path: PathBuf, prefix: u8, options: &Options) -> Result<Self, SectionError> {
+    fn new(name: &str, path: PathBuf, section_id: u8, options: &Options) -> Result<Self, SectionError> {
         let kv_storage = DB::open(&options, &path)
             .map_err(|e| SectionError {
                 section_name: name.to_owned(),
@@ -240,7 +241,7 @@ impl Section {
         Ok(Section {
             name: name.to_owned(),
             path: path,
-            prefix: prefix,
+            section_id,
             kv_storage: kv_storage,
             next_checkpoint_id: 0,
         })
@@ -330,7 +331,7 @@ struct WALRecordCommit {
 }
 
 impl WALRecordCommit {
-    fn new(commit_data: &BTreeMap<WriteKey, Option<Box<[u8]>>>) -> WALRecordCommit {
+    fn new(commit_data: &BTreeMap<Key, Option<Box<[u8]>>>) -> WALRecordCommit {
         let data = commit_data
             .iter()
             .map(|(key, value)| {
@@ -358,7 +359,7 @@ pub struct SectionError {
 pub enum SectionErrorKind {
     FailedToCreateSectionError { source: speedb::Error },
     FailedToCreateSectionNameExists {},
-    FailedToCreateSectionPrefixExists { prefix: u8, existing_section: String },
+    FailedToCreateSectionIDExists { id: u8, existing_section: String },
     FailedToGetSectionHandle {},
     FailedToDeleteSection { source: std::io::Error },
     FailedGet { source: speedb::Error },
@@ -377,7 +378,7 @@ impl Error for SectionError {
         match &self.kind {
             SectionErrorKind::FailedToCreateSectionError { source, .. } => Some(source),
             SectionErrorKind::FailedToCreateSectionNameExists { .. } => None,
-            SectionErrorKind::FailedToCreateSectionPrefixExists { .. } => None,
+            SectionErrorKind::FailedToCreateSectionIDExists { .. } => None,
             SectionErrorKind::FailedToGetSectionHandle { .. } => None,
             SectionErrorKind::FailedToDeleteSection { source, .. } => Some(source),
             SectionErrorKind::FailedGet { source, .. } => Some(source),

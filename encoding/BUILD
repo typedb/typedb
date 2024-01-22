@@ -19,7 +19,7 @@ load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = [
     "//concept:__pkg__",
-    "//database:__pkg__"
+    "//database:__subpackages__"
 ])
 
 rust_library(

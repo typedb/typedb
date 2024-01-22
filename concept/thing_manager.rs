@@ -44,7 +44,7 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
     }
 
     fn get_entities(&self) -> impl Iterator<Item=Entity> {
-        let prefix = Prefix::Entity.as_bytes();
+        // let prefix = Prefix::Entity.bytes();
         // self.snapshot.iterate_prefix(prefix).map(|(key, value)| Entity::new(ThingEncoder::decideThingIIDSmall))
         empty()
     }
