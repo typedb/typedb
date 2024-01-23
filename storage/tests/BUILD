@@ -20,18 +20,39 @@ load("@rules_rust//rust:defs.bzl", "rust_test")
 package(default_visibility = ["//visibility:public",])
 
 rust_test(
-    name = "test-storage",
+    name = "test",
     srcs = glob([
-        "*.rs",
+        "test_storage.rs",
     ]),
     deps = [
         "//storage",
         "//common/logger",
 
         "@crates//:rand",
-        "@crates//:speedb",
         "@crates//:tracing",
     ]
+)
+
+# To run this via Cargo, add a 'bench' section to the Cargo.toml:
+#   [[bench]]
+#       name = "bench"
+#	    harness = false
+# To run this via Bazel, Criterion must be provided the --bench argument:
+#   bazel run --compilation_mode=opt //storage/tests:benchmark -- --bench
+rust_test(
+    name = "benchmark",
+    srcs = glob([
+        "bench_storage.rs",
+    ]),
+    deps = [
+        "//storage",
+        "//common/logger",
+
+        "@crates//:rand",
+        "@crates//:tracing",
+        "@crates//:criterion",
+    ],
+    use_libtest_harness = False,
 )
 
 checkstyle_test(

@@ -24,9 +24,9 @@ use std::sync::RwLock;
 use itertools::Itertools;
 use wal::SequenceNumber;
 
+use crate::Storage;
 use crate::error::StorageError;
-use crate::key_value::{Key, KeyFixed, Value};
-use crate::{key_value, Storage};
+use crate::key_value::{Key, Value};
 
 pub enum Snapshot<'storage> {
     Read(ReadSnapshot<'storage>),

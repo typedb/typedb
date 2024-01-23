@@ -24,7 +24,7 @@ use std::rc::Rc;
 
 use logger::error;
 use logger::result::ResultExt;
-use speedb::{DB, Options, WriteBatch, WriteBatchWithTransaction};
+use speedb::{DB, Options, ReadOptions, WriteBatch, WriteOptions};
 use wal::{Record, SequenceNumber, WAL};
 
 use crate::durability_service::DurabilityService;
@@ -39,11 +39,15 @@ pub mod snapshot;
 mod durability_service;
 mod isolation_manager;
 
+pub type SectionId = u8;
+
+const SECTION_ID_MAX: usize = SectionId::MAX as usize;
+
 pub struct Storage {
     owner_name: Rc<str>,
     path: PathBuf,
     sections: Vec<Section>,
-    section_index: [u8; 256],
+    section_index: [SectionId; SECTION_ID_MAX],
     durability_service: WAL,
     // TODO: want to inject either a remote or local service
     isolation_manager: IsolationManager,
@@ -61,7 +65,7 @@ impl Storage {
             owner_name: owner_name.clone(),
             path: kv_storage_dir,
             sections: Vec::new(),
-            section_index: [0; 256],
+            section_index: [0; SECTION_ID_MAX],
             durability_service: WAL::new(),
             isolation_manager: IsolationManager::new(),
             empty: Box::new([0; 0]),
@@ -79,18 +83,18 @@ impl Storage {
         //   For each record, commit the records. Some sections will write duplicates, but all writes are idempotent so this is OK.
     }
 
-    pub fn create_section(&mut self, name: &str, prefix: u8, options: &Options) -> Result<(), StorageError> {
+    pub fn create_section(&mut self, name: &str, section_id: SectionId, options: &Options) -> Result<(), StorageError> {
         let section_path = self.path.with_extension(name);
-        self.validate_new_section(name, prefix)?;
-        self.sections.push(Section::new(name, section_path, prefix, options).map_err(|err| StorageError {
+        self.validate_new_section(name, section_id)?;
+        self.sections.push(Section::new(name, section_path, section_id, options).map_err(|err| StorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
             kind: StorageErrorKind::SectionError { source: err },
         })?);
-        self.section_index[prefix as usize] = self.sections.len() as u8 - 1;
+        self.section_index[section_id as usize] = self.sections.len() as SectionId - 1;
         Ok(())
     }
 
-    fn validate_new_section(&self, name: &str, prefix: u8) -> Result<(), StorageError> {
+    fn validate_new_section(&self, name: &str, section_id: SectionId) -> Result<(), StorageError> {
         for section in &self.sections {
             if section.name == name {
                 return Err(StorageError {
@@ -102,14 +106,14 @@ impl Storage {
                         }
                     },
                 });
-            } else if section.section_id == prefix {
+            } else if section.section_id == section_id {
                 return Err(StorageError {
                     storage_name: self.owner_name.as_ref().to_owned(),
                     kind: StorageErrorKind::SectionError {
                         source: SectionError {
                             section_name: name.to_owned(),
                             kind: SectionErrorKind::FailedToCreateSectionIDExists {
-                                id: prefix,
+                                id: section_id,
                                 existing_section: section.name.to_owned(),
                             },
                         }
@@ -128,23 +132,48 @@ impl Storage {
         ReadSnapshot::new(self, SequenceNumber { number: 0 })
     }
 
-    pub fn snapshot_commit<'storage>(&'storage self, snapshot: WriteSnapshot<'storage>) {
+    pub fn snapshot_commit<'storage>(&'storage self, snapshot: WriteSnapshot<'storage>) -> Result<(), StorageError> {
         let (writes, open_sequence_number) = snapshot.into_data();
         //  1. make durable and get sequence number
-        // TODO: create a set of serialised WriteBatch, one per Section, which are serialised to WAL record directly
-        let commit_sequence_number = self.durability_service.sequenced_write(WALRecordCommit::new(&writes));
+
+        let write_batches = self.section_write_batches(&writes);
+        let commit_sequence_number = self.durability_service.sequenced_write(WALRecordCommit::new(&write_batches));
+
         //  2. notify committed to isolation manager (must be immediate so waiting txn's don't spin long)
-        let writes_shared = Rc::new(writes);
-        self.isolation_manager.notify_commit(open_sequence_number, commit_sequence_number, writes_shared.clone());
-        // steps:
+        self.isolation_manager.notify_commit(open_sequence_number, commit_sequence_number, writes);
+
         //  3. validate against concurrent transactions in the given order.
         // TODO decide if we should block until all predecessors finish, allow out of order (non-Calvin model), or validate against all predecessors even if they are validating and fail eagerly.
 
         // TODO implement
 
         //  4. write to kv-storage
-        // TODO - commit write batches directly to avoid re-creating structures
-        writes_shared.iter().for_each(|(key, value)| self.put(key, value));
+        for (index, write_batch) in write_batches.into_iter().enumerate() {
+            debug_assert!(index < SECTION_ID_MAX);
+            if write_batch.is_some() {
+                self.get_section(index as SectionId).write(write_batch.unwrap())
+                    .map_err(|error| StorageError {
+                        storage_name: self.owner_name.as_ref().to_owned(),
+                        kind: StorageErrorKind::SectionError { source: error }
+                    })?;
+            }
+        }
+        Ok(())
+    }
+
+    fn section_write_batches(&self, writes: &BTreeMap<Key, Value>) -> [Option<WriteBatch>; SECTION_ID_MAX] {
+        const EMPTY_WRITE_BATCH: Option<WriteBatch> = None;
+        let mut write_batches: [Option<WriteBatch>; SECTION_ID_MAX] = [EMPTY_WRITE_BATCH; SECTION_ID_MAX];
+
+        // let mut write_batches: Box<[Option<WriteBatch>]> = (0..SECTIONS_MAX).map(|_| None).collect::<Vec<Option<WriteBatch>>>().into_boxed_slice();
+        writes.iter().for_each(|(key, value)| {
+            let section_id = key.section_id() as usize;
+            if write_batches[section_id].is_none() {
+                write_batches[section_id] = Some(WriteBatch::default());
+            }
+            write_batches[section_id].as_mut().unwrap().put(key.bytes(), value.bytes())
+        });
+        write_batches
     }
 
     pub fn put(&self, key: &Key, value: &Value) {
@@ -182,7 +211,7 @@ impl Storage {
             })
     }
 
-    fn get_section(&self, section_id: u8) -> &Section {
+    fn get_section(&self, section_id: SectionId) -> &Section {
         let section_index = self.section_index[section_id as usize];
         self.sections.get(section_index as usize).unwrap()
     }
@@ -224,13 +253,15 @@ impl Storage {
 pub struct Section {
     name: String,
     path: PathBuf,
-    section_id: u8,
+    section_id: SectionId,
     kv_storage: DB,
     next_checkpoint_id: u64,
+    read_options: ReadOptions,
+    write_options: WriteOptions,
 }
 
 impl Section {
-    fn new(name: &str, path: PathBuf, section_id: u8, options: &Options) -> Result<Self, SectionError> {
+    fn new(name: &str, path: PathBuf, section_id: SectionId, options: &Options) -> Result<Self, SectionError> {
         let kv_storage = DB::open(&options, &path)
             .map_err(|e| SectionError {
                 section_name: name.to_owned(),
@@ -239,9 +270,11 @@ impl Section {
         Ok(Section {
             name: name.to_owned(),
             path: path,
-            section_id,
+            section_id: section_id,
             kv_storage: kv_storage,
             next_checkpoint_id: 0,
+            read_options: Section::new_read_options(),
+            write_options: Section::new_write_options(),
         })
     }
 
@@ -257,7 +290,7 @@ impl Section {
         //  open DB at 'active'
     }
 
-    pub fn new_options() -> Options {
+    pub fn new_db_options() -> Options {
         let mut options = Options::default();
         options.create_if_missing(true);
         options.create_missing_column_families(true);
@@ -266,9 +299,20 @@ impl Section {
         options
     }
 
+    fn new_read_options() -> ReadOptions {
+        ReadOptions::default()
+    }
+
+    fn new_write_options() -> WriteOptions {
+        let mut options = WriteOptions::default();
+        // TODO; verify that disabling WAL is the final decision
+        options.disable_wal(true);
+        options
+    }
+
     fn put(&self, key: &[u8], value: &[u8]) -> Result<(), SectionError> {
         // TODO: this should WAL if it is going to be exposed
-        self.kv_storage.put(key, value)
+        self.kv_storage.put_opt(key, value, &self.write_options)
             .map_err(|e| SectionError {
                 section_name: self.name.clone(),
                 kind: SectionErrorKind::FailedPut { source: e },
@@ -276,7 +320,7 @@ impl Section {
     }
 
     fn get(&self, key: &[u8]) -> Result<Option<Value>, SectionError> {
-        self.kv_storage.get(key).map_err(|e| SectionError {
+        self.kv_storage.get_opt(key, &self.read_options).map_err(|e| SectionError {
             section_name: self.name.clone(),
             kind: SectionErrorKind::FailedGet { source: e },
         }).map(
@@ -286,7 +330,7 @@ impl Section {
     }
 
     fn get_prev(&self, key: &[u8]) -> Option<Value> {
-        let mut iterator = self.kv_storage.raw_iterator();
+        let mut iterator = self.kv_storage.raw_iterator_opt(Section::new_read_options());
         iterator.seek_for_prev(key);
         iterator.key().map(|array_ref| Value::Value(array_ref.into()))
     }
@@ -300,6 +344,15 @@ impl Section {
                     section_name: self.name.clone(),
                     kind: SectionErrorKind::FailedIterate { source: error },
                 })
+            }
+        })
+    }
+
+    fn write(&self, write_batch: WriteBatch) -> Result<(), SectionError> {
+        self.kv_storage.write_opt(write_batch, &self.write_options).map_err(|error| {
+            SectionError {
+                section_name: self.name.clone(),
+                kind: SectionErrorKind::FailedBatchWrite { source: error },
             }
         })
     }
@@ -327,17 +380,30 @@ impl Section {
 }
 
 struct WALRecordCommit {
-    // TODO: replace with proper interface for serialised data
-    data: Box<[(Box<[u8]>, Box<[u8]>)]>,
+    data: Box<[u8]>,
 }
 
 impl WALRecordCommit {
-    fn new(commit_data: &BTreeMap<Key, Value>) -> WALRecordCommit {
-        let data = commit_data
-            .iter()
-            .map(|(key, value)| {
-                (key.bytes().to_vec().into_boxed_slice(), value.bytes().to_vec().into_boxed_slice())
-            }).collect::<Vec<_>>().into_boxed_slice();
+    const WB_SIZE_BYTES: usize = std::mem::size_of::<u64>();
+
+    // TODO: should this serialise the BTree writes directly?
+    fn new(commit_data: &[Option<WriteBatch>]) -> WALRecordCommit {
+        let data_size = commit_data.iter()
+            .map(|wb| wb.as_ref().map_or(0, |batch| WALRecordCommit::WB_SIZE_BYTES + batch.size_in_bytes()))
+            .sum();
+
+        let mut data: Box<[u8]> = vec![0; data_size].into_boxed_slice();
+        let mut index: usize = 0;
+
+        for write_batch in commit_data.iter().flatten() {
+            let length_start = index;
+            let length_end = length_start + std::mem::size_of::<u64>();
+            let data_end = length_end + write_batch.size_in_bytes();
+            index = data_end;
+
+            data[length_start..length_end].copy_from_slice(&write_batch.size_in_bytes().to_be_bytes());
+            data[length_end..data_end].copy_from_slice(write_batch.data());
+        }
         WALRecordCommit {
             data: data
         }
@@ -360,11 +426,12 @@ pub struct SectionError {
 pub enum SectionErrorKind {
     FailedToCreateSectionError { source: speedb::Error },
     FailedToCreateSectionNameExists {},
-    FailedToCreateSectionIDExists { id: u8, existing_section: String },
+    FailedToCreateSectionIDExists { id: SectionId, existing_section: String },
     FailedToGetSectionHandle {},
     FailedToDeleteSection { source: std::io::Error },
     FailedGet { source: speedb::Error },
     FailedPut { source: speedb::Error },
+    FailedBatchWrite { source: speedb::Error },
     FailedIterate { source: speedb::Error },
 }
 
@@ -384,6 +451,7 @@ impl Error for SectionError {
             SectionErrorKind::FailedToDeleteSection { source, .. } => Some(source),
             SectionErrorKind::FailedGet { source, .. } => Some(source),
             SectionErrorKind::FailedPut { source, .. } => Some(source),
+            SectionErrorKind::FailedBatchWrite { source, .. } => Some(source),
             SectionErrorKind::FailedIterate { source, .. } => Some(source),
         }
     }

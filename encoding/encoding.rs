@@ -54,7 +54,7 @@ impl EncodingSection {
     }
 
     fn initialise_storage(&self, storage: &mut Storage) -> Result<(), StorageError> {
-        let options = Section::new_options();
+        let options = Section::new_db_options();
         storage.create_section(self.name(), self.id(), &options)
     }
 }

@@ -16,6 +16,8 @@
  */
 
 use std::cmp::Ordering;
+use std::ops::Deref;
+use crate::SectionId;
 
 pub const FIXED_KEY_LENGTH_BYTES: usize = 48;
 
@@ -33,7 +35,7 @@ impl Key {
         }
     }
 
-    pub fn section_id(&self) -> u8 {
+    pub fn section_id(&self) -> SectionId {
         match self {
             Key::Fixed(fixed_key) => fixed_key.section_id(),
             Key::Dynamic(dynamic_key) => dynamic_key.section_id(),
@@ -43,13 +45,13 @@ impl Key {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct KeyFixed {
-    section_id: u8,
+    section_id: SectionId,
     key_length: usize,
     data: [u8; FIXED_KEY_LENGTH_BYTES],
 }
 
 impl KeyFixed {
-    pub fn new(section_id: u8, key_length: usize, data: [u8; FIXED_KEY_LENGTH_BYTES]) -> KeyFixed {
+    pub fn new(section_id: SectionId, key_length: usize, data: [u8; FIXED_KEY_LENGTH_BYTES]) -> KeyFixed {
         KeyFixed {
             section_id: section_id,
             key_length: key_length,
@@ -61,19 +63,19 @@ impl KeyFixed {
         &self.data[0..self.key_length]
     }
 
-    fn section_id(&self) -> u8 {
+    fn section_id(&self) -> SectionId {
         self.section_id
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyDynamic {
-    section_id: u8,
+    section_id: SectionId,
     data: Box<[u8]>,
 }
 
 impl KeyDynamic {
-    pub fn new(section_id: u8, data: Box<[u8]>) -> KeyDynamic {
+    pub fn new(section_id: SectionId, data: Box<[u8]>) -> KeyDynamic {
         KeyDynamic {
             section_id: section_id,
             data: data,
@@ -84,7 +86,7 @@ impl KeyDynamic {
         self.data.as_ref()
     }
 
-    fn section_id(&self) -> u8 {
+    fn section_id(&self) -> SectionId {
         self.section_id
     }
 }
@@ -117,9 +119,16 @@ impl Ord for Key {
 impl From<(Vec<u8>, u8)> for KeyFixed {
     // For tests
     fn from((bytes, section_id): (Vec<u8>, u8)) -> Self {
+        KeyFixed::from((bytes.as_slice(), section_id))
+    }
+}
+
+impl From<(&[u8], u8)> for KeyFixed {
+    // For tests
+    fn from((bytes, section_id): (&[u8], u8)) -> Self {
         assert!(bytes.len() < FIXED_KEY_LENGTH_BYTES);
         let mut data = [0; FIXED_KEY_LENGTH_BYTES];
-        data[0..bytes.len()].copy_from_slice(bytes.as_slice());
+        data[0..bytes.len()].copy_from_slice(bytes);
         KeyFixed {
             section_id: section_id,
             key_length: bytes.len(),

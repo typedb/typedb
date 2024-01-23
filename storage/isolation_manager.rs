@@ -28,7 +28,7 @@ use crate::snapshot::Snapshot;
 
 pub(crate) struct IsolationManager {
     // TODO improve: RWLock is not optimal
-    commits: RwLock<Vec<(SequenceNumber, SequenceNumber, Rc<BTreeMap<Key, Value>>)>>
+    commits: RwLock<Vec<(SequenceNumber, SequenceNumber, BTreeMap<Key, Value>)>>
 }
 
 impl IsolationManager {
@@ -42,7 +42,7 @@ impl IsolationManager {
         todo!()
     }
 
-    pub(crate) fn notify_commit(&self, open_sequence_number: SequenceNumber, commit_sequence_number: SequenceNumber, writes: Rc<BTreeMap<Key, Value>>) {
+    pub(crate) fn notify_commit(&self, open_sequence_number: SequenceNumber, commit_sequence_number: SequenceNumber, writes: BTreeMap<Key, Value>) {
         let mut lock = self.commits.write().unwrap_or_log();
         lock.push((open_sequence_number, commit_sequence_number, writes));
     }
