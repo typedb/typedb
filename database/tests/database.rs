@@ -15,8 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::path::PathBuf;
+use std::cell::OnceCell;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Mutex;
 
 use encoding::type_::type_encoding::concept::root::Root;
 use logger::initialise_logging;
@@ -25,11 +27,15 @@ use tracing::dispatcher::DefaultGuard;
 
 use database::database::Database;
 
-fn setup() -> (PathBuf, DefaultGuard) {
-    let guard = initialise_logging();
+static LOGGING_GUARD: Mutex<OnceCell<DefaultGuard>> = Mutex::new(OnceCell::new());
+
+fn setup() -> PathBuf {
+    LOGGING_GUARD.lock().unwrap().get_or_init(initialise_logging);
     let id = rand::random::<u64>();
-    let fs_tmp_dir = std::env::temp_dir();
-    (fs_tmp_dir.with_extension(format!("test_database{}", id)), guard)
+    let mut fs_tmp_dir = std::env::temp_dir();
+    let dir_name = format!("test_database_{}", id);
+    fs_tmp_dir.push(Path::new(&dir_name));
+    fs_tmp_dir
 }
 
 fn cleanup(path: PathBuf) {
@@ -38,7 +44,7 @@ fn cleanup(path: PathBuf) {
 
 #[test]
 fn create_delete_database() {
-    let (database_path, _log_guard) = setup();
+    let database_path = setup();
     let db_result = Database::new(&database_path, Rc::from("create_delete"));
     assert!(db_result.is_ok());
     let db = db_result.unwrap();

@@ -82,7 +82,6 @@ pub trait DeserialisableDynamic {
 
 impl<T: IntoBytes> Serialisable for T {
     fn serialised_size(&self) -> usize {
-        println!("Size: {}", Self::BYTE_LEN);
         Self::BYTE_LEN
     }
 

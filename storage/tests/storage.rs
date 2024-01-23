@@ -16,8 +16,11 @@
  */
 
 
-use std::path::PathBuf;
+use std::cell::OnceCell;
+use std::iter::Once;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Mutex;
 
 use tracing::subscriber::DefaultGuard;
 
@@ -26,12 +29,15 @@ use rand;
 use storage::{error::{StorageError, StorageErrorKind}, SectionError, SectionErrorKind, Storage};
 use storage::key_value::{Key, KeyFixed, Value};
 
+static LOGGING_GUARD: Mutex<OnceCell<DefaultGuard>> = Mutex::new(OnceCell::new());
 
-fn setup() -> (PathBuf, DefaultGuard) {
-    let guard = initialise_logging();
+fn setup() -> PathBuf {
+    LOGGING_GUARD.lock().unwrap().get_or_init(initialise_logging);
     let id = rand::random::<u64>();
-    let fs_tmp_dir = std::env::temp_dir();
-    (fs_tmp_dir.with_extension(format!("test_storage_{}", id)), guard)
+    let mut fs_tmp_dir = std::env::temp_dir();
+    let dir_name = format!("test_storage_{}", id);
+    fs_tmp_dir.push(Path::new(&dir_name));
+    fs_tmp_dir
 }
 
 fn cleanup(path: PathBuf) {
@@ -40,7 +46,7 @@ fn cleanup(path: PathBuf) {
 
 #[test]
 fn create_delete() {
-    let (storage_path, _log_guard) = setup();
+    let storage_path = setup();
     dbg!("Test one");
     dbg!(&storage_path);
     let storage_result = Storage::new(Rc::from("storage"), &storage_path);
@@ -53,7 +59,7 @@ fn create_delete() {
 
 #[test]
 fn create_sections() {
-    let (storage_path, _log_guard) = setup();
+    let storage_path = setup();
     dbg!("Test two");
     dbg!(&storage_path);
     let mut storage = Storage::new(Rc::from("storage"), &storage_path).unwrap();
@@ -72,7 +78,7 @@ fn create_sections() {
 
 #[test]
 fn create_sections_errors() {
-    let (storage_path, _log_guard) = setup();
+    let storage_path = setup();
     let mut storage = Storage::new(Rc::from("storage"), &storage_path).unwrap();
     let sec_1_prefix: u8 = 0x0;
     storage.create_section("sec_1", sec_1_prefix, &storage::Section::new_options()).unwrap();
@@ -108,7 +114,7 @@ fn create_sections_errors() {
 
 #[test]
 fn get_put_iterate() {
-    let (storage_path, _log_guard) = setup();
+    let storage_path = setup();
     let mut storage = Storage::new(Rc::from("storage"), &storage_path).unwrap();
     let sec_1_id: u8 = 0x0;
     storage.create_section("sec_1", sec_1_id, &storage::Section::new_options()).unwrap();
