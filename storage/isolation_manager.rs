@@ -15,26 +15,30 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeSet, VecDeque};
+use std::error::Error;
+use std::fmt::{Display, Formatter};
 use std::iter::empty;
-use std::rc::Rc;
 use std::sync::RwLock;
+use std::sync::atomic::AtomicU64;
+
+use durability::SequenceNumber;
 use logger::result::ResultExt;
 
-use wal::SequenceNumber;
-
-use crate::key_value::{Key, Value};
-use crate::snapshot::Snapshot;
+use crate::key_value::Key;
+use crate::snapshot::{UpdateData, WriteData};
 
 pub(crate) struct IsolationManager {
     // TODO improve: RWLock is not optimal
-    commits: RwLock<Vec<(SequenceNumber, SequenceNumber, BTreeMap<Key, Value>)>>
+    commits: RwLock<Vec<CommitRecord>>,
+    timeline: Timeline,
 }
 
 impl IsolationManager {
-    pub(crate) fn new() -> IsolationManager {
+    pub(crate) fn new(next_sequence_number: SequenceNumber) -> IsolationManager {
         IsolationManager {
-            commits: RwLock::new(vec![]),
+            commits: Default::default(),
+            timeline: Timeline::new(next_sequence_number),
         }
     }
 
@@ -42,18 +46,152 @@ impl IsolationManager {
         todo!()
     }
 
-    pub(crate) fn notify_commit(&self, open_sequence_number: SequenceNumber, commit_sequence_number: SequenceNumber, writes: BTreeMap<Key, Value>) {
-        let mut lock = self.commits.write().unwrap_or_log();
-        lock.push((open_sequence_number, commit_sequence_number, writes));
+    pub(crate) fn notify_commit_pending(&self, open_sequence_number: SequenceNumber, commit_record: CommitRecord) {
+        let mut commits = self.commits.write().unwrap_or_log();
+        commits.push(commit_record);
     }
 
-    pub(crate) fn notify_closed(&self, sequence_number: SequenceNumber) {
+    pub(crate) fn notify_commit_confirmed(&self, commit_sequence_number: SequenceNumber) {
         todo!()
     }
 
-    pub(crate) fn iterate_snapshots(&self, from: SequenceNumber, to: SequenceNumber) -> impl Iterator<Item=Snapshot> {
+    pub(crate) fn notify_commit_failed(&self, commit_sequence_number: SequenceNumber) {
+        todo!()
+    }
+
+    pub(crate) fn last_committed(&self) -> SequenceNumber {
+        SequenceNumber::new(0)
+    }
+
+    pub(crate) fn iterate_commits_between(&self, from: SequenceNumber, to: SequenceNumber) -> impl Iterator<Item=&CommitRecord> {
         empty()
+    }
+
+    pub(crate) fn validate_isolation(&self, predecessor: &CommitRecord, successor: &CommitRecord) -> Result<(), IsolationError> {
+        
+
+        // if (txn.dataStorage.modifyDeleteConflict(mayConflict.dataStorage)) {
+        //     throw TypeDBException.of(TRANSACTION_ISOLATION_MODIFY_DELETE_VIOLATION);
+        // } else if (txn.dataStorage.deleteModifyConflict(mayConflict.dataStorage)) {
+        //     throw TypeDBException.of(TRANSACTION_ISOLATION_DELETE_MODIFY_VIOLATION);
+        // } else if (txn.dataStorage.exclusiveCreateConflict(mayConflict.dataStorage)) {
+        //     throw TypeDBException.of(TRANSACTION_ISOLATION_EXCLUSIVE_CREATE_VIOLATION);
+        // }
+    }
+}
+
+const TIMELINE_WINDOW_SIZE: usize = 100;
+
+struct Timeline {
+    windows: RwLock<VecDeque<Box<TimelineWindow<TIMELINE_WINDOW_SIZE>>>>,
+}
+
+impl Timeline {
+    fn new(starting_sequence_number: SequenceNumber) -> Timeline {
+        let mut windows = VecDeque::new();
+        windows.push_back(Box::new(TimelineWindow::new(starting_sequence_number)));
+        Timeline {
+            windows: RwLock::new(windows),
+        }
+    }
+
+    fn set_pending(&self, sequence_number: SequenceNumber, commit_record: CommitRecord) {
+        let record = TimelineSlot::Pending(commit_record);
+        let window = self.get_or_create_window(sequence_number);
+    }
+
+    fn get_or_create_window(&self, sequence_number: SequenceNumber) {
+        let windows = self.windows.read().unwrap_or_log();
+        let last_window = windows.back();
+    }
+
+    fn try_get_window(&self, sequence_number: SequenceNumber) -> Option<Box<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
+        let windows = self.windows.read().unwrap_or_log();
+        windows.iter().rev().find(|window| window.contains(&sequence_number))
+            .map(|w| *w)
+    }
+}
+
+struct TimelineWindow<const SIZE: usize> {
+    starting_sequence_number: SequenceNumber,
+    end_sequence_number: SequenceNumber,
+    window: [TimelineSlot; SIZE],
+    readers: AtomicU64,
+}
+
+impl<const SIZE: usize> TimelineWindow<SIZE> {
+    fn new(starting_sequence_number: SequenceNumber) -> TimelineWindow<SIZE> {
+        const EMPTY: TimelineSlot = TimelineSlot::Empty;
+        let window = [EMPTY; SIZE];
+        TimelineWindow {
+            starting_sequence_number: starting_sequence_number,
+            end_sequence_number: starting_sequence_number.plus(SIZE as u64),
+            window: window,
+            readers: AtomicU64::new(0),
+        }
+    }
+
+    fn start(&self) -> &SequenceNumber {
+        &self.starting_sequence_number
+    }
+
+    fn end(&self) -> &SequenceNumber {
+        &self.end_sequence_number
+    }
+
+    fn contains(&self, sequence_number: &SequenceNumber) -> bool {
+        self.starting_sequence_number <= *sequence_number && *sequence_number < self.end_sequence_number
+    }
+}
+
+enum TimelineSlot {
+    Empty,
+    Pending(CommitRecord),
+    Committed(CommitRecord),
+    Failed,
+}
+
+pub(crate) struct CommitRecord {
+    // TODO: this could read-through to the WAL if we have to?
+    writes: WriteData,
+    updates: UpdateData,
+    open_sequence_number: SequenceNumber,
+}
+
+impl CommitRecord {
+    pub(crate) fn new(writes: WriteData, updates: BTreeSet<Key>, open_sequence_number: SequenceNumber) -> CommitRecord {
+        CommitRecord {
+            writes: writes,
+            updates: updates,
+            open_sequence_number: open_sequence_number
+        }
+    }
+
+    pub(crate) fn writes(&self) -> &WriteData {
+
     }
 }
 
 
+#[derive(Debug)]
+pub struct IsolationError {
+    pub kind: IsolationErrorKind,
+}
+
+#[derive(Debug)]
+pub enum IsolationErrorKind {
+    FailedToDeleteStorage { source: std::io::Error },
+}
+
+impl Display for IsolationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for IsolationError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match &self.kind {
+        }
+    }
+}

@@ -32,7 +32,7 @@ rust_library(
     ]),
     deps = [
         "//storage",
-        "//storage/wal",
+        "//storage/durability",
         "//common/logger",
 
         "@crates//:tracing",

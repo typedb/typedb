@@ -15,12 +15,39 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use wal::{Record, SequenceNumber};
+pub mod wal;
 
-pub(crate) trait DurabilityService {
-    fn sequenced_write(&self, record: &dyn Record) -> SequenceNumber;
-
-    fn last_sequence_number(&self) -> SequenceNumber;
+pub trait DurabilityService: Sequencer {
+    fn sequenced_write(&self, record: impl Record) -> SequenceNumber;
 
     fn iterate_records_from(&self, sequence_number: SequenceNumber) -> Box<dyn Iterator<Item=(SequenceNumber, &dyn Record)>>;
+}
+
+pub trait Record {
+    fn as_bytes(&self) -> &[u8];
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub struct SequenceNumber {
+    number: u64,
+}
+
+impl SequenceNumber {
+
+    pub fn new(number: u64) -> SequenceNumber {
+        SequenceNumber { number: number }
+    }
+
+    pub fn plus(&self, number: u64) -> SequenceNumber {
+        return SequenceNumber { number: self.number + number }
+    }
+}
+
+pub trait Sequencer {
+
+    fn take_next(&self) -> SequenceNumber;
+
+    fn poll_next(&self) -> SequenceNumber;
+
+    fn previous(&self) -> SequenceNumber;
 }

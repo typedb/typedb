@@ -15,18 +15,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::ops::RangeFrom;
-use std::sync::RwLock;
+use std::sync::{Mutex, RwLock};
 
+use durability::SequenceNumber;
 use itertools::Itertools;
-use wal::SequenceNumber;
 
-use crate::Storage;
 use crate::error::StorageError;
+use crate::isolation_manager::CommitRecord;
 use crate::key_value::{Key, Value};
+use crate::Storage;
+
+pub(crate) type WriteData = BTreeMap<Key, Value>;
+pub(crate) type UpdateData = BTreeSet<Key>;
 
 pub enum Snapshot<'storage> {
     Read(ReadSnapshot<'storage>),
@@ -56,6 +60,7 @@ pub struct ReadSnapshot<'storage> {
 
 impl<'storage> ReadSnapshot<'storage> {
     pub(crate) fn new(storage: &'storage Storage, open_sequence_number: SequenceNumber) -> ReadSnapshot {
+        // Note: for serialisability, we would need to register the open transaction to the IsolationManager
         ReadSnapshot {
             storage: storage,
             open_sequence_number: open_sequence_number,
@@ -74,15 +79,18 @@ impl<'storage> ReadSnapshot<'storage> {
 pub struct WriteSnapshot<'storage> {
     storage: &'storage Storage,
     // TODO: replace with BTree Left-Right structure to allow concurrent read/write
-    writes: RwLock<BTreeMap<Key, Value>>,
+    writes: RwLock<WriteData>,
+    updates: Mutex<UpdateData>,
     open_sequence_number: SequenceNumber,
 }
 
 impl<'storage> WriteSnapshot<'storage> {
     pub(crate) fn new(storage: &'storage Storage, open_sequence_number: SequenceNumber) -> WriteSnapshot {
+        storage.isolation_manager.notify_open(open_sequence_number);
         WriteSnapshot {
             storage: storage,
-            writes: RwLock::new(BTreeMap::new()),
+            writes: RwLock::new(WriteData::new()),
+            updates: Mutex::new(UpdateData::new()),
             open_sequence_number: open_sequence_number,
         }
     }
@@ -104,7 +112,7 @@ impl<'storage> WriteSnapshot<'storage> {
         // if write.is_some() {
         //
         // } else {
-            self.storage.get(key)
+        self.storage.get(key)
         // }
         // TODO merge with inserts & deletes
     }
@@ -113,7 +121,7 @@ impl<'storage> WriteSnapshot<'storage> {
         // TODO merge with inserts & deletes
         self.storage.iterate_prefix(prefix).merge_by(
             self.iterate_prefix_buffered(prefix),
-            |(k1, v1), (k2, v2)| k1.cmp(k2).is_le()
+            |(k1, v1), (k2, v2)| k1.cmp(k2).is_le(),
         )
     }
 
@@ -131,8 +139,11 @@ impl<'storage> WriteSnapshot<'storage> {
         self.storage.snapshot_commit(self);
     }
 
-    pub(crate) fn into_data(self) -> (BTreeMap<Key, Value>, SequenceNumber) {
-        (self.writes.into_inner().unwrap(), self.open_sequence_number)
+    pub(crate) fn into_commit_record(self) -> CommitRecord {
+        CommitRecord::new(
+            self.writes.into_inner().unwrap(), self.updates.into_inner().unwrap(),
+            self.open_sequence_number,
+        )
     }
 }
 

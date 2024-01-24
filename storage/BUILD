@@ -31,7 +31,7 @@ rust_library(
         "*.rs",
     ]),
     deps = [
-        "//storage/wal",
+        "//storage/durability",
         "//common/logger",
 
         "@crates//:itertools",

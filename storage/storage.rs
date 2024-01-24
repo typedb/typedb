@@ -25,18 +25,16 @@ use std::rc::Rc;
 use logger::error;
 use logger::result::ResultExt;
 use speedb::{DB, Options, ReadOptions, WriteBatch, WriteOptions};
-use wal::{Record, SequenceNumber, WAL};
+use durability::{Record, SequenceNumber, DurabilityService, wal::WAL, Sequencer};
 
-use crate::durability_service::DurabilityService;
 use crate::error::{StorageError, StorageErrorKind};
 use crate::isolation_manager::IsolationManager;
 use crate::key_value::{Key, Value};
-use crate::snapshot::{ReadSnapshot, WriteSnapshot};
+use crate::snapshot::{ReadSnapshot, WriteData, WriteSnapshot};
 
 pub mod error;
 pub mod key_value;
 pub mod snapshot;
-mod durability_service;
 mod isolation_manager;
 
 pub type SectionId = u8;
@@ -51,9 +49,6 @@ pub struct Storage {
     durability_service: WAL,
     // TODO: want to inject either a remote or local service
     isolation_manager: IsolationManager,
-
-    // TODO eliminate
-    empty: Box<[u8]>,
 }
 
 impl Storage {
@@ -61,14 +56,14 @@ impl Storage {
 
     pub fn new(owner_name: Rc<str>, path: &PathBuf) -> Result<Self, StorageError> {
         let kv_storage_dir = path.with_extension(Storage::STORAGE_DIR_NAME);
+        let durability_service = WAL::new();
         Ok(Storage {
             owner_name: owner_name.clone(),
             path: kv_storage_dir,
             sections: Vec::new(),
             section_index: [0; SECTION_ID_MAX],
-            durability_service: WAL::new(),
-            isolation_manager: IsolationManager::new(),
-            empty: Box::new([0; 0]),
+            durability_service: durability_service,
+            isolation_manager: IsolationManager::new(durability_service.poll_next()),
         })
     }
 
@@ -125,27 +120,44 @@ impl Storage {
     }
 
     pub fn snapshot_write<'storage>(&'storage self) -> WriteSnapshot<'storage> {
-        WriteSnapshot::new(self, SequenceNumber { number: 0 })
+        /*
+
+        How to pick a sequence number:
+
+        TXN 1 - open(0) ---> durably write = 10 PENDING ---> validate ---> write ---> committed. RETURN
+
+        Question: does external consistency make sense for single-node machines?
+        If user opens TXN 10 in thread 1, thread 2... work. User expects if open TXN after TXN 10 returns, we will see it. Otherwise, no expectations.
+        Therefore - we can always use the last committed state safely for happens-before relations.
+
+        For external consistency, we should use the the currently last pending sequence number and wait for it to finish.
+
+         */
+
+        let open_sequence_number = self.isolation_manager.last_committed();
+        WriteSnapshot::new(self, open_sequence_number)
     }
 
     pub fn snapshot_read<'storage>(&'storage self) -> ReadSnapshot<'storage> {
-        ReadSnapshot::new(self, SequenceNumber { number: 0 })
+        let open_sequence_number = self.isolation_manager.last_committed();
+        ReadSnapshot::new(self, open_sequence_number)
     }
 
     pub fn snapshot_commit<'storage>(&'storage self, snapshot: WriteSnapshot<'storage>) -> Result<(), StorageError> {
-        let (writes, open_sequence_number) = snapshot.into_data();
-        //  1. make durable and get sequence number
+        let commit_record = snapshot.into_commit_record();
 
-        let write_batches = self.section_write_batches(&writes);
+        //  1. make durable and get sequence number
+        let write_batches = self.to_write_batches(commit_record.writes());
         let commit_sequence_number = self.durability_service.sequenced_write(WALRecordCommit::new(&write_batches));
 
-        //  2. notify committed to isolation manager (must be immediate so waiting txn's don't spin long)
-        self.isolation_manager.notify_commit(open_sequence_number, commit_sequence_number, writes);
+        //  2. notify committed to isolation manager
+        self.isolation_manager.notify_commit_pending(open_sequence_number, commit_record);
 
         //  3. validate against concurrent transactions in the given order.
-        // TODO decide if we should block until all predecessors finish, allow out of order (non-Calvin model), or validate against all predecessors even if they are validating and fail eagerly.
-
-        // TODO implement
+        // TODO decide if we should block until all predecessors finish, allow out of order (non-Calvin model/applicable for non-distributed), or validate against all predecessors even if they are validating and fail eagerly.
+        for predecessor_commit_record in self.isolation_manager.iterate_commits_between(open_sequence_number, commit_sequence_number) {
+            self.isolation_manager.validate_isolation(predecessor_commit_record, &commit_record);
+        }
 
         //  4. write to kv-storage
         for (index, write_batch) in write_batches.into_iter().enumerate() {
@@ -161,7 +173,7 @@ impl Storage {
         Ok(())
     }
 
-    fn section_write_batches(&self, writes: &BTreeMap<Key, Value>) -> [Option<WriteBatch>; SECTION_ID_MAX] {
+    fn to_write_batches(&self, writes: &WriteData) -> [Option<WriteBatch>; SECTION_ID_MAX] {
         const EMPTY_WRITE_BATCH: Option<WriteBatch> = None;
         let mut write_batches: [Option<WriteBatch>; SECTION_ID_MAX] = [EMPTY_WRITE_BATCH; SECTION_ID_MAX];
 
@@ -320,6 +332,8 @@ impl Section {
     }
 
     fn get(&self, key: &[u8]) -> Result<Option<Value>, SectionError> {
+        // TODO: if we can let Value decide whether to read Value into stack or heap automatically, we can avoid one heap allocation using GetPinnableSlice
+        // TODO: even better if we pass in a transform function that maps &[u8] to T we're not restricted to Values
         self.kv_storage.get_opt(key, &self.read_options).map_err(|e| SectionError {
             section_name: self.name.clone(),
             kind: SectionErrorKind::FailedGet { source: e },
@@ -337,6 +351,7 @@ impl Section {
 
     // TODO: we should benchmark using iterator pools
     fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=Result<(Box<[u8]>, Value), SectionError>> + 's {
+        // TODO:
         self.kv_storage.prefix_iterator(prefix).map(|result| {
             match result {
                 Ok((key, value)) => Ok((key, if value.is_empty() { Value::Empty } else { Value::Value(value) })),
