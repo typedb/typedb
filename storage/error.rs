@@ -17,6 +17,7 @@
 
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
+use crate::isolation_manager::IsolationError;
 
 use crate::SectionError;
 
@@ -30,6 +31,7 @@ pub struct StorageError {
 pub enum StorageErrorKind {
     FailedToDeleteStorage { source: std::io::Error },
     SectionError { source: SectionError },
+    IsolationError { source: IsolationError },
 }
 
 impl Display for StorageError {
@@ -43,6 +45,7 @@ impl Error for StorageError {
         match &self.kind {
             StorageErrorKind::FailedToDeleteStorage { source, .. } => Some(source),
             StorageErrorKind::SectionError { source, .. } => Some(source),
+            StorageErrorKind::IsolationError { source, .. } => Some(source),
         }
     }
 }

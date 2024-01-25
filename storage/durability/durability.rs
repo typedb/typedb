@@ -27,7 +27,7 @@ pub trait Record {
     fn as_bytes(&self) -> &[u8];
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct SequenceNumber {
     number: u64,
 }
@@ -40,6 +40,10 @@ impl SequenceNumber {
 
     pub fn plus(&self, number: u64) -> SequenceNumber {
         return SequenceNumber { number: self.number + number }
+    }
+
+    pub fn number(&self) -> u64 {
+        self.number
     }
 }
 

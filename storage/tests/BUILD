@@ -47,6 +47,20 @@ rust_test(
     ]
 )
 
+rust_test(
+    name = "test-isolation",
+    srcs = glob([
+        "test_isolation.rs",
+    ]),
+    deps = [
+        "//storage",
+        "//common/logger",
+
+        "@crates//:rand",
+        "@crates//:tracing",
+    ]
+)
+
 # To run this via Cargo, add a 'bench' section to the Cargo.toml:
 #   [[bench]]
 #       name = "bench"

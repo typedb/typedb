@@ -83,7 +83,7 @@ pub struct WriteSnapshot<'storage> {
 
 impl<'storage> WriteSnapshot<'storage> {
     pub(crate) fn new(storage: &'storage Storage, open_sequence_number: SequenceNumber) -> WriteSnapshot {
-        storage.isolation_manager.notify_open(open_sequence_number);
+        storage.isolation_manager.notify_open(&open_sequence_number);
         WriteSnapshot {
             storage: storage,
             writes: RwLock::new(WriteData::new()),

@@ -26,7 +26,7 @@ pub struct WAL {
 impl WAL {
     pub fn new() -> WAL {
         WAL {
-            sequence_number: AtomicU64::new(0),
+            sequence_number: AtomicU64::new(1),
         }
     }
 }
