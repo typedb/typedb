@@ -20,9 +20,23 @@ load("@rules_rust//rust:defs.bzl", "rust_test")
 package(default_visibility = ["//visibility:public",])
 
 rust_test(
-    name = "test",
+    name = "test-storage",
     srcs = glob([
         "test_storage.rs",
+    ]),
+    deps = [
+        "//storage",
+        "//common/logger",
+
+        "@crates//:rand",
+        "@crates//:tracing",
+    ]
+)
+
+rust_test(
+    name = "test-snapshot",
+    srcs = glob([
+        "test_snapshot.rs",
     ]),
     deps = [
         "//storage",

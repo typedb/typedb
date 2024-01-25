@@ -30,7 +30,7 @@ use durability::{Record, SequenceNumber, DurabilityService, wal::WAL, Sequencer}
 use crate::error::{StorageError, StorageErrorKind};
 use crate::isolation_manager::IsolationManager;
 use crate::key_value::{Key, Value};
-use crate::snapshot::{ReadSnapshot, WriteData, WriteSnapshot};
+use crate::snapshot::{ReadSnapshot, Write, WriteData, WriteSnapshot};
 
 pub mod error;
 pub mod key_value;
@@ -62,8 +62,8 @@ impl Storage {
             path: kv_storage_dir,
             sections: Vec::new(),
             section_index: [0; SECTION_ID_MAX],
-            durability_service: durability_service,
             isolation_manager: IsolationManager::new(durability_service.poll_next()),
+            durability_service: durability_service,
         })
     }
 
@@ -150,14 +150,14 @@ impl Storage {
         let write_batches = self.to_write_batches(commit_record.writes());
         let commit_sequence_number = self.durability_service.sequenced_write(WALRecordCommit::new(&write_batches));
 
-        //  2. notify committed to isolation manager
-        self.isolation_manager.notify_commit_pending(open_sequence_number, commit_record);
-
-        //  3. validate against concurrent transactions in the given order.
+        //  2. validate against concurrent transactions in the given order.
         // TODO decide if we should block until all predecessors finish, allow out of order (non-Calvin model/applicable for non-distributed), or validate against all predecessors even if they are validating and fail eagerly.
-        for predecessor_commit_record in self.isolation_manager.iterate_commits_between(open_sequence_number, commit_sequence_number) {
+        for predecessor_commit_record in self.isolation_manager.iterate_commits_between(commit_record.open_sequence_number(), &commit_sequence_number) {
             self.isolation_manager.validate_isolation(predecessor_commit_record, &commit_record);
         }
+
+        //  3. notify committed to isolation manager on success
+        let commit_record = self.isolation_manager.notify_commit_confirmed(commit_sequence_number, commit_record);
 
         //  4. write to kv-storage
         for (index, write_batch) in write_batches.into_iter().enumerate() {
@@ -178,12 +178,15 @@ impl Storage {
         let mut write_batches: [Option<WriteBatch>; SECTION_ID_MAX] = [EMPTY_WRITE_BATCH; SECTION_ID_MAX];
 
         // let mut write_batches: Box<[Option<WriteBatch>]> = (0..SECTIONS_MAX).map(|_| None).collect::<Vec<Option<WriteBatch>>>().into_boxed_slice();
-        writes.iter().for_each(|(key, value)| {
+        writes.iter().for_each(|(key, write)| {
             let section_id = key.section_id() as usize;
             if write_batches[section_id].is_none() {
                 write_batches[section_id] = Some(WriteBatch::default());
             }
-            write_batches[section_id].as_mut().unwrap().put(key.bytes(), value.bytes())
+            match write {
+                Write::Insert(value) => write_batches[section_id].as_mut().unwrap().put(key.bytes(), value.bytes()),
+                Write::Delete => write_batches[section_id].as_mut().unwrap().delete(key.bytes()),
+            }
         });
         write_batches
     }

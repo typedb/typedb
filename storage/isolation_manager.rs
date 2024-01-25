@@ -26,7 +26,7 @@ use durability::SequenceNumber;
 use logger::result::ResultExt;
 
 use crate::key_value::Key;
-use crate::snapshot::{UpdateData, WriteData};
+use crate::snapshot::{ModifyData, WriteData};
 
 pub(crate) struct IsolationManager {
     // TODO improve: RWLock is not optimal
@@ -43,16 +43,12 @@ impl IsolationManager {
     }
 
     pub(crate) fn notify_open(&self, sequence_number: SequenceNumber) {
-        todo!()
+        // TODO
     }
 
-    pub(crate) fn notify_commit_pending(&self, open_sequence_number: SequenceNumber, commit_record: CommitRecord) {
+    pub(crate) fn notify_commit_confirmed(&self, commit_sequence_number: SequenceNumber, commit_record: CommitRecord) {
         let mut commits = self.commits.write().unwrap_or_log();
         commits.push(commit_record);
-    }
-
-    pub(crate) fn notify_commit_confirmed(&self, commit_sequence_number: SequenceNumber) {
-        todo!()
     }
 
     pub(crate) fn notify_commit_failed(&self, commit_sequence_number: SequenceNumber) {
@@ -63,12 +59,12 @@ impl IsolationManager {
         SequenceNumber::new(0)
     }
 
-    pub(crate) fn iterate_commits_between(&self, from: SequenceNumber, to: SequenceNumber) -> impl Iterator<Item=&CommitRecord> {
+    pub(crate) fn iterate_commits_between(&self, from: &SequenceNumber, to: &SequenceNumber) -> impl Iterator<Item=&CommitRecord> {
         empty()
     }
 
     pub(crate) fn validate_isolation(&self, predecessor: &CommitRecord, successor: &CommitRecord) -> Result<(), IsolationError> {
-        
+        // predecessor.writes
 
         // if (txn.dataStorage.modifyDeleteConflict(mayConflict.dataStorage)) {
         //     throw TypeDBException.of(TRANSACTION_ISOLATION_MODIFY_DELETE_VIOLATION);
@@ -77,6 +73,21 @@ impl IsolationManager {
         // } else if (txn.dataStorage.exclusiveCreateConflict(mayConflict.dataStorage)) {
         //     throw TypeDBException.of(TRANSACTION_ISOLATION_EXCLUSIVE_CREATE_VIOLATION);
         // }
+        todo!()
+    }
+
+    fn delete_modify_violation(&self, predecessor_writes: WriteData, successor_modifications: ModifyData) -> bool {
+        // TODO: this can be optimised by some kind of bit-wise NAND of two bloom filter-like data structures first, since we assume few clashes this should mostly succeed
+        successor_modifications.iter() .any(|key|
+            predecessor_writes.get(key).map_or(false, |write| write.is_delete())
+        )
+    }
+
+    fn modify_delete_violation(&self, predecessor_modifications: ModifyData, successor_writes: WriteData) -> bool {
+        // TODO: this can be optimised by some kind of bit-wise NAND of two bloom filter-like data structures first, since we assume few clashes this should mostly succeed
+        successor_writes.iter().any(|(key, write)|
+            write.is_delete() && predecessor_modifications.get(key).is_some()
+        )
     }
 }
 
@@ -106,9 +117,10 @@ impl Timeline {
     }
 
     fn try_get_window(&self, sequence_number: SequenceNumber) -> Option<Box<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
-        let windows = self.windows.read().unwrap_or_log();
-        windows.iter().rev().find(|window| window.contains(&sequence_number))
-            .map(|w| *w)
+        // let windows = self.windows.read().unwrap_or_log();
+        // windows.iter().rev().find(|window| window.contains(&sequence_number))
+        //     .map(|w| *w)
+        todo!()
     }
 }
 
@@ -154,21 +166,25 @@ enum TimelineSlot {
 pub(crate) struct CommitRecord {
     // TODO: this could read-through to the WAL if we have to?
     writes: WriteData,
-    updates: UpdateData,
+    modifications: ModifyData,
     open_sequence_number: SequenceNumber,
 }
 
 impl CommitRecord {
-    pub(crate) fn new(writes: WriteData, updates: BTreeSet<Key>, open_sequence_number: SequenceNumber) -> CommitRecord {
+    pub(crate) fn new(writes: WriteData, modifications: BTreeSet<Key>, open_sequence_number: SequenceNumber) -> CommitRecord {
         CommitRecord {
             writes: writes,
-            updates: updates,
+            modifications: modifications,
             open_sequence_number: open_sequence_number
         }
     }
 
     pub(crate) fn writes(&self) -> &WriteData {
+        &self.writes
+    }
 
+    pub(crate) fn open_sequence_number(&self) -> &SequenceNumber {
+        &self.open_sequence_number
     }
 }
 
@@ -180,7 +196,6 @@ pub struct IsolationError {
 
 #[derive(Debug)]
 pub enum IsolationErrorKind {
-    FailedToDeleteStorage { source: std::io::Error },
 }
 
 impl Display for IsolationError {
@@ -191,7 +206,8 @@ impl Display for IsolationError {
 
 impl Error for IsolationError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match &self.kind {
-        }
+        todo!()
+        // match &self.kind {
+        // }
     }
 }

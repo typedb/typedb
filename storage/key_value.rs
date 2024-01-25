@@ -16,7 +16,7 @@
  */
 
 use std::cmp::Ordering;
-use std::ops::Deref;
+
 use crate::SectionId;
 
 pub const FIXED_KEY_LENGTH_BYTES: usize = 48;

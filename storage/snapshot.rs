@@ -22,15 +22,12 @@ use std::ops::RangeFrom;
 use std::sync::{Mutex, RwLock};
 
 use durability::SequenceNumber;
-use itertools::Itertools;
+use itertools::{EitherOrBoth, Itertools};
 
 use crate::error::StorageError;
 use crate::isolation_manager::CommitRecord;
 use crate::key_value::{Key, Value};
 use crate::Storage;
-
-pub(crate) type WriteData = BTreeMap<Key, Value>;
-pub(crate) type UpdateData = BTreeSet<Key>;
 
 pub enum Snapshot<'storage> {
     Read(ReadSnapshot<'storage>),
@@ -80,7 +77,7 @@ pub struct WriteSnapshot<'storage> {
     storage: &'storage Storage,
     // TODO: replace with BTree Left-Right structure to allow concurrent read/write
     writes: RwLock<WriteData>,
-    updates: Mutex<UpdateData>,
+    modifications: Mutex<ModifyData>,
     open_sequence_number: SequenceNumber,
 }
 
@@ -90,42 +87,63 @@ impl<'storage> WriteSnapshot<'storage> {
         WriteSnapshot {
             storage: storage,
             writes: RwLock::new(WriteData::new()),
-            updates: Mutex::new(UpdateData::new()),
+            modifications: Mutex::new(ModifyData::new()),
             open_sequence_number: open_sequence_number,
         }
     }
 
     pub fn put(&self, key: Key) {
         let mut map = self.writes.write().unwrap();
-        map.insert(key, Value::Empty);
+        map.insert(key, Write::Insert(Value::Empty));
     }
 
     pub fn put_val(&self, key: Key, value: Value) {
         let mut map = self.writes.write().unwrap();
-        map.insert(key, value);
+        map.insert(key, Write::Insert(value));
     }
 
-    fn get(&self, key: &Key) -> Option<Value> {
+    pub fn delete(&self, key: Key) {
+        let mut map = self.writes.write().unwrap();
+        if map.get(&key).map_or(false, |write| write.is_insert()) {
+            map.remove(&key);
+        } else {
+            map.insert(key, Write::Delete);
+        }
+    }
+
+    pub fn get(&self, key: &Key) -> Option<Value> {
         let map = self.writes.read().unwrap();
-        // let write = map.get(key);
-        //
-        // if write.is_some() {
-        //
-        // } else {
-        self.storage.get(key)
-        // }
-        // TODO merge with inserts & deletes
-    }
-
-    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &Key) -> impl Iterator<Item=(Box<[u8]>, Value)> + 'snapshot {
-        // TODO merge with inserts & deletes
-        self.storage.iterate_prefix(prefix).merge_by(
-            self.iterate_prefix_buffered(prefix),
-            |(k1, v1), (k2, v2)| k1.cmp(k2).is_le(),
+        let write = map.get(key);
+        write.map_or_else(
+            || self.storage.get(key),
+            |write| match write {
+                // TODO: don't want to require clone
+                Write::Insert(value) => Some(value.clone()),
+                Write::Delete => None,
+            },
         )
     }
 
-    fn iterate_prefix_buffered<'s>(&'s self, prefix: &Key) -> impl Iterator<Item=(Box<[u8]>, Value)> + 's {
+    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &Key) -> impl Iterator<Item=(Box<[u8]>, Value)> + 'snapshot {
+        let storage_iterator = self.storage.iterate_prefix(prefix);
+        let buffered_iterator = self.iterate_prefix_buffered(prefix);
+        storage_iterator.merge_join_by(
+            buffered_iterator,
+            |(k1, v1), (k2, v2)| k1.cmp(k2),
+        ).filter_map(|ordering| match ordering {
+            EitherOrBoth::Both((k1, v1), (k2, write2)) => match write2 {
+                Write::Insert(v2) => Some((k2, v2)),
+                Write::Delete => None,
+            },
+            EitherOrBoth::Left((k1, v1)) => Some((k1, v1)),
+            EitherOrBoth::Right((k2, write2)) => match write2 {
+                Write::Insert(v2) => Some((k2, v2)),
+                Write::Delete => None,
+            },
+        })
+    }
+
+    fn iterate_prefix_buffered<'s>(&'s self, prefix: &Key) -> impl Iterator<Item=(Box<[u8]>, Write)> + 's {
         let map = self.writes.read().unwrap();
         let range = RangeFrom { start: prefix };
         // TODO: hold read lock while iterating so avoid collecting into array
@@ -141,9 +159,29 @@ impl<'storage> WriteSnapshot<'storage> {
 
     pub(crate) fn into_commit_record(self) -> CommitRecord {
         CommitRecord::new(
-            self.writes.into_inner().unwrap(), self.updates.into_inner().unwrap(),
+            self.writes.into_inner().unwrap(), self.modifications.into_inner().unwrap(),
             self.open_sequence_number,
         )
+    }
+}
+
+
+pub(crate) type WriteData = BTreeMap<Key, Write>;
+pub(crate) type ModifyData = BTreeSet<Key>;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Write {
+    Insert(Value),
+    Delete,
+}
+
+impl Write {
+    pub(crate) fn is_insert(&self) -> bool {
+        matches!(self, Write::Insert(_))
+    }
+
+    pub(crate) fn is_delete(&self) -> bool {
+        matches!(self, Write::Delete)
     }
 }
 
