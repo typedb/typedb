@@ -18,6 +18,7 @@
 package com.vaticle.typedb.core.graph.structure.impl;
 
 import com.vaticle.typedb.core.common.collection.KeyValue;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.encoding.Encoding;
@@ -37,9 +38,11 @@ import com.vaticle.typeql.lang.pattern.Pattern;
 import com.vaticle.typeql.lang.pattern.statement.Statement;
 import com.vaticle.typeql.lang.pattern.statement.ThingStatement;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeString;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.encoding.Encoding.Property.Structure.LABEL;
@@ -157,7 +160,9 @@ public abstract class RuleStructureImpl implements RuleStructure {
         return statements.flatMap(s -> iterate(s.variables().iterator()))
                 .distinct().filter(TypeQLVariable::isLabelled).map(v -> {
                     if (v.reference().asLabel().scope().isPresent()) {
-                        return Label.of(v.reference().asLabel().label(), v.reference().asLabel().scope().get());
+                        Optional<Label> label = graph.resolveRoleTypeAlias(Label.of(v.reference().asLabel().label(), v.reference().asLabel().scope().get()));
+                        if (label.isPresent()) return label.get();
+                        else throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, v.reference().asLabel().name(), v.reference().asLabel().scope());
                     } else {
                         return Label.of(v.reference().asLabel().label());
                     }

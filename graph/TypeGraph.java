@@ -48,6 +48,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -136,6 +137,7 @@ public class TypeGraph {
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> supertypes;
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> subtypes;
         private final ConcurrentMap<Label, Set<Label>> resolvedRoleTypeLabels;
+        private final ConcurrentMap<Label, Optional<Label>> resolvedRoleTypeAliases;
 
         Cache() {
             ownedAttributeTypes = new ConcurrentHashMap<>();
@@ -150,6 +152,7 @@ public class TypeGraph {
             supertypes = new ConcurrentHashMap<>();
             subtypes = new ConcurrentHashMap<>();
             resolvedRoleTypeLabels = new ConcurrentHashMap<>();
+            resolvedRoleTypeAliases = new ConcurrentHashMap<>();
         }
 
         public void clear() {
@@ -305,8 +308,7 @@ public class TypeGraph {
             } else {
                 return cache.ownedAttributeTypes.computeIfAbsent(owner, o -> fetchOwnedAttributeTypes(owner, annotations));
             }
-        }
-        else return fetchOwnedAttributeTypes(owner, annotations);
+        } else return fetchOwnedAttributeTypes(owner, annotations);
     }
 
     private NavigableSet<TypeVertex> fetchOwnedAttributeTypes(TypeVertex owner, Set<Annotation> annotations) {
@@ -329,7 +331,8 @@ public class TypeGraph {
 
     private FunctionalIterator<TypeVertex> overriddenOwns(TypeVertex owner, Set<Annotation> annotations) {
         FunctionalIterator<TypeVertex> overridden = owner.outs().edge(OWNS_KEY).overridden().noNulls();
-        if (!annotations.contains(Annotation.KEY)) overridden = overridden.link(owner.outs().edge(OWNS).overridden().noNulls());
+        if (!annotations.contains(Annotation.KEY))
+            overridden = overridden.link(owner.outs().edge(OWNS).overridden().noNulls());
         return overridden;
     }
 
@@ -344,7 +347,7 @@ public class TypeGraph {
     }
 
     private NavigableSet<TypeVertex> fetchOwnersOfAttributeType(TypeVertex attType, Set<Annotation> annotations) {
-        Forwardable<TypeVertex, Order.Asc>owners = attType.ins().edge(OWNS_KEY).from();
+        Forwardable<TypeVertex, Order.Asc> owners = attType.ins().edge(OWNS_KEY).from();
         if (!annotations.contains(Annotation.KEY)) owners = owners.merge(attType.ins().edge(OWNS).from());
         return owners.flatMap(owner -> tree(owner, o -> o.ins().edge(SUB).from().filter(s ->
                 overriddenOwns(s, annotations).noneMatch(ov -> ov.equals(attType))
@@ -404,6 +407,25 @@ public class TypeGraph {
             return roleTypes;
         };
         if (isReadOnly) return cache.relatedRoleTypes.computeIfAbsent(relation, o -> fn.get());
+        else return fn.get();
+    }
+
+    public Optional<Label> resolveRoleTypeAlias(Label scopedLabel) {
+        assert scopedLabel.scope().isPresent();
+        Supplier<Optional<Label>> fn = () -> {
+            TypeVertex relationType = getType(scopedLabel.scope().get());
+            if (relationType == null) throw TypeDBException.of(TYPE_NOT_FOUND, scopedLabel.scope().get());
+            else {
+                return Optional.ofNullable(
+                        loop(relationType, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
+                                .flatMap(rel -> rel.outs().edge(RELATES).to())
+                                .filter(rol -> rol.properLabel().name().equals(scopedLabel.name()))
+                                .map(TypeVertex::properLabel)
+                                .firstOrNull()
+                );
+            }
+        };
+        if (isReadOnly) return cache.resolvedRoleTypeAliases.computeIfAbsent(scopedLabel, l -> fn.get());
         else return fn.get();
     }
 
@@ -558,11 +580,11 @@ public class TypeGraph {
 
     /**
      * Commits all the writes captured in this graph into storage.
-     *
+     * <p>
      * First, for every {@code TypeVertex} that is held in {@code typeByIID},
      * we generate a unique {@code IID} to be persisted in storage. Then, we
      * commit each vertex into storage by calling {@code vertex.commit()}.
-     *
+     * <p>
      * We repeat the same process for rules.
      */
     public void commit() {
