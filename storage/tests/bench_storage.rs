@@ -15,32 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::cell::OnceCell;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::rc::Rc;
-use std::sync::Mutex;
-
-use logger::initialise_logging;
-use tracing::subscriber::DefaultGuard;
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use storage::{Section, Storage, SectionId};
+use storage::{Section, SectionId, Storage};
 use storage::key_value::{Key, KeyFixed, Value};
 use storage::snapshot::Snapshot;
-
-static LOGGING_GUARD: Mutex<OnceCell<DefaultGuard>> = Mutex::new(OnceCell::new());
-
-fn setup() -> PathBuf {
-    let id = rand::random::<u64>();
-    let mut fs_tmp_dir = std::env::temp_dir();
-    let dir_name = format!("test_storage_{}", id);
-    fs_tmp_dir.push(Path::new(&dir_name));
-    fs_tmp_dir
-}
-
-fn cleanup(path: PathBuf) {
-    std::fs::remove_dir_all(path).ok();
-}
+use test_utils::{init_logging, create_tmp_dir, delete_dir};
 
 fn random_key(section_id: SectionId) -> Key {
     let mut bytes: [u8; 24] = rand::random();
@@ -86,7 +68,7 @@ fn bench_snapshot_write_put(storage: &Storage, section_id: SectionId, batch_size
 }
 
 fn setup_storage(section_id: SectionId, key_count: usize) -> (Storage, PathBuf) {
-    let storage_path = setup();
+    let storage_path = create_tmp_dir();
     let mut storage = Storage::new(Rc::from("storage_bench"), &storage_path).unwrap();
     let options = Section::new_db_options();
     storage.create_section("default", section_id, &options).unwrap();
@@ -96,7 +78,7 @@ fn setup_storage(section_id: SectionId, key_count: usize) -> (Storage, PathBuf) 
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    LOGGING_GUARD.lock().unwrap().get_or_init(initialise_logging);
+    init_logging();
     {
         let section_id = 0 as SectionId;
         let initial_key_count: usize = 10_000_000; // approximately 0.2 GB of keys
@@ -104,7 +86,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         c.bench_function("snapshot_read_get", |b| b.iter(|| {
             bench_snapshot_read_get(&storage, section_id)
         }));
-        cleanup(storage_path);
+        delete_dir(storage_path);
     }
     {
         let section_id = 0 as SectionId;
@@ -113,7 +95,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         c.bench_function("snapshot_write_put", |b| b.iter(|| {
             bench_snapshot_write_put(&storage, section_id, 100)
         }));
-        cleanup(storage_path);
+        delete_dir(storage_path);
     }
 }
 

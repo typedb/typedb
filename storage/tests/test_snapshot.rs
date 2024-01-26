@@ -16,33 +16,17 @@
  */
 
 
-use std::cell::OnceCell;
-use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::Mutex;
-use logger::initialise_logging;
-use tracing::dispatcher::DefaultGuard;
+
 use storage::key_value::{Key, KeyFixed, Value};
 use storage::Storage;
-
-static LOGGING_GUARD: Mutex<OnceCell<DefaultGuard>> = Mutex::new(OnceCell::new());
-
-fn setup() -> PathBuf {
-    LOGGING_GUARD.lock().unwrap().get_or_init(initialise_logging);
-    let id = rand::random::<u64>();
-    let mut fs_tmp_dir = std::env::temp_dir();
-    let dir_name = format!("test_storage_{}", id);
-    fs_tmp_dir.push(Path::new(&dir_name));
-    fs_tmp_dir
-}
-
-fn cleanup(path: PathBuf) {
-    std::fs::remove_dir_all(path).ok();
-}
+use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
 #[test]
 fn snapshot_buffered_put_get() {
-    let storage_path = setup();
+    init_logging();
+
+    let storage_path = create_tmp_dir();
     let mut storage = Storage::new(Rc::from("storage"), &storage_path).unwrap();
     let sec_id: u8 = 0x0;
     storage.create_section("sec", sec_id, &storage::Section::new_db_options()).unwrap();
@@ -65,12 +49,13 @@ fn snapshot_buffered_put_get() {
     let key_5 = Key::Fixed(KeyFixed::from((vec![sec_id, 0xff, 0xff, 0xff], sec_id)));
     assert_eq!(snapshot.get(&key_5), None);
 
-    cleanup(storage_path)
+    delete_dir(storage_path)
 }
 
 #[test]
 fn snapshot_buffered_put_iterate() {
-    let storage_path = setup();
+    init_logging();
+    let storage_path = create_tmp_dir();
     let mut storage = Storage::new(Rc::from("storage"), &storage_path).unwrap();
     let sec_id: u8 = 0x0;
     storage.create_section("sec", sec_id, &storage::Section::new_db_options()).unwrap();
@@ -97,12 +82,13 @@ fn snapshot_buffered_put_iterate() {
         ]
     );
 
-    cleanup(storage_path)
+    delete_dir(storage_path)
 }
 
 #[test]
 fn snapshot_buffered_delete() {
-    let storage_path = setup();
+    init_logging();
+    let storage_path = create_tmp_dir();
     let mut storage = Storage::new(Rc::from("storage"), &storage_path).unwrap();
     let sec_id: u8 = 0x0;
     storage.create_section("sec", sec_id, &storage::Section::new_db_options()).unwrap();
@@ -132,12 +118,13 @@ fn snapshot_buffered_delete() {
         ]
     );
 
-    cleanup(storage_path)
+    delete_dir(storage_path)
 }
 
 #[test]
 fn snapshot_read_through() {
-    let storage_path = setup();
+    init_logging();
+    let storage_path = create_tmp_dir();
     let mut storage = Storage::new(Rc::from("storage"), &storage_path).unwrap();
     let sec_id: u8 = 0x0;
     storage.create_section("sec", sec_id, &storage::Section::new_db_options()).unwrap();
@@ -184,5 +171,5 @@ fn snapshot_read_through() {
         ]
     );
 
-    cleanup(storage_path)
+    delete_dir(storage_path)
 }

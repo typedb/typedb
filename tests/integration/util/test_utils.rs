@@ -17,30 +17,25 @@
 
 use std::cell::OnceCell;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 use std::sync::Mutex;
 
-use encoding::type_::type_encoding::concept::root::Root;
 use logger::initialise_logging;
-use rand;
-use tracing::dispatcher::DefaultGuard;
+use tracing::subscriber::DefaultGuard;
 
-use database::database::Database;
-use test_utils::{create_tmp_dir, delete_dir, init_logging};
+pub static LOGGING_GUARD: Mutex<OnceCell<DefaultGuard>> = Mutex::new(OnceCell::new());
 
-#[test]
-fn create_delete_database() {
-    init_logging();
-    let database_path = create_tmp_dir();
-    let db_result = Database::new(&database_path, Rc::from("create_delete"));
-    assert!(db_result.is_ok());
-    let db = db_result.unwrap();
+pub fn init_logging() {
+    LOGGING_GUARD.lock().unwrap().get_or_init(initialise_logging);
+}
 
-    let txn = db.transaction_read();
-    let types = txn.type_manager();
-    let root_entity_type = types.get_entity_type(&Root::Entity.label());
-    dbg!("Root entity type: {}", root_entity_type);
-    // let delete_result = db.delete();
-    // assert!(delete_result.is_ok());
-    delete_dir(database_path)
+pub fn create_tmp_dir() -> PathBuf {
+    let id = rand::random::<u64>();
+    let mut fs_tmp_dir = std::env::temp_dir();
+    let dir_name = format!("test_storage_{}", id);
+    fs_tmp_dir.push(Path::new(&dir_name));
+    fs_tmp_dir
+}
+
+pub fn delete_dir(path: PathBuf) {
+    std::fs::remove_dir_all(path).ok();
 }

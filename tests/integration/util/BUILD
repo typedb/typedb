@@ -16,29 +16,25 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_test")
-package(default_visibility = ["//visibility:public",])
+load("@rules_rust//rust:defs.bzl", "rust_library")
+package(default_visibility = ["//visibility:public"])
 
-rust_test(
-    name = "test-database",
+rust_library(
+    name = "test-utils",
+    crate_root = "test_utils.rs",
     srcs = glob([
         "*.rs",
     ]),
     deps = [
-        "//database",
-        "//encoding",
         "//common/logger",
 
-        "//tests/integration/util:test-utils",
-
         "@crates//:rand",
-        "@crates//:speedb",
         "@crates//:tracing",
     ]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*", "*/*/*"]),
+    include = glob(["*"]),
     license_type = "agpl-header",
 )
