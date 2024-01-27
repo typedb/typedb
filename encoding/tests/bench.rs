@@ -44,6 +44,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     let iid_generator = Arc::new(ThingIIDGenerator::new());
     let type_id = TypeID::from(0);
+
     c.bench_function("id_generation", |b| b.iter(|| {
         id_generation(iid_generator.clone(), type_id)
     }));

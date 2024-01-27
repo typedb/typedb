@@ -29,7 +29,7 @@ rust_test(
         "//encoding",
         "//common/logger",
 
-        "//tests/integration/util:test-utils",
+        "//util/test:test-utils",
 
         "@crates//:rand",
         "@crates//:speedb",

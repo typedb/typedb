@@ -15,23 +15,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::{BTreeSet, VecDeque};
+use std::collections::VecDeque;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::iter::empty;
 use std::sync::{Arc, Mutex, OnceLock, RwLock};
 use std::sync::atomic::{AtomicU64, AtomicU8, AtomicUsize, Ordering};
 
-use durability::SequenceNumber;
 use itertools::Itertools;
+
+use durability::SequenceNumber;
 use logger::result::ResultExt;
 
-use crate::key_value::Key;
-use crate::snapshot::{ModifyData, WriteData};
+use crate::snapshot::{Write, WriteData};
 
 pub(crate) struct IsolationManager {
     timeline: Timeline,
 }
+
 
 impl IsolationManager {
     pub(crate) fn new(next_sequence_number: SequenceNumber) -> IsolationManager {
@@ -40,20 +41,113 @@ impl IsolationManager {
         }
     }
 
-    pub(crate) fn notify_open(&self, sequence_number: &SequenceNumber) {
+    pub(crate) fn opened(&self, sequence_number: &SequenceNumber) {
         self.timeline.record_reader(sequence_number);
     }
 
-    pub(crate) fn notify_commit_pending(&self, commit_sequence_number: &SequenceNumber, commit_record: CommitRecord) {
+    pub(crate) fn closed(&self, commit_sequence_number: &SequenceNumber, open_sequence_number: &SequenceNumber) {
+        self.timeline.record_closed(commit_sequence_number, open_sequence_number);
+    }
+
+    pub(crate) fn try_commit(&self, commit_sequence_number: SequenceNumber, commit_record: CommitRecord) -> Result<(), IsolationError> {
+        let open_sequence_number = commit_record.open_sequence_number().clone();
+
+        let shared_record = self.pending(&commit_sequence_number, commit_record);
+        let validation_result = self.validate_all_concurrent(&commit_sequence_number, &shared_record);
+
+        if validation_result.is_ok() {
+            self.committed(&commit_sequence_number);
+            Ok(())
+        } else {
+            self.closed(&commit_sequence_number, &open_sequence_number);
+            validation_result
+        }
+    }
+
+    fn validate_all_concurrent(&self, commit_sequence_number: &SequenceNumber, commit_record: &CommitRecord) -> Result<(), IsolationError> {
+        // TODO: decide if we should block until all predecessors finish, allow out of order (non-Calvin model/traditional model)
+        //       We could also validate against all predecessors even if they are validating and fail eagerly.
+        for number in (commit_record.open_sequence_number().number() + 1..commit_sequence_number.number()) {
+            let predecessor_sequence_number = SequenceNumber::new(number);
+            self.validate_concurrent(commit_record, predecessor_sequence_number)?
+        }
+        Ok(())
+    }
+
+    fn validate_concurrent(&self, commit_record: &CommitRecord, predecessor_sequence_number: SequenceNumber) -> Result<(), IsolationError> {
+        let predecessor_status = self.get_commit_status(&predecessor_sequence_number);
+        match predecessor_status {
+            CommitStatus::Empty => unreachable!("A concurrent status should never be empty at commit time"),
+            CommitStatus::Pending(predecessor_record) => {
+                let result = self.validate_isolation(&commit_record, &predecessor_record);
+                if result.is_err() && self.await_pending_status_commits(&predecessor_sequence_number) {
+                    result
+                } else {
+                    Ok(())
+                }
+            }
+            CommitStatus::Committed(predecessor_record) => {
+                return self.validate_isolation(&commit_record, &predecessor_record);
+            }
+            CommitStatus::Closed => {
+                Ok(())
+            }
+        }
+    }
+
+    fn await_pending_status_commits(&self, predecessor_sequence_number: &SequenceNumber) -> bool {
+        debug_assert!(!matches!(self.get_commit_status(&predecessor_sequence_number), CommitStatus::Empty));
+        loop {
+            let status = self.get_commit_status(&predecessor_sequence_number);
+            match status {
+                CommitStatus::Empty => unreachable!("Illegal state - commit status cannot move from pending"),
+                CommitStatus::Pending(_) => {
+                    // TODO: we can improve the spin lock with async/await
+                    // Note we only expect to have long waits in long chains of overlapping transactions that would conflict
+                    // could also do a little sleep in the spin lock, for example if the validating is still far away
+                    continue;
+                }
+                CommitStatus::Committed(_) => return true,
+                CommitStatus::Closed => return false,
+            }
+        }
+    }
+
+    fn validate_isolation(&self, record: &CommitRecord, predecessor: &CommitRecord) -> Result<(), IsolationError> {
+        // TODO: this can be optimised by some kind of bit-wise NAND of two bloom filter-like data structures first, since we assume few clashes this should mostly succeed
+        // TODO: can be optimised with an intersection of two sorted iterators instead of iterate + gets
+        for (key, write) in record.writes() {
+            let predecessor_write = predecessor.writes().get(key);
+            if predecessor_write.is_some() {
+                match write {
+                    Write::Insert(_) => {}
+                    Write::InsertPreexisting(value, reinsert) => {
+                        // Re-insert the value if a predecessor has deleted it. This may create extra versions of a key
+                        //  in the case that the predecessor ends up failing. However, this will be rare.
+                        if matches!(predecessor_write.unwrap(), Write::Delete) {
+                            reinsert.store(true, Ordering::SeqCst);
+                        }
+                    }
+                    Write::RequireExists(_) => {
+                        if matches!(predecessor_write.unwrap(), Write::Delete) {
+                            return Err(IsolationError {
+                                kind: IsolationErrorKind::DeleteRequiredViolation
+                            });
+                        }
+                    }
+                    Write::Delete => {}
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn pending(&self, commit_sequence_number: &SequenceNumber, commit_record: CommitRecord) -> Arc<CommitRecord> {
         self.timeline.record_pending(commit_sequence_number, commit_record)
     }
 
-    pub(crate) fn notify_commit(&self, commit_sequence_number: &SequenceNumber) {
+    fn committed(&self, commit_sequence_number: &SequenceNumber) {
         self.timeline.record_committed(commit_sequence_number)
-    }
-
-    pub(crate) fn notify_closed(&self, commit_sequence_number: &SequenceNumber, open_sequence_number: &SequenceNumber) {
-        self.timeline.record_closed(commit_sequence_number, open_sequence_number);
     }
 
     pub(crate) fn watermark(&self) -> SequenceNumber {
@@ -66,34 +160,6 @@ impl IsolationManager {
 
     pub(crate) fn get_commit_status(&self, sequence_number: &SequenceNumber) -> CommitStatus {
         self.timeline.get_status(sequence_number)
-    }
-
-    pub(crate) fn validate_isolation(&self, predecessor: &CommitRecord, successor: &CommitRecord) -> Result<(), IsolationError> {
-        if self.delete_modify_violation(predecessor.writes(), successor.modifications()) {
-            return Err(IsolationError {
-                kind: IsolationErrorKind::DeleteModifyViolation
-            });
-        } else if self.modify_delete_violation(predecessor.modifications(), successor.writes()) {
-            return Err(IsolationError {
-                kind: IsolationErrorKind::ModifyDeleteViolation
-            });
-        }
-        // TODO: modify-modify violation?
-        Ok(())
-    }
-
-    fn delete_modify_violation(&self, predecessor_writes: &WriteData, successor_modifications: &ModifyData) -> bool {
-        // TODO: this can be optimised by some kind of bit-wise NAND of two bloom filter-like data structures first, since we assume few clashes this should mostly succeed
-        successor_modifications.iter().any(|key|
-            predecessor_writes.get(key).map_or(false, |write| write.is_delete())
-        )
-    }
-
-    fn modify_delete_violation(&self, predecessor_modifications: &ModifyData, successor_writes: &WriteData) -> bool {
-        // TODO: this can be optimised by some kind of bit-wise NAND of two bloom filter-like data structures first, since we assume few clashes this should mostly succeed
-        successor_writes.iter().any(|(key, write)|
-            write.is_delete() && predecessor_modifications.get(key).is_some()
-        )
     }
 }
 
@@ -148,9 +214,9 @@ impl Timeline {
         window.increment_readers();
     }
 
-    fn record_pending(&self, sequence_number: &SequenceNumber, commit_record: CommitRecord) {
+    fn record_pending(&self, sequence_number: &SequenceNumber, commit_record: CommitRecord) -> Arc<CommitRecord> {
         let window = self.get_window(sequence_number);
-        window.set_pending(sequence_number, commit_record);
+        window.set_pending(sequence_number, commit_record)
     }
 
     fn record_committed(&self, sequence_number: &SequenceNumber) {
@@ -266,11 +332,13 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         }).next()
     }
 
-    fn set_pending(&self, sequence_number: &SequenceNumber, commit_record: CommitRecord) {
+    fn set_pending(&self, sequence_number: &SequenceNumber, commit_record: CommitRecord) -> Arc<CommitRecord> {
         debug_assert!(self.contains(sequence_number));
         let index = self.index_of(sequence_number);
-        self.commit_records[index].set(Arc::new(commit_record)).unwrap_or_log();
+        let shared_record = Arc::new(commit_record);
+        self.commit_records[index].set(shared_record.clone()).unwrap_or_log();
         self.slots[index].store(SlotMarker::Pending.as_u8(), Ordering::SeqCst);
+        shared_record
     }
 
     fn set_committed(&self, sequence_number: &SequenceNumber) {
@@ -291,7 +359,7 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         debug_assert!(self.contains(sequence_number));
         let index = self.index_of(sequence_number);
         let status = SlotMarker::from(self.slots[index].load(Ordering::SeqCst));
-        match status  {
+        match status {
             SlotMarker::Empty => CommitStatus::Empty,
             SlotMarker::Pending => CommitStatus::Pending(self.commit_records[index].get().unwrap().clone()),
             SlotMarker::Committed => CommitStatus::Committed(self.commit_records[index].get().unwrap().clone()),
@@ -349,30 +417,23 @@ impl SlotMarker {
     }
 }
 
-
 #[derive(Debug)]
 pub(crate) struct CommitRecord {
-    // TODO: this could read-through to the WAL if we have to?
+    // TODO: this could read-through to the WAL if we have to save memory?
     writes: WriteData,
-    modifications: ModifyData,
     open_sequence_number: SequenceNumber,
 }
 
 impl CommitRecord {
-    pub(crate) fn new(writes: WriteData, modifications: BTreeSet<Key>, open_sequence_number: SequenceNumber) -> CommitRecord {
+    pub(crate) fn new(writes: WriteData, open_sequence_number: SequenceNumber) -> CommitRecord {
         CommitRecord {
             writes: writes,
-            modifications: modifications,
             open_sequence_number: open_sequence_number,
         }
     }
 
     pub(crate) fn writes(&self) -> &WriteData {
         &self.writes
-    }
-
-    pub(crate) fn modifications(&self) -> &ModifyData {
-        &self.modifications
     }
 
     pub(crate) fn open_sequence_number(&self) -> &SequenceNumber {
@@ -387,21 +448,21 @@ pub struct IsolationError {
 
 #[derive(Debug)]
 pub enum IsolationErrorKind {
-    DeleteModifyViolation,
-    ModifyDeleteViolation,
+    DeleteRequiredViolation,
 }
 
 impl Display for IsolationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        match &self.kind {
+            IsolationErrorKind::DeleteRequiredViolation => write!(f, "Isolation violation: Delete conflict. A concurrent commit has deleted a key required by this transaction. Please retry"),
+        }
     }
 }
 
 impl Error for IsolationError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
-            IsolationErrorKind::DeleteModifyViolation => None,
-            IsolationErrorKind::ModifyDeleteViolation => None,
+            IsolationErrorKind::DeleteRequiredViolation => None,
         }
     }
 }

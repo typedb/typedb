@@ -15,14 +15,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::ops::RangeFrom;
-use std::sync::{Mutex, RwLock};
+use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, RwLock};
+
+use itertools::{EitherOrBoth, Itertools};
 
 use durability::SequenceNumber;
-use itertools::{EitherOrBoth, Itertools};
 
 use crate::error::StorageError;
 use crate::isolation_manager::CommitRecord;
@@ -77,31 +79,53 @@ pub struct WriteSnapshot<'storage> {
     storage: &'storage Storage,
     // TODO: replace with BTree Left-Right structure to allow concurrent read/write
     writes: RwLock<WriteData>,
-    modifications: Mutex<ModifyData>,
     open_sequence_number: SequenceNumber,
 }
 
 impl<'storage> WriteSnapshot<'storage> {
     pub(crate) fn new(storage: &'storage Storage, open_sequence_number: SequenceNumber) -> WriteSnapshot {
-        storage.isolation_manager.notify_open(&open_sequence_number);
+        storage.isolation_manager.opened(&open_sequence_number);
         WriteSnapshot {
             storage: storage,
             writes: RwLock::new(WriteData::new()),
-            modifications: Mutex::new(ModifyData::new()),
             open_sequence_number: open_sequence_number,
         }
     }
 
-    pub fn put(&self, key: Key) {
+    /// Insert a key with a new version
+    pub fn insert(&self, key: Key) {
         let mut map = self.writes.write().unwrap();
         map.insert(key, Write::Insert(Value::Empty));
     }
 
-    pub fn put_val(&self, key: Key, value: Value) {
+    pub fn insert_val(&self, key: Key, value: Value) {
         let mut map = self.writes.write().unwrap();
         map.insert(key, Write::Insert(value));
     }
 
+    /// Insert a key with a new version if it does not already exist.
+    /// If the key exists, mark it as a preexisting insertion to escalate to Insert if there is a concurrent Delete.
+    pub fn put(&self, key: Key) {
+        let existing = self.get(&key);
+        if existing.is_some() {
+            let mut map = self.writes.write().unwrap();
+            map.insert(key, Write::InsertPreexisting(Value::Empty, Arc::new(AtomicBool::new(false))));
+        } else {
+            self.insert(key)
+        }
+    }
+
+    pub fn put_val(&self, key: Key, value: Value) {
+        let existing = self.get(&key);
+        if existing.is_some() {
+            let mut map = self.writes.write().unwrap();
+            map.insert(key, Write::InsertPreexisting(value, Arc::new(AtomicBool::new(false))));
+        } else {
+            self.insert_val(key, value);
+        }
+    }
+
+    /// Insert a delete marker for the key with a new version
     pub fn delete(&self, key: Key) {
         let mut map = self.writes.write().unwrap();
         if map.get(&key).map_or(false, |write| write.is_insert()) {
@@ -111,14 +135,40 @@ impl<'storage> WriteSnapshot<'storage> {
         }
     }
 
+    /// Get a Value, and mark it as a required key
+    pub fn get_required(&self, key: Key) -> Value {
+        let map = self.writes.read().unwrap();
+        let existing = map.get(&key);
+        if existing.is_none() {
+            let storage_value = self.storage.get(&key);
+            if storage_value.is_some() {
+                let mut map = self.writes.write().unwrap();
+                map.insert(key, Write::RequireExists(storage_value.as_ref().unwrap().clone()));
+                return storage_value.unwrap()
+            } else {
+                unreachable!("Require key exists in snapshot or in storage.");
+            }
+        } else {
+            let write = existing.unwrap();
+            match write {
+                Write::Insert(value) => value.clone(), // exists
+                Write::InsertPreexisting(value, _) => value.clone(), // exists
+                Write::RequireExists(value) => value.clone(), // cached
+                Write::Delete => unreachable!("Require key has been marked for deletion"),
+            }
+        }
+    }
+
+    /// Get the Value for the key, returning an empty Option if it does not exist
     pub fn get(&self, key: &Key) -> Option<Value> {
         let map = self.writes.read().unwrap();
         let write = map.get(key);
         write.map_or_else(
             || self.storage.get(key),
             |write| match write {
-                // TODO: don't want to require clone
                 Write::Insert(value) => Some(value.clone()),
+                Write::InsertPreexisting(value, _) => Some(value.clone()),
+                Write::RequireExists(value) => Some(value.clone()),
                 Write::Delete => None,
             },
         )
@@ -133,11 +183,18 @@ impl<'storage> WriteSnapshot<'storage> {
         ).filter_map(|ordering| match ordering {
             EitherOrBoth::Both((k1, v1), (k2, write2)) => match write2 {
                 Write::Insert(v2) => Some((k2, v2)),
+                Write::InsertPreexisting(v2, _) => Some((k2, v2)),
+                Write::RequireExists(v2) => {
+                    debug_assert_eq!(v1, v2);
+                    Some((k1, v1))
+                },
                 Write::Delete => None,
             },
             EitherOrBoth::Left((k1, v1)) => Some((k1, v1)),
             EitherOrBoth::Right((k2, write2)) => match write2 {
                 Write::Insert(v2) => Some((k2, v2)),
+                Write::InsertPreexisting(v2, _) => Some((k2, v2)),
+                Write::RequireExists(_) => unreachable!("Invalid state: a key required to exist must also exists in Storage."),
                 Write::Delete => None,
             },
         })
@@ -159,19 +216,23 @@ impl<'storage> WriteSnapshot<'storage> {
 
     pub(crate) fn into_commit_record(self) -> CommitRecord {
         CommitRecord::new(
-            self.writes.into_inner().unwrap(), self.modifications.into_inner().unwrap(),
+            self.writes.into_inner().unwrap(),
             self.open_sequence_number,
         )
     }
 }
 
-
 pub(crate) type WriteData = BTreeMap<Key, Write>;
-pub(crate) type ModifyData = BTreeSet<Key>;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub(crate) enum Write {
+    // Insert KeyValue with a new version. Never conflicts.
     Insert(Value),
+    // Insert KeyValue with new version if a concurrent Txn deletes Key. Boolean indicates requires re-insertion. Never conflicts.
+    InsertPreexisting(Value, Arc<AtomicBool>),
+    // Mark Key as required from storage. Caches existing storage Value. Conflicts with Delete.
+    RequireExists(Value),
+    // Delete with a new version. Conflicts with Require.
     Delete,
 }
 

@@ -15,20 +15,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-use std::ops::{Deref, RangeFrom};
+use std::ops::Deref;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::sync::atomic::Ordering;
 
+use speedb::{DB, Options, ReadOptions, WriteBatch, WriteOptions};
+
+use durability::{DurabilityService, Record, Sequencer, wal::WAL};
 use logger::error;
 use logger::result::ResultExt;
-use speedb::{DB, Options, ReadOptions, WriteBatch, WriteOptions};
-use durability::{Record, SequenceNumber, DurabilityService, wal::WAL, Sequencer};
 
 use crate::error::{StorageError, StorageErrorKind};
-use crate::isolation_manager::{CommitRecord, CommitStatus, IsolationError, IsolationManager};
+use crate::isolation_manager::IsolationManager;
 use crate::key_value::{Key, Value};
 use crate::snapshot::{ReadSnapshot, Write, WriteData, WriteSnapshot};
 
@@ -148,23 +149,18 @@ impl Storage {
 
         //  1. make durable and get sequence number
         let write_batches = self.to_write_batches(commit_record.writes());
+        // TODO: we have to make durable the logical writes, not the write batch - this includes writes marked for conflict, to allow replays/recovery correctly.
         let commit_sequence_number = self.durability_service.sequenced_write(WALRecordCommit::new(&write_batches));
 
-        //  2. validate against concurrent transactions in the given order.
-        // TODO decide if we should block until all predecessors finish, allow out of order (non-Calvin model/applicable for non-distributed), or validate against all predecessors even if they are validating and fail eagerly.
-        let validation_result = self.validate_concurrent(&commit_sequence_number, &commit_record);
+        // 2. validate commit isolation
+        let isolation_result = self.isolation_manager.try_commit(commit_sequence_number, commit_record);
 
-        if validation_result.is_err() {
-            // 3. if validation failed, record and return isolation error
-            self.isolation_manager.notify_closed(&commit_sequence_number, commit_record.open_sequence_number());
-            return validation_result.map_err(|isolation_error| StorageError {
+        if isolation_result.is_err() {
+            return isolation_result.map_err(|isolation_error| StorageError {
                 storage_name: self.owner_name.as_ref().to_owned(),
                 kind: StorageErrorKind::IsolationError { source: isolation_error },
             });
         } else {
-            //  3. if validation succeeded, record
-            self.isolation_manager.notify_commit(&commit_sequence_number);
-
             //  4. write to kv-storage
             for (index, write_batch) in write_batches.into_iter().enumerate() {
                 debug_assert!(index < SECTION_ID_MAX);
@@ -180,42 +176,10 @@ impl Storage {
         }
     }
 
-    fn validate_concurrent(&self, commit_sequence_number: &SequenceNumber, commit_record: &CommitRecord) -> Result<(), IsolationError> {
-        for number in (commit_record.open_sequence_number().number() + 1..commit_sequence_number.number()) {
-            let predecessor_sequence_number = SequenceNumber::new(number);
-            loop {
-                let status = self.isolation_manager.get_commit_status(&predecessor_sequence_number);
-                match status {
-                    CommitStatus::Empty => unreachable!("An overlapping sequence number should never be empty at commit time"),
-                    CommitStatus::Pending(predecessor_record) => {
-                        let result = self.isolation_manager.validate_isolation(&predecessor_record, &commit_record);
-                        if result.is_err() {
-                            // TODO: we can improve the spin lock with async/await
-                            // Note we only expect to have long waits in long chains of overlapping transactions that would conflict
-                            // could do a little sleep in the spin lock
-                            continue;
-                        } else {
-                            break;
-                        }
-                    }
-                    CommitStatus::Committed(predecessor_record) => {
-                        return self.isolation_manager.validate_isolation(&predecessor_record, &commit_record);
-                    }
-                    CommitStatus::Closed => {
-                        break;
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
-
     fn to_write_batches(&self, writes: &WriteData) -> [Option<WriteBatch>; SECTION_ID_MAX] {
         const EMPTY_WRITE_BATCH: Option<WriteBatch> = None;
         let mut write_batches: [Option<WriteBatch>; SECTION_ID_MAX] = [EMPTY_WRITE_BATCH; SECTION_ID_MAX];
 
-        // let mut write_batches: Box<[Option<WriteBatch>]> = (0..SECTIONS_MAX).map(|_| None).collect::<Vec<Option<WriteBatch>>>().into_boxed_slice();
         writes.iter().for_each(|(key, write)| {
             let section_id = key.section_id() as usize;
             if write_batches[section_id].is_none() {
@@ -223,6 +187,10 @@ impl Storage {
             }
             match write {
                 Write::Insert(value) => write_batches[section_id].as_mut().unwrap().put(key.bytes(), value.bytes()),
+                Write::InsertPreexisting(value, reinsert) => if reinsert.load(Ordering::SeqCst) {
+                    write_batches[section_id].as_mut().unwrap().put(key.bytes(), value.bytes())
+                },
+                Write::RequireExists(_) => {}
                 Write::Delete => write_batches[section_id].as_mut().unwrap().delete(key.bytes()),
             }
         });

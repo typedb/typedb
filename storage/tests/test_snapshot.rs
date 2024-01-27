@@ -19,7 +19,7 @@
 use std::rc::Rc;
 
 use storage::key_value::{Key, KeyFixed, Value};
-use storage::Storage;
+use storage::*;
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
 #[test]

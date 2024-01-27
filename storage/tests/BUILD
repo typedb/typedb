@@ -27,7 +27,7 @@ rust_test(
     deps = [
         "//storage",
         "//common/logger",
-        "//tests/integration/util:test-utils",
+        "//util/test:test-utils",
 
         "@crates//:rand",
         "@crates//:tracing",
@@ -42,7 +42,7 @@ rust_test(
     deps = [
         "//storage",
         "//common/logger",
-        "//tests/integration/util:test-utils",
+        "//util/test:test-utils",
 
         "@crates//:rand",
         "@crates//:tracing",
@@ -57,7 +57,7 @@ rust_test(
     deps = [
         "//storage",
         "//common/logger",
-        "//tests/integration/util:test-utils",
+        "//util/test:test-utils",
 
         "@crates//:rand",
         "@crates//:tracing",
@@ -78,7 +78,7 @@ rust_test(
     deps = [
         "//storage",
         "//common/logger",
-        "//tests/integration/util:test-utils",
+        "//util/test:test-utils",
 
         "@crates//:rand",
         "@crates//:tracing",

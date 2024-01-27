@@ -21,6 +21,7 @@ use crate::SectionId;
 
 pub const FIXED_KEY_LENGTH_BYTES: usize = 48;
 
+// TODO: we will need to know if these are from storage or from memory
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Key {
     Fixed(KeyFixed),
@@ -180,10 +181,10 @@ impl Value {
         }
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub fn has_value(&self) -> bool {
         match self {
-            Value::Empty => true,
-            Value::Value(_) => false,
+            Value::Empty => false,
+            Value::Value(_) => true,
         }
     }
 }

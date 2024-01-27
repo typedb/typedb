@@ -16,38 +16,42 @@
  */
 
 
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use storage::key_value::{Key, KeyFixed, Value};
 use storage::Storage;
-use test_utils::{create_tmp_dir, delete_dir, init_logging};
+use test_utils::{create_tmp_dir, init_logging};
 
-#[test]
-fn snapshot_buffered_put_get() {
-    init_logging();
+const SEC_ID: u8 = 0;
+const KEY_1: [u8; 4] = [SEC_ID, 0x0, 0x0, 0x1];
+const KEY_2: [u8; 4] = [SEC_ID, 0x0, 0x0, 0x2];
+const VALUE_1: [u8; 1]= [0x0];
+const VALUE_2: [u8; 1]= [0x1];
 
-    let storage_path = create_tmp_dir();
+fn setup_storage(storage_path: &PathBuf) -> Storage {
     let mut storage = Storage::new(Rc::from("storage"), &storage_path).unwrap();
-    let sec_id: u8 = 0x0;
-    storage.create_section("sec", sec_id, &storage::Section::new_db_options()).unwrap();
+    storage.create_section("sec", SEC_ID, &storage::Section::new_db_options()).unwrap();
 
     let snapshot = storage.snapshot_write();
+    snapshot.put_val(Key::Fixed(KeyFixed::from(&KEY_1, SEC_ID)), Value::Value(Box::new(VALUE_1)));
+    snapshot.put_val(Key::Fixed(KeyFixed::from(&KEY_2, SEC_ID)), Value::Value(Box::new(VALUE_2)));
+    snapshot.commit();
 
-    let key_1 = Key::Fixed(KeyFixed::from((vec![sec_id, 0x0, 0x0, 0x1], sec_id)));
-    let key_2 = Key::Fixed(KeyFixed::from((vec![sec_id, 0x1, 0x0, 0x10], sec_id)));
-    let key_3 = Key::Fixed(KeyFixed::from((vec![sec_id, 0x1, 0x0, 0xff], sec_id)));
-    let key_4 = Key::Fixed(KeyFixed::from((vec![sec_id, 0x2, 0x0, 0xff], sec_id)));
-    let value_1 = Box::new([0, 0, 0, 0]);
-    snapshot.put_val(key_1.clone(), Value::Value(value_1.clone()));
-    snapshot.put(key_2.clone());
-    snapshot.put(key_3);
-    snapshot.put(key_4);
+    storage
+}
 
-    assert_eq!(snapshot.get(&key_1), Some(Value::Value(value_1)));
-    assert_eq!(snapshot.get(&key_2), Some(Value::Empty));
+#[test]
+fn g0_update_conflicts_fail() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let storage = setup_storage(&storage_path);
 
-    let key_5 = Key::Fixed(KeyFixed::from((vec![sec_id, 0xff, 0xff, 0xff], sec_id)));
-    assert_eq!(snapshot.get(&key_5), None);
+    let snapshot_1 = storage.snapshot_write();
+    let snapshot_2 = storage.snapshot_write();
 
-    delete_dir(storage_path)
+
+
+
+    snapshot_1;
 }
