@@ -204,27 +204,23 @@ public class TypeDBServer implements AutoCloseable {
 
     protected String serverID() {
         try {
-            return serverIDStored();
+            Path serverIDFile = config().storage().dataDir().resolve(SERVER_ID_FILE_NAME);
+            if (serverIDFile.toFile().exists()) {
+                return Files.readString(serverIDFile);
+            } else {
+                Random random = new Random();
+                String serverID = IntStream.range(0, SERVER_ID_LENGTH).boxed()
+                        .map(i -> SERVER_ID_ALPHABET.charAt(random.nextInt(SERVER_ID_ALPHABET.length())))
+                        .map(String::valueOf)
+                        .collect(Collectors.joining());
+                Files.writeString(serverIDFile, serverID);
+                return serverID;
+            }
         } catch (Exception e) {
             LOG.debug("Failed to create, persist, or read stored server ID: ", e);
         }
         // fallback
         return "_0";
-    }
-
-    private String serverIDStored() throws IOException {
-        Path serverIDFile = config().storage().dataDir().resolve(SERVER_ID_FILE_NAME);
-        if (serverIDFile.toFile().exists()) {
-            return Files.readString(serverIDFile);
-        } else {
-            Random random = new Random();
-            String serverID = IntStream.range(0, SERVER_ID_LENGTH).boxed()
-                    .map(i -> SERVER_ID_ALPHABET.charAt(random.nextInt(SERVER_ID_ALPHABET.length())))
-                    .map(String::valueOf)
-                    .collect(Collectors.joining());
-            Files.writeString(serverIDFile, serverID);
-            return serverID;
-        }
     }
 
     protected io.grpc.Server rpcServer() {
