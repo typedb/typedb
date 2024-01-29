@@ -49,18 +49,11 @@ import java.io.IOException;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
 import java.net.ServerSocket;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -215,13 +208,6 @@ public class TypeDBServer implements AutoCloseable {
         } catch (Exception e) {
             LOG.debug("Failed to create, persist, or read stored server ID: ", e);
         }
-
-        try {
-            return serverIDNetwork();
-        } catch (Exception e) {
-            LOG.debug("Failed to derive server ID from mac address: ", e);
-        }
-
         // fallback
         return "_0";
     }
@@ -239,13 +225,6 @@ public class TypeDBServer implements AutoCloseable {
             Files.writeString(serverIDFile, serverID);
             return serverID;
         }
-    }
-
-    private String serverIDNetwork() throws UnknownHostException, SocketException, NoSuchAlgorithmException {
-        byte[] mac = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getHardwareAddress();
-        byte[] macHash = MessageDigest.getInstance("SHA-256").digest(mac);
-        byte[] truncatedHash = Arrays.copyOfRange(macHash, 0, 8);
-        return String.format("%X", ByteBuffer.wrap(truncatedHash).getLong());
     }
 
     protected io.grpc.Server rpcServer() {
