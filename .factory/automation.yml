@@ -20,7 +20,6 @@ config:
   dependencies:
     dependencies: [build]
     typeql: [build, release]
-    typedb-common: [build, release]
     typedb-protocol: [build, release]
     typedb-behaviour: [build]
 

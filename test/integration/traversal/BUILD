@@ -42,7 +42,7 @@ host_compatible_java_test(
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/common",
         "@vaticle_typeql//java/pattern",
-        "@vaticle_typedb_common//:common"
+        "@vaticle_typeql//common/java:common"
     ],
 )
 

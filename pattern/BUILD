@@ -45,7 +45,7 @@ native_java_libraries(
     ], exclude = ["*Test.java", "*/*Test.java"],),
     deps = [
         # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
         "@vaticle_typeql//java/builder:builder",
         "@vaticle_typeql//java/common:common",
         "@vaticle_typeql//java/pattern:pattern",
@@ -73,7 +73,7 @@ host_compatible_java_test(
     ],
     deps = [
         # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
         "@vaticle_typeql//java:typeql-lang",
     ],
 )
