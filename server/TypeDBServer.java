@@ -49,19 +49,18 @@ import java.io.IOException;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
 import java.net.ServerSocket;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.JAVA_ERROR;
@@ -73,6 +72,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOM
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PORT_IN_USE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
+import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_ALPHABET;
+import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_FILE_NAME;
+import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_LENGTH;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_DISTRIBUTION_NAME;
 import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
@@ -202,13 +204,23 @@ public class TypeDBServer implements AutoCloseable {
 
     protected String serverID() {
         try {
-            byte[] mac = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getHardwareAddress();
-            byte[] macHash = MessageDigest.getInstance("SHA-256").digest(mac);
-            byte[] truncatedHash = Arrays.copyOfRange(macHash, 0, 8);
-            return String.format("%X", ByteBuffer.wrap(truncatedHash).getLong());
+            Path serverIDFile = config().storage().dataDir().resolve(SERVER_ID_FILE_NAME);
+            if (serverIDFile.toFile().exists()) {
+                return Files.readString(serverIDFile);
+            } else {
+                Random random = new Random();
+                String serverID = IntStream.range(0, SERVER_ID_LENGTH).boxed()
+                        .map(i -> SERVER_ID_ALPHABET.charAt(random.nextInt(SERVER_ID_ALPHABET.length())))
+                        .map(String::valueOf)
+                        .collect(Collectors.joining());
+                Files.writeString(serverIDFile, serverID);
+                return serverID;
+            }
         } catch (Exception e) {
-            return "";
+            LOG.debug("Failed to create, persist, or read stored server ID: ", e);
         }
+        // fallback
+        return "_0";
     }
 
     protected io.grpc.Server rpcServer() {
