@@ -25,7 +25,7 @@ typedb_java_test(
     srcs = ["AssemblyTest.java"],
     deps = [
         "//tool/runner:typedb-runner",
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
         "@maven//:com_vaticle_typedb_typedb_console_runner",
     ],
     server_artifacts = {

@@ -46,7 +46,7 @@ native_java_libraries(
     ],
     deps = [
         # Vaticle Dependencies
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb:{pom_version}"],
     visibility = ["//visibility:public"],

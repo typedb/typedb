@@ -148,10 +148,7 @@ container_pull(
 # Load @vaticle/typedb dependencies #
 #####################################
 
-# We don't load Maven artifacts for @vaticle_typedb_common as they are only needed
-# if you depend on @vaticle_typedb_common//test/server
-load("//dependencies/vaticle:repositories.bzl", "vaticle_typedb_common","vaticle_typeql", "vaticle_typedb_protocol", "vaticle_typedb_behaviour")
-vaticle_typedb_common()
+load("//dependencies/vaticle:repositories.bzl", "vaticle_typeql", "vaticle_typedb_protocol", "vaticle_typedb_behaviour")
 vaticle_typeql()
 vaticle_typedb_protocol()
 vaticle_typedb_behaviour()
@@ -160,7 +157,6 @@ load("//dependencies/vaticle:artifacts.bzl", "vaticle_typedb_console_artifact")
 vaticle_typedb_console_artifact()
 
 # Load maven artifacts
-load("@vaticle_typedb_common//dependencies/maven:artifacts.bzl", vaticle_typedb_common_artifacts = "artifacts")
 load("@vaticle_typeql//dependencies/maven:artifacts.bzl", vaticle_typeql_artifacts = "artifacts")
 load("@vaticle_typedb_protocol//dependencies/maven:artifacts.bzl", vaticle_typedb_protocol_artifacts = "artifacts")
 load("//dependencies/maven:artifacts.bzl", vaticle_typedb_artifacts = "artifacts")
@@ -171,7 +167,6 @@ load("//dependencies/vaticle:artifacts.bzl", vaticle_typedb_vaticle_maven_artifa
 ############################
 load("@vaticle_dependencies//library/maven:rules.bzl", "maven")
 maven(
-    vaticle_typedb_common_artifacts  +
     vaticle_dependencies_tool_maven_artifacts +
     vaticle_typeql_artifacts +
     vaticle_typedb_artifacts +
