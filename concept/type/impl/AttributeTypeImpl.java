@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
@@ -137,8 +138,15 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             throw exception(TypeDBException.of(ATTRIBUTE_SUPERTYPE_VALUE_TYPE, getLabel(), getValueType().name(),
                     superType.getLabel(), superType.getValueType().name()));
         } else if (!superType.isAbstract()) {
+            // TODO: Relax
             throw exception(TypeDBException.of(ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT, superType.getLabel()));
         }
+        Iterators.link(
+                validation_setSupertype_plays(superType),
+                validation_setSupertype_owns(superType)
+        ).forEachRemaining(exception -> {
+            throw exception;
+        });
         setSuperTypeVertex(((AttributeTypeImpl) superType).vertex);
     }
 

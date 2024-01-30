@@ -18,9 +18,12 @@
 
 package com.vaticle.typedb.core.concept.type.impl;
 
+import com.vaticle.typedb.common.collection.Collections;
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.common.parameters.Order;
@@ -56,34 +59,7 @@ import static com.vaticle.typedb.common.collection.Collections.concatToList;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_OWNS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_PLAYS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_HAS_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_HAS_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDE_NOT_AVAILABLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATTRIBUTE_TYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_REDECLARATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATTRIBUTE_REDECLARATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATTRIBUTE_WAS_OVERRIDDEN;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_UNIQUE_PRECONDITION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_VALUE_TYPE_NO_EXACT_EQUALITY;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_ROLE_TYPE_CANNOT_BE_PLAYED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_DELETE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.*;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
@@ -105,6 +81,49 @@ import static java.util.Comparator.comparing;
 public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private final Cache cache;
+
+    protected FunctionalIterator<TypeDBException> validation_setSupertype_plays(ThingType supertype) {
+        Set<RoleType> removedPlays = new HashSet<>();
+        Set<RoleType> hiddenPlays = new HashSet<>();
+        getSupertype().getPlays(TRANSITIVE).filter(roleType -> !roleType.isRoot()).forEachRemaining(removedPlays::add);
+        supertype.getPlays(TRANSITIVE).forEachRemaining(removedPlays::remove);
+        Iterators.link(Iterators.iterate(supertype), supertype.getSupertypes()).forEachRemaining(t -> {
+            t.getPlays(EXPLICIT).forEachRemaining(roleType -> {
+                RoleType overridden = t.getPlaysOverridden(roleType);
+                if (overridden != null) hiddenPlays.add(overridden);
+            });
+        });
+
+        return Iterators.link(
+                getSubtypes(TRANSITIVE).flatMap(t -> t.validation_removedPlays_overriddenPlaysRedeclaration(hiddenPlays)),
+                getSubtypes(TRANSITIVE).flatMap(t -> t.validation_removedPlays_brokenPlaysOverrides(removedPlays)),
+                getSubtypes(TRANSITIVE).flatMap(t -> t.validation_removedPlays_leakedPlays(removedPlays, hiddenPlays))
+        );
+    }
+
+    protected FunctionalIterator<TypeDBException> validation_setSupertype_owns(ThingType supertype) {
+        return Iterators.empty(); // TODO
+    }
+
+    protected FunctionalIterator<TypeDBException> validation_removedPlays_overriddenPlaysRedeclaration(Set<RoleType> hiddenPlays) {
+        return getPlays(EXPLICIT)
+                .filter(hiddenPlays::contains)
+                .map(roleType -> TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE, getLabel(), roleType));
+    }
+
+    protected FunctionalIterator<TypeDBException> validation_removedPlays_brokenPlaysOverrides(Set<RoleType> removedPlays) {
+        return getPlays(EXPLICIT)
+                .filter(roleType -> removedPlays.contains(getPlaysOverridden(roleType)))
+                .map(roleType -> TypeDBException.of(SCHEMA_VALIDATION_OVERRIDE_PLAYS_NOT_AVAILABLE, getLabel(), roleType.getLabel(), getPlaysOverridden(roleType).getLabel() ));
+    }
+
+    protected FunctionalIterator<TypeDBException> validation_removedPlays_leakedPlays(Set<RoleType> removedPlays, Set<RoleType> hiddenPlays) {
+        //TODO: Remove hidden plays? It would cause an exception in validation_removedPlays_overriddenPlaysRedeclaration anyway.
+        return Iterators.link(Iterators.iterate(removedPlays), Iterators.iterate(hiddenPlays))
+                .filter(roleType -> this.getInstances(EXPLICIT).anyMatch(instance -> instance.getRelations(roleType).hasNext()))
+                .map(roleType -> TypeDBException.of(SCHEMA_VALIDATION_LEAKED_PLAYS, getLabel(), roleType.getLabel()));
+    }
+
 
     private static class Cache {
         private NavigableSet<Owns> owns = null;
@@ -405,6 +424,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         } else if (getSupertypes().filter(t -> !t.equals(this)).mergeMapForwardable(ThingType::getPlays, ASC).findFirst(roleType).isPresent()) {
             throw exception(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE, getLabel(), roleType.getLabel()));
         }
+
         TypeEdge existingEdge = vertex.outs().edge(PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (existingEdge != null) existingEdge.unsetOverridden();
         else vertex.outs().put(PLAYS, ((RoleTypeImpl) roleType).vertex);
@@ -413,6 +433,22 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         validateIsNotDeleted();
+        getSubtypes(TRANSITIVE)
+                .flatMap(t -> Iterators.link(
+                        t.validation_removedPlays_brokenPlaysOverrides(Collections.set(overriddenType)),
+                        t.validation_removedPlays_overriddenPlaysRedeclaration(Collections.set(overriddenType)),
+                        // TODO: Strictly, it should be: t.validation_removedPlays_leakedPlays(java.util.Collections.emptySet(), Collections.set(overriddenType))
+                        // TODO: But, I plan to reduce it to one argument
+                        t.validation_removedPlays_leakedPlays(Collections.set(overriddenType), java.util.Collections.emptySet())
+                )).forEachRemaining(exception -> {
+                    throw exception;
+                });
+        // We also have to ensure we don't make any redundant plays declarations invalid.
+        validation_removedPlays_brokenPlaysOverrides(Collections.set(overriddenType))
+                .forEachRemaining(exception -> {
+                    throw exception;
+                });
+
         setPlays(roleType);
         override(this, PLAYS, roleType, overriddenType, getSupertype().getPlays(),
                 vertex.outs().edge(PLAYS).to().mapSorted(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v), rt -> rt.vertex, ASC),
@@ -435,6 +471,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (getInstances().anyMatch(thing -> thing.getRelations(roleType).first().isPresent())) {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, vertex.label(), roleType.getLabel().toString()));
         }
+        getSubtypes(TRANSITIVE)
+            .flatMap(t -> Iterators.link(
+                    t.validation_removedPlays_brokenPlaysOverrides(Collections.set(roleType)),
+                    t.validation_removedPlays_leakedPlays(Collections.set(roleType), java.util.Collections.emptySet()) // TODO: Redundant, since it's checked above. Remove the above!
+            )).forEachRemaining(exception -> {
+                    throw exception;
+                });
         edge.delete();
     }
 
@@ -495,7 +538,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 validateIsAbstractOrOwnedAttributeTypesNotAbstract(),
                 validateIsAbstractOrPlayedRoleTypesNotAbstract(),
                 validateOverriddenOwnedAttributeTypesAreSupertypes(),
-                validateOverriddenPlayedRoleTypesAreSupertypes()
+                validateOverriddenPlayedRoleTypesAreSupertypes(),
+                validatePlaysAreNotRedeclared(),
+                validateOwnsAreNotRedeclared()
         );
     }
 
@@ -529,6 +574,19 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         p -> TypeDBException.of(OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE,
                                 getLabel(), p.first().getLabel(), p.second().getLabel())
                 ).toList();
+    }
+
+    private List<TypeDBException> validatePlaysAreNotRedeclared() {
+        Set<RoleType> explicitPlays = getPlays(EXPLICIT).toSet();
+        return getSupertypes().filter(t -> !t.equals(this))
+                .flatMap(thingType -> thingType.getPlays(EXPLICIT).filter(explicitPlays::contains).map(roleType -> new Pair<>(thingType, roleType)))
+                .map(p -> TypeDBException.of(REDUNDANT_PLAYS_DECLARATION, getLabel(), p.second().getLabel(), p.first().getLabel()))
+                .toList();
+    }
+
+    private List<TypeDBException> validateOwnsAreNotRedeclared() {
+        System.err.println("TODO: IMPLEMENT validateOwnsAreNotRedeclared!"); // TODO:
+        return java.util.Collections.emptyList();
     }
 
     @Override

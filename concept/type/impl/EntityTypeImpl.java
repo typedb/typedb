@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
@@ -81,6 +82,12 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Override
     public void setSupertype(EntityType superType) {
         validateIsNotDeleted();
+        Iterators.link(
+                validation_setSupertype_plays(superType),
+                validation_setSupertype_owns(superType)
+        ).forEachRemaining(exception -> {
+            throw exception;
+        });
         setSuperTypeVertex(((EntityTypeImpl) superType).vertex);
     }
 
