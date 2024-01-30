@@ -1,5 +1,11 @@
 Install & Run: https://typedb.com/docs/home/install
 
+Download from TypeDB Package Repository: 
+
+Server only: [Distributions for 2.26.0-rc1](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-server+version:2.26.0-rc1)
+
+Server + Console: [Distributions for 2.26.0-rc1](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-all+version:2.26.0-rc1)
+
 
 ## New Features
 - **Enable Unicode variable names**
