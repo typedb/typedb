@@ -19,10 +19,11 @@ use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::ops::RangeFrom;
-use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, RwLock};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use itertools::{EitherOrBoth, Itertools};
+use serde::{Deserialize, Serialize};
 
 use durability::SequenceNumber;
 
@@ -144,7 +145,7 @@ impl<'storage> WriteSnapshot<'storage> {
             if storage_value.is_some() {
                 let mut map = self.writes.write().unwrap();
                 map.insert(key, Write::RequireExists(storage_value.as_ref().unwrap().clone()));
-                return storage_value.unwrap()
+                return storage_value.unwrap();
             } else {
                 unreachable!("Require key exists in snapshot or in storage.");
             }
@@ -187,7 +188,7 @@ impl<'storage> WriteSnapshot<'storage> {
                 Write::RequireExists(v2) => {
                     debug_assert_eq!(v1, v2);
                     Some((k1, v1))
-                },
+                }
                 Write::Delete => None,
             },
             EitherOrBoth::Left((k1, v1)) => Some((k1, v1)),
@@ -224,7 +225,7 @@ impl<'storage> WriteSnapshot<'storage> {
 
 pub(crate) type WriteData = BTreeMap<Key, Write>;
 
-#[derive(Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) enum Write {
     // Insert KeyValue with a new version. Never conflicts.
     Insert(Value),
@@ -235,6 +236,40 @@ pub(crate) enum Write {
     // Delete with a new version. Conflicts with Require.
     Delete,
 }
+
+impl PartialEq<Self> for Write {
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            Write::Insert(value) => {
+                if let Write::Insert(other_value) = other {
+                    value == other_value
+                } else {
+                    false
+                }
+            }
+            Write::InsertPreexisting(value, reinsert) => {
+                if let Write::InsertPreexisting(other_value, other_reinsert) = other {
+                    other_value == value &&
+                        reinsert.load(Ordering::SeqCst) == other_reinsert.load(Ordering::SeqCst)
+                } else {
+                    false
+                }
+            }
+            Write::RequireExists(value) => {
+                if let Write::RequireExists(other_value) = other {
+                    value == other_value
+                } else {
+                    false
+                }
+            }
+            Write::Delete => {
+                matches!(other, Write::Delete)
+            }
+        }
+    }
+}
+
+impl Eq for Write { }
 
 impl Write {
     pub(crate) fn is_insert(&self) -> bool {

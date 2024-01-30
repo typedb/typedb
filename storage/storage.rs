@@ -24,12 +24,12 @@ use std::sync::atomic::Ordering;
 
 use speedb::{DB, Options, ReadOptions, WriteBatch, WriteOptions};
 
-use durability::{DurabilityService, Record, Sequencer, wal::WAL};
+use durability::{DurabilityService, DurabilityRecord, Sequencer, wal::WAL, DurabilityRecordType};
 use logger::error;
 use logger::result::ResultExt;
 
 use crate::error::{StorageError, StorageErrorKind};
-use crate::isolation_manager::IsolationManager;
+use crate::isolation_manager::{CommitRecord, IsolationManager};
 use crate::key_value::{Key, Value};
 use crate::snapshot::{ReadSnapshot, Write, WriteData, WriteSnapshot};
 
@@ -57,7 +57,8 @@ impl Storage {
 
     pub fn new(owner_name: Rc<str>, path: &PathBuf) -> Result<Self, StorageError> {
         let kv_storage_dir = path.with_extension(Storage::STORAGE_DIR_NAME);
-        let durability_service = WAL::new();
+        let mut durability_service = WAL::new();
+        durability_service.register_record_type(DurabilityRecordCommit::TYPE, DurabilityRecordCommit::NAME);
         Ok(Storage {
             owner_name: owner_name.clone(),
             path: kv_storage_dir,
@@ -148,20 +149,26 @@ impl Storage {
         let commit_record = snapshot.into_commit_record();
 
         //  1. make durable and get sequence number
-        let write_batches = self.to_write_batches(commit_record.writes());
-        // TODO: we have to make durable the logical writes, not the write batch - this includes writes marked for conflict, to allow replays/recovery correctly.
-        let commit_sequence_number = self.durability_service.sequenced_write(WALRecordCommit::new(&write_batches));
+        let commit_sequence_number = self.durability_service.sequenced_write(
+            DurabilityRecordCommit::new(&commit_record), DurabilityRecordCommit::NAME
+        );
 
         // 2. validate commit isolation
         let isolation_result = self.isolation_manager.try_commit(commit_sequence_number, commit_record);
 
         if isolation_result.is_err() {
-            return isolation_result.map_err(|isolation_error| StorageError {
+            isolation_result.map(|record| ()).map_err(|isolation_error| StorageError {
                 storage_name: self.owner_name.as_ref().to_owned(),
                 kind: StorageErrorKind::IsolationError { source: isolation_error },
-            });
+            })
         } else {
             //  4. write to kv-storage
+            let commit_record = isolation_result.unwrap();
+
+            // TODO: we have to make durable the logical writes, getting back the commit sequence number.
+            //       sequence number must be included in the write batch keys!
+            let write_batches = self.to_write_batches(&commit_record.writes());
+
             for (index, write_batch) in write_batches.into_iter().enumerate() {
                 debug_assert!(index < SECTION_ID_MAX);
                 if write_batch.is_some() {
@@ -403,40 +410,35 @@ impl Section {
     }
 }
 
-struct WALRecordCommit {
+struct DurabilityRecordCommit {
     data: Box<[u8]>,
 }
 
-impl WALRecordCommit {
-    const WB_SIZE_BYTES: usize = std::mem::size_of::<u64>();
+impl DurabilityRecordCommit {
+    const NAME: &'static str = "DurabilityRecordCommit";
+    const TYPE: DurabilityRecordType = 0;
 
-    // TODO: should this serialise the BTree writes directly?
-    fn new(commit_data: &[Option<WriteBatch>]) -> WALRecordCommit {
-        let data_size = commit_data.iter()
-            .map(|wb| wb.as_ref().map_or(0, |batch| WALRecordCommit::WB_SIZE_BYTES + batch.size_in_bytes()))
-            .sum();
+    fn new(commit_data: &CommitRecord) -> DurabilityRecordCommit {
 
-        let mut data: Box<[u8]> = vec![0; data_size].into_boxed_slice();
-        let mut index: usize = 0;
+        let data = bincode::serialize(commit_data);
 
-        for write_batch in commit_data.iter().flatten() {
-            let length_start = index;
-            let length_end = length_start + std::mem::size_of::<u64>();
-            let data_end = length_end + write_batch.size_in_bytes();
-            index = data_end;
+        assert_eq!(bincode::deserialize::<CommitRecord>(data.as_ref().unwrap().as_slice()).unwrap(), *commit_data);
 
-            data[length_start..length_end].copy_from_slice(&write_batch.size_in_bytes().to_be_bytes());
-            data[length_end..data_end].copy_from_slice(write_batch.data());
-        }
-        WALRecordCommit {
-            data: data
+        // TODO handle error case
+
+        DurabilityRecordCommit {
+            data: data.unwrap().into_boxed_slice()
         }
     }
 }
 
-impl Record for WALRecordCommit {
-    fn as_bytes(&self) -> &[u8] {
-        todo!()
+impl DurabilityRecord for DurabilityRecordCommit {
+    fn record_type(&self) -> DurabilityRecordType {
+        return 0;
+    }
+
+    fn bytes(&self) -> &[u8] {
+        self.data.as_ref()
     }
 }
 

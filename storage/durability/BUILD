@@ -29,6 +29,7 @@ rust_library(
         "//common/logger",
 
         "@crates//:itertools",
+        "@crates//:serde",
         "@crates//:tracing",
     ]
 )

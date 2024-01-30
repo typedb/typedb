@@ -15,17 +15,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::{DurabilityService, Record, SequenceNumber, Sequencer};
+use crate::{DurabilityRecord, DurabilityRecordType, DurabilityService, SequenceNumber, Sequencer};
 
 pub struct WAL {
+    registered_types: HashMap<DurabilityRecordType, &'static str>,
     sequence_number: AtomicU64,
 }
 
 impl WAL {
     pub fn new() -> WAL {
         WAL {
+            registered_types: HashMap::new(),
             sequence_number: AtomicU64::new(1),
         }
     }
@@ -45,18 +48,21 @@ impl Sequencer for WAL {
     }
 }
 
-///
-/// Questions:
-///     1. Single file write vs multi-file write with multiple threads - performance implication?
-///     2. Recovery/Checksum requirements - what are the failure modes
-///     3. How to benchmark
-///
 impl DurabilityService for WAL {
-    fn sequenced_write(&self, record: impl Record) -> SequenceNumber {
+    fn register_record_type(&mut self, record_type: DurabilityRecordType, record_name: &'static str) {
+        if self.registered_types.get(&record_type).map(|name| *name != record_name).unwrap_or(false) {
+            panic!("Illegal state: two types of WAL records registered with same ID and different names.")
+        }
+        self.registered_types.insert(record_type, record_name);
+    }
+
+    fn sequenced_write(&self, record: impl DurabilityRecord, record_name: &'static str) -> SequenceNumber {
+        debug_assert!(*self.registered_types.get(&record.record_type()).unwrap() == record_name);
+        // TODO: serialise into file and wait for fsync
         self.take_next()
     }
 
-    fn iterate_records_from(&self, sequence_number: SequenceNumber) -> Box<dyn Iterator<Item=(SequenceNumber, &dyn Record)>> {
+    fn iterate_records_from(&self, sequence_number: SequenceNumber) -> Box<dyn Iterator<Item=(SequenceNumber, &dyn DurabilityRecord)>> {
         todo!()
     }
 }

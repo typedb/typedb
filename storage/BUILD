@@ -34,9 +34,11 @@ rust_library(
         "//storage/durability",
         "//common/logger",
 
+        "@crates//:bincode",
         "@crates//:itertools",
         "@crates//:speedb",
         "@crates//:tracing",
+        "@crates//:serde",
         "@crates//:struct_deser",
     ]
 )

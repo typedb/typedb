@@ -16,13 +16,18 @@
  */
 
 use std::cmp::Ordering;
+use std::fmt;
+
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{MapAccess, SeqAccess, Visitor};
+use serde::ser::SerializeStruct;
 
 use crate::SectionId;
 
 pub const FIXED_KEY_LENGTH_BYTES: usize = 48;
 
 // TODO: we will need to know if these are from storage or from memory
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Key {
     Fixed(KeyFixed),
     Dynamic(KeyDynamic),
@@ -47,7 +52,7 @@ impl Key {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct KeyFixed {
     section_id: SectionId,
-    key_length: usize,
+    key_length: u64,
     data: [u8; FIXED_KEY_LENGTH_BYTES],
 }
 
@@ -55,13 +60,13 @@ impl KeyFixed {
     pub fn new(section_id: SectionId, key_length: usize, data: [u8; FIXED_KEY_LENGTH_BYTES]) -> KeyFixed {
         KeyFixed {
             section_id: section_id,
-            key_length: key_length,
+            key_length: key_length as u64,
             data: data,
         }
     }
 
     pub fn bytes(&self) -> &[u8] {
-        &self.data[0..self.key_length]
+        &self.data[0..(self.key_length as usize)]
     }
 
     fn section_id(&self) -> SectionId {
@@ -69,7 +74,110 @@ impl KeyFixed {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+impl Serialize for KeyFixed {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        let mut state = serializer.serialize_struct("KeyFixed", 2)?;
+        state.serialize_field("section_id", &self.section_id)?;
+        state.serialize_field("data", self.bytes())?;
+        state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for KeyFixed {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        enum Field { SectionID, Data }
+
+        impl<'de> Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+                where
+                    D: Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("`section_id` or `data`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                        where
+                            E: de::Error,
+                    {
+                        match value {
+                            "section_id" => Ok(Field::SectionID),
+                            "data" => Ok(Field::Data),
+                            _ => Err(de::Error::unknown_field(value, &["section_id", "data"])),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        struct KeyFixedVisitor;
+
+        impl<'de> Visitor<'de> for KeyFixedVisitor {
+            type Value = KeyFixed;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct Duration")
+            }
+
+            fn visit_seq<V>(self, mut seq: V) -> Result<KeyFixed, V::Error>
+                where
+                    V: SeqAccess<'de>,
+            {
+                let section_id = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let bytes: &[u8] = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let length = bytes.len();
+                let mut data = [0; FIXED_KEY_LENGTH_BYTES];
+                data[0..length].copy_from_slice(bytes);
+
+                Ok(KeyFixed::new(section_id, length, data))
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<KeyFixed, V::Error>
+                where
+                    V: MapAccess<'de>,
+            {
+                let mut section_id = None;
+                let mut bytes: Option<&[u8]> = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::SectionID => {
+                            if section_id.is_some() {
+                                return Err(de::Error::duplicate_field("section_id"));
+                            }
+                            section_id = Some(map.next_value()?);
+                        }
+                        Field::Data  => {
+                            if bytes.is_some() {
+                                return Err(de::Error::duplicate_field("data"));
+                            }
+                            bytes = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let section_id = section_id.ok_or_else(|| de::Error::missing_field("section_id"))?;
+                let bytes = bytes.ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let length = bytes.len();
+                let mut data = [0; FIXED_KEY_LENGTH_BYTES];
+                data[0..length].copy_from_slice(bytes);
+
+                Ok(KeyFixed::new(section_id, length, data))
+            }
+        }
+
+
+        deserializer.deserialize_struct("KeyFixed", &["section_id", "data"], KeyFixedVisitor)
+    }
+}
+
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct KeyDynamic {
     section_id: SectionId,
     data: Box<[u8]>,
@@ -132,7 +240,7 @@ impl From<(&[u8], u8)> for KeyFixed {
         data[0..bytes.len()].copy_from_slice(bytes);
         KeyFixed {
             section_id: section_id,
-            key_length: bytes.len(),
+            key_length: bytes.len() as u64,
             data: data,
         }
     }
@@ -167,7 +275,7 @@ impl Ord for KeyDynamic {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     Empty,
     Value(Box<[u8]>),

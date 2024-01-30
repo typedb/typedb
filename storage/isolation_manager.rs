@@ -23,6 +23,7 @@ use std::sync::{Arc, Mutex, OnceLock, RwLock};
 use std::sync::atomic::{AtomicU64, AtomicU8, AtomicUsize, Ordering};
 
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
 use durability::SequenceNumber;
 use logger::result::ResultExt;
@@ -49,7 +50,7 @@ impl IsolationManager {
         self.timeline.record_closed(commit_sequence_number, open_sequence_number);
     }
 
-    pub(crate) fn try_commit(&self, commit_sequence_number: SequenceNumber, commit_record: CommitRecord) -> Result<(), IsolationError> {
+    pub(crate) fn try_commit(&self, commit_sequence_number: SequenceNumber, commit_record: CommitRecord) -> Result<Arc<CommitRecord>, IsolationError> {
         let open_sequence_number = commit_record.open_sequence_number().clone();
 
         let shared_record = self.pending(&commit_sequence_number, commit_record);
@@ -57,10 +58,10 @@ impl IsolationManager {
 
         if validation_result.is_ok() {
             self.committed(&commit_sequence_number);
-            Ok(())
+            Ok(shared_record)
         } else {
             self.closed(&commit_sequence_number, &open_sequence_number);
-            validation_result
+            validation_result.map(|ok| shared_record)
         }
     }
 
@@ -417,7 +418,7 @@ impl SlotMarker {
     }
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub(crate) struct CommitRecord {
     // TODO: this could read-through to the WAL if we have to save memory?
     writes: WriteData,
