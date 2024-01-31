@@ -3,12 +3,11 @@
 @maven//:com_eclipsesource_minimal_json_minimal_json_0_9_5
 @maven//:com_electronwill_night_config_core_3_6_5
 @maven//:com_electronwill_night_config_toml_3_6_5
-@maven//:com_fasterxml_jackson_core_jackson_core_2_11_3
 @maven//:com_github_ben_manes_caffeine_caffeine_2_8_6
 @maven//:com_google_android_annotations_4_1_1_4
 @maven//:com_google_api_grpc_proto_google_common_protos_2_9_0
-@maven//:com_google_auth_google_auth_library_credentials_0_22_0
-@maven//:com_google_auth_google_auth_library_oauth2_http_0_22_0
+@maven//:com_google_auth_google_auth_library_credentials_1_6_0
+@maven//:com_google_auth_google_auth_library_oauth2_http_1_6_0
 @maven//:com_google_auto_value_auto_value_1_9
 @maven//:com_google_auto_value_auto_value_annotations_1_9
 @maven//:com_google_code_findbugs_jsr305_3_0_2
@@ -18,7 +17,7 @@
 @maven//:com_google_guava_guava_30_1_jre
 @maven//:com_google_guava_listenablefuture_9999_0_empty_to_avoid_conflict_with_guava
 @maven//:com_google_http_client_google_http_client_1_34_2
-@maven//:com_google_http_client_google_http_client_jackson2_1_37_0
+@maven//:com_google_http_client_google_http_client_gson_1_41_4
 @maven//:com_google_j2objc_j2objc_annotations_1_3
 @maven//:com_google_ortools_ortools_darwin_aarch64_9_6_2534
 @maven//:com_google_ortools_ortools_darwin_x86_64_9_6_2534
