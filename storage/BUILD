@@ -33,6 +33,7 @@ rust_library(
     deps = [
         "//storage/durability",
         "//common/logger",
+        "//common/primitive",
 
         "@crates//:bincode",
         "@crates//:itertools",

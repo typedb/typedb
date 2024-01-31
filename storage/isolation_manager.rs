@@ -18,6 +18,7 @@
 use std::collections::VecDeque;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use std::io::Read;
 use std::iter::empty;
 use std::sync::{Arc, Mutex, OnceLock, RwLock};
 use std::sync::atomic::{AtomicU64, AtomicU8, AtomicUsize, Ordering};
@@ -25,8 +26,9 @@ use std::sync::atomic::{AtomicU64, AtomicU8, AtomicUsize, Ordering};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use durability::SequenceNumber;
+use durability::{DurabilityRecord, DurabilityRecordType, SequenceNumber};
 use logger::result::ResultExt;
+use primitive::U80;
 
 use crate::snapshot::{Write, WriteData};
 
@@ -68,8 +70,8 @@ impl IsolationManager {
     fn validate_all_concurrent(&self, commit_sequence_number: &SequenceNumber, commit_record: &CommitRecord) -> Result<(), IsolationError> {
         // TODO: decide if we should block until all predecessors finish, allow out of order (non-Calvin model/traditional model)
         //       We could also validate against all predecessors even if they are validating and fail eagerly.
-        for number in (commit_record.open_sequence_number().number() + 1..commit_sequence_number.number()) {
-            let predecessor_sequence_number = SequenceNumber::new(number);
+        for number in (commit_record.open_sequence_number().number().number() + 1..commit_sequence_number.number().number()) {
+            let predecessor_sequence_number = SequenceNumber::new(U80::new(number));
             self.validate_concurrent(commit_record, predecessor_sequence_number)?
         }
         Ok(())
@@ -169,14 +171,12 @@ const TIMELINE_WINDOW_SIZE: usize = 100;
 struct Timeline {
     windows: RwLock<VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>>,
     next_window_start: Mutex<SequenceNumber>,
-    // TODO: doesn't need its own Lock, since updates always are within the windows Write lock
-    slot_watermark: AtomicU64,
 }
 
 impl Timeline {
     fn new(starting_sequence_number: SequenceNumber) -> Timeline {
-        debug_assert!(starting_sequence_number.number() > 0);
-        let last_sequence_number_value = starting_sequence_number.number() - 1;
+        debug_assert!(starting_sequence_number.number().number() > 0);
+        let last_sequence_number_value = starting_sequence_number.number() - U80::new(1);
         let initial_window = Arc::new(TimelineWindow::new(SequenceNumber::new(last_sequence_number_value)));
         let mut windows = VecDeque::new();
         windows.push_back(initial_window);
@@ -184,7 +184,6 @@ impl Timeline {
         let timeline = Timeline {
             windows: RwLock::new(windows),
             next_window_start: Mutex::new(starting_sequence_number.clone()),
-            slot_watermark: AtomicU64::new(last_sequence_number_value),
         };
 
         // initialise the predecessor slot for readers to index against
@@ -194,6 +193,7 @@ impl Timeline {
     }
 
     fn watermark(&self) -> SequenceNumber {
+        // TODO: we should not need to get a read lock every time we want to open get the recent watermark to open a snapshot
         let windows = self.windows.read().unwrap_or_log();
         windows.iter().filter_map(|w| {
             if w.is_finished() {
@@ -299,7 +299,7 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
 
         TimelineWindow {
             starting_sequence_number: starting_sequence_number,
-            end_sequence_number: starting_sequence_number.plus(SIZE as u64),
+            end_sequence_number: SequenceNumber::new(starting_sequence_number.number() + U80::new(SIZE as u128)),
             slots: slots,
             commit_records: commit_data,
             readers: AtomicU64::new(0),
@@ -327,7 +327,7 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         self.slots.iter().enumerate().filter_map(|(index, status)| {
             let marker = SlotMarker::from(status.load(Ordering::SeqCst));
             match marker {
-                SlotMarker::Empty | SlotMarker::Pending => Some(self.start().plus(index as u64 - 1)),
+                SlotMarker::Empty | SlotMarker::Pending => Some(SequenceNumber::new(self.start().number() + U80::new(index as u128 - 1))),
                 SlotMarker::Committed | SlotMarker::Closed => None,
             }
         }).next()
@@ -377,7 +377,8 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
     }
 
     fn index_of(&self, sequence_number: &SequenceNumber) -> usize {
-        (sequence_number.number() - self.starting_sequence_number.number()) as usize
+        debug_assert!(sequence_number.number().number() - self.starting_sequence_number.number().number() < usize::MAX as u128);
+        (sequence_number.number().number() - self.starting_sequence_number.number().number()) as usize
     }
 }
 
@@ -426,6 +427,9 @@ pub(crate) struct CommitRecord {
 }
 
 impl CommitRecord {
+    pub(crate) const DURABILITY_RECORD_TYPE: DurabilityRecordType = 0;
+    pub(crate) const DURABILITY_RECORD_NAME: &'static str = "commit_record";
+
     pub(crate) fn new(writes: WriteData, open_sequence_number: SequenceNumber) -> CommitRecord {
         CommitRecord {
             writes: writes,
@@ -440,6 +444,24 @@ impl CommitRecord {
     pub(crate) fn open_sequence_number(&self) -> &SequenceNumber {
         &self.open_sequence_number
     }
+}
+
+
+impl DurabilityRecord for CommitRecord {
+    fn record_type(&self) -> DurabilityRecordType {
+        return Self::DURABILITY_RECORD_TYPE;
+    }
+
+    fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
+        debug_assert_eq!(bincode::deserialize::<CommitRecord>(bincode::serialize(&self).as_ref().unwrap()).unwrap(), *self);
+        bincode::serialize_into(writer, &self.writes)
+    }
+
+    // fn deserialise_from(record_type: DurabilityRecordType, reader: &impl Read) -> Result<Self, dyn Error>
+    //     where Self: Sized {
+    //     assert_eq!(Self::DURABILITY_RECORD_TYPE, record_type);
+    //     bincode::deserialize_from(reader)
+    // }
 }
 
 #[derive(Debug)]

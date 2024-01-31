@@ -17,16 +17,19 @@
 
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use std::io::Read;
 use std::ops::Deref;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
 
+use itertools::Itertools;
 use speedb::{DB, Options, ReadOptions, WriteBatch, WriteOptions};
 
-use durability::{DurabilityService, DurabilityRecord, Sequencer, wal::WAL, DurabilityRecordType};
+use durability::{DurabilityRecord, DurabilityService, SequenceNumber, Sequencer, wal::WAL};
 use logger::error;
 use logger::result::ResultExt;
+use primitive::U80;
 
 use crate::error::{StorageError, StorageErrorKind};
 use crate::isolation_manager::{CommitRecord, IsolationManager};
@@ -47,8 +50,8 @@ pub struct Storage {
     path: PathBuf,
     sections: Vec<Section>,
     section_index: [SectionId; SECTION_ID_MAX],
+    // TODO: inject either a remote or local service
     durability_service: WAL,
-    // TODO: want to inject either a remote or local service
     isolation_manager: IsolationManager,
 }
 
@@ -58,7 +61,7 @@ impl Storage {
     pub fn new(owner_name: Rc<str>, path: &PathBuf) -> Result<Self, StorageError> {
         let kv_storage_dir = path.with_extension(Storage::STORAGE_DIR_NAME);
         let mut durability_service = WAL::new();
-        durability_service.register_record_type(DurabilityRecordCommit::TYPE, DurabilityRecordCommit::NAME);
+        durability_service.register_record_type(CommitRecord::DURABILITY_RECORD_TYPE, CommitRecord::DURABILITY_RECORD_NAME);
         Ok(Storage {
             owner_name: owner_name.clone(),
             path: kv_storage_dir,
@@ -78,6 +81,8 @@ impl Storage {
         //   Get the last known committed sequence number from each section
         //   Iterate over records from Durability Service from the earliest sequence number
         //   For each record, commit the records. Some sections will write duplicates, but all writes are idempotent so this is OK.
+
+        // TODO: we have to be careful when we resume from a checkpoint and reapply the Records.Write.InsertPreexisting, to re-check if previous commits have deleted these keys
     }
 
     pub fn create_section(&mut self, name: &str, section_id: SectionId, options: &Options) -> Result<(), StorageError> {
@@ -150,42 +155,37 @@ impl Storage {
 
         //  1. make durable and get sequence number
         let commit_sequence_number = self.durability_service.sequenced_write(
-            DurabilityRecordCommit::new(&commit_record), DurabilityRecordCommit::NAME
-        );
+            &commit_record, CommitRecord::DURABILITY_RECORD_NAME,
+        ).map_err(|err| StorageError {
+            storage_name: self.owner_name.to_string(),
+            kind: StorageErrorKind::DurabilityError { source: err },
+        })?;
 
         // 2. validate commit isolation
-        let isolation_result = self.isolation_manager.try_commit(commit_sequence_number, commit_record);
-
-        if isolation_result.is_err() {
-            isolation_result.map(|record| ()).map_err(|isolation_error| StorageError {
+        let commit_record = self.isolation_manager.try_commit(commit_sequence_number, commit_record)
+            .map_err(|err| StorageError {
                 storage_name: self.owner_name.as_ref().to_owned(),
-                kind: StorageErrorKind::IsolationError { source: isolation_error },
-            })
-        } else {
-            //  4. write to kv-storage
-            let commit_record = isolation_result.unwrap();
+                kind: StorageErrorKind::IsolationError { source: err },
+            })?;
 
-            // TODO: we have to make durable the logical writes, getting back the commit sequence number.
-            //       sequence number must be included in the write batch keys!
-            let write_batches = self.to_write_batches(&commit_record.writes());
+        //  3. write to kv-storage
+        let write_batches = self.to_write_batches(&commit_sequence_number, &commit_record.writes());
 
-            for (index, write_batch) in write_batches.into_iter().enumerate() {
-                debug_assert!(index < SECTION_ID_MAX);
-                if write_batch.is_some() {
-                    self.get_section(index as SectionId).write(write_batch.unwrap())
-                        .map_err(|error| StorageError {
-                            storage_name: self.owner_name.as_ref().to_owned(),
-                            kind: StorageErrorKind::SectionError { source: error },
-                        })?;
-                }
+        for (index, write_batch) in write_batches.into_iter().enumerate() {
+            debug_assert!(index < SECTION_ID_MAX);
+            if write_batch.is_some() {
+                self.get_section(index as SectionId).write(write_batch.unwrap())
+                    .map_err(|error| StorageError {
+                        storage_name: self.owner_name.as_ref().to_owned(),
+                        kind: StorageErrorKind::SectionError { source: error },
+                    })?;
             }
-            Ok(())
         }
+        Ok(())
     }
 
-    fn to_write_batches(&self, writes: &WriteData) -> [Option<WriteBatch>; SECTION_ID_MAX] {
-        const EMPTY_WRITE_BATCH: Option<WriteBatch> = None;
-        let mut write_batches: [Option<WriteBatch>; SECTION_ID_MAX] = [EMPTY_WRITE_BATCH; SECTION_ID_MAX];
+    fn to_write_batches(&self, commit_sequence_number: &SequenceNumber, writes: &WriteData) -> [Option<WriteBatch>; SECTION_ID_MAX] {
+        let mut write_batches: [Option<WriteBatch>; SECTION_ID_MAX] = core::array::from_fn(|_| None);
 
         writes.iter().for_each(|(key, write)| {
             let section_id = key.section_id() as usize;
@@ -193,12 +193,24 @@ impl Storage {
                 write_batches[section_id] = Some(WriteBatch::default());
             }
             match write {
-                Write::Insert(value) => write_batches[section_id].as_mut().unwrap().put(key.bytes(), value.bytes()),
+                Write::Insert(value) => {
+                    write_batches[section_id].as_mut().unwrap().put(
+                        StorageKey::new(key.bytes(), commit_sequence_number, StorageOperation::Insert).bytes(),
+                        value.bytes(),
+                    )
+                }
                 Write::InsertPreexisting(value, reinsert) => if reinsert.load(Ordering::SeqCst) {
-                    write_batches[section_id].as_mut().unwrap().put(key.bytes(), value.bytes())
+                    write_batches[section_id].as_mut().unwrap().put(
+                        StorageKey::new(key.bytes(), commit_sequence_number, StorageOperation::Insert).bytes(),
+                        value.bytes(),
+                    )
                 },
                 Write::RequireExists(_) => {}
-                Write::Delete => write_batches[section_id].as_mut().unwrap().delete(key.bytes()),
+                Write::Delete => {
+                    write_batches[section_id].as_mut().unwrap().delete(
+                        StorageKey::new(key.bytes(), commit_sequence_number, StorageOperation::Delete).bytes()
+                    )
+                }
             }
         });
         write_batches
@@ -275,6 +287,139 @@ impl Storage {
         } else {
             Err(errors)
         }
+    }
+}
+
+
+enum StorageKey {
+    Small(StorageKeySmall),
+    Large(StorageKeyLarge),
+}
+
+impl StorageKey {
+    const OPERATION_NEGATIVE_OFFSET: usize = StorageOperation::serialised_len();
+    const SEQUENCE_NUMBER_NEGATIVE_OFFSET: usize = StorageKey::OPERATION_NEGATIVE_OFFSET + StorageOperation::serialised_len();
+    const KEY_NEGATIVE_OFFSET: usize = StorageKey::SEQUENCE_NUMBER_NEGATIVE_OFFSET + SequenceNumber::serialised_len();
+
+    fn new(bytes: &[u8], sequence_number: &SequenceNumber, storage_operation: StorageOperation) -> StorageKey {
+        let size = bytes.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len();
+
+        if size < StorageKeySmall::BYTES {
+            StorageKey::Small(StorageKeySmall::new(bytes, sequence_number, storage_operation))
+        } else {
+            StorageKey::Large(StorageKeyLarge::new(bytes, sequence_number, storage_operation))
+        }
+    }
+
+    fn bytes(&self) -> &[u8] {
+        match self {
+            StorageKey::Small(key) => key.bytes(),
+            StorageKey::Large(key) => key.bytes(),
+        }
+    }
+
+    fn length(&self) -> usize {
+        match self {
+            StorageKey::Small(key) => key.length,
+            StorageKey::Large(key) => key.bytes().len(),
+        }
+    }
+
+    fn key(&self) -> &[u8] {
+        &self.bytes()[0..(self.length() - StorageKey::KEY_NEGATIVE_OFFSET)]
+    }
+
+    fn sequence_number(&self) -> SequenceNumber {
+        let sequence_number_offset = self.length() - StorageKey::KEY_NEGATIVE_OFFSET;
+        let sequence_number_end = self.length() - StorageKey::SEQUENCE_NUMBER_NEGATIVE_OFFSET;
+        let inverse_sequence_number_bytes = &self.bytes()[sequence_number_offset..sequence_number_end];
+        debug_assert_eq!(SequenceNumber::serialised_len(), inverse_sequence_number_bytes.len());
+        SequenceNumber::new(U80::from_be_bytes(inverse_sequence_number_bytes))
+    }
+
+    fn operation(&self) -> StorageOperation {
+        let operation_byte_offset = self.length() - StorageKey::OPERATION_NEGATIVE_OFFSET;
+        let operation_byte_end = self.length();
+        StorageOperation::from(&self.bytes()[operation_byte_offset..operation_byte_end])
+    }
+}
+
+struct StorageKeySmall {
+    length: usize,
+    bytes: [u8; StorageKeySmall::BYTES],
+}
+
+impl StorageKeySmall {
+    const BYTES: usize = 64;
+
+    fn new(bytes: &[u8], sequence_number: &SequenceNumber, storage_operation: StorageOperation) -> StorageKeySmall {
+        let length = bytes.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len();
+        debug_assert!(length <= StorageKeySmall::BYTES);
+        let bytes_end = bytes.len();
+        let sequence_number_end = bytes_end + SequenceNumber::serialised_len();
+        let operation_end = sequence_number_end + StorageOperation::serialised_len();
+
+        let mut storage_key_bytes = [0; StorageKeySmall::BYTES];
+        storage_key_bytes[0..bytes_end].copy_from_slice(bytes);
+        sequence_number.invert().serialise_be_into(&mut storage_key_bytes[bytes_end..sequence_number_end]);
+        storage_key_bytes[sequence_number_end..operation_end].copy_from_slice(storage_operation.bytes());
+        StorageKeySmall {
+            length: length,
+            bytes: storage_key_bytes,
+        }
+    }
+
+    fn bytes(&self) -> &[u8] {
+        &self.bytes[0..self.length]
+    }
+}
+
+struct StorageKeyLarge {
+    bytes: Box<[u8]>,
+}
+
+impl StorageKeyLarge {
+    fn new(bytes: &[u8], sequence_number: &SequenceNumber, storage_operation: StorageOperation) -> StorageKeyLarge {
+        let mut vec = Vec::with_capacity(bytes.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len());
+        vec.extend_from_slice(bytes);
+        vec.extend_from_slice(&sequence_number.invert().serialise_be());
+        vec.extend_from_slice(storage_operation.bytes());
+
+        StorageKeyLarge {
+            bytes: vec.into_boxed_slice()
+        }
+    }
+
+    fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
+enum StorageOperation {
+    Insert,
+    Delete,
+}
+
+impl StorageOperation {
+    const BYTES: usize = 1;
+
+    const fn bytes(&self) -> &[u8; StorageOperation::BYTES] {
+        match self {
+            StorageOperation::Insert => &[0x0],
+            StorageOperation::Delete => &[0x1],
+        }
+    }
+
+    const fn from(bytes: &[u8]) -> StorageOperation {
+        match bytes {
+            [0x0] => StorageOperation::Insert,
+            [0x1] => StorageOperation::Delete,
+            _ => panic!("Unrecognised storage operation bytes.")
+        }
+    }
+
+    const fn serialised_len() -> usize {
+        StorageOperation::BYTES
     }
 }
 
@@ -407,38 +552,6 @@ impl Section {
                 })
             }
         }
-    }
-}
-
-struct DurabilityRecordCommit {
-    data: Box<[u8]>,
-}
-
-impl DurabilityRecordCommit {
-    const NAME: &'static str = "DurabilityRecordCommit";
-    const TYPE: DurabilityRecordType = 0;
-
-    fn new(commit_data: &CommitRecord) -> DurabilityRecordCommit {
-
-        let data = bincode::serialize(commit_data);
-
-        assert_eq!(bincode::deserialize::<CommitRecord>(data.as_ref().unwrap().as_slice()).unwrap(), *commit_data);
-
-        // TODO handle error case
-
-        DurabilityRecordCommit {
-            data: data.unwrap().into_boxed_slice()
-        }
-    }
-}
-
-impl DurabilityRecord for DurabilityRecordCommit {
-    fn record_type(&self) -> DurabilityRecordType {
-        return 0;
-    }
-
-    fn bytes(&self) -> &[u8] {
-        self.data.as_ref()
     }
 }
 

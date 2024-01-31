@@ -230,7 +230,7 @@ pub(crate) enum Write {
     // Insert KeyValue with a new version. Never conflicts.
     Insert(Value),
     // Insert KeyValue with new version if a concurrent Txn deletes Key. Boolean indicates requires re-insertion. Never conflicts.
-    InsertPreexisting(Value, Arc<AtomicBool>),
+    InsertPreexisting(Value, Arc<AtomicBool>), // TODO what happens during replay
     // Mark Key as required from storage. Caches existing storage Value. Conflicts with Delete.
     RequireExists(Value),
     // Delete with a new version. Conflicts with Require.
@@ -269,7 +269,7 @@ impl PartialEq<Self> for Write {
     }
 }
 
-impl Eq for Write { }
+impl Eq for Write {}
 
 impl Write {
     pub(crate) fn is_insert(&self) -> bool {

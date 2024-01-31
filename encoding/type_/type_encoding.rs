@@ -25,7 +25,7 @@ pub mod concept {
     use crate::prefix::PrefixID;
 
     const TYPE_ID_SIZE: usize = 2;
-    type TYPE_ID_UINT = u16;
+    type TypeIDUint = u16;
 
     #[derive(StructDeser, Copy, Clone, Debug, PartialEq, Eq, Hash)]
     pub struct TypeIID {

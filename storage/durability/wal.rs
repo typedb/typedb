@@ -15,36 +15,52 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+use std::fs::{File, OpenOptions};
+use std::ops::DerefMut;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Mutex;
 
-use crate::{DurabilityRecord, DurabilityRecordType, DurabilityService, SequenceNumber, Sequencer};
+use primitive::U80;
 
+use crate::{DurabilityError, DurabilityErrorKind, DurabilityRecord, DurabilityRecordType, DurabilityService, SequenceNumber, Sequencer};
+
+///
+/// I think we could use an MMAP append-only file to allow records to serialise themselves directly into the right place
+/// We could also use a Writer/Stream compressor to reduce the write bandwidth requirements
+///
 pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, &'static str>,
     sequence_number: AtomicU64,
+    file: Mutex<File>,
 }
 
 impl WAL {
     pub fn new() -> WAL {
+        let mut f = OpenOptions::new()
+            .append(true)
+                .create(true) // Optionally create the file if it doesn't already exist
+                .open("/tmp/test_wal")
+                .unwrap();
         WAL {
             registered_types: HashMap::new(),
             sequence_number: AtomicU64::new(1),
+            file: Mutex::new(f),
         }
     }
 }
 
 impl Sequencer for WAL {
     fn take_next(&self) -> SequenceNumber {
-        SequenceNumber::new(self.sequence_number.fetch_add(1, Ordering::Relaxed))
+        SequenceNumber::new(U80::new(self.sequence_number.fetch_add(1, Ordering::Relaxed) as u128))
     }
 
     fn poll_next(&self) -> SequenceNumber {
-        SequenceNumber::new(self.sequence_number.load(Ordering::Relaxed))
+        SequenceNumber::new(U80::new(self.sequence_number.load(Ordering::Relaxed) as u128))
     }
 
     fn previous(&self) -> SequenceNumber {
-        SequenceNumber::new(self.sequence_number.load(Ordering::Relaxed) - 1)
+        SequenceNumber::new(U80::new(self.sequence_number.load(Ordering::Relaxed) as u128 - 1))
     }
 }
 
@@ -56,14 +72,14 @@ impl DurabilityService for WAL {
         self.registered_types.insert(record_type, record_name);
     }
 
-    fn sequenced_write(&self, record: impl DurabilityRecord, record_name: &'static str) -> SequenceNumber {
+    fn sequenced_write(&self, record: &impl DurabilityRecord, record_name: &'static str) -> Result<SequenceNumber, DurabilityError> {
         debug_assert!(*self.registered_types.get(&record.record_type()).unwrap() == record_name);
-        // TODO: serialise into file and wait for fsync
-        self.take_next()
-    }
+        let mut file = self.file.lock().unwrap();
 
-    fn iterate_records_from(&self, sequence_number: SequenceNumber) -> Box<dyn Iterator<Item=(SequenceNumber, &dyn DurabilityRecord)>> {
-        todo!()
+        record.serialise_into(file.deref_mut()).map(|_| self.take_next())
+            .map_err(|err| DurabilityError {
+                kind: DurabilityErrorKind::BincodeSerializeError {source: err }
+            })
     }
 }
 

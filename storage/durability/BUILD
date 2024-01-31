@@ -27,7 +27,9 @@ rust_library(
     ]),
     deps = [
         "//common/logger",
+        "//common/primitive",
 
+        "@crates//:bincode",
         "@crates//:itertools",
         "@crates//:serde",
         "@crates//:tracing",

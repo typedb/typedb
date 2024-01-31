@@ -15,6 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::error::Error;
+use std::fmt::{Display, Formatter};
+use std::io::{Read, Write};
+use std::ops::{Add, Sub};
+use primitive::{U80};
+
 use serde::{Deserialize, Serialize};
 
 pub mod wal;
@@ -53,9 +59,9 @@ pub mod wal;
 pub trait DurabilityService: Sequencer {
     fn register_record_type(&mut self, record_type: DurabilityRecordType, record_name: &'static str);
 
-    fn sequenced_write(&self, record: impl DurabilityRecord, record_name: &'static str) -> SequenceNumber;
+    fn sequenced_write(&self, record: &impl DurabilityRecord, record_name: &'static str) -> Result<SequenceNumber, DurabilityError>;
 
-    fn iterate_records_from(&self, sequence_number: SequenceNumber) -> Box<dyn Iterator<Item=(SequenceNumber, &dyn DurabilityRecord)>>;
+    // fn iterate_records_from(&self, sequence_number: SequenceNumber) -> Box<dyn Iterator<Item=(SequenceNumber, DurabilityRecordType, dyn Read)>>;
 }
 
 pub type DurabilityRecordType = u8;
@@ -63,34 +69,93 @@ pub type DurabilityRecordType = u8;
 pub trait DurabilityRecord {
     fn record_type(&self) -> DurabilityRecordType;
 
-    fn bytes(&self) -> &[u8];
+    fn serialise_into(&self, writer: &mut impl Write) -> bincode::Result<()>;
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct SequenceNumber {
-    number: u64,
+    number: U80,
 }
 
 impl SequenceNumber {
+    pub const MAX: SequenceNumber = SequenceNumber { number: U80::MAX };
 
-    pub fn new(number: u64) -> SequenceNumber {
+    pub fn new(number: U80) -> SequenceNumber {
         SequenceNumber { number: number }
     }
 
-    pub fn plus(&self, number: u64) -> SequenceNumber {
-        return SequenceNumber { number: self.number + number }
+    pub fn plus(&self, number: U80) -> SequenceNumber {
+        return SequenceNumber { number: self.number + number };
     }
 
-    pub fn number(&self) -> u64 {
+    pub fn number(&self) -> U80 {
         self.number
+    }
+
+    pub fn serialise_be_into(&self, bytes: &mut [u8]) {
+        assert_eq!(bytes.len(), U80::BYTES);
+        let number_bytes = self.number.to_be_bytes();
+        bytes.copy_from_slice(&number_bytes)
+    }
+
+    pub fn serialise_be(&self) -> [u8; U80::BYTES] {
+        self.number.to_be_bytes()
+    }
+
+    pub fn invert(&self) -> SequenceNumber {
+        SequenceNumber::MAX - *self
+    }
+
+    pub const fn serialised_len() -> usize {
+        U80::BYTES
+    }
+}
+
+impl Add for SequenceNumber {
+    type Output = SequenceNumber;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        SequenceNumber { number: self.number + rhs.number }
+    }
+}
+
+impl Sub for SequenceNumber {
+    type Output = SequenceNumber;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        SequenceNumber { number: self.number - rhs.number }
     }
 }
 
 pub trait Sequencer {
-
     fn take_next(&self) -> SequenceNumber;
 
     fn poll_next(&self) -> SequenceNumber;
 
     fn previous(&self) -> SequenceNumber;
+}
+
+
+#[derive(Debug)]
+pub struct DurabilityError {
+    pub kind: DurabilityErrorKind,
+}
+
+#[derive(Debug)]
+pub enum DurabilityErrorKind {
+    BincodeSerializeError { source: bincode::Error },
+}
+
+impl Display for DurabilityError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for DurabilityError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match &self.kind {
+            DurabilityErrorKind::BincodeSerializeError { source, .. } => Some(source),
+        }
+    }
 }
