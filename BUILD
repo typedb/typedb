@@ -280,6 +280,7 @@ targz_edit(
     name = "console-artifact-native-x86_64.tar.gz",
     src = "@vaticle_typedb_console_artifact_linux-x86_64//file",
     strip_components = 1,
+    exclude_globs = ["typedb"],
 )
 
 assemble_apt(
@@ -314,6 +315,7 @@ targz_edit(
     name = "console-artifact-native-arm64.tar.gz",
     src = "@vaticle_typedb_console_artifact_linux-arm64//file",
     strip_components = 1,
+    exclude_globs = ["typedb"],
 )
 
 assemble_apt(
