@@ -21,6 +21,8 @@ package com.vaticle.typedb.core.server;
 import ch.qos.logback.classic.LoggerContext;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.common.util.Java;
+import com.vaticle.typedb.core.common.diagnostics.CoreErrorReporter;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -32,7 +34,6 @@ import com.vaticle.typedb.core.migrator.CoreMigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
 import com.vaticle.typedb.core.server.common.Constants;
 import com.vaticle.typedb.core.server.logging.CoreLogback;
-import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.server.parameters.CoreConfig;
 import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
 import com.vaticle.typedb.core.server.parameters.CoreSubcommand;
@@ -48,27 +49,32 @@ import java.io.IOException;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
+import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_TO_CREATE_DATA_DIRECTORY;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PORT_IN_USE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.JAVA_ERROR;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNKNOWN_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_TO_CREATE_DATA_DIRECTORY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PORT_IN_USE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
+import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_ALPHABET;
+import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_FILE_NAME;
+import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_LENGTH;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_DISTRIBUTION_NAME;
 import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
@@ -103,6 +109,7 @@ public class TypeDBServer implements AutoCloseable {
         this.debug = debug;
 
         verifyJavaVersion();
+        verifyPort();
         createOrVerifyDataDir();
         configureDiagnostics();
 
@@ -151,7 +158,21 @@ public class TypeDBServer implements AutoCloseable {
         if (majorVersion == Java.UNKNOWN_VERSION) {
             logger().warn("Could not detect Java version from version string '{}'. Will start {} anyway.", System.getProperty("java.version"), name());
         } else if (majorVersion < 11) {
-            throw TypeDBException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
+            logger().error(INCOMPATIBLE_JAVA_RUNTIME.message(majorVersion));
+            System.exit(1);
+        }
+    }
+
+    private void verifyPort() {
+        int port = config.server().address().getPort();
+        try (ServerSocket serverSocket = new ServerSocket()) {
+            // setReuseAddress(false) is required only on macOS,
+            // otherwise the code will not work correctly on that platform
+            serverSocket.setReuseAddress(false);
+            serverSocket.bind(new InetSocketAddress(InetAddress.getByName("localhost"), port), 1);
+        } catch (Exception ex) {
+            logger().error(PORT_IN_USE.message(address()));
+            System.exit(1);
         }
     }
 
@@ -170,17 +191,36 @@ public class TypeDBServer implements AutoCloseable {
         }
     }
 
-    private void configureDiagnostics() {
-        Diagnostics.initialise(serverID(), TYPEDB_DISTRIBUTION_NAME, Version.VERSION, Constants.DIAGNOSTICS_REPORTING_URI);
+    protected void configureDiagnostics() {
+        try {
+            Diagnostics.initialise(
+                    config.diagnostics().reporting().enable(), serverID(), name(), Version.VERSION,
+                    Constants.DIAGNOSTICS_REPORTING_URI, new CoreErrorReporter()
+            );
+        } catch (Throwable e) {
+            LOG.debug("Failed to initialise diagnostics: ", e);
+        }
     }
 
-    private String serverID() {
+    protected String serverID() {
         try {
-            byte[] mac = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getHardwareAddress();
-            return Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(mac));
-        } catch (NoSuchAlgorithmException | IOException e) {
-            return "";
+            Path serverIDFile = config().storage().dataDir().resolve(SERVER_ID_FILE_NAME);
+            if (serverIDFile.toFile().exists()) {
+                return Files.readString(serverIDFile);
+            } else {
+                Random random = new Random();
+                String serverID = IntStream.range(0, SERVER_ID_LENGTH).boxed()
+                        .map(i -> SERVER_ID_ALPHABET.charAt(random.nextInt(SERVER_ID_ALPHABET.length())))
+                        .map(String::valueOf)
+                        .collect(Collectors.joining());
+                Files.writeString(serverIDFile, serverID);
+                return serverID;
+            }
+        } catch (Exception e) {
+            LOG.debug("Failed to create, persist, or read stored server ID: ", e);
         }
+        // fallback
+        return "_0";
     }
 
     protected io.grpc.Server rpcServer() {
@@ -224,7 +264,7 @@ public class TypeDBServer implements AutoCloseable {
         return LOG;
     }
 
-    protected void start() {
+    protected void start() throws TypeDBCheckedException {
         try {
             server.start();
             logger().info("{} is now running and will keep this process alive.", name());
@@ -232,9 +272,9 @@ public class TypeDBServer implements AutoCloseable {
             logger().info("");
         } catch (IOException e) {
             if (e.getCause() != null && e.getCause() instanceof BindException) {
-                throw TypeDBException.of(PORT_IN_USE, address());
+                throw TypeDBCheckedException.of(PORT_IN_USE, address());
             } else {
-                throw new RuntimeException(e);
+                throw TypeDBCheckedException.of(JAVA_ERROR, e);
             }
         }
     }
@@ -273,7 +313,7 @@ public class TypeDBServer implements AutoCloseable {
                 logger().info("{} server has been closed.", name());
             } catch (Throwable e) {
                 logger().error(FAILED_AT_STOPPING.message(), e);
-                throw TypeDBCheckedException.of(e);
+                throw TypeDBCheckedException.of(UNKNOWN_ERROR, e);
             }
         }
     }
@@ -310,7 +350,12 @@ public class TypeDBServer implements AutoCloseable {
     private static void runServer(CoreSubcommand.Server subcmdServer) {
         Instant start = Instant.now();
         TypeDBServer server = TypeDBServer.create(subcmdServer.config(), subcmdServer.isDebug());
-        server.start();
+        try {
+            server.start();
+        } catch (TypeDBCheckedException e) {
+            server.logger().error(e.getMessage());
+            System.exit(1);
+        }
         Instant end = Instant.now();
         server.logger().info("version: {}", Version.VERSION);
         server.logger().info("listening to address: {}:{}", server.address().getHostString(), server.address().getPort());

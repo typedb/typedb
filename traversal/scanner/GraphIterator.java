@@ -50,7 +50,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.intersect;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
@@ -113,7 +113,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     /**
      * We make explicit hidden dependencies caused by filtering roles through scopes. A vertex that must backtrack
      * to another vertex in order to find permutations of role instances is annotated with an implicit dependency.
-     *
+     * <p>
      * Specifically, this occurs when traversing over two sibling edges that can take on an overlapping set of roles.
      * In this case, the two destinations vertices have an implicit dependency.
      * It can also happen between a pair of vertices that can take on overlapping Role instances.
@@ -183,8 +183,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             return iteratorState == IteratorState.FETCHED;
         } catch (Throwable e) {
             // note: catching runtime exception until we can gracefully interrupt running queries on tx close
-            if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent() &&
-                    ((TypeDBException) e).code().get().equals(RESOURCE_CLOSED.code())) {
+            if (e instanceof TypeDBException && ((TypeDBException) e).errorMessage().code().equals(RESOURCE_CLOSED.code())) {
                 LOG.debug("Transaction was closed during graph iteration");
             } else {
                 LOG.error("Parameters: " + params.toString());
@@ -233,8 +232,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         if (vertexTraverser.findNextVertex()) {
             success(vertexTraverser);
             assert direction == Direction.TRAVERSE;
-        }
-        else {
+        } else {
             failed(vertexTraverser);
             direction = Direction.REVISIT_ALL;
         }
@@ -402,13 +400,13 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromEdges() {
             if (procedureVertex.isValue()) {
-                Map<ProcedureEdge<?,?>, Value<?>> arguments = new HashMap<>();
+                Map<ProcedureEdge<?, ?>, Value<?>> arguments = new HashMap<>();
                 procedureVertex.ins().forEach(edge -> {
                     Vertex<?, ?> fromVertex = vertexTraversers.get(edge.from()).vertex();
                     Value<?> value = fromVertex.isValue() ? fromVertex.asValue() : fromVertex.asThing().asAttribute();
                     arguments.put(edge, value);
                 });
-                Vertex<?,?> result = procedureVertex.asValue().evaluateAndFilter(arguments, params).orElse(null);
+                Vertex<?, ?> result = procedureVertex.asValue().evaluateAndFilter(arguments, params).orElse(null);
                 return result != null ? iterateSorted(ASC, result) : iterateSorted(ASC);
             } else {
                 List<Forwardable<Vertex<?, ?>, Order.Asc>> iterators = new ArrayList<>();

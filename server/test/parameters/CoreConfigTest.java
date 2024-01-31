@@ -31,11 +31,11 @@ import java.util.HashSet;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIGS_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_FILE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_KEY_MISSING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_LOG_OUTPUT_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_VALUE_UNEXPECTED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_KEY_MISSING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIGS_UNRECOGNISED;
 import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -95,8 +95,7 @@ public class CoreConfigTest {
             CoreConfigFactory.config(configMissing, new HashSet<>(), new CoreConfigParser());
             fail();
         } catch (TypeDBException e) {
-            assert e.code().isPresent();
-            assertEquals(CONFIG_FILE_NOT_FOUND.code(), e.code().get());
+            assertEquals(CONFIG_FILE_NOT_FOUND.code(), e.errorMessage().code());
         }
     }
 
@@ -107,8 +106,7 @@ public class CoreConfigTest {
             CoreConfigFactory.config(configMissingLog, new HashSet<>(), new CoreConfigParser());
             fail();
         } catch (TypeDBException e) {
-            assert e.code().isPresent();
-            assertEquals(CONFIG_KEY_MISSING.code(), e.code().get());
+            assertEquals(CONFIG_KEY_MISSING.code(), e.errorMessage().code());
             assertEquals(CONFIG_KEY_MISSING.message("storage.data"), e.getMessage());
         }
     }
@@ -120,8 +118,7 @@ public class CoreConfigTest {
             CoreConfigFactory.config(configMissingLogDebugger, new HashSet<>(), new CoreConfigParser());
             fail();
         } catch (TypeDBException e) {
-            assert e.code().isPresent();
-            assertEquals(CONFIG_KEY_MISSING.code(), e.code().get());
+            assertEquals(CONFIG_KEY_MISSING.code(), e.errorMessage().code());
             assertEquals(CONFIG_KEY_MISSING.message("log.debugger"), e.getMessage());
         }
     }
@@ -133,8 +130,7 @@ public class CoreConfigTest {
             CoreConfigFactory.config(configInvalidOutput, new HashSet<>(), new CoreConfigParser());
             fail();
         } catch (TypeDBException e) {
-            assert e.code().isPresent();
-            assertEquals(CONFIG_LOG_OUTPUT_UNRECOGNISED.code(), e.code().get());
+            assertEquals(CONFIG_LOG_OUTPUT_UNRECOGNISED.code(), e.errorMessage().code());
         }
     }
 
@@ -145,8 +141,7 @@ public class CoreConfigTest {
             CoreConfigFactory.config(configInvalidPathType, new HashSet<>(), new CoreConfigParser());
             fail();
         } catch (TypeDBException e) {
-            assert e.code().isPresent();
-            assertEquals(CONFIG_VALUE_UNEXPECTED.code(), e.code().get());
+            assertEquals(CONFIG_VALUE_UNEXPECTED.code(), e.errorMessage().code());
             assertEquals(CONFIG_VALUE_UNEXPECTED.message("storage.data", "123456[int]", YAMLParser.Value.Primitive.PATH.description()), e.getMessage());
         }
     }
@@ -158,8 +153,7 @@ public class CoreConfigTest {
             CoreConfigFactory.config(configUnrecognisedOption, new HashSet<>(), new CoreConfigParser());
             fail();
         } catch (TypeDBException e) {
-            assert e.code().isPresent();
-            assertEquals(CONFIGS_UNRECOGNISED.code(), e.code().get());
+            assertEquals(CONFIGS_UNRECOGNISED.code(), e.errorMessage().code());
             assertEquals(CONFIGS_UNRECOGNISED.message(list("log.custom-logger-invalid")), e.getMessage());
         }
     }

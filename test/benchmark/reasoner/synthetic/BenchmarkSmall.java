@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.benchmark.synthetic;
 
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
@@ -36,6 +37,7 @@ import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLGet;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -53,6 +55,11 @@ public class BenchmarkSmall {
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
 
     private static CoreDatabaseManager databaseMgr;
+
+    @BeforeClass
+    public static void beforeClass() {
+        Diagnostics.initialiseNoop();
+    }
 
     @Before
     public void setUp() throws IOException {

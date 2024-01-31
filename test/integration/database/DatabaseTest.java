@@ -18,8 +18,10 @@
 
 package com.vaticle.typedb.core.database;
 
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.encoding.Encoding;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -34,6 +36,11 @@ import static com.vaticle.typedb.core.common.test.Util.assertThrowsWithMessage;
 public class DatabaseTest {
 
     private static final Factory factory = new CoreFactory();
+
+    @BeforeClass
+    public static void beforeClass() {
+        Diagnostics.initialiseNoop();
+    }
 
     @Test
     public void databaseCreationSucceeds() throws IOException {

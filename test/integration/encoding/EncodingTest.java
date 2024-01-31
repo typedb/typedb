@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.encoding;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -74,13 +75,15 @@ public class EncodingTest {
     private static final String database = "encoding-test";
 
     private static final Factory factory = new CoreFactory();
-    private static final CoreDatabaseManager dbMgr = factory.databaseManager(options);
+    private static CoreDatabaseManager dbMgr;
 
     private CoreSession session;
 
     @BeforeClass
     public static void setUp() throws IOException {
+        Diagnostics.initialiseNoop();
         Util.resetDirectory(dataDir);
+        dbMgr = factory.databaseManager(options);
         dbMgr.create(database);
         TypeDB.Session session = dbMgr.session(database, Arguments.Session.Type.SCHEMA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
@@ -145,7 +148,7 @@ public class EncodingTest {
         try {
             return ByteArray.join(ATTRIBUTE.prefix().bytes(), type.iid().bytes(), Encoding.ValueType.STRING.bytes(), encodeStringAsSorted(attributeValue, STRING_ENCODING));
         } catch (TypeDBCheckedException e) {
-            throw TypeDBException.of(e);
+            throw e.toUnchecked();
         }
     }
 

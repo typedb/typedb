@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.test.integration;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -29,6 +30,7 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -58,6 +60,11 @@ public class StringAttributeTest {
     private static final int UNICODE_CODE_POINT_END = 0x10FFFF;
     // since RFC 3629 (November 2003), this range (inclusive) is not valid unicode
     private static final Pair<Integer, Integer> UNICODE_INVALID_RANGE = pair(0xD800, 0xDFFF);
+
+    @BeforeClass
+    public static void beforeClass() {
+        Diagnostics.initialiseNoop();
+    }
 
     @Test
     public void all_unicode_characters_are_valid() throws IOException {
@@ -144,8 +151,7 @@ public class StringAttributeTest {
                     try {
                         attrType.put(excludedString);
                     } catch (TypeDBException e) {
-                        assertTrue(e.code().isPresent());
-                        assertEquals(UNENCODABLE_STRING.code(), e.code().get());
+                        assertEquals(UNENCODABLE_STRING.code(), e.errorMessage().code());
                     }
                 }
             }

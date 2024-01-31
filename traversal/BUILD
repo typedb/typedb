@@ -40,7 +40,7 @@ native_java_libraries(
     ],
     deps = [
         # Vaticle Dependencies
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
         "@vaticle_typeql//java/common:common",
         "@vaticle_typeql//java/pattern:pattern",
         "@vaticle_typeql//java/query:query",

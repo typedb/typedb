@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.logic;
 
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
@@ -71,6 +72,7 @@ public class TypeInferenceTest {
 
     @BeforeClass
     public static void open() throws IOException {
+        Diagnostics.initialiseNoop();
         Util.resetDirectory(dataDir);
         databaseMgr = CoreDatabaseManager.open(options);
     }

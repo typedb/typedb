@@ -534,7 +534,7 @@ public abstract class ProcedureVertex<
                 try {
                     iid = new VertexIID.Thing.Attribute.Double(type.iid(), convertToDouble(sourceEncoding, sourceValue));
                 } catch (TypeDBCheckedException e) {
-                    throw TypeDBException.of(e);
+                    throw e.toUnchecked();
                 }
                 return ThingVertexImpl.Target.of(graphMgr.data(), iid);
             } else if (type.valueType().equals(STRING)) throw TypeDBException.of(UNSUPPORTED_OPERATION);
@@ -704,7 +704,7 @@ public abstract class ProcedureVertex<
             } catch (RuntimeException e) {
                 throw evaluationError(args, e);
             } catch (TypeDBCheckedException e) {
-                throw TypeDBException.of(e);
+                throw e.toUnchecked();
             }
 
             if (iterate(props().predicates()).allMatch(predicate -> checkPredicate(predicate, vertex, parameters.getValues(id().asVariable(), predicate))) &&

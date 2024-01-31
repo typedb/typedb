@@ -18,39 +18,31 @@
 
 package com.vaticle.typedb.core.common.exception;
 
-import javax.annotation.Nullable;
 import java.util.Optional;
 
 public class TypeDBCheckedException extends Exception {
 
-    @Nullable
     private final ErrorMessage errorMessage;
+    private final Object[] parameters;
 
-    private TypeDBCheckedException(String error) {
-        super(error);
-        errorMessage = null;
-    }
 
     private TypeDBCheckedException(ErrorMessage error, Object... parameters) {
         super(error.message(parameters));
         assert !getMessage().contains("%s");
         this.errorMessage = error;
-    }
-
-    private TypeDBCheckedException(Throwable e) {
-        super(e);
-        errorMessage = null;
-    }
-
-    public static TypeDBCheckedException of(Throwable e) {
-        return new TypeDBCheckedException(e);
+        this.parameters = parameters;
     }
 
     public static TypeDBCheckedException of(ErrorMessage errorMessage, Object... parameters) {
         return new TypeDBCheckedException(errorMessage, parameters);
     }
 
-    public Optional<String> code() {
-        return Optional.ofNullable(errorMessage).map(com.vaticle.typedb.common.exception.ErrorMessage::code);
+    public Optional<ErrorMessage> errorMessage() {
+        return Optional.ofNullable(errorMessage);
     }
+
+    public TypeDBException toUnchecked() {
+        return TypeDBException.of(errorMessage, parameters);
+    }
+
 }

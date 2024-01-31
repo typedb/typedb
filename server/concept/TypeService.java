@@ -34,6 +34,7 @@ import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.TransactionProto.Transaction;
 import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
+import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.EnumMap;
 import java.util.List;
@@ -41,7 +42,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;

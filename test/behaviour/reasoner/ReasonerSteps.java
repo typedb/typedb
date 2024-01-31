@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.test.behaviour.reasoner;
 
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -102,6 +103,7 @@ public class ReasonerSteps {
     @Given("typedb starts")
     public void typedb_starts() throws IOException {
         assertNull(databaseMgr);
+        Diagnostics.initialiseNoop();
         resetDirectory();
         System.out.println("Connecting to TypeDB ...");
         databaseMgr = CoreDatabaseManager.open(options);

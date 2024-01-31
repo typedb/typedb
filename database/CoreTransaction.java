@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.STORAGE_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_COMMIT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
@@ -240,7 +241,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     schemaStorage.commit();
                     session.database().cacheInvalidate();
                 } catch (RocksDBException e) {
-                    throw TypeDBException.of(e);
+                    throw TypeDBException.of(STORAGE_ERROR, e);
                 } finally {
                     closeResources();
                     notifyClosed();
@@ -257,7 +258,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                 graphMgr.clear();
                 schemaStorage.rollback();
             } catch (RocksDBException e) {
-                throw TypeDBException.of(e);
+                throw TypeDBException.of(STORAGE_ERROR, e);
             }
         }
 
@@ -344,7 +345,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     throw e;
                 } catch (RocksDBException e) {
                     delete();
-                    throw TypeDBException.of(e);
+                    throw TypeDBException.of(STORAGE_ERROR, e);
                 } finally {
                     closeResources();
                     notifyClosed();
@@ -360,7 +361,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                 graphMgr.data().clear();
                 dataStorage.rollback();
             } catch (RocksDBException e) {
-                throw TypeDBException.of(e);
+                throw TypeDBException.of(STORAGE_ERROR, e);
             }
         }
 

@@ -26,7 +26,10 @@ host_compatible_java_test(
     data = [
         "//test/benchmark/reasoner/iam/resources:common",
     ],
-    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:common"],
+    native_libraries_deps = [
+        "//test/benchmark/reasoner/iam/common:common",
+        "//common:common",
+    ],
 )
 
 host_compatible_java_test(
@@ -38,7 +41,10 @@ host_compatible_java_test(
         "//test/benchmark/reasoner/iam/resources:common",
         "complex-rule-graph-test.tql"
     ],
-    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:common"],
+    native_libraries_deps = [
+        "//test/benchmark/reasoner/iam/common:common",
+        "//common:common",
+    ],
 )
 
 host_compatible_java_test(
@@ -49,7 +55,10 @@ host_compatible_java_test(
         "//test/benchmark/reasoner/iam/resources:common",
         "conjunction-structure-test.tql",
     ],
-    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:common"],
+    native_libraries_deps = [
+        "//test/benchmark/reasoner/iam/common:common",
+        "//common:common",
+    ],
 )
 
 host_compatible_java_test(
@@ -60,7 +69,10 @@ host_compatible_java_test(
         "//test/benchmark/reasoner/iam/resources:common",
         "language-features-test.tql",
     ],
-    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:common"],
+    native_libraries_deps = [
+        "//test/benchmark/reasoner/iam/common:common",
+        "//common:common",
+    ],
 )
 
 host_compatible_java_test(
@@ -70,7 +82,10 @@ host_compatible_java_test(
     data = [
         "//test/benchmark/reasoner/iam/resources:common",
     ],
-    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:common"],
+    native_libraries_deps = [
+        "//test/benchmark/reasoner/iam/common:common",
+        "//common:common",
+    ],
 )
 
 checkstyle_test(

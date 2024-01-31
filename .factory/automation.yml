@@ -20,7 +20,6 @@ config:
   dependencies:
     dependencies: [build]
     typeql: [build, release]
-    typedb-common: [build, release]
     typedb-protocol: [build, release]
     typedb-behaviour: [build]
 
@@ -157,8 +156,8 @@ build:
         branch: [master, development]
       dependencies: [test-assembly-linux-targz]
       command: |
-        export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
-        export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+        export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+        export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-arm64-targz -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-x86_64-targz -- snapshot
@@ -177,8 +176,8 @@ build:
         branch: [master, development]
       dependencies: [test-assembly-linux-targz]
       command: |
-        export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
-        export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
+        export DEPLOY_APT_USERNAME=$REPO_TYPEDB_USERNAME
+        export DEPLOY_APT_PASSWORD=$REPO_TYPEDB_PASSWORD
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel run --define version=$(git rev-parse HEAD) //:deploy-apt-x86_64 -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //:deploy-apt-arm64 -- snapshot
@@ -199,6 +198,44 @@ build:
       command: |
         export TEST_DEPLOYMENT_APT_COMMIT=$FACTORY_COMMIT
         bazel test //test/deployment:apt --action_env=TEST_DEPLOYMENT_APT_COMMIT --test_output=streamed
+
+    deploy-runner-maven-snapshot:
+      image: vaticle-ubuntu-22.04
+      filter:
+        owner: vaticle
+        branch: [master, development]
+      dependencies: [build]
+      command: |
+        export DEPLOY_MAVEN_USERNAME=$REPO_TYPEDB_USERNAME
+        export DEPLOY_MAVEN_PASSWORD=$REPO_TYPEDB_PASSWORD
+        bazel run --define version=$(git rev-parse HEAD) //tool/runner:deploy-maven -- snapshot
+
+    sync-dependencies:
+      image: vaticle-ubuntu-22.04
+      filter:
+        owner: vaticle
+        branch: [master, development]
+      dependencies:
+        - build
+        - build-dependency
+        - test-unit
+        - test-integration
+        - test-behaviour-connection
+        - test-behaviour-concept
+        - test-behaviour-query-read
+        - test-behaviour-query-write
+        - test-behaviour-query-definable
+        - test-behaviour-reasoner
+        - test-benchmark-reasoner
+        - test-assembly-linux-targz
+        - test-assembly-docker
+        - deploy-artifact-snapshot
+        - deploy-apt-snapshot
+        - test-deployment-apt-x86_64
+      command: |
+          export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN
+          bazel run @vaticle_dependencies//tool/sync:dependencies -- --source ${FACTORY_REPO}@${FACTORY_COMMIT}
+
 release:
   filter:
     owner: vaticle
@@ -238,8 +275,8 @@ release:
         branch: master
       dependencies: [deploy-github]
       command: |
-        export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
-        export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
+        export DEPLOY_APT_USERNAME=$REPO_TYPEDB_USERNAME
+        export DEPLOY_APT_PASSWORD=$REPO_TYPEDB_PASSWORD
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel run --define version=$(cat VERSION) //:deploy-apt-x86_64 -- release
         bazel run --define version=$(cat VERSION) //:deploy-apt-arm64 -- release
@@ -261,8 +298,8 @@ release:
         branch: master
       dependencies: [deploy-github]
       command: |
-        export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
-        export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+        export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
+        export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel run --define version=$(cat VERSION) //server:deploy-linux-arm64-targz -- release
         bazel run --define version=$(cat VERSION) //server:deploy-linux-x86_64-targz -- release
@@ -274,3 +311,27 @@ release:
         bazel run --define version=$(cat VERSION) //:deploy-mac-arm64-zip -- release
         bazel run --define version=$(cat VERSION) //:deploy-mac-x86_64-zip -- release
         bazel run --define version=$(cat VERSION) //:deploy-windows-x86_64-zip -- release
+    deploy-runner-maven-release:
+      filter:
+        owner: vaticle
+        branch: master
+      image: vaticle-ubuntu-22.04
+      dependencies: [build]
+      command: |
+        export DEPLOY_MAVEN_USERNAME=$REPO_TYPEDB_USERNAME
+        export DEPLOY_MAVEN_PASSWORD=$REPO_TYPEDB_PASSWORD
+        bazel run --define version=$(cat VERSION) //tool/runner:deploy-maven -- release
+    sync-dependencies-release:
+      image: vaticle-ubuntu-22.04
+      filter:
+        owner: vaticle
+        branch: [master, development]
+      dependencies:
+        - deploy-github
+        - deploy-brew
+        - deploy-apt-release
+        - deploy-docker
+        - deploy-artifact-release
+      command: |
+          export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN
+          bazel run @vaticle_dependencies//tool/sync:dependencies -- --source ${FACTORY_REPO}@$(cat VERSION)

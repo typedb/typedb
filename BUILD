@@ -46,7 +46,7 @@ native_java_libraries(
     ],
     deps = [
         # Vaticle Dependencies
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb:{pom_version}"],
     visibility = ["//visibility:public"],
@@ -78,7 +78,7 @@ assemble_targz(
     targets = [
         ":console-artifact-jars-linux-arm64",
         "//server:server-deps-linux-arm64",
-        "@vaticle_typedb_common//binary:assemble-bash-targz"
+        "//binary:assemble-bash-targz"
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -97,7 +97,7 @@ assemble_targz(
     targets = [
         ":console-artifact-jars-linux-x86_64",
         "//server:server-deps-linux-x86_64",
-        "@vaticle_typedb_common//binary:assemble-bash-targz"
+        "//binary:assemble-bash-targz"
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -116,7 +116,7 @@ assemble_zip(
     targets = [
         "//server:server-deps-mac-arm64",
         ":console-artifact-jars-mac-arm64",
-        "@vaticle_typedb_common//binary:assemble-bash-targz",
+        "//binary:assemble-bash-targz",
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -135,7 +135,7 @@ assemble_zip(
     targets = [
         "//server:server-deps-mac-x86_64",
         ":console-artifact-jars-mac-x86_64",
-        "@vaticle_typedb_common//binary:assemble-bash-targz",
+        "//binary:assemble-bash-targz",
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -154,7 +154,7 @@ assemble_zip(
     targets = [
         "//server:server-deps-windows-x86_64",
         ":console-artifact-jars-windows-x86_64",
-        "@vaticle_typedb_common//binary:assemble-bat-targz",
+        "//binary:assemble-bat-targz",
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -165,46 +165,46 @@ assemble_zip(
 deploy_artifact(
     name = "deploy-linux-arm64-targz",
     target = ":assemble-linux-arm64-targz",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb-all-linux-arm64",
     artifact_name = "typedb-all-linux-arm64-{version}.tar.gz",
-    release = deployment['artifact.release'],
-    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact']['release']['upload'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
 )
 
 deploy_artifact(
     name = "deploy-linux-x86_64-targz",
     target = ":assemble-linux-x86_64-targz",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb-all-linux-x86_64",
     artifact_name = "typedb-all-linux-x86_64-{version}.tar.gz",
-    release = deployment['artifact.release'],
-    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact']['release']['upload'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
 )
 
 deploy_artifact(
     name = "deploy-mac-arm64-zip",
     target = ":assemble-mac-arm64-zip",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb-all-mac-arm64",
     artifact_name = "typedb-all-mac-arm64-{version}.zip",
-    release = deployment['artifact.release'],
-    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact']['release']['upload'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
 )
 
 deploy_artifact(
     name = "deploy-mac-x86_64-zip",
     target = ":assemble-mac-x86_64-zip",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb-all-mac-x86_64",
     artifact_name = "typedb-all-mac-x86_64-{version}.zip",
-    release = deployment['artifact.release'],
-    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact']['release']['upload'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
 )
 
 deploy_artifact(
     name = "deploy-windows-x86_64-zip",
     target = ":assemble-windows-x86_64-zip",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb-all-windows-x86_64",
     artifact_name = "typedb-all-windows-x86_64-{version}.zip",
-    release = deployment['artifact.release'],
-    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact']['release']['upload'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
 )
 
 assemble_versioned(
@@ -251,8 +251,8 @@ deploy_github(
 
 deploy_brew(
     name = "deploy-brew",
-    snapshot = deployment['brew.snapshot'],
-    release = deployment['brew.release'],
+    snapshot = deployment['brew']['snapshot'],
+    release = deployment['brew']['release'],
     formula = "//config/brew:typedb.rb",
     file_substitutions = {
         "//:checksum-mac-arm64": "{sha256-arm64}",
@@ -280,6 +280,7 @@ targz_edit(
     name = "console-artifact-native-x86_64.tar.gz",
     src = "@vaticle_typedb_console_artifact_linux-x86_64//file",
     strip_components = 1,
+    exclude_globs = ["typedb"],
 )
 
 assemble_apt(
@@ -292,8 +293,8 @@ assemble_apt(
     archives = [
         "//server:server-deps-linux-x86_64",
         ":console-artifact-native-x86_64.tar.gz",
-        "@vaticle_typedb_common//binary:assemble-bash-targz",
-        "@vaticle_typedb_common//binary:assemble-apt-targz",
+        "//binary:assemble-bash-targz",
+        "//binary:assemble-apt-targz",
     ],
     installation_dir = apt_installation_dir,
     files = assemble_files,
@@ -306,14 +307,15 @@ assemble_apt(
 deploy_apt(
     name = "deploy-apt-x86_64",
     target = ":assemble-linux-x86_64-apt",
-    snapshot = deployment['apt.snapshot'],
-    release = deployment['apt.release'],
+    snapshot = deployment['apt']['snapshot']['upload'],
+    release = deployment['apt']['release']['upload'],
 )
 
 targz_edit(
     name = "console-artifact-native-arm64.tar.gz",
     src = "@vaticle_typedb_console_artifact_linux-arm64//file",
     strip_components = 1,
+    exclude_globs = ["typedb"],
 )
 
 assemble_apt(
@@ -326,8 +328,8 @@ assemble_apt(
     archives = [
         "//server:server-deps-linux-arm64",
         ":console-artifact-native-arm64.tar.gz",
-        "@vaticle_typedb_common//binary:assemble-bash-targz",
-        "@vaticle_typedb_common//binary:assemble-apt-targz",
+        "//binary:assemble-bash-targz",
+        "//binary:assemble-apt-targz",
     ],
     installation_dir = apt_installation_dir,
     files = assemble_files,
@@ -340,8 +342,8 @@ assemble_apt(
 deploy_apt(
     name = "deploy-apt-arm64",
     target = ":assemble-linux-arm64-apt",
-    snapshot = deployment['apt.snapshot'],
-    release = deployment['apt.release'],
+    snapshot = deployment['apt']['snapshot']['upload'],
+    release = deployment['apt']['release']['upload'],
 )
 
 release_validate_deps(
@@ -429,5 +431,6 @@ filegroup(
         "@vaticle_dependencies//tool/release/notes:create",
         "@vaticle_dependencies//tool/checkstyle:test-coverage",
         "@vaticle_dependencies//tool/unuseddeps:unused-deps",
+        "@vaticle_dependencies//tool/sync:dependencies",
     ],
 )

@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.test.behaviour.connection;
 
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.database.CoreDatabase;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
@@ -104,6 +105,7 @@ public class ConnectionSteps {
     public void typedb_starts() throws IOException {
         assertNull(databaseMgr);
         resetDirectory();
+        Diagnostics.initialiseNoop();
         System.out.println("Connecting to TypeDB ...");
         databaseMgr = CoreDatabaseManager.open(options);
     }

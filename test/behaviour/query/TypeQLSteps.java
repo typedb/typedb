@@ -140,6 +140,11 @@ public class TypeQLSteps {
         assertThrows(() -> typeql_delete(deleteQueryStatements));
     }
 
+    @Given("typeql delete; throws exception containing {string}")
+    public void typeql_delete_throws_exception(String exception, String deleteQueryStatements) {
+        assertThrowsWithMessage(() -> typeql_delete(deleteQueryStatements), exception);
+    }
+
     @Given("typeql update")
     public void typeql_update(String updateQueryStatements) {
         TypeQLUpdate typeQLQuery = TypeQL.parseQuery(String.join("\n", updateQueryStatements)).asUpdate();

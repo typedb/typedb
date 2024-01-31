@@ -18,19 +18,22 @@
 
 package com.vaticle.typedb.core.test.assembly;
 
-import com.vaticle.typedb.common.test.console.TypeDBConsoleRunner;
-import com.vaticle.typedb.common.test.core.TypeDBCoreRunner;
+import com.vaticle.typedb.console.tool.runner.TypeDBConsoleRunner;
+import com.vaticle.typedb.core.tool.runner.TypeDBCoreRunner;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeoutException;
 
+import static com.vaticle.typedb.common.collection.Collections.map;
+import static com.vaticle.typedb.common.collection.Collections.pair;
+
 public class AssemblyTest {
 
     @Test
     public void bootup() throws InterruptedException, TimeoutException, IOException {
-        TypeDBCoreRunner server = new TypeDBCoreRunner();
+        TypeDBCoreRunner server = new TypeDBCoreRunner(map(pair("--diagnostics.reporting.enable", "false")));
         try {
             server.start();
         } finally {

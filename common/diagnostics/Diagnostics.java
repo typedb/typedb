@@ -18,14 +18,13 @@
 
 package com.vaticle.typedb.core.common.diagnostics;
 
-import com.vaticle.typedb.core.common.exception.ErrorMessage;
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import io.sentry.ITransaction;
 import io.sentry.NoOpTransaction;
 import io.sentry.Sentry;
-import io.sentry.SpanStatus;
 import io.sentry.TransactionContext;
 import io.sentry.protocol.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.ScheduledFuture;
@@ -39,10 +38,29 @@ import static java.util.concurrent.TimeUnit.HOURS;
 
 public class Diagnostics {
 
+    private static final Logger LOG = LoggerFactory.getLogger(Diagnostics.class);
+
     public static long INITIAL_DELAY_MILLIS = HOURS.toMillis(1);
 
-    public static void initialise(String serverID, String distributionName, String version, String diagnosticsURI) {
+    private static Diagnostics diagnostics = null;
+
+    private final ErrorReporter errorReporter;
+
+    /*
+     * Private singleton constructor
+     */
+    private Diagnostics(ErrorReporter errorReporter) {
+        this.errorReporter = errorReporter;
+    }
+
+    public static synchronized void initialise(boolean enable, String serverID, String distributionName, String version, String diagnosticsURI,
+                                               ErrorReporter errorReporter) {
+        if (diagnostics != null) {
+            LOG.debug("Skipping re-initialising diagnostics");
+            return;
+        }
         Sentry.init(options -> {
+            options.setEnabled(enable);
             options.setDsn(diagnosticsURI);
             options.setEnableTracing(true);
             options.setSendDefaultPii(false);
@@ -51,31 +69,35 @@ public class Diagnostics {
         User user = new User();
         user.setUsername(serverID);
         Sentry.setUser(user);
+        diagnostics = new Diagnostics(errorReporter);
+    }
+
+    public static synchronized void initialiseNoop() {
+        Sentry.init(options -> options.setEnabled(false));
+        diagnostics = new Diagnostics(new ErrorReporter.NoopReporter());
     }
 
     private static String releaseName(String distributionName, String version) {
         return distributionName + "@" + version;
     }
 
-    public static void submitError(Throwable error) {
-        if (error instanceof TypeDBException && ((TypeDBException) error).code().isPresent() &&
-                !((TypeDBException) error).code().get().startsWith(ErrorMessage.Internal.codePrefix)) {
-            ITransaction txn = Sentry.startTransaction("user_error", "user_error");
-            txn.setData("error_code", ((TypeDBException) error).code().get());
-            txn.finish(SpanStatus.OK);
-        } else {
-            Sentry.captureException(error);
-        }
+    public static Diagnostics get() {
+        assert diagnostics != null;
+        return diagnostics;
     }
 
-    public static ScheduledDiagnosticProvider scheduledProvider(long initialDelayMillis, long delayMillis, String name,
-                                                                String operation, @Nullable String description) {
+    public void submitError(Throwable error) {
+        this.errorReporter.reportError(error);
+    }
+
+    public ScheduledDiagnosticProvider scheduledProvider(long initialDelayMillis, long delayMillis, String name,
+                                                         String operation, @Nullable String description) {
         return new ScheduledDiagnosticProvider(initialDelayMillis, delayMillis, transactionContext(name, operation, description));
     }
 
-    public static ScheduledFuture<?> scheduledRunner(long initialDelayMillis, long delayMillis, String name, String operation,
-                                                     @Nullable String description, Consumer<TransactionContext> run,
-                                                     ScheduledThreadPoolExecutor executor) {
+    public ScheduledFuture<?> scheduledRunner(long initialDelayMillis, long delayMillis, String name, String operation,
+                                              @Nullable String description, Consumer<TransactionContext> run,
+                                              ScheduledThreadPoolExecutor executor) {
         TransactionContext transactionContext = transactionContext(name, operation, description);
         return executor.scheduleWithFixedDelay(
                 () -> run.accept(transactionContext),

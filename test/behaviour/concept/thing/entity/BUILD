@@ -29,7 +29,7 @@ host_compatible_java_library(
         "//test/behaviour/connection:steps",
 
         # Internal Repository Dependencies
-        # "@vaticle_typedb_common//:common",
+        # "@vaticle_typeql//common/java:common",
 
         # External Maven Dependencies
         "@maven//:junit_junit",

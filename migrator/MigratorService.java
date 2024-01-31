@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.migrator.database.DatabaseImporter;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import io.sentry.Sentry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +57,7 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
             responseObserver.onCompleted();
         } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.submitError(e);
+            Diagnostics.get().submitError(e);
             responseObserver.onError(exception(e));
         }
     }
@@ -80,7 +79,7 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
             responseObserver.onCompleted();
         } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.submitError(e);
+            Diagnostics.get().submitError(e);
             responseObserver.onError(exception(e));
         } finally {
             if (importer != null) importer.close();

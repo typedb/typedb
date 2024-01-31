@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.test.assembly;
 
-import com.vaticle.typedb.common.test.console.TypeDBConsoleRunner;
+import com.vaticle.typedb.console.tool.runner.TypeDBConsoleRunner;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +51,8 @@ public class DockerTest {
         StartedProcess typeDBProcess = executor.command(
                 "docker", "run", "--name", "typedb",
                 "--rm", "-t", "-p", String.format("%d:%d", typeDBPort, typeDBPort),
-                "bazel:assemble-docker"
+                "bazel:assemble-docker",
+                "/opt/typedb-all-linux-x86_64/typedb", "server", "--diagnostics.reporting.enable=false"
         ).start();
         TypeDBConsoleRunner consoleRunner = new TypeDBConsoleRunner();
         testIsReady(consoleRunner);

@@ -25,7 +25,7 @@ native_java_libraries(
     srcs = glob(["*/*.java", "*/*/*.java"], exclude=["test/*", "*Test.java", "*/*Test.java"]),
     deps = [
         # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
         "@vaticle_typeql//java/query:query",
 
         # External Maven Dependencies
@@ -52,7 +52,7 @@ host_compatible_java_test(
     test_class = "com.vaticle.typedb.core.common.iterator.PermutationIteratorTest",
     deps = [
         # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
     ],
     native_libraries_deps = [
         "//common:common",

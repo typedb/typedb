@@ -29,13 +29,7 @@ import javax.annotation.Nullable;
  */
 public class TypeDBException extends RuntimeException {
 
-    @Nullable
-    public final ErrorMessage error;
-
-    private TypeDBException(String error) {
-        super(error);
-        this.error = null;
-    }
+    private final ErrorMessage error;
 
     private TypeDBException(ErrorMessage error, Throwable cause) {
         super(error.message(cause), cause);
@@ -49,15 +43,6 @@ public class TypeDBException extends RuntimeException {
         this.error = error;
     }
 
-    private TypeDBException(Throwable e) {
-        super(e);
-        error = null;
-    }
-
-    public static TypeDBException of(Throwable e) {
-        return new TypeDBException(e);
-    }
-
     public static TypeDBException of(ErrorMessage errorMessage, Throwable cause) {
         return new TypeDBException(errorMessage, cause);
     }
@@ -66,16 +51,8 @@ public class TypeDBException extends RuntimeException {
         return new TypeDBException(errorMessage, parameters);
     }
 
-    public Optional<String> code() {
-        return Optional.ofNullable(error).map(ErrorMessage::code);
-    }
-
-    public static TypeDBException of(List<TypeDBException> exceptions) {
-        StringBuilder messages = new StringBuilder();
-        for (TypeDBException exception : exceptions) {
-            messages.append(exception.getMessage()).append("\n");
-        }
-        return new TypeDBException(messages.toString());
+    public ErrorMessage errorMessage() {
+        return error;
     }
 
     @Override
@@ -83,7 +60,7 @@ public class TypeDBException extends RuntimeException {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TypeDBException that = (TypeDBException) o;
-        return Objects.equals(error, that.error);
+        return error.equals(that.error);
     }
 
     @Override

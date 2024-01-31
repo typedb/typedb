@@ -33,7 +33,7 @@ native_java_libraries(
         "//reasoner:reasoner",
     ],
     deps = [
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/common",
         "@vaticle_typeql//java/query",

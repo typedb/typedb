@@ -26,7 +26,10 @@ host_compatible_java_test(
         "//test/benchmark/reasoner/iam/resources:common",
         "basic_test.tql",
     ],
-    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:common"],
+    native_libraries_deps = [
+        "//test/benchmark/reasoner/iam/common:common",
+        "//common:common",
+    ],
 )
 
 checkstyle_test(

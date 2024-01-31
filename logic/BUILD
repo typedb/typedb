@@ -57,7 +57,7 @@ native_java_libraries(
     ],
     deps = [
         # Internal Repository Dependencies
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
         "@vaticle_typeql//java/common",
         "@vaticle_typeql//java/pattern",
 
@@ -82,7 +82,7 @@ host_compatible_java_test(
         # Internal dependencies
 
         # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
         "@vaticle_typeql//java:typeql-lang",
     ],
 )
@@ -102,7 +102,7 @@ host_compatible_java_test(
     deps = [
 
         # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
         "@vaticle_typeql//java:typeql-lang",
     ],
 )
@@ -123,7 +123,7 @@ host_compatible_java_test(
         # Internal dependencies
 
         # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
         "@vaticle_typeql//java/common",
         "@vaticle_typeql//java:typeql-lang",
     ],

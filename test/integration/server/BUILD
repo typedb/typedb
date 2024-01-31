@@ -35,7 +35,7 @@ host_compatible_java_test(
     test_class = "com.vaticle.typedb.core.server.ParametersTest",
     deps = [
         "//test/integration/util:util",
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
     ],
 )
 

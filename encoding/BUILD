@@ -32,7 +32,7 @@ native_java_libraries(
     srcs = glob(["*.java", "*/*.java"]),
     deps = [
         # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
         "@vaticle_typeql//java/common:common",
 
         # External Maven Dependencies

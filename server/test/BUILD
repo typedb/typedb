@@ -38,7 +38,7 @@ host_compatible_java_test(
         # Internal dependencies
 
         # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
     ],
     data = [
         "//server:config",

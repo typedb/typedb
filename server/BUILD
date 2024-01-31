@@ -66,7 +66,7 @@ native_java_libraries(
         ":version",
 
         # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
         "@vaticle_typeql//java/pattern:pattern",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
@@ -203,7 +203,7 @@ permissions = {
 
 assemble_targz(
     name = "assemble-linux-arm64-targz",
-    targets = ["server-deps-linux-arm64", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = ["server-deps-linux-arm64", "//server/binary:assemble-bash-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
@@ -213,7 +213,7 @@ assemble_targz(
 
 assemble_targz(
     name = "assemble-linux-x86_64-targz",
-    targets = ["server-deps-linux-x86_64", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = ["server-deps-linux-x86_64", "//server/binary:assemble-bash-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
@@ -223,7 +223,7 @@ assemble_targz(
 
 assemble_zip(
     name = "assemble-mac-arm64-zip",
-    targets = ["server-deps-mac-arm64", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = ["server-deps-mac-arm64", "//server/binary:assemble-bash-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
@@ -233,7 +233,7 @@ assemble_zip(
 
 assemble_zip(
     name = "assemble-mac-x86_64-zip",
-    targets = ["server-deps-mac-x86_64", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = ["server-deps-mac-x86_64", "//server/binary:assemble-bash-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
@@ -243,7 +243,7 @@ assemble_zip(
 
 assemble_zip(
     name = "assemble-windows-x86_64-zip",
-    targets = ["server-deps-windows-x86_64", "@vaticle_typedb_common//binary:assemble-bat-targz"],
+    targets = ["server-deps-windows-x86_64", "//server/binary:assemble-bat-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
@@ -254,46 +254,46 @@ assemble_zip(
 deploy_artifact(
     name = "deploy-linux-arm64-targz",
     target = ":assemble-linux-arm64-targz",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb-server-linux-arm64",
     artifact_name = "typedb-server-linux-arm64-{version}.tar.gz",
-    release = deployment['artifact.release'],
-    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact']['release']['upload'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
 )
 
 deploy_artifact(
     name = "deploy-linux-x86_64-targz",
     target = ":assemble-linux-x86_64-targz",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb-server-linux-x86_64",
     artifact_name = "typedb-server-linux-x86_64-{version}.tar.gz",
-    release = deployment['artifact.release'],
-    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact']['release']['upload'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
 )
 
 deploy_artifact(
     name = "deploy-mac-arm64-zip",
     target = ":assemble-mac-arm64-zip",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb-server-mac-arm64",
     artifact_name = "typedb-server-mac-arm64-{version}.zip",
-    release = deployment['artifact.release'],
-    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact']['release']['upload'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
 )
 
 deploy_artifact(
     name = "deploy-mac-x86_64-zip",
     target = ":assemble-mac-x86_64-zip",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb-server-mac-x86_64",
     artifact_name = "typedb-server-mac-x86_64-{version}.zip",
-    release = deployment['artifact.release'],
-    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact']['release']['upload'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
 )
 
 deploy_artifact(
     name = "deploy-windows-x86_64-zip",
     target = ":assemble-windows-x86_64-zip",
-    artifact_group = "vaticle_typedb",
+    artifact_group = "typedb-server-windows-x86_64",
     artifact_name = "typedb-server-windows-x86_64-{version}.zip",
-    release = deployment['artifact.release'],
-    snapshot = deployment['artifact.snapshot'],
+    release = deployment['artifact']['release']['upload'],
+    snapshot = deployment['artifact']['snapshot']['upload'],
 )
 
 checkstyle_test(

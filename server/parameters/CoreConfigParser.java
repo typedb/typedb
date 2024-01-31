@@ -31,9 +31,9 @@ import java.util.Set;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIGS_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_SECTION_MUST_BE_MAP;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_YAML_MUST_BE_MAP;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIGS_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.Constants.DIAGNOSTICS_REPORTING_URI;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_EXT;
@@ -46,8 +46,8 @@ import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Pr
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.LIST_STRING;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.PATH;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.STRING;
-import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.TIME_PERIOD_NAME;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.TIME_PERIOD;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.TIME_PERIOD_NAME;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.dynamic;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.predefined;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.restricted;
@@ -187,6 +187,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
                     private final String filename;
                     private final String extension;
+
                     public File(String filename, String extension) {
                         super();
                         this.filename = filename;
@@ -511,10 +512,8 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
             protected static final String description = "Configure diagnostics reporting.";
 
             private static final Predefined<Boolean> enable =
-                    predefined("enable", "Enable Vaticle Factory tracing.", BOOLEAN);
-            private static final Predefined<String> uri =
-                    predefined("uri", "URI of Vaticle Factory server.", STRING);
-            private static final Set<Predefined<?>> parsers = set(enable, uri);
+                    predefined("enable", "Enable diagnostics reporting.", BOOLEAN);
+            private static final Set<Predefined<?>> parsers = set(enable);
 
             @Override
             public CoreConfig.Diagnostics.Reporting parse(YAML yaml, String path) {
@@ -531,7 +530,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
             @Override
             public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                return list(enable.help(path), uri.help(path));
+                return list(enable.help(path));
             }
         }
     }

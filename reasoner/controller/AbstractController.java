@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.RESOURCE_CLOSED;
 
 
 public abstract class AbstractController<
@@ -108,8 +108,8 @@ public abstract class AbstractController<
 
     @Override
     public void exception(Throwable e) {
-        if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent()) {
-            String code = ((TypeDBException) e).code().get();
+        if (e instanceof TypeDBException) {
+            String code = ((TypeDBException) e).errorMessage().code();
             if (code.equals(RESOURCE_CLOSED.code())) {
                 LOG.debug("Controller interrupted by resource close: {}", e.getMessage());
                 context.registry().terminate(e);

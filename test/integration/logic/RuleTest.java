@@ -17,6 +17,7 @@
 
 package com.vaticle.typedb.core.logic;
 
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
@@ -41,6 +42,7 @@ import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.statement.ThingStatement;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -75,6 +77,11 @@ public class RuleTest {
 
     private Variable getVariable(Set<Variable> vars, Identifier identifier) {
         return iterate(vars).filter(v -> v.id().equals(identifier)).next();
+    }
+
+    @BeforeClass
+    public static void beforeClass() {
+        Diagnostics.initialiseNoop();
     }
 
     @Test
@@ -113,7 +120,7 @@ public class RuleTest {
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.namedConcept("x"), people.get(0)),
-                                                               pair(Identifier.Variable.namedConcept("y"), people.get(1))));
+                            pair(Identifier.Variable.namedConcept("y"), people.get(1))));
 
                     Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertTrue(materialisation.isPresent());
@@ -158,8 +165,8 @@ public class RuleTest {
                     ConceptManager conceptMgr = txn.concepts();
                     RelationType friendship = conceptMgr.getRelationType("friendship");
                     txn.query().insert(TypeQL.parseQuery("insert $x isa person; $y isa person; " +
-                                                                 "(spouse: $x, spouse: $y) isa marriage;" +
-                                                                 "(friend: $x, friend: $y) isa friendship;").asInsert());
+                            "(spouse: $x, spouse: $y) isa marriage;" +
+                            "(friend: $x, friend: $y) isa friendship;").asInsert());
                     List<? extends Relation> friendshipInstances = friendship.getInstances().toList();
                     assertEquals(1, friendshipInstances.size());
 
@@ -169,7 +176,7 @@ public class RuleTest {
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.namedConcept("x"), people.get(0)),
-                                                               pair(Identifier.Variable.namedConcept("y"), people.get(1))));
+                            pair(Identifier.Variable.namedConcept("y"), people.get(1))));
 
                     Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertFalse(materialisation.isPresent());
@@ -212,7 +219,7 @@ public class RuleTest {
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.namedConcept("x"), milkInst),
-                                                               pair(Identifier.Variable.namedConcept("a"), ageInDays10)));
+                            pair(Identifier.Variable.namedConcept("a"), ageInDays10)));
                     Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertTrue(materialisation.isPresent());
                     assertEquals(2, materialisation.get().size());
@@ -564,9 +571,9 @@ public class RuleTest {
                             TypeQL.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
                             TypeQL.parseStatement("(friend: $x, friend: $y) isa friendship").asThing());
                     assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"),
-                                                    Label.of("marriage"), Label.of("friend", "friendship"), Label.of("friendship")),
-                                                marriageFriendsRule.getLabel(),
-                                                graphMgr
+                                    Label.of("marriage"), Label.of("friend", "friendship"), Label.of("friendship")),
+                            marriageFriendsRule.getLabel(),
+                            graphMgr
                     );
 
                     Rule marriageSameName = logicMgr.putRule(
@@ -574,8 +581,8 @@ public class RuleTest {
                             TypeQL.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
                             TypeQL.parseStatement("$y has $a").asThing());
                     assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"), Label.of("marriage"), Label.of("name")),
-                                                marriageSameName.getLabel(),
-                                                graphMgr
+                            marriageSameName.getLabel(),
+                            graphMgr
                     );
 
                     txn.commit();
@@ -584,12 +591,12 @@ public class RuleTest {
                 try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
                     assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"),
-                                                    Label.of("marriage"), Label.of("friend", "friendship"), Label.of("friendship")),
-                                                marriageFriendsRule.getLabel(), txn.logic().graph());
+                                    Label.of("marriage"), Label.of("friend", "friendship"), Label.of("friendship")),
+                            marriageFriendsRule.getLabel(), txn.logic().graph());
 
                     Rule marriageSameName = txn.logic().getRule("marriage-same-name");
                     assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"), Label.of("marriage"), Label.of("name")),
-                                                marriageSameName.getLabel(), txn.logic().graph()
+                            marriageSameName.getLabel(), txn.logic().graph()
                     );
                 }
                 // deleting a relation type used in a rule should throw
@@ -750,21 +757,21 @@ public class RuleTest {
                 try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
 
                     txn.query().define(TypeQL.parseQuery("define " +
-                                                                 "person sub entity, owns is-starting-school, owns grade;" +
-                                                                 "is-starting-school sub attribute, value boolean;" +
-                                                                 "grade sub attribute, value long;" +
-                                                                 "rule person-starting-school: when {" +
-                                                                 "  $x isa person;" +
-                                                                 "  not { $x has is-starting-school true; };" +
-                                                                 "} then {" +
-                                                                 "  $x has grade 1;" +
-                                                                 "};" +
-                                                                 "" +
-                                                                 "rule person-with-grade-is-in-school: when {" +
-                                                                 "  $x isa person, has grade 1;" +
-                                                                 "} then {" +
-                                                                 "  $x has is-starting-school true;" +
-                                                                 "};").asDefine());
+                            "person sub entity, owns is-starting-school, owns grade;" +
+                            "is-starting-school sub attribute, value boolean;" +
+                            "grade sub attribute, value long;" +
+                            "rule person-starting-school: when {" +
+                            "  $x isa person;" +
+                            "  not { $x has is-starting-school true; };" +
+                            "} then {" +
+                            "  $x has grade 1;" +
+                            "};" +
+                            "" +
+                            "rule person-with-grade-is-in-school: when {" +
+                            "  $x isa person, has grade 1;" +
+                            "} then {" +
+                            "  $x has is-starting-school true;" +
+                            "};").asDefine());
                     assertThrowsTypeDBException(txn::commit, CONTRADICTORY_RULE_CYCLE.code());
                 }
             }

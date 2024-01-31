@@ -25,7 +25,7 @@ native_java_libraries(
     srcs = glob(["*/*.java", "*/*/*.java"], exclude=["test/*", "*Test.java", "*/*Test.java"]),
     deps = [
         # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//common/java:common",
 
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
