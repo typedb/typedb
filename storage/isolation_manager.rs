@@ -138,7 +138,15 @@ impl IsolationManager {
                             });
                         }
                     }
-                    Write::Delete => {}
+                    Write::Delete => {
+                        // we escalate delete-required to failure, since requires imply dependencies that may be broken
+                        // TODO: maybe RequireExists should be RequireDependency to capture this?
+                        if matches!(predecessor_write.unwrap(), Write::RequireExists(_)) {
+                            return Err(IsolationError {
+                                kind: IsolationErrorKind::RequiredDeleteViolation
+                            });
+                        }
+                    }
                 }
             }
         }
@@ -472,12 +480,14 @@ pub struct IsolationError {
 #[derive(Debug)]
 pub enum IsolationErrorKind {
     DeleteRequiredViolation,
+    RequiredDeleteViolation,
 }
 
 impl Display for IsolationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match &self.kind {
-            IsolationErrorKind::DeleteRequiredViolation => write!(f, "Isolation violation: Delete conflict. A concurrent commit has deleted a key required by this transaction. Please retry"),
+            IsolationErrorKind::DeleteRequiredViolation => write!(f, "Isolation violation: Delete-Require conflict. A concurrent commit has deleted a key required by this transaction. Please retry"),
+            IsolationErrorKind::RequiredDeleteViolation => write!(f, "Isolation violation: Require-Delete conflict. This commit has deleted a key required by a concurrent transaction. Please retry"),
         }
     }
 }
@@ -486,6 +496,7 @@ impl Error for IsolationError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
             IsolationErrorKind::DeleteRequiredViolation => None,
+            IsolationErrorKind::RequiredDeleteViolation => None,
         }
     }
 }

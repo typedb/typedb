@@ -18,7 +18,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-use storage::error::StorageError;
+use storage::error::MVCCStorageError;
 
 #[derive(Debug)]
 pub struct DatabaseError {
@@ -28,8 +28,8 @@ pub struct DatabaseError {
 
 #[derive(Debug)]
 pub enum DatabaseErrorKind {
-    FailedToCreateStorage(StorageError),
-    FailedToSetupStorage(StorageError),
+    FailedToCreateStorage(MVCCStorageError),
+    FailedToSetupStorage(MVCCStorageError),
 }
 
 impl Display for DatabaseError {

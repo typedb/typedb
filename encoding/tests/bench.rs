@@ -18,7 +18,7 @@
 use std::sync::Arc;
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use storage::key_value::Key;
+use storage::key_value::KeyspaceKey;
 
 use encoding::{DeserialisableFixed, SerialisableKeyFixed};
 use encoding::thing::id_generator::ThingIIDGenerator;
@@ -29,7 +29,7 @@ fn id_generation(thing_iid_generator: Arc<ThingIIDGenerator>, type_id: TypeID) -
     thing_iid_generator.take_entity_iid(&type_id)
 }
 
-fn id_generation_serialisation(thing_iid_generator: Arc<ThingIIDGenerator>, type_id: TypeID) -> Key {
+fn id_generation_serialisation(thing_iid_generator: Arc<ThingIIDGenerator>, type_id: TypeID) -> KeyspaceKey {
     let iid = thing_iid_generator.take_entity_iid(&type_id);
     iid.serialise_to_key()
 }

@@ -22,43 +22,45 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::ser::SerializeStruct;
 
-use crate::SectionId;
+pub type KeyspaceId = u8;
 
-pub const FIXED_KEY_LENGTH_BYTES: usize = 48;
+pub(crate) const KEYSPACE_ID_MAX: usize = KeyspaceId::MAX as usize;
+const FIXED_KEY_LENGTH_BYTES: usize = 48;
+
 
 // TODO: we will need to know if these are from storage or from memory
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub enum Key {
-    Fixed(KeyFixed),
-    Dynamic(KeyDynamic),
+pub enum KeyspaceKey {
+    Fixed(SectionKeyFixed),
+    Dynamic(SectionKeyDynamic),
 }
 
-impl Key {
+impl KeyspaceKey {
     pub fn bytes(&self) -> &[u8] {
         match self {
-            Key::Fixed(fixed_key) => fixed_key.bytes(),
-            Key::Dynamic(dynamic_key) => dynamic_key.bytes(),
+            KeyspaceKey::Fixed(fixed_key) => fixed_key.bytes(),
+            KeyspaceKey::Dynamic(dynamic_key) => dynamic_key.bytes(),
         }
     }
 
-    pub fn section_id(&self) -> SectionId {
+    pub fn keyspace_id(&self) -> KeyspaceId {
         match self {
-            Key::Fixed(fixed_key) => fixed_key.section_id(),
-            Key::Dynamic(dynamic_key) => dynamic_key.section_id(),
+            KeyspaceKey::Fixed(fixed_key) => fixed_key.keyspace_id(),
+            KeyspaceKey::Dynamic(dynamic_key) => dynamic_key.keyspace_id(),
         }
     }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct KeyFixed {
-    section_id: SectionId,
+pub struct SectionKeyFixed {
+    section_id: KeyspaceId,
     key_length: u64,
     data: [u8; FIXED_KEY_LENGTH_BYTES],
 }
 
-impl KeyFixed {
-    pub fn new(section_id: SectionId, key_length: usize, data: [u8; FIXED_KEY_LENGTH_BYTES]) -> KeyFixed {
-        KeyFixed {
+impl SectionKeyFixed {
+    pub fn new(section_id: KeyspaceId, key_length: usize, data: [u8; FIXED_KEY_LENGTH_BYTES]) -> SectionKeyFixed {
+        SectionKeyFixed {
             section_id: section_id,
             key_length: key_length as u64,
             data: data,
@@ -69,12 +71,12 @@ impl KeyFixed {
         &self.data[0..(self.key_length as usize)]
     }
 
-    fn section_id(&self) -> SectionId {
+    fn keyspace_id(&self) -> KeyspaceId {
         self.section_id
     }
 }
 
-impl Serialize for KeyFixed {
+impl Serialize for SectionKeyFixed {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let mut state = serializer.serialize_struct("KeyFixed", 2)?;
         state.serialize_field("section_id", &self.section_id)?;
@@ -83,7 +85,7 @@ impl Serialize for KeyFixed {
     }
 }
 
-impl<'de> Deserialize<'de> for KeyFixed {
+impl<'de> Deserialize<'de> for SectionKeyFixed {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         enum Field { SectionID, Data }
 
@@ -120,13 +122,13 @@ impl<'de> Deserialize<'de> for KeyFixed {
         struct KeyFixedVisitor;
 
         impl<'de> Visitor<'de> for KeyFixedVisitor {
-            type Value = KeyFixed;
+            type Value = SectionKeyFixed;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("struct Duration")
             }
 
-            fn visit_seq<V>(self, mut seq: V) -> Result<KeyFixed, V::Error>
+            fn visit_seq<V>(self, mut seq: V) -> Result<SectionKeyFixed, V::Error>
                 where
                     V: SeqAccess<'de>,
             {
@@ -136,10 +138,10 @@ impl<'de> Deserialize<'de> for KeyFixed {
                 let mut data = [0; FIXED_KEY_LENGTH_BYTES];
                 data[0..length].copy_from_slice(bytes);
 
-                Ok(KeyFixed::new(section_id, length, data))
+                Ok(SectionKeyFixed::new(section_id, length, data))
             }
 
-            fn visit_map<V>(self, mut map: V) -> Result<KeyFixed, V::Error>
+            fn visit_map<V>(self, mut map: V) -> Result<SectionKeyFixed, V::Error>
                 where
                     V: MapAccess<'de>,
             {
@@ -153,7 +155,7 @@ impl<'de> Deserialize<'de> for KeyFixed {
                             }
                             section_id = Some(map.next_value()?);
                         }
-                        Field::Data  => {
+                        Field::Data => {
                             if bytes.is_some() {
                                 return Err(de::Error::duplicate_field("data"));
                             }
@@ -167,10 +169,9 @@ impl<'de> Deserialize<'de> for KeyFixed {
                 let mut data = [0; FIXED_KEY_LENGTH_BYTES];
                 data[0..length].copy_from_slice(bytes);
 
-                Ok(KeyFixed::new(section_id, length, data))
+                Ok(SectionKeyFixed::new(section_id, length, data))
             }
         }
-
 
         deserializer.deserialize_struct("KeyFixed", &["section_id", "data"], KeyFixedVisitor)
     }
@@ -178,14 +179,14 @@ impl<'de> Deserialize<'de> for KeyFixed {
 
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct KeyDynamic {
-    section_id: SectionId,
+pub struct SectionKeyDynamic {
+    section_id: KeyspaceId,
     data: Box<[u8]>,
 }
 
-impl KeyDynamic {
-    pub fn new(section_id: SectionId, data: Box<[u8]>) -> KeyDynamic {
-        KeyDynamic {
+impl SectionKeyDynamic {
+    pub fn new(section_id: KeyspaceId, data: Box<[u8]>) -> SectionKeyDynamic {
+        SectionKeyDynamic {
             section_id: section_id,
             data: data,
         }
@@ -195,50 +196,50 @@ impl KeyDynamic {
         self.data.as_ref()
     }
 
-    fn section_id(&self) -> SectionId {
+    fn keyspace_id(&self) -> KeyspaceId {
         self.section_id
     }
 }
 
-impl PartialOrd<Self> for Key {
+impl PartialOrd<Self> for KeyspaceKey {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for Key {
+impl Ord for KeyspaceKey {
     fn cmp(&self, other: &Self) -> Ordering {
         match self {
-            Key::Fixed(fixedKey) => {
+            KeyspaceKey::Fixed(fixedKey) => {
                 match other {
-                    Key::Fixed(otherFixedKey) => fixedKey.cmp(otherFixedKey),
-                    Key::Dynamic(_) => Ordering::Less,
+                    KeyspaceKey::Fixed(otherFixedKey) => fixedKey.cmp(otherFixedKey),
+                    KeyspaceKey::Dynamic(_) => Ordering::Less,
                 }
             }
-            Key::Dynamic(dynamicKey) => {
+            KeyspaceKey::Dynamic(dynamicKey) => {
                 match other {
-                    Key::Fixed(_) => Ordering::Greater,
-                    Key::Dynamic(otherDynamicKey) => dynamicKey.cmp(otherDynamicKey),
+                    KeyspaceKey::Fixed(_) => Ordering::Greater,
+                    KeyspaceKey::Dynamic(otherDynamicKey) => dynamicKey.cmp(otherDynamicKey),
                 }
             }
         }
     }
 }
 
-impl From<(Vec<u8>, u8)> for KeyFixed {
+impl From<(Vec<u8>, u8)> for SectionKeyFixed {
     // For tests
     fn from((bytes, section_id): (Vec<u8>, u8)) -> Self {
-        KeyFixed::from((bytes.as_slice(), section_id))
+        SectionKeyFixed::from((bytes.as_slice(), section_id))
     }
 }
 
-impl From<(&[u8], u8)> for KeyFixed {
+impl From<(&[u8], u8)> for SectionKeyFixed {
     // For tests
     fn from((bytes, section_id): (&[u8], u8)) -> Self {
         assert!(bytes.len() < FIXED_KEY_LENGTH_BYTES);
         let mut data = [0; FIXED_KEY_LENGTH_BYTES];
         data[0..bytes.len()].copy_from_slice(bytes);
-        KeyFixed {
+        SectionKeyFixed {
             section_id: section_id,
             key_length: bytes.len() as u64,
             data: data,
@@ -246,13 +247,13 @@ impl From<(&[u8], u8)> for KeyFixed {
     }
 }
 
-impl PartialOrd<Self> for KeyFixed {
+impl PartialOrd<Self> for SectionKeyFixed {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for KeyFixed {
+impl Ord for SectionKeyFixed {
     fn cmp(&self, other: &Self) -> Ordering {
         let ordering = self.data.partial_cmp(&other.data).unwrap();
         if ordering.is_eq() {
@@ -263,13 +264,13 @@ impl Ord for KeyFixed {
     }
 }
 
-impl PartialOrd<Self> for KeyDynamic {
+impl PartialOrd<Self> for SectionKeyDynamic {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for KeyDynamic {
+impl Ord for SectionKeyDynamic {
     fn cmp(&self, other: &Self) -> Ordering {
         self.data.cmp(&other.data)
     }

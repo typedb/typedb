@@ -19,36 +19,42 @@ use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use durability::DurabilityError;
 use crate::isolation_manager::IsolationError;
-
-use crate::SectionError;
+use crate::kv::kv_storage::KVStorageError;
+use crate::key_value::KeyspaceId;
 
 #[derive(Debug)]
-pub struct StorageError {
+pub struct MVCCStorageError {
     pub storage_name: String,
-    pub kind: StorageErrorKind,
+    pub kind: MVCCStorageErrorKind,
 }
 
 #[derive(Debug)]
-pub enum StorageErrorKind {
+pub enum MVCCStorageErrorKind {
     FailedToDeleteStorage { source: std::io::Error },
-    SectionError { source: SectionError },
+    KeyspaceNameExists { keyspace: String },
+    KeyspaceIdExists { new_keyspace: String, keyspace_id: KeyspaceId, existing_keyspace: String },
+    KeyspaceError { source: KVStorageError, keyspace: String },
+    KeyspaceDeleteError { source: KVStorageError },
     IsolationError { source: IsolationError },
     DurabilityError { source: DurabilityError },
 }
 
-impl Display for StorageError {
+impl Display for MVCCStorageError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }
 }
 
-impl Error for StorageError {
+impl Error for MVCCStorageError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
-            StorageErrorKind::FailedToDeleteStorage { source, .. } => Some(source),
-            StorageErrorKind::SectionError { source, .. } => Some(source),
-            StorageErrorKind::IsolationError { source, .. } => Some(source),
-            StorageErrorKind::DurabilityError{ source, .. } => Some(source),
+            MVCCStorageErrorKind::FailedToDeleteStorage { source, .. } => Some(source),
+            MVCCStorageErrorKind::KeyspaceError { source, .. } => Some(source),
+            MVCCStorageErrorKind::IsolationError { source, .. } => Some(source),
+            MVCCStorageErrorKind::DurabilityError { source, .. } => Some(source),
+            MVCCStorageErrorKind::KeyspaceNameExists { ..  } => None,
+            MVCCStorageErrorKind::KeyspaceIdExists { .. } => None,
+            MVCCStorageErrorKind::KeyspaceDeleteError { source } => Some(source),
         }
     }
 }

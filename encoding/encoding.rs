@@ -19,10 +19,10 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::str::Utf8Error;
 
-use storage::{Section, Storage};
-use storage::error::StorageError;
-pub use storage::key_value::{FIXED_KEY_LENGTH_BYTES, Key, KeyFixed};
-use storage::key_value::{KeyDynamic, Value};
+use storage::{StorageSection, MVCCStorage};
+use storage::error::MVCCStorageError;
+pub use storage::key_value::{FIXED_KEY_LENGTH_BYTES, KeyspaceKey, SectionKeyFixed};
+use storage::key_value::{SectionKeyDynamic, Value};
 use struct_deser::{FromBytes, IntoBytes, SerializedByteLen};
 
 pub mod thing;
@@ -53,13 +53,13 @@ impl EncodingSection {
         }
     }
 
-    fn initialise_storage(&self, storage: &mut Storage) -> Result<(), StorageError> {
-        let options = Section::new_db_options();
-        storage.create_section(self.name(), self.id(), &options)
+    fn initialise_storage(&self, storage: &mut MVCCStorage) -> Result<(), MVCCStorageError> {
+        let options = MVCCStorage::new_db_options();
+        storage.create_keyspace(self.name(), self.id(), &options)
     }
 }
 
-pub fn initialise_storage(storage: &mut Storage) -> Result<(), StorageError> {
+pub fn initialise_storage(storage: &mut MVCCStorage) -> Result<(), MVCCStorageError> {
     EncodingSection::Schema.initialise_storage(storage)?;
     EncodingSection::Data.initialise_storage(storage)
 }
@@ -105,21 +105,21 @@ impl<T: FromBytes> DeserialisableFixed for T {
 pub trait SerialisableKeyFixed: Serialisable {
     fn key_section_id(&self) -> u8;
 
-    fn serialise_to_key(&self) -> Key {
+    fn serialise_to_key(&self) -> KeyspaceKey {
         let mut bytes = vec![0; self.serialised_size()];
         self.serialise_into(bytes.as_mut_slice());
-        Key::Dynamic(KeyDynamic::new(self.key_section_id(), bytes.into_boxed_slice()))
+        KeyspaceKey::Dynamic(SectionKeyDynamic::new(self.key_section_id(), bytes.into_boxed_slice()))
     }
 }
 
 pub trait SerialisableKeyDynamic: Serialisable {
     fn key_section_id(&self) -> u8;
 
-    fn serialise_to_key(&self) -> Key {
+    fn serialise_to_key(&self) -> KeyspaceKey {
         debug_assert!(self.serialised_size() < FIXED_KEY_LENGTH_BYTES);
         let mut data = [0; FIXED_KEY_LENGTH_BYTES];
         self.serialise_into(&mut data[0..self.serialised_size()]);
-        Key::Fixed(KeyFixed::new(self.key_section_id(), self.serialised_size(), data))
+        KeyspaceKey::Fixed(SectionKeyFixed::new(self.key_section_id(), self.serialised_size(), data))
     }
 }
 

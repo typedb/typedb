@@ -19,8 +19,8 @@
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use storage::key_value::{Key, KeyFixed, Value};
-use storage::{Storage, SectionId};
+use storage::key_value::{KeyspaceKey, SectionKeyFixed, Value};
+use storage::{MVCCStorage, KeyspaceId};
 use test_utils::{create_tmp_dir, init_logging};
 
 const SEC_ID: u8 = 0;

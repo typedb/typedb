@@ -24,7 +24,7 @@ use encoding::initialise_storage;
 use encoding::type_::id_generator::TypeIIDGenerator;
 use encoding::thing::id_generator::ThingIIDGenerator;
 use storage::snapshot::Snapshot;
-use storage::Storage;
+use storage::MVCCStorage;
 use crate::error::DatabaseError;
 use crate::error::DatabaseErrorKind::{FailedToCreateStorage, FailedToSetupStorage};
 use crate::transaction::{TransactionRead, TransactionWrite};
@@ -32,7 +32,7 @@ use crate::transaction::{TransactionRead, TransactionWrite};
 pub struct Database {
     name: Rc<str>,
     path: PathBuf,
-    storage: Storage,
+    storage: MVCCStorage,
     type_iid_generator: TypeIIDGenerator,
     thing_iid_generator: ThingIIDGenerator,
 }
@@ -41,7 +41,7 @@ impl Database {
     pub fn new(path: &PathBuf, database_name: Rc<str>) -> Result<Database, DatabaseError> {
         let database_path = path.with_extension(String::from(database_name.as_ref()));
         fs::create_dir(database_path.as_path());
-        let mut storage = Storage::new(database_name.clone(), path)
+        let mut storage = MVCCStorage::new(database_name.clone(), path)
             .map_err(|storage_error| DatabaseError {
                 database_name: database_name.to_string(),
                 kind: FailedToCreateStorage(storage_error),

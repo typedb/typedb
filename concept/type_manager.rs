@@ -27,7 +27,7 @@ use encoding::type_::type_encoding::concept::TypeIID;
 use encoding::type_::type_encoding::concept::root::Root;
 use encoding::type_::type_encoding::index::{LabelTypeIIDIndex, TypeIIDLabelIndex};
 use storage::snapshot::Snapshot;
-use storage::Storage;
+use storage::MVCCStorage;
 
 pub struct TypeManager<'txn, 'storage: 'txn> {
     snapshot: Rc<Snapshot<'storage>>,
@@ -43,7 +43,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub fn initialise_types(storage: &mut Storage, id_generator: &TypeIIDGenerator) {
+    pub fn initialise_types(storage: &mut MVCCStorage, id_generator: &TypeIIDGenerator) {
         let snapshot = Rc::new(Snapshot::Write(storage.snapshot_write()));
         {
             let type_manager = TypeManager::new(snapshot.clone(), id_generator);

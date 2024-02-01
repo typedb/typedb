@@ -27,10 +27,10 @@ use serde::{Deserialize, Serialize};
 
 use durability::SequenceNumber;
 
-use crate::error::StorageError;
+use crate::error::MVCCStorageError;
 use crate::isolation_manager::CommitRecord;
-use crate::key_value::{Key, Value};
-use crate::Storage;
+use crate::key_value::{KeyspaceKey, Value};
+use crate::MVCCStorage;
 
 pub enum Snapshot<'storage> {
     Read(ReadSnapshot<'storage>),
@@ -38,14 +38,14 @@ pub enum Snapshot<'storage> {
 }
 
 impl<'storage> Snapshot<'storage> {
-    pub fn get<'snapshot>(&'snapshot self, key: &Key) -> Option<Value> {
+    pub fn get<'snapshot>(&'snapshot self, key: &KeyspaceKey) -> Option<Value> {
         match self {
             Snapshot::Read(snapshot) => snapshot.get(key),
             Snapshot::Write(snapshot) => snapshot.get(key),
         }
     }
 
-    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &Key) -> Box<dyn Iterator<Item=(Box<[u8]>, Value)> + 'snapshot> {
+    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &KeyspaceKey) -> Box<dyn Iterator<Item=(Box<[u8]>, Value)> + 'snapshot> {
         match self {
             Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
             Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
@@ -54,12 +54,12 @@ impl<'storage> Snapshot<'storage> {
 }
 
 pub struct ReadSnapshot<'storage> {
-    storage: &'storage Storage,
+    storage: &'storage MVCCStorage,
     open_sequence_number: SequenceNumber,
 }
 
 impl<'storage> ReadSnapshot<'storage> {
-    pub(crate) fn new(storage: &'storage Storage, open_sequence_number: SequenceNumber) -> ReadSnapshot {
+    pub(crate) fn new(storage: &'storage MVCCStorage, open_sequence_number: SequenceNumber) -> ReadSnapshot {
         // Note: for serialisability, we would need to register the open transaction to the IsolationManager
         ReadSnapshot {
             storage: storage,
@@ -67,24 +67,24 @@ impl<'storage> ReadSnapshot<'storage> {
         }
     }
 
-    fn get<'snapshot>(&self, key: &Key) -> Option<Value> {
-        self.storage.get(key)
+    fn get<'snapshot>(&self, key: &KeyspaceKey) -> Option<Value> {
+        self.storage.get_direct(key)
     }
 
-    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &Key) -> impl Iterator<Item=(Box<[u8]>, Value)> + 'snapshot {
-        self.storage.iterate_prefix(prefix)
+    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &KeyspaceKey) -> impl Iterator<Item=(Box<[u8]>, Value)> + 'snapshot {
+        self.storage.iterate_prefix_direct(prefix)
     }
 }
 
 pub struct WriteSnapshot<'storage> {
-    storage: &'storage Storage,
+    storage: &'storage MVCCStorage,
     // TODO: replace with BTree Left-Right structure to allow concurrent read/write
     writes: RwLock<WriteData>,
     open_sequence_number: SequenceNumber,
 }
 
 impl<'storage> WriteSnapshot<'storage> {
-    pub(crate) fn new(storage: &'storage Storage, open_sequence_number: SequenceNumber) -> WriteSnapshot {
+    pub(crate) fn new(storage: &'storage MVCCStorage, open_sequence_number: SequenceNumber) -> WriteSnapshot {
         storage.isolation_manager.opened(&open_sequence_number);
         WriteSnapshot {
             storage: storage,
@@ -94,19 +94,19 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     /// Insert a key with a new version
-    pub fn insert(&self, key: Key) {
+    pub fn insert(&self, key: KeyspaceKey) {
         let mut map = self.writes.write().unwrap();
         map.insert(key, Write::Insert(Value::Empty));
     }
 
-    pub fn insert_val(&self, key: Key, value: Value) {
+    pub fn insert_val(&self, key: KeyspaceKey, value: Value) {
         let mut map = self.writes.write().unwrap();
         map.insert(key, Write::Insert(value));
     }
 
     /// Insert a key with a new version if it does not already exist.
     /// If the key exists, mark it as a preexisting insertion to escalate to Insert if there is a concurrent Delete.
-    pub fn put(&self, key: Key) {
+    pub fn put(&self, key: KeyspaceKey) {
         let existing = self.get(&key);
         if existing.is_some() {
             let mut map = self.writes.write().unwrap();
@@ -116,7 +116,7 @@ impl<'storage> WriteSnapshot<'storage> {
         }
     }
 
-    pub fn put_val(&self, key: Key, value: Value) {
+    pub fn put_val(&self, key: KeyspaceKey, value: Value) {
         let existing = self.get(&key);
         if existing.is_some() {
             let mut map = self.writes.write().unwrap();
@@ -127,7 +127,7 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     /// Insert a delete marker for the key with a new version
-    pub fn delete(&self, key: Key) {
+    pub fn delete(&self, key: KeyspaceKey) {
         let mut map = self.writes.write().unwrap();
         if map.get(&key).map_or(false, |write| write.is_insert()) {
             map.remove(&key);
@@ -137,11 +137,11 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     /// Get a Value, and mark it as a required key
-    pub fn get_required(&self, key: Key) -> Value {
+    pub fn get_required(&self, key: KeyspaceKey) -> Value {
         let map = self.writes.read().unwrap();
         let existing = map.get(&key);
         if existing.is_none() {
-            let storage_value = self.storage.get(&key);
+            let storage_value = self.storage.get_direct(&key);
             if storage_value.is_some() {
                 let mut map = self.writes.write().unwrap();
                 map.insert(key, Write::RequireExists(storage_value.as_ref().unwrap().clone()));
@@ -161,11 +161,11 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     /// Get the Value for the key, returning an empty Option if it does not exist
-    pub fn get(&self, key: &Key) -> Option<Value> {
+    pub fn get(&self, key: &KeyspaceKey) -> Option<Value> {
         let map = self.writes.read().unwrap();
         let write = map.get(key);
         write.map_or_else(
-            || self.storage.get(key),
+            || self.storage.get_direct(key),
             |write| match write {
                 Write::Insert(value) => Some(value.clone()),
                 Write::InsertPreexisting(value, _) => Some(value.clone()),
@@ -175,8 +175,8 @@ impl<'storage> WriteSnapshot<'storage> {
         )
     }
 
-    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &Key) -> impl Iterator<Item=(Box<[u8]>, Value)> + 'snapshot {
-        let storage_iterator = self.storage.iterate_prefix(prefix);
+    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &KeyspaceKey) -> impl Iterator<Item=(Box<[u8]>, Value)> + 'snapshot {
+        let storage_iterator = self.storage.iterate_prefix_direct(prefix);
         let buffered_iterator = self.iterate_prefix_buffered(prefix);
         storage_iterator.merge_join_by(
             buffered_iterator,
@@ -201,11 +201,11 @@ impl<'storage> WriteSnapshot<'storage> {
         })
     }
 
-    fn iterate_prefix_buffered<'s>(&'s self, prefix: &Key) -> impl Iterator<Item=(Box<[u8]>, Write)> + 's {
+    fn iterate_prefix_buffered<'s>(&'s self, prefix: &KeyspaceKey) -> impl Iterator<Item=(Box<[u8]>, Write)> + 's {
         let map = self.writes.read().unwrap();
         let range = RangeFrom { start: prefix };
         // TODO: hold read lock while iterating so avoid collecting into array
-        map.range::<Key, _>(range).map(|(key, val)| {
+        map.range::<KeyspaceKey, _>(range).map(|(key, val)| {
             // TODO: we can avoid allocation here once we settle on a Key/Value struct
             (key.bytes().into(), val.clone())
         }).collect::<Vec<_>>().into_iter()
@@ -223,7 +223,7 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 }
 
-pub(crate) type WriteData = BTreeMap<Key, Write>;
+pub(crate) type WriteData = BTreeMap<KeyspaceKey, Write>;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) enum Write {
@@ -289,8 +289,8 @@ pub struct WriteSnapshotError {
 
 #[derive(Debug)]
 pub enum WriteSnapshotErrorKind {
-    FailedGet { source: StorageError },
-    FailedPut { source: StorageError },
+    FailedGet { source: MVCCStorageError },
+    FailedPut { source: MVCCStorageError },
 }
 
 impl Display for WriteSnapshotError {
