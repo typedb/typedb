@@ -46,6 +46,7 @@ import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -96,7 +97,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         return Iterators.link(
                 getSubtypes(TRANSITIVE).flatMap(t -> t.validation_removedPlays_overriddenPlaysRedeclaration(hiddenPlays)),
-                getSubtypes(TRANSITIVE).flatMap(t -> t.validation_removedPlays_brokenPlaysOverrides(removedPlays)),
                 getSubtypes(TRANSITIVE).flatMap(t -> t.validation_removedPlays_leakedPlays(removedPlays, hiddenPlays))
         );
     }
@@ -108,13 +108,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     protected FunctionalIterator<TypeDBException> validation_removedPlays_overriddenPlaysRedeclaration(Set<RoleType> hiddenPlays) {
         return getPlays(EXPLICIT)
                 .filter(hiddenPlays::contains)
-                .map(roleType -> TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE, getLabel(), roleType));
+                .map(roleType -> TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN, getLabel(), roleType));
     }
 
     protected FunctionalIterator<TypeDBException> validation_removedPlays_brokenPlaysOverrides(Set<RoleType> removedPlays) {
         return getPlays(EXPLICIT)
                 .filter(roleType -> removedPlays.contains(getPlaysOverridden(roleType)))
-                .map(roleType -> TypeDBException.of(SCHEMA_VALIDATION_OVERRIDE_PLAYS_NOT_AVAILABLE, getLabel(), roleType.getLabel(), getPlaysOverridden(roleType).getLabel() ));
+                .map(roleType -> TypeDBException.of(SCHEMA_VALIDATION_OVERRIDE_PLAYS_NOT_AVAILABLE, getLabel(), roleType.getLabel(), getPlaysOverridden(roleType).getLabel()));
     }
 
     protected FunctionalIterator<TypeDBException> validation_removedPlays_leakedPlays(Set<RoleType> removedPlays, Set<RoleType> hiddenPlays) {
@@ -421,8 +421,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         validateIsNotDeleted();
         if (roleType.isRoot()) {
             throw exception(TypeDBException.of(ROOT_ROLE_TYPE_CANNOT_BE_PLAYED));
-        } else if (getSupertypes().filter(t -> !t.equals(this)).mergeMapForwardable(ThingType::getPlays, ASC).findFirst(roleType).isPresent()) {
-            throw exception(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE, getLabel(), roleType.getLabel()));
+        } else if (getSupertypes().filter(t -> !t.equals(this)).anyMatch(thingType -> thingType.getPlays(EXPLICIT).anyMatch(rt -> roleType.equals(thingType.getPlaysOverridden(rt))))) {
+            throw exception(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN, getLabel(), roleType.getLabel()));
         }
 
         TypeEdge existingEdge = vertex.outs().edge(PLAYS, ((RoleTypeImpl) roleType).vertex);
@@ -434,17 +434,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         validateIsNotDeleted();
         getSubtypes(TRANSITIVE)
-                .flatMap(t -> Iterators.link(
-                        t.validation_removedPlays_brokenPlaysOverrides(Collections.set(overriddenType)),
-                        t.validation_removedPlays_overriddenPlaysRedeclaration(Collections.set(overriddenType)),
-                        // TODO: Strictly, it should be: t.validation_removedPlays_leakedPlays(java.util.Collections.emptySet(), Collections.set(overriddenType))
-                        // TODO: But, I plan to reduce it to one argument
-                        t.validation_removedPlays_leakedPlays(Collections.set(overriddenType), java.util.Collections.emptySet())
-                )).forEachRemaining(exception -> {
-                    throw exception;
-                });
-        // We also have to ensure we don't make any redundant plays declarations invalid.
-        validation_removedPlays_brokenPlaysOverrides(Collections.set(overriddenType))
+                .flatMap(t -> t.validation_removedPlays_leakedPlays(Collections.set(overriddenType), java.util.Collections.emptySet()))
                 .forEachRemaining(exception -> {
                     throw exception;
                 });
@@ -472,10 +462,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, vertex.label(), roleType.getLabel().toString()));
         }
         getSubtypes(TRANSITIVE)
-            .flatMap(t -> Iterators.link(
-                    t.validation_removedPlays_brokenPlaysOverrides(Collections.set(roleType)),
-                    t.validation_removedPlays_leakedPlays(Collections.set(roleType), java.util.Collections.emptySet()) // TODO: Redundant, since it's checked above. Remove the above!
-            )).forEachRemaining(exception -> {
+                .flatMap(t ->
+                        t.validation_removedPlays_leakedPlays(Collections.set(roleType), java.util.Collections.emptySet()) // TODO: Redundant, since it's checked above. Remove the above!
+                ).forEachRemaining(exception -> {
                     throw exception;
                 });
         edge.delete();
@@ -537,8 +526,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return concatToList(
                 validateIsAbstractOrOwnedAttributeTypesNotAbstract(),
                 validateIsAbstractOrPlayedRoleTypesNotAbstract(),
-                validateOverriddenOwnedAttributeTypesAreSupertypes(),
-                validateOverriddenPlayedRoleTypesAreSupertypes(),
+                validateOverriddenOwnedAttributeTypesAreSupertypesAndInherited(),
+                validateOverriddenPlayedRoleTypesAreSuperTypesAndInherited(),
                 validatePlaysAreNotRedeclared(),
                 validateOwnsAreNotRedeclared()
         );
@@ -558,22 +547,38 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         ).toList();
     }
 
-    private List<TypeDBException> validateOverriddenOwnedAttributeTypesAreSupertypes() {
-        return iterate(getOwns())
+    private List<TypeDBException> validateOverriddenOwnedAttributeTypesAreSupertypesAndInherited() {
+        List<TypeDBException> exceptions = new ArrayList<>();
+        iterate(getOwns(EXPLICIT))
                 .filter(owns -> owns.overridden().isPresent())
-                .filter(owns -> owns.attributeType().getSupertypes().noneMatch(s -> s.equals(owns.overridden().get()))).map(
-                        p -> TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE,
-                                getLabel(), p.attributeType().getLabel(), p.overridden().get().getLabel())
-                ).toList();
+                .forEachRemaining(owns -> {
+                    if (owns.attributeType().getSupertypes().noneMatch(s -> s.equals(owns.overridden().get()))) {
+                        exceptions.add(TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE,
+                                getLabel(), owns.attributeType().getLabel(), owns.overridden().get().getLabel()));
+                    }
+                    if (!getSupertype().getOwnedAttributes(TRANSITIVE).contains(owns.overridden().get())) {
+                        exceptions.add(TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_INHERITED,
+                                getLabel(), owns.overridden().get().getLabel(), owns.attributeType().getLabel(), owns.overridden().get().getLabel()));
+                    }
+                });
+        return exceptions;
     }
 
-    private List<TypeDBException> validateOverriddenPlayedRoleTypesAreSupertypes() {
-        return getPlays().map(rt -> pair(rt, getPlaysOverridden(rt)))
+    private List<TypeDBException> validateOverriddenPlayedRoleTypesAreSuperTypesAndInherited() {
+        List<TypeDBException> exceptions = new ArrayList<>();
+        getPlays().map(rt -> pair(rt, getPlaysOverridden(rt)))
                 .filter(p -> p.second() != null)
-                .filter(p -> p.first().getSupertypes().noneMatch(s -> s.equals(p.second()))).map(
-                        p -> TypeDBException.of(OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE,
-                                getLabel(), p.first().getLabel(), p.second().getLabel())
-                ).toList();
+                .forEachRemaining(p -> {
+                    if (p.first().getSupertypes().noneMatch(s -> s.equals(p.second()))) {
+                        exceptions.add(TypeDBException.of(OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE,
+                                getLabel(), p.first().getLabel(), p.second().getLabel()));
+                    }
+                    if (!getSupertype().plays(p.second())) {
+                        exceptions.add(TypeDBException.of(OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_INHERITED,
+                                getLabel(), p.first().getLabel(), p.second().getLabel()));
+                    }
+                });
+        return exceptions;
     }
 
     private List<TypeDBException> validatePlaysAreNotRedeclared() {
@@ -585,6 +590,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private List<TypeDBException> validateOwnsAreNotRedeclared() {
+
         System.err.println("TODO: IMPLEMENT validateOwnsAreNotRedeclared!"); // TODO:
         return java.util.Collections.emptyList();
     }
@@ -825,8 +831,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             } else {
                 Optional<Owns> parentOwns = iterate(superOwns).filter(owns -> owns.attributeType().equals(attributeType)).first();
                 parentOwns.ifPresent(owns -> {
-                    if (annotations.isEmpty())
-                        throw TypeDBException.of(OWNS_ATTRIBUTE_REDECLARATION, owner.getLabel(), attributeType.getLabel());
                     validateAgainstParent(owns, owner, attributeType, annotations);
                 });
             }
@@ -840,6 +844,17 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
             if ((annotations.contains(KEY) || annotations.contains(UNIQUE)) && !attributeType.getValueType().hasExactEquality()) {
                 throw owner.exception(TypeDBException.of(OWNS_VALUE_TYPE_NO_EXACT_EQUALITY, owner.getLabel(), attributeType.getLabel(), annotations, attributeType.getValueType().name()));
+            }
+        }
+
+        private static int compareAnnotations(Set<Annotation> declared, Set<Annotation> inherited) { //inherited = parent.effectiveAnnotations()
+            // -1 : more specific, 0 equal, 1 more general
+            boolean inheritedKey = inherited.contains(KEY);
+            boolean declaredUnique = declared.contains(UNIQUE);
+            if (inheritedKey && declaredUnique) {
+                return 1;
+            } else {
+                return 0;
             }
         }
 

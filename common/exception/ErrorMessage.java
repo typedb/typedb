@@ -606,11 +606,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(33, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to unique.");
         public static final TypeWrite ILLEGAL_ROLE_TYPE_ALIAS =
                 new TypeWrite(34, "The role type '%s' cannot be used as an alias for the inherited role type '%s' - use the inherited role type or define a new role type overriding it with a new name.");
-        public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE =
-                new TypeWrite(35, "Type '%s' cannot declare plays role type '%s' as it has been inherited or overridden and cannot be redeclared.");
-//        // TODO: Move to this once we've split it in two
-//        public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN =
-//            new TypeWrite(35, "Type '%s' cannot declare plays role type '%s' as it has been overridden and cannot be redeclared.");
+        public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN =
+            new TypeWrite(35, "Type '%s' cannot declare plays role type '%s' as it has been overridden and cannot be redeclared.");
         public static final TypeWrite PLAYS_ABSTRACT_ROLE_TYPE =
                 new TypeWrite(36, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
         public static final TypeWrite RELATION_NO_ROLE =
