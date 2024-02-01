@@ -46,6 +46,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_ABSTRACT_ROLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_NO_ROLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_FROM_SUPERTYPE;
@@ -231,7 +232,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         Set<RoleType> hiddenRoleTypes = Collections.set(roleType);
         Iterators.link(
                 getSubtypes(TRANSITIVE).flatMap(t -> t.validation_removedRelates_leakedRelates(hiddenRoleTypes)),
-                getSubtypes(TRANSITIVE).filter(t -> !t.equals(this)).flatMap(t -> t.validation_removedRelates_brokenRelatesOverrides(hiddenRoleTypes))
+                getSubtypes(TRANSITIVE).filter(t -> !t.equals(this)).flatMap(t -> t.validation_removedRelates_brokenRelatesOverrides(hiddenRoleTypes)),
+
         ).forEachRemaining(exception -> {
             throw exception;
         });
