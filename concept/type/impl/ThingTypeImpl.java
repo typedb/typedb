@@ -582,17 +582,21 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private List<TypeDBException> validatePlaysAreNotRedeclared() {
-        Set<RoleType> explicitPlays = getPlays(EXPLICIT).toSet();
-        return getSupertypes().filter(t -> !t.equals(this))
-                .flatMap(thingType -> thingType.getPlays(EXPLICIT).filter(explicitPlays::contains).map(roleType -> new Pair<>(thingType, roleType)))
-                .map(p -> TypeDBException.of(REDUNDANT_PLAYS_DECLARATION, getLabel(), p.second().getLabel(), p.first().getLabel()))
+        return getPlays(EXPLICIT).intersect(getSupertype().getPlays(TRANSITIVE))
+                .map(roleType -> TypeDBException.of(REDUNDANT_PLAYS_DECLARATION, getLabel(), roleType))
                 .toList();
     }
 
     private List<TypeDBException> validateOwnsAreNotRedeclared() {
-
-        System.err.println("TODO: IMPLEMENT validateOwnsAreNotRedeclared!"); // TODO:
-        return java.util.Collections.emptyList();
+        Set<AttributeType> redeclaredOwns = new HashSet<>(getOwnedAttributes(EXPLICIT));
+        redeclaredOwns.retainAll(getSupertype().getOwnedAttributes(TRANSITIVE));
+        return iterate(redeclaredOwns)
+                .filter(attributeType -> {
+                    return OwnsImpl.compareAnnotations(
+                            getOwns(EXPLICIT, attributeType).get().effectiveAnnotations(),
+                            getSupertype().getOwns(TRANSITIVE, attributeType).get().effectiveAnnotations()) >= 0;
+                }).map(attributeType -> TypeDBException.of(REDUNDANT_OWNS_DECLARATION, getLabel(), attributeType.getLabel()))
+                .toList();
     }
 
     @Override
@@ -825,13 +829,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 Optional<Owns> parentOwns = iterate(superOwns).filter(owns -> owns.attributeType().equals(overriddenType)).first();
                 if (parentOwns.isEmpty()) {
                     throw owner.exception(TypeDBException.of(OVERRIDE_NOT_AVAILABLE, owner.getLabel(), overriddenType.getLabel()));
-                } else {
-                    validateAgainstParent(parentOwns.get(), owner, attributeType, annotations);
+                } else if (compareAnnotations(annotations, parentOwns.get().effectiveAnnotations()) > 0) {
+                    throw owner.exception(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, owner.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
                 }
             } else {
                 Optional<Owns> parentOwns = iterate(superOwns).filter(owns -> owns.attributeType().equals(attributeType)).first();
                 parentOwns.ifPresent(owns -> {
-                    validateAgainstParent(owns, owner, attributeType, annotations);
+                    if (compareAnnotations(annotations, parentOwns.get().effectiveAnnotations()) > 0) {
+                        throw owner.exception(TypeDBException.of(OWNS_DECLARATION_ANNOTATION_LESS_STRICT, owner.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
+                    }
                 });
             }
 
@@ -855,22 +861,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 return 1;
             } else {
                 return 0;
-            }
-        }
-
-        private static void validateAgainstParent(
-                Owns parent, Type owner, AttributeType attribute, Set<Annotation> annotations
-        ) {
-            Set<Annotation> inheritedAnnotations = parent.effectiveAnnotations();
-            boolean inheritedKey = inheritedAnnotations.contains(KEY);
-            boolean childUnique = annotations.contains(UNIQUE);
-            if (inheritedKey && childUnique) {
-                throw owner.exception(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, owner.getLabel(), attribute.getLabel(), annotations, parent.toString()));
-            }
-            Set<Annotation> redeclared = new HashSet<>(annotations);
-            redeclared.retainAll(inheritedAnnotations);
-            if (!redeclared.isEmpty()) {
-                throw owner.exception(TypeDBException.of(OWNS_ANNOTATION_REDECLARATION, owner.getLabel(), attribute.getLabel(), redeclared));
             }
         }
 

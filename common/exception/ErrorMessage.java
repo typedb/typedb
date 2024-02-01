@@ -586,8 +586,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(23, "The native root 'role' type cannot be played.");
         public static final TypeWrite OWNS_ATTRIBUTE_WAS_OVERRIDDEN =
                 new TypeWrite(24, "Type '%s' cannot own '%s' since it was overridden in a supertype, and cannot be redeclared as an ownership.");
-        public static final TypeWrite OWNS_ATTRIBUTE_REDECLARATION =
-                new TypeWrite(25, "Type '%s' cannot redeclare inherited ownership '%s' without annotation specialisation or as an override.");
+        public static final TypeWrite REDUNDANT_OWNS_DECLARATION =
+                new TypeWrite(25, "Type '%s' cannot redeclare inherited ownership '%s' without annotation specialisation.");
         public static final TypeWrite OWNS_VALUE_TYPE_NO_EXACT_EQUALITY =
                 new TypeWrite(26, "Type '%s' cannot own '%s' with annotations '%s' since it has has value type '%s', which does not have an exact equality.");
         public static final TypeWrite OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE =
@@ -672,8 +672,9 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final TypeWrite SCHEMA_VALIDATION_LEAKED_PLAYS =
                 new TypeWrite(66, "Instances of type '%s' playing the role '%s' exist and would become invalid.");
         public static final TypeWrite REDUNDANT_PLAYS_DECLARATION =
-                new TypeWrite(67, "Type '%s' cannot redeclare plays role type '%s' as it is already inherited from '%s'.");
-
+                new TypeWrite(67, "Type '%s' cannot redeclare plays role type '%s' as it is already inherited.");
+        public static final TypeWrite OWNS_DECLARATION_ANNOTATION_LESS_STRICT =
+                new TypeWrite(68, "Type '%s' cannot declare ownership of '%s' with annotations '%s' since this annotation is not stricter than the inherited ownership '%s'.");
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";
 

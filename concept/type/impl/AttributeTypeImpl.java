@@ -36,6 +36,8 @@ import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -137,9 +139,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         if (!superType.isRoot() && !Objects.equals(this.getValueType(), superType.getValueType())) {
             throw exception(TypeDBException.of(ATTRIBUTE_SUPERTYPE_VALUE_TYPE, getLabel(), getValueType().name(),
                     superType.getLabel(), superType.getValueType().name()));
-        } else if (!superType.isAbstract()) {
-            // TODO: Relax
-            throw exception(TypeDBException.of(ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT, superType.getLabel()));
         }
         Iterators.link(
                 validation_setSupertype_plays(superType),
@@ -172,6 +171,15 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         if (isRoot()) return emptySorted();
         if (transitivity == EXPLICIT) return vertex.ins().edge(OWNS_KEY).from().merge(vertex.ins().edge(OWNS).from());
         else return iterateSorted(graphMgr().schema().ownersOfAttributeType(vertex, annotations), ASC);
+    }
+
+    @Override
+    public List<TypeDBException> exceptions() {
+        List<TypeDBException> exceptions = new ArrayList<>(super.exceptions());
+        if (!isAbstract() && getSubtypes(EXPLICIT).hasNext()) {
+            exceptions.add(TypeDBException.of(ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT, getLabel()));
+        }
+        return exceptions;
     }
 
     @Override
