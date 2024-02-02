@@ -868,11 +868,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 validationExceptions.add(owner.getSubtypes(TRANSITIVE).flatMap(t -> t.validation_addedOwns_unavailableHiddenOwnsRedeclaration(java.util.Collections.singleton(overriddenType))));
             }
 
-            Set<Annotation> existingEffectiveAnnotations = existingExplicit.map(Owns::effectiveAnnotations).orElse(existingOrInherited.map(Owns::effectiveAnnotations).orElse(emptySet()));
-            if (compareAnnotationsPermissive(annotations, existingEffectiveAnnotations) < 0) {
-                Map<AttributeType, Set<Annotation>> addedOwnsAnnotations = Map.of(attributeType, annotations);
-                validationExceptions.add(owner.getSubtypes(TRANSITIVE).flatMap(t -> t.validation_addedOwns_ownsRedeclarationsHaveStricterAnnotations(addedOwnsAnnotations)));
-                validationExceptions.add(owner.getSubtypes(TRANSITIVE).flatMap(t -> t.validation_addedOwns_dataAgainstAnnotations(addedOwnsAnnotations)));
+            if (!annotations.isEmpty()) {
+                Set<Annotation> existingEffectiveAnnotations = existingExplicit.map(Owns::effectiveAnnotations).orElse(existingOrInherited.map(Owns::effectiveAnnotations).orElse(emptySet()));
+                if (compareAnnotationsPermissive(annotations, existingEffectiveAnnotations) < 0) {
+                    Map<AttributeType, Set<Annotation>> addedOwnsAnnotations = Map.of(attributeType, annotations);
+                    validationExceptions.add(owner.getSubtypes(TRANSITIVE).flatMap(t -> t.validation_addedOwns_ownsRedeclarationsHaveStricterAnnotations(addedOwnsAnnotations)));
+                    validationExceptions.add(owner.getSubtypes(TRANSITIVE).flatMap(t -> t.validation_addedOwns_dataAgainstAnnotations(addedOwnsAnnotations)));
+                }
             }
             Iterators.link(validationExceptions).forEachRemaining(e -> {throw e;});
 
@@ -918,6 +920,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 throw owner.exception(TypeDBException.of(OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE, owner.getLabel(), attributeType.getLabel(), KEY, UNIQUE));
             }
 
+            // TODO: See if I can simplify
             Set<Owns> superOwns = owner.getSupertype().getOwns();
             if (overriddenType != null) {
                 if (attributeType.getSupertypes().noneMatch(overriddenType::equals)) {
@@ -929,13 +932,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 Optional<Owns> parentOwns = iterate(superOwns).filter(owns -> owns.attributeType().equals(overriddenType)).first();
                 if (parentOwns.isEmpty()) {
                     throw owner.exception(TypeDBException.of(OVERRIDE_NOT_AVAILABLE, owner.getLabel(), overriddenType.getLabel()));
-                } else if (compareAnnotationsPermissive(annotations, parentOwns.get().effectiveAnnotations()) > 0) {
+                } else if (!annotations.isEmpty() && compareAnnotationsPermissive(annotations, parentOwns.get().effectiveAnnotations()) > 0) {
                     throw owner.exception(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, owner.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
                 }
             } else {
                 Optional<Owns> parentOwns = iterate(superOwns).filter(owns -> owns.attributeType().equals(attributeType)).first();
                 parentOwns.ifPresent(owns -> {
-                    if (compareAnnotationsPermissive(annotations, parentOwns.get().effectiveAnnotations()) > 0) {
+                    if (!annotations.isEmpty() && compareAnnotationsPermissive(annotations, parentOwns.get().effectiveAnnotations()) > 0) {
                         throw owner.exception(TypeDBException.of(OWNS_DECLARATION_ANNOTATION_LESS_STRICT, owner.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
                     }
                 });
