@@ -675,6 +675,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(67, "Type '%s' cannot redeclare plays role type '%s' as it is already inherited.");
         public static final TypeWrite OWNS_DECLARATION_ANNOTATION_LESS_STRICT =
                 new TypeWrite(68, "Type '%s' cannot declare ownership of '%s' with annotations '%s' since this annotation is not stricter than the inherited ownership '%s'.");
+
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";
 

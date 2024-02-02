@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.iterator.LinkedIterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.common.parameters.Order;
@@ -48,9 +49,12 @@ import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -86,7 +90,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     protected FunctionalIterator<TypeDBException> validation_setSupertype_plays(ThingType supertype) {
         Set<RoleType> removedPlays = new HashSet<>();
         Set<RoleType> hiddenPlays = new HashSet<>();
-        getSupertype().getPlays(TRANSITIVE).filter(roleType -> !roleType.isRoot()).forEachRemaining(removedPlays::add);
+        getSupertype().getPlays(TRANSITIVE).forEachRemaining(removedPlays::add);
         supertype.getPlays(TRANSITIVE).forEachRemaining(removedPlays::remove);
         Iterators.link(Iterators.iterate(supertype), supertype.getSupertypes()).forEachRemaining(t -> {
             t.getPlays(EXPLICIT).forEachRemaining(roleType -> {
@@ -96,21 +100,40 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         });
 
         return Iterators.link(
-                getSubtypes(TRANSITIVE).flatMap(t -> t.validation_removedPlays_overriddenPlaysRedeclaration(hiddenPlays)),
+                getSubtypes(TRANSITIVE).flatMap(t -> t.validation_addedPlays_unavailableHiddenPlaysRedeclaration(hiddenPlays)),
                 getSubtypes(TRANSITIVE).flatMap(t -> t.validation_removedPlays_leakedPlays(removedPlays, hiddenPlays))
         );
     }
 
     protected FunctionalIterator<TypeDBException> validation_setSupertype_owns(ThingType supertype) {
-        return Iterators.empty(); // TODO
+        Set<AttributeType> removedOwns = new HashSet<>(getSupertype().getOwnedAttributes(TRANSITIVE));
+        removedOwns.removeAll(supertype.getOwnedAttributes(TRANSITIVE));
+        Set<AttributeType> hiddenOwns = new HashSet<>();
+        Iterators.link(Iterators.iterate(supertype), supertype.getSupertypes()).forEachRemaining(t -> {
+            iterate(t.getOwnedAttributes(EXPLICIT)).forEachRemaining(attributeType -> {
+                AttributeType overridden = t.getOwnsOverridden(attributeType);
+                if (overridden != null) hiddenOwns.add(overridden);
+            });
+        });
+
+        Map<AttributeType, Owns> addedOwns = new HashMap<>();
+        getSupertype().getOwns(TRANSITIVE).forEach(owns -> addedOwns.put(owns.attributeType(), owns));
+
+        return new LinkedIterators<>(Collections.list(
+                getSubtypes(TRANSITIVE).flatMap(t -> t.validation_addedOwns_unavailableHiddenOwnsRedeclaration(hiddenOwns)),
+                getSubtypes(TRANSITIVE).flatMap(t -> t.validation_addedOwns_ownsRedeclarationsHaveStricterAnnotations(addedOwns)),
+                getSubtypes(TRANSITIVE).flatMap(t -> t.validation_addedOwns_dataAgainstAnnotations(addedOwns)),
+                getSubtypes(TRANSITIVE).flatMap(t -> t.validation_removedOwns_leakedOwns(removedOwns)))
+        );
     }
 
-    protected FunctionalIterator<TypeDBException> validation_removedPlays_overriddenPlaysRedeclaration(Set<RoleType> hiddenPlays) {
+    protected FunctionalIterator<TypeDBException> validation_addedPlays_unavailableHiddenPlaysRedeclaration(Set<RoleType> hiddenPlays) {
         return getPlays(EXPLICIT)
                 .filter(hiddenPlays::contains)
                 .map(roleType -> TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN, getLabel(), roleType));
     }
 
+    // TODO: Remove?
     protected FunctionalIterator<TypeDBException> validation_removedPlays_brokenPlaysOverrides(Set<RoleType> removedPlays) {
         return getPlays(EXPLICIT)
                 .filter(roleType -> removedPlays.contains(getPlaysOverridden(roleType)))
@@ -124,6 +147,57 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 .map(roleType -> TypeDBException.of(SCHEMA_VALIDATION_LEAKED_PLAYS, getLabel(), roleType.getLabel()));
     }
 
+    protected FunctionalIterator<TypeDBException> validation_addedOwns_unavailableHiddenOwnsRedeclaration(Set<AttributeType> hiddenOwns) {
+        return iterate(getOwnedAttributes(EXPLICIT))
+                .filter(hiddenOwns::contains)
+                .map(attributeType -> TypeDBException.of(OWNS_ATTRIBUTE_WAS_OVERRIDDEN, getLabel(), attributeType.getLabel()));
+    }
+
+    protected FunctionalIterator<TypeDBException> validation_addedOwns_ownsRedeclarationsHaveStricterAnnotations(Map<AttributeType, Owns> addedOwns) {
+        return iterate(getOwns(EXPLICIT))
+                .map(declaredOwns -> {
+                    Owns parentOwns;
+                    ErrorMessage errorMessage = null;
+                    if (null != (parentOwns = addedOwns.getOrDefault(declaredOwns.attributeType(), null))) {
+                        errorMessage = OWNS_DECLARATION_ANNOTATION_LESS_STRICT;
+                    }  else if (null != (parentOwns = addedOwns.getOrDefault(getOwnsOverridden(declaredOwns.attributeType()), null))) {
+                        errorMessage = OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT;
+                    }
+
+                    if (parentOwns != null && OwnsImpl.compareAnnotations(((OwnsImpl)declaredOwns).explicitAnnotations(), parentOwns.effectiveAnnotations()) > 0) {
+                        return TypeDBException.of(errorMessage, getLabel(), declaredOwns.attributeType().getLabel(), ((OwnsImpl) declaredOwns).explicitAnnotations(), parentOwns.toString());
+                    } else {
+                        return null;
+                    }
+                }).filter(Objects::nonNull);
+    }
+
+    protected FunctionalIterator<TypeDBException> validation_addedOwns_dataAgainstAnnotations(Map<AttributeType, Owns> addedOwns) {
+        return iterate(getOwns(TRANSITIVE))
+                .map(declaredOwns -> {
+                    Owns parentOwns = addedOwns.getOrDefault(declaredOwns.attributeType(), null);
+                    if (parentOwns == null) parentOwns = addedOwns.getOrDefault(getOwnsOverridden(declaredOwns.attributeType()), null);
+
+                    if (parentOwns == null) {
+                        return null;
+                    } else if (OwnsImpl.compareAnnotations(declaredOwns.effectiveAnnotations(), parentOwns.effectiveAnnotations()) < 0) {
+                        try {
+                            // TODO: validate data considers instances of subtypes as well. Validate the correctness of that.
+                            OwnsImpl.validateData(this, (AttributeTypeImpl) declaredOwns.attributeType(), parentOwns.effectiveAnnotations(), declaredOwns.effectiveAnnotations());
+                        } catch (TypeDBException e) {
+                            return e;
+                        }
+                    }
+                    return null;
+                }).filter(Objects::nonNull);
+    }
+
+    protected FunctionalIterator<TypeDBException> validation_removedOwns_leakedOwns(Set<AttributeType> removedOwns) {
+        //TODO: Remove hidden plays? It would cause an exception in validation_removedPlays_overriddenPlaysRedeclaration anyway.
+        return Iterators.iterate(removedOwns)
+                .filter(attributeType -> this.getInstances(EXPLICIT).anyMatch(instance -> instance.getHas(attributeType).hasNext()))
+                .map(attributeType -> TypeDBException.of(SCHEMA_VALIDATION_LEAKED_OWNS, getLabel(), attributeType.getLabel()));
+    }
 
     private static class Cache {
         private NavigableSet<Owns> owns = null;
@@ -772,7 +846,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             validateSchema(owner, attributeType, overriddenType, annotations);
 
             Optional<Owns> existingOrInherited = iterate(owner.getOwns()).filter(owns -> owns.attributeType().equals(attributeType)).first();
-            validateData(owner, attributeType, annotations, existingOrInherited.orElse(null));
+            validateData(owner, attributeType, annotations, existingOrInherited.map(e -> e.effectiveAnnotations()).orElse(java.util.Collections.emptySet()));
 
             Optional<Owns> existingExplicit = iterate(owner.getOwns(EXPLICIT))
                     .filter(ownsExplicit -> ownsExplicit.attributeType().equals(attributeType)).first();
@@ -865,20 +939,20 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         private static void validateData(ThingTypeImpl owner, AttributeTypeImpl attributeType,
-                                         Set<Annotation> annotations, @Nullable Owns existingOwns) {
+                                         Set<Annotation> annotations, Set<Annotation> existingAnnotations) {
             if (annotations.contains(KEY)) {
-                if (existingOwns == null || existingOwns.effectiveAnnotations().isEmpty()) {
+                if (existingAnnotations.isEmpty()) {
                     owner.getInstances().forEachRemaining(instance -> validateDataKey(owner, instance, attributeType));
-                } else if (existingOwns.effectiveAnnotations().contains(UNIQUE)) {
+                } else if (existingAnnotations.contains(UNIQUE)) {
                     owner.getInstances().forEachRemaining(instance -> validateDataKeyCardinality(owner, instance, attributeType));
                 } else {
-                    assert existingOwns.effectiveAnnotations().contains(KEY);
+                    assert existingAnnotations.contains(KEY);
                 }
             } else if (annotations.contains(UNIQUE)) {
-                if (existingOwns == null || existingOwns.effectiveAnnotations().isEmpty()) {
+                if (existingAnnotations.isEmpty()) {
                     owner.getInstances().forEachRemaining(instance -> validateDataUnique(owner, instance, attributeType));
                 } else {
-                    assert existingOwns.effectiveAnnotations().contains(KEY) || existingOwns.effectiveAnnotations().contains(UNIQUE);
+                    assert existingAnnotations.contains(KEY) || existingAnnotations.contains(UNIQUE);
                 }
             }
         }
