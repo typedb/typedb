@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.validation.Validation;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -141,7 +142,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     superType.getLabel(), superType.getValueType().name()));
         }
         Iterators.link(
-                validation_setSupertype_plays(superType),
+                Iterators.iterate(Validation.Plays.validateRelocate(this, superType)),
                 validation_setSupertype_owns(superType)
         ).forEachRemaining(exception -> {
             throw exception;

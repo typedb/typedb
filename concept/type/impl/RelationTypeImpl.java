@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.validation.Validation;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -124,23 +125,13 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public void setSupertype(RelationType superType) {
         validateIsNotDeleted();
         Iterators.link(
-                validation_setSupertype_relates(superType),
-                validation_setSupertype_plays(superType),
+                Iterators.iterate(Validation.Relates.validateRelocate(this, superType)),
+                Iterators.iterate(Validation.Plays.validateRelocate(this, superType)),
                 validation_setSupertype_owns(superType)
         ).forEachRemaining(exception -> {
             throw exception;
         });
         setSuperTypeVertex(((RelationTypeImpl) superType).vertex);
-    }
-
-    protected FunctionalIterator<TypeDBException> validation_setSupertype_relates(RelationType supertype) {
-        Set<RoleType> removedRelates = new HashSet<>();
-        getSupertype().getRelates(TRANSITIVE).filter(roleType -> !roleType.isRoot()).forEachRemaining(removedRelates::add);
-        supertype.getRelates(TRANSITIVE).forEachRemaining(removedRelates::remove);
-        return Iterators.link(
-                getSubtypes(TRANSITIVE).flatMap(t -> t.validation_removedRelates_leakedRelates(removedRelates)),
-                getSubtypes(TRANSITIVE).flatMap(t -> t.validation_removedRelates_brokenRelatesOverrides(removedRelates))
-        );
     }
 
     @Override
@@ -197,12 +188,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         ) {
             throw exception(TypeDBException.of(RELATION_RELATES_ROLE_NOT_AVAILABLE, roleLabel, overriddenLabel));
         }
-
-        Set<RoleType> hiddenRoleTypes = Collections.set(inherited.get());
-        Iterators.link(
-                getSubtypes(TRANSITIVE).flatMap(t -> t.validation_removedRelates_leakedRelates(hiddenRoleTypes)),
-                getSubtypes(TRANSITIVE).filter(t -> !t.equals(this)).flatMap(t -> t.validation_removedRelates_brokenRelatesOverrides(hiddenRoleTypes))
-        ).forEachRemaining(exception -> {
+        Validation.Relates.validateCreate(this, roleLabel, inherited.get()).forEach(exception -> {
             throw exception;
         });
 
@@ -212,27 +198,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         vertex.outs().edge(RELATES, roleType.vertex).setOverridden(inherited.get().vertex);
     }
 
-    private FunctionalIterator<TypeDBException> validation_removedRelates_brokenRelatesOverrides(Set<RoleType> removedRelates) {
-        return getRelates(EXPLICIT)
-                .filter(roleType -> removedRelates.contains(roleType.getSupertype()))
-                .map(roleType -> TypeDBException.of(SCHEMA_VALIDATION_RELATES_OVERRIDE_NOT_AVAILABLE, roleType.getSupertype().getLabel(), roleType.getSupertype().getLabel()));
-    }
-
-    private FunctionalIterator<TypeDBException> validation_removedRelates_leakedRelates(Set<RoleType> removedRelates) {
-        return Iterators.iterate(removedRelates)
-                .filter(roleType -> this.getInstances(EXPLICIT).anyMatch(instance -> instance.getPlayers(roleType).hasNext()))
-                .map(roleType -> TypeDBException.of(SCHEMA_VALIDATION_LEAKED_RELATES, getLabel(), roleType.getLabel()));
-    }
-
     @Override
     public void unsetRelates(String roleLabel) {
         validateIsNotDeleted();
         RoleType roleType = getRelates(roleLabel);
-        Set<RoleType> hiddenRoleTypes = Collections.set(roleType);
-        Iterators.link(
-                getSubtypes(TRANSITIVE).flatMap(t -> t.validation_removedRelates_leakedRelates(hiddenRoleTypes)),
-                getSubtypes(TRANSITIVE).filter(t -> !t.equals(this)).flatMap(t -> t.validation_removedRelates_brokenRelatesOverrides(hiddenRoleTypes))
-        ).forEachRemaining(exception -> {
+        Validation.Relates.validateRemove(this, roleType).forEach(exception -> {
             throw exception;
         });
         roleType.delete();

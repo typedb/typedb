@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.validation.Validation;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
@@ -83,7 +84,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     public void setSupertype(EntityType superType) {
         validateIsNotDeleted();
         Iterators.link(
-                validation_setSupertype_plays(superType),
+                Iterators.iterate(Validation.Plays.validateRelocate(this, superType)),
                 validation_setSupertype_owns(superType)
         ).forEachRemaining(exception -> {
             throw exception;
