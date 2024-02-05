@@ -17,7 +17,7 @@
 
 use logger::result::ResultExt;
 use struct_deser_derive::StructDeser;
-use storage::key_value::Value;
+use storage::key_value::StorageValue;
 
 use crate::{DeserialisableDynamic, EncodingError, EncodingErrorKind, Serialisable, SerialisableKeyFixed, SerialisableValue};
 

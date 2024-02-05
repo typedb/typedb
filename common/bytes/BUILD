@@ -17,36 +17,22 @@
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library")
-package(default_visibility = [
-    "//concept:__subpackages__",
-    "//database:__subpackages__",
-    "//encoding:__subpackages__",
-    "//storage/tests:__subpackages__"
-])
+
+package(default_visibility = ["//visibility:public"])
 
 rust_library(
-    name = "storage",
-    crate_root = "storage.rs",
+    name = "bytes",
+    crate_root = "bytes.rs",
     srcs = glob([
         "*.rs",
     ]),
     deps = [
-        "//storage/durability",
-        "//common/logger",
-        "//common/primitive",
-        "//common/bytes",
-
-        "@crates//:bincode",
-        "@crates//:itertools",
-        "@crates//:speedb",
-        "@crates//:tracing",
         "@crates//:serde",
-        "@crates//:struct_deser",
     ]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob(["*", "*/*", "*/*/*"]),
     license_type = "agpl-header",
 )

@@ -29,7 +29,7 @@ use durability::SequenceNumber;
 
 use crate::error::MVCCStorageError;
 use crate::isolation_manager::CommitRecord;
-use crate::key_value::{KeyspaceKey, Value};
+use crate::key_value::{StorageKey, StorageValue};
 use crate::MVCCStorage;
 
 pub enum Snapshot<'storage> {
@@ -38,14 +38,14 @@ pub enum Snapshot<'storage> {
 }
 
 impl<'storage> Snapshot<'storage> {
-    pub fn get<'snapshot>(&'snapshot self, key: &KeyspaceKey) -> Option<Value> {
+    pub fn get<'snapshot>(&'snapshot self, key: &StorageKey<SNAPSHOT_INLINE_KEYS>) -> Option<StorageValue> {
         match self {
             Snapshot::Read(snapshot) => snapshot.get(key),
             Snapshot::Write(snapshot) => snapshot.get(key),
         }
     }
 
-    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &KeyspaceKey) -> Box<dyn Iterator<Item=(Box<[u8]>, Value)> + 'snapshot> {
+    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &StorageKey<SNAPSHOT_INLINE_KEYS>) -> Box<dyn Iterator<Item=(Box<[u8]>, StorageValue)> + 'snapshot> {
         match self {
             Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
             Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
@@ -67,11 +67,11 @@ impl<'storage> ReadSnapshot<'storage> {
         }
     }
 
-    fn get<'snapshot>(&self, key: &KeyspaceKey) -> Option<Value> {
+    fn get<'snapshot>(&self, key: &StorageKey<SNAPSHOT_INLINE_KEYS>) -> Option<StorageValue> {
         self.storage.get_direct(key)
     }
 
-    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &KeyspaceKey) -> impl Iterator<Item=(Box<[u8]>, Value)> + 'snapshot {
+    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &StorageKey<SNAPSHOT_INLINE_KEYS>) -> impl Iterator<Item=(Box<[u8]>, StorageValue)> + 'snapshot {
         self.storage.iterate_prefix_direct(prefix)
     }
 }
@@ -94,29 +94,29 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     /// Insert a key with a new version
-    pub fn insert(&self, key: KeyspaceKey) {
+    pub fn insert(&self, key: StorageKey<SNAPSHOT_INLINE_KEYS>) {
         let mut map = self.writes.write().unwrap();
-        map.insert(key, Write::Insert(Value::Empty));
+        map.insert(key, Write::Insert(StorageValue::Empty));
     }
 
-    pub fn insert_val(&self, key: KeyspaceKey, value: Value) {
+    pub fn insert_val(&self, key: StorageKey<SNAPSHOT_INLINE_KEYS>, value: StorageValue) {
         let mut map = self.writes.write().unwrap();
         map.insert(key, Write::Insert(value));
     }
 
     /// Insert a key with a new version if it does not already exist.
     /// If the key exists, mark it as a preexisting insertion to escalate to Insert if there is a concurrent Delete.
-    pub fn put(&self, key: KeyspaceKey) {
+    pub fn put(&self, key: StorageKey<SNAPSHOT_INLINE_KEYS>) {
         let existing = self.get(&key);
         if existing.is_some() {
             let mut map = self.writes.write().unwrap();
-            map.insert(key, Write::InsertPreexisting(Value::Empty, Arc::new(AtomicBool::new(false))));
+            map.insert(key, Write::InsertPreexisting(StorageValue::Empty, Arc::new(AtomicBool::new(false))));
         } else {
             self.insert(key)
         }
     }
 
-    pub fn put_val(&self, key: KeyspaceKey, value: Value) {
+    pub fn put_val(&self, key: StorageKey<SNAPSHOT_INLINE_KEYS>, value: StorageValue) {
         let existing = self.get(&key);
         if existing.is_some() {
             let mut map = self.writes.write().unwrap();
@@ -127,7 +127,7 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     /// Insert a delete marker for the key with a new version
-    pub fn delete(&self, key: KeyspaceKey) {
+    pub fn delete(&self, key: StorageKey<SNAPSHOT_INLINE_KEYS>) {
         let mut map = self.writes.write().unwrap();
         if map.get(&key).map_or(false, |write| write.is_insert()) {
             map.remove(&key);
@@ -137,7 +137,7 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     /// Get a Value, and mark it as a required key
-    pub fn get_required(&self, key: KeyspaceKey) -> Value {
+    pub fn get_required(&self, key: StorageKey<SNAPSHOT_INLINE_KEYS>) -> StorageValue {
         let map = self.writes.read().unwrap();
         let existing = map.get(&key);
         if existing.is_none() {
@@ -161,7 +161,7 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     /// Get the Value for the key, returning an empty Option if it does not exist
-    pub fn get(&self, key: &KeyspaceKey) -> Option<Value> {
+    pub fn get(&self, key: &StorageKey<SNAPSHOT_INLINE_KEYS>) -> Option<StorageValue> {
         let map = self.writes.read().unwrap();
         let write = map.get(key);
         write.map_or_else(
@@ -175,7 +175,7 @@ impl<'storage> WriteSnapshot<'storage> {
         )
     }
 
-    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &KeyspaceKey) -> impl Iterator<Item=(Box<[u8]>, Value)> + 'snapshot {
+    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &StorageKey<SNAPSHOT_INLINE_KEYS>) -> impl Iterator<Item=(Box<[u8]>, StorageValue)> + 'snapshot {
         let storage_iterator = self.storage.iterate_prefix_direct(prefix);
         let buffered_iterator = self.iterate_prefix_buffered(prefix);
         storage_iterator.merge_join_by(
@@ -201,13 +201,13 @@ impl<'storage> WriteSnapshot<'storage> {
         })
     }
 
-    fn iterate_prefix_buffered<'s>(&'s self, prefix: &KeyspaceKey) -> impl Iterator<Item=(Box<[u8]>, Write)> + 's {
+    fn iterate_prefix_buffered<'s>(&'s self, prefix: &StorageKey<SNAPSHOT_INLINE_KEYS>) -> impl Iterator<Item=(Box<[u8]>, Write)> + 's {
         let map = self.writes.read().unwrap();
         let range = RangeFrom { start: prefix };
         // TODO: hold read lock while iterating so avoid collecting into array
-        map.range::<KeyspaceKey, _>(range).map(|(key, val)| {
+        map.range::<StorageKey<SNAPSHOT_INLINE_KEYS>, _>(range).map(|(key, val)| {
             // TODO: we can avoid allocation here once we settle on a Key/Value struct
-            (key.bytes().into(), val.clone())
+            (key.bytes().bytes().into(), val.clone())
         }).collect::<Vec<_>>().into_iter()
     }
 
@@ -223,16 +223,19 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 }
 
-pub(crate) type WriteData = BTreeMap<KeyspaceKey, Write>;
+pub(crate) const SNAPSHOT_INLINE_KEYS: usize = 48;
+
+pub(crate) type WriteData = BTreeMap<StorageKey<SNAPSHOT_INLINE_KEYS>, Write>;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) enum Write {
     // Insert KeyValue with a new version. Never conflicts.
-    Insert(Value),
+    Insert(StorageValue),
     // Insert KeyValue with new version if a concurrent Txn deletes Key. Boolean indicates requires re-insertion. Never conflicts.
-    InsertPreexisting(Value, Arc<AtomicBool>), // TODO what happens during replay
+    InsertPreexisting(StorageValue, Arc<AtomicBool>),
+    // TODO what happens during replay
     // Mark Key as required from storage. Caches existing storage Value. Conflicts with Delete.
-    RequireExists(Value),
+    RequireExists(StorageValue),
     // Delete with a new version. Conflicts with Require.
     Delete,
 }

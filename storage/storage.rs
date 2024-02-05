@@ -27,6 +27,8 @@ use std::sync::atomic::Ordering;
 use itertools::Itertools;
 use speedb::{Options, WriteBatch};
 
+use bytes::byte_array::ByteArray;
+use bytes::ByteArrayOrRef;
 use durability::{DurabilityRecord, DurabilityService, SequenceNumber, Sequencer, wal::WAL};
 use logger::error;
 use logger::result::ResultExt;
@@ -35,20 +37,20 @@ use primitive::U80;
 use crate::error::{MVCCStorageError, MVCCStorageErrorKind};
 use crate::error::MVCCStorageErrorKind::KeyspaceError;
 use crate::isolation_manager::{CommitRecord, IsolationManager};
-use crate::key_value::{KEYSPACE_ID_MAX, KeyspaceId, KeyspaceKey, Value};
-use crate::kv::kv_storage::KVStorage;
-use crate::snapshot::{ReadSnapshot, Write, WriteData, WriteSnapshot};
+use crate::key_value::{StorageKey, StorageValue};
+use crate::keyspace::keyspace::{IteratorController, IterControl, Keyspace, KEYSPACE_ID_MAX, KeyspaceId};
+use crate::snapshot::{ReadSnapshot, SNAPSHOT_INLINE_KEYS, Write, WriteData, WriteSnapshot};
 
 pub mod error;
 pub mod key_value;
 pub mod snapshot;
 mod isolation_manager;
-mod kv;
+mod keyspace;
 
 pub struct MVCCStorage {
     owner_name: Rc<str>,
     path: PathBuf,
-    keyspaces: Vec<KVStorage>,
+    keyspaces: Vec<Keyspace>,
     keyspaces_index: [KeyspaceId; KEYSPACE_ID_MAX],
     // TODO: inject either a remote or local service
     durability_service: WAL,
@@ -57,14 +59,15 @@ pub struct MVCCStorage {
 
 impl MVCCStorage {
     const STORAGE_DIR_NAME: &'static str = "storage";
+    pub(crate) const ITERATOR_INLINE_BYTES: usize = 128;
 
     pub fn new(owner_name: Rc<str>, path: &PathBuf) -> Result<Self, MVCCStorageError> {
-        let kv_storage_dir = path.with_extension(MVCCStorage::STORAGE_DIR_NAME);
+        let storage_dir = path.with_extension(MVCCStorage::STORAGE_DIR_NAME);
         let mut durability_service = WAL::new();
         durability_service.register_record_type(CommitRecord::DURABILITY_RECORD_TYPE, CommitRecord::DURABILITY_RECORD_NAME);
         Ok(MVCCStorage {
             owner_name: owner_name.clone(),
-            path: kv_storage_dir,
+            path: storage_dir,
             keyspaces: Vec::new(),
             keyspaces_index: [0; KEYSPACE_ID_MAX],
             isolation_manager: IsolationManager::new(durability_service.poll_next()),
@@ -88,7 +91,7 @@ impl MVCCStorage {
     pub fn create_keyspace(&mut self, name: &str, keyspace_id: KeyspaceId, options: &Options) -> Result<(), MVCCStorageError> {
         let keyspace_path = self.path.with_extension(name);
         self.validate_new_keyspace(name, keyspace_id)?;
-        self.keyspaces.push(KVStorage::new(keyspace_path, options).map_err(|err| MVCCStorageError {
+        self.keyspaces.push(Keyspace::new(keyspace_path, options).map_err(|err| MVCCStorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
             kind: MVCCStorageErrorKind::KeyspaceError { source: err, keyspace: name.to_owned() },
         })?);
@@ -201,20 +204,20 @@ impl MVCCStorage {
             match write {
                 Write::Insert(value) => {
                     write_batches[keyspace_id].as_mut().unwrap().put(
-                        MVCCKey::<'static>::build(key.bytes(), commit_sequence_number, StorageOperation::Insert).bytes(),
+                        MVCCKey::<'static>::build(key.bytes().bytes(), commit_sequence_number, StorageOperation::Insert).bytes(),
                         value.bytes(),
                     )
                 }
                 Write::InsertPreexisting(value, reinsert) => if reinsert.load(Ordering::SeqCst) {
                     write_batches[keyspace_id].as_mut().unwrap().put(
-                        MVCCKey::<'static>::build(key.bytes(), commit_sequence_number, StorageOperation::Insert).bytes(),
+                        MVCCKey::<'static>::build(key.bytes().bytes(), commit_sequence_number, StorageOperation::Insert).bytes(),
                         value.bytes(),
                     )
                 },
                 Write::RequireExists(_) => {}
                 Write::Delete => {
                     write_batches[keyspace_id].as_mut().unwrap().delete(
-                        MVCCKey::build(key.bytes(), commit_sequence_number, StorageOperation::Delete).bytes()
+                        MVCCKey::<'static>::build(key.bytes().bytes(), commit_sequence_number, StorageOperation::Delete).bytes()
                     )
                 }
             }
@@ -222,7 +225,7 @@ impl MVCCStorage {
         write_batches
     }
 
-    fn get_keyspace(&self, keyspace_id: KeyspaceId) -> &KVStorage {
+    fn get_keyspace(&self, keyspace_id: KeyspaceId) -> &Keyspace {
         let keyspace_index = self.keyspaces_index[keyspace_id as usize];
         self.keyspaces.get(keyspace_index as usize).unwrap()
     }
@@ -261,14 +264,21 @@ impl MVCCStorage {
         }
     }
 
-    pub fn get<R, V>(&self, key: &KeyspaceKey, open_sequence_number: &SequenceNumber, mut reader: R) -> Option<V>
-        where R: FnMut(&[u8]) -> V {
+    pub fn get<M, V>(&self, key: &StorageKey<SNAPSHOT_INLINE_KEYS>, open_sequence_number: &SequenceNumber, mut mapper: M) -> Option<V>
+        where M: FnMut(&[u8]) -> V {
         let result = self.get_keyspace(key.keyspace_id())
             .iterate_prefix(
-                key.bytes(),
+                key.bytes().bytes(),
                 |sequenced_key, value| {
-                    MVCCStorage::mvcc_visibility((sequenced_key, value), open_sequence_number)
-                        .map(|(k, v)| ((), reader(v)))
+                    let mvcc_key = MVCCKey::wrap_slice(sequenced_key);
+                    if mvcc_key.is_visible_to(open_sequence_number) {
+                        match mvcc_key.operation() {
+                            StorageOperation::Insert => IterControl::Accept((), mapper(value)),
+                            StorageOperation::Delete => IterControl::Stop
+                        }
+                    } else {
+                        IterControl::IgnoreSingle
+                    }
                 },
             ).next();
         match result {
@@ -284,20 +294,49 @@ impl MVCCStorage {
         }
     }
 
+    pub fn iterate_prefix<'s, M: 's, K: 's, V: 's>(&'s self, prefix: &'s StorageKey<SNAPSHOT_INLINE_KEYS>, open_sequence_number: &SequenceNumber, mut mapper: M)
+                                                             -> impl Iterator<Item=Result<(K, V), MVCCStorageError>> + 's
+        where M: FnMut(&[u8], &[u8]) -> (K, V) {
+        let mut iterator_controller = visibility::VariableWidthIteratorController::new(open_sequence_number, mapper);
+        let keyspace_prefix_iterator = self.get_keyspace(prefix.keyspace_id())
+            .iterate_prefix(
+                prefix.bytes().bytes(),
+                iterator_controller
+                // move |sequenced_key, value| {
+                //     let control = iterator_controller.control(sequenced_key, value);
+                //     // control.map(|k, v| mapper(k, v))
+                //
+                //     match control {
+                //         IterControl::IgnoreSingle => IterControl::IgnoreSingle,
+                //         IterControl::IgnoreUntil(k) => IterControl::IgnoreUntil(k),
+                //         IterControl::Accept(k, v) => {
+                //             let (t, u) = mapper(k, v);
+                //             IterControl::Accept(t, u)
+                //         }
+                //         IterControl::Stop => IterControl::Stop
+                //     }
+                // },
+            ).map(|result| result.map_err(|err| MVCCStorageError {
+            storage_name: self.owner_name.to_string(),
+            kind: MVCCStorageErrorKind::KeyspaceError { source: err, keyspace: self.get_keyspace(prefix.keyspace_id()).name().to_owned() },
+        }));
+        keyspace_prefix_iterator
+    }
+
     // --- direct access to storage, bypassing MVCC and returning raw key/value pairs ---
 
-    pub fn put_direct(&self, key: &KeyspaceKey, value: &Value) {
+    pub fn put_direct(&self, key: &StorageKey<SNAPSHOT_INLINE_KEYS>, value: &StorageValue) {
         // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
-        self.get_keyspace(key.keyspace_id()).put(key.bytes(), value.bytes()).map_err(|e| MVCCStorageError {
+        self.get_keyspace(key.keyspace_id()).put(key.bytes().bytes(), value.bytes()).map_err(|e| MVCCStorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
             kind: MVCCStorageErrorKind::KeyspaceError { source: e, keyspace: self.get_keyspace(key.keyspace_id()).name().to_owned() },
         }).unwrap_or_log()
     }
 
-    pub fn get_direct(&self, key: &KeyspaceKey) -> Option<Value> {
+    pub fn get_direct(&self, key: &StorageKey<SNAPSHOT_INLINE_KEYS>) -> Option<StorageValue> {
         self.get_keyspace(key.keyspace_id()).get(
-            key.bytes(),
-            |value| Value::Value(Box::from(value)),
+            key.bytes().bytes(),
+            |value| StorageValue::Value(Box::from(value)),
         ).map_err(|e| MVCCStorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
             kind: MVCCStorageErrorKind::KeyspaceError { source: e, keyspace: self.get_keyspace(key.keyspace_id()).name().to_owned() },
@@ -305,14 +344,14 @@ impl MVCCStorage {
         }).unwrap_or_log()
     }
 
-    pub fn get_prev_direct(&self, key: &KeyspaceKey) -> Option<(Box<[u8]>, Value)> {
+    pub fn get_prev_direct(&self, key: &StorageKey<SNAPSHOT_INLINE_KEYS>) -> Option<(Box<[u8]>, StorageValue)> {
         self.get_keyspace(key.keyspace_id()).get_prev(
-            key.bytes(),
-                |k, v| (Box::from(k), Value::Value(Box::from(v)))
+            key.bytes().bytes(),
+            |k, v| (Box::from(k), StorageValue::Value(Box::from(v))),
         )
     }
 
-    pub fn iterate_prefix_direct<'s>(&'s self, prefix: &KeyspaceKey) -> impl Iterator<Item=(Box<[u8]>, Value)> + 's {
+    pub fn iterate_prefix_direct<'s>(&'s self, prefix: &StorageKey<SNAPSHOT_INLINE_KEYS>) -> impl Iterator<Item=(Box<[u8]>, StorageValue)> + 's {
         // debug_assert!(prefix.bytes().len() > 1);
         // self.get_keyspace(prefix.keyspace_id()).iterate_prefix(prefix.bytes())
         //     .map(|res| {
@@ -327,88 +366,199 @@ impl MVCCStorage {
         //     })
         empty()
     }
-
-    fn mvcc_visibility<'bytes>((key, value): (&'bytes [u8], &'bytes [u8]), open_sequence_number: &SequenceNumber) -> Visibility<'bytes> {
-        let mvcc_key = MVCCKey::<'bytes>::wrap(key);
-        let sequence_number = mvcc_key.sequence_number();
-
-        if open_sequence_number <= &sequence_number {
-            Some((mvcc_key.into_key(), value))
-        } else {
-            None
-        }
-    }
 }
 
-enum Visibility<'bytes> {
-    Ignore,
-    Visible(&'bytes [u8], &'bytes [u8]),
-    Deleted,
+mod visibility {
+    use bytes::byte_array::ByteArray;
+    use durability::SequenceNumber;
+    use logger::result::ResultExt;
+
+    use crate::{MVCCKey, MVCCStorage, StorageOperation};
+    use crate::keyspace::keyspace::{IteratorController, IterControl};
+
+    pub(crate) struct VariableWidthIteratorController<M, K, V> where M: FnMut(&[u8], &[u8]) -> (K, V) {
+        last_visible_key: Option<ByteArray<{ MVCCStorage::ITERATOR_INLINE_BYTES }>>,
+        open_sequence_number: SequenceNumber,
+        mapper: M,
+    }
+
+    impl<M, K, V> VariableWidthIteratorController<M, K, V> where M: FnMut(&[u8], &[u8]) -> (K, V) {
+        pub(crate) fn new(open_sequence_number: &SequenceNumber, mapper: M) -> VariableWidthIteratorController<M, K, V> {
+            VariableWidthIteratorController {
+                last_visible_key: None,
+                open_sequence_number: *open_sequence_number,
+                mapper: mapper,
+            }
+        }
+
+        fn is_new_visible_key(&self, mvcc_key: &MVCCKey) -> bool {
+            (self.last_visible_key.is_none() || self.last_visible_key.as_ref().unwrap().bytes() != mvcc_key.key())
+                && mvcc_key.is_visible_to(&self.open_sequence_number)
+        }
+    }
+
+    impl<M, K, V> IteratorController<K, V> for VariableWidthIteratorController<M, K, V> where M: FnMut(&[u8], &[u8]) -> (K, V) {
+        fn control<'a>(&mut self, sequenced_key: &'a [u8], value: &'a [u8]) -> IterControl<'a, K, V> {
+            let mvcc_key = MVCCKey::wrap_slice(sequenced_key);
+
+            if self.is_new_visible_key(&mvcc_key) {
+                self.last_visible_key = Some(ByteArray::from(mvcc_key.key()));
+                match mvcc_key.operation() {
+                    StorageOperation::Insert => {
+                        IterControl::Accept(mvcc_key.into_key().unwrap_reference(), value)
+                    }
+                    StorageOperation::Delete => {
+                        IterControl::IgnoreSingle
+                    }
+                }
+            } else {
+                IterControl::IgnoreSingle
+            }
+        }
+    }
+    //
+    // pub(crate) struct FixedWidthIteratorController {
+    //     last_visible_key: Option<ByteArray<{ MVCCStorage::ITERATOR_INLINE_BYTES }>>,
+    //     next_possible_key: Option<ByteArray<{ MVCCStorage::ITERATOR_INLINE_BYTES }>>,
+    //     open_sequence_number: SequenceNumber,
+    // }
+    //
+    // impl FixedWidthIteratorController {
+    //     pub(crate) fn new(open_sequence_number: &SequenceNumber) -> FixedWidthIteratorController {
+    //         FixedWidthIteratorController {
+    //             last_visible_key: None,
+    //             next_possible_key: None,
+    //             open_sequence_number: *open_sequence_number,
+    //         }
+    //     }
+    //
+    //     pub(crate) fn control<'a>(&mut self, sequenced_key: &'a [u8], value: &'a [u8]) -> IterControl<'a, &'a [u8], &'a [u8]> {
+    //         let mvcc_key = MVCCKey::wrap_slice(sequenced_key);
+    //
+    //         if self.last_visible_key.is_none() {
+    //             if mvcc_key.is_visible_to(&self.open_sequence_number) {
+    //                 self.control_new_visible_key(mvcc_key, value)
+    //             } else {
+    //                 IterControl::IgnoreSingle
+    //             }
+    //         } else {
+    //             if self.last_visible_key.as_ref().unwrap().bytes() == mvcc_key.key() {
+    //                 // skip over old versions of a previously accepted key
+    //                 IterControl::IgnoreUntil(self.next_possible_key.as_ref().unwrap().bytes())
+    //             } else if mvcc_key.is_visible_to(&self.open_sequence_number) {
+    //                 self.control_new_visible_key(mvcc_key, value)
+    //             } else {
+    //                 IterControl::IgnoreSingle
+    //             }
+    //         }
+    //     }
+    //
+    //     fn control_new_visible_key<'a>(&mut self, mvcc_key: MVCCKey, value: &'a [u8]) -> IterControl<'a, &[u8], &[u8]> {
+    //         let last_key = ByteArray::from(mvcc_key.key());
+    //
+    //         // TODO: we should be able to append the sequence number + the first operation to this, to skip through keys and new versions of the expected key
+    //         //       we should verify that this is going to work with prefix iterators when the prefix extractor is set to a shorter length?
+    //         let mut next_key = last_key.clone();
+    //         next_key.increment().unwrap_or_log();
+    //         self.last_visible_key = Some(last_key);
+    //         self.next_possible_key = Some(next_key);
+    //         match mvcc_key.operation() {
+    //             StorageOperation::Insert => {
+    //                 IterControl::Accept(mvcc_key.into_key().unwrap_reference(), value)
+    //             }
+    //             StorageOperation::Delete => {
+    //                 IterControl::IgnoreUntil(&self.next_possible_key.as_ref().unwrap().bytes())
+    //             }
+    //         }
+    //     }
+    //
+    //     fn is_new_visible_key(&self, mvcc_key: &MVCCKey) -> bool {
+    //         (self.last_visible_key.is_none() || self.last_visible_key.as_ref().unwrap().bytes() != mvcc_key.key())
+    //             && mvcc_key.is_visible_to(&self.open_sequence_number)
+    //     }
+    // }
+
+// pub(crate) fn read_mvcc<'bytes>((key, value): (&'bytes [u8], &'bytes [u8]), open_sequence_number: &SequenceNumber) -> MVCCRead<'bytes> {
+//     let mvcc_key = MVCCKey::<'bytes>::wrap(key);
+//     let operation = mvcc_key.operation();
+//
+//     if mvcc_key.is_visible_to(&open_sequence_number) {
+//         match operation {
+//             StorageOperation::Insert => MVCCRead::Visible(mvcc_key.into_key(), value),
+//             StorageOperation::Delete => MVCCRead::Deleted,
+//         }
+//     } else {
+//         MVCCRead::Hidden
+//     }
+// }
 }
 
 ///
 /// MVCC keys are made of three parts: the [KEY][SEQ][OP]
 ///
-/// Small keys are designed to be able to kept on the stack and live in a fixed size array
-/// Large keys are heap stored and point to the heap, with the same structure
-///
-enum MVCCKey<'bytes> {
-    Small(MVCCKeySmall),
-    Large(MVCCKeyLarge),
-    Ref(MVCCRef<'bytes>),
+struct MVCCKey<'bytes> {
+    bytes: ByteArrayOrRef<'bytes, MVCC_KEY_INLINE_SIZE>,
 }
+
+// byte array inline size can be adjusted to avoid allocation since these key are often short-lived
+const MVCC_KEY_INLINE_SIZE: usize = 128;
 
 impl<'bytes> MVCCKey<'bytes> {
     const OPERATION_NEGATIVE_OFFSET: usize = StorageOperation::serialised_len();
     const SEQUENCE_NUMBER_NEGATIVE_OFFSET: usize = MVCCKey::OPERATION_NEGATIVE_OFFSET + StorageOperation::serialised_len();
     const KEY_NEGATIVE_OFFSET: usize = MVCCKey::SEQUENCE_NUMBER_NEGATIVE_OFFSET + SequenceNumber::serialised_len();
 
-    fn build(bytes: &[u8], sequence_number: &SequenceNumber, storage_operation: StorageOperation) -> MVCCKey<'bytes> {
-        let size = bytes.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len();
+    fn build(key: &[u8], sequence_number: &SequenceNumber, storage_operation: StorageOperation) -> MVCCKey<'bytes> {
+        let length = key.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len();
+        let mut byte_array = ByteArray::empty(length);
+        let mut bytes = byte_array.bytes_mut();
 
-        if size < MVCCKeySmall::BYTES {
-            MVCCKey::Small(MVCCKeySmall::new(bytes, sequence_number, storage_operation))
-        } else {
-            MVCCKey::Large(MVCCKeyLarge::new(bytes, sequence_number, storage_operation))
+        let key_end = key.len();
+        let sequence_number_end = key_end + SequenceNumber::serialised_len();
+        let operation_end = sequence_number_end + StorageOperation::serialised_len();
+
+        bytes[0..key_end].copy_from_slice(bytes);
+        sequence_number.invert().serialise_be_into(&mut bytes[key_end..sequence_number_end]);
+        bytes[sequence_number_end..operation_end].copy_from_slice(storage_operation.bytes());
+
+        MVCCKey {
+            bytes: ByteArrayOrRef::Array(byte_array),
         }
     }
 
-    fn wrap(bytes: &'bytes [u8]) -> MVCCKey<'bytes> {
-        MVCCKey::Ref(MVCCRef::new(bytes))
+    fn wrap_owned(bytes: ByteArray<MVCC_KEY_INLINE_SIZE>) -> MVCCKey<'bytes> {
+        MVCCKey {
+            bytes: ByteArrayOrRef::Array(bytes),
+        }
+    }
+
+    fn wrap_slice(bytes: &[u8]) -> MVCCKey<'bytes> {
+        MVCCKey {
+            bytes: ByteArrayOrRef::Reference(bytes)
+        }
+    }
+
+    pub(crate) fn is_visible_to(&self, sequence_number: &SequenceNumber) -> bool {
+        self.sequence_number() <= *sequence_number
     }
 
     fn bytes(&'bytes self) -> &'bytes [u8] {
-        match self {
-            MVCCKey::Small(key) => key.bytes(),
-            MVCCKey::Large(key) => key.bytes(),
-            MVCCKey::Ref(mvcc_ref) => mvcc_ref.bytes(),
-        }
-    }
-
-    // TODO: this really means we should refactor into separate data structures
-    fn into_bytes(self) -> &'bytes [u8] {
-        match self {
-            MVCCKey::Small(_) => unreachable!("Illegal state"),
-            MVCCKey::Large(_) => unreachable!("Illegal state"),
-            MVCCKey::Ref(mvcc_ref) => mvcc_ref.into_bytes(),
-        }
+        self.bytes.bytes()
     }
 
     fn length(&self) -> usize {
-        match self {
-            MVCCKey::Small(key) => key.length,
-            MVCCKey::Large(key) => key.bytes().len(),
-            MVCCKey::Ref(mvcc_ref) => mvcc_ref.bytes().len(),
-        }
+        self.bytes.length()
     }
 
     fn key(&'bytes self) -> &'bytes [u8] {
         &self.bytes()[0..(self.length() - MVCCKey::KEY_NEGATIVE_OFFSET)]
     }
 
-    fn into_key(self) -> &'bytes [u8] {
-        let length = self.length();
-        &self.into_bytes()[0..(length - MVCCKey::KEY_NEGATIVE_OFFSET)]
+    fn into_key(self) -> ByteArrayOrRef<'bytes, MVCC_KEY_INLINE_SIZE> {
+        let end = self.length() - MVCCKey::KEY_NEGATIVE_OFFSET;
+        let mut bytes = self.bytes;
+        bytes.truncate(end);
+        bytes
     }
 
     fn sequence_number(&self) -> SequenceNumber {
@@ -423,77 +573,6 @@ impl<'bytes> MVCCKey<'bytes> {
         let operation_byte_offset = self.length() - MVCCKey::OPERATION_NEGATIVE_OFFSET;
         let operation_byte_end = self.length();
         StorageOperation::from(&self.bytes()[operation_byte_offset..operation_byte_end])
-    }
-}
-
-struct MVCCKeySmall {
-    length: usize,
-    bytes: [u8; MVCCKeySmall::BYTES],
-}
-
-impl MVCCKeySmall {
-    const BYTES: usize = 64;
-
-    fn new(bytes: &[u8], sequence_number: &SequenceNumber, storage_operation: StorageOperation) -> MVCCKeySmall {
-        let length = bytes.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len();
-        debug_assert!(length <= MVCCKeySmall::BYTES);
-        let bytes_end = bytes.len();
-        let sequence_number_end = bytes_end + SequenceNumber::serialised_len();
-        let operation_end = sequence_number_end + StorageOperation::serialised_len();
-
-        let mut storage_key_bytes = [0; MVCCKeySmall::BYTES];
-        storage_key_bytes[0..bytes_end].copy_from_slice(bytes);
-        sequence_number.invert().serialise_be_into(&mut storage_key_bytes[bytes_end..sequence_number_end]);
-        storage_key_bytes[sequence_number_end..operation_end].copy_from_slice(storage_operation.bytes());
-        MVCCKeySmall {
-            length: length,
-            bytes: storage_key_bytes,
-        }
-    }
-
-    fn bytes(&self) -> &[u8] {
-        &self.bytes[0..self.length]
-    }
-}
-
-struct MVCCKeyLarge {
-    bytes: Box<[u8]>,
-}
-
-impl MVCCKeyLarge {
-    fn new(bytes: &[u8], sequence_number: &SequenceNumber, storage_operation: StorageOperation) -> MVCCKeyLarge {
-        let mut vec = Vec::with_capacity(bytes.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len());
-        vec.extend_from_slice(bytes);
-        vec.extend_from_slice(&sequence_number.invert().serialise_be());
-        vec.extend_from_slice(storage_operation.bytes());
-
-        MVCCKeyLarge {
-            bytes: vec.into_boxed_slice()
-        }
-    }
-
-    fn bytes(&self) -> &[u8] {
-        &self.bytes
-    }
-}
-
-struct MVCCRef<'bytes> {
-    bytes: &'bytes [u8],
-}
-
-impl<'bytes> MVCCRef<'bytes> {
-    fn new(bytes: &'bytes [u8]) -> MVCCRef<'bytes> {
-        MVCCRef {
-            bytes: bytes,
-        }
-    }
-
-    fn bytes(&self) -> &'bytes [u8] {
-        self.bytes
-    }
-
-    fn into_bytes(self) -> &'bytes [u8] {
-        self.bytes
     }
 }
 

@@ -20,14 +20,14 @@ use std::rc::Rc;
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use storage::{StorageSection, KeyspaceId, MVCCStorage};
-use storage::key_value::{KeyspaceKey, SectionKeyFixed, Value};
+use storage::key_value::{StorageKey, StorageKey, StorageValue};
 use storage::snapshot::Snapshot;
 use test_utils::{init_logging, create_tmp_dir, delete_dir};
 
-fn random_key(section_id: KeyspaceId) -> KeyspaceKey {
+fn random_key(section_id: KeyspaceId) -> StorageKey {
     let mut bytes: [u8; 24] = rand::random();
     bytes[0] = 0b0;
-    KeyspaceKey::Fixed(SectionKeyFixed::from((bytes.as_slice(), section_id)))
+    StorageKey::Fixed(StorageKey::from((bytes.as_slice(), section_id)))
 }
 
 fn populate_storage(storage: &MVCCStorage, section_id: KeyspaceId, key_count: usize) -> usize {
@@ -42,15 +42,15 @@ fn populate_storage(storage: &MVCCStorage, section_id: KeyspaceId, key_count: us
     }
     snapshot.commit();
     let snapshot = Snapshot::Read(storage.snapshot_read());
-    let prefix = KeyspaceKey::Fixed(SectionKeyFixed::from(([0 as u8].as_slice(), section_id)));
+    let prefix = StorageKey::Fixed(StorageKey::from(([0 as u8].as_slice(), section_id)));
     let iterator = snapshot.iterate_prefix(&prefix);
     iterator.count()
 }
 
 
-fn bench_snapshot_read_get(storage: &MVCCStorage, section_id: KeyspaceId) -> Option<Value> {
+fn bench_snapshot_read_get(storage: &MVCCStorage, section_id: KeyspaceId) -> Option<StorageValue> {
     let snapshot = Snapshot::Read(storage.snapshot_read());
-    let mut last: Option<Value> = None;
+    let mut last: Option<StorageValue> = None;
     for _ in 0..1 {
         let key = random_key(section_id);
         last = snapshot.get(&key)
