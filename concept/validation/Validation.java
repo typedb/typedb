@@ -18,29 +18,40 @@
 
 package com.vaticle.typedb.core.concept.validation;
 
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concept.type.impl.AttributeTypeImpl;
+import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import javax.annotation.Nullable;
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_LEAKED_PLAYS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_LEAKED_RELATES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_OVERRIDE_PLAYS_NOT_AVAILABLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_RELATES_OVERRIDE_NOT_AVAILABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.*;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_UNIQUE_PRECONDITION;
+import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.UNIQUE;
+import static java.util.Collections.emptySet;
 
 public class Validation {
     public static class Relates {
@@ -97,16 +108,7 @@ public class Validation {
     }
 
     public static class Plays {
-//        ThingType player;
-//        RoleType played;
-//        RoleType overridden;
-//
-//        public Plays(ThingType player, RoleType played, RoleType overridden) {
-//            this.player = player;
-//            this.played = played;
-//            this.overridden = overridden;
-//        }
-//
+
         public static List<TypeDBException> validateCreate(ThingType thingType, RoleType added, @Nullable RoleType overridden) {
             List<TypeDBException> exceptions = new ArrayList<>();
             if (overridden != null) {
@@ -195,16 +197,183 @@ public class Validation {
     }
 
     public static class Owns {
-        ThingType owner;
-        AttributeType owned;
-        AttributeType overridden;
-        Set<Annotation> annotations;
 
-        public Owns(ThingType owner, AttributeType owned, AttributeType overridden, Set<Annotation> annotations) {
-            this.owner = owner;
-            this.owned = owned;
-            this.overridden = overridden;
-            this.annotations = annotations;
+        public static List<TypeDBException> validateAdd(ThingType thingType, AttributeType attributeType, @Nullable AttributeType overriddenType, Set<TypeQLToken.Annotation> explicitAnnotations) {
+            List<TypeDBException> exceptions = new ArrayList<>();
+            if (overriddenType != null) {
+                Set<AttributeType> hiddenOwns = new HashSet<>();
+                hiddenOwns.add(overriddenType);
+                validateNoHiddenOwnsRedeclaration(thingType, hiddenOwns, exceptions);
+            }
+
+            Optional<ThingType.Owns> existingOrInherited = iterate(thingType.getOwns()).filter(owns -> owns.attributeType().equals(attributeType)).first();
+            Optional<ThingType.Owns> existingExplicit = iterate(thingType.getOwns(EXPLICIT))
+                    .filter(ownsExplicit -> ownsExplicit.attributeType().equals(attributeType)).first();
+            Set<TypeQLToken.Annotation> existingEffectiveAnnotations = existingExplicit.map(ThingType.Owns::effectiveAnnotations).orElse(existingOrInherited.map(ThingType.Owns::effectiveAnnotations).orElse(emptySet()));
+
+            // Making sure it's stricter than existingEffective is done before, since that is part of validating the declaration.
+            if (Validation.Owns.compareAnnotationsPermissive(explicitAnnotations, existingEffectiveAnnotations) < 0) {
+                Map<AttributeType, Set<TypeQLToken.Annotation>> addedOwnsAnnotations = Map.of(attributeType, explicitAnnotations);
+                thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateOwnsRedeclarationsAndOverridesHaveStricterAnnotations(subtype, addedOwnsAnnotations, exceptions));
+                thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateDataSatisfyAnnotations(subtype, addedOwnsAnnotations, exceptions));
+            }
+            return exceptions;
         }
+
+        public static List<TypeDBException> validateRemove(ThingType thingType, AttributeType attributeType) {
+            List<TypeDBException> exceptions = new ArrayList<>();
+            Set<AttributeType> removedOwns = new HashSet<>();
+            removedOwns.add(attributeType);
+            validateNoLeakedOwns(thingType, removedOwns, exceptions);
+            return exceptions;
+        }
+
+        public static List<TypeDBException> validateRelocate(ThingType thingType, ThingType newSupertype) {
+            List<TypeDBException> exceptions = new ArrayList<>();
+            Set<AttributeType> removedOwns = new HashSet<>(thingType.getSupertype().getOwnedAttributes(TRANSITIVE));
+            removedOwns.removeAll(newSupertype.getOwnedAttributes(TRANSITIVE));
+            Set<AttributeType> hiddenOwns = new HashSet<>();
+            Iterators.link(Iterators.iterate(newSupertype), newSupertype.getSupertypes()).forEachRemaining(t -> {
+                iterate(t.getOwnedAttributes(EXPLICIT)).forEachRemaining(attributeType -> {
+                    AttributeType overridden = t.getOwnsOverridden(attributeType);
+                    if (overridden != null) hiddenOwns.add(overridden);
+                });
+            });
+
+            Map<AttributeType, Set<TypeQLToken.Annotation>> addedOwnsAnnotations = new HashMap<>();
+            newSupertype.getOwns(TRANSITIVE).forEach(owns -> addedOwnsAnnotations.put(owns.attributeType(), owns.effectiveAnnotations()));
+
+            validateNoHiddenOwnsRedeclaration(thingType, hiddenOwns, exceptions);
+            validateOwnsRedeclarationsAndOverridesHaveStricterAnnotations(thingType, addedOwnsAnnotations, exceptions);
+            validateDataSatisfyAnnotations(thingType, addedOwnsAnnotations, exceptions);
+            validateNoLeakedOwns(thingType, removedOwns, exceptions);
+            return exceptions;
+        }
+
+        private static void validateNoHiddenOwnsRedeclaration(ThingType thingType, Set<AttributeType> hiddenOwns, List<TypeDBException> acc) {
+            iterate(thingType.getOwnedAttributes(EXPLICIT))
+                    .filter(hiddenOwns::contains)
+                    .forEachRemaining(attributeType -> {
+                        acc.add(TypeDBException.of(OWNS_ATTRIBUTE_WAS_OVERRIDDEN, thingType.getLabel(), attributeType.getLabel()));
+                    });
+            // TODO: Optimise overridden
+            thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoHiddenOwnsRedeclaration(subtype, hiddenOwns, acc));
+        }
+
+        private static void validateOwnsRedeclarationsAndOverridesHaveStricterAnnotations(ThingType thingType, Map<AttributeType, Set<TypeQLToken.Annotation>> addedAnnotations, List<TypeDBException> acc) {
+            // TODO: (LONG-TERM) We would ideally have done this at commit time, but we can't because annotations are inherited when they're not specified.
+            // Concretely: when we move a type without annotations to be a descendant of one with annotations, We cannot detect the change at commit time.
+            iterate(thingType.getOwns(EXPLICIT))
+                    .forEachRemaining(declaredOwns -> {
+                        if (addedAnnotations.containsKey(declaredOwns.attributeType())) {
+                            Set<TypeQLToken.Annotation> parentAnnotations = addedAnnotations.get(declaredOwns.attributeType());
+                            if (compareAnnotationsPermissive(declaredOwns.effectiveAnnotations(), parentAnnotations) > 0) {
+                                acc.add(TypeDBException.of(OWNS_REDECLARATION_ANNOTATION_LESS_STRICT, thingType.getLabel(), declaredOwns.attributeType().getLabel(), ((ThingTypeImpl.OwnsImpl) declaredOwns).explicitAnnotations(), parentAnnotations));
+                            }
+                        } else if (thingType.getOwnsOverridden(declaredOwns.attributeType()) != null && addedAnnotations.containsKey(thingType.getOwnsOverridden(declaredOwns.attributeType()))) {
+                            Set<TypeQLToken.Annotation> parentAnnotations = addedAnnotations.get(thingType.getOwnsOverridden(declaredOwns.attributeType()));
+                            if (compareAnnotationsPermissive(declaredOwns.effectiveAnnotations(), parentAnnotations) > 0) {
+                                acc.add(TypeDBException.of(OWNS_OVERRIDE_ANNOTATION_LESS_STRICT_THAN_PARENT, thingType.getLabel(), declaredOwns.attributeType().getLabel(), ((ThingTypeImpl.OwnsImpl) declaredOwns).explicitAnnotations(), parentAnnotations));
+                            }
+                        }
+                    });
+            // TODO: Optimise overridden
+            thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateOwnsRedeclarationsAndOverridesHaveStricterAnnotations(subtype, addedAnnotations, acc));
+        }
+
+        private static void validateDataSatisfyAnnotations(ThingType thingType, Map<AttributeType, Set<TypeQLToken.Annotation>> addedAnnotations, List<TypeDBException> acc) {
+            iterate(thingType.getOwns(TRANSITIVE))
+                    .forEachRemaining(declaredOwns -> {
+                        Set<TypeQLToken.Annotation> freshlyInheritedAnnotations;
+                        if (addedAnnotations.containsKey(declaredOwns.attributeType())) {
+                            freshlyInheritedAnnotations = addedAnnotations.get(declaredOwns.attributeType());
+                        } else if (thingType.getOwnsOverridden(declaredOwns.attributeType()) != null && addedAnnotations.containsKey(thingType.getOwnsOverridden(declaredOwns.attributeType()))) {
+                            freshlyInheritedAnnotations = addedAnnotations.get(thingType.getOwnsOverridden(declaredOwns.attributeType()));
+                        } else freshlyInheritedAnnotations = null;
+
+                        if (freshlyInheritedAnnotations != null && compareAnnotationsPermissive(declaredOwns.effectiveAnnotations(), freshlyInheritedAnnotations) < 0) {
+                            try {
+                                // TODO: validate data considers instances of subtypes as well. Validate the correctness of that.
+                                // There's plenty of redundant work because I repeat every next level
+                                validateData((ThingTypeImpl) thingType, (AttributeTypeImpl) declaredOwns.attributeType(), freshlyInheritedAnnotations, declaredOwns.effectiveAnnotations());
+                            } catch (TypeDBException e) {
+                                acc.add(e);
+                            }
+                        }
+                    });
+            // TODO: Optimise overridden
+            thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateDataSatisfyAnnotations(subtype, addedAnnotations, acc));
+        }
+
+        private static void validateNoLeakedOwns(ThingType thingType, Set<AttributeType> removedOwns, List<TypeDBException> acc) {
+            //TODO: Remove hidden plays? It would cause an exception in validation_removedPlays_overriddenPlaysRedeclaration anyway.
+            Iterators.iterate(removedOwns)
+                    .filter(attributeType -> thingType.getInstances(EXPLICIT).anyMatch(instance -> instance.getHas(attributeType).hasNext()))
+                    .forEachRemaining(attributeType -> acc.add(TypeDBException.of(SCHEMA_VALIDATION_LEAKED_OWNS, thingType.getLabel(), attributeType.getLabel())));
+
+            // TODO: Optimise overridden
+            thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoLeakedOwns(subtype, removedOwns, acc));
+        }
+
+
+        public static int compareAnnotationsPermissive(Set<TypeQLToken.Annotation> first, Set<TypeQLToken.Annotation> second) {
+            // -1 : more specific, 0 equal, 1 more general
+            int firstBits = (first.contains(KEY)) ? 2 : (first.contains(UNIQUE) ? 1 : 0);
+            int secondBits = (second.contains(KEY)) ? 2 : (second.contains(UNIQUE) ? 1 : 0);
+            return Integer.compare(secondBits, firstBits); // Key is the greatest, which is opposite to what the function returns.
+        }
+
+        private static void validateData(ThingTypeImpl owner, AttributeTypeImpl attributeType,
+                                         Set<TypeQLToken.Annotation> annotations, Set<TypeQLToken.Annotation> existingAnnotations) {
+            if (annotations.contains(KEY)) {
+                if (existingAnnotations.isEmpty()) {
+                    owner.getInstances(EXPLICIT).forEachRemaining(instance -> validateDataKey(owner, instance, attributeType));
+                } else if (existingAnnotations.contains(UNIQUE)) {
+                    owner.getInstances(EXPLICIT).forEachRemaining(instance -> validateDataKeyCardinality(owner, instance, attributeType));
+                } else {
+                    assert existingAnnotations.contains(KEY);
+                }
+            } else if (annotations.contains(UNIQUE)) {
+                if (existingAnnotations.isEmpty()) {
+                    owner.getInstances(EXPLICIT).forEachRemaining(instance -> validateDataUnique(owner, instance, attributeType));
+                } else {
+                    assert existingAnnotations.contains(KEY) || existingAnnotations.contains(UNIQUE);
+                }
+            }
+        }
+
+        private static void validateDataKey(ThingTypeImpl ownerType, Thing owner, AttributeType attributeType) {
+            FunctionalIterator<? extends Attribute> attrs = owner.getHas(attributeType);
+            if (!attrs.hasNext()) {
+                throw ownerType.exception(TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY, ownerType.getLabel(), attributeType.getLabel()));
+            }
+            Attribute key = attrs.next();
+            if (attrs.hasNext()) {
+                throw ownerType.exception(TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING, ownerType.getLabel(), attributeType.getLabel()));
+            } else if (compareSize(key.getOwners(ownerType), 1) != 0) {
+                throw ownerType.exception(TypeDBException.of(OWNS_KEY_PRECONDITION_UNIQUENESS, attributeType.getLabel(), ownerType.getLabel()));
+            }
+        }
+
+        private static void validateDataKeyCardinality(ThingTypeImpl ownerType, Thing owner, AttributeTypeImpl attributeType) {
+            FunctionalIterator<? extends Attribute> attrs = owner.getHas(attributeType);
+            if (!attrs.hasNext()) {
+                throw ownerType.exception(TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY, ownerType.getLabel(), attributeType.getLabel()));
+            }
+            Attribute key = attrs.next();
+            if (attrs.hasNext()) {
+                throw ownerType.exception(TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING, ownerType.getLabel(), attributeType.getLabel()));
+            }
+        }
+
+        private static void validateDataUnique(ThingTypeImpl ownerType, Thing instance, AttributeTypeImpl attributeType) {
+            instance.getHas(attributeType).forEachRemaining(attr -> {
+                if (compareSize(attr.getOwners(ownerType), 1) != 0) {
+                    throw ownerType.exception(TypeDBException.of(OWNS_UNIQUE_PRECONDITION, attributeType.getLabel(), ownerType.getLabel()));
+                }
+            });
+        }
+
+
     }
 }

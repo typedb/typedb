@@ -127,7 +127,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         Iterators.link(
                 Iterators.iterate(Validation.Relates.validateRelocate(this, superType)),
                 Iterators.iterate(Validation.Plays.validateRelocate(this, superType)),
-                validation_setSupertype_owns(superType)
+                Iterators.iterate(Validation.Owns.validateRelocate(this, superType))
         ).forEachRemaining(exception -> {
             throw exception;
         });

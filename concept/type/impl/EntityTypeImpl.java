@@ -85,7 +85,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         validateIsNotDeleted();
         Iterators.link(
                 Iterators.iterate(Validation.Plays.validateRelocate(this, superType)),
-                validation_setSupertype_owns(superType)
+                Iterators.iterate(Validation.Owns.validateRelocate(this, superType))
         ).forEachRemaining(exception -> {
             throw exception;
         });
