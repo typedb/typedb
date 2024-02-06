@@ -56,7 +56,31 @@ import static com.vaticle.typedb.common.collection.Collections.concatToList;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.*;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_OWNS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_PLAYS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_INHERITED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_INHERITED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDE_NOT_AVAILABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATTRIBUTE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATTRIBUTE_WAS_OVERRIDDEN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_REDECLARATION_ANNOTATION_LESS_STRICT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_VALUE_TYPE_NO_EXACT_EQUALITY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.REDUNDANT_OWNS_DECLARATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.REDUNDANT_PLAYS_DECLARATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_ROLE_TYPE_CANNOT_BE_PLAYED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_DELETE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
@@ -536,7 +560,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private List<TypeDBException> validatePlaysAreNotRedeclared() {
         return getPlays(EXPLICIT).intersect(getSupertype().getPlays(TRANSITIVE))
-                .map(roleType -> TypeDBException.of(REDUNDANT_PLAYS_DECLARATION, getLabel(), roleType))
+                .map(roleType -> TypeDBException.of(REDUNDANT_PLAYS_DECLARATION, getLabel(), roleType.getLabel()))
                 .toList();
     }
 
