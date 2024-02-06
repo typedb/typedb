@@ -506,9 +506,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                                 getLabel(), owns.attributeType().getLabel(), owns.overridden().get().getLabel()));
                     }
                     if (!getSupertype().getOwnedAttributes(TRANSITIVE).contains(owns.overridden().get())) {
-//                        THIS IS THROWN BECAUSE AN ATTRIBUTE OVERRIDES ITSELF DURING A REDECLARATION
-                        exceptions.add(TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_INHERITED,
-                                getLabel(), owns.overridden().get().getLabel(), owns.attributeType().getLabel(), owns.overridden().get().getLabel()));
+                        if (owns.overridden().get().equals(owns.attributeType())) {
+                            ((OwnsImpl)owns).edge.unsetOverridden();
+                        } else {
+                            exceptions.add(TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_INHERITED,
+                                    getLabel(), owns.overridden().get().getLabel(), owns.attributeType().getLabel(), owns.overridden().get().getLabel()));
+                        }
                     }
                 });
         return exceptions;
