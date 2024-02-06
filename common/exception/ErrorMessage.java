@@ -562,7 +562,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(11, "In the type '%s', the played role type '%s' cannot override '%s' as it is not a supertype.");
         public static final TypeWrite OVERRIDDEN_RELATED_ROLE_TYPE_NOT_INHERITED =
                 new TypeWrite(12, "In the relation type '%s', the related role type '%s' cannot override '%s' as it is not an inherited role type.");
-        public static final TypeWrite OVERRIDE_NOT_AVAILABLE = // TODO: this can be split between 'has', 'key' and 'plays' once pushed to commit
+        public static final TypeWrite OVERRIDE_NOT_AVAILABLE =
                 new TypeWrite(13, "The type '%s' cannot override '%s' as it is either directly declared or not inherited.");
         public static final TypeWrite ATTRIBUTE_SUPERTYPE_VALUE_TYPE =
                 new TypeWrite(14, "The attribute type '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
@@ -653,10 +653,10 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final TypeWrite MAX_SUBTYPE_REACHED =
                 new TypeWrite(57, "The maximum number of '%s' types has been reached: '%s'.");
 
-        public static final TypeWrite UNDEFINE_RELATES_SCHEMA_VALIDATION_FAILED =
-                new TypeWrite(58, "The role type '%s' cannot be undefined because: %s.");
-        public static final TypeWrite MOVE_RELATION_SCHEMA_VALIDATION_FAILED =
-                new TypeWrite(59, "The relation type '%s' cannot be moved because: %s.");
+        public static final TypeWrite SCHEMA_VALIDATION_INVALID_UNDEFINE =
+                new TypeWrite(58, "The type '%s' cannot be undefined because the resulting schema would be invalid: %s.");
+        public static final TypeWrite SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE =
+                new TypeWrite(59, "Cannot modify supertype of '%s'  because the resulting schema would be invalid: %s.");
         public static final TypeWrite SCHEMA_VALIDATION_RELATES_OVERRIDE_NOT_AVAILABLE =
                 new TypeWrite(60, "The relates declaration '%s' is broken because the type it overrides, '%s', would not be inherited.");
         public static final TypeWrite SCHEMA_VALIDATION_OVERRIDE_PLAYS_NOT_AVAILABLE =

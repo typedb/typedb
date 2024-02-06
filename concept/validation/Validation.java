@@ -284,23 +284,21 @@ public class Validation {
         }
 
         private static void validateDataSatisfyAnnotations(ThingType thingType, Map<AttributeType, Set<TypeQLToken.Annotation>> addedAnnotations, List<TypeDBException> acc) {
-            iterate(thingType.getOwns(TRANSITIVE))
-                    .forEachRemaining(declaredOwns -> {
-                        Set<TypeQLToken.Annotation> freshlyInheritedAnnotations;
-                        if (addedAnnotations.containsKey(declaredOwns.attributeType())) {
-                            freshlyInheritedAnnotations = addedAnnotations.get(declaredOwns.attributeType());
-                        } else if (thingType.getOwnsOverridden(declaredOwns.attributeType()) != null && addedAnnotations.containsKey(thingType.getOwnsOverridden(declaredOwns.attributeType()))) {
-                            freshlyInheritedAnnotations = addedAnnotations.get(thingType.getOwnsOverridden(declaredOwns.attributeType()));
-                        } else freshlyInheritedAnnotations = null;
-
-                        if (freshlyInheritedAnnotations != null && compareAnnotationsPermissive(freshlyInheritedAnnotations, declaredOwns.effectiveAnnotations()) < 0) {
-                            try {
-                                validateData((ThingTypeImpl) thingType, (AttributeTypeImpl) declaredOwns.attributeType(), freshlyInheritedAnnotations, declaredOwns.effectiveAnnotations());
-                            } catch (TypeDBException e) {
-                                acc.add(e);
-                            }
-                        }
-                    });
+            // Misses validating fresh ones
+            addedAnnotations.forEach((modifiedAttributeType, updatedAnnotations) -> {
+                Optional<ThingType.Owns> existingOwns = iterate(thingType.getOwns(TRANSITIVE))
+                        .filter(owns -> owns.attributeType().getSupertypes().anyMatch(addedAnnotations::containsKey))
+                        .first();
+                Set<TypeQLToken.Annotation> existingAnnotations = existingOwns.map(ThingType.Owns::effectiveAnnotations).orElse(emptySet());
+                AttributeType attributeType = existingOwns.map(ThingType.Owns::attributeType).orElse(modifiedAttributeType);
+                if (existingAnnotations != null && compareAnnotationsPermissive(updatedAnnotations, existingAnnotations) < 0) {
+                    try {
+                        validateData((ThingTypeImpl) thingType, (AttributeTypeImpl) attributeType, updatedAnnotations, existingAnnotations);
+                    } catch (TypeDBException e) {
+                        acc.add(e);
+                    }
+                }
+            });
             // TODO: Optimise overridden
             thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateDataSatisfyAnnotations(subtype, addedAnnotations, acc));
         }
