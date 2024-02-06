@@ -115,8 +115,6 @@ public interface ThingType extends Type {
 
         Optional<AttributeType> overridden();
 
-        void delete();
-
         void getSyntax(StringBuilder builder);
     }
 }

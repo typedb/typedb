@@ -256,7 +256,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void unsetOwns(AttributeType attributeType) {
         validateIsNotDeleted();
         Optional<Owns> owns = getOwns(EXPLICIT, attributeType);
-        if (owns.isPresent()) owns.get().delete();
+        if (owns.isPresent()) {
+            Validation.Owns.validateRemove(this, attributeType).forEach(e -> {throw e;});
+            ((OwnsImpl)owns.get()).delete();
+        }
         else if (getOwns(attributeType).isPresent()) {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_OWNS, getLabel(), attributeType.getLabel()));
         } else {
@@ -387,7 +390,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         validateIsNotDeleted();
 
-        Validation.Plays.validateCreate(this, roleType, overriddenType).forEach(exception -> {
+        Validation.Plays.validateAdd(this, roleType, overriddenType).forEach(exception -> {
             throw exception;
         });
 
@@ -409,9 +412,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 throw exception(TypeDBException.of(INVALID_UNDEFINE_NONEXISTENT_PLAYS,
                         this.getLabel().toString(), roleType.getLabel().toString()));
             }
-        }
-        if (getInstances().anyMatch(thing -> thing.getRelations(roleType).first().isPresent())) {
-            throw exception(TypeDBException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, vertex.label(), roleType.getLabel().toString()));
         }
         Validation.Plays.validateRemove(this, roleType).forEach(exception -> {
             throw exception;
@@ -506,6 +506,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                                 getLabel(), owns.attributeType().getLabel(), owns.overridden().get().getLabel()));
                     }
                     if (!getSupertype().getOwnedAttributes(TRANSITIVE).contains(owns.overridden().get())) {
+//                        THIS IS THROWN BECAUSE AN ATTRIBUTE OVERRIDES ITSELF DURING A REDECLARATION
                         exceptions.add(TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_INHERITED,
                                 getLabel(), owns.overridden().get().getLabel(), owns.attributeType().getLabel(), owns.overridden().get().getLabel()));
                     }
@@ -719,11 +720,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         private static OwnsImpl of(ThingTypeImpl owner, AttributeTypeImpl attributeType,
                                    @Nullable AttributeType overriddenType, Set<Annotation> annotations) {
             validateSchema(owner, attributeType, overriddenType, annotations);
-
-
             // Validate the subtree.
-            List<TypeDBException> validationExceptions = Validation.Owns.validateAdd(owner, attributeType, overriddenType, annotations) ;
-            validationExceptions.forEach(e -> {
+            Validation.Owns.validateAdd(owner, attributeType, overriddenType, annotations).forEach(e -> {
                 throw e;
             });
 
@@ -838,12 +836,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             return Optional.ofNullable(overridden);
         }
 
-        @Override
-        public void delete() {
+        private void delete() {
             if (!edge.isDeleted()) {
-                if (owner.getInstances().anyMatch(thing -> thing.getHas(attributeType).first().isPresent())) {
-                    throw owner.exception(TypeDBException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, owner.getLabel(), attributeType.getLabel()));
-                }
+//                if (owner.getInstances().anyMatch(thing -> thing.getHas(attributeType).first().isPresent())) {
+//                    throw owner.exception(TypeDBException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, owner.getLabel(), attributeType.getLabel()));
+//                }
                 this.edge.delete();
             }
         }
