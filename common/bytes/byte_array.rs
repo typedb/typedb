@@ -32,11 +32,15 @@ pub enum ByteArray<const INLINE_BYTES: usize> {
 }
 
 impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
-    pub fn empty(length: usize) -> ByteArray<INLINE_BYTES> {
+    pub const fn empty() -> ByteArray<INLINE_BYTES> {
+        ByteArray::Inline(ByteArrayInline::empty())
+    }
+
+    pub fn zeros(length: usize) -> ByteArray<INLINE_BYTES> {
         if length < INLINE_BYTES {
-            ByteArray::Inline(ByteArrayInline::empty(length))
+            ByteArray::Inline(ByteArrayInline::zeros(length))
         } else {
-            ByteArray::Boxed(ByteArrayBoxed::empty(length))
+            ByteArray::Boxed(ByteArrayBoxed::zeros(length))
         }
     }
 
@@ -68,6 +72,10 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
 
     pub fn new(bytes: [u8; INLINE_BYTES], length: usize) -> ByteArray<INLINE_BYTES> {
         ByteArray::Inline(ByteArrayInline::new(bytes, length))
+    }
+
+    pub fn boxed(bytes: Box<[u8]>) -> ByteArray<INLINE_BYTES> {
+        ByteArray::Boxed(ByteArrayBoxed::wrap(bytes))
     }
 
     pub fn bytes(&self) -> &[u8] {
@@ -119,7 +127,14 @@ struct ByteArrayInline<const BYTES: usize> {
 }
 
 impl<const BYTES: usize> ByteArrayInline<BYTES> {
-    fn empty(length: usize) -> ByteArrayInline<BYTES> {
+    const fn empty() -> ByteArrayInline<BYTES> {
+        ByteArrayInline {
+            data: [0; BYTES],
+            length: 0
+        }
+    }
+
+    fn zeros(length: usize) -> ByteArrayInline<BYTES> {
         assert!(length < BYTES);
         ByteArrayInline {
             data: [0; BYTES],
@@ -282,7 +297,7 @@ struct ByteArrayBoxed {
 }
 
 impl ByteArrayBoxed {
-    fn empty(length: usize) -> ByteArrayBoxed {
+    fn zeros(length: usize) -> ByteArrayBoxed {
         ByteArrayBoxed {
             data: vec![0; length].into_boxed_slice(),
             length: length,
@@ -327,6 +342,13 @@ impl ByteArrayBoxed {
         ByteArrayBoxed {
             data: data,
             length: length,
+        }
+    }
+
+    fn wrap(bytes: Box<[u8]>) -> ByteArrayBoxed {
+        ByteArrayBoxed {
+            length: bytes.len(),
+            data: bytes,
         }
     }
 

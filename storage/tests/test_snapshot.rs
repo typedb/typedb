@@ -18,7 +18,7 @@
 
 use std::rc::Rc;
 
-use storage::key_value::{StorageKey, StorageKey, StorageValue};
+use storage::key_value::{StorageKeyReference, StorageKeyReference, StorageValue};
 use storage::*;
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
@@ -33,10 +33,10 @@ fn snapshot_buffered_put_get() {
 
     let snapshot = storage.snapshot_write();
 
-    let key_1 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x0, 0x0, 0x1], sec_id)));
-    let key_2 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x1, 0x0, 0x10], sec_id)));
-    let key_3 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x1, 0x0, 0xff], sec_id)));
-    let key_4 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x2, 0x0, 0xff], sec_id)));
+    let key_1 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x0, 0x0, 0x1], sec_id)));
+    let key_2 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x1, 0x0, 0x10], sec_id)));
+    let key_3 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x1, 0x0, 0xff], sec_id)));
+    let key_4 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x2, 0x0, 0xff], sec_id)));
     let value_1 = Box::new([0, 0, 0, 0]);
     snapshot.put_val(key_1.clone(), StorageValue::Value(value_1.clone()));
     snapshot.put(key_2.clone());
@@ -46,7 +46,7 @@ fn snapshot_buffered_put_get() {
     assert_eq!(snapshot.get(&key_1), Some(StorageValue::Value(value_1)));
     assert_eq!(snapshot.get(&key_2), Some(StorageValue::Empty));
 
-    let key_5 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0xff, 0xff, 0xff], sec_id)));
+    let key_5 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0xff, 0xff, 0xff], sec_id)));
     assert_eq!(snapshot.get(&key_5), None);
 
     delete_dir(storage_path)
@@ -62,16 +62,16 @@ fn snapshot_buffered_put_iterate() {
 
     let snapshot = storage.snapshot_write();
 
-    let key_1 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x0, 0x0, 0x1], sec_id)));
-    let key_2 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x1, 0x0, 0x10], sec_id)));
-    let key_3 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x1, 0x0, 0xff], sec_id)));
-    let key_4 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x2, 0x0, 0xff], sec_id)));
+    let key_1 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x0, 0x0, 0x1], sec_id)));
+    let key_2 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x1, 0x0, 0x10], sec_id)));
+    let key_3 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x1, 0x0, 0xff], sec_id)));
+    let key_4 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x2, 0x0, 0xff], sec_id)));
     snapshot.put(key_1);
     snapshot.put(key_2.clone());
     snapshot.put(key_3.clone());
     snapshot.put(key_4.clone());
 
-    let key_prefix = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x1], sec_id)));
+    let key_prefix = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x1], sec_id)));
     let key_values: Vec<(Box<[u8]>, StorageValue)> = snapshot.iterate_prefix(&key_prefix).collect();
     assert_eq!(
         key_values,
@@ -95,10 +95,10 @@ fn snapshot_buffered_delete() {
 
     let snapshot = storage.snapshot_write();
 
-    let key_1 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x0, 0x0, 0x1], sec_id)));
-    let key_2 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x1, 0x0, 0x10], sec_id)));
-    let key_3 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x1, 0x0, 0xff], sec_id)));
-    let key_4 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x2, 0x0, 0xff], sec_id)));
+    let key_1 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x0, 0x0, 0x1], sec_id)));
+    let key_2 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x1, 0x0, 0x10], sec_id)));
+    let key_3 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x1, 0x0, 0xff], sec_id)));
+    let key_4 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x2, 0x0, 0xff], sec_id)));
     snapshot.put(key_1);
     snapshot.put(key_2.clone());
     snapshot.put(key_3.clone());
@@ -108,7 +108,7 @@ fn snapshot_buffered_delete() {
 
     assert_eq!(snapshot.get(&key_3), None);
 
-    let key_prefix = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x1], sec_id)));
+    let key_prefix = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x1], sec_id)));
     let key_values: Vec<(Box<[u8]>, StorageValue)> = snapshot.iterate_prefix(&key_prefix).collect();
     assert_eq!(
         key_values,
@@ -129,10 +129,10 @@ fn snapshot_read_through() {
     let sec_id: u8 = 0x0;
     storage.create_keyspace("sec", sec_id, &storage::StorageSection::new_db_options()).unwrap();
 
-    let key_1 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x0, 0x0, 0x1], sec_id)));
-    let key_2 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x1, 0x0, 0x10], sec_id)));
-    let key_3 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x1, 0x0, 0xff], sec_id)));
-    let key_4 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x2, 0x0, 0xff], sec_id)));
+    let key_1 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x0, 0x0, 0x1], sec_id)));
+    let key_2 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x1, 0x0, 0x10], sec_id)));
+    let key_3 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x1, 0x0, 0xff], sec_id)));
+    let key_4 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x2, 0x0, 0xff], sec_id)));
 
     let snapshot = storage.snapshot_write();
     snapshot.put(key_1.clone());
@@ -141,13 +141,13 @@ fn snapshot_read_through() {
     snapshot.put(key_4.clone());
     snapshot.commit();
 
-    let key_5 = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x1, 0x2, 0x0], sec_id)));
+    let key_5 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x1, 0x2, 0x0], sec_id)));
 
     // test put - iterate read-through
     let snapshot = storage.snapshot_write();
     snapshot.put(key_5.clone());
 
-    let key_prefix = StorageKey::Fixed(StorageKey::from((vec![sec_id, 0x1], sec_id)));
+    let key_prefix = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_id, 0x1], sec_id)));
     let key_values: Vec<(Box<[u8]>, StorageValue)> = snapshot.iterate_prefix(&key_prefix).collect();
     assert_eq!(
         key_values,

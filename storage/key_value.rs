@@ -15,94 +15,219 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::borrow::Borrow;
 use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};
 use serde::de::Visitor;
 
 use bytes::byte_array::ByteArray;
+use bytes::byte_reference::ByteReference;
 
 use crate::keyspace::keyspace::KeyspaceId;
 
-// TODO: we may want to fix the INLINE_SIZE for all storage keys here
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct StorageKey<const INLINE_SIZE: usize> {
-    keyspace_id: KeyspaceId,
-    bytes: ByteArray<INLINE_SIZE>,
+pub enum StorageKey<'bytes, const INLINE_SIZE: usize> {
+    Array(StorageKeyArray<INLINE_SIZE>),
+    Reference(StorageKeyReference<'bytes>),
 }
 
-impl<const INLINE_SIZE: usize> StorageKey<INLINE_SIZE> {
-    pub fn new(keyspace_id: KeyspaceId, bytes: ByteArray<INLINE_SIZE>) -> StorageKey<INLINE_SIZE> {
-        StorageKey {
-            keyspace_id: keyspace_id,
-            bytes: bytes,
+impl<'bytes, const INLINE_SIZE: usize> StorageKey<'bytes, INLINE_SIZE> {
+    pub fn array(keyspace_id: KeyspaceId, byte_array: ByteArray<INLINE_SIZE>) -> StorageKey<'bytes, INLINE_SIZE> {
+        StorageKey::Array(StorageKeyArray::new(keyspace_id, byte_array))
+    }
+
+    pub fn reference(keyspace_id: KeyspaceId, byte_reference: ByteReference<'bytes>) -> StorageKey<'bytes, INLINE_SIZE> {
+        StorageKey::Reference(StorageKeyReference::new(keyspace_id, byte_reference))
+    }
+
+    pub fn bytes(&self) -> &'bytes [u8] {
+        match self {
+            StorageKey::Array(array) => array.bytes(),
+            StorageKey::Reference(reference) => reference.bytes(),
         }
     }
 
-    pub fn bytes(&self) -> &ByteArray<INLINE_SIZE> {
-        &self.bytes
+    pub(crate) fn keyspace_id(&self) -> KeyspaceId {
+        match self {
+            StorageKey::Array(bytes) => bytes.keyspace_id,
+            StorageKey::Reference(bytes) => bytes.keyspace_id,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct StorageKeyArray<const INLINE_SIZE: usize> {
+    keyspace_id: KeyspaceId,
+    byte_array: ByteArray<INLINE_SIZE>,
+}
+
+impl<const INLINE_SIZE: usize> StorageKeyArray<INLINE_SIZE> {
+    pub(crate) fn new(keyspace_id: KeyspaceId, array: ByteArray<INLINE_SIZE>) -> StorageKeyArray<INLINE_SIZE> {
+        StorageKeyArray {
+            keyspace_id: keyspace_id,
+            byte_array: array,
+        }
     }
 
     pub(crate) fn keyspace_id(&self) -> KeyspaceId {
         self.keyspace_id
     }
-}
 
-impl<const INLINE_SIZE: usize> From<(Vec<u8>, u8)> for StorageKey<INLINE_SIZE> {
-    // For tests
-    fn from((bytes, section_id): (Vec<u8>, u8)) -> Self {
-        StorageKey::from((bytes.as_slice(), section_id))
+    pub(crate) fn bytes(&self) -> &[u8] {
+        self.byte_array.bytes()
+    }
+
+    pub(crate) fn byte_array(&self) -> &ByteArray<INLINE_SIZE> {
+        &self.byte_array
+    }
+
+    pub(crate) fn into_byte_array(self) -> ByteArray<INLINE_SIZE> {
+        self.byte_array
     }
 }
 
-impl<const INLINE_SIZE: usize> From<(&[u8], u8)> for StorageKey<INLINE_SIZE> {
+impl<const INLINE_SIZE: usize> Borrow<[u8]> for StorageKeyArray<INLINE_SIZE> {
+    fn borrow(&self) -> &[u8] {
+        self.bytes()
+    }
+}
+
+// TODO: we may want to fix the INLINE_SIZE for all storage keys here
+#[derive(Debug, PartialEq, Eq)]
+pub struct StorageKeyReference<'bytes> {
+    keyspace_id: KeyspaceId,
+    reference: ByteReference<'bytes>,
+}
+
+impl<'bytes> StorageKeyReference<'bytes> {
+    pub(crate) fn new(keyspace_id: KeyspaceId, reference: ByteReference<'bytes>) -> StorageKeyReference<'bytes> {
+        StorageKeyReference {
+            keyspace_id: keyspace_id,
+            reference: reference,
+        }
+    }
+
+    pub(crate) fn keyspace_id(&self) -> KeyspaceId {
+        self.keyspace_id
+    }
+
+    pub(crate) fn bytes(&self) -> &[u8] {
+        self.reference.bytes()
+    }
+
+    pub(crate) fn byte_ref(&self) -> &ByteReference<'bytes> {
+        &self.reference
+    }
+}
+
+impl<const INLINE_SIZE: usize> From<(Vec<u8>, u8)> for StorageKeyArray<INLINE_SIZE> {
+    // For tests
+    fn from((bytes, section_id): (Vec<u8>, u8)) -> Self {
+        StorageKeyArray::from((bytes.as_slice(), section_id))
+    }
+}
+
+impl<const INLINE_SIZE: usize> From<(&[u8], u8)> for StorageKeyArray<INLINE_SIZE> {
     // For tests
     fn from((bytes, section_id): (&[u8], u8)) -> Self {
         let bytes = ByteArray::<INLINE_SIZE>::from(bytes);
-        StorageKey {
+        StorageKeyArray {
             keyspace_id: section_id,
-            bytes: bytes,
+            byte_array: bytes,
         }
     }
 }
 
-// TODO: should these take into account Keyspace ID?
-impl<const INLINE_SIZE: usize> PartialOrd<Self> for StorageKey<INLINE_SIZE> {
+impl<'bytes, const INLINE_SIZE: usize> PartialEq<Self> for StorageKey<'bytes, INLINE_SIZE> {
+    fn eq(&self, other: &Self) -> bool {
+        self.keyspace_id() == other.keyspace_id() && self.bytes() == other.bytes()
+    }
+}
+
+impl<'bytes, const INLINE_SIZE: usize> Eq for StorageKey<'bytes, INLINE_SIZE> {}
+
+impl<'bytes, const INLINE_SIZE: usize> PartialOrd<Self> for StorageKey<'bytes, INLINE_SIZE> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        // TODO: should this take into account Keyspace ID?
         Some(self.cmp(other))
     }
 }
 
-impl<const INLINE_SIZE: usize> Ord for StorageKey<INLINE_SIZE> {
+impl<'bytes, const INLINE_SIZE: usize> Ord for StorageKey<'bytes, INLINE_SIZE> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.bytes.cmp(&other.bytes)
+        self.bytes().cmp(&other.bytes())
+    }
+}
+
+#[derive(Debug)]
+pub enum StorageValue<'bytes, const INLINE_SIZE: usize> {
+    Array(StorageValueArray<INLINE_SIZE>),
+    Reference(StorageValueReference<'bytes>),
+}
+
+impl<'bytes, const INLINE_SIZE: usize> StorageValue<'bytes, INLINE_SIZE> {
+    pub fn empty() -> StorageValue<'bytes, INLINE_SIZE> {
+        StorageValue::Array(StorageValueArray::empty())
+    }
+
+    pub fn array(array: ByteArray<INLINE_SIZE>) -> StorageValue<'bytes, INLINE_SIZE> {
+        StorageValue::Array(StorageValueArray::new(array))
+    }
+
+    pub fn reference(reference: ByteReference<'bytes>) -> StorageValue<'bytes, INLINE_SIZE> {
+        StorageValue::Reference(StorageValueReference::new(reference))
+    }
+
+    pub fn bytes(&self) -> &'bytes [u8] {
+        match self {
+            StorageValue::Empty => &[0; 0],
+            StorageValue::Value(bytes) => bytes.bytes(),
+        }
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub enum StorageValue {
-    Empty,
-    Value(Box<[u8]>),
+pub struct StorageValueArray<const INLINE_SIZE: usize> {
+    byte_array: ByteArray<INLINE_SIZE>,
 }
 
-impl StorageValue {
-    pub fn bytes(&self) -> &[u8] {
-        match self {
-            StorageValue::Empty => &[0; 0],
-            StorageValue::Value(bytes) => bytes,
+impl<const INLINE_SIZE: usize> StorageValueArray<INLINE_SIZE> {
+    pub(crate) const fn empty() -> StorageValueArray<INLINE_SIZE> {
+        StorageValueArray {
+            byte_array: ByteArray::empty()
         }
     }
 
-    pub fn has_value(&self) -> bool {
-        match self {
-            StorageValue::Empty => false,
-            StorageValue::Value(_) => true,
+    fn new(array: ByteArray<INLINE_SIZE>) -> StorageValueArray<INLINE_SIZE> {
+        StorageValueArray {
+            byte_array: array
         }
+    }
+
+    fn bytes(&self) -> &[u8] {
+        self.byte_array.bytes()
     }
 }
 
-impl From<Option<Box<[u8]>>> for StorageValue {
+#[derive(Debug, PartialEq, Eq)]
+pub struct StorageValueReference<'bytes> {
+    reference: ByteReference<'bytes>,
+}
+
+impl<'bytes> StorageValueReference<'bytes> {
+    pub(crate) fn new(reference: ByteReference<'bytes>) -> StorageValueReference<'bytes> {
+        StorageValueReference {
+            reference: reference
+        }
+    }
+
+    fn bytes(&self) -> &[u8] {
+        self.reference.bytes()
+    }
+}
+
+impl<'bytes, const INLINE_SIZE: usize> From<Option<Box<[u8]>>> for StorageValue<'bytes, INLINE_SIZE> {
     fn from(value: Option<Box<[u8]>>) -> Self {
-        value.map_or_else(|| StorageValue::Empty, |bytes| StorageValue::Value(bytes))
+        value.map_or_else(|| StorageValue::empty(), |bytes| StorageValue::array(ByteArray::boxed(bytes)))
     }
 }

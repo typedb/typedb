@@ -16,21 +16,26 @@
  */
 
 use std::fmt::{Display, Formatter, Pointer};
+
+use serde::{Deserialize, Serialize};
+
 use crate::byte_array::ByteArray;
+use crate::byte_reference::ByteReference;
 
 pub mod byte_array;
+pub mod byte_reference;
 
 #[derive(Debug)]
 pub enum ByteArrayOrRef<'bytes, const ARRAY_INLINE_SIZE: usize> {
     Array(ByteArray<ARRAY_INLINE_SIZE>),
-    Reference(&'bytes [u8]),
+    Reference(ByteReference<'bytes>),
 }
 
 impl<'bytes, const ARRAY_INLINE_SIZE: usize> ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
     pub fn bytes(&'bytes self) -> &'bytes [u8] {
         match self {
             ByteArrayOrRef::Array(array) => array.bytes(),
-            &ByteArrayOrRef::Reference(bytes) => bytes
+            ByteArrayOrRef::Reference(reference) => reference.bytes(),
         }
     }
 
@@ -44,25 +49,32 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> ByteArrayOrRef<'bytes, ARRAY_INLINE
             ByteArrayOrRef::Array(mut array) => {
                 array.truncate(length);
                 ByteArrayOrRef::Array(array)
-
-            },
-            ByteArrayOrRef::Reference(bytes) => ByteArrayOrRef::Reference(
-                &bytes[0..length]
+            }
+            ByteArrayOrRef::Reference(reference) => ByteArrayOrRef::Reference(
+                reference.truncate(length)
             )
         }
     }
 
-    pub fn unwrap_reference(self) -> &'bytes [u8] {
-        if let ByteArrayOrRef::Reference(bytes) = self {
-            bytes
+    pub fn unwrap_reference(self) -> ByteReference<'bytes> {
+        if let ByteArrayOrRef::Reference(reference) = self {
+            reference
         } else {
             panic!("{} cannot be unwrapped as a reference", self)
         }
     }
 }
 
-impl<'bytes,  const ARRAY_INLINE_SIZE: usize> Display for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
+impl<'bytes, const ARRAY_INLINE_SIZE: usize> Display for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", dbg!(self))
     }
 }
+
+impl<'bytes, const ARRAY_INLINE_SIZE: usize> PartialEq for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
+    fn eq(&self, other: &Self) -> bool {
+        self.bytes().eq(other.bytes())
+    }
+}
+
+impl<'bytes, const ARRAY_INLINE_SIZE: usize> Eq for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {}

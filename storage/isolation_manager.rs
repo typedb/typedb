@@ -30,7 +30,7 @@ use durability::{DurabilityRecord, DurabilityRecordType, SequenceNumber};
 use logger::result::ResultExt;
 use primitive::U80;
 
-use crate::snapshot::{Write, WriteData};
+use crate::snapshot::{Write, KeyspaceWrites};
 
 pub(crate) struct IsolationManager {
     timeline: Timeline,
@@ -430,7 +430,7 @@ impl SlotMarker {
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub(crate) struct CommitRecord {
     // TODO: this could read-through to the WAL if we have to save memory?
-    writes: WriteData,
+    writes: KeyspaceWrites,
     open_sequence_number: SequenceNumber,
 }
 
@@ -438,14 +438,14 @@ impl CommitRecord {
     pub(crate) const DURABILITY_RECORD_TYPE: DurabilityRecordType = 0;
     pub(crate) const DURABILITY_RECORD_NAME: &'static str = "commit_record";
 
-    pub(crate) fn new(writes: WriteData, open_sequence_number: SequenceNumber) -> CommitRecord {
+    pub(crate) fn new(writes: KeyspaceWrites, open_sequence_number: SequenceNumber) -> CommitRecord {
         CommitRecord {
             writes: writes,
             open_sequence_number: open_sequence_number,
         }
     }
 
-    pub(crate) fn writes(&self) -> &WriteData {
+    pub(crate) fn writes(&self) -> &KeyspaceWrites {
         &self.writes
     }
 

@@ -19,7 +19,7 @@
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use storage::key_value::{StorageKey, StorageKey, StorageValue};
+use storage::key_value::{StorageKeyReference, StorageKeyReference, StorageValue};
 use storage::{MVCCStorage, KeyspaceId};
 use test_utils::{create_tmp_dir, init_logging};
 

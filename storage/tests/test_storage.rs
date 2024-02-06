@@ -20,7 +20,7 @@ use std::rc::Rc;
 
 use rand;
 use storage::{error::{MVCCStorageError, MVCCStorageErrorKind}, MVCCStorageSectionError, MVCCStorageSectionErrorKind, MVCCStorage};
-use storage::key_value::{StorageKey, StorageKey, StorageValue};
+use storage::key_value::{StorageKeyReference, StorageKeyReference, StorageValue};
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
 #[test]
@@ -99,19 +99,19 @@ fn get_put_iterate() {
     let sec_2_id: u8 = 0x10;
     storage.create_keyspace("sec_2", sec_2_id, &storage::StorageSection::new_db_options()).unwrap();
 
-    let sec_1_key_1 = StorageKey::Fixed(StorageKey::from((vec![sec_1_id, 0x0, 0x0, 0x1], sec_1_id)));
-    let sec_1_key_2 = StorageKey::Fixed(StorageKey::from((vec![sec_1_id, 0x1, 0x0, 0x10], sec_1_id)));
-    let sec_1_key_3 = StorageKey::Fixed(StorageKey::from((vec![sec_1_id, 0x1, 0x0, 0xff], sec_1_id)));
-    let sec_1_key_4 = StorageKey::Fixed(StorageKey::from((vec![sec_1_id, 0x2, 0x0, 0xff], sec_1_id)));
+    let sec_1_key_1 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_1_id, 0x0, 0x0, 0x1], sec_1_id)));
+    let sec_1_key_2 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_1_id, 0x1, 0x0, 0x10], sec_1_id)));
+    let sec_1_key_3 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_1_id, 0x1, 0x0, 0xff], sec_1_id)));
+    let sec_1_key_4 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_1_id, 0x2, 0x0, 0xff], sec_1_id)));
     storage.put_direct(&sec_1_key_1, &StorageValue::Empty);
     storage.put_direct(&sec_1_key_2, &StorageValue::Empty);
     storage.put_direct(&sec_1_key_3, &StorageValue::Empty);
     storage.put_direct(&sec_1_key_4, &StorageValue::Empty);
 
-    let sec_2_key_1 = StorageKey::Fixed(StorageKey::from((vec![sec_2_id, 0x1, 0x0, 0x1], sec_2_id)));
-    let sec_2_key_2 = StorageKey::Fixed(StorageKey::from((vec![sec_2_id, 0xb, 0x0, 0x10], sec_2_id)));
-    let sec_2_key_3 = StorageKey::Fixed(StorageKey::from((vec![sec_2_id, 0x5, 0x0, 0xff], sec_2_id)));
-    let sec_2_key_4 = StorageKey::Fixed(StorageKey::from((vec![sec_2_id, 0x2, 0x0, 0xff], sec_2_id)));
+    let sec_2_key_1 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_2_id, 0x1, 0x0, 0x1], sec_2_id)));
+    let sec_2_key_2 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_2_id, 0xb, 0x0, 0x10], sec_2_id)));
+    let sec_2_key_3 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_2_id, 0x5, 0x0, 0xff], sec_2_id)));
+    let sec_2_key_4 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_2_id, 0x2, 0x0, 0xff], sec_2_id)));
     storage.put_direct(&sec_2_key_1, &StorageValue::Empty);
     storage.put_direct(&sec_2_key_2, &StorageValue::Empty);
     storage.put_direct(&sec_2_key_3, &StorageValue::Empty);
@@ -123,7 +123,7 @@ fn get_put_iterate() {
     let second_value = storage.get_direct(&sec_2_key_1);
     assert_eq!(second_value, Some(StorageValue::Empty));
 
-    let prefix = StorageKey::Fixed(StorageKey::from((vec![sec_1_id, 0x1], sec_1_id)));
+    let prefix = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_1_id, 0x1], sec_1_id)));
     let entries: Vec<(Vec<u8>, StorageValue)> = storage.iterate_prefix_direct(&prefix)
         .map(|(key, value)| (key.to_vec(), value))
         .collect();

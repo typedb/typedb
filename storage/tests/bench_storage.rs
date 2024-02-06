@@ -20,14 +20,14 @@ use std::rc::Rc;
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use storage::{StorageSection, KeyspaceId, MVCCStorage};
-use storage::key_value::{StorageKey, StorageKey, StorageValue};
+use storage::key_value::{StorageKeyReference, StorageKeyReference, StorageValue};
 use storage::snapshot::Snapshot;
 use test_utils::{init_logging, create_tmp_dir, delete_dir};
 
-fn random_key(section_id: KeyspaceId) -> StorageKey {
+fn random_key(section_id: KeyspaceId) -> StorageKeyReference {
     let mut bytes: [u8; 24] = rand::random();
     bytes[0] = 0b0;
-    StorageKey::Fixed(StorageKey::from((bytes.as_slice(), section_id)))
+    StorageKeyReference::Fixed(StorageKeyReference::from((bytes.as_slice(), section_id)))
 }
 
 fn populate_storage(storage: &MVCCStorage, section_id: KeyspaceId, key_count: usize) -> usize {
@@ -42,7 +42,7 @@ fn populate_storage(storage: &MVCCStorage, section_id: KeyspaceId, key_count: us
     }
     snapshot.commit();
     let snapshot = Snapshot::Read(storage.snapshot_read());
-    let prefix = StorageKey::Fixed(StorageKey::from(([0 as u8].as_slice(), section_id)));
+    let prefix = StorageKeyReference::Fixed(StorageKeyReference::from(([0 as u8].as_slice(), section_id)));
     let iterator = snapshot.iterate_prefix(&prefix);
     iterator.count()
 }
