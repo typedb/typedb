@@ -50,6 +50,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RE
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_FROM_SUPERTYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_INVALID_DEFINE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_INVALID_UNDEFINE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
@@ -120,13 +123,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void setSupertype(RelationType superType) {
         validateIsNotDeleted();
-        Iterators.link(
+
+        Validation.throwIfNonEmpty(Iterators.link(
                 Iterators.iterate(Validation.Relates.validateRelocate(this, superType)),
                 Iterators.iterate(Validation.Plays.validateRelocate(this, superType)),
                 Iterators.iterate(Validation.Owns.validateRelocate(this, superType))
-        ).forEachRemaining(exception -> {
-            throw exception;
-        });
+        ).toList(), e -> TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this, superType, e));
         setSuperTypeVertex(((RelationTypeImpl) superType).vertex);
     }
 
@@ -184,9 +186,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         ) {
             throw exception(TypeDBException.of(RELATION_RELATES_ROLE_NOT_AVAILABLE, roleLabel, overriddenLabel));
         }
-        Validation.Relates.validateAdd(this, roleLabel, inherited.get()).forEach(exception -> {
-            throw exception;
-        });
+        Validation.throwIfNonEmpty(Validation.Relates.validateAdd(this, roleLabel, inherited.get()), e ->
+                TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Relates.format(this.getLabel().toString(), roleLabel.toString(), overriddenLabel.toString()), e)
+        );
 
         setRelates(roleLabel);
         RoleTypeImpl roleType = (RoleTypeImpl) this.getRelates(roleLabel);
@@ -198,9 +200,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public void unsetRelates(String roleLabel) {
         validateIsNotDeleted();
         RoleType roleType = getRelates(roleLabel);
-        Validation.Relates.validateRemove(this, roleType).forEach(exception -> {
-            throw exception;
-        });
+        Validation.throwIfNonEmpty(Validation.Relates.validateRemove(this, roleType), e ->
+            TypeDBException.of(SCHEMA_VALIDATION_INVALID_UNDEFINE, Validation.Relates.format(this, roleType, getRelatesOverridden(roleType.getLabel().toString())))
+        );
         roleType.delete();
     }
 

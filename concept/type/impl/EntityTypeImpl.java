@@ -35,10 +35,12 @@ import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
+import java.util.Collections;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
@@ -83,12 +85,10 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Override
     public void setSupertype(EntityType superType) {
         validateIsNotDeleted();
-        Iterators.link(
+        Validation.throwIfNonEmpty(Iterators.link(
                 Iterators.iterate(Validation.Plays.validateRelocate(this, superType)),
                 Iterators.iterate(Validation.Owns.validateRelocate(this, superType))
-        ).forEachRemaining(exception -> {
-            throw exception;
-        });
+        ).toList(), e -> TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this, superType, e));
         setSuperTypeVertex(((EntityTypeImpl) superType).vertex);
     }
 

@@ -650,13 +650,13 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(55, "The type constraint '%s' is not accepted in a define/undefine query.");
         public static final TypeWrite ILLEGAL_SUPERTYPE_ENCODING =
                 new TypeWrite(56, "Unable to set type with class '%s' as a supertype.");
-        public static final TypeWrite MAX_SUBTYPE_REACHED =
-                new TypeWrite(57, "The maximum number of '%s' types has been reached: '%s'.");
 
+        public static final TypeWrite SCHEMA_VALIDATION_INVALID_DEFINE =
+                new TypeWrite(57, "Defining '%s' failed because resulting schema would be invalid: %s.");
         public static final TypeWrite SCHEMA_VALIDATION_INVALID_UNDEFINE =
-                new TypeWrite(58, "The type '%s' cannot be undefined because the resulting schema would be invalid: %s.");
+                new TypeWrite(58, "Undefining '%s' failed because the resulting schema would be invalid: %s.");
         public static final TypeWrite SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE =
-                new TypeWrite(59, "Cannot modify supertype of '%s'  because the resulting schema would be invalid: %s.");
+                new TypeWrite(59, "Setting the supertype of '%s' to '%s' failed because the resulting schema would be invalid: %s.");
         public static final TypeWrite SCHEMA_VALIDATION_RELATES_OVERRIDE_NOT_AVAILABLE =
                 new TypeWrite(60, "The relates declaration '%s' is broken because the type it overrides, '%s', would not be inherited.");
         public static final TypeWrite SCHEMA_VALIDATION_OVERRIDE_PLAYS_NOT_AVAILABLE =
@@ -677,6 +677,9 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(68, "Type '%s' cannot redeclare ownership of '%s' with annotations '%s' since this annotation is not stricter than the inherited ownership '%s'.");
         public static final TypeWrite OWNS_OVERRIDE_ANNOTATION_LESS_STRICT_THAN_PARENT = // TODO: This is a duplicate of #29
                 new TypeWrite(69, "Type '%s' cannot declare ownership of '%s' with annotations '%s' since this is not stricter than the inherited annotations: '%s'.");
+
+        public static final TypeWrite MAX_SUBTYPE_REACHED =
+                new TypeWrite(-1, "The maximum number of '%s' types has been reached: '%s'.");
 
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";

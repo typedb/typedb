@@ -54,6 +54,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.AT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.merge;
@@ -97,7 +98,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public void unsetAbstract() {
-        if (getSubtypes().anyMatch(sub -> !sub.equals(this))) throw exception(TypeDBException.of(ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES, getLabel()));
+        if (getSubtypes().anyMatch(sub -> !sub.equals(this)))
+            throw exception(TypeDBException.of(ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES, getLabel()));
         vertex.isAbstract(false);
     }
 
@@ -141,12 +143,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             throw exception(TypeDBException.of(ATTRIBUTE_SUPERTYPE_VALUE_TYPE, getLabel(), getValueType().name(),
                     superType.getLabel(), superType.getValueType().name()));
         }
-        Iterators.link(
+        Validation.throwIfNonEmpty(Iterators.link(
                 Iterators.iterate(Validation.Plays.validateRelocate(this, superType)),
                 Iterators.iterate(Validation.Owns.validateRelocate(this, superType))
-        ).forEachRemaining(exception -> {
-            throw exception;
-        });
+        ).toList(), e -> TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this, superType, e));
         setSuperTypeVertex(((AttributeTypeImpl) superType).vertex);
     }
 

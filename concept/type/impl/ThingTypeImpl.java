@@ -56,31 +56,7 @@ import static com.vaticle.typedb.common.collection.Collections.concatToList;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_OWNS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_PLAYS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_INHERITED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_INHERITED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDE_NOT_AVAILABLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATTRIBUTE_TYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATTRIBUTE_WAS_OVERRIDDEN;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_REDECLARATION_ANNOTATION_LESS_STRICT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_VALUE_TYPE_NO_EXACT_EQUALITY;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.REDUNDANT_OWNS_DECLARATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.REDUNDANT_PLAYS_DECLARATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_ROLE_TYPE_CANNOT_BE_PLAYED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_DELETE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.*;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
@@ -281,10 +257,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         validateIsNotDeleted();
         Optional<Owns> owns = getOwns(EXPLICIT, attributeType);
         if (owns.isPresent()) {
-            Validation.Owns.validateRemove(this, attributeType).forEach(e -> {throw e;});
-            ((OwnsImpl)owns.get()).delete();
-        }
-        else if (getOwns(attributeType).isPresent()) {
+            Validation.throwIfNonEmpty(Validation.Owns.validateRemove(this, attributeType),
+                    errList -> TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Owns.format(this, attributeType, owns.get().overridden().orElse(null), owns.get().effectiveAnnotations()), errList));
+            ((OwnsImpl) owns.get()).delete();
+        } else if (getOwns(attributeType).isPresent()) {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_OWNS, getLabel(), attributeType.getLabel()));
         } else {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_NONEXISTENT_OWNS, getLabel(), attributeType.getLabel()));
@@ -414,9 +390,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         validateIsNotDeleted();
 
-        Validation.Plays.validateAdd(this, roleType, overriddenType).forEach(exception -> {
-            throw exception;
-        });
+        Validation.throwIfNonEmpty(Validation.Plays.validateAdd(this, roleType, overriddenType), errList ->
+                TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Plays.format(this, roleType, overriddenType), errList)
+        );
 
         setPlays(roleType);
         override(this, PLAYS, roleType, overriddenType, getSupertype().getPlays(),
@@ -437,9 +413,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         this.getLabel().toString(), roleType.getLabel().toString()));
             }
         }
-        Validation.Plays.validateRemove(this, roleType).forEach(exception -> {
-            throw exception;
-        });
+        Validation.throwIfNonEmpty(Validation.Plays.validateRemove(this, roleType), e ->
+            TypeDBException.of(SCHEMA_VALIDATION_INVALID_UNDEFINE, Validation.Plays.format(this, roleType, this.getPlaysOverridden(roleType)), e)
+        );
         edge.delete();
     }
 
@@ -531,7 +507,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                     }
                     if (!getSupertype().getOwnedAttributes(TRANSITIVE).contains(owns.overridden().get())) {
                         if (owns.overridden().get().equals(owns.attributeType())) {
-                            ((OwnsImpl)owns).edge.unsetOverridden();
+                            ((OwnsImpl) owns).edge.unsetOverridden();
                         } else {
                             exceptions.add(TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_INHERITED,
                                     getLabel(), owns.overridden().get().getLabel(), owns.attributeType().getLabel(), owns.overridden().get().getLabel()));
@@ -569,7 +545,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         redeclaredOwns.retainAll(getSupertype().getOwnedAttributes(TRANSITIVE));
         return iterate(redeclaredOwns)
                 .filter(attributeType -> {
-                    return Validation.Owns.compareAnnotationsPermissive(
+                    return OwnsImpl.compareAnnotationsPermissive(
                             getOwns(EXPLICIT, attributeType).get().effectiveAnnotations(),
                             getSupertype().getOwns(TRANSITIVE, attributeType).get().effectiveAnnotations()) >= 0;
                 }).map(attributeType -> TypeDBException.of(REDUNDANT_OWNS_DECLARATION, getLabel(), attributeType.getLabel()))
@@ -748,9 +724,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                                    @Nullable AttributeType overriddenType, Set<Annotation> annotations) {
             validateSchema(owner, attributeType, overriddenType, annotations);
             // Validate the subtree.
-            Validation.Owns.validateAdd(owner, attributeType, overriddenType, annotations).forEach(e -> {
-                throw e;
-            });
+            Validation.throwIfNonEmpty(Validation.Owns.validateAdd(owner, attributeType, overriddenType, annotations), e ->
+                    TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Owns.format(owner, attributeType, overriddenType, annotations), e)
+            );
 
             Optional<Owns> existingExplicit = iterate(owner.getOwns(EXPLICIT))
                     .filter(ownsExplicit -> ownsExplicit.attributeType().equals(attributeType)).first();
@@ -807,13 +783,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 Optional<Owns> parentOwns = iterate(superOwns).filter(owns -> owns.attributeType().equals(overriddenType)).first();
                 if (parentOwns.isEmpty()) {
                     throw owner.exception(TypeDBException.of(OVERRIDE_NOT_AVAILABLE, owner.getLabel(), overriddenType.getLabel()));
-                } else if (!annotations.isEmpty() && Validation.Owns.compareAnnotationsPermissive(annotations, parentOwns.get().effectiveAnnotations()) > 0) {
+                } else if (!annotations.isEmpty() && compareAnnotationsPermissive(annotations, parentOwns.get().effectiveAnnotations()) > 0) {
                     throw owner.exception(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, owner.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
                 }
             } else { // TODO: See if any of this can be taken over by the Validation class
                 Optional<Owns> parentOwns = iterate(superOwns).filter(owns -> owns.attributeType().equals(attributeType)).first();
                 parentOwns.ifPresent(owns -> {
-                    if (!annotations.isEmpty() && Validation.Owns.compareAnnotationsPermissive(annotations, parentOwns.get().effectiveAnnotations()) > 0) {
+                    if (!annotations.isEmpty() && compareAnnotationsPermissive(annotations, parentOwns.get().effectiveAnnotations()) > 0) {
                         throw owner.exception(TypeDBException.of(OWNS_REDECLARATION_ANNOTATION_LESS_STRICT, owner.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
                     }
                 });
@@ -831,6 +807,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             }
         }
 
+        public static int compareAnnotationsPermissive(Set<TypeQLToken.Annotation> first, Set<TypeQLToken.Annotation> second) {
+            // -1 : more specific, 0 equal, 1 more general
+            int firstBits = (first.contains(KEY)) ? 2 : (first.contains(UNIQUE) ? 1 : 0);
+            int secondBits = (second.contains(KEY)) ? 2 : (second.contains(UNIQUE) ? 1 : 0);
+            return Integer.compare(secondBits, firstBits); // Key is the greatest, which is opposite to what the function returns.
+        }
+        
         @Override
         public AttributeType attributeType() {
             return attributeType;
@@ -865,9 +848,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         private void delete() {
             if (!edge.isDeleted()) {
-//                if (owner.getInstances().anyMatch(thing -> thing.getHas(attributeType).first().isPresent())) {
-//                    throw owner.exception(TypeDBException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, owner.getLabel(), attributeType.getLabel()));
-//                }
                 this.edge.delete();
             }
         }
