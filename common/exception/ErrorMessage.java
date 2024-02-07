@@ -592,8 +592,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(26, "Type '%s' cannot own '%s' with annotations '%s' since it has has value type '%s', which does not have an exact equality.");
         public static final TypeWrite OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE =
                 new TypeWrite(27, "Type '%s' cannot own '%s' with incompatible declared annotations '%s' and '%s'");
-        public static final TypeWrite OWNS_ANNOTATION_REDECLARATION =
-                new TypeWrite(28, "Type '%s' cannot declare ownership of '%s' with annotations '%s' since these annotations are inherited.");
+        public static final TypeWrite OWNS_OVERRIDE_ANNOTATIONS_REDUNDANT =
+                new TypeWrite(28, "Type '%s' cannot declare ownership of '%s' with annotations '%s' since these annotations are inherited from overriding '%s'.");
         public static final TypeWrite OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT =
                 new TypeWrite(29, "Type '%s' cannot declare ownership of '%s' with annotations '%s' since this annotation is not stricter than the parent ownership '%s'.");
         public static final TypeWrite OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY =
@@ -607,7 +607,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final TypeWrite ILLEGAL_ROLE_TYPE_ALIAS =
                 new TypeWrite(34, "The role type '%s' cannot be used as an alias for the inherited role type '%s' - use the inherited role type or define a new role type overriding it with a new name.");
         public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN =
-            new TypeWrite(35, "Type '%s' cannot declare plays role type '%s' as it has been overridden and cannot be redeclared.");
+                new TypeWrite(35, "Type '%s' cannot declare plays role type '%s' as it has been overridden and cannot be redeclared.");
         public static final TypeWrite PLAYS_ABSTRACT_ROLE_TYPE =
                 new TypeWrite(36, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
         public static final TypeWrite RELATION_NO_ROLE =

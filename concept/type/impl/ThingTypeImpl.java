@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.common.parameters.Order;
@@ -543,13 +544,23 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private List<TypeDBException> validateOwnsAreNotRedeclared() {
         Set<AttributeType> redeclaredOwns = new HashSet<>(getOwnedAttributes(EXPLICIT));
         redeclaredOwns.retainAll(getSupertype().getOwnedAttributes(TRANSITIVE));
-        return iterate(redeclaredOwns)
+        FunctionalIterator<TypeDBException> redundantRedeclarations = iterate(redeclaredOwns)
                 .filter(attributeType -> {
                     return OwnsImpl.compareAnnotationsPermissive(
                             getOwns(EXPLICIT, attributeType).get().effectiveAnnotations(),
                             getSupertype().getOwns(TRANSITIVE, attributeType).get().effectiveAnnotations()) >= 0;
-                }).map(attributeType -> TypeDBException.of(REDUNDANT_OWNS_DECLARATION, getLabel(), attributeType.getLabel()))
-                .toList();
+                }).map(attributeType -> TypeDBException.of(REDUNDANT_OWNS_DECLARATION, getLabel(), attributeType.getLabel()));
+
+        FunctionalIterator<TypeDBException> overridesWithRedundantAnnotations = Iterators.iterate(getOwns(EXPLICIT))
+                .filter(owns -> owns.overridden().isPresent())
+                .filter(owns -> {
+                    return !((OwnsImpl) owns).explicitAnnotations().isEmpty() && OwnsImpl.compareAnnotationsPermissive(
+                            ((OwnsImpl) owns).explicitAnnotations(),
+                            getSupertype().getOwns(TRANSITIVE, owns.overridden().get()).get().effectiveAnnotations()) >= 0;
+                }).map(owns -> TypeDBException.of(OWNS_OVERRIDE_ANNOTATIONS_REDUNDANT, getLabel(), owns.attributeType().getLabel(), ((OwnsImpl)owns).explicitAnnotations(), owns.overridden().get().getLabel()));
+        return Iterators.link(redundantRedeclarations, overridesWithRedundantAnnotations).toList();
+
+
     }
 
     @Override
