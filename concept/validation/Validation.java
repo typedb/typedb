@@ -135,9 +135,10 @@ public class Validation {
     public static class Plays {
 
         public static String format(ThingType thingType, RoleType roleType, @Nullable RoleType overridenRoleType) {
-            return TypeQL.type(thingType.getLabel().toString())
-                    .plays(roleType.getLabel().name(), (overridenRoleType != null ? overridenRoleType.getLabel().name() : null))
-                    .toString(true);
+            return (overridenRoleType != null ?
+                    TypeQL.type(thingType.getLabel().toString()).plays(roleType.getLabel().scope().get(), roleType.getLabel().name(), overridenRoleType.getLabel().name()) :
+                    TypeQL.type(thingType.getLabel().toString()).plays(roleType.getLabel().scope().get(), roleType.getLabel().name())
+                    ).toString(false);
         }
 
         public static List<TypeDBException> validateAdd(ThingType thingType, RoleType added, @Nullable RoleType overridden) {
@@ -214,7 +215,7 @@ public class Validation {
             return TypeQL.type(thingType.getLabel().toString()).owns(
                     attributeType.getLabel().toString(),
                     overriddenType != null ? overriddenType.getLabel().toString() : null,
-                    annotations.toArray((TypeQLToken.Annotation[]) null)
+                    annotations.toArray(new TypeQLToken.Annotation[0])
             ).toString(false);
         }
 

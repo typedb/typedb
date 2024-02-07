@@ -143,10 +143,14 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             throw exception(TypeDBException.of(ATTRIBUTE_SUPERTYPE_VALUE_TYPE, getLabel(), getValueType().name(),
                     superType.getLabel(), superType.getValueType().name()));
         }
+        if (!superType.isAbstract()) {
+            throw exception(TypeDBException.of(ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT, getLabel()));
+        }
+
         Validation.throwIfNonEmpty(Iterators.link(
                 Iterators.iterate(Validation.Plays.validateRelocate(this, superType)),
                 Iterators.iterate(Validation.Owns.validateRelocate(this, superType))
-        ).toList(), e -> TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this, superType, e));
+        ).toList(), e -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this, superType, e)));
         setSuperTypeVertex(((AttributeTypeImpl) superType).vertex);
     }
 
@@ -172,15 +176,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         if (isRoot()) return emptySorted();
         if (transitivity == EXPLICIT) return vertex.ins().edge(OWNS_KEY).from().merge(vertex.ins().edge(OWNS).from());
         else return iterateSorted(graphMgr().schema().ownersOfAttributeType(vertex, annotations), ASC);
-    }
-
-    @Override
-    public List<TypeDBException> exceptions() {
-        List<TypeDBException> exceptions = new ArrayList<>(super.exceptions());
-        if (!isAbstract() && getSubtypes(EXPLICIT).hasNext()) {
-            exceptions.add(TypeDBException.of(ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT, getLabel()));
-        }
-        return exceptions;
     }
 
     @Override

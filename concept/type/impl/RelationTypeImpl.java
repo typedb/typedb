@@ -128,7 +128,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
                 Iterators.iterate(Validation.Relates.validateRelocate(this, superType)),
                 Iterators.iterate(Validation.Plays.validateRelocate(this, superType)),
                 Iterators.iterate(Validation.Owns.validateRelocate(this, superType))
-        ).toList(), e -> TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this, superType, e));
+        ).toList(), e -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this, superType, e)));
         setSuperTypeVertex(((RelationTypeImpl) superType).vertex);
     }
 
@@ -187,7 +187,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
             throw exception(TypeDBException.of(RELATION_RELATES_ROLE_NOT_AVAILABLE, roleLabel, overriddenLabel));
         }
         Validation.throwIfNonEmpty(Validation.Relates.validateAdd(this, roleLabel, inherited.get()), e ->
-                TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Relates.format(this.getLabel().toString(), roleLabel.toString(), overriddenLabel.toString()), e)
+                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Relates.format(this.getLabel().toString(), roleLabel.toString(), overriddenLabel.toString()), e))
         );
 
         setRelates(roleLabel);
@@ -201,7 +201,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         validateIsNotDeleted();
         RoleType roleType = getRelates(roleLabel);
         Validation.throwIfNonEmpty(Validation.Relates.validateRemove(this, roleType), e ->
-            TypeDBException.of(SCHEMA_VALIDATION_INVALID_UNDEFINE, Validation.Relates.format(this, roleType, getRelatesOverridden(roleType.getLabel().toString())))
+                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_UNDEFINE, Validation.Relates.format(this, roleType, getRelatesOverridden(roleType.getLabel().toString())), e))
         );
         roleType.delete();
     }

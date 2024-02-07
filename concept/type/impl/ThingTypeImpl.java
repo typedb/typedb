@@ -259,7 +259,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         Optional<Owns> owns = getOwns(EXPLICIT, attributeType);
         if (owns.isPresent()) {
             Validation.throwIfNonEmpty(Validation.Owns.validateRemove(this, attributeType),
-                    errList -> TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Owns.format(this, attributeType, owns.get().overridden().orElse(null), owns.get().effectiveAnnotations()), errList));
+                    errList -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Owns.format(this, attributeType, owns.get().overridden().orElse(null), owns.get().effectiveAnnotations()), errList)));
             ((OwnsImpl) owns.get()).delete();
         } else if (getOwns(attributeType).isPresent()) {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_OWNS, getLabel(), attributeType.getLabel()));
@@ -392,7 +392,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         validateIsNotDeleted();
 
         Validation.throwIfNonEmpty(Validation.Plays.validateAdd(this, roleType, overriddenType), errList ->
-                TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Plays.format(this, roleType, overriddenType), errList)
+                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Plays.format(this, roleType, overriddenType), errList))
         );
 
         setPlays(roleType);
@@ -415,7 +415,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             }
         }
         Validation.throwIfNonEmpty(Validation.Plays.validateRemove(this, roleType), e ->
-            TypeDBException.of(SCHEMA_VALIDATION_INVALID_UNDEFINE, Validation.Plays.format(this, roleType, this.getPlaysOverridden(roleType)), e)
+                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_UNDEFINE, Validation.Plays.format(this, roleType, this.getPlaysOverridden(roleType)), e))
         );
         edge.delete();
     }
@@ -557,7 +557,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                     return !((OwnsImpl) owns).explicitAnnotations().isEmpty() && OwnsImpl.compareAnnotationsPermissive(
                             ((OwnsImpl) owns).explicitAnnotations(),
                             getSupertype().getOwns(TRANSITIVE, owns.overridden().get()).get().effectiveAnnotations()) >= 0;
-                }).map(owns -> TypeDBException.of(OWNS_OVERRIDE_ANNOTATIONS_REDUNDANT, getLabel(), owns.attributeType().getLabel(), ((OwnsImpl)owns).explicitAnnotations(), owns.overridden().get().getLabel()));
+                }).map(owns -> TypeDBException.of(OWNS_OVERRIDE_ANNOTATIONS_REDUNDANT, getLabel(), owns.attributeType().getLabel(), ((OwnsImpl) owns).explicitAnnotations(), owns.overridden().get().getLabel()));
         return Iterators.link(redundantRedeclarations, overridesWithRedundantAnnotations).toList();
 
 
@@ -736,7 +736,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             validateSchema(owner, attributeType, overriddenType, annotations);
             // Validate the subtree.
             Validation.throwIfNonEmpty(Validation.Owns.validateAdd(owner, attributeType, overriddenType, annotations), e ->
-                    TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Owns.format(owner, attributeType, overriddenType, annotations), e)
+                    owner.exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Owns.format(owner, attributeType, overriddenType, annotations), e))
             );
 
             Optional<Owns> existingExplicit = iterate(owner.getOwns(EXPLICIT))
@@ -824,7 +824,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             int secondBits = (second.contains(KEY)) ? 2 : (second.contains(UNIQUE) ? 1 : 0);
             return Integer.compare(secondBits, firstBits); // Key is the greatest, which is opposite to what the function returns.
         }
-        
+
         @Override
         public AttributeType attributeType() {
             return attributeType;
