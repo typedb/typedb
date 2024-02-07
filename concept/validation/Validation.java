@@ -74,7 +74,7 @@ public class Validation {
     public static class Relates {
 
         public static String format(RelationType relationType, RoleType roleType, @Nullable RoleType overridenRoleType) {
-            return format(relationType.getLabel().toString(), roleType.getLabel().toString(), overridenRoleType != null ? overridenRoleType.getLabel().toString() : null);
+            return format(relationType.getLabel().toString(), roleType.getLabel().name(), overridenRoleType != null ? overridenRoleType.getLabel().name() : null);
         }
         public static String format(String relationType, String roleType, @Nullable String overridenRoleType) {
             return TypeQL.type(relationType).relates(roleType, overridenRoleType).toString(false);
@@ -136,8 +136,8 @@ public class Validation {
 
         public static String format(ThingType thingType, RoleType roleType, @Nullable RoleType overridenRoleType) {
             return TypeQL.type(thingType.getLabel().toString())
-                    .plays(roleType.getLabel().toString(), (overridenRoleType != null ? overridenRoleType.getLabel().toString() : null))
-                    .toString(false);
+                    .plays(roleType.getLabel().name(), (overridenRoleType != null ? overridenRoleType.getLabel().name() : null))
+                    .toString(true);
         }
 
         public static List<TypeDBException> validateAdd(ThingType thingType, RoleType added, @Nullable RoleType overridden) {
@@ -146,6 +146,7 @@ public class Validation {
                 Set<RoleType> noLongerPlays = new HashSet<>();
                 noLongerPlays.add(overridden);
                 validateNoLeakedInstances(thingType, noLongerPlays, exceptions, true);
+                validateNoHiddenPlaysRedeclaration(thingType, noLongerPlays, exceptions, true);
             }
             return exceptions;
         }
@@ -172,7 +173,7 @@ public class Validation {
             });
 
             validateNoHiddenPlaysRedeclaration(thingType, hiddenPlays, exceptions, false);
-            validateNoLeakedInstances(thingType, removedPlays, exceptions, false); // No need for hidden plays
+            validateNoLeakedInstances(thingType, removedPlays, exceptions, false);
             return exceptions;
         }
 
@@ -183,7 +184,7 @@ public class Validation {
                     .filter(hidden::contains)
                     .forEachRemaining(roleType -> {
                         if (!isHidingThingType) overriddenHere.add(roleType);
-                        acc.add(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN, thingType.getLabel(), roleType));
+                        acc.add(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN, thingType.getLabel(), roleType.getLabel()));
                     });
             hidden.removeAll(overriddenHere);
             thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoHiddenPlaysRedeclaration(subtype, hidden, acc, false));

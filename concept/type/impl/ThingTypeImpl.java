@@ -552,7 +552,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 }).map(attributeType -> TypeDBException.of(REDUNDANT_OWNS_DECLARATION, getLabel(), attributeType.getLabel()));
 
         FunctionalIterator<TypeDBException> overridesWithRedundantAnnotations = Iterators.iterate(getOwns(EXPLICIT))
-                .filter(owns -> owns.overridden().isPresent())
+                .filter(owns -> owns.overridden().isPresent() && getSupertype().getOwns(TRANSITIVE, owns.overridden().get()).isPresent())
                 .filter(owns -> {
                     return !((OwnsImpl) owns).explicitAnnotations().isEmpty() && OwnsImpl.compareAnnotationsPermissive(
                             ((OwnsImpl) owns).explicitAnnotations(),
