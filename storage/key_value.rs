@@ -19,7 +19,6 @@ use std::borrow::Borrow;
 use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};
-use serde::de::Visitor;
 
 use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
@@ -40,7 +39,7 @@ impl<'bytes, const INLINE_SIZE: usize> StorageKey<'bytes, INLINE_SIZE> {
         StorageKey::Reference(StorageKeyReference::new(keyspace_id, byte_reference))
     }
 
-    pub fn bytes(&self) -> &'bytes [u8] {
+    pub fn bytes(&'bytes self) -> &'bytes [u8] {
         match self {
             StorageKey::Array(array) => array.bytes(),
             StorageKey::Reference(reference) => reference.bytes(),
@@ -173,7 +172,7 @@ impl<'bytes, const INLINE_SIZE: usize> StorageValue<'bytes, INLINE_SIZE> {
         StorageValue::Reference(StorageValueReference::new(reference))
     }
 
-    pub fn bytes(&self) -> &'bytes [u8] {
+    pub fn bytes(&'bytes self) -> &'bytes [u8] {
         match self {
             StorageValue::Array(array) => array.bytes(),
             StorageValue::Reference(reference) => reference.bytes(),

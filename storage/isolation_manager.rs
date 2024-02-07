@@ -29,8 +29,9 @@ use serde::{Deserialize, Serialize};
 use durability::{DurabilityRecord, DurabilityRecordType, SequenceNumber};
 use logger::result::ResultExt;
 use primitive::U80;
-use crate::keyspace::keyspace::KEYSPACE_ID_MAX;
-use crate::snapshot::buffer::{KeyspaceBuffer, Write};
+use crate::keyspace::keyspace::{KEYSPACE_ID_MAX, KeyspaceId};
+use crate::snapshot::buffer::{KeyspaceBuffer, KeyspaceBuffers};
+use crate::snapshot::write::Write;
 
 pub(crate) struct IsolationManager {
     timeline: Timeline,
@@ -125,7 +126,7 @@ impl IsolationManager {
                 continue;
             }
 
-            let predecessor_map = &predecessor.buffers[index].map().read().unwrap();
+            let predecessor_map = predecessor.buffers.get(index as KeyspaceId).map().read().unwrap();
             if (predecessor_map.is_empty()) {
                 continue;
             }
@@ -439,10 +440,10 @@ impl SlotMarker {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct CommitRecord {
     // TODO: this could read-through to the WAL if we have to save memory?
-    buffers: [KeyspaceBuffer; KEYSPACE_ID_MAX],
+    buffers: KeyspaceBuffers,
     open_sequence_number: SequenceNumber,
 }
 
@@ -450,14 +451,14 @@ impl CommitRecord {
     pub(crate) const DURABILITY_RECORD_TYPE: DurabilityRecordType = 0;
     pub(crate) const DURABILITY_RECORD_NAME: &'static str = "commit_record";
 
-    pub(crate) fn new(writes: [KeyspaceBuffer; KEYSPACE_ID_MAX], open_sequence_number: SequenceNumber) -> CommitRecord {
+    pub(crate) fn new(buffers: KeyspaceBuffers, open_sequence_number: SequenceNumber) -> CommitRecord {
         CommitRecord {
-            buffers: writes,
+            buffers: buffers,
             open_sequence_number: open_sequence_number,
         }
     }
 
-    pub(crate) fn buffers(&self) -> &[KeyspaceBuffer; KEYSPACE_ID_MAX] {
+    pub(crate) fn buffers(&self) -> &KeyspaceBuffers {
         &self.buffers
     }
 
@@ -466,14 +467,17 @@ impl CommitRecord {
     }
 }
 
-
 impl DurabilityRecord for CommitRecord {
     fn record_type(&self) -> DurabilityRecordType {
         return Self::DURABILITY_RECORD_TYPE;
     }
 
     fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
-        debug_assert_eq!(bincode::deserialize::<CommitRecord>(bincode::serialize(&self).as_ref().unwrap()).unwrap(), *self);
+        debug_assert_eq!(
+            bincode::serialize(
+                &bincode::deserialize::<CommitRecord>(bincode::serialize(&self).as_ref().unwrap()).unwrap()
+            ).unwrap(),
+            bincode::serialize(self).unwrap());
         bincode::serialize_into(writer, &self.buffers)
     }
 

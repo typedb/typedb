@@ -30,7 +30,7 @@ use crate::isolation_manager::CommitRecord;
 use crate::key_value::{StorageKey, StorageKeyArray, StorageValue, StorageValueArray};
 use crate::keyspace::keyspace::{KEYSPACE_ID_MAX, KeyspaceId};
 use crate::MVCCStorage;
-use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, KeyspaceBuffer};
+use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, KeyspaceBuffer, KeyspaceBuffers};
 
 pub enum Snapshot<'storage> {
     Read(ReadSnapshot<'storage>),
@@ -45,7 +45,7 @@ impl<'storage> Snapshot<'storage> {
         }
     }
 
-    pub fn iterate_prefix<'this>(&'this self, prefix: &StorageKey<'_, BUFFER_INLINE_KEY>) -> Box<dyn Iterator<Item=Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this> {
+    pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> Box<dyn Iterator<Item=Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this> {
         match self {
             Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
             Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
@@ -82,8 +82,7 @@ impl<'storage> ReadSnapshot<'storage> {
 
 pub struct WriteSnapshot<'storage> {
     storage: &'storage MVCCStorage,
-    // TODO: replace with BTree Left-Right structure to allow concurrent read/write
-    buffers: [KeyspaceBuffer; KEYSPACE_ID_MAX],
+    buffers: KeyspaceBuffers,
     open_sequence_number: SequenceNumber,
 }
 
@@ -92,7 +91,7 @@ impl<'storage> WriteSnapshot<'storage> {
         storage.isolation_manager.opened(&open_sequence_number);
         WriteSnapshot {
             storage: storage,
-            buffers: core::array::from_fn(|_| KeyspaceBuffer::new()),
+            buffers: KeyspaceBuffers::new(),
             open_sequence_number: open_sequence_number,
         }
     }
@@ -105,7 +104,7 @@ impl<'storage> WriteSnapshot<'storage> {
     pub fn insert_val(&self, key: StorageKeyArray<BUFFER_INLINE_KEY>, value: StorageValueArray<BUFFER_INLINE_VALUE>) {
         let keyspace_id = key.keyspace_id();
         let byte_array = key.into_byte_array();
-        self.get_buffer(keyspace_id).insert(byte_array, value);
+        self.buffers.get(keyspace_id).insert(byte_array, value);
     }
 
     /// Insert a key with a new version if it does not already exist.
@@ -115,11 +114,13 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     pub fn put_val(&self, key: StorageKeyArray<BUFFER_INLINE_KEY>, value: StorageValueArray<BUFFER_INLINE_VALUE>) {
-        let buffer = self.get_buffer(key.keyspace_id());
+        let keyspace_id = key.keyspace_id();
+        let buffer = self.buffers.get(keyspace_id);
         let existing_buffered = buffer.contains(key.byte_array());
         if !existing_buffered {
+            let wrapped = StorageKey::Array(key);
             let existing_stored = self.storage.get(
-                &StorageKey::Array(key),
+                &wrapped,
                 &self.open_sequence_number,
                 |reference| {
                     // Only copy if the value is the same
@@ -130,6 +131,7 @@ impl<'storage> WriteSnapshot<'storage> {
                     }
                 },
             );
+            let StorageKey::Array(key) = wrapped else { unreachable!() };
             let byte_array = key.into_byte_array();
             if existing_stored.is_some() && existing_stored.as_ref().unwrap().is_some() {
                 buffer.insert_preexisting(byte_array, existing_stored.unwrap().unwrap());
@@ -146,12 +148,13 @@ impl<'storage> WriteSnapshot<'storage> {
     pub fn delete(&self, key: StorageKeyArray<BUFFER_INLINE_KEY>) {
         let keyspace_id = key.keyspace_id();
         let byte_array = key.into_byte_array();
-        self.get_buffer(keyspace_id).delete(byte_array);
+        self.buffers.get(keyspace_id).delete(byte_array);
     }
 
     /// Get a Value, and mark it as a required key
     pub fn get_required(&self, key: &StorageKey<'_, BUFFER_INLINE_KEY>) -> StorageValueArray<BUFFER_INLINE_VALUE> {
-        let buffer = self.get_buffer(key.keyspace_id());
+        let keyspace_id = key.keyspace_id();
+        let buffer = self.buffers.get(keyspace_id);
         let existing = buffer.get(key.bytes());
         if existing.is_none() {
             let storage_value = self.storage.get(
@@ -173,14 +176,15 @@ impl<'storage> WriteSnapshot<'storage> {
 
     /// Get the Value for the key, returning an empty Option if it does not exist
     pub fn get(&self, key: &StorageKey<'_, BUFFER_INLINE_KEY>) -> Option<StorageValueArray<BUFFER_INLINE_VALUE>> {
-        let existing_value = self.get_buffer(key.keyspace_id()).get(key.bytes());
+        let keyspace_id = key.keyspace_id();
+        let existing_value = self.buffers.get(keyspace_id).get(key.bytes());
         existing_value.map_or_else(
             || self.storage.get(key, &self.open_sequence_number, |reference| StorageValueArray::new(ByteArray::from(reference))),
             |existing| Some(existing),
         )
     }
 
-    pub fn iterate_prefix<'this>(&'this self, prefix: &StorageKey<'_, BUFFER_INLINE_KEY>) -> impl Iterator<Item=Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
+    pub fn iterate_prefix<'this>(&'this self, prefix: &StorageKey<'this, BUFFER_INLINE_KEY>) -> impl Iterator<Item=Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
         // let storage_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
         // let buffered_iterator = self.writes.iterate_prefix(prefix.keyspace_id(), prefix.bytes());
         // storage_iterator.merge_join_by(
@@ -215,17 +219,13 @@ impl<'storage> WriteSnapshot<'storage> {
         iter::empty()
     }
 
-    fn get_buffer(&self, keyspace_id: KeyspaceId) -> &KeyspaceBuffer {
-        &self.buffers[keyspace_id as usize]
-    }
-
     pub fn commit(self) {
         self.storage.snapshot_commit(self);
     }
 
     pub(crate) fn into_commit_record(self) -> CommitRecord {
         CommitRecord::new(
-            self.buffers.writes,
+            self.buffers,
             self.open_sequence_number,
         )
     }

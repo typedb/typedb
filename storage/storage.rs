@@ -35,12 +35,13 @@ use durability::{DurabilityRecord, DurabilityService, SequenceNumber, Sequencer,
 use logger::error;
 use logger::result::ResultExt;
 use primitive::U80;
+use snapshot::write::Write;
 
 use crate::error::{MVCCStorageError, MVCCStorageErrorKind};
 use crate::isolation_manager::{CommitRecord, IsolationManager};
 use crate::key_value::{StorageKey, StorageKeyReference, StorageValue, StorageValueReference};
 use crate::keyspace::keyspace::{Keyspace, KEYSPACE_ID_MAX, KeyspaceId, KeyspacePrefixIterator};
-use crate::snapshot::buffer::{KeyspaceBuffer, Write, BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE};
+use crate::snapshot::buffer::{BUFFER_INLINE_VALUE, KeyspaceBuffer, KeyspaceBuffers};
 use crate::snapshot::snapshot::{ReadSnapshot, WriteSnapshot};
 
 pub mod error;
@@ -195,7 +196,7 @@ impl MVCCStorage {
         Ok(())
     }
 
-    fn to_write_batches(&self, commit_sequence_number: &SequenceNumber, buffers: &[KeyspaceBuffer; KEYSPACE_ID_MAX]) -> [Option<WriteBatch>; KEYSPACE_ID_MAX] {
+    fn to_write_batches(&self, commit_sequence_number: &SequenceNumber, buffers: &KeyspaceBuffers) -> [Option<WriteBatch>; KEYSPACE_ID_MAX] {
         let mut write_batches: [Option<WriteBatch>; KEYSPACE_ID_MAX] = core::array::from_fn(|_| None);
 
         buffers.iter().enumerate().for_each(|(index, buffer)| {
@@ -222,7 +223,7 @@ impl MVCCStorage {
                         Write::Delete => {
                             write_batch.put(
                                 MVCCKey::<'static>::build(key.bytes(), commit_sequence_number, StorageOperation::Delete).bytes(),
-                                ByteArray::empty().bytes()
+                                []
                             )
                         }
                     }
@@ -403,14 +404,14 @@ impl<'a> Iterator for MVCCPrefixIterator<'a> {
                     }));
                 } else {
                     let (key, value) = result.unwrap();
-                    let mvcc_key = MVCCKey::wrap_slice(key);
+                    let mvcc_key = MVCCKey::wrap_slice(&*key);
                     if self.is_new_visible_key(&mvcc_key) {
                         self.last_visible_key = Some(ByteArray::from(mvcc_key.key()));
                         match mvcc_key.operation() {
                             StorageOperation::Insert => {
                                 return Some(Ok((
                                     StorageKeyReference::new(self.keyspace.id(), mvcc_key.into_key().unwrap_reference()),
-                                    StorageValueReference::new(ByteReference::new(value))
+                                    StorageValueReference::new(ByteReference::new(&*value))
                                 )));
                             }
                             StorageOperation::Delete => {

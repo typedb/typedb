@@ -15,6 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub(crate) mod snapshot;
-pub(crate) mod buffer;
-pub(crate) mod write;
+trait RefIterator {
+    type Item;
+
+    fn next<'this>(&'this self) -> Option<Self::Item>;
+}

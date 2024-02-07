@@ -15,9 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::cell::Cell;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use std::ops::Deref;
 use std::path::PathBuf;
+use std::rc::Rc;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use speedb::{DB, DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions};
 
@@ -152,6 +157,7 @@ pub(crate) struct KeyspacePrefixIterator<'a> {
     prefix: &'a [u8],
     iterator: DBRawIterator<'a>,
     done: bool,
+    is_last_item_dirty: Option<Rc<Cell<bool>>>,
 }
 
 impl<'s> KeyspacePrefixIterator<'s> {
@@ -167,6 +173,7 @@ impl<'s> KeyspacePrefixIterator<'s> {
             prefix: prefix,
             iterator: raw_iterator,
             done: false,
+            is_last_item_dirty: None,
         }
     }
 
@@ -176,9 +183,12 @@ impl<'s> KeyspacePrefixIterator<'s> {
 }
 
 impl<'a> Iterator for KeyspacePrefixIterator<'a> {
-    type Item = Result<(&'a [u8], &'a [u8]), KeyspaceError>;
+    type Item = Result<(SharedItem<[u8]>, SharedItem<[u8]>), KeyspaceError>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if let Some(dirty) = self.is_last_item_dirty.take() {
+            dirty.set(true);
+        }
         if self.done {
             return None;
         } else if !self.iterator.valid() {
@@ -198,11 +208,43 @@ impl<'a> Iterator for KeyspacePrefixIterator<'a> {
                 return None;
             } else {
                 let value = self.iterator.value().unwrap();
+
+                let dirty = Rc::new(Cell::new(false));
+                self.is_last_item_dirty = Some(dirty.clone());
+                let key = SharedItem::new(dirty.clone(), key as *const [u8]);
+                let value = SharedItem::new(dirty, value as *const [u8]);
                 Some(Ok((key, value)))
             }
         }
     }
 }
+
+#[derive(Debug)]
+struct SharedItem<T: ?Sized> {
+    is_dirty: Rc<Cell<bool>>,
+    item: *const T,
+}
+
+impl<T: ?Sized> SharedItem<T> {
+    fn new(is_dirty: Rc<Cell<bool>>, item: *const T) -> Self {
+        SharedItem {
+            is_dirty: is_dirty,
+            item: item,
+        }
+    }
+}
+
+impl<T: ?Sized> Deref for SharedItem<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        if self.is_dirty.get() {
+            panic!("Runtime lifetime error. Accessing invalid shared memory that is not longer available.");
+        }
+        unsafe { &*self.item }
+    }
+}
+
 //
 //
 // pub(crate) struct KeyspacePrefixIterator<'s, C, K, V>
