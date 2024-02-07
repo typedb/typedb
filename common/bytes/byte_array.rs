@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::{Display, Formatter};
@@ -120,6 +121,7 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
     }
 }
 
+
 #[derive(Debug, Clone)]
 struct ByteArrayInline<const BYTES: usize> {
     data: [u8; BYTES],
@@ -130,7 +132,7 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
     const fn empty() -> ByteArrayInline<BYTES> {
         ByteArrayInline {
             data: [0; BYTES],
-            length: 0
+            length: 0,
         }
     }
 
@@ -363,6 +365,12 @@ impl ByteArrayBoxed {
     pub fn truncate(&mut self, length: usize) {
         assert!(length <= self.length);
         self.length = length;
+    }
+}
+
+impl<const INLINE_SIZE: usize> Borrow<[u8]> for ByteArray<INLINE_SIZE> {
+    fn borrow(&self) -> &[u8] {
+        self.bytes()
     }
 }
 

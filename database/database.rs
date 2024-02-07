@@ -23,7 +23,7 @@ use concept::type_manager::TypeManager;
 use encoding::initialise_storage;
 use encoding::type_::id_generator::TypeIIDGenerator;
 use encoding::thing::id_generator::ThingIIDGenerator;
-use storage::snapshot::Snapshot;
+use storage::snapshot2::Snapshot;
 use storage::MVCCStorage;
 use crate::error::DatabaseError;
 use crate::error::DatabaseErrorKind::{FailedToCreateStorage, FailedToSetupStorage};

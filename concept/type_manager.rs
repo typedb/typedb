@@ -26,7 +26,7 @@ use encoding::type_::id_generator::TypeIIDGenerator;
 use encoding::type_::type_encoding::concept::TypeIID;
 use encoding::type_::type_encoding::concept::root::Root;
 use encoding::type_::type_encoding::index::{LabelTypeIIDIndex, TypeIIDLabelIndex};
-use storage::snapshot::Snapshot;
+use storage::snapshot2::Snapshot;
 use storage::MVCCStorage;
 
 pub struct TypeManager<'txn, 'storage: 'txn> {

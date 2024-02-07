@@ -21,7 +21,7 @@ use std::rc::Rc;
 use criterion::{Criterion, criterion_group, criterion_main};
 use storage::{StorageSection, KeyspaceId, MVCCStorage};
 use storage::key_value::{StorageKeyReference, StorageKeyReference, StorageValue};
-use storage::snapshot::Snapshot;
+use storage::snapshot2::Snapshot;
 use test_utils::{init_logging, create_tmp_dir, delete_dir};
 
 fn random_key(section_id: KeyspaceId) -> StorageKeyReference {

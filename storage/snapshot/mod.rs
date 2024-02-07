@@ -15,26 +15,5 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct ByteReference<'bytes> {
-    bytes: &'bytes [u8],
-}
-
-impl<'bytes> ByteReference<'bytes> {
-    pub fn new(bytes: &'bytes [u8]) -> ByteReference<'bytes> {
-        ByteReference {
-            bytes: bytes
-        }
-    }
-
-    pub fn bytes(&self) -> &'bytes [u8] {
-        self.bytes
-    }
-
-    pub(crate) fn truncate(mut self, length: usize) -> ByteReference<'bytes> {
-        assert!(length <= self.bytes.len());
-        ByteReference {
-            bytes: &self.bytes[0..length]
-        }
-    }
-}
+pub(crate) mod snapshot;
+pub(crate) mod buffer;

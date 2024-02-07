@@ -23,7 +23,7 @@ use speedb::{DB, DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOption
 
 pub type KeyspaceId = u8;
 
-pub(crate) const KEYSPACE_ID_MAX: usize = KeyspaceId::MAX as usize;
+pub(crate) const KEYSPACE_ID_MAX: usize = KeyspaceId::MAX as usize + 1;
 
 
 ///
@@ -148,9 +148,9 @@ impl Keyspace {
     }
 }
 
-pub(crate) struct KeyspacePrefixIterator<'s> {
-    prefix: &'s [u8],
-    iterator: DBRawIterator<'s>,
+pub(crate) struct KeyspacePrefixIterator<'a> {
+    prefix: &'a [u8],
+    iterator: DBRawIterator<'a>,
     done: bool,
 }
 
@@ -175,10 +175,10 @@ impl<'s> KeyspacePrefixIterator<'s> {
     }
 }
 
-impl<'s, 'this> Iterator for KeyspacePrefixIterator<'s> {
-    type Item = Result<(&'this [u8], &'this [u8]), KeyspaceError>;
+impl<'a> Iterator for KeyspacePrefixIterator<'a> {
+    type Item = Result<(&'a [u8], &'a [u8]), KeyspaceError>;
 
-    fn next(&'this mut self) -> Option<Self::Item> {
+    fn next(&mut self) -> Option<Self::Item> {
         if self.done {
             return None;
         } else if !self.iterator.valid() {

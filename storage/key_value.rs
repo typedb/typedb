@@ -86,11 +86,6 @@ impl<const INLINE_SIZE: usize> StorageKeyArray<INLINE_SIZE> {
     }
 }
 
-impl<const INLINE_SIZE: usize> Borrow<[u8]> for StorageKeyArray<INLINE_SIZE> {
-    fn borrow(&self) -> &[u8] {
-        self.bytes()
-    }
-}
 
 // TODO: we may want to fix the INLINE_SIZE for all storage keys here
 #[derive(Debug, PartialEq, Eq)]
@@ -180,8 +175,8 @@ impl<'bytes, const INLINE_SIZE: usize> StorageValue<'bytes, INLINE_SIZE> {
 
     pub fn bytes(&self) -> &'bytes [u8] {
         match self {
-            StorageValue::Empty => &[0; 0],
-            StorageValue::Value(bytes) => bytes.bytes(),
+            StorageValue::Array(array) => array.bytes(),
+            StorageValue::Reference(reference) => reference.bytes(),
         }
     }
 }
@@ -198,13 +193,17 @@ impl<const INLINE_SIZE: usize> StorageValueArray<INLINE_SIZE> {
         }
     }
 
-    fn new(array: ByteArray<INLINE_SIZE>) -> StorageValueArray<INLINE_SIZE> {
+    pub(crate) fn new(array: ByteArray<INLINE_SIZE>) -> StorageValueArray<INLINE_SIZE> {
         StorageValueArray {
             byte_array: array
         }
     }
 
-    fn bytes(&self) -> &[u8] {
+    pub(crate) fn byte_array(&self) -> &ByteArray<INLINE_SIZE> {
+        &self.byte_array
+    }
+
+    pub(crate) fn bytes(&self) -> &[u8] {
         self.byte_array.bytes()
     }
 }

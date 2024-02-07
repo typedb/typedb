@@ -29,8 +29,8 @@ use serde::{Deserialize, Serialize};
 use durability::{DurabilityRecord, DurabilityRecordType, SequenceNumber};
 use logger::result::ResultExt;
 use primitive::U80;
-
-use crate::snapshot::{Write, KeyspaceWrites};
+use crate::keyspace::keyspace::KEYSPACE_ID_MAX;
+use crate::snapshot::buffer::{KeyspaceBuffer, Write};
 
 pub(crate) struct IsolationManager {
     timeline: Timeline,
@@ -119,32 +119,44 @@ impl IsolationManager {
     fn validate_isolation(&self, record: &CommitRecord, predecessor: &CommitRecord) -> Result<(), IsolationError> {
         // TODO: this can be optimised by some kind of bit-wise NAND of two bloom filter-like data structures first, since we assume few clashes this should mostly succeed
         // TODO: can be optimised with an intersection of two sorted iterators instead of iterate + gets
-        for (key, write) in record.writes() {
-            let predecessor_write = predecessor.writes().get(key);
-            if predecessor_write.is_some() {
-                match write {
-                    Write::Insert(_) => {}
-                    Write::InsertPreexisting(value, reinsert) => {
-                        // Re-insert the value if a predecessor has deleted it. This may create extra versions of a key
-                        //  in the case that the predecessor ends up failing. However, this will be rare.
-                        if matches!(predecessor_write.unwrap(), Write::Delete) {
-                            reinsert.store(true, Ordering::SeqCst);
+        for (index, buffer) in record.buffers().iter().enumerate() {
+            let map = buffer.map().read().unwrap();
+            if map.is_empty() {
+                continue;
+            }
+
+            let predecessor_map = &predecessor.buffers[index].map().read().unwrap();
+            if (predecessor_map.is_empty()) {
+                continue;
+            }
+
+            for (key, write) in map.iter() {
+                let predecessor_write = predecessor_map.get(key.bytes());
+                if predecessor_write.is_some() {
+                    match write {
+                        Write::Insert(_) => {}
+                        Write::InsertPreexisting(value, reinsert) => {
+                            // Re-insert the value if a predecessor has deleted it. This may create extra versions of a key
+                            //  in the case that the predecessor ends up failing. However, this will be rare.
+                            if matches!(predecessor_write.unwrap(), Write::Delete) {
+                                reinsert.store(true, Ordering::SeqCst);
+                            }
                         }
-                    }
-                    Write::RequireExists(_) => {
-                        if matches!(predecessor_write.unwrap(), Write::Delete) {
-                            return Err(IsolationError {
-                                kind: IsolationErrorKind::DeleteRequiredViolation
-                            });
+                        Write::RequireExists(_) => {
+                            if matches!(predecessor_write.unwrap(), Write::Delete) {
+                                return Err(IsolationError {
+                                    kind: IsolationErrorKind::DeleteRequiredViolation
+                                });
+                            }
                         }
-                    }
-                    Write::Delete => {
-                        // we escalate delete-required to failure, since requires imply dependencies that may be broken
-                        // TODO: maybe RequireExists should be RequireDependency to capture this?
-                        if matches!(predecessor_write.unwrap(), Write::RequireExists(_)) {
-                            return Err(IsolationError {
-                                kind: IsolationErrorKind::RequiredDeleteViolation
-                            });
+                        Write::Delete => {
+                            // we escalate delete-required to failure, since requires imply dependencies that may be broken
+                            // TODO: maybe RequireExists should be RequireDependency to capture this?
+                            if matches!(predecessor_write.unwrap(), Write::RequireExists(_)) {
+                                return Err(IsolationError {
+                                    kind: IsolationErrorKind::RequiredDeleteViolation
+                                });
+                            }
                         }
                     }
                 }
@@ -430,7 +442,7 @@ impl SlotMarker {
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub(crate) struct CommitRecord {
     // TODO: this could read-through to the WAL if we have to save memory?
-    writes: KeyspaceWrites,
+    buffers: [KeyspaceBuffer; KEYSPACE_ID_MAX],
     open_sequence_number: SequenceNumber,
 }
 
@@ -438,15 +450,15 @@ impl CommitRecord {
     pub(crate) const DURABILITY_RECORD_TYPE: DurabilityRecordType = 0;
     pub(crate) const DURABILITY_RECORD_NAME: &'static str = "commit_record";
 
-    pub(crate) fn new(writes: KeyspaceWrites, open_sequence_number: SequenceNumber) -> CommitRecord {
+    pub(crate) fn new(writes: [KeyspaceBuffer; KEYSPACE_ID_MAX], open_sequence_number: SequenceNumber) -> CommitRecord {
         CommitRecord {
-            writes: writes,
+            buffers: writes,
             open_sequence_number: open_sequence_number,
         }
     }
 
-    pub(crate) fn writes(&self) -> &KeyspaceWrites {
-        &self.writes
+    pub(crate) fn buffers(&self) -> &[KeyspaceBuffer; KEYSPACE_ID_MAX] {
+        &self.buffers
     }
 
     pub(crate) fn open_sequence_number(&self) -> &SequenceNumber {
@@ -462,7 +474,7 @@ impl DurabilityRecord for CommitRecord {
 
     fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
         debug_assert_eq!(bincode::deserialize::<CommitRecord>(bincode::serialize(&self).as_ref().unwrap()).unwrap(), *self);
-        bincode::serialize_into(writer, &self.writes)
+        bincode::serialize_into(writer, &self.buffers)
     }
 
     // fn deserialise_from(record_type: DurabilityRecordType, reader: &impl Read) -> Result<Self, dyn Error>

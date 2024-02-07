@@ -19,7 +19,7 @@ use std::iter::empty;
 
 use encoding::prefix::Prefix;
 use encoding::thing::thing_encoding::concept::{AttributeIID, ObjectIID};
-use storage::snapshot::Snapshot;
+use storage::snapshot2::Snapshot;
 use crate::type_manager::EntityType;
 
 pub struct ThingManager<'txn, 'storage: 'txn> {
