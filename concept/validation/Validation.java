@@ -42,19 +42,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATTRIBUTE_WAS_OVERRIDDEN;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_OVERRIDE_ANNOTATION_LESS_STRICT_THAN_PARENT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_REDECLARATION_ANNOTATION_LESS_STRICT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_UNIQUE_PRECONDITION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_LEAKED_OWNS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_LEAKED_PLAYS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_LEAKED_RELATES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_RELATES_OVERRIDE_NOT_AVAILABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.*;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
@@ -66,7 +56,7 @@ import static java.util.Collections.emptySet;
 public class Validation {
     public static void throwIfNonEmpty(List<TypeDBException> validationErrors, Function<String, TypeDBException> exceptionFromErrorList) {
         if (!validationErrors.isEmpty()) {
-            String formattedErrors = "\n- " + String.join("\n-", validationErrors.toString());
+            String formattedErrors = "\n- " + validationErrors.stream().map(TypeDBException::getMessage).collect(Collectors.joining("\n-"));
             throw exceptionFromErrorList.apply(formattedErrors);
         }
     }
@@ -109,7 +99,7 @@ public class Validation {
             relationType.getRelates(EXPLICIT)
                     .filter(roleType -> removed.contains(roleType.getSupertype()))
                     .forEachRemaining(roleType -> {
-                        acc.add(TypeDBException.of(SCHEMA_VALIDATION_RELATES_OVERRIDE_NOT_AVAILABLE, roleType.getSupertype().getLabel(), roleType.getSupertype().getLabel()));
+                        acc.add(TypeDBException.of(OVERRIDDEN_RELATED_ROLE_TYPE_NOT_INHERITED, relationType.getLabel(), roleType.getLabel(), roleType.getSupertype().getLabel()));
                     });
             relationType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoBrokenOverrides(subtype, removed, acc));
         }
@@ -119,7 +109,7 @@ public class Validation {
             Iterators.iterate(removed)
                     .filter(roleType -> relationType.getInstances(EXPLICIT).anyMatch(instance -> instance.getPlayers(roleType).hasNext()))
                     .forEachRemaining(roleType -> {
-                        acc.add(TypeDBException.of(SCHEMA_VALIDATION_LEAKED_RELATES, relationType.getLabel(), roleType.getLabel()));
+                        acc.add(TypeDBException.of(INVALID_UNDEFINE_RELATES_HAS_INSTANCES, relationType.getLabel(), roleType.getLabel()));
                     });
             relationType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoLeakedInstances(subtype, removed, acc));
         }
@@ -196,7 +186,7 @@ public class Validation {
                 Iterators.iterate(removedOrHidden)
                         .filter(roleType -> thingType.getInstances(EXPLICIT).anyMatch(instance -> instance.getRelations(roleType).hasNext()))
                         .forEachRemaining(roleType -> {
-                            acc.add(TypeDBException.of(SCHEMA_VALIDATION_LEAKED_PLAYS, thingType.getLabel(), roleType.getLabel()));
+                            acc.add(TypeDBException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, thingType.getLabel(), roleType.getLabel()));
                         });
                 thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoLeakedInstances(subtype, removedOrHidden, acc, false));
             }
@@ -283,12 +273,12 @@ public class Validation {
                         if (addedAnnotations.containsKey(declaredOwns.attributeType())) {
                             Set<TypeQLToken.Annotation> parentAnnotations = addedAnnotations.get(declaredOwns.attributeType());
                             if (ThingTypeImpl.OwnsImpl.compareAnnotationsPermissive(declaredOwns.effectiveAnnotations(), parentAnnotations) > 0) {
-                                acc.add(TypeDBException.of(OWNS_REDECLARATION_ANNOTATION_LESS_STRICT, thingType.getLabel(), declaredOwns.attributeType().getLabel(), ((ThingTypeImpl.OwnsImpl) declaredOwns).explicitAnnotations(), parentAnnotations));
+                                acc.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, thingType.getLabel(), declaredOwns.attributeType().getLabel(), declaredOwns.effectiveAnnotations(), parentAnnotations));
                             }
                         } else if (thingType.getOwnsOverridden(declaredOwns.attributeType()) != null && addedAnnotations.containsKey(thingType.getOwnsOverridden(declaredOwns.attributeType()))) {
                             Set<TypeQLToken.Annotation> parentAnnotations = addedAnnotations.get(thingType.getOwnsOverridden(declaredOwns.attributeType()));
                             if (ThingTypeImpl.OwnsImpl.compareAnnotationsPermissive(declaredOwns.effectiveAnnotations(), parentAnnotations) > 0) {
-                                acc.add(TypeDBException.of(OWNS_OVERRIDE_ANNOTATION_LESS_STRICT_THAN_PARENT, thingType.getLabel(), declaredOwns.attributeType().getLabel(), ((ThingTypeImpl.OwnsImpl) declaredOwns).explicitAnnotations(), parentAnnotations));
+                                acc.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, thingType.getLabel(), declaredOwns.attributeType().getLabel(), declaredOwns.effectiveAnnotations(), parentAnnotations));
                             }
                         }
                     });
@@ -325,7 +315,7 @@ public class Validation {
                 Iterators.iterate(removedOwns)
                         .filter(attributeType -> thingType.getInstances(EXPLICIT).anyMatch(instance -> instance.getHas(attributeType).hasNext()))
                         .forEachRemaining(attributeType -> {
-                            acc.add(TypeDBException.of(SCHEMA_VALIDATION_LEAKED_OWNS, thingType.getLabel(), attributeType.getLabel()));
+                            acc.add(TypeDBException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, thingType.getLabel(), attributeType.getLabel()));
                         });
                 thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoLeakedInstances(subtype, removedOwns, acc, false));
             }

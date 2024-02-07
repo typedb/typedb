@@ -128,7 +128,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
                 Iterators.iterate(Validation.Relates.validateRelocate(this, superType)),
                 Iterators.iterate(Validation.Plays.validateRelocate(this, superType)),
                 Iterators.iterate(Validation.Owns.validateRelocate(this, superType))
-        ).toList(), e -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this, superType, e)));
+        ).toList(), e -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this.getLabel(), superType.getLabel(), e)));
         setSuperTypeVertex(((RelationTypeImpl) superType).vertex);
     }
 

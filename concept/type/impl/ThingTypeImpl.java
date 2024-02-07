@@ -61,17 +61,15 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.IN
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_OWNS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_PLAYS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_INHERITED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_OWNED_ATTRIBUTE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_INHERITED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATTRIBUTE_WAS_OVERRIDDEN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_OVERRIDE_ANNOTATIONS_REDUNDANT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_REDECLARATION_ANNOTATION_LESS_STRICT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_VALUE_TYPE_NO_EXACT_EQUALITY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN;
@@ -298,11 +296,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private static <T extends Type> void override(T owner, Encoding.Edge.Type encoding, T type, T overriddenType,
                                                   Forwardable<? extends Type, Order.Asc> overridable,
                                                   Forwardable<? extends Type, Order.Asc> notOverridable, // because the child can override the same type as parent but with annotations
-                                                  ErrorMessage message) {
+                                                  ErrorMessage notSupertypeMessage, ErrorMessage notAvailableMessage) {
         if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
-            throw owner.exception(TypeDBException.of(message, owner.getLabel(), type.getLabel(), overriddenType.getLabel()));
+            throw owner.exception(TypeDBException.of(notSupertypeMessage, owner.getLabel(), type.getLabel(), overriddenType.getLabel()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
-            throw owner.exception(TypeDBException.of(OVERRIDE_NOT_AVAILABLE, type.getLabel(), overriddenType.getLabel()));
+            throw owner.exception(TypeDBException.of(notAvailableMessage, owner.getLabel(), type.getLabel(), overriddenType.getLabel()));
         }
 
         ((TypeImpl) owner).vertex.outs().edge(encoding, ((TypeImpl) type).vertex).setOverridden(((TypeImpl) overriddenType).vertex);
@@ -408,7 +406,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         } else if (getSupertypes().filter(t -> !t.equals(this)).anyMatch(thingType -> thingType.getPlays(EXPLICIT).anyMatch(rt -> roleType.equals(thingType.getPlaysOverridden(rt))))) {
             throw exception(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN, getLabel(), roleType.getLabel()));
         }
-
         TypeEdge existingEdge = vertex.outs().edge(PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (existingEdge != null) existingEdge.unsetOverridden();
         else vertex.outs().put(PLAYS, ((RoleTypeImpl) roleType).vertex);
@@ -417,15 +414,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         validateIsNotDeleted();
-
         Validation.throwIfNonEmpty(Validation.Plays.validateAdd(this, roleType, overriddenType), errList ->
                 exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Plays.format(this, roleType, overriddenType), errList))
         );
-
         setPlays(roleType);
         override(this, PLAYS, roleType, overriddenType, getSupertype().getPlays(),
                 vertex.outs().edge(PLAYS).to().mapSorted(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v), rt -> rt.vertex, ASC),
-                OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE);
+                OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE, OVERRIDDEN_PLAYED_ROLE_NOT_AVAILABLE);
     }
 
     @Override
@@ -535,7 +530,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                     }
                     if (!getSupertype().getOwnedAttributes(TRANSITIVE).contains(owns.overridden().get())) {
                         if (!owns.overridden().get().equals(owns.attributeType())) {
-                            exceptions.add(TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_INHERITED,
+                            exceptions.add(TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_NOT_AVAILABLE,
                                     getLabel(), owns.overridden().get().getLabel(), owns.attributeType().getLabel(), owns.overridden().get().getLabel()));
                         } // ignore self overrides, since these are not explicitly set by the user
                     }
@@ -553,7 +548,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                                 getLabel(), p.first().getLabel(), p.second().getLabel()));
                     }
                     if (!getSupertype().plays(p.second())) {
-                        exceptions.add(TypeDBException.of(OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_INHERITED,
+                        exceptions.add(TypeDBException.of(OVERRIDDEN_PLAYED_ROLE_NOT_AVAILABLE,
                                 getLabel(), p.first().getLabel(), p.second().getLabel(), p.second().getLabel()));
                     }
                 });
@@ -818,15 +813,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 }
                 Optional<Owns> parentOwns = iterate(superOwns).filter(owns -> owns.attributeType().equals(overriddenType)).first();
                 if (parentOwns.isEmpty()) {
-                    throw owner.exception(TypeDBException.of(OVERRIDE_NOT_AVAILABLE, owner.getLabel(), overriddenType.getLabel()));
+                    throw owner.exception(TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_NOT_AVAILABLE, owner.getLabel(), attributeType.getLabel(), overriddenType.getLabel()));
                 } else if (!annotations.isEmpty() && compareAnnotationsPermissive(annotations, parentOwns.get().effectiveAnnotations()) > 0) {
                     throw owner.exception(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, owner.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
                 }
-            } else { // TODO: See if any of this can be taken over by the Validation class
+            } else {
                 Optional<Owns> parentOwns = iterate(superOwns).filter(owns -> owns.attributeType().equals(attributeType)).first();
                 parentOwns.ifPresent(owns -> {
                     if (!annotations.isEmpty() && compareAnnotationsPermissive(annotations, parentOwns.get().effectiveAnnotations()) > 0) {
-                        throw owner.exception(TypeDBException.of(OWNS_REDECLARATION_ANNOTATION_LESS_STRICT, owner.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
+                        throw owner.exception(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, owner.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
                     }
                 });
             }

@@ -562,8 +562,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(11, "In the type '%s', the played role type '%s' cannot override '%s' as it is not a supertype.");
         public static final TypeWrite OVERRIDDEN_RELATED_ROLE_TYPE_NOT_INHERITED =
                 new TypeWrite(12, "In the relation type '%s', the related role type '%s' cannot override '%s' as it is not an inherited role type.");
-        public static final TypeWrite OVERRIDE_NOT_AVAILABLE =
-                new TypeWrite(13, "The type '%s' cannot override '%s' as it is either directly declared or not inherited.");
+//        public static final TypeWrite OVERRIDE_NOT_AVAILABLE =
+//                new TypeWrite(13, "The type '%s' cannot override '%s' as it is either directly declared or not inherited.");
         public static final TypeWrite ATTRIBUTE_SUPERTYPE_VALUE_TYPE =
                 new TypeWrite(14, "The attribute type '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_MISSING =
@@ -651,35 +651,21 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final TypeWrite ILLEGAL_SUPERTYPE_ENCODING =
                 new TypeWrite(56, "Unable to set type with class '%s' as a supertype.");
 
+
         public static final TypeWrite SCHEMA_VALIDATION_INVALID_DEFINE =
                 new TypeWrite(57, "Defining '%s' failed because resulting schema would be invalid: %s.");
         public static final TypeWrite SCHEMA_VALIDATION_INVALID_UNDEFINE =
                 new TypeWrite(58, "Undefining '%s' failed because the resulting schema would be invalid: %s.");
         public static final TypeWrite SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE =
                 new TypeWrite(59, "Setting the supertype of '%s' to '%s' failed because the resulting schema would be invalid: %s.");
-        public static final TypeWrite SCHEMA_VALIDATION_RELATES_OVERRIDE_NOT_AVAILABLE =
-                new TypeWrite(60, "The relates declaration '%s' is broken because the type it overrides, '%s', would not be inherited.");
-        public static final TypeWrite SCHEMA_VALIDATION_OVERRIDE_PLAYS_NOT_AVAILABLE =
-                new TypeWrite(61, "The plays declaration of type '%s' for role '%s' is broken because the type it overrides, '%s', would not be inherited.");
-        public static final TypeWrite OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_INHERITED =
-                new TypeWrite(62, "The type '%s' cannot override playing '%s' with '%s' as it does not inherit the ability to play '%s'.");
-        public static final TypeWrite OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_INHERITED =
-                new TypeWrite(63, "The type '%s' cannot override the ownership of '%s' with '%s' as it does not inherit ownership of '%s'.");
-        public static final TypeWrite SCHEMA_VALIDATION_LEAKED_RELATES =
-                new TypeWrite(64, "Instances of relation type '%s' relating the role '%s' exist and would become invalid.");
-        public static final TypeWrite SCHEMA_VALIDATION_LEAKED_OWNS =
-                new TypeWrite(65, "Instances of type '%s' owning attributes of type '%s' exist and would become invalid.");
-        public static final TypeWrite SCHEMA_VALIDATION_LEAKED_PLAYS =
-                new TypeWrite(66, "Instances of type '%s' playing the role '%s' exist and would become invalid.");
+        public static final TypeWrite OVERRIDDEN_PLAYED_ROLE_NOT_AVAILABLE =
+                new TypeWrite(62, "The type '%s' cannot override playing '%s' with '%s' as it is either directly declared or not inherited.");
+        public static final TypeWrite OVERRIDDEN_OWNED_ATTRIBUTE_NOT_AVAILABLE =
+                new TypeWrite(63, "The type '%s' cannot override the ownership of '%s' with '%s' as it is either directly declared or not inherited.");
         public static final TypeWrite REDUNDANT_PLAYS_DECLARATION =
-                new TypeWrite(67, "Type '%s' cannot redeclare plays role type '%s' as it is already inherited.");
-        public static final TypeWrite OWNS_REDECLARATION_ANNOTATION_LESS_STRICT =
-                new TypeWrite(68, "Type '%s' cannot redeclare ownership of '%s' with annotations '%s' since this annotation is not stricter than the inherited ownership '%s'.");
-        public static final TypeWrite OWNS_OVERRIDE_ANNOTATION_LESS_STRICT_THAN_PARENT = // TODO: This is a duplicate of #29
-                new TypeWrite(69, "Type '%s' cannot declare ownership of '%s' with annotations '%s' since this is not stricter than the inherited annotations: '%s'.");
-
+                new TypeWrite(67, "Type '%s' cannot declare plays role type '%s' as it is already inherited.");
         public static final TypeWrite MAX_SUBTYPE_REACHED =
-                new TypeWrite(-1, "The maximum number of '%s' types has been reached: '%s'.");
+                new TypeWrite(70, "The maximum number of '%s' types has been reached: '%s'.");
 
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";

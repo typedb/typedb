@@ -41,7 +41,6 @@ import java.util.List;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_RELATED_ROLE_TYPE_NOT_INHERITED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
@@ -162,20 +161,6 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     public void delete() {
         validateDelete();
         vertex.delete();
-    }
-
-    @Override
-    void validateDelete() {
-        super.validateDelete();
-        if (getInstances().first().isPresent()) {
-            throw exception(TypeDBException.of(INVALID_UNDEFINE_RELATES_HAS_INSTANCES, getLabel()));
-        }
-    }
-
-    private FunctionalIterator<RoleImpl> getInstances() {
-        return getSubtypes().filter(t -> !t.isAbstract())
-                .flatMap(t -> graphMgr().data().getReadable(t.vertex))
-                .map(RoleImpl::of);
     }
 
     @Override
