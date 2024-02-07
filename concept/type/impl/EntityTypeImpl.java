@@ -35,7 +35,6 @@ import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
-import java.util.Collections;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;

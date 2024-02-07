@@ -37,8 +37,6 @@ import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -58,10 +56,10 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SC
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.merge;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
@@ -98,8 +96,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public void unsetAbstract() {
-        if (getSubtypes().anyMatch(sub -> !sub.equals(this)))
-            throw exception(TypeDBException.of(ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES, getLabel()));
+        if (getSubtypes().anyMatch(sub -> !sub.equals(this))) throw exception(TypeDBException.of(ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES, getLabel()));
         vertex.isAbstract(false);
     }
 
@@ -142,15 +139,14 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         if (!superType.isRoot() && !Objects.equals(this.getValueType(), superType.getValueType())) {
             throw exception(TypeDBException.of(ATTRIBUTE_SUPERTYPE_VALUE_TYPE, getLabel(), getValueType().name(),
                     superType.getLabel(), superType.getValueType().name()));
+        } else if (!superType.isAbstract()) {
+            throw exception(TypeDBException.of(ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT, superType.getLabel()));
         }
-        if (!superType.isAbstract()) {
-            throw exception(TypeDBException.of(ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT, getLabel()));
-        }
-
         Validation.throwIfNonEmpty(Iterators.link(
                 Iterators.iterate(Validation.Plays.validateRelocate(this, superType)),
                 Iterators.iterate(Validation.Owns.validateRelocate(this, superType))
         ).toList(), e -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this, superType, e)));
+
         setSuperTypeVertex(((AttributeTypeImpl) superType).vertex);
     }
 

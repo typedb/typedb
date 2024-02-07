@@ -73,13 +73,6 @@ public class Validation {
 
     public static class Relates {
 
-        public static String format(RelationType relationType, RoleType roleType, @Nullable RoleType overridenRoleType) {
-            return format(relationType.getLabel().toString(), roleType.getLabel().name(), overridenRoleType != null ? overridenRoleType.getLabel().name() : null);
-        }
-        public static String format(String relationType, String roleType, @Nullable String overridenRoleType) {
-            return TypeQL.type(relationType).relates(roleType, overridenRoleType).toString(false);
-        }
-
         public static List<TypeDBException> validateAdd(RelationType relationType, String added, @Nullable RoleType overridden) {
             List<TypeDBException> exceptions = new ArrayList<>();
             if (overridden != null) {
@@ -130,16 +123,18 @@ public class Validation {
                     });
             relationType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoLeakedInstances(subtype, removed, acc));
         }
+
+        public static String format(RelationType relationType, RoleType roleType, @Nullable RoleType overridenRoleType) {
+            return format(relationType.getLabel().toString(), roleType.getLabel().name(), overridenRoleType != null ? overridenRoleType.getLabel().name() : null);
+        }
+
+        public static String format(String relationType, String roleType, @Nullable String overridenRoleType) {
+            return TypeQL.type(relationType).relates(roleType, overridenRoleType).toString(false);
+        }
+
     }
 
     public static class Plays {
-
-        public static String format(ThingType thingType, RoleType roleType, @Nullable RoleType overridenRoleType) {
-            return (overridenRoleType != null ?
-                    TypeQL.type(thingType.getLabel().toString()).plays(roleType.getLabel().scope().get(), roleType.getLabel().name(), overridenRoleType.getLabel().name()) :
-                    TypeQL.type(thingType.getLabel().toString()).plays(roleType.getLabel().scope().get(), roleType.getLabel().name())
-                    ).toString(false);
-        }
 
         public static List<TypeDBException> validateAdd(ThingType thingType, RoleType added, @Nullable RoleType overridden) {
             List<TypeDBException> exceptions = new ArrayList<>();
@@ -207,17 +202,16 @@ public class Validation {
             }
             removedOrHidden.addAll(redeclaredHere);
         }
+
+        public static String format(ThingType thingType, RoleType roleType, @Nullable RoleType overridenRoleType) {
+            return (overridenRoleType != null ?
+                    TypeQL.type(thingType.getLabel().toString()).plays(roleType.getLabel().scope().get(), roleType.getLabel().name(), overridenRoleType.getLabel().name()) :
+                    TypeQL.type(thingType.getLabel().toString()).plays(roleType.getLabel().scope().get(), roleType.getLabel().name())
+            ).toString(false);
+        }
     }
 
     public static class Owns {
-
-        public static String format(ThingType thingType, AttributeType attributeType, @Nullable AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
-            return TypeQL.type(thingType.getLabel().toString()).owns(
-                    attributeType.getLabel().toString(),
-                    overriddenType != null ? overriddenType.getLabel().toString() : null,
-                    annotations.toArray(new TypeQLToken.Annotation[0])
-            ).toString(false);
-        }
 
         public static List<TypeDBException> validateAdd(ThingType thingType, AttributeType attributeType, @Nullable AttributeType overriddenType, Set<TypeQLToken.Annotation> explicitAnnotations) {
             List<TypeDBException> exceptions = new ArrayList<>();
@@ -387,6 +381,13 @@ public class Validation {
                     throw ownerType.exception(TypeDBException.of(OWNS_UNIQUE_PRECONDITION, attributeType.getLabel(), ownerType.getLabel()));
                 }
             });
+        }
+
+        public static String format(ThingType thingType, AttributeType attributeType, @Nullable AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
+            return (overriddenType != null ?
+                    TypeQL.type(thingType.getLabel().toString()).owns(attributeType.getLabel().toString(), overriddenType.getLabel().toString(), annotations.toArray(new TypeQLToken.Annotation[0])) :
+                    TypeQL.type(thingType.getLabel().toString()).owns(attributeType.getLabel().toString(), annotations.toArray(new TypeQLToken.Annotation[0]))
+            ).toString(false);
         }
     }
 }

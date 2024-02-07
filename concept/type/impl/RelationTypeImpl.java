@@ -201,7 +201,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         validateIsNotDeleted();
         RoleType roleType = getRelates(roleLabel);
         Validation.throwIfNonEmpty(Validation.Relates.validateRemove(this, roleType), e ->
-                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_UNDEFINE, Validation.Relates.format(this, roleType, getRelatesOverridden(roleType.getLabel().toString())), e))
+                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_UNDEFINE,
+                        Validation.Relates.format(this, roleType, getRelatesOverridden(roleType.getLabel().toString())), e))
         );
         roleType.delete();
     }
