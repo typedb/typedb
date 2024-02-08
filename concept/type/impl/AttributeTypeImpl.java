@@ -29,7 +29,7 @@ import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.concept.validation.Validation;
+import com.vaticle.typedb.core.concept.validation.SchemaValidation;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -142,9 +142,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         } else if (!superType.isAbstract()) {
             throw exception(TypeDBException.of(ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT, superType.getLabel()));
         }
-        Validation.throwIfNonEmpty(Iterators.link(
-                Iterators.iterate(Validation.Plays.validateRelocate(this, superType)),
-                Iterators.iterate(Validation.Owns.validateRelocate(this, superType))
+        SchemaValidation.throwIfNonEmpty(Iterators.link(
+                Iterators.iterate(SchemaValidation.Plays.validateRelocate(this, superType)),
+                Iterators.iterate(SchemaValidation.Owns.validateRelocate(this, superType))
         ).toList(), e -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this.getLabel(), superType.getLabel(), e)));
 
         setSuperTypeVertex(((AttributeTypeImpl) superType).vertex);

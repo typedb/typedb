@@ -34,7 +34,7 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
-import com.vaticle.typedb.core.concept.validation.Validation;
+import com.vaticle.typedb.core.concept.validation.SchemaValidation;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
@@ -283,8 +283,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         validateIsNotDeleted();
         Optional<Owns> owns = getOwns(EXPLICIT, attributeType);
         if (owns.isPresent()) {
-            Validation.throwIfNonEmpty(Validation.Owns.validateRemove(this, attributeType),
-                    errList -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Owns.format(this, attributeType, owns.get().overridden().orElse(null), owns.get().effectiveAnnotations()), errList)));
+            SchemaValidation.throwIfNonEmpty(SchemaValidation.Owns.validateRemove(this, attributeType),
+                    errList -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SchemaValidation.Owns.format(this, attributeType, owns.get().overridden().orElse(null), owns.get().effectiveAnnotations()), errList)));
             ((OwnsImpl) owns.get()).delete();
         } else if (getOwns(attributeType).isPresent()) {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_OWNS, getLabel(), attributeType.getLabel()));
@@ -414,8 +414,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         validateIsNotDeleted();
-        Validation.throwIfNonEmpty(Validation.Plays.validateAdd(this, roleType, overriddenType), errList ->
-                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Plays.format(this, roleType, overriddenType), errList))
+        SchemaValidation.throwIfNonEmpty(SchemaValidation.Plays.validateAdd(this, roleType, overriddenType), errList ->
+                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SchemaValidation.Plays.format(this, roleType, overriddenType), errList))
         );
         setPlays(roleType);
         override(this, PLAYS, roleType, overriddenType, getSupertype().getPlays(),
@@ -436,8 +436,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         this.getLabel().toString(), roleType.getLabel().toString()));
             }
         }
-        Validation.throwIfNonEmpty(Validation.Plays.validateRemove(this, roleType), e ->
-                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_UNDEFINE, Validation.Plays.format(this, roleType, this.getPlaysOverridden(roleType)), e))
+        SchemaValidation.throwIfNonEmpty(SchemaValidation.Plays.validateRemove(this, roleType), e ->
+                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_UNDEFINE, SchemaValidation.Plays.format(this, roleType, this.getPlaysOverridden(roleType)), e))
         );
         edge.delete();
     }
@@ -755,8 +755,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                                    @Nullable AttributeType overriddenType, Set<Annotation> annotations) {
             validateSchema(owner, attributeType, overriddenType, annotations);
             // Validate the subtree.
-            Validation.throwIfNonEmpty(Validation.Owns.validateAdd(owner, attributeType, overriddenType, annotations), e ->
-                    owner.exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, Validation.Owns.format(owner, attributeType, overriddenType, annotations), e))
+            SchemaValidation.throwIfNonEmpty(SchemaValidation.Owns.validateAdd(owner, attributeType, overriddenType, annotations), e ->
+                    owner.exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SchemaValidation.Owns.format(owner, attributeType, overriddenType, annotations), e))
             );
 
             Optional<Owns> existingExplicit = iterate(owner.getOwns(EXPLICIT))
