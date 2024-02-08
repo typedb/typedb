@@ -60,6 +60,15 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PROTO
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.USER_MANAGEMENT_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
+import static com.vaticle.typedb.core.server.MetricsService.GaugeKind.DATABASE_COUNT;
+import static com.vaticle.typedb.core.server.MetricsService.GaugeKind.SESSION_COUNT;
+import static com.vaticle.typedb.core.server.MetricsService.NetworkRequestKind.CONNECTION_OPEN;
+import static com.vaticle.typedb.core.server.MetricsService.NetworkRequestKind.DATABASE;
+import static com.vaticle.typedb.core.server.MetricsService.NetworkRequestKind.DATABASE_MANAGEMENT;
+import static com.vaticle.typedb.core.server.MetricsService.NetworkRequestKind.SERVERS_ALL;
+import static com.vaticle.typedb.core.server.MetricsService.NetworkRequestKind.SESSION;
+import static com.vaticle.typedb.core.server.MetricsService.NetworkRequestKind.USER;
+import static com.vaticle.typedb.core.server.MetricsService.NetworkRequestKind.USER_MANAGEMENT;
 import static com.vaticle.typedb.core.server.common.RequestReader.applyDefaultOptions;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Database.deleteRes;
@@ -83,10 +92,13 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     private final String address;
     protected final TypeDB.DatabaseManager databaseMgr;
     private final ConcurrentMap<UUID, SessionService> sessionServices;
+    final MetricsService metricsService;
 
-    public TypeDBService(InetSocketAddress address, TypeDB.DatabaseManager databaseMgr) {
+    public TypeDBService(InetSocketAddress address, TypeDB.DatabaseManager databaseMgr, String name) {
         this.address = address.getHostString() + ":" + address.getPort();
         this.databaseMgr = databaseMgr;
+        this.metricsService = new MetricsService(name);
+        (new Thread(metricsService)).start();
         sessionServices = new ConcurrentHashMap<>();
 
         if (LOG.isDebugEnabled()) {
@@ -127,6 +139,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public void connectionOpen(ConnectionProto.Connection.Open.Req request,
                                StreamObserver<ConnectionProto.Connection.Open.Res> responder) {
         try {
+            this.metricsService.requestAttempt(CONNECTION_OPEN);
             if (request.getVersion() != VersionProto.Version.VERSION) {
                 int driverProtocolVersion = request.getVersion() == VersionProto.Version.UNSPECIFIED ?
                         0 : request.getVersionValue();
@@ -139,6 +152,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             } else {
                 responder.onNext(ResponseBuilder.Connection.openRes());
                 responder.onCompleted();
+                this.metricsService.requestSuccess(CONNECTION_OPEN);
             }
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -150,8 +164,10 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     @Override
     public void serversAll(ServerManager.All.Req request, StreamObserver<ServerManager.All.Res> responder) {
         try {
+            this.metricsService.requestAttempt(SERVERS_ALL);
             responder.onNext(ResponseBuilder.ServerManager.allRes(address));
             responder.onCompleted();
+            this.metricsService.requestSuccess(SERVERS_ALL);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
             Diagnostics.get().submitError(e);
@@ -161,6 +177,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
 
     @Override
     public void usersContains(UserManager.Contains.Req request, StreamObserver<UserManager.Contains.Res> responder) {
+        this.metricsService.requestAttempt(USER_MANAGEMENT);
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
@@ -170,6 +187,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
 
     @Override
     public void usersCreate(UserManager.Create.Req request, StreamObserver<UserManager.Create.Res> responder) {
+        this.metricsService.requestAttempt(USER_MANAGEMENT);
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
@@ -179,6 +197,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
 
     @Override
     public void usersDelete(UserManager.Delete.Req request, StreamObserver<UserManager.Delete.Res> responder) {
+        this.metricsService.requestAttempt(USER_MANAGEMENT);
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
@@ -188,6 +207,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
 
     @Override
     public void usersAll(UserManager.All.Req request, StreamObserver<UserManager.All.Res> responder) {
+        this.metricsService.requestAttempt(USER_MANAGEMENT);
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
@@ -197,6 +217,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
 
     @Override
     public void usersPasswordSet(UserManager.PasswordSet.Req request, StreamObserver<UserManager.PasswordSet.Res> responder) {
+        this.metricsService.requestAttempt(USER_MANAGEMENT);
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
@@ -206,6 +227,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
 
     @Override
     public void usersGet(UserManager.Get.Req request, StreamObserver<UserManager.Get.Res> responder) {
+        this.metricsService.requestAttempt(USER_MANAGEMENT);
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
@@ -215,6 +237,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
 
     @Override
     public void userPasswordUpdate(User.PasswordUpdate.Req request, StreamObserver<User.PasswordUpdate.Res> responder) {
+        this.metricsService.requestAttempt(USER);
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
@@ -234,9 +257,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     @Override
     public void databasesContains(DatabaseManager.Contains.Req request, StreamObserver<DatabaseManager.Contains.Res> responder) {
         try {
+            this.metricsService.requestAttempt(DATABASE_MANAGEMENT);
             boolean contains = databaseMgr.contains(request.getName());
             responder.onNext(containsRes(contains));
             responder.onCompleted();
+            this.metricsService.requestSuccess(DATABASE_MANAGEMENT);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
             Diagnostics.get().submitError(e);
@@ -247,21 +272,27 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     @Override
     public void databasesCreate(DatabaseManager.Create.Req request, StreamObserver<DatabaseManager.Create.Res> responder) {
         try {
+            this.metricsService.requestAttempt(DATABASE_MANAGEMENT);
             doCreateDatabase(request.getName());
             responder.onNext(createRes());
             responder.onCompleted();
+            this.metricsService.requestSuccess(DATABASE_MANAGEMENT);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
             Diagnostics.get().submitError(e);
             responder.onError(exception(e));
+        } finally {
+            this.metricsService.update(DATABASE_COUNT, databaseMgr.all().size());
         }
     }
 
     @Override
     public void databasesGet(DatabaseManager.Get.Req request, StreamObserver<DatabaseManager.Get.Res> responder) {
         try {
+            this.metricsService.requestAttempt(DATABASE_MANAGEMENT);
             responder.onNext(getRes(address, request.getName()));
             responder.onCompleted();
+            this.metricsService.requestSuccess(DATABASE_MANAGEMENT);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
             Diagnostics.get().submitError(e);
@@ -272,9 +303,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     @Override
     public void databasesAll(DatabaseManager.All.Req request, StreamObserver<DatabaseManager.All.Res> responder) {
         try {
+            this.metricsService.requestAttempt(DATABASE_MANAGEMENT);
             List<String> databaseNames = databaseMgr.all().stream().map(TypeDB.Database::name).collect(toList());
             responder.onNext(allRes(address, databaseNames));
             responder.onCompleted();
+            this.metricsService.requestSuccess(DATABASE_MANAGEMENT);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
             Diagnostics.get().submitError(e);
@@ -285,9 +318,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     @Override
     public void databaseSchema(Database.Schema.Req request, StreamObserver<Database.Schema.Res> responder) {
         try {
+            this.metricsService.requestAttempt(DATABASE);
             String schema = databaseMgr.get(request.getName()).schema();
             responder.onNext(schemaRes(schema));
             responder.onCompleted();
+            this.metricsService.requestSuccess(DATABASE);
         } catch (TypeDBException e) {
             LOG.error(e.getMessage(), e);
             Diagnostics.get().submitError(e);
@@ -298,9 +333,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     @Override
     public void databaseTypeSchema(Database.TypeSchema.Req request, StreamObserver<Database.TypeSchema.Res> responder) {
         try {
+            this.metricsService.requestAttempt(DATABASE);
             String schema = databaseMgr.get(request.getName()).typeSchema();
             responder.onNext(typeSchemaRes(schema));
             responder.onCompleted();
+            this.metricsService.requestSuccess(DATABASE);
         } catch (TypeDBException e) {
             LOG.error(e.getMessage(), e);
             Diagnostics.get().submitError(e);
@@ -311,9 +348,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     @Override
     public void databaseRuleSchema(Database.RuleSchema.Req request, StreamObserver<Database.RuleSchema.Res> responder) {
         try {
+            this.metricsService.requestAttempt(DATABASE);
             String schema = databaseMgr.get(request.getName()).ruleSchema();
             responder.onNext(ruleSchemaRes(schema));
             responder.onCompleted();
+            this.metricsService.requestSuccess(DATABASE);
         } catch (TypeDBException e) {
             LOG.error(e.getMessage(), e);
             Diagnostics.get().submitError(e);
@@ -324,13 +363,17 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     @Override
     public void databaseDelete(Database.Delete.Req request, StreamObserver<Database.Delete.Res> responder) {
         try {
+            this.metricsService.requestAttempt(DATABASE);
             doDeleteDatabase(request.getName());
             responder.onNext(deleteRes());
             responder.onCompleted();
+            this.metricsService.requestSuccess(DATABASE);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
             Diagnostics.get().submitError(e);
             responder.onError(exception(e));
+        } finally {
+            this.metricsService.update(DATABASE_COUNT, databaseMgr.all().size());
         }
     }
 
@@ -338,6 +381,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public void sessionOpen(SessionProto.Session.Open.Req request,
                             StreamObserver<SessionProto.Session.Open.Res> responder) {
         try {
+            this.metricsService.requestAttempt(SESSION);
             Instant start = Instant.now();
             Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
             Options.Session options = applyDefaultOptions(new Options.Session(), request.getOptions());
@@ -347,10 +391,13 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             int duration = (int) Duration.between(start, Instant.now()).toMillis();
             responder.onNext(openRes(sessionSvc.UUID(), duration));
             responder.onCompleted();
+            this.metricsService.requestSuccess(SESSION);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
             Diagnostics.get().submitError(e);
             responder.onError(exception(e));
+        } finally {
+            this.metricsService.update(SESSION_COUNT, sessionServices.size());
         }
     }
 
@@ -358,16 +405,20 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public void sessionClose(SessionProto.Session.Close.Req request,
                              StreamObserver<SessionProto.Session.Close.Res> responder) {
         try {
+            this.metricsService.requestAttempt(SESSION);
             UUID sessionID = byteStringAsUUID(request.getSessionId());
             SessionService sessionSvc = sessionServices.get(sessionID);
             if (sessionSvc == null) throw TypeDBException.of(SESSION_NOT_FOUND, sessionID);
             sessionSvc.close();
             responder.onNext(closeRes());
             responder.onCompleted();
+            this.metricsService.requestSuccess(SESSION);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
             Diagnostics.get().submitError(e);
             responder.onError(exception(e));
+        } finally {
+            this.metricsService.update(SESSION_COUNT, sessionServices.size());
         }
     }
 

@@ -226,7 +226,7 @@ public class TypeDBServer implements AutoCloseable {
     protected io.grpc.Server rpcServer() {
         assert Executors.isInitialised();
 
-        typeDBService = new TypeDBService(config.server().address(), databaseMgr);
+        typeDBService = new TypeDBService(config.server().address(), databaseMgr, name());
         MigratorService migratorService = new MigratorService(databaseMgr, Version.VERSION);
 
         return NettyServerBuilder.forAddress(config.server().address())
