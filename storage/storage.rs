@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::cell::Cell;
 use std::error::Error;
 use std::fmt::Display;
 use std::io::Read;
@@ -22,6 +23,7 @@ use std::iter::empty;
 use std::ops::Deref;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use itertools::Itertools;
@@ -32,6 +34,7 @@ use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
 use bytes::ByteArrayOrRef;
 use durability::{DurabilityRecord, DurabilityService, SequenceNumber, Sequencer, wal::WAL};
+use iterator::RefIterator;
 use logger::error;
 use logger::result::ResultExt;
 use primitive::U80;
@@ -39,9 +42,9 @@ use snapshot::write::Write;
 
 use crate::error::{MVCCStorageError, MVCCStorageErrorKind};
 use crate::isolation_manager::{CommitRecord, IsolationManager};
-use crate::key_value::{StorageKey, StorageKeyReference, StorageValue, StorageValueReference};
+use crate::key_value::{StorageKey, StorageKeyArray, StorageKeyReference, StorageValue, StorageValueReference};
 use crate::keyspace::keyspace::{Keyspace, KEYSPACE_ID_MAX, KeyspaceId, KeyspacePrefixIterator};
-use crate::snapshot::buffer::{BUFFER_INLINE_VALUE, KeyspaceBuffer, KeyspaceBuffers};
+use crate::snapshot::buffer::{BUFFER_INLINE_VALUE, KeyspaceBuffers};
 use crate::snapshot::snapshot::{ReadSnapshot, WriteSnapshot};
 
 pub mod error;
@@ -223,7 +226,7 @@ impl MVCCStorage {
                         Write::Delete => {
                             write_batch.put(
                                 MVCCKey::<'static>::build(key.bytes(), commit_sequence_number, StorageOperation::Delete).bytes(),
-                                []
+                                [],
                             )
                         }
                     }
@@ -308,13 +311,13 @@ impl MVCCStorage {
     }
 
     pub fn iterate_prefix<'this, const S: usize>(&'this self, prefix: &'this StorageKey<'this, S>, open_sequence_number: &SequenceNumber)
-                                                 -> impl Iterator<Item=Result<(StorageKeyReference<'this>, StorageValueReference<'this>), MVCCStorageError>> + 'this {
+                                                 -> MVCCPrefixIterator {
         MVCCPrefixIterator::new(self, prefix, open_sequence_number)
     }
 
     // --- direct access to storage, bypassing MVCC and returning raw key/value pairs ---
 
-    pub fn put_direct(&self, key: &StorageKeyReference<'_>, value: &StorageValue<'_, BUFFER_INLINE_VALUE>) {
+    pub fn put_raw(&self, key: &StorageKeyReference<'_>, value: &StorageValue<'_, BUFFER_INLINE_VALUE>) {
         // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
         self.get_keyspace(key.keyspace_id()).put(key.byte_ref().bytes(), value.bytes()).map_err(|e| MVCCStorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
@@ -322,10 +325,11 @@ impl MVCCStorage {
         }).unwrap_or_log()
     }
 
-    pub fn get_direct(&self, key: &StorageKeyReference<'_>) -> Option<StorageValueReference<'_>> {
+    pub fn get_raw<M, V>(&self, key: &StorageKeyReference<'_>, mut mapper: M) -> Option<V>
+        where M: FnMut(&[u8]) -> V {
         self.get_keyspace(key.keyspace_id()).get(
             key.byte_ref().bytes(),
-            |value| StorageValueReference::new(ByteReference::new(value)),
+            |value| mapper(value),
         ).map_err(|e| MVCCStorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
             kind: MVCCStorageErrorKind::KeyspaceError { source: e, keyspace: self.get_keyspace(key.keyspace_id()).name().to_owned() },
@@ -333,12 +337,11 @@ impl MVCCStorage {
         }).unwrap_or_log()
     }
 
-    pub fn get_prev_direct(&self, key: &StorageKeyReference<'_>) -> Option<(StorageKeyReference<'_>, StorageValueReference<'_>)> {
+    pub fn get_prev_raw<KM, VM, K, V>(&self, key: &StorageKeyReference<'_>, mut key_mapper: KM, mut value_mapper: VM) -> Option<(K, V)>
+        where KM: FnMut(&[u8]) -> K, VM: FnMut(&[u8]) -> V {
         self.get_keyspace(key.keyspace_id()).get_prev(
             key.byte_ref().bytes(),
-            |k, v| (
-                StorageKeyReference::new(key.keyspace_id(), ByteReference::new(k)),
-                StorageValueReference::new(ByteReference::new(v))),
+            |k, v| (key_mapper(k), value_mapper(v)),
         )
     }
 
@@ -363,21 +366,21 @@ struct MVCCPrefixIterator<'a> {
     storage: &'a MVCCStorage,
     keyspace: &'a Keyspace,
     iterator: KeyspacePrefixIterator<'a>,
-    last_visible_key: Option<ByteArray<MVCC_KEY_INLINE_SIZE>>,
     open_sequence_number: SequenceNumber,
+    last_visible_key: Option<ByteArray<MVCC_KEY_INLINE_SIZE>>,
 }
 
 impl<'s> MVCCPrefixIterator<'s> {
     // TODO: optimisations for fixed-width keyspaces
-    fn new<const S: usize>(storage: &'s MVCCStorage, prefix: &StorageKey<'s, S>, open_sequence_number: &SequenceNumber) -> MVCCPrefixIterator<'s> {
+    fn new<const S: usize>(storage: &'s MVCCStorage, prefix: &'s StorageKey<'s, S>, open_sequence_number: &SequenceNumber) -> MVCCPrefixIterator<'s> {
         let keyspace = storage.get_keyspace(prefix.keyspace_id());
         let iterator = keyspace.iterate_prefix(prefix.bytes());
         MVCCPrefixIterator {
             storage: storage,
             keyspace: keyspace,
             iterator: iterator,
-            last_visible_key: None,
             open_sequence_number: *open_sequence_number,
+            last_visible_key: None,
         }
     }
 
@@ -387,10 +390,8 @@ impl<'s> MVCCPrefixIterator<'s> {
     }
 }
 
-impl<'a> Iterator for MVCCPrefixIterator<'a> {
-    type Item = Result<(StorageKeyReference<'a>, StorageValueReference<'a>), MVCCStorageError>;
-
-    fn next(&mut self) -> Option<Self::Item> {
+impl<'a, 'this> RefIterator<'this, Result<(StorageKeyReference<'this>, StorageValueReference<'this>), MVCCStorageError>> for MVCCPrefixIterator<'a> {
+    fn next(&'this mut self) -> Option<Result<(StorageKeyReference<'this>, StorageValueReference<'this>), MVCCStorageError>> {
         loop {
             let next = self.iterator.next();
             if next.is_none() {
@@ -411,14 +412,15 @@ impl<'a> Iterator for MVCCPrefixIterator<'a> {
                             StorageOperation::Insert => {
                                 return Some(Ok((
                                     StorageKeyReference::new(self.keyspace.id(), mvcc_key.into_key().unwrap_reference()),
-                                    StorageValueReference::new(ByteReference::new(&*value))
+                                    StorageValueReference::new(ByteReference::new(value)),
                                 )));
                             }
                             StorageOperation::Delete => {
-                                continue;
+                                // return self.next();
+                                // continue;
                             }
                         }
-                    }
+                    } else {}
                 }
             }
         }
@@ -563,7 +565,7 @@ impl<'bytes> MVCCKey<'bytes> {
         let sequence_number_end = key_end + SequenceNumber::serialised_len();
         let operation_end = sequence_number_end + StorageOperation::serialised_len();
 
-        bytes[0..key_end].copy_from_slice(bytes);
+        bytes[0..key_end].copy_from_slice(key);
         sequence_number.invert().serialise_be_into(&mut bytes[key_end..sequence_number_end]);
         bytes[sequence_number_end..operation_end].copy_from_slice(storage_operation.bytes());
 
@@ -603,8 +605,7 @@ impl<'bytes> MVCCKey<'bytes> {
     fn into_key(self) -> ByteArrayOrRef<'bytes, MVCC_KEY_INLINE_SIZE> {
         let end = self.length() - MVCCKey::KEY_NEGATIVE_OFFSET;
         let mut bytes = self.bytes;
-        bytes.truncate(end);
-        bytes
+        bytes.truncate(end)
     }
 
     fn sequence_number(&self) -> SequenceNumber {

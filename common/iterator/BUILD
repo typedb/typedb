@@ -22,7 +22,7 @@ package(default_visibility = ["//visibility:public"])
 
 rust_library(
     name = "iterator",
-    crate_root = "iterator.rs",
+    crate_root = "mod.rs",
     srcs = glob([
         "*.rs",
     ]),

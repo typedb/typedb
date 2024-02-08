@@ -18,13 +18,14 @@
 use std::cell::Cell;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-use std::ops::Deref;
+use std::iter::{once, Once};
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 use speedb::{DB, DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions};
+use bytes::byte_array::ByteArray;
+use iterator::RefIterator;
+
 
 pub type KeyspaceId = u8;
 
@@ -182,13 +183,8 @@ impl<'s> KeyspacePrefixIterator<'s> {
     }
 }
 
-impl<'a> Iterator for KeyspacePrefixIterator<'a> {
-    type Item = Result<(SharedItem<[u8]>, SharedItem<[u8]>), KeyspaceError>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(dirty) = self.is_last_item_dirty.take() {
-            dirty.set(true);
-        }
+impl<'a, 'this> RefIterator<'this, Result<(&'this [u8], &'this [u8]), KeyspaceError>> for KeyspacePrefixIterator<'a> {
+    fn next(&'this mut self) -> Option<Result<(&'this [u8], &'this [u8]), KeyspaceError>> {
         if self.done {
             return None;
         } else if !self.iterator.valid() {
@@ -208,42 +204,12 @@ impl<'a> Iterator for KeyspacePrefixIterator<'a> {
                 return None;
             } else {
                 let value = self.iterator.value().unwrap();
-
-                let dirty = Rc::new(Cell::new(false));
-                self.is_last_item_dirty = Some(dirty.clone());
-                let key = SharedItem::new(dirty.clone(), key as *const [u8]);
-                let value = SharedItem::new(dirty, value as *const [u8]);
                 Some(Ok((key, value)))
             }
         }
     }
 }
 
-#[derive(Debug)]
-struct SharedItem<T: ?Sized> {
-    is_dirty: Rc<Cell<bool>>,
-    item: *const T,
-}
-
-impl<T: ?Sized> SharedItem<T> {
-    fn new(is_dirty: Rc<Cell<bool>>, item: *const T) -> Self {
-        SharedItem {
-            is_dirty: is_dirty,
-            item: item,
-        }
-    }
-}
-
-impl<T: ?Sized> Deref for SharedItem<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        if self.is_dirty.get() {
-            panic!("Runtime lifetime error. Accessing invalid shared memory that is not longer available.");
-        }
-        unsafe { &*self.item }
-    }
-}
 
 //
 //

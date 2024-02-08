@@ -103,24 +103,24 @@ fn get_put_iterate() {
     let sec_1_key_2 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_1_id, 0x1, 0x0, 0x10], sec_1_id)));
     let sec_1_key_3 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_1_id, 0x1, 0x0, 0xff], sec_1_id)));
     let sec_1_key_4 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_1_id, 0x2, 0x0, 0xff], sec_1_id)));
-    storage.put_direct(&sec_1_key_1, &StorageValue::Empty);
-    storage.put_direct(&sec_1_key_2, &StorageValue::Empty);
-    storage.put_direct(&sec_1_key_3, &StorageValue::Empty);
-    storage.put_direct(&sec_1_key_4, &StorageValue::Empty);
+    storage.put_raw(&sec_1_key_1, &StorageValue::Empty);
+    storage.put_raw(&sec_1_key_2, &StorageValue::Empty);
+    storage.put_raw(&sec_1_key_3, &StorageValue::Empty);
+    storage.put_raw(&sec_1_key_4, &StorageValue::Empty);
 
     let sec_2_key_1 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_2_id, 0x1, 0x0, 0x1], sec_2_id)));
     let sec_2_key_2 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_2_id, 0xb, 0x0, 0x10], sec_2_id)));
     let sec_2_key_3 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_2_id, 0x5, 0x0, 0xff], sec_2_id)));
     let sec_2_key_4 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_2_id, 0x2, 0x0, 0xff], sec_2_id)));
-    storage.put_direct(&sec_2_key_1, &StorageValue::Empty);
-    storage.put_direct(&sec_2_key_2, &StorageValue::Empty);
-    storage.put_direct(&sec_2_key_3, &StorageValue::Empty);
-    storage.put_direct(&sec_2_key_4, &StorageValue::Empty);
+    storage.put_raw(&sec_2_key_1, &StorageValue::Empty);
+    storage.put_raw(&sec_2_key_2, &StorageValue::Empty);
+    storage.put_raw(&sec_2_key_3, &StorageValue::Empty);
+    storage.put_raw(&sec_2_key_4, &StorageValue::Empty);
 
-    let first_value = storage.get_direct(&sec_1_key_1);
+    let first_value = storage.get_raw(&sec_1_key_1);
     assert_eq!(first_value, Some(StorageValue::Empty));
 
-    let second_value = storage.get_direct(&sec_2_key_1);
+    let second_value = storage.get_raw(&sec_2_key_1);
     assert_eq!(second_value, Some(StorageValue::Empty));
 
     let prefix = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_1_id, 0x1], sec_1_id)));

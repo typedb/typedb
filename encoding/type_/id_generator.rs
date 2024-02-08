@@ -39,7 +39,7 @@ impl TypeIIDGenerator {
     }
 
     pub fn load(storage: &MVCCStorage) -> TypeIIDGenerator {
-        let next_entity: AtomicU16 = storage.get_prev_direct(&EntityType.next_prefix_id().serialise_to_key())
+        let next_entity: AtomicU16 = storage.get_prev_raw(&EntityType.next_prefix_id().serialise_to_key())
             .map_or_else(
                 || AtomicU16::new(0),
                 |prev| {
@@ -47,7 +47,7 @@ impl TypeIIDGenerator {
                     let val = u16::from_be_bytes((&prev.bytes()[0..2]).try_into().unwrap());
                     AtomicU16::new(val)
                 });
-        let next_attribute: AtomicU16 = storage.get_prev_direct(&AttributeType.next_prefix_id().serialise_to_key())
+        let next_attribute: AtomicU16 = storage.get_prev_raw(&AttributeType.next_prefix_id().serialise_to_key())
             .map_or_else(
                 || AtomicU16::new(0),
                 |prev| {

@@ -35,6 +35,7 @@ rust_library(
         "//common/logger",
         "//common/primitive",
         "//common/bytes",
+        "//common/iterator",
 
         "@crates//:bincode",
         "@crates//:itertools",

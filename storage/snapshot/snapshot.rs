@@ -24,13 +24,13 @@ use itertools::Itertools;
 
 use bytes::byte_array::ByteArray;
 use durability::SequenceNumber;
+use iterator::RefIterator;
 
 use crate::error::MVCCStorageError;
 use crate::isolation_manager::CommitRecord;
 use crate::key_value::{StorageKey, StorageKeyArray, StorageValue, StorageValueArray};
-use crate::keyspace::keyspace::{KEYSPACE_ID_MAX, KeyspaceId};
 use crate::MVCCStorage;
-use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, KeyspaceBuffer, KeyspaceBuffers};
+use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, KeyspaceBuffers};
 
 pub enum Snapshot<'storage> {
     Read(ReadSnapshot<'storage>),
@@ -45,7 +45,8 @@ impl<'storage> Snapshot<'storage> {
         }
     }
 
-    pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> Box<dyn Iterator<Item=Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this> {
+    pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>)
+                                 -> Box<dyn RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this> {
         match self {
             Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
             Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
@@ -72,11 +73,11 @@ impl<'storage> ReadSnapshot<'storage> {
         self.storage.get(key, &self.open_sequence_number, |reference| StorageValueArray::new(ByteArray::from(reference)))
     }
 
-    fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> impl Iterator<Item=Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
-        self.storage.iterate_prefix(prefix, &self.open_sequence_number)
-            .map(|result| result.map(|(k, v)| {
-                (StorageKey::Reference(k), StorageValue::Reference(v))
-            }))
+    fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> impl RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
+        let mvcc_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
+        mvcc_iterator.map(|result| result.map(|(k, v)| {
+            (StorageKey::Reference(k), StorageValue::Reference(v))
+        }))
     }
 }
 
@@ -184,7 +185,7 @@ impl<'storage> WriteSnapshot<'storage> {
         )
     }
 
-    pub fn iterate_prefix<'this>(&'this self, prefix: &StorageKey<'this, BUFFER_INLINE_KEY>) -> impl Iterator<Item=Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
+    pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> impl RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
         // let storage_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
         // let buffered_iterator = self.writes.iterate_prefix(prefix.keyspace_id(), prefix.bytes());
         // storage_iterator.merge_join_by(
@@ -215,8 +216,12 @@ impl<'storage> WriteSnapshot<'storage> {
         //     },
         // })
 
-        // TODO
-        iter::empty()
+        // TODO replace
+
+        let mvcc_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
+        mvcc_iterator.map(|result| result.map(|(k, v)| {
+            (StorageKey::Reference(k), StorageValue::Reference(v))
+        }))
     }
 
     pub fn commit(self) {
