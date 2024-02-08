@@ -29,6 +29,8 @@ rust_library(
     crate_root = "storage.rs",
     srcs = glob([
         "*.rs",
+        "keyspace/*.rs",
+        "snapshot/*.rs",
     ]),
     deps = [
         "//storage/durability",
@@ -43,6 +45,7 @@ rust_library(
         "@crates//:tracing",
         "@crates//:serde",
         "@crates//:struct_deser",
+        "@crates//:polonius-the-crab",
     ]
 )
 

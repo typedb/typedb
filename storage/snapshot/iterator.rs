@@ -15,7 +15,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub(crate) mod snapshot;
-pub(crate) mod buffer;
-pub(crate) mod write;
-pub(crate) mod iterator;
+use crate::key_value::{StorageKey, StorageKeyArray};
+use crate::MVCCPrefixIterator;
+use crate::snapshot::buffer::BUFFER_INLINE_KEY;
+use crate::snapshot::snapshot::SnapshotError;
+use crate::snapshot::write::Write;
+
+struct SnapshotPrefixIterator<'a> {
+    mvcc_iterator: MVCCPrefixIterator<'a>,
+    buffered_iterator: dyn Iterator<Item=(StorageKeyArray<BUFFER_INLINE_KEY>, Write)>
+}
+
+// impl<'a> SnapshotPrefixIterator<'a> {
+//
+//     fn next<'this>(&'this mut self) -> Option<Result<StorageKey<'this, BUFFER_INLINE_KEY>, StorageVal<'this, BUFFER_INLINE_KEY>>, SnapshotError> {
+//
+//     }
+// }

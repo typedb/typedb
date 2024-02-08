@@ -130,9 +130,7 @@ impl KeyspaceBuffer {
     pub(crate) fn iterate_prefix<'this>(&'this self, keyspace_id: KeyspaceId, prefix: &[u8]) -> impl Iterator<Item=(StorageKeyArray<BUFFER_INLINE_KEY>, Write)> + 'this {
         let map = self.buffer.read().unwrap();
 
-
         // TODO: stop iterator after prefix+1
-
 
         // TODO: hold read lock while iterating so avoid collecting into array
         map.range::<[u8], _>((Bound::Included(prefix), Bound::Unbounded)).map(|(key, val)| {

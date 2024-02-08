@@ -124,7 +124,7 @@ pub trait SerialisableKeyDynamic: Serialisable {
 }
 
 pub trait SerialisableValue: Serialisable {
-    fn serialise_to_value(&self) -> StorageValue {
+    fn serialise_to_value(&self) -> StorageValue<'_, 48> {
         let mut bytes = vec![0; self.serialised_size()];
         self.serialise_into(bytes.as_mut_slice());
         StorageValue::Value(bytes.into_boxed_slice())

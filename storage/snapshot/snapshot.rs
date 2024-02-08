@@ -24,12 +24,11 @@ use itertools::Itertools;
 
 use bytes::byte_array::ByteArray;
 use durability::SequenceNumber;
-use iterator::RefIterator;
 
 use crate::error::MVCCStorageError;
 use crate::isolation_manager::CommitRecord;
 use crate::key_value::{StorageKey, StorageKeyArray, StorageValue, StorageValueArray};
-use crate::MVCCStorage;
+use crate::{MVCCPrefixIterator, MVCCStorage};
 use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, KeyspaceBuffers};
 
 pub enum Snapshot<'storage> {
@@ -45,13 +44,14 @@ impl<'storage> Snapshot<'storage> {
         }
     }
 
-    pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>)
-                                 -> Box<dyn RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this> {
-        match self {
-            Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
-            Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
-        }
-    }
+    // pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>)
+    //                              -> Box<dyn RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this> {
+        // match self {
+        //     Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
+        //     Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
+        // }
+        // todo!()
+    // }
 }
 
 pub struct ReadSnapshot<'storage> {
@@ -73,11 +73,13 @@ impl<'storage> ReadSnapshot<'storage> {
         self.storage.get(key, &self.open_sequence_number, |reference| StorageValueArray::new(ByteArray::from(reference)))
     }
 
-    fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> impl RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
+    fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) ->MVCCPrefixIterator { // impl RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
         let mvcc_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
-        mvcc_iterator.map(|result| result.map(|(k, v)| {
-            (StorageKey::Reference(k), StorageValue::Reference(v))
-        }))
+        mvcc_iterator
+        //
+        //     .map(|result| result.map(|(k, v)| {
+        //     (StorageKey::Reference(k), StorageValue::Reference(v))
+        // }))
     }
 }
 
@@ -185,9 +187,10 @@ impl<'storage> WriteSnapshot<'storage> {
         )
     }
 
-    pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> impl RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
-        // let storage_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
-        // let buffered_iterator = self.writes.iterate_prefix(prefix.keyspace_id(), prefix.bytes());
+    pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> MVCCPrefixIterator { // impl RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
+        let storage_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
+        storage_iterator
+        // let buffered_iterator = self.buffers.get(prefix.keyspace_id()).iterate_prefix(prefix.keyspace_id(), prefix.bytes());
         // storage_iterator.merge_join_by(
         //     buffered_iterator,
         //     |(k1, v1), (k2, v2)| k1.cmp(k2),
@@ -218,10 +221,9 @@ impl<'storage> WriteSnapshot<'storage> {
 
         // TODO replace
 
-        let mvcc_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
-        mvcc_iterator.map(|result| result.map(|(k, v)| {
-            (StorageKey::Reference(k), StorageValue::Reference(v))
-        }))
+        //     .map(|result| result.map(|(k, v)| {
+        //     (StorageKey::Reference(k), StorageValue::Reference(v))
+        // }))
     }
 
     pub fn commit(self) {
@@ -237,27 +239,29 @@ impl<'storage> WriteSnapshot<'storage> {
 }
 
 #[derive(Debug)]
-pub struct WriteSnapshotError {
-    pub kind: WriteSnapshotErrorKind,
+pub struct SnapshotError {
+    pub kind: SnapshotErrorKind,
 }
 
 #[derive(Debug)]
-pub enum WriteSnapshotErrorKind {
+pub enum SnapshotErrorKind {
+    FailedIterate { source: MVCCStorageError },
     FailedGet { source: MVCCStorageError },
     FailedPut { source: MVCCStorageError },
 }
 
-impl Display for WriteSnapshotError {
+impl Display for SnapshotError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }
 }
 
-impl Error for WriteSnapshotError {
+impl Error for SnapshotError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
-            WriteSnapshotErrorKind::FailedGet { source, .. } => Some(source),
-            WriteSnapshotErrorKind::FailedPut { source, .. } => Some(source),
+            SnapshotErrorKind::FailedIterate { source, .. } => Some(source),
+            SnapshotErrorKind::FailedGet { source, .. } => Some(source),
+            SnapshotErrorKind::FailedPut { source, .. } => Some(source),
         }
     }
 }

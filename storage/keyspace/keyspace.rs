@@ -23,8 +23,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use speedb::{DB, DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions};
-use bytes::byte_array::ByteArray;
-use iterator::RefIterator;
+use crate::keyspace::keyspace::State::EMPTY;
 
 
 pub type KeyspaceId = u8;
@@ -157,8 +156,15 @@ impl Keyspace {
 pub(crate) struct KeyspacePrefixIterator<'a> {
     prefix: &'a [u8],
     iterator: DBRawIterator<'a>,
-    done: bool,
-    is_last_item_dirty: Option<Rc<Cell<bool>>>,
+    state: State,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum State {
+    EMPTY,
+    READY,
+    ERROR,
+    DONE,
 }
 
 impl<'s> KeyspacePrefixIterator<'s> {
@@ -168,45 +174,86 @@ impl<'s> KeyspacePrefixIterator<'s> {
         // read_opts.set_prefix_same_as_start(true);
         let mut read_opts = keyspace.new_read_options();
         let mut raw_iterator: DBRawIteratorWithThreadMode<'s, DB> = keyspace.kv_storage.raw_iterator_opt(read_opts);
-        raw_iterator.seek(prefix);
 
-        KeyspacePrefixIterator {
+        let mut iter = KeyspacePrefixIterator {
             prefix: prefix,
             iterator: raw_iterator,
-            done: false,
-            is_last_item_dirty: None,
+            state: State::EMPTY,
+        };
+        iter.seek(prefix);
+        iter
+    }
+    //
+    // pub(crate) fn next(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
+    //     if self.done {
+    //         return None;
+    //     } else if !self.iterator.valid() {
+    //         self.done = true;
+    //         return None;
+    //     } else if self.iterator.status().is_err() {
+    //         self.done = true;
+    //         return Some(Err(KeyspaceError {
+    //             kind: KeyspaceErrorKind::FailedIterate {
+    //                 source: self.iterator.status().err().unwrap()
+    //             }
+    //         }));
+    //     } else {
+    //         let key = self.iterator.key().unwrap();
+    //         if key.len() < self.prefix.len() || &key[0..self.prefix.len()] != self.prefix {
+    //             self.done = true;
+    //             return None;
+    //         } else {
+    //             let value = self.iterator.value().unwrap();
+    //             Some(Ok((key, value)))
+    //         }
+    //     }
+    // }
+
+    pub(crate) fn seek(&mut self, key: &[u8]) {
+        if self.has_valid_prefix(key) {
+            self.iterator.seek(key);
+            self.check();
+        } else {
+            self.state = State::DONE;
         }
     }
 
-    pub(crate) fn seek(&mut self, key: &[u8]) {
-        self.iterator.seek(key);
+    pub(crate) fn advance(&mut self) {
+        assert!(self.state != State::DONE && self.state != State::ERROR);
+        self.iterator.next();
+        self.check();
     }
-}
 
-impl<'a, 'this> RefIterator<'this, Result<(&'this [u8], &'this [u8]), KeyspaceError>> for KeyspacePrefixIterator<'a> {
-    fn next(&'this mut self) -> Option<Result<(&'this [u8], &'this [u8]), KeyspaceError>> {
-        if self.done {
-            return None;
-        } else if !self.iterator.valid() {
-            self.done = true;
-            return None;
+    fn check(&mut self) {
+        if self.iterator.valid() {
+            self.state = State::READY;
         } else if self.iterator.status().is_err() {
-            self.done = true;
+            self.state = State::ERROR;
+        } else {
+            self.state = State::DONE;
+        }
+    }
+
+    pub(crate) fn peek(&self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
+        if self.state == State::DONE {
+            return None;
+        } else if self.state == State::ERROR {
             return Some(Err(KeyspaceError {
                 kind: KeyspaceErrorKind::FailedIterate {
                     source: self.iterator.status().err().unwrap()
                 }
             }));
-        } else {
+        } else if self.state == State::READY {
             let key = self.iterator.key().unwrap();
-            if key.len() < self.prefix.len() || &key[0..self.prefix.len()] != self.prefix {
-                self.done = true;
-                return None;
-            } else {
-                let value = self.iterator.value().unwrap();
-                Some(Ok((key, value)))
-            }
+            let value = self.iterator.value().unwrap();
+            Some(Ok((key, value)))
+        } else {
+            unreachable!("peek() can only be called after check() prepares the state.");
         }
+    }
+
+    fn has_valid_prefix(&self, key: &[u8]) -> bool {
+        return key.len() >= self.prefix.len() || &key[0..self.prefix.len()] == self.prefix;
     }
 }
 
