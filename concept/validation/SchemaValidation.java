@@ -318,7 +318,7 @@ public class SchemaValidation {
                         .first();
                 Set<TypeQLToken.Annotation> existingAnnotations = existingOwns.map(ThingType.Owns::effectiveAnnotations).orElse(emptySet());
                 AttributeType attributeType = existingOwns.map(ThingType.Owns::attributeType).orElse(modifiedAttributeType);
-                if (!existingAnnotations.isEmpty() && ThingTypeImpl.OwnsImpl.compareAnnotationsPermissive(updatedAnnotations, existingAnnotations) < 0) {
+                if (ThingTypeImpl.OwnsImpl.compareAnnotationsPermissive(updatedAnnotations, existingAnnotations) < 0) {
                     try {
                         validateData((ThingTypeImpl) thingType, (AttributeTypeImpl) attributeType, updatedAnnotations, existingAnnotations);
                     } catch (TypeDBException e) {
