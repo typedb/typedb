@@ -118,19 +118,18 @@ public class SchemaValidation {
             removed.addAll(overriddenHere);
         }
 
-        private static void validateNoLeakedInstances(RelationType relationType, Set<RoleType> removed, List<TypeDBException> acc) {
-            // TODO: Optimisation: any RoleType in removed which was overridden by this type need not be validated in subtypes
-            if (removed.isEmpty()) return;
+        private static void validateNoLeakedInstances(RelationType relationType, Set<RoleType> removedOrHidden, List<TypeDBException> acc) {
+            if (removedOrHidden.isEmpty()) return;
             List<RoleType> overriddenHere = new ArrayList<>();
-            Iterators.iterate(removed)
+            Iterators.iterate(removedOrHidden)
                     .filter(roleType -> relationType.getInstances(EXPLICIT).anyMatch(instance -> instance.getPlayers(roleType).hasNext()))
                     .forEachRemaining(roleType -> {
                         acc.add(TypeDBException.of(INVALID_UNDEFINE_RELATES_HAS_INSTANCES, relationType.getLabel(), roleType.getLabel()));
                         overriddenHere.add(roleType);
                     });
-            removed.removeAll(overriddenHere);
-            relationType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoLeakedInstances(subtype, removed, acc));
-            removed.addAll(overriddenHere);
+            removedOrHidden.removeAll(overriddenHere);
+            relationType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoLeakedInstances(subtype, removedOrHidden, acc));
+            removedOrHidden.addAll(overriddenHere);
         }
 
         public static String format(RelationType relationType, RoleType roleType, @Nullable RoleType overridenRoleType) {
@@ -276,25 +275,23 @@ public class SchemaValidation {
             return exceptions;
         }
 
-        private static void validateNoHiddenOwnsRedeclaration(ThingType thingType, Set<AttributeType> hiddenOwns, List<TypeDBException> acc, boolean isHidingType) {
+        private static void validateNoHiddenOwnsRedeclaration(ThingType thingType, Set<AttributeType> hidden, List<TypeDBException> acc, boolean isHidingType) {
             List<AttributeType> overriddenHere = new ArrayList<>();
             iterate(thingType.getOwnedAttributes(EXPLICIT))
                     .forEachRemaining(attributeType -> {
-                        if (hiddenOwns.contains(attributeType)) {
+                        if (hidden.contains(attributeType)) {
                             acc.add(TypeDBException.of(OWNS_ATTRIBUTE_WAS_OVERRIDDEN, thingType.getLabel(), attributeType.getLabel()));
-                        } else if (!isHidingType && thingType.getOwnsOverridden(attributeType) != null && hiddenOwns.contains(thingType.getOwnsOverridden(attributeType))) {
+                        } else if (!isHidingType && thingType.getOwnsOverridden(attributeType) != null && hidden.contains(thingType.getOwnsOverridden(attributeType))) {
                             overriddenHere.add(attributeType);
                         }
                     });
 
-            hiddenOwns.removeAll(overriddenHere);
-            thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoHiddenOwnsRedeclaration(subtype, hiddenOwns, acc, false));
-            hiddenOwns.addAll(overriddenHere);
+            hidden.removeAll(overriddenHere);
+            thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoHiddenOwnsRedeclaration(subtype, hidden, acc, false));
+            hidden.addAll(overriddenHere);
         }
 
         private static void validateOwnsRedeclarationsAndOverridesHaveStricterAnnotations(ThingType thingType, Map<AttributeType, Set<TypeQLToken.Annotation>> addedAnnotations, List<TypeDBException> acc) {
-            // TODO: (LONG-TERM) We would ideally have done this at commit time, but we can't because annotations are inherited when they're not specified.
-            // Hence, when we move a type without annotations to be a descendant of one with annotations, We cannot detect the change at commit time.
             iterate(thingType.getOwns(EXPLICIT))
                     .forEachRemaining(declaredOwns -> {
                         if (addedAnnotations.containsKey(declaredOwns.attributeType())) {
@@ -333,20 +330,20 @@ public class SchemaValidation {
             thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateDataSatisfyAnnotations(subtype, addedAnnotations, acc));
         }
 
-        private static void validateNoLeakedInstances(ThingType thingType, Set<AttributeType> removedOwns, List<TypeDBException> acc, boolean isRemovingThingType) {
+        private static void validateNoLeakedInstances(ThingType thingType, Set<AttributeType> removedOrHidden, List<TypeDBException> acc, boolean isRemovingThingType) {
             List<AttributeType> redeclaredHere = !isRemovingThingType ?
-                    iterate(thingType.getOwnedAttributes(EXPLICIT)).filter(removedOwns::contains).toList() :
+                    iterate(thingType.getOwnedAttributes(EXPLICIT)).filter(removedOrHidden::contains).toList() :
                     Collections.emptyList();
-            removedOwns.removeAll(redeclaredHere);
-            if (!removedOwns.isEmpty()) {
-                Iterators.iterate(removedOwns)
+            removedOrHidden.removeAll(redeclaredHere);
+            if (!removedOrHidden.isEmpty()) {
+                Iterators.iterate(removedOrHidden)
                         .filter(attributeType -> thingType.getInstances(EXPLICIT).anyMatch(instance -> instance.getHas(attributeType).hasNext()))
                         .forEachRemaining(attributeType -> {
                             acc.add(TypeDBException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, thingType.getLabel(), attributeType.getLabel()));
                         });
-                thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoLeakedInstances(subtype, removedOwns, acc, false));
+                thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoLeakedInstances(subtype, removedOrHidden, acc, false));
             }
-            removedOwns.addAll(redeclaredHere);
+            removedOrHidden.addAll(redeclaredHere);
         }
 
         private static void validateData(ThingTypeImpl owner, AttributeTypeImpl attributeType,
