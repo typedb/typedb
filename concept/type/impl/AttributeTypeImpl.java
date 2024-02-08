@@ -146,7 +146,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                 Iterators.iterate(SchemaValidation.Plays.validateRelocate(this, superType)),
                 Iterators.iterate(SchemaValidation.Owns.validateRelocate(this, superType))
         ).toList(), e -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this.getLabel(), superType.getLabel(), e)));
-
         setSuperTypeVertex(((AttributeTypeImpl) superType).vertex);
     }
 

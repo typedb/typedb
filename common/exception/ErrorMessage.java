@@ -648,8 +648,6 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(55, "The type constraint '%s' is not accepted in a define/undefine query.");
         public static final TypeWrite ILLEGAL_SUPERTYPE_ENCODING =
                 new TypeWrite(56, "Unable to set type with class '%s' as a supertype.");
-
-
         public static final TypeWrite SCHEMA_VALIDATION_INVALID_DEFINE =
                 new TypeWrite(57, "Defining '%s' failed because resulting schema would be invalid: %s.");
         public static final TypeWrite SCHEMA_VALIDATION_INVALID_UNDEFINE =

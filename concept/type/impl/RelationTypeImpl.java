@@ -123,7 +123,6 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void setSupertype(RelationType superType) {
         validateIsNotDeleted();
-
         SchemaValidation.throwIfNonEmpty(Iterators.link(
                 Iterators.iterate(SchemaValidation.Relates.validateRelocate(this, superType)),
                 Iterators.iterate(SchemaValidation.Plays.validateRelocate(this, superType)),
