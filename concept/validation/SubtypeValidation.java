@@ -161,7 +161,7 @@ public class SubtypeValidation {
                 Set<RoleType> noLongerPlays = new HashSet<>();
                 noLongerPlays.add(overridden);
                 validateNoLeakedInstances(thingType, noLongerPlays, exceptions, true);
-                validateNoHiddenPlaysRedeclaration(thingType, noLongerPlays, exceptions, true);
+                validateNoHiddenPlaysRedeclaration(thingType, noLongerPlays, exceptions);
             }
             return exceptions;
         }
@@ -187,29 +187,30 @@ public class SubtypeValidation {
                 });
             });
 
-            validateNoHiddenPlaysRedeclaration(thingType, hiddenPlays, exceptions, false);
+            validateNoHiddenPlaysRedeclaration(thingType, hiddenPlays, exceptions);
             validateNoLeakedInstances(thingType, removedPlays, exceptions, false);
             return exceptions;
         }
 
-        private static void validateNoHiddenPlaysRedeclaration(ThingType thingType, Set<RoleType> hidden, List<TypeDBException> exceptions, boolean isHidingThingType) {
-            if (hidden.isEmpty()) return;
+        private static void validateNoHiddenPlaysRedeclaration(ThingType thingType, Set<RoleType> toBeHidden, List<TypeDBException> exceptions) {
+            if (toBeHidden.isEmpty()) return;
             List<RoleType> overriddenHere = new ArrayList<>();
             thingType.getPlays(EXPLICIT)
                     .forEachRemaining(roleType -> {
-                        if (hidden.contains(roleType)) {
+                        if (toBeHidden.contains(roleType)) {
                             exceptions.add(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN, thingType.getLabel(), roleType.getLabel()));
-                        } else if (!isHidingThingType && thingType.getPlaysOverridden(roleType) != null && hidden.contains(thingType.getPlaysOverridden(roleType))) {
-                            overriddenHere.add(roleType);
+                        }
+                        if (thingType.getPlaysOverridden(roleType) != null && toBeHidden.contains(thingType.getPlaysOverridden(roleType))) {
+                            overriddenHere.add(roleType); // Since validation runs before the mutation, this (correctly) won't consider the edge being added.
                         }
                     });
-            hidden.removeAll(overriddenHere);
-            thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoHiddenPlaysRedeclaration(subtype, hidden, exceptions, false));
-            hidden.addAll(overriddenHere);
+            toBeHidden.removeAll(overriddenHere);
+            thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoHiddenPlaysRedeclaration(subtype, toBeHidden, exceptions));
+            toBeHidden.addAll(overriddenHere);
         }
 
-        private static void validateNoLeakedInstances(ThingType thingType, Set<RoleType> removedOrHidden, List<TypeDBException> exceptions, boolean isRemovingThingType) {
-            List<RoleType> redeclaredHere = !isRemovingThingType ?
+        private static void validateNoLeakedInstances(ThingType thingType, Set<RoleType> removedOrHidden, List<TypeDBException> exceptions, boolean isRemovingType) {
+            List<RoleType> redeclaredHere = !isRemovingType ?
                     iterate(thingType.getPlays(EXPLICIT)).filter(removedOrHidden::contains).toList() :
                     Collections.emptyList();
             removedOrHidden.removeAll(redeclaredHere);
