@@ -217,18 +217,18 @@ public class SubtypeValidation {
 
         private static void validateNoLeakedInstances(ThingType thingType, Set<RoleType> noLongerPlays, List<TypeDBException> exceptions, boolean isRemovingType) {
             if (noLongerPlays.isEmpty()) return;
-            List<RoleType> redeclaredHere = !isRemovingType ? // redeclaredOrOverriddenHere?
-                    iterate(thingType.getPlays(EXPLICIT)).filter(noLongerPlays::contains).toList() :
+            List<RoleType> redeclaredOrOverriddenHere = !isRemovingType ?
+                    thingType.getPlays(EXPLICIT).flatMap(roleType -> Iterators.iterate(roleType, thingType.getPlaysOverridden(roleType))).filter(noLongerPlays::contains).toList() :
                     Collections.emptyList();
-            noLongerPlays.removeAll(redeclaredHere);
+
+            noLongerPlays.removeAll(redeclaredOrOverriddenHere);
             Iterators.iterate(noLongerPlays)
                     .filter(roleType -> thingType.getInstances(EXPLICIT).anyMatch(instance -> instance.getRelations(roleType).hasNext()))
                     .forEachRemaining(roleType -> {
                         exceptions.add(TypeDBException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, thingType.getLabel(), roleType.getLabel()));
                     });
             thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoLeakedInstances(subtype, noLongerPlays, exceptions, false));
-
-            noLongerPlays.addAll(redeclaredHere);
+            noLongerPlays.addAll(redeclaredOrOverriddenHere);
         }
 
         public static String format(ThingType thingType, RoleType roleType, @Nullable RoleType overridenRoleType) {
@@ -312,18 +312,18 @@ public class SubtypeValidation {
 
         private static void validateNoLeakedInstances(ThingType thingType, Set<AttributeType> noLongerOwned, List<TypeDBException> exceptions, boolean isRemovingThingType) {
             if (noLongerOwned.isEmpty()) return;
-            List<AttributeType> redeclaredHere = !isRemovingThingType ?
-                    iterate(thingType.getOwnedAttributes(EXPLICIT)).filter(noLongerOwned::contains).toList() :
+            List<AttributeType> redeclaredOrOverriddenHere = !isRemovingThingType ?
+                    iterate(thingType.getOwnedAttributes(EXPLICIT)).flatMap(attributeType -> Iterators.iterate(attributeType, attributeType.getSupertype())).filter(noLongerOwned::contains).toList() :
                     Collections.emptyList();
-            noLongerOwned.removeAll(redeclaredHere);
 
+            noLongerOwned.removeAll(redeclaredOrOverriddenHere);
             Iterators.iterate(noLongerOwned)
                     .filter(attributeType -> thingType.getInstances(EXPLICIT).anyMatch(instance -> instance.getHas(attributeType).hasNext()))
                     .forEachRemaining(attributeType -> {
                         exceptions.add(TypeDBException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, thingType.getLabel(), attributeType.getLabel()));
                     });
             thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoLeakedInstances(subtype, noLongerOwned, exceptions, false));
-            noLongerOwned.addAll(redeclaredHere);
+            noLongerOwned.addAll(redeclaredOrOverriddenHere);
         }
 
         private static void validateOwnsRedeclarationsAndOverridesHaveStricterAnnotations(ThingType thingType, Map<AttributeType, Set<TypeQLToken.Annotation>> annotationsToAdd, List<TypeDBException> exceptions) {
