@@ -44,17 +44,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_HAS_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_HAS_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_RELATED_ROLE_TYPE_NOT_INHERITED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATTRIBUTE_WAS_OVERRIDDEN;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_UNIQUE_PRECONDITION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.*;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
@@ -63,17 +53,24 @@ import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.UNIQUE;
 import static java.util.Collections.emptySet;
 
-public class SchemaValidation {
+public class SubtypeValidation {
     public static void throwIfNonEmpty(List<TypeDBException> validationErrors, Function<String, TypeDBException> exceptionFromErrorList) {
         if (!validationErrors.isEmpty()) {
-            String formattedErrors = "\n- " + validationErrors.stream().map(TypeDBException::getMessage).collect(Collectors.joining("\n-"));
+            String formattedErrors = "\n- " + validationErrors.stream().map(TypeDBException::getMessage).collect(Collectors.joining("\n- "));
             throw exceptionFromErrorList.apply(formattedErrors);
         }
     }
 
     public static class Relates {
 
-        public static List<TypeDBException> validateAdd(RelationType relationType, String added, @Nullable RoleType overridden) {
+        public static List<TypeDBException> validateAdd(RelationType relationType, String addedRole) {
+            List<TypeDBException> exceptions = new ArrayList<>();
+            Set<String> addedRoles = Collections.singleton(addedRole);
+            relationType.getSubtypes().forEachRemaining(subtype -> validateRoleNameUniqueness(relationType, addedRoles, exceptions));
+            return exceptions;
+        }
+
+        public static List<TypeDBException> validateOverride(RelationType relationType, @Nullable RoleType overridden) {
             if (overridden != null) {
                 List<TypeDBException> exceptions = new ArrayList<>();
                 Set<RoleType> noLongerRelates = new HashSet<>();
@@ -95,13 +92,27 @@ public class SchemaValidation {
 
         public static List<TypeDBException> validateRelocate(RelationType relationType, RelationType newSupertype) {
             List<TypeDBException> exceptions = new ArrayList<>();
-            Set<RoleType> noLongerRelates = new HashSet<>();
-            RelationType oldSuperType = relationType.getSupertype();
-            oldSuperType.getRelates(TRANSITIVE).filter(roleType -> !roleType.isRoot()).forEachRemaining(noLongerRelates::add);
-            newSupertype.getRelates(TRANSITIVE).forEachRemaining(noLongerRelates::remove);
-            validateNoBrokenOverrides(relationType, noLongerRelates, exceptions);
-            validateNoLeakedInstances(relationType, noLongerRelates, exceptions);
+            Set<RoleType> oldRelates = new HashSet<>();
+            Set<RoleType> newRelates = new HashSet<>();
+            relationType.getSupertype().getRelates(TRANSITIVE).filter(roleType -> !roleType.isRoot()).forEachRemaining(oldRelates::add);
+            newSupertype.getRelates(TRANSITIVE).filter(roleType -> !roleType.isRoot()).forEachRemaining(newRelates::add);
+            Set<RoleType> bothRelates = com.vaticle.typedb.common.collection.Collections.intersection(newRelates, oldRelates);
+            newRelates.removeAll(bothRelates);
+            oldRelates.removeAll(bothRelates);
+
+            validateRoleNameUniqueness(relationType, iterate(newRelates).map(roleType -> roleType.getLabel().name()).toSet(), exceptions);
+            validateNoBrokenOverrides(relationType, newRelates, exceptions);
+            validateNoLeakedInstances(relationType, oldRelates, exceptions);
             return exceptions;
+        }
+
+        private static void validateRoleNameUniqueness(RelationType relationType, Set<String> addedRoles, List<TypeDBException> exceptions) {
+            relationType.getRelates(EXPLICIT)
+                    .filter(roleType -> addedRoles.contains(roleType.getLabel().name()))
+                    .forEachRemaining(roleType -> {
+                        exceptions.add(TypeDBException.of(RELATION_RELATES_ROLE_FROM_SUPERTYPE, roleType.getLabel().name(), relationType.getLabel()));
+                    });
+            relationType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateRoleNameUniqueness(subtype, addedRoles, exceptions));
         }
 
         private static void validateNoBrokenOverrides(RelationType relationType, Set<RoleType> removed, List<TypeDBException> acc) {

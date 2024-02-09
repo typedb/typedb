@@ -30,7 +30,7 @@ import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.concept.validation.SchemaValidation;
+import com.vaticle.typedb.core.concept.validation.SubtypeValidation;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
@@ -84,9 +84,9 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Override
     public void setSupertype(EntityType superType) {
         validateIsNotDeleted();
-        SchemaValidation.throwIfNonEmpty(Iterators.link(
-                Iterators.iterate(SchemaValidation.Plays.validateRelocate(this, superType)),
-                Iterators.iterate(SchemaValidation.Owns.validateRelocate(this, superType))
+        SubtypeValidation.throwIfNonEmpty(Iterators.link(
+                Iterators.iterate(SubtypeValidation.Plays.validateRelocate(this, superType)),
+                Iterators.iterate(SubtypeValidation.Owns.validateRelocate(this, superType))
         ).toList(), e -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this.getLabel(), superType.getLabel(), e)));
         setSuperTypeVertex(((EntityTypeImpl) superType).vertex);
     }
