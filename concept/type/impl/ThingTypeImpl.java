@@ -566,19 +566,18 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         redeclaredOwns.retainAll(getSupertype().getOwnedAttributes(TRANSITIVE));
         FunctionalIterator<TypeDBException> redundantRedeclarations = iterate(redeclaredOwns)
                 .filter(attributeType -> {
-                    return OwnsImpl.compareAnnotationsPermissive(
+                    return !OwnsImpl.isFirstStricter(
                             getOwns(EXPLICIT, attributeType).get().effectiveAnnotations(),
-                            getSupertype().getOwns(TRANSITIVE, attributeType).get().effectiveAnnotations()) >= 0;
+                            getSupertype().getOwns(TRANSITIVE, attributeType).get().effectiveAnnotations());
                 }).map(attributeType -> TypeDBException.of(REDUNDANT_OWNS_DECLARATION, getLabel(), attributeType.getLabel()));
 
         FunctionalIterator<TypeDBException> overridesWithRedundantAnnotations = Iterators.iterate(getOwns(EXPLICIT))
                 .filter(owns -> owns.overridden().isPresent() && getSupertype().getOwns(TRANSITIVE, owns.overridden().get()).isPresent())
                 .filter(owns -> {
-                    return !((OwnsImpl) owns).explicitAnnotations().isEmpty() &&
-                            OwnsImpl.compareAnnotationsPermissive(
+                    return !((OwnsImpl) owns).explicitAnnotations().isEmpty() && !OwnsImpl.isFirstStricter(
                                     ((OwnsImpl) owns).explicitAnnotations(),
                                     getSupertype().getOwns(TRANSITIVE, owns.overridden().get()).get().effectiveAnnotations()
-                            ) >= 0;
+                            );
                 }).map(owns -> TypeDBException.of(OWNS_OVERRIDE_ANNOTATIONS_REDUNDANT, getLabel(), owns.attributeType().getLabel(), ((OwnsImpl) owns).explicitAnnotations(), owns.overridden().get().getLabel()));
         return Iterators.link(redundantRedeclarations, overridesWithRedundantAnnotations).toList();
     }
@@ -814,13 +813,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 Optional<Owns> parentOwns = iterate(superOwns).filter(owns -> owns.attributeType().equals(overriddenType)).first();
                 if (parentOwns.isEmpty()) {
                     throw owner.exception(TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_NOT_AVAILABLE, owner.getLabel(), attributeType.getLabel(), overriddenType.getLabel()));
-                } else if (!annotations.isEmpty() && compareAnnotationsPermissive(annotations, parentOwns.get().effectiveAnnotations()) > 0) {
+                } else if (!annotations.isEmpty() && !isFirstStricterOrEqual(annotations, parentOwns.get().effectiveAnnotations())) {
                     throw owner.exception(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, owner.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
                 }
             } else {
                 Optional<Owns> parentOwns = iterate(superOwns).filter(owns -> owns.attributeType().equals(attributeType)).first();
                 parentOwns.ifPresent(owns -> {
-                    if (!annotations.isEmpty() && compareAnnotationsPermissive(annotations, parentOwns.get().effectiveAnnotations()) > 0) {
+                    if (!annotations.isEmpty() && !isFirstStricterOrEqual(annotations, parentOwns.get().effectiveAnnotations())) {
                         throw owner.exception(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, owner.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
                     }
                 });
@@ -838,11 +837,24 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             }
         }
 
-        public static int compareAnnotationsPermissive(Set<TypeQLToken.Annotation> first, Set<TypeQLToken.Annotation> second) {
-            // -1 : more specific, 0 equal, 1 more general
-            int firstBits = (first.contains(KEY)) ? 2 : (first.contains(UNIQUE) ? 1 : 0);
-            int secondBits = (second.contains(KEY)) ? 2 : (second.contains(UNIQUE) ? 1 : 0);
-            return Integer.compare(secondBits, firstBits); // Key is the greatest, which is opposite to what the function returns.
+        public static boolean isFirstStricter(Set<TypeQLToken.Annotation> first, Set<TypeQLToken.Annotation> second) {
+            if (second.contains(KEY)) {
+                return false;
+            } else if (second.contains(UNIQUE)) {
+                return first.contains(KEY);
+            } else {
+                return first.contains(KEY) || first.contains(UNIQUE);
+            }
+        }
+
+        public static boolean isFirstStricterOrEqual(Set<TypeQLToken.Annotation> first, Set<TypeQLToken.Annotation> second) {
+            if (second.contains(KEY)) {
+                return first.contains(KEY);
+            } else if (second.contains(UNIQUE)) {
+                return first.contains(KEY) || first.contains(UNIQUE);
+            } else {
+                return true;
+            }
         }
 
         @Override

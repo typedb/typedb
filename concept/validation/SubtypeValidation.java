@@ -248,7 +248,7 @@ public class SubtypeValidation {
             Set<TypeQLToken.Annotation> existingEffectiveAnnotations = existingExplicit.map(ThingType.Owns::effectiveAnnotations).orElse(existingOrInherited.map(ThingType.Owns::effectiveAnnotations).orElse(emptySet()));
 
             // Making sure it's stricter than existingEffective is done before, since that is part of validating the declaration.
-            if (ThingTypeImpl.OwnsImpl.compareAnnotationsPermissive(explicitAnnotations, existingEffectiveAnnotations) < 0) {
+            if (ThingTypeImpl.OwnsImpl.isFirstStricter(explicitAnnotations, existingEffectiveAnnotations)) {
                 Map<AttributeType, Set<TypeQLToken.Annotation>> addedOwnsAnnotations = Map.of(attributeType, explicitAnnotations);
                 thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateOwnsRedeclarationsAndOverridesHaveStricterAnnotations(subtype, addedOwnsAnnotations, exceptions));
                 validateDataSatisfyAnnotations(thingType, addedOwnsAnnotations, exceptions);
@@ -307,12 +307,12 @@ public class SubtypeValidation {
                     .forEachRemaining(declaredOwns -> {
                         if (addedAnnotations.containsKey(declaredOwns.attributeType())) {
                             Set<TypeQLToken.Annotation> parentAnnotations = addedAnnotations.get(declaredOwns.attributeType());
-                            if (ThingTypeImpl.OwnsImpl.compareAnnotationsPermissive(declaredOwns.effectiveAnnotations(), parentAnnotations) > 0) {
+                            if (!ThingTypeImpl.OwnsImpl.isFirstStricterOrEqual(declaredOwns.effectiveAnnotations(), parentAnnotations)) {
                                 acc.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, thingType.getLabel(), declaredOwns.attributeType().getLabel(), declaredOwns.effectiveAnnotations(), parentAnnotations));
                             }
                         } else if (thingType.getOwnsOverridden(declaredOwns.attributeType()) != null && addedAnnotations.containsKey(thingType.getOwnsOverridden(declaredOwns.attributeType()))) {
                             Set<TypeQLToken.Annotation> parentAnnotations = addedAnnotations.get(thingType.getOwnsOverridden(declaredOwns.attributeType()));
-                            if (ThingTypeImpl.OwnsImpl.compareAnnotationsPermissive(declaredOwns.effectiveAnnotations(), parentAnnotations) > 0) {
+                            if (!ThingTypeImpl.OwnsImpl.isFirstStricterOrEqual(declaredOwns.effectiveAnnotations(), parentAnnotations)) {
                                 acc.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, thingType.getLabel(), declaredOwns.attributeType().getLabel(), declaredOwns.effectiveAnnotations(), parentAnnotations));
                             }
                         }
@@ -329,7 +329,7 @@ public class SubtypeValidation {
                         .first();
                 Set<TypeQLToken.Annotation> existingAnnotations = existingOwns.map(ThingType.Owns::effectiveAnnotations).orElse(emptySet());
                 AttributeType attributeType = existingOwns.map(ThingType.Owns::attributeType).orElse(modifiedAttributeType);
-                if (ThingTypeImpl.OwnsImpl.compareAnnotationsPermissive(updatedAnnotations, existingAnnotations) < 0) {
+                if (ThingTypeImpl.OwnsImpl.isFirstStricter(updatedAnnotations, existingAnnotations)) {
                     try {
                         validateData((ThingTypeImpl) thingType, (AttributeTypeImpl) attributeType, updatedAnnotations, existingAnnotations);
                     } catch (TypeDBException e) {
