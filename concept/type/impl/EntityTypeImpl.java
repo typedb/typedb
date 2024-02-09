@@ -85,8 +85,8 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     public void setSupertype(EntityType superType) {
         validateIsNotDeleted();
         SubtypeValidation.throwIfNonEmpty(Iterators.link(
-                Iterators.iterate(SubtypeValidation.Plays.validateRelocate(this, superType)),
-                Iterators.iterate(SubtypeValidation.Owns.validateRelocate(this, superType))
+                Iterators.iterate(SubtypeValidation.Plays.validateSetSupertype(this, superType)),
+                Iterators.iterate(SubtypeValidation.Owns.validateSetSupertype(this, superType))
         ).toList(), e -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this.getLabel(), superType.getLabel(), e)));
         setSuperTypeVertex(((EntityTypeImpl) superType).vertex);
     }

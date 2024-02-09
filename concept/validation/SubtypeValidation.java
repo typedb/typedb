@@ -90,7 +90,7 @@ public class SubtypeValidation {
             return exceptions;
         }
 
-        public static List<TypeDBException> validateRelocate(RelationType relationType, RelationType newSupertype) {
+        public static List<TypeDBException> validateSetSupertype(RelationType relationType, RelationType newSupertype) {
             List<TypeDBException> exceptions = new ArrayList<>();
             Set<RoleType> oldRelates = new HashSet<>();
             Set<RoleType> newRelates = new HashSet<>();
@@ -155,7 +155,7 @@ public class SubtypeValidation {
 
     public static class Plays {
 
-        public static List<TypeDBException> validateAdd(ThingType thingType, RoleType added, @Nullable RoleType overridden) {
+        public static List<TypeDBException> validateOverride(ThingType thingType, @Nullable RoleType overridden) {
             List<TypeDBException> exceptions = new ArrayList<>();
             if (overridden != null) {
                 Set<RoleType> noLongerPlays = new HashSet<>();
@@ -174,7 +174,7 @@ public class SubtypeValidation {
             return exceptions;
         }
 
-        public static List<TypeDBException> validateRelocate(ThingType thingType, ThingType newSupertype) {
+        public static List<TypeDBException> validateSetSupertype(ThingType thingType, ThingType newSupertype) {
             List<TypeDBException> exceptions = new ArrayList<>();
             Set<RoleType> removedPlays = new HashSet<>();
             Set<RoleType> hiddenPlays = new HashSet<>();
@@ -264,7 +264,7 @@ public class SubtypeValidation {
             return exceptions;
         }
 
-        public static List<TypeDBException> validateRelocate(ThingType thingType, ThingType newSupertype) {
+        public static List<TypeDBException> validateSetSupertype(ThingType thingType, ThingType newSupertype) {
             List<TypeDBException> exceptions = new ArrayList<>();
             Set<AttributeType> removedOwns = new HashSet<>(thingType.getSupertype().getOwnedAttributes(TRANSITIVE));
             removedOwns.removeAll(newSupertype.getOwnedAttributes(TRANSITIVE));

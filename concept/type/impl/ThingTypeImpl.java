@@ -414,7 +414,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         validateIsNotDeleted();
-        SubtypeValidation.throwIfNonEmpty(SubtypeValidation.Plays.validateAdd(this, roleType, overriddenType), errList ->
+        SubtypeValidation.throwIfNonEmpty(SubtypeValidation.Plays.validateOverride(this, overriddenType), errList ->
                 exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Plays.format(this, roleType, overriddenType), errList))
         );
         setPlays(roleType);

@@ -143,8 +143,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             throw exception(TypeDBException.of(ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT, superType.getLabel()));
         }
         SubtypeValidation.throwIfNonEmpty(Iterators.link(
-                Iterators.iterate(SubtypeValidation.Plays.validateRelocate(this, superType)),
-                Iterators.iterate(SubtypeValidation.Owns.validateRelocate(this, superType))
+                Iterators.iterate(SubtypeValidation.Plays.validateSetSupertype(this, superType)),
+                Iterators.iterate(SubtypeValidation.Owns.validateSetSupertype(this, superType))
         ).toList(), e -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this.getLabel(), superType.getLabel(), e)));
         setSuperTypeVertex(((AttributeTypeImpl) superType).vertex);
     }
