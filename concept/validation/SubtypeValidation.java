@@ -118,11 +118,17 @@ public class SubtypeValidation {
         private static void validateNoBrokenOverrides(RelationType relationType, Set<RoleType> noLongerRelates, List<TypeDBException> exceptions) {
             if (noLongerRelates.isEmpty()) return;
             List<RoleType> overriddenHere = new ArrayList<>();
+            assert relationType.getRelates(EXPLICIT).allMatch(roleType -> (
+                    (relationType.getRelatesOverridden(roleType.getLabel().name()) == null && roleType.getSupertype().isRoot()) ||
+                            (relationType.getRelatesOverridden(roleType.getLabel().name()).equals(roleType.getSupertype()))
+            ));
             relationType.getRelates(EXPLICIT)
-                    .filter(roleType -> noLongerRelates.contains(roleType.getSupertype()))
                     .forEachRemaining(roleType -> {
-                        exceptions.add(TypeDBException.of(OVERRIDDEN_RELATED_ROLE_TYPE_NOT_INHERITED, relationType.getLabel(), roleType.getLabel(), roleType.getSupertype().getLabel()));
-                        overriddenHere.add(roleType.getSupertype());
+                        RoleType overriddenRoleType = relationType.getRelatesOverridden(roleType.getLabel().name());
+                        if (overriddenRoleType != null && noLongerRelates.contains(overriddenRoleType)) {
+                            exceptions.add(TypeDBException.of(OVERRIDDEN_RELATED_ROLE_TYPE_NOT_INHERITED, relationType.getLabel(), roleType.getLabel(), overriddenRoleType.getLabel()));
+                            overriddenHere.add(overriddenRoleType);
+                        }
                     });
             noLongerRelates.removeAll(overriddenHere);
             relationType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoBrokenOverrides(subtype, noLongerRelates, exceptions));
@@ -131,7 +137,7 @@ public class SubtypeValidation {
 
         private static void validateNoLeakedInstances(RelationType relationType, Set<RoleType> noLongerRelates, List<TypeDBException> exceptions) {
             if (noLongerRelates.isEmpty()) return;
-            List<? extends RoleType> overriddenHere = relationType.getRelates(EXPLICIT).map(RoleType::getSupertype).filter(noLongerRelates::contains).toList();
+            List<? extends RoleType> overriddenHere = relationType.getRelates(EXPLICIT).map(roleType -> relationType.getRelatesOverridden(roleType.getLabel().name())).filter(noLongerRelates::contains).toList();
             noLongerRelates.removeAll(overriddenHere);
             Iterators.iterate(noLongerRelates)
                     .filter(roleType -> relationType.getInstances(EXPLICIT).anyMatch(instance -> instance.getPlayers(roleType).hasNext()))
@@ -211,7 +217,7 @@ public class SubtypeValidation {
 
         private static void validateNoLeakedInstances(ThingType thingType, Set<RoleType> noLongerPlays, List<TypeDBException> exceptions, boolean isRemovingType) {
             if (noLongerPlays.isEmpty()) return;
-            List<RoleType> redeclaredHere = !isRemovingType ?
+            List<RoleType> redeclaredHere = !isRemovingType ? // redeclaredOrOverriddenHere?
                     iterate(thingType.getPlays(EXPLICIT)).filter(noLongerPlays::contains).toList() :
                     Collections.emptyList();
             noLongerPlays.removeAll(redeclaredHere);
@@ -324,10 +330,11 @@ public class SubtypeValidation {
             iterate(thingType.getOwns(EXPLICIT))
                     .forEachRemaining(declaredOwns -> {
                         Set<TypeQLToken.Annotation> declaredAnnotations = ((ThingTypeImpl.OwnsImpl) declaredOwns).explicitAnnotations();
-                        if (declaredAnnotations.isEmpty()) return; // If no annotations are declared, they are inherited.
+                        if (declaredAnnotations.isEmpty())
+                            return; // If no annotations are declared, they are inherited.
                         else if (annotationsToAdd.containsKey(declaredOwns.attributeType())) {
                             Set<TypeQLToken.Annotation> newInheritedAnnotations = annotationsToAdd.get(declaredOwns.attributeType());
-                            if ( !ThingTypeImpl.OwnsImpl.isFirstStricterOrEqual(declaredOwns.effectiveAnnotations(), newInheritedAnnotations)) {
+                            if (!ThingTypeImpl.OwnsImpl.isFirstStricterOrEqual(declaredOwns.effectiveAnnotations(), newInheritedAnnotations)) {
                                 exceptions.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, thingType.getLabel(), declaredOwns.attributeType().getLabel(), declaredAnnotations, newInheritedAnnotations));
                             }
                         } else if (thingType.getOwnsOverridden(declaredOwns.attributeType()) != null && annotationsToAdd.containsKey(thingType.getOwnsOverridden(declaredOwns.attributeType()))) {
