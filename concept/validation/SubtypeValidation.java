@@ -70,15 +70,13 @@ public class SubtypeValidation {
             return exceptions;
         }
 
-        public static List<TypeDBException> validateOverride(RelationType relationType, @Nullable RoleType overridden) {
-            if (overridden != null) {
-                List<TypeDBException> exceptions = new ArrayList<>();
-                Set<RoleType> noLongerRelates = new HashSet<>();
-                noLongerRelates.add(overridden);
-                relationType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoBrokenOverrides(subtype, noLongerRelates, exceptions));
-                validateNoLeakedInstances(relationType, noLongerRelates, exceptions);
-                return exceptions;
-            } else return Collections.emptyList();
+        public static List<TypeDBException> validateOverride(RelationType relationType, RoleType overridden) {
+            List<TypeDBException> exceptions = new ArrayList<>();
+            Set<RoleType> noLongerRelates = new HashSet<>();
+            noLongerRelates.add(overridden);
+            relationType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoBrokenOverrides(subtype, noLongerRelates, exceptions));
+            validateNoLeakedInstances(relationType, noLongerRelates, exceptions);
+            return exceptions;
         }
 
         public static List<TypeDBException> validateRemove(RelationType relationType, RoleType deleted) {
@@ -161,14 +159,12 @@ public class SubtypeValidation {
 
     public static class Plays {
 
-        public static List<TypeDBException> validateOverride(ThingType thingType, @Nullable RoleType overridden) {
+        public static List<TypeDBException> validateOverride(ThingType thingType, RoleType overridden) {
             List<TypeDBException> exceptions = new ArrayList<>();
-            if (overridden != null) {
-                Set<RoleType> noLongerPlays = new HashSet<>();
-                noLongerPlays.add(overridden);
-                validateNoLeakedInstances(thingType, noLongerPlays, exceptions, true);
-                validateNoHiddenPlaysRedeclaration(thingType, noLongerPlays, exceptions);
-            }
+            Set<RoleType> noLongerPlays = new HashSet<>();
+            noLongerPlays.add(overridden);
+            validateNoLeakedInstances(thingType, noLongerPlays, exceptions, true);
+            validateNoHiddenPlaysRedeclaration(thingType, noLongerPlays, exceptions);
             return exceptions;
         }
 
@@ -330,8 +326,7 @@ public class SubtypeValidation {
             iterate(thingType.getOwns(EXPLICIT))
                     .forEachRemaining(declaredOwns -> {
                         Set<TypeQLToken.Annotation> declaredAnnotations = ((ThingTypeImpl.OwnsImpl) declaredOwns).explicitAnnotations();
-                        if (declaredAnnotations.isEmpty())
-                            return; // If no annotations are declared, they are inherited.
+                        if (declaredAnnotations.isEmpty()) return; // If no annotations are declared, they are inherited.
                         else if (annotationsToAdd.containsKey(declaredOwns.attributeType())) {
                             Set<TypeQLToken.Annotation> newInheritedAnnotations = annotationsToAdd.get(declaredOwns.attributeType());
                             if (!ThingTypeImpl.OwnsImpl.isFirstStricterOrEqual(declaredOwns.effectiveAnnotations(), newInheritedAnnotations)) {

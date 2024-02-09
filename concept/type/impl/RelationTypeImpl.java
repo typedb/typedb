@@ -238,7 +238,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         return null;
     }
 
-    FunctionalIterator<RoleTypeImpl> overriddenRoles() {
+    FunctionalIterator<RoleTypeImpl> overriddenRoles() { // TODO: Unused -> Remove?
         return vertex.outs().edge(RELATES).overridden().filter(Objects::nonNull)
                 .map(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v));
     }
