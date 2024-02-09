@@ -189,8 +189,8 @@ impl<'storage> WriteSnapshot<'storage> {
 
     pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> MVCCPrefixIterator { // impl RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
         let storage_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
+        let buffered_iterator = self.buffers.get(prefix.keyspace_id()).iterate_prefix(prefix.keyspace_id(), prefix.bytes());
         storage_iterator
-        // let buffered_iterator = self.buffers.get(prefix.keyspace_id()).iterate_prefix(prefix.keyspace_id(), prefix.bytes());
         // storage_iterator.merge_join_by(
         //     buffered_iterator,
         //     |(k1, v1), (k2, v2)| k1.cmp(k2),

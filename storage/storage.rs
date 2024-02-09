@@ -16,7 +16,6 @@
  */
 
 use itertools::Itertools;
-use polonius_the_crab::{polonius_loop, polonius_return, polonius_try};
 use speedb::{Options, WriteBatch};
 use tracing::Value;
 
@@ -38,6 +37,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use iterator::SortedIterator;
 
 use crate::error::{MVCCStorageError, MVCCStorageErrorKind};
 use crate::isolation_manager::{CommitRecord, IsolationManager};
@@ -395,35 +395,6 @@ impl<'s> MVCCPrefixIterator<'s> {
         }
     }
 
-    // fn next<'this>(&'this mut self) -> Option<Result<(StorageKeyReference<'this>, StorageValueReference<'this>), MVCCStorageError>> {
-    //     let mut mvcc_iter = self;
-    //     polonius_loop!(|mvcc_iter| -> Option<Result<(StorageKeyReference<'polonius>, StorageValueReference<'polonius>), MVCCStorageError>> {
-    //             let result = polonius_try!(mvcc_iter.iterator.next());
-    //             if result.is_err() {
-    //                 polonius_return!(Some(Err(MVCCStorageError {
-    //                     storage_name: mvcc_iter.storage.owner_name.to_string(),
-    //                     kind: MVCCStorageErrorKind::KeyspaceError { source: result.unwrap_err(), keyspace: mvcc_iter.keyspace.name().to_owned() },
-    //                 })));
-    //             } else {
-    //                 let (key, value) = result.unwrap();
-    //                 let mvcc_key = MVCCKey::wrap_slice(key);
-    //                 let is_visible = (mvcc_iter.last_visible_key.is_none() || mvcc_iter.last_visible_key.as_ref().unwrap().bytes() != mvcc_key.key()) && mvcc_key.is_visible_to(&mvcc_iter.open_sequence_number);
-    //                 if is_visible {
-    //                     mvcc_iter.last_visible_key = Some(ByteArray::from(mvcc_key.key()));
-    //                     match mvcc_key.operation() {
-    //                         StorageOperation::Insert => {
-    //                             polonius_return!(Some(Ok((
-    //                                 StorageKeyReference::new(mvcc_iter.keyspace.id(), mvcc_key.into_key().unwrap_reference()),
-    //                                 StorageValueReference::new(ByteReference::new(value)),
-    //                             ))));
-    //                         }
-    //                         StorageOperation::Delete => {}
-    //                     }
-    //                 }
-    //             }
-    //         })
-    // }
-
     fn advance(&mut self) {
         assert!(self.state != State::DONE && self.state != State::ERROR);
         loop {
@@ -447,8 +418,10 @@ impl<'s> MVCCPrefixIterator<'s> {
                             StorageOperation::Insert => {
                                 self.state = State::READY;
                                 return;
+                            },
+                            StorageOperation::Delete => {
+                                continue;
                             }
-                            StorageOperation::Delete => {}
                         }
                     }
                 }
@@ -456,7 +429,7 @@ impl<'s> MVCCPrefixIterator<'s> {
         }
     }
 
-    fn peek<'this>(&'this self) -> Option<Result<(StorageKeyReference<'this>, StorageValueReference<'this>), MVCCStorageError>> {
+    fn peek<'this>(&'this mut self) -> Option<Result<(StorageKeyReference<'this>, StorageValueReference<'this>), MVCCStorageError>> {
         let result = self.iterator.peek()?;
         if result.is_err() {
             Some(Err(MVCCStorageError {
