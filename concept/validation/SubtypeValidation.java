@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.concept.validation;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
@@ -339,27 +340,31 @@ public class SubtypeValidation {
                             }
                         }
                     });
-            // We can't do an 'overriddenHere' optimisation here
+            // Can we do an 'overriddenHere' optimisation here?
             thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateOwnsRedeclarationsAndOverridesHaveStricterAnnotations(subtype, annotationsToAdd, exceptions));
         }
 
         private static void validateDataSatisfyAnnotations(ThingType thingType, Map<AttributeType, Set<TypeQLToken.Annotation>> annotationsToAdd, List<TypeDBException> exceptions) {
+            if (annotationsToAdd.isEmpty()) return;
             annotationsToAdd.forEach((modifiedAttributeType, updatedAnnotations) -> {
-                iterate(thingType.getOwns(TRANSITIVE))
-                        .filter(owns -> owns.attributeType().getSupertypes().anyMatch(annotationsToAdd::containsKey))
-                        .forEachRemaining(existingOwns -> {
-                            Set<TypeQLToken.Annotation> existingAnnotations = existingOwns.effectiveAnnotations();
-                            AttributeType attributeType = existingOwns.attributeType();
-                            if (ThingTypeImpl.OwnsImpl.isFirstStricter(updatedAnnotations, existingAnnotations)) {
-                                try {
-                                    validateDataAnnotations((ThingTypeImpl) thingType, (AttributeTypeImpl) attributeType, updatedAnnotations, existingAnnotations);
-                                } catch (TypeDBException e) {
-                                    exceptions.add(e);
-                                }
-                            }
-                        });
+                Map<AttributeType, Set<TypeQLToken.Annotation>> affectedAttributes = new HashMap<>();
+                iterate(thingType.getOwnedAttributes(TRANSITIVE))
+                        .filter(attributeType -> attributeType.equals(modifiedAttributeType) || attributeType.getSupertypes().anyMatch(supertype ->  supertype.equals(modifiedAttributeType)))
+                        .forEachRemaining(attributeType -> affectedAttributes.put(attributeType, thingType.getOwns(TRANSITIVE, attributeType).get().effectiveAnnotations()));
+                if (affectedAttributes.isEmpty()) {
+                    affectedAttributes.put(modifiedAttributeType, Collections.emptySet());
+                }
+                affectedAttributes.forEach((attributeType, existingAnnotations) -> {
+                    if (ThingTypeImpl.OwnsImpl.isFirstStricter(updatedAnnotations, existingAnnotations)) {
+                        try {
+                            validateDataAnnotations((ThingTypeImpl) thingType, (AttributeTypeImpl) attributeType, updatedAnnotations, existingAnnotations);
+                        } catch (TypeDBException e) {
+                            exceptions.add(e);
+                        }
+                    }
+                });
             });
-            // We can't do an 'overriddenHere' optimisation here
+            // Can we do an 'overriddenHere' optimisation here?
             thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateDataSatisfyAnnotations(subtype, annotationsToAdd, exceptions));
         }
 
