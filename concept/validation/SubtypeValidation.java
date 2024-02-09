@@ -66,7 +66,7 @@ public class SubtypeValidation {
         public static List<TypeDBException> validateAdd(RelationType relationType, String addedRole) {
             List<TypeDBException> exceptions = new ArrayList<>();
             Set<String> addedRoles = Collections.singleton(addedRole);
-            relationType.getSubtypes().forEachRemaining(subtype -> validateRoleNameUniqueness(relationType, addedRoles, exceptions));
+            relationType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateRoleNameUniqueness(subtype, addedRoles, exceptions));
             return exceptions;
         }
 
@@ -92,17 +92,17 @@ public class SubtypeValidation {
 
         public static List<TypeDBException> validateSetSupertype(RelationType relationType, RelationType newSupertype) {
             List<TypeDBException> exceptions = new ArrayList<>();
-            Set<RoleType> oldRelates = new HashSet<>();
-            Set<RoleType> newRelates = new HashSet<>();
-            relationType.getSupertype().getRelates(TRANSITIVE).filter(roleType -> !roleType.isRoot()).forEachRemaining(oldRelates::add);
-            newSupertype.getRelates(TRANSITIVE).filter(roleType -> !roleType.isRoot()).forEachRemaining(newRelates::add);
-            Set<RoleType> bothRelates = com.vaticle.typedb.common.collection.Collections.intersection(newRelates, oldRelates);
-            newRelates.removeAll(bothRelates);
-            oldRelates.removeAll(bothRelates);
+            Set<RoleType> noLongerRelates = new HashSet<>();
+            Set<RoleType> newlyAddedRelates = new HashSet<>();
+            relationType.getSupertype().getRelates(TRANSITIVE).filter(roleType -> !roleType.isRoot()).forEachRemaining(noLongerRelates::add);
+            newSupertype.getRelates(TRANSITIVE).filter(roleType -> !roleType.isRoot()).forEachRemaining(newlyAddedRelates::add);
+            Set<RoleType> bothSupertypesRelate = com.vaticle.typedb.common.collection.Collections.intersection(newlyAddedRelates, noLongerRelates);
+            newlyAddedRelates.removeAll(bothSupertypesRelate);
+            noLongerRelates.removeAll(bothSupertypesRelate);
 
-            validateRoleNameUniqueness(relationType, iterate(newRelates).map(roleType -> roleType.getLabel().name()).toSet(), exceptions);
-            validateNoBrokenOverrides(relationType, newRelates, exceptions);
-            validateNoLeakedInstances(relationType, oldRelates, exceptions);
+            validateRoleNameUniqueness(relationType, iterate(newlyAddedRelates).map(roleType -> roleType.getLabel().name()).toSet(), exceptions);
+            validateNoBrokenOverrides(relationType, noLongerRelates, exceptions);
+            validateNoLeakedInstances(relationType, noLongerRelates, exceptions);
             return exceptions;
         }
 
