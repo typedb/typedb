@@ -27,7 +27,6 @@ use logger::error;
 use logger::result::ResultExt;
 use primitive::U80;
 use snapshot::write::Write;
-use std::cell::Cell;
 use std::error::Error;
 use std::fmt::Display;
 use std::io::Read;
@@ -37,7 +36,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
-use iterator::SortedIterator;
+use iterator::State;
 
 use crate::error::{MVCCStorageError, MVCCStorageErrorKind};
 use crate::isolation_manager::{CommitRecord, IsolationManager};
@@ -367,16 +366,9 @@ struct MVCCPrefixIterator<'a> {
     iterator: KeyspacePrefixIterator<'a>,
     open_sequence_number: SequenceNumber,
     last_visible_key: Option<ByteArray<MVCC_KEY_INLINE_SIZE>>,
-    state: State,
+    state: State<MVCCStorageError>,
 }
 
-#[derive(Debug, Eq, PartialEq)]
-enum State {
-    EMPTY,
-    READY,
-    ERROR,
-    DONE,
-}
 
 impl<'s> MVCCPrefixIterator<'s> {
     //
@@ -391,22 +383,28 @@ impl<'s> MVCCPrefixIterator<'s> {
             iterator: iterator,
             open_sequence_number: *open_sequence_number,
             last_visible_key: None,
-            state: State::EMPTY,
+            state: State::ItemUsed,
         }
     }
 
     fn advance(&mut self) {
-        assert!(self.state != State::DONE && self.state != State::ERROR);
+        // assert!(self.state != State::Done && self.state != State::Error);
         loop {
             self.iterator.advance();
             let peek = self.iterator.peek();
             if peek.is_none() {
-                self.state = State::DONE;
+                self.state = State::Done;
                 return;
             } else {
                 let result = peek.unwrap();
-                if result.is_err() {
-                    self.state = State::ERROR;
+                if let Err(error) = result {
+                    self.state = State::Error(MVCCStorageError {
+                        storage_name: self.storage.owner_name.to_string(),
+                        kind: MVCCStorageErrorKind::KeyspaceError {
+                            source: error,
+                            keyspace: self.keyspace.name().to_string(),
+                        }
+                    });
                     return;
                 } else {
                     let (key, value) = result.unwrap();
@@ -416,7 +414,7 @@ impl<'s> MVCCPrefixIterator<'s> {
                         self.last_visible_key = Some(ByteArray::from(mvcc_key.key()));
                         match mvcc_key.operation() {
                             StorageOperation::Insert => {
-                                self.state = State::READY;
+                                self.state = State::ItemReady;
                                 return;
                             },
                             StorageOperation::Delete => {
@@ -444,6 +442,11 @@ impl<'s> MVCCPrefixIterator<'s> {
                 StorageValueReference::new(ByteReference::new(value)),
             )))
         }
+    }
+
+    fn next<'this>(&'this mut self) -> Option<Result<(StorageKeyReference<'this>, StorageValueReference<'this>), MVCCStorageError>> {
+        self.advance();
+        self.peek()
     }
 }
 

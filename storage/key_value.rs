@@ -31,14 +31,6 @@ pub enum StorageKey<'bytes, const INLINE_SIZE: usize> {
 }
 
 impl<'bytes, const INLINE_SIZE: usize> StorageKey<'bytes, INLINE_SIZE> {
-    pub fn array(keyspace_id: KeyspaceId, byte_array: ByteArray<INLINE_SIZE>) -> StorageKey<'bytes, INLINE_SIZE> {
-        StorageKey::Array(StorageKeyArray::new(keyspace_id, byte_array))
-    }
-
-    pub fn reference(keyspace_id: KeyspaceId, byte_reference: ByteReference<'bytes>) -> StorageKey<'bytes, INLINE_SIZE> {
-        StorageKey::Reference(StorageKeyReference::new(keyspace_id, byte_reference))
-    }
-
     pub fn bytes(&'bytes self) -> &'bytes [u8] {
         match self {
             StorageKey::Array(array) => array.bytes(),
@@ -114,6 +106,12 @@ impl<'bytes> StorageKeyReference<'bytes> {
     }
 }
 
+impl<'bytes, const INLINE_SIZE: usize> From<&'bytes StorageKeyArray<INLINE_SIZE>> for StorageKeyReference<'bytes> {
+    fn from(array_ref: &'bytes StorageKeyArray<INLINE_SIZE>) -> Self {
+        StorageKeyReference::new(array_ref.keyspace_id, ByteReference::from(array_ref.byte_array()))
+    }
+}
+
 impl<const INLINE_SIZE: usize> From<(Vec<u8>, u8)> for StorageKeyArray<INLINE_SIZE> {
     // For tests
     fn from((bytes, section_id): (Vec<u8>, u8)) -> Self {
@@ -162,14 +160,6 @@ pub enum StorageValue<'bytes, const INLINE_SIZE: usize> {
 impl<'bytes, const INLINE_SIZE: usize> StorageValue<'bytes, INLINE_SIZE> {
     pub fn empty() -> StorageValue<'bytes, INLINE_SIZE> {
         StorageValue::Array(StorageValueArray::empty())
-    }
-
-    pub fn array(array: ByteArray<INLINE_SIZE>) -> StorageValue<'bytes, INLINE_SIZE> {
-        StorageValue::Array(StorageValueArray::new(array))
-    }
-
-    pub fn reference(reference: ByteReference<'bytes>) -> StorageValue<'bytes, INLINE_SIZE> {
-        StorageValue::Reference(StorageValueReference::new(reference))
     }
 
     pub fn bytes(&'bytes self) -> &'bytes [u8] {
@@ -224,8 +214,14 @@ impl<'bytes> StorageValueReference<'bytes> {
     }
 }
 
+impl <'bytes, const INLINE_SIZE: usize> From<&'bytes StorageValueArray<INLINE_SIZE>> for StorageValueReference<'bytes> {
+    fn from(array_ref: &'bytes StorageValueArray<INLINE_SIZE>) -> Self {
+        StorageValueReference::new(ByteReference::from(array_ref.byte_array()))
+    }
+}
+
 impl<'bytes, const INLINE_SIZE: usize> From<Option<Box<[u8]>>> for StorageValue<'bytes, INLINE_SIZE> {
     fn from(value: Option<Box<[u8]>>) -> Self {
-        value.map_or_else(|| StorageValue::empty(), |bytes| StorageValue::array(ByteArray::boxed(bytes)))
+        value.map_or_else(|| StorageValue::empty(), |bytes| StorageValue::Array(StorageValueArray::new(ByteArray::boxed(bytes))))
     }
 }

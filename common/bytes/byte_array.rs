@@ -105,6 +105,10 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
         }
     }
 
+    pub fn starts_with(&self, bytes: &[u8]) -> bool {
+        self.length() >= bytes.len() && &self.bytes()[0..bytes.len()] == bytes
+    }
+
     // TODO: this needs to be optimised using bigger strides than a single byte!
     ///
     /// Performs a big-endian overflowing +1 operation

@@ -73,7 +73,20 @@ impl Write {
         matches!(self, Write::Insert(_))
     }
 
+    pub(crate) fn is_insert_preexisting(&self) -> bool {
+        matches!(self, Write::InsertPreexisting(_, _))
+    }
+
     pub(crate) fn is_delete(&self) -> bool {
         matches!(self, Write::Delete)
+    }
+
+    pub(crate) fn get_value(&self) -> &StorageValueArray<BUFFER_INLINE_VALUE> {
+        match self {
+            Write::Insert(value) => value,
+            Write::InsertPreexisting(value, _) => value,
+            Write::RequireExists(value) => value,
+            Write::Delete => panic!("Buffered delete does not have a value."),
+        }
     }
 }

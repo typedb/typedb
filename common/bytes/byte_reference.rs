@@ -15,6 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use crate::byte_array::ByteArray;
+
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ByteReference<'bytes> {
     bytes: &'bytes [u8],
@@ -36,5 +38,11 @@ impl<'bytes> ByteReference<'bytes> {
         ByteReference {
             bytes: &self.bytes[0..length]
         }
+    }
+}
+
+impl<'bytes, const INLINE_SIZE: usize> From<&'bytes ByteArray<INLINE_SIZE>> for ByteReference<'bytes> {
+    fn from(array_ref: &'bytes ByteArray<INLINE_SIZE>) -> Self {
+        ByteReference::new(array_ref.bytes())
     }
 }

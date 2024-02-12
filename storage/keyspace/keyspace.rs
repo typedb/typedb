@@ -15,16 +15,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::cell::Cell;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-use std::iter::{once, Once};
 use std::path::PathBuf;
-use std::rc::Rc;
 
 use speedb::{DB, DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions};
-use crate::keyspace::keyspace::State::EMPTY;
-
 
 pub type KeyspaceId = u8;
 

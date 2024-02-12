@@ -19,6 +19,7 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::iter;
 use std::ops::RangeBounds;
+use std::sync::Arc;
 
 use itertools::Itertools;
 
@@ -189,7 +190,7 @@ impl<'storage> WriteSnapshot<'storage> {
 
     pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> MVCCPrefixIterator { // impl RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
         let storage_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
-        let buffered_iterator = self.buffers.get(prefix.keyspace_id()).iterate_prefix(prefix.keyspace_id(), prefix.bytes());
+        let buffered_iterator = self.buffers.get(prefix.keyspace_id()).iterate_prefix(prefix.bytes());
         storage_iterator
         // storage_iterator.merge_join_by(
         //     buffered_iterator,
@@ -245,7 +246,8 @@ pub struct SnapshotError {
 
 #[derive(Debug)]
 pub enum SnapshotErrorKind {
-    FailedIterate { source: MVCCStorageError },
+    FailedMVCCStorageIterate { source: MVCCStorageError },
+    FailedIterate { source: Arc<SnapshotError> },
     FailedGet { source: MVCCStorageError },
     FailedPut { source: MVCCStorageError },
 }
@@ -262,6 +264,7 @@ impl Error for SnapshotError {
             SnapshotErrorKind::FailedIterate { source, .. } => Some(source),
             SnapshotErrorKind::FailedGet { source, .. } => Some(source),
             SnapshotErrorKind::FailedPut { source, .. } => Some(source),
+            SnapshotErrorKind::FailedMVCCStorageIterate { source, .. } => Some(source),
         }
     }
 }

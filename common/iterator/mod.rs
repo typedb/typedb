@@ -15,7 +15,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub trait SortedIterator<T> {
+use std::error::Error;
 
-    fn peek<'this>(&'this self) -> T;
+#[derive(Debug)]
+pub enum State<E> {
+    Unknown,
+    ItemReady,
+    ItemUsed,
+    Error(E),
+    Done,
 }
+
+impl<E> PartialEq for State<E> {
+    fn eq(&self, other: &Self) -> bool {
+        return std::mem::discriminant(self) == std::mem::discriminant(other)
+    }
+}
+
+impl<E> Eq for State<E> {}

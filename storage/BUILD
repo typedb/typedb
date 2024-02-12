@@ -45,7 +45,6 @@ rust_library(
         "@crates//:tracing",
         "@crates//:serde",
         "@crates//:struct_deser",
-        "@crates//:polonius-the-crab",
     ]
 )
 
