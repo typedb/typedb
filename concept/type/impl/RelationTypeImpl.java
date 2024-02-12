@@ -152,9 +152,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void setRelates(String roleLabel) {
         validateIsNotDeleted();
-        DeclarationValidation.Relates.validateAdd(this, roleLabel).forEachRemaining(e -> {
-            throw exception(e);
-        });
+        DeclarationValidation.Relates.validateAdd(this, roleLabel).forEach(e -> { throw exception(e); });
         SubtypeValidation.collectExceptions(SubtypeValidation.Relates.validateAdd(this, roleLabel)).ifPresent(e -> {
             throw exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Relates.format(this.getLabel().toString(), roleLabel, null), e));
         });
@@ -175,8 +173,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public void setRelates(String roleLabel, String overriddenLabel) {
         validateIsNotDeleted();
         assert getSupertype() != null;
-        DeclarationValidation.Relates.validateAdd(this, roleLabel).forEachRemaining(e -> { throw exception(e); });
-        DeclarationValidation.Relates.validateOverride(this, roleLabel, overriddenLabel).forEachRemaining(e -> { throw exception(e); });
+        DeclarationValidation.Relates.validateAdd(this, roleLabel).forEach(e -> { throw exception(e); });
+        DeclarationValidation.Relates.validateOverride(this, roleLabel, overriddenLabel).forEach(e -> { throw exception(e); });
         RoleTypeImpl overriddenType = (RoleTypeImpl) getSupertype().getRelates(TRANSITIVE, overriddenLabel);
         SubtypeValidation.collectExceptions(
             SubtypeValidation.Relates.validateAdd(this, roleLabel),

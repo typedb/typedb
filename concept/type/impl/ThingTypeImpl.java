@@ -253,10 +253,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (attributeType.isRoot()) {
             throw exception(TypeDBException.of(ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED));
         }
-        Iterators.link(
-            DeclarationValidation.Owns.validateAdd(this, attributeType, annotations),
-            DeclarationValidation.Owns.validateOverride(this, attributeType, overriddenType, annotations)
-        ).forEachRemaining(e -> { throw exception(e); });
+        DeclarationValidation.Owns.validateAdd(this, attributeType, annotations).forEach(e -> { throw exception(e); });
+        DeclarationValidation.Owns.validateOverride(this, attributeType, overriddenType, annotations).forEach(e -> { throw exception(e); });
         SubtypeValidation.collectExceptions(
                 SubtypeValidation.Owns.validateAdd(this, attributeType, annotations),
                 SubtypeValidation.Owns.validateOverride(this, overriddenType)
@@ -377,7 +375,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType) {
         validateIsNotDeleted();
-        DeclarationValidation.Plays.validateAdd(this, roleType).forEachRemaining(e -> { throw exception(e); });
+        DeclarationValidation.Plays.validateAdd(this, roleType).forEach(e -> { throw exception(e); });
         TypeEdge existingEdge = vertex.outs().edge(PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (existingEdge != null) existingEdge.unsetOverridden();
         else vertex.outs().put(PLAYS, ((RoleTypeImpl) roleType).vertex);
@@ -386,8 +384,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         validateIsNotDeleted();
-        DeclarationValidation.Plays.validateAdd(this, roleType).forEachRemaining(e -> { throw exception(e); });
-        DeclarationValidation.Plays.validateOverride(this, roleType, overriddenType).forEachRemaining(e -> { throw exception(e); });
+        DeclarationValidation.Plays.validateAdd(this, roleType).forEach(e -> { throw exception(e); });
+        DeclarationValidation.Plays.validateOverride(this, roleType, overriddenType).forEach(e -> { throw exception(e); });
         SubtypeValidation.collectExceptions(SubtypeValidation.Plays.validateOverride(this, overriddenType)).ifPresent(errList -> {
             throw exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Plays.format(this, roleType, overriddenType), errList));
         });
