@@ -364,7 +364,7 @@ public class SubtypeValidation {
                     }
                 });
             });
-            // Can we do an 'overriddenHere' optimisation here?
+            // Too complicated to do an 'overriddenHere' optimisation here.
             thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateAnnotationsStricter(subtype, annotationsToAdd, exceptions));
         }
 
@@ -382,7 +382,7 @@ public class SubtypeValidation {
                     validateDataAnnotations((ThingTypeImpl) thingType, (AttributeTypeImpl) attributeType, updatedAnnotations, existingAnnotations, exceptions);
                 });
             });
-            // Can we do an 'overriddenHere' optimisation here?
+            // Too complicated to do an 'overriddenHere' optimisation here.
             thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateDataSatisfyAnnotations(subtype, annotationsToAdd, exceptions));
         }
 
