@@ -95,43 +95,43 @@ public class DeclarationValidation {
     }
 
     public static class Owns {
-        public static List<TypeDBException> validateAdd(ThingType owner, AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
+        public static List<TypeDBException> validateAdd(ThingType thingType, AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
             List<TypeDBException> exceptions = new ArrayList<>();
             if (annotations.contains(KEY) && annotations.contains(UNIQUE)) {
-                exceptions.add(TypeDBException.of(OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE, owner.getLabel(), attributeType.getLabel(), KEY, UNIQUE));
+                exceptions.add(TypeDBException.of(OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE, thingType.getLabel(), attributeType.getLabel(), KEY, UNIQUE));
             }
             if ((annotations.contains(KEY) || annotations.contains(UNIQUE)) && !attributeType.getValueType().hasExactEquality()) {
-                exceptions.add(TypeDBException.of(OWNS_VALUE_TYPE_NO_EXACT_EQUALITY, owner.getLabel(), attributeType.getLabel(), annotations, attributeType.getValueType().name()));
+                exceptions.add(TypeDBException.of(OWNS_VALUE_TYPE_NO_EXACT_EQUALITY, thingType.getLabel(), attributeType.getLabel(), annotations, attributeType.getValueType().name()));
             }
 
-            if (owner.getSupertype().getOwnedAttributes(TRANSITIVE).contains(attributeType)) {
-                ThingType.Owns parentOwns = owner.getSupertype().getOwns(TRANSITIVE, attributeType).get();
+            if (thingType.getSupertype().getOwnedAttributes(TRANSITIVE).contains(attributeType)) {
+                ThingType.Owns parentOwns = thingType.getSupertype().getOwns(TRANSITIVE, attributeType).get();
                 if (!annotations.isEmpty() && !ThingTypeImpl.OwnsImpl.isFirstStricterOrEqual(annotations, parentOwns.effectiveAnnotations())) {
-                    exceptions.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, owner.getLabel(), attributeType.getLabel(), annotations, parentOwns.toString()));
+                    exceptions.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, thingType.getLabel(), attributeType.getLabel(), annotations, parentOwns.toString()));
                 }
             }
 
-            FunctionalIterator<ThingType.Owns> hiddenTypes = owner.getSupertypes().flatMap(t -> iterate(t.getOwns(EXPLICIT))).filter(owns -> owns.overridden().isPresent());
+            FunctionalIterator<ThingType.Owns> hiddenTypes = thingType.getSupertypes().flatMap(t -> iterate(t.getOwns(EXPLICIT))).filter(owns -> owns.overridden().isPresent());
             if (hiddenTypes.anyMatch(owns -> !owns.attributeType().equals(attributeType) && owns.overridden().get().equals(owns.attributeType()))) {
-                exceptions.add(TypeDBException.of(OWNS_ATTRIBUTE_WAS_OVERRIDDEN, owner.getLabel(), attributeType.getLabel()));
+                exceptions.add(TypeDBException.of(OWNS_ATTRIBUTE_WAS_OVERRIDDEN, thingType.getLabel(), attributeType.getLabel()));
             }
 
             return exceptions;
         }
 
-        public static List<TypeDBException> validateOverride(ThingType owner, AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
+        public static List<TypeDBException> validateOverride(ThingType thingType, AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
             List<TypeDBException> exceptions = new ArrayList<>();
             if (attributeType.getSupertypes().noneMatch(overriddenType::equals)) {
                 exceptions.add(TypeDBException.of(
-                        OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE, owner.getLabel(), attributeType.getLabel(),
+                        OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE, thingType.getLabel(), attributeType.getLabel(),
                         overriddenType.getLabel()
                 ));
             }
-            Optional<ThingType.Owns> parentOwns = iterate(owner.getSupertype().getOwns(TRANSITIVE)).filter(owns -> owns.attributeType().equals(overriddenType)).first();
+            Optional<ThingType.Owns> parentOwns = iterate(thingType.getSupertype().getOwns(TRANSITIVE)).filter(owns -> owns.attributeType().equals(overriddenType)).first();
             if (parentOwns.isEmpty()) {
-                exceptions.add(TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_NOT_AVAILABLE, owner.getLabel(), attributeType.getLabel(), overriddenType.getLabel()));
+                exceptions.add(TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_NOT_AVAILABLE, thingType.getLabel(), attributeType.getLabel(), overriddenType.getLabel()));
             } else if (!annotations.isEmpty() && !ThingTypeImpl.OwnsImpl.isFirstStricterOrEqual(annotations, parentOwns.get().effectiveAnnotations())) {
-                exceptions.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, owner.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
+                exceptions.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, thingType.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
             }
             return exceptions;
         }

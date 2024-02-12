@@ -251,8 +251,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public RoleType getRelates(Transitivity transitivity, String roleLabel) {
         TypeVertex roleTypeVertex = graphMgr().schema().getType(roleLabel, vertex.label());
         if (roleTypeVertex != null) return conceptMgr.convertRoleType(roleTypeVertex);
-        else if (transitivity == TRANSITIVE)
-            return getRelates().filter(role -> role.getLabel().name().equals(roleLabel)).first().orElse(null);
+        else if (transitivity == TRANSITIVE) return getRelates().filter(role -> role.getLabel().name().equals(roleLabel)).first().orElse(null);
         else return null;
     }
 
