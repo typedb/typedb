@@ -45,7 +45,18 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.*;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_HAS_INSTANCES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_HAS_INSTANCES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_RELATED_ROLE_TYPE_NOT_INHERITED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATTRIBUTE_WAS_OVERRIDDEN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_UNIQUE_PRECONDITION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_FROM_SUPERTYPE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
@@ -55,6 +66,7 @@ import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.UNIQUE;
 import static java.util.Collections.emptySet;
 
 public class SubtypeValidation {
+
     public static void throwIfNonEmpty(List<TypeDBException> validationErrors, Function<String, TypeDBException> exceptionFromErrorList) {
         if (!validationErrors.isEmpty()) {
             String formattedErrors = "\n- " + validationErrors.stream().map(TypeDBException::getMessage).collect(Collectors.joining("\n- "));
@@ -136,7 +148,10 @@ public class SubtypeValidation {
 
         private static void validateNoLeakedInstances(RelationType relationType, Set<RoleType> noLongerRelates, List<TypeDBException> exceptions) {
             if (noLongerRelates.isEmpty()) return;
-            List<? extends RoleType> overriddenHere = relationType.getRelates(EXPLICIT).map(roleType -> relationType.getRelatesOverridden(roleType.getLabel().name())).filter(noLongerRelates::contains).toList();
+            List<? extends RoleType> overriddenHere = relationType.getRelates(EXPLICIT)
+                    .map(roleType -> relationType.getRelatesOverridden(roleType.getLabel().name()))
+                    .filter(noLongerRelates::contains).toList();
+
             noLongerRelates.removeAll(overriddenHere);
             Iterators.iterate(noLongerRelates)
                     .filter(roleType -> relationType.getInstances(EXPLICIT).anyMatch(instance -> instance.getPlayers(roleType).first().isPresent()))
@@ -249,7 +264,8 @@ public class SubtypeValidation {
             Optional<ThingType.Owns> existingOrInherited = iterate(thingType.getOwns()).filter(owns -> owns.attributeType().equals(attributeType)).first();
             Optional<ThingType.Owns> existingExplicit = iterate(thingType.getOwns(EXPLICIT))
                     .filter(ownsExplicit -> ownsExplicit.attributeType().equals(attributeType)).first();
-            Set<TypeQLToken.Annotation> existingEffectiveAnnotations = existingExplicit.map(ThingType.Owns::effectiveAnnotations).orElse(existingOrInherited.map(ThingType.Owns::effectiveAnnotations).orElse(emptySet()));
+            Set<TypeQLToken.Annotation> existingEffectiveAnnotations = existingExplicit.map(ThingType.Owns::effectiveAnnotations)
+                    .orElse(existingOrInherited.map(ThingType.Owns::effectiveAnnotations).orElse(emptySet()));
 
             // Making sure it's stricter than existingEffective is done before, since that is part of validating the declaration.
             if (ThingTypeImpl.OwnsImpl.isFirstStricter(explicitAnnotations, existingEffectiveAnnotations)) {

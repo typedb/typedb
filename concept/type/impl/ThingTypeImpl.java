@@ -549,24 +549,27 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private List<TypeDBException> validateOwnsAreNotRedeclared() {
+        List<TypeDBException> exceptions = new ArrayList<>();
         Set<AttributeType> redeclaredOwns = new HashSet<>(getOwnedAttributes(EXPLICIT));
         redeclaredOwns.retainAll(getSupertype().getOwnedAttributes(TRANSITIVE));
-        FunctionalIterator<TypeDBException> redundantRedeclarations = iterate(redeclaredOwns)
+        iterate(redeclaredOwns)
                 .filter(attributeType -> {
                     return !OwnsImpl.isFirstStricter(
                             getOwns(EXPLICIT, attributeType).get().effectiveAnnotations(),
                             getSupertype().getOwns(TRANSITIVE, attributeType).get().effectiveAnnotations());
-                }).map(attributeType -> TypeDBException.of(REDUNDANT_OWNS_DECLARATION, getLabel(), attributeType.getLabel()));
+                }).map(attributeType -> TypeDBException.of(REDUNDANT_OWNS_DECLARATION, getLabel(), attributeType.getLabel()))
+                .toList(exceptions);
 
-        FunctionalIterator<TypeDBException> overridesWithRedundantAnnotations = Iterators.iterate(getOwns(EXPLICIT))
+        Iterators.iterate(getOwns(EXPLICIT))
                 .filter(owns -> owns.overridden().isPresent() && getSupertype().getOwns(TRANSITIVE, owns.overridden().get()).isPresent())
                 .filter(owns -> {
                     return !((OwnsImpl) owns).explicitAnnotations().isEmpty() && !OwnsImpl.isFirstStricter(
                                     ((OwnsImpl) owns).explicitAnnotations(),
                                     getSupertype().getOwns(TRANSITIVE, owns.overridden().get()).get().effectiveAnnotations()
                             );
-                }).map(owns -> TypeDBException.of(OWNS_OVERRIDE_ANNOTATIONS_REDUNDANT, getLabel(), owns.attributeType().getLabel(), ((OwnsImpl) owns).explicitAnnotations(), owns.overridden().get().getLabel()));
-        return Iterators.link(redundantRedeclarations, overridesWithRedundantAnnotations).toList();
+                }).map(owns -> TypeDBException.of(OWNS_OVERRIDE_ANNOTATIONS_REDUNDANT, getLabel(), owns.attributeType().getLabel(), ((OwnsImpl) owns).explicitAnnotations(), owns.overridden().get().getLabel()))
+                .toList(exceptions);
+        return exceptions;
     }
 
     @Override

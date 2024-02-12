@@ -59,7 +59,7 @@ public class DeclarationValidation {
             relationType.getSupertypes().filter(superType -> !superType.equals(relationType)).flatMap(superType -> superType.getRelates(EXPLICIT))
                     .filter(roleType -> roleType.getLabel().name().equals(toAdd))
                     .map(roleType -> TypeDBException.of(RELATION_RELATES_ROLE_FROM_SUPERTYPE, roleType.getLabel(), relationType.getLabel()))
-                    .forEachRemaining(exceptions::add);
+                    .toList(exceptions);
             return exceptions;
         }
 
@@ -115,14 +115,15 @@ public class DeclarationValidation {
                 exceptions.add(TypeDBException.of(OWNS_VALUE_TYPE_NO_EXACT_EQUALITY, thingType.getLabel(), attributeType.getLabel(), annotations, attributeType.getValueType().name()));
             }
 
-            if (thingType.getSupertype().getOwnedAttributes(TRANSITIVE).contains(attributeType)) {
+            if (thingType.getSupertype().getOwns(TRANSITIVE, attributeType).isPresent()) {
                 ThingType.Owns parentOwns = thingType.getSupertype().getOwns(TRANSITIVE, attributeType).get();
                 if (!annotations.isEmpty() && !ThingTypeImpl.OwnsImpl.isFirstStricterOrEqual(annotations, parentOwns.effectiveAnnotations())) {
                     exceptions.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, thingType.getLabel(), attributeType.getLabel(), annotations, parentOwns.toString()));
                 }
             }
 
-            FunctionalIterator<ThingType.Owns> hiddenTypes = thingType.getSupertypes().flatMap(t -> iterate(t.getOwns(EXPLICIT))).filter(owns -> owns.overridden().isPresent());
+            FunctionalIterator<ThingType.Owns> hiddenTypes = thingType.getSupertypes()
+                    .flatMap(t -> iterate(t.getOwns(EXPLICIT))).filter(owns -> owns.overridden().isPresent());
             if (hiddenTypes.anyMatch(owns -> !owns.attributeType().equals(attributeType) && owns.overridden().get().equals(owns.attributeType()))) {
                 exceptions.add(TypeDBException.of(OWNS_ATTRIBUTE_WAS_OVERRIDDEN, thingType.getLabel(), attributeType.getLabel()));
             }

@@ -156,7 +156,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
             throw exception(e);
         });
         SubtypeValidation.throwIfNonEmpty(SubtypeValidation.Relates.validateAdd(this, roleLabel), e ->
-                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Relates.format(this.getLabel().toString(), roleLabel.toString(), null), e))
+                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Relates.format(this.getLabel().toString(), roleLabel, null), e))
         );
         TypeVertex roleTypeVertex = graphMgr().schema().getType(roleLabel, vertex.label());
         RoleTypeImpl roleType;
@@ -180,7 +180,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         });
         RoleTypeImpl overriddenType = (RoleTypeImpl) getSupertype().getRelates(TRANSITIVE, overriddenLabel);
         SubtypeValidation.throwIfNonEmpty(Collections.concatToList(SubtypeValidation.Relates.validateAdd(this, roleLabel), SubtypeValidation.Relates.validateOverride(this, overriddenType)), e ->
-                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Relates.format(this.getLabel().toString(), roleLabel.toString(), overriddenLabel.toString()), e))
+                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Relates.format(this.getLabel().toString(), roleLabel, overriddenLabel), e))
         );
 
         setRelates(roleLabel);
