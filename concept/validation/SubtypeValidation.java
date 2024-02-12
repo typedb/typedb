@@ -273,7 +273,7 @@ public class SubtypeValidation {
             Set<AttributeType> removedOwns = new HashSet<>(thingType.getSupertype().getOwnedAttributes(TRANSITIVE));
             removedOwns.removeAll(newSupertype.getOwnedAttributes(TRANSITIVE));
             Set<AttributeType> hiddenOwns = new HashSet<>();
-            Iterators.link(Iterators.iterate(newSupertype), newSupertype.getSupertypes()).forEachRemaining(t -> {
+            newSupertype.getSupertypes().forEachRemaining(t -> {
                 iterate(t.getOwnedAttributes(EXPLICIT)).forEachRemaining(attributeType -> {
                     AttributeType overridden = t.getOwnsOverridden(attributeType);
                     if (overridden != null) hiddenOwns.add(overridden);
@@ -349,7 +349,7 @@ public class SubtypeValidation {
             annotationsToAdd.forEach((modifiedAttributeType, updatedAnnotations) -> {
                 Map<AttributeType, Set<TypeQLToken.Annotation>> affectedAttributes = new HashMap<>();
                 iterate(thingType.getOwnedAttributes(TRANSITIVE))
-                        .filter(attributeType -> attributeType.equals(modifiedAttributeType) || attributeType.getSupertypes().anyMatch(supertype ->  supertype.equals(modifiedAttributeType)))
+                        .filter(attributeType -> attributeType.getSupertypes().anyMatch(supertype ->  supertype.equals(modifiedAttributeType)))
                         .forEachRemaining(attributeType -> affectedAttributes.put(attributeType, thingType.getOwns(TRANSITIVE, attributeType).get().effectiveAnnotations()));
                 if (affectedAttributes.isEmpty()) {
                     affectedAttributes.put(modifiedAttributeType, Collections.emptySet());
