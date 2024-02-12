@@ -39,23 +39,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_HAS_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_HAS_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_RELATED_ROLE_TYPE_NOT_INHERITED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATTRIBUTE_WAS_OVERRIDDEN;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_UNIQUE_PRECONDITION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_FROM_SUPERTYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.*;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
@@ -254,26 +242,23 @@ public class SubtypeValidation {
 
     public static class Owns {
 
-        public static List<TypeDBException> validateAdd(ThingType thingType, AttributeType attributeType, @Nullable AttributeType overriddenType, Set<TypeQLToken.Annotation> explicitAnnotations) {
+        public static List<TypeDBException> validateAdd(ThingType thingType, AttributeType attributeType, Set<TypeQLToken.Annotation> explicitAnnotations) {
             List<TypeDBException> exceptions = new ArrayList<>();
-            if (overriddenType != null) {
-                Set<AttributeType> hiddenOwns = new HashSet<>();
-                hiddenOwns.add(overriddenType);
-                validateNoHiddenOwnsRedeclaration(thingType, hiddenOwns, exceptions);
-            }
-
-            Optional<ThingType.Owns> existingOrInherited = iterate(thingType.getOwns()).filter(owns -> owns.attributeType().equals(attributeType)).first();
-            Optional<ThingType.Owns> existingExplicit = iterate(thingType.getOwns(EXPLICIT))
-                    .filter(ownsExplicit -> ownsExplicit.attributeType().equals(attributeType)).first();
-            Set<TypeQLToken.Annotation> existingEffectiveAnnotations = existingExplicit.map(ThingType.Owns::effectiveAnnotations)
-                    .orElse(existingOrInherited.map(ThingType.Owns::effectiveAnnotations).orElse(emptySet()));
-
+            Set<TypeQLToken.Annotation> existingEffectiveAnnotations = thingType.getOwns(attributeType).map(ThingType.Owns::effectiveAnnotations).orElse(emptySet());
             // Making sure it's stricter than existingEffective is done before, since that is part of validating the declaration.
             if (ThingTypeImpl.OwnsImpl.isFirstStricter(explicitAnnotations, existingEffectiveAnnotations)) {
                 Map<AttributeType, Set<TypeQLToken.Annotation>> addedOwnsAnnotations = Map.of(attributeType, explicitAnnotations);
                 thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateAnnotationsStricter(subtype, addedOwnsAnnotations, exceptions));
                 validateDataSatisfyAnnotations(thingType, addedOwnsAnnotations, exceptions);
             }
+            return exceptions;
+        }
+
+        public static List<TypeDBException> validateOverride(ThingType thingType, @Nullable AttributeType overriddenType) {
+            List<TypeDBException> exceptions = new ArrayList<>();
+            Set<AttributeType> hiddenOwns = new HashSet<>();
+            hiddenOwns.add(overriddenType);
+            validateNoHiddenOwnsRedeclaration(thingType, hiddenOwns, exceptions);
             return exceptions;
         }
 
@@ -349,8 +334,9 @@ public class SubtypeValidation {
                     newInheritedAnnotations = annotationsToAdd.get(declaredOwns.attributeType());
                 } else if (thingType.getOwnsOverridden(declaredOwns.attributeType()) != null && annotationsToAdd.containsKey(thingType.getOwnsOverridden(declaredOwns.attributeType()))) {
                     newInheritedAnnotations = annotationsToAdd.get(thingType.getOwnsOverridden(declaredOwns.attributeType()));
-                }
-                if (newInheritedAnnotations != null && !ThingTypeImpl.OwnsImpl.isFirstStricterOrEqual(declaredOwns.effectiveAnnotations(), newInheritedAnnotations)) {
+                } else return;
+
+                if (!ThingTypeImpl.OwnsImpl.isFirstStricterOrEqual(declaredOwns.effectiveAnnotations(), newInheritedAnnotations)) {
                     exceptions.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT,
                             thingType.getLabel(), declaredOwns.attributeType().getLabel(), declaredAnnotations, newInheritedAnnotations));
                 }
@@ -376,7 +362,6 @@ public class SubtypeValidation {
             // Can we do an 'overriddenHere' optimisation here?
             thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateDataSatisfyAnnotations(subtype, annotationsToAdd, exceptions));
         }
-
 
         private static void validateDataAnnotations(ThingTypeImpl owner, AttributeTypeImpl attributeType,
                                                     Set<TypeQLToken.Annotation> annotations, Set<TypeQLToken.Annotation> existingAnnotations, List<TypeDBException> exceptions) {

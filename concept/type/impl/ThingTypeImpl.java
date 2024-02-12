@@ -44,6 +44,7 @@ import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -276,8 +277,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (overriddenType != null) {
             DeclarationValidation.Owns.validateOverride(this, attributeType, overriddenType, annotations).forEach(e -> { throw exception(e); });
         }
-        SubtypeValidation.throwIfNonEmpty(SubtypeValidation.Owns.validateAdd(this, attributeType, overriddenType, annotations), e ->
-                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Owns.format(this, attributeType, overriddenType, annotations), e))
+        SubtypeValidation.throwIfNonEmpty(
+                com.vaticle.typedb.common.collection.Collections.concatToList(
+                        SubtypeValidation.Owns.validateAdd(this, attributeType, annotations),
+                        overriddenType != null ? SubtypeValidation.Owns.validateOverride(this, overriddenType) : Collections.emptyList()
+                ), e -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Owns.format(this, attributeType, overriddenType, annotations), e))
         );
         OwnsImpl.create(this, (AttributeTypeImpl) attributeType, overriddenType, annotations);
     }
