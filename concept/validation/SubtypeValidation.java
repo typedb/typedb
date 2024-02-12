@@ -34,14 +34,17 @@ import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.*;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
@@ -54,11 +57,13 @@ import static java.util.Collections.emptySet;
 
 public class SubtypeValidation {
 
-    public static void throwIfNonEmpty(List<TypeDBException> validationErrors, Function<String, TypeDBException> exceptionFromErrorList) {
-        if (!validationErrors.isEmpty()) {
-            String formattedErrors = "\n- " + validationErrors.stream().map(TypeDBException::getMessage).collect(Collectors.joining("\n- "));
-            throw exceptionFromErrorList.apply(formattedErrors);
-        }
+    @SafeVarargs
+    public static Optional<String> collectExceptions(List<TypeDBException>... validationErrors) {
+        String combinedMessage = Stream.concat(
+                Stream.of(""),
+                Arrays.stream(validationErrors).flatMap(Collection::stream).map(TypeDBException::getMessage)
+        ).collect(Collectors.joining("\n- "));
+        return combinedMessage.isBlank() ? Optional.empty() : Optional.of(combinedMessage);
     }
 
     public static class Relates {
@@ -70,13 +75,15 @@ public class SubtypeValidation {
             return exceptions;
         }
 
-        public static List<TypeDBException> validateOverride(RelationType relationType, RoleType overridden) {
-            List<TypeDBException> exceptions = new ArrayList<>();
-            Set<RoleType> noLongerRelates = new HashSet<>();
-            noLongerRelates.add(overridden);
-            relationType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoBrokenOverrides(subtype, noLongerRelates, exceptions));
-            validateNoLeakedInstances(relationType, noLongerRelates, exceptions);
-            return exceptions;
+        public static List<TypeDBException> validateOverride(RelationType relationType, @Nullable RoleType overriddenType) {
+            if (overriddenType != null) {
+                List<TypeDBException> exceptions = new ArrayList<>();
+                Set<RoleType> noLongerRelates = new HashSet<>();
+                noLongerRelates.add(overriddenType);
+                relationType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateNoBrokenOverrides(subtype, noLongerRelates, exceptions));
+                validateNoLeakedInstances(relationType, noLongerRelates, exceptions);
+                return exceptions;
+            } else return Collections.emptyList();
         }
 
         public static List<TypeDBException> validateRemove(RelationType relationType, RoleType deleted) {
@@ -163,13 +170,15 @@ public class SubtypeValidation {
 
     public static class Plays {
 
-        public static List<TypeDBException> validateOverride(ThingType thingType, RoleType overridden) {
-            List<TypeDBException> exceptions = new ArrayList<>();
-            Set<RoleType> noLongerPlays = new HashSet<>();
-            noLongerPlays.add(overridden);
-            validateNoLeakedInstances(thingType, noLongerPlays, exceptions, true);
-            validateNoHiddenPlaysRedeclaration(thingType, noLongerPlays, exceptions);
-            return exceptions;
+        public static List<TypeDBException> validateOverride(ThingType thingType, RoleType overriddenType) {
+            if (overriddenType != null) {
+                List<TypeDBException> exceptions = new ArrayList<>();
+                Set<RoleType> noLongerPlays = new HashSet<>();
+                noLongerPlays.add(overriddenType);
+                validateNoLeakedInstances(thingType, noLongerPlays, exceptions, true);
+                validateNoHiddenPlaysRedeclaration(thingType, noLongerPlays, exceptions);
+                return exceptions;
+            } else return Collections.emptyList();
         }
 
         public static List<TypeDBException> validateRemove(ThingType thingType, RoleType deleted) {
@@ -192,7 +201,6 @@ public class SubtypeValidation {
                     if (overridden != null) hiddenPlays.add(overridden);
                 });
             });
-
             validateNoHiddenPlaysRedeclaration(thingType, hiddenPlays, exceptions);
             validateNoLeakedInstances(thingType, removedPlays, exceptions, false);
             return exceptions;
@@ -255,11 +263,13 @@ public class SubtypeValidation {
         }
 
         public static List<TypeDBException> validateOverride(ThingType thingType, @Nullable AttributeType overriddenType) {
-            List<TypeDBException> exceptions = new ArrayList<>();
-            Set<AttributeType> hiddenOwns = new HashSet<>();
-            hiddenOwns.add(overriddenType);
-            validateNoHiddenOwnsRedeclaration(thingType, hiddenOwns, exceptions);
-            return exceptions;
+            if (overriddenType != null) {
+                List<TypeDBException> exceptions = new ArrayList<>();
+                Set<AttributeType> hiddenOwns = new HashSet<>();
+                hiddenOwns.add(overriddenType);
+                validateNoHiddenOwnsRedeclaration(thingType, hiddenOwns, exceptions);
+                return exceptions;
+            } else return Collections.emptyList();
         }
 
         public static List<TypeDBException> validateRemove(ThingType thingType, AttributeType attributeType) {

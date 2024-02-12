@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
@@ -142,10 +141,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         } else if (!superType.isAbstract()) {
             throw exception(TypeDBException.of(ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT, superType.getLabel()));
         }
-        SubtypeValidation.throwIfNonEmpty(Iterators.link(
-                Iterators.iterate(SubtypeValidation.Plays.validateSetSupertype(this, superType)),
-                Iterators.iterate(SubtypeValidation.Owns.validateSetSupertype(this, superType))
-        ).toList(), e -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this.getLabel(), superType.getLabel(), e)));
+        SubtypeValidation.collectExceptions(
+                SubtypeValidation.Plays.validateSetSupertype(this, superType),
+                SubtypeValidation.Owns.validateSetSupertype(this, superType)
+        ).ifPresent(e -> {
+            throw exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE, this.getLabel(), superType.getLabel(), e));
+        });
         setSuperTypeVertex(((AttributeTypeImpl) superType).vertex);
     }
 

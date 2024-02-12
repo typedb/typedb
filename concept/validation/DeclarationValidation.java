@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.concept.validation;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
@@ -54,37 +55,37 @@ import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.UNIQUE;
 
 public class DeclarationValidation {
     public static class Relates {
-        public static List<TypeDBException> validateAdd(RelationType relationType, String toAdd) {
+        public static FunctionalIterator<TypeDBException> validateAdd(RelationType relationType, String toAdd) {
             List<TypeDBException> exceptions = new ArrayList<>();
             relationType.getSupertypes().filter(superType -> !superType.equals(relationType)).flatMap(superType -> superType.getRelates(EXPLICIT))
                     .filter(roleType -> roleType.getLabel().name().equals(toAdd))
                     .map(roleType -> TypeDBException.of(RELATION_RELATES_ROLE_FROM_SUPERTYPE, roleType.getLabel(), relationType.getLabel()))
                     .toList(exceptions);
-            return exceptions;
+            return Iterators.iterate(exceptions);
         }
 
-        public static List<TypeDBException> validateOverride(RelationType relationType, String roleLabel, String overriddenLabel) {
+        public static FunctionalIterator<TypeDBException> validateOverride(RelationType relationType, String roleLabel, String overriddenLabel) {
             List<TypeDBException> exceptions = new ArrayList<>();
             if (relationType.getSupertype().getRelates(TRANSITIVE, overriddenLabel) == null) {
                 exceptions.add(TypeDBException.of(RELATION_RELATES_ROLE_NOT_AVAILABLE, roleLabel, overriddenLabel));
             }
-            return exceptions;
+            return Iterators.iterate(exceptions);
         }
     }
 
     public static class Plays {
 
-        public static List<TypeDBException> validateAdd(ThingTypeImpl thingType, RoleType roleType) {
+        public static FunctionalIterator<TypeDBException> validateAdd(ThingTypeImpl thingType, RoleType roleType) {
             List<TypeDBException> exceptions = new ArrayList<>();
             if (roleType.isRoot()) {
                 exceptions.add(TypeDBException.of(ROOT_ROLE_TYPE_CANNOT_BE_PLAYED));
             } else if (thingType.getSupertypes().filter(t -> !t.equals(thingType)).anyMatch(supertype -> supertype.getPlays(EXPLICIT).anyMatch(rt -> roleType.equals(supertype.getPlaysOverridden(rt))))) {
                 exceptions.add(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN, thingType.getLabel(), roleType.getLabel()));
             }
-            return exceptions;
+            return Iterators.iterate(exceptions);
         }
 
-        public static List<TypeDBException> validateOverride(ThingTypeImpl thingType, RoleType roleType, RoleType overriddenType) {
+        public static FunctionalIterator<TypeDBException> validateOverride(ThingTypeImpl thingType, RoleType roleType, RoleType overriddenType) {
             List<TypeDBException> exceptions = new ArrayList<>();
             if (roleType.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
                 exceptions.add(TypeDBException.of(OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE, thingType.getLabel(), roleType.getLabel(), overriddenType.getLabel()));
@@ -101,12 +102,12 @@ public class DeclarationValidation {
             if (notOverridable.contains(overriddenType)) {
                 exceptions.add(TypeDBException.of(OVERRIDDEN_PLAYED_ROLE_NOT_AVAILABLE, thingType.getLabel(), roleType.getLabel(), overriddenType.getLabel()));
             }
-            return exceptions;
+            return Iterators.iterate(exceptions);
         }
     }
 
     public static class Owns {
-        public static List<TypeDBException> validateAdd(ThingType thingType, AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
+        public static FunctionalIterator<TypeDBException> validateAdd(ThingType thingType, AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
             List<TypeDBException> exceptions = new ArrayList<>();
             if (annotations.contains(KEY) && annotations.contains(UNIQUE)) {
                 exceptions.add(TypeDBException.of(OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE, thingType.getLabel(), attributeType.getLabel(), KEY, UNIQUE));
@@ -128,24 +129,27 @@ public class DeclarationValidation {
                 exceptions.add(TypeDBException.of(OWNS_ATTRIBUTE_WAS_OVERRIDDEN, thingType.getLabel(), attributeType.getLabel()));
             }
 
-            return exceptions;
+            return Iterators.iterate(exceptions);
         }
 
-        public static List<TypeDBException> validateOverride(ThingType thingType, AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
-            List<TypeDBException> exceptions = new ArrayList<>();
-            if (attributeType.getSupertypes().noneMatch(overriddenType::equals)) {
-                exceptions.add(TypeDBException.of(
-                        OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE, thingType.getLabel(), attributeType.getLabel(),
-                        overriddenType.getLabel()
-                ));
-            }
-            Optional<ThingType.Owns> parentOwns = iterate(thingType.getSupertype().getOwns(TRANSITIVE)).filter(owns -> owns.attributeType().equals(overriddenType)).first();
-            if (parentOwns.isEmpty()) {
-                exceptions.add(TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_NOT_AVAILABLE, thingType.getLabel(), attributeType.getLabel(), overriddenType.getLabel()));
-            } else if (!annotations.isEmpty() && !ThingTypeImpl.OwnsImpl.isFirstStricterOrEqual(annotations, parentOwns.get().effectiveAnnotations())) {
-                exceptions.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, thingType.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
-            }
-            return exceptions;
+        public static FunctionalIterator<TypeDBException> validateOverride(ThingType thingType, AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
+            if (overriddenType != null) {
+                List<TypeDBException> exceptions = new ArrayList<>();
+
+                if (attributeType.getSupertypes().noneMatch(overriddenType::equals)) {
+                    exceptions.add(TypeDBException.of(
+                            OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE, thingType.getLabel(), attributeType.getLabel(),
+                            overriddenType.getLabel()
+                    ));
+                }
+                Optional<ThingType.Owns> parentOwns = iterate(thingType.getSupertype().getOwns(TRANSITIVE)).filter(owns -> owns.attributeType().equals(overriddenType)).first();
+                if (parentOwns.isEmpty()) {
+                    exceptions.add(TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_NOT_AVAILABLE, thingType.getLabel(), attributeType.getLabel(), overriddenType.getLabel()));
+                } else if (!annotations.isEmpty() && !ThingTypeImpl.OwnsImpl.isFirstStricterOrEqual(annotations, parentOwns.get().effectiveAnnotations())) {
+                    exceptions.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, thingType.getLabel(), attributeType.getLabel(), annotations, parentOwns.get().toString()));
+                }
+                return Iterators.iterate(exceptions);
+            } else return Iterators.empty();
         }
     }
 }

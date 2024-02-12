@@ -44,7 +44,6 @@ import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -58,26 +57,7 @@ import static com.vaticle.typedb.common.collection.Collections.concatToList;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_OWNS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_PLAYS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_OWNED_ATTRIBUTE_NOT_AVAILABLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_NOT_AVAILABLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATTRIBUTE_TYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_OVERRIDE_ANNOTATIONS_REDUNDANT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.REDUNDANT_OWNS_DECLARATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.REDUNDANT_PLAYS_DECLARATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_INVALID_DEFINE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_INVALID_UNDEFINE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_DELETE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.*;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
@@ -273,16 +253,16 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (attributeType.isRoot()) {
             throw exception(TypeDBException.of(ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED));
         }
-        DeclarationValidation.Owns.validateAdd(this, attributeType, annotations).forEach(e -> { throw exception(e); });
-        if (overriddenType != null) {
-            DeclarationValidation.Owns.validateOverride(this, attributeType, overriddenType, annotations).forEach(e -> { throw exception(e); });
-        }
-        SubtypeValidation.throwIfNonEmpty(
-                com.vaticle.typedb.common.collection.Collections.concatToList(
-                        SubtypeValidation.Owns.validateAdd(this, attributeType, annotations),
-                        overriddenType != null ? SubtypeValidation.Owns.validateOverride(this, overriddenType) : Collections.emptyList()
-                ), e -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Owns.format(this, attributeType, overriddenType, annotations), e))
-        );
+        Iterators.link(
+            DeclarationValidation.Owns.validateAdd(this, attributeType, annotations),
+            DeclarationValidation.Owns.validateOverride(this, attributeType, overriddenType, annotations)
+        ).forEachRemaining(e -> { throw exception(e); });
+        SubtypeValidation.collectExceptions(
+                SubtypeValidation.Owns.validateAdd(this, attributeType, annotations),
+                SubtypeValidation.Owns.validateOverride(this, overriddenType)
+        ).ifPresent(e -> {
+            throw exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Owns.format(this, attributeType, overriddenType, annotations), e));
+        });
         OwnsImpl.create(this, (AttributeTypeImpl) attributeType, overriddenType, annotations);
     }
 
@@ -291,8 +271,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         validateIsNotDeleted();
         Optional<Owns> owns = getOwns(EXPLICIT, attributeType);
         if (owns.isPresent()) {
-            SubtypeValidation.throwIfNonEmpty(SubtypeValidation.Owns.validateRemove(this, attributeType),
-                    errList -> exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Owns.format(this, attributeType, owns.get().overridden().orElse(null), owns.get().effectiveAnnotations()), errList)));
+            SubtypeValidation.collectExceptions(SubtypeValidation.Owns.validateRemove(this, attributeType)).ifPresent(errList -> {
+                throw exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Owns.format(this, attributeType, owns.get().overridden().orElse(null), owns.get().effectiveAnnotations()), errList));
+            });
             ((OwnsImpl) owns.get()).delete();
         } else if (getOwns(attributeType).isPresent()) {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_OWNS, getLabel(), attributeType.getLabel()));
@@ -396,7 +377,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType) {
         validateIsNotDeleted();
-        DeclarationValidation.Plays.validateAdd(this, roleType).forEach(e -> { throw exception(e); });
+        DeclarationValidation.Plays.validateAdd(this, roleType).forEachRemaining(e -> { throw exception(e); });
         TypeEdge existingEdge = vertex.outs().edge(PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (existingEdge != null) existingEdge.unsetOverridden();
         else vertex.outs().put(PLAYS, ((RoleTypeImpl) roleType).vertex);
@@ -405,11 +386,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         validateIsNotDeleted();
-        DeclarationValidation.Plays.validateAdd(this, roleType).forEach(e -> { throw exception(e); });
-        DeclarationValidation.Plays.validateOverride(this, roleType, overriddenType).forEach(e -> { throw exception(e); });
-        SubtypeValidation.throwIfNonEmpty(SubtypeValidation.Plays.validateOverride(this, overriddenType), errList ->
-                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Plays.format(this, roleType, overriddenType), errList))
-        );
+        DeclarationValidation.Plays.validateAdd(this, roleType).forEachRemaining(e -> { throw exception(e); });
+        DeclarationValidation.Plays.validateOverride(this, roleType, overriddenType).forEachRemaining(e -> { throw exception(e); });
+        SubtypeValidation.collectExceptions(SubtypeValidation.Plays.validateOverride(this, overriddenType)).ifPresent(errList -> {
+            throw exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Plays.format(this, roleType, overriddenType), errList));
+        });
         setPlays(roleType);
         vertex.outs().edge(PLAYS, ((RoleTypeImpl)roleType).vertex).setOverridden(((RoleTypeImpl) overriddenType).vertex);
     }
@@ -427,9 +408,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         this.getLabel().toString(), roleType.getLabel().toString()));
             }
         }
-        SubtypeValidation.throwIfNonEmpty(SubtypeValidation.Plays.validateRemove(this, roleType), e ->
-                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_UNDEFINE, SubtypeValidation.Plays.format(this, roleType, this.getPlaysOverridden(roleType)), e))
-        );
+        SubtypeValidation.collectExceptions(SubtypeValidation.Plays.validateRemove(this, roleType)).ifPresent(e -> {
+            throw exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_UNDEFINE, SubtypeValidation.Plays.format(this, roleType, this.getPlaysOverridden(roleType)), e));
+        });
         edge.delete();
     }
 
