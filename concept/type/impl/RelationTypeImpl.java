@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.validation.DeclarationValidation;
 import com.vaticle.typedb.core.concept.validation.SubtypeValidation;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
@@ -41,25 +42,21 @@ import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_ABSTRACT_ROLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_NO_ROLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_FROM_SUPERTYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_INVALID_DEFINE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.SCHEMA_VALIDATION_INVALID_UNDEFINE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.RELATION_TYPE;
@@ -155,48 +152,41 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void setRelates(String roleLabel) {
         validateIsNotDeleted();
+        DeclarationValidation.Relates.validateAdd(this, roleLabel).forEach(e -> {
+            throw exception(e);
+        });
+        SubtypeValidation.throwIfNonEmpty(SubtypeValidation.Relates.validateAdd(this, roleLabel), e ->
+                exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Relates.format(this.getLabel().toString(), roleLabel.toString(), null), e))
+        );
         TypeVertex roleTypeVertex = graphMgr().schema().getType(roleLabel, vertex.label());
-        if (roleTypeVertex == null && getSupertypes()
-                .filter(t -> !t.equals(this) && t.isRelationType()).map(TypeImpl::asRelationType)
-                .flatMap(RelationType::getRelates).anyMatch(role -> role.getLabel().name().equals(roleLabel))) {
-            throw exception(TypeDBException.of(RELATION_RELATES_ROLE_FROM_SUPERTYPE, roleLabel, getLabel()));
+        RoleTypeImpl roleType;
+        if (roleTypeVertex == null) {
+            roleType = RoleTypeImpl.of(conceptMgr, roleLabel, vertex.label());
+            vertex.outs().put(RELATES, roleType.vertex);
         } else {
-            SubtypeValidation.throwIfNonEmpty(SubtypeValidation.Relates.validateAdd(this, roleLabel), e ->
-                    exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Relates.format(this.getLabel().toString(), roleLabel.toString(), null), e))
-            );
-            RoleTypeImpl roleType;
-            if (roleTypeVertex == null) {
-                roleType = RoleTypeImpl.of(conceptMgr, roleLabel, vertex.label());
-                vertex.outs().put(RELATES, roleType.vertex);
-            } else {
-                roleType = (RoleTypeImpl) conceptMgr.convertRoleType(roleTypeVertex);
-                roleType.setSupertype(conceptMgr.convertRoleType(graphMgr().schema().rootRoleType()));
-            }
-            assert roleType.getSupertype() != null;
-            vertex.outs().edge(RELATES, roleType.vertex).setOverridden(((RoleTypeImpl) roleType.getSupertype()).vertex);
+            roleType = (RoleTypeImpl) conceptMgr.convertRoleType(roleTypeVertex);
+            roleType.setSupertype(conceptMgr.convertRoleType(graphMgr().schema().rootRoleType()));
         }
+        assert roleType.getSupertype() != null;
+        vertex.outs().edge(RELATES, roleType.vertex).setOverridden(((RoleTypeImpl) roleType.getSupertype()).vertex);
     }
 
     @Override
     public void setRelates(String roleLabel, String overriddenLabel) {
         validateIsNotDeleted();
-        Optional<RoleTypeImpl> inherited;
         assert getSupertype() != null;
-        if (declaredRoles().anyMatch(r -> r.getLabel().name().equals(overriddenLabel)) ||
-                !(inherited = getSupertype().getRelates()
-                        .filter(role -> role.getLabel().name().equals(overriddenLabel)).first()
-                ).isPresent()
-        ) {
-            throw exception(TypeDBException.of(RELATION_RELATES_ROLE_NOT_AVAILABLE, roleLabel, overriddenLabel));
-        }
-        SubtypeValidation.throwIfNonEmpty(Collections.concatToList(SubtypeValidation.Relates.validateAdd(this, roleLabel), SubtypeValidation.Relates.validateOverride(this, inherited.get())), e ->
+        Collections.concatToList(DeclarationValidation.Relates.validateAdd(this, roleLabel), DeclarationValidation.Relates.validateOverride(this, roleLabel, overriddenLabel)).forEach(e -> {
+            throw exception(e);
+        });
+        RoleTypeImpl overriddenType = (RoleTypeImpl) getSupertype().getRelates(TRANSITIVE, overriddenLabel);
+        SubtypeValidation.throwIfNonEmpty(Collections.concatToList(SubtypeValidation.Relates.validateAdd(this, roleLabel), SubtypeValidation.Relates.validateOverride(this, overriddenType)), e ->
                 exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Relates.format(this.getLabel().toString(), roleLabel.toString(), overriddenLabel.toString()), e))
         );
 
         setRelates(roleLabel);
         RoleTypeImpl roleType = (RoleTypeImpl) this.getRelates(roleLabel);
-        roleType.setSupertype(inherited.get());
-        vertex.outs().edge(RELATES, roleType.vertex).setOverridden(inherited.get().vertex);
+        roleType.setSupertype(overriddenType);
+        vertex.outs().edge(RELATES, roleType.vertex).setOverridden(overriddenType.vertex);
     }
 
     @Override
@@ -236,11 +226,6 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
                 return conceptMgr.convertRoleType(relatesEdge.overridden().get());
         }
         return null;
-    }
-
-    FunctionalIterator<RoleTypeImpl> overriddenRoles() { // TODO: Unused -> Remove?
-        return vertex.outs().edge(RELATES).overridden().filter(Objects::nonNull)
-                .map(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v));
     }
 
     private FunctionalIterator<RoleTypeImpl> declaredRoles() {

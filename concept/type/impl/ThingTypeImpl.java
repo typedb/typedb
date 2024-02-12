@@ -34,6 +34,7 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.concept.validation.DeclarationValidation;
 import com.vaticle.typedb.core.concept.validation.SubtypeValidation;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
@@ -293,15 +294,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
     }
 
-    private static <T extends Type> void override(T owner, Encoding.Edge.Type encoding, T type, T overriddenType,
-                                                  Forwardable<? extends Type, Order.Asc> overridable,
-                                                  Forwardable<? extends Type, Order.Asc> notOverridable, // because the child can override the same type as parent but with annotations
-                                                  ErrorMessage notSupertypeMessage, ErrorMessage notAvailableMessage) {
-        if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
-            throw owner.exception(TypeDBException.of(notSupertypeMessage, owner.getLabel(), type.getLabel(), overriddenType.getLabel()));
-        } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
-            throw owner.exception(TypeDBException.of(notAvailableMessage, owner.getLabel(), type.getLabel(), overriddenType.getLabel()));
-        }
+    private static <T extends Type> void override(T owner, Encoding.Edge.Type encoding, T type, T overriddenType) {
+//        if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
+//            throw owner.exception(TypeDBException.of(notSupertypeMessage, owner.getLabel(), type.getLabel(), overriddenType.getLabel()));
+//        } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
+//            throw owner.exception(TypeDBException.of(notAvailableMessage, owner.getLabel(), type.getLabel(), overriddenType.getLabel()));
+//        }
 
         ((TypeImpl) owner).vertex.outs().edge(encoding, ((TypeImpl) type).vertex).setOverridden(((TypeImpl) overriddenType).vertex);
     }
@@ -401,11 +399,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType) {
         validateIsNotDeleted();
-        if (roleType.isRoot()) {
-            throw exception(TypeDBException.of(ROOT_ROLE_TYPE_CANNOT_BE_PLAYED));
-        } else if (getSupertypes().filter(t -> !t.equals(this)).anyMatch(thingType -> thingType.getPlays(EXPLICIT).anyMatch(rt -> roleType.equals(thingType.getPlaysOverridden(rt))))) {
-            throw exception(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN, getLabel(), roleType.getLabel()));
-        }
+        DeclarationValidation.Plays.validateAdd(this, roleType).forEach(e -> { throw exception(e); });
         TypeEdge existingEdge = vertex.outs().edge(PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (existingEdge != null) existingEdge.unsetOverridden();
         else vertex.outs().put(PLAYS, ((RoleTypeImpl) roleType).vertex);
@@ -414,13 +408,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         validateIsNotDeleted();
+        DeclarationValidation.Plays.validateAdd(this, roleType).forEach(e -> { throw exception(e); });
+        DeclarationValidation.Plays.validateOverride(this, roleType, overriddenType).forEach(e -> { throw exception(e); });
         SubtypeValidation.throwIfNonEmpty(SubtypeValidation.Plays.validateOverride(this, overriddenType), errList ->
                 exception(TypeDBException.of(SCHEMA_VALIDATION_INVALID_DEFINE, SubtypeValidation.Plays.format(this, roleType, overriddenType), errList))
         );
         setPlays(roleType);
-        override(this, PLAYS, roleType, overriddenType, getSupertype().getPlays(),
-                vertex.outs().edge(PLAYS).to().mapSorted(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v), rt -> rt.vertex, ASC),
-                OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE, OVERRIDDEN_PLAYED_ROLE_NOT_AVAILABLE);
+        vertex.outs().edge(PLAYS, ((RoleTypeImpl)roleType).vertex).setOverridden(((RoleTypeImpl) overriddenType).vertex);
+        override(this, PLAYS, roleType, overriddenType);
     }
 
     @Override
