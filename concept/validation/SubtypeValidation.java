@@ -139,7 +139,7 @@ public class SubtypeValidation {
             List<? extends RoleType> overriddenHere = relationType.getRelates(EXPLICIT).map(roleType -> relationType.getRelatesOverridden(roleType.getLabel().name())).filter(noLongerRelates::contains).toList();
             noLongerRelates.removeAll(overriddenHere);
             Iterators.iterate(noLongerRelates)
-                    .filter(roleType -> relationType.getInstances(EXPLICIT).anyMatch(instance -> instance.getPlayers(roleType).hasNext()))
+                    .filter(roleType -> relationType.getInstances(EXPLICIT).anyMatch(instance -> instance.getPlayers(roleType).first().isPresent()))
                     .forEachRemaining(roleType -> {
                         exceptions.add(TypeDBException.of(INVALID_UNDEFINE_RELATES_HAS_INSTANCES, relationType.getLabel(), roleType.getLabel()));
                     });
@@ -220,7 +220,7 @@ public class SubtypeValidation {
 
             noLongerPlays.removeAll(redeclaredOrOverriddenHere);
             Iterators.iterate(noLongerPlays)
-                    .filter(roleType -> thingType.getInstances(EXPLICIT).anyMatch(instance -> instance.getRelations(roleType).hasNext()))
+                    .filter(roleType -> thingType.getInstances(EXPLICIT).anyMatch(instance -> instance.getRelations(roleType).first().isPresent()))
                     .forEachRemaining(roleType -> {
                         exceptions.add(TypeDBException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, thingType.getLabel(), roleType.getLabel()));
                     });
@@ -315,7 +315,7 @@ public class SubtypeValidation {
 
             noLongerOwned.removeAll(redeclaredOrOverriddenHere);
             Iterators.iterate(noLongerOwned)
-                    .filter(attributeType -> thingType.getInstances(EXPLICIT).anyMatch(instance -> instance.getHas(attributeType).hasNext()))
+                    .filter(attributeType -> thingType.getInstances(EXPLICIT).anyMatch(instance -> instance.getHas(attributeType).first().isPresent()))
                     .forEachRemaining(attributeType -> {
                         exceptions.add(TypeDBException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, thingType.getLabel(), attributeType.getLabel()));
                     });
@@ -390,11 +390,11 @@ public class SubtypeValidation {
 
         private static void validateDataKey(ThingTypeImpl ownerType, Thing owner, AttributeType attributeType) {
             FunctionalIterator<? extends Attribute> attrs = owner.getHas(attributeType);
-            if (!attrs.hasNext()) {
+            if (!attrs.first().isPresent()) {
                 throw TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY, ownerType.getLabel(), attributeType.getLabel());
             }
             Attribute key = attrs.next();
-            if (attrs.hasNext()) {
+            if (attrs.first().isPresent()) {
                 throw TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING, ownerType.getLabel(), attributeType.getLabel());
             } else if (compareSize(key.getOwners(ownerType), 1) != 0) {
                 throw TypeDBException.of(OWNS_KEY_PRECONDITION_UNIQUENESS, attributeType.getLabel(), ownerType.getLabel());
@@ -403,11 +403,11 @@ public class SubtypeValidation {
 
         private static void validateDataKeyCardinality(ThingTypeImpl ownerType, Thing owner, AttributeTypeImpl attributeType) {
             FunctionalIterator<? extends Attribute> attrs = owner.getHas(attributeType);
-            if (!attrs.hasNext()) {
+            if (!attrs.first().isPresent()) {
                 throw TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY, ownerType.getLabel(), attributeType.getLabel());
             }
             Attribute key = attrs.next();
-            if (attrs.hasNext()) {
+            if (attrs.first().isPresent()) {
                 throw TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING, ownerType.getLabel(), attributeType.getLabel());
             }
         }
