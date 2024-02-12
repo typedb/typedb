@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -335,21 +336,33 @@ public class SubtypeValidation {
             noLongerOwned.addAll(redeclaredOrOverriddenHere);
         }
 
+        private static Set<AttributeType> overridesChain(ThingType.Owns owns) {
+            Set<AttributeType> overridesChain = new HashSet<>();
+            ThingType.Owns at = owns;
+            while (at != null) {
+                overridesChain.add(at.attributeType());
+                if (at.overridden().isPresent()) {
+                    at = at.owner().getSupertype().getOwns(at.overridden().get()).orElse(null);
+                } else at = null;
+            }
+            return overridesChain;
+        }
+
         private static void validateAnnotationsStricter(ThingType thingType, Map<AttributeType, Set<TypeQLToken.Annotation>> annotationsToAdd, List<TypeDBException> exceptions) {
             iterate(thingType.getOwns(EXPLICIT)).forEachRemaining(declaredOwns -> {
                 Set<TypeQLToken.Annotation> declaredAnnotations = ((ThingTypeImpl.OwnsImpl) declaredOwns).explicitAnnotations();
                 if (declaredAnnotations.isEmpty()) return;  // If no annotations are declared, they are inherited.
-                Set<TypeQLToken.Annotation> newInheritedAnnotations = null;
-                if (annotationsToAdd.containsKey(declaredOwns.attributeType())) {
-                    newInheritedAnnotations = annotationsToAdd.get(declaredOwns.attributeType());
-                } else if (thingType.getOwnsOverridden(declaredOwns.attributeType()) != null && annotationsToAdd.containsKey(thingType.getOwnsOverridden(declaredOwns.attributeType()))) {
-                    newInheritedAnnotations = annotationsToAdd.get(thingType.getOwnsOverridden(declaredOwns.attributeType()));
-                } else return;
 
-                if (!ThingTypeImpl.OwnsImpl.isFirstStricterOrEqual(declaredOwns.effectiveAnnotations(), newInheritedAnnotations)) {
-                    exceptions.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT,
-                            thingType.getLabel(), declaredOwns.attributeType().getLabel(), declaredAnnotations, newInheritedAnnotations));
-                }
+                List<Set<TypeQLToken.Annotation>> newInheritedAnnotationsList = Iterators.iterate(overridesChain(declaredOwns))
+                        .map(attributeType -> annotationsToAdd.getOrDefault(attributeType, null)).filter(Objects::nonNull)
+                        .toList();
+                assert newInheritedAnnotationsList.size() <= 1;
+                newInheritedAnnotationsList.forEach(newInheritedAnnotations -> {
+                    if (!ThingTypeImpl.OwnsImpl.isFirstStricterOrEqual(declaredOwns.effectiveAnnotations(), newInheritedAnnotations)) {
+                        exceptions.add(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT,
+                                thingType.getLabel(), declaredOwns.attributeType().getLabel(), declaredAnnotations, newInheritedAnnotations));
+                    }
+                });
             });
             // Can we do an 'overriddenHere' optimisation here?
             thingType.getSubtypes(EXPLICIT).forEachRemaining(subtype -> validateAnnotationsStricter(subtype, annotationsToAdd, exceptions));
@@ -359,9 +372,9 @@ public class SubtypeValidation {
             if (annotationsToAdd.isEmpty()) return;
             annotationsToAdd.forEach((modifiedAttributeType, updatedAnnotations) -> {
                 Map<AttributeType, Set<TypeQLToken.Annotation>> affectedAttributes = new HashMap<>();
-                iterate(thingType.getOwnedAttributes(TRANSITIVE))
-                        .filter(attributeType -> attributeType.getSupertypes().anyMatch(supertype -> supertype.equals(modifiedAttributeType)))
-                        .forEachRemaining(attributeType -> affectedAttributes.put(attributeType, thingType.getOwns(TRANSITIVE, attributeType).get().effectiveAnnotations()));
+                iterate(thingType.getOwns(TRANSITIVE))
+                        .filter(owns -> Iterators.iterate(overridesChain(owns)).anyMatch(modifiedAttributeType::equals))
+                        .forEachRemaining(owns -> affectedAttributes.put(owns.attributeType(), owns.effectiveAnnotations()));
                 if (affectedAttributes.isEmpty()) {
                     affectedAttributes.put(modifiedAttributeType, Collections.emptySet());
                 }

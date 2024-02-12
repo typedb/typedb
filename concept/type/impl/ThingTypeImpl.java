@@ -780,6 +780,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
+        public ThingType owner() {
+            return owner;
+        }
+
+        @Override
         public AttributeType attributeType() {
             return attributeType;
         }
