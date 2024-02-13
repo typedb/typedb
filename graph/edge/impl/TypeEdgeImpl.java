@@ -489,7 +489,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             if (overridden.isFirst()) {
                 overridden = Either.second(overridden.first() != null ? graph.convert(overridden.first()) : null);
             }
-            return Optional.of(overridden.second());
+            return Optional.ofNullable(overridden.second());
         }
 
         /**
