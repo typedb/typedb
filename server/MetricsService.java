@@ -185,7 +185,7 @@ public class MetricsService {
                 .childHandler(new MetricsInitializer(sslContext, middleware));
             Channel channel = bootstrap.bind(scrapePort).sync().channel();
             channel.closeFuture().sync();
-        } catch (InterruptedException e) {
+        } catch (InterruptedException ignored) {
             // do nothing
         } finally {
             group.shutdownGracefully();
