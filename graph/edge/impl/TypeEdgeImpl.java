@@ -407,6 +407,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         private final AtomicBoolean deleted;
         private TypeVertex from;
         private TypeVertex to;
+        private final AtomicBoolean committed;
         private VertexIID.Type overriddenIID;
         private TypeVertex overridden;
         private Set<Annotation> annotations;
@@ -440,6 +441,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             deleted = new AtomicBoolean(false);
             if (overriddenIID != null) this.overriddenIID = overriddenIID;
             annotations = null;
+            committed = new AtomicBoolean(false);
         }
 
         @Override
@@ -501,17 +503,13 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         @Override
         public void setOverridden(TypeVertex overridden) {
             this.overridden = overridden;
-            overriddenIID = overridden.iid();
-            graph.storage().putUntracked(computeForwardIID(), overriddenIID.bytes());
-            graph.storage().putUntracked(computeBackwardIID(), overriddenIID.bytes());
+            overriddenIID = null;
         }
 
         @Override
         public void unsetOverridden() {
             this.overridden = null;
             this.overriddenIID = null;
-            graph.storage().putUntracked(computeForwardIID());
-            graph.storage().putUntracked(computeBackwardIID());
         }
 
         @Override
@@ -587,15 +585,18 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             return deleted.get();
         }
 
-        /**
-         * No-op commit operation of a persisted edge.
-         * <p>
-         * Persisted edges do not need to be committed back to the graph storage.
-         * The only property of a persisted edge that can be changed is only the
-         * {@code overriddenIID}, and that is immediately written to storage when changed.
-         */
         @Override
         public void commit() {
+            if (committed.compareAndSet(false, true)) {
+                if (overridden != null) {
+                    // TODO: Store overridden as an edge property instead in 3.0
+                    graph.storage().putUntracked(computeForwardIID(), overridden.iid().bytes());
+                    graph.storage().putUntracked(computeBackwardIID(), overridden.iid().bytes());
+                } else {
+                    graph.storage().putUntracked(computeForwardIID());
+                    graph.storage().putUntracked(computeBackwardIID());
+                }
+            }
         }
     }
 }
