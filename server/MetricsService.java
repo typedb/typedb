@@ -25,6 +25,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
@@ -45,7 +46,9 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpServerExpectContinueHandler;
 import io.netty.handler.codec.http.HttpUtil;
+import io.netty.handler.ssl.SslContext;
 
+import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,9 +67,8 @@ import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class MetricsService implements Runnable {
+public class MetricsService {
     enum NetworkRequestKind {
         CONNECTION_OPEN,
         SERVERS_ALL,
@@ -81,6 +83,7 @@ public class MetricsService implements Runnable {
     enum GaugeKind {
         DATABASE_COUNT,
         SESSION_COUNT,
+        TRANSACTION_COUNT,
     }
 
     private final ConcurrentMap<NetworkRequestKind, AtomicLong> attemptedRequestCounts = new ConcurrentHashMap<>();
@@ -89,7 +92,7 @@ public class MetricsService implements Runnable {
 
     private final String name;
 
-    private ScheduledFuture<?> task;
+    private ScheduledFuture<?> pushScheduledTask;
 
     MetricsService(String name) {
         this.name = name;
@@ -104,31 +107,24 @@ public class MetricsService implements Runnable {
     }
 
     private void push() {
-        EventLoopGroup group = new NioEventLoopGroup();
+        EventLoopGroup group = new NioEventLoopGroup(1);
         try {
-            Bootstrap b = new Bootstrap();
-
-            b.group(group).channel(NioSocketChannel.class).handler(new ChannelInitializer<SocketChannel>() {
+            Bootstrap bootstrap = new Bootstrap();
+            bootstrap.group(group).channel(NioSocketChannel.class).handler(new ChannelInitializer<SocketChannel>() {
                 @Override protected void initChannel(SocketChannel socketChannel) { socketChannel.pipeline().addLast(new HttpClientCodec()); }
             });
-
-            // Make the connection attempt.
-            Channel ch = b.connect("localhost", 1500).sync().channel();
-
-            // Prepare the HTTP request.
+            Channel channel = bootstrap.connect("localhost", 1500).sync().channel();
             FullHttpRequest request = new DefaultFullHttpRequest(HTTP_1_1, POST, "/", Unpooled.wrappedBuffer((formatJSON()).getBytes(StandardCharsets.UTF_8)));
             request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
             request.headers().set(CONTENT_TYPE, TEXT_PLAIN);
-            ch.writeAndFlush(request).sync();
-            ch.closeFuture().sync();
+            channel.writeAndFlush(request).sync();
+            channel.closeFuture().sync();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            // Shut down executor threads to exit.
             group.shutdownGracefully();
+            pushScheduledTask = scheduled().schedule(this::push, 1, HOURS);
         }
-
-        task = scheduled().schedule(this::push, 1, HOURS);
     }
 
     public void requestAttempt(NetworkRequestKind kind) {
@@ -139,41 +135,50 @@ public class MetricsService implements Runnable {
         successfulRequestCounts.get(kind).incrementAndGet();
     }
 
-    public void update(GaugeKind kind, long value) {
+    public void setGauge(GaugeKind kind, long value) {
         gauges.get(kind).set(value);
     }
 
-    public void serve() {
-        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+    public void serve(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
+        EventLoopGroup group = new NioEventLoopGroup(1);
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap
-                .group(bossGroup)
+                .group(group)
                 .channel(NioServerSocketChannel.class)
-                .childHandler(new MetricsInitializer());
+                .childHandler(new MetricsInitializer(sslContext, middleware));
             Channel channel = bootstrap.bind(4104).sync().channel();
             channel.closeFuture().sync();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            // do nothing
         } finally {
-            bossGroup.shutdownGracefully();
+            group.shutdownGracefully();
         }
-    }
-
-    @Override
-    public void run() {
-        serve();
     }
 
     class MetricsInitializer extends ChannelInitializer<SocketChannel> {
+        private final SslContext sslContext;
+        private final ChannelInboundHandlerAdapter[] middleware;
+        MetricsInitializer(@Nullable SslContext sslContext,ChannelInboundHandlerAdapter... middleware) {
+            this.sslContext = sslContext;
+            this.middleware = middleware;
+        }
+
         @Override
         protected void initChannel(SocketChannel socketChannel) {
             ChannelPipeline pipeline = socketChannel.pipeline();
+            if (sslContext != null) {
+                pipeline.addLast(sslContext.newHandler(socketChannel.alloc()));
+            }
             pipeline.addLast(new HttpServerCodec());
             pipeline.addLast(new HttpServerExpectContinueHandler());
+            for (var mw: middleware) {
+                pipeline.addLast(mw);
+            }
             pipeline.addLast(new MetricsHandler());
         }
     }
+
 
     class MetricsHandler extends SimpleChannelInboundHandler<HttpObject> {
         @Override
@@ -220,7 +225,6 @@ public class MetricsService implements Runnable {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            cause.printStackTrace();
             ctx.close();
         }
     }

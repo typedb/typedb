@@ -36,6 +36,7 @@ import com.vaticle.typedb.protocol.UserProto.User;
 import com.vaticle.typedb.protocol.UserProto.UserManager;
 import com.vaticle.typedb.protocol.VersionProto;
 import io.grpc.stub.StreamObserver;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.sentry.Sentry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +63,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.USER_
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static com.vaticle.typedb.core.server.MetricsService.GaugeKind.DATABASE_COUNT;
 import static com.vaticle.typedb.core.server.MetricsService.GaugeKind.SESSION_COUNT;
+import static com.vaticle.typedb.core.server.MetricsService.GaugeKind.TRANSACTION_COUNT;
 import static com.vaticle.typedb.core.server.MetricsService.NetworkRequestKind.CONNECTION_OPEN;
 import static com.vaticle.typedb.core.server.MetricsService.NetworkRequestKind.DATABASE;
 import static com.vaticle.typedb.core.server.MetricsService.NetworkRequestKind.DATABASE_MANAGEMENT;
@@ -94,11 +96,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     private final ConcurrentMap<UUID, SessionService> sessionServices;
     final MetricsService metricsService;
 
-    public TypeDBService(InetSocketAddress address, TypeDB.DatabaseManager databaseMgr, String name) {
+    public TypeDBService(InetSocketAddress address, TypeDB.DatabaseManager databaseMgr, String name, ChannelInboundHandlerAdapter... middleware) {
         this.address = address.getHostString() + ":" + address.getPort();
         this.databaseMgr = databaseMgr;
         this.metricsService = new MetricsService(name);
-        (new Thread(metricsService)).start();
+        (new Thread(() -> metricsService.serve(null, middleware))).start();
         sessionServices = new ConcurrentHashMap<>();
 
         if (LOG.isDebugEnabled()) {
@@ -282,7 +284,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Diagnostics.get().submitError(e);
             responder.onError(exception(e));
         } finally {
-            this.metricsService.update(DATABASE_COUNT, databaseMgr.all().size());
+            this.metricsService.setGauge(DATABASE_COUNT, databaseMgr.all().size());
         }
     }
 
@@ -373,7 +375,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Diagnostics.get().submitError(e);
             responder.onError(exception(e));
         } finally {
-            this.metricsService.update(DATABASE_COUNT, databaseMgr.all().size());
+            this.metricsService.setGauge(DATABASE_COUNT, databaseMgr.all().size());
         }
     }
 
@@ -397,7 +399,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Diagnostics.get().submitError(e);
             responder.onError(exception(e));
         } finally {
-            this.metricsService.update(SESSION_COUNT, sessionServices.size());
+            this.metricsService.setGauge(SESSION_COUNT, sessionServices.size());
         }
     }
 
@@ -418,7 +420,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Diagnostics.get().submitError(e);
             responder.onError(exception(e));
         } finally {
-            this.metricsService.update(SESSION_COUNT, sessionServices.size());
+            this.metricsService.setGauge(SESSION_COUNT, sessionServices.size());
         }
     }
 
@@ -443,6 +445,10 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public StreamObserver<TransactionProto.Transaction.Client> transaction(
             StreamObserver<TransactionProto.Transaction.Server> responder) {
         return new TransactionService(this, responder);
+    }
+
+    void updateTransactioncount() {
+        this.metricsService.setGauge(TRANSACTION_COUNT, sessionServices.values().stream().mapToLong(SessionService::transactionCount).sum());
     }
 
     protected void doCreateDatabase(String databaseName) {

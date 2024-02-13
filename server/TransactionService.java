@@ -153,6 +153,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             close(error);
         } finally {
             if (accessLock != null) accessLock.unlock();
+            this.typeDBSvc.updateTransactioncount();
         }
     }
 

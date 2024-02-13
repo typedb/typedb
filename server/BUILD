@@ -81,6 +81,7 @@ native_java_libraries(
         "@maven//:io_grpc_grpc_netty",
         "@maven//:io_grpc_grpc_stub",
         "@maven//:io_netty_netty_all",
+        "@maven//:io_netty_netty_handler",
         "@maven//:io_netty_netty_buffer",
         "@maven//:io_netty_netty_codec_http",
         "@maven//:io_netty_netty_transport",
