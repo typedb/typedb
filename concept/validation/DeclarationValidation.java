@@ -46,6 +46,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OW
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_FROM_SUPERTYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_ROLE_TYPE_CANNOT_BE_PLAYED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
@@ -109,6 +110,9 @@ public class DeclarationValidation {
     public static class Owns {
         public static List<TypeDBException> validateAdd(ThingType thingType, AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
             List<TypeDBException> exceptions = new ArrayList<>();
+            if (attributeType.isRoot()) {
+                exceptions.add(TypeDBException.of(ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED));
+            }
             if (annotations.contains(KEY) && annotations.contains(UNIQUE)) {
                 exceptions.add(TypeDBException.of(OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE, thingType.getLabel(), attributeType.getLabel(), KEY, UNIQUE));
             }
