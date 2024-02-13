@@ -376,7 +376,7 @@ public final class ConceptManager {
             deleted = graphMgr.data().writeVertices()
                     .filter(v -> v.existence().equals(STORED) && v.isModified() && v.encoding().equals(RELATION))
                     .map(v -> ThingImpl.of(this, v).asRelation().deleteIfNoPlayer())
-                    .anyMatch(d -> d);
+                    .reduce(false, ((acc, val) -> acc || val));
         }
     }
 
