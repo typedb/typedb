@@ -39,13 +39,15 @@ public class CoreConfig {
     protected final Storage storage;
     protected final Log log;
     protected final Diagnostics diagnostics;
+    protected final Metrics metrics;
     protected final VaticleFactory vaticleFactory;
 
-    protected CoreConfig(Server server, Storage storage, Log log, @Nullable Diagnostics diagnostics, @Nullable VaticleFactory vaticleFactory) {
+    protected CoreConfig(Server server, Storage storage, Log log, @Nullable Diagnostics diagnostics, @Nullable Metrics metrics, @Nullable VaticleFactory vaticleFactory) {
         this.server = server;
         this.storage = storage;
         this.log = log;
         this.diagnostics = diagnostics;
+        this.metrics = metrics;
         this.vaticleFactory = vaticleFactory;
     }
 
@@ -429,6 +431,59 @@ public class CoreConfig {
 
             public Optional<String> uri() {
                 return Optional.ofNullable(uri);
+            }
+        }
+    }
+
+    public static class Metrics {
+
+        private final Reporting reporting;
+        private final ScrapeEndpoint scrapeEndpoint;
+
+        public Metrics(Reporting reporting, ScrapeEndpoint scrapeEndpoint) {
+            this.reporting = reporting;
+            this.scrapeEndpoint = scrapeEndpoint;
+        }
+
+        public Reporting reporting() {
+            return reporting;
+        }
+
+        public static class Reporting {
+
+            private final boolean enable;
+            private final String uri;
+
+            Reporting(boolean enable, @Nullable String uri) {
+                this.enable = enable;
+                this.uri = uri;
+            }
+
+            public boolean enable() {
+                return enable;
+            }
+
+            public Optional<String> uri() {
+                return Optional.ofNullable(uri);
+            }
+        }
+
+        public static class ScrapeEndpoint {
+
+            private final boolean enable;
+            private final Integer port;
+
+            ScrapeEndpoint(boolean enable, @Nullable Integer port) {
+                this.enable = enable;
+                this.port = port;
+            }
+
+            public boolean enable() {
+                return enable;
+            }
+
+            public Optional<Integer> port() {
+                return Optional.ofNullable(port);
             }
         }
     }

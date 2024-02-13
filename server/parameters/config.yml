@@ -66,6 +66,13 @@ diagnostics:
   reporting:
     enable: true
 
+metrics:
+  reporting:
+    enable: true
+  scrape-endpoint:
+    enable: true
+    port: 4104
+
 vaticle-factory:
   enable: false
   #  uri: "https://tracing.factory.vaticle.com:7979"
