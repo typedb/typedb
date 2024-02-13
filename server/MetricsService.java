@@ -88,6 +88,8 @@ public class MetricsService {
     private final ConcurrentMap<NetworkRequestKind, AtomicLong> successfulRequestCounts = new ConcurrentHashMap<>();
     private final ConcurrentMap<GaugeKind, AtomicLong> gauges = new ConcurrentHashMap<>();
 
+    // FIXME this should either go away with either the metrics push endpoint providing a trusted cert,
+    // or this should be initialized with correct certs
     private SSLContext sslContext;
 
     private final String serverID;
