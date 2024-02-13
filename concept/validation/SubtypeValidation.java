@@ -195,9 +195,11 @@ public class SubtypeValidation {
 
         public static List<TypeDBException> validateRemove(ThingType thingType, RoleType deleted) {
             List<TypeDBException> exceptions = new ArrayList<>();
-            Set<RoleType> noLongerPlays = new HashSet<>();
-            noLongerPlays.add(deleted);
-            validateNoLeakedInstances(thingType, noLongerPlays, exceptions, true);
+            if (!thingType.getSupertype().plays(deleted)) {
+                Set<RoleType> noLongerPlays = new HashSet<>();
+                noLongerPlays.add(deleted);
+                validateNoLeakedInstances(thingType, noLongerPlays, exceptions, true);
+            }
             return exceptions;
         }
 
@@ -286,9 +288,11 @@ public class SubtypeValidation {
 
         public static List<TypeDBException> validateRemove(ThingType thingType, AttributeType attributeType) {
             List<TypeDBException> exceptions = new ArrayList<>();
-            Set<AttributeType> removedOwns = new HashSet<>();
-            removedOwns.add(attributeType);
-            validateNoLeakedInstances(thingType, removedOwns, exceptions, true);
+            if (thingType.getSupertype().getOwns(attributeType).isEmpty()) {
+                Set<AttributeType> removedOwns = new HashSet<>();
+                removedOwns.add(attributeType);
+                validateNoLeakedInstances(thingType, removedOwns, exceptions, true);
+            }
             return exceptions;
         }
 
