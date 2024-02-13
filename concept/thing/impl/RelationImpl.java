@@ -107,8 +107,13 @@ public class RelationImpl extends ThingImpl implements Relation {
         super.delete();
     }
 
-    public void deleteIfNoPlayer() {
-        if (!writableVertex().outs().edge(RELATING).to().hasNext()) this.delete();
+    public boolean deleteIfNoPlayer() {
+        if (!writableVertex().outs().edge(RELATING).to().hasNext()) {
+            this.delete();
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
