@@ -67,6 +67,10 @@ public class CoreConfig {
         return diagnostics;
     }
 
+    public Metrics metrics() {
+        return metrics;
+    }
+
     public VaticleFactory vaticleFactory() {
         return vaticleFactory;
     }
@@ -447,6 +451,10 @@ public class CoreConfig {
 
         public Reporting reporting() {
             return reporting;
+        }
+
+        public ScrapeEndpoint scrapeEndpoint() {
+            return scrapeEndpoint;
         }
 
         public static class Reporting {

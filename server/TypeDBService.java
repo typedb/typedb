@@ -96,12 +96,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     private final ConcurrentMap<UUID, SessionService> sessionServices;
     final MetricsService metricsService;
 
-    public TypeDBService(InetSocketAddress address, TypeDB.DatabaseManager databaseMgr, String name, ChannelInboundHandlerAdapter... middleware) {
+    public TypeDBService(InetSocketAddress address, TypeDB.DatabaseManager databaseMgr, MetricsService metricsService) {
         this.address = address.getHostString() + ":" + address.getPort();
         this.databaseMgr = databaseMgr;
-        this.metricsService = new MetricsService(name);
-        (new Thread(() -> metricsService.serve(null, middleware))).start();
-        sessionServices = new ConcurrentHashMap<>();
+        this.sessionServices = new ConcurrentHashMap<>();
+        this.metricsService = metricsService;
 
         if (LOG.isDebugEnabled()) {
             Executors.scheduled().scheduleAtFixedRate(this::logConnectionStates, 0, 1, TimeUnit.MINUTES);

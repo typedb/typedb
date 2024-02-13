@@ -18,7 +18,6 @@
 package com.vaticle.typedb.core.server;
 
 import com.eclipsesource.json.JsonObject;
-import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -33,13 +32,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpClientCodec;
-import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
@@ -49,7 +43,13 @@ import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.ssl.SslContext;
 
 import javax.annotation.Nullable;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.X509Certificate;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -62,10 +62,8 @@ import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderValues.CLOSE;
 import static io.netty.handler.codec.http.HttpHeaderValues.TEXT_PLAIN;
-import static io.netty.handler.codec.http.HttpMethod.POST;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 public class MetricsService {
@@ -90,12 +88,25 @@ public class MetricsService {
     private final ConcurrentMap<NetworkRequestKind, AtomicLong> successfulRequestCounts = new ConcurrentHashMap<>();
     private final ConcurrentMap<GaugeKind, AtomicLong> gauges = new ConcurrentHashMap<>();
 
+    private SSLContext sslContext;
+
+    private final String serverID;
     private final String name;
+    private final String version;
+    private final String reportingURI;
 
     private ScheduledFuture<?> pushScheduledTask;
 
-    MetricsService(String name) {
+    MetricsService(
+        String serverID, String name, String version,
+        boolean isReportingEnabled, String reportingURI,
+        boolean isScrapeEndpointEnabled, Integer scrapePort
+    ) {
+        this.serverID = serverID;
         this.name = name;
+        this.version = version;
+        this.reportingURI = reportingURI;
+
         for (var kind : NetworkRequestKind.values()) {
             attemptedRequestCounts.put(kind, new AtomicLong(0));
             successfulRequestCounts.put(kind, new AtomicLong(0));
@@ -103,26 +114,49 @@ public class MetricsService {
         for (var kind : GaugeKind.values()) {
             gauges.put(kind, new AtomicLong(0));
         }
-        push();
+
+        if (isScrapeEndpointEnabled) {
+            (new Thread(() -> this.serve(scrapePort, null))).start();
+        }
+
+        if (isReportingEnabled) {
+        try {
+            sslContext = SSLContext.getInstance("SSL");
+            sslContext.init(null, new TrustManager[] {
+                    new X509TrustManager() {
+                        @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
+                        @Override public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                        @Override public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                    }
+            }, new java.security.SecureRandom());
+            push();
+        } catch (Exception ignored) {
+            sslContext = null;
+        }
+        }
     }
 
     private void push() {
-        EventLoopGroup group = new NioEventLoopGroup(1);
         try {
-            Bootstrap bootstrap = new Bootstrap();
-            bootstrap.group(group).channel(NioSocketChannel.class).handler(new ChannelInitializer<SocketChannel>() {
-                @Override protected void initChannel(SocketChannel socketChannel) { socketChannel.pipeline().addLast(new HttpClientCodec()); }
-            });
-            Channel channel = bootstrap.connect("localhost", 1500).sync().channel();
-            FullHttpRequest request = new DefaultFullHttpRequest(HTTP_1_1, POST, "/", Unpooled.wrappedBuffer((formatJSON()).getBytes(StandardCharsets.UTF_8)));
-            request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
-            request.headers().set(CONTENT_TYPE, TEXT_PLAIN);
-            channel.writeAndFlush(request).sync();
-            channel.closeFuture().sync();
+            HttpsURLConnection conn = (HttpsURLConnection)(new URL(reportingURI)).openConnection();
+
+            conn.setSSLSocketFactory(sslContext.getSocketFactory());
+
+            conn.setRequestMethod("POST");
+
+            conn.setRequestProperty("Charset", "utf-8");
+            conn.setRequestProperty("Connection", "close");
+            conn.setRequestProperty("Content-Type", "application/json");
+
+            conn.setDoOutput(true);
+            conn.getOutputStream().write(formatJSON().getBytes(StandardCharsets.UTF_8));
+
+            conn.connect();
+
+            conn.getInputStream().readAllBytes();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            group.shutdownGracefully();
             pushScheduledTask = scheduled().schedule(this::push, 1, HOURS);
         }
     }
@@ -139,7 +173,7 @@ public class MetricsService {
         gauges.get(kind).set(value);
     }
 
-    public void serve(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
+    public void serve(Integer scrapePort, @Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
         EventLoopGroup group = new NioEventLoopGroup(1);
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
@@ -147,7 +181,7 @@ public class MetricsService {
                 .group(group)
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new MetricsInitializer(sslContext, middleware));
-            Channel channel = bootstrap.bind(4104).sync().channel();
+            Channel channel = bootstrap.bind(scrapePort).sync().channel();
             channel.closeFuture().sync();
         } catch (InterruptedException e) {
             // do nothing
@@ -231,10 +265,10 @@ public class MetricsService {
 
     private String formatPrometheus() {
         StringBuilder buf = new StringBuilder(
-                "# TypeDB version: " + name + " " + Version.VERSION + "\n" +
+                "# TypeDB version: " + name + " " + version + "\n" +
                         "# Time zone: " + TimeZone.getDefault().getID() + "\n" +
                         "# Java version: " + System.getProperty("java.vendor") + " " + System.getProperty("java.version") + "\n" +
-                        "# Platform: " + System.getProperty("os.name") + " " + System.getProperty( "os.arch") + " " + System.getProperty("os.version") + "\n" +
+                        "# Platform: " + System.getProperty("os.name") + " " + System.getProperty("os.arch") + " " + System.getProperty("os.version") + "\n" +
                         "\n" +
                         "# TYPE attempted_requests_total counter\n"
         );
@@ -259,7 +293,8 @@ public class MetricsService {
         JsonObject metrics = new JsonObject();
 
         JsonObject system = new JsonObject();
-        system.add("TypeDB version", name + " " + Version.VERSION);
+        system.add("TypeDB version", name + " " + version);
+        system.add("Server ID", serverID);
         system.add("Time zone", TimeZone.getDefault().getID());
         system.add("Java version", System.getProperty("java.vendor") + " " + System.getProperty("java.version"));
         system.add("Platform", System.getProperty("os.name") + " " + System.getProperty("os.arch") + " " + System.getProperty("os.version"));

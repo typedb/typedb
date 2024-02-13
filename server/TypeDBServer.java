@@ -87,6 +87,7 @@ public class TypeDBServer implements AutoCloseable {
     protected final CoreDatabaseManager databaseMgr;
     protected final io.grpc.Server server;
     protected final boolean debug;
+    private final MetricsService metricsService;
     protected TypeDBService typeDBService;
     protected AtomicBoolean isOpen;
     private final CoreConfig config;
@@ -112,6 +113,8 @@ public class TypeDBServer implements AutoCloseable {
         verifyPort();
         createOrVerifyDataDir();
         configureDiagnostics();
+
+        metricsService = configureMetrics();
 
         if (debug) logger().info("Running {} in debug mode.", name());
 
@@ -195,11 +198,19 @@ public class TypeDBServer implements AutoCloseable {
         try {
             Diagnostics.initialise(
                     config.diagnostics().reporting().enable(), serverID(), name(), Version.VERSION,
-                    Constants.DIAGNOSTICS_REPORTING_URI, new CoreErrorReporter()
+                    config.diagnostics().reporting().uri().orElse(null), new CoreErrorReporter()
             );
         } catch (Throwable e) {
             LOG.debug("Failed to initialise diagnostics: ", e);
         }
+    }
+
+    protected MetricsService configureMetrics() {
+        return new MetricsService(
+                serverID(), name(), Version.VERSION,
+                config.metrics().reporting().enable(), config.metrics().reporting().uri().orElse(null),
+                config.metrics().scrapeEndpoint().enable(), config.metrics().scrapeEndpoint().port().orElse(null)
+        );
     }
 
     protected String serverID() {
@@ -226,7 +237,7 @@ public class TypeDBServer implements AutoCloseable {
     protected io.grpc.Server rpcServer() {
         assert Executors.isInitialised();
 
-        typeDBService = new TypeDBService(config.server().address(), databaseMgr, name());
+        typeDBService = new TypeDBService(config.server().address(), databaseMgr, metricsService);
         MigratorService migratorService = new MigratorService(databaseMgr, Version.VERSION);
 
         return NettyServerBuilder.forAddress(config.server().address())
