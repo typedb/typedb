@@ -15,14 +15,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::cmp::Ordering;
 use std::error::Error;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::path::PathBuf;
 
 use speedb::{DB, DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions};
 
+use bytes::byte_array::ByteArray;
+use iterator::State;
+use logger::result::ResultExt;
+
 pub type KeyspaceId = u8;
 
+pub(crate) const KEYSPACE_ID_RESERVED_UNSET: KeyspaceId = 0 as KeyspaceId;
 pub(crate) const KEYSPACE_ID_MAX: usize = KeyspaceId::MAX as usize + 1;
 
 
@@ -148,18 +154,18 @@ impl Keyspace {
     }
 }
 
-pub(crate) struct KeyspacePrefixIterator<'a> {
-    prefix: &'a [u8],
-    iterator: DBRawIterator<'a>,
-    state: State,
+impl Debug for Keyspace {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Keyspace[name={}, path={}, id={}, next_checkpoint_id={}]",
+               self.name(), self.path.to_str().unwrap(), self.keyspace_id, self.next_checkpoint_id
+        )
+    }
 }
 
-#[derive(Debug, PartialEq, Eq)]
-enum State {
-    EMPTY,
-    READY,
-    ERROR,
-    DONE,
+pub struct KeyspacePrefixIterator<'a> {
+    prefix: &'a [u8],
+    iterator: DBRawIterator<'a>,
+    state: State<speedb::Error>,
 }
 
 impl<'s> KeyspacePrefixIterator<'s> {
@@ -170,215 +176,130 @@ impl<'s> KeyspacePrefixIterator<'s> {
         let mut read_opts = keyspace.new_read_options();
         let mut raw_iterator: DBRawIteratorWithThreadMode<'s, DB> = keyspace.kv_storage.raw_iterator_opt(read_opts);
 
-        let mut iter = KeyspacePrefixIterator {
+        KeyspacePrefixIterator {
             prefix: prefix,
             iterator: raw_iterator,
-            state: State::EMPTY,
-        };
-        iter.seek(prefix);
-        iter
+            state: State::Init,
+        }
     }
-    //
-    // pub(crate) fn next(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
-    //     if self.done {
-    //         return None;
-    //     } else if !self.iterator.valid() {
-    //         self.done = true;
-    //         return None;
-    //     } else if self.iterator.status().is_err() {
-    //         self.done = true;
-    //         return Some(Err(KeyspaceError {
-    //             kind: KeyspaceErrorKind::FailedIterate {
-    //                 source: self.iterator.status().err().unwrap()
-    //             }
-    //         }));
-    //     } else {
-    //         let key = self.iterator.key().unwrap();
-    //         if key.len() < self.prefix.len() || &key[0..self.prefix.len()] != self.prefix {
-    //             self.done = true;
-    //             return None;
-    //         } else {
-    //             let value = self.iterator.value().unwrap();
-    //             Some(Ok((key, value)))
-    //         }
-    //     }
-    // }
+
+    pub(crate) fn peek(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
+        match &self.state {
+            State::Init => {
+                self.iterator.seek(self.prefix);
+                self.update_state();
+                self.peek()
+            }
+            State::ItemReady => {
+                let key = self.iterator.key().unwrap();
+                let value = self.iterator.value().unwrap();
+                Some(Ok((key, value)))
+            }
+            State::ItemUsed => {
+                self.advance_and_update_state();
+                self.peek()
+            }
+            State::Error(error) => Some(Err(KeyspaceError {
+                kind: KeyspaceErrorKind::FailedIterate { source: error.clone() }
+            })),
+            State::Done => None
+        }
+    }
+
+    pub(crate) fn next(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
+        match &self.state {
+            State::Init => {
+                self.iterator.seek(self.prefix);
+                self.update_state();
+                self.next()
+            }
+            State::ItemReady => {
+                self.state = State::ItemUsed;
+                let key = self.iterator.key().unwrap();
+                let value = self.iterator.value().unwrap();
+                Some(Ok((key, value)))
+            }
+            State::ItemUsed => {
+                self.advance_and_update_state();
+                self.next()
+            }
+            State::Error(error) => Some(Err(KeyspaceError {
+                kind: KeyspaceErrorKind::FailedIterate { source: error.clone() }
+            })),
+            State::Done => None
+        }
+    }
 
     pub(crate) fn seek(&mut self, key: &[u8]) {
-        if self.has_valid_prefix(key) {
-            self.iterator.seek(key);
-            self.check();
-        } else {
-            self.state = State::DONE;
-        }
-    }
-
-    pub(crate) fn advance(&mut self) {
-        assert!(self.state != State::DONE && self.state != State::ERROR);
-        self.iterator.next();
-        self.check();
-    }
-
-    fn check(&mut self) {
-        if self.iterator.valid() {
-            self.state = State::READY;
-        } else if self.iterator.status().is_err() {
-            self.state = State::ERROR;
-        } else {
-            self.state = State::DONE;
-        }
-    }
-
-    pub(crate) fn peek(&self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
-        if self.state == State::DONE {
-            return None;
-        } else if self.state == State::ERROR {
-            return Some(Err(KeyspaceError {
-                kind: KeyspaceErrorKind::FailedIterate {
-                    source: self.iterator.status().err().unwrap()
+        match &self.state {
+            State:: Done | State::Error(_) => {},
+            State::Init => {
+                if self.has_valid_prefix(key) {
+                    self.iterator.seek(key);
+                    self.update_state();
+                } else {
+                    self.state = State:: Done;
                 }
-            }));
-        } else if self.state == State::READY {
-            let key = self.iterator.key().unwrap();
-            let value = self.iterator.value().unwrap();
-            Some(Ok((key, value)))
+            }
+            State::ItemReady => {
+                let valid_prefix = self.has_valid_prefix(key);
+                if valid_prefix {
+                    match self.peek().unwrap().unwrap().0.cmp(key) {
+                        Ordering::Less => {
+                            self.iterator.seek(key);
+                            self.update_state();
+                        }
+                        Ordering::Equal => {}
+                        Ordering::Greater => unreachable!("Cannot seek backward.")
+                    }
+                } else {
+                    self.state = State:: Done;
+                }
+            }
+            State::ItemUsed => {
+                self.advance_and_update_state();
+                self.seek(key)
+            }
+        }
+    }
+
+    pub(crate) fn advance_and_update_state(&mut self) {
+        assert!(matches!(self.state, State::ItemUsed));
+        self.iterator.next();
+        self.update_state();
+    }
+
+    fn update_state(&mut self) {
+        if self.iterator.valid() {
+            if self.has_valid_prefix(self.iterator.key().unwrap()) {
+                self.state = State::ItemReady;
+            } else {
+                self.state = State::Done;
+            }
+        } else if self.iterator.status().is_err() {
+            self.state = State::Error(self.iterator.status().err().unwrap().clone());
         } else {
-            unreachable!("peek() can only be called after check() prepares the state.");
+            self.state = State::Done;
         }
     }
 
     fn has_valid_prefix(&self, key: &[u8]) -> bool {
-        return key.len() >= self.prefix.len() || &key[0..self.prefix.len()] == self.prefix;
+        return key.len() >= self.prefix.len() && &key[0..self.prefix.len()] == self.prefix;
+    }
+
+    pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(mut self) -> Vec<(ByteArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)> {
+        let mut vec = Vec::new();
+        loop {
+            let item = self.next();
+            if item.is_none() {
+                break;
+            }
+            let (key, value) = item.unwrap().unwrap_or_log();
+            vec.push((ByteArray::<INLINE_KEY>::from(key), ByteArray::<INLINE_VALUE>::from(value)));
+        }
+        vec
     }
 }
-
-
-//
-//
-// pub(crate) struct KeyspacePrefixIterator<'s, C, K, V>
-//     where C: IteratorController<K, V> {
-//     prefix: &'s [u8],
-//     iterator: DBRawIterator<'s>,
-//     controller: C,
-//     key: PhantomData<K>,
-//     value: PhantomData<V>,
-//     done: bool,
-// }
-//
-// impl<'s, C, K, V> KeyspacePrefixIterator<'s, C, K, V>
-//     where C: IteratorController<K, V> {
-//     fn new(keyspace: &'s Keyspace, prefix: &'s [u8], controller: C) -> KeyspacePrefixIterator<'s, C, K, V> {
-//
-//         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
-//         // read_opts.set_prefix_same_as_start(true);
-//         let mut read_opts = keyspace.new_read_options();
-//         let mut raw_iterator: DBRawIteratorWithThreadMode<'s, DB> = keyspace.kv_storage.raw_iterator_opt(read_opts);
-//         raw_iterator.seek(prefix);
-//
-//         KeyspacePrefixIterator {
-//             prefix: prefix,
-//             iterator: raw_iterator,
-//             controller: controller,
-//             key: PhantomData::default(),
-//             value: PhantomData::default(),
-//             done: false,
-//         }
-//     }
-//
-//     fn seek(&mut self, key: &[u8]) {
-//         self.iterator.seek(key);
-//     }
-// }
-//
-// impl<'s, C, K, V> Iterator for KeyspacePrefixIterator<'s, C, K, V>
-//     where C: IteratorController<K, V> {
-//     type Item = Result<(K, V), KeyspaceError>;
-//
-//     fn next(&mut self) -> Option<Self::Item> {
-//         loop {
-//             if self.done {
-//                 return None;
-//             } else if !self.iterator.valid() {
-//                 self.done = true;
-//                 return None;
-//             } else if self.iterator.status().is_err() {
-//                 self.done = true;
-//                 return Some(Err(KeyspaceError {
-//                     kind: KeyspaceErrorKind::FailedIterate {
-//                         source: self.iterator.status().err().unwrap()
-//                     }
-//                 }));
-//             } else {
-//                 let key = self.iterator.key().unwrap();
-//                 if key.len() < self.prefix.len() || &key[0..self.prefix.len()] != self.prefix {
-//                     self.done = true;
-//                     return None;
-//                 }
-//
-//                 let value = self.iterator.value().unwrap();
-//                 let control = self.controller.control(key, value);
-//                 match control {
-//                     IterControl::IgnoreSingle => continue,
-//                     IterControl::IgnoreUntil(k) => {
-//                         self.iterator.seek(k);
-//                         continue;
-//                     }
-//                     IterControl::Accept(k, v) => return Some(Ok::<(K, V), KeyspaceError>((k, v))),
-//                     IterControl::Stop => {
-//                         self.done = true;
-//                         return None;
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
-//
-// pub(crate) trait IteratorController<K, V> {
-//     fn control<'a>(&'a mut self, key: &[u8], value: &[u8]) -> IterControl<'a, K, V>;
-// }
-//
-// pub(crate) enum IterControl<'a, K, V> {
-//     IgnoreSingle,
-//     IgnoreUntil(&'a [u8]),
-//     Accept(K, V),
-//     Stop,
-// }
-//
-// impl<'a, K, V> IterControl<'a, K, V> {
-//     pub(crate) fn map<F, T, U>(self, mut func: F) -> IterControl<'a, T, U>
-//         where F: FnMut(K, V) -> (T, U) {
-//         match self {
-//             IterControl::IgnoreSingle => IterControl::IgnoreSingle,
-//             IterControl::IgnoreUntil(k) => IterControl::IgnoreUntil(k),
-//             IterControl::Accept(k, v) => {
-//                 let (t, u) = func(k, v);
-//                 IterControl::Accept(t, u)
-//             }
-//             IterControl::Stop => IterControl::Stop
-//         }
-//     }
-//
-//     const fn is_ignore_single(&self) -> bool {
-//         matches!(self, IterControl::IgnoreSingle)
-//     }
-//
-//     const fn is_accept(&self) -> bool {
-//         matches!(self, IterControl::Accept(_, _))
-//     }
-//
-//     const fn is_stop(&self) -> bool {
-//         matches!(self, IterControl::Stop)
-//     }
-//
-//     fn try_into_ignore_until(self) -> Option<&'a [u8]> {
-//         if let IterControl::IgnoreUntil(bytes) = self {
-//             Some(bytes)
-//         } else {
-//             None
-//         }
-//     }
-// }
 
 #[derive(Debug)]
 pub struct KeyspaceError {

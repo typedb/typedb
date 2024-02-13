@@ -19,117 +19,117 @@
 use std::rc::Rc;
 
 use rand;
+use bytes::byte_array::ByteArray;
 
-// #[test]
-// fn create_delete() {
-//     init_logging();
-//     let storage_path = create_tmp_dir();
-//     let storage_result = MVCCStorage::new(Rc::from("storage"), &storage_path);
-//     assert!(storage_result.is_ok());
-//     let storage = storage_result.unwrap();
-//     let delete_result = storage.delete_storage();
-//     assert!(delete_result.is_ok());
-//     delete_dir(storage_path)
-// }
-//
-// #[test]
-// fn create_sections() {
-//     init_logging();
-//     let storage_path = create_tmp_dir();
-//     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-//     let sec_1_prefix: u8 = 0x0;
-//     let create_1_result = storage.create_keyspace("sec_1", sec_1_prefix, &storage::StorageSection::new_db_options());
-//     assert!(create_1_result.is_ok());
-//     let sec_2_prefix: u8 = 0x10;
-//     let create_2_result = storage.create_keyspace("sec_2", sec_2_prefix, &storage::StorageSection::new_db_options());
-//     assert!(create_2_result.is_ok(), "{create_2_result:?}");
-//     let delete_result = storage.delete_storage();
-//     assert!(delete_result.is_ok(), "{:?}", delete_result);
-//
-//     delete_dir(storage_path)
-// }
-//
-// #[test]
-// fn create_sections_errors() {
-//     init_logging();
-//     let storage_path = create_tmp_dir();
-//     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-//     let sec_1_prefix: u8 = 0x0;
-//     storage.create_keyspace("sec_1", sec_1_prefix, &storage::StorageSection::new_db_options()).unwrap();
-//
-//     let sec_2_prefix: u8 = 0x10;
-//     let name_error = storage.create_keyspace("sec_1", sec_2_prefix, &storage::StorageSection::new_db_options());
-//     assert!(matches!(name_error, Err(MVCCStorageError{
-//         kind: MVCCStorageErrorKind::SectionError {
-//             source: MVCCStorageSectionError {
-//                 kind: MVCCStorageSectionErrorKind::FailedToCreateSectionNameExists{..},
-//                 ..
-//             },
-//             ..
-//         },
-//         ..
-//     })), "{}", name_error.unwrap_err());
-//
-//     let duplicate_prefix: u8 = 0x0;
-//     let prefix_error = storage.create_keyspace("sec_2", duplicate_prefix, &storage::StorageSection::new_db_options());
-//     assert!(matches!(prefix_error, Err(MVCCStorageError{
-//         kind: MVCCStorageErrorKind::SectionError {
-//             source: MVCCStorageSectionError {
-//                 kind: MVCCStorageSectionErrorKind::FailedToCreateSectionIDExists{..},
-//                 ..
-//             },
-//             ..
-//         },
-//         ..
-//     })), "{}", prefix_error.unwrap_err());
-//
-//     delete_dir(storage_path)
-// }
-//
-// #[test]
-// fn get_put_iterate() {
-//     init_logging();
-//     let storage_path = create_tmp_dir();
-//     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-//     let sec_1_id: u8 = 0x0;
-//     storage.create_keyspace("sec_1", sec_1_id, &storage::StorageSection::new_db_options()).unwrap();
-//     let sec_2_id: u8 = 0x10;
-//     storage.create_keyspace("sec_2", sec_2_id, &storage::StorageSection::new_db_options()).unwrap();
-//
-//     let sec_1_key_1 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_1_id, 0x0, 0x0, 0x1], sec_1_id)));
-//     let sec_1_key_2 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_1_id, 0x1, 0x0, 0x10], sec_1_id)));
-//     let sec_1_key_3 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_1_id, 0x1, 0x0, 0xff], sec_1_id)));
-//     let sec_1_key_4 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_1_id, 0x2, 0x0, 0xff], sec_1_id)));
-//     storage.put_raw(&sec_1_key_1, &StorageValue::Empty);
-//     storage.put_raw(&sec_1_key_2, &StorageValue::Empty);
-//     storage.put_raw(&sec_1_key_3, &StorageValue::Empty);
-//     storage.put_raw(&sec_1_key_4, &StorageValue::Empty);
-//
-//     let sec_2_key_1 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_2_id, 0x1, 0x0, 0x1], sec_2_id)));
-//     let sec_2_key_2 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_2_id, 0xb, 0x0, 0x10], sec_2_id)));
-//     let sec_2_key_3 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_2_id, 0x5, 0x0, 0xff], sec_2_id)));
-//     let sec_2_key_4 = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_2_id, 0x2, 0x0, 0xff], sec_2_id)));
-//     storage.put_raw(&sec_2_key_1, &StorageValue::Empty);
-//     storage.put_raw(&sec_2_key_2, &StorageValue::Empty);
-//     storage.put_raw(&sec_2_key_3, &StorageValue::Empty);
-//     storage.put_raw(&sec_2_key_4, &StorageValue::Empty);
-//
-//     let first_value = storage.get_raw(&sec_1_key_1);
-//     assert_eq!(first_value, Some(StorageValue::Empty));
-//
-//     let second_value = storage.get_raw(&sec_2_key_1);
-//     assert_eq!(second_value, Some(StorageValue::Empty));
-//
-//     let prefix = StorageKeyReference::Fixed(StorageKeyReference::from((vec![sec_1_id, 0x1], sec_1_id)));
-//     let entries: Vec<(Vec<u8>, StorageValue)> = storage.iterate_prefix_direct(&prefix)
-//         .map(|(key, value)| (key.to_vec(), value))
-//         .collect();
-//     assert_eq!(entries, vec![
-//         (sec_1_key_2.bytes().to_vec(), StorageValue::Empty),
-//         (sec_1_key_3.bytes().to_vec(), StorageValue::Empty),
-//         (sec_1_key_4.bytes().to_vec(), StorageValue::Empty),
-//     ]);
-//
-//     delete_dir(storage_path)
-// }
-//
+use storage::error::{MVCCStorageError, MVCCStorageErrorKind};
+use storage::key_value::{StorageKeyArray, StorageKeyReference, StorageValue};
+use storage::MVCCStorage;
+use storage::keyspace::keyspace::{KeyspaceId};
+use test_utils::{create_tmp_dir, delete_dir, init_logging};
+
+#[test]
+fn create_delete() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let storage_result = MVCCStorage::new(Rc::from("storage"), &storage_path);
+    assert!(storage_result.is_ok());
+    let storage = storage_result.unwrap();
+    let delete_result = storage.delete_storage();
+    assert!(delete_result.is_ok());
+    delete_dir(storage_path)
+}
+
+#[test]
+fn create_keyspaces() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let options = MVCCStorage::new_db_options();
+    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let keyspace_1_id: KeyspaceId = 0x1;
+    let create_1_result = storage.create_keyspace("keyspace_1", keyspace_1_id, &options);
+    assert!(create_1_result.is_ok());
+    let keyspace_2_id: KeyspaceId = 0x10;
+    let create_2_result = storage.create_keyspace("keyspace_2", keyspace_2_id, &options);
+    assert!(create_2_result.is_ok(), "{create_2_result:?}");
+    let delete_result = storage.delete_storage();
+    assert!(delete_result.is_ok(), "{:?}", delete_result);
+
+    delete_dir(storage_path)
+}
+
+#[test]
+fn create_keyspaces_errors() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let options = MVCCStorage::new_db_options();
+    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let keyspace_1_id: KeyspaceId = 0x1;
+    storage.create_keyspace("keyspace_1", keyspace_1_id, &options).unwrap();
+
+    let keyspace_2_id: KeyspaceId = 0x10;
+    let name_error = storage.create_keyspace("keyspace_1", keyspace_2_id, &options);
+    assert!(matches!(name_error, Err(MVCCStorageError{
+        kind: MVCCStorageErrorKind::KeyspaceNameExists {
+            ..
+        },
+        ..
+    })), "{}", name_error.unwrap_err());
+
+    let duplicate_prefix: KeyspaceId = 0x1;
+    let prefix_error = storage.create_keyspace("keyspace_2", duplicate_prefix, &options);
+    dbg!(&prefix_error);
+    assert!(matches!(prefix_error, Err(MVCCStorageError{
+        kind: MVCCStorageErrorKind::KeyspaceIdExists {
+            ..
+        },
+        ..
+    })), "{}", prefix_error.unwrap_err());
+
+    delete_dir(storage_path)
+}
+
+#[test]
+fn get_put_iterate() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let options = MVCCStorage::new_db_options();
+    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let keyspace_1_id: u8 = 0x1;
+    storage.create_keyspace("keyspace_1", keyspace_1_id, &options).unwrap();
+    let keyspace_2_id: u8 = 0x10;
+    storage.create_keyspace("keyspace_2", keyspace_2_id, &options).unwrap();
+
+    let keyspace_1_key_1 = StorageKeyArray::<64>::from((vec![0x0, 0x0, 0x1], keyspace_1_id));
+    let keyspace_1_key_2 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0x10], keyspace_1_id));
+    let keyspace_1_key_3 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0xff], keyspace_1_id));
+    let keyspace_1_key_4 = StorageKeyArray::<64>::from((vec![0x2, 0x0, 0xff], keyspace_1_id));
+    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_1), &StorageValue::<'_, 128>::empty());
+    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_2), &StorageValue::<'_, 128>::empty());
+    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_3), &StorageValue::<'_, 128>::empty());
+    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_4), &StorageValue::<'_, 128>::empty());
+
+    let keyspace_2_key_1 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0x1], keyspace_2_id));
+    let keyspace_2_key_2 = StorageKeyArray::<64>::from((vec![0xb, 0x0, 0x10], keyspace_2_id));
+    let keyspace_2_key_3 = StorageKeyArray::<64>::from((vec![0x5, 0x0, 0xff], keyspace_2_id));
+    let keyspace_2_key_4 = StorageKeyArray::<64>::from((vec![0x2, 0x0, 0xff], keyspace_2_id));
+    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_1), &StorageValue::<'_, 128>::empty());
+    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_2), &StorageValue::<'_, 128>::empty());
+    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_3), &StorageValue::<'_, 128>::empty());
+    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_4), &StorageValue::<'_, 128>::empty());
+
+    let first_value = storage.get_raw(StorageKeyReference::from(&keyspace_1_key_1), |value| StorageValue::from(Some(Box::from(value))));
+    assert_eq!(first_value, Some(StorageValue::<'_, 128>::empty()));
+
+    let second_value = storage.get_raw(StorageKeyReference::from(&keyspace_2_key_1), |value| StorageValue::<'_, 128>::from(Some(Box::from(value))));
+    assert_eq!(second_value, Some(StorageValue::empty()));
+
+    let prefix = StorageKeyArray::<64>::from((vec![0x1], keyspace_1_id));
+    let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage.iterate_keyspace_prefix(StorageKeyReference::from(&prefix)).collect_cloned::<64, 128>();
+    assert_eq!(items, vec![
+        (keyspace_1_key_2.into_byte_array(), ByteArray::<128>::empty()),
+        (keyspace_1_key_3.into_byte_array(), ByteArray::<128>::empty()),
+    ]);
+
+    delete_dir(storage_path)
+}
+

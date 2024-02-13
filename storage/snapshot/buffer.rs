@@ -35,8 +35,8 @@ use crate::keyspace::keyspace::{KEYSPACE_ID_MAX, KeyspaceId};
 use crate::snapshot::snapshot::SnapshotError;
 use crate::snapshot::write::Write;
 
-pub(crate) const BUFFER_INLINE_KEY: usize = 48;
-pub(crate) const BUFFER_INLINE_VALUE: usize = 128;
+pub const BUFFER_INLINE_KEY: usize = 48;
+pub const BUFFER_INLINE_VALUE: usize = 128;
 
 #[derive(Debug)]
 pub(crate) struct KeyspaceBuffers {
@@ -158,7 +158,7 @@ pub(crate) struct BufferedPrefixIterator {
 impl BufferedPrefixIterator {
     fn new(range: Vec<(StorageKeyArray<BUFFER_INLINE_KEY>, Write)>) -> BufferedPrefixIterator {
         BufferedPrefixIterator {
-            state: State::Unknown,
+            state: State::Init,
             index: 0,
             range: range,
         }
@@ -167,13 +167,17 @@ impl BufferedPrefixIterator {
     pub(crate) fn peek(&mut self) -> Option<Result<(&StorageKeyArray<BUFFER_INLINE_KEY>, &Write), SnapshotError>> {
         match &self.state {
             State::Done => None,
-            State::ItemUsed | State::Unknown => {
+            State::Init => {
                 self.update_state();
                 self.peek()
             }
             State::ItemReady => {
                 let (key, value) = &self.range[self.index];
                 Some(Ok((key, value)))
+            }
+            State::ItemUsed => {
+                self.advance_and_update_state();
+                self.peek()
             }
             State::Error(_) => unreachable!("Unused state."),
         }
@@ -182,32 +186,32 @@ impl BufferedPrefixIterator {
     pub(crate) fn next(&mut self) -> Option<Result<(&StorageKeyArray<BUFFER_INLINE_KEY>, &Write), SnapshotError>> {
         match &self.state {
             State::Done => None,
-            State::Unknown => {
+            State::Init => {
                 self.update_state();
                 self.next()
             }
             State::ItemReady => {
+                let (key, value) = &self.range[self.index];
+                let value = Some(Ok((key, value)));
                 self.state = State::ItemUsed;
-                let value = self.peek();
                 value
             }
             State::ItemUsed => {
-                self.advance();
-                self.update_state();
+                self.advance_and_update_state();
                 self.next()
             }
             State::Error(_) => unreachable!("Unused state."),
         }
     }
 
-    fn advance(&mut self) {
-        assert_eq!(self.state, State::ItemReady);
+    fn advance_and_update_state(&mut self) {
+        assert_eq!(self.state, State::ItemUsed);
         self.index += 1;
-        self.state = State::ItemUsed;
+        self.update_state();
     }
 
     fn update_state(&mut self) {
-        assert_eq!(self.state, State::ItemUsed);
+        assert!(matches!(self.state, State::ItemUsed) || matches!(self.state, State::Init));
         if self.index < self.range.len() {
             self.state = State::ItemReady;
         } else {
@@ -218,7 +222,7 @@ impl BufferedPrefixIterator {
     fn seek(&mut self, target: impl Borrow<[u8]>) {
         match &self.state {
             State::Done => {}
-            State::Unknown => {
+            State::Init => {
                 self.update_state();
                 self.seek(target);
             }
@@ -316,7 +320,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffers {
                     buffers: buffers
                 })
             }
-            //
+
             // fn visit_map<V>(self, mut map: V) -> Result<KeyspaceBuffers, V::Error>
             //     where
             //         V: MapAccess<'de>,
@@ -346,8 +350,9 @@ impl<'de> Deserialize<'de> for KeyspaceBuffers {
 
 impl Serialize for KeyspaceBuffer {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        let mut state = serializer.serialize_struct("KeyspaceBuffer", 1)?;
-        state.serialize_field("buffer", &*self.buffer.read().unwrap())?;
+        let mut state = serializer.serialize_struct("KeyspaceBuffer", 2)?;
+        state.serialize_field("KeyspaceId", &self.keyspace_id)?;
+        state.serialize_field("Buffer", &*self.buffer.read().unwrap())?;
         state.end()
     }
 }
@@ -439,6 +444,6 @@ impl<'de> Deserialize<'de> for KeyspaceBuffer {
             }
         }
 
-        deserializer.deserialize_struct("KeyspaceBuffer", &["Buffer"], KeyspaceBufferVisitor)
+        deserializer.deserialize_struct("KeyspaceBuffer", &["KeyspaceID", "Buffer"], KeyspaceBufferVisitor)
     }
 }

@@ -17,6 +17,7 @@
 
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
+use std::sync::Arc;
 use durability::DurabilityError;
 use crate::isolation_manager::IsolationError;
 use crate::keyspace::keyspace::{KeyspaceError, KeyspaceId};
@@ -31,8 +32,9 @@ pub struct MVCCStorageError {
 pub enum MVCCStorageErrorKind {
     FailedToDeleteStorage { source: std::io::Error },
     KeyspaceNameExists { keyspace: String },
+    KeyspaceIdReserved { keyspace: String, keyspace_id: KeyspaceId },
     KeyspaceIdExists { new_keyspace: String, keyspace_id: KeyspaceId, existing_keyspace: String },
-    KeyspaceError { source: KeyspaceError, keyspace: String },
+    KeyspaceError { source: Arc<KeyspaceError>, keyspace: String },
     KeyspaceDeleteError { source: KeyspaceError },
     IsolationError { source: IsolationError },
     DurabilityError { source: DurabilityError },
@@ -52,6 +54,7 @@ impl Error for MVCCStorageError {
             MVCCStorageErrorKind::IsolationError { source, .. } => Some(source),
             MVCCStorageErrorKind::DurabilityError { source, .. } => Some(source),
             MVCCStorageErrorKind::KeyspaceNameExists { ..  } => None,
+            MVCCStorageErrorKind::KeyspaceIdReserved { .. } => None,
             MVCCStorageErrorKind::KeyspaceIdExists { .. } => None,
             MVCCStorageErrorKind::KeyspaceDeleteError { source } => Some(source),
         }

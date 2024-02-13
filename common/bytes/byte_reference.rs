@@ -33,6 +33,10 @@ impl<'bytes> ByteReference<'bytes> {
         self.bytes
     }
 
+    pub fn into_bytes(self) -> &'bytes [u8] {
+        self.bytes
+    }
+
     pub(crate) fn truncate(mut self, length: usize) -> ByteReference<'bytes> {
         assert!(length <= self.bytes.len());
         ByteReference {

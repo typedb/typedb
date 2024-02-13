@@ -17,20 +17,18 @@
 
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-use std::iter;
 use std::ops::RangeBounds;
 use std::sync::Arc;
-
-use itertools::Itertools;
 
 use bytes::byte_array::ByteArray;
 use durability::SequenceNumber;
 
+use crate::{MVCCPrefixIterator, MVCCStorage};
 use crate::error::MVCCStorageError;
 use crate::isolation_manager::CommitRecord;
-use crate::key_value::{StorageKey, StorageKeyArray, StorageValue, StorageValueArray};
-use crate::{MVCCPrefixIterator, MVCCStorage};
+use crate::key_value::{StorageKey, StorageKeyArray, StorageValueArray};
 use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, KeyspaceBuffers};
+use crate::snapshot::iterator::SnapshotPrefixIterator;
 
 pub enum Snapshot<'storage> {
     Read(ReadSnapshot<'storage>),
@@ -47,11 +45,11 @@ impl<'storage> Snapshot<'storage> {
 
     // pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>)
     //                              -> Box<dyn RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this> {
-        // match self {
-        //     Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
-        //     Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
-        // }
-        // todo!()
+    // match self {
+    //     Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
+    //     Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
+    // }
+    // todo!()
     // }
 }
 
@@ -71,10 +69,10 @@ impl<'storage> ReadSnapshot<'storage> {
 
     fn get<'snapshot>(&self, key: &StorageKey<'_, BUFFER_INLINE_KEY>) -> Option<StorageValueArray<BUFFER_INLINE_VALUE>> {
         // TODO: this clone may not be necessary - we could pass a reference up?
-        self.storage.get(key, &self.open_sequence_number, |reference| StorageValueArray::new(ByteArray::from(reference)))
+        self.storage.get(key, &self.open_sequence_number, |reference| StorageValueArray::new(ByteArray::from(reference.bytes())))
     }
 
-    fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) ->MVCCPrefixIterator { // impl RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
+    fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> MVCCPrefixIterator { // impl RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
         let mvcc_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
         mvcc_iterator
         //
@@ -128,8 +126,8 @@ impl<'storage> WriteSnapshot<'storage> {
                 &self.open_sequence_number,
                 |reference| {
                     // Only copy if the value is the same
-                    if reference == value.bytes() {
-                        Some(StorageValueArray::new(ByteArray::from(reference)))
+                    if reference.bytes() == value.bytes() {
+                        Some(StorageValueArray::new(ByteArray::from(reference.bytes())))
                     } else {
                         None
                     }
@@ -164,7 +162,7 @@ impl<'storage> WriteSnapshot<'storage> {
             let storage_value = self.storage.get(
                 key,
                 &self.open_sequence_number,
-                |reference| StorageValueArray::new(ByteArray::from(reference)),
+                |reference| StorageValueArray::new(ByteArray::from(reference.bytes())),
             );
             if storage_value.is_some() {
                 buffer.require_exists(ByteArray::from(key.bytes()), storage_value.as_ref().unwrap().clone());
@@ -183,48 +181,15 @@ impl<'storage> WriteSnapshot<'storage> {
         let keyspace_id = key.keyspace_id();
         let existing_value = self.buffers.get(keyspace_id).get(key.bytes());
         existing_value.map_or_else(
-            || self.storage.get(key, &self.open_sequence_number, |reference| StorageValueArray::new(ByteArray::from(reference))),
+            || self.storage.get(key, &self.open_sequence_number, |reference| StorageValueArray::new(ByteArray::from(reference.bytes()))),
             |existing| Some(existing),
         )
     }
 
-    pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> MVCCPrefixIterator { // impl RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
+    pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> SnapshotPrefixIterator<'this> {
         let storage_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
         let buffered_iterator = self.buffers.get(prefix.keyspace_id()).iterate_prefix(prefix.bytes());
-        storage_iterator
-        // storage_iterator.merge_join_by(
-        //     buffered_iterator,
-        //     |(k1, v1), (k2, v2)| k1.cmp(k2),
-        // ).filter_map(|ordering| match ordering {
-        //     EitherOrBoth::Both(Ok((k1, v1)), (k2, write2)) => match write2 {
-        //         Write::Insert(v2) => Some((k2, v2)),
-        //         Write::InsertPreexisting(v2, _) => Some((k2, v2)),
-        //         Write::RequireExists(v2) => {
-        //             debug_assert_eq!(v1, v2);
-        //             Some((k1, v1))
-        //         }
-        //         Write::Delete => None,
-        //     },
-        //     EitherOrBoth::Left(Ok((k1, v1))) => Some((k1, v1)),
-        //     EitherOrBoth::Right((k2, write2)) => match write2 {
-        //         Write::Insert(v2) => Some((k2, v2)),
-        //         Write::InsertPreexisting(v2, _) => Some((k2, v2)),
-        //         Write::RequireExists(_) => unreachable!("Invalid state: a key required to exist must also exists in Storage."),
-        //         Write::Delete => None,
-        //     },
-        //     EitherOrBoth::Both(Err(_), _) => {
-        //         panic!("Unhandled error in iteration")
-        //     },
-        //     EitherOrBoth::Left(Err(_)) => {
-        //         panic!("Unhandled error in iteration")
-        //     },
-        // })
-
-        // TODO replace
-
-        //     .map(|result| result.map(|(k, v)| {
-        //     (StorageKey::Reference(k), StorageValue::Reference(v))
-        // }))
+        SnapshotPrefixIterator::new(storage_iterator, Some(buffered_iterator))
     }
 
     pub fn commit(self) {

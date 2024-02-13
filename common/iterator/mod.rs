@@ -17,9 +17,9 @@
 
 use std::error::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum State<E> {
-    Unknown,
+    Init,
     ItemReady,
     ItemUsed,
     Error(E),

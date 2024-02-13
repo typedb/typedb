@@ -15,6 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::error::Error;
+use std::fmt::Display;
+use std::io::Read;
+use std::ops::Deref;
+use std::path::PathBuf;
+use std::rc::Rc;
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
+
 use itertools::Itertools;
 use speedb::{Options, WriteBatch};
 use tracing::Value;
@@ -23,39 +32,30 @@ use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
 use bytes::ByteArrayOrRef;
 use durability::{DurabilityRecord, DurabilityService, SequenceNumber, Sequencer, wal::WAL};
+use iterator::State;
 use logger::error;
 use logger::result::ResultExt;
 use primitive::U80;
 use snapshot::write::Write;
-use std::error::Error;
-use std::fmt::Display;
-use std::io::Read;
-use std::iter::{empty, once};
-use std::ops::Deref;
-use std::path::PathBuf;
-use std::rc::Rc;
-use std::sync::Arc;
-use std::sync::atomic::Ordering;
-use iterator::State;
 
 use crate::error::{MVCCStorageError, MVCCStorageErrorKind};
 use crate::isolation_manager::{CommitRecord, IsolationManager};
 use crate::key_value::{StorageKey, StorageKeyReference, StorageValue, StorageValueReference};
-use crate::keyspace::keyspace::{Keyspace, KEYSPACE_ID_MAX, KeyspaceId, KeyspacePrefixIterator};
+use crate::keyspace::keyspace::{Keyspace, KEYSPACE_ID_MAX, KEYSPACE_ID_RESERVED_UNSET, KeyspaceError, KeyspaceId, KeyspacePrefixIterator};
 use crate::snapshot::buffer::{BUFFER_INLINE_VALUE, KeyspaceBuffers};
 use crate::snapshot::snapshot::{ReadSnapshot, WriteSnapshot};
 
 pub mod error;
 pub mod key_value;
 mod isolation_manager;
-mod keyspace;
-mod snapshot;
+pub mod keyspace;
+pub mod snapshot;
 
 pub struct MVCCStorage {
     owner_name: Rc<str>,
     path: PathBuf,
     keyspaces: Vec<Keyspace>,
-    keyspaces_index: [KeyspaceId; KEYSPACE_ID_MAX],
+    keyspaces_index: [Option<KeyspaceId>; KEYSPACE_ID_MAX],
     // TODO: inject either a remote or local service
     durability_service: WAL,
     isolation_manager: IsolationManager,
@@ -73,7 +73,7 @@ impl MVCCStorage {
             owner_name: owner_name.clone(),
             path: storage_dir,
             keyspaces: Vec::new(),
-            keyspaces_index: [0; KEYSPACE_ID_MAX],
+            keyspaces_index: core::array::from_fn(|_| None),
             isolation_manager: IsolationManager::new(durability_service.poll_next()),
             durability_service: durability_service,
         })
@@ -93,13 +93,15 @@ impl MVCCStorage {
     }
 
     pub fn create_keyspace(&mut self, name: &str, keyspace_id: KeyspaceId, options: &Options) -> Result<(), MVCCStorageError> {
-        let keyspace_path = self.path.with_extension(name);
+        let mut keyspace_path = self.path.clone();
+        keyspace_path.push(name);
         self.validate_new_keyspace(name, keyspace_id)?;
+
         self.keyspaces.push(Keyspace::new(keyspace_path, options, keyspace_id).map_err(|err| MVCCStorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
-            kind: MVCCStorageErrorKind::KeyspaceError { source: err, keyspace: name.to_owned() },
+            kind: MVCCStorageErrorKind::KeyspaceError { source: Arc::new(err), keyspace: name.to_owned() },
         })?);
-        self.keyspaces_index[keyspace_id as usize] = self.keyspaces.len() as KeyspaceId - 1;
+        self.keyspaces_index[keyspace_id as usize] = Some(self.keyspaces.len() as KeyspaceId - 1);
         Ok(())
     }
 
@@ -113,24 +115,35 @@ impl MVCCStorage {
     }
 
     fn validate_new_keyspace(&self, name: &str, keyspace_id: KeyspaceId) -> Result<(), MVCCStorageError> {
-        for id in self.keyspaces_index {
-            let keyspace = self.get_keyspace(id);
-            if keyspace.name() == name {
-                return Err(MVCCStorageError {
-                    storage_name: self.owner_name.as_ref().to_owned(),
-                    kind: MVCCStorageErrorKind::KeyspaceNameExists {
-                        keyspace: name.to_owned(),
-                    },
-                });
-            } else if id == keyspace_id {
-                return Err(MVCCStorageError {
-                    storage_name: self.owner_name.as_ref().to_owned(),
-                    kind: MVCCStorageErrorKind::KeyspaceIdExists {
-                        new_keyspace: name.to_owned(),
-                        keyspace_id: keyspace_id,
-                        existing_keyspace: keyspace.name().to_owned(),
-                    },
-                });
+        if keyspace_id == KEYSPACE_ID_RESERVED_UNSET {
+            return Err(MVCCStorageError {
+                storage_name: self.owner_name.as_ref().to_owned(),
+                kind: MVCCStorageErrorKind::KeyspaceIdReserved {
+                    keyspace: name.to_owned(),
+                    keyspace_id: keyspace_id,
+                },
+            });
+        }
+        for existing_keyspace_id in (0..self.keyspaces_index.len()) {
+            if let Some(existing_keyspace_index) = self.keyspaces_index[existing_keyspace_id] {
+                let keyspace = &self.keyspaces[existing_keyspace_index as usize];
+                if keyspace.name() == name {
+                    return Err(MVCCStorageError {
+                        storage_name: self.owner_name.as_ref().to_owned(),
+                        kind: MVCCStorageErrorKind::KeyspaceNameExists {
+                            keyspace: name.to_owned(),
+                        },
+                    });
+                } else if existing_keyspace_id as KeyspaceId == keyspace_id {
+                    return Err(MVCCStorageError {
+                        storage_name: self.owner_name.as_ref().to_owned(),
+                        kind: MVCCStorageErrorKind::KeyspaceIdExists {
+                            new_keyspace: name.to_owned(),
+                            keyspace_id: keyspace_id,
+                            existing_keyspace: keyspace.name().to_owned(),
+                        },
+                    });
+                }
             }
         }
         Ok(())
@@ -188,7 +201,7 @@ impl MVCCStorage {
                     .map_err(|error| MVCCStorageError {
                         storage_name: self.owner_name.as_ref().to_owned(),
                         kind: MVCCStorageErrorKind::KeyspaceError {
-                            source: error,
+                            source: Arc::new(error),
                             keyspace: self.get_keyspace(index as KeyspaceId).name().to_owned(),
                         },
                     })?;
@@ -236,7 +249,7 @@ impl MVCCStorage {
     }
 
     fn get_keyspace(&self, keyspace_id: KeyspaceId) -> &Keyspace {
-        let keyspace_index = self.keyspaces_index[keyspace_id as usize];
+        let keyspace_index = self.keyspaces_index[keyspace_id as usize].unwrap();
         self.keyspaces.get(keyspace_index as usize).unwrap()
     }
 
@@ -275,37 +288,12 @@ impl MVCCStorage {
     }
 
     pub fn get<M, V, const S: usize>(&self, key: &StorageKey<'_, S>, open_sequence_number: &SequenceNumber, mut mapper: M) -> Option<V>
-        where M: FnMut(&[u8]) -> V {
-        // self.iterate_prefix(key, open_sequence_number);
-        //
-        // let result = self.get_keyspace(key.keyspace_id())
-        //     .iterate_prefix(
-        //         key.bytes().bytes(),
-        //         |sequenced_key, value| {
-        //             let mvcc_key = MVCCKey::wrap_slice(sequenced_key);
-        //             if mvcc_key.is_visible_to(open_sequence_number) {
-        //                 match mvcc_key.operation() {
-        //                     StorageOperation::Insert => IterControl::Accept((), mapper(value)),
-        //                     StorageOperation::Delete => IterControl::Stop
-        //                 }
-        //             } else {
-        //                 IterControl::IgnoreSingle
-        //             }
-        //         },
-        //     ).next();
-        // match result {
-        //     None => None,
-        //     Some(Err(error)) => Err(MVCCStorageError {
-        //         storage_name: self.owner_name.to_string(),
-        //         kind: KeyspaceError {
-        //             keyspace: self.get_keyspace(key.keyspace_id()).name().to_owned(),
-        //             source: error,
-        //         },
-        //     }).unwrap_or_log(),
-        //     Some(Ok((k, v))) => Some(v)
-        // }
-
-        todo!()
+        where M: FnMut(StorageValueReference<'_>) -> V {
+        let mut iterator = self.iterate_prefix(key, open_sequence_number);
+        // TODO: we don't want to panic on unwrap here
+        iterator.next().transpose().unwrap_or_log().map(|(_, value)|
+            mapper(value)
+        )
     }
 
     pub fn iterate_prefix<'this, const S: usize>(&'this self, prefix: &'this StorageKey<'this, S>, open_sequence_number: &SequenceNumber)
@@ -315,27 +303,27 @@ impl MVCCStorage {
 
     // --- direct access to storage, bypassing MVCC and returning raw key/value pairs ---
 
-    pub fn put_raw(&self, key: &StorageKeyReference<'_>, value: &StorageValue<'_, BUFFER_INLINE_VALUE>) {
+    pub fn put_raw(&self, key: StorageKeyReference<'_>, value: &StorageValue<'_, BUFFER_INLINE_VALUE>) {
         // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
         self.get_keyspace(key.keyspace_id()).put(key.byte_ref().bytes(), value.bytes()).map_err(|e| MVCCStorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
-            kind: MVCCStorageErrorKind::KeyspaceError { source: e, keyspace: self.get_keyspace(key.keyspace_id()).name().to_owned() },
+            kind: MVCCStorageErrorKind::KeyspaceError { source: Arc::new(e), keyspace: self.get_keyspace(key.keyspace_id()).name().to_owned() },
         }).unwrap_or_log()
     }
 
-    pub fn get_raw<M, V>(&self, key: &StorageKeyReference<'_>, mut mapper: M) -> Option<V>
+    pub fn get_raw<M, V>(&self, key: StorageKeyReference<'_>, mut mapper: M) -> Option<V>
         where M: FnMut(&[u8]) -> V {
         self.get_keyspace(key.keyspace_id()).get(
             key.byte_ref().bytes(),
             |value| mapper(value),
         ).map_err(|e| MVCCStorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
-            kind: MVCCStorageErrorKind::KeyspaceError { source: e, keyspace: self.get_keyspace(key.keyspace_id()).name().to_owned() },
+            kind: MVCCStorageErrorKind::KeyspaceError { source: Arc::new(e), keyspace: self.get_keyspace(key.keyspace_id()).name().to_owned() },
             // TODO: unwrap_or_log may be incorrect: this could trigger if the DB is deleted for example?
         }).unwrap_or_log()
     }
 
-    pub fn get_prev_raw<KM, VM, K, V>(&self, key: &StorageKeyReference<'_>, mut key_mapper: KM, mut value_mapper: VM) -> Option<(K, V)>
+    pub fn get_prev_raw<KM, VM, K, V>(&self, key: StorageKeyReference<'_>, mut key_mapper: KM, mut value_mapper: VM) -> Option<(K, V)>
         where KM: FnMut(&[u8]) -> K, VM: FnMut(&[u8]) -> V {
         self.get_keyspace(key.keyspace_id()).get_prev(
             key.byte_ref().bytes(),
@@ -343,20 +331,9 @@ impl MVCCStorage {
         )
     }
 
-    pub fn iterate_prefix_direct<'s>(&'s self, prefix: &StorageKeyReference<'_>) -> impl Iterator<Item=(Box<[u8]>, StorageValue<'_, BUFFER_INLINE_VALUE>)> + 's {
-        // debug_assert!(prefix.bytes().len() > 1);
-        // self.get_keyspace(prefix.keyspace_id()).iterate_prefix(prefix.bytes())
-        //     .map(|res| {
-        //         match res {
-        //             Ok((k, v)) => Ok((k, Value::from(v))),
-        //             Err(error) => Err(StorageError {
-        //                 storage_name: self.owner_name.as_ref().to_owned(),
-        //                 kind: StorageErrorKind::SectionError { source: error },
-        //             })
-        //             // TODO: unwrap_or_log may be incorrect: this could trigger if the DB is deleted for example?
-        //         }.unwrap_or_log()
-        //     })
-        empty()
+    pub fn iterate_keyspace_prefix<'this>(&'this self, prefix: StorageKeyReference<'this>) -> KeyspacePrefixIterator<'this> {
+        debug_assert!(prefix.bytes().len() > 0);
+        self.get_keyspace(prefix.keyspace_id()).iterate_prefix(prefix.into_byte_ref().into_bytes())
     }
 }
 
@@ -366,15 +343,15 @@ struct MVCCPrefixIterator<'a> {
     iterator: KeyspacePrefixIterator<'a>,
     open_sequence_number: SequenceNumber,
     last_visible_key: Option<ByteArray<MVCC_KEY_INLINE_SIZE>>,
-    state: State<MVCCStorageError>,
+    state: State<Arc<KeyspaceError>>,
 }
-
 
 impl<'s> MVCCPrefixIterator<'s> {
     //
     // TODO: optimisations for fixed-width keyspaces
     //
     fn new<const S: usize>(storage: &'s MVCCStorage, prefix: &'s StorageKey<'s, S>, open_sequence_number: &SequenceNumber) -> MVCCPrefixIterator<'s> {
+        debug_assert!(prefix.bytes().len() > 0);
         let keyspace = storage.get_keyspace(prefix.keyspace_id());
         let iterator = keyspace.iterate_prefix(prefix.bytes());
         MVCCPrefixIterator {
@@ -383,70 +360,94 @@ impl<'s> MVCCPrefixIterator<'s> {
             iterator: iterator,
             open_sequence_number: *open_sequence_number,
             last_visible_key: None,
-            state: State::ItemUsed,
+            state: State::Init,
         }
     }
 
-    fn advance(&mut self) {
-        // assert!(self.state != State::Done && self.state != State::Error);
-        loop {
-            self.iterator.advance();
+    fn peek(&mut self) -> Option<Result<(StorageKeyReference, StorageValueReference), MVCCStorageError>> {
+        match &self.state {
+            State::Init => {
+                self.find_next_state();
+                self.peek()
+            }
+            State::ItemReady => {
+                let (key, value) = self.iterator.peek().unwrap().unwrap();
+                let mvcc_key = MVCCKey::wrap_slice(key);
+                Some(Ok((
+                    StorageKeyReference::new(self.keyspace.id(), mvcc_key.into_key().unwrap_reference()),
+                    StorageValueReference::new(ByteReference::new(value)),
+                )))
+            }
+            State::ItemUsed => {
+                self.advance_and_find_next_state();
+                self.peek()
+            }
+            State::Error(error) => Some(Err(MVCCStorageError {
+                storage_name: self.storage.owner_name.to_string(),
+                kind: MVCCStorageErrorKind::KeyspaceError { source: error.clone(), keyspace: self.keyspace.name().to_owned() },
+            })),
+            State::Done => None
+        }
+    }
+
+    fn next(&mut self) -> Option<Result<(StorageKeyReference, StorageValueReference), MVCCStorageError>> {
+        match &self.state {
+            State::Init => {
+                self.find_next_state();
+                self.next()
+            }
+            State::ItemReady => {
+                let (key, value) = self.iterator.peek().unwrap().unwrap();
+                let mvcc_key = MVCCKey::wrap_slice(key);
+                let item = Some(Ok((
+                    StorageKeyReference::new(self.keyspace.id(), mvcc_key.into_key().unwrap_reference()),
+                    StorageValueReference::new(ByteReference::new(value)),
+                )));
+                self.state = State::ItemUsed;
+                item
+            }
+            State::ItemUsed => {
+                self.advance_and_find_next_state();
+                self.next()
+            }
+            State::Error(error) => Some(Err(MVCCStorageError {
+                storage_name: self.storage.owner_name.to_string(),
+                kind: MVCCStorageErrorKind::KeyspaceError { source: error.clone(), keyspace: self.keyspace.name().to_owned() },
+            })),
+            State::Done => None,
+        }
+    }
+
+    fn seek(&mut self) {
+        todo!()
+    }
+
+    fn find_next_state(&mut self) {
+        assert!(matches!(&self.state, &State::Init) || matches!(&self.state, &State::ItemUsed));
+        while matches!(&self.state, &State::Init) || matches!(&self.state, &State::ItemUsed) {
             let peek = self.iterator.peek();
-            if peek.is_none() {
-                self.state = State::Done;
-                return;
-            } else {
-                let result = peek.unwrap();
-                if let Err(error) = result {
-                    self.state = State::Error(MVCCStorageError {
-                        storage_name: self.storage.owner_name.to_string(),
-                        kind: MVCCStorageErrorKind::KeyspaceError {
-                            source: error,
-                            keyspace: self.keyspace.name().to_string(),
-                        }
-                    });
-                    return;
-                } else {
-                    let (key, value) = result.unwrap();
+            match peek {
+                None => self.state = State::Done,
+                Some(Ok((key, value))) => {
                     let mvcc_key = MVCCKey::wrap_slice(key);
                     let is_visible = (self.last_visible_key.is_none() || self.last_visible_key.as_ref().unwrap().bytes() != mvcc_key.key()) && mvcc_key.is_visible_to(&self.open_sequence_number);
                     if is_visible {
                         self.last_visible_key = Some(ByteArray::from(mvcc_key.key()));
                         match mvcc_key.operation() {
-                            StorageOperation::Insert => {
-                                self.state = State::ItemReady;
-                                return;
-                            },
-                            StorageOperation::Delete => {
-                                continue;
-                            }
+                            StorageOperation::Insert => self.state = State::ItemReady,
+                            StorageOperation::Delete => {}
                         }
                     }
                 }
+                Some(Err(error)) => self.state = State::Error(Arc::new(error)),
             }
         }
     }
 
-    fn peek<'this>(&'this mut self) -> Option<Result<(StorageKeyReference<'this>, StorageValueReference<'this>), MVCCStorageError>> {
-        let result = self.iterator.peek()?;
-        if result.is_err() {
-            Some(Err(MVCCStorageError {
-                storage_name: self.storage.owner_name.to_string(),
-                kind: MVCCStorageErrorKind::KeyspaceError { source: result.unwrap_err(), keyspace: self.keyspace.name().to_owned() },
-            }))
-        } else {
-            let (key, value) = result.unwrap();
-            let mvcc_key = MVCCKey::wrap_slice(key);
-            Some(Ok((
-                StorageKeyReference::new(self.keyspace.id(), mvcc_key.into_key().unwrap_reference()),
-                StorageValueReference::new(ByteReference::new(value)),
-            )))
-        }
-    }
-
-    fn next<'this>(&'this mut self) -> Option<Result<(StorageKeyReference<'this>, StorageValueReference<'this>), MVCCStorageError>> {
-        self.advance();
-        self.peek()
+    fn advance_and_find_next_state(&mut self) {
+        assert!(matches!(self.state, State::ItemUsed));
+        let _ = self.iterator.next();
+        self.find_next_state();
     }
 }
 

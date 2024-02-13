@@ -17,53 +17,96 @@
 
 use std::cmp::Ordering;
 use std::sync::Arc;
+use bytes::byte_array::ByteArray;
 
 use iterator::State;
 
-use crate::key_value::{StorageKey, StorageKeyReference, StorageValue, StorageValueReference};
+use crate::key_value::{StorageKey, StorageKeyArray, StorageKeyReference, StorageValue, StorageValueArray, StorageValueReference};
 use crate::MVCCPrefixIterator;
 use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, BufferedPrefixIterator};
 use crate::snapshot::snapshot::{SnapshotError, SnapshotErrorKind};
 use crate::snapshot::write::Write;
 
-struct SnapshotPrefixIterator<'a> {
+pub struct SnapshotPrefixIterator<'a> {
     storage_iterator: MVCCPrefixIterator<'a>,
     buffered_iterator: Option<BufferedPrefixIterator>,
-    state: State<Arc<SnapshotError>>,
-    item_source: ItemSource,
+    iterator_state: IteratorState,
 }
 
-enum ItemSource {
+#[derive(Debug)]
+struct IteratorState {
+    state: State<Arc<SnapshotError>>,
+    ready_item_source: ReadyItemSource,
+}
+
+impl IteratorState {
+    fn new() -> IteratorState {
+        IteratorState {
+            state: State::Init,
+            ready_item_source: ReadyItemSource::Storage,
+        }
+    }
+
+    fn state(&self) -> &State<Arc<SnapshotError>> {
+        &self.state
+    }
+
+    fn source(&self) -> &ReadyItemSource {
+        &self.ready_item_source
+    }
+
+    fn set_init(&mut self) {
+        self.state = State::Init;
+    }
+
+    fn set_item_ready(&mut self, source: ReadyItemSource) {
+        self.state = State::ItemReady;
+        self.ready_item_source = source;
+    }
+
+    fn set_item_used(&mut self) {
+        self.state = State::ItemUsed;
+    }
+
+    fn set_done(&mut self) {
+        self.state = State::Done;
+    }
+
+    fn set_error(&mut self, error: Arc<SnapshotError>) {
+        self.state = State::Error(error)
+    }
+}
+
+#[derive(Debug)]
+enum ReadyItemSource {
     Storage,
     Buffered,
     Both,
 }
 
 impl<'a> SnapshotPrefixIterator<'a> {
-    fn new(&self, mvcc_iterator: MVCCPrefixIterator<'a>, buffered_iterator: Option<BufferedPrefixIterator>) -> SnapshotPrefixIterator<'a> {
+    pub(crate) fn new(mvcc_iterator: MVCCPrefixIterator<'a>, buffered_iterator: Option<BufferedPrefixIterator>) -> SnapshotPrefixIterator<'a> {
         SnapshotPrefixIterator {
             storage_iterator: mvcc_iterator,
             buffered_iterator: buffered_iterator,
-            state: State::Unknown,
-            item_source: ItemSource::Storage,
+            iterator_state: IteratorState::new(),
         }
     }
 
-    fn peek<'this>(&'this mut self) -> Option<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), SnapshotError>> {
-        match &self.state {
-            State::Unknown => {
+    pub fn peek<'this>(&'this mut self) -> Option<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), SnapshotError>> {
+        match self.iterator_state.state().clone() {
+            State::Init => {
                 self.find_next_state();
                 self.peek()
             }
             State::ItemReady => {
-                match self.item_source {
-                    ItemSource::Storage | ItemSource::Both => self.storage_peek(),
-                    ItemSource::Buffered => Some(Ok(self.get_buffered_peek())),
+                match self.iterator_state.source().clone() {
+                    ReadyItemSource::Storage | ReadyItemSource::Both => Self::storage_peek(&mut self.storage_iterator),
+                    ReadyItemSource::Buffered => Some(Ok(Self::get_buffered_peek(self.buffered_iterator.as_mut().unwrap()))),
                 }
             }
             State::ItemUsed => {
-                self.consume_used_item();
-                self.find_next_state();
+                self.advance_and_find_next_state();
                 self.peek()
             }
             State::Error(error) => Some(Err(SnapshotError {
@@ -73,23 +116,22 @@ impl<'a> SnapshotPrefixIterator<'a> {
         }
     }
 
-    fn next(&mut self) -> Option<Result<(StorageKey<BUFFER_INLINE_KEY>, StorageValue<BUFFER_INLINE_VALUE>), SnapshotError>> {
-        match &self.state {
-            State::Unknown => {
+    pub fn next(&mut self) -> Option<Result<(StorageKey<BUFFER_INLINE_KEY>, StorageValue<BUFFER_INLINE_VALUE>), SnapshotError>> {
+        match self.iterator_state.state().clone() {
+            State::Init => {
                 self.find_next_state();
                 self.next()
             }
             State::ItemReady => {
-                self.state = State::ItemUsed;
-                let item = match self.item_source {
-                    ItemSource::Storage | ItemSource::Both => self.storage_peek(),
-                    ItemSource::Buffered => Some(Ok(self.get_buffered_peek())),
+                let item = match self.iterator_state.source().clone() {
+                    ReadyItemSource::Storage | ReadyItemSource::Both => Self::storage_peek(&mut self.storage_iterator),
+                    ReadyItemSource::Buffered => Some(Ok(Self::get_buffered_peek(self.buffered_iterator.as_mut().unwrap()))),
                 };
+                self.iterator_state.set_item_used();
                 item
             }
             State::ItemUsed => {
-                self.consume_used_item();
-                self.find_next_state();
+                self.advance_and_find_next_state();
                 self.next()
             }
             State::Error(error) => Some(Err(SnapshotError {
@@ -99,89 +141,70 @@ impl<'a> SnapshotPrefixIterator<'a> {
         }
     }
 
+    pub fn seek(&mut self) {
+        // if state == DONE | ERROR -> do nothing
+        // if state == INIT -> seek(), state = UPDATING, update_state()
+        // if state == EMPTY -> seek(), state = UPDATING, update_state() TODO: compare to previous to prevent backward seek?
+        // if state == READY -> seek(), state = UPDATING, update_state() TODO: compare to peek() to prevent backwrard seek?
+
+        todo!()
+    }
+
     fn find_next_state(&mut self) {
-        assert_eq!(self.state, State::Unknown);
-        while self.state == State::Unknown {
+        assert!(matches!(self.iterator_state.state(), &State::Init) || matches!(self.iterator_state.state(), &State::ItemUsed));
+        while matches!(self.iterator_state.state(), &State::Init) || matches!(self.iterator_state.state(), &State::ItemUsed) {
             let mut advance_storage = false;
             let mut advance_buffered = false;
-            match self.buffered_peek() {
-                None => {
-                    match self.storage_peek() {
-                        None => self.state = State::Done,
-                        Some(Ok(_)) => {
-                            self.state = State::ItemReady;
-                            self.item_source = ItemSource::Storage;
-                        }
-                        Some(Err(error)) => self.state = State::Error(Arc::new(error)),
-                    }
-                }
-                Some(Ok((buffered_key, buffered_write))) => {
-                    match self.storage_peek() {
-                        None => {
-                            if buffered_write.is_delete() {
-                                // SKIP buffered
-                                advance_buffered = true;
-                            } else {
-                                // ACCEPT buffered
-                                self.state = State::ItemReady;
-                                self.item_source = ItemSource::Buffered;
-                            }
-                        }
-                        Some(Ok((storage_key, storage_value))) => {
-                            let cmp = buffered_key.cmp(&storage_key);
-                            match cmp {
-                                Ordering::Less => {
-                                    if buffered_write.is_delete() {
-                                        // SKIP buffered
-                                        advance_buffered = true;
-                                    } else {
-                                        self.state = State::ItemReady;
-                                        self.item_source = ItemSource::Buffered;
-                                    }
-                                }
-                                Ordering::Equal => {
-                                    if buffered_write.is_delete() {
-                                        // SKIP both
-                                        advance_storage = true;
-                                        advance_buffered = true;
-                                    } else {
-                                        debug_assert_eq!(storage_value.bytes(), buffered_write.get_value().bytes());
-                                        // ACCEPT both
-                                        self.state = State::ItemReady;
-                                        self.item_source = ItemSource::Both;
-                                    }
-                                }
-                                Ordering::Greater => {
-                                    self.state = State::ItemReady;
-                                    self.item_source = ItemSource::Storage;
-                                }
-                            }
-                        }
-                        Some(Err(error)) => self.state = State::Error(Arc::new(error)),
-                    }
-                }
-                Some(Err(error)) => self.state = State::Error(Arc::new(error)),
-            }
+            let storage_peek = Self::storage_peek(&mut self.storage_iterator).transpose();
+            let buffered_peek = Self::buffered_peek(&mut self.buffered_iterator);
 
-            if advance_buffered {
-                let _ = self.buffered_iterator.as_mut().unwrap().next();
+            match (buffered_peek, storage_peek) {
+                (None, Ok(None)) => self.iterator_state.set_done(),
+                (None, Ok(Some(_))) => self.iterator_state.set_item_ready(ReadyItemSource::Storage),
+                (Some(Err(error)), _) | (_, Err(error)) => self.iterator_state.set_error(Arc::new(error)),
+                (Some(Ok((buffered_key, buffered_write))), Ok(storage_peek)) => {
+                    (advance_storage, advance_buffered) = Self::merge_buffered(&mut self.iterator_state, (buffered_key, buffered_write), storage_peek);
+                }
             }
             if advance_storage {
                 let _ = self.storage_iterator.next();
             }
+            if advance_buffered {
+                let _ = self.buffered_iterator.as_mut().unwrap().next();
+            }
         }
     }
 
-    fn merge_buffered(&mut self, buffered_peek: (StorageKey<BUFFER_INLINE_KEY>, &Write), storage_peek: Option<Result<(StorageKey<BUFFER_INLINE_KEY>, StorageValue<BUFFER_INLINE_VALUE>), SnapshotError>>) -> (bool, bool) {
+    fn merge_buffered(iterator_state: &mut IteratorState, buffered_peek: (StorageKey<BUFFER_INLINE_KEY>, &Write), storage_peek: Option<(StorageKey<BUFFER_INLINE_KEY>, StorageValue<BUFFER_INLINE_VALUE>)>) -> (bool, bool) {
         let (buffered_key, buffered_write) = buffered_peek;
         let mut advance_storage = false;
         let mut advance_buffered = false;
+        let ordering = storage_peek.as_ref().map(|(storage_key, _)| buffered_key.cmp(storage_key));
 
+        match ordering {
+            None | Some(Ordering::Less) => if buffered_write.is_delete() {
+                // SKIP buffered
+                advance_buffered = true;
+            } else {
+                // ACCEPT buffered
+                iterator_state.set_item_ready(ReadyItemSource::Buffered);
+            },
+            Some(Ordering::Equal) => if buffered_write.is_delete() {
+                // SKIP both
+                advance_storage = true;
+                advance_buffered = true;
+            } else {
+                debug_assert_eq!(storage_peek.unwrap().1.bytes(), buffered_write.get_value().bytes());
+                // ACCEPT both
+                iterator_state.set_item_ready(ReadyItemSource::Both);
+            },
+            Some(Ordering::Greater) => iterator_state.set_item_ready(ReadyItemSource::Storage),
+        }
         (advance_storage, advance_buffered)
     }
 
-    fn buffered_peek<'this>(&'this mut self) -> Option<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, &Write), SnapshotError>> {
-        if let Some(buffered_iterator) = &mut self.buffered_iterator {
+    fn buffered_peek<'this>(buffered_iterator: &'this mut Option<BufferedPrefixIterator>) -> Option<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, &Write), SnapshotError>> {
+        if let Some(buffered_iterator) = buffered_iterator {
             let buffered_peek = buffered_iterator.peek();
             match buffered_peek {
                 None => None,
@@ -195,8 +218,8 @@ impl<'a> SnapshotPrefixIterator<'a> {
         }
     }
 
-    fn storage_peek<'this>(&'this mut self) -> Option<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), SnapshotError>> {
-        let storage_peek = self.storage_iterator.peek();
+    fn storage_peek<'this>(storage_iterator: &'this mut MVCCPrefixIterator) -> Option<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), SnapshotError>> {
+        let storage_peek = storage_iterator.peek();
         match storage_peek {
             None => None,
             Some(Ok((key, value))) => {
@@ -212,25 +235,24 @@ impl<'a> SnapshotPrefixIterator<'a> {
         }
     }
 
-    fn consume_used_item(&mut self) {
-        assert_eq!(self.state, State::ItemUsed);
-        match self.item_source {
-            ItemSource::Storage => {
+    fn advance_and_find_next_state(&mut self) {
+        assert!(matches!(self.iterator_state.state, State::ItemUsed));
+        match self.iterator_state.source() {
+            ReadyItemSource::Storage => {
                 let _ = self.storage_iterator.next();
             }
-            ItemSource::Buffered => {
+            ReadyItemSource::Buffered => {
                 let _ = self.buffered_iterator.as_mut().unwrap().next();
             }
-            ItemSource::Both => {
+            ReadyItemSource::Both => {
                 let _ = self.buffered_iterator.as_mut().unwrap().next();
                 let _ = self.storage_iterator.next();
             }
         }
-        self.state = State::Unknown;
+        self.find_next_state();
     }
 
-    fn get_buffered_peek<'this>(&'this mut self) -> (StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>) {
-        let buffered_iterator = self.buffered_iterator.as_mut().unwrap();
+    fn get_buffered_peek<'this>(buffered_iterator: &'this mut BufferedPrefixIterator) -> (StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>) {
         let (key, write) = buffered_iterator.peek().unwrap().unwrap();
         (
             StorageKey::Reference(StorageKeyReference::from(key)),
@@ -238,13 +260,21 @@ impl<'a> SnapshotPrefixIterator<'a> {
         )
     }
 
-    fn seek(&mut self) {
-        // if state == DONE | ERROR -> do nothing
-        // if state == INIT -> seek(), state = UPDATING, update_state()
-        // if state == EMPTY -> seek(), state = UPDATING, update_state() TODO: compare to previous to prevent backward seek?
-        // if state == READY -> seek(), state = UPDATING, update_state() TODO: compare to peek() to prevent backwrard seek?
+    pub fn collect_cloned<'t>(mut self) -> Vec<(StorageKey<'t, BUFFER_INLINE_KEY>, StorageValue<'t, BUFFER_INLINE_VALUE>)> {
+        let mut vec = Vec::new();
+        loop {
+            let item = self.next();
+            if item.is_none() {
+                break;
+            }
+            let (key, value) = item.unwrap().unwrap();
 
-        todo!()
+            vec.push((
+                StorageKey::Array(StorageKeyArray::new(key.keyspace_id(), ByteArray::from(key.bytes()))),
+                StorageValue::Array(StorageValueArray::new(ByteArray::from(value.bytes())))
+             ));
+        }
+        vec
     }
 }
 

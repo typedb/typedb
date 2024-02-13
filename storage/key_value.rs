@@ -25,6 +25,7 @@ use bytes::byte_reference::ByteReference;
 
 use crate::keyspace::keyspace::KeyspaceId;
 
+#[derive(Debug)]
 pub enum StorageKey<'bytes, const INLINE_SIZE: usize> {
     Array(StorageKeyArray<INLINE_SIZE>),
     Reference(StorageKeyReference<'bytes>),
@@ -64,7 +65,7 @@ impl<const INLINE_SIZE: usize> StorageKeyArray<INLINE_SIZE> {
         self.keyspace_id
     }
 
-    pub(crate) fn bytes(&self) -> &[u8] {
+    pub fn bytes(&self) -> &[u8] {
         self.byte_array.bytes()
     }
 
@@ -72,7 +73,7 @@ impl<const INLINE_SIZE: usize> StorageKeyArray<INLINE_SIZE> {
         &self.byte_array
     }
 
-    pub(crate) fn into_byte_array(self) -> ByteArray<INLINE_SIZE> {
+    pub fn into_byte_array(self) -> ByteArray<INLINE_SIZE> {
         self.byte_array
     }
 }
@@ -97,12 +98,16 @@ impl<'bytes> StorageKeyReference<'bytes> {
         self.keyspace_id
     }
 
-    pub(crate) fn bytes(&self) -> &[u8] {
+    pub fn bytes(&self) -> &[u8] {
         self.reference.bytes()
     }
 
     pub(crate) fn byte_ref(&self) -> &ByteReference<'bytes> {
         &self.reference
+    }
+
+    pub(crate) fn into_byte_ref(self) -> ByteReference<'bytes> {
+        self.reference
     }
 }
 
@@ -170,19 +175,27 @@ impl<'bytes, const INLINE_SIZE: usize> StorageValue<'bytes, INLINE_SIZE> {
     }
 }
 
+impl<'bytes, const INLINE_SIZE: usize> PartialEq<Self> for StorageValue<'bytes, INLINE_SIZE> {
+    fn eq(&self, other: &Self) -> bool {
+        self.bytes() == other.bytes()
+    }
+}
+
+impl<'bytes, const INLINE_SIZE: usize> Eq for StorageValue<'bytes, INLINE_SIZE> {}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct StorageValueArray<const INLINE_SIZE: usize> {
     byte_array: ByteArray<INLINE_SIZE>,
 }
 
 impl<const INLINE_SIZE: usize> StorageValueArray<INLINE_SIZE> {
-    pub(crate) const fn empty() -> StorageValueArray<INLINE_SIZE> {
+    pub const fn empty() -> StorageValueArray<INLINE_SIZE> {
         StorageValueArray {
             byte_array: ByteArray::empty()
         }
     }
 
-    pub(crate) fn new(array: ByteArray<INLINE_SIZE>) -> StorageValueArray<INLINE_SIZE> {
+    pub fn new(array: ByteArray<INLINE_SIZE>) -> StorageValueArray<INLINE_SIZE> {
         StorageValueArray {
             byte_array: array
         }
@@ -209,7 +222,7 @@ impl<'bytes> StorageValueReference<'bytes> {
         }
     }
 
-    fn bytes(&self) -> &[u8] {
+    pub(crate) fn bytes(&self) -> &[u8] {
         self.reference.bytes()
     }
 }
