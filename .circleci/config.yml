@@ -24,13 +24,13 @@ orbs:
 executors:
   linux-arm64:
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2004:2023.10.1
       resource_class: arm.medium
     working_directory: ~/typedb
 
   linux-x86_64:
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2004:2023.10.1
     working_directory: ~/typedb
 
   mac-arm64:
