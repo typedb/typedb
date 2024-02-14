@@ -22,7 +22,6 @@ import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
-import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -104,7 +103,6 @@ import static com.vaticle.typedb.core.encoding.Encoding.ENCODING_VERSION;
 import static com.vaticle.typedb.core.encoding.Encoding.System.ENCODING_VERSION_KEY;
 import static java.util.Collections.emptySet;
 import static java.util.Comparator.reverseOrder;
-import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -112,7 +110,6 @@ public class CoreDatabase implements TypeDB.Database {
 
     private static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
     private static final int ROCKS_LOG_PERIOD = 300;
-    private static final long DIAGNOSTIC_TXN_PERIOD = HOURS.toMillis(1);
 
     private final CoreDatabaseManager databaseMgr;
     private final Factory.Session sessionFactory;
@@ -126,8 +123,6 @@ public class CoreDatabase implements TypeDB.Database {
     protected final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     protected final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final IsolationManager isolationMgr;
-    public final Diagnostics.ScheduledDiagnosticProvider txnDiagnosticProvider;
-    public long txnDiagnosticLastTransactionID;
     private final StatisticsCorrector statisticsCorrector;
 
     protected OptimisticTransactionDB rocksSchema;
@@ -154,11 +149,6 @@ public class CoreDatabase implements TypeDB.Database {
         schemaLockWriteRequests = new AtomicInteger(0);
         nextTransactionID = new AtomicLong(0);
         isOpen = new AtomicBoolean(false);
-        txnDiagnosticProvider = Diagnostics.get().scheduledProvider(
-                Diagnostics.INITIAL_DELAY_MILLIS, DIAGNOSTIC_TXN_PERIOD,
-                "db_txn", "txn_open_to_close", null
-        );
-        txnDiagnosticLastTransactionID = nextTransactionID.get();
     }
 
     protected StatisticsCorrector createStatisticsCorrector() {

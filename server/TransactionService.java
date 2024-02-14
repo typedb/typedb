@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
-import com.vaticle.typedb.core.database.CoreDatabase;
 import com.vaticle.typedb.core.server.common.ResponseBuilder;
 import com.vaticle.typedb.core.server.common.SynchronizedStreamObserver;
 import com.vaticle.typedb.core.server.concept.ConceptService;
@@ -220,19 +219,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                                                   Options.Transaction options) {
         Arguments.Transaction.Type type = Arguments.Transaction.Type.of(req.getType().getNumber());
         if (type == null) throw TypeDBException.of(BAD_TRANSACTION_TYPE, req.getType());
-        TypeDB.Transaction transaction = sessionSvc.session().transaction(type, options);
-        CoreDatabase coreDatabase = (CoreDatabase) sessionSvc.session().database();
-        transaction.context().diagnosticTxn(coreDatabase.txnDiagnosticProvider.get((txn, elapsedMillis) -> {
-                    long txnCount = transaction.context().transactionId() - coreDatabase.txnDiagnosticLastTransactionID;
-                    coreDatabase.txnDiagnosticLastTransactionID = transaction.context().transactionId();
-                    double txnPerSec = txnCount * 1000.0 / elapsedMillis;
-                    txn.setMeasurement("db_txn_window_txn_count", txnCount);
-                    txn.setMeasurement("db_txn_window_millis", elapsedMillis);
-                    txn.setMeasurement("db_txn_window_txn_per_sec", txnPerSec);
-                    return txn;
-                })
-        );
-        return transaction;
+        return sessionSvc.session().transaction(type, options);
     }
 
     protected void commit(UUID requestID) {

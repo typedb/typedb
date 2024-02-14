@@ -18,29 +18,14 @@
 
 package com.vaticle.typedb.core.common.diagnostics;
 
-import io.sentry.ITransaction;
-import io.sentry.NoOpTransaction;
 import io.sentry.Sentry;
-import io.sentry.TransactionContext;
 import io.sentry.protocol.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-
-import static java.util.concurrent.TimeUnit.HOURS;
-
 public class Diagnostics {
 
     private static final Logger LOG = LoggerFactory.getLogger(Diagnostics.class);
-
-    public static long INITIAL_DELAY_MILLIS = HOURS.toMillis(1);
 
     private static Diagnostics diagnostics = null;
 
@@ -88,87 +73,5 @@ public class Diagnostics {
 
     public void submitError(Throwable error) {
         this.errorReporter.reportError(error);
-    }
-
-    public ScheduledDiagnosticProvider scheduledProvider(long initialDelayMillis, long delayMillis, String name,
-                                                         String operation, @Nullable String description) {
-        return new ScheduledDiagnosticProvider(initialDelayMillis, delayMillis, transactionContext(name, operation, description));
-    }
-
-    public ScheduledFuture<?> scheduledRunner(long initialDelayMillis, long delayMillis, String name, String operation,
-                                              @Nullable String description, Consumer<TransactionContext> run,
-                                              ScheduledThreadPoolExecutor executor) {
-        TransactionContext transactionContext = transactionContext(name, operation, description);
-        return executor.scheduleWithFixedDelay(
-                () -> run.accept(transactionContext),
-                initialDelayMillis, delayMillis, TimeUnit.MILLISECONDS
-        );
-    }
-
-    private static TransactionContext transactionContext(String name, String operation, @Nullable String description) {
-        TransactionContext context = new TransactionContext(name, operation);
-        if (description != null) context.setDescription(description);
-        return context;
-    }
-
-    /**
-     * Poll-based scheduled diagnostics provider.
-     * Given an initial delay and subsequent period, many threads can compete to get the 'real' diagnostic
-     * transaction in the current time window. Only 1 'real' diagnostic transaction is used per time window,
-     * and the remainder receive a No-op diagnostic transaction.
-     */
-    public static class ScheduledDiagnosticProvider {
-
-        private final long initialDelayMillis;
-        private final long delayMillis;
-        private final TransactionContext context;
-        private final long initialTime;
-        private final AtomicLong lastWindow;
-
-        private ScheduledDiagnosticProvider(long initialDelayMillis, long delayMillis, TransactionContext transactionContext) {
-            this.initialDelayMillis = initialDelayMillis;
-            this.delayMillis = delayMillis;
-            this.context = transactionContext;
-            this.initialTime = System.currentTimeMillis();
-            this.lastWindow = new AtomicLong(-1); // last consumed delay windows after initial delay window
-        }
-
-        /**
-         * Fetch a diagnostic transaction which is a no-op if the time window has already been taken previously.
-         *
-         * @return A real or no-op diagnostic transaction
-         */
-        public ITransaction get(BiFunction<ITransaction, Long, ITransaction> mayTransform) {
-            long time = System.currentTimeMillis();
-            ITransaction txn;
-            long timeSinceLast;
-            if (time < initialTime + initialDelayMillis) {
-                // initial delay window
-                txn = NoOpTransaction.getInstance();
-                timeSinceLast = time - initialTime;
-            } else {
-                // number of current delay window since initial delay window ended
-                long currentWindow = (time - (initialTime + initialDelayMillis)) / delayMillis;
-                long lastWindowValue = this.lastWindow.get();
-
-                // if the current window is equal to the last window (or last window has moved forward by another thread)
-                // then the current thread should not sample
-                if (currentWindow <= lastWindowValue) {
-                    txn = NoOpTransaction.getInstance();
-                    timeSinceLast = 0;
-                } else {
-                    // one thread will be allowed to populate the lastWindow with the current one
-                    if (this.lastWindow.compareAndSet(lastWindowValue, currentWindow)) {
-                        txn = Sentry.startTransaction(context);
-                        timeSinceLast = (currentWindow - lastWindowValue) * delayMillis;
-                    } else {
-                        txn = NoOpTransaction.getInstance();
-                        timeSinceLast = 0;
-                    }
-                }
-            }
-            if (!txn.isNoOp()) return mayTransform.apply(txn, timeSinceLast);
-            else return txn;
-        }
     }
 }
