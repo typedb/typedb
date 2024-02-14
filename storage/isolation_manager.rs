@@ -29,14 +29,14 @@ use serde::{Deserialize, Serialize};
 use durability::{DurabilityRecord, DurabilityRecordType, SequenceNumber};
 use logger::result::ResultExt;
 use primitive::U80;
-use crate::keyspace::keyspace::{KEYSPACE_ID_MAX, KeyspaceId};
-use crate::snapshot::buffer::{KeyspaceBuffer, KeyspaceBuffers};
+
+use crate::keyspace::keyspace::KeyspaceId;
+use crate::snapshot::buffer::KeyspaceBuffers;
 use crate::snapshot::write::Write;
 
 pub(crate) struct IsolationManager {
     timeline: Timeline,
 }
-
 
 impl IsolationManager {
     pub(crate) fn new(next_sequence_number: SequenceNumber) -> IsolationManager {
@@ -189,9 +189,9 @@ impl IsolationManager {
 
 const TIMELINE_WINDOW_SIZE: usize = 100;
 
+#[derive(Debug)]
 struct Timeline {
-    windows: RwLock<VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>>,
-    next_window_start: Mutex<SequenceNumber>,
+    next_window_and_windows: RwLock<(SequenceNumber, VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>)>,
 }
 
 impl Timeline {
@@ -203,8 +203,7 @@ impl Timeline {
         windows.push_back(initial_window);
 
         let timeline = Timeline {
-            windows: RwLock::new(windows),
-            next_window_start: Mutex::new(starting_sequence_number.clone()),
+            next_window_and_windows: RwLock::new((starting_sequence_number.clone(), windows)),
         };
 
         // initialise the predecessor slot for readers to index against
@@ -215,7 +214,7 @@ impl Timeline {
 
     fn watermark(&self) -> SequenceNumber {
         // TODO: we should not need to get a read lock every time we want to open get the recent watermark to open a snapshot
-        let windows = self.windows.read().unwrap_or_log();
+        let (next_sequence_number, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
         windows.iter().filter_map(|w| {
             if w.is_finished() {
                 None
@@ -223,7 +222,7 @@ impl Timeline {
                 debug_assert!(w.watermark().is_some());
                 w.watermark()
             }
-        }).next().unwrap()
+        }).next().unwrap_or(next_sequence_number.clone())
     }
 
     fn get_status(&self, sequence_number: &SequenceNumber) -> CommitStatus {
@@ -232,12 +231,12 @@ impl Timeline {
     }
 
     fn record_reader(&self, sequence_number: &SequenceNumber) {
-        let window = self.get_window(sequence_number);
+        let window = self.get_or_create_window(sequence_number);
         window.increment_readers();
     }
 
     fn record_pending(&self, sequence_number: &SequenceNumber, commit_record: CommitRecord) -> Arc<CommitRecord> {
-        let window = self.get_window(sequence_number);
+        let window = self.get_or_create_window(sequence_number);
         window.set_pending(sequence_number, commit_record)
     }
 
@@ -274,21 +273,21 @@ impl Timeline {
     }
 
     fn try_get_window(&self, sequence_number: &SequenceNumber) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
-        let windows = self.windows.read().unwrap_or_log();
+        let (_, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
         windows.iter().rev().find(|window| window.contains(sequence_number))
             .map(|w| w.clone())
     }
 
     fn create_windows_to(&self, sequence_number: &SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
-        let mut windows = self.windows.write().unwrap_or_log();
+        let (next_window, windows) = &mut *self.next_window_and_windows.write().unwrap_or_log();
         // re-check if another thread created required window already
-        // TODO: is this guaranteed to deadlock? Acquiring read lock inside write lock
+
+        // TODO: this DOES deadlock! How to make re-entrant?
         let window = self.try_get_window(sequence_number);
         if window.is_none() {
-            let mut next_window_start = self.next_window_start.lock().unwrap_or_log();
             let window = loop {
-                let new_window = TimelineWindow::new(*next_window_start);
-                *next_window_start = new_window.end_sequence_number.clone();
+                let new_window = TimelineWindow::new(*next_window);
+                *next_window = new_window.end_sequence_number.clone();
                 let shared_new_window = Arc::new(new_window);
                 windows.push_back(shared_new_window.clone());
                 if shared_new_window.contains(sequence_number) {
@@ -302,6 +301,7 @@ impl Timeline {
     }
 }
 
+#[derive(Debug)]
 struct TimelineWindow<const SIZE: usize> {
     starting_sequence_number: SequenceNumber,
     end_sequence_number: SequenceNumber,

@@ -26,7 +26,7 @@ use durability::SequenceNumber;
 use crate::{MVCCPrefixIterator, MVCCStorage};
 use crate::error::MVCCStorageError;
 use crate::isolation_manager::CommitRecord;
-use crate::key_value::{StorageKey, StorageKeyArray, StorageValueArray};
+use crate::key_value::{StorageKey, StorageKeyArray, StorageValue, StorageValueArray};
 use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, KeyspaceBuffers};
 use crate::snapshot::iterator::SnapshotPrefixIterator;
 
@@ -45,11 +45,10 @@ impl<'storage> Snapshot<'storage> {
 
     // pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>)
     //                              -> Box<dyn RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this> {
-    // match self {
-    //     Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
-    //     Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
-    // }
-    // todo!()
+    //     match self {
+    //         Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
+    //         Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
+    //     }
     // }
 }
 
@@ -67,18 +66,14 @@ impl<'storage> ReadSnapshot<'storage> {
         }
     }
 
-    fn get<'snapshot>(&self, key: &StorageKey<'_, BUFFER_INLINE_KEY>) -> Option<StorageValueArray<BUFFER_INLINE_VALUE>> {
+    pub fn get<'snapshot>(&self, key: &StorageKey<'_, BUFFER_INLINE_KEY>) -> Option<StorageValueArray<BUFFER_INLINE_VALUE>> {
         // TODO: this clone may not be necessary - we could pass a reference up?
         self.storage.get(key, &self.open_sequence_number, |reference| StorageValueArray::new(ByteArray::from(reference.bytes())))
     }
 
-    fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> MVCCPrefixIterator { // impl RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this {
+    pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> SnapshotPrefixIterator {
         let mvcc_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
-        mvcc_iterator
-        //
-        //     .map(|result| result.map(|(k, v)| {
-        //     (StorageKey::Reference(k), StorageValue::Reference(v))
-        // }))
+        SnapshotPrefixIterator::new(mvcc_iterator, None)
     }
 }
 

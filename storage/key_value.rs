@@ -87,7 +87,7 @@ pub struct StorageKeyReference<'bytes> {
 }
 
 impl<'bytes> StorageKeyReference<'bytes> {
-    pub(crate) fn new(keyspace_id: KeyspaceId, reference: ByteReference<'bytes>) -> StorageKeyReference<'bytes> {
+    pub fn new(keyspace_id: KeyspaceId, reference: ByteReference<'bytes>) -> StorageKeyReference<'bytes> {
         StorageKeyReference {
             keyspace_id: keyspace_id,
             reference: reference,
