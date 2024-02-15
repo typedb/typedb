@@ -575,9 +575,8 @@ struct MVCCKey<'bytes> {
 const MVCC_KEY_INLINE_SIZE: usize = 128;
 
 impl<'bytes> MVCCKey<'bytes> {
-    const OPERATION_NEGATIVE_OFFSET: usize = StorageOperation::serialised_len();
-    const SEQUENCE_NUMBER_NEGATIVE_OFFSET: usize = MVCCKey::OPERATION_NEGATIVE_OFFSET + StorageOperation::serialised_len();
-    const KEY_NEGATIVE_OFFSET: usize = MVCCKey::SEQUENCE_NUMBER_NEGATIVE_OFFSET + SequenceNumber::serialised_len();
+    const OPERATION_START_NEGATIVE_OFFSET: usize = StorageOperation::serialised_len();
+    const SEQUENCE_NUMBER_START_NEGATIVE_OFFSET: usize = MVCCKey::OPERATION_START_NEGATIVE_OFFSET +  SequenceNumber::serialised_len();
 
     fn build(key: &[u8], sequence_number: &SequenceNumber, storage_operation: StorageOperation) -> MVCCKey<'bytes> {
         let length = key.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len();
@@ -622,26 +621,26 @@ impl<'bytes> MVCCKey<'bytes> {
     }
 
     fn key(&'bytes self) -> &'bytes [u8] {
-        &self.bytes()[0..(self.length() - MVCCKey::KEY_NEGATIVE_OFFSET)]
+        &self.bytes()[0..(self.length() - MVCCKey::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET)]
     }
 
     fn into_key(self) -> ByteArrayOrRef<'bytes, MVCC_KEY_INLINE_SIZE> {
-        let end = self.length() - MVCCKey::KEY_NEGATIVE_OFFSET;
+        let end = self.length() - MVCCKey::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
         let mut bytes = self.bytes;
         bytes.truncate(end)
     }
 
     fn sequence_number(&self) -> SequenceNumber {
-        let sequence_number_offset = self.length() - MVCCKey::KEY_NEGATIVE_OFFSET;
-        let sequence_number_end = self.length() - MVCCKey::SEQUENCE_NUMBER_NEGATIVE_OFFSET;
-        let inverse_sequence_number_bytes = &self.bytes()[sequence_number_offset..sequence_number_end];
+        let sequence_number_start = self.length() - MVCCKey::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
+        let sequence_number_end = sequence_number_start + SequenceNumber::serialised_len();
+        let inverse_sequence_number_bytes = &self.bytes()[sequence_number_start..sequence_number_end];
         debug_assert_eq!(SequenceNumber::serialised_len(), inverse_sequence_number_bytes.len());
-        SequenceNumber::new(U80::from_be_bytes(inverse_sequence_number_bytes))
+        SequenceNumber::new(U80::from_be_bytes(inverse_sequence_number_bytes)).invert()
     }
 
     fn operation(&self) -> StorageOperation {
-        let operation_byte_offset = self.length() - MVCCKey::OPERATION_NEGATIVE_OFFSET;
-        let operation_byte_end = self.length();
+        let operation_byte_offset = self.length() - MVCCKey::OPERATION_START_NEGATIVE_OFFSET;
+        let operation_byte_end = operation_byte_offset + StorageOperation::serialised_len();
         StorageOperation::from(&self.bytes()[operation_byte_offset..operation_byte_end])
     }
 }

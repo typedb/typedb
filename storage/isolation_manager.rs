@@ -81,8 +81,6 @@ impl IsolationManager {
         // TODO: decide if we should block until all predecessors finish, allow out of order (non-Calvin model/traditional model)
         //       We could also validate against all predecessors even if they are validating and fail eagerly.
 
-        dbg!(&commit_sequence_number);
-        println!("{}", commit_sequence_number);
         let mut number = commit_record.open_sequence_number().number().number() + 1;
         let end_number = commit_sequence_number.number().number();
         while number < end_number {
@@ -417,12 +415,7 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
     fn get_status(&self, sequence_number: &SequenceNumber) -> CommitStatus {
         debug_assert!(self.contains(sequence_number));
         let index = self.index_of(sequence_number);
-        println!("Index: '{}', for sequence number: '{}'", index, sequence_number);
         let status = SlotMarker::from(self.slots[index].load(Ordering::SeqCst));
-        dbg!("Status: {}", &status);
-        if sequence_number.number().number() == 1 {
-            dbg!(&self.slots);
-        }
         match status {
             SlotMarker::Empty => CommitStatus::Empty,
             SlotMarker::Pending => CommitStatus::Pending(self.commit_records[index].get().unwrap().clone()),

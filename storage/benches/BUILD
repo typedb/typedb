@@ -35,6 +35,7 @@ rust_test(
         "@crates//:rand",
         "@crates//:tracing",
         "@crates//:criterion",
+        "@crates//:pprof",
     ],
     use_libtest_harness = False,
 )

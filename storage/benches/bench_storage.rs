@@ -15,10 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::path::PathBuf;
+use std::ffi::c_int;
+use std::fs::File;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::profiler::Profiler;
+use pprof::ProfilerGuard;
 
 use bytes::byte_reference::ByteReference;
 use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference, StorageValueArray};
@@ -50,10 +54,13 @@ fn populate_storage(storage: &MVCCStorage, keyspace_id: KeyspaceId, key_count: u
         snapshot.put(random_key_24(keyspace_id));
     }
     snapshot.commit();
+    println!("Keys written: {}", key_count);
     let snapshot = storage.snapshot_read();
     let prefix = StorageKey::Reference(StorageKeyReference::new(keyspace_id, ByteReference::new(&[0 as u8])));
     let iterator = snapshot.iterate_prefix(&prefix);
-    iterator.collect_cloned().len()
+    let count = iterator.collect_cloned().len();
+    println!("Keys confirmed to be written: {}", count);
+    count
 }
 
 fn bench_snapshot_read_get(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Option<StorageValueArray<BUFFER_INLINE_VALUE>> {
@@ -61,7 +68,7 @@ fn bench_snapshot_read_get(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Op
     let mut last: Option<StorageValueArray<BUFFER_INLINE_VALUE>> = None;
     for _ in 0..1 {
         let key = random_key_24(keyspace_id);
-        last = snapshot.get(&StorageKey::Array(key))
+        last = snapshot.get(&StorageKey::Array(key));
     }
     last
 }
@@ -97,25 +104,74 @@ fn setup_storage(keyspace_id: KeyspaceId, key_count: usize) -> (MVCCStorage, Pat
 
 fn criterion_benchmark(c: &mut Criterion) {
     init_logging();
+    const INITIAL_KEY_COUNT: usize = 100_000; // 10 million = approximately 0.2 GB of keys
+    const KEYSPACE_ID: KeyspaceId = 1;
     {
-        let keyspace_id = 1 as KeyspaceId;
-        let initial_key_count: usize = 10_000_000; // approximately 0.2 GB of keys
-        let (storage, storage_path) = setup_storage(keyspace_id, initial_key_count);
+        let (storage, storage_path) = setup_storage(KEYSPACE_ID, INITIAL_KEY_COUNT);
         c.bench_function("snapshot_read_get", |b| b.iter(|| {
-            bench_snapshot_read_get(&storage, keyspace_id)
+            bench_snapshot_read_get(&storage, KEYSPACE_ID)
         }));
         delete_dir(storage_path);
     }
     {
-        let keyspace_id = 0 as KeyspaceId;
-        let initial_key_count: usize = 10_000_000; // approximately 0.2 GB of keys
-        let (storage, storage_path) = setup_storage(keyspace_id, initial_key_count);
+        let (storage, storage_path) = setup_storage(KEYSPACE_ID, INITIAL_KEY_COUNT);
         c.bench_function("snapshot_write_put", |b| b.iter(|| {
-            bench_snapshot_write_put(&storage, keyspace_id, 100)
+            bench_snapshot_write_put(&storage, KEYSPACE_ID, 100)
+        }));
+        delete_dir(storage_path);
+    }
+    {
+        let (storage, storage_path) = setup_storage(KEYSPACE_ID, INITIAL_KEY_COUNT);
+        c.bench_function("snapshot_read_iterate", |b| b.iter(|| {
+            bench_snapshot_read_iterate::<4, 1>(&storage, KEYSPACE_ID)
         }));
         delete_dir(storage_path);
     }
 }
 
-criterion_group!(benches, criterion_benchmark);
+pub struct FlamegraphProfiler<'a> {
+    frequency: c_int,
+    active_profiler: Option<ProfilerGuard<'a>>,
+}
+
+impl<'a> FlamegraphProfiler<'a> {
+    #[allow(dead_code)]
+    pub fn new(frequency: c_int) -> Self {
+        FlamegraphProfiler {
+            frequency,
+            active_profiler: None,
+        }
+    }
+}
+
+impl<'a> Profiler for FlamegraphProfiler<'a> {
+    fn start_profiling(&mut self, _benchmark_id: &str, _benchmark_dir: &Path) {
+        self.active_profiler = Some(ProfilerGuard::new(self.frequency).unwrap());
+    }
+
+    fn stop_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
+        std::fs::create_dir_all(benchmark_dir).unwrap();
+        let flamegraph_path = benchmark_dir.join("flamegraph.svg");
+        let flamegraph_file = File::create(&flamegraph_path)
+            .expect("File system error while creating flamegraph.svg");
+        if let Some(profiler) = self.active_profiler.take() {
+            profiler
+                .report()
+                .build()
+                .unwrap()
+                .flamegraph(flamegraph_file)
+                .expect("Error writing flamegraph");
+        }
+    }
+}
+
+fn profiled() -> Criterion {
+    Criterion::default().with_profiler(FlamegraphProfiler::new(100))
+}
+
+criterion_group!(
+    benches,
+    // config = profiled();
+   criterion_benchmark
+);
 criterion_main!(benches);
