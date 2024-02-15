@@ -77,6 +77,12 @@ pub struct SequenceNumber {
     number: U80,
 }
 
+impl Display for SequenceNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SeqNr[{}]", self.number.number())
+    }
+}
+
 impl SequenceNumber {
     pub const MAX: SequenceNumber = SequenceNumber { number: U80::MAX };
 

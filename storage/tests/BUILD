@@ -64,30 +64,6 @@ rust_test(
     ]
 )
 
-# To run this via Cargo, add a 'bench' section to the Cargo.toml:
-#   [[bench]]
-#       name = "bench"
-#	    harness = false
-# To run this via Bazel, Criterion must be provided the --bench argument:
-#   bazel run --compilation_mode=opt //storage/tests:benchmark -- --bench
-rust_test(
-    name = "benchmark",
-    srcs = glob([
-        "bench_storage.rs",
-    ]),
-    deps = [
-        "//storage",
-        "//common/bytes",
-        "//common/logger",
-        "//util/test:test-utils",
-
-        "@crates//:rand",
-        "@crates//:tracing",
-        "@crates//:criterion",
-    ],
-    use_libtest_harness = False,
-)
-
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*", "*/*/*"]),

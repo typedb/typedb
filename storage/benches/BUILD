@@ -16,41 +16,31 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_library")
-package(default_visibility = [
-    "//concept:__subpackages__",
-    "//database:__subpackages__",
-    "//encoding:__subpackages__",
-    "//storage/tests:__subpackages__",
-    "//storage/benches:__subpackages__",
-])
+load("@rules_rust//rust:defs.bzl", "rust_test")
+package(default_visibility = ["//visibility:public",])
 
-rust_library(
-    name = "storage",
-    crate_root = "storage.rs",
+# To run this via Bazel, Criterion must be provided the --bench argument:
+#   bazel run --compilation_mode=opt //storage/benches:bench_storage -- --bench
+rust_test(
+    name = "bench_storage",
     srcs = glob([
-        "*.rs",
-        "keyspace/*.rs",
-        "snapshot/*.rs",
+        "bench_storage.rs",
     ]),
     deps = [
-        "//storage/durability",
-        "//common/logger",
-        "//common/primitive",
+        "//storage",
         "//common/bytes",
-        "//common/iterator",
+        "//common/logger",
+        "//util/test:test-utils",
 
-        "@crates//:bincode",
-        "@crates//:itertools",
-        "@crates//:speedb",
+        "@crates//:rand",
         "@crates//:tracing",
-        "@crates//:serde",
-        "@crates//:struct_deser",
-    ]
+        "@crates//:criterion",
+    ],
+    use_libtest_harness = False,
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob(["*", "*/*", "*/*/*"]),
     license_type = "agpl-header",
 )

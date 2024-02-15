@@ -20,7 +20,7 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::io::Read;
 use std::iter::empty;
-use std::sync::{Arc, Mutex, OnceLock, RwLock};
+use std::sync::{Arc, OnceLock, RwLock};
 use std::sync::atomic::{AtomicU64, AtomicU8, AtomicUsize, Ordering};
 
 use itertools::Itertools;
@@ -34,8 +34,15 @@ use crate::keyspace::keyspace::KeyspaceId;
 use crate::snapshot::buffer::KeyspaceBuffers;
 use crate::snapshot::write::Write;
 
+#[derive(Debug)]
 pub(crate) struct IsolationManager {
     timeline: Timeline,
+}
+
+impl Display for IsolationManager {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Timeline[windows={}, next_window_sequence_number={}, watermark={}]", self.timeline.window_count(), self.timeline.next_window_sequence_number(), self.watermark())
+    }
 }
 
 impl IsolationManager {
@@ -51,6 +58,7 @@ impl IsolationManager {
 
     pub(crate) fn closed(&self, commit_sequence_number: &SequenceNumber, open_sequence_number: &SequenceNumber) {
         self.timeline.record_closed(commit_sequence_number, open_sequence_number);
+        self.timeline.remove_reader(open_sequence_number);
     }
 
     pub(crate) fn try_commit(&self, commit_sequence_number: SequenceNumber, commit_record: CommitRecord) -> Result<Arc<CommitRecord>, IsolationError> {
@@ -69,11 +77,18 @@ impl IsolationManager {
     }
 
     fn validate_all_concurrent(&self, commit_sequence_number: &SequenceNumber, commit_record: &CommitRecord) -> Result<(), IsolationError> {
+        debug_assert!(commit_record.open_sequence_number() < commit_sequence_number);
         // TODO: decide if we should block until all predecessors finish, allow out of order (non-Calvin model/traditional model)
         //       We could also validate against all predecessors even if they are validating and fail eagerly.
-        for number in (commit_record.open_sequence_number().number().number() + 1..commit_sequence_number.number().number()) {
+
+        dbg!(&commit_sequence_number);
+        println!("{}", commit_sequence_number);
+        let mut number = commit_record.open_sequence_number().number().number() + 1;
+        let end_number = commit_sequence_number.number().number();
+        while number < end_number {
             let predecessor_sequence_number = SequenceNumber::new(U80::new(number));
-            self.validate_concurrent(commit_record, predecessor_sequence_number)?
+            self.validate_concurrent(commit_record, predecessor_sequence_number)?;
+            number += 1;
         }
         Ok(())
     }
@@ -81,7 +96,9 @@ impl IsolationManager {
     fn validate_concurrent(&self, commit_record: &CommitRecord, predecessor_sequence_number: SequenceNumber) -> Result<(), IsolationError> {
         let predecessor_status = self.get_commit_status(&predecessor_sequence_number);
         match predecessor_status {
-            CommitStatus::Empty => unreachable!("A concurrent status should never be empty at commit time"),
+            CommitStatus::Empty => {
+                unreachable!("A concurrent status should never be empty at commit time")
+            },
             CommitStatus::Pending(predecessor_record) => {
                 let result = self.validate_isolation(&commit_record, &predecessor_record);
                 if result.is_err() && self.await_pending_status_commits(&predecessor_sequence_number) {
@@ -187,7 +204,7 @@ impl IsolationManager {
     }
 }
 
-const TIMELINE_WINDOW_SIZE: usize = 100;
+const TIMELINE_WINDOW_SIZE: usize = 5;
 
 #[derive(Debug)]
 struct Timeline {
@@ -199,11 +216,12 @@ impl Timeline {
         debug_assert!(starting_sequence_number.number().number() > 0);
         let last_sequence_number_value = starting_sequence_number.number() - U80::new(1);
         let initial_window = Arc::new(TimelineWindow::new(SequenceNumber::new(last_sequence_number_value)));
+        let next_window_start = initial_window.end().clone();
         let mut windows = VecDeque::new();
         windows.push_back(initial_window);
 
         let timeline = Timeline {
-            next_window_and_windows: RwLock::new((starting_sequence_number.clone(), windows)),
+            next_window_and_windows: RwLock::new((next_window_start, windows)),
         };
 
         // initialise the predecessor slot for readers to index against
@@ -222,7 +240,7 @@ impl Timeline {
                 debug_assert!(w.watermark().is_some());
                 w.watermark()
             }
-        }).next().unwrap_or(next_sequence_number.clone())
+        }).next().unwrap_or_else(|| SequenceNumber::new(next_sequence_number.number() - U80::new(1)))
     }
 
     fn get_status(&self, sequence_number: &SequenceNumber) -> CommitStatus {
@@ -249,7 +267,6 @@ impl Timeline {
     fn record_closed(&self, sequence_number: &SequenceNumber, open_sequence_number: &SequenceNumber) {
         let window = self.get_window(sequence_number);
         window.set_closed(sequence_number);
-        self.remove_reader(open_sequence_number);
     }
 
     fn remove_reader(&self, reader_sequence_number: &SequenceNumber) {
@@ -257,6 +274,11 @@ impl Timeline {
         let readers_remaining = read_window.decrement_readers();
         // TODO if the readers are 0, we can de-allocate this window if it is the last one
         // TODO and then continue as long as the head has 0 readers
+    }
+
+    fn last_window(windows: &VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>) -> Arc<crate::isolation_manager::TimelineWindow<TIMELINE_WINDOW_SIZE>> {
+        debug_assert!(windows.len() > 0);
+        windows[windows.len() - 1].clone()
     }
 
     fn get_or_create_window(&self, sequence_number: &SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
@@ -274,6 +296,10 @@ impl Timeline {
 
     fn try_get_window(&self, sequence_number: &SequenceNumber) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
         let (_, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
+        Self::find_window(sequence_number, windows)
+    }
+
+    fn find_window(sequence_number: &SequenceNumber, windows: &VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
         windows.iter().rev().find(|window| window.contains(sequence_number))
             .map(|w| w.clone())
     }
@@ -282,8 +308,7 @@ impl Timeline {
         let (next_window, windows) = &mut *self.next_window_and_windows.write().unwrap_or_log();
         // re-check if another thread created required window already
 
-        // TODO: this DOES deadlock! How to make re-entrant?
-        let window = self.try_get_window(sequence_number);
+        let window = Self::find_window(sequence_number, windows);
         if window.is_none() {
             let window = loop {
                 let new_window = TimelineWindow::new(*next_window);
@@ -298,6 +323,16 @@ impl Timeline {
         } else {
             window.unwrap().clone()
         }
+    }
+
+    fn window_count(&self) -> usize {
+        let (_, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
+        windows.len()
+    }
+
+    fn next_window_sequence_number(&self) -> SequenceNumber {
+        let (next_window_sequence_number, _) = &*self.next_window_and_windows.read().unwrap_or_log();
+        next_window_sequence_number.clone()
     }
 }
 
@@ -328,10 +363,12 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         }
     }
 
+    /// Sequence number start of window (inclusive)
     fn start(&self) -> &SequenceNumber {
         &self.starting_sequence_number
     }
 
+    /// Sequence number end of window (exclusive)
     fn end(&self) -> &SequenceNumber {
         &self.end_sequence_number
     }
@@ -380,7 +417,12 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
     fn get_status(&self, sequence_number: &SequenceNumber) -> CommitStatus {
         debug_assert!(self.contains(sequence_number));
         let index = self.index_of(sequence_number);
+        println!("Index: '{}', for sequence number: '{}'", index, sequence_number);
         let status = SlotMarker::from(self.slots[index].load(Ordering::SeqCst));
+        dbg!("Status: {}", &status);
+        if sequence_number.number().number() == 1 {
+            dbg!(&self.slots);
+        }
         match status {
             SlotMarker::Empty => CommitStatus::Empty,
             SlotMarker::Pending => CommitStatus::Pending(self.commit_records[index].get().unwrap().clone()),
@@ -390,11 +432,11 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
     }
 
     fn increment_readers(&self) {
-        self.readers.fetch_add(1, Ordering::Relaxed);
+        self.readers.fetch_add(1, Ordering::SeqCst);
     }
 
     fn decrement_readers(&self) -> u64 {
-        self.readers.fetch_sub(1, Ordering::Relaxed)
+        self.readers.fetch_sub(1, Ordering::SeqCst)
     }
 
     fn index_of(&self, sequence_number: &SequenceNumber) -> usize {

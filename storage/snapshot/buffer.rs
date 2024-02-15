@@ -308,12 +308,10 @@ impl<'de> Deserialize<'de> for KeyspaceBuffers {
             {
                 let mut buffers_init: [MaybeUninit<KeyspaceBuffer>; 256] = core::array::from_fn(|i| MaybeUninit::uninit());
 
-                let mut index = 0;
                 while let Some(keyspace_buffer) = seq.next_element()? {
-                    buffers_init[index].write(keyspace_buffer);
-                    index += 1;
+                    let keyspace_buffer: KeyspaceBuffer = keyspace_buffer;
+                    buffers_init[keyspace_buffer.keyspace_id as usize].write(keyspace_buffer);
                 }
-                assert_eq!(index, buffers_init.len());
 
                 let buffers = unsafe { mem::transmute(buffers_init) };
                 Ok(KeyspaceBuffers {
@@ -343,7 +341,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffers {
             // }
         }
 
-        deserializer.deserialize_struct("KeyspaceBuffers", &["Buffers"], KeyspaceBuffersVisitor)
+        deserializer.deserialize_tuple(KEYSPACE_ID_MAX, KeyspaceBuffersVisitor)
     }
 }
 

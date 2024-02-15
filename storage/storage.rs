@@ -337,7 +337,7 @@ impl MVCCStorage {
     }
 }
 
-struct MVCCPrefixIterator<'a> {
+pub struct MVCCPrefixIterator<'a> {
     storage: &'a MVCCStorage,
     keyspace: &'a Keyspace,
     iterator: KeyspacePrefixIterator<'a>,

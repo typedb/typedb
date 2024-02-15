@@ -127,7 +127,7 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
 
 
 #[derive(Debug, Clone)]
-struct ByteArrayInline<const BYTES: usize> {
+pub struct ByteArrayInline<const BYTES: usize> {
     data: [u8; BYTES],
     length: u64,
 }
@@ -297,7 +297,7 @@ impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct ByteArrayBoxed {
+pub struct ByteArrayBoxed {
     data: Box<[u8]>,
     length: usize,
 }
