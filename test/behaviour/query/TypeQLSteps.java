@@ -88,8 +88,15 @@ public class TypeQLSteps {
 
     @Given("typeql define")
     public void typeql_define(String defineQueryStatements) {
-        TypeQLDefine typeQLQuery = TypeQL.parseQuery(String.join("\n", defineQueryStatements)).asDefine();
-        tx().query().define(typeQLQuery);
+        try {
+            TypeQLDefine typeQLQuery = TypeQL.parseQuery(String.join("\n", defineQueryStatements)).asDefine();
+            tx().query().define(typeQLQuery);
+        } catch (TypeQLException e) {
+            // NOTE: We manually close transaction here, because we want to align with all non-java drivers,
+            // where parsing happens at server-side which closes transaction if they fail
+            tx().close();
+            throw e;
+        }
     }
 
     @Given("typeql define; throws exception containing {string}")
