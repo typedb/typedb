@@ -50,6 +50,21 @@ rust_test(
 )
 
 rust_test(
+    name = "test-mvcc",
+    srcs = glob([
+        "test_mvcc.rs",
+    ]),
+    deps = [
+        "//storage",
+        "//common/logger",
+        "//util/test:test-utils",
+
+        "@crates//:rand",
+        "@crates//:tracing",
+    ]
+)
+
+rust_test(
     name = "test-isolation",
     srcs = glob([
         "test_isolation.rs",

@@ -186,11 +186,15 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     pub fn commit(self) -> Result<(), SnapshotError> {
-        self.storage.snapshot_commit(self).map_err(|err| SnapshotError {
-            kind: SnapshotErrorKind::FailedCommit {
-                source: err
-            }
-        })
+        if self.buffers.is_empty() {
+            Ok(())
+        } else {
+            self.storage.snapshot_commit(self).map_err(|err| SnapshotError {
+                kind: SnapshotErrorKind::FailedCommit {
+                    source: err
+                }
+            })
+        }
     }
 
     pub(crate) fn into_commit_record(self) -> CommitRecord {

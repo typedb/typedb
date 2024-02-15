@@ -430,6 +430,8 @@ impl<'s> MVCCPrefixIterator<'s> {
                 None => self.state = State::Done,
                 Some(Ok((key, value))) => {
                     let mvcc_key = MVCCKey::wrap_slice(key);
+                    let s = mvcc_key.sequence_number();
+                    let op = mvcc_key.operation();
                     let is_visible = (self.last_visible_key.is_none() || self.last_visible_key.as_ref().unwrap().bytes() != mvcc_key.key()) && mvcc_key.is_visible_to(&self.open_sequence_number);
                     if is_visible {
                         self.last_visible_key = Some(ByteArray::from(mvcc_key.key()));
@@ -437,6 +439,8 @@ impl<'s> MVCCPrefixIterator<'s> {
                             StorageOperation::Insert => self.state = State::ItemReady,
                             StorageOperation::Delete => {}
                         }
+                    } else {
+                        self.advance()
                     }
                 }
                 Some(Err(error)) => self.state = State::Error(Arc::new(error)),
@@ -446,8 +450,12 @@ impl<'s> MVCCPrefixIterator<'s> {
 
     fn advance_and_find_next_state(&mut self) {
         assert!(matches!(self.state, State::ItemUsed));
-        let _ = self.iterator.next();
+        self.advance();
         self.find_next_state();
+    }
+
+    fn advance(&mut self) {
+        let _ = self.iterator.next();
     }
 }
 

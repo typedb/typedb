@@ -50,6 +50,10 @@ impl KeyspaceBuffers {
         }
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.buffers.iter().all(|buffer| buffer.is_empty())
+    }
+
     pub(crate) fn get(&self, keyspace_id: KeyspaceId) -> &KeyspaceBuffer {
         &self.buffers[keyspace_id as usize]
     }
@@ -75,6 +79,10 @@ impl KeyspaceBuffer {
             keyspace_id: keyspace_id,
             buffer: RwLock::new(BTreeMap::new()),
         }
+    }
+    pub(crate) fn is_empty(&self) -> bool {
+        let map = self.buffer.read().unwrap();
+        map.is_empty()
     }
 
     pub(crate) fn insert(&self, key: ByteArray<BUFFER_INLINE_KEY>, value: StorageValueArray<BUFFER_INLINE_VALUE>) {

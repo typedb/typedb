@@ -32,6 +32,7 @@ use test_utils::{create_tmp_dir, init_logging};
 const KEYSPACE_ID: KeyspaceId = 0;
 const KEY_1: [u8; 4] = [0x0, 0x0, 0x0, 0x1];
 const KEY_2: [u8; 4] = [0x0, 0x0, 0x0, 0x2];
+const KEY_3: [u8; 4] = [0x0, 0x0, 0x0, 0x3];
 const VALUE_1: [u8; 1] = [0x0];
 const VALUE_2: [u8; 1] = [0x1];
 const VALUE_3: [u8; 1] = [0x88];
@@ -49,9 +50,32 @@ fn setup_storage(storage_path: &PathBuf) -> MVCCStorage {
     storage
 }
 
-///
-/// Note: In general, we emulate an "update" as a 'getForUpdate' followed by a write
-///
+#[test]
+fn commits_isolated() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let storage = setup_storage(&storage_path);
+
+    let snapshot_1 = storage.snapshot_write();
+    let snapshot_2 = storage.snapshot_read();
+
+    let key_3 =  StorageKeyArray::new(KEYSPACE_ID, ByteArray::from(&KEY_3));
+    let value_3 =  StorageValueArray::new(ByteArray::from(&VALUE_3));
+    snapshot_1.put_val(key_3.clone(), value_3.clone());
+    snapshot_1.commit().unwrap();
+
+    let get = snapshot_2.get(&StorageKey::Reference(StorageKeyReference::from(&key_3)));
+    assert!(get.is_none());
+    let prefix = StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::from(&[0x0 as u8])));
+    let iterated = snapshot_2.iterate_prefix(&prefix).collect_cloned();
+    assert_eq!(iterated.len(), 2);
+
+    let snapshot_3 = storage.snapshot_read();
+    let get = snapshot_3.get(&StorageKey::Reference(StorageKeyReference::from(&key_3)));
+    assert!(matches!(get, Some(value_3)));
+    let iterated = snapshot_3.iterate_prefix(&prefix).collect_cloned();
+    assert_eq!(iterated.len(), 3);
+}
 
 ///
 /// 1. Open two snapshots on the same version
