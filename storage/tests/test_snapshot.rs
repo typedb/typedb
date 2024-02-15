@@ -32,7 +32,7 @@ fn snapshot_buffered_put_get() {
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::new_db_options();
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-    let keyspace_id: KeyspaceId = 0x1;
+    let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 
     let snapshot = storage.snapshot_write();
@@ -62,7 +62,7 @@ fn snapshot_buffered_put_iterate() {
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::new_db_options();
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-    let keyspace_id: KeyspaceId = 0x1;
+    let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 
     let snapshot = storage.snapshot_write();
@@ -95,7 +95,7 @@ fn snapshot_buffered_delete() {
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::new_db_options();
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-    let keyspace_id: KeyspaceId = 0x1;
+    let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 
     let snapshot = storage.snapshot_write();
@@ -131,7 +131,7 @@ fn snapshot_read_through() {
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::new_db_options();
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-    let keyspace_id: KeyspaceId = 0x1;
+    let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 
     let key_1 = StorageKeyArray::<BUFFER_INLINE_KEY>::from((vec![0x0, 0x0, 0x1], keyspace_id));

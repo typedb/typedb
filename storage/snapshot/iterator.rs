@@ -24,7 +24,7 @@ use iterator::State;
 use crate::key_value::{StorageKey, StorageKeyArray, StorageKeyReference, StorageValue, StorageValueArray, StorageValueReference};
 use crate::MVCCPrefixIterator;
 use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, BufferedPrefixIterator};
-use crate::snapshot::snapshot::{SnapshotError, SnapshotErrorKind};
+use crate::snapshot::error::{SnapshotError, SnapshotErrorKind};
 use crate::snapshot::write::Write;
 
 pub struct SnapshotPrefixIterator<'a> {

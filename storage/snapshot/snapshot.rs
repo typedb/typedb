@@ -15,19 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::error::Error;
-use std::fmt::{Display, Formatter};
+use std::fmt::Display;
 use std::ops::RangeBounds;
-use std::sync::Arc;
-
 use bytes::byte_array::ByteArray;
 use durability::SequenceNumber;
 
-use crate::{MVCCPrefixIterator, MVCCStorage};
+use crate::MVCCStorage;
 use crate::error::MVCCStorageError;
 use crate::isolation_manager::CommitRecord;
-use crate::key_value::{StorageKey, StorageKeyArray, StorageValue, StorageValueArray};
+use crate::key_value::{StorageKey, StorageKeyArray, StorageValueArray};
 use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, KeyspaceBuffers};
+use crate::snapshot::error::{SnapshotError, SnapshotErrorKind};
 use crate::snapshot::iterator::SnapshotPrefixIterator;
 
 pub enum Snapshot<'storage> {
@@ -187,8 +185,12 @@ impl<'storage> WriteSnapshot<'storage> {
         SnapshotPrefixIterator::new(storage_iterator, Some(buffered_iterator))
     }
 
-    pub fn commit(self) {
-        self.storage.snapshot_commit(self);
+    pub fn commit(self) -> Result<(), SnapshotError> {
+        self.storage.snapshot_commit(self).map_err(|err| SnapshotError {
+            kind: SnapshotErrorKind::FailedCommit {
+                source: err
+            }
+        })
     }
 
     pub(crate) fn into_commit_record(self) -> CommitRecord {
@@ -196,35 +198,5 @@ impl<'storage> WriteSnapshot<'storage> {
             self.buffers,
             self.open_sequence_number,
         )
-    }
-}
-
-#[derive(Debug)]
-pub struct SnapshotError {
-    pub kind: SnapshotErrorKind,
-}
-
-#[derive(Debug)]
-pub enum SnapshotErrorKind {
-    FailedMVCCStorageIterate { source: MVCCStorageError },
-    FailedIterate { source: Arc<SnapshotError> },
-    FailedGet { source: MVCCStorageError },
-    FailedPut { source: MVCCStorageError },
-}
-
-impl Display for SnapshotError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for SnapshotError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match &self.kind {
-            SnapshotErrorKind::FailedIterate { source, .. } => Some(source),
-            SnapshotErrorKind::FailedGet { source, .. } => Some(source),
-            SnapshotErrorKind::FailedPut { source, .. } => Some(source),
-            SnapshotErrorKind::FailedMVCCStorageIterate { source, .. } => Some(source),
-        }
     }
 }

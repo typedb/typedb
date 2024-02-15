@@ -28,8 +28,9 @@ use logger::result::ResultExt;
 
 pub type KeyspaceId = u8;
 
-pub(crate) const KEYSPACE_ID_RESERVED_UNSET: KeyspaceId = 0 as KeyspaceId;
-pub(crate) const KEYSPACE_ID_MAX: usize = KeyspaceId::MAX as usize + 1;
+pub(crate) const KEYSPACE_ID_MAX: KeyspaceId = KeyspaceId::MAX;
+pub(crate) const KEYSPACE_ID_MAX_COUNT: usize = KEYSPACE_ID_MAX as usize + 1;
+pub(crate) const KEYSPACE_ID_RESERVED_UNSET: KeyspaceId = KEYSPACE_ID_MAX;
 
 
 ///
@@ -232,13 +233,13 @@ impl<'s> KeyspacePrefixIterator<'s> {
 
     pub(crate) fn seek(&mut self, key: &[u8]) {
         match &self.state {
-            State:: Done | State::Error(_) => {},
+            State::Done | State::Error(_) => {}
             State::Init => {
                 if self.has_valid_prefix(key) {
                     self.iterator.seek(key);
                     self.update_state();
                 } else {
-                    self.state = State:: Done;
+                    self.state = State::Done;
                 }
             }
             State::ItemReady => {
@@ -253,7 +254,7 @@ impl<'s> KeyspacePrefixIterator<'s> {
                         Ordering::Greater => unreachable!("Cannot seek backward.")
                     }
                 } else {
-                    self.state = State:: Done;
+                    self.state = State::Done;
                 }
             }
             State::ItemUsed => {

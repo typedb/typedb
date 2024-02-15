@@ -500,6 +500,13 @@ impl CommitRecord {
     pub(crate) fn open_sequence_number(&self) -> &SequenceNumber {
         &self.open_sequence_number
     }
+
+    fn deserialise_from(record_type: DurabilityRecordType, reader: impl Read)
+        where Self: Sized {
+        assert_eq!(Self::DURABILITY_RECORD_TYPE, record_type);
+        // TODO: handle error with a better message
+        bincode::deserialize_from(reader).unwrap_or_log()
+    }
 }
 
 impl DurabilityRecord for CommitRecord {
@@ -512,15 +519,10 @@ impl DurabilityRecord for CommitRecord {
             bincode::serialize(
                 &bincode::deserialize::<CommitRecord>(bincode::serialize(&self).as_ref().unwrap()).unwrap()
             ).unwrap(),
-            bincode::serialize(self).unwrap());
+            bincode::serialize(self).unwrap()
+        );
         bincode::serialize_into(writer, &self.buffers)
     }
-
-    // fn deserialise_from(record_type: DurabilityRecordType, reader: &impl Read) -> Result<Self, dyn Error>
-    //     where Self: Sized {
-    //     assert_eq!(Self::DURABILITY_RECORD_TYPE, record_type);
-    //     bincode::deserialize_from(reader)
-    // }
 }
 
 #[derive(Debug)]
@@ -537,8 +539,8 @@ pub enum IsolationErrorKind {
 impl Display for IsolationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match &self.kind {
-            IsolationErrorKind::DeleteRequiredViolation => write!(f, "Isolation violation: Delete-Require conflict. A concurrent commit has deleted a key required by this transaction. Please retry"),
-            IsolationErrorKind::RequiredDeleteViolation => write!(f, "Isolation violation: Require-Delete conflict. This commit has deleted a key required by a concurrent transaction. Please retry"),
+            IsolationErrorKind::DeleteRequiredViolation => write!(f, "Isolation violation: Delete-Require conflict. A preceding concurrent commit has deleted a key required by this transaction. Please retry."),
+            IsolationErrorKind::RequiredDeleteViolation => write!(f, "Isolation violation: Require-Delete conflict. This commit has deleted a key required by a preceding concurrent transaction. Please retry."),
         }
     }
 }

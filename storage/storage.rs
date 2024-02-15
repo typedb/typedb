@@ -41,13 +41,13 @@ use snapshot::write::Write;
 use crate::error::{MVCCStorageError, MVCCStorageErrorKind};
 use crate::isolation_manager::{CommitRecord, IsolationManager};
 use crate::key_value::{StorageKey, StorageKeyReference, StorageValue, StorageValueReference};
-use crate::keyspace::keyspace::{Keyspace, KEYSPACE_ID_MAX, KEYSPACE_ID_RESERVED_UNSET, KeyspaceError, KeyspaceId, KeyspacePrefixIterator};
+use crate::keyspace::keyspace::{Keyspace, KEYSPACE_ID_MAX_COUNT, KEYSPACE_ID_RESERVED_UNSET, KeyspaceError, KeyspaceId, KeyspacePrefixIterator};
 use crate::snapshot::buffer::{BUFFER_INLINE_VALUE, KeyspaceBuffers};
 use crate::snapshot::snapshot::{ReadSnapshot, WriteSnapshot};
 
 pub mod error;
 pub mod key_value;
-mod isolation_manager;
+pub mod isolation_manager;
 pub mod keyspace;
 pub mod snapshot;
 
@@ -55,7 +55,7 @@ pub struct MVCCStorage {
     owner_name: Rc<str>,
     path: PathBuf,
     keyspaces: Vec<Keyspace>,
-    keyspaces_index: [Option<KeyspaceId>; KEYSPACE_ID_MAX],
+    keyspaces_index: [Option<KeyspaceId>; KEYSPACE_ID_MAX_COUNT],
     // TODO: inject either a remote or local service
     durability_service: WAL,
     isolation_manager: IsolationManager,
@@ -195,7 +195,7 @@ impl MVCCStorage {
         let write_batches = self.to_write_batches(&commit_sequence_number, &commit_record.buffers());
 
         for (index, write_batch) in write_batches.into_iter().enumerate() {
-            debug_assert!(index < KEYSPACE_ID_MAX);
+            debug_assert!(index < KEYSPACE_ID_MAX_COUNT);
             if write_batch.is_some() {
                 self.get_keyspace(index as KeyspaceId).write(write_batch.unwrap())
                     .map_err(|error| MVCCStorageError {
@@ -210,8 +210,8 @@ impl MVCCStorage {
         Ok(())
     }
 
-    fn to_write_batches(&self, commit_sequence_number: &SequenceNumber, buffers: &KeyspaceBuffers) -> [Option<WriteBatch>; KEYSPACE_ID_MAX] {
-        let mut write_batches: [Option<WriteBatch>; KEYSPACE_ID_MAX] = core::array::from_fn(|_| None);
+    fn to_write_batches(&self, commit_sequence_number: &SequenceNumber, buffers: &KeyspaceBuffers) -> [Option<WriteBatch>; KEYSPACE_ID_MAX_COUNT] {
+        let mut write_batches: [Option<WriteBatch>; KEYSPACE_ID_MAX_COUNT] = core::array::from_fn(|_| None);
 
         buffers.iter().enumerate().for_each(|(index, buffer)| {
             let mut map = buffer.map().read().unwrap();

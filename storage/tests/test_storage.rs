@@ -45,7 +45,7 @@ fn create_keyspaces() {
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::new_db_options();
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-    let keyspace_1_id: KeyspaceId = 0x1;
+    let keyspace_1_id: KeyspaceId = 0x0;
     let create_1_result = storage.create_keyspace("keyspace_1", keyspace_1_id, &options);
     assert!(create_1_result.is_ok());
     let keyspace_2_id: KeyspaceId = 0x10;
@@ -63,7 +63,7 @@ fn create_keyspaces_errors() {
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::new_db_options();
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-    let keyspace_1_id: KeyspaceId = 0x1;
+    let keyspace_1_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace_1", keyspace_1_id, &options).unwrap();
 
     let keyspace_2_id: KeyspaceId = 0x10;
@@ -75,9 +75,8 @@ fn create_keyspaces_errors() {
         ..
     })), "{}", name_error.unwrap_err());
 
-    let duplicate_prefix: KeyspaceId = 0x1;
+    let duplicate_prefix: KeyspaceId = 0x0;
     let prefix_error = storage.create_keyspace("keyspace_2", duplicate_prefix, &options);
-    dbg!(&prefix_error);
     assert!(matches!(prefix_error, Err(MVCCStorageError{
         kind: MVCCStorageErrorKind::KeyspaceIdExists {
             ..

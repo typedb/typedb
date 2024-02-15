@@ -31,8 +31,8 @@ use bytes::byte_array::ByteArray;
 use iterator::State;
 
 use crate::key_value::{StorageKeyArray, StorageValueArray};
-use crate::keyspace::keyspace::{KEYSPACE_ID_MAX, KeyspaceId};
-use crate::snapshot::snapshot::SnapshotError;
+use crate::keyspace::keyspace::{KEYSPACE_ID_MAX_COUNT, KeyspaceId};
+use crate::snapshot::error::SnapshotError;
 use crate::snapshot::write::Write;
 
 pub const BUFFER_INLINE_KEY: usize = 48;
@@ -40,7 +40,7 @@ pub const BUFFER_INLINE_VALUE: usize = 128;
 
 #[derive(Debug)]
 pub(crate) struct KeyspaceBuffers {
-    buffers: [KeyspaceBuffer; KEYSPACE_ID_MAX],
+    buffers: [KeyspaceBuffer; KEYSPACE_ID_MAX_COUNT],
 }
 
 impl KeyspaceBuffers {
@@ -76,16 +76,6 @@ impl KeyspaceBuffer {
             buffer: RwLock::new(BTreeMap::new()),
         }
     }
-
-    // fn new() -> KeyspaceBuffers {
-    //     KeyspaceBuffers {
-    //         buffers: core::array::from_fn(|i| RwLock::new(BTreeMap::new()))
-    //     }
-    // }
-    //
-    // fn get_keyspace_writes(&self, keyspace_id: KeyspaceId) -> RwLock<BTreeMap<ByteArray<BUFFER_INLINE_KEY>, Write>> {
-    //     self.buffers[keyspace_id as usize]
-    // }
 
     pub(crate) fn insert(&self, key: ByteArray<BUFFER_INLINE_KEY>, value: StorageValueArray<BUFFER_INLINE_VALUE>) {
         let mut map = self.buffer.write().unwrap();
@@ -252,7 +242,7 @@ impl BufferedPrefixIterator {
 
 impl Serialize for KeyspaceBuffers {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        let mut state = serializer.serialize_tuple(KEYSPACE_ID_MAX)?;
+        let mut state = serializer.serialize_tuple(KEYSPACE_ID_MAX_COUNT)?;
         for buffer in &self.buffers {
             state.serialize_element(&buffer)?;
         }
@@ -341,7 +331,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffers {
             // }
         }
 
-        deserializer.deserialize_tuple(KEYSPACE_ID_MAX, KeyspaceBuffersVisitor)
+        deserializer.deserialize_tuple(KEYSPACE_ID_MAX_COUNT, KeyspaceBuffersVisitor)
     }
 }
 

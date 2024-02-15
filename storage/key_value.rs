@@ -54,13 +54,12 @@ pub struct StorageKeyArray<const INLINE_SIZE: usize> {
 }
 
 impl<const INLINE_SIZE: usize> StorageKeyArray<INLINE_SIZE> {
-    pub(crate) fn new(keyspace_id: KeyspaceId, array: ByteArray<INLINE_SIZE>) -> StorageKeyArray<INLINE_SIZE> {
+    pub fn new(keyspace_id: KeyspaceId, array: ByteArray<INLINE_SIZE>) -> StorageKeyArray<INLINE_SIZE> {
         StorageKeyArray {
             keyspace_id: keyspace_id,
             byte_array: array,
         }
     }
-
     pub(crate) fn keyspace_id(&self) -> KeyspaceId {
         self.keyspace_id
     }
@@ -117,10 +116,19 @@ impl<'bytes, const INLINE_SIZE: usize> From<&'bytes StorageKeyArray<INLINE_SIZE>
     }
 }
 
+impl<const INLINE_SIZE: usize, const SIZE: usize> From<&StorageKey<'_, SIZE>> for StorageKeyArray<INLINE_SIZE> {
+    fn from(key: &StorageKey<'_, SIZE>) -> Self {
+        StorageKeyArray {
+            keyspace_id: key.keyspace_id(),
+            byte_array: ByteArray::from(key.bytes()),
+        }
+    }
+}
+
 impl<const INLINE_SIZE: usize> From<(Vec<u8>, u8)> for StorageKeyArray<INLINE_SIZE> {
     // For tests
     fn from((bytes, section_id): (Vec<u8>, u8)) -> Self {
-        StorageKeyArray::from((bytes.as_slice(), section_id))
+        From::from((bytes.as_slice(), section_id))
     }
 }
 
@@ -227,7 +235,7 @@ impl<'bytes> StorageValueReference<'bytes> {
     }
 }
 
-impl <'bytes, const INLINE_SIZE: usize> From<&'bytes StorageValueArray<INLINE_SIZE>> for StorageValueReference<'bytes> {
+impl<'bytes, const INLINE_SIZE: usize> From<&'bytes StorageValueArray<INLINE_SIZE>> for StorageValueReference<'bytes> {
     fn from(array_ref: &'bytes StorageValueArray<INLINE_SIZE>) -> Self {
         StorageValueReference::new(ByteReference::from(array_ref.byte_array()))
     }

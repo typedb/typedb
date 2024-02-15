@@ -104,8 +104,8 @@ fn setup_storage(keyspace_id: KeyspaceId, key_count: usize) -> (MVCCStorage, Pat
 
 fn criterion_benchmark(c: &mut Criterion) {
     init_logging();
-    const INITIAL_KEY_COUNT: usize = 100_000; // 10 million = approximately 0.2 GB of keys
-    const KEYSPACE_ID: KeyspaceId = 1;
+    const INITIAL_KEY_COUNT: usize = 10_000_000; // 10 million = approximately 0.2 GB of keys
+    const KEYSPACE_ID: KeyspaceId = 0;
     {
         let (storage, storage_path) = setup_storage(KEYSPACE_ID, INITIAL_KEY_COUNT);
         c.bench_function("snapshot_read_get", |b| b.iter(|| {
@@ -165,6 +165,7 @@ impl<'a> Profiler for FlamegraphProfiler<'a> {
     }
 }
 
+// TODO: this flame graph output isn't working. Copied from https://www.jibbow.com/posts/criterion-flamegraphs/
 fn profiled() -> Criterion {
     Criterion::default().with_profiler(FlamegraphProfiler::new(100))
 }

@@ -21,6 +21,7 @@ use std::sync::Arc;
 use durability::DurabilityError;
 use crate::isolation_manager::IsolationError;
 use crate::keyspace::keyspace::{KeyspaceError, KeyspaceId};
+use crate::snapshot::error::SnapshotErrorKind;
 
 #[derive(Debug)]
 pub struct MVCCStorageError {
@@ -42,7 +43,32 @@ pub enum MVCCStorageErrorKind {
 
 impl Display for MVCCStorageError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        match &self.kind {
+            MVCCStorageErrorKind::FailedToDeleteStorage { source, .. } => {
+                write!(f, "MVCCStorageError.FailedToDeleteStorage caused by: '{}'", source)
+            }
+            MVCCStorageErrorKind::KeyspaceNameExists { keyspace, .. } => {
+                write!(f, "MVCCStorageError.KeyspaceNameExists: '{}'", keyspace)
+            }
+            MVCCStorageErrorKind::KeyspaceIdReserved { keyspace, keyspace_id, .. } => {
+                write!(f, "MVCCStorageError.KeyspaceIdReserved: reserved keyspace id '{}' cannot be used for new keyspace '{}'.", keyspace_id, keyspace)
+            }
+            MVCCStorageErrorKind::KeyspaceIdExists { new_keyspace, keyspace_id, existing_keyspace, .. } => {
+                write!(f, "MVCCStorageError.KeyspaceIdExists: keyspace id '{}' cannot be used for new keyspace '{}' since it is already used by keyspace '{}'", keyspace_id, new_keyspace, existing_keyspace)
+            }
+            MVCCStorageErrorKind::KeyspaceError { source, keyspace, .. } => {
+                write!(f, "MVCCStorageError.KeyspaceError in keyspace '{}' caused by: '{}'", keyspace, source)
+            }
+            MVCCStorageErrorKind::KeyspaceDeleteError { source, .. } => {
+                write!(f, "MVCCStorageError.KeyspaceDeleteError caused by: '{}'", source)
+            }
+            MVCCStorageErrorKind::IsolationError { source, .. } => {
+                write!(f, "MVCCStorageError.IsolationError caused by: '{}'", source)
+            }
+            MVCCStorageErrorKind::DurabilityError { source, .. } => {
+                write!(f, "MVCCStorageError.DurabilityError caused by: '{}'", source)
+            },
+        }
     }
 }
 
@@ -53,7 +79,7 @@ impl Error for MVCCStorageError {
             MVCCStorageErrorKind::KeyspaceError { source, .. } => Some(source),
             MVCCStorageErrorKind::IsolationError { source, .. } => Some(source),
             MVCCStorageErrorKind::DurabilityError { source, .. } => Some(source),
-            MVCCStorageErrorKind::KeyspaceNameExists { ..  } => None,
+            MVCCStorageErrorKind::KeyspaceNameExists { .. } => None,
             MVCCStorageErrorKind::KeyspaceIdReserved { .. } => None,
             MVCCStorageErrorKind::KeyspaceIdExists { .. } => None,
             MVCCStorageErrorKind::KeyspaceDeleteError { source } => Some(source),
