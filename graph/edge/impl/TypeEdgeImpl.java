@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.graph.edge.impl;
 
+import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
@@ -407,8 +408,8 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         private final AtomicBoolean deleted;
         private TypeVertex from;
         private TypeVertex to;
-        private VertexIID.Type overriddenIID;
-        private TypeVertex overridden;
+        private final AtomicBoolean committed;
+        private Either<VertexIID.Type, TypeVertex> overridden;
         private Set<Annotation> annotations;
 
         /**
@@ -438,8 +439,9 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             }
             encoding = iid.encoding();
             deleted = new AtomicBoolean(false);
-            if (overriddenIID != null) this.overriddenIID = overriddenIID;
+            overridden = Either.first(overriddenIID);
             annotations = null;
+            committed = new AtomicBoolean(false);
         }
 
         @Override
@@ -484,10 +486,10 @@ public abstract class TypeEdgeImpl implements TypeEdge {
 
         @Override
         public Optional<TypeVertex> overridden() {
-            if (overridden != null) return Optional.of(overridden);
-            if (overriddenIID == null) return Optional.empty();
-            overridden = graph.convert(overriddenIID);
-            return Optional.of(overridden);
+            if (overridden.isFirst()) {
+                overridden = Either.second(overridden.first() != null ? graph.convert(overridden.first()) : null);
+            }
+            return Optional.ofNullable(overridden.second());
         }
 
         /**
@@ -500,18 +502,12 @@ public abstract class TypeEdgeImpl implements TypeEdge {
          */
         @Override
         public void setOverridden(TypeVertex overridden) {
-            this.overridden = overridden;
-            overriddenIID = overridden.iid();
-            graph.storage().putUntracked(computeForwardIID(), overriddenIID.bytes());
-            graph.storage().putUntracked(computeBackwardIID(), overriddenIID.bytes());
+            this.overridden = Either.second(overridden);
         }
 
         @Override
         public void unsetOverridden() {
-            this.overridden = null;
-            this.overriddenIID = null;
-            graph.storage().putUntracked(computeForwardIID());
-            graph.storage().putUntracked(computeBackwardIID());
+            this.overridden = Either.second(null);
         }
 
         @Override
@@ -587,15 +583,18 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             return deleted.get();
         }
 
-        /**
-         * No-op commit operation of a persisted edge.
-         * <p>
-         * Persisted edges do not need to be committed back to the graph storage.
-         * The only property of a persisted edge that can be changed is only the
-         * {@code overriddenIID}, and that is immediately written to storage when changed.
-         */
         @Override
         public void commit() {
+            if (committed.compareAndSet(false, true) && overridden.isSecond()) {
+                if (overridden.second() != null) {
+                    // TODO: Store overridden as an edge property instead in 3.0
+                    graph.storage().putUntracked(forward.iid(), overridden.second().iid().bytes());
+                    graph.storage().putUntracked(backward.iid(), overridden.second().iid().bytes());
+                } else {
+                    graph.storage().putUntracked(forward.iid());
+                    graph.storage().putUntracked(backward.iid());
+                }
+            }
         }
     }
 }
