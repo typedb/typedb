@@ -34,6 +34,7 @@ pub enum MVCCStorageErrorKind {
     FailedToDeleteStorage { source: std::io::Error },
     KeyspaceNameExists { keyspace: String },
     KeyspaceIdReserved { keyspace: String, keyspace_id: KeyspaceId },
+    KeyspaceIdTooLarge { keyspace: String, keyspace_id: KeyspaceId, max_keyspace_id: KeyspaceId },
     KeyspaceIdExists { new_keyspace: String, keyspace_id: KeyspaceId, existing_keyspace: String },
     KeyspaceError { source: Arc<KeyspaceError>, keyspace: String },
     KeyspaceDeleteError { source: KeyspaceError },
@@ -53,6 +54,9 @@ impl Display for MVCCStorageError {
             MVCCStorageErrorKind::KeyspaceIdReserved { keyspace, keyspace_id, .. } => {
                 write!(f, "MVCCStorageError.KeyspaceIdReserved: reserved keyspace id '{}' cannot be used for new keyspace '{}'.", keyspace_id, keyspace)
             }
+            MVCCStorageErrorKind::KeyspaceIdTooLarge { keyspace, keyspace_id, max_keyspace_id: maximum, .. } => {
+                write!(f, "MVCCStorageError.KeyspaceIdTooLarge: keyspace id '{}' cannot be used for new keyspace '{}' since it is larger than maximum keyspace id '{}'.", keyspace_id, keyspace, maximum)
+            }
             MVCCStorageErrorKind::KeyspaceIdExists { new_keyspace, keyspace_id, existing_keyspace, .. } => {
                 write!(f, "MVCCStorageError.KeyspaceIdExists: keyspace id '{}' cannot be used for new keyspace '{}' since it is already used by keyspace '{}'", keyspace_id, new_keyspace, existing_keyspace)
             }
@@ -67,7 +71,7 @@ impl Display for MVCCStorageError {
             }
             MVCCStorageErrorKind::DurabilityError { source, .. } => {
                 write!(f, "MVCCStorageError.DurabilityError caused by: '{}'", source)
-            },
+            }
         }
     }
 }
@@ -81,6 +85,7 @@ impl Error for MVCCStorageError {
             MVCCStorageErrorKind::DurabilityError { source, .. } => Some(source),
             MVCCStorageErrorKind::KeyspaceNameExists { .. } => None,
             MVCCStorageErrorKind::KeyspaceIdReserved { .. } => None,
+            MVCCStorageErrorKind::KeyspaceIdTooLarge{  .. } => None,
             MVCCStorageErrorKind::KeyspaceIdExists { .. } => None,
             MVCCStorageErrorKind::KeyspaceDeleteError { source } => Some(source),
         }

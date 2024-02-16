@@ -25,8 +25,10 @@ This file should comprise a set of low-level tests relating to MVCC.
 
 3. We should be able to open a previous snapshot in write, and the commit should fail if a subsequent commit has a conflicting operation
    Note: edge case is when the commit records have been purged from memory. Isolation manager should be able to retrieve them again from the Durability service on demand.
+   Note: let's write this test first, and leave it red. This will induce a refactor of the Timeline - which is the next task.
 
-4. We should be able to configure that a cleanup is run after T has elapsed that deletes old versions of data we no longer want to retain
+
+4. We should be able to configure that a cleanup of old versionsn of key is run after T has elapsed that deletes old versions of data we no longer want to retain
    We want the time keeping component to be received from the durability service, which should be able to tell us the last sequence number
    before a specific time (it should be able to binary search its WAL log files and check the dates on them to find this information).
    After cleanup is run, we should get a good error if a version that is too-old is opened.

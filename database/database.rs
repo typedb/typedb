@@ -18,12 +18,12 @@
 use std::fs;
 use std::path::PathBuf;
 use std::rc::Rc;
+use speedb::Snapshot;
 
 use concept::type_manager::TypeManager;
 use encoding::initialise_storage;
 use encoding::type_::id_generator::TypeIIDGenerator;
 use encoding::thing::id_generator::ThingIIDGenerator;
-use storage::snapshot2::Snapshot;
 use storage::MVCCStorage;
 use crate::error::DatabaseError;
 use crate::error::DatabaseErrorKind::{FailedToCreateStorage, FailedToSetupStorage};
@@ -66,7 +66,7 @@ impl Database {
     }
 
     pub fn transaction_read(&self) -> TransactionRead {
-        let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(self.storage.snapshot_read()));
+        let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(self.storage.open_snapshot_read()));
         let type_manager = TypeManager::new(snapshot.clone(), &self.type_iid_generator);
         TransactionRead {
             snapshot: snapshot,
@@ -75,7 +75,7 @@ impl Database {
     }
 
     fn transaction_write(&self) -> TransactionWrite {
-        let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(self.storage.snapshot_write()));
+        let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(self.storage.open_snapshot_write()));
         let type_manager = TypeManager::new(snapshot.clone(), &self.type_iid_generator);
         TransactionWrite {
             snapshot: snapshot,

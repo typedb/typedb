@@ -42,7 +42,7 @@ fn setup_storage(storage_path: &PathBuf) -> MVCCStorage {
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
     storage.create_keyspace("keyspace", KEYSPACE_ID, &MVCCStorage::new_db_options()).unwrap();
 
-    let snapshot = storage.snapshot_write();
+    let snapshot = storage.open_snapshot_write();
     snapshot.put_val(StorageKeyArray::new(KEYSPACE_ID, ByteArray::from(&KEY_1)), StorageValueArray::new(ByteArray::from(&VALUE_1)));
     snapshot.put_val(StorageKeyArray::new(KEYSPACE_ID, ByteArray::from(&KEY_2)), StorageValueArray::new(ByteArray::from(&VALUE_2)));
     snapshot.commit().unwrap();
@@ -56,8 +56,8 @@ fn commits_isolated() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_1 = storage.snapshot_write();
-    let snapshot_2 = storage.snapshot_read();
+    let snapshot_1 = storage.open_snapshot_write();
+    let snapshot_2 = storage.open_snapshot_read();
 
     let key_3 =  StorageKeyArray::new(KEYSPACE_ID, ByteArray::from(&KEY_3));
     let value_3 =  StorageValueArray::new(ByteArray::from(&VALUE_3));
@@ -70,7 +70,7 @@ fn commits_isolated() {
     let iterated = snapshot_2.iterate_prefix(&prefix).collect_cloned();
     assert_eq!(iterated.len(), 2);
 
-    let snapshot_3 = storage.snapshot_read();
+    let snapshot_3 = storage.open_snapshot_read();
     let get = snapshot_3.get(&StorageKey::Reference(StorageKeyReference::from(&key_3)));
     assert!(matches!(get, Some(value_3)));
     let iterated = snapshot_3.iterate_prefix(&prefix).collect_cloned();
@@ -89,8 +89,8 @@ fn g0_update_conflicts_fail() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_1 = storage.snapshot_write();
-    let snapshot_2 = storage.snapshot_write();
+    let snapshot_1 = storage.open_snapshot_write();
+    let snapshot_2 = storage.open_snapshot_write();
 
     let key_1: &StorageKey<'_, 48> = &StorageKey::Reference(StorageKeyReference::new(KEYSPACE_ID, ByteReference::new(&KEY_1)));
     let key_2: &StorageKey<'_, 48> = &StorageKey::Reference(StorageKeyReference::new(KEYSPACE_ID, ByteReference::new(&KEY_2)));

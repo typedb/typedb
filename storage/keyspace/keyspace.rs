@@ -28,9 +28,12 @@ use logger::result::ResultExt;
 
 pub type KeyspaceId = u8;
 
-pub(crate) const KEYSPACE_ID_MAX: KeyspaceId = KeyspaceId::MAX;
-pub(crate) const KEYSPACE_ID_MAX_COUNT: usize = KEYSPACE_ID_MAX as usize + 1;
-pub(crate) const KEYSPACE_ID_RESERVED_UNSET: KeyspaceId = KEYSPACE_ID_MAX;
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// WARNING: adjusting these constants affects many things, including serialised WAL records and in-memory data structures.  //
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+pub(crate) const KEYSPACE_MAXIMUM_COUNT: usize = 10;
+pub(crate) const KEYSPACE_ID_MAX: KeyspaceId = KEYSPACE_MAXIMUM_COUNT as u8 - 1;
+pub(crate) const KEYSPACE_ID_RESERVED_UNSET: KeyspaceId = KEYSPACE_ID_MAX + 1;
 
 
 ///

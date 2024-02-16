@@ -41,7 +41,7 @@ use snapshot::write::Write;
 use crate::error::{MVCCStorageError, MVCCStorageErrorKind};
 use crate::isolation_manager::{CommitRecord, IsolationManager};
 use crate::key_value::{StorageKey, StorageKeyReference, StorageValue, StorageValueReference};
-use crate::keyspace::keyspace::{Keyspace, KEYSPACE_ID_MAX_COUNT, KEYSPACE_ID_RESERVED_UNSET, KeyspaceError, KeyspaceId, KeyspacePrefixIterator};
+use crate::keyspace::keyspace::{Keyspace, KEYSPACE_ID_MAX, KEYSPACE_ID_RESERVED_UNSET, KEYSPACE_MAXIMUM_COUNT, KeyspaceError, KeyspaceId, KeyspacePrefixIterator};
 use crate::snapshot::buffer::{BUFFER_INLINE_VALUE, KeyspaceBuffers};
 use crate::snapshot::snapshot::{ReadSnapshot, WriteSnapshot};
 
@@ -55,7 +55,7 @@ pub struct MVCCStorage {
     owner_name: Rc<str>,
     path: PathBuf,
     keyspaces: Vec<Keyspace>,
-    keyspaces_index: [Option<KeyspaceId>; KEYSPACE_ID_MAX_COUNT],
+    keyspaces_index: [Option<KeyspaceId>; KEYSPACE_MAXIMUM_COUNT],
     // TODO: inject either a remote or local service
     durability_service: WAL,
     isolation_manager: IsolationManager,
@@ -123,6 +123,15 @@ impl MVCCStorage {
                     keyspace_id: keyspace_id,
                 },
             });
+        } else if keyspace_id > KEYSPACE_ID_MAX {
+            return Err(MVCCStorageError {
+                storage_name: self.owner_name.as_ref().to_owned(),
+                kind: MVCCStorageErrorKind::KeyspaceIdTooLarge {
+                    keyspace: name.to_owned(),
+                    keyspace_id: keyspace_id,
+                    max_keyspace_id: KEYSPACE_ID_MAX,
+                },
+            });
         }
         for existing_keyspace_id in (0..self.keyspaces_index.len()) {
             if let Some(existing_keyspace_index) = self.keyspaces_index[existing_keyspace_id] {
@@ -149,7 +158,7 @@ impl MVCCStorage {
         Ok(())
     }
 
-    pub fn snapshot_write<'storage>(&'storage self) -> WriteSnapshot<'storage> {
+    pub fn open_snapshot_write<'storage>(&'storage self) -> WriteSnapshot<'storage> {
         /*
 
         How to pick a sequence number:
@@ -168,7 +177,7 @@ impl MVCCStorage {
         WriteSnapshot::new(self, open_sequence_number)
     }
 
-    pub fn snapshot_read<'storage>(&'storage self) -> ReadSnapshot<'storage> {
+    pub fn open_snapshot_read<'storage>(&'storage self) -> ReadSnapshot<'storage> {
         let open_sequence_number = self.isolation_manager.watermark();
         ReadSnapshot::new(self, open_sequence_number)
     }
@@ -185,17 +194,20 @@ impl MVCCStorage {
         })?;
 
         // 2. validate commit isolation
-        let commit_record = self.isolation_manager.try_commit(commit_sequence_number, commit_record)
+        self.isolation_manager.try_commit(commit_sequence_number, commit_record)
             .map_err(|err| MVCCStorageError {
                 storage_name: self.owner_name.as_ref().to_owned(),
                 kind: MVCCStorageErrorKind::IsolationError { source: err },
             })?;
 
         //  3. write to kv-storage
-        let write_batches = self.to_write_batches(&commit_sequence_number, &commit_record.buffers());
+        let write_batches = self.isolation_manager.apply_to_commit_record(
+            &commit_sequence_number,
+            |record| self.to_write_batches(&commit_sequence_number, record.buffers()),
+        );
 
         for (index, write_batch) in write_batches.into_iter().enumerate() {
-            debug_assert!(index < KEYSPACE_ID_MAX_COUNT);
+            debug_assert!(index < KEYSPACE_MAXIMUM_COUNT);
             if write_batch.is_some() {
                 self.get_keyspace(index as KeyspaceId).write(write_batch.unwrap())
                     .map_err(|error| MVCCStorageError {
@@ -210,8 +222,8 @@ impl MVCCStorage {
         Ok(())
     }
 
-    fn to_write_batches(&self, commit_sequence_number: &SequenceNumber, buffers: &KeyspaceBuffers) -> [Option<WriteBatch>; KEYSPACE_ID_MAX_COUNT] {
-        let mut write_batches: [Option<WriteBatch>; KEYSPACE_ID_MAX_COUNT] = core::array::from_fn(|_| None);
+    fn to_write_batches(&self, commit_sequence_number: &SequenceNumber, buffers: &KeyspaceBuffers) -> [Option<WriteBatch>; KEYSPACE_MAXIMUM_COUNT] {
+        let mut write_batches: [Option<WriteBatch>; KEYSPACE_MAXIMUM_COUNT] = core::array::from_fn(|_| None);
 
         buffers.iter().enumerate().for_each(|(index, buffer)| {
             let mut map = buffer.map().read().unwrap();
@@ -246,6 +258,10 @@ impl MVCCStorage {
             }
         });
         write_batches
+    }
+
+    pub fn closed_snapshot_write(&self, open_sequence_number: &SequenceNumber) {
+        self.isolation_manager.closed(open_sequence_number)
     }
 
     fn get_keyspace(&self, keyspace_id: KeyspaceId) -> &Keyspace {
@@ -584,7 +600,7 @@ const MVCC_KEY_INLINE_SIZE: usize = 128;
 
 impl<'bytes> MVCCKey<'bytes> {
     const OPERATION_START_NEGATIVE_OFFSET: usize = StorageOperation::serialised_len();
-    const SEQUENCE_NUMBER_START_NEGATIVE_OFFSET: usize = MVCCKey::OPERATION_START_NEGATIVE_OFFSET +  SequenceNumber::serialised_len();
+    const SEQUENCE_NUMBER_START_NEGATIVE_OFFSET: usize = MVCCKey::OPERATION_START_NEGATIVE_OFFSET + SequenceNumber::serialised_len();
 
     fn build(key: &[u8], sequence_number: &SequenceNumber, storage_operation: StorageOperation) -> MVCCKey<'bytes> {
         let length = key.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len();

@@ -48,7 +48,7 @@ fn create_keyspaces() {
     let keyspace_1_id: KeyspaceId = 0x0;
     let create_1_result = storage.create_keyspace("keyspace_1", keyspace_1_id, &options);
     assert!(create_1_result.is_ok());
-    let keyspace_2_id: KeyspaceId = 0x10;
+    let keyspace_2_id: KeyspaceId = 0x1;
     let create_2_result = storage.create_keyspace("keyspace_2", keyspace_2_id, &options);
     assert!(create_2_result.is_ok(), "{create_2_result:?}");
     let delete_result = storage.delete_storage();
@@ -66,7 +66,7 @@ fn create_keyspaces_errors() {
     let keyspace_1_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace_1", keyspace_1_id, &options).unwrap();
 
-    let keyspace_2_id: KeyspaceId = 0x10;
+    let keyspace_2_id: KeyspaceId = 0x1;
     let name_error = storage.create_keyspace("keyspace_1", keyspace_2_id, &options);
     assert!(matches!(name_error, Err(MVCCStorageError{
         kind: MVCCStorageErrorKind::KeyspaceNameExists {
@@ -93,9 +93,9 @@ fn get_put_iterate() {
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::new_db_options();
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-    let keyspace_1_id: u8 = 0x1;
+    let keyspace_1_id: u8 = 0x0;
     storage.create_keyspace("keyspace_1", keyspace_1_id, &options).unwrap();
-    let keyspace_2_id: u8 = 0x10;
+    let keyspace_2_id: u8 = 0x1;
     storage.create_keyspace("keyspace_2", keyspace_2_id, &options).unwrap();
 
     let keyspace_1_key_1 = StorageKeyArray::<64>::from((vec![0x0, 0x0, 0x1], keyspace_1_id));

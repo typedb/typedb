@@ -44,7 +44,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     }
 
     pub fn initialise_types(storage: &mut MVCCStorage, id_generator: &TypeIIDGenerator) {
-        let snapshot = Rc::new(Snapshot::Write(storage.snapshot_write()));
+        let snapshot = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
         {
             let type_manager = TypeManager::new(snapshot.clone(), id_generator);
             type_manager.create_entity_type(&Root::Entity.label());

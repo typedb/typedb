@@ -31,7 +31,7 @@ use bytes::byte_array::ByteArray;
 use iterator::State;
 
 use crate::key_value::{StorageKeyArray, StorageValueArray};
-use crate::keyspace::keyspace::{KEYSPACE_ID_MAX_COUNT, KeyspaceId};
+use crate::keyspace::keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId};
 use crate::snapshot::error::SnapshotError;
 use crate::snapshot::write::Write;
 
@@ -40,7 +40,7 @@ pub const BUFFER_INLINE_VALUE: usize = 128;
 
 #[derive(Debug)]
 pub(crate) struct KeyspaceBuffers {
-    buffers: [KeyspaceBuffer; KEYSPACE_ID_MAX_COUNT],
+    buffers: [KeyspaceBuffer; KEYSPACE_MAXIMUM_COUNT],
 }
 
 impl KeyspaceBuffers {
@@ -250,7 +250,7 @@ impl BufferedPrefixIterator {
 
 impl Serialize for KeyspaceBuffers {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        let mut state = serializer.serialize_tuple(KEYSPACE_ID_MAX_COUNT)?;
+        let mut state = serializer.serialize_tuple(KEYSPACE_MAXIMUM_COUNT)?;
         for buffer in &self.buffers {
             state.serialize_element(&buffer)?;
         }
@@ -304,7 +304,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffers {
                 where
                     V: SeqAccess<'de>,
             {
-                let mut buffers_init: [MaybeUninit<KeyspaceBuffer>; 256] = core::array::from_fn(|i| MaybeUninit::uninit());
+                let mut buffers_init: [MaybeUninit<KeyspaceBuffer>; KEYSPACE_MAXIMUM_COUNT] = core::array::from_fn(|i| MaybeUninit::uninit());
 
                 while let Some(keyspace_buffer) = seq.next_element()? {
                     let keyspace_buffer: KeyspaceBuffer = keyspace_buffer;
@@ -339,7 +339,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffers {
             // }
         }
 
-        deserializer.deserialize_tuple(KEYSPACE_ID_MAX_COUNT, KeyspaceBuffersVisitor)
+        deserializer.deserialize_tuple(KEYSPACE_MAXIMUM_COUNT, KeyspaceBuffersVisitor)
     }
 }
 

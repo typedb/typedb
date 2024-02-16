@@ -48,6 +48,13 @@ impl<'storage> Snapshot<'storage> {
     //         Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
     //     }
     // }
+
+    pub fn close(self) {
+        match self {
+            Snapshot::Read(snapshot) => snapshot.close(),
+            Snapshot::Write(snapshot) => snapshot.close_resources(),
+        }
+    }
 }
 
 pub struct ReadSnapshot<'storage> {
@@ -72,6 +79,9 @@ impl<'storage> ReadSnapshot<'storage> {
     pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> SnapshotPrefixIterator {
         let mvcc_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
         SnapshotPrefixIterator::new(mvcc_iterator, None)
+    }
+
+    pub fn close(self) {
     }
 }
 
@@ -202,5 +212,19 @@ impl<'storage> WriteSnapshot<'storage> {
             self.buffers,
             self.open_sequence_number,
         )
+    }
+
+    pub(crate) fn open_sequence_number(&self) -> &SequenceNumber {
+        &self.open_sequence_number
+    }
+
+    pub fn close_resources(&mut self) {
+        self.storage.closed_snapshot_write(self.open_sequence_number());
+    }
+}
+
+impl Drop for WriteSnapshot<'_> {
+    fn drop(&mut self) {
+        self.close_resources();
     }
 }

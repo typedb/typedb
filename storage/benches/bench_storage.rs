@@ -45,17 +45,17 @@ fn random_key_4(keyspace_id: KeyspaceId) -> StorageKeyArray<BUFFER_INLINE_KEY> {
 
 fn populate_storage(storage: &MVCCStorage, keyspace_id: KeyspaceId, key_count: usize) -> usize {
     const BATCH_SIZE: usize = 1_000;
-    let mut snapshot = storage.snapshot_write();
+    let mut snapshot = storage.open_snapshot_write();
     for i in 0..key_count {
         if i % BATCH_SIZE == 0 {
             snapshot.commit();
-            snapshot = storage.snapshot_write();
+            snapshot = storage.open_snapshot_write();
         }
         snapshot.put(random_key_24(keyspace_id));
     }
     snapshot.commit();
     println!("Keys written: {}", key_count);
-    let snapshot = storage.snapshot_read();
+    let snapshot = storage.open_snapshot_read();
     let prefix = StorageKey::Reference(StorageKeyReference::new(keyspace_id, ByteReference::new(&[0 as u8])));
     let iterator = snapshot.iterate_prefix(&prefix);
     let count = iterator.collect_cloned().len();
@@ -64,7 +64,7 @@ fn populate_storage(storage: &MVCCStorage, keyspace_id: KeyspaceId, key_count: u
 }
 
 fn bench_snapshot_read_get(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Option<StorageValueArray<BUFFER_INLINE_VALUE>> {
-    let snapshot = storage.snapshot_read();
+    let snapshot = storage.open_snapshot_read();
     let mut last: Option<StorageValueArray<BUFFER_INLINE_VALUE>> = None;
     for _ in 0..1 {
         let key = random_key_24(keyspace_id);
@@ -74,7 +74,7 @@ fn bench_snapshot_read_get(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Op
 }
 
 fn bench_snapshot_read_iterate<const PREFIX_LEN: usize, const ITERATE_COUNT: usize>(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Option<StorageValueArray<BUFFER_INLINE_VALUE>> {
-    let snapshot = storage.snapshot_read();
+    let snapshot = storage.open_snapshot_read();
     let mut last: Option<StorageValueArray<BUFFER_INLINE_VALUE>> = None;
     for _ in 0..1 {
         let key = random_key_4(keyspace_id);
@@ -84,12 +84,12 @@ fn bench_snapshot_read_iterate<const PREFIX_LEN: usize, const ITERATE_COUNT: usi
 }
 
 fn bench_snapshot_write_put(storage: &MVCCStorage, keyspace_id: KeyspaceId, batch_size: usize) {
-    let snapshot = storage.snapshot_write();
+    let snapshot = storage.open_snapshot_write();
     for _ in 0..batch_size {
         let key = random_key_24(keyspace_id);
         snapshot.put(key);
     }
-    snapshot.commit()
+    snapshot.commit().unwrap()
 }
 
 fn setup_storage(keyspace_id: KeyspaceId, key_count: usize) -> (MVCCStorage, PathBuf) {
@@ -129,50 +129,55 @@ fn criterion_benchmark(c: &mut Criterion) {
     }
 }
 
-pub struct FlamegraphProfiler<'a> {
-    frequency: c_int,
-    active_profiler: Option<ProfilerGuard<'a>>,
-}
-
-impl<'a> FlamegraphProfiler<'a> {
-    #[allow(dead_code)]
-    pub fn new(frequency: c_int) -> Self {
-        FlamegraphProfiler {
-            frequency,
-            active_profiler: None,
-        }
-    }
-}
-
-impl<'a> Profiler for FlamegraphProfiler<'a> {
-    fn start_profiling(&mut self, _benchmark_id: &str, _benchmark_dir: &Path) {
-        self.active_profiler = Some(ProfilerGuard::new(self.frequency).unwrap());
-    }
-
-    fn stop_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
-        std::fs::create_dir_all(benchmark_dir).unwrap();
-        let flamegraph_path = benchmark_dir.join("flamegraph.svg");
-        let flamegraph_file = File::create(&flamegraph_path)
-            .expect("File system error while creating flamegraph.svg");
-        if let Some(profiler) = self.active_profiler.take() {
-            profiler
-                .report()
-                .build()
-                .unwrap()
-                .flamegraph(flamegraph_file)
-                .expect("Error writing flamegraph");
-        }
-    }
-}
-
-// TODO: this flame graph output isn't working. Copied from https://www.jibbow.com/posts/criterion-flamegraphs/
-fn profiled() -> Criterion {
-    Criterion::default().with_profiler(FlamegraphProfiler::new(100))
-}
-
-criterion_group!(
-    benches,
-    // config = profiled();
-   criterion_benchmark
-);
+criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
+
+
+// --- TODO: this flame graph output isn't working. Copied from https://www.jibbow.com/posts/criterion-flamegraphs/ ---
+
+// pub struct FlamegraphProfiler<'a> {
+//     frequency: c_int,
+//     active_profiler: Option<ProfilerGuard<'a>>,
+// }
+//
+// impl<'a> FlamegraphProfiler<'a> {
+//     #[allow(dead_code)]
+//     pub fn new(frequency: c_int) -> Self {
+//         FlamegraphProfiler {
+//             frequency,
+//             active_profiler: None,
+//         }
+//     }
+// }
+//
+// impl<'a> Profiler for FlamegraphProfiler<'a> {
+//     fn start_profiling(&mut self, _benchmark_id: &str, _benchmark_dir: &Path) {
+//         self.active_profiler = Some(ProfilerGuard::new(self.frequency).unwrap());
+//     }
+//
+//     fn stop_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
+//         std::fs::create_dir_all(benchmark_dir).unwrap();
+//         let flamegraph_path = benchmark_dir.join("flamegraph.svg");
+//         let flamegraph_file = File::create(&flamegraph_path)
+//             .expect("File system error while creating flamegraph.svg");
+//         if let Some(profiler) = self.active_profiler.take() {
+//             profiler
+//                 .report()
+//                 .build()
+//                 .unwrap()
+//                 .flamegraph(flamegraph_file)
+//                 .expect("Error writing flamegraph");
+//         }
+//     }
+// }
+//
+// fn profiled() -> Criterion {
+//     Criterion::default().with_profiler(FlamegraphProfiler::new(100))
+// }
+// criterion_group!(
+//     name = benches;
+//     config = profiled();
+//     targets = criterion_benchmark
+// );
+//
+// criterion_main!(benches);
