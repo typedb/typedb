@@ -17,36 +17,15 @@
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library")
-package(default_visibility = [
-    "//concept:__subpackages__",
-    "//database:__subpackages__",
-    "//encoding:__subpackages__",
-    "//storage/tests:__subpackages__",
-    "//storage/benches:__subpackages__",
-])
+package(default_visibility = ["//visibility:public"])
 
 rust_library(
-    name = "storage",
-    crate_root = "storage.rs",
+    name = "resource",
+    crate_root = "resource.rs",
     srcs = glob([
         "*.rs",
-        "keyspace/*.rs",
-        "snapshot/*.rs",
     ]),
     deps = [
-        "//storage/durability",
-        "//common/logger",
-        "//common/primitive",
-        "//common/bytes",
-        "//common/iterator",
-        "//resource",
-
-        "@crates//:bincode",
-        "@crates//:itertools",
-        "@crates//:speedb",
-        "@crates//:tracing",
-        "@crates//:serde",
-        "@crates//:struct_deser",
     ]
 )
 
