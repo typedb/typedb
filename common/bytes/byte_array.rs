@@ -21,7 +21,7 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use serde::de::{Error, MapAccess, SeqAccess, Visitor};
+use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::ser::SerializeStruct;
 
 use crate::byte_array::ByteArrayErrorKind::Overflow;

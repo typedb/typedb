@@ -134,7 +134,7 @@ impl KeyspaceBuffer {
     pub(crate) fn iterate_prefix<'a>(&self, prefix: &'a [u8]) -> BufferedPrefixIterator {
         let map = self.buffer.read().unwrap();
         let range = map.range::<[u8], _>((Bound::Included(prefix), Bound::Unbounded))
-            .take_while(|(key, value)| key.starts_with(prefix))
+            .take_while(|(key, _)| key.starts_with(prefix))
             .map(|(key, val)| {
                 (StorageKeyArray::new(self.keyspace_id, key.clone()), val.clone())
             }).collect::<Vec<_>>();
@@ -227,7 +227,7 @@ impl BufferedPrefixIterator {
             State::ItemReady => {
                 loop {
                     let peek = self.peek();
-                    if let Some(Ok((key, value))) = peek {
+                    if let Some(Ok((key, _))) = peek {
                         if key.bytes().cmp(target.borrow()) == Ordering::Less {
                             let _ = self.next();
                             self.update_state();
@@ -304,7 +304,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffers {
                 where
                     V: SeqAccess<'de>,
             {
-                let mut buffers_init: [MaybeUninit<KeyspaceBuffer>; KEYSPACE_MAXIMUM_COUNT] = core::array::from_fn(|i| MaybeUninit::uninit());
+                let mut buffers_init: [MaybeUninit<KeyspaceBuffer>; KEYSPACE_MAXIMUM_COUNT] = core::array::from_fn(|_| MaybeUninit::uninit());
 
                 while let Some(keyspace_buffer) = seq.next_element()? {
                     let keyspace_buffer: KeyspaceBuffer = keyspace_buffer;

@@ -15,23 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::error::Error;
-use std::fmt::Display;
-use std::io::Read;
-use std::ops::Deref;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
-use itertools::Itertools;
 use speedb::{Options, WriteBatch};
-use tracing::Value;
 
 use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
 use bytes::ByteArrayOrRef;
-use durability::{DurabilityRecord, DurabilityService, SequenceNumber, Sequencer, wal::WAL};
+use durability::{DurabilityService, SequenceNumber, Sequencer, wal::WAL};
 use iterator::State;
 use logger::error;
 use logger::result::ResultExt;
@@ -226,7 +220,7 @@ impl MVCCStorage {
         let mut write_batches: [Option<WriteBatch>; KEYSPACE_MAXIMUM_COUNT] = core::array::from_fn(|_| None);
 
         buffers.iter().enumerate().for_each(|(index, buffer)| {
-            let mut map = buffer.map().read().unwrap();
+            let map = buffer.map().read().unwrap();
             if map.is_empty() {
                 write_batches[index] = None
             } else {
@@ -446,9 +440,7 @@ impl<'s> MVCCPrefixIterator<'s> {
                 None => self.state = State::Done,
                 Some(Ok((key, value))) => {
                     let mvcc_key = MVCCKey::wrap_slice(key);
-                    let s = mvcc_key.sequence_number();
-                    let op = mvcc_key.operation();
-                    let is_visible = (self.last_visible_key.is_none() || self.last_visible_key.as_ref().unwrap().bytes() != mvcc_key.key()) && mvcc_key.is_visible_to(&self.open_sequence_number);
+                    let is_visible = Self::is_visible_key(&self.open_sequence_number, &self.last_visible_key, &mvcc_key);
                     if is_visible {
                         self.last_visible_key = Some(ByteArray::from(mvcc_key.key()));
                         match mvcc_key.operation() {
@@ -462,6 +454,10 @@ impl<'s> MVCCPrefixIterator<'s> {
                 Some(Err(error)) => self.state = State::Error(Arc::new(error)),
             }
         }
+    }
+
+    fn is_visible_key(open_sequence_number: &SequenceNumber, last_visible_key: &Option<ByteArray<128>>, mvcc_key: &MVCCKey) -> bool {
+        (last_visible_key.is_none() || last_visible_key.as_ref().unwrap().bytes() != mvcc_key.key()) && mvcc_key.is_visible_to(open_sequence_number)
     }
 
     fn advance_and_find_next_state(&mut self) {
@@ -605,7 +601,7 @@ impl<'bytes> MVCCKey<'bytes> {
     fn build(key: &[u8], sequence_number: &SequenceNumber, storage_operation: StorageOperation) -> MVCCKey<'bytes> {
         let length = key.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len();
         let mut byte_array = ByteArray::zeros(length);
-        let mut bytes = byte_array.bytes_mut();
+        let bytes = byte_array.bytes_mut();
 
         let key_end = key.len();
         let sequence_number_end = key_end + SequenceNumber::serialised_len();
@@ -650,7 +646,7 @@ impl<'bytes> MVCCKey<'bytes> {
 
     fn into_key(self) -> ByteArrayOrRef<'bytes, MVCC_KEY_INLINE_SIZE> {
         let end = self.length() - MVCCKey::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
-        let mut bytes = self.bytes;
+        let bytes = self.bytes;
         bytes.truncate(end)
     }
 

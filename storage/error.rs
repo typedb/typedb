@@ -21,7 +21,6 @@ use std::sync::Arc;
 use durability::DurabilityError;
 use crate::isolation_manager::IsolationError;
 use crate::keyspace::keyspace::{KeyspaceError, KeyspaceId};
-use crate::snapshot::error::SnapshotErrorKind;
 
 #[derive(Debug)]
 pub struct MVCCStorageError {

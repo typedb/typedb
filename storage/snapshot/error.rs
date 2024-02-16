@@ -19,7 +19,6 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use crate::error::MVCCStorageError;
-use crate::isolation_manager::IsolationErrorKind;
 
 #[derive(Debug)]
 pub struct SnapshotError {

@@ -15,13 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::fmt::Display;
-use std::ops::RangeBounds;
 use bytes::byte_array::ByteArray;
 use durability::SequenceNumber;
 
 use crate::MVCCStorage;
-use crate::error::MVCCStorageError;
 use crate::isolation_manager::CommitRecord;
 use crate::key_value::{StorageKey, StorageKeyArray, StorageValueArray};
 use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, KeyspaceBuffers};
@@ -49,7 +46,7 @@ impl<'storage> Snapshot<'storage> {
     //     }
     // }
 
-    pub fn close(self) {
+    pub fn close(mut self) {
         match self {
             Snapshot::Read(snapshot) => snapshot.close(),
             Snapshot::Write(snapshot) => snapshot.close_resources(),
@@ -218,13 +215,16 @@ impl<'storage> WriteSnapshot<'storage> {
         &self.open_sequence_number
     }
 
-    pub fn close_resources(&mut self) {
+    pub fn close_resources(&self) {
         self.storage.closed_snapshot_write(self.open_sequence_number());
     }
 }
-
-impl Drop for WriteSnapshot<'_> {
-    fn drop(&mut self) {
-        self.close_resources();
-    }
-}
+//
+//  TODO: in the current version, we should need to close resouces on drop because we need to notify Isolation the txn is closed.
+//        However in the next iteration of IsolationManager, we don't need to record readers at all.
+//
+// impl Drop for WriteSnapshot<'_> {
+//     fn drop(&mut self) {
+//         self.close_resources();
+//     }
+// }

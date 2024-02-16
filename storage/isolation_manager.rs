@@ -23,7 +23,6 @@ use std::iter::empty;
 use std::sync::{Arc, OnceLock, RwLock};
 use std::sync::atomic::{AtomicU64, AtomicU8, AtomicUsize, Ordering};
 
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use durability::{DurabilityRecord, DurabilityRecordType, SequenceNumber};
@@ -153,7 +152,7 @@ impl IsolationManager {
             }
 
             let predecessor_map = predecessor.buffers.get(index as KeyspaceId).map().read().unwrap();
-            if (predecessor_map.is_empty()) {
+            if predecessor_map.is_empty() {
                 continue;
             }
 
@@ -162,7 +161,7 @@ impl IsolationManager {
                 if predecessor_write.is_some() {
                     match write {
                         Write::Insert(_) => {}
-                        Write::InsertPreexisting(value, reinsert) => {
+                        Write::InsertPreexisting(_, reinsert) => {
                             // Re-insert the value if a predecessor has deleted it. This may create extra versions of a key
                             //  in the case that the predecessor ends up failing. However, this will be rare.
                             if matches!(predecessor_write.unwrap(), Write::Delete) {
@@ -202,10 +201,6 @@ impl IsolationManager {
 
     pub(crate) fn watermark(&self) -> SequenceNumber {
         self.timeline.watermark()
-    }
-
-    pub(crate) fn iterate_records_between(&self, from: &SequenceNumber, to: &SequenceNumber) -> impl Iterator<Item=&CommitRecord> {
-        empty()
     }
 
     pub(crate) fn apply_to_commit_record<F, T>(&self, sequence_number: &SequenceNumber, function: F) -> T

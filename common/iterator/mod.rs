@@ -15,8 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::error::Error;
-
 #[derive(Debug, Clone)]
 pub enum State<E> {
     Init,

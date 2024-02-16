@@ -18,7 +18,7 @@
 use tracing;
 pub use tracing::{error, trace, info};
 use tracing::dispatcher::DefaultGuard;
-use tracing_subscriber::{Layer, prelude::*};
+use tracing_subscriber::{prelude::*};
 
 pub mod result;
 

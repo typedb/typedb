@@ -20,7 +20,7 @@ pub mod concept {
 
     use struct_deser_derive::StructDeser;
 
-    use crate::{EncodingSection, SerialisableKeyFixed};
+    use crate::{EncodingKeyspace, SerialisableKeyFixed};
     use crate::prefix::PrefixID;
     use crate::type_::type_encoding::concept::TypeID;
 
@@ -42,7 +42,7 @@ pub mod concept {
 
     impl SerialisableKeyFixed for ObjectIID {
         fn key_section_id(&self) -> u8 {
-            EncodingSection::Data.id()
+            EncodingKeyspace::Data.id()
         }
     }
 

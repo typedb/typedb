@@ -15,7 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::borrow::Borrow;
 use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};

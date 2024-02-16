@@ -37,7 +37,7 @@ pub struct WAL {
 
 impl WAL {
     pub fn new() -> WAL {
-        let mut f = OpenOptions::new()
+        let f = OpenOptions::new()
             .append(true)
                 .create(true) // Optionally create the file if it doesn't already exist
                 .open("/tmp/test_wal")

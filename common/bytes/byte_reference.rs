@@ -37,7 +37,7 @@ impl<'bytes> ByteReference<'bytes> {
         self.bytes
     }
 
-    pub(crate) fn truncate(mut self, length: usize) -> ByteReference<'bytes> {
+    pub(crate) fn truncate(self, length: usize) -> ByteReference<'bytes> {
         assert!(length <= self.bytes.len());
         ByteReference {
             bytes: &self.bytes[0..length]

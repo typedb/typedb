@@ -19,11 +19,12 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::str::Utf8Error;
 
-use storage::{StorageSection, MVCCStorage};
+use struct_deser::{FromBytes, IntoBytes, SerializedByteLen};
+
+use storage::{MVCCStorage};
 use storage::error::MVCCStorageError;
 pub use storage::key_value::{FIXED_KEY_LENGTH_BYTES, StorageKeyReference, StorageKeyReference};
 use storage::key_value::{KeyspaceKeyDynamic, StorageValue};
-use struct_deser::{FromBytes, IntoBytes, SerializedByteLen};
 
 pub mod thing;
 pub mod type_;
@@ -32,24 +33,23 @@ pub mod label;
 mod infix;
 mod value;
 
-
-enum EncodingSection {
+enum EncodingKeyspace {
     Schema,
-    Data, // TODO: partition into sub-spaces for write optimisation
+    Data, // TODO: partition into sub-keyspaces for write optimisation
 }
 
-impl EncodingSection {
+impl EncodingKeyspace {
     const fn name(&self) -> &str {
         match self {
-            EncodingSection::Schema => "schema",
-            EncodingSection::Data => "data",
+            EncodingKeyspace::Schema => "schema",
+            EncodingKeyspace::Data => "data",
         }
     }
 
     const fn id(&self) -> u8 {
         match self {
-            EncodingSection::Schema => 0b0,
-            EncodingSection::Data => 0b100,
+            EncodingKeyspace::Schema => 0x0,
+            EncodingKeyspace::Data => 0x1,
         }
     }
 
@@ -60,8 +60,8 @@ impl EncodingSection {
 }
 
 pub fn initialise_storage(storage: &mut MVCCStorage) -> Result<(), MVCCStorageError> {
-    EncodingSection::Schema.initialise_storage(storage)?;
-    EncodingSection::Data.initialise_storage(storage)
+    EncodingKeyspace::Schema.initialise_storage(storage)?;
+    EncodingKeyspace::Data.initialise_storage(storage)
 }
 
 pub trait Serialisable {

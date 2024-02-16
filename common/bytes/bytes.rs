@@ -15,9 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::fmt::{Display, Formatter, Pointer};
-
-use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 
 use crate::byte_array::ByteArray;
 use crate::byte_reference::ByteReference;

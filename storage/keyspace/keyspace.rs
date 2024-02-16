@@ -178,7 +178,7 @@ impl<'s> KeyspacePrefixIterator<'s> {
         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
         // read_opts.set_prefix_same_as_start(true);
         let mut read_opts = keyspace.new_read_options();
-        let mut raw_iterator: DBRawIteratorWithThreadMode<'s, DB> = keyspace.kv_storage.raw_iterator_opt(read_opts);
+        let raw_iterator: DBRawIteratorWithThreadMode<'s, DB> = keyspace.kv_storage.raw_iterator_opt(read_opts);
 
         KeyspacePrefixIterator {
             prefix: prefix,

@@ -16,7 +16,7 @@
  */
 
 use struct_deser_derive::StructDeser;
-use crate::{EncodingSection, Serialisable, SerialisableKeyFixed};
+use crate::{EncodingKeyspace, Serialisable, SerialisableKeyFixed};
 
 pub const PREFIX_SIZE: usize = 1;
 
@@ -32,7 +32,7 @@ impl SerialisableKeyFixed for PrefixID {
             Prefix::RelationType |
             Prefix::AttributeType |
             Prefix::TypeLabelIndex |
-            Prefix::LabelTypeIndex  => EncodingSection::Schema.id(),
+            Prefix::LabelTypeIndex  => EncodingKeyspace::Schema.id(),
             Prefix::Entity => todo!(),
             Prefix::Attribute => todo!()
         }
