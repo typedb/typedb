@@ -17,13 +17,24 @@
 
 package com.vaticle.typedb.core.common.diagnostics;
 
-public interface ErrorReporter {
+import java.util.Map;
+import java.util.function.Consumer;
 
-    void reportError(Throwable error);
+public class ErrorReporter {
+    private final Map<Class<?>, Consumer<Throwable>> handlers;
+    private final Consumer<Throwable> fallbackHandler;
 
-    class NoopReporter implements ErrorReporter {
+    ErrorReporter(Map<Class<?>, Consumer<Throwable>> handlers, Consumer<Throwable> fallbackHandler) {
+        this.handlers = handlers;
+        this.fallbackHandler = fallbackHandler;
+    }
 
-        @Override
-        public void reportError(Throwable error) {}
+    public void reportError(Throwable error) {
+        for (Class<?> clazz : handlers.keySet())
+            if (clazz.isInstance(error)) {
+                handlers.get(clazz).accept(error);
+                return;
+            }
+        fallbackHandler.accept(error);
     }
 }

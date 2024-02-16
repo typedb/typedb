@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.server;
 import ch.qos.logback.classic.LoggerContext;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.common.util.Java;
-import com.vaticle.typedb.core.common.diagnostics.CoreErrorReporter;
 import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;

@@ -18,10 +18,18 @@
 
 package com.vaticle.typedb.core.common.diagnostics;
 
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import io.sentry.ITransaction;
 import io.sentry.Sentry;
+import io.sentry.SpanStatus;
 import io.sentry.protocol.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
 
 public abstract class Diagnostics {
 
@@ -33,8 +41,8 @@ public abstract class Diagnostics {
 
     private static Diagnostics diagnostics = null;
 
-    final Metrics metrics;
-    private final ErrorReporter errorReporter;
+    protected final Metrics metrics;
+    protected final ErrorReporter errorReporter;
     private final StatisticReporter statisticReporter;
     private final MonitoringEndpoint monitoringEndpoint;
 
@@ -50,7 +58,7 @@ public abstract class Diagnostics {
 
     public static class Noop extends Diagnostics {
         private Noop() {
-            super(null, new ErrorReporter.NoopReporter(), new StatisticReporter.NoopReporter(), null);
+            super(null, null, null, null);
         }
 
         public static synchronized void initialise() {
@@ -58,6 +66,14 @@ public abstract class Diagnostics {
             diagnostics = new Diagnostics.Noop();
         }
 
+        @Override
+        public void submitError(Throwable error) {}
+        @Override
+        public void requestAttempt(Metrics.NetworkRequests.Kind kind) {}
+        @Override
+        public void requestSuccess(Metrics.NetworkRequests.Kind kind) {}
+        @Override
+        public void setGauge(Metrics.UsageStatistics.Kind kind, long value) {}
     }
 
     public static class Core extends Diagnostics {
@@ -77,22 +93,51 @@ public abstract class Diagnostics {
 
             initSentry(serverID, distributionName, version, errorReportingEnable);
 
-            CoreStatisticReporter statisticReporter;
-            if (statisticsReportingEnable) statisticReporter = new CoreStatisticReporter(METRICS_REPORTING_URI);
+            Metrics metrics = new Metrics(serverID, distributionName, version);
+
+            Map<Class<?>, Consumer<Throwable>> handlers = new HashMap<>();
+            handlers.put(TypeDBException.class, error -> submitTypeDBException((TypeDBException)error));
+            ErrorReporter errorReporter = new ErrorReporter(handlers, Sentry::captureException);
+
+            StatisticReporter statisticReporter;
+            if (statisticsReportingEnable) statisticReporter = new StatisticReporter(METRICS_REPORTING_URI, metrics);
             else statisticReporter = null;
 
             MonitoringEndpoint monitoringEndpoint;
-            if (monitoringEnable) monitoringEndpoint = new CoreMonitoringEndpoint(monitoringPort);
+            if (monitoringEnable) monitoringEndpoint = new MonitoringEndpoint(monitoringPort);
             else monitoringEndpoint = null;
 
-            diagnostics = new Core(
-                    new Metrics(serverID, distributionName, version),
-                    new CoreErrorReporter(),
-                    statisticReporter,
-                    monitoringEndpoint
-            );
+            diagnostics = new Core(metrics, errorReporter, statisticReporter, monitoringEndpoint);
+        }
 
-            if (statisticReporter != null) statisticReporter.push();
+        private static void submitTypeDBException(TypeDBException exception) {
+            if (!exception.errorMessage().getClass().equals(ErrorMessage.Internal.class)) {
+                ITransaction txn = Sentry.startTransaction("user_error", "user_error");
+                txn.setData("error_code", exception.errorMessage().code());
+                txn.finish(SpanStatus.OK);
+            } else {
+                Sentry.captureException(exception);
+            }
+        }
+
+        @Override
+        public void submitError(Throwable error) {
+            errorReporter.reportError(error);
+        }
+
+        @Override
+        public void requestAttempt(Metrics.NetworkRequests.Kind kind) {
+            metrics.requestAttempt(kind);
+        }
+
+        @Override
+        public void requestSuccess(Metrics.NetworkRequests.Kind kind) {
+            metrics.requestSuccess(kind);
+        }
+
+        @Override
+        public void setGauge(Metrics.UsageStatistics.Kind kind, long value) {
+            metrics.setGauge(kind, value);
         }
     }
 
@@ -118,19 +163,11 @@ public abstract class Diagnostics {
         return diagnostics;
     }
 
-    public void submitError(Throwable error) {
-        this.errorReporter.reportError(error);
-    }
+    public abstract void submitError(Throwable error);
 
-    public void requestAttempt(Metrics.NetworkRequests.Kind kind) {
-        metrics.requestAttempt(kind);
-    }
+    public abstract void requestAttempt(Metrics.NetworkRequests.Kind kind);
 
-    public void requestSuccess(Metrics.NetworkRequests.Kind kind) {
-        metrics.requestSuccess(kind);
-    }
+    public abstract void requestSuccess(Metrics.NetworkRequests.Kind kind);
 
-    public void setGauge(Metrics.UsageStatistics.Kind kind, long value) {
-        metrics.setGauge(kind, value);
-    }
+    public abstract void setGauge(Metrics.UsageStatistics.Kind kind, long value);
 }

@@ -53,8 +53,26 @@ import static io.netty.handler.codec.http.HttpHeaderValues.TEXT_PLAIN;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
-public interface MonitoringEndpoint {
-    class MetricsInitializer extends ChannelInitializer<SocketChannel> {
+public class MonitoringEndpoint {
+    MonitoringEndpoint(int scrapePort) {
+        (new Thread(() -> this.serve(scrapePort, null))).start();
+    }
+
+    public void serve(int scrapePort, @Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
+        EventLoopGroup group = new NioEventLoopGroup(1);
+        try {
+            ServerBootstrap bootstrap = new ServerBootstrap();
+            bootstrap.group(group).channel(NioServerSocketChannel.class).childHandler(new MetricsInitializer(sslContext, middleware));
+            Channel channel = bootstrap.bind(scrapePort).sync().channel();
+            channel.closeFuture().sync();
+        } catch (InterruptedException ignored) {
+            // do nothing
+        } finally {
+            group.shutdownGracefully();
+        }
+    }
+
+    static class MetricsInitializer extends ChannelInitializer<SocketChannel> {
         private final SslContext sslContext;
         private final ChannelInboundHandlerAdapter[] middleware;
 
@@ -79,7 +97,7 @@ public interface MonitoringEndpoint {
     }
 
 
-    class MetricsHandler extends SimpleChannelInboundHandler<HttpObject> {
+    static class MetricsHandler extends SimpleChannelInboundHandler<HttpObject> {
         @Override
         public void channelReadComplete(ChannelHandlerContext ctx) {
             ctx.flush();
