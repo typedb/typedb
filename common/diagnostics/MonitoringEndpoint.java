@@ -43,18 +43,23 @@ import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.ssl.SslContext;
 
 import javax.annotation.Nullable;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
+import static io.netty.handler.codec.http.HttpHeaderValues.APPLICATION_JSON;
 import static io.netty.handler.codec.http.HttpHeaderValues.CLOSE;
 import static io.netty.handler.codec.http.HttpHeaderValues.TEXT_PLAIN;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 public class MonitoringEndpoint {
-    MonitoringEndpoint(int scrapePort) {
+    private final Metrics metrics;
+    MonitoringEndpoint(Metrics metrics, int scrapePort) {
+        this.metrics = metrics;
         (new Thread(() -> this.serve(scrapePort, null))).start();
     }
 
@@ -72,7 +77,7 @@ public class MonitoringEndpoint {
         }
     }
 
-    static class MetricsInitializer extends ChannelInitializer<SocketChannel> {
+    class MetricsInitializer extends ChannelInitializer<SocketChannel> {
         private final SslContext sslContext;
         private final ChannelInboundHandlerAdapter[] middleware;
 
@@ -97,7 +102,7 @@ public class MonitoringEndpoint {
     }
 
 
-    static class MetricsHandler extends SimpleChannelInboundHandler<HttpObject> {
+    class MetricsHandler extends SimpleChannelInboundHandler<HttpObject> {
         @Override
         public void channelReadComplete(ChannelHandlerContext ctx) {
             ctx.flush();
@@ -108,7 +113,13 @@ public class MonitoringEndpoint {
             if (msg instanceof HttpRequest) {
                 HttpRequest req = (HttpRequest) msg;
 
-                if (!req.uri().equals("/metrics")) {
+                URI uri;
+                try {
+                uri = new URI(req.uri());
+                } catch (Exception ignored) {
+                    uri = URI.create("a");
+                }
+                if (!uri.getPath().equals("/metrics")) {
                     FullHttpResponse response = new DefaultFullHttpResponse(req.protocolVersion(), NOT_FOUND);
                     response.headers().set(CONTENT_TYPE, TEXT_PLAIN).setInt(CONTENT_LENGTH, response.content().readableBytes());
                     response.headers().set(CONNECTION, CLOSE);
@@ -117,9 +128,18 @@ public class MonitoringEndpoint {
                 }
 
                 boolean keepAlive = HttpUtil.isKeepAlive(req);
-                FullHttpResponse response = new DefaultFullHttpResponse(req.protocolVersion(), OK,
-                        Unpooled.wrappedBuffer((Diagnostics.get().metrics.formatPrometheus()).getBytes(StandardCharsets.UTF_8)));
-                response.headers().set(CONTENT_TYPE, TEXT_PLAIN).setInt(CONTENT_LENGTH, response.content().readableBytes());
+                FullHttpResponse response = new DefaultFullHttpResponse(req.protocolVersion(), OK);
+
+                String query = Objects.requireNonNullElse(uri.getQuery(), "");
+
+                if (query.toLowerCase().contains("format=json")) {
+                    response.content().writeBytes(Unpooled.wrappedBuffer((metrics.formatJSON()).getBytes(StandardCharsets.UTF_8)));
+                    response.headers().set(CONTENT_TYPE, APPLICATION_JSON);
+                } else {
+                    response.content().writeBytes(Unpooled.wrappedBuffer((metrics.formatPrometheus()).getBytes(StandardCharsets.UTF_8)));
+                    response.headers().set(CONTENT_TYPE, TEXT_PLAIN);
+                }
+                response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
 
                 if (keepAlive) {
                     if (!req.protocolVersion().isKeepAliveDefault()) {

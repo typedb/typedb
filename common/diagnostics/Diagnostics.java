@@ -104,7 +104,7 @@ public abstract class Diagnostics {
             else statisticReporter = null;
 
             MonitoringEndpoint monitoringEndpoint;
-            if (monitoringEnable) monitoringEndpoint = new MonitoringEndpoint(monitoringPort);
+            if (monitoringEnable) monitoringEndpoint = new MonitoringEndpoint(metrics, monitoringPort);
             else monitoringEndpoint = null;
 
             diagnostics = new Core(metrics, errorReporter, statisticReporter, monitoringEndpoint);
