@@ -13,17 +13,11 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package com.vaticle.typedb.core.common.diagnostics;
 
-public interface ErrorReporter {
-
-    void reportError(Throwable error);
-
-    class NoopReporter implements ErrorReporter {
-
-        @Override
-        public void reportError(Throwable error) {}
-    }
+public interface StatisticReporter {
+    class NoopReporter implements StatisticReporter {}
 }

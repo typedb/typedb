@@ -64,14 +64,11 @@ log:
 
 diagnostics:
   reporting:
-    enable: true
-
-metrics:
-  reporting:
-    enable: true
-  scrape-endpoint:
-    enable: true
+    errors: true
+    statistics: true
+  monitoring:
     port: 4104
+    enable: true
 
 vaticle-factory:
   enable: false

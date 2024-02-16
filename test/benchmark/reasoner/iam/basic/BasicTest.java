@@ -48,7 +48,7 @@ public class BasicTest {
 
     @BeforeClass
     public static void setup() throws IOException {
-        Diagnostics.initialiseNoop();
+        Diagnostics.Noop.initialise();
         benchmarker.setUp();
         benchmarker.loadDatabase(COMMON_RESOURCE_DIR.resolve("types.tql"), COMMON_RESOURCE_DIR.resolve("data.typedb"));
         benchmarker.loadSchema(RESOURCE_DIRECTORY.resolve("basic_test.tql"));

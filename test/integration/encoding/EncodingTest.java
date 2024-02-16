@@ -81,7 +81,7 @@ public class EncodingTest {
 
     @BeforeClass
     public static void setUp() throws IOException {
-        Diagnostics.initialiseNoop();
+        Diagnostics.Noop.initialise();
         Util.resetDirectory(dataDir);
         dbMgr = factory.databaseManager(options);
         dbMgr.create(database);

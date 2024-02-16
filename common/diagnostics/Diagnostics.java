@@ -23,30 +23,83 @@ import io.sentry.protocol.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Diagnostics {
+public abstract class Diagnostics {
+
+    // FIXME inject
+    public static final String DIAGNOSTICS_REPORTING_URI = "https://3d710295c75c81492e57e1997d9e01e1@o4506315929812992.ingest.sentry.io/4506316048629760";
+    public static final String METRICS_REPORTING_URI = "https://localhost:1500/";
 
     private static final Logger LOG = LoggerFactory.getLogger(Diagnostics.class);
 
     private static Diagnostics diagnostics = null;
 
+    final Metrics metrics;
     private final ErrorReporter errorReporter;
+    private final StatisticReporter statisticReporter;
+    private final MonitoringEndpoint monitoringEndpoint;
 
     /*
      * Private singleton constructor
      */
-    private Diagnostics(ErrorReporter errorReporter) {
+    protected Diagnostics(Metrics metrics, ErrorReporter errorReporter, StatisticReporter statisticReporter, MonitoringEndpoint monitoringEndpoint) {
+        this.metrics = metrics;
         this.errorReporter = errorReporter;
+        this.statisticReporter = statisticReporter;
+        this.monitoringEndpoint = monitoringEndpoint;
     }
 
-    public static synchronized void initialise(boolean enable, String serverID, String distributionName, String version, String diagnosticsURI,
-                                               ErrorReporter errorReporter) {
-        if (diagnostics != null) {
-            LOG.debug("Skipping re-initialising diagnostics");
-            return;
+    public static class Noop extends Diagnostics {
+        private Noop() {
+            super(null, new ErrorReporter.NoopReporter(), new StatisticReporter.NoopReporter(), null);
         }
+
+        public static synchronized void initialise() {
+            Sentry.init(options -> options.setEnabled(false));
+            diagnostics = new Diagnostics.Noop();
+        }
+
+    }
+
+    public static class Core extends Diagnostics {
+        private Core(Metrics metrics, ErrorReporter errorReporter, StatisticReporter statisticReporter, MonitoringEndpoint monitoringEndpoint) {
+            super(metrics, errorReporter, statisticReporter, monitoringEndpoint);
+        }
+
+        public static synchronized void initialise(
+                String serverID, String distributionName, String version,
+                boolean errorReportingEnable, boolean statisticsReportingEnable,
+                boolean monitoringEnable, int monitoringPort
+        ) {
+            if (diagnostics != null) {
+                LOG.debug("Skipping re-initialising diagnostics");
+                return;
+            }
+
+            initSentry(serverID, distributionName, version, errorReportingEnable);
+
+            CoreStatisticReporter statisticReporter;
+            if (statisticsReportingEnable) statisticReporter = new CoreStatisticReporter(METRICS_REPORTING_URI);
+            else statisticReporter = null;
+
+            MonitoringEndpoint monitoringEndpoint;
+            if (monitoringEnable) monitoringEndpoint = new CoreMonitoringEndpoint(monitoringPort);
+            else monitoringEndpoint = null;
+
+            diagnostics = new Core(
+                    new Metrics(serverID, distributionName, version),
+                    new CoreErrorReporter(),
+                    statisticReporter,
+                    monitoringEndpoint
+            );
+
+            if (statisticReporter != null) statisticReporter.push();
+        }
+    }
+
+    protected static void initSentry(String serverID, String distributionName, String version, boolean errorReportingEnable) {
         Sentry.init(options -> {
-            options.setEnabled(enable);
-            options.setDsn(diagnosticsURI);
+            options.setEnabled(errorReportingEnable);
+            options.setDsn(DIAGNOSTICS_REPORTING_URI);
             options.setEnableTracing(true);
             options.setSendDefaultPii(false);
             options.setRelease(releaseName(distributionName, version));
@@ -54,12 +107,6 @@ public class Diagnostics {
         User user = new User();
         user.setUsername(serverID);
         Sentry.setUser(user);
-        diagnostics = new Diagnostics(errorReporter);
-    }
-
-    public static synchronized void initialiseNoop() {
-        Sentry.init(options -> options.setEnabled(false));
-        diagnostics = new Diagnostics(new ErrorReporter.NoopReporter());
     }
 
     private static String releaseName(String distributionName, String version) {
@@ -73,5 +120,17 @@ public class Diagnostics {
 
     public void submitError(Throwable error) {
         this.errorReporter.reportError(error);
+    }
+
+    public void requestAttempt(Metrics.NetworkRequests.Kind kind) {
+        metrics.requestAttempt(kind);
+    }
+
+    public void requestSuccess(Metrics.NetworkRequests.Kind kind) {
+        metrics.requestSuccess(kind);
+    }
+
+    public void setGauge(Metrics.UsageStatistics.Kind kind, long value) {
+        metrics.setGauge(kind, value);
     }
 }

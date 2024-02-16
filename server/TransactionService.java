@@ -55,6 +55,7 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.TRANSACTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.EMPTY_TRANSACTION_REQUEST;
@@ -68,7 +69,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_NOT_OPENED;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.scheduled;
-import static com.vaticle.typedb.core.server.MetricsService.NetworkRequestKind.TRANSACTION;
 import static com.vaticle.typedb.core.server.common.RequestReader.applyDefaultOptions;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Transaction.serverMsg;
@@ -136,7 +136,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private void execute(TransactionProto.Transaction.Req request) {
         Lock accessLock = null;
         try {
-            this.typeDBSvc.metricsService.requestAttempt(TRANSACTION);
+            Diagnostics.get().requestAttempt(TRANSACTION);
             accessLock = acquireRequestLock(request);
             switch (request.getReqCase()) {
                 case REQ_NOT_SET:
@@ -147,7 +147,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 default:
                     executeRequest(request);
             }
-            this.typeDBSvc.metricsService.requestSuccess(TRANSACTION);
+            Diagnostics.get().requestSuccess(TRANSACTION);
         } catch (Throwable error) {
             close(error);
         } finally {

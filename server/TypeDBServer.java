@@ -32,7 +32,6 @@ import com.vaticle.typedb.core.database.CoreFactory;
 import com.vaticle.typedb.core.database.Factory;
 import com.vaticle.typedb.core.migrator.CoreMigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
-import com.vaticle.typedb.core.server.common.Constants;
 import com.vaticle.typedb.core.server.logging.CoreLogback;
 import com.vaticle.typedb.core.server.parameters.CoreConfig;
 import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
@@ -87,7 +86,6 @@ public class TypeDBServer implements AutoCloseable {
     protected final CoreDatabaseManager databaseMgr;
     protected final io.grpc.Server server;
     protected final boolean debug;
-    private final MetricsService metricsService;
     protected TypeDBService typeDBService;
     protected AtomicBoolean isOpen;
     private final CoreConfig config;
@@ -113,8 +111,6 @@ public class TypeDBServer implements AutoCloseable {
         verifyPort();
         createOrVerifyDataDir();
         configureDiagnostics();
-
-        metricsService = configureMetrics();
 
         if (debug) logger().info("Running {} in debug mode.", name());
 
@@ -196,21 +192,14 @@ public class TypeDBServer implements AutoCloseable {
 
     protected void configureDiagnostics() {
         try {
-            Diagnostics.initialise(
-                    config.diagnostics().reporting().enable(), serverID(), name(), Version.VERSION,
-                    config.diagnostics().reporting().uri().orElse(null), new CoreErrorReporter()
+            Diagnostics.Core.initialise(
+                    serverID(), name(), Version.VERSION,
+                    config.diagnostics().reporting().errors(), config.diagnostics().reporting().statistics(),
+                    config.diagnostics().monitoring().enable(), config.diagnostics().monitoring().port()
             );
         } catch (Throwable e) {
             LOG.debug("Failed to initialise diagnostics: ", e);
         }
-    }
-
-    protected MetricsService configureMetrics() {
-        return new MetricsService(
-                serverID(), name(), Version.VERSION,
-                config.metrics().reporting().enable(), config.metrics().reporting().uri().orElse(null),
-                config.metrics().scrapeEndpoint().enable(), config.metrics().scrapeEndpoint().port().orElse(null)
-        );
     }
 
     protected String serverID() {
@@ -237,7 +226,7 @@ public class TypeDBServer implements AutoCloseable {
     protected io.grpc.Server rpcServer() {
         assert Executors.isInitialised();
 
-        typeDBService = new TypeDBService(config.server().address(), databaseMgr, metricsService);
+        typeDBService = new TypeDBService(config.server().address(), databaseMgr);
         MigratorService migratorService = new MigratorService(databaseMgr, Version.VERSION);
 
         return NettyServerBuilder.forAddress(config.server().address())

@@ -44,7 +44,7 @@ public class RealQueriesTest {
 
     @BeforeClass
     public static void setup() throws IOException {
-        Diagnostics.initialiseNoop();
+        Diagnostics.Noop.initialise();
         benchmarker.setUp();
         benchmarker.loadDatabase(COMMON_RESOURCE_DIR.resolve("types.tql"), COMMON_RESOURCE_DIR.resolve("data.typedb"));
         benchmarker.loadSchema(COMMON_RESOURCE_DIR.resolve("rules.tql"));

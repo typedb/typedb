@@ -35,8 +35,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_SECTION_MUST_BE_MAP;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_YAML_MUST_BE_MAP;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.server.common.Constants.DIAGNOSTICS_REPORTING_URI;
-import static com.vaticle.typedb.core.server.common.Constants.METRICS_REPORTING_URI;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_EXT;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_NAME;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.KeyValue.Dynamic;
@@ -61,20 +59,16 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
     private static final Predefined<CoreConfig.Log> log = predefined(Log.name, Log.description, new Log());
     protected static final Predefined<CoreConfig.Diagnostics> diagnostics =
             predefined(Diagnostics.name, Diagnostics.description, new Diagnostics());
-    protected static final Predefined<CoreConfig.Metrics> metrics =
-            predefined(Metrics.name, Metrics.description, new Metrics());
     protected static final Predefined<CoreConfig.VaticleFactory> vaticleFactory =
             predefined(VaticleFactory.name, VaticleFactory.description, new VaticleFactory());
-    private static final Set<Predefined<?>> parsers = set(server, storage, log, diagnostics, metrics, vaticleFactory);
+    private static final Set<Predefined<?>> parsers = set(server, storage, log, diagnostics, vaticleFactory);
 
     @Override
     public CoreConfig parse(YAML yaml, String path) {
         if (yaml.isMap()) {
             validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
-            return new CoreConfig(server.parse(yaml.asMap(), path), storage.parse(yaml.asMap(), path),
-                    log.parse(yaml.asMap(), path), diagnostics.parse(yaml.asMap(), path), metrics.parse(yaml.asMap(), path),
-                    vaticleFactory.parse(yaml.asMap(), path)
-            );
+            return new CoreConfig(server.parse(yaml.asMap(), path), storage.parse(yaml.asMap(), path), log.parse(yaml.asMap(), path),
+                    diagnostics.parse(yaml.asMap(), path), vaticleFactory.parse(yaml.asMap(), path));
         } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, path);
     }
 
@@ -500,20 +494,23 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
         protected static final Predefined<CoreConfig.Diagnostics.Reporting> reporting =
                 predefined(Diagnostics.Reporting.name, Diagnostics.Reporting.description, new Diagnostics.Reporting());
-        private static final Set<Predefined<?>> parsers = set(reporting);
+        protected static final Predefined<CoreConfig.Diagnostics.Monitoring> monitoring =
+                predefined(Diagnostics.Monitoring.name, Diagnostics.Monitoring.description, new Diagnostics.Monitoring());
+        private static final Set<Predefined<?>> parsers = set(reporting, monitoring);
 
         @Override
         public CoreConfig.Diagnostics parse(YAML yaml, String path) {
             if (yaml.isMap()) {
                 validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                 CoreConfig.Diagnostics.Reporting reporting = Diagnostics.reporting.parse(yaml.asMap(), path);
-                return new CoreConfig.Diagnostics(reporting);
+                CoreConfig.Diagnostics.Monitoring monitoring = Diagnostics.monitoring.parse(yaml.asMap(), path);
+                return new CoreConfig.Diagnostics(reporting, monitoring);
             } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, path);
         }
 
         @Override
         public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-            return list(reporting.help(path));
+            return list(reporting.help(path), monitoring.help(path));
         }
 
         protected static class Reporting extends Compound<CoreConfig.Diagnostics.Reporting> {
@@ -521,112 +518,54 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
             protected static final String name = "reporting";
             protected static final String description = "Configure diagnostics reporting.";
 
-            private static final Predefined<Boolean> enable =
-                    predefined("enable", "Enable diagnostics reporting.", BOOLEAN);
-            private static final Set<Predefined<?>> parsers = set(enable);
+            private static final Predefined<Boolean> errors =
+                    predefined("errors", "Enable diagnostics reporting.", BOOLEAN);
+            private static final Predefined<Boolean> statistics =
+                    predefined("statistics", "Enable diagnostics reporting.", BOOLEAN);
+            private static final Set<Predefined<?>> parsers = set(errors, statistics);
 
             @Override
             public CoreConfig.Diagnostics.Reporting parse(YAML yaml, String path) {
                 if (yaml.isMap()) {
-                    boolean enable = Reporting.enable.parse(yaml.asMap(), path);
                     validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
-                    if (enable) {
-                        return new CoreConfig.Diagnostics.Reporting(true, DIAGNOSTICS_REPORTING_URI);
-                    } else {
-                        return new CoreConfig.Diagnostics.Reporting(false, null);
-                    }
+                    return new CoreConfig.Diagnostics.Reporting(Reporting.errors.parse(yaml.asMap(), path),
+                            Reporting.statistics.parse(yaml.asMap(), path));
                 } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
             }
 
             @Override
             public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                return list(enable.help(path));
+                return list(errors.help(path), statistics.help(path));
             }
         }
-    }
 
-    protected static class Metrics extends Compound<CoreConfig.Metrics> {
+        protected static class Monitoring extends Compound<CoreConfig.Diagnostics.Monitoring> {
 
-        protected static final String name = "metrics";
-        protected static final String description = "Configure server metrics.";
-
-        protected static final Predefined<CoreConfig.Metrics.Reporting> reporting =
-                predefined(Metrics.Reporting.name, Metrics.Reporting.description, new Metrics.Reporting());
-        protected static final Predefined<CoreConfig.Metrics.ScrapeEndpoint> scrapeEndpoint =
-                predefined(Metrics.ScrapeEndpoint.name, Metrics.ScrapeEndpoint.description, new Metrics.ScrapeEndpoint());
-        private static final Set<Predefined<?>> parsers = set(reporting, scrapeEndpoint);
-
-        @Override
-        public CoreConfig.Metrics parse(YAML yaml, String path) {
-            if (yaml.isMap()) {
-                validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
-                CoreConfig.Metrics.Reporting reporting = Metrics.reporting.parse(yaml.asMap(), path);
-                CoreConfig.Metrics.ScrapeEndpoint scrapeEndpoint = Metrics.scrapeEndpoint.parse(yaml.asMap(), path);
-                return new CoreConfig.Metrics(reporting, scrapeEndpoint);
-            } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, path);
-        }
-
-        @Override
-        public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-            return list(reporting.help(path));
-        }
-
-        protected static class Reporting extends Compound<CoreConfig.Metrics.Reporting> {
-
-            protected static final String name = "reporting";
-            protected static final String description = "Configure metrics reporting.";
+            protected static final String name = "monitoring";
+            protected static final String description = "Configure diagnostics monitoring.";
 
             private static final Predefined<Boolean> enable =
-                    predefined("enable", "Enable metrics reporting.", BOOLEAN);
-            private static final Set<Predefined<?>> parsers = set(enable);
-
-            @Override
-            public CoreConfig.Metrics.Reporting parse(YAML yaml, String path) {
-                if (yaml.isMap()) {
-                    boolean enable = Reporting.enable.parse(yaml.asMap(), path);
-                    validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
-                    if (enable) {
-                        return new CoreConfig.Metrics.Reporting(true, METRICS_REPORTING_URI);
-                    } else {
-                        return new CoreConfig.Metrics.Reporting(false, null);
-                    }
-                } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
-            }
-
-            @Override
-            public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                return list(enable.help(path));
-            }
-        }
-
-        protected static class ScrapeEndpoint extends Compound<CoreConfig.Metrics.ScrapeEndpoint> {
-
-            protected static final String name = "scrape-endpoint";
-            protected static final String description = "Configure metrics scrape endpoint.";
-
-            private static final Predefined<Boolean> enable =
-                    predefined("enable", "Enable metrics scrape endpoint.", BOOLEAN);
+                    predefined("enable", "TODO", BOOLEAN);
             private static final Predefined<Integer> port =
-                    predefined("port", "Port of the metrics scrape endpoint.", INTEGER);
+                    predefined("port", "TODO", INTEGER);
             private static final Set<Predefined<?>> parsers = set(enable, port);
 
             @Override
-            public CoreConfig.Metrics.ScrapeEndpoint parse(YAML yaml, String path) {
+            public CoreConfig.Diagnostics.Monitoring parse(YAML yaml, String path) {
                 if (yaml.isMap()) {
-                    boolean enable = ScrapeEndpoint.enable.parse(yaml.asMap(), path);
-                    validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
+                    boolean enable = Monitoring.enable.parse(yaml.asMap(), path);
                     if (enable) {
-                        Integer port = ScrapeEndpoint.port.parse(yaml.asMap(), path);
-                        return new CoreConfig.Metrics.ScrapeEndpoint(true, port);
+                        validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
+                        return new CoreConfig.Diagnostics.Monitoring(true, Monitoring.port.parse(yaml.asMap(), path));
                     } else {
-                        return new CoreConfig.Metrics.ScrapeEndpoint(false, null);
+                        return new CoreConfig.Diagnostics.Monitoring(false, 0);
                     }
                 } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
             }
 
             @Override
             public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                return list(enable.help(path));
+                return list(enable.help(path), port.help(path));
             }
         }
     }

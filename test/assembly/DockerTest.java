@@ -52,7 +52,7 @@ public class DockerTest {
                 "docker", "run", "--name", "typedb",
                 "--rm", "-t", "-p", String.format("%d:%d", typeDBPort, typeDBPort),
                 "bazel:assemble-docker",
-                "/opt/typedb-all-linux-x86_64/typedb", "server", "--diagnostics.reporting.enable=false"
+                "/opt/typedb-all-linux-x86_64/typedb", "server", "--diagnostics.reporting.errors=false"
         ).start();
         TypeDBConsoleRunner consoleRunner = new TypeDBConsoleRunner();
         testIsReady(consoleRunner);

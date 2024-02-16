@@ -29,10 +29,16 @@ native_java_libraries(
         "@vaticle_typeql//java/query:query",
 
         # External Maven Dependencies
+        "@maven//:com_eclipsesource_minimal_json_minimal_json",
         "@maven//:com_google_ortools_ortools_java",
         "@maven//:com_github_ben_manes_caffeine_caffeine",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:io_netty_netty_all",
+        "@maven//:io_netty_netty_handler",
+        "@maven//:io_netty_netty_buffer",
+        "@maven//:io_netty_netty_codec_http",
+        "@maven//:io_netty_netty_transport",
         "@maven//:io_sentry_sentry",
         "@maven//:org_slf4j_slf4j_api",
     ],
