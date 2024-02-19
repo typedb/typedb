@@ -28,12 +28,14 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Metrics {
     private final SystemProperties system;
     private final NetworkRequests requests;
-    private final UsageStatistics usage;
+    private final DBUsageStatistics usage;
+    private final UserErrorStatistics userErrors;
 
-    Metrics(String serverID, String name, String version) {
+    public Metrics(String serverID, String name, String version) {
         this.system = new SystemProperties(serverID, name, version);
         this.requests = new NetworkRequests();
-        this.usage = new UsageStatistics();
+        this.usage = new DBUsageStatistics();
+        this.userErrors = new UserErrorStatistics();
     }
 
     public void requestAttempt(Metrics.NetworkRequests.Kind kind) {
@@ -44,19 +46,24 @@ public class Metrics {
         requests.success(kind);
     }
 
-    public void setGauge(Metrics.UsageStatistics.Kind kind, long value) {
+    public void setGauge(DBUsageStatistics.Kind kind, long value) {
         usage.set(kind, value);
     }
 
+    public void registerError(String errorCode) {
+        userErrors.register(errorCode);
+    }
+
     String formatPrometheus() {
-        return system.formatPrometheus() + "\n" + requests.formatPrometheus() + "\n" + usage.formatPrometheus();
+        return String.join("\n", system.formatPrometheus(), requests.formatPrometheus(), usage.formatPrometheus(), userErrors.formatPrometheus());
     }
 
     String formatJSON() {
         JsonObject metrics = new JsonObject();
         metrics.add("system", system.formatJSON());
         metrics.add("requests", requests.formatJSON());
-        metrics.add("current", usage.formatJSON());
+        metrics.add("DB usage", usage.formatJSON());
+        metrics.add("user errors", userErrors.formatJSON());
         return metrics.toString();
     }
 
@@ -144,23 +151,21 @@ public class Metrics {
         }
     }
 
-    public static class UsageStatistics {
+    public static class DBUsageStatistics {
         public enum Kind {
-            DATABASE_COUNT,
-            SESSION_COUNT,
-            TRANSACTION_COUNT,
+            DATABASES, SESSIONS, TRANSACTIONS,
         }
 
         private final ConcurrentMap<Kind, AtomicLong> gauges = new ConcurrentHashMap<>();
 
-        UsageStatistics() {
+        DBUsageStatistics() {
             for (Kind kind : Kind.values()) {
                 gauges.put(kind, new AtomicLong(0));
             }
         }
 
         public void set(Kind kind, long value) {
-            gauges.get(kind).addAndGet(value);
+            gauges.get(kind).set(value);
         }
 
         JsonObject formatJSON() {
@@ -175,6 +180,36 @@ public class Metrics {
             StringBuilder buf  = new StringBuilder("# TYPE current_count gauge\n");
             for (Kind kind : Kind.values()) {
                 buf.append("current_count{kind=\"").append(kind).append("\"} ").append(gauges.get(kind)).append("\n");
+            }
+            return buf.toString();
+        }
+    }
+
+    public static class UserErrorStatistics {
+        private final ConcurrentMap<String, AtomicLong> errorCounts = new ConcurrentHashMap<>();
+
+        public void register(String errorCode) {
+            errorCounts.computeIfAbsent(errorCode, c -> new AtomicLong(0)).incrementAndGet();
+        }
+
+        JsonObject formatJSON() {
+            if (errorCounts.isEmpty()) return new JsonObject();
+
+            JsonObject errors = new JsonObject();
+            for (String code : errorCounts.keySet()) {
+                long count = errorCounts.get(code).get();
+                errors.add(code, count);
+            }
+            return errors;
+        }
+
+        String formatPrometheus() {
+            if (errorCounts.isEmpty()) return "";
+
+            StringBuilder buf = new StringBuilder("# TYPE error_total counter\n");
+            for (String code : errorCounts.keySet()) {
+                long count = errorCounts.get(code).get();
+                buf.append("error_total{code=\"").append(code).append("\"} ").append(count).append("\n");
             }
             return buf.toString();
         }

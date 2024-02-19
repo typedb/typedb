@@ -41,7 +41,7 @@ public class StatisticReporter {
     private ScheduledFuture<?> pushScheduledTask;
     private final ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(1);
 
-    StatisticReporter(String reportingURI, Metrics metrics) {
+    public StatisticReporter(String reportingURI, Metrics metrics) {
         this.reportingURI = reportingURI;
         this.metrics = metrics;
 

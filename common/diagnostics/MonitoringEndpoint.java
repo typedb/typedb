@@ -58,7 +58,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 public class MonitoringEndpoint {
     private final Metrics metrics;
-    MonitoringEndpoint(Metrics metrics, int scrapePort) {
+    public MonitoringEndpoint(Metrics metrics, int scrapePort) {
         this.metrics = metrics;
         (new Thread(() -> this.serve(scrapePort, null))).start();
     }

@@ -20,16 +20,10 @@ package com.vaticle.typedb.core.common.diagnostics;
 
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import io.sentry.ITransaction;
 import io.sentry.Sentry;
-import io.sentry.SpanStatus;
 import io.sentry.protocol.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
 
 public abstract class Diagnostics {
 
@@ -37,28 +31,26 @@ public abstract class Diagnostics {
     public static final String DIAGNOSTICS_REPORTING_URI = "https://3d710295c75c81492e57e1997d9e01e1@o4506315929812992.ingest.sentry.io/4506316048629760";
     public static final String METRICS_REPORTING_URI = "https://localhost:1500/";
 
-    private static final Logger LOG = LoggerFactory.getLogger(Diagnostics.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(Diagnostics.class);
 
-    private static Diagnostics diagnostics = null;
+    protected static Diagnostics diagnostics = null;
 
     protected final Metrics metrics;
-    protected final ErrorReporter errorReporter;
     private final StatisticReporter statisticReporter;
     private final MonitoringEndpoint monitoringEndpoint;
 
     /*
      * Private singleton constructor
      */
-    protected Diagnostics(Metrics metrics, ErrorReporter errorReporter, StatisticReporter statisticReporter, MonitoringEndpoint monitoringEndpoint) {
+    protected Diagnostics(Metrics metrics, StatisticReporter statisticReporter, MonitoringEndpoint monitoringEndpoint) {
         this.metrics = metrics;
-        this.errorReporter = errorReporter;
         this.statisticReporter = statisticReporter;
         this.monitoringEndpoint = monitoringEndpoint;
     }
 
     public static class Noop extends Diagnostics {
         private Noop() {
-            super(null, null, null, null);
+            super(null, null, null);
         }
 
         public static synchronized void initialise() {
@@ -73,12 +65,12 @@ public abstract class Diagnostics {
         @Override
         public void requestSuccess(Metrics.NetworkRequests.Kind kind) {}
         @Override
-        public void setGauge(Metrics.UsageStatistics.Kind kind, long value) {}
+        public void setGauge(Metrics.DBUsageStatistics.Kind kind, long value) {}
     }
 
     public static class Core extends Diagnostics {
-        private Core(Metrics metrics, ErrorReporter errorReporter, StatisticReporter statisticReporter, MonitoringEndpoint monitoringEndpoint) {
-            super(metrics, errorReporter, statisticReporter, monitoringEndpoint);
+        private Core(Metrics metrics, StatisticReporter statisticReporter, MonitoringEndpoint monitoringEndpoint) {
+            super(metrics, statisticReporter, monitoringEndpoint);
         }
 
         public static synchronized void initialise(
@@ -95,10 +87,6 @@ public abstract class Diagnostics {
 
             Metrics metrics = new Metrics(serverID, distributionName, version);
 
-            Map<Class<?>, Consumer<Throwable>> handlers = new HashMap<>();
-            handlers.put(TypeDBException.class, error -> submitTypeDBException((TypeDBException)error));
-            ErrorReporter errorReporter = new ErrorReporter(handlers, Sentry::captureException);
-
             StatisticReporter statisticReporter;
             if (statisticsReportingEnable) statisticReporter = new StatisticReporter(METRICS_REPORTING_URI, metrics);
             else statisticReporter = null;
@@ -107,22 +95,23 @@ public abstract class Diagnostics {
             if (monitoringEnable) monitoringEndpoint = new MonitoringEndpoint(metrics, monitoringPort);
             else monitoringEndpoint = null;
 
-            diagnostics = new Core(metrics, errorReporter, statisticReporter, monitoringEndpoint);
+            diagnostics = new Core(metrics, statisticReporter, monitoringEndpoint);
         }
 
-        private static void submitTypeDBException(TypeDBException exception) {
-            if (!exception.errorMessage().getClass().equals(ErrorMessage.Internal.class)) {
-                ITransaction txn = Sentry.startTransaction("user_error", "user_error");
-                txn.setData("error_code", exception.errorMessage().code());
-                txn.finish(SpanStatus.OK);
-            } else {
-                Sentry.captureException(exception);
-            }
+        private boolean isUserError(TypeDBException exception) {
+            return !(exception.errorMessage() instanceof ErrorMessage.Internal);
         }
 
         @Override
         public void submitError(Throwable error) {
-            errorReporter.reportError(error);
+            if (error instanceof TypeDBException) {
+                TypeDBException typeDBException = (TypeDBException) error;
+                if (isUserError(typeDBException)) {
+                    metrics.registerError(typeDBException.errorMessage().code());
+                    return;
+                }
+            }
+            Sentry.captureException(error);
         }
 
         @Override
@@ -136,7 +125,7 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void setGauge(Metrics.UsageStatistics.Kind kind, long value) {
+        public void setGauge(Metrics.DBUsageStatistics.Kind kind, long value) {
             metrics.setGauge(kind, value);
         }
     }
@@ -169,5 +158,5 @@ public abstract class Diagnostics {
 
     public abstract void requestSuccess(Metrics.NetworkRequests.Kind kind);
 
-    public abstract void setGauge(Metrics.UsageStatistics.Kind kind, long value);
+    public abstract void setGauge(Metrics.DBUsageStatistics.Kind kind, long value);
 }
