@@ -139,12 +139,12 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                     public static final String type = "stdout";
                     public static final String description = "Options to configure a log output to stdout.";
 
-                    private static final Predefined<Boolean> enable =
-                            predefined("enable", "Enable logging to stdout.", BOOLEAN);
                     private static final Predefined<String> typeParser = predefined(
                             "type", "An output that writes to stdout.", restricted(STRING, list(type))
                     );
-                    private static final Set<Predefined<?>> parsers = set(enable, typeParser);
+                    private static final Predefined<Boolean> enable =
+                            predefined("enable", "Enable logging to stdout.", BOOLEAN);
+                    private static final Set<Predefined<?>> parsers = set(typeParser, enable);
 
                     @Override
                     public CoreConfig.Common.Output.Type.Stdout parse(YAML yaml, String path) {
@@ -159,7 +159,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
                     @Override
                     public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                        return list(typeParser.help(path));
+                        return list(typeParser.help(path), enable.help(path));
                     }
                 }
 
@@ -168,10 +168,10 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                     public static final String type = "file";
                     public static final String description = "Options to configure a log output to files in a directory.";
 
-                    private static final Predefined<Boolean> enable =
-                            predefined("enable", "Enable logging to the file.", BOOLEAN);
                     private static final Predefined<String> typeParser =
                             predefined("type", "An output that writes to a directory.", restricted(STRING, list(type)));
+                    private static final Predefined<Boolean> enable =
+                            predefined("enable", "Enable logging to the file.", BOOLEAN);
                     private static final Predefined<Path> baseDirectory =
                             predefined("base-dir", "Directory to write to. Relative paths are relative to distribution path.", PATH);
                     private static final Predefined<Long> fileSizeLimit =
@@ -187,7 +187,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                                     BYTES_SIZE
                             ); // TODO reasoner needs to respect this
                     private static final Set<Predefined<?>> parsers = set(
-                            enable, typeParser, baseDirectory, fileSizeLimit, archiveGrouping, archiveAgeLimit, archivesSizeLimit
+                            typeParser, enable, baseDirectory, fileSizeLimit, archiveGrouping, archiveAgeLimit, archivesSizeLimit
                     );
 
                     private final String filename;
@@ -220,7 +220,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
                     @Override
                     public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                        return list(typeParser.help(path), baseDirectory.help(path),
+                        return list(typeParser.help(path), enable.help(path), baseDirectory.help(path),
                                 fileSizeLimit.help(path), archiveGrouping.help(path), archiveAgeLimit.help(path),
                                 archivesSizeLimit.help(path));
                     }
