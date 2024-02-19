@@ -27,10 +27,6 @@ import org.slf4j.LoggerFactory;
 
 public abstract class Diagnostics {
 
-    // FIXME inject
-    public static final String DIAGNOSTICS_REPORTING_URI = "https://3d710295c75c81492e57e1997d9e01e1@o4506315929812992.ingest.sentry.io/4506316048629760";
-    public static final String METRICS_REPORTING_URI = "https://localhost:1500/";
-
     protected static final Logger LOG = LoggerFactory.getLogger(Diagnostics.class);
 
     protected static Diagnostics diagnostics = null;
@@ -69,13 +65,14 @@ public abstract class Diagnostics {
     }
 
     public static class Core extends Diagnostics {
-        private Core(Metrics metrics, StatisticReporter statisticReporter, MonitoringEndpoint monitoringEndpoint) {
+        protected Core(Metrics metrics, StatisticReporter statisticReporter, MonitoringEndpoint monitoringEndpoint) {
             super(metrics, statisticReporter, monitoringEndpoint);
         }
 
         public static synchronized void initialise(
                 String serverID, String distributionName, String version,
-                boolean errorReportingEnable, boolean statisticsReportingEnable,
+                boolean errorReportingEnable, String errorReportingURI,
+                boolean statisticsReportingEnable, String statisticsReportingURI,
                 boolean monitoringEnable, int monitoringPort
         ) {
             if (diagnostics != null) {
@@ -83,12 +80,12 @@ public abstract class Diagnostics {
                 return;
             }
 
-            initSentry(serverID, distributionName, version, errorReportingEnable);
+            initSentry(serverID, distributionName, version, errorReportingEnable, errorReportingURI);
 
             Metrics metrics = new Metrics(serverID, distributionName, version);
 
             StatisticReporter statisticReporter;
-            if (statisticsReportingEnable) statisticReporter = new StatisticReporter(METRICS_REPORTING_URI, metrics);
+            if (statisticsReportingEnable) statisticReporter = new StatisticReporter(statisticsReportingURI, metrics);
             else statisticReporter = null;
 
             MonitoringEndpoint monitoringEndpoint;
@@ -130,10 +127,10 @@ public abstract class Diagnostics {
         }
     }
 
-    protected static void initSentry(String serverID, String distributionName, String version, boolean errorReportingEnable) {
+    protected static void initSentry(String serverID, String distributionName, String version, boolean errorReportingEnable, String errorReportingURI) {
         Sentry.init(options -> {
             options.setEnabled(errorReportingEnable);
-            options.setDsn(DIAGNOSTICS_REPORTING_URI);
+            options.setDsn(errorReportingURI);
             options.setEnableTracing(true);
             options.setSendDefaultPii(false);
             options.setRelease(releaseName(distributionName, version));

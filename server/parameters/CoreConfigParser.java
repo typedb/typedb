@@ -489,8 +489,8 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
     protected static class Diagnostics extends Compound<CoreConfig.Diagnostics> {
 
-        protected static final String name = "diagnostics";
-        protected static final String description = "Configure server diagnostics.";
+        public static final String name = "diagnostics";
+        public static final String description = "Configure server diagnostics.";
 
         protected static final Predefined<CoreConfig.Diagnostics.Reporting> reporting =
                 predefined(Diagnostics.Reporting.name, Diagnostics.Reporting.description, new Diagnostics.Reporting());

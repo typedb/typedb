@@ -70,6 +70,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOM
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PORT_IN_USE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
+import static com.vaticle.typedb.core.server.common.Constants.DIAGNOSTICS_REPORTING_URI;
+import static com.vaticle.typedb.core.server.common.Constants.METRICS_REPORTING_URI;
 import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_ALPHABET;
 import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_FILE_NAME;
 import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_LENGTH;
@@ -193,7 +195,8 @@ public class TypeDBServer implements AutoCloseable {
         try {
             Diagnostics.Core.initialise(
                     serverID(), name(), Version.VERSION,
-                    config.diagnostics().reporting().errors(), config.diagnostics().reporting().statistics(),
+                    config.diagnostics().reporting().errors(), DIAGNOSTICS_REPORTING_URI,
+                    config.diagnostics().reporting().statistics(), METRICS_REPORTING_URI,
                     config.diagnostics().monitoring().enable(), config.diagnostics().monitoring().port()
             );
         } catch (Throwable e) {
