@@ -371,10 +371,13 @@ public final class ConceptManager {
     }
 
     public void cleanupRelations() {
-        graphMgr.data().writeVertices()
-                .filter(v -> v.existence().equals(STORED) && v.isModified() && v.encoding().equals(RELATION))
-                .forEachRemaining(v -> ThingImpl.of(this, v).asRelation().deleteIfNoPlayer());
-
+        boolean deleted = true;
+        while (deleted) {
+            deleted = graphMgr.data().writeVertices()
+                    .filter(v -> v.existence().equals(STORED) && v.isModified() && v.encoding().equals(RELATION))
+                    .map(v -> ThingImpl.of(this, v).asRelation().deleteIfNoPlayer())
+                    .reduce(false, ((acc, val) -> acc || val));
+        }
     }
 
     public void validateThings() {

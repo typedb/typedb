@@ -142,7 +142,9 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                     private static final Predefined<String> typeParser = predefined(
                             "type", "An output that writes to stdout.", restricted(STRING, list(type))
                     );
-                    private static final Set<Predefined<?>> parsers = set(typeParser);
+                    private static final Predefined<Boolean> enable =
+                            predefined("enable", "Enable logging to stdout.", BOOLEAN);
+                    private static final Set<Predefined<?>> parsers = set(typeParser, enable);
 
                     @Override
                     public CoreConfig.Common.Output.Type.Stdout parse(YAML yaml, String path) {
@@ -150,13 +152,14 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                             validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                             String type = typeParser.parse(yaml.asMap(), path);
                             assert Stdout.type.equals(type);
-                            return new CoreConfig.Common.Output.Type.Stdout();
+                            boolean enabled = enable.parse(yaml.asMap(), path);
+                            return new CoreConfig.Common.Output.Type.Stdout(enabled);
                         } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
                     }
 
                     @Override
                     public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                        return list(typeParser.help(path));
+                        return list(typeParser.help(path), enable.help(path));
                     }
                 }
 
@@ -167,6 +170,8 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
                     private static final Predefined<String> typeParser =
                             predefined("type", "An output that writes to a directory.", restricted(STRING, list(type)));
+                    private static final Predefined<Boolean> enable =
+                            predefined("enable", "Enable logging to the file.", BOOLEAN);
                     private static final Predefined<Path> baseDirectory =
                             predefined("base-dir", "Directory to write to. Relative paths are relative to distribution path.", PATH);
                     private static final Predefined<Long> fileSizeLimit =
@@ -182,7 +187,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                                     BYTES_SIZE
                             ); // TODO reasoner needs to respect this
                     private static final Set<Predefined<?>> parsers = set(
-                            typeParser, baseDirectory, fileSizeLimit, archiveGrouping, archiveAgeLimit, archivesSizeLimit
+                            typeParser, enable, baseDirectory, fileSizeLimit, archiveGrouping, archiveAgeLimit, archivesSizeLimit
                     );
 
                     private final String filename;
@@ -201,6 +206,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                             String type = typeParser.parse(yaml.asMap(), path);
                             assert File.type.equals(type);
                             return new CoreConfig.Common.Output.Type.File(
+                                    enable.parse(yaml.asMap(), path),
                                     configPathAbsolute(baseDirectory.parse(yaml.asMap(), path)),
                                     filename,
                                     extension,
@@ -214,7 +220,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
                     @Override
                     public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                        return list(typeParser.help(path), baseDirectory.help(path),
+                        return list(typeParser.help(path), enable.help(path), baseDirectory.help(path),
                                 fileSizeLimit.help(path), archiveGrouping.help(path), archiveAgeLimit.help(path),
                                 archivesSizeLimit.help(path));
                     }

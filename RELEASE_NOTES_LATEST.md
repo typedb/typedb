@@ -2,9 +2,9 @@ Install & Run: https://typedb.com/docs/home/install
 
 Download from TypeDB Package Repository: 
 
-Server only: [Distributions for 2.26.0-rc1](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-server+version:2.26.0-rc1)
+Server only: [Distributions for 2.26.6](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-server+version:2.26.6)
 
-Server + Console: [Distributions for 2.26.0-rc1](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-all+version:2.26.0-rc1)
+Server + Console: [Distributions for 2.26.6](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-all+version:2.26.6)
 
 
 ## New Features
@@ -25,6 +25,25 @@ Server + Console: [Distributions for 2.26.0-rc1](https://cloudsmith.io/~typedb/r
   
 
 ## Bugs Fixed
+- **Fix schema export of overridden plays edge**
+  Make schema exports consistent with the TypeQL spec of overridden roles in 'plays' declarations being unscoped labels. 
+  
+  
+- **Fix bug when overriding committed role-types with newly defined role-types**
+  Fixes a bug which creates an invalid override when a committed role-type is overridden with a newly defined role-type.
+  
+  
+- **Fix commit-time cleanup of chains of empty relations**
+  
+  In cases where chains of empty relations existed, for example `r1 -> r2 -> r3... -> rX`,  it was possible that TypeDB did not correctly execute the automatic relation cleanup due to the order the relations happened to be traversed.
+  
+  TypeDB now retries the commit-time cleanup of empty relations until there are no new deletions. We accept the higher runtime cost of this operation since 1) we expect the number of modified relations in a transaction to be relatively small (no more than thousands) 2) relation chains are relatively rare 3) relation chains that must clean up in dependent fashion are extremely rare.
+  
+  
+- **Fix apt deployment: correct entry point script**
+  
+  When assembling a server + console bundle for apt deployment, the console entry point would sometimes override the bundle entry point, making the server inaccessible. We resolve that issue by explicitly filtering out the console entry point during assembly.
+  
 
 
 ## Code Refactors
@@ -75,6 +94,8 @@ Server + Console: [Distributions for 2.26.0-rc1](https://cloudsmith.io/~typedb/r
   
 
 ## Other Improvements
+- **Pin CircleCI Ubuntu image to a specifici Ubuntu 20.04 release**
+
 - **Explicitly install python tool dependencies**
   
   Since the upgrade to rules-python v0.24 (https://github.com/vaticle/dependencies/pull/460), we are required to explicitly install python dependencies in the WORKSPACE file. The python tools happened to be unused, so these errors were not visible until the sync dependencies tool was restored.

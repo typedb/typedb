@@ -85,6 +85,16 @@ public class CoreConfig {
 
             public static abstract class Type {
 
+                private final boolean enable;
+
+                protected Type(boolean enable) {
+                    this.enable = enable;
+                }
+
+                public boolean enabled() {
+                    return enable;
+                }
+
                 public boolean isStdout() {
                     return false;
                 }
@@ -103,7 +113,8 @@ public class CoreConfig {
 
                 public static class Stdout extends Type {
 
-                    Stdout() {
+                    Stdout(boolean enable) {
+                        super(enable);
                     }
 
                     @Override
@@ -127,9 +138,10 @@ public class CoreConfig {
                     private final String filename;
                     private final String extension;
 
-                    File(Path baseDirectory, String filename, String extension,
+                    File(boolean enable, Path baseDirectory, String filename, String extension,
                          long fileSizeLimit, YAMLParser.Value.TimePeriodName archiveGrouping,
                          YAMLParser.Value.TimePeriod archiveAgeLimit, long archivesSizeLimit) {
+                        super(enable);
                         this.baseDirectory = baseDirectory;
                         this.filename = filename;
                         this.extension = extension;
