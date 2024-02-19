@@ -32,11 +32,13 @@ public abstract class Diagnostics {
     protected static Diagnostics diagnostics = null;
 
     protected final Metrics metrics;
+
+    /* separate services, kept here so that they don't get GC'd */
     private final StatisticReporter statisticReporter;
     private final MonitoringEndpoint monitoringEndpoint;
 
     /*
-     * Private singleton constructor
+     * Protected singleton constructor
      */
     protected Diagnostics(Metrics metrics, StatisticReporter statisticReporter, MonitoringEndpoint monitoringEndpoint) {
         this.metrics = metrics;
