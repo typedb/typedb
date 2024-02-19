@@ -28,8 +28,10 @@ log:
   output:
     stdout:
       type: stdout
+      enable: true
     file:
       type: file
+      enable: true
       base-dir: /absolute/path/to/logs/dir
       file-size-limit: 50mb
       archive-grouping: month

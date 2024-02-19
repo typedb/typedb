@@ -30,11 +30,11 @@ storage:
 log:
   output:
     stdout:
-      enable: true
       type: stdout
-    file:
       enable: true
+    file:
       type: file
+      enable: true
       base-dir: server/logs
       file-size-limit: 50mb
       archive-grouping: month
