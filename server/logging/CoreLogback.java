@@ -65,11 +65,14 @@ public class CoreLogback {
                                                                                LoggerContext logContext,
                                                                                LayoutWrappingEncoder<EVENT> encoder,
                                                                                CoreConfig.Common.Output.Type outputType) {
+        Appender<EVENT> appender;
         if (outputType.isStdout()) {
-            return consoleAppender(name, logContext, encoder);
+            appender = consoleAppender(name, logContext, encoder);
         } else if (outputType.isFile()) {
-            return fileAppender(name, logContext, encoder, outputType.asFile());
+            appender = fileAppender(name, logContext, encoder, outputType.asFile());
         } else throw TypeDBException.of(ILLEGAL_STATE);
+        if (outputType.enabled()) appender.start();
+        return appender;
     }
 
     private static void configureLogger(CoreConfig.Log.Logger.Filtered logger, LoggerContext context,
@@ -101,7 +104,6 @@ public class CoreLogback {
         appender.setContext(context);
         appender.setName(name);
         appender.setEncoder(encoder);
-        appender.start();
         return appender;
     }
 
@@ -127,7 +129,6 @@ public class CoreLogback {
         policy.setParent(appender);
         policy.start();
         appender.setRollingPolicy(policy);
-        appender.start();
         return appender;
     }
 

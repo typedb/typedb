@@ -139,10 +139,12 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                     public static final String type = "stdout";
                     public static final String description = "Options to configure a log output to stdout.";
 
+                    private static final Predefined<Boolean> enable =
+                            predefined("enable", "Enable logging to stdout.", BOOLEAN);
                     private static final Predefined<String> typeParser = predefined(
                             "type", "An output that writes to stdout.", restricted(STRING, list(type))
                     );
-                    private static final Set<Predefined<?>> parsers = set(typeParser);
+                    private static final Set<Predefined<?>> parsers = set(enable, typeParser);
 
                     @Override
                     public CoreConfig.Common.Output.Type.Stdout parse(YAML yaml, String path) {
@@ -150,7 +152,8 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                             validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                             String type = typeParser.parse(yaml.asMap(), path);
                             assert Stdout.type.equals(type);
-                            return new CoreConfig.Common.Output.Type.Stdout();
+                            boolean enabled = enable.parse(yaml.asMap(), path);
+                            return new CoreConfig.Common.Output.Type.Stdout(enabled);
                         } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
                     }
 
@@ -165,6 +168,8 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                     public static final String type = "file";
                     public static final String description = "Options to configure a log output to files in a directory.";
 
+                    private static final Predefined<Boolean> enable =
+                            predefined("enable", "Enable logging to the file.", BOOLEAN);
                     private static final Predefined<String> typeParser =
                             predefined("type", "An output that writes to a directory.", restricted(STRING, list(type)));
                     private static final Predefined<Path> baseDirectory =
@@ -182,7 +187,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                                     BYTES_SIZE
                             ); // TODO reasoner needs to respect this
                     private static final Set<Predefined<?>> parsers = set(
-                            typeParser, baseDirectory, fileSizeLimit, archiveGrouping, archiveAgeLimit, archivesSizeLimit
+                            enable, typeParser, baseDirectory, fileSizeLimit, archiveGrouping, archiveAgeLimit, archivesSizeLimit
                     );
 
                     private final String filename;
@@ -201,6 +206,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                             String type = typeParser.parse(yaml.asMap(), path);
                             assert File.type.equals(type);
                             return new CoreConfig.Common.Output.Type.File(
+                                    enable.parse(yaml.asMap(), path),
                                     configPathAbsolute(baseDirectory.parse(yaml.asMap(), path)),
                                     filename,
                                     extension,

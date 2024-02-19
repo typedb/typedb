@@ -30,8 +30,10 @@ storage:
 log:
   output:
     stdout:
+      enable: true
       type: stdout
     file:
+      enable: true
       type: file
       base-dir: server/logs
       file-size-limit: 50mb
