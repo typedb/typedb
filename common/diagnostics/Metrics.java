@@ -54,17 +54,21 @@ public class Metrics {
         userErrors.register(errorCode);
     }
 
-    String formatPrometheus() {
+    protected String formatPrometheus() {
         return String.join("\n", system.formatPrometheus(), requests.formatPrometheus(), usage.formatPrometheus(), userErrors.formatPrometheus());
     }
 
-    String formatJSON() {
+    protected JsonObject asJSON() {
         JsonObject metrics = new JsonObject();
-        metrics.add("system", system.formatJSON());
-        metrics.add("requests", requests.formatJSON());
-        metrics.add("DB usage", usage.formatJSON());
-        metrics.add("user errors", userErrors.formatJSON());
-        return metrics.toString();
+        metrics.add("system", system.asJSON());
+        metrics.add("requests", requests.asJSON());
+        metrics.add("DB usage", usage.asJSON());
+        metrics.add("user errors", userErrors.asJSON());
+        return metrics;
+    }
+
+    protected String formatJSON() {
+        return asJSON().toString();
     }
 
     static class SystemProperties {
@@ -78,7 +82,7 @@ public class Metrics {
             this.version = version;
         }
 
-        JsonObject formatJSON() {
+        JsonObject asJSON() {
             JsonObject system = new JsonObject();
             system.add("TypeDB version", name + " " + version);
             system.add("Server ID", serverID);
@@ -127,7 +131,7 @@ public class Metrics {
             successful.get(kind).incrementAndGet();
         }
 
-        JsonObject formatJSON() {
+        JsonObject asJSON() {
             JsonObject requests = new JsonObject();
             for (var kind : Kind.values()) {
                 JsonObject requestStats = new JsonObject();
@@ -168,7 +172,7 @@ public class Metrics {
             gauges.get(kind).set(value);
         }
 
-        JsonObject formatJSON() {
+        JsonObject asJSON() {
             JsonObject current = new JsonObject();
             for (Kind kind : Kind.values()) {
                 current.add(kind.name(), gauges.get(kind).get());
@@ -185,14 +189,14 @@ public class Metrics {
         }
     }
 
-    public static class UserErrorStatistics {
+    private static class UserErrorStatistics {
         private final ConcurrentMap<String, AtomicLong> errorCounts = new ConcurrentHashMap<>();
 
         public void register(String errorCode) {
             errorCounts.computeIfAbsent(errorCode, c -> new AtomicLong(0)).incrementAndGet();
         }
 
-        JsonObject formatJSON() {
+        JsonObject asJSON() {
             if (errorCounts.isEmpty()) return new JsonObject();
 
             JsonObject errors = new JsonObject();

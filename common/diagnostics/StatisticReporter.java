@@ -41,9 +41,9 @@ public class StatisticReporter {
     private ScheduledFuture<?> pushScheduledTask;
     private final ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(1);
 
-    public StatisticReporter(String reportingURI, Metrics metrics) {
-        this.reportingURI = reportingURI;
+    public StatisticReporter(Metrics metrics, String reportingURI) {
         this.metrics = metrics;
+        this.reportingURI = reportingURI;
 
         try {
             sslContext = SSLContext.getInstance("SSL");

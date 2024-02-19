@@ -20,10 +20,13 @@ package com.vaticle.typedb.core.common.diagnostics;
 
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.sentry.Sentry;
 import io.sentry.protocol.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
 
 public abstract class Diagnostics {
 
@@ -35,7 +38,7 @@ public abstract class Diagnostics {
 
     /* separate services, kept here so that they don't get GC'd */
     private final StatisticReporter statisticReporter;
-    private final MonitoringEndpoint monitoringEndpoint;
+    protected final MonitoringEndpoint monitoringEndpoint;
 
     /*
      * Protected singleton constructor
@@ -56,6 +59,8 @@ public abstract class Diagnostics {
             diagnostics = new Diagnostics.Noop();
         }
 
+        @Override
+        public void mayStartServing() {}
         @Override
         public void submitError(Throwable error) {}
         @Override
@@ -85,20 +90,40 @@ public abstract class Diagnostics {
             initSentry(serverID, distributionName, version, errorReportingEnable, errorReportingURI);
 
             Metrics metrics = new Metrics(serverID, distributionName, version);
-
-            StatisticReporter statisticReporter;
-            if (statisticsReportingEnable) statisticReporter = new StatisticReporter(statisticsReportingURI, metrics);
-            else statisticReporter = null;
-
-            MonitoringEndpoint monitoringEndpoint;
-            if (monitoringEnable) monitoringEndpoint = new MonitoringEndpoint(metrics, monitoringPort);
-            else monitoringEndpoint = null;
+            StatisticReporter statisticReporter = initStatisticReporter(statisticsReportingEnable, statisticsReportingURI, metrics);
+            MonitoringEndpoint monitoringEndpoint = initMonitoringEndpoint(monitoringEnable, monitoringPort, metrics);
 
             diagnostics = new Core(metrics, statisticReporter, monitoringEndpoint);
         }
 
-        private boolean isUserError(TypeDBException exception) {
-            return !(exception.errorMessage() instanceof ErrorMessage.Internal);
+        @Nullable
+        protected static MonitoringEndpoint initMonitoringEndpoint(boolean monitoringEnable, int monitoringPort, Metrics metrics, ChannelInboundHandlerAdapter... middleware) {
+            if (monitoringEnable) return new MonitoringEndpoint(metrics, monitoringPort, null, middleware);
+            else return null;
+        }
+
+        @Nullable
+        protected static StatisticReporter initStatisticReporter(boolean statisticsReportingEnable, String statisticsReportingURI, Metrics metrics) {
+            if (statisticsReportingEnable) return new StatisticReporter(metrics, statisticsReportingURI);
+            else return null;
+        }
+
+        protected static void initSentry(String serverID, String distributionName, String version, boolean errorReportingEnable, String errorReportingURI) {
+            Sentry.init(options -> {
+                options.setEnabled(errorReportingEnable);
+                options.setDsn(errorReportingURI);
+                options.setEnableTracing(true);
+                options.setSendDefaultPii(false);
+                options.setRelease(releaseName(distributionName, version));
+            });
+            User user = new User();
+            user.setUsername(serverID);
+            Sentry.setUser(user);
+        }
+
+        @Override
+        public void mayStartServing() {
+            if (monitoringEndpoint != null) monitoringEndpoint.startServing();
         }
 
         @Override
@@ -111,6 +136,10 @@ public abstract class Diagnostics {
                 }
             }
             Sentry.captureException(error);
+        }
+
+        private boolean isUserError(TypeDBException exception) {
+            return !(exception.errorMessage() instanceof ErrorMessage.Internal);
         }
 
         @Override
@@ -129,19 +158,6 @@ public abstract class Diagnostics {
         }
     }
 
-    protected static void initSentry(String serverID, String distributionName, String version, boolean errorReportingEnable, String errorReportingURI) {
-        Sentry.init(options -> {
-            options.setEnabled(errorReportingEnable);
-            options.setDsn(errorReportingURI);
-            options.setEnableTracing(true);
-            options.setSendDefaultPii(false);
-            options.setRelease(releaseName(distributionName, version));
-        });
-        User user = new User();
-        user.setUsername(serverID);
-        Sentry.setUser(user);
-    }
-
     private static String releaseName(String distributionName, String version) {
         return distributionName + "@" + version;
     }
@@ -150,6 +166,8 @@ public abstract class Diagnostics {
         assert diagnostics != null;
         return diagnostics;
     }
+
+    public abstract void mayStartServing();
 
     public abstract void submitError(Throwable error);
 

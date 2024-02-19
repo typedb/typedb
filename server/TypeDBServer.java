@@ -111,7 +111,6 @@ public class TypeDBServer implements AutoCloseable {
         verifyJavaVersion();
         verifyPort();
         createOrVerifyDataDir();
-        configureDiagnostics();
 
         if (debug) logger().info("Running {} in debug mode.", name());
 
@@ -126,6 +125,10 @@ public class TypeDBServer implements AutoCloseable {
         this.factory = factory;
         databaseMgr = factory.databaseManager(options);
         server = rpcServer();
+
+        // FIXME indirect dependency on rpcServer() !
+        configureDiagnostics();
+
         Thread.setDefaultUncaughtExceptionHandler(
                 (t, e) -> {
                     try {
@@ -269,6 +272,7 @@ public class TypeDBServer implements AutoCloseable {
     protected void start() throws TypeDBCheckedException {
         try {
             server.start();
+            Diagnostics.get().mayStartServing();
             logger().info("{} is now running and will keep this process alive.", name());
             logger().info("You can press CTRL+C to shutdown this server.");
             logger().info("");

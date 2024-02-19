@@ -544,9 +544,9 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
             protected static final String name = "monitoring";
             protected static final String description = "Configure diagnostics monitoring.";
 
-            private static final Predefined<Boolean> enable =
+            protected static final Predefined<Boolean> enable =
                     predefined("enable", "TODO", BOOLEAN);
-            private static final Predefined<Integer> port =
+            protected static final Predefined<Integer> port =
                     predefined("port", "TODO", INTEGER);
             private static final Set<Predefined<?>> parsers = set(enable, port);
 

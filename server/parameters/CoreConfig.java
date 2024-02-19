@@ -443,7 +443,7 @@ public class CoreConfig {
             private final boolean enable;
             private final int port;
 
-            Monitoring(boolean enable, int port) {
+            public Monitoring(boolean enable, int port) {
                 this.enable = enable;
                 this.port = port;
             }

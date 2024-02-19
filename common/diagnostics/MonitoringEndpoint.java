@@ -58,12 +58,22 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 public class MonitoringEndpoint {
     private final Metrics metrics;
-    public MonitoringEndpoint(Metrics metrics, int scrapePort) {
+    private final int scrapePort;
+    private final SslContext sslContext;
+    private final ChannelInboundHandlerAdapter[] middleware;
+
+    public MonitoringEndpoint(Metrics metrics, int scrapePort, SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
         this.metrics = metrics;
-        (new Thread(() -> this.serve(scrapePort, null))).start();
+        this.scrapePort = scrapePort;
+        this.sslContext = sslContext;
+        this.middleware = middleware;
     }
 
-    public void serve(int scrapePort, @Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
+    void startServing() {
+        (new Thread(this::serve)).start();
+    }
+
+    private void serve() {
         EventLoopGroup group = new NioEventLoopGroup(1);
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
@@ -115,7 +125,7 @@ public class MonitoringEndpoint {
 
                 URI uri;
                 try {
-                uri = new URI(req.uri());
+                    uri = new URI(req.uri());
                 } catch (Exception ignored) {
                     uri = URI.create("a");
                 }
