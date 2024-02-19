@@ -204,7 +204,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             RoleType overridden = getPlaysOverridden(roleType);
             if (overridden != null) {
                 builder.append(SPACE).append(TypeQLToken.Constraint.AS).append(SPACE)
-                        .append(overridden.getLabel().scopedName());
+                        .append(overridden.getLabel().name());
             }
         });
     }
