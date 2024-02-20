@@ -18,10 +18,12 @@
 use std::cmp::Ordering;
 use std::sync::Arc;
 use bytes::byte_array::ByteArray;
+use bytes::byte_array_or_ref::ByteArrayOrRef;
+use bytes::byte_reference::ByteReference;
 
 use iterator::State;
 
-use crate::key_value::{StorageKey, StorageKeyArray, StorageKeyReference, StorageValue, StorageValueArray, StorageValueReference};
+use crate::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
 use crate::MVCCPrefixIterator;
 use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, BufferedPrefixIterator};
 use crate::snapshot::error::{SnapshotError, SnapshotErrorKind};
@@ -93,14 +95,14 @@ impl<'a> SnapshotPrefixIterator<'a> {
         }
     }
 
-    pub fn peek<'this>(&'this mut self) -> Option<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), SnapshotError>> {
+    pub fn peek<'this>(&'this mut self) -> Option<Result<(StorageKeyReference<'this>, ByteReference<'this>), SnapshotError>> {
         match self.iterator_state.state().clone() {
             State::Init => {
                 self.find_next_state();
                 self.peek()
             }
             State::ItemReady => {
-                match self.iterator_state.source().clone() {
+                match self.iterator_state.source() {
                     ReadyItemSource::Storage | ReadyItemSource::Both => Self::storage_peek(&mut self.storage_iterator),
                     ReadyItemSource::Buffered => Some(Ok(Self::get_buffered_peek(self.buffered_iterator.as_mut().unwrap()))),
                 }
@@ -116,14 +118,14 @@ impl<'a> SnapshotPrefixIterator<'a> {
         }
     }
 
-    pub fn next(&mut self) -> Option<Result<(StorageKey<BUFFER_INLINE_KEY>, StorageValue<BUFFER_INLINE_VALUE>), SnapshotError>> {
+    pub fn next<'this>(&'this mut self) -> Option<Result<(StorageKeyReference<'this>, ByteReference<'this>), SnapshotError>> {
         match self.iterator_state.state().clone() {
             State::Init => {
                 self.find_next_state();
                 self.next()
             }
             State::ItemReady => {
-                let item = match self.iterator_state.source().clone() {
+                let item = match self.iterator_state.source() {
                     ReadyItemSource::Storage | ReadyItemSource::Both => Self::storage_peek(&mut self.storage_iterator),
                     ReadyItemSource::Buffered => Some(Ok(Self::get_buffered_peek(self.buffered_iterator.as_mut().unwrap()))),
                 };
@@ -175,7 +177,7 @@ impl<'a> SnapshotPrefixIterator<'a> {
         }
     }
 
-    fn merge_buffered(iterator_state: &mut IteratorState, buffered_peek: (StorageKey<BUFFER_INLINE_KEY>, &Write), storage_peek: Option<(StorageKey<BUFFER_INLINE_KEY>, StorageValue<BUFFER_INLINE_VALUE>)>) -> (bool, bool) {
+    fn merge_buffered(iterator_state: &mut IteratorState, buffered_peek: (StorageKeyReference<'_>, &Write), storage_peek: Option<(StorageKeyReference<'_>, ByteReference<'_>)>) -> (bool, bool) {
         let (buffered_key, buffered_write) = buffered_peek;
         let mut advance_storage = false;
         let mut advance_buffered = false;
@@ -203,13 +205,13 @@ impl<'a> SnapshotPrefixIterator<'a> {
         (advance_storage, advance_buffered)
     }
 
-    fn buffered_peek<'this>(buffered_iterator: &'this mut Option<BufferedPrefixIterator>) -> Option<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, &Write), SnapshotError>> {
+    fn buffered_peek<'this>(buffered_iterator: &'this mut Option<BufferedPrefixIterator>) -> Option<Result<(StorageKeyReference<'this>, &Write), SnapshotError>> {
         if let Some(buffered_iterator) = buffered_iterator {
             let buffered_peek = buffered_iterator.peek();
             match buffered_peek {
                 None => None,
                 Some(Ok((key, value))) => {
-                    Some(Ok((StorageKey::Reference(StorageKeyReference::from(key)), value)))
+                    Some(Ok((StorageKeyReference::from(key), value)))
                 }
                 Some(Err(error)) => Some(Err(error)),
             }
@@ -218,12 +220,12 @@ impl<'a> SnapshotPrefixIterator<'a> {
         }
     }
 
-    fn storage_peek<'this>(storage_iterator: &'this mut MVCCPrefixIterator) -> Option<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), SnapshotError>> {
+    fn storage_peek<'this>(storage_iterator: &'this mut MVCCPrefixIterator) -> Option<Result<(StorageKeyReference<'this>, ByteReference<'this>), SnapshotError>> {
         let storage_peek = storage_iterator.peek();
         match storage_peek {
             None => None,
             Some(Ok((key, value))) => {
-                Some(Ok((StorageKey::Reference(key), StorageValue::Reference(value))))
+                Some(Ok((key, value)))
             }
             Some(Err(error)) => {
                 Some(Err(SnapshotError {
@@ -252,15 +254,15 @@ impl<'a> SnapshotPrefixIterator<'a> {
         self.find_next_state();
     }
 
-    fn get_buffered_peek<'this>(buffered_iterator: &'this mut BufferedPrefixIterator) -> (StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>) {
+    fn get_buffered_peek<'this>(buffered_iterator: &'this mut BufferedPrefixIterator) -> (StorageKeyReference<'this>, ByteReference<'this>) {
         let (key, write) = buffered_iterator.peek().unwrap().unwrap();
         (
-            StorageKey::Reference(StorageKeyReference::from(key)),
-            StorageValue::Reference(StorageValueReference::from(write.get_value()))
+            StorageKeyReference::from(key),
+            ByteReference::from(write.get_value())
         )
     }
 
-    pub fn collect_cloned<'t>(mut self) -> Vec<(StorageKey<'t, BUFFER_INLINE_KEY>, StorageValue<'t, BUFFER_INLINE_VALUE>)> {
+    pub fn collect_cloned<'t>(mut self) -> Vec<(StorageKey<'t, BUFFER_INLINE_KEY>, ByteArrayOrRef<'t, BUFFER_INLINE_VALUE>)> {
         let mut vec = Vec::new();
         loop {
             let item = self.next();
@@ -268,11 +270,9 @@ impl<'a> SnapshotPrefixIterator<'a> {
                 break;
             }
             let (key, value) = item.unwrap().unwrap();
-
-            vec.push((
-                StorageKey::Array(StorageKeyArray::new(key.keyspace_id(), ByteArray::from(key.bytes()))),
-                StorageValue::Array(StorageValueArray::new(ByteArray::from(value.bytes())))
-             ));
+            let key: StorageKey<'_, BUFFER_INLINE_KEY> = StorageKey::Array(StorageKeyArray::from(key.clone()));
+            let value = ByteArrayOrRef::Array(ByteArray::from(value));
+            vec.push((key, value));
         }
         vec
     }

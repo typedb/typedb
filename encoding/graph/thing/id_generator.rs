@@ -16,37 +16,37 @@
  */
 
 
-use std::sync::atomic::{AtomicU64, Ordering};
-use crate::prefix::{Prefix, PrefixID};
-use crate::type_::type_encoding::concept::TypeID;
-use crate::thing::thing_encoding::concept::ObjectIID;
-use crate::thing::thing_encoding::concept::ObjectID;
+use std::sync::atomic::AtomicU64;
 
-pub struct ThingIIDGenerator {
+use crate::graph::thing::thing_encoding::concept::ObjectIID;
+use crate::graph::type_::vertex::{TypeID, TypeIdUInt};
+
+pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,
     relation_ids: Box<[AtomicU64]>,
     attribute_ids: Box<[AtomicU64]>,
 }
 
-impl ThingIIDGenerator {
-    pub fn new() -> ThingIIDGenerator {
-        ThingIIDGenerator {
-            entity_ids: (0..u16::MAX as usize)
+impl ThingVertexGenerator {
+    pub fn new() -> ThingVertexGenerator {
+        ThingVertexGenerator {
+            entity_ids: (0..TypeIdUInt::MAX as usize)
                 .map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice(),
-            relation_ids: (0..u16::MAX as usize)
+            relation_ids: (0..TypeIdUInt::MAX as usize)
                 .map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice(),
-            attribute_ids: (0..u16::MAX as usize)
+            attribute_ids: (0..TypeIdUInt::MAX as usize)
                 .map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice(),
         }
     }
 
-    pub fn load() -> ThingIIDGenerator {
+    pub fn load() -> ThingVertexGenerator {
         todo!()
     }
 
-    pub fn take_entity_iid(&self, type_id: &TypeID) -> ObjectIID {
-        let index = type_id.as_u16() as usize;
-        let entity_id = self.entity_ids[index].fetch_add(1, Ordering::Relaxed);
-        ObjectIID::new(Prefix::Entity.type_id(), *type_id, ObjectID::from(entity_id))
+    pub fn take_entity_iid(&self, type_id: &TypeID) -> ObjectIID<'_> {
+        // let index = type_id.as_u16() as usize;
+        // let entity_id = self.entity_ids[index].fetch_add(1, Ordering::Relaxed);
+        // ObjectIID::new(PrefixType::Entity.prefix(), *type_id, ObjectID::from(entity_id))
+        todo!()
     }
 }

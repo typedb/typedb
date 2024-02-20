@@ -42,7 +42,7 @@ fn snapshot_buffered_put_get() {
     let key_2 = StorageKeyArray::<BUFFER_INLINE_KEY>::from((vec![0x1, 0x0, 0x10], keyspace_id));
     let key_3 = StorageKeyArray::<BUFFER_INLINE_KEY>::from((vec![0x1, 0x0, 0xff], keyspace_id));
     let key_4 = StorageKeyArray::<BUFFER_INLINE_KEY>::from((vec![0x2, 0x0, 0xff], keyspace_id));
-    let value_1 = ByteArray::from(&[0, 0, 0, 0]);
+    let value_1 = ByteArray::copy(&[0, 0, 0, 0]);
     snapshot.put_val(key_1.clone(), StorageValueArray::new(value_1.clone()));
     snapshot.put(key_2.clone());
     snapshot.put(key_3);

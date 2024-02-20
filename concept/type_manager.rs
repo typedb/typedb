@@ -18,33 +18,35 @@
 
 use std::rc::Rc;
 
-use encoding::{DeserialisableFixed, SerialisableKeyDynamic, SerialisableKeyFixed, SerialisableValue};
-pub use encoding::label::Label;
-use encoding::prefix::Prefix;
-use encoding::type_::id_generator::TypeIIDGenerator;
-use encoding::type_::type_encoding::concept::TypeIID;
-use encoding::type_::type_encoding::concept::root::Root;
-use encoding::type_::type_encoding::index::{LabelTypeIIDIndex, TypeIIDLabelIndex};
+use bytes::byte_array::ByteArray;
+use bytes::byte_array_or_ref::ByteArrayOrRef;
+use encoding::graph::type_::index::{LabelToTypeIndexKey, TypeToLabelIndexKey};
+use encoding::graph::type_::Root;
+use encoding::graph::type_::vertex::TypeVertex;
+use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
+use encoding::layout::prefix::PrefixType;
+use encoding::primitive::label::Label;
 use storage::MVCCStorage;
+use storage::snapshot::snapshot::Snapshot;
 
 pub struct TypeManager<'txn, 'storage: 'txn> {
     snapshot: Rc<Snapshot<'storage>>,
-    iid_generator: &'txn TypeIIDGenerator,
+    vertex_generator: &'txn TypeVertexGenerator,
     // TODO: add a shared schema cache
 }
 
 impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
-    pub fn new(snapshot: Rc<Snapshot<'storage>>, id_generator: &'txn TypeIIDGenerator) -> TypeManager<'txn, 'storage> {
+    pub fn new(snapshot: Rc<Snapshot<'storage>>, vertex_generator: &'txn TypeVertexGenerator) -> TypeManager<'txn, 'storage> {
         TypeManager {
             snapshot: snapshot,
-            iid_generator: id_generator,
+            vertex_generator,
         }
     }
 
-    pub fn initialise_types(storage: &mut MVCCStorage, id_generator: &TypeIIDGenerator) {
+    pub fn initialise_types(storage: &mut MVCCStorage, vertex_generator: &TypeVertexGenerator) {
         let snapshot = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
         {
-            let type_manager = TypeManager::new(snapshot.clone(), id_generator);
+            let type_manager = TypeManager::new(snapshot.clone(), vertex_generator);
             type_manager.create_entity_type(&Root::Entity.label());
             type_manager.create_attribute_type(&Root::Attribute.label());
         }
@@ -57,46 +59,55 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     }
 
     pub fn create_entity_type(&self, label_: &Label) -> EntityType {
-        let label = &label_.name();
+        let label = label_.name();
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let type_iid = self.iid_generator.take_entity_type_iid();
-            let type_iid_key = type_iid.serialise_to_key();
-            write_snapshot.put(type_iid_key.clone());
-            let (iid_label_index_key, value) = TypeIIDLabelIndex::new(type_iid, label);
-            write_snapshot.put_val(iid_label_index_key.serialise_to_key(), value.serialise_to_value());
-            let label_iid_index_key = LabelTypeIIDIndex::new(label);
-            write_snapshot.put_val(label_iid_index_key.serialise_to_key(), type_iid.serialise_to_value());
-            return EntityType::new(type_iid);
+            let type_vertex = self.vertex_generator.take_entity_type_vertex();
+            write_snapshot.put(type_vertex.as_storage_key().to_owned());
+            self.create_type_indexes(label, &type_vertex);
+            return EntityType::new(type_vertex);
         }
         panic!("Illegal state: create type requires write snapshot")
     }
 
     pub fn get_entity_type(&self, label: &Label) -> Option<EntityType> {
-        let key = LabelTypeIIDIndex::new(label.name()).serialise_to_key();
-        self.snapshot.get(&key).map(|value| EntityType::new(TypeIID::deserialise_from(&value.bytes())))
+        self.get_type(label, |vertex| EntityType::new(vertex))
     }
 
     pub fn create_attribute_type(&self, label_: &Label) -> AttributeType {
         let label = &label_.name();
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let type_iid = self.iid_generator.take_attribute_type_iid();
-            let type_iid_key = type_iid.serialise_to_key();
-            write_snapshot.put(type_iid_key.clone());
-            let (iid_label_index_key, value) = TypeIIDLabelIndex::new(type_iid, label);
-            write_snapshot.put_val(iid_label_index_key.serialise_to_key(), value.serialise_to_value());
-            let label_iid_index_key = LabelTypeIIDIndex::new(label);
-            // TODO: we serialise TypeIID twice, the same way - for Key and for Value
-            write_snapshot.put_val(label_iid_index_key.serialise_to_key(), type_iid.serialise_to_value());
-            return AttributeType::new(type_iid);
+            let type_vertex = self.vertex_generator.take_attribute_type_vertex();
+            write_snapshot.put(type_vertex.as_storage_key().to_owned());
+            self.create_type_indexes(label, &type_vertex);
+            return AttributeType::new(type_vertex);
         }
         panic!("Illegal state: create type requires write snapshot")
     }
 
     pub fn get_attribute_type(&self, label: &Label) -> Option<AttributeType> {
-        let key = LabelTypeIIDIndex::new(label.name()).serialise_to_key();
-        self.snapshot.get(&key).map(|value| AttributeType::new(TypeIID::deserialise_from(&value.bytes())))
+        self.get_type(label, |vertex| AttributeType::new(vertex))
+    }
+
+    fn get_type<M, U>(&self, label: &Label, mapper: M) -> Option<U> where M: FnOnce(TypeVertex<'static>) -> U {
+        let key = LabelToTypeIndexKey::build(label.name()).into_storage_key();
+        self.snapshot.get::<48>(&key).map(|value| {
+            mapper(TypeVertex::new(ByteArrayOrRef::Array(value)))
+        })
+    }
+
+    fn create_type_indexes(&self, label: &str, type_vertex: &TypeVertex) {
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            let (vertex_label_index_key, value) = TypeToLabelIndexKey::build_key_value(&type_vertex, label);
+            write_snapshot.put_val(vertex_label_index_key.into_storage_key().to_owned(), value.into_bytes().into_owned());
+
+            let label_iid_index_key = LabelToTypeIndexKey::build(label);
+            let type_vertex_value = ByteArray::copy(type_vertex.bytes().bytes());
+            write_snapshot.put_val(label_iid_index_key.into_storage_key().to_owned(), type_vertex_value);
+        } else {
+            unreachable!("Must be using a write snapshot to create type indexes.")
+        }
     }
 
     // TODO:
@@ -104,30 +115,32 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     //   this is only applicable for type manager where we can only have 1 concurrent txn and IDs are precious
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub struct EntityType {
-    iid: TypeIID,
+#[derive(Debug, Eq, PartialEq)]
+pub struct EntityType<'a> {
+    vertex: TypeVertex<'a>,
 }
 
-impl EntityType {
-    pub fn new(iid: TypeIID) -> EntityType {
-        if iid.prefix() != Prefix::EntityType.type_id() {
-            panic!("Type IID prefix was expected to be Prefix::EntityType but was {:?}", iid.prefix())
+impl<'a> EntityType<'a> {
+    pub fn new(vertex: TypeVertex<'a>) -> EntityType {
+        if vertex.prefix() != PrefixType::EntityType.prefix() {
+            panic!("Type IID prefix was expected to be Prefix::EntityType ({:?}) but was {:?}",
+                   PrefixType::EntityType.prefix(), vertex.prefix())
         }
-        EntityType { iid: iid }
+        EntityType { vertex: vertex }
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub struct AttributeType {
-    iid: TypeIID,
+#[derive(Debug, Eq, PartialEq)]
+pub struct AttributeType<'a> {
+    vertex: TypeVertex<'a>,
 }
 
-impl AttributeType {
-    pub fn new(iid: TypeIID) -> AttributeType {
-        if iid.prefix() != Prefix::AttributeType.type_id() {
-            panic!("Type IID prefix was expected to be Prefix::AttributeType but was {:?}", iid.prefix())
+impl<'a> AttributeType<'a> {
+    pub fn new(vertex: TypeVertex<'a>) -> AttributeType {
+        if vertex.prefix() != PrefixType::AttributeType.prefix() {
+            panic!("Type IID prefix was expected to be Prefix::AttributeType ({:?}) but was {:?}",
+                   PrefixType::AttributeType.prefix(), vertex.prefix())
         }
-        AttributeType { iid: iid }
+        AttributeType { vertex: vertex }
     }
 }

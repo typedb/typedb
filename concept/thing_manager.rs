@@ -17,9 +17,7 @@
 
 use std::iter::empty;
 
-use encoding::prefix::Prefix;
-use encoding::thing::thing_encoding::concept::{AttributeIID, ObjectIID};
-use storage::snapshot2::Snapshot;
+use storage::snapshot::snapshot::Snapshot;
 use crate::type_manager::EntityType;
 
 pub struct ThingManager<'txn, 'storage: 'txn> {
@@ -52,9 +50,9 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
 
 
 struct Entity {
-    iid: ObjectIID,
+    // iid: ObjectIID,
 }
 
 struct Attribute {
-    iid: AttributeIID,
+    // iid: AttributeIID,
 }

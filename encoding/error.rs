@@ -15,5 +15,30 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub mod type_encoding;
-pub mod id_generator;
+use std::error::Error;
+use std::fmt::{Display, Formatter};
+use std::str::Utf8Error;
+
+#[derive(Debug)]
+pub struct EncodingError {
+    pub kind: EncodingErrorKind,
+}
+
+#[derive(Debug)]
+pub enum EncodingErrorKind {
+    FailedUFT8Decode { bytes: Box<[u8]>, source: Utf8Error }
+}
+
+impl Display for EncodingError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for EncodingError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match &self.kind {
+            EncodingErrorKind::FailedUFT8Decode { source, .. } => Some(source),
+        }
+    }
+}

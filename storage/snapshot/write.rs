@@ -18,18 +18,18 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use crate::key_value::StorageValueArray;
+use bytes::byte_array::ByteArray;
 use crate::snapshot::buffer::BUFFER_INLINE_VALUE;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) enum Write {
     // Insert KeyValue with a new version. Never conflicts.
-    Insert(StorageValueArray<BUFFER_INLINE_VALUE>),
+    Insert(ByteArray<BUFFER_INLINE_VALUE>),
     // Insert KeyValue with new version if a concurrent Txn deletes Key. Boolean indicates requires re-insertion. Never conflicts.
-    InsertPreexisting(StorageValueArray<BUFFER_INLINE_VALUE>, Arc<AtomicBool>),
+    InsertPreexisting(ByteArray<BUFFER_INLINE_VALUE>, Arc<AtomicBool>),
     // TODO what happens during replay
     // Mark Key as required from storage. Caches existing storage Value. Conflicts with Delete.
-    RequireExists(StorageValueArray<BUFFER_INLINE_VALUE>),
+    RequireExists(ByteArray<BUFFER_INLINE_VALUE>),
     // Delete with a new version. Conflicts with Require.
     Delete,
 }
@@ -81,7 +81,7 @@ impl Write {
         matches!(self, Write::Delete)
     }
 
-    pub(crate) fn get_value(&self) -> &StorageValueArray<BUFFER_INLINE_VALUE> {
+    pub(crate) fn get_value(&self) -> &ByteArray<BUFFER_INLINE_VALUE> {
         match self {
             Write::Insert(value) => value,
             Write::InsertPreexisting(value, _) => value,

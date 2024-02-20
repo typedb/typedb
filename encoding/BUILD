@@ -28,12 +28,14 @@ rust_library(
     crate_root = "encoding.rs",
     srcs = glob([
         "*.rs",
-        "*/*.rs"
+        "*/*.rs",
+        "*/*/*.rs",
     ]),
     deps = [
         "//storage",
         "//storage/durability",
         "//common/logger",
+        "//common/bytes",
 
         "@crates//:tracing",
         "@crates//:struct_deser",

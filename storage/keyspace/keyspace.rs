@@ -117,8 +117,8 @@ impl Keyspace {
         })
     }
 
-    pub(crate) fn get_prev<M, K, V>(&self, key: &[u8], mut mapper: M) -> Option<(K, V)>
-        where M: FnMut(&[u8], &[u8]) -> (K, V) {
+    pub(crate) fn get_prev<M,T>(&self, key: &[u8], mut mapper: M) -> Option<T>
+        where M: FnMut(&[u8], &[u8]) -> T {
         let mut iterator = self.kv_storage.raw_iterator_opt(self.new_read_options());
         iterator.seek_for_prev(key);
         iterator.item().map(|(k, v)| mapper(k, v))
@@ -299,7 +299,7 @@ impl<'s> KeyspacePrefixIterator<'s> {
                 break;
             }
             let (key, value) = item.unwrap().unwrap_or_log();
-            vec.push((ByteArray::<INLINE_KEY>::from(key), ByteArray::<INLINE_VALUE>::from(value)));
+            vec.push((ByteArray::<INLINE_KEY>::copy(key), ByteArray::<INLINE_VALUE>::copy(value)));
         }
         vec
     }

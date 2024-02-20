@@ -19,8 +19,8 @@ use std::borrow::Cow;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Label {
-    pub(crate) name: Cow<'static, str>,
-    pub(crate) scope: Option<Cow<'static, str>>,
+    pub name: Cow<'static, str>,
+    pub scope: Option<Cow<'static, str>>,
 }
 
 impl Label {

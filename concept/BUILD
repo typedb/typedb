@@ -27,6 +27,7 @@ rust_library(
         "*.rs"
     ]),
     deps = [
+        "//common/bytes",
         "//encoding",
         "//storage",
     ],

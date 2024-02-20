@@ -18,9 +18,9 @@
 use bytes::byte_array::ByteArray;
 use durability::SequenceNumber;
 
-use crate::MVCCStorage;
 use crate::isolation_manager::CommitRecord;
-use crate::key_value::{StorageKey, StorageKeyArray, StorageValueArray};
+use crate::key_value::{StorageKey, StorageKeyArray};
+use crate::MVCCStorage;
 use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, KeyspaceBuffers};
 use crate::snapshot::error::{SnapshotError, SnapshotErrorKind};
 use crate::snapshot::iterator::SnapshotPrefixIterator;
@@ -31,7 +31,7 @@ pub enum Snapshot<'storage> {
 }
 
 impl<'storage> Snapshot<'storage> {
-    pub fn get<'snapshot>(&'snapshot self, key: &StorageKey<'_, BUFFER_INLINE_KEY>) -> Option<StorageValueArray<BUFFER_INLINE_VALUE>> {
+    pub fn get<'snapshot, const INLINE_SIZE: usize>(&'snapshot self, key: &StorageKey<'_, BUFFER_INLINE_KEY>) -> Option<ByteArray<INLINE_SIZE>> {
         match self {
             Snapshot::Read(snapshot) => snapshot.get(key),
             Snapshot::Write(snapshot) => snapshot.get(key),
@@ -46,7 +46,7 @@ impl<'storage> Snapshot<'storage> {
     //     }
     // }
 
-    pub fn close(mut self) {
+    pub fn close(self) {
         match self {
             Snapshot::Read(snapshot) => snapshot.close(),
             Snapshot::Write(snapshot) => snapshot.close_resources(),
@@ -68,9 +68,9 @@ impl<'storage> ReadSnapshot<'storage> {
         }
     }
 
-    pub fn get<'snapshot>(&self, key: &StorageKey<'_, BUFFER_INLINE_KEY>) -> Option<StorageValueArray<BUFFER_INLINE_VALUE>> {
+    pub fn get<'snapshot, const INLINE_SIZE: usize>(&self, key: &StorageKey<'_, BUFFER_INLINE_KEY>) -> Option<ByteArray<INLINE_SIZE>> {
         // TODO: this clone may not be necessary - we could pass a reference up?
-        self.storage.get(key, &self.open_sequence_number, |reference| StorageValueArray::new(ByteArray::from(reference.bytes())))
+        self.storage.get(key, &self.open_sequence_number, |reference| ByteArray::from(reference))
     }
 
     pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> SnapshotPrefixIterator {
@@ -78,8 +78,7 @@ impl<'storage> ReadSnapshot<'storage> {
         SnapshotPrefixIterator::new(mvcc_iterator, None)
     }
 
-    pub fn close(self) {
-    }
+    pub fn close(self) {}
 }
 
 pub struct WriteSnapshot<'storage> {
@@ -100,10 +99,10 @@ impl<'storage> WriteSnapshot<'storage> {
 
     /// Insert a key with a new version
     pub fn insert(&self, key: StorageKeyArray<BUFFER_INLINE_KEY>) {
-        self.insert_val(key, StorageValueArray::empty())
+        self.insert_val(key, ByteArray::empty())
     }
 
-    pub fn insert_val(&self, key: StorageKeyArray<BUFFER_INLINE_KEY>, value: StorageValueArray<BUFFER_INLINE_VALUE>) {
+    pub fn insert_val(&self, key: StorageKeyArray<BUFFER_INLINE_KEY>, value: ByteArray<BUFFER_INLINE_VALUE>) {
         let keyspace_id = key.keyspace_id();
         let byte_array = key.into_byte_array();
         self.buffers.get(keyspace_id).insert(byte_array, value);
@@ -112,10 +111,10 @@ impl<'storage> WriteSnapshot<'storage> {
     /// Insert a key with a new version if it does not already exist.
     /// If the key exists, mark it as a preexisting insertion to escalate to Insert if there is a concurrent Delete.
     pub fn put(&self, key: StorageKeyArray<BUFFER_INLINE_KEY>) {
-        self.put_val(key, StorageValueArray::empty())
+        self.put_val(key, ByteArray::empty())
     }
 
-    pub fn put_val(&self, key: StorageKeyArray<BUFFER_INLINE_KEY>, value: StorageValueArray<BUFFER_INLINE_VALUE>) {
+    pub fn put_val(&self, key: StorageKeyArray<BUFFER_INLINE_KEY>, value: ByteArray<BUFFER_INLINE_VALUE>) {
         let keyspace_id = key.keyspace_id();
         let buffer = self.buffers.get(keyspace_id);
         let existing_buffered = buffer.contains(key.byte_array());
@@ -127,7 +126,7 @@ impl<'storage> WriteSnapshot<'storage> {
                 |reference| {
                     // Only copy if the value is the same
                     if reference.bytes() == value.bytes() {
-                        Some(StorageValueArray::new(ByteArray::from(reference.bytes())))
+                        Some(ByteArray::from(reference))
                     } else {
                         None
                     }
@@ -154,7 +153,7 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     /// Get a Value, and mark it as a required key
-    pub fn get_required(&self, key: &StorageKey<'_, BUFFER_INLINE_KEY>) -> StorageValueArray<BUFFER_INLINE_VALUE> {
+    pub fn get_required(&self, key: &StorageKey<'_, BUFFER_INLINE_KEY>) -> ByteArray<BUFFER_INLINE_VALUE> {
         let keyspace_id = key.keyspace_id();
         let buffer = self.buffers.get(keyspace_id);
         let existing = buffer.get(key.bytes());
@@ -162,10 +161,10 @@ impl<'storage> WriteSnapshot<'storage> {
             let storage_value = self.storage.get(
                 key,
                 &self.open_sequence_number,
-                |reference| StorageValueArray::new(ByteArray::from(reference.bytes())),
+                |reference| ByteArray::from(reference),
             );
             if storage_value.is_some() {
-                buffer.require_exists(ByteArray::from(key.bytes()), storage_value.as_ref().unwrap().clone());
+                buffer.require_exists(ByteArray::copy(key.bytes()), storage_value.as_ref().unwrap().clone());
                 return storage_value.unwrap();
             } else {
                 // TODO: what if the user concurrent requires a concept while deleting it in another query
@@ -177,11 +176,11 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     /// Get the Value for the key, returning an empty Option if it does not exist
-    pub fn get(&self, key: &StorageKey<'_, BUFFER_INLINE_KEY>) -> Option<StorageValueArray<BUFFER_INLINE_VALUE>> {
+    pub fn get<const INLINE_SIZE: usize>(&self, key: &StorageKey<'_, BUFFER_INLINE_KEY>) -> Option<ByteArray<INLINE_SIZE>> {
         let keyspace_id = key.keyspace_id();
         let existing_value = self.buffers.get(keyspace_id).get(key.bytes());
         existing_value.map_or_else(
-            || self.storage.get(key, &self.open_sequence_number, |reference| StorageValueArray::new(ByteArray::from(reference.bytes()))),
+            || self.storage.get(key, &self.open_sequence_number, |reference| ByteArray::from(reference)),
             |existing| Some(existing),
         )
     }

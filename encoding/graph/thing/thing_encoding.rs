@@ -19,30 +19,23 @@ pub mod concept {
     use std::mem;
 
     use struct_deser_derive::StructDeser;
+    use crate::graph::type_::vertex::TypeID;
 
-    use crate::{EncodingKeyspace, SerialisableKeyFixed};
-    use crate::prefix::PrefixID;
-    use crate::type_::type_encoding::concept::TypeID;
+    use crate::layout::prefix::Prefix;
 
     const OBJECT_ID_SIZE: usize = 8;
     const ATTRIBUTE_ID_SIZE: usize = 12;
 
-    #[derive(StructDeser, Copy, Clone, Debug, PartialEq, Eq)]
-    pub struct ObjectIID {
-        prefix: PrefixID,
-        type_id: TypeID,
+    #[derive(Debug, PartialEq, Eq)]
+    pub struct ObjectIID<'a> {
+        prefix: Prefix<'a>,
+        type_id: TypeID<'a>,
         object_id: ObjectID,
     }
 
-    impl ObjectIID {
-        pub fn new(prefix: PrefixID, type_id: TypeID, object_id: ObjectID) -> ObjectIID {
+    impl<'a> ObjectIID<'a> {
+        pub fn new(prefix: Prefix<'a>, type_id: TypeID<'a>, object_id: ObjectID) -> Self {
             ObjectIID { prefix: prefix, type_id: type_id, object_id: object_id }
-        }
-    }
-
-    impl SerialisableKeyFixed for ObjectIID {
-        fn key_section_id(&self) -> u8 {
-            EncodingKeyspace::Data.id()
         }
     }
 
@@ -58,14 +51,14 @@ pub mod concept {
         }
     }
 
-    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-    pub struct AttributeIID {
-        prefix: PrefixID,
-        type_id: TypeID,
+    #[derive(Debug, PartialEq, Eq)]
+    pub struct AttributeIID<'a> {
+        prefix: Prefix<'a>,
+        type_id: TypeID<'a>,
         id: AttributeID,
     }
 
-    impl AttributeIID {
+    impl<'a> AttributeIID<'a> {
 
     }
 

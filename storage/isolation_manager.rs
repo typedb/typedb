@@ -19,7 +19,6 @@ use std::collections::VecDeque;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::io::Read;
-use std::iter::empty;
 use std::sync::{Arc, OnceLock, RwLock};
 use std::sync::atomic::{AtomicU64, AtomicU8, AtomicUsize, Ordering};
 

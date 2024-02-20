@@ -23,8 +23,8 @@ use std::sync::atomic::Ordering;
 use speedb::{Options, WriteBatch};
 
 use bytes::byte_array::ByteArray;
+use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
-use bytes::ByteArrayOrRef;
 use durability::{DurabilityService, SequenceNumber, Sequencer, wal::WAL};
 use iterator::State;
 use logger::error;
@@ -34,7 +34,7 @@ use snapshot::write::Write;
 
 use crate::error::{MVCCStorageError, MVCCStorageErrorKind};
 use crate::isolation_manager::{CommitRecord, IsolationManager};
-use crate::key_value::{StorageKey, StorageKeyReference, StorageValue, StorageValueReference};
+use crate::key_value::{StorageKey, StorageKeyReference};
 use crate::keyspace::keyspace::{Keyspace, KEYSPACE_ID_MAX, KEYSPACE_ID_RESERVED_UNSET, KEYSPACE_MAXIMUM_COUNT, KeyspaceError, KeyspaceId, KeyspacePrefixIterator};
 use crate::snapshot::buffer::{BUFFER_INLINE_VALUE, KeyspaceBuffers};
 use crate::snapshot::snapshot::{ReadSnapshot, WriteSnapshot};
@@ -57,7 +57,6 @@ pub struct MVCCStorage {
 
 impl MVCCStorage {
     const STORAGE_DIR_NAME: &'static str = "storage";
-    pub(crate) const ITERATOR_INLINE_BYTES: usize = 128;
 
     pub fn new(owner_name: Rc<str>, path: &PathBuf) -> Result<Self, MVCCStorageError> {
         let storage_dir = path.with_extension(MVCCStorage::STORAGE_DIR_NAME);
@@ -298,7 +297,7 @@ impl MVCCStorage {
     }
 
     pub fn get<M, V, const S: usize>(&self, key: &StorageKey<'_, S>, open_sequence_number: &SequenceNumber, mut mapper: M) -> Option<V>
-        where M: FnMut(StorageValueReference<'_>) -> V {
+        where M: FnMut(ByteReference<'_>) -> V {
         let mut iterator = self.iterate_prefix(key, open_sequence_number);
         // TODO: we don't want to panic on unwrap here
         iterator.next().transpose().unwrap_or_log().map(|(_, value)|
@@ -313,7 +312,7 @@ impl MVCCStorage {
 
     // --- direct access to storage, bypassing MVCC and returning raw key/value pairs ---
 
-    pub fn put_raw(&self, key: StorageKeyReference<'_>, value: &StorageValue<'_, BUFFER_INLINE_VALUE>) {
+    pub fn put_raw(&self, key: StorageKeyReference<'_>, value: &ByteArrayOrRef<'_, BUFFER_INLINE_VALUE>) {
         // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
         self.get_keyspace(key.keyspace_id()).put(key.byte_ref().bytes(), value.bytes()).map_err(|e| MVCCStorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
@@ -333,11 +332,11 @@ impl MVCCStorage {
         }).unwrap_or_log()
     }
 
-    pub fn get_prev_raw<KM, VM, K, V>(&self, key: StorageKeyReference<'_>, mut key_mapper: KM, mut value_mapper: VM) -> Option<(K, V)>
-        where KM: FnMut(&[u8]) -> K, VM: FnMut(&[u8]) -> V {
+    pub fn get_prev_raw<M, T>(&self, key: StorageKeyReference<'_>, mut key_value_mapper: M) -> Option<T>
+        where M: FnMut(&[u8], &[u8]) -> T {
         self.get_keyspace(key.keyspace_id()).get_prev(
             key.byte_ref().bytes(),
-            |k, v| (key_mapper(k), value_mapper(v)),
+            |k, v| key_value_mapper(k, v),
         )
     }
 
@@ -374,7 +373,7 @@ impl<'s> MVCCPrefixIterator<'s> {
         }
     }
 
-    fn peek(&mut self) -> Option<Result<(StorageKeyReference, StorageValueReference), MVCCStorageError>> {
+    fn peek(&mut self) -> Option<Result<(StorageKeyReference, ByteReference), MVCCStorageError>> {
         match &self.state {
             State::Init => {
                 self.find_next_state();
@@ -385,7 +384,7 @@ impl<'s> MVCCPrefixIterator<'s> {
                 let mvcc_key = MVCCKey::wrap_slice(key);
                 Some(Ok((
                     StorageKeyReference::new(self.keyspace.id(), mvcc_key.into_key().unwrap_reference()),
-                    StorageValueReference::new(ByteReference::new(value)),
+                    ByteReference::new(value),
                 )))
             }
             State::ItemUsed => {
@@ -400,7 +399,7 @@ impl<'s> MVCCPrefixIterator<'s> {
         }
     }
 
-    fn next(&mut self) -> Option<Result<(StorageKeyReference, StorageValueReference), MVCCStorageError>> {
+    fn next(&mut self) -> Option<Result<(StorageKeyReference, ByteReference), MVCCStorageError>> {
         match &self.state {
             State::Init => {
                 self.find_next_state();
@@ -411,7 +410,7 @@ impl<'s> MVCCPrefixIterator<'s> {
                 let mvcc_key = MVCCKey::wrap_slice(key);
                 let item = Some(Ok((
                     StorageKeyReference::new(self.keyspace.id(), mvcc_key.into_key().unwrap_reference()),
-                    StorageValueReference::new(ByteReference::new(value)),
+                    ByteReference::new(value),
                 )));
                 self.state = State::ItemUsed;
                 item
@@ -438,11 +437,11 @@ impl<'s> MVCCPrefixIterator<'s> {
             let peek = self.iterator.peek();
             match peek {
                 None => self.state = State::Done,
-                Some(Ok((key, value))) => {
+                Some(Ok((key, _))) => {
                     let mvcc_key = MVCCKey::wrap_slice(key);
                     let is_visible = Self::is_visible_key(&self.open_sequence_number, &self.last_visible_key, &mvcc_key);
                     if is_visible {
-                        self.last_visible_key = Some(ByteArray::from(mvcc_key.key()));
+                        self.last_visible_key = Some(ByteArray::copy(mvcc_key.key()));
                         match mvcc_key.operation() {
                             StorageOperation::Insert => self.state = State::ItemReady,
                             StorageOperation::Delete => {}
@@ -471,118 +470,6 @@ impl<'s> MVCCPrefixIterator<'s> {
     }
 }
 
-mod visibility {
-    // pub(crate) struct VariableWidthIteratorController<M, K, V> where M: FnMut(&[u8], &[u8]) -> (K, V) {
-    //     last_visible_key: Option<ByteArray<{ MVCCStorage::ITERATOR_INLINE_BYTES }>>,
-    //     open_sequence_number: SequenceNumber,
-    //     mapper: M,
-    // }
-    //
-    // impl<M, K, V> VariableWidthIteratorController<M, K, V> where M: FnMut(&[u8], &[u8]) -> (K, V) {
-    //     pub(crate) fn new(open_sequence_number: &SequenceNumber, mapper: M) -> VariableWidthIteratorController<M, K, V> {
-    //         VariableWidthIteratorController {
-    //             last_visible_key: None,
-    //             open_sequence_number: *open_sequence_number,
-    //             mapper: mapper,
-    //         }
-    //     }
-    // }
-    //
-    // impl<M, K, V> IteratorController<K, V> for VariableWidthIteratorController<M, K, V> where M: FnMut(&[u8], &[u8]) -> (K, V) {
-    //     fn control<'a>(&mut self, sequenced_key: &'a [u8], value: &'a [u8]) -> IterControl<'a, K, V> {
-    //         let mvcc_key = MVCCKey::wrap_slice(sequenced_key);
-    //
-    //         if self.is_new_visible_key(&mvcc_key) {
-    //             self.last_visible_key = Some(ByteArray::from(mvcc_key.key()));
-    //             match mvcc_key.operation() {
-    //                 StorageOperation::Insert => {
-    //                     IterControl::Accept(mvcc_key.into_key().unwrap_reference(), value)
-    //                 }
-    //                 StorageOperation::Delete => {
-    //                     IterControl::IgnoreSingle
-    //                 }
-    //             }
-    //         } else {
-    //             IterControl::IgnoreSingle
-    //         }
-    //     }
-    // }
-    //
-    // pub(crate) struct FixedWidthIteratorController {
-    //     last_visible_key: Option<ByteArray<{ MVCCStorage::ITERATOR_INLINE_BYTES }>>,
-    //     next_possible_key: Option<ByteArray<{ MVCCStorage::ITERATOR_INLINE_BYTES }>>,
-    //     open_sequence_number: SequenceNumber,
-    // }
-    //
-    // impl FixedWidthIteratorController {
-    //     pub(crate) fn new(open_sequence_number: &SequenceNumber) -> FixedWidthIteratorController {
-    //         FixedWidthIteratorController {
-    //             last_visible_key: None,
-    //             next_possible_key: None,
-    //             open_sequence_number: *open_sequence_number,
-    //         }
-    //     }
-    //
-    //     pub(crate) fn control<'a>(&mut self, sequenced_key: &'a [u8], value: &'a [u8]) -> IterControl<'a, &'a [u8], &'a [u8]> {
-    //         let mvcc_key = MVCCKey::wrap_slice(sequenced_key);
-    //
-    //         if self.last_visible_key.is_none() {
-    //             if mvcc_key.is_visible_to(&self.open_sequence_number) {
-    //                 self.control_new_visible_key(mvcc_key, value)
-    //             } else {
-    //                 IterControl::IgnoreSingle
-    //             }
-    //         } else {
-    //             if self.last_visible_key.as_ref().unwrap().bytes() == mvcc_key.key() {
-    //                 // skip over old versions of a previously accepted key
-    //                 IterControl::IgnoreUntil(self.next_possible_key.as_ref().unwrap().bytes())
-    //             } else if mvcc_key.is_visible_to(&self.open_sequence_number) {
-    //                 self.control_new_visible_key(mvcc_key, value)
-    //             } else {
-    //                 IterControl::IgnoreSingle
-    //             }
-    //         }
-    //     }
-    //
-    //     fn control_new_visible_key<'a>(&mut self, mvcc_key: MVCCKey, value: &'a [u8]) -> IterControl<'a, &[u8], &[u8]> {
-    //         let last_key = ByteArray::from(mvcc_key.key());
-    //
-    //         // TODO: we should be able to append the sequence number + the first operation to this, to skip through keys and new versions of the expected key
-    //         //       we should verify that this is going to work with prefix iterators when the prefix extractor is set to a shorter length?
-    //         let mut next_key = last_key.clone();
-    //         next_key.increment().unwrap_or_log();
-    //         self.last_visible_key = Some(last_key);
-    //         self.next_possible_key = Some(next_key);
-    //         match mvcc_key.operation() {
-    //             StorageOperation::Insert => {
-    //                 IterControl::Accept(mvcc_key.into_key().unwrap_reference(), value)
-    //             }
-    //             StorageOperation::Delete => {
-    //                 IterControl::IgnoreUntil(&self.next_possible_key.as_ref().unwrap().bytes())
-    //             }
-    //         }
-    //     }
-    //
-    //     fn is_new_visible_key(&self, mvcc_key: &MVCCKey) -> bool {
-    //         (self.last_visible_key.is_none() || self.last_visible_key.as_ref().unwrap().bytes() != mvcc_key.key())
-    //             && mvcc_key.is_visible_to(&self.open_sequence_number)
-    //     }
-    // }
-
-// pub(crate) fn read_mvcc<'bytes>((key, value): (&'bytes [u8], &'bytes [u8]), open_sequence_number: &SequenceNumber) -> MVCCRead<'bytes> {
-//     let mvcc_key = MVCCKey::<'bytes>::wrap(key);
-//     let operation = mvcc_key.operation();
-//
-//     if mvcc_key.is_visible_to(&open_sequence_number) {
-//         match operation {
-//             StorageOperation::Insert => MVCCRead::Visible(mvcc_key.into_key(), value),
-//             StorageOperation::Delete => MVCCRead::Deleted,
-//         }
-//     } else {
-//         MVCCRead::Hidden
-//     }
-// }
-}
 
 ///
 /// MVCC keys are made of three parts: the [KEY][SEQ][OP]
@@ -613,12 +500,6 @@ impl<'bytes> MVCCKey<'bytes> {
 
         MVCCKey {
             bytes: ByteArrayOrRef::Array(byte_array),
-        }
-    }
-
-    fn wrap_owned(bytes: ByteArray<MVCC_KEY_INLINE_SIZE>) -> MVCCKey<'bytes> {
-        MVCCKey {
-            bytes: ByteArrayOrRef::Array(bytes),
         }
     }
 

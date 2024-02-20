@@ -22,9 +22,9 @@ package(default_visibility = ["//visibility:public",])
 # To run this via Bazel, Criterion must be provided the --bench argument:
 #   bazel run --compilation_mode=opt //storage/benches:bench_storage -- --bench
 rust_test(
-    name = "bench_storage",
+    name = "bench_mvcc_storage",
     srcs = glob([
-        "bench_storage.rs",
+        "bench_mvcc_storage.rs",
     ]),
     deps = [
         "//storage",

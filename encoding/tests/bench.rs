@@ -20,7 +20,7 @@ use std::sync::Arc;
 use criterion::{Criterion, criterion_group, criterion_main};
 use storage::key_value::StorageKeyReference;
 
-use encoding::{DeserialisableFixed, SerialisableKeyFixed};
+use encoding::serializable::{DeserialisableFixed, SerialisableKeyFixed};
 use encoding::thing::id_generator::ThingIIDGenerator;
 use encoding::thing::thing_encoding::concept::ObjectIID;
 use encoding::type_::type_encoding::concept::TypeID;

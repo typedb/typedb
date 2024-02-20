@@ -15,19 +15,30 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub const INFIX_SIZE: usize = 1;
+pub mod vertex;
+pub mod vertex_generator;
+mod edge;
+pub mod index;
 
-pub enum Infix {
-    HasForward,
-    HasBackward,
+
+use std::borrow::Cow;
+
+use crate::primitive::label::Label;
+
+pub enum Root {
+    Entity,
+    Attribute,
+    Relation,
+    Role,
 }
 
-impl Infix {
-    pub(crate) const fn as_bytes(&self) -> [u8; INFIX_SIZE] {
+impl Root {
+    pub const fn label(&self) -> Label {
         match self {
-            Infix::HasForward => [0],
-            Infix::HasBackward => [1],
+            Root::Entity => Label { name: Cow::Borrowed("entity"), scope: None },
+            Root::Attribute => Label { name: Cow::Borrowed("attribute"), scope: None },
+            Root::Relation => Label { name: Cow::Borrowed("relation"), scope: None },
+            Root::Role => Label { name: Cow::Borrowed("role"), scope: Some(Cow::Borrowed("relation")) },
         }
     }
 }
-

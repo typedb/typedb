@@ -15,17 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::cell::OnceCell;
-use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::Mutex;
 
-use encoding::type_::type_encoding::concept::root::Root;
-use logger::initialise_logging;
 use rand;
-use tracing::dispatcher::DefaultGuard;
 
 use database::database::Database;
+use encoding::graph::type_::Root;
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
 #[test]

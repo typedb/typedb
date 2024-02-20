@@ -30,6 +30,7 @@ rust_library(
         "//storage",
 
         "@crates//:itertools",
+        "@crates//:speedb",
         "@crates//:tracing",
     ],
     visibility = ["//visibility:public"],

@@ -15,23 +15,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::error::Error;
-use std::fmt::{Display, Formatter};
-use std::str::Utf8Error;
 
-use struct_deser::{FromBytes, IntoBytes, SerializedByteLen};
-
-use storage::{MVCCStorage};
 use storage::error::MVCCStorageError;
-pub use storage::key_value::{FIXED_KEY_LENGTH_BYTES, StorageKeyReference, StorageKeyReference};
-use storage::key_value::{KeyspaceKeyDynamic, StorageValue};
+use storage::keyspace::keyspace::KeyspaceId;
+use storage::MVCCStorage;
 
-pub mod thing;
-pub mod type_;
-pub mod prefix;
-pub mod label;
-mod infix;
-mod value;
+pub mod graph;
+pub mod layout;
+mod serializable;
+mod error;
+pub mod primitive;
 
 enum EncodingKeyspace {
     Schema,
@@ -46,7 +39,7 @@ impl EncodingKeyspace {
         }
     }
 
-    const fn id(&self) -> u8 {
+    const fn id(&self) -> KeyspaceId {
         match self {
             EncodingKeyspace::Schema => 0x0,
             EncodingKeyspace::Data => 0x1,
@@ -62,98 +55,4 @@ impl EncodingKeyspace {
 pub fn initialise_storage(storage: &mut MVCCStorage) -> Result<(), MVCCStorageError> {
     EncodingKeyspace::Schema.initialise_storage(storage)?;
     EncodingKeyspace::Data.initialise_storage(storage)
-}
-
-pub trait Serialisable {
-    fn serialised_size(&self) -> usize;
-
-    fn serialise_into(&self, array: &mut [u8]);
-}
-
-pub trait DeserialisableFixed {
-    fn serialised_size() -> usize;
-
-    fn deserialise_from(array: &[u8]) -> Self;
-}
-
-pub trait DeserialisableDynamic {
-    fn deserialise_from(array: Box<[u8]>) -> Self;
-}
-
-impl<T: IntoBytes> Serialisable for T {
-    fn serialised_size(&self) -> usize {
-        Self::BYTE_LEN
-    }
-
-    fn serialise_into(&self, array: &mut [u8]) {
-        debug_assert_eq!(array.len(), self.serialised_size());
-        self.into_bytes(array)
-    }
-}
-
-impl<T: FromBytes> DeserialisableFixed for T {
-    fn serialised_size() -> usize {
-        Self::BYTE_LEN
-    }
-
-    fn deserialise_from(array: &[u8]) -> Self {
-        debug_assert_eq!(array.len(), Self::serialised_size());
-        T::from_bytes(array)
-    }
-}
-
-pub trait SerialisableKeyFixed: Serialisable {
-    fn key_section_id(&self) -> u8;
-
-    fn serialise_to_key(&self) -> StorageKeyReference {
-        let mut bytes = vec![0; self.serialised_size()];
-        self.serialise_into(bytes.as_mut_slice());
-        StorageKeyReference::Dynamic(KeyspaceKeyDynamic::new(self.key_section_id(), bytes.into_boxed_slice()))
-    }
-}
-
-pub trait SerialisableKeyDynamic: Serialisable {
-    fn key_section_id(&self) -> u8;
-
-    fn serialise_to_key(&self) -> StorageKeyReference {
-        debug_assert!(self.serialised_size() < FIXED_KEY_LENGTH_BYTES);
-        let mut data = [0; FIXED_KEY_LENGTH_BYTES];
-        self.serialise_into(&mut data[0..self.serialised_size()]);
-        StorageKeyReference::Fixed(StorageKeyReference::new(self.key_section_id(), self.serialised_size(), data))
-    }
-}
-
-pub trait SerialisableValue: Serialisable {
-    fn serialise_to_value(&self) -> StorageValue<'_, 48> {
-        let mut bytes = vec![0; self.serialised_size()];
-        self.serialise_into(bytes.as_mut_slice());
-        StorageValue::Value(bytes.into_boxed_slice())
-    }
-}
-
-// anything serialisable can be serialised as a value
-impl<T: Serialisable> SerialisableValue for T {}
-
-#[derive(Debug)]
-pub struct EncodingError {
-    pub kind: EncodingErrorKind,
-}
-
-#[derive(Debug)]
-pub enum EncodingErrorKind {
-    FailedUFT8Decode { bytes: Box<[u8]>, source: Utf8Error }
-}
-
-impl Display for EncodingError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for EncodingError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match &self.kind {
-            EncodingErrorKind::FailedUFT8Decode { source, .. } => Some(source),
-        }
-    }
 }

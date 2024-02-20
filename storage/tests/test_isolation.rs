@@ -43,8 +43,8 @@ fn setup_storage(storage_path: &PathBuf) -> MVCCStorage {
     storage.create_keyspace("keyspace", KEYSPACE_ID, &MVCCStorage::new_db_options()).unwrap();
 
     let snapshot = storage.open_snapshot_write();
-    snapshot.put_val(StorageKeyArray::new(KEYSPACE_ID, ByteArray::from(&KEY_1)), StorageValueArray::new(ByteArray::from(&VALUE_1)));
-    snapshot.put_val(StorageKeyArray::new(KEYSPACE_ID, ByteArray::from(&KEY_2)), StorageValueArray::new(ByteArray::from(&VALUE_2)));
+    snapshot.put_val(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&KEY_1)), StorageValueArray::new(ByteArray::copy(&VALUE_1)));
+    snapshot.put_val(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&KEY_2)), StorageValueArray::new(ByteArray::copy(&VALUE_2)));
     snapshot.commit().unwrap();
 
     storage
@@ -59,14 +59,14 @@ fn commits_isolated() {
     let snapshot_1 = storage.open_snapshot_write();
     let snapshot_2 = storage.open_snapshot_read();
 
-    let key_3 =  StorageKeyArray::new(KEYSPACE_ID, ByteArray::from(&KEY_3));
-    let value_3 =  StorageValueArray::new(ByteArray::from(&VALUE_3));
+    let key_3 =  StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&KEY_3));
+    let value_3 =  StorageValueArray::new(ByteArray::copy(&VALUE_3));
     snapshot_1.put_val(key_3.clone(), value_3.clone());
     snapshot_1.commit().unwrap();
 
     let get = snapshot_2.get(&StorageKey::Reference(StorageKeyReference::from(&key_3)));
     assert!(get.is_none());
-    let prefix = StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::from(&[0x0 as u8])));
+    let prefix = StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&[0x0 as u8])));
     let iterated = snapshot_2.iterate_prefix(&prefix).collect_cloned();
     assert_eq!(iterated.len(), 2);
 

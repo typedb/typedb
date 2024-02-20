@@ -18,13 +18,14 @@
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::ser::SerializeStruct;
 
-use crate::byte_array::ByteArrayErrorKind::Overflow;
+use crate::byte_reference::ByteReference;
+use crate::{BytesError, increment};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ByteArray<const INLINE_BYTES: usize> {
@@ -45,7 +46,7 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
         }
     }
 
-    pub fn from(bytes: &[u8]) -> ByteArray<INLINE_BYTES> {
+    pub fn copy(bytes: &[u8]) -> ByteArray<INLINE_BYTES> {
         if bytes.len() < INLINE_BYTES {
             ByteArray::Inline(ByteArrayInline::from(bytes))
         } else {
@@ -53,7 +54,7 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
         }
     }
 
-    pub fn from_2(bytes_1: &[u8], bytes_2: &[u8]) -> ByteArray<INLINE_BYTES> {
+    pub fn copy_concat_2(bytes_1: &[u8], bytes_2: &[u8]) -> ByteArray<INLINE_BYTES> {
         let length = bytes_1.len() + bytes_2.len();
         if length < INLINE_BYTES {
             ByteArray::Inline(ByteArrayInline::from_2(bytes_1, bytes_2))
@@ -62,7 +63,7 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
         }
     }
 
-    pub fn from_3(bytes_1: &[u8], bytes_2: &[u8], bytes_3: &[u8]) -> ByteArray<INLINE_BYTES> {
+    pub fn copy_concat_3(bytes_1: &[u8], bytes_2: &[u8], bytes_3: &[u8]) -> ByteArray<INLINE_BYTES> {
         let length = bytes_1.len() + bytes_2.len() + bytes_3.len();
         if length < INLINE_BYTES {
             ByteArray::Inline(ByteArrayInline::from_3(bytes_1, bytes_2, bytes_3))
@@ -71,7 +72,7 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
         }
     }
 
-    pub fn new(bytes: [u8; INLINE_BYTES], length: usize) -> ByteArray<INLINE_BYTES> {
+    pub fn inline(bytes: [u8; INLINE_BYTES], length: usize) -> ByteArray<INLINE_BYTES> {
         ByteArray::Inline(ByteArrayInline::new(bytes, length))
     }
 
@@ -109,24 +110,19 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
         self.length() >= bytes.len() && &self.bytes()[0..bytes.len()] == bytes
     }
 
-    // TODO: this needs to be optimised using bigger strides than a single byte!
-    ///
-    /// Performs a big-endian overflowing +1 operation
-    ///
-    pub fn increment(&mut self) -> Result<(), ByteArrayError> {
-        for byte in self.bytes_mut().iter_mut().rev() {
-            let (val, overflow) = byte.overflowing_add(1);
-            *byte = val;
-            if !overflow {
-                return Ok(());
-            }
-        }
-        return Err(ByteArrayError { kind: Overflow {} });
+    pub fn increment(&mut self) -> Result<(), BytesError> {
+        increment(self.bytes_mut())
+    }
+}
+
+impl<const BYTES: usize> From<ByteReference<'_>> for ByteArray<BYTES> {
+    fn from(byte_reference: ByteReference<'_>) -> Self {
+        ByteArray::copy(byte_reference.bytes())
     }
 }
 
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ByteArrayInline<const BYTES: usize> {
     data: [u8; BYTES],
     length: u64,
@@ -296,6 +292,12 @@ impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
     }
 }
 
+impl<const BYTES: usize> Debug for ByteArrayInline<BYTES> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "[{:?}, allocated_size: {}]", self.bytes(), self.length)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ByteArrayBoxed {
     data: Box<[u8]>,
@@ -405,19 +407,3 @@ impl<const INLINE_BYTES: usize> PartialEq<Self> for ByteArray<INLINE_BYTES> {
 
 impl<const INLINE_BYTES: usize> Eq for ByteArray<INLINE_BYTES> {}
 
-
-#[derive(Debug)]
-pub struct ByteArrayError {
-    pub kind: ByteArrayErrorKind,
-}
-
-#[derive(Debug)]
-pub enum ByteArrayErrorKind {
-    Overflow {},
-}
-
-impl Display for ByteArrayError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}

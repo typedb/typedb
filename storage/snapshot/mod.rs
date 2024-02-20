@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub(crate) mod snapshot;
+pub mod snapshot;
 pub mod buffer;
 pub(crate) mod write;
 pub(crate) mod iterator;

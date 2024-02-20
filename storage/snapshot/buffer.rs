@@ -30,7 +30,7 @@ use serde::ser::{SerializeStruct, SerializeTuple};
 use bytes::byte_array::ByteArray;
 use iterator::State;
 
-use crate::key_value::{StorageKeyArray, StorageValueArray};
+use crate::key_value::StorageKeyArray;
 use crate::keyspace::keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId};
 use crate::snapshot::error::SnapshotError;
 use crate::snapshot::write::Write;
@@ -85,17 +85,17 @@ impl KeyspaceBuffer {
         map.is_empty()
     }
 
-    pub(crate) fn insert(&self, key: ByteArray<BUFFER_INLINE_KEY>, value: StorageValueArray<BUFFER_INLINE_VALUE>) {
+    pub(crate) fn insert(&self, key: ByteArray<BUFFER_INLINE_KEY>, value: ByteArray<BUFFER_INLINE_VALUE>) {
         let mut map = self.buffer.write().unwrap();
         map.insert(key, Write::Insert(value));
     }
 
-    pub(crate) fn insert_preexisting(&self, key: ByteArray<BUFFER_INLINE_KEY>, value: StorageValueArray<BUFFER_INLINE_VALUE>) {
+    pub(crate) fn insert_preexisting(&self, key: ByteArray<BUFFER_INLINE_KEY>, value: ByteArray<BUFFER_INLINE_VALUE>) {
         let mut map = self.buffer.write().unwrap();
         map.insert(key, Write::InsertPreexisting(value, Arc::new(AtomicBool::new(false))));
     }
 
-    pub(crate) fn require_exists(&self, key: ByteArray<BUFFER_INLINE_KEY>, value: StorageValueArray<BUFFER_INLINE_VALUE>) {
+    pub(crate) fn require_exists(&self, key: ByteArray<BUFFER_INLINE_KEY>, value: ByteArray<BUFFER_INLINE_VALUE>) {
         let mut map = self.buffer.write().unwrap();
         // TODO: what if it already has been inserted? Ie. InsertPreexisting?
         map.insert(key, Write::RequireExists(value));
@@ -116,14 +116,14 @@ impl KeyspaceBuffer {
         map.get(key.bytes()).is_some()
     }
 
-    pub(crate) fn get(&self, key: &[u8]) -> Option<StorageValueArray<BUFFER_INLINE_VALUE>> {
+    pub(crate) fn get<const INLINE_SIZE: usize>(&self, key: &[u8]) -> Option<ByteArray<INLINE_SIZE>> {
         let map = self.buffer.read().unwrap();
         let existing = map.get(key);
         if let Some(write) = existing {
             match write {
-                Write::Insert(value) => Some(value.clone()),
-                Write::InsertPreexisting(value, _) => Some(value.clone()),
-                Write::RequireExists(value) => Some(value.clone()),
+                Write::Insert(value) => Some(ByteArray::copy(value.bytes())),
+                Write::InsertPreexisting(value, _) => Some(ByteArray::copy(value.bytes())),
+                Write::RequireExists(value) => Some(ByteArray::copy(value.bytes())),
                 Write::Delete => None,
             }
         } else {

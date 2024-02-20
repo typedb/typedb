@@ -18,13 +18,13 @@
 use std::fs;
 use std::path::PathBuf;
 use std::rc::Rc;
-use speedb::Snapshot;
 
 use concept::type_manager::TypeManager;
+use encoding::graph::thing::id_generator::ThingVertexGenerator;
+use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
 use encoding::initialise_storage;
-use encoding::type_::id_generator::TypeIIDGenerator;
-use encoding::thing::id_generator::ThingIIDGenerator;
 use storage::MVCCStorage;
+use storage::snapshot::snapshot::Snapshot;
 use crate::error::DatabaseError;
 use crate::error::DatabaseErrorKind::{FailedToCreateStorage, FailedToSetupStorage};
 use crate::transaction::{TransactionRead, TransactionWrite};
@@ -33,8 +33,8 @@ pub struct Database {
     name: Rc<str>,
     path: PathBuf,
     storage: MVCCStorage,
-    type_iid_generator: TypeIIDGenerator,
-    thing_iid_generator: ThingIIDGenerator,
+    type_vertex_generator: TypeVertexGenerator,
+    thing_vertex_generator: ThingVertexGenerator,
 }
 
 impl Database {
@@ -51,23 +51,23 @@ impl Database {
             database_name: database_name.to_string(),
             kind: FailedToSetupStorage(storage_error),
         })?;
-        let type_iid_generator = TypeIIDGenerator::new();
-        let thing_iid_generator = ThingIIDGenerator::new();
-        TypeManager::initialise_types(&mut storage, &type_iid_generator);
+        let type_vertex_generator = TypeVertexGenerator::new();
+        let thing_vertex_generator = ThingVertexGenerator::new();
+        TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 
         let database = Database {
             name: database_name.clone(),
             path: database_path,
             storage: storage,
-            type_iid_generator: type_iid_generator,
-            thing_iid_generator: thing_iid_generator,
+            type_vertex_generator: type_vertex_generator,
+            thing_vertex_generator: thing_vertex_generator,
         };
         Ok(database)
     }
 
     pub fn transaction_read(&self) -> TransactionRead {
         let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(self.storage.open_snapshot_read()));
-        let type_manager = TypeManager::new(snapshot.clone(), &self.type_iid_generator);
+        let type_manager = TypeManager::new(snapshot.clone(), &self.type_vertex_generator);
         TransactionRead {
             snapshot: snapshot,
             type_manager: type_manager,
@@ -76,7 +76,7 @@ impl Database {
 
     fn transaction_write(&self) -> TransactionWrite {
         let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(self.storage.open_snapshot_write()));
-        let type_manager = TypeManager::new(snapshot.clone(), &self.type_iid_generator);
+        let type_manager = TypeManager::new(snapshot.clone(), &self.type_vertex_generator);
         TransactionWrite {
             snapshot: snapshot,
             type_manager: type_manager,

@@ -18,7 +18,7 @@
 use std::rc::Rc;
 
 use concept::type_manager::TypeManager;
-use storage::snapshot2::Snapshot;
+use storage::snapshot::snapshot::Snapshot;
 
 pub struct TransactionRead<'txn, 'storage: 'txn> {
     pub(crate) snapshot: Rc<Snapshot<'storage>>,

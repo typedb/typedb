@@ -17,13 +17,13 @@
 
 use crate::byte_array::ByteArray;
 
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ByteReference<'bytes> {
     bytes: &'bytes [u8],
 }
 
 impl<'bytes> ByteReference<'bytes> {
-    pub fn new(bytes: &'bytes [u8]) -> ByteReference<'bytes> {
+    pub const fn new(bytes: &'bytes [u8]) -> ByteReference<'bytes> {
         ByteReference {
             bytes: bytes
         }
