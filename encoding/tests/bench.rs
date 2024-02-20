@@ -15,18 +15,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::any::Any;
 use std::sync::Arc;
 
 use criterion::{Criterion, criterion_group, criterion_main};
+use encoding::graph::thing::id_generator::ThingVertexGenerator;
+use encoding::graph::thing::thing_encoding::concept::ObjectIID;
+use encoding::graph::type_::vertex::TypeVertex;
 use storage::key_value::StorageKeyReference;
 
-use encoding::serializable::{DeserialisableFixed, SerialisableKeyFixed};
-use encoding::thing::id_generator::ThingIIDGenerator;
-use encoding::thing::thing_encoding::concept::ObjectIID;
-use encoding::type_::type_encoding::concept::TypeID;
+// TODO: this benchmark needs to be restored
 
-fn id_generation(thing_iid_generator: Arc<ThingIIDGenerator>, type_id: TypeID) -> ObjectIID {
-    thing_iid_generator.take_entity_iid(&type_id)
+fn id_generation(thing_iid_generator: Arc<ThingVertexGenerator>, type_vertex: TypeVertex) -> ObjectIID {
+    thing_iid_generator.take_entity_iid(&type_vertex.type_id())
 }
 
 fn id_generation_serialisation(thing_iid_generator: Arc<ThingIIDGenerator>, type_id: TypeID) -> StorageKeyReference {

@@ -22,11 +22,10 @@ use std::ops::Range;
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
-use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::snapshot::buffer::BUFFER_INLINE_KEY;
-use crate::EncodingKeyspace;
 
+use crate::{AsBytes, EncodingKeyspace, Keyable};
 use crate::layout::prefix::Prefix;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -55,32 +54,28 @@ impl<'a> TypeVertex<'a> {
         Prefix::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_prefix()])))
     }
 
-    pub fn as_storage_key(&'a self) -> StorageKey<'a, BUFFER_INLINE_KEY> {
-        StorageKey::new_ref(self.keyspace_id(), &self.bytes)
-    }
-
-    pub fn into_storage_key(self) -> StorageKey<'a, BUFFER_INLINE_KEY> {
-        StorageKey::new_owned(self.keyspace_id(), self.into_bytes())
-    }
-
-    pub fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
-        self.bytes
-    }
-
-    pub fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_ref()
-    }
-
-    fn keyspace_id(&self) -> KeyspaceId {
-        EncodingKeyspace::Schema.id()
-    }
-
     const fn range_prefix() -> Range<usize> {
         0..Prefix::LENGTH
     }
 
     const fn range_type_id() -> Range<usize> {
         Self::range_prefix().end..Self::range_prefix().end + TypeID::LENGTH
+    }
+}
+
+impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for TypeVertex<'a> {
+    fn bytes(&'a self) -> ByteReference<'a> {
+        self.bytes.as_ref()
+    }
+
+    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
+        self.bytes
+    }
+}
+
+impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for TypeVertex<'a> {
+    fn keyspace_id(&self) -> KeyspaceId {
+        EncodingKeyspace::Schema.id()
     }
 }
 
@@ -99,13 +94,18 @@ impl<'a> TypeID<'a> {
         TypeID { bytes: ByteArrayOrRef::Array(ByteArray::inline(id.to_be_bytes(), TypeID::LENGTH)) }
     }
 
-    pub(crate) fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_ref()
-    }
-
     pub(crate) fn as_u16(&self) -> u16 {
         u16::from_be_bytes(self.bytes.bytes()[0..Self::LENGTH].try_into().unwrap())
     }
 }
 
+impl<'a> AsBytes<'a, { TypeID::LENGTH }> for TypeID<'a> {
+    fn bytes(&'a self) -> ByteReference<'a> {
+        self.bytes.as_ref()
+    }
+
+    fn into_bytes(self) -> ByteArrayOrRef<'a, { TypeID::LENGTH }> {
+        self.bytes
+    }
+}
 

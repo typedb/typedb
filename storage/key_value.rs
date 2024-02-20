@@ -39,8 +39,8 @@ impl<'bytes, const INLINE_SIZE: usize> StorageKey<'bytes, INLINE_SIZE> {
         }
     }
 
-    pub fn new_ref(keyspace_id: KeyspaceId, bytes: &'bytes ByteArrayOrRef<'bytes, INLINE_SIZE>) -> Self {
-        StorageKey::Reference(StorageKeyReference::new(keyspace_id, bytes.as_ref()))
+    pub fn new_ref(keyspace_id: KeyspaceId, bytes: ByteReference<'bytes>) -> Self {
+        StorageKey::Reference(StorageKeyReference::new(keyspace_id, bytes))
     }
 
     pub fn new_owned(keyspace_id: KeyspaceId, bytes: ByteArrayOrRef<'bytes, INLINE_SIZE>) -> Self {

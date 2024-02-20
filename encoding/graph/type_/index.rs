@@ -23,7 +23,7 @@ use bytes::byte_reference::ByteReference;
 use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::snapshot::buffer::BUFFER_INLINE_KEY;
-use crate::EncodingKeyspace;
+use crate::{AsBytes, EncodingKeyspace, Keyable};
 
 use crate::graph::type_::vertex::TypeVertex;
 use crate::layout::prefix::{Prefix, PrefixType};
@@ -49,20 +49,8 @@ impl<'a> TypeToLabelIndexKey<'a> {
         (TypeToLabelIndexKey { bytes: ByteArrayOrRef::Array(array) }, StringBytes::build_ref(label))
     }
 
-    fn as_storage_key(&'a self) -> StorageKey<'a, BUFFER_INLINE_KEY> {
-        StorageKey::new_ref(self.keyspace_id(), &self.bytes)
-    }
-
     pub fn into_storage_key(self) -> StorageKey<'a, BUFFER_INLINE_KEY> {
         StorageKey::new_owned(self.keyspace_id(), self.into_bytes())
-    }
-
-    fn keyspace_id(&self) -> KeyspaceId {
-        EncodingKeyspace::Schema.id()
-    }
-
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
-        self.bytes
     }
 
     const fn range_prefix() -> Range<usize> {
@@ -71,6 +59,23 @@ impl<'a> TypeToLabelIndexKey<'a> {
 
     const fn range_type_vertex() -> Range<usize> {
         Self::range_prefix().end..Self::range_prefix().end + TypeVertex::LENGTH
+    }
+}
+
+impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for TypeToLabelIndexKey<'a> {
+    fn bytes(&'a self) -> ByteReference<'a> {
+        self.bytes.as_ref()
+    }
+
+
+    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
+        self.bytes
+    }
+}
+
+impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for TypeToLabelIndexKey<'a> {
+    fn keyspace_id(&self) -> KeyspaceId {
+        EncodingKeyspace::Schema.id()
     }
 }
 
@@ -100,22 +105,6 @@ impl<'a> LabelToTypeIndexKey<'a> {
         StringBytes::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_label(self.label_length())])))
     }
 
-    fn as_storage_key(&'a self) -> StorageKey<'a, BUFFER_INLINE_KEY> {
-        StorageKey::new_ref(self.keyspace_id(), &self.bytes)
-    }
-
-    pub fn into_storage_key(self) -> StorageKey<'a, BUFFER_INLINE_KEY> {
-        StorageKey::new_owned(self.keyspace_id(), self.into_bytes())
-    }
-
-    fn keyspace_id(&self) -> KeyspaceId {
-        EncodingKeyspace::Schema.id()
-    }
-
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
-        self.bytes
-    }
-
     fn label_length(&self) -> usize {
         self.bytes.length() - Prefix::LENGTH
     }
@@ -129,38 +118,19 @@ impl<'a> LabelToTypeIndexKey<'a> {
     }
 }
 
-// impl Serialisable for LabelTypeIIDIndex {
-//     fn serialised_size(&self) -> usize {
-//         self.prefix.serialised_size() + self.label.serialised_size()
-//     }
-//
-//     fn serialise_into(&self, array: &mut [u8]) {
-//         debug_assert_eq!(array.len(), self.serialised_size());
-//         let slice = &mut array[0..self.prefix.serialised_size()];
-//         self.prefix.serialise_into(slice);
-//         let slice = &mut array[self.prefix.serialised_size()..self.serialised_size()];
-//         self.label.serialise_into(slice)
-//     }
-// }
-//
-// impl DeserialisableDynamic for LabelTypeIIDIndex {
-//
-//     fn deserialise_from(array: Box<[u8]>) -> Self {
-//         let slice = &array[0..<PrefixID as DeserialisableFixed>::serialised_size()];
-//         let prefix_id = PrefixID::deserialise_from(slice);
-//
-//         // TODO: introduce 'ByteArray', which allows in-place truncation. This will allow us to avoid re-allocating on truncation
-//         let slice = &array[<PrefixID as DeserialisableFixed>::serialised_size()..array.len()];
-//         let label = StringBytes::deserialise_from(Box::from(slice));
-//         LabelTypeIIDIndex {
-//             prefix: prefix_id,
-//             label: label
-//         }
-//     }
-// }
-//
-// impl SerialisableKeyDynamic for LabelTypeIIDIndex {
-//     fn keyspace_id(&self) -> u8 {
-//         EncodingKeyspace::Schema.id()
-//     }
-// }
+impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for LabelToTypeIndexKey<'a> {
+    fn bytes(&'a self) -> ByteReference<'a> {
+        self.bytes.as_ref()
+    }
+
+
+    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
+        self.bytes
+    }
+}
+
+impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for LabelToTypeIndexKey<'a> {
+    fn keyspace_id(&self) -> KeyspaceId {
+        EncodingKeyspace::Schema.id()
+    }
+}

@@ -20,7 +20,7 @@ load("@rules_rust//rust:defs.bzl", "rust_test")
 package(default_visibility = ["//visibility:public",])
 
 # To run this via Bazel, Criterion must be provided the --bench argument:
-#   bazel run --compilation_mode=opt //storage/benches:bench_storage -- --bench
+#   bazel run --compilation_mode=opt //storage/benches:bench_mvcc_storage -- --bench
 rust_test(
     name = "bench_mvcc_storage",
     srcs = glob([

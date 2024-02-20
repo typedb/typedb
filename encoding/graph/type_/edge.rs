@@ -23,8 +23,8 @@ use bytes::byte_reference::ByteReference;
 use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::snapshot::buffer::BUFFER_INLINE_KEY;
-use crate::EncodingKeyspace;
-use crate::graph::type_::vertex::TypeVertex;
+use crate::{AsBytes, EncodingKeyspace, Keyable};
+use crate::graph::type_::vertex::{TypeID, TypeVertex};
 use crate::layout::infix::{Infix, InfixType};
 
 struct OwnsForwardEdge<'a> {
@@ -61,22 +61,6 @@ impl<'a> OwnsForwardEdge<'a> {
         EncodingKeyspace::Schema.id()
     }
 
-    fn as_storage_key(&'a self) -> StorageKey<'a, BUFFER_INLINE_KEY> {
-        StorageKey::new_ref(self.keyspace_id(), &self.bytes)
-    }
-
-    fn into_storage_key(self) -> StorageKey<'a, BUFFER_INLINE_KEY> {
-        StorageKey::new(self.keyspace_id(), self.into_bytes())
-    }
-
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_ref()
-    }
-
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
-        self.bytes
-    }
-
     const fn range_from() -> Range<usize> {
         0..TypeVertex::LENGTH
     }
@@ -87,5 +71,21 @@ impl<'a> OwnsForwardEdge<'a> {
 
     const fn range_to() -> Range<usize> {
         Self::range_infix().end..Self::range_infix().end + TypeVertex::LENGTH
+    }
+}
+
+impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for OwnsForwardEdge<'a> {
+    fn bytes(&'a self) -> ByteReference<'a> {
+        self.bytes.as_ref()
+    }
+
+    fn into_bytes(self) -> ByteArrayOrRef<'a,BUFFER_INLINE_KEY> {
+        self.bytes
+    }
+}
+
+impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for OwnsForwardEdge<'a> {
+    fn keyspace_id(&self) -> KeyspaceId {
+        EncodingKeyspace::Schema.id()
     }
 }

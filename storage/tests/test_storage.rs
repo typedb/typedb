@@ -19,12 +19,13 @@
 use std::rc::Rc;
 
 use rand;
-use bytes::byte_array::ByteArray;
 
+use bytes::byte_array::ByteArray;
+use bytes::byte_array_or_ref::ByteArrayOrRef;
 use storage::error::{MVCCStorageError, MVCCStorageErrorKind};
-use storage::key_value::{StorageKeyArray, StorageKeyReference, StorageValue};
+use storage::key_value::{StorageKeyArray, StorageKeyReference};
+use storage::keyspace::keyspace::KeyspaceId;
 use storage::MVCCStorage;
-use storage::keyspace::keyspace::{KeyspaceId};
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
 #[test]
@@ -102,25 +103,25 @@ fn get_put_iterate() {
     let keyspace_1_key_2 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0x10], keyspace_1_id));
     let keyspace_1_key_3 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0xff], keyspace_1_id));
     let keyspace_1_key_4 = StorageKeyArray::<64>::from((vec![0x2, 0x0, 0xff], keyspace_1_id));
-    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_1), &StorageValue::<'_, 128>::empty());
-    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_2), &StorageValue::<'_, 128>::empty());
-    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_3), &StorageValue::<'_, 128>::empty());
-    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_4), &StorageValue::<'_, 128>::empty());
+    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_1), &ByteArrayOrRef::Array(ByteArray::empty()));
+    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_2), &ByteArrayOrRef::Array(ByteArray::empty()));
+    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_3), &ByteArrayOrRef::Array(ByteArray::empty()));
+    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_4), &ByteArrayOrRef::Array(ByteArray::empty()));
 
     let keyspace_2_key_1 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0x1], keyspace_2_id));
     let keyspace_2_key_2 = StorageKeyArray::<64>::from((vec![0xb, 0x0, 0x10], keyspace_2_id));
     let keyspace_2_key_3 = StorageKeyArray::<64>::from((vec![0x5, 0x0, 0xff], keyspace_2_id));
     let keyspace_2_key_4 = StorageKeyArray::<64>::from((vec![0x2, 0x0, 0xff], keyspace_2_id));
-    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_1), &StorageValue::<'_, 128>::empty());
-    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_2), &StorageValue::<'_, 128>::empty());
-    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_3), &StorageValue::<'_, 128>::empty());
-    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_4), &StorageValue::<'_, 128>::empty());
+    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_1), &ByteArrayOrRef::Array(ByteArray::empty()));
+    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_2), &ByteArrayOrRef::Array(ByteArray::empty()));
+    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_3), &ByteArrayOrRef::Array(ByteArray::empty()));
+    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_4), &ByteArrayOrRef::Array(ByteArray::empty()));
 
-    let first_value = storage.get_raw(StorageKeyReference::from(&keyspace_1_key_1), |value| StorageValue::from(Some(Box::from(value))));
-    assert_eq!(first_value, Some(StorageValue::<'_, 128>::empty()));
+    let first_value: Option<ByteArray<48>> = storage.get_raw(StorageKeyReference::from(&keyspace_1_key_1), |value| ByteArray::copy(value));
+    assert_eq!(first_value, Some(ByteArray::empty()));
 
-    let second_value = storage.get_raw(StorageKeyReference::from(&keyspace_2_key_1), |value| StorageValue::<'_, 128>::from(Some(Box::from(value))));
-    assert_eq!(second_value, Some(StorageValue::empty()));
+    let second_value: Option<ByteArray<48>> = storage.get_raw(StorageKeyReference::from(&keyspace_2_key_1), |value| ByteArray::copy(value));
+    assert_eq!(second_value, Some(ByteArray::empty()));
 
     let prefix = StorageKeyArray::<64>::from((vec![0x1], keyspace_1_id));
     let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage.iterate_keyspace_prefix(StorageKeyReference::from(&prefix)).collect_cloned::<64, 128>();

@@ -16,13 +16,16 @@
  */
 
 
+use bytes::byte_array_or_ref::ByteArrayOrRef;
+use bytes::byte_reference::ByteReference;
 use storage::error::MVCCStorageError;
+use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::MVCCStorage;
+use storage::snapshot::buffer::BUFFER_INLINE_KEY;
 
 pub mod graph;
 pub mod layout;
-mod serializable;
 mod error;
 pub mod primitive;
 
@@ -55,4 +58,26 @@ impl EncodingKeyspace {
 pub fn initialise_storage(storage: &mut MVCCStorage) -> Result<(), MVCCStorageError> {
     EncodingKeyspace::Schema.initialise_storage(storage)?;
     EncodingKeyspace::Data.initialise_storage(storage)
+}
+
+pub trait AsBytes<'a, const INLINE_SIZE: usize> {
+
+    fn bytes(&'a self) -> ByteReference<'a>;
+
+    fn into_bytes(self) -> ByteArrayOrRef<'a, INLINE_SIZE>;
+
+}
+
+pub trait Keyable<'a, const INLINE_SIZE: usize> : AsBytes<'a, INLINE_SIZE> + Sized {
+
+    fn keyspace_id(&self) -> KeyspaceId;
+
+    fn as_storage_key(&'a self) -> StorageKey<'a, INLINE_SIZE> {
+        StorageKey::new_ref(self.keyspace_id(), self.bytes())
+    }
+
+    fn into_storage_key(self) -> StorageKey<'a, INLINE_SIZE> {
+        StorageKey::new(self.keyspace_id(), self.into_bytes())
+    }
+
 }

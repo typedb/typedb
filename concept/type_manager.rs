@@ -24,6 +24,7 @@ use encoding::graph::type_::index::{LabelToTypeIndexKey, TypeToLabelIndexKey};
 use encoding::graph::type_::Root;
 use encoding::graph::type_::vertex::TypeVertex;
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
+use encoding::{AsBytes, Keyable};
 use encoding::layout::prefix::PrefixType;
 use encoding::primitive::label::Label;
 use storage::MVCCStorage;
@@ -103,7 +104,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             write_snapshot.put_val(vertex_label_index_key.into_storage_key().to_owned(), value.into_bytes().into_owned());
 
             let label_iid_index_key = LabelToTypeIndexKey::build(label);
-            let type_vertex_value = ByteArray::copy(type_vertex.bytes().bytes());
+            let type_vertex_value = ByteArray::from(type_vertex.bytes());
             write_snapshot.put_val(label_iid_index_key.into_storage_key().to_owned(), type_vertex_value);
         } else {
             unreachable!("Must be using a write snapshot to create type indexes.")

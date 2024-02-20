@@ -15,17 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::ffi::c_int;
-use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use criterion::profiler::Profiler;
-use pprof::ProfilerGuard;
 
+use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
-use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference, StorageValueArray};
+use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::MVCCStorage;
 use storage::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE};
@@ -63,9 +60,9 @@ fn populate_storage(storage: &MVCCStorage, keyspace_id: KeyspaceId, key_count: u
     count
 }
 
-fn bench_snapshot_read_get(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Option<StorageValueArray<BUFFER_INLINE_VALUE>> {
+fn bench_snapshot_read_get(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Option<ByteArray<BUFFER_INLINE_VALUE>> {
     let snapshot = storage.open_snapshot_read();
-    let mut last: Option<StorageValueArray<BUFFER_INLINE_VALUE>> = None;
+    let mut last: Option<ByteArray<BUFFER_INLINE_VALUE>> = None;
     for _ in 0..1 {
         let key = random_key_24(keyspace_id);
         last = snapshot.get(&StorageKey::Array(key));
@@ -73,10 +70,10 @@ fn bench_snapshot_read_get(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Op
     last
 }
 
-fn bench_snapshot_read_iterate<const PREFIX_LEN: usize, const ITERATE_COUNT: usize>(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Option<StorageValueArray<BUFFER_INLINE_VALUE>> {
+fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Option<ByteArray<BUFFER_INLINE_VALUE>> {
     let snapshot = storage.open_snapshot_read();
-    let mut last: Option<StorageValueArray<BUFFER_INLINE_VALUE>> = None;
-    for _ in 0..1 {
+    let mut last: Option<ByteArray<BUFFER_INLINE_VALUE>> = None;
+    for _ in 0..ITERATE_COUNT {
         let key = random_key_4(keyspace_id);
         last = snapshot.get(&StorageKey::Array(key))
     }
@@ -104,7 +101,7 @@ fn setup_storage(keyspace_id: KeyspaceId, key_count: usize) -> (MVCCStorage, Pat
 
 fn criterion_benchmark(c: &mut Criterion) {
     init_logging();
-    const INITIAL_KEY_COUNT: usize = 10_000_000; // 10 million = approximately 0.2 GB of keys
+    const INITIAL_KEY_COUNT: usize = 10_000; // 10 million = approximately 0.2 GB of keys
     const KEYSPACE_ID: KeyspaceId = 0;
     {
         let (storage, storage_path) = setup_storage(KEYSPACE_ID, INITIAL_KEY_COUNT);
@@ -123,7 +120,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     {
         let (storage, storage_path) = setup_storage(KEYSPACE_ID, INITIAL_KEY_COUNT);
         c.bench_function("snapshot_read_iterate", |b| b.iter(|| {
-            bench_snapshot_read_iterate::<4, 1>(&storage, KEYSPACE_ID)
+            bench_snapshot_read_iterate::<1>(&storage, KEYSPACE_ID)
         }));
         delete_dir(storage_path);
     }

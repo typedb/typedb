@@ -262,7 +262,7 @@ impl<'a> SnapshotPrefixIterator<'a> {
         )
     }
 
-    pub fn collect_cloned<'t>(mut self) -> Vec<(StorageKey<'t, BUFFER_INLINE_KEY>, ByteArrayOrRef<'t, BUFFER_INLINE_VALUE>)> {
+    pub fn collect_cloned<'t>(mut self) -> Vec<(StorageKey<'t, BUFFER_INLINE_KEY>, ByteArray<BUFFER_INLINE_VALUE>)> {
         let mut vec = Vec::new();
         loop {
             let item = self.next();
@@ -271,7 +271,7 @@ impl<'a> SnapshotPrefixIterator<'a> {
             }
             let (key, value) = item.unwrap().unwrap();
             let key: StorageKey<'_, BUFFER_INLINE_KEY> = StorageKey::Array(StorageKeyArray::from(key.clone()));
-            let value = ByteArrayOrRef::Array(ByteArray::from(value));
+            let value = ByteArray::from(value);
             vec.push((key, value));
         }
         vec

@@ -23,7 +23,7 @@ use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
 use storage::error::{MVCCStorageError, MVCCStorageErrorKind};
 use storage::isolation_manager::{IsolationError, IsolationErrorKind};
-use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference, StorageValueArray};
+use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::MVCCStorage;
 use storage::snapshot::error::{SnapshotError, SnapshotErrorKind};
@@ -43,8 +43,8 @@ fn setup_storage(storage_path: &PathBuf) -> MVCCStorage {
     storage.create_keyspace("keyspace", KEYSPACE_ID, &MVCCStorage::new_db_options()).unwrap();
 
     let snapshot = storage.open_snapshot_write();
-    snapshot.put_val(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&KEY_1)), StorageValueArray::new(ByteArray::copy(&VALUE_1)));
-    snapshot.put_val(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&KEY_2)), StorageValueArray::new(ByteArray::copy(&VALUE_2)));
+    snapshot.put_val(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
+    snapshot.put_val(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_2));
     snapshot.commit().unwrap();
 
     storage
@@ -59,19 +59,19 @@ fn commits_isolated() {
     let snapshot_1 = storage.open_snapshot_write();
     let snapshot_2 = storage.open_snapshot_read();
 
-    let key_3 =  StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&KEY_3));
-    let value_3 =  StorageValueArray::new(ByteArray::copy(&VALUE_3));
+    let key_3 = StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&KEY_3));
+    let value_3 = ByteArray::copy(&VALUE_3);
     snapshot_1.put_val(key_3.clone(), value_3.clone());
     snapshot_1.commit().unwrap();
 
-    let get = snapshot_2.get(&StorageKey::Reference(StorageKeyReference::from(&key_3)));
+    let get: Option<ByteArray<48>> = snapshot_2.get(&StorageKey::Reference(StorageKeyReference::from(&key_3)));
     assert!(get.is_none());
     let prefix = StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&[0x0 as u8])));
     let iterated = snapshot_2.iterate_prefix(&prefix).collect_cloned();
     assert_eq!(iterated.len(), 2);
 
     let snapshot_3 = storage.open_snapshot_read();
-    let get = snapshot_3.get(&StorageKey::Reference(StorageKeyReference::from(&key_3)));
+    let get: Option<ByteArray<48>>  = snapshot_3.get(&StorageKey::Reference(StorageKeyReference::from(&key_3)));
     assert!(matches!(get, Some(value_3)));
     let iterated = snapshot_3.iterate_prefix(&prefix).collect_cloned();
     assert_eq!(iterated.len(), 3);
@@ -97,7 +97,7 @@ fn g0_update_conflicts_fail() {
 
     snapshot_1.get_required(key_1);
 
-    snapshot_2.delete(StorageKeyArray::from(key_1));
+    snapshot_2.delete(StorageKeyArray::from(key_1.as_reference()));
 
     let result_1 = snapshot_1.commit();
     assert!(result_1.is_ok());
