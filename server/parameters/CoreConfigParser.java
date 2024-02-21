@@ -466,7 +466,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                 private static final Predefined<String> typeParser =
                         predefined("type", "Type of this debugger.", restricted(STRING, list(type)));
                 private static final Predefined<Boolean> enable =
-                        predefined("enable", "Enable reasoner performance counters and logging in each transasction.", BOOLEAN);
+                        predefined("enable", "Enable reasoner performance counters and logging in each transaction.", BOOLEAN);
                 private static final Set<Predefined<?>> parsers = set(typeParser, output, enable);
 
                 @Override
@@ -519,9 +519,9 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
             protected static final String description = "Configure diagnostics reporting.";
 
             private static final Predefined<Boolean> errors =
-                    predefined("errors", "Enable diagnostics reporting.", BOOLEAN);
+                    predefined("errors", "Enable error diagnostics reporting.", BOOLEAN);
             private static final Predefined<Boolean> statistics =
-                    predefined("statistics", "Enable diagnostics reporting.", BOOLEAN);
+                    predefined("statistics", "Enable usage statistics reporting.", BOOLEAN);
             private static final Set<Predefined<?>> parsers = set(errors, statistics);
 
             @Override
@@ -545,9 +545,9 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
             protected static final String description = "Configure diagnostics monitoring.";
 
             protected static final Predefined<Boolean> enable =
-                    predefined("enable", "TODO", BOOLEAN);
+                    predefined("enable", "Enable diagnostics monitoring HTTP endpoint.", BOOLEAN);
             protected static final Predefined<Integer> port =
-                    predefined("port", "TODO", INTEGER);
+                    predefined("port", "Port on which to expose the monitoring endpoint.", INTEGER);
             private static final Set<Predefined<?>> parsers = set(enable, port);
 
             @Override

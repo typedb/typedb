@@ -67,8 +67,8 @@ diagnostics:
     errors: true
     statistics: true
   monitoring:
-    port: 4104
     enable: true
+    port: 4104
 
 vaticle-factory:
   enable: false
