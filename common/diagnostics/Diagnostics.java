@@ -39,15 +39,15 @@ public abstract class Diagnostics {
 
     /* separate services, kept here so that they don't get GC'd */
     private final StatisticReporter statisticReporter;
-    protected final MonitoringEndpoint monitoringEndpoint;
+    protected final MonitoringServer monitoringServer;
 
     /*
      * Protected singleton constructor
      */
-    protected Diagnostics(Metrics metrics, StatisticReporter statisticReporter, MonitoringEndpoint monitoringEndpoint) {
+    protected Diagnostics(Metrics metrics, StatisticReporter statisticReporter, MonitoringServer monitoringServer) {
         this.metrics = metrics;
         this.statisticReporter = statisticReporter;
-        this.monitoringEndpoint = monitoringEndpoint;
+        this.monitoringServer = monitoringServer;
     }
 
     public static class Noop extends Diagnostics {
@@ -73,8 +73,8 @@ public abstract class Diagnostics {
     }
 
     public static class Core extends Diagnostics {
-        protected Core(Metrics metrics, StatisticReporter statisticReporter, MonitoringEndpoint monitoringEndpoint) {
-            super(metrics, statisticReporter, monitoringEndpoint);
+        protected Core(Metrics metrics, StatisticReporter statisticReporter, MonitoringServer monitoringServer) {
+            super(metrics, statisticReporter, monitoringServer);
         }
 
         public static synchronized void initialise(
@@ -92,14 +92,14 @@ public abstract class Diagnostics {
 
             Metrics metrics = new Metrics(serverID, distributionName, version);
             StatisticReporter statisticReporter = initStatisticReporter(statisticsReportingEnable, statisticsReportingURI, metrics);
-            MonitoringEndpoint monitoringEndpoint = initMonitoringEndpoint(monitoringEnable, monitoringPort, metrics);
+            MonitoringServer monitoringServer = initMonitoringServer(monitoringEnable, monitoringPort, metrics);
 
-            diagnostics = new Core(metrics, statisticReporter, monitoringEndpoint);
+            diagnostics = new Core(metrics, statisticReporter, monitoringServer);
         }
 
         @Nullable
-        protected static MonitoringEndpoint initMonitoringEndpoint(boolean monitoringEnable, int monitoringPort, Metrics metrics) {
-            if (monitoringEnable) return new MonitoringEndpoint(metrics, monitoringPort);
+        protected static MonitoringServer initMonitoringServer(boolean monitoringEnable, int monitoringPort, Metrics metrics) {
+            if (monitoringEnable) return new MonitoringServer(metrics, monitoringPort);
             else return null;
         }
 
@@ -124,7 +124,7 @@ public abstract class Diagnostics {
 
         @Override
         public void mayStartServing(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
-            if (monitoringEndpoint != null) monitoringEndpoint.startServing(sslContext, middleware);
+            if (monitoringServer != null) monitoringServer.startServing(sslContext, middleware);
         }
 
         @Override
