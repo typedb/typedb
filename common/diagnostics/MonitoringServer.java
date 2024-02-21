@@ -132,5 +132,10 @@ public class MonitoringServer {
                 ctx.write(response).addListener(ChannelFutureListener.CLOSE);
             }
         }
+
+        @Override
+        public void channelReadComplete(ChannelHandlerContext ctx) {
+            ctx.flush();
+        }
     }
 }
