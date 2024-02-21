@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.common.diagnostics;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.ssl.SslContext;
 import io.sentry.Sentry;
 import io.sentry.protocol.User;
 import org.slf4j.Logger;
@@ -60,7 +61,7 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void mayStartServing() {}
+        public void mayStartServing(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {}
         @Override
         public void submitError(Throwable error) {}
         @Override
@@ -97,8 +98,8 @@ public abstract class Diagnostics {
         }
 
         @Nullable
-        protected static MonitoringEndpoint initMonitoringEndpoint(boolean monitoringEnable, int monitoringPort, Metrics metrics, ChannelInboundHandlerAdapter... middleware) {
-            if (monitoringEnable) return new MonitoringEndpoint(metrics, monitoringPort, null, middleware);
+        protected static MonitoringEndpoint initMonitoringEndpoint(boolean monitoringEnable, int monitoringPort, Metrics metrics) {
+            if (monitoringEnable) return new MonitoringEndpoint(metrics, monitoringPort);
             else return null;
         }
 
@@ -122,8 +123,8 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void mayStartServing() {
-            if (monitoringEndpoint != null) monitoringEndpoint.startServing();
+        public void mayStartServing(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
+            if (monitoringEndpoint != null) monitoringEndpoint.startServing(sslContext, middleware);
         }
 
         @Override
@@ -167,7 +168,7 @@ public abstract class Diagnostics {
         return diagnostics;
     }
 
-    public abstract void mayStartServing();
+    public abstract void mayStartServing(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware);
 
     public abstract void submitError(Throwable error);
 

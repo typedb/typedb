@@ -59,21 +59,17 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 public class MonitoringEndpoint {
     private final Metrics metrics;
     private final int scrapePort;
-    private final SslContext sslContext;
-    private final ChannelInboundHandlerAdapter[] middleware;
 
-    public MonitoringEndpoint(Metrics metrics, int scrapePort, SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
+    public MonitoringEndpoint(Metrics metrics, int scrapePort) {
         this.metrics = metrics;
         this.scrapePort = scrapePort;
-        this.sslContext = sslContext;
-        this.middleware = middleware;
     }
 
-    void startServing() {
-        (new Thread(this::serve)).start();
+    void startServing(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
+        (new Thread(() -> this.serve(sslContext, middleware))).start();
     }
 
-    private void serve() {
+    private void serve(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
         EventLoopGroup group = new NioEventLoopGroup(1);
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
@@ -104,8 +100,8 @@ public class MonitoringEndpoint {
             }
             pipeline.addLast(new HttpServerCodec());
             pipeline.addLast(new HttpServerExpectContinueHandler());
-            for (var mw : middleware) {
-                pipeline.addLast(mw);
+            for (ChannelInboundHandlerAdapter handler : middleware) {
+                pipeline.addLast(handler);
             }
             pipeline.addLast(new MetricsHandler());
         }
@@ -127,7 +123,7 @@ public class MonitoringEndpoint {
                 try {
                     uri = new URI(req.uri());
                 } catch (Exception ignored) {
-                    uri = URI.create("a");
+                    uri = URI.create("a"); // FIXME
                 }
                 if (!uri.getPath().equals("/metrics")) {
                     FullHttpResponse response = new DefaultFullHttpResponse(req.protocolVersion(), NOT_FOUND);
