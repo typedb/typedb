@@ -28,13 +28,13 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Metrics {
     private final SystemProperties system;
     private final NetworkRequests requests;
-    private final DBUsageStatistics usage;
+    private final UsageCounters usage;
     private final UserErrorStatistics userErrors;
 
     public Metrics(String serverID, String name, String version) {
         this.system = new SystemProperties(serverID, name, version);
         this.requests = new NetworkRequests();
-        this.usage = new DBUsageStatistics();
+        this.usage = new UsageCounters();
         this.userErrors = new UserErrorStatistics();
     }
 
@@ -46,7 +46,7 @@ public class Metrics {
         requests.success(kind);
     }
 
-    public void setGauge(DBUsageStatistics.Kind kind, long value) {
+    public void setCurrentCount(UsageCounters.Kind kind, long value) {
         usage.set(kind, value);
     }
 
@@ -155,14 +155,14 @@ public class Metrics {
         }
     }
 
-    public static class DBUsageStatistics {
+    public static class UsageCounters {
         public enum Kind {
             DATABASES, SESSIONS, TRANSACTIONS, USERS,
         }
 
         private final ConcurrentMap<Kind, AtomicLong> gauges = new ConcurrentHashMap<>();
 
-        DBUsageStatistics() {
+        UsageCounters() {
             for (Kind kind : Kind.values()) {
                 gauges.put(kind, new AtomicLong(0));
             }

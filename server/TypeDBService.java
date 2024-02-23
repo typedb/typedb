@@ -59,9 +59,9 @@ import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests
 import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.SESSION;
 import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.USER;
 import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.USER_MANAGEMENT;
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.DBUsageStatistics.Kind.DATABASES;
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.DBUsageStatistics.Kind.SESSIONS;
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.DBUsageStatistics.Kind.TRANSACTIONS;
+import static com.vaticle.typedb.core.common.diagnostics.Metrics.UsageCounters.Kind.DATABASES;
+import static com.vaticle.typedb.core.common.diagnostics.Metrics.UsageCounters.Kind.SESSIONS;
+import static com.vaticle.typedb.core.common.diagnostics.Metrics.UsageCounters.Kind.TRANSACTIONS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
@@ -99,7 +99,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         this.databaseMgr = databaseMgr;
         this.sessionServices = new ConcurrentHashMap<>();
 
-        Diagnostics.get().setGauge(DATABASES, databaseMgr.all().size());
+        Diagnostics.get().setCurrentCount(DATABASES, databaseMgr.all().size());
 
         if (LOG.isDebugEnabled()) {
             Executors.scheduled().scheduleAtFixedRate(this::logConnectionStates, 0, 1, TimeUnit.MINUTES);
@@ -282,7 +282,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Diagnostics.get().submitError(e);
             responder.onError(exception(e));
         } finally {
-            Diagnostics.get().setGauge(DATABASES, databaseMgr.all().size());
+            Diagnostics.get().setCurrentCount(DATABASES, databaseMgr.all().size());
         }
     }
 
@@ -373,7 +373,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Diagnostics.get().submitError(e);
             responder.onError(exception(e));
         } finally {
-            Diagnostics.get().setGauge(DATABASES, databaseMgr.all().size());
+            Diagnostics.get().setCurrentCount(DATABASES, databaseMgr.all().size());
         }
     }
 
@@ -397,7 +397,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Diagnostics.get().submitError(e);
             responder.onError(exception(e));
         } finally {
-            Diagnostics.get().setGauge(SESSIONS, sessionServices.size());
+            Diagnostics.get().setCurrentCount(SESSIONS, sessionServices.size());
         }
     }
 
@@ -418,7 +418,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Diagnostics.get().submitError(e);
             responder.onError(exception(e));
         } finally {
-            Diagnostics.get().setGauge(SESSIONS, sessionServices.size());
+            Diagnostics.get().setCurrentCount(SESSIONS, sessionServices.size());
             updateTransactionCount();
         }
     }
@@ -447,7 +447,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     }
 
     void updateTransactionCount() {
-        Diagnostics.get().setGauge(TRANSACTIONS, sessionServices.values().stream().mapToLong(SessionService::transactionCount).sum());
+        Diagnostics.get().setCurrentCount(TRANSACTIONS, sessionServices.values().stream().mapToLong(SessionService::transactionCount).sum());
     }
 
     protected void doCreateDatabase(String databaseName) {
