@@ -141,6 +141,7 @@ public class MonitoringServer {
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             // do nothing, print nothing
+            // FIXME debug log?
         }
     }
 }

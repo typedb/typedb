@@ -79,7 +79,8 @@ public class StatisticReporter {
 
             conn.getInputStream().readAllBytes();
         } catch (Exception e) {
-            e.printStackTrace();
+            // do nothing
+            // FIXME debug log?
         } finally {
             pushScheduledTask = scheduled.schedule(this::push, 1, HOURS);
         }
