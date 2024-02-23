@@ -157,7 +157,7 @@ public class Metrics {
 
     public static class DBUsageStatistics {
         public enum Kind {
-            DATABASES, SESSIONS, TRANSACTIONS,
+            DATABASES, SESSIONS, TRANSACTIONS, USERS,
         }
 
         private final ConcurrentMap<Kind, AtomicLong> gauges = new ConcurrentHashMap<>();
