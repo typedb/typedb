@@ -99,6 +99,8 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         this.databaseMgr = databaseMgr;
         this.sessionServices = new ConcurrentHashMap<>();
 
+        Diagnostics.get().setGauge(DATABASES, databaseMgr.all().size());
+
         if (LOG.isDebugEnabled()) {
             Executors.scheduled().scheduleAtFixedRate(this::logConnectionStates, 0, 1, TimeUnit.MINUTES);
         }
