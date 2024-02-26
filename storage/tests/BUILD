@@ -26,6 +26,7 @@ rust_test(
     ]),
     deps = [
         "//storage",
+        "//common/bytes",
         "//common/logger",
         "//util/test:test-utils",
 
@@ -41,6 +42,7 @@ rust_test(
     ]),
     deps = [
         "//storage",
+        "//common/bytes",
         "//common/logger",
         "//util/test:test-utils",
 
@@ -56,6 +58,7 @@ rust_test(
     ]),
     deps = [
         "//storage",
+        "//common/bytes",
         "//common/logger",
         "//util/test:test-utils",
 
@@ -71,6 +74,7 @@ rust_test(
     ]),
     deps = [
         "//storage",
+        "//common/bytes",
         "//common/logger",
         "//util/test:test-utils",
 

@@ -19,16 +19,12 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test", "rust_binary")
 package(default_visibility = ["//visibility:public",])
 
-# To run this via Cargo, add a 'bench' section to the Cargo.toml:
-#   [[bench]]
-#       name = "bench"
-#	    harness = false
 # To run this via Bazel, Criterion must be provided the --bench argument:
-#   bazel run --compilation_mode=opt //encoding/tests:benchmark -- --bench
+#   bazel run --compilation_mode=opt //encoding/benches:benchmark -- --bench
 rust_test(
     name = "benchmark",
     srcs = glob([
-        "bench.rs",
+        "benchmark.rs",
     ]),
     deps = [
         "//encoding",

@@ -20,7 +20,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use concept::type_manager::TypeManager;
-use encoding::graph::thing::id_generator::ThingVertexGenerator;
+use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
 use encoding::initialise_storage;
 use storage::MVCCStorage;

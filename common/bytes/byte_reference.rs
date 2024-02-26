@@ -17,6 +17,10 @@
 
 use crate::byte_array::ByteArray;
 
+/*
+TODO: if a ByteReference can be directly sliced (eg. byte_ref[0..10]) this would improve its ergonomics a fair amount
+ */
+
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ByteReference<'bytes> {
     bytes: &'bytes [u8],
@@ -24,9 +28,7 @@ pub struct ByteReference<'bytes> {
 
 impl<'bytes> ByteReference<'bytes> {
     pub const fn new(bytes: &'bytes [u8]) -> ByteReference<'bytes> {
-        ByteReference {
-            bytes: bytes
-        }
+        ByteReference { bytes: bytes }
     }
 
     pub fn bytes(&self) -> &'bytes [u8] {
@@ -39,9 +41,7 @@ impl<'bytes> ByteReference<'bytes> {
 
     pub(crate) fn truncate(self, length: usize) -> ByteReference<'bytes> {
         assert!(length <= self.bytes.len());
-        ByteReference {
-            bytes: &self.bytes[0..length]
-        }
+        ByteReference { bytes: &self.bytes[0..length] }
     }
 }
 

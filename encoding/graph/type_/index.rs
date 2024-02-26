@@ -26,7 +26,7 @@ use storage::snapshot::buffer::BUFFER_INLINE_KEY;
 use crate::{AsBytes, EncodingKeyspace, Keyable};
 
 use crate::graph::type_::vertex::TypeVertex;
-use crate::layout::prefix::{Prefix, PrefixType};
+use crate::layout::prefix::{PrefixID, PrefixType};
 use crate::primitive::string::StringBytes;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -35,7 +35,7 @@ pub struct TypeToLabelIndexKey<'a> {
 }
 
 impl<'a> TypeToLabelIndexKey<'a> {
-    const LENGTH: usize = Prefix::LENGTH + TypeVertex::LENGTH;
+    const LENGTH: usize = PrefixID::LENGTH + TypeVertex::LENGTH;
 
     pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
@@ -54,7 +54,7 @@ impl<'a> TypeToLabelIndexKey<'a> {
     }
 
     const fn range_prefix() -> Range<usize> {
-        0..Prefix::LENGTH
+        0..PrefixID::LENGTH
     }
 
     const fn range_type_vertex() -> Range<usize> {
@@ -85,20 +85,20 @@ pub struct LabelToTypeIndexKey<'a> {
 
 impl<'a> LabelToTypeIndexKey<'a> {
     pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>) -> Self {
-        debug_assert!(bytes.length() >= Prefix::LENGTH);
+        debug_assert!(bytes.length() >= PrefixID::LENGTH);
         LabelToTypeIndexKey { bytes: bytes }
     }
 
     pub fn build(label: &str) -> Self {
         let label_bytes = StringBytes::build(&label);
-        let mut array = ByteArray::zeros(label_bytes.length() + Prefix::LENGTH);
+        let mut array = ByteArray::zeros(label_bytes.length() + PrefixID::LENGTH);
         array.bytes_mut()[Self::range_prefix()].copy_from_slice(PrefixType::LabelToTypeIndex.prefix().bytes().bytes());
         array.bytes_mut()[Self::range_label(label_bytes.length())].copy_from_slice(label_bytes.bytes().bytes());
         LabelToTypeIndexKey { bytes: ByteArrayOrRef::Array(array) }
     }
 
-    fn prefix(&'a self) -> Prefix<'a> {
-        Prefix::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_prefix()])))
+    fn prefix(&'a self) -> PrefixID<'a> {
+        PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_prefix()])))
     }
 
     fn label(&'a self) -> StringBytes<'a> {
@@ -106,11 +106,11 @@ impl<'a> LabelToTypeIndexKey<'a> {
     }
 
     fn label_length(&self) -> usize {
-        self.bytes.length() - Prefix::LENGTH
+        self.bytes.length() - PrefixID::LENGTH
     }
 
     const fn range_prefix() -> Range<usize> {
-        0..Prefix::LENGTH
+        0..PrefixID::LENGTH
     }
 
     fn range_label(label_length: usize) -> Range<usize> {

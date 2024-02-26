@@ -16,10 +16,11 @@
  */
 
 
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::graph::thing::thing_encoding::concept::ObjectIID;
+use crate::graph::thing::vertex::concept::{ObjectID, ObjectVertex};
 use crate::graph::type_::vertex::{TypeID, TypeIdUInt};
+use crate::layout::prefix::PrefixType;
 
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,
@@ -29,6 +30,8 @@ pub struct ThingVertexGenerator {
 
 impl ThingVertexGenerator {
     pub fn new() -> ThingVertexGenerator {
+        // TODO: we should create a resizable Vector linked to the number of types/highest id of each type
+        //       this will speed up booting time on load and reduce memory footprint
         ThingVertexGenerator {
             entity_ids: (0..TypeIdUInt::MAX as usize)
                 .map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice(),
@@ -43,10 +46,9 @@ impl ThingVertexGenerator {
         todo!()
     }
 
-    pub fn take_entity_iid(&self, type_id: &TypeID) -> ObjectIID<'_> {
-        // let index = type_id.as_u16() as usize;
-        // let entity_id = self.entity_ids[index].fetch_add(1, Ordering::Relaxed);
-        // ObjectIID::new(PrefixType::Entity.prefix(), *type_id, ObjectID::from(entity_id))
-        todo!()
+    pub fn take_entity_vertex(&self, type_id: &TypeID<'_>) -> ObjectVertex<'static> {
+        let index = type_id.as_u16() as usize;
+        let entity_id = self.entity_ids[index].fetch_add(1, Ordering::Relaxed);
+        ObjectVertex::build(&PrefixType::Entity.prefix(), type_id, ObjectID::build(entity_id))
     }
 }

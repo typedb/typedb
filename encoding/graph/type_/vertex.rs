@@ -26,7 +26,7 @@ use storage::keyspace::keyspace::KeyspaceId;
 use storage::snapshot::buffer::BUFFER_INLINE_KEY;
 
 use crate::{AsBytes, EncodingKeyspace, Keyable};
-use crate::layout::prefix::Prefix;
+use crate::layout::prefix::PrefixID;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct TypeVertex<'a> {
@@ -34,28 +34,30 @@ pub struct TypeVertex<'a> {
 }
 
 impl<'a> TypeVertex<'a> {
-    pub(crate) const LENGTH: usize = Prefix::LENGTH + TypeID::LENGTH;
+    pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;
 
     pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>) -> TypeVertex<'a> {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        TypeVertex {
-            bytes: bytes,
-        }
+        TypeVertex { bytes: bytes }
     }
 
-    pub(crate) fn build(prefix: &Prefix<'a>, type_id: &TypeID) -> Self {
+    pub fn build(prefix: &PrefixID<'a>, type_id: &TypeID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array.bytes_mut()[Self::range_prefix()].copy_from_slice(prefix.bytes().bytes());
         array.bytes_mut()[Self::range_type_id()].copy_from_slice(type_id.bytes().bytes());
         TypeVertex { bytes: ByteArrayOrRef::Array(array) }
     }
 
-    pub fn prefix(&'a self) -> Prefix<'a> {
-        Prefix::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_prefix()])))
+    pub fn prefix(&'a self) -> PrefixID<'a> {
+        PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_prefix()])))
+    }
+
+    pub fn type_id(&'a self) -> TypeID<'a> {
+        TypeID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_type_id()])))
     }
 
     const fn range_prefix() -> Range<usize> {
-        0..Prefix::LENGTH
+        0..PrefixID::LENGTH
     }
 
     const fn range_type_id() -> Range<usize> {
@@ -87,7 +89,12 @@ pub struct TypeID<'a> {
 pub type TypeIdUInt = u16;
 
 impl<'a> TypeID<'a> {
-    const LENGTH: usize = std::mem::size_of::<TypeIdUInt>();
+    pub(crate) const LENGTH: usize = std::mem::size_of::<TypeIdUInt>();
+
+    pub fn new(bytes: ByteArrayOrRef<'a, { TypeID::LENGTH }>) -> TypeID<'a> {
+        debug_assert_eq!(bytes.length(), TypeID::LENGTH);
+        TypeID { bytes: bytes }
+    }
 
     pub fn build(id: TypeIdUInt) -> Self {
         debug_assert_eq!(mem::size_of_val(&id), TypeID::LENGTH);

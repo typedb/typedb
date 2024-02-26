@@ -22,25 +22,23 @@ use storage::key_value::{StorageKey, StorageKeyReference};
 use crate::EncodingKeyspace;
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Prefix<'a> {
-    bytes: ByteArrayOrRef<'a, { Prefix::LENGTH }>,
+pub struct PrefixID<'a> {
+    bytes: ByteArrayOrRef<'a, { PrefixID::LENGTH }>,
 }
 
-impl<'a> Prefix<'a> {
+impl<'a> PrefixID<'a> {
     pub(crate) const LENGTH: usize = 1;
 
-    pub(crate) const fn new(bytes: ByteArrayOrRef<'a, { Prefix::LENGTH }>) -> Self {
-        Prefix {
-            bytes: bytes
-        }
+    pub(crate) const fn new(bytes: ByteArrayOrRef<'a, { PrefixID::LENGTH }>) -> Self {
+        PrefixID { bytes: bytes }
     }
 
-    pub(crate) fn bytes(&self) -> &ByteArrayOrRef<'a, { Prefix::LENGTH }> {
+    pub(crate) fn bytes(&self) -> &ByteArrayOrRef<'a, { PrefixID::LENGTH }> {
         &self.bytes
     }
 
     // use as prefix key
-    pub(crate) fn as_storage_key<'this>(&'this self) -> StorageKey<'a, { Prefix::LENGTH }>
+    pub(crate) fn as_storage_key<'this>(&'this self) -> StorageKey<'a, { PrefixID::LENGTH }>
         where 'this: 'a {
         let keyspace_id = match PrefixType::from_prefix(self) {
             PrefixType::EntityType |
@@ -68,7 +66,7 @@ pub enum PrefixType {
 }
 
 impl PrefixType {
-    pub const fn prefix(&self) -> Prefix {
+    pub const fn prefix(&self) -> PrefixID {
         let bytes = match self {
             Self::EntityType => &[0],
             Self::RelationType => &[1],
@@ -78,11 +76,11 @@ impl PrefixType {
             Self::Entity => &[100],
             Self::Attribute => &[101],
         };
-        Prefix::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
+        PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
     }
 
     // TODO: this is hard to maintain relative to the above - we should convert the pair into a macro or something?
-    pub const fn next_prefix(&self) -> Prefix {
+    pub const fn next_prefix(&self) -> PrefixID {
         let bytes = match self {
             Self::EntityType => &[1],
             Self::RelationType => &[2],
@@ -92,10 +90,10 @@ impl PrefixType {
             Self::Entity => &[101],
             Self::Attribute => &[102],
         };
-        Prefix::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
+        PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
     }
 
-    pub fn from_prefix(prefix: &Prefix) -> PrefixType {
+    pub fn from_prefix(prefix: &PrefixID) -> PrefixType {
         match prefix.bytes.bytes() {
             [0] => PrefixType::EntityType,
             [1] => PrefixType::RelationType,
