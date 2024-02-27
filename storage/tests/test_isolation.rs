@@ -66,7 +66,7 @@ fn commits_isolated() {
 
     let get: Option<ByteArray<48>> = snapshot_2.get(&StorageKey::Reference(StorageKeyReference::from(&key_3)));
     assert!(get.is_none());
-    let prefix = StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&[0x0 as u8])));
+    let prefix: StorageKey<'_, 48> = StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&[0x0 as u8])));
     let iterated = snapshot_2.iterate_prefix(&prefix).collect_cloned();
     assert_eq!(iterated.len(), 2);
 

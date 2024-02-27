@@ -16,13 +16,14 @@
  */
 
 
+use std::ops::Range;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
 use storage::error::MVCCStorageError;
 use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::MVCCStorage;
-use storage::snapshot::buffer::BUFFER_INLINE_KEY;
+use crate::layout::prefix::PrefixID;
 
 pub mod graph;
 pub mod layout;
@@ -79,5 +80,13 @@ pub trait Keyable<'a, const INLINE_SIZE: usize> : AsBytes<'a, INLINE_SIZE> + Siz
     fn into_storage_key(self) -> StorageKey<'a, INLINE_SIZE> {
         StorageKey::new(self.keyspace_id(), self.into_bytes())
     }
+}
 
+pub trait Prefixed<'a, const INLINE_SIZE: usize> : AsBytes<'a, INLINE_SIZE> {
+
+    const RANGE_PREFIX: Range<usize> = 0..PrefixID::LENGTH;
+
+    fn prefix(&'a self) -> PrefixID<'a> {
+        PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes().bytes()[Self::RANGE_PREFIX])))
+    }
 }

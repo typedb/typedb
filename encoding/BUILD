@@ -38,11 +38,7 @@ rust_library(
         "//common/bytes",
 
         "@crates//:tracing",
-        "@crates//:struct_deser",
     ],
-    proc_macro_deps = [
-        "@crates//:struct_deser-derive"
-    ]
 )
 
 checkstyle_test(

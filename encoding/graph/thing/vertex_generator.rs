@@ -18,7 +18,7 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::graph::thing::vertex::concept::{ObjectID, ObjectVertex};
+use crate::graph::thing::vertex::{ObjectID, ObjectVertex};
 use crate::graph::type_::vertex::{TypeID, TypeIdUInt};
 use crate::layout::prefix::PrefixType;
 

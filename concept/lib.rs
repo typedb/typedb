@@ -15,6 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use encoding::graph::type_::vertex::TypeVertex;
+
 pub mod thing_manager;
 pub mod type_manager;
 pub mod error;
+mod iterator;
+
+
+trait Type<'a> {
+    fn vertex(&'a self) -> &TypeVertex<'a>;
+}

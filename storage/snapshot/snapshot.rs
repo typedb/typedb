@@ -38,17 +38,16 @@ impl<'storage> Snapshot<'storage> {
         }
     }
 
-    // pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>)
-    //                              -> Box<dyn RefIterator<Result<(StorageKey<'this, BUFFER_INLINE_KEY>, StorageValue<'this, BUFFER_INLINE_VALUE>), MVCCStorageError>> + 'this> {
-    //     match self {
-    //         Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
-    //         Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
-    //     }
-    // }
+    pub fn iterate_prefix<'this, const INLINE_BYTES: usize>(&'this self, prefix: &'this StorageKey<'this, INLINE_BYTES>) -> SnapshotPrefixIterator<'this> {
+        match self {
+            Snapshot::Read(snapshot) => snapshot.iterate_prefix(prefix),
+            Snapshot::Write(snapshot) => snapshot.iterate_prefix(prefix),
+        }
+    }
 
     pub fn close(self) {
         match self {
-            Snapshot::Read(snapshot) => snapshot.close(),
+            Snapshot::Read(snapshot) => snapshot.close_resources(),
             Snapshot::Write(snapshot) => snapshot.close_resources(),
         }
     }
@@ -73,12 +72,12 @@ impl<'storage> ReadSnapshot<'storage> {
         self.storage.get(key, &self.open_sequence_number, |reference| ByteArray::from(reference))
     }
 
-    pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> SnapshotPrefixIterator {
+    pub fn iterate_prefix<'this, const INLINE_SIZE: usize>(&'this self, prefix: &'this StorageKey<'this, INLINE_SIZE>) -> SnapshotPrefixIterator {
         let mvcc_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
         SnapshotPrefixIterator::new(mvcc_iterator, None)
     }
 
-    pub fn close(self) {}
+    pub fn close_resources(self) {}
 }
 
 pub struct WriteSnapshot<'storage> {
@@ -185,7 +184,7 @@ impl<'storage> WriteSnapshot<'storage> {
         )
     }
 
-    pub fn iterate_prefix<'this>(&'this self, prefix: &'this StorageKey<'this, BUFFER_INLINE_KEY>) -> SnapshotPrefixIterator<'this> {
+    pub fn iterate_prefix<'this, const INLINE_BYTES: usize>(&'this self, prefix: &'this StorageKey<'this, INLINE_BYTES>) -> SnapshotPrefixIterator<'this> {
         let storage_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
         let buffered_iterator = self.buffers.get(prefix.keyspace_id()).iterate_prefix(prefix.bytes());
         SnapshotPrefixIterator::new(storage_iterator, Some(buffered_iterator))

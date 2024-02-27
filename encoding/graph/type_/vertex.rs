@@ -25,7 +25,7 @@ use bytes::byte_reference::ByteReference;
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::snapshot::buffer::BUFFER_INLINE_KEY;
 
-use crate::{AsBytes, EncodingKeyspace, Keyable};
+use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
 use crate::layout::prefix::PrefixID;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -43,25 +43,17 @@ impl<'a> TypeVertex<'a> {
 
     pub fn build(prefix: &PrefixID<'a>, type_id: &TypeID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
-        array.bytes_mut()[Self::range_prefix()].copy_from_slice(prefix.bytes().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
         array.bytes_mut()[Self::range_type_id()].copy_from_slice(type_id.bytes().bytes());
         TypeVertex { bytes: ByteArrayOrRef::Array(array) }
-    }
-
-    pub fn prefix(&'a self) -> PrefixID<'a> {
-        PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_prefix()])))
     }
 
     pub fn type_id(&'a self) -> TypeID<'a> {
         TypeID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_type_id()])))
     }
 
-    const fn range_prefix() -> Range<usize> {
-        0..PrefixID::LENGTH
-    }
-
     const fn range_type_id() -> Range<usize> {
-        Self::range_prefix().end..Self::range_prefix().end + TypeID::LENGTH
+        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeID::LENGTH
     }
 }
 
@@ -80,6 +72,8 @@ impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for TypeVertex<'a> {
         EncodingKeyspace::Schema.id()
     }
 }
+
+impl<'a> Prefixed<'a, BUFFER_INLINE_KEY> for TypeVertex<'a> { }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct TypeID<'a> {

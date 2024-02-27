@@ -18,5 +18,5 @@
 pub mod snapshot;
 pub mod buffer;
 pub(crate) mod write;
-pub(crate) mod iterator;
+pub mod iterator;
 pub mod error;

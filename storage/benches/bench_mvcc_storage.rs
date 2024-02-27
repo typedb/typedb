@@ -53,7 +53,7 @@ fn populate_storage(storage: &MVCCStorage, keyspace_id: KeyspaceId, key_count: u
     snapshot.commit();
     println!("Keys written: {}", key_count);
     let snapshot = storage.open_snapshot_read();
-    let prefix = StorageKey::Reference(StorageKeyReference::new(keyspace_id, ByteReference::new(&[0 as u8])));
+    let prefix: StorageKey<'_, 48> = StorageKey::Reference(StorageKeyReference::new(keyspace_id, ByteReference::new(&[0 as u8])));
     let iterator = snapshot.iterate_prefix(&prefix);
     let count = iterator.collect_cloned().len();
     println!("Keys confirmed to be written: {}", count);

@@ -35,57 +35,6 @@ pub struct SnapshotPrefixIterator<'a> {
     iterator_state: IteratorState,
 }
 
-#[derive(Debug)]
-struct IteratorState {
-    state: State<Arc<SnapshotError>>,
-    ready_item_source: ReadyItemSource,
-}
-
-impl IteratorState {
-    fn new() -> IteratorState {
-        IteratorState {
-            state: State::Init,
-            ready_item_source: ReadyItemSource::Storage,
-        }
-    }
-
-    fn state(&self) -> &State<Arc<SnapshotError>> {
-        &self.state
-    }
-
-    fn source(&self) -> &ReadyItemSource {
-        &self.ready_item_source
-    }
-
-    fn set_init(&mut self) {
-        self.state = State::Init;
-    }
-
-    fn set_item_ready(&mut self, source: ReadyItemSource) {
-        self.state = State::ItemReady;
-        self.ready_item_source = source;
-    }
-
-    fn set_item_used(&mut self) {
-        self.state = State::ItemUsed;
-    }
-
-    fn set_done(&mut self) {
-        self.state = State::Done;
-    }
-
-    fn set_error(&mut self, error: Arc<SnapshotError>) {
-        self.state = State::Error(error)
-    }
-}
-
-#[derive(Debug)]
-enum ReadyItemSource {
-    Storage,
-    Buffered,
-    Both,
-}
-
 impl<'a> SnapshotPrefixIterator<'a> {
     pub(crate) fn new(mvcc_iterator: MVCCPrefixIterator<'a>, buffered_iterator: Option<BufferedPrefixIterator>) -> SnapshotPrefixIterator<'a> {
         SnapshotPrefixIterator {
@@ -279,36 +228,53 @@ impl<'a> SnapshotPrefixIterator<'a> {
 }
 
 
-// storage_iterator.merge_join_by(
-//     buffered_iterator,
-//     |(k1, v1), (k2, v2)| k1.cmp(k2),
-// ).filter_map(|ordering| match ordering {
-//     EitherOrBoth::Both(Ok((k1, v1)), (k2, write2)) => match write2 {
-//         Write::Insert(v2) => Some((k2, v2)),
-//         Write::InsertPreexisting(v2, _) => Some((k2, v2)),
-//         Write::RequireExists(v2) => {
-//             debug_assert_eq!(v1, v2);
-//             Some((k1, v1))
-//         }
-//         Write::Delete => None,
-//     },
-//     EitherOrBoth::Left(Ok((k1, v1))) => Some((k1, v1)),
-//     EitherOrBoth::Right((k2, write2)) => match write2 {
-//         Write::Insert(v2) => Some((k2, v2)),
-//         Write::InsertPreexisting(v2, _) => Some((k2, v2)),
-//         Write::RequireExists(_) => unreachable!("Invalid state: a key required to exist must also exists in Storage."),
-//         Write::Delete => None,
-//     },
-//     EitherOrBoth::Both(Err(_), _) => {
-//         panic!("Unhandled error in iteration")
-//     },
-//     EitherOrBoth::Left(Err(_)) => {
-//         panic!("Unhandled error in iteration")
-//     },
-// })
+#[derive(Debug)]
+struct IteratorState {
+    state: State<Arc<SnapshotError>>,
+    ready_item_source: ReadyItemSource,
+}
 
-// TODO replace
+impl IteratorState {
+    fn new() -> IteratorState {
+        IteratorState {
+            state: State::Init,
+            ready_item_source: ReadyItemSource::Storage,
+        }
+    }
 
-//     .map(|result| result.map(|(k, v)| {
-//     (StorageKey::Reference(k), StorageValue::Reference(v))
-// }))
+    fn state(&self) -> &State<Arc<SnapshotError>> {
+        &self.state
+    }
+
+    fn source(&self) -> &ReadyItemSource {
+        &self.ready_item_source
+    }
+
+    fn set_init(&mut self) {
+        self.state = State::Init;
+    }
+
+    fn set_item_ready(&mut self, source: ReadyItemSource) {
+        self.state = State::ItemReady;
+        self.ready_item_source = source;
+    }
+
+    fn set_item_used(&mut self) {
+        self.state = State::ItemUsed;
+    }
+
+    fn set_done(&mut self) {
+        self.state = State::Done;
+    }
+
+    fn set_error(&mut self, error: Arc<SnapshotError>) {
+        self.state = State::Error(error)
+    }
+}
+
+#[derive(Debug)]
+enum ReadyItemSource {
+    Storage,
+    Buffered,
+    Both,
+}

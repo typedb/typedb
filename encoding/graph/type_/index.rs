@@ -23,46 +23,40 @@ use bytes::byte_reference::ByteReference;
 use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::snapshot::buffer::BUFFER_INLINE_KEY;
-use crate::{AsBytes, EncodingKeyspace, Keyable};
+use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
 
 use crate::graph::type_::vertex::TypeVertex;
 use crate::layout::prefix::{PrefixID, PrefixType};
 use crate::primitive::string::StringBytes;
 
+// TODO: maybe we want to either use Generics or Macros to implement all Index'es the same way?
+
 #[derive(Debug, PartialEq, Eq)]
-pub struct TypeToLabelIndexKey<'a> {
+pub struct TypeToLabelIndex<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>,
 }
 
-impl<'a> TypeToLabelIndexKey<'a> {
+impl<'a> TypeToLabelIndex<'a> {
     const LENGTH: usize = PrefixID::LENGTH + TypeVertex::LENGTH;
 
     pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        TypeToLabelIndexKey { bytes: bytes }
+        TypeToLabelIndex { bytes: bytes }
     }
 
     pub fn build_key_value(vertex: &TypeVertex<'a>, label: &'a str) -> (Self, StringBytes<'a>) {
         let mut array = ByteArray::zeros(Self::LENGTH);
-        array.bytes_mut()[Self::range_prefix()].copy_from_slice(PrefixType::TypeToLabelIndex.prefix().bytes().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::TypeToLabelIndex.prefix().bytes().bytes());
         array.bytes_mut()[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
-        (TypeToLabelIndexKey { bytes: ByteArrayOrRef::Array(array) }, StringBytes::build_ref(label))
-    }
-
-    pub fn into_storage_key(self) -> StorageKey<'a, BUFFER_INLINE_KEY> {
-        StorageKey::new_owned(self.keyspace_id(), self.into_bytes())
-    }
-
-    const fn range_prefix() -> Range<usize> {
-        0..PrefixID::LENGTH
+        (TypeToLabelIndex { bytes: ByteArrayOrRef::Array(array) }, StringBytes::build_ref(label))
     }
 
     const fn range_type_vertex() -> Range<usize> {
-        Self::range_prefix().end..Self::range_prefix().end + TypeVertex::LENGTH
+        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeVertex::LENGTH
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for TypeToLabelIndexKey<'a> {
+impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for TypeToLabelIndex<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_ref()
     }
@@ -73,32 +67,30 @@ impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for TypeToLabelIndexKey<'a> {
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for TypeToLabelIndexKey<'a> {
+impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for TypeToLabelIndex<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
         EncodingKeyspace::Schema.id()
     }
 }
 
-pub struct LabelToTypeIndexKey<'a> {
+impl<'a> Prefixed<'a, BUFFER_INLINE_KEY> for TypeToLabelIndex<'a> {}
+
+pub struct LabelToTypeIndex<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>,
 }
 
-impl<'a> LabelToTypeIndexKey<'a> {
+impl<'a> LabelToTypeIndex<'a> {
     pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>) -> Self {
         debug_assert!(bytes.length() >= PrefixID::LENGTH);
-        LabelToTypeIndexKey { bytes: bytes }
+        LabelToTypeIndex { bytes: bytes }
     }
 
     pub fn build(label: &str) -> Self {
         let label_bytes = StringBytes::build(&label);
         let mut array = ByteArray::zeros(label_bytes.length() + PrefixID::LENGTH);
-        array.bytes_mut()[Self::range_prefix()].copy_from_slice(PrefixType::LabelToTypeIndex.prefix().bytes().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::LabelToTypeIndex.prefix().bytes().bytes());
         array.bytes_mut()[Self::range_label(label_bytes.length())].copy_from_slice(label_bytes.bytes().bytes());
-        LabelToTypeIndexKey { bytes: ByteArrayOrRef::Array(array) }
-    }
-
-    fn prefix(&'a self) -> PrefixID<'a> {
-        PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_prefix()])))
+        LabelToTypeIndex { bytes: ByteArrayOrRef::Array(array) }
     }
 
     fn label(&'a self) -> StringBytes<'a> {
@@ -109,28 +101,25 @@ impl<'a> LabelToTypeIndexKey<'a> {
         self.bytes.length() - PrefixID::LENGTH
     }
 
-    const fn range_prefix() -> Range<usize> {
-        0..PrefixID::LENGTH
-    }
-
     fn range_label(label_length: usize) -> Range<usize> {
-        Self::range_prefix().end..Self::range_prefix().end + label_length
+        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + label_length
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for LabelToTypeIndexKey<'a> {
+impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for LabelToTypeIndex<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_ref()
     }
-
 
     fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
         self.bytes
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for LabelToTypeIndexKey<'a> {
+impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for LabelToTypeIndex<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
         EncodingKeyspace::Schema.id()
     }
 }
+
+impl<'a> Prefixed<'a, BUFFER_INLINE_KEY> for LabelToTypeIndex<'a> { }

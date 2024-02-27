@@ -15,44 +15,62 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::any::Any;
 use std::iter::empty;
+use std::rc::Rc;
 
+use encoding::graph::thing::vertex::{AttributeVertex, ObjectVertex};
+use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
+use encoding::Keyable;
+use encoding::layout::prefix::PrefixType;
+use storage::key_value::StorageKey;
 use storage::snapshot::snapshot::Snapshot;
+
+use crate::Type;
 use crate::type_manager::EntityType;
 
 pub struct ThingManager<'txn, 'storage: 'txn> {
-    snapshot: &'txn Snapshot<'storage>,
+    snapshot: Rc<Snapshot<'storage>>,
+    vertex_generator: &'txn ThingVertexGenerator,
 }
 
 impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
-
-    pub fn new(&self, snapshot: &'txn Snapshot<'storage>) -> ThingManager<'txn, 'storage> {
-        ThingManager {
-            snapshot: snapshot
-        }
+    pub fn new(&self, snapshot: Rc<Snapshot<'storage>>, vertex_generator: &'txn ThingVertexGenerator) -> Self {
+        ThingManager { snapshot: snapshot, vertex_generator: vertex_generator }
     }
 
     fn create_entity(&self, entity_type: EntityType) -> Entity {
-        if let Snapshot::Write(write_snapshot) = self.snapshot {
-            // create ID
-            // create IID
-            // create and return Entity
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            let vertex = self.vertex_generator.take_entity_vertex(&entity_type.vertex().type_id());
+            write_snapshot.put(vertex.as_storage_key().to_owned());
+            return Entity::new(vertex);
         }
         panic!("Illegal state: create entity requires write snapshot")
     }
 
-    fn get_entities(&self) -> impl Iterator<Item=Entity> {
-        // let prefix = Prefix::Entity.bytes();
-        // self.snapshot.iterate_prefix(prefix).map(|(key, value)| Entity::new(ThingEncoder::decideThingIIDSmall))
-        empty()
+    fn get_entities(&self) -> () {
+        let prefix = ObjectVertex::prefix_prefix(&PrefixType::Entity.prefix());
+        self.snapshot.iterate_prefix(&prefix);
+            ()
     }
 }
 
-
-struct Entity {
-    // iid: ObjectIID,
+struct Entity<'a> {
+    vertex: ObjectVertex<'a>,
 }
 
-struct Attribute {
-    // iid: AttributeIID,
+impl<'a> Entity<'a> {
+    fn new(vertex: ObjectVertex<'a>) -> Self {
+        Entity { vertex: vertex }
+    }
+}
+
+struct Attribute<'a> {
+    vertex: AttributeVertex<'a>,
+}
+
+impl<'a> Attribute<'a> {
+    fn new(vertex: AttributeVertex<'a>) -> Self {
+        Attribute { vertex: vertex }
+    }
 }

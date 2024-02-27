@@ -17,14 +17,15 @@
 
 
 use std::ops::Range;
+
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
-use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::snapshot::buffer::BUFFER_INLINE_KEY;
+
 use crate::{AsBytes, EncodingKeyspace, Keyable};
-use crate::graph::type_::vertex::{TypeID, TypeVertex};
+use crate::graph::type_::vertex::TypeVertex;
 use crate::layout::infix::{Infix, InfixType};
 
 struct OwnsForwardEdge<'a> {
@@ -55,10 +56,6 @@ impl<'a> OwnsForwardEdge<'a> {
     fn to(&'a self) -> TypeVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[Self::range_to()]);
         TypeVertex::new(ByteArrayOrRef::Reference(reference))
-    }
-
-    fn keyspace_id(&self) -> KeyspaceId {
-        EncodingKeyspace::Schema.id()
     }
 
     const fn range_from() -> Range<usize> {

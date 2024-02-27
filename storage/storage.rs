@@ -305,8 +305,8 @@ impl MVCCStorage {
         )
     }
 
-    pub fn iterate_prefix<'this, const S: usize>(&'this self, prefix: &'this StorageKey<'this, S>, open_sequence_number: &SequenceNumber)
-                                                 -> MVCCPrefixIterator {
+    pub fn iterate_prefix<'this, const INLINE_BYTES: usize>(&'this self, prefix: &'this StorageKey<'this, INLINE_BYTES>, open_sequence_number: &SequenceNumber)
+                                                            -> MVCCPrefixIterator {
         MVCCPrefixIterator::new(self, prefix, open_sequence_number)
     }
 
