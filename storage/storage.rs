@@ -62,14 +62,14 @@ impl MVCCStorage {
 
     pub fn new(owner_name: Rc<str>, path: &PathBuf) -> Result<Self, MVCCStorageError> {
         let storage_dir = path.with_extension(MVCCStorage::STORAGE_DIR_NAME);
-        let mut durability_service = WAL::new();
+        let mut durability_service = WAL::open("/tmp/wal").expect("Could not create WAL directory");
         durability_service.register_record_type(CommitRecord::DURABILITY_RECORD_TYPE, CommitRecord::DURABILITY_RECORD_NAME);
         Ok(MVCCStorage {
             owner_name: owner_name.clone(),
             path: storage_dir,
             keyspaces: Vec::new(),
             keyspaces_index: core::array::from_fn(|_| None),
-            isolation_manager: IsolationManager::new(durability_service.poll_next()),
+            isolation_manager: IsolationManager::new(durability_service.current()),
             durability_service: durability_service,
         })
     }

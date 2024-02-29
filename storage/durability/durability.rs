@@ -15,16 +15,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::error::Error;
-use std::fmt::{Display, Formatter};
-use std::io::Write;
-use std::ops::{Add, Sub};
+#![deny(unused_must_use)]
+#![deny(rust_2018_idioms)]
 
+use std::{
+    error::Error,
+    fmt::{Display, Formatter},
+    io::{self, Read, Write},
+};
+
+use primitive::U80;
 use serde::{Deserialize, Serialize};
 
 use primitive::u80::U80;
 
 pub mod wal;
+
+pub type Result<T> = std::result::Result<T, DurabilityError>;
 
 ///
 /// Notes:
@@ -57,20 +64,31 @@ pub mod wal;
 ///     1. Recovery/Checksum requirements - what are the failure modes
 ///     2. How to benchmark
 
-pub trait DurabilityService: Sequencer {
-    fn register_record_type(&mut self, record_type: DurabilityRecordType, record_name: &'static str);
+pub struct RawRecord {
+    pub sequence_number: SequenceNumber,
+    pub record_type: DurabilityRecordType,
+    pub bytes: Box<[u8]>,
+}
 
-    fn sequenced_write(&self, record: &impl DurabilityRecord, record_name: &'static str) -> Result<SequenceNumber, DurabilityError>;
+pub trait DurabilityService: Sequencer {
+    fn register_record_type<Record: DurabilityRecord>(&mut self);
+
+    fn sequenced_write<Record>(&self, record: &Record) -> Result<SequenceNumber>
+    where
+        Record: DurabilityRecord;
 
     // fn iterate_records_from(&self, sequence_number: SequenceNumber) -> Box<dyn Iterator<Item=(SequenceNumber, DurabilityRecordType, dyn Read)>>;
+
+    fn recover(&self) -> impl Iterator<Item = io::Result<RawRecord>>;
 }
 
 pub type DurabilityRecordType = u8;
 
-pub trait DurabilityRecord {
-    fn record_type(&self) -> DurabilityRecordType;
-
+pub trait DurabilityRecord: Sized {
+    const RECORD_TYPE: DurabilityRecordType;
+    const RECORD_NAME: &'static str;
     fn serialise_into(&self, writer: &mut impl Write) -> bincode::Result<()>;
+    fn deserialize_from(writer: &mut impl Read) -> bincode::Result<Self>;
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
@@ -85,14 +103,18 @@ impl Display for SequenceNumber {
 }
 
 impl SequenceNumber {
-    pub const MAX: SequenceNumber = SequenceNumber { number: U80::MAX };
+    pub const MAX: Self = Self { number: U80::MAX };
 
-    pub fn new(number: U80) -> SequenceNumber {
-        SequenceNumber { number: number }
+    pub fn new(number: U80) -> Self {
+        Self { number }
     }
 
-    pub fn plus(&self, number: U80) -> SequenceNumber {
-        return SequenceNumber { number: self.number + number };
+    pub fn next(&self) -> Self {
+        Self { number: self.number + U80::new(1) }
+    }
+
+    pub fn previous(&self) -> Self {
+        Self { number: self.number - U80::new(1) }
     }
 
     pub fn number(&self) -> U80 {
@@ -109,8 +131,8 @@ impl SequenceNumber {
         self.number.to_be_bytes()
     }
 
-    pub fn invert(&self) -> SequenceNumber {
-        SequenceNumber::MAX - *self
+    pub fn invert(&self) -> Self {
+        Self { number: U80::MAX - self.number }
     }
 
     pub const fn serialised_len() -> usize {
@@ -118,26 +140,10 @@ impl SequenceNumber {
     }
 }
 
-impl Add for SequenceNumber {
-    type Output = SequenceNumber;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        SequenceNumber { number: self.number + rhs.number }
-    }
-}
-
-impl Sub for SequenceNumber {
-    type Output = SequenceNumber;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        SequenceNumber { number: self.number - rhs.number }
-    }
-}
-
 pub trait Sequencer {
-    fn take_next(&self) -> SequenceNumber;
+    fn increment(&self) -> SequenceNumber;
 
-    fn poll_next(&self) -> SequenceNumber;
+    fn current(&self) -> SequenceNumber;
 
     fn previous(&self) -> SequenceNumber;
 }
@@ -149,12 +155,19 @@ pub struct DurabilityError {
 
 #[derive(Debug)]
 pub enum DurabilityErrorKind {
+    #[non_exhaustive]
     BincodeSerializeError { source: bincode::Error },
 }
 
 impl Display for DurabilityError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
+    }
+}
+
+impl From<bincode::Error> for DurabilityError {
+    fn from(source: bincode::Error) -> Self {
+        Self { kind: DurabilityErrorKind::BincodeSerializeError { source } }
     }
 }
 
