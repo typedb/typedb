@@ -143,13 +143,13 @@ public class Metrics {
         }
 
         String formatPrometheus() {
-            StringBuilder buf = new StringBuilder("# TYPE attempted_requests_total counter\n");
+            StringBuilder buf = new StringBuilder("# TYPE typedb_attempted_requests_total counter\n");
             for (var kind : Kind.values()) {
-                buf.append("attempted_requests_total{kind=\"").append(kind).append("\"} ").append(attempted.get(kind)).append("\n");
+                buf.append("typedb_attempted_requests_total{kind=\"").append(kind).append("\"} ").append(attempted.get(kind)).append("\n");
             }
-            buf.append("\n# TYPE successful_requests_total counter\n");
+            buf.append("\n# TYPE typedb_successful_requests_total counter\n");
             for (var kind : Kind.values()) {
-                buf.append("successful_requests_total{kind=\"").append(kind).append("\"} ").append(successful.get(kind)).append("\n");
+                buf.append("typedb_successful_requests_total{kind=\"").append(kind).append("\"} ").append(successful.get(kind)).append("\n");
             }
             return buf.toString();
         }
@@ -181,9 +181,9 @@ public class Metrics {
         }
 
         String formatPrometheus() {
-            StringBuilder buf  = new StringBuilder("# TYPE current_count gauge\n");
+            StringBuilder buf  = new StringBuilder("# TYPE typedb_current_count gauge\n");
             for (Kind kind : Kind.values()) {
-                buf.append("current_count{kind=\"").append(kind).append("\"} ").append(gauges.get(kind)).append("\n");
+                buf.append("typedb_current_count{kind=\"").append(kind).append("\"} ").append(gauges.get(kind)).append("\n");
             }
             return buf.toString();
         }
@@ -210,10 +210,10 @@ public class Metrics {
         String formatPrometheus() {
             if (errorCounts.isEmpty()) return "";
 
-            StringBuilder buf = new StringBuilder("# TYPE error_total counter\n");
+            StringBuilder buf = new StringBuilder("# TYPE typedb_error_total counter\n");
             for (String code : errorCounts.keySet()) {
                 long count = errorCounts.get(code).get();
-                buf.append("error_total{code=\"").append(code).append("\"} ").append(count).append("\n");
+                buf.append("typedb_error_total{code=\"").append(code).append("\"} ").append(count).append("\n");
             }
             return buf.toString();
         }
