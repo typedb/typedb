@@ -78,7 +78,7 @@ public class Util {
         } else {
             throw new IllegalStateException(String.format("The distribution archive format must be either %s or %s", TAR_GZ, ZIP));
         }
-        // The TypeDB Enterprise archive extracts to a folder inside TYPEDB_TARGET_DIRECTORY named
+        // The TypeDB Cloud archive extracts to a folder inside TYPEDB_TARGET_DIRECTORY named
         // typedb-server-{platform}-{version}. We know it's the only folder, so we can retrieve it using Files.list.
         return Files.list(runnerDir).findFirst().get().toAbsolutePath();
     }

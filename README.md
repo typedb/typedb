@@ -143,7 +143,7 @@ TypeDB breaks down the patchwork of existing database paradigms into three funda
 ### TypeDB editions
 
 * [TypeDB Cloud](https://cloud.typedb.com) — multi-cloud DBaaS
-* [TypeDB Enterprise](mailto://sales@vaticle.com) — Enterprise edition of TypeDB
+* [TypeDB Cloud self-hosted](mailto://sales@vaticle.com) — allows you to deploy TypeDB Cloud in your own environment
 * **TypeDB Core** — Open-source edition of TypeDB ← _This repository_
 
 For a comparison of all three editions, see the [Deploy](https://typedb.com/deploy) page on our website.
@@ -240,7 +240,7 @@ This software is developed by [Vaticle](https://vaticle.com/).
 It's released under the GNU Affero GENERAL PUBLIC LICENSE version 3 (AGPL v.3.0).
 For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE). 
 
-Vaticle also provides a commercial license for TypeDB Enterprise - get in touch with our team at 
+Vaticle also provides a commercial license for TypeDB Cloud self-hosted - get in touch with our team at 
 [commercial@vaticle.com](emailto://sales@vaticle.com).
 
 Copyright (C) 2023 Vaticle.
