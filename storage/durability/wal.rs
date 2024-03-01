@@ -24,7 +24,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicU64, Ordering},
-        Mutex,
+        Mutex, MutexGuard,
     },
 };
 
@@ -36,7 +36,7 @@ use crate::{
     Sequencer,
 };
 
-const MAX_FILE_SIZE: u64 = 1024;
+const MAX_WAL_FILE_SIZE: u64 = 1024;
 
 const FILE_PREFIX: &str = "wal-";
 const CHECKPOINTED_SUFFIX: &str = "-checkpoint";
@@ -54,6 +54,7 @@ pub struct WAL {
     files: Mutex<Files>,
 }
 
+#[derive(Debug)]
 struct File {
     start: SequenceNumber,
     handle: StdFile,
@@ -63,7 +64,7 @@ struct File {
 
 impl File {
     fn format_file_name(seq: SequenceNumber) -> String {
-        format!("{}{:020}", FILE_PREFIX, seq.number().number())
+        format!("{}{:025}", FILE_PREFIX, seq.number().number())
     }
 
     fn open_at(directory: PathBuf, start: SequenceNumber) -> io::Result<Self> {
@@ -81,6 +82,7 @@ impl File {
     }
 }
 
+#[derive(Debug)]
 struct Files {
     current: File,
     previous: Vec<File>,
@@ -102,6 +104,61 @@ impl Files {
 
         Ok(Self { current: last, previous: files })
     }
+
+    fn open_new_file_at(&mut self, directory: PathBuf, start: SequenceNumber) -> io::Result<()> {
+        let mut file = File::open_at(directory, start)?;
+        std::mem::swap(&mut self.current, &mut file);
+        self.previous.push(file);
+        Ok(())
+    }
+
+    fn iter(&self) -> impl Iterator<Item = &File> {
+        self.previous.iter().chain(iter::once(&self.current))
+    }
+}
+
+struct RecordIterator<'a> {
+    files: MutexGuard<'a, Files>,
+    current: Option<usize>,
+}
+
+impl<'a> RecordIterator<'a> {
+    fn new(files: MutexGuard<'a, Files>) -> Self {
+        let mut this = Self { current: (!files.previous.is_empty()).then_some(0), files };
+        this.rewind_current();
+        this
+    }
+
+    fn rewind_current(&mut self) {
+        self.current().handle.rewind().unwrap();
+    }
+
+    fn current(&mut self) -> &mut File {
+        match self.current {
+            None => &mut self.files.current,
+            Some(n) => self.files.previous.get_mut(n).unwrap(),
+        }
+    }
+}
+
+impl<'a> Iterator for RecordIterator<'a> {
+    type Item = io::Result<RawRecord>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let file = self.current();
+        match read_one_record(file).transpose() {
+            None => {
+                if let Some(n) = self.current {
+                    self.current = if n + 1 < self.files.previous.len() { Some(n + 1) } else { None };
+                    self.rewind_current();
+                    self.next()
+                } else {
+                    None
+                }
+            }
+            some => some,
+        }
+    }
 }
 
 impl WAL {
@@ -114,11 +171,19 @@ impl WAL {
             fs::create_dir_all(&directory)?;
         }
 
+        let files = Files::open(directory.clone())?;
+        let next = 0; // TODO
+        let redo_point = files
+            .iter()
+            .find(|f| !f.path.file_name().and_then(|s| s.to_str()).unwrap().ends_with(CHECKPOINTED_SUFFIX))
+            .map(|f| f.start.number().number() as u64)
+            .unwrap_or(next);
+
         Ok(Self {
             registered_types: HashMap::new(),
-            next_sequence_number: AtomicU64::new(0),
-            redo_point: AtomicU64::new(0),
-            files: Mutex::new(Files::open(directory.clone())?),
+            next_sequence_number: AtomicU64::new(next),
+            redo_point: AtomicU64::new(redo_point),
+            files: Mutex::new(files),
             directory,
         })
     }
@@ -165,14 +230,16 @@ impl DurabilityService for WAL {
 
         file.len = file.handle.stream_position()?;
 
+        if file.len >= MAX_WAL_FILE_SIZE {
+            files.open_new_file_at(self.directory.clone(), self.current())?;
+        }
+
         Ok(seq)
     }
 
     fn iter_from(&self, sequence_number: SequenceNumber) -> impl Iterator<Item = io::Result<RawRecord>> {
-        let mut files = self.files.lock().unwrap();
-        files.current.handle.rewind().unwrap();
-        iter::from_fn(move || read_one_record(&mut files.current).transpose())
-            .skip_while(move |r| r.as_ref().is_ok_and(|r| r.sequence_number < sequence_number))
+        let files = self.files.lock().unwrap();
+        RecordIterator::new(files).skip_while(move |r| r.as_ref().is_ok_and(|r| r.sequence_number < sequence_number))
     }
 
     fn checkpoint(&self) -> Result<()> {
@@ -181,14 +248,12 @@ impl DurabilityService for WAL {
         let checkpointed_path = files.current.path.with_file_name(
             files.current.path.file_name().and_then(|s| s.to_str()).unwrap().to_owned() + CHECKPOINTED_SUFFIX,
         );
+        fs::rename(&files.current.path, &checkpointed_path)?;
         files.current.handle = OpenOptions::new().read(true).append(true).create(true).open(&checkpointed_path)?;
         files.current.path = checkpointed_path;
 
         let next = self.current();
-        let mut file = File::open_at(self.directory.clone(), next)?;
-        std::mem::swap(&mut files.current, &mut file);
-        files.previous.push(file);
-
+        files.open_new_file_at(self.directory.clone(), next)?;
         self.redo_point.store(self.next_sequence_number.load(Ordering::Relaxed), Ordering::Relaxed);
         Ok(())
     }
@@ -240,7 +305,7 @@ mod test {
 
     type BoxError = Box<dyn std::error::Error>;
 
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
     struct TestRecord {
         bytes: [u8; 4],
     }
@@ -276,6 +341,31 @@ mod test {
 
         let read_record = TestRecord::deserialize_from(&mut &*bytes)?;
         assert_eq!(record, read_record);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_wal_write_read_lots() -> Result<(), BoxError> {
+        let directory = tempdir::TempDir::new("wal-test")?;
+
+        let records = [TestRecord { bytes: *b"test" }; 1024];
+
+        let mut wal = WAL::open(&directory)?;
+        wal.register_record_type::<TestRecord>();
+        records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ()))?;
+
+        let read_records = wal
+            .recover()
+            .map(|res| {
+                let RawRecord { record_type, bytes, .. } = res?;
+                assert_eq!(record_type, TestRecord::RECORD_TYPE);
+                Ok::<_, BoxError>(TestRecord::deserialize_from(&mut &*bytes)?)
+            })
+            .try_collect::<_, Vec<TestRecord>, _>()?;
+
+        assert_eq!(records.len(), read_records.len());
+        assert_eq!(records, &*read_records);
 
         Ok(())
     }
@@ -335,12 +425,12 @@ mod test {
     fn test_wal_checkpoint_recover() -> Result<(), BoxError> {
         let directory = tempdir::TempDir::new("wal-test")?;
 
-        let record = TestRecord { bytes: *b"test" };
+        let committed_record = TestRecord { bytes: *b"1234" };
         let records = [TestRecord { bytes: *b"test" }, TestRecord { bytes: *b"abcd" }];
 
         let mut wal = WAL::open(&directory)?;
         wal.register_record_type::<TestRecord>();
-        wal.sequenced_write(&record)?;
+        wal.sequenced_write(&committed_record)?;
         wal.checkpoint()?;
         records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ()))?;
 

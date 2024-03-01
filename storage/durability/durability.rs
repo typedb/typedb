@@ -64,12 +64,14 @@ pub type Result<T> = std::result::Result<T, DurabilityError>;
 ///     1. Recovery/Checksum requirements - what are the failure modes
 ///     2. How to benchmark
 
+#[derive(Debug)]
 struct RecordHeader {
     sequence_number: SequenceNumber,
     len: u32,
     record_type: DurabilityRecordType,
 }
 
+#[derive(Debug)]
 pub struct RawRecord {
     pub sequence_number: SequenceNumber,
     pub record_type: DurabilityRecordType,
