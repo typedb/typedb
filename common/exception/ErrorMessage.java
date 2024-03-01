@@ -110,7 +110,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Server ERROR_LOGGING_CONNECTIONS =
                 new Server(36, "An error occurred while logging server connection info.");
         public static final Server USER_MANAGEMENT_NOT_AVAILABLE =
-                new Server(37, "User management is only available in TypeDB Enterprise.");
+                new Server(37, "User management is only available in TypeDB Cloud.");
 
         private static final String codePrefix = "SRV";
         private static final String messagePrefix = "Invalid Server Operation";

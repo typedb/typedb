@@ -9,7 +9,7 @@ labels: bug
 
 ## Environment
 
-1. TypeDB distribution: Core/Enterprise/Cloud
+1. TypeDB distribution: Core/Cloud
 2. TypeDB version:
 3. Environment: Linux/Mac/Windows/TypeDB Cloud/Google Cloud/AWS/Azure
 4. Client and version:
