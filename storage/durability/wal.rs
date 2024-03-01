@@ -36,6 +36,11 @@ use crate::{
     Sequencer,
 };
 
+const MAX_FILE_SIZE: u64 = 1024;
+
+const FILE_PREFIX: &str = "wal-";
+const CHECKPOINTED_SUFFIX: &str = "-checkpoint";
+
 //
 // I think we could use an MMAP append-only file to allow records to serialise themselves directly into the right place
 // We could also use a Writer/Stream compressor to reduce the write bandwidth requirements
@@ -44,6 +49,7 @@ use crate::{
 pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, &'static str>,
     next_sequence_number: AtomicU64,
+    redo_point: AtomicU64,
     directory: PathBuf,
     files: Mutex<Files>,
 }
@@ -56,6 +62,17 @@ struct File {
 }
 
 impl File {
+    fn format_file_name(seq: SequenceNumber) -> String {
+        format!("{}{:020}", FILE_PREFIX, seq.number().number())
+    }
+
+    fn open_at(directory: PathBuf, start: SequenceNumber) -> io::Result<Self> {
+        let path = directory.join(Self::format_file_name(start));
+        let mut handle = OpenOptions::new().read(true).append(true).create(true).open(&path)?;
+        let len = handle.seek(io::SeekFrom::End(0))?;
+        Ok(Self { start, handle, len, path })
+    }
+
     fn open(path: PathBuf) -> io::Result<Self> {
         let num = path.file_name().and_then(|s| s.to_str()).and_then(|s| s.split('-').nth(1)).unwrap().parse().unwrap();
         let mut handle = OpenOptions::new().read(true).append(true).create(true).open(&path)?;
@@ -69,14 +86,7 @@ struct Files {
     previous: Vec<File>,
 }
 
-const FILE_PREFIX: &str = "wal-";
-const CHECKPOINTED_SUFFIX: &str = "-checkpoint";
-
 impl Files {
-    fn format_file_name(seq: SequenceNumber) -> String {
-        format!("{}{:020}", FILE_PREFIX, seq.number().number())
-    }
-
     fn open(directory: PathBuf) -> io::Result<Self> {
         let mut files: Vec<File> = directory
             .read_dir()?
@@ -88,8 +98,7 @@ impl Files {
             .try_collect()?;
         files.sort_unstable_by(|lhs, rhs| lhs.path.cmp(&rhs.path));
 
-        let seq = SequenceNumber::new(U80::new(0));
-        let last = files.pop().map(Ok).unwrap_or_else(|| File::open(directory.join(Self::format_file_name(seq))))?;
+        let last = files.pop().map(Ok).unwrap_or_else(|| File::open_at(directory, SequenceNumber::new(U80::new(0))))?;
 
         Ok(Self { current: last, previous: files })
     }
@@ -107,7 +116,8 @@ impl WAL {
 
         Ok(Self {
             registered_types: HashMap::new(),
-            next_sequence_number: AtomicU64::new(1),
+            next_sequence_number: AtomicU64::new(0),
+            redo_point: AtomicU64::new(0),
             files: Mutex::new(Files::open(directory.clone())?),
             directory,
         })
@@ -165,8 +175,26 @@ impl DurabilityService for WAL {
             .skip_while(move |r| r.as_ref().is_ok_and(|r| r.sequence_number < sequence_number))
     }
 
+    fn checkpoint(&self) -> Result<()> {
+        let mut files = self.files.lock().unwrap();
+
+        let checkpointed_path = files.current.path.with_file_name(
+            files.current.path.file_name().and_then(|s| s.to_str()).unwrap().to_owned() + CHECKPOINTED_SUFFIX,
+        );
+        files.current.handle = OpenOptions::new().read(true).append(true).create(true).open(&checkpointed_path)?;
+        files.current.path = checkpointed_path;
+
+        let next = self.current();
+        let mut file = File::open_at(self.directory.clone(), next)?;
+        std::mem::swap(&mut files.current, &mut file);
+        files.previous.push(file);
+
+        self.redo_point.store(self.next_sequence_number.load(Ordering::Relaxed), Ordering::Relaxed);
+        Ok(())
+    }
+
     fn recover(&self) -> impl Iterator<Item = io::Result<RawRecord>> {
-        self.iter_from(SequenceNumber::new(U80::new(0)))
+        self.iter_from(SequenceNumber::new(U80::new(self.redo_point.load(Ordering::Relaxed) as u128)))
     }
 }
 
@@ -234,6 +262,25 @@ mod test {
     }
 
     #[test]
+    fn test_wal_write_read() -> Result<(), BoxError> {
+        let directory = tempdir::TempDir::new("wal-test")?;
+
+        let record = TestRecord { bytes: *b"test" };
+
+        let mut wal = WAL::open(&directory)?;
+        wal.register_record_type::<TestRecord>();
+        wal.sequenced_write(&record)?;
+
+        let RawRecord { record_type, bytes, .. } = wal.recover().next().unwrap()?;
+        assert_eq!(record_type, TestRecord::RECORD_TYPE);
+
+        let read_record = TestRecord::deserialize_from(&mut &*bytes)?;
+        assert_eq!(record, read_record);
+
+        Ok(())
+    }
+
+    #[test]
     fn test_wal_recover() -> Result<(), BoxError> {
         let directory = tempdir::TempDir::new("wal-test")?;
 
@@ -246,8 +293,10 @@ mod test {
 
         let mut wal = WAL::open(&directory)?;
         wal.register_record_type::<TestRecord>();
+
         let RawRecord { record_type, bytes, .. } = wal.recover().next().unwrap()?;
         assert_eq!(record_type, TestRecord::RECORD_TYPE);
+
         let read_record = TestRecord::deserialize_from(&mut &*bytes)?;
         assert_eq!(record, read_record);
 
@@ -263,6 +312,49 @@ mod test {
         let mut wal = WAL::open(&directory)?;
         wal.register_record_type::<TestRecord>();
         records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ()))?;
+        drop(wal);
+
+        let mut wal = WAL::open(&directory)?;
+        wal.register_record_type::<TestRecord>();
+
+        let read_records = wal
+            .recover()
+            .map(|res| {
+                let RawRecord { record_type, bytes, .. } = res?;
+                assert_eq!(record_type, TestRecord::RECORD_TYPE);
+                Ok::<_, BoxError>(TestRecord::deserialize_from(&mut &*bytes)?)
+            })
+            .try_collect::<_, Vec<TestRecord>, _>()?;
+
+        assert_eq!(records, &*read_records);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_wal_checkpoint_recover() -> Result<(), BoxError> {
+        let directory = tempdir::TempDir::new("wal-test")?;
+
+        let record = TestRecord { bytes: *b"test" };
+        let records = [TestRecord { bytes: *b"test" }, TestRecord { bytes: *b"abcd" }];
+
+        let mut wal = WAL::open(&directory)?;
+        wal.register_record_type::<TestRecord>();
+        wal.sequenced_write(&record)?;
+        wal.checkpoint()?;
+        records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ()))?;
+
+        let read_records = wal
+            .recover()
+            .map(|res| {
+                let RawRecord { record_type, bytes, .. } = res?;
+                assert_eq!(record_type, TestRecord::RECORD_TYPE);
+                Ok::<_, BoxError>(TestRecord::deserialize_from(&mut &*bytes)?)
+            })
+            .try_collect::<_, Vec<TestRecord>, _>()?;
+
+        assert_eq!(records, &*read_records);
+
         drop(wal);
 
         let mut wal = WAL::open(&directory)?;

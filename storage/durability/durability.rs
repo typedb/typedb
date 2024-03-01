@@ -85,6 +85,7 @@ pub trait DurabilityService: Sequencer {
 
     fn iter_from(&self, sequence_number: SequenceNumber) -> impl Iterator<Item = io::Result<RawRecord>>;
 
+    fn checkpoint(&self) -> Result<()>;
     fn recover(&self) -> impl Iterator<Item = io::Result<RawRecord>>;
 }
 
