@@ -64,6 +64,12 @@ pub type Result<T> = std::result::Result<T, DurabilityError>;
 ///     1. Recovery/Checksum requirements - what are the failure modes
 ///     2. How to benchmark
 
+struct RecordHeader {
+    sequence_number: SequenceNumber,
+    len: u32,
+    record_type: DurabilityRecordType,
+}
+
 pub struct RawRecord {
     pub sequence_number: SequenceNumber,
     pub record_type: DurabilityRecordType,
@@ -77,7 +83,7 @@ pub trait DurabilityService: Sequencer {
     where
         Record: DurabilityRecord;
 
-    // fn iterate_records_from(&self, sequence_number: SequenceNumber) -> Box<dyn Iterator<Item=(SequenceNumber, DurabilityRecordType, dyn Read)>>;
+    fn iter_from(&self, sequence_number: SequenceNumber) -> impl Iterator<Item = io::Result<RawRecord>>;
 
     fn recover(&self) -> impl Iterator<Item = io::Result<RawRecord>>;
 }
@@ -127,7 +133,7 @@ impl SequenceNumber {
         bytes.copy_from_slice(&number_bytes)
     }
 
-    pub fn serialise_be(&self) -> [u8; U80::BYTES] {
+    pub fn to_be_bytes(&self) -> [u8; U80::BYTES] {
         self.number.to_be_bytes()
     }
 
@@ -157,6 +163,9 @@ pub struct DurabilityError {
 pub enum DurabilityErrorKind {
     #[non_exhaustive]
     BincodeSerializeError { source: bincode::Error },
+
+    #[non_exhaustive]
+    IOError { source: io::Error },
 }
 
 impl Display for DurabilityError {
@@ -171,10 +180,17 @@ impl From<bincode::Error> for DurabilityError {
     }
 }
 
+impl From<io::Error> for DurabilityError {
+    fn from(source: io::Error) -> Self {
+        Self { kind: DurabilityErrorKind::IOError { source } }
+    }
+}
+
 impl Error for DurabilityError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
             DurabilityErrorKind::BincodeSerializeError { source, .. } => Some(source),
+            DurabilityErrorKind::IOError { source, .. } => Some(source),
         }
     }
 }

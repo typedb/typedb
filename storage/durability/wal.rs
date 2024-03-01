@@ -19,7 +19,7 @@ use std::{
     collections::HashMap,
     ffi::OsStr,
     fs::{self, File as StdFile, OpenOptions},
-    io::{self, Read, Write},
+    io::{self, Read, Seek, Write},
     iter,
     path::{Path, PathBuf},
     sync::{
@@ -31,7 +31,10 @@ use std::{
 use itertools::Itertools;
 use primitive::U80;
 
-use crate::{DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, Result, SequenceNumber, Sequencer};
+use crate::{
+    DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, RecordHeader, Result, SequenceNumber,
+    Sequencer,
+};
 
 //
 // I think we could use an MMAP append-only file to allow records to serialise themselves directly into the right place
@@ -40,20 +43,24 @@ use crate::{DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord
 #[derive(Debug)]
 pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, &'static str>,
-    sequence_number: AtomicU64,
+    next_sequence_number: AtomicU64,
     directory: PathBuf,
     files: Mutex<Files>,
 }
 
 struct File {
-    file: StdFile,
+    start: SequenceNumber,
+    handle: StdFile,
+    len: u64,
     path: PathBuf,
 }
 
 impl File {
     fn open(path: PathBuf) -> io::Result<Self> {
-        let file = OpenOptions::new().read(true).append(true).create(true).open(&path)?;
-        Ok(Self { file, path })
+        let num = path.file_name().and_then(|s| s.to_str()).and_then(|s| s.split('-').nth(1)).unwrap().parse().unwrap();
+        let mut handle = OpenOptions::new().read(true).append(true).create(true).open(&path)?;
+        let len = handle.seek(io::SeekFrom::End(0))?;
+        Ok(Self { start: SequenceNumber::new(U80::new(num)), handle, len, path })
     }
 }
 
@@ -63,6 +70,7 @@ struct Files {
 }
 
 const FILE_PREFIX: &str = "wal-";
+const CHECKPOINTED_SUFFIX: &str = "-checkpoint";
 
 impl Files {
     fn format_file_name(seq: SequenceNumber) -> String {
@@ -99,31 +107,24 @@ impl WAL {
 
         Ok(Self {
             registered_types: HashMap::new(),
-            sequence_number: AtomicU64::new(1),
+            next_sequence_number: AtomicU64::new(1),
             files: Mutex::new(Files::open(directory.clone())?),
             directory,
         })
-    }
-
-    fn write_header<Record: DurabilityRecord>(file: &mut StdFile, seq: SequenceNumber, len: u32) -> io::Result<()> {
-        file.write_all(&seq.number().to_be_bytes())?;
-        file.write_all(&len.to_be_bytes())?;
-        file.write_all(&[Record::RECORD_TYPE])?;
-        Ok(())
     }
 }
 
 impl Sequencer for WAL {
     fn increment(&self) -> SequenceNumber {
-        SequenceNumber::new(U80::new(self.sequence_number.fetch_add(1, Ordering::Relaxed) as u128))
+        SequenceNumber::new(U80::new(self.next_sequence_number.fetch_add(1, Ordering::Relaxed) as u128))
     }
 
     fn current(&self) -> SequenceNumber {
-        SequenceNumber::new(U80::new(self.sequence_number.load(Ordering::Relaxed) as u128))
+        SequenceNumber::new(U80::new(self.next_sequence_number.load(Ordering::Relaxed) as u128))
     }
 
     fn previous(&self) -> SequenceNumber {
-        SequenceNumber::new(U80::new(self.sequence_number.load(Ordering::Relaxed) as u128 - 1))
+        SequenceNumber::new(U80::new(self.next_sequence_number.load(Ordering::Relaxed) as u128 - 1))
     }
 }
 
@@ -142,54 +143,64 @@ impl DurabilityService for WAL {
         debug_assert!(self.registered_types.get(&Record::RECORD_TYPE) == Some(&Record::RECORD_NAME));
         let mut files = self.files.lock().unwrap();
 
-        let file = &mut files.current.file;
+        let file = &mut files.current;
+        file.handle.seek(io::SeekFrom::End(0))?;
         let seq = self.increment();
 
         let mut buf = Vec::new();
         record.serialise_into(&mut buf)?;
 
-        Self::write_header::<Record>(file, seq, buf.len() as u32).unwrap(); // TODO
-        file.write_all(&buf).unwrap(); // TODO
+        write_header::<Record>(&mut file.handle, seq, buf.len() as u32)?;
+        file.handle.write_all(&buf)?;
+
+        file.len = file.handle.stream_position()?;
 
         Ok(seq)
     }
 
-    // fn iterate_records_from(&self, sequence_number: SequenceNumber) -> Box<dyn Iterator<Item=(SequenceNumber, DurabilityRecordType, Box<[u8]>)>> { todo!() }
+    fn iter_from(&self, sequence_number: SequenceNumber) -> impl Iterator<Item = io::Result<RawRecord>> {
+        let mut files = self.files.lock().unwrap();
+        files.current.handle.rewind().unwrap();
+        iter::from_fn(move || read_one_record(&mut files.current).transpose())
+            .skip_while(move |r| r.as_ref().is_ok_and(|r| r.sequence_number < sequence_number))
+    }
 
     fn recover(&self) -> impl Iterator<Item = io::Result<RawRecord>> {
-        let mut files = self.files.lock().unwrap();
-        iter::from_fn(move || read_one_record(&mut files.current.file).transpose())
+        self.iter_from(SequenceNumber::new(U80::new(0)))
     }
 }
 
-fn read_one_record(file: &mut StdFile) -> io::Result<Option<RawRecord>> {
-    let (sequence_number, len, record_type) = match read_header(file) {
-        Ok(Some(header)) => header,
-        Err(err) if err.kind() == io::ErrorKind::UnexpectedEof => return Ok(None),
-        Ok(None) => return Ok(None),
-        Err(err) => return Err(err),
-    };
+fn write_header<Record: DurabilityRecord>(file: &mut StdFile, seq: SequenceNumber, len: u32) -> io::Result<()> {
+    file.write_all(&seq.to_be_bytes())?;
+    file.write_all(&len.to_be_bytes())?;
+    file.write_all(&[Record::RECORD_TYPE])?;
+    Ok(())
+}
 
+fn read_one_record(file: &mut File) -> io::Result<Option<RawRecord>> {
+    if file.handle.stream_position()? == file.len {
+        return Ok(None);
+    }
+    let RecordHeader { sequence_number, len, record_type } = read_header(&mut file.handle)?;
     let mut bytes = vec![0; len as usize].into_boxed_slice();
-    file.read_exact(&mut bytes)?;
+    file.handle.read_exact(&mut bytes)?;
     Ok(Some(RawRecord { sequence_number, record_type, bytes }))
 }
 
-fn read_header(file: &mut StdFile) -> io::Result<Option<(SequenceNumber, u32, u8)>> {
+fn read_header(file: &mut StdFile) -> io::Result<RecordHeader> {
     let mut buf = [0; U80::BYTES];
-    match file.read_exact(&mut buf) {
-        Ok(()) => (),
-        Err(err) if err.kind() == io::ErrorKind::UnexpectedEof => return Ok(None),
-        Err(err) => return Err(err),
-    }
-    let seq = SequenceNumber::new(U80::from_be_bytes(&buf));
+    file.read_exact(&mut buf)?;
+    let sequence_number = SequenceNumber::new(U80::from_be_bytes(&buf));
+
     let mut buf = [0; std::mem::size_of::<u32>()];
     file.read_exact(&mut buf)?;
     let len = u32::from_be_bytes(buf);
+
     let mut buf = [0; 1];
     file.read_exact(&mut buf)?;
     let [record_type] = buf;
-    Ok(Some((seq, len, record_type)))
+
+    Ok(RecordHeader { sequence_number, len, record_type })
 }
 
 #[cfg(test)]
@@ -267,6 +278,44 @@ mod test {
             .try_collect::<_, Vec<TestRecord>, _>()?;
 
         assert_eq!(records, &*read_records);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_wal_iterate_from() -> Result<(), BoxError> {
+        let directory = tempdir::TempDir::new("wal-test")?;
+
+        let records = [TestRecord { bytes: *b"test" }, TestRecord { bytes: *b"abcd" }];
+
+        let mut wal = WAL::open(&directory)?;
+        wal.register_record_type::<TestRecord>();
+        let sequence_numbers: Vec<_> = records.iter().map(|record| wal.sequenced_write(record)).try_collect()?;
+        let iter_start = sequence_numbers[1];
+
+        let read_records = wal
+            .iter_from(iter_start)
+            .map(|res| {
+                let RawRecord { record_type, bytes, .. } = res?;
+                assert_eq!(record_type, TestRecord::RECORD_TYPE);
+                Ok::<_, BoxError>(TestRecord::deserialize_from(&mut &*bytes)?)
+            })
+            .try_collect::<_, Vec<TestRecord>, _>()?;
+        assert_eq!(&records[1..], &*read_records);
+
+        drop(wal);
+
+        let mut wal = WAL::open(&directory)?;
+        wal.register_record_type::<TestRecord>();
+        let read_records = wal
+            .iter_from(iter_start)
+            .map(|res| {
+                let RawRecord { record_type, bytes, .. } = res?;
+                assert_eq!(record_type, TestRecord::RECORD_TYPE);
+                Ok::<_, BoxError>(TestRecord::deserialize_from(&mut &*bytes)?)
+            })
+            .try_collect::<_, Vec<TestRecord>, _>()?;
+        assert_eq!(&records[1..], &*read_records);
 
         Ok(())
     }
