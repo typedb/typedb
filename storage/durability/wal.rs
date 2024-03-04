@@ -317,8 +317,6 @@ mod test {
     use super::WAL;
     use crate::{DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord};
 
-    type BoxError = Box<dyn std::error::Error>;
-
     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
     struct TestRecord {
         bytes: [u8; 4],
@@ -329,190 +327,170 @@ mod test {
         const RECORD_NAME: &'static str = "TEST";
 
         fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
-            writer.write_all(&self.bytes)?;
+            writer.write_all(&self.bytes).unwrap();
             Ok(())
         }
 
         fn deserialize_from(reader: &mut impl std::io::Read) -> bincode::Result<Self> {
             let mut bytes = [0; 4];
-            reader.read_exact(&mut bytes)?;
+            reader.read_exact(&mut bytes).unwrap();
             Ok(Self { bytes })
         }
     }
 
-    #[test]
-    fn test_wal_write_read() -> Result<(), BoxError> {
-        let directory = TempDir::new("wal-test")?;
-
-        let record = TestRecord { bytes: *b"test" };
-
-        let mut wal = WAL::open(&directory)?;
+    fn open_wal(directory: &TempDir) -> WAL {
+        let mut wal = WAL::open(directory).unwrap();
         wal.register_record_type::<TestRecord>();
-        wal.sequenced_write(&record)?;
-
-        let RawRecord { record_type, bytes, .. } = wal.recover().next().unwrap()?;
-        assert_eq!(record_type, TestRecord::RECORD_TYPE);
-
-        let read_record = TestRecord::deserialize_from(&mut &*bytes)?;
-        assert_eq!(record, read_record);
-
-        Ok(())
+        wal
     }
 
     #[test]
-    fn test_wal_write_read_lots() -> Result<(), BoxError> {
-        let directory = TempDir::new("wal-test")?;
+    fn test_wal_write_read() {
+        let directory = TempDir::new("wal-test").unwrap();
+
+        let record = TestRecord { bytes: *b"test" };
+
+        let wal = open_wal(&directory);
+        wal.sequenced_write(&record).unwrap();
+
+        let RawRecord { record_type, bytes, .. } = wal.recover().next().unwrap().unwrap();
+        assert_eq!(record_type, TestRecord::RECORD_TYPE);
+
+        let read_record = TestRecord::deserialize_from(&mut &*bytes).unwrap();
+        assert_eq!(record, read_record);
+    }
+
+    #[test]
+    fn test_wal_write_read_lots() {
+        let directory = TempDir::new("wal-test").unwrap();
 
         let records = [TestRecord { bytes: *b"test" }; 1024];
 
-        let mut wal = WAL::open(&directory)?;
-        wal.register_record_type::<TestRecord>();
-        records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ()))?;
+        let wal = open_wal(&directory);
+        records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ())).unwrap();
 
         let read_records = wal
             .recover()
             .map(|res| {
-                let RawRecord { record_type, bytes, .. } = res?;
+                let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
-                Ok::<_, BoxError>(TestRecord::deserialize_from(&mut &*bytes)?)
+                TestRecord::deserialize_from(&mut &*bytes).unwrap()
             })
-            .try_collect::<_, Vec<TestRecord>, _>()?;
+            .collect_vec();
 
         assert_eq!(records.len(), read_records.len());
         assert_eq!(records, &*read_records);
-
-        Ok(())
     }
 
     #[test]
-    fn test_wal_recover() -> Result<(), BoxError> {
-        let directory = TempDir::new("wal-test")?;
+    fn test_wal_recover() {
+        let directory = TempDir::new("wal-test").unwrap();
 
         let record = TestRecord { bytes: *b"test" };
 
-        let mut wal = WAL::open(&directory)?;
-        wal.register_record_type::<TestRecord>();
-        wal.sequenced_write(&record)?;
+        let wal = open_wal(&directory);
+        wal.sequenced_write(&record).unwrap();
         drop(wal);
 
-        let mut wal = WAL::open(&directory)?;
-        wal.register_record_type::<TestRecord>();
-
-        let RawRecord { record_type, bytes, .. } = wal.recover().next().unwrap()?;
+        let wal = open_wal(&directory);
+        let RawRecord { record_type, bytes, .. } = wal.recover().next().unwrap().unwrap();
         assert_eq!(record_type, TestRecord::RECORD_TYPE);
 
-        let read_record = TestRecord::deserialize_from(&mut &*bytes)?;
+        let read_record = TestRecord::deserialize_from(&mut &*bytes).unwrap();
         assert_eq!(record, read_record);
-
-        Ok(())
     }
 
     #[test]
-    fn test_wal_recover_multiple() -> Result<(), BoxError> {
-        let directory = TempDir::new("wal-test")?;
+    fn test_wal_recover_multiple() {
+        let directory = TempDir::new("wal-test").unwrap();
 
         let records = [TestRecord { bytes: *b"test" }, TestRecord { bytes: *b"abcd" }];
 
-        let mut wal = WAL::open(&directory)?;
-        wal.register_record_type::<TestRecord>();
-        records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ()))?;
+        let wal = open_wal(&directory);
+        records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ())).unwrap();
         drop(wal);
 
-        let mut wal = WAL::open(&directory)?;
-        wal.register_record_type::<TestRecord>();
-
+        let wal = open_wal(&directory);
         let read_records = wal
             .recover()
             .map(|res| {
-                let RawRecord { record_type, bytes, .. } = res?;
+                let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
-                Ok::<_, BoxError>(TestRecord::deserialize_from(&mut &*bytes)?)
+                TestRecord::deserialize_from(&mut &*bytes).unwrap()
             })
-            .try_collect::<_, Vec<TestRecord>, _>()?;
+            .collect_vec();
 
         assert_eq!(records, &*read_records);
-
-        Ok(())
     }
 
     #[test]
-    fn test_wal_checkpoint_recover() -> Result<(), BoxError> {
-        let directory = TempDir::new("wal-test")?;
+    fn test_wal_checkpoint_recover() {
+        let directory = TempDir::new("wal-test").unwrap();
 
         let committed_record = TestRecord { bytes: *b"1234" };
         let records = [TestRecord { bytes: *b"test" }, TestRecord { bytes: *b"abcd" }];
 
-        let mut wal = WAL::open(&directory)?;
-        wal.register_record_type::<TestRecord>();
-        wal.sequenced_write(&committed_record)?;
-        wal.checkpoint()?;
-        records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ()))?;
+        let wal = open_wal(&directory);
+        wal.sequenced_write(&committed_record).unwrap();
+        wal.checkpoint().unwrap();
+        records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ())).unwrap();
 
         let read_records = wal
             .recover()
             .map(|res| {
-                let RawRecord { record_type, bytes, .. } = res?;
+                let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
-                Ok::<_, BoxError>(TestRecord::deserialize_from(&mut &*bytes)?)
+                TestRecord::deserialize_from(&mut &*bytes).unwrap()
             })
-            .try_collect::<_, Vec<TestRecord>, _>()?;
-
+            .collect_vec();
         assert_eq!(records, &*read_records);
 
         drop(wal);
 
-        let mut wal = WAL::open(&directory)?;
-        wal.register_record_type::<TestRecord>();
-
+        let wal = open_wal(&directory);
         let read_records = wal
             .recover()
             .map(|res| {
-                let RawRecord { record_type, bytes, .. } = res?;
+                let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
-                Ok::<_, BoxError>(TestRecord::deserialize_from(&mut &*bytes)?)
+                TestRecord::deserialize_from(&mut &*bytes).unwrap()
             })
-            .try_collect::<_, Vec<TestRecord>, _>()?;
+            .collect_vec();
 
         assert_eq!(records, &*read_records);
-
-        Ok(())
     }
 
     #[test]
-    fn test_wal_iterate_from() -> Result<(), BoxError> {
-        let directory = TempDir::new("wal-test")?;
+    fn test_wal_iterate_from() {
+        let directory = TempDir::new("wal-test").unwrap();
 
         let records = [TestRecord { bytes: *b"test" }, TestRecord { bytes: *b"abcd" }];
 
-        let mut wal = WAL::open(&directory)?;
-        wal.register_record_type::<TestRecord>();
-        let sequence_numbers: Vec<_> = records.iter().map(|record| wal.sequenced_write(record)).try_collect()?;
+        let wal = open_wal(&directory);
+        let sequence_numbers: Vec<_> = records.iter().map(|record| wal.sequenced_write(record)).try_collect().unwrap();
         let iter_start = sequence_numbers[1];
 
-        let read_records = wal
+        let read_records: Vec<TestRecord> = wal
             .iter_from(iter_start)
             .map(|res| {
-                let RawRecord { record_type, bytes, .. } = res?;
+                let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
-                Ok::<_, BoxError>(TestRecord::deserialize_from(&mut &*bytes)?)
+                TestRecord::deserialize_from(&mut &*bytes).unwrap()
             })
-            .try_collect::<_, Vec<TestRecord>, _>()?;
+            .collect_vec();
         assert_eq!(&records[1..], &*read_records);
 
         drop(wal);
 
-        let mut wal = WAL::open(&directory)?;
-        wal.register_record_type::<TestRecord>();
+        let wal = open_wal(&directory);
         let read_records = wal
             .iter_from(iter_start)
             .map(|res| {
-                let RawRecord { record_type, bytes, .. } = res?;
+                let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
-                Ok::<_, BoxError>(TestRecord::deserialize_from(&mut &*bytes)?)
+                TestRecord::deserialize_from(&mut &*bytes).unwrap()
             })
-            .try_collect::<_, Vec<TestRecord>, _>()?;
+            .collect_vec();
         assert_eq!(&records[1..], &*read_records);
-
-        Ok(())
     }
 }
