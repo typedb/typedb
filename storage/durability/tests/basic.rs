@@ -69,6 +69,7 @@ fn basic() {
     drop(wal);
 
     let wal = open_wal(&directory);
+
     let mut recovery_iterator = wal.recover();
     let RawRecord { sequence_number, record_type, bytes } = recovery_iterator.next().unwrap().unwrap();
     assert_eq!(sequence_number, written_entry_id);
