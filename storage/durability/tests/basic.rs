@@ -42,39 +42,34 @@ impl DurabilityRecord for TestRecord {
     }
 }
 
+fn open_wal(directory: &TempDir) -> WAL {
+    let mut wal = WAL::open(directory).unwrap();
+    wal.register_record_type::<TestRecord>();
+    wal
+}
+
 #[test]
 fn basic() {
     let directory = TempDir::new("wal-test").unwrap();
 
     let message = TestRecord { bytes: b"hello world".to_vec() };
 
-    let mut wal = WAL::open(&directory).unwrap();
-    wal.register_record_type::<TestRecord>();
-    let wal = wal;
-
+    let wal = open_wal(&directory);
     let written_entry_id = wal.sequenced_write(&message).unwrap();
     println!("hello world written to WAL in {written_entry_id}");
     drop(wal);
 
-    let mut wal = WAL::open(&directory).unwrap();
-    wal.register_record_type::<TestRecord>();
-    let wal = wal;
-
+    let wal = open_wal(&directory);
     let raw_record = wal.iter_from(written_entry_id).next().unwrap().unwrap();
     let read_record = TestRecord::deserialize_from(&mut &*raw_record.bytes).unwrap();
     assert_eq!(read_record, message);
-
     wal.checkpoint().unwrap();
     let written_entry_id = wal.sequenced_write(&message).unwrap();
     println!("hello world written to WAL in {written_entry_id}");
     drop(wal);
 
-    let mut wal = WAL::open(&directory).unwrap();
-    wal.register_record_type::<TestRecord>();
-    let wal = wal;
-
+    let wal = open_wal(&directory);
     let mut recovery_iterator = wal.recover();
-
     let RawRecord { sequence_number, record_type, bytes } = recovery_iterator.next().unwrap().unwrap();
     assert_eq!(sequence_number, written_entry_id);
     assert_eq!(record_type, TestRecord::RECORD_TYPE);
@@ -85,10 +80,7 @@ fn basic() {
     wal.checkpoint().unwrap();
     drop(wal);
 
-    let mut wal = WAL::open(&directory).unwrap();
-    wal.register_record_type::<TestRecord>();
-    let wal = wal;
-
+    let wal = open_wal(&directory);
     let mut recovery_iterator = wal.recover();
     assert!(recovery_iterator.next().is_none());
 }
