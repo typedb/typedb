@@ -49,7 +49,7 @@ const CHECKPOINTED_SUFFIX: &str = "-checkpoint";
 pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, &'static str>,
     next_sequence_number: AtomicU64,
-    redo_point: AtomicU64,
+    checkpoint: AtomicU64,
     files: Mutex<Files>,
 }
 
@@ -64,18 +64,23 @@ impl WAL {
         }
 
         let files = Files::open(directory.clone())?;
-        let next = 0; // TODO
-        let redo_point = files
+        let checkpoint = files
             .iter()
             .find(|f| !f.path.file_name().and_then(|s| s.to_str()).unwrap().ends_with(CHECKPOINTED_SUFFIX))
             .map(|f| f.start.number().number() as u64)
-            .unwrap_or(next);
+            .unwrap_or(0);
+
+        let files = Mutex::new(files);
+        let next = RecordIterator::new(files.lock().unwrap())
+            .last()
+            .map(|rr| rr.unwrap().sequence_number.number().number() as u64 + 1)
+            .unwrap_or(0);
 
         Ok(Self {
             registered_types: HashMap::new(),
             next_sequence_number: AtomicU64::new(next),
-            redo_point: AtomicU64::new(redo_point),
-            files: Mutex::new(files),
+            checkpoint: AtomicU64::new(checkpoint),
+            files,
         })
     }
 }
@@ -140,17 +145,16 @@ impl DurabilityService for WAL {
             files.current.path.file_name().and_then(|s| s.to_str()).unwrap().to_owned() + CHECKPOINTED_SUFFIX,
         );
         fs::rename(&files.current.path, &checkpointed_path)?;
-        files.current.handle = OpenOptions::new().read(true).append(true).create(true).open(&checkpointed_path)?;
-        files.current.path = checkpointed_path;
+        files.current = File::open(checkpointed_path)?;
 
         let next = self.current();
         files.open_new_file_at(next)?;
-        self.redo_point.store(self.next_sequence_number.load(Ordering::Relaxed), Ordering::Relaxed);
+        self.checkpoint.store(self.next_sequence_number.load(Ordering::Relaxed), Ordering::Relaxed);
         Ok(())
     }
 
     fn recover(&self) -> impl Iterator<Item = io::Result<RawRecord>> {
-        self.iter_from(SequenceNumber::new(U80::new(self.redo_point.load(Ordering::Relaxed) as u128)))
+        self.iter_from(SequenceNumber::new(U80::new(self.checkpoint.load(Ordering::Relaxed) as u128)))
     }
 }
 
@@ -173,9 +177,7 @@ impl Files {
             .try_collect()?;
         files.sort_unstable_by(|lhs, rhs| lhs.path.cmp(&rhs.path));
 
-        let last = files
-            .pop()
-            .map(Ok)
+        let last = (files.pop().map(Ok))
             .unwrap_or_else(|| File::open_at(directory.clone(), SequenceNumber::new(U80::new(0))))?;
 
         Ok(Self { directory, current: last, previous: files })
