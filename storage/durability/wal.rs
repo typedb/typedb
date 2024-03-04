@@ -299,6 +299,7 @@ fn read_header(file: &mut StdFile) -> io::Result<RecordHeader> {
 #[cfg(test)]
 mod test {
     use itertools::Itertools;
+    use tempdir::TempDir;
 
     use super::WAL;
     use crate::{DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord};
@@ -328,7 +329,7 @@ mod test {
 
     #[test]
     fn test_wal_write_read() -> Result<(), BoxError> {
-        let directory = tempdir::TempDir::new("wal-test")?;
+        let directory = TempDir::new("wal-test")?;
 
         let record = TestRecord { bytes: *b"test" };
 
@@ -347,7 +348,7 @@ mod test {
 
     #[test]
     fn test_wal_write_read_lots() -> Result<(), BoxError> {
-        let directory = tempdir::TempDir::new("wal-test")?;
+        let directory = TempDir::new("wal-test")?;
 
         let records = [TestRecord { bytes: *b"test" }; 1024];
 
@@ -372,7 +373,7 @@ mod test {
 
     #[test]
     fn test_wal_recover() -> Result<(), BoxError> {
-        let directory = tempdir::TempDir::new("wal-test")?;
+        let directory = TempDir::new("wal-test")?;
 
         let record = TestRecord { bytes: *b"test" };
 
@@ -395,7 +396,7 @@ mod test {
 
     #[test]
     fn test_wal_recover_multiple() -> Result<(), BoxError> {
-        let directory = tempdir::TempDir::new("wal-test")?;
+        let directory = TempDir::new("wal-test")?;
 
         let records = [TestRecord { bytes: *b"test" }, TestRecord { bytes: *b"abcd" }];
 
@@ -423,7 +424,7 @@ mod test {
 
     #[test]
     fn test_wal_checkpoint_recover() -> Result<(), BoxError> {
-        let directory = tempdir::TempDir::new("wal-test")?;
+        let directory = TempDir::new("wal-test")?;
 
         let committed_record = TestRecord { bytes: *b"1234" };
         let records = [TestRecord { bytes: *b"test" }, TestRecord { bytes: *b"abcd" }];
@@ -466,7 +467,7 @@ mod test {
 
     #[test]
     fn test_wal_iterate_from() -> Result<(), BoxError> {
-        let directory = tempdir::TempDir::new("wal-test")?;
+        let directory = TempDir::new("wal-test")?;
 
         let records = [TestRecord { bytes: *b"test" }, TestRecord { bytes: *b"abcd" }];
 
