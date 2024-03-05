@@ -304,6 +304,7 @@ impl<'a> Iterator for RecordIterator<'a> {
                     self.next()
                 }
             }
+            Some(Err(err)) if err.kind() == io::ErrorKind::UnexpectedEof => None,
             some => some,
         }
     }
