@@ -48,7 +48,7 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
     }
 
     pub fn get_entities<'this>(&'this self) -> EntityIterator<'this, 1>  {
-        let prefix = ObjectVertex::prefix_prefix(&PrefixType::Entity.prefix());
+        let prefix = ObjectVertex::prefix_prefix(&PrefixType::VertexEntity.prefix());
         let snapshot_iterator = self.snapshot.iterate_prefix(prefix);
         EntityIterator::new(snapshot_iterator)
     }

@@ -16,9 +16,8 @@
  */
 
 use std::rc::Rc;
-use concept::thing_manager::ThingManager;
-
-use concept::type_manager::TypeManager;
+use concept::thing::thing_manager::ThingManager;
+use concept::type_::type_manager::TypeManager;
 use storage::snapshot::snapshot::Snapshot;
 
 pub struct TransactionRead<'txn, 'storage: 'txn> {

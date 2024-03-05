@@ -28,9 +28,9 @@ pub struct AttributeType<'a> {
 
 impl<'a> AttributeType<'a> {
     pub fn new(vertex: TypeVertex<'a>) -> AttributeType {
-        if vertex.prefix() != PrefixType::AttributeType.prefix() {
+        if vertex.prefix() != PrefixType::VertexAttributeType.prefix() {
             panic!("Type IID prefix was expected to be Prefix::AttributeType ({:?}) but was {:?}",
-                   PrefixType::AttributeType.prefix(), vertex.prefix())
+                   PrefixType::VertexAttributeType.prefix(), vertex.prefix())
         }
         AttributeType { vertex: vertex }
     }

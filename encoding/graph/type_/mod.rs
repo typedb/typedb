@@ -18,7 +18,7 @@
 pub mod vertex;
 pub mod vertex_generator;
 mod edge;
-pub mod index;
+pub mod property;
 
 
 use std::borrow::Cow;

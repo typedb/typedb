@@ -27,9 +27,9 @@ pub struct EntityType<'a> {
 
 impl<'a> EntityType<'a> {
     pub fn new(vertex: TypeVertex<'a>) -> EntityType {
-        if vertex.prefix() != PrefixType::EntityType.prefix() {
+        if vertex.prefix() != PrefixType::VertexEntityType.prefix() {
             panic!("Type IID prefix was expected to be Prefix::EntityType ({:?}) but was {:?}",
-                   PrefixType::EntityType.prefix(), vertex.prefix())
+                   PrefixType::VertexEntityType.prefix(), vertex.prefix())
         }
         EntityType { vertex: vertex }
     }

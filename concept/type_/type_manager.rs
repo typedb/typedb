@@ -21,7 +21,7 @@ use std::rc::Rc;
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::{AsBytes, Keyable};
-use encoding::graph::type_::index::{LabelToTypeIndex, TypeToLabelIndex};
+use encoding::graph::type_::property::{LabelToTypeProperty, TypeToLabelProperty};
 use encoding::graph::type_::Root;
 use encoding::graph::type_::vertex::TypeVertex;
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
@@ -93,7 +93,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     }
 
     fn get_type<M, U>(&self, label: &Label, mapper: M) -> Option<U> where M: FnOnce(TypeVertex<'static>) -> U {
-        let key = LabelToTypeIndex::build(label.name()).into_storage_key();
+        let key = LabelToTypeProperty::build(label.name()).into_storage_key();
         self.snapshot.get::<48>(key).map(|value| {
             mapper(TypeVertex::new(ByteArrayOrRef::Array(value)))
         })
@@ -101,10 +101,10 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
 
     fn create_type_indexes(&self, label: &str, type_vertex: &TypeVertex) {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let (vertex_label_index_key, value) = TypeToLabelIndex::build_key_value(&type_vertex, label);
+            let (vertex_label_index_key, value) = TypeToLabelProperty::build_key_value(&type_vertex, label);
             write_snapshot.put_val(vertex_label_index_key.into_storage_key().to_owned_array(), value.into_bytes().into_array());
 
-            let label_iid_index_key = LabelToTypeIndex::build(label);
+            let label_iid_index_key = LabelToTypeProperty::build(label);
             let type_vertex_value = ByteArray::from(type_vertex.bytes());
             write_snapshot.put_val(label_iid_index_key.into_storage_key().to_owned_array(), type_vertex_value);
         } else {

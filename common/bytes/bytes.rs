@@ -36,6 +36,22 @@ pub fn increment(bytes: &mut [u8]) -> Result<(), BytesError> {
     return Err(BytesError { kind: BytesErrorKind::IncrementOverflow {} });
 }
 
+///
+/// Performs a 'const' big-endian +1 operation that panics on overflow
+///
+pub const fn increment_fixed<const SIZE: usize>(mut bytes: [u8; SIZE]) -> [u8; SIZE] {
+    let mut index = SIZE;
+    while index > 0 {
+        let (val, overflow) = bytes[index - 1].overflowing_add(1);
+        bytes[index - 1] = val;
+        if overflow {
+            panic!("Overflow while incrementing array")
+        }
+        index -= 1;
+    }
+    bytes
+}
+
 
 #[derive(Debug)]
 pub struct BytesError {

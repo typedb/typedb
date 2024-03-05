@@ -41,7 +41,7 @@ impl TypeVertexGenerator {
 
     pub fn load(storage: &MVCCStorage) -> TypeVertexGenerator {
         let next_entity: AtomicU16 = storage.get_prev_raw(
-            PrefixType::EntityType.next_prefix().as_storage_key().as_reference(),
+            PrefixType::VertexEntityType.successor_prefix().as_storage_key().as_reference(),
             |_, value| {
                 debug_assert_eq!(value.len(), Self::U16_LENGTH);
                 let array: [u8; Self::U16_LENGTH] = value[0..Self::U16_LENGTH].try_into().unwrap();
@@ -50,7 +50,7 @@ impl TypeVertexGenerator {
             },
         ).unwrap_or_else(|| AtomicU16::new(0));
         let next_attribute: AtomicU16 = storage.get_prev_raw(
-            PrefixType::AttributeType.next_prefix().as_storage_key().as_reference(),
+            PrefixType::VertexAttributeType.successor_prefix().as_storage_key().as_reference(),
             |_, value| {
                 debug_assert_eq!(value.len(), Self::U16_LENGTH);
                 let array: [u8; Self::U16_LENGTH] = value[0..Self::U16_LENGTH].try_into().unwrap();
@@ -65,12 +65,12 @@ impl TypeVertexGenerator {
 
     pub fn take_entity_type_vertex(&self) -> TypeVertex {
         let next = TypeID::build(self.next_entity.fetch_add(1, Ordering::Relaxed));
-        TypeVertex::build(&PrefixType::EntityType.prefix(), &next)
+        TypeVertex::build(&PrefixType::VertexEntityType.prefix(), &next)
     }
 
     pub fn take_attribute_type_vertex(&self) -> TypeVertex {
         let next = TypeID::build(self.next_attribute.fetch_add(1, Ordering::Relaxed));
-        TypeVertex::build(&PrefixType::AttributeType.prefix(), &next)
+        TypeVertex::build(&PrefixType::VertexAttributeType.prefix(), &next)
     }
 }
 

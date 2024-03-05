@@ -49,6 +49,6 @@ impl ThingVertexGenerator {
     pub fn take_entity_vertex(&self, type_id: &TypeID<'_>) -> ObjectVertex<'static> {
         let index = type_id.as_u16() as usize;
         let entity_id = self.entity_ids[index].fetch_add(1, Ordering::Relaxed);
-        ObjectVertex::build(&PrefixType::Entity.prefix(), type_id, ObjectID::build(entity_id))
+        ObjectVertex::build(&PrefixType::VertexEntity.prefix(), type_id, ObjectID::build(entity_id))
     }
 }

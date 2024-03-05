@@ -17,7 +17,7 @@
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
-use storage::key_value::{StorageKey, StorageKeyReference};
+use bytes::increment_fixed;
 use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::{AsBytes, EncodingKeyspace, Keyable};
@@ -35,83 +35,89 @@ impl<'a> PrefixID<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, {PrefixID::LENGTH}> for PrefixID<'a> {
+impl<'a> AsBytes<'a, { PrefixID::LENGTH }> for PrefixID<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, {PrefixID::LENGTH}> {
+    fn into_bytes(self) -> ByteArrayOrRef<'a, { PrefixID::LENGTH }> {
         self.bytes
     }
 }
 
 // used as prefix key
-impl<'a> Keyable<'a, {PrefixID::LENGTH}> for PrefixID<'a> {
+impl<'a> Keyable<'a, { PrefixID::LENGTH }> for PrefixID<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
         match PrefixType::from_prefix(self) {
-            PrefixType::EntityType |
-            PrefixType::RelationType |
-            PrefixType::AttributeType |
-            PrefixType::TypeToLabelIndex |
-            PrefixType::LabelToTypeIndex => EncodingKeyspace::Schema.id(),
-            PrefixType::Entity => todo!(),
-            PrefixType::Attribute => todo!()
+            PrefixType::VertexEntityType |
+            PrefixType::VertexRelationType |
+            PrefixType::VertexAttributeType |
+            PrefixType::PropertyTypeToLabel |
+            PrefixType::PropertyLabelToType => EncodingKeyspace::Schema.id(),
+            PrefixType::VertexEntity => todo!(),
+            PrefixType::VertexAttribute => todo!()
         }
     }
 }
 
 pub enum PrefixType {
-    EntityType,
-    RelationType,
-    AttributeType,
+    VertexEntityType,
+    VertexRelationType,
+    VertexAttributeType,
 
-    TypeToLabelIndex,
-    LabelToTypeIndex,
+    VertexEntity,
+    VertexAttribute,
 
-    Entity,
-    Attribute,
+    PropertyTypeToLabel,
+    PropertyLabelToType,
+}
+
+macro_rules! prefix_functions {
+    ($(
+        $name:ident => $bytes:tt
+    ),*) => {
+        pub const fn prefix(&self) -> PrefixID {
+            let bytes = match self {
+                $(
+                    Self::$name => {&$bytes},
+                )*
+            };
+            PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
+        }
+
+        pub const fn successor_prefix(&self) -> PrefixID {
+            let bytes = match self {
+                $(
+                    Self::$name => {
+                        const successor: [u8; PrefixID::LENGTH] = increment_fixed($bytes);
+                        &successor
+                    },
+                )*
+            };
+            PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
+        }
+
+        pub fn from_prefix(prefix: &PrefixID) -> Self {
+            match prefix.bytes.bytes() {
+                $(
+                    $bytes => {Self::$name},
+                )*
+                _ => unreachable!(),
+            }
+       }
+   };
 }
 
 impl PrefixType {
-    pub const fn prefix(&self) -> PrefixID {
-        let bytes = match self {
-            Self::EntityType => &[0],
-            Self::RelationType => &[1],
-            Self::AttributeType => &[2],
-            Self::TypeToLabelIndex => &[20],
-            Self::LabelToTypeIndex => &[21],
-            Self::Entity => &[100],
-            Self::Attribute => &[101],
-        };
-        PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
-    }
+    prefix_functions!(
+           VertexEntityType => [20],
+           VertexRelationType => [21],
+           VertexAttributeType => [22],
 
-    // TODO: this is hard to maintain relative to the above - we should convert the pair into a macro or something?
-    pub const fn next_prefix(&self) -> PrefixID {
-        let bytes = match self {
-            Self::EntityType => &[1],
-            Self::RelationType => &[2],
-            Self::AttributeType => &[3],
-            Self::TypeToLabelIndex => &[21],
-            Self::LabelToTypeIndex => &[22],
-            Self::Entity => &[101],
-            Self::Attribute => &[102],
-        };
-        PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
-    }
+           VertexEntity => [60],
+           VertexAttribute => [61],
 
-    pub fn from_prefix(prefix: &PrefixID) -> PrefixType {
-        match prefix.bytes.bytes() {
-            [0] => PrefixType::EntityType,
-            [1] => PrefixType::RelationType,
-            [2] => PrefixType::AttributeType,
-            [20] => PrefixType::TypeToLabelIndex,
-            [21] => PrefixType::LabelToTypeIndex,
-
-            [100] => PrefixType::Entity,
-            [101] => PrefixType::Attribute,
-
-            _ => unreachable!(),
-        }
-    }
+           PropertyTypeToLabel => [100],
+           PropertyLabelToType => [101]
+    );
 }
