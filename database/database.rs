@@ -18,6 +18,7 @@
 use std::fs;
 use std::path::PathBuf;
 use std::rc::Rc;
+use concept::thing_manager::ThingManager;
 
 use concept::type_manager::TypeManager;
 use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
@@ -68,18 +69,22 @@ impl Database {
     pub fn transaction_read(&self) -> TransactionRead {
         let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(self.storage.open_snapshot_read()));
         let type_manager = TypeManager::new(snapshot.clone(), &self.type_vertex_generator);
+        let thing_manager = ThingManager::new(snapshot.clone(), &self.thing_vertex_generator);
         TransactionRead {
             snapshot: snapshot,
             type_manager: type_manager,
+            thing_manager: thing_manager
         }
     }
 
     fn transaction_write(&self) -> TransactionWrite {
         let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(self.storage.open_snapshot_write()));
         let type_manager = TypeManager::new(snapshot.clone(), &self.type_vertex_generator);
+        let thing_manager = ThingManager::new(snapshot.clone(), &self.thing_vertex_generator);
         TransactionWrite {
             snapshot: snapshot,
             type_manager: type_manager,
+            thing_manager: thing_manager,
         }
     }
 }

@@ -45,6 +45,7 @@ pub mod isolation_manager;
 pub mod keyspace;
 pub mod snapshot;
 
+#[derive(Debug)]
 pub struct MVCCStorage {
     owner_name: Rc<str>,
     path: PathBuf,
@@ -296,7 +297,7 @@ impl MVCCStorage {
         }
     }
 
-    pub fn get<M, V, const S: usize>(&self, key: &StorageKey<'_, S>, open_sequence_number: &SequenceNumber, mut mapper: M) -> Option<V>
+    pub fn get<M, V, const KS: usize>(&self, key: StorageKey<'_, KS>, open_sequence_number: &SequenceNumber, mut mapper: M) -> Option<V>
         where M: FnMut(ByteReference<'_>) -> V {
         let mut iterator = self.iterate_prefix(key, open_sequence_number);
         // TODO: we don't want to panic on unwrap here
@@ -305,8 +306,8 @@ impl MVCCStorage {
         )
     }
 
-    pub fn iterate_prefix<'this, const INLINE_BYTES: usize>(&'this self, prefix: &'this StorageKey<'this, INLINE_BYTES>, open_sequence_number: &SequenceNumber)
-                                                            -> MVCCPrefixIterator {
+    pub fn iterate_prefix<'this, const PS: usize>(&'this self, prefix: StorageKey<'this, PS>, open_sequence_number: &SequenceNumber)
+                                                  -> MVCCPrefixIterator<'this, PS> {
         MVCCPrefixIterator::new(self, prefix, open_sequence_number)
     }
 
@@ -314,7 +315,7 @@ impl MVCCStorage {
 
     pub fn put_raw(&self, key: StorageKeyReference<'_>, value: &ByteArrayOrRef<'_, BUFFER_INLINE_VALUE>) {
         // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
-        self.get_keyspace(key.keyspace_id()).put(key.byte_ref().bytes(), value.bytes()).map_err(|e| MVCCStorageError {
+        self.get_keyspace(key.keyspace_id()).put(key.bytes(), value.bytes()).map_err(|e| MVCCStorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
             kind: MVCCStorageErrorKind::KeyspaceError { source: Arc::new(e), keyspace: self.get_keyspace(key.keyspace_id()).name().to_owned() },
         }).unwrap_or_log()
@@ -323,7 +324,7 @@ impl MVCCStorage {
     pub fn get_raw<M, V>(&self, key: StorageKeyReference<'_>, mut mapper: M) -> Option<V>
         where M: FnMut(&[u8]) -> V {
         self.get_keyspace(key.keyspace_id()).get(
-            key.byte_ref().bytes(),
+            key.bytes(),
             |value| mapper(value),
         ).map_err(|e| MVCCStorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
@@ -335,34 +336,34 @@ impl MVCCStorage {
     pub fn get_prev_raw<M, T>(&self, key: StorageKeyReference<'_>, mut key_value_mapper: M) -> Option<T>
         where M: FnMut(&[u8], &[u8]) -> T {
         self.get_keyspace(key.keyspace_id()).get_prev(
-            key.byte_ref().bytes(),
+            key.bytes(),
             |k, v| key_value_mapper(k, v),
         )
     }
 
-    pub fn iterate_keyspace_prefix<'this>(&'this self, prefix: StorageKeyReference<'this>) -> KeyspacePrefixIterator<'this> {
+    pub fn iterate_keyspace_prefix<'this, const PREFIX_INLINE_SIZE: usize>(&'this self, prefix: StorageKey<'this, PREFIX_INLINE_SIZE>) -> KeyspacePrefixIterator<'this, PREFIX_INLINE_SIZE> {
         debug_assert!(prefix.bytes().len() > 0);
-        self.get_keyspace(prefix.keyspace_id()).iterate_prefix(prefix.into_byte_ref().into_bytes())
+        self.get_keyspace(prefix.keyspace_id()).iterate_prefix(prefix.into_byte_array_or_ref())
     }
 }
 
-pub struct MVCCPrefixIterator<'a> {
+pub struct MVCCPrefixIterator<'a, const PS: usize> {
     storage: &'a MVCCStorage,
     keyspace: &'a Keyspace,
-    iterator: KeyspacePrefixIterator<'a>,
+    iterator: KeyspacePrefixIterator<'a, PS>,
     open_sequence_number: SequenceNumber,
     last_visible_key: Option<ByteArray<MVCC_KEY_INLINE_SIZE>>,
     state: State<Arc<KeyspaceError>>,
 }
 
-impl<'s> MVCCPrefixIterator<'s> {
+impl<'s, const P: usize> MVCCPrefixIterator<'s, P> {
     //
     // TODO: optimisations for fixed-width keyspaces
     //
-    fn new<const S: usize>(storage: &'s MVCCStorage, prefix: &'s StorageKey<'s, S>, open_sequence_number: &SequenceNumber) -> MVCCPrefixIterator<'s> {
+    fn new(storage: &'s MVCCStorage, prefix: StorageKey<'s, P>, open_sequence_number: &SequenceNumber) -> Self {
         debug_assert!(prefix.bytes().len() > 0);
         let keyspace = storage.get_keyspace(prefix.keyspace_id());
-        let iterator = keyspace.iterate_prefix(prefix.bytes());
+        let iterator = keyspace.iterate_prefix(prefix.into_byte_array_or_ref());
         MVCCPrefixIterator {
             storage: storage,
             keyspace: keyspace,

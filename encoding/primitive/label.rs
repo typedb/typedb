@@ -18,18 +18,33 @@
 use std::borrow::Cow;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub struct Label {
-    pub name: Cow<'static, str>,
-    pub scope: Option<Cow<'static, str>>,
+pub struct Label<'a> {
+    pub name: Cow<'a, str>,
+    pub scope: Option<Cow<'a, str>>,
 }
 
-impl Label {
-    pub fn name(&self) -> &str {
+impl<'a> Label<'a> {
+
+    pub fn new(name: &'a str) -> Self {
+        Label {
+            name: Cow::Borrowed(name),
+            scope: None,
+        }
+    }
+
+    pub fn new_scoped(name: &'a str, scope: &'a str) -> Self {
+        Label {
+            name: Cow::Borrowed(name),
+            scope: Some(Cow::Borrowed(scope)),
+        }
+    }
+
+    pub fn name(&'a self) -> &'a str {
         &self.name
     }
 
     // TODO; can this just return an &Option<str> ?
-    pub fn scope(&self) -> &Option<Cow<'static, str>> {
+    pub fn scope(&'a self) -> &Option<Cow<'a, str>> {
         &self.scope
     }
 }

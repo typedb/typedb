@@ -60,7 +60,7 @@ impl<'a> StringBytes<'a> {
     }
 
     pub fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_ref()
+        self.bytes.as_reference()
     }
 }
 

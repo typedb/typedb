@@ -20,7 +20,7 @@ load("@rules_rust//rust:defs.bzl", "rust_test")
 package(default_visibility = ["//visibility:public",])
 
 rust_test(
-    name = "test-database",
+    name = "test_database",
     srcs = glob([
         "*.rs",
     ]),
@@ -29,7 +29,7 @@ rust_test(
         "//encoding",
         "//common/logger",
 
-        "//util/test:test-utils",
+        "//util/test:test_utils",
 
         "@crates//:rand",
         "@crates//:speedb",

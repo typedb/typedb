@@ -26,7 +26,7 @@ exports_files(
 )
 
 rust_binary(
-    name = "typedb-server-bin",
+    name = "typedb_server_bin",
     srcs = [
         "main.rs"
     ],
@@ -55,7 +55,7 @@ checkstyle_test(
 )
 
 checkstyle_test(
-    name = "checkstyle-license",
+    name = "checkstyle_license",
     include = ["LICENSE"],
     license_type = "agpl-fulltext",
 )

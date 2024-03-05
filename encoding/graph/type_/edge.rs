@@ -26,14 +26,14 @@ use storage::snapshot::buffer::BUFFER_INLINE_KEY;
 
 use crate::{AsBytes, EncodingKeyspace, Keyable};
 use crate::graph::type_::vertex::TypeVertex;
-use crate::layout::infix::{Infix, InfixType};
+use crate::layout::infix::{InfixID, InfixType};
 
 struct OwnsForwardEdge<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>,
 }
 
 impl<'a> OwnsForwardEdge<'a> {
-    const LENGTH: usize = 2 * TypeVertex::LENGTH + Infix::LENGTH;
+    const LENGTH: usize = 2 * TypeVertex::LENGTH + InfixID::LENGTH;
 
     fn new(bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
@@ -63,7 +63,7 @@ impl<'a> OwnsForwardEdge<'a> {
     }
 
     const fn range_infix() -> Range<usize> {
-        Self::range_from().end..Self::range_from().end + Infix::LENGTH
+        Self::range_from().end..Self::range_from().end + InfixID::LENGTH
     }
 
     const fn range_to() -> Range<usize> {
@@ -73,7 +73,7 @@ impl<'a> OwnsForwardEdge<'a> {
 
 impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for OwnsForwardEdge<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_ref()
+        self.bytes.as_reference()
     }
 
     fn into_bytes(self) -> ByteArrayOrRef<'a,BUFFER_INLINE_KEY> {

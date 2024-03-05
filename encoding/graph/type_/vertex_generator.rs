@@ -20,6 +20,7 @@ use std::sync::atomic::{AtomicU16, Ordering};
 use storage::MVCCStorage;
 
 use crate::graph::type_::vertex::{TypeID, TypeVertex};
+use crate::Keyable;
 use crate::layout::prefix::PrefixType;
 
 // TODO: if we always scan for the next available TypeID, we automatically recycle deleted TypeIDs?

@@ -18,13 +18,16 @@
 load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = [
+    ":__subpackages__",
     "//database:__pkg__",
 ])
 
 rust_library(
     name = "concept",
     srcs = glob([
-        "*.rs"
+        "*.rs",
+        "type_/*.rs",
+        "thing/*.rs",
     ]),
     deps = [
         "//common/bytes",

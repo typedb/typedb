@@ -18,8 +18,9 @@
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
 use storage::key_value::{StorageKey, StorageKeyReference};
+use storage::keyspace::keyspace::KeyspaceId;
 
-use crate::EncodingKeyspace;
+use crate::{AsBytes, EncodingKeyspace, Keyable};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct PrefixID<'a> {
@@ -32,15 +33,22 @@ impl<'a> PrefixID<'a> {
     pub(crate) const fn new(bytes: ByteArrayOrRef<'a, { PrefixID::LENGTH }>) -> Self {
         PrefixID { bytes: bytes }
     }
+}
 
-    pub(crate) fn bytes(&self) -> &ByteArrayOrRef<'a, { PrefixID::LENGTH }> {
-        &self.bytes
+impl<'a> AsBytes<'a, {PrefixID::LENGTH}> for PrefixID<'a> {
+    fn bytes(&'a self) -> ByteReference<'a> {
+        self.bytes.as_reference()
     }
 
-    // use as prefix key
-    pub(crate) fn as_storage_key<'this>(&'this self) -> StorageKey<'a, { PrefixID::LENGTH }>
-        where 'this: 'a {
-        let keyspace_id = match PrefixType::from_prefix(self) {
+    fn into_bytes(self) -> ByteArrayOrRef<'a, {PrefixID::LENGTH}> {
+        self.bytes
+    }
+}
+
+// used as prefix key
+impl<'a> Keyable<'a, {PrefixID::LENGTH}> for PrefixID<'a> {
+    fn keyspace_id(&self) -> KeyspaceId {
+        match PrefixType::from_prefix(self) {
             PrefixType::EntityType |
             PrefixType::RelationType |
             PrefixType::AttributeType |
@@ -48,8 +56,7 @@ impl<'a> PrefixID<'a> {
             PrefixType::LabelToTypeIndex => EncodingKeyspace::Schema.id(),
             PrefixType::Entity => todo!(),
             PrefixType::Attribute => todo!()
-        };
-        StorageKey::Reference(StorageKeyReference::new(keyspace_id, ByteReference::new(self.bytes.bytes())))
+        }
     }
 }
 

@@ -64,16 +64,16 @@ fn commits_isolated() {
     snapshot_1.put_val(key_3.clone(), value_3.clone());
     snapshot_1.commit().unwrap();
 
-    let get: Option<ByteArray<48>> = snapshot_2.get(&StorageKey::Reference(StorageKeyReference::from(&key_3)));
+    let get: Option<ByteArray<48>> = snapshot_2.get(StorageKey::Reference(StorageKeyReference::from(&key_3)));
     assert!(get.is_none());
     let prefix: StorageKey<'_, 48> = StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&[0x0 as u8])));
-    let iterated = snapshot_2.iterate_prefix(&prefix).collect_cloned();
+    let iterated = snapshot_2.iterate_prefix(prefix.clone()).collect_cloned();
     assert_eq!(iterated.len(), 2);
 
     let snapshot_3 = storage.open_snapshot_read();
-    let get: Option<ByteArray<48>>  = snapshot_3.get(&StorageKey::Reference(StorageKeyReference::from(&key_3)));
+    let get: Option<ByteArray<48>>  = snapshot_3.get(StorageKey::Reference(StorageKeyReference::from(&key_3)));
     assert!(matches!(get, Some(value_3)));
-    let iterated = snapshot_3.iterate_prefix(&prefix).collect_cloned();
+    let iterated = snapshot_3.iterate_prefix(prefix.clone()).collect_cloned();
     assert_eq!(iterated.len(), 3);
 }
 
@@ -92,12 +92,12 @@ fn g0_update_conflicts_fail() {
     let snapshot_1 = storage.open_snapshot_write();
     let snapshot_2 = storage.open_snapshot_write();
 
-    let key_1: &StorageKey<'_, 48> = &StorageKey::Reference(StorageKeyReference::new(KEYSPACE_ID, ByteReference::new(&KEY_1)));
-    let key_2: &StorageKey<'_, 48> = &StorageKey::Reference(StorageKeyReference::new(KEYSPACE_ID, ByteReference::new(&KEY_2)));
+    let key_1: StorageKey<'_, 48> = StorageKey::Reference(StorageKeyReference::new(KEYSPACE_ID, ByteReference::new(&KEY_1)));
+    let key_2: StorageKey<'_, 48> = StorageKey::Reference(StorageKeyReference::new(KEYSPACE_ID, ByteReference::new(&KEY_2)));
 
-    snapshot_1.get_required(key_1);
+    snapshot_1.get_required(key_1.clone());
 
-    snapshot_2.delete(StorageKeyArray::from(key_1.as_reference()));
+    snapshot_2.delete(key_1.clone().to_owned_array());
 
     let result_1 = snapshot_1.commit();
     assert!(result_1.is_ok());

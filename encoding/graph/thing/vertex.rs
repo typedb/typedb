@@ -85,11 +85,15 @@ impl<'a> ObjectVertex<'a> {
     const fn range_object_id() -> Range<usize> {
         Self::range_type_id().end..Self::range_type_id().end + ObjectID::LENGTH
     }
+
+    pub fn to_owned(&self) -> ObjectVertex<'static> {
+        ObjectVertex { bytes: self.bytes.to_owned() }
+    }
 }
 
 impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for ObjectVertex<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_ref()
+        self.bytes.as_reference()
     }
 
     fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
@@ -126,7 +130,7 @@ impl<'a> ObjectID<'a> {
 
 impl<'a> AsBytes<'a, { ObjectID::LENGTH }> for ObjectID<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_ref()
+        self.bytes.as_reference()
     }
 
     fn into_bytes(self) -> ByteArrayOrRef<'a, { ObjectID::LENGTH }> {
@@ -134,7 +138,7 @@ impl<'a> AsBytes<'a, { ObjectID::LENGTH }> for ObjectID<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AttributeVertex<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>,
 }
@@ -171,11 +175,15 @@ impl<'a> AttributeVertex<'a> {
     const fn range_attribute_id() -> Range<usize> {
         Self::range_type_id().end..Self::range_type_id().end + AttributeID::LENGTH
     }
+
+    fn to_owned(&self) -> AttributeVertex<'static> {
+        AttributeVertex { bytes: self.bytes.to_owned() }
+    }
 }
 
 impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for AttributeVertex<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_ref()
+        self.bytes.as_reference()
     }
 
     fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
@@ -228,7 +236,7 @@ impl<'a> AttributeID<'a> {
 
 impl<'a> AsBytes<'a, { AttributeID::LENGTH }> for AttributeID<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_ref()
+        self.bytes.as_reference()
     }
 
     fn into_bytes(self) -> ByteArrayOrRef<'a, { AttributeID::LENGTH }> {

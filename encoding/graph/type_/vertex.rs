@@ -28,7 +28,7 @@ use storage::snapshot::buffer::BUFFER_INLINE_KEY;
 use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
 use crate::layout::prefix::PrefixID;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TypeVertex<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>,
 }
@@ -55,11 +55,15 @@ impl<'a> TypeVertex<'a> {
     const fn range_type_id() -> Range<usize> {
         Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeID::LENGTH
     }
+
+    pub fn into_owned(self) -> TypeVertex<'static> {
+        TypeVertex { bytes: self.bytes.into_owned() }
+    }
 }
 
 impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for TypeVertex<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_ref()
+        self.bytes.as_reference()
     }
 
     fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
@@ -102,7 +106,7 @@ impl<'a> TypeID<'a> {
 
 impl<'a> AsBytes<'a, { TypeID::LENGTH }> for TypeID<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_ref()
+        self.bytes.as_reference()
     }
 
     fn into_bytes(self) -> ByteArrayOrRef<'a, { TypeID::LENGTH }> {

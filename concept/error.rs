@@ -16,27 +16,31 @@
  */
 
 
+use std::error::Error;
 use std::fmt::{Display, Formatter};
 
+use storage::snapshot::error::SnapshotError;
+
 #[derive(Debug)]
-pub struct TypeError {
-    pub kind: TypeErrorKind,
+pub struct ConceptError {
+    pub kind: ConceptErrorKind,
 }
 
 #[derive(Debug)]
-pub enum TypeErrorKind {
+pub enum ConceptErrorKind {
+    SnapshotError { source: SnapshotError }
 }
 
-impl Display for TypeError {
+impl Display for ConceptError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }
 }
 
-// impl Error for TypeError {
-//     fn source(&self) -> Option<&(dyn Error + 'static)> {
-//         match &self.kind {
-//
-//         }
-//     }
-// }
+impl Error for ConceptError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match &self.kind {
+            ConceptErrorKind::SnapshotError { source, .. } => Some(source)
+        }
+    }
+}

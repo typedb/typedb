@@ -19,24 +19,22 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test")
 package(default_visibility = ["//visibility:public",])
 
-# To run this via Bazel, Criterion must be provided the --bench argument:
-#   bazel run --compilation_mode=opt //storage/benches:bench_mvcc_storage -- --bench
 rust_test(
-    name = "bench_mvcc_storage",
+    name = "test_thing",
     srcs = glob([
-        "bench_mvcc_storage.rs",
+        "test_thing.rs",
     ]),
     deps = [
-        "//storage",
         "//common/bytes",
         "//common/logger",
+        "//concept",
+        "//encoding",
+        "//storage",
         "//util/test:test_utils",
 
         "@crates//:rand",
         "@crates//:tracing",
-        "@crates//:criterion",
-    ],
-    use_libtest_harness = False,
+    ]
 )
 
 checkstyle_test(

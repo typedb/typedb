@@ -25,14 +25,14 @@ use bytes::byte_reference::ByteReference;
 
 use crate::keyspace::keyspace::KeyspaceId;
 
-#[derive(Debug)]
-pub enum StorageKey<'bytes, const INLINE_SIZE: usize> {
-    Array(StorageKeyArray<INLINE_SIZE>),
+#[derive(Debug, Clone)]
+pub enum StorageKey<'bytes, const S: usize> {
+    Array(StorageKeyArray<S>),
     Reference(StorageKeyReference<'bytes>),
 }
 
-impl<'bytes, const INLINE_SIZE: usize> StorageKey<'bytes, INLINE_SIZE> {
-    pub fn new(keyspace_id: KeyspaceId, bytes: ByteArrayOrRef<'bytes, INLINE_SIZE>) -> Self {
+impl<'bytes, const S: usize> StorageKey<'bytes, S> {
+    pub fn new(keyspace_id: KeyspaceId, bytes: ByteArrayOrRef<'bytes, S>) -> Self {
         match bytes {
             ByteArrayOrRef::Array(array) => StorageKey::Array(StorageKeyArray::new(keyspace_id, array)),
             ByteArrayOrRef::Reference(reference) => StorageKey::Reference(StorageKeyReference::new(keyspace_id, reference)),
@@ -43,7 +43,7 @@ impl<'bytes, const INLINE_SIZE: usize> StorageKey<'bytes, INLINE_SIZE> {
         StorageKey::Reference(StorageKeyReference::new(keyspace_id, bytes))
     }
 
-    pub fn new_owned(keyspace_id: KeyspaceId, bytes: ByteArray<INLINE_SIZE>) -> Self {
+    pub fn new_owned(keyspace_id: KeyspaceId, bytes: ByteArray<S>) -> Self {
         StorageKey::Array(StorageKeyArray::new(keyspace_id, bytes))
     }
 
@@ -51,6 +51,13 @@ impl<'bytes, const INLINE_SIZE: usize> StorageKey<'bytes, INLINE_SIZE> {
         match self {
             StorageKey::Array(array) => array.bytes(),
             StorageKey::Reference(reference) => reference.bytes(),
+        }
+    }
+
+    pub fn into_byte_array_or_ref(self) -> ByteArrayOrRef<'bytes, S> {
+        match self {
+            StorageKey::Array(array) => ByteArrayOrRef::Array(array.into_byte_array()),
+            StorageKey::Reference(reference) => ByteArrayOrRef::Reference(reference.into_byte_ref()),
         }
     }
 
@@ -64,11 +71,11 @@ impl<'bytes, const INLINE_SIZE: usize> StorageKey<'bytes, INLINE_SIZE> {
     pub fn as_reference(&'bytes self) -> StorageKeyReference<'bytes> {
         match self {
             StorageKey::Array(array) => StorageKeyReference::from(array),
-            StorageKey::Reference(reference) => StorageKeyReference::new(reference.keyspace_id(), reference.byte_ref().clone()),
+            StorageKey::Reference(reference) => StorageKeyReference::new(reference.keyspace_id(), reference.byte_ref()),
         }
     }
 
-    pub fn to_owned(&self) -> StorageKeyArray<INLINE_SIZE> {
+    pub fn to_owned_array(&self) -> StorageKeyArray<S> {
         match self {
             StorageKey::Array(array) => array.clone(),
             StorageKey::Reference(reference) => StorageKeyArray::from(reference.clone()),
@@ -178,8 +185,8 @@ impl<'bytes> StorageKeyReference<'bytes> {
         self.reference.bytes()
     }
 
-    pub(crate) fn byte_ref(&self) -> &ByteReference<'bytes> {
-        &self.reference
+    pub fn byte_ref(&self) -> ByteReference<'bytes> {
+        self.reference.clone()
     }
 
     pub(crate) fn into_byte_ref(self) -> ByteReference<'bytes> {

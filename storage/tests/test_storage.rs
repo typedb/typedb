@@ -23,7 +23,7 @@ use rand;
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use storage::error::{MVCCStorageError, MVCCStorageErrorKind};
-use storage::key_value::{StorageKeyArray, StorageKeyReference};
+use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::MVCCStorage;
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
@@ -124,7 +124,7 @@ fn get_put_iterate() {
     assert_eq!(second_value, Some(ByteArray::empty()));
 
     let prefix = StorageKeyArray::<64>::from((vec![0x1], keyspace_1_id));
-    let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage.iterate_keyspace_prefix(StorageKeyReference::from(&prefix)).collect_cloned::<64, 128>();
+    let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage.iterate_keyspace_prefix(StorageKey::<64>::Reference(StorageKeyReference::from(&prefix))).collect_cloned::<64, 128>();
     assert_eq!(items, vec![
         (keyspace_1_key_2.into_byte_array(), ByteArray::<128>::empty()),
         (keyspace_1_key_3.into_byte_array(), ByteArray::<128>::empty()),

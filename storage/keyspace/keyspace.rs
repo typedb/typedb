@@ -23,6 +23,7 @@ use std::path::PathBuf;
 use speedb::{DB, DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions};
 
 use bytes::byte_array::ByteArray;
+use bytes::byte_array_or_ref::ByteArrayOrRef;
 use iterator::State;
 use logger::result::ResultExt;
 
@@ -125,7 +126,7 @@ impl Keyspace {
     }
 
     // TODO: we should benchmark using iterator pools, which would require changing prefix/range on read options
-    pub(crate) fn iterate_prefix<'s>(&'s self, prefix: &'s [u8]) -> KeyspacePrefixIterator<'s> {
+    pub(crate) fn iterate_prefix<'s, const PREFIX_INLINE_SIZE: usize>(&'s self, prefix: ByteArrayOrRef<'s, PREFIX_INLINE_SIZE>) -> KeyspacePrefixIterator<'s, PREFIX_INLINE_SIZE> {
         KeyspacePrefixIterator::new(&self, prefix)
     }
 
@@ -166,19 +167,19 @@ impl Debug for Keyspace {
     }
 }
 
-pub struct KeyspacePrefixIterator<'a> {
-    prefix: &'a [u8],
+pub struct KeyspacePrefixIterator<'a, const PS: usize> {
+    prefix:  ByteArrayOrRef<'a, PS>,
     iterator: DBRawIterator<'a>,
     state: State<speedb::Error>,
 }
 
-impl<'s> KeyspacePrefixIterator<'s> {
-    fn new(keyspace: &'s Keyspace, prefix: &'s [u8]) -> KeyspacePrefixIterator<'s> {
+impl<'a, const PS: usize> KeyspacePrefixIterator<'a, PS> {
 
+    fn new(keyspace: &'a Keyspace, prefix:  ByteArrayOrRef<'a, PS>) -> Self {
         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
         // read_opts.set_prefix_same_as_start(true);
         let mut read_opts = keyspace.new_read_options();
-        let raw_iterator: DBRawIteratorWithThreadMode<'s, DB> = keyspace.kv_storage.raw_iterator_opt(read_opts);
+        let raw_iterator: DBRawIteratorWithThreadMode<'a, DB> = keyspace.kv_storage.raw_iterator_opt(read_opts);
 
         KeyspacePrefixIterator {
             prefix: prefix,
@@ -190,7 +191,7 @@ impl<'s> KeyspacePrefixIterator<'s> {
     pub(crate) fn peek(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
         match &self.state {
             State::Init => {
-                self.iterator.seek(self.prefix);
+                self.iterator.seek(self.prefix.bytes());
                 self.update_state();
                 self.peek()
             }
@@ -213,7 +214,7 @@ impl<'s> KeyspacePrefixIterator<'s> {
     pub(crate) fn next(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
         match &self.state {
             State::Init => {
-                self.iterator.seek(self.prefix);
+                self.iterator.seek(self.prefix.bytes());
                 self.update_state();
                 self.next()
             }
@@ -288,7 +289,7 @@ impl<'s> KeyspacePrefixIterator<'s> {
     }
 
     fn has_valid_prefix(&self, key: &[u8]) -> bool {
-        return key.len() >= self.prefix.len() && &key[0..self.prefix.len()] == self.prefix;
+        return key.len() >= self.prefix.length() && &key[0..self.prefix.length()] == self.prefix.bytes();
     }
 
     pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(mut self) -> Vec<(ByteArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)> {

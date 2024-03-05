@@ -26,16 +26,16 @@ use storage::snapshot::buffer::BUFFER_INLINE_KEY;
 use crate::{AsBytes, EncodingKeyspace, Keyable};
 use crate::graph::thing::vertex::{AttributeVertex, ObjectID, ObjectVertex};
 use crate::graph::type_::vertex::{TypeID, TypeVertex};
-use crate::layout::infix::{Infix, InfixType};
+use crate::layout::infix::{InfixID, InfixType};
 
 struct HasForwardEdge<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>,
 }
 
 impl<'a> HasForwardEdge<'a> {
-    const LENGTH: usize = ObjectVertex::LENGTH + Infix::LENGTH + AttributeVertex::LENGTH;
-    const LENGTH_PREFIX_FROM_OBJECT: usize = ObjectVertex::LENGTH + Infix::LENGTH;
-    const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize = ObjectVertex::LENGTH + Infix::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
+    const LENGTH: usize = ObjectVertex::LENGTH + InfixID::LENGTH + AttributeVertex::LENGTH;
+    const LENGTH_PREFIX_FROM_OBJECT: usize = ObjectVertex::LENGTH + InfixID::LENGTH;
+    const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize = ObjectVertex::LENGTH + InfixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
 
     fn new(bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
@@ -85,7 +85,7 @@ impl<'a> HasForwardEdge<'a> {
     }
 
     const fn range_infix() -> Range<usize> {
-        Self::range_from().end..Self::range_from().end + Infix::LENGTH
+        Self::range_from().end..Self::range_from().end + InfixID::LENGTH
     }
 
     const fn range_to() -> Range<usize> {
@@ -95,7 +95,7 @@ impl<'a> HasForwardEdge<'a> {
 
 impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for HasForwardEdge<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_ref()
+        self.bytes.as_reference()
     }
 
     fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {

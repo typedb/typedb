@@ -20,7 +20,7 @@ load("@rules_rust//rust:defs.bzl", "rust_test")
 package(default_visibility = ["//visibility:public",])
 
 rust_test(
-    name = "test-storage",
+    name = "test_storage",
     srcs = glob([
         "test_storage.rs",
     ]),
@@ -28,7 +28,7 @@ rust_test(
         "//storage",
         "//common/bytes",
         "//common/logger",
-        "//util/test:test-utils",
+        "//util/test:test_utils",
 
         "@crates//:rand",
         "@crates//:tracing",
@@ -36,7 +36,7 @@ rust_test(
 )
 
 rust_test(
-    name = "test-snapshot",
+    name = "test_snapshot",
     srcs = glob([
         "test_snapshot.rs",
     ]),
@@ -44,7 +44,7 @@ rust_test(
         "//storage",
         "//common/bytes",
         "//common/logger",
-        "//util/test:test-utils",
+        "//util/test:test_utils",
 
         "@crates//:rand",
         "@crates//:tracing",
@@ -52,7 +52,7 @@ rust_test(
 )
 
 rust_test(
-    name = "test-mvcc",
+    name = "test_mvcc",
     srcs = glob([
         "test_mvcc.rs",
     ]),
@@ -60,7 +60,7 @@ rust_test(
         "//storage",
         "//common/bytes",
         "//common/logger",
-        "//util/test:test-utils",
+        "//util/test:test_utils",
 
         "@crates//:rand",
         "@crates//:tracing",
@@ -68,7 +68,7 @@ rust_test(
 )
 
 rust_test(
-    name = "test-isolation",
+    name = "test_isolation",
     srcs = glob([
         "test_isolation.rs",
     ]),
@@ -76,7 +76,7 @@ rust_test(
         "//storage",
         "//common/bytes",
         "//common/logger",
-        "//util/test:test-utils",
+        "//util/test:test_utils",
 
         "@crates//:rand",
         "@crates//:tracing",

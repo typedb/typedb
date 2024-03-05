@@ -29,14 +29,14 @@ use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, BufferedPr
 use crate::snapshot::error::{SnapshotError, SnapshotErrorKind};
 use crate::snapshot::write::Write;
 
-pub struct SnapshotPrefixIterator<'a> {
-    storage_iterator: MVCCPrefixIterator<'a>,
+pub struct SnapshotPrefixIterator<'a, const PS: usize> {
+    storage_iterator: MVCCPrefixIterator<'a, PS>,
     buffered_iterator: Option<BufferedPrefixIterator>,
     iterator_state: IteratorState,
 }
 
-impl<'a> SnapshotPrefixIterator<'a> {
-    pub(crate) fn new(mvcc_iterator: MVCCPrefixIterator<'a>, buffered_iterator: Option<BufferedPrefixIterator>) -> SnapshotPrefixIterator<'a> {
+impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
+    pub(crate) fn new(mvcc_iterator: MVCCPrefixIterator<'a, PS>, buffered_iterator: Option<BufferedPrefixIterator>) -> Self{
         SnapshotPrefixIterator {
             storage_iterator: mvcc_iterator,
             buffered_iterator: buffered_iterator,
@@ -169,7 +169,7 @@ impl<'a> SnapshotPrefixIterator<'a> {
         }
     }
 
-    fn storage_peek<'this>(storage_iterator: &'this mut MVCCPrefixIterator) -> Option<Result<(StorageKeyReference<'this>, ByteReference<'this>), SnapshotError>> {
+    fn storage_peek<'this>(storage_iterator: &'this mut MVCCPrefixIterator<'_, PS>) -> Option<Result<(StorageKeyReference<'this>, ByteReference<'this>), SnapshotError>> {
         let storage_peek = storage_iterator.peek();
         match storage_peek {
             None => None,
@@ -211,7 +211,7 @@ impl<'a> SnapshotPrefixIterator<'a> {
         )
     }
 
-    pub fn collect_cloned<'t>(mut self) -> Vec<(StorageKey<'t, BUFFER_INLINE_KEY>, ByteArray<BUFFER_INLINE_VALUE>)> {
+    pub fn collect_cloned(mut self) -> Vec<(StorageKey<'static, BUFFER_INLINE_KEY>, ByteArray<BUFFER_INLINE_VALUE>)> {
         let mut vec = Vec::new();
         loop {
             let item = self.next();
@@ -219,7 +219,7 @@ impl<'a> SnapshotPrefixIterator<'a> {
                 break;
             }
             let (key, value) = item.unwrap().unwrap();
-            let key: StorageKey<'_, BUFFER_INLINE_KEY> = StorageKey::Array(StorageKeyArray::from(key.clone()));
+            let key = StorageKey::Array(StorageKeyArray::from(key.clone()));
             let value = ByteArray::from(value);
             vec.push((key, value));
         }

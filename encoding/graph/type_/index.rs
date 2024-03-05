@@ -58,7 +58,7 @@ impl<'a> TypeToLabelIndex<'a> {
 
 impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for TypeToLabelIndex<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_ref()
+        self.bytes.as_reference()
     }
 
 
@@ -108,7 +108,7 @@ impl<'a> LabelToTypeIndex<'a> {
 
 impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for LabelToTypeIndex<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_ref()
+        self.bytes.as_reference()
     }
 
     fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {

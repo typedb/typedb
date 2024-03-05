@@ -15,14 +15,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use encoding::graph::thing::vertex::{AttributeVertex, ObjectVertex};
 use encoding::graph::type_::vertex::TypeVertex;
 
-pub mod thing_manager;
-pub mod type_manager;
+pub mod type_;
+pub mod thing;
 pub mod error;
-mod iterator;
+pub mod iterator;
 
+trait Concept<'a>: Eq + PartialEq { }
 
-trait Type<'a> {
+trait Type<'a>: Concept<'a> {
     fn vertex(&'a self) -> &TypeVertex<'a>;
+}
+
+trait Thing<'a>: Concept<'a> {}
+
+trait Object<'a>: Thing<'a> {
+    fn vertex(&'a self) -> &ObjectVertex<'a>;
+}
+
+trait Attribute<'a>: Thing<'a> {
+    fn vertex(&'a self) -> &AttributeVertex<'a>;
 }

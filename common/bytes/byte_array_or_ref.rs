@@ -27,6 +27,15 @@ pub enum ByteArrayOrRef<'bytes, const ARRAY_INLINE_SIZE: usize> {
     Reference(ByteReference<'bytes>),
 }
 
+impl<'bytes, const INLINE_SIZE: usize> Clone for ByteArrayOrRef<'bytes, INLINE_SIZE> {
+    fn clone(&self) -> ByteArrayOrRef<'static, INLINE_SIZE> {
+        match self {
+            ByteArrayOrRef::Array(array) => ByteArrayOrRef::Array(array.clone()),
+            ByteArrayOrRef::Reference(reference) => ByteArrayOrRef::Array(ByteArray::from(reference.clone())),
+        }
+    }
+}
+
 impl<'bytes, const ARRAY_INLINE_SIZE: usize> ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
     pub fn bytes(&'bytes self) -> &'bytes [u8] {
         match self {
@@ -52,6 +61,21 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> ByteArrayOrRef<'bytes, ARRAY_INLINE
         }
     }
 
+    pub fn to_owned(&self) -> ByteArrayOrRef<'static, ARRAY_INLINE_SIZE> {
+        ByteArrayOrRef::Array(self.to_array())
+    }
+
+    pub fn into_owned(self) -> ByteArrayOrRef<'static, ARRAY_INLINE_SIZE> {
+        ByteArrayOrRef::Array(self.into_array())
+    }
+
+    pub fn as_reference<'this>(&'this self) -> ByteReference<'bytes> where 'this: 'bytes {
+        match self {
+            ByteArrayOrRef::Array(array) => ByteReference::from(array),
+            ByteArrayOrRef::Reference(reference) => reference.clone()
+        }
+    }
+
     pub fn unwrap_reference(self) -> ByteReference<'bytes> {
         if let ByteArrayOrRef::Reference(reference) = self {
             reference
@@ -60,24 +84,17 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> ByteArrayOrRef<'bytes, ARRAY_INLINE
         }
     }
 
-    pub fn into_owned(self) -> ByteArray<ARRAY_INLINE_SIZE> {
+    pub fn into_array(self) -> ByteArray<ARRAY_INLINE_SIZE> {
         match self {
             ByteArrayOrRef::Array(array) => array,
             ByteArrayOrRef::Reference(byte_reference) => ByteArray::from(byte_reference),
         }
     }
 
-    pub fn to_owned(&self) -> ByteArray<ARRAY_INLINE_SIZE> {
+    pub fn to_array(&self) -> ByteArray<ARRAY_INLINE_SIZE> {
         match self {
             ByteArrayOrRef::Array(array) => array.clone(),
             ByteArrayOrRef::Reference(byte_reference) => ByteArray::from(byte_reference.clone()),
-        }
-    }
-
-    pub fn as_ref<'this>(&'this self) -> ByteReference<'bytes> where 'this: 'bytes {
-        match self {
-            ByteArrayOrRef::Array(array) => ByteReference::from(array),
-            ByteArrayOrRef::Reference(reference) => reference.clone()
         }
     }
 }

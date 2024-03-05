@@ -17,23 +17,30 @@
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
+use crate::AsBytes;
 
 
-pub(crate) struct Infix<'a> {
-    bytes: ByteArrayOrRef<'a, { Infix::LENGTH }>,
+pub(crate) struct InfixID<'a> {
+    bytes: ByteArrayOrRef<'a, { InfixID::LENGTH }>,
 }
 
-impl<'a> Infix<'a> {
+impl<'a> InfixID<'a> {
     pub(crate) const LENGTH: usize = 1;
 
-    const fn new(bytes: ByteArrayOrRef<'a, { Infix::LENGTH }>) -> Self {
-        Infix {
+    const fn new(bytes: ByteArrayOrRef<'a, { InfixID::LENGTH }>) -> Self {
+        InfixID {
             bytes: bytes
         }
     }
+}
 
-    pub(crate) fn bytes(&self) -> &ByteArrayOrRef<'a, { Infix::LENGTH }> {
-        &self.bytes
+impl<'a> AsBytes<'a, { InfixID::LENGTH }> for InfixID<'a> {
+    fn bytes(&'a self) -> ByteReference<'a> {
+        self.bytes.as_reference()
+    }
+
+    fn into_bytes(self) -> ByteArrayOrRef<'a, { InfixID::LENGTH }> {
+        self.bytes
     }
 }
 
@@ -46,7 +53,7 @@ pub(crate) enum InfixType {
 }
 
 impl InfixType {
-    pub(crate) const fn as_infix(&self) -> Infix<'static> {
+    pub(crate) const fn as_infix(&self) -> InfixID<'static> {
         let bytes = match self {
             InfixType::OwnsForward => &[6],
             InfixType::OwnsBackward => &[7],
@@ -54,6 +61,6 @@ impl InfixType {
             InfixType::HasForward => &[50],
             InfixType::HasBackward => &[51],
         };
-        Infix::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
+        InfixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
     }
 }

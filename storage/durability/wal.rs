@@ -29,6 +29,7 @@ use crate::{DurabilityError, DurabilityErrorKind, DurabilityRecord, DurabilityRe
 /// I think we could use an MMAP append-only file to allow records to serialise themselves directly into the right place
 /// We could also use a Writer/Stream compressor to reduce the write bandwidth requirements
 ///
+#[derive(Debug)]
 pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, &'static str>,
     sequence_number: AtomicU64,
