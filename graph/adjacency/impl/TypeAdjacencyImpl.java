@@ -245,7 +245,7 @@ public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIE
             if ((bufferedEdges = edges.get(encoding)) == null) return storageIterator;
             else {
                 Set<EDGE_VIEW> originalBufferedEdges = new HashSet<>(bufferedEdges);
-                return iterateSorted(bufferedEdges, ASC).merge(storageIterator.filter(e -> !originalBufferedEdges.contains(e)));
+                return iterateSorted(bufferedEdges, ASC).merge(storageIterator.filter(e -> !originalBufferedEdges.contains(e))).distinct();
             }
         }
 
