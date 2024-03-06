@@ -241,7 +241,7 @@ public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIE
                     );
             if (isReadOnly) storageIterator = storageIterator.onConsumed(() -> fetched.add(encoding));
             if ((bufferedEdges = edges.get(encoding)) == null) return storageIterator;
-            else return iterateSorted(bufferedEdges, ASC).merge(storageIterator).distinct();
+            else return iterateSorted(bufferedEdges, ASC).merge(storageIterator.filter(e -> !bufferedEdges.contains(e)));
         }
 
         @Override
