@@ -24,12 +24,29 @@ use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
 use crate::graph::Typed;
-use crate::layout::prefix::PrefixID;
+use crate::layout::prefix::{PrefixID, PrefixType};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TypeVertex<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }
+
+macro_rules! type_vertex_constructors {
+    ($new_name:ident, $build_name:ident, PrefixType::$prefix:ident) => {
+        pub fn $new_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeVertex<'a> {
+            let vertex = TypeVertex::new(bytes);
+            debug_assert_eq!(vertex.prefix(), PrefixType::$prefix);
+            vertex
+        }
+
+        pub fn $build_name(type_id: &TypeID) -> TypeVertex<'static> {
+            TypeVertex::build(&PrefixType::$prefix.prefix_id(), type_id)
+        }
+    };
+}
+
+type_vertex_constructors!(new_entity_type_vertex, build_entity_type_vertex, PrefixType::VertexEntityType);
+type_vertex_constructors!(new_attribute_type_vertex, build_attribute_type_vertex, PrefixType::VertexAttributeType);
 
 impl<'a> TypeVertex<'a> {
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;
@@ -39,10 +56,10 @@ impl<'a> TypeVertex<'a> {
         TypeVertex { bytes: bytes }
     }
 
-    pub fn build(prefix: &PrefixID<'a>, type_number: &TypeID) -> Self {
+    fn build(prefix: &PrefixID<'a>, type_id: &TypeID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
-        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_number.bytes().bytes());
+        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_id.bytes().bytes());
         TypeVertex { bytes: ByteArrayOrRef::Array(array) }
     }
 

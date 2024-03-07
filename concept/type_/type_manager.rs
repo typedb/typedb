@@ -23,13 +23,14 @@ use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::{AsBytes, Keyable};
 use encoding::graph::type_::property::{LabelToTypeProperty, TypeToLabelProperty};
 use encoding::graph::type_::Root;
-use encoding::graph::type_::vertex::TypeVertex;
+use encoding::graph::type_::vertex::{new_attribute_type_vertex, new_entity_type_vertex, TypeVertex};
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
 use encoding::primitive::label::Label;
 use storage::MVCCStorage;
 use storage::snapshot::snapshot::Snapshot;
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::entity_type::EntityType;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE};
 
 pub struct TypeManager<'txn, 'storage: 'txn> {
     snapshot: Rc<Snapshot<'storage>>,
@@ -72,7 +73,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     }
 
     pub fn get_entity_type(&self, label: &Label) -> Option<EntityType> {
-        self.get_type(label, |vertex| EntityType::new(vertex))
+        self.get_type(label, |bytes| EntityType::new(new_entity_type_vertex(bytes)))
     }
 
     pub fn create_attribute_type(&self, label: &Label) -> AttributeType {
@@ -87,13 +88,13 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     }
 
     pub fn get_attribute_type(&self, label: &Label) -> Option<AttributeType> {
-        self.get_type(label, |vertex| AttributeType::new(vertex))
+        self.get_type(label, |bytes| AttributeType::new(new_attribute_type_vertex(bytes)))
     }
 
-    fn get_type<M, U>(&self, label: &Label, mapper: M) -> Option<U> where M: FnOnce(TypeVertex<'static>) -> U {
+    fn get_type<M, U>(&self, label: &Label, mapper: M) -> Option<U> where M: FnOnce(ByteArrayOrRef<'static, BUFFER_KEY_INLINE>) -> U {
         let key = LabelToTypeProperty::build(label).into_storage_key();
-        self.snapshot.get::<64>(key.as_reference()).map(|value| {
-            mapper(TypeVertex::new(ByteArrayOrRef::Array(value)))
+        self.snapshot.get::<{ BUFFER_KEY_INLINE }>(key.as_reference()).map(|value| {
+            mapper(ByteArrayOrRef::Array(value))
         })
     }
 

@@ -20,8 +20,8 @@ use std::ops::Range;
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::keyspace::keyspace::KeyspaceId;
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
 use crate::graph::type_::vertex::TypeVertex;
@@ -46,7 +46,7 @@ impl<'a> TypeToLabelProperty<'a> {
 
     pub fn build(vertex: &TypeVertex<'_>) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::PropertyTypeToLabel.prefix().bytes().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::PropertyTypeToLabel.prefix_id().bytes().bytes());
         array.bytes_mut()[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
         TypeToLabelProperty { bytes: ByteArrayOrRef::Array(array) }
     }
@@ -88,7 +88,7 @@ impl<'a> LabelToTypeProperty<'a> {
     pub fn build(label: &Label) -> Self {
         let label_string_bytes = label.scoped_name();
         let mut array = ByteArray::zeros(label_string_bytes.bytes().length() + PrefixID::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::PropertyLabelToType.prefix().bytes().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::PropertyLabelToType.prefix_id().bytes().bytes());
         array.bytes_mut()[Self::range_label(label_string_bytes.bytes().length())].copy_from_slice(label_string_bytes.bytes().bytes());
         LabelToTypeProperty { bytes: ByteArrayOrRef::Array(array) }
     }

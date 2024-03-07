@@ -28,24 +28,48 @@ use crate::{AsBytes, EncodingKeyspace, Keyable};
 use crate::graph::type_::vertex::TypeVertex;
 use crate::layout::infix::{InfixID, InfixType};
 
-struct OwnsForwardEdge<'a> {
+struct TypeEdge<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }
 
-impl<'a> OwnsForwardEdge<'a> {
+macro_rules! type_edge_constructors {
+    ($new_name:ident, $build_name:ident, InfixType::$infix:ident) => {
+        pub(crate) fn $new_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeEdge<'a> {
+            let edge = TypeEdge::new(bytes);
+            debug_assert_eq!(edge.infix(), InfixType::$infix);
+            edge
+        }
+
+        pub(crate) fn $build_name(from: &TypeVertex, to: &TypeVertex) -> TypeEdge<'static> {
+            TypeEdge::build(from, InfixType::$infix, to)
+        }
+    };
+}
+
+type_edge_constructors!(new_sub_edge_forward, build_sub_edge_forward, InfixType::SubForward);
+type_edge_constructors!(new_sub_edge_backward, build_sub_edge_backward, InfixType::SubBackward);
+type_edge_constructors!(new_owns_edge_forward, build_owns_edge_forward, InfixType::OwnsForward);
+type_edge_constructors!(new_owns_edge_backward, build_owns_edge_backward, InfixType::OwnsBackward);
+type_edge_constructors!(new_plays_edge_forward, build_plays_edge_forward, InfixType::PlaysForward);
+type_edge_constructors!(new_plays_edge_backward, build_plays_edge_backward, InfixType::PlaysBackward);
+type_edge_constructors!(new_relates_edge_forward, build_relates_edge_forward, InfixType::RelatesForward);
+type_edge_constructors!(new_relates_edge_backward, build_relates_edge_backward,  InfixType::RelatesBackward);
+
+impl<'a> TypeEdge<'a> {
     const LENGTH: usize = 2 * TypeVertex::LENGTH + InfixID::LENGTH;
 
     fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        OwnsForwardEdge { bytes: bytes, }
+        let edge = TypeEdge { bytes: bytes };
+        edge
     }
 
-    fn build(from: &TypeVertex, to: &TypeVertex) -> Self {
+    fn build(from: &TypeVertex, infix: InfixType, to: &TypeVertex) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(InfixType::OwnsForward.as_infix().bytes().bytes());
+        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(infix.infix_id().bytes().bytes());
         bytes.bytes_mut()[Self::range_to()].copy_from_slice(to.bytes().bytes());
-        OwnsForwardEdge { bytes: ByteArrayOrRef::Array(bytes) }
+        Self { bytes: ByteArrayOrRef::Array(bytes) }
     }
 
     fn from(&'a self) -> TypeVertex<'a> {
@@ -56,6 +80,10 @@ impl<'a> OwnsForwardEdge<'a> {
     fn to(&'a self) -> TypeVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[Self::range_to()]);
         TypeVertex::new(ByteArrayOrRef::Reference(reference))
+    }
+
+    fn infix(&self) -> InfixType {
+        InfixType::from_infix_id(InfixID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_infix()]))))
     }
 
     const fn range_from() -> Range<usize> {
@@ -71,17 +99,17 @@ impl<'a> OwnsForwardEdge<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for OwnsForwardEdge<'a> {
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a,BUFFER_KEY_INLINE> {
+    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for OwnsForwardEdge<'a> {
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
         EncodingKeyspace::Schema.id()
     }

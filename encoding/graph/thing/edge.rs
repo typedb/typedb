@@ -34,6 +34,14 @@ struct HasForwardEdge<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }
 
+/*
+Extensions:
+
+We could save 1 storage byte per edge by removing the prefix for from/to with a static prefix. However:
+1) this adds significant complexity in the API (the from/to will not return a ref to a valid whole Vertex)
+2) Making the API return valid vertices from the from/to would require an extra memcopy to add the known prefix
+3) Alternatively, the API exposes incomplete vertices (just the Type+ID) and we deal with using them elsewhere
+ */
 impl<'a> HasForwardEdge<'a> {
     const LENGTH: usize = ObjectVertex::LENGTH + InfixID::LENGTH + AttributeVertex::LENGTH;
     const LENGTH_PREFIX_FROM_OBJECT: usize = ObjectVertex::LENGTH + InfixID::LENGTH;
@@ -47,7 +55,7 @@ impl<'a> HasForwardEdge<'a> {
     fn build(from: &ObjectVertex<'_>, to: &AttributeVertex<'_>) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(InfixType::HasForward.as_infix().bytes().bytes());
+        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(InfixType::HasForward.infix_id().bytes().bytes());
         bytes.bytes_mut()[Self::range_to()].copy_from_slice(to.bytes().bytes());
         HasForwardEdge { bytes: ByteArrayOrRef::Array(bytes) }
     }
@@ -55,14 +63,14 @@ impl<'a> HasForwardEdge<'a> {
     pub fn prefix_from_object(from: &ObjectVertex<'_>) -> StorageKey<'static, { HasForwardEdge::LENGTH_PREFIX_FROM_OBJECT }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(InfixType::HasForward.as_infix().bytes().bytes());
+        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(InfixType::HasForward.infix_id().bytes().bytes());
         StorageKey::new_owned(Self::keyspace_id(), bytes)
     }
 
     pub fn prefix_from_object_to_type(from: &ObjectVertex, to_type: &TypeVertex) -> StorageKey<'static, { HasForwardEdge::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(InfixType::HasForward.as_infix().bytes().bytes());
+        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(InfixType::HasForward.infix_id().bytes().bytes());
         let to_type_range = Self::range_infix().end..Self::range_infix().end + TypeVertex::LENGTH;
         bytes.bytes_mut()[to_type_range].copy_from_slice(to_type.bytes().bytes());
         StorageKey::new_owned(Self::keyspace_id(), bytes)

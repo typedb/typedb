@@ -48,7 +48,7 @@ impl<'a> AsBytes<'a, { PrefixID::LENGTH }> for PrefixID<'a> {
 // used as prefix key
 impl<'a> Keyable<'a, { PrefixID::LENGTH }> for PrefixID<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
-        match PrefixType::from_prefix(self) {
+        match PrefixType::from_prefix_id(self) {
             PrefixType::VertexEntityType |
             PrefixType::VertexRelationType |
             PrefixType::VertexAttributeType |
@@ -60,6 +60,7 @@ impl<'a> Keyable<'a, { PrefixID::LENGTH }> for PrefixID<'a> {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum PrefixType {
     VertexEntityType,
     VertexRelationType,
@@ -76,7 +77,7 @@ macro_rules! prefix_functions {
     ($(
         $name:ident => $bytes:tt
     ),*) => {
-        pub const fn prefix(&self) -> PrefixID {
+        pub const fn prefix_id(&self) -> PrefixID {
             let bytes = match self {
                 $(
                     Self::$name => {&$bytes}
@@ -85,7 +86,7 @@ macro_rules! prefix_functions {
             PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
         }
 
-        pub const fn successor_prefix(&self) -> PrefixID {
+        pub const fn successor_prefix_id(&self) -> PrefixID {
             let bytes = match self {
                 $(
                     Self::$name => {
@@ -97,7 +98,7 @@ macro_rules! prefix_functions {
             PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
         }
 
-        pub fn from_prefix(prefix: &PrefixID) -> Self {
+        pub fn from_prefix_id(prefix: &PrefixID) -> Self {
             match prefix.bytes.bytes() {
                 $(
                     $bytes => {Self::$name}

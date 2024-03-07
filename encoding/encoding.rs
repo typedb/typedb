@@ -25,7 +25,7 @@ use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::MVCCStorage;
 
-use crate::layout::prefix::PrefixID;
+use crate::layout::prefix::{PrefixID, PrefixType};
 
 pub mod graph;
 pub mod layout;
@@ -89,7 +89,7 @@ pub trait Prefixed<'a, const INLINE_SIZE: usize> : AsBytes<'a, INLINE_SIZE> {
 
     const RANGE_PREFIX: Range<usize> = 0..PrefixID::LENGTH;
 
-    fn prefix(&'a self) -> PrefixID<'a> {
-        PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes().bytes()[Self::RANGE_PREFIX])))
+    fn prefix(&'a self) -> PrefixType {
+        PrefixType::from_prefix_id(&PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes().bytes()[Self::RANGE_PREFIX]))))
     }
 }

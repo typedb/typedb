@@ -16,22 +16,19 @@
  */
 
 use std::cell::OnceCell;
+
 use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
-use encoding::graph::type_::vertex::TypeVertex;
+use encoding::graph::type_::vertex::{TypeVertex, new_entity_type_vertex};
 use encoding::layout::prefix::PrefixType;
-use encoding::{AsBytes, Keyable, Prefixed};
-use encoding::graph::thing::vertex::ObjectVertex;
-use encoding::graph::type_::property::TypeToLabelProperty;
+use encoding::Prefixed;
 use encoding::primitive::label::Label;
-use encoding::primitive::string::StringBytes;
 use storage::key_value::StorageKeyReference;
 use storage::snapshot::iterator::SnapshotPrefixIterator;
 use storage::snapshot::snapshot::Snapshot;
-use crate::{concept_iterator, ConceptAPI, IIDAPI};
-use crate::thing::entity::Entity;
-use crate::type_::{EntityTypeAPI, TypeAPI};
+
+use crate::{concept_iterator, ConceptAPI};
 use crate::error::{ConceptError, ConceptErrorKind};
+use crate::type_::TypeAPI;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EntityType<'a> {
@@ -41,9 +38,9 @@ pub struct EntityType<'a> {
 
 impl<'a> EntityType<'a> {
     pub fn new(vertex: TypeVertex<'a>) -> EntityType {
-        if vertex.prefix() != PrefixType::VertexEntityType.prefix() {
+        if vertex.prefix() != PrefixType::VertexEntityType {
             panic!("Type IID prefix was expected to be Prefix::EntityType ({:?}) but was {:?}",
-                   PrefixType::VertexEntityType.prefix(), vertex.prefix())
+                   PrefixType::VertexEntityType, vertex.prefix())
         }
         EntityType { vertex: vertex, label: OnceCell::new() }
     }
@@ -79,7 +76,7 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_to_entity_type<'a>(storage_key_ref: StorageKeyReference<'a>) -> EntityType<'a> {
-    EntityType::new(TypeVertex::new(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
+    EntityType::new(new_entity_type_vertex(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
 }
 
 concept_iterator!(EntityTypeIterator, EntityType, storage_key_to_entity_type);

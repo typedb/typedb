@@ -34,9 +34,9 @@ pub struct AttributeType<'a> {
 
 impl<'a> AttributeType<'a> {
     pub fn new(vertex: TypeVertex<'a>) -> AttributeType {
-        if vertex.prefix() != PrefixType::VertexAttributeType.prefix() {
+        if vertex.prefix() != PrefixType::VertexAttributeType {
             panic!("Type IID prefix was expected to be Prefix::AttributeType ({:?}) but was {:?}",
-                   PrefixType::VertexAttributeType.prefix(), vertex.prefix())
+                   PrefixType::VertexAttributeType, vertex.prefix())
         }
         AttributeType { vertex: vertex, label: OnceCell::new() }
     }

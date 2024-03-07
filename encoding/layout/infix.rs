@@ -27,7 +27,7 @@ pub(crate) struct InfixID<'a> {
 impl<'a> InfixID<'a> {
     pub(crate) const LENGTH: usize = 1;
 
-    const fn new(bytes: ByteArrayOrRef<'a, { InfixID::LENGTH }>) -> Self {
+    pub const fn new(bytes: ByteArrayOrRef<'a, { InfixID::LENGTH }>) -> Self {
         InfixID { bytes: bytes }
     }
 }
@@ -42,23 +42,57 @@ impl<'a> AsBytes<'a, { InfixID::LENGTH }> for InfixID<'a> {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub(crate) enum InfixType {
+    SubForward,
+    SubBackward,
     OwnsForward,
     OwnsBackward,
+    PlaysForward,
+    PlaysBackward,
+    RelatesForward,
+    RelatesBackward,
 
     HasForward,
     HasBackward,
 }
 
-impl InfixType {
-    pub(crate) const fn as_infix(&self) -> InfixID<'static> {
-        let bytes = match self {
-            InfixType::OwnsForward => &[6],
-            InfixType::OwnsBackward => &[7],
+macro_rules! infix_functions {
+    ($(
+        $name:ident => $bytes:tt
+    ),*) => {
+        pub(crate) const fn infix_id(&self) -> InfixID {
+            let bytes = match self {
+                $(
+                    Self::$name => {&$bytes}
+                )*
+            };
+            InfixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
+        }
 
-            InfixType::HasForward => &[50],
-            InfixType::HasBackward => &[51],
-        };
-        InfixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
-    }
+        pub(crate) fn from_infix_id(infix_id: InfixID) -> Self {
+            match infix_id.bytes.bytes() {
+                $(
+                    $bytes => {Self::$name}
+                )*
+                _ => unreachable!(),
+            }
+       }
+   };
+}
+
+impl InfixType {
+    infix_functions!(
+        SubForward => [20],
+        SubBackward => [21],
+        OwnsForward => [22],
+        OwnsBackward => [23],
+        PlaysForward => [24],
+        PlaysBackward => [25],
+        RelatesForward => [26],
+        RelatesBackward => [27],
+
+        HasForward => [50],
+        HasBackward => [51]
+    );
 }

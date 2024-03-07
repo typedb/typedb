@@ -15,16 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use crate::primitive::label::Label;
+
 pub mod vertex;
 pub mod vertex_generator;
 mod edge;
 pub mod property;
 
-
-use std::borrow::Cow;
-
-use crate::primitive::label::Label;
-use crate::primitive::string::StringBytes;
 
 pub enum Root {
     Entity,
