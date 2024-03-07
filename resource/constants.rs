@@ -15,22 +15,13 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::ops::Range;
+pub mod snapshot {
+    pub const BUFFER_KEY_INLINE: usize = 64;
+    pub const BUFFER_VALUE_INLINE: usize = 128;
+}
 
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
-
-use crate::{AsBytes, Keyable, Prefixed};
-use crate::graph::type_::vertex::TypeID;
-
-pub mod thing;
-pub mod type_;
-
-
-pub trait Typed<'a, const INLINE_SIZE: usize>: Prefixed<'a, INLINE_SIZE> {
-    const RANGE_TYPE_ID: Range<usize> = Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeID::LENGTH;
-
-    fn type_id(&'a self) -> TypeID<'a> {
-        TypeID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes().bytes()[Self::RANGE_TYPE_ID])))
-    }
+pub mod encoding {
+    pub const LABEL_NAME_STRING_INLINE: usize = 64;
+    pub const LABEL_SCOPE_STRING_INLINE: usize = 64;
+    pub const LABEL_SCOPED_NAME_STRING_INLINE: usize = LABEL_NAME_STRING_INLINE + LABEL_SCOPE_STRING_INLINE;
 }

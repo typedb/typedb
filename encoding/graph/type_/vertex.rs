@@ -16,44 +16,34 @@
  */
 
 
-use std::mem;
-use std::ops::Range;
-
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::keyspace::keyspace::KeyspaceId;
-use storage::snapshot::buffer::BUFFER_INLINE_KEY;
 
 use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
+use crate::graph::Typed;
 use crate::layout::prefix::PrefixID;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TypeVertex<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>,
+    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }
 
 impl<'a> TypeVertex<'a> {
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;
 
-    pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>) -> TypeVertex<'a> {
+    pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeVertex<'a> {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         TypeVertex { bytes: bytes }
     }
 
-    pub fn build(prefix: &PrefixID<'a>, type_id: &TypeID) -> Self {
+    pub fn build(prefix: &PrefixID<'a>, type_number: &TypeID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
-        array.bytes_mut()[Self::range_type_id()].copy_from_slice(type_id.bytes().bytes());
+        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_number.bytes().bytes());
         TypeVertex { bytes: ByteArrayOrRef::Array(array) }
-    }
-
-    pub fn type_id(&'a self) -> TypeID<'a> {
-        TypeID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_type_id()])))
-    }
-
-    const fn range_type_id() -> Range<usize> {
-        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeID::LENGTH
     }
 
     pub fn into_owned(self) -> TypeVertex<'static> {
@@ -61,41 +51,43 @@ impl<'a> TypeVertex<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for TypeVertex<'a> {
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
+    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for TypeVertex<'a> {
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
         EncodingKeyspace::Schema.id()
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_INLINE_KEY> for TypeVertex<'a> { }
+impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> { }
+
+impl<'a> Typed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct TypeID<'a> {
     bytes: ByteArrayOrRef<'a, { TypeID::LENGTH }>,
 }
 
-pub type TypeIdUInt = u16;
+pub type TypeIDUInt = u16;
 
 impl<'a> TypeID<'a> {
-    pub(crate) const LENGTH: usize = std::mem::size_of::<TypeIdUInt>();
+    pub(crate) const LENGTH: usize = std::mem::size_of::<TypeIDUInt>();
 
     pub fn new(bytes: ByteArrayOrRef<'a, { TypeID::LENGTH }>) -> TypeID<'a> {
         debug_assert_eq!(bytes.length(), TypeID::LENGTH);
         TypeID { bytes: bytes }
     }
 
-    pub fn build(id: TypeIdUInt) -> Self {
-        debug_assert_eq!(mem::size_of_val(&id), TypeID::LENGTH);
+    pub fn build(id: TypeIDUInt) -> Self {
+        debug_assert_eq!(std::mem::size_of_val(&id), TypeID::LENGTH);
         TypeID { bytes: ByteArrayOrRef::Array(ByteArray::inline(id.to_be_bytes(), TypeID::LENGTH)) }
     }
 

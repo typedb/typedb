@@ -58,7 +58,7 @@ macro_rules! concept_iterator {
                     if item.is_none() {
                         break;
                     }
-                    let key = item.unwrap().unwrap().to_owned();
+                    let key = item.unwrap().unwrap().into_owned();
                     vec.push(key);
                 }
                 vec

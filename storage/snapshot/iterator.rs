@@ -17,15 +17,15 @@
 
 use std::cmp::Ordering;
 use std::sync::Arc;
-use bytes::byte_array::ByteArray;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
 
+use bytes::byte_array::ByteArray;
+use bytes::byte_reference::ByteReference;
 use iterator::State;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use crate::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
 use crate::MVCCPrefixIterator;
-use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, BufferedPrefixIterator};
+use crate::snapshot::buffer::BufferedPrefixIterator;
 use crate::snapshot::error::{SnapshotError, SnapshotErrorKind};
 use crate::snapshot::write::Write;
 
@@ -211,7 +211,7 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         )
     }
 
-    pub fn collect_cloned(mut self) -> Vec<(StorageKey<'static, BUFFER_INLINE_KEY>, ByteArray<BUFFER_INLINE_VALUE>)> {
+    pub fn collect_cloned(mut self) -> Vec<(StorageKey<'static, BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)> {
         let mut vec = Vec::new();
         loop {
             let item = self.next();

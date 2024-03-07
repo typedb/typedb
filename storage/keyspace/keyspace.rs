@@ -24,6 +24,7 @@ use speedb::{DB, DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOption
 
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
+use bytes::byte_reference::ByteReference;
 use iterator::State;
 use logger::result::ResultExt;
 
@@ -72,7 +73,7 @@ impl Keyspace {
     }
 
     // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options
-    pub(crate) fn new_from_checkpoint(path: PathBuf) {
+    pub(crate) fn load_from_checkpoint(path: PathBuf) {
         todo!()
         // Steps:
         //  WARNING: this is intended to be DESTRUCTIVE since we may wipe anything partially written in the active directory

@@ -18,26 +18,26 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::graph::thing::vertex::{ObjectID, ObjectVertex};
-use crate::graph::type_::vertex::{TypeID, TypeIdUInt};
+use crate::graph::thing::vertex::{ObjectNumber, ObjectVertex};
+use crate::graph::type_::vertex::{TypeID, TypeIDUInt};
 use crate::layout::prefix::PrefixType;
 
 pub struct ThingVertexGenerator {
-    entity_ids: Box<[AtomicU64]>,
-    relation_ids: Box<[AtomicU64]>,
-    attribute_ids: Box<[AtomicU64]>,
+    entity_numbers: Box<[AtomicU64]>,
+    relation_numbers: Box<[AtomicU64]>,
+    attribute_numbers: Box<[AtomicU64]>,
 }
 
 impl ThingVertexGenerator {
     pub fn new() -> ThingVertexGenerator {
         // TODO: we should create a resizable Vector linked to the number of types/highest id of each type
-        //       this will speed up booting time on load and reduce memory footprint
+        //       this will speed up booting time on load (loading this will require MAX types * 3 iterator searches) and reduce memory footprint
         ThingVertexGenerator {
-            entity_ids: (0..TypeIdUInt::MAX as usize)
+            entity_numbers: (0..TypeIDUInt::MAX as usize)
                 .map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice(),
-            relation_ids: (0..TypeIdUInt::MAX as usize)
+            relation_numbers: (0..TypeIDUInt::MAX as usize)
                 .map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice(),
-            attribute_ids: (0..TypeIdUInt::MAX as usize)
+            attribute_numbers: (0..TypeIDUInt::MAX as usize)
                 .map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice(),
         }
     }
@@ -46,9 +46,9 @@ impl ThingVertexGenerator {
         todo!()
     }
 
-    pub fn take_entity_vertex(&self, type_id: &TypeID<'_>) -> ObjectVertex<'static> {
-        let index = type_id.as_u16() as usize;
-        let entity_id = self.entity_ids[index].fetch_add(1, Ordering::Relaxed);
-        ObjectVertex::build(&PrefixType::VertexEntity.prefix(), type_id, ObjectID::build(entity_id))
+    pub fn take_entity_vertex(&self, type_number: &TypeID<'_>) -> ObjectVertex<'static> {
+        let index = type_number.as_u16() as usize;
+        let entity_number = self.entity_numbers[index].fetch_add(1, Ordering::Relaxed);
+        ObjectVertex::build(&PrefixType::VertexEntity.prefix(), type_number, ObjectNumber::build(entity_number))
     }
 }

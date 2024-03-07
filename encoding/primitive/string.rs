@@ -19,30 +19,33 @@ use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
 use logger::result::ResultExt;
-use storage::snapshot::buffer::BUFFER_INLINE_VALUE;
 
+use crate::AsBytes;
 use crate::error::{EncodingError, EncodingErrorKind};
 
-pub struct StringBytes<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_INLINE_VALUE>,
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct StringBytes<'a, const INLINE_LENGTH: usize> {
+    bytes: ByteArrayOrRef<'a, INLINE_LENGTH>,
 }
 
-impl<'a> StringBytes<'a> {
-    pub fn new(value: ByteArrayOrRef<'a, BUFFER_INLINE_VALUE>) -> Self {
-        StringBytes {
-            bytes: value
-        }
+impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
+    pub fn new(value: ByteArrayOrRef<'a, INLINE_LENGTH>) -> Self {
+        StringBytes { bytes: value }
     }
 
-    pub fn build(value: &str) -> Self {
+    pub fn build_owned(value: &str) -> Self {
         StringBytes { bytes: ByteArrayOrRef::Array(ByteArray::copy(value.as_bytes())) }
     }
 
-    pub fn build_ref(value: &'a str) -> Self {
+    pub const fn build_ref(value: &'a str) -> Self {
         StringBytes { bytes: ByteArrayOrRef::Reference(ByteReference::new(value.as_bytes())) }
     }
 
-    pub fn decode_ref(&self) -> &str {
+    pub fn clone_as_ref(&'a self) -> StringBytes<'a, INLINE_LENGTH> {
+        StringBytes { bytes: ByteArrayOrRef::Reference(self.bytes.as_reference()) }
+    }
+
+    pub fn decode(&self) -> &str {
         std::str::from_utf8(self.bytes.bytes())
             .map_err(|err| {
                 EncodingError {
@@ -54,13 +57,15 @@ impl<'a> StringBytes<'a> {
     pub fn length(&self) -> usize {
         self.bytes.length()
     }
+}
 
-    pub fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_VALUE> {
-        self.bytes
+impl<'a, const INLINE_LENGTH: usize> AsBytes<'a, INLINE_LENGTH> for StringBytes<'a, INLINE_LENGTH> {
+    fn bytes(&'a self) -> ByteReference<'a> {
+        self.bytes.as_reference()
     }
 
-    pub fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
+    fn into_bytes(self) -> ByteArrayOrRef<'a, INLINE_LENGTH> {
+        self.bytes
     }
 }
 

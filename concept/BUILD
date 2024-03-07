@@ -33,6 +33,7 @@ rust_library(
         "//common/bytes",
         "//encoding",
         "//storage",
+        "//resource",
     ],
 )
 

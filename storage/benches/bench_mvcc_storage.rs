@@ -25,16 +25,16 @@ use bytes::byte_reference::ByteReference;
 use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::MVCCStorage;
-use storage::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE};
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
-fn random_key_24(keyspace_id: KeyspaceId) -> StorageKeyArray<BUFFER_INLINE_KEY> {
+fn random_key_24(keyspace_id: KeyspaceId) -> StorageKeyArray<{ BUFFER_KEY_INLINE }> {
     let mut bytes: [u8; 24] = rand::random();
     bytes[0] = 0b0;
     StorageKeyArray::from((bytes.as_slice(), keyspace_id))
 }
 
-fn random_key_4(keyspace_id: KeyspaceId) -> StorageKeyArray<BUFFER_INLINE_KEY> {
+fn random_key_4(keyspace_id: KeyspaceId) -> StorageKeyArray<{ BUFFER_KEY_INLINE }> {
     let mut bytes: [u8; 4] = rand::random();
     bytes[0] = 0b0;
     StorageKeyArray::from((bytes.as_slice(), keyspace_id))
@@ -60,20 +60,20 @@ fn populate_storage(storage: &MVCCStorage, keyspace_id: KeyspaceId, key_count: u
     count
 }
 
-fn bench_snapshot_read_get(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Option<ByteArray<BUFFER_INLINE_VALUE>> {
+fn bench_snapshot_read_get(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Option<ByteArray<{ BUFFER_VALUE_INLINE }>> {
     let snapshot = storage.open_snapshot_read();
-    let mut last: Option<ByteArray<BUFFER_INLINE_VALUE>> = None;
+    let mut last: Option<ByteArray<{BUFFER_VALUE_INLINE}>> = None;
     for _ in 0..1 {
-        last = snapshot.get(StorageKey::Array(random_key_24(keyspace_id)));
+        last = snapshot.get(StorageKey::Array(random_key_24(keyspace_id)).as_reference());
     }
     last
 }
 
-fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Option<ByteArray<BUFFER_INLINE_VALUE>> {
+fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Option<ByteArray<{ BUFFER_VALUE_INLINE }>> {
     let snapshot = storage.open_snapshot_read();
-    let mut last: Option<ByteArray<BUFFER_INLINE_VALUE>> = None;
+    let mut last: Option<ByteArray<{BUFFER_VALUE_INLINE}>> = None;
     for _ in 0..ITERATE_COUNT {
-        last = snapshot.get(StorageKey::Array(random_key_4(keyspace_id)))
+        last = snapshot.get(StorageKey::Array(random_key_4(keyspace_id)).as_reference())
     }
     last
 }

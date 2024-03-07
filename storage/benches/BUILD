@@ -27,9 +27,10 @@ rust_test(
         "bench_mvcc_storage.rs",
     ]),
     deps = [
-        "//storage",
         "//common/bytes",
         "//common/logger",
+        "//resource",
+        "//storage",
         "//util/test:test_utils",
 
         "@crates//:rand",

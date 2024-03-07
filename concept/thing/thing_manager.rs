@@ -15,18 +15,19 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::any::Any;
 use std::rc::Rc;
 
+use encoding::{Keyable, Prefixed};
 use encoding::graph::thing::vertex::ObjectVertex;
 use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
-use encoding::Keyable;
+use encoding::graph::Typed;
 use encoding::layout::prefix::PrefixType;
 use storage::snapshot::snapshot::Snapshot;
 
-use crate::{Object, Type};
 use crate::thing::entity::{Entity, EntityIterator};
+use crate::thing::ObjectAPI;
 use crate::type_::entity_type::EntityType;
+use crate::type_::TypeAPI;
 
 pub struct ThingManager<'txn, 'storage: 'txn> {
     snapshot: Rc<Snapshot<'storage>>,

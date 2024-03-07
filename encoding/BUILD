@@ -32,10 +32,11 @@ rust_library(
         "*/*/*.rs",
     ]),
     deps = [
-        "//storage",
-        "//storage/durability",
         "//common/logger",
         "//common/bytes",
+        "//resource",
+        "//storage",
+        "//storage/durability",
 
         "@crates//:tracing",
     ],

@@ -15,26 +15,46 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use encoding::graph::thing::vertex::{AttributeVertex, ObjectVertex};
-use encoding::graph::type_::vertex::TypeVertex;
+use bytes::byte_reference::ByteReference;
+use encoding::AsBytes;
+use thing::{AttributeAPI, ObjectAPI};
+use type_::TypeAPI;
 
 pub mod type_;
 pub mod thing;
 pub mod error;
 pub mod iterator;
 
-trait Concept<'a>: Eq + PartialEq { }
+trait ConceptAPI<'a>: Eq + PartialEq {}
 
-trait Type<'a>: Concept<'a> {
-    fn vertex(&'a self) -> &TypeVertex<'a>;
+// ---- IID implementations ---
+
+trait IIDAPI<'a> {
+    fn iid(&'a self) -> ByteReference<'a>;
 }
 
-trait Thing<'a>: Concept<'a> {}
 
-trait Object<'a>: Thing<'a> {
-    fn vertex(&'a self) -> &ObjectVertex<'a>;
-}
+// --- Annotations ---
 
-trait Attribute<'a>: Thing<'a> {
-    fn vertex(&'a self) -> &AttributeVertex<'a>;
+trait Annotatable<'a>: IIDAPI<'a> {
+
+    fn set_annotation(&self) {
+        // set annotation on this structure
+        todo!()
+    }
+
+    fn get_annotations(&self) {
+        // get "effective" annotations
+        todo!()
+    }
+
+    fn get_declared_annotations(&self) {
+        // get annotations declared
+        todo!()
+    }
+
+    fn get_inherited_annotations(&self) {
+        // get annotations inherited
+        todo!()
+    }
 }

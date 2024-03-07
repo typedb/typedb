@@ -20,10 +20,12 @@ use encoding::graph::thing::vertex::ObjectVertex;
 use storage::key_value::StorageKeyReference;
 use storage::snapshot::iterator::SnapshotPrefixIterator;
 
-use crate::{Concept, concept_iterator, Object, Thing, Type};
+use crate::{ConceptAPI, concept_iterator};
 use crate::error::{ConceptError, ConceptErrorKind};
+use crate::thing::{ObjectAPI, ThingAPI};
+use crate::type_::TypeAPI;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Entity<'a> {
     vertex: ObjectVertex<'a>,
 }
@@ -33,26 +35,23 @@ impl<'a> Entity<'a> {
         Entity { vertex: vertex }
     }
 
-    pub fn to_owned(&self) -> Entity<'static> {
-        Entity { vertex: self.vertex.to_owned() }
+    pub fn into_owned(self) -> Entity<'static> {
+        Entity { vertex: self.vertex.into_owned() }
     }
 }
 
-impl<'a> Concept<'a> for Entity<'a> {}
+impl<'a> ConceptAPI<'a> for Entity<'a> {}
 
-impl<'a> Thing<'a> for Entity<'a> {}
+impl<'a> ThingAPI<'a> for Entity<'a> {}
 
-impl<'a> Object<'a> for Entity<'a> {
+impl<'a> ObjectAPI<'a> for Entity<'a> {
     fn vertex(&'a self) -> &ObjectVertex<'a> {
         &self.vertex
     }
 }
 
-
 // TODO: can we inline this into the macro invocation?
-fn create_entity<'a>(storage_key_ref: StorageKeyReference<'a>) -> Entity<'a> {
+fn storage_key_to_entity<'a>(storage_key_ref: StorageKeyReference<'a>) -> Entity<'a> {
     Entity::new(ObjectVertex::new(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
 }
-
-concept_iterator!(EntityIterator, Entity, create_entity);
-
+concept_iterator!(EntityIterator, Entity, storage_key_to_entity);

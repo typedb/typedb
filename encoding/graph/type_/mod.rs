@@ -24,6 +24,7 @@ pub mod property;
 use std::borrow::Cow;
 
 use crate::primitive::label::Label;
+use crate::primitive::string::StringBytes;
 
 pub enum Root {
     Entity,
@@ -35,10 +36,10 @@ pub enum Root {
 impl Root {
     pub const fn label(&self) -> Label {
         match self {
-            Root::Entity => Label { name: Cow::Borrowed("entity"), scope: None },
-            Root::Attribute => Label { name: Cow::Borrowed("attribute"), scope: None },
-            Root::Relation => Label { name: Cow::Borrowed("relation"), scope: None },
-            Root::Role => Label { name: Cow::Borrowed("role"), scope: Some(Cow::Borrowed("relation")) },
+            Root::Entity => Label::new_static(&"entity"),
+            Root::Attribute => Label::new_static(&"attribute"),
+            Root::Relation => Label::new_static(&"relation"),
+            Root::Role => Label::new_static_scoped(&"role", &"relation", &"relation:role"),
         }
     }
 }

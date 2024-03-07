@@ -25,9 +25,10 @@ rust_test(
         "test_storage.rs",
     ]),
     deps = [
-        "//storage",
         "//common/bytes",
         "//common/logger",
+        "//storage",
+        "//resource",
         "//util/test:test_utils",
 
         "@crates//:rand",
@@ -41,11 +42,11 @@ rust_test(
         "test_snapshot.rs",
     ]),
     deps = [
-        "//storage",
         "//common/bytes",
         "//common/logger",
+        "//storage",
+        "//resource",
         "//util/test:test_utils",
-
         "@crates//:rand",
         "@crates//:tracing",
     ]
@@ -57,11 +58,11 @@ rust_test(
         "test_mvcc.rs",
     ]),
     deps = [
-        "//storage",
         "//common/bytes",
         "//common/logger",
+        "//storage",
+        "//resource",
         "//util/test:test_utils",
-
         "@crates//:rand",
         "@crates//:tracing",
     ]
@@ -73,9 +74,10 @@ rust_test(
         "test_isolation.rs",
     ]),
     deps = [
-        "//storage",
         "//common/bytes",
         "//common/logger",
+        "//storage",
+        "//resource",
         "//util/test:test_utils",
 
         "@crates//:rand",

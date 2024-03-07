@@ -17,19 +17,21 @@
 
 
 use std::ops::Range;
+
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
-use storage::snapshot::buffer::BUFFER_INLINE_KEY;
+
 use crate::{AsBytes, EncodingKeyspace, Keyable};
-use crate::graph::thing::vertex::{AttributeVertex, ObjectID, ObjectVertex};
-use crate::graph::type_::vertex::{TypeID, TypeVertex};
+use crate::graph::thing::vertex::{AttributeVertex, ObjectVertex};
+use crate::graph::type_::vertex::TypeVertex;
 use crate::layout::infix::{InfixID, InfixType};
 
 struct HasForwardEdge<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>,
+    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }
 
 impl<'a> HasForwardEdge<'a> {
@@ -37,7 +39,7 @@ impl<'a> HasForwardEdge<'a> {
     const LENGTH_PREFIX_FROM_OBJECT: usize = ObjectVertex::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize = ObjectVertex::LENGTH + InfixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
 
-    fn new(bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>) -> Self {
+    fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         HasForwardEdge { bytes: bytes }
     }
@@ -93,17 +95,17 @@ impl<'a> HasForwardEdge<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for HasForwardEdge<'a> {
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for HasForwardEdge<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
+    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for HasForwardEdge<'a> {
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for HasForwardEdge<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
         Self::keyspace_id()
     }

@@ -21,47 +21,47 @@ use std::ops::Range;
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
-use storage::snapshot::buffer::BUFFER_INLINE_KEY;
 
 use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
 use crate::graph::type_::vertex::TypeID;
+use crate::graph::Typed;
 use crate::layout::prefix::PrefixID;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObjectVertex<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>,
+    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }
 
 impl<'a> ObjectVertex<'a> {
-    pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectID::LENGTH;
-    pub(crate) const LENGTH_PREFIX_PREFIX: usize = PrefixID::LENGTH;
-    pub(crate) const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
+    pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectNumber::LENGTH;
+    const LENGTH_PREFIX_PREFIX: usize = PrefixID::LENGTH;
+    const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
 
-    pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>) -> ObjectVertex<'a> {
+    pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> ObjectVertex<'a> {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         ObjectVertex { bytes: bytes }
     }
 
-    pub fn build(prefix: &PrefixID<'_>, type_id: &TypeID<'_>, object_id: ObjectID<'_>) -> Self {
+    pub fn build(prefix: &PrefixID<'_>, type_number: &TypeID<'_>, object_number: ObjectNumber<'_>) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
-        array.bytes_mut()[Self::range_type_id()].copy_from_slice(type_id.bytes().bytes());
-        array.bytes_mut()[Self::range_object_id()].copy_from_slice(object_id.bytes().bytes());
+        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_number.bytes().bytes());
+        array.bytes_mut()[Self::range_object_number()].copy_from_slice(object_number.bytes().bytes());
         ObjectVertex { bytes: ByteArrayOrRef::Array(array) }
     }
 
-    pub fn prefix_prefix(prefix: &PrefixID<'_>) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_PREFIX }> {
+    pub fn prefix_prefix(prefix: &PrefixID<'_>) -> StorageKey<'static, {ObjectVertex::LENGTH_PREFIX_PREFIX}> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_PREFIX);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
         StorageKey::new(Self::keyspace_id(), ByteArrayOrRef::Array(array))
     }
-
-    pub fn prefix_type(prefix: &PrefixID<'_>, type_id: &TypeID<'_>) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_TYPE }> {
+    fn prefix_type(prefix: &PrefixID<'_>, type_number: &TypeID<'_>) -> StorageKey<'static, {ObjectVertex::LENGTH_PREFIX_TYPE}> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
-        array.bytes_mut()[Self::range_type_id()].copy_from_slice(type_id.bytes().bytes());
+        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_number.bytes().bytes());
         StorageKey::new(Self::keyspace_id(), ByteArrayOrRef::Array(array))
     }
 
@@ -70,110 +70,95 @@ impl<'a> ObjectVertex<'a> {
         EncodingKeyspace::Data.id()
     }
 
-    pub fn type_id(&'a self) -> TypeID<'a> {
-        TypeID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_type_id()])))
+    pub fn object_number(&'a self) -> ObjectNumber<'a> {
+        ObjectNumber::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_object_number()])))
+    }
+    const fn range_object_number() -> Range<usize> {
+        Self::RANGE_TYPE_ID.end..Self::RANGE_TYPE_ID.end + ObjectNumber::LENGTH
     }
 
-    pub fn object_id(&'a self) -> ObjectID<'a> {
-        ObjectID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_object_id()])))
-    }
-
-    const fn range_type_id() -> Range<usize> {
-        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeID::LENGTH
-    }
-
-    const fn range_object_id() -> Range<usize> {
-        Self::range_type_id().end..Self::range_type_id().end + ObjectID::LENGTH
-    }
-
-    pub fn to_owned(&self) -> ObjectVertex<'static> {
-        ObjectVertex { bytes: self.bytes.to_owned() }
+    pub fn into_owned(self) -> ObjectVertex<'static> {
+        ObjectVertex { bytes: self.bytes.into_owned() }
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for ObjectVertex<'a> {
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
+    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for ObjectVertex<'a> {
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
         Self::keyspace_id()
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_INLINE_KEY> for ObjectVertex<'a> {}
+impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {}
+
+impl<'a> Typed<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {}
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct ObjectID<'a> {
-    bytes: ByteArrayOrRef<'a, { ObjectID::LENGTH }>,
+pub struct ObjectNumber<'a> {
+    bytes: ByteArrayOrRef<'a, { ObjectNumber::LENGTH }>,
 }
 
-impl<'a> ObjectID<'a> {
+impl<'a> ObjectNumber<'a> {
     const LENGTH: usize = 8;
 
-    fn new(bytes: ByteArrayOrRef<'a, { ObjectID::LENGTH }>) -> Self {
+    fn new(bytes: ByteArrayOrRef<'a, { ObjectNumber::LENGTH }>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        ObjectID { bytes: bytes }
+        ObjectNumber { bytes: bytes }
     }
 
     pub fn build(id: u64) -> Self {
         debug_assert_eq!(mem::size_of_val(&id), Self::LENGTH);
-        ObjectID { bytes: ByteArrayOrRef::Array(ByteArray::inline(id.to_be_bytes(), Self::LENGTH)) }
+        ObjectNumber { bytes: ByteArrayOrRef::Array(ByteArray::inline(id.to_be_bytes(), Self::LENGTH)) }
     }
 }
 
-impl<'a> AsBytes<'a, { ObjectID::LENGTH }> for ObjectID<'a> {
+impl<'a> AsBytes<'a, { ObjectNumber::LENGTH }> for ObjectNumber<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, { ObjectID::LENGTH }> {
+    fn into_bytes(self) -> ByteArrayOrRef<'a, { ObjectNumber::LENGTH }> {
         self.bytes
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AttributeVertex<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>,
+    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }
 
 impl<'a> AttributeVertex<'a> {
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + AttributeID::LENGTH;
     pub(crate) const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
 
-    pub(crate) fn new(bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>) -> Self {
+    pub(crate) fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         AttributeVertex { bytes: bytes }
     }
 
-    fn build(prefix_id: &PrefixID<'a>, type_id: &TypeID<'_>, attribute_id: AttributeID) -> Self {
+    fn build(prefix: &PrefixID<'a>, type_number: &TypeID<'_>, attribute_number: AttributeID) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix_id.bytes().bytes());
-        bytes.bytes_mut()[Self::range_type_id()].copy_from_slice(type_id.bytes().bytes());
-        bytes.bytes_mut()[Self::range_attribute_id()].copy_from_slice(attribute_id.bytes().bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
+        bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_number.bytes().bytes());
+        bytes.bytes_mut()[Self::range_attribute_number()].copy_from_slice(attribute_number.bytes().bytes());
         Self { bytes: ByteArrayOrRef::Array(bytes) }
     }
 
-    pub fn type_id(&'a self) -> TypeID<'a> {
-        TypeID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_type_id()])))
+    pub fn attribute_number(&'a self) -> AttributeID<'a> {
+        AttributeID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_attribute_number()])))
     }
 
-    pub fn attribute_id(&'a self) -> AttributeID<'a> {
-        AttributeID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_attribute_id()])))
-    }
-
-    const fn range_type_id() -> Range<usize> {
-        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeID::LENGTH
-    }
-
-    const fn range_attribute_id() -> Range<usize> {
-        Self::range_type_id().end..Self::range_type_id().end + AttributeID::LENGTH
+    const fn range_attribute_number() -> Range<usize> {
+        Self::RANGE_TYPE_ID.end..Self::RANGE_TYPE_ID.end + AttributeID::LENGTH
     }
 
     fn to_owned(&self) -> AttributeVertex<'static> {
@@ -181,17 +166,19 @@ impl<'a> AttributeVertex<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for AttributeVertex<'a> {
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
+    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_INLINE_KEY> for AttributeVertex<'a> {}
+impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {}
+
+impl<'a> Typed<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {}
 
 #[derive(Debug, PartialEq, Eq)]
 struct AttributeID<'a> {
@@ -200,8 +187,8 @@ struct AttributeID<'a> {
 
 impl<'a> AttributeID<'a> {
     const HEADER_LENGTH: usize = 4;
-    const ID_LENGTH: usize = 8;
-    const LENGTH: usize = Self::HEADER_LENGTH + Self::ID_LENGTH;
+    const NUMBER_LENGTH: usize = 8;
+    const LENGTH: usize = Self::HEADER_LENGTH + Self::NUMBER_LENGTH;
 
     pub fn new(bytes: ByteArrayOrRef<'a, { AttributeID::LENGTH }>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
@@ -209,11 +196,11 @@ impl<'a> AttributeID<'a> {
     }
 
     pub fn build(header: &[u8; AttributeID::HEADER_LENGTH], id: u64) -> Self {
-        debug_assert_eq!(mem::size_of_val(&id), Self::ID_LENGTH);
+        debug_assert_eq!(mem::size_of_val(&id), Self::NUMBER_LENGTH);
         let id_bytes = id.to_be_bytes();
         let mut array = ByteArray::zeros(Self::LENGTH);
         array.bytes_mut()[Self::range_header()].copy_from_slice(header);
-        array.bytes_mut()[Self::range_id()].copy_from_slice(&id_bytes);
+        array.bytes_mut()[Self::range_number()].copy_from_slice(&id_bytes);
         AttributeID { bytes: ByteArrayOrRef::Array(array) }
     }
 
@@ -221,16 +208,16 @@ impl<'a> AttributeID<'a> {
         ByteReference::new(&self.bytes.bytes()[Self::range_header()])
     }
 
-    fn id(&'a self) -> ByteReference<'a> {
-        ByteReference::new(&self.bytes.bytes()[Self::range_id()])
+    fn number(&'a self) -> ByteReference<'a> {
+        ByteReference::new(&self.bytes.bytes()[Self::range_number()])
     }
 
     const fn range_header() -> Range<usize> {
         0..Self::HEADER_LENGTH
     }
 
-    const fn range_id() -> Range<usize> {
-        Self::range_header().end..Self::range_header().end + Self::ID_LENGTH
+    const fn range_number() -> Range<usize> {
+        Self::range_header().end..Self::range_header().end + Self::NUMBER_LENGTH
     }
 }
 

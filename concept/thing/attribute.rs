@@ -17,7 +17,7 @@
 
 use encoding::graph::thing::vertex::AttributeVertex;
 
-use crate::Type;
+use crate::type_::TypeAPI;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Attribute<'a> {

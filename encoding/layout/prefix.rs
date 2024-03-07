@@ -79,7 +79,7 @@ macro_rules! prefix_functions {
         pub const fn prefix(&self) -> PrefixID {
             let bytes = match self {
                 $(
-                    Self::$name => {&$bytes},
+                    Self::$name => {&$bytes}
                 )*
             };
             PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
@@ -91,7 +91,7 @@ macro_rules! prefix_functions {
                     Self::$name => {
                         const successor: [u8; PrefixID::LENGTH] = increment_fixed($bytes);
                         &successor
-                    },
+                    }
                 )*
             };
             PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
@@ -100,7 +100,7 @@ macro_rules! prefix_functions {
         pub fn from_prefix(prefix: &PrefixID) -> Self {
             match prefix.bytes.bytes() {
                 $(
-                    $bytes => {Self::$name},
+                    $bytes => {Self::$name}
                 )*
                 _ => unreachable!(),
             }

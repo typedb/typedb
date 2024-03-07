@@ -17,12 +17,14 @@
 
 
 use std::ops::Range;
+
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
 use storage::error::MVCCStorageError;
 use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::MVCCStorage;
+
 use crate::layout::prefix::PrefixID;
 
 pub mod graph;
@@ -30,7 +32,7 @@ pub mod layout;
 mod error;
 pub mod primitive;
 
-enum EncodingKeyspace {
+pub enum EncodingKeyspace {
     Schema,
     Data, // TODO: partition into sub-keyspaces for write optimisation
 }
@@ -43,7 +45,7 @@ impl EncodingKeyspace {
         }
     }
 
-    const fn id(&self) -> KeyspaceId {
+    pub const fn id(&self) -> KeyspaceId {
         match self {
             EncodingKeyspace::Schema => 0x0,
             EncodingKeyspace::Data => 0x1,
@@ -81,6 +83,7 @@ pub trait Keyable<'a, const INLINE_SIZE: usize> : AsBytes<'a, INLINE_SIZE> + Siz
         StorageKey::new(self.keyspace_id(), self.into_bytes())
     }
 }
+
 
 pub trait Prefixed<'a, const INLINE_SIZE: usize> : AsBytes<'a, INLINE_SIZE> {
 

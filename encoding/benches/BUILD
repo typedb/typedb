@@ -28,6 +28,7 @@ rust_test(
     ]),
     deps = [
         "//encoding",
+        "//resource",
         "//storage",
 
         "@crates//:criterion",

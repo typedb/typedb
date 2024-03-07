@@ -20,35 +20,35 @@ use std::ops::Range;
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
-use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
-use storage::snapshot::buffer::BUFFER_INLINE_KEY;
-use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
+use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
 use crate::graph::type_::vertex::TypeVertex;
 use crate::layout::prefix::{PrefixID, PrefixType};
+use crate::primitive::label::Label;
 use crate::primitive::string::StringBytes;
 
 // TODO: maybe we want to either use Generics or Macros to implement all Properties the same way?
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct TypeToLabelProperty<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>,
+    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }
 
 impl<'a> TypeToLabelProperty<'a> {
     const LENGTH: usize = PrefixID::LENGTH + TypeVertex::LENGTH;
 
-    pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>) -> Self {
+    pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         TypeToLabelProperty { bytes: bytes }
     }
 
-    pub fn build_key_value(vertex: &TypeVertex<'a>, label: &'a str) -> (Self, StringBytes<'a>) {
+    pub fn build(vertex: &TypeVertex<'_>) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::PropertyTypeToLabel.prefix().bytes().bytes());
         array.bytes_mut()[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
-        (TypeToLabelProperty { bytes: ByteArrayOrRef::Array(array) }, StringBytes::build_ref(label))
+        TypeToLabelProperty { bytes: ByteArrayOrRef::Array(array) }
     }
 
     const fn range_type_vertex() -> Range<usize> {
@@ -56,44 +56,44 @@ impl<'a> TypeToLabelProperty<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for TypeToLabelProperty<'a> {
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeToLabelProperty<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
 
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
+    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for TypeToLabelProperty<'a> {
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeToLabelProperty<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
         EncodingKeyspace::Schema.id()
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_INLINE_KEY> for TypeToLabelProperty<'a> {}
+impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeToLabelProperty<'a> {}
 
 pub struct LabelToTypeProperty<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>,
+    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }
 
 impl<'a> LabelToTypeProperty<'a> {
-    pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>) -> Self {
+    pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= PrefixID::LENGTH);
         LabelToTypeProperty { bytes: bytes }
     }
 
-    pub fn build(label: &str) -> Self {
-        let label_bytes = StringBytes::build(&label);
-        let mut array = ByteArray::zeros(label_bytes.length() + PrefixID::LENGTH);
+    pub fn build(label: &Label) -> Self {
+        let label_string_bytes = label.scoped_name();
+        let mut array = ByteArray::zeros(label_string_bytes.bytes().length() + PrefixID::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::PropertyLabelToType.prefix().bytes().bytes());
-        array.bytes_mut()[Self::range_label(label_bytes.length())].copy_from_slice(label_bytes.bytes().bytes());
+        array.bytes_mut()[Self::range_label(label_string_bytes.bytes().length())].copy_from_slice(label_string_bytes.bytes().bytes());
         LabelToTypeProperty { bytes: ByteArrayOrRef::Array(array) }
     }
 
-    fn label(&'a self) -> StringBytes<'a> {
+    fn label(&'a self) -> StringBytes<'a, BUFFER_KEY_INLINE> {
         StringBytes::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_label(self.label_length())])))
     }
 
@@ -106,20 +106,20 @@ impl<'a> LabelToTypeProperty<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for LabelToTypeProperty<'a> {
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for LabelToTypeProperty<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_INLINE_KEY> {
+    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for LabelToTypeProperty<'a> {
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for LabelToTypeProperty<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
         EncodingKeyspace::Schema.id()
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_INLINE_KEY> for LabelToTypeProperty<'a> { }
+impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for LabelToTypeProperty<'a> {}

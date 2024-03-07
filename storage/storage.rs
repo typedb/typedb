@@ -30,13 +30,14 @@ use iterator::State;
 use logger::error;
 use logger::result::ResultExt;
 use primitive::U80;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use snapshot::write::Write;
 
 use crate::error::{MVCCStorageError, MVCCStorageErrorKind};
 use crate::isolation_manager::{CommitRecord, IsolationManager};
 use crate::key_value::{StorageKey, StorageKeyReference};
 use crate::keyspace::keyspace::{Keyspace, KEYSPACE_ID_MAX, KEYSPACE_ID_RESERVED_UNSET, KEYSPACE_MAXIMUM_COUNT, KeyspaceError, KeyspaceId, KeyspacePrefixIterator};
-use crate::snapshot::buffer::{BUFFER_INLINE_VALUE, KeyspaceBuffers};
+use crate::snapshot::buffer::KeyspaceBuffers;
 use crate::snapshot::snapshot::{ReadSnapshot, WriteSnapshot};
 
 pub mod error;
@@ -74,12 +75,12 @@ impl MVCCStorage {
     }
 
     // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options
-    fn new_from_checkpoint(path: &PathBuf, durability_service: impl DurabilityService) -> Result<Self, MVCCStorageError> {
+    fn load_from_checkpoint(path: &PathBuf, durability_service: impl DurabilityService) -> Result<Self, MVCCStorageError> {
         todo!("Booting from checkpoint not yet implemented")
 
         // Steps:
         //   Load each keyspace from their latest checkpoint
-        //   Get the last known committed sequence number from each keyspace
+        //   Get the last known committed sequence number from each keyspace (if we want to do this at all... could probably just replay)
         //   Iterate over records from Durability Service from the earliest sequence number
         //   For each record, commit the records. Some keyspaces will write duplicates, but all writes are idempotent so this is OK.
 
@@ -297,9 +298,9 @@ impl MVCCStorage {
         }
     }
 
-    pub fn get<M, V, const KS: usize>(&self, key: StorageKey<'_, KS>, open_sequence_number: &SequenceNumber, mut mapper: M) -> Option<V>
+    pub fn get<M, V>(&self, key: StorageKeyReference<'_>, open_sequence_number: &SequenceNumber, mut mapper: M) -> Option<V>
         where M: FnMut(ByteReference<'_>) -> V {
-        let mut iterator = self.iterate_prefix(key, open_sequence_number);
+        let mut iterator = self.iterate_prefix(StorageKey::<8>::Reference(key), open_sequence_number);
         // TODO: we don't want to panic on unwrap here
         iterator.next().transpose().unwrap_or_log().map(|(_, value)|
             mapper(value)
@@ -313,7 +314,7 @@ impl MVCCStorage {
 
     // --- direct access to storage, bypassing MVCC and returning raw key/value pairs ---
 
-    pub fn put_raw(&self, key: StorageKeyReference<'_>, value: &ByteArrayOrRef<'_, BUFFER_INLINE_VALUE>) {
+    pub fn put_raw(&self, key: StorageKeyReference<'_>, value: &ByteArrayOrRef<'_, BUFFER_VALUE_INLINE>) {
         // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
         self.get_keyspace(key.keyspace_id()).put(key.bytes(), value.bytes()).map_err(|e| MVCCStorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
@@ -341,7 +342,7 @@ impl MVCCStorage {
         )
     }
 
-    pub fn iterate_keyspace_prefix<'this, const PREFIX_INLINE_SIZE: usize>(&'this self, prefix: StorageKey<'this, PREFIX_INLINE_SIZE>) -> KeyspacePrefixIterator<'this, PREFIX_INLINE_SIZE> {
+    pub fn iterate_keyspace_prefix<'this, const PREFIX_INLINE: usize>(&'this self, prefix: StorageKey<'this, PREFIX_INLINE>) -> KeyspacePrefixIterator<'this, PREFIX_INLINE> {
         debug_assert!(prefix.bytes().len() > 0);
         self.get_keyspace(prefix.keyspace_id()).iterate_prefix(prefix.into_byte_array_or_ref())
     }

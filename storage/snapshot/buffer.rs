@@ -34,9 +34,7 @@ use crate::key_value::StorageKeyArray;
 use crate::keyspace::keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId};
 use crate::snapshot::error::SnapshotError;
 use crate::snapshot::write::Write;
-
-pub const BUFFER_INLINE_KEY: usize = 48;
-pub const BUFFER_INLINE_VALUE: usize = 128;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 #[derive(Debug)]
 pub(crate) struct KeyspaceBuffers {
@@ -70,7 +68,7 @@ impl KeyspaceBuffers {
 #[derive(Debug)]
 pub(crate) struct KeyspaceBuffer {
     keyspace_id: KeyspaceId,
-    buffer: RwLock<BTreeMap<ByteArray<BUFFER_INLINE_KEY>, Write>>,
+    buffer: RwLock<BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>>,
 }
 
 impl KeyspaceBuffer {
@@ -85,23 +83,23 @@ impl KeyspaceBuffer {
         map.is_empty()
     }
 
-    pub(crate) fn insert(&self, key: ByteArray<BUFFER_INLINE_KEY>, value: ByteArray<BUFFER_INLINE_VALUE>) {
+    pub(crate) fn insert(&self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
         let mut map = self.buffer.write().unwrap();
         map.insert(key, Write::Insert(value));
     }
 
-    pub(crate) fn insert_preexisting(&self, key: ByteArray<BUFFER_INLINE_KEY>, value: ByteArray<BUFFER_INLINE_VALUE>) {
+    pub(crate) fn insert_preexisting(&self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
         let mut map = self.buffer.write().unwrap();
         map.insert(key, Write::InsertPreexisting(value, Arc::new(AtomicBool::new(false))));
     }
 
-    pub(crate) fn require_exists(&self, key: ByteArray<BUFFER_INLINE_KEY>, value: ByteArray<BUFFER_INLINE_VALUE>) {
+    pub(crate) fn require_exists(&self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
         let mut map = self.buffer.write().unwrap();
         // TODO: what if it already has been inserted? Ie. InsertPreexisting?
         map.insert(key, Write::RequireExists(value));
     }
 
-    pub(crate) fn delete(&self, key: ByteArray<BUFFER_INLINE_KEY>) {
+    pub(crate) fn delete(&self, key: ByteArray<BUFFER_KEY_INLINE>) {
         let mut map = self.buffer.write().unwrap();
         if map.get(key.bytes()).map_or(false, |write| write.is_insert() || write.is_insert_preexisting()) {
             // undo previous insert
@@ -111,12 +109,12 @@ impl KeyspaceBuffer {
         }
     }
 
-    pub(crate) fn contains(&self, key: &ByteArray<BUFFER_INLINE_KEY>) -> bool {
+    pub(crate) fn contains(&self, key: &ByteArray<BUFFER_KEY_INLINE>) -> bool {
         let map = self.buffer.read().unwrap();
         map.get(key.bytes()).is_some()
     }
 
-    pub(crate) fn get<const INLINE_SIZE: usize>(&self, key: &[u8]) -> Option<ByteArray<INLINE_SIZE>> {
+    pub(crate) fn get<const INLINE_BYTES: usize>(&self, key: &[u8]) -> Option<ByteArray<INLINE_BYTES>> {
         let map = self.buffer.read().unwrap();
         let existing = map.get(key);
         if let Some(write) = existing {
@@ -141,7 +139,7 @@ impl KeyspaceBuffer {
         BufferedPrefixIterator::new(range)
     }
 
-    pub(crate) fn map(&self) -> &RwLock<BTreeMap<ByteArray<BUFFER_INLINE_KEY>, Write>> {
+    pub(crate) fn map(&self) -> &RwLock<BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>> {
         &self.buffer
     }
 }
@@ -150,11 +148,11 @@ impl KeyspaceBuffer {
 pub(crate) struct BufferedPrefixIterator {
     state: State<SnapshotError>,
     index: usize,
-    range: Vec<(StorageKeyArray<BUFFER_INLINE_KEY>, Write)>,
+    range: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)>,
 }
 
 impl BufferedPrefixIterator {
-    fn new(range: Vec<(StorageKeyArray<BUFFER_INLINE_KEY>, Write)>) -> BufferedPrefixIterator {
+    fn new(range: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)>) -> BufferedPrefixIterator {
         BufferedPrefixIterator {
             state: State::Init,
             index: 0,
@@ -162,7 +160,7 @@ impl BufferedPrefixIterator {
         }
     }
 
-    pub(crate) fn peek(&mut self) -> Option<Result<(&StorageKeyArray<BUFFER_INLINE_KEY>, &Write), SnapshotError>> {
+    pub(crate) fn peek(&mut self) -> Option<Result<(&StorageKeyArray<BUFFER_KEY_INLINE>, &Write), SnapshotError>> {
         match &self.state {
             State::Done => None,
             State::Init => {
@@ -181,7 +179,7 @@ impl BufferedPrefixIterator {
         }
     }
 
-    pub(crate) fn next(&mut self) -> Option<Result<(&StorageKeyArray<BUFFER_INLINE_KEY>, &Write), SnapshotError>> {
+    pub(crate) fn next(&mut self) -> Option<Result<(&StorageKeyArray<BUFFER_KEY_INLINE>, &Write), SnapshotError>> {
         match &self.state {
             State::Done => None,
             State::Init => {
@@ -401,7 +399,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffer {
                     V: SeqAccess<'de>,
             {
                 let keyspace_id = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let buffer: BTreeMap<ByteArray<BUFFER_INLINE_KEY>, Write> = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let buffer: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 Ok(KeyspaceBuffer {
                     keyspace_id: keyspace_id,
                     buffer: RwLock::new(buffer),
@@ -413,7 +411,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffer {
                     V: MapAccess<'de>,
             {
                 let mut keyspace_id: Option<KeyspaceId> = None;
-                let mut buffer: Option<BTreeMap<ByteArray<BUFFER_INLINE_KEY>, Write>> = None;
+                let mut buffer: Option<BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>> = None;
                 while let Some(key) = map.next_key()? {
                     match key {
                         Field::KeyspaceId => {
@@ -432,7 +430,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffer {
                 }
 
                 let keyspace_id = keyspace_id.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let buffer: BTreeMap<ByteArray<BUFFER_INLINE_KEY>, Write> = buffer.ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let buffer: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> = buffer.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 Ok(KeyspaceBuffer {
                     keyspace_id: keyspace_id,
                     buffer: RwLock::new(buffer),

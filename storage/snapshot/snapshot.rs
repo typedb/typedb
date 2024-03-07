@@ -16,12 +16,14 @@
  */
 
 use bytes::byte_array::ByteArray;
+use bytes::byte_reference::ByteReference;
 use durability::SequenceNumber;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use crate::isolation_manager::CommitRecord;
 use crate::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
 use crate::MVCCStorage;
-use crate::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE, KeyspaceBuffers};
+use crate::snapshot::buffer::KeyspaceBuffers;
 use crate::snapshot::error::{SnapshotError, SnapshotErrorKind};
 use crate::snapshot::iterator::SnapshotPrefixIterator;
 
@@ -32,10 +34,17 @@ pub enum Snapshot<'storage> {
 }
 
 impl<'storage> Snapshot<'storage> {
-    pub fn get<'snapshot, const KS: usize>(&'snapshot self, key: StorageKey<'_, BUFFER_INLINE_KEY>) -> Option<ByteArray<KS>> {
+    pub fn get<'snapshot, const KS: usize>(&'snapshot self, key: StorageKeyReference<'_>) -> Option<ByteArray<KS>> {
         match self {
             Snapshot::Read(snapshot) => snapshot.get(key),
             Snapshot::Write(snapshot) => snapshot.get(key),
+        }
+    }
+
+    pub fn get_mapped<T>(&self, key: StorageKeyReference<'_>, mut mapper: impl FnMut(ByteReference<'_>) -> T) -> Option<T> {
+        match self {
+            Snapshot::Read(snapshot) => snapshot.get_mapped(key, mapper),
+            Snapshot::Write(snapshot) => snapshot.get_mapped(key, mapper),
         }
     }
 
@@ -69,9 +78,13 @@ impl<'storage> ReadSnapshot<'storage> {
         }
     }
 
-    pub fn get<'snapshot, const KS: usize>(&self, key: StorageKey<'_, BUFFER_INLINE_KEY>) -> Option<ByteArray<KS>> {
+    pub fn get<'snapshot, const KS: usize>(&self, key: StorageKeyReference<'_>) -> Option<ByteArray<KS>> {
         // TODO: this clone may not be necessary - we could pass a reference up?
         self.storage.get(key, &self.open_sequence_number, |reference| ByteArray::from(reference))
+    }
+
+    pub fn get_mapped<T>(&self, key: StorageKeyReference<'_>, mut mapper: impl FnMut(ByteReference<'_>) -> T) -> Option<T> {
+        self.storage.get(key, &self.open_sequence_number, |reference| mapper(reference))
     }
 
     pub fn iterate_prefix<'this, const PS: usize>(&'this self, prefix: StorageKey<'this, PS>) -> SnapshotPrefixIterator<'this, PS> {
@@ -100,11 +113,11 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     /// Insert a key with a new version
-    pub fn insert(&self, key: StorageKeyArray<BUFFER_INLINE_KEY>) {
+    pub fn insert(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
         self.insert_val(key, ByteArray::empty())
     }
 
-    pub fn insert_val(&self, key: StorageKeyArray<BUFFER_INLINE_KEY>, value: ByteArray<BUFFER_INLINE_VALUE>) {
+    pub fn insert_val(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
         let keyspace_id = key.keyspace_id();
         let byte_array = key.into_byte_array();
         self.buffers.get(keyspace_id).insert(byte_array, value);
@@ -112,16 +125,16 @@ impl<'storage> WriteSnapshot<'storage> {
 
     /// Insert a key with a new version if it does not already exist.
     /// If the key exists, mark it as a preexisting insertion to escalate to Insert if there is a concurrent Delete.
-    pub fn put(&self, key: StorageKeyArray<BUFFER_INLINE_KEY>) {
+    pub fn put(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
         self.put_val(key, ByteArray::empty())
     }
 
-    pub fn put_val(&self, key: StorageKeyArray<BUFFER_INLINE_KEY>, value: ByteArray<BUFFER_INLINE_VALUE>) {
+    pub fn put_val(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
         let keyspace_id = key.keyspace_id();
         let buffer = self.buffers.get(keyspace_id);
         let existing_buffered = buffer.contains(key.byte_array());
         if !existing_buffered {
-            let wrapped: StorageKey<'_, BUFFER_INLINE_KEY> = StorageKey::Reference(StorageKeyReference::from(&key));
+            let wrapped = StorageKeyReference::from(&key);
             let existing_stored = self.storage.get(
                 wrapped,
                 &self.open_sequence_number,
@@ -147,20 +160,20 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     /// Insert a delete marker for the key with a new version
-    pub fn delete(&self, key: StorageKeyArray<BUFFER_INLINE_KEY>) {
+    pub fn delete(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
         let keyspace_id = key.keyspace_id();
         let byte_array = key.into_byte_array();
         self.buffers.get(keyspace_id).delete(byte_array);
     }
 
     /// Get a Value, and mark it as a required key
-    pub fn get_required(&self, key: StorageKey<'_, BUFFER_INLINE_KEY>) -> ByteArray<BUFFER_INLINE_VALUE> {
+    pub fn get_required(&self, key: StorageKey<'_, BUFFER_KEY_INLINE>) -> ByteArray<BUFFER_VALUE_INLINE> {
         let keyspace_id = key.keyspace_id();
         let buffer = self.buffers.get(keyspace_id);
         let existing = buffer.get(key.bytes());
         if existing.is_none() {
             let storage_value = self.storage.get(
-                StorageKey::<BUFFER_INLINE_KEY>::Reference(key.as_reference()),
+                key.as_reference(),
                 &self.open_sequence_number,
                 |reference| ByteArray::from(reference),
             );
@@ -177,13 +190,20 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     /// Get the Value for the key, returning an empty Option if it does not exist
-    pub fn get<const INLINE_SIZE: usize>(&self, key: StorageKey<'_, BUFFER_INLINE_KEY>) -> Option<ByteArray<INLINE_SIZE>> {
+    pub fn get<const INLINE_BYTES: usize>(&self, key: StorageKeyReference<'_>) -> Option<ByteArray<INLINE_BYTES>> {
         let keyspace_id = key.keyspace_id();
         let existing_value = self.buffers.get(keyspace_id).get(key.bytes());
         existing_value.map_or_else(
             || self.storage.get(key, &self.open_sequence_number, |reference| ByteArray::from(reference)),
             |existing| Some(existing),
         )
+    }
+
+    pub fn get_mapped<T>(&self, key: StorageKeyReference<'_>, mut mapper: impl FnMut(ByteReference<'_>) -> T) -> Option<T> {
+        let keyspace_id = key.keyspace_id();
+        let existing_value = self.buffers.get(keyspace_id).get(key.bytes());
+        existing_value.map(|value: ByteArray<BUFFER_VALUE_INLINE>| mapper(ByteReference::from(&value)))
+            .or_else(|| self.storage.get(key, &self.open_sequence_number, |reference| mapper(reference)))
     }
 
     pub fn iterate_prefix<'this, const PS: usize>(&'this self, prefix: StorageKey<'this, PS>) -> SnapshotPrefixIterator<'this, PS> {

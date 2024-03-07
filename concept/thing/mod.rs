@@ -15,6 +15,22 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use encoding::AsBytes;
+use encoding::graph::thing::vertex::{AttributeVertex, ObjectVertex};
+
+use crate::{ConceptAPI, IIDAPI};
+
 pub mod attribute;
 pub mod entity;
 pub mod thing_manager;
+
+trait ThingAPI<'a>: ConceptAPI<'a> {}
+
+pub trait ObjectAPI<'a>: ThingAPI<'a> {
+    fn vertex(&'a self) -> &ObjectVertex<'a>;
+}
+
+pub trait AttributeAPI<'a>: ThingAPI<'a> {
+    fn vertex(&'a self) -> &AttributeVertex<'a>;
+}
+

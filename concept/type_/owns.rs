@@ -15,22 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::ops::Range;
 
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
+pub struct Owns {
 
-use crate::{AsBytes, Keyable, Prefixed};
-use crate::graph::type_::vertex::TypeID;
-
-pub mod thing;
-pub mod type_;
-
-
-pub trait Typed<'a, const INLINE_SIZE: usize>: Prefixed<'a, INLINE_SIZE> {
-    const RANGE_TYPE_ID: Range<usize> = Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeID::LENGTH;
-
-    fn type_id(&'a self) -> TypeID<'a> {
-        TypeID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes().bytes()[Self::RANGE_TYPE_ID])))
-    }
 }

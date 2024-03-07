@@ -60,8 +60,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub fn create_entity_type(&self, label_: &Label) -> EntityType {
-        let label = label_.name();
+    pub fn create_entity_type(&self, label: &Label) -> EntityType {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_vertex = self.vertex_generator.take_entity_type_vertex();
@@ -76,8 +75,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         self.get_type(label, |vertex| EntityType::new(vertex))
     }
 
-    pub fn create_attribute_type(&self, label_: &Label) -> AttributeType {
-        let label = &label_.name();
+    pub fn create_attribute_type(&self, label: &Label) -> AttributeType {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_vertex = self.vertex_generator.take_attribute_type_vertex();
@@ -93,16 +91,17 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     }
 
     fn get_type<M, U>(&self, label: &Label, mapper: M) -> Option<U> where M: FnOnce(TypeVertex<'static>) -> U {
-        let key = LabelToTypeProperty::build(label.name()).into_storage_key();
-        self.snapshot.get::<48>(key).map(|value| {
+        let key = LabelToTypeProperty::build(label).into_storage_key();
+        self.snapshot.get::<64>(key.as_reference()).map(|value| {
             mapper(TypeVertex::new(ByteArrayOrRef::Array(value)))
         })
     }
 
-    fn create_type_indexes(&self, label: &str, type_vertex: &TypeVertex) {
+    fn create_type_indexes(&self, label: &Label, type_vertex: &TypeVertex) {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let (vertex_label_index_key, value) = TypeToLabelProperty::build_key_value(&type_vertex, label);
-            write_snapshot.put_val(vertex_label_index_key.into_storage_key().to_owned_array(), value.into_bytes().into_array());
+            let vertex_label_index_key = TypeToLabelProperty::build(&type_vertex);
+            let value = ByteArray::from(label.scoped_name.bytes());
+            write_snapshot.put_val(vertex_label_index_key.into_storage_key().to_owned_array(), value);
 
             let label_iid_index_key = LabelToTypeProperty::build(label);
             let type_vertex_value = ByteArray::from(type_vertex.bytes());

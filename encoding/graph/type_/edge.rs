@@ -21,21 +21,21 @@ use std::ops::Range;
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::keyspace::keyspace::KeyspaceId;
-use storage::snapshot::buffer::BUFFER_INLINE_KEY;
 
 use crate::{AsBytes, EncodingKeyspace, Keyable};
 use crate::graph::type_::vertex::TypeVertex;
 use crate::layout::infix::{InfixID, InfixType};
 
 struct OwnsForwardEdge<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>,
+    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }
 
 impl<'a> OwnsForwardEdge<'a> {
     const LENGTH: usize = 2 * TypeVertex::LENGTH + InfixID::LENGTH;
 
-    fn new(bytes: ByteArrayOrRef<'a, BUFFER_INLINE_KEY>) -> Self {
+    fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         OwnsForwardEdge { bytes: bytes, }
     }
@@ -71,17 +71,17 @@ impl<'a> OwnsForwardEdge<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_INLINE_KEY> for OwnsForwardEdge<'a> {
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for OwnsForwardEdge<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a,BUFFER_INLINE_KEY> {
+    fn into_bytes(self) -> ByteArrayOrRef<'a,BUFFER_KEY_INLINE> {
         self.bytes
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_INLINE_KEY> for OwnsForwardEdge<'a> {
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for OwnsForwardEdge<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
         EncodingKeyspace::Schema.id()
     }

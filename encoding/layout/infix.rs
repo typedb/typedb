@@ -28,9 +28,7 @@ impl<'a> InfixID<'a> {
     pub(crate) const LENGTH: usize = 1;
 
     const fn new(bytes: ByteArrayOrRef<'a, { InfixID::LENGTH }>) -> Self {
-        InfixID {
-            bytes: bytes
-        }
+        InfixID { bytes: bytes }
     }
 }
 

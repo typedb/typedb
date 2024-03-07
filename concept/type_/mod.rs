@@ -15,18 +15,62 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use bytes::byte_array_or_ref::ByteArrayOrRef;
+use encoding::{AsBytes, Keyable};
+use encoding::graph::type_::property::TypeToLabelProperty;
+use encoding::graph::type_::vertex::TypeVertex;
+use encoding::primitive::label::Label;
+use encoding::primitive::string::StringBytes;
+use resource::constants::encoding::LABEL_SCOPED_NAME_STRING_INLINE;
+use storage::snapshot::snapshot::Snapshot;
+
+use crate::{ConceptAPI, IIDAPI};
 use crate::type_::attribute_type::AttributeType;
+use crate::type_::owns::Owns;
 
 pub mod attribute_type;
 pub mod entity_type;
 pub mod type_manager;
+mod owns;
+mod plays;
 
+pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized {
+    fn vertex(&'a self) -> &TypeVertex<'a>;
 
-struct Owns {}
+    fn get_label(&self, snapshot: &Snapshot) -> &Label;
 
-trait Owner {
-    fn set_owns(&self, attribute_type: &AttributeType) -> Owns {
-        // encode ownership of the type
+    fn _fetch_label(&'a self, snapshot: &Snapshot<'a>) -> Label<'static> {
+        let key = TypeToLabelProperty::build(self.vertex());
+        snapshot.get_mapped(key.into_storage_key().as_reference(), |reference| {
+            let value = StringBytes::new(ByteArrayOrRef::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(reference));
+            let as_str = value.decode();
+            let mut splits = as_str.split(":");
+            let first = splits.next().unwrap();
+            if let Some(second) = splits.next() {
+                Label::build_scoped(first, second)
+            } else {
+                Label::build(first)
+            }
+        }).unwrap()
+    }
+
+    // fn set_label(&self, label: &Label);
+    //
+    // fn get_supertype(&self) -> Option<Self>;
+}
+
+pub trait EntityTypeAPI<'a>: TypeAPI<'a> {
+
+    // fn get_supertypes(&'a self) -> EntityTypeIterator<'static, 1>; // TODO: correct prefix size
+
+    // fn get_subtypes(&self) -> EntityTypeIterator<'static, 1>; // TODO: correct prefix size
+}
+
+pub trait AttributeTypeAPI<'a>: TypeAPI<'a> {}
+
+trait OwnerAPI<'a>: TypeAPI<'a> {
+    fn create_owns(&self, attribute_type: &AttributeType) -> Owns {
+        // create Owns
         todo!()
     }
 
@@ -34,39 +78,54 @@ trait Owner {
         // fetch iterator of Owns
         todo!()
     }
-}
 
-trait Owned {
+    fn get_owns_owned(&self) {
+        // fetch iterator of owned attribute types
+        todo!()
+    }
 
-    fn get_owners(&self) {
-        // return owners of this type
+    fn has_owns_owned(&self, attribute_type: &AttributeType) -> bool {
         todo!()
     }
 }
 
-// Anything that is IID can be made annotateable
-// --> We can make all Edges and Vertices implement IID
-// --> All Concepts (eg. anything that has a Vertex) can be IID
-// --> LAYOUT: we can make scans simpler by making annotations be a different prefix? This means edges and vertices will be treated the same...
-trait Annotatable {
-
-    fn set_annotation(&self) {
-        // set annotation on this structure
+trait OwnedAPI<'a>: AttributeTypeAPI<'a> {
+    fn get_owns(&self) {
+        // return iterator of Owns
         todo!()
     }
 
-    fn get_annotations(&self) {
-        // get "effective" annotations
+    fn get_owns_owners(&self) {
+        // return iterator of Owns
+        todo!()
+    }
+}
+
+trait PlayerAPI<'a>: TypeAPI<'a> {
+
+    // fn create_plays(&self, role_type: &RoleType) -> Plays;
+
+    fn get_plays(&self) {
+        // return iterator of Plays
         todo!()
     }
 
-    fn get_declared_annotations(&self) {
-        // get annotations declared
+    fn get_plays_played(&self) {
+        // return iterator of played types
         todo!()
     }
 
-    fn get_inherited_annotations(&self) {
-        // get annotations inherited
+    // fn has_plays_played(&self, role_type: &RoleType);
+}
+
+trait PlayedAPI<'a>: TypeAPI<'a> {
+    fn get_plays(&self) {
+        // return iterator of Plays
+        todo!()
+    }
+
+    fn get_plays_players(&self) {
+        // return iterator of player types
         todo!()
     }
 }

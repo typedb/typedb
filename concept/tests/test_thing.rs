@@ -18,20 +18,15 @@
 
 use std::rc::Rc;
 
-use bytes::byte_array::ByteArray;
-use logger::result::ResultExt;
-use storage::key_value::{StorageKey, StorageKeyArray};
-use storage::MVCCStorage;
-use storage::keyspace::keyspace::KeyspaceId;
-use storage::snapshot::buffer::{BUFFER_INLINE_KEY, BUFFER_INLINE_VALUE};
-use storage::snapshot::snapshot::Snapshot;
-use test_utils::{create_tmp_dir, delete_dir, init_logging};
-use encoding::initialise_storage;
 use concept::thing::thing_manager::ThingManager;
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
+use encoding::initialise_storage;
 use encoding::primitive::label::Label;
+use storage::MVCCStorage;
+use storage::snapshot::snapshot::Snapshot;
+use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
 #[test]
 fn thing_create_iterate() {
@@ -49,7 +44,7 @@ fn thing_create_iterate() {
         let type_vertex_generator = TypeVertexGenerator::new();
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator);
 
-        let person_label = Label::new("person");
+        let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&person_label);
 
         let person_1 = thing_manager.create_entity(&person_type);

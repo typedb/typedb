@@ -45,7 +45,10 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> ByteArrayOrRef<'bytes, ARRAY_INLINE
     }
 
     pub fn length(&self) -> usize {
-        self.bytes().len()
+        match self {
+            ByteArrayOrRef::Array(array) => array.length(),
+            ByteArrayOrRef::Reference(reference) => reference.length(),
+        }
     }
 
     pub fn truncate(self, length: usize) -> ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
@@ -69,7 +72,7 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> ByteArrayOrRef<'bytes, ARRAY_INLINE
         ByteArrayOrRef::Array(self.into_array())
     }
 
-    pub fn as_reference<'this>(&'this self) -> ByteReference<'bytes> where 'this: 'bytes {
+    pub fn as_reference(&'bytes self) -> ByteReference<'bytes> {
         match self {
             ByteArrayOrRef::Array(array) => ByteReference::from(array),
             ByteArrayOrRef::Reference(reference) => reference.clone()
