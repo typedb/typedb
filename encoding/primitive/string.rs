@@ -23,6 +23,8 @@ use logger::result::ResultExt;
 use crate::AsBytes;
 use crate::error::{EncodingError, EncodingErrorKind};
 
+// TODO: when we write this as a key to storage, we must double check that [AA] follows [A] and isn't after [B] (length independent)
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct StringBytes<'a, const INLINE_LENGTH: usize> {
     bytes: ByteArrayOrRef<'a, INLINE_LENGTH>,

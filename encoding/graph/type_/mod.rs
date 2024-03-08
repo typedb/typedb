@@ -19,7 +19,7 @@ use crate::primitive::label::Label;
 
 pub mod vertex;
 pub mod vertex_generator;
-mod edge;
+pub mod edge;
 pub mod property;
 
 

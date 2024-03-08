@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::ops::{Add, Sub};
+
 pub mod maybe_owns;
 pub mod u80;
-
-use std::ops::{Add, Sub};
 

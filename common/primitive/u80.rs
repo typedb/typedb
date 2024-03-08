@@ -15,8 +15,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use serde::{Deserialize, Serialize};
 use std::ops::{Add, Sub};
+
+use serde::{Deserialize, Serialize};
 
 ///
 ///  TODO: we will have to see if its more efficient to always represent as a number (if most operations will be numbers)

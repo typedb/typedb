@@ -24,9 +24,7 @@ use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
-use crate::graph::thing::vertex::ObjectVertex;
 use crate::graph::Typed;
-use crate::layout::infix::InfixType;
 use crate::layout::prefix::{PrefixID, PrefixType};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -35,7 +33,7 @@ pub struct TypeVertex<'a> {
 }
 
 macro_rules! type_vertex_constructors {
-    ($new_name:ident, $build_name:ident, $build_name_prefix:ident, PrefixType::$prefix:ident) => {
+    ($new_name:ident, $build_name:ident, $build_name_prefix:ident, $is_name:ident, PrefixType::$prefix:ident) => {
         pub fn $new_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeVertex<'a> {
             let vertex = TypeVertex::new(bytes);
             debug_assert_eq!(vertex.prefix(), PrefixType::$prefix);
@@ -50,12 +48,28 @@ macro_rules! type_vertex_constructors {
         pub fn $build_name_prefix() ->  StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
             TypeVertex::build_prefix(&PrefixType::$prefix.prefix_id())
         }
+
+        pub fn $is_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> bool {
+            bytes.length() == TypeVertex::LENGTH && TypeVertex::new(bytes).prefix() == PrefixType::$prefix
+        }
     };
 }
 
-type_vertex_constructors!(new_entity_type_vertex, build_entity_type_vertex, build_entity_type_vertex_prefix, PrefixType::VertexEntityType);
-type_vertex_constructors!(new_relation_type_vertex, build_relation_type_vertex, build_relation_type_vertex_prefix, PrefixType::VertexRelationType);
-type_vertex_constructors!(new_attribute_type_vertex, build_attribute_type_vertex, build_attribute_type_vertex_prefix, PrefixType::VertexAttributeType);
+type_vertex_constructors!(
+    new_entity_type_vertex, build_entity_type_vertex, build_entity_type_vertex_prefix,
+    is_entity_type_vertex,
+    PrefixType::VertexEntityType
+);
+type_vertex_constructors!(
+    new_relation_type_vertex, build_relation_type_vertex, build_relation_type_vertex_prefix,
+    is_relation_type_vertex,
+    PrefixType::VertexRelationType
+);
+type_vertex_constructors!(
+    new_attribute_type_vertex, build_attribute_type_vertex, build_attribute_type_vertex_prefix,
+    is_attribute_type_vertex,
+    PrefixType::VertexAttributeType
+);
 
 impl<'a> TypeVertex<'a> {
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;

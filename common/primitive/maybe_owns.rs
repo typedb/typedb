@@ -15,9 +15,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::borrow::Borrow;
 use std::ops::Deref;
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum MaybeOwns<'a, T> {
     Owned(T),
     Borrowed(&'a T),

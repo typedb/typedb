@@ -18,22 +18,24 @@
 use std::cell::OnceCell;
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
+use encoding::graph::type_::Root;
 use encoding::graph::type_::vertex::{new_entity_type_vertex, TypeVertex};
 use encoding::layout::prefix::PrefixType;
 use encoding::Prefixed;
 use encoding::primitive::label::Label;
 use storage::key_value::StorageKeyReference;
 use storage::snapshot::iterator::SnapshotPrefixIterator;
-use storage::snapshot::snapshot::Snapshot;
 
 use crate::{concept_iterator, ConceptAPI};
 use crate::error::{ConceptError, ConceptErrorKind};
+use crate::type_::type_manager::TypeManager;
 use crate::type_::TypeAPI;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct EntityType<'a> {
     vertex: TypeVertex<'a>,
     label: OnceCell<Label<'static>>,
+    is_root: OnceCell<bool>,
 }
 
 impl<'a> EntityType<'a> {
@@ -42,12 +44,12 @@ impl<'a> EntityType<'a> {
             panic!("Type IID prefix was expected to be Prefix::EntityType ({:?}) but was {:?}",
                    PrefixType::VertexEntityType, vertex.prefix())
         }
-        EntityType { vertex: vertex, label: OnceCell::new() }
+        EntityType { vertex: vertex, label: OnceCell::new(), is_root: OnceCell::new(), }
     }
 
     fn into_owned(self) -> EntityType<'static> {
         let v = self.vertex.into_owned();
-        EntityType { vertex: v, label: self.label }
+        EntityType { vertex: v, label: self.label, is_root: self.is_root, }
     }
 }
 
@@ -58,13 +60,17 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
         &self.vertex
     }
 
-    fn get_label(&self, snapshot: &Snapshot) -> &Label {
-        self.label.get_or_init(|| self._get_storage_label(snapshot).unwrap())
+    fn get_label(&self, type_manager: &TypeManager) -> &Label {
+        self.label.get_or_init(|| type_manager.get_storage_label(self.vertex()).unwrap())
     }
 
-    fn set_label(&mut self, label: &Label, snapshot: &Snapshot) {
-        self._set_storage_label(label, snapshot);
+    fn set_label(&mut self, type_manager: &TypeManager, label: &Label) {
+        type_manager.set_storage_label(self.vertex(), label);
         self.label = OnceCell::from(label.clone().into_owned());
+    }
+
+    fn is_root(&self, type_manager: &TypeManager) -> bool {
+        *self.is_root.get_or_init(|| self.get_label(type_manager) == &Root::Attribute.label())
     }
 }
 

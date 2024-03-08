@@ -105,7 +105,7 @@ impl<'bytes, const INLINE_SIZE: usize> Ord for StorageKey<'bytes, INLINE_SIZE> {
 }
 
 // TODO: we may want to fix the INLINE_SIZE for all storage keys here
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StorageKeyArray<const INLINE_SIZE: usize> {
     keyspace_id: KeyspaceId,
     byte_array: ByteArray<INLINE_SIZE>,
@@ -127,12 +127,33 @@ impl<const INLINE_SIZE: usize> StorageKeyArray<INLINE_SIZE> {
         self.byte_array.bytes()
     }
 
-    pub(crate) fn byte_array(&self) -> &ByteArray<INLINE_SIZE> {
+    pub fn byte_array(&self) -> &ByteArray<INLINE_SIZE> {
         &self.byte_array
     }
 
     pub fn into_byte_array(self) -> ByteArray<INLINE_SIZE> {
         self.byte_array
+    }
+}
+
+impl<const INLINE_SIZE: usize> PartialEq<Self> for StorageKeyArray<INLINE_SIZE> {
+    fn eq(&self, other: &Self) -> bool {
+        self.keyspace_id() == other.keyspace_id() && self.bytes() == other.bytes()
+    }
+}
+
+impl<const INLINE_SIZE: usize> Eq for StorageKeyArray<INLINE_SIZE> {}
+
+impl<const INLINE_SIZE: usize> PartialOrd<Self> for StorageKeyArray<INLINE_SIZE> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        // TODO: should this take into account Keyspace ID?
+        Some(self.cmp(other))
+    }
+}
+
+impl<const INLINE_SIZE: usize> Ord for StorageKeyArray<INLINE_SIZE> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.bytes().cmp(&other.bytes())
     }
 }
 
@@ -199,7 +220,6 @@ impl<'bytes, const INLINE_SIZE: usize> From<&'bytes StorageKeyArray<INLINE_SIZE>
         StorageKeyReference::new(array_ref.keyspace_id, ByteReference::from(array_ref.byte_array()))
     }
 }
-
 
 impl<'bytes> PartialEq<Self> for StorageKeyReference<'bytes> {
     fn eq(&self, other: &Self) -> bool {

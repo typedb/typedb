@@ -16,20 +16,22 @@
  */
 
 use std::cell::OnceCell;
+use encoding::graph::type_::Root;
 
 use encoding::graph::type_::vertex::TypeVertex;
 use encoding::layout::prefix::PrefixType;
 use encoding::Prefixed;
 use encoding::primitive::label::Label;
-use storage::snapshot::snapshot::Snapshot;
 
 use crate::ConceptAPI;
+use crate::type_::type_manager::TypeManager;
 use crate::type_::TypeAPI;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct AttributeType<'a> {
     vertex: TypeVertex<'a>,
     label: OnceCell<Label<'static>>,
+    is_root: OnceCell<bool>,
 }
 
 impl<'a> AttributeType<'a> {
@@ -38,12 +40,12 @@ impl<'a> AttributeType<'a> {
             panic!("Type IID prefix was expected to be Prefix::AttributeType ({:?}) but was {:?}",
                    PrefixType::VertexAttributeType, vertex.prefix())
         }
-        AttributeType { vertex: vertex, label: OnceCell::new() }
+        AttributeType { vertex: vertex, label: OnceCell::new(), is_root: OnceCell::new(), }
     }
 
     fn into_owned(self) -> AttributeType<'static> {
         let v = self.vertex.into_owned();
-        AttributeType { vertex: v, label: self.label }
+        AttributeType { vertex: v, label: self.label, is_root: self.is_root, }
     }
 }
 
@@ -54,13 +56,17 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         &self.vertex
     }
 
-    fn get_label(&self, snapshot: &Snapshot) -> &Label {
-        self.label.get_or_init(|| self._get_storage_label(snapshot).unwrap())
+    fn get_label(&self, type_manager: &TypeManager) -> &Label {
+        self.label.get_or_init(|| type_manager.get_storage_label(self.vertex()).unwrap())
     }
 
-    fn set_label(&mut self, label: &Label, snapshot: &Snapshot) {
-        self._set_storage_label(label, snapshot);
+    fn set_label(&mut self, type_manager: &TypeManager, label: &Label) {
+        type_manager.set_storage_label(self.vertex(), label);
         self.label = OnceCell::from(label.clone().into_owned());
+    }
+
+    fn is_root(&self, type_manager: &TypeManager) -> bool {
+        *self.is_root.get_or_init(|| self.get_label(type_manager) == &Root::Attribute.label())
     }
 }
 //

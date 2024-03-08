@@ -42,7 +42,7 @@ fn thing_create_iterate() {
         let thing_manager = ThingManager::new(snapshot.clone(), &thing_vertex_generator);
 
         let type_vertex_generator = TypeVertexGenerator::new();
-        let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator);
+        let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
 
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&person_label);

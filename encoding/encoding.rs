@@ -90,6 +90,6 @@ pub trait Prefixed<'a, const INLINE_SIZE: usize> : AsBytes<'a, INLINE_SIZE> {
     const RANGE_PREFIX: Range<usize> = 0..PrefixID::LENGTH;
 
     fn prefix(&'a self) -> PrefixType {
-        PrefixType::from_prefix_id(&PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes().bytes()[Self::RANGE_PREFIX]))))
+        PrefixType::from_prefix_id(PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes().bytes()[Self::RANGE_PREFIX]))))
     }
 }

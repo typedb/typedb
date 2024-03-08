@@ -15,6 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::collections::{BTreeSet, HashSet};
+use std::hash::Hash;
+
 #[derive(Debug, Clone)]
 pub enum State<E> {
     Init,
@@ -31,3 +34,27 @@ impl<E> PartialEq for State<E> {
 }
 
 impl<E> Eq for State<E> {}
+
+
+pub trait Collector<T> {
+    fn add(&mut self, element: T);
+}
+
+impl<T> Collector<T> for Vec<T> {
+    fn add(&mut self, element: T) {
+        self.push(element);
+    }
+}
+
+impl<T: PartialOrd + Ord> Collector<T> for BTreeSet<T> {
+    fn add(&mut self, element: T) {
+        self.insert(element);
+    }
+}
+
+
+impl<T: Hash + Eq + PartialEq> Collector<T> for HashSet<T> {
+    fn add(&mut self, element: T) {
+        self.insert(element);
+    }
+}

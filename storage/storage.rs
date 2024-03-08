@@ -26,7 +26,7 @@ use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
 use durability::{DurabilityService, SequenceNumber, Sequencer, wal::WAL};
-use iterator::State;
+use iterator::{State, Collector};
 use logger::error;
 use logger::result::ResultExt;
 use primitive::u80::U80;
@@ -471,9 +471,7 @@ impl<'s, const P: usize> MVCCPrefixIterator<'s, P> {
         let _ = self.iterator.next();
     }
 
-    pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(mut self) -> Vec<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)> {
-        let vec: Vec<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)> = vec!();
-        let mut vec = Vec::new();
+    pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(mut self, collector: &mut impl Collector<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)>) {
         loop {
             let item = self.next();
             if item.is_none() {
@@ -482,9 +480,8 @@ impl<'s, const P: usize> MVCCPrefixIterator<'s, P> {
             let (key_ref, value_ref) = item.unwrap().unwrap();
             let key = StorageKeyArray::from(key_ref);
             let value = ByteArray::from(value_ref);
-            vec.push((key, value));
+            collector.add((key, value));
         }
-        vec
     }
 }
 

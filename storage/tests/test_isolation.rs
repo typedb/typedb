@@ -21,6 +21,7 @@ use std::rc::Rc;
 
 use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::error::{MVCCStorageError, MVCCStorageErrorKind};
 use storage::isolation_manager::{IsolationError, IsolationErrorKind};
 use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
@@ -28,7 +29,6 @@ use storage::keyspace::keyspace::KeyspaceId;
 use storage::MVCCStorage;
 use storage::snapshot::error::{SnapshotError, SnapshotErrorKind};
 use test_utils::{create_tmp_dir, init_logging};
-use resource::constants::snapshot::{BUFFER_KEY_INLINE};
 
 const KEYSPACE_ID: KeyspaceId = 0;
 const KEY_1: [u8; 4] = [0x0, 0x0, 0x0, 0x1];

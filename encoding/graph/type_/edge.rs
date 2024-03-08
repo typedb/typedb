@@ -33,8 +33,8 @@ pub struct TypeEdge<'a> {
 }
 
 macro_rules! type_edge_constructors {
-    ($new_name:ident, $build_name:ident, InfixType::$infix:ident) => {
-        pub(crate) fn $new_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeEdge<'a> {
+    ($new_name:ident, $build_name:ident, $is_name:ident, InfixType::$infix:ident) => {
+        pub fn $new_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeEdge<'a> {
             let edge = TypeEdge::new(bytes);
             debug_assert_eq!(edge.infix(), InfixType::$infix);
             edge
@@ -43,17 +43,21 @@ macro_rules! type_edge_constructors {
         pub(crate) fn $build_name(from: &TypeVertex, to: &TypeVertex) -> TypeEdge<'static> {
             TypeEdge::build(from, InfixType::$infix, to)
         }
+
+        pub fn $is_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> bool {
+            return bytes.length() == TypeEdge::LENGTH && TypeEdge::new(bytes).infix() == InfixType::$infix
+        }
     };
 }
 
-type_edge_constructors!(new_sub_edge_forward, build_sub_edge_forward, InfixType::SubForward);
-type_edge_constructors!(new_sub_edge_backward, build_sub_edge_backward, InfixType::SubBackward);
-type_edge_constructors!(new_owns_edge_forward, build_owns_edge_forward, InfixType::OwnsForward);
-type_edge_constructors!(new_owns_edge_backward, build_owns_edge_backward, InfixType::OwnsBackward);
-type_edge_constructors!(new_plays_edge_forward, build_plays_edge_forward, InfixType::PlaysForward);
-type_edge_constructors!(new_plays_edge_backward, build_plays_edge_backward, InfixType::PlaysBackward);
-type_edge_constructors!(new_relates_edge_forward, build_relates_edge_forward, InfixType::RelatesForward);
-type_edge_constructors!(new_relates_edge_backward, build_relates_edge_backward,  InfixType::RelatesBackward);
+type_edge_constructors!(new_sub_edge_forward, build_sub_edge_forward, is_sub_edge_forward, InfixType::SubForward);
+type_edge_constructors!(new_sub_edge_backward, build_sub_edge_backward, is_sub_edge_backward, InfixType::SubBackward);
+type_edge_constructors!(new_owns_edge_forward, build_owns_edge_forward, is_owns_edge_forward, InfixType::OwnsForward);
+type_edge_constructors!(new_owns_edge_backward, build_owns_edge_backward, is_owns_edge_backward, InfixType::OwnsBackward);
+type_edge_constructors!(new_plays_edge_forward, build_plays_edge_forward, is_plays_edge_forward, InfixType::PlaysForward);
+type_edge_constructors!(new_plays_edge_backward, build_plays_edge_backward,  is_plays_edge_backward,InfixType::PlaysBackward);
+type_edge_constructors!(new_relates_edge_forward, build_relates_edge_forward, is_relates_edge_forward, InfixType::RelatesForward);
+type_edge_constructors!(new_relates_edge_backward, build_relates_edge_backward, is_relates_edge_backward, InfixType::RelatesBackward);
 
 impl<'a> TypeEdge<'a> {
     const LENGTH: usize = 2 * TypeVertex::LENGTH + InfixID::LENGTH;
@@ -72,12 +76,12 @@ impl<'a> TypeEdge<'a> {
         Self { bytes: ByteArrayOrRef::Array(bytes) }
     }
 
-    fn from(&'a self) -> TypeVertex<'a> {
+    pub fn from(&'a self) -> TypeVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[Self::range_from()]);
         TypeVertex::new(ByteArrayOrRef::Reference(reference))
     }
 
-    fn to(&'a self) -> TypeVertex<'a> {
+    pub fn to(&'a self) -> TypeVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[Self::range_to()]);
         TypeVertex::new(ByteArrayOrRef::Reference(reference))
     }

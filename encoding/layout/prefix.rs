@@ -22,7 +22,7 @@ use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::{AsBytes, EncodingKeyspace, Keyable};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PrefixID<'a> {
     bytes: ByteArrayOrRef<'a, { PrefixID::LENGTH }>,
 }
@@ -48,7 +48,7 @@ impl<'a> AsBytes<'a, { PrefixID::LENGTH }> for PrefixID<'a> {
 // used as prefix key
 impl<'a> Keyable<'a, { PrefixID::LENGTH }> for PrefixID<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
-        match PrefixType::from_prefix_id(self) {
+        match PrefixType::from_prefix_id(self.clone()) {
             PrefixType::VertexEntityType |
             PrefixType::VertexRelationType |
             PrefixType::VertexAttributeType |
@@ -60,7 +60,7 @@ impl<'a> Keyable<'a, { PrefixID::LENGTH }> for PrefixID<'a> {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum PrefixType {
     VertexEntityType,
     VertexRelationType,
@@ -98,7 +98,7 @@ macro_rules! prefix_functions {
             PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
         }
 
-        pub fn from_prefix_id(prefix: &PrefixID) -> Self {
+        pub fn from_prefix_id(prefix: PrefixID) -> Self {
             match prefix.bytes.bytes() {
                 $(
                     $bytes => {Self::$name}

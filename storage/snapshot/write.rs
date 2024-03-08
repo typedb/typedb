@@ -15,11 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::sync::atomic::{AtomicBool, Ordering};
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use serde::{Deserialize, Serialize};
+
 use bytes::byte_array::ByteArray;
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) enum Write {
