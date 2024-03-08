@@ -24,8 +24,8 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::ser::SerializeStruct;
 
-use crate::byte_reference::ByteReference;
 use crate::{BytesError, increment};
+use crate::byte_reference::ByteReference;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ByteArray<const INLINE_BYTES: usize> {

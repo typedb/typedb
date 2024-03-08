@@ -28,10 +28,8 @@ rust_test(
         "//database",
         "//encoding",
         "//common/logger",
-
         "//util/test:test_utils",
 
-        "@crates//:rand",
         "@crates//:speedb",
         "@crates//:tracing",
     ]

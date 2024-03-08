@@ -15,22 +15,33 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::ops::Range;
+use std::borrow::Borrow;
+use std::ops::Deref;
 
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
+pub enum MaybeOwns<'a, T> {
+    Owned(T),
+    Borrowed(&'a T),
+}
 
-use crate::graph::type_::vertex::TypeID;
-use crate::Prefixed;
+impl<'a, T> MaybeOwns<'a, T> {
 
-pub mod thing;
-pub mod type_;
+    pub fn owned(t: T) -> Self {
+        Self::Owned(t)
+    }
 
-
-pub trait Typed<'a, const INLINE_SIZE: usize>: Prefixed<'a, INLINE_SIZE> {
-    const RANGE_TYPE_ID: Range<usize> = Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeID::LENGTH;
-
-    fn type_id(&'a self) -> TypeID<'a> {
-        TypeID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes().bytes()[Self::RANGE_TYPE_ID])))
+    pub fn borrowed(t: &'a T) -> Self {
+        Self::Borrowed(t)
     }
 }
+
+impl<T> Deref for MaybeOwns<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        match self {
+            MaybeOwns::Owned(owned) => &owned,
+            MaybeOwns::Borrowed(ref borrowed) => &borrowed,
+        }
+    }
+}
+

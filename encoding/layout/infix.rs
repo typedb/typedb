@@ -17,8 +17,8 @@
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
-use crate::AsBytes;
 
+use crate::AsBytes;
 
 pub(crate) struct InfixID<'a> {
     bytes: ByteArrayOrRef<'a, { InfixID::LENGTH }>,

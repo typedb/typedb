@@ -41,7 +41,7 @@ impl<'storage> Snapshot<'storage> {
         }
     }
 
-    pub fn get_mapped<T>(&self, key: StorageKeyReference<'_>, mut mapper: impl FnMut(ByteReference<'_>) -> T) -> Option<T> {
+    pub fn get_mapped<T>(&self, key: StorageKeyReference<'_>, mapper: impl FnMut(ByteReference<'_>) -> T) -> Option<T> {
         match self {
             Snapshot::Read(snapshot) => snapshot.get_mapped(key, mapper),
             Snapshot::Write(snapshot) => snapshot.get_mapped(key, mapper),

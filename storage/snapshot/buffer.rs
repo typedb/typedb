@@ -29,12 +29,12 @@ use serde::ser::{SerializeStruct, SerializeTuple};
 
 use bytes::byte_array::ByteArray;
 use iterator::State;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use crate::key_value::StorageKeyArray;
 use crate::keyspace::keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId};
 use crate::snapshot::error::SnapshotError;
 use crate::snapshot::write::Write;
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 #[derive(Debug)]
 pub(crate) struct KeyspaceBuffers {

@@ -16,6 +16,7 @@
  */
 
 use std::rc::Rc;
+
 use concept::thing::thing_manager::ThingManager;
 use concept::type_::type_manager::TypeManager;
 use storage::snapshot::snapshot::Snapshot;

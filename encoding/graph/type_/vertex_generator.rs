@@ -19,14 +19,15 @@ use std::sync::atomic::{AtomicU16, Ordering};
 
 use storage::MVCCStorage;
 
-use crate::graph::type_::vertex::{build_attribute_type_vertex, build_entity_type_vertex, TypeID, TypeVertex};
+use crate::graph::type_::vertex::{build_attribute_type_vertex, build_entity_type_vertex, build_relation_type_vertex, TypeID, TypeVertex};
 use crate::Keyable;
 use crate::layout::prefix::PrefixType;
 
 // TODO: if we always scan for the next available TypeID, we automatically recycle deleted TypeIDs?
-//          -> If we do reuse TypeIDs, this we also need to make sure to reset the Thing ID generators on delete!
+//          -> If we do reuse TypeIDs, this we also need to make sure to reset the Thing ID generators on delete! (test should exist to confirm this).
 pub struct TypeVertexGenerator {
     next_entity: AtomicU16,
+    next_relation: AtomicU16,
     next_attribute: AtomicU16,
 }
 
@@ -36,6 +37,7 @@ impl TypeVertexGenerator {
     pub fn new() -> TypeVertexGenerator {
         TypeVertexGenerator {
             next_entity: AtomicU16::new(0),
+            next_relation: AtomicU16::new(0),
             next_attribute: AtomicU16::new(0),
         }
     }
@@ -43,6 +45,15 @@ impl TypeVertexGenerator {
     pub fn load(storage: &MVCCStorage) -> TypeVertexGenerator {
         let next_entity: AtomicU16 = storage.get_prev_raw(
             PrefixType::VertexEntityType.successor_prefix_id().as_storage_key().as_reference(),
+            |_, value| {
+                debug_assert_eq!(value.len(), Self::U16_LENGTH);
+                let array: [u8; Self::U16_LENGTH] = value[0..Self::U16_LENGTH].try_into().unwrap();
+                let val = u16::from_be_bytes(array);
+                AtomicU16::new(val)
+            },
+        ).unwrap_or_else(|| AtomicU16::new(0));
+        let next_relation: AtomicU16 = storage.get_prev_raw(
+            PrefixType::VertexRelationType.successor_prefix_id().as_storage_key().as_reference(),
             |_, value| {
                 debug_assert_eq!(value.len(), Self::U16_LENGTH);
                 let array: [u8; Self::U16_LENGTH] = value[0..Self::U16_LENGTH].try_into().unwrap();
@@ -60,16 +71,22 @@ impl TypeVertexGenerator {
             }).unwrap_or_else(|| AtomicU16::new(0));
         TypeVertexGenerator {
             next_entity: next_entity,
+            next_relation: next_relation,
             next_attribute: next_attribute,
         }
     }
 
-    pub fn take_entity_type_vertex(&self) -> TypeVertex {
+    pub fn take_entity_type(&self) -> TypeVertex {
         let next = TypeID::build(self.next_entity.fetch_add(1, Ordering::Relaxed));
         build_entity_type_vertex(&next)
     }
 
-    pub fn take_attribute_type_vertex(&self) -> TypeVertex {
+    pub fn take_relation_type(&self) -> TypeVertex {
+        let next = TypeID::build(self.next_relation.fetch_add(1, Ordering::Relaxed));
+        build_relation_type_vertex(&next)
+    }
+
+    pub fn take_attribute_type(&self) -> TypeVertex {
         let next = TypeID::build(self.next_attribute.fetch_add(1, Ordering::Relaxed));
         build_attribute_type_vertex(&next)
     }

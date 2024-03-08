@@ -74,4 +74,12 @@ impl<'a> Label<'a> {
     pub fn scoped_name(&'a self) -> StringBytes<'a, LABEL_SCOPED_NAME_STRING_INLINE> {
         self.scoped_name.clone_as_ref()
     }
+
+    pub fn into_owned(self) -> Label<'static> {
+        Label {
+            name: self.name.into_owned(),
+            scope: self.scope.map(|string_bytes| string_bytes.into_owned()),
+            scoped_name: self.scoped_name.into_owned(),
+        }
+    }
 }

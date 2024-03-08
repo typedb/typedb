@@ -20,7 +20,7 @@ use encoding::graph::thing::vertex::ObjectVertex;
 use storage::key_value::StorageKeyReference;
 use storage::snapshot::iterator::SnapshotPrefixIterator;
 
-use crate::{ConceptAPI, concept_iterator};
+use crate::{concept_iterator, ConceptAPI};
 use crate::error::{ConceptError, ConceptErrorKind};
 use crate::thing::{ObjectAPI, ThingAPI};
 use crate::type_::TypeAPI;

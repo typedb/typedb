@@ -18,16 +18,17 @@
 use std::fs;
 use std::path::PathBuf;
 use std::rc::Rc;
+
 use concept::thing::thing_manager::ThingManager;
 use concept::type_::type_manager::TypeManager;
-
 use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
 use encoding::initialise_storage;
 use storage::MVCCStorage;
 use storage::snapshot::snapshot::Snapshot;
+
 use crate::error::DatabaseError;
-use crate::error::DatabaseErrorKind::{FailedToCreateStorage, FailedToSetupStorage};
+use crate::error::DatabaseErrorKind::{FailedToCreateDirectory, FailedToCreateStorage, FailedToSetupStorage};
 use crate::transaction::{TransactionRead, TransactionWrite};
 
 pub struct Database {
@@ -41,7 +42,10 @@ pub struct Database {
 impl Database {
     pub fn new(path: &PathBuf, database_name: Rc<str>) -> Result<Database, DatabaseError> {
         let database_path = path.with_extension(String::from(database_name.as_ref()));
-        fs::create_dir(database_path.as_path());
+        fs::create_dir(database_path.as_path()).map_err(|io_error| DatabaseError {
+            database_name: database_name.to_string(),
+            kind: FailedToCreateDirectory(io_error),
+        })?;
         let mut storage = MVCCStorage::new(database_name.clone(), path)
             .map_err(|storage_error| DatabaseError {
                 database_name: database_name.to_string(),
@@ -67,18 +71,18 @@ impl Database {
     }
 
     pub fn transaction_read(&self) -> TransactionRead {
-        let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(self.storage.open_snapshot_read()));
+        let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(self.storage.open_snapshot_read()));
         let type_manager = TypeManager::new(snapshot.clone(), &self.type_vertex_generator);
         let thing_manager = ThingManager::new(snapshot.clone(), &self.thing_vertex_generator);
         TransactionRead {
             snapshot: snapshot,
             type_manager: type_manager,
-            thing_manager: thing_manager
+            thing_manager: thing_manager,
         }
     }
 
     fn transaction_write(&self) -> TransactionWrite {
-        let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(self.storage.open_snapshot_write()));
+        let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(self.storage.open_snapshot_write()));
         let type_manager = TypeManager::new(snapshot.clone(), &self.type_vertex_generator);
         let thing_manager = ThingManager::new(snapshot.clone(), &self.thing_vertex_generator);
         TransactionWrite {

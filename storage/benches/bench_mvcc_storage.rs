@@ -22,10 +22,10 @@ use criterion::{Criterion, criterion_group, criterion_main};
 
 use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
 use storage::keyspace::keyspace::KeyspaceId;
 use storage::MVCCStorage;
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
 fn random_key_24(keyspace_id: KeyspaceId) -> StorageKeyArray<{ BUFFER_KEY_INLINE }> {

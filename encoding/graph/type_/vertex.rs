@@ -20,10 +20,13 @@ use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
+use crate::graph::thing::vertex::ObjectVertex;
 use crate::graph::Typed;
+use crate::layout::infix::InfixType;
 use crate::layout::prefix::{PrefixID, PrefixType};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -32,7 +35,7 @@ pub struct TypeVertex<'a> {
 }
 
 macro_rules! type_vertex_constructors {
-    ($new_name:ident, $build_name:ident, PrefixType::$prefix:ident) => {
+    ($new_name:ident, $build_name:ident, $build_name_prefix:ident, PrefixType::$prefix:ident) => {
         pub fn $new_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeVertex<'a> {
             let vertex = TypeVertex::new(bytes);
             debug_assert_eq!(vertex.prefix(), PrefixType::$prefix);
@@ -42,14 +45,21 @@ macro_rules! type_vertex_constructors {
         pub fn $build_name(type_id: &TypeID) -> TypeVertex<'static> {
             TypeVertex::build(&PrefixType::$prefix.prefix_id(), type_id)
         }
+
+        // TODO: this could be static/allocated only once
+        pub fn $build_name_prefix() ->  StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
+            TypeVertex::build_prefix(&PrefixType::$prefix.prefix_id())
+        }
     };
 }
 
-type_vertex_constructors!(new_entity_type_vertex, build_entity_type_vertex, PrefixType::VertexEntityType);
-type_vertex_constructors!(new_attribute_type_vertex, build_attribute_type_vertex, PrefixType::VertexAttributeType);
+type_vertex_constructors!(new_entity_type_vertex, build_entity_type_vertex, build_entity_type_vertex_prefix, PrefixType::VertexEntityType);
+type_vertex_constructors!(new_relation_type_vertex, build_relation_type_vertex, build_relation_type_vertex_prefix, PrefixType::VertexRelationType);
+type_vertex_constructors!(new_attribute_type_vertex, build_attribute_type_vertex, build_attribute_type_vertex_prefix, PrefixType::VertexAttributeType);
 
 impl<'a> TypeVertex<'a> {
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;
+    pub(crate) const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
     pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeVertex<'a> {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
@@ -61,6 +71,16 @@ impl<'a> TypeVertex<'a> {
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_id.bytes().bytes());
         TypeVertex { bytes: ByteArrayOrRef::Array(array) }
+    }
+
+    fn build_prefix(prefix: &PrefixID<'a>) -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
+        StorageKey::new_owned(Self::keyspace_id(), bytes)
+    }
+
+    fn keyspace_id() -> KeyspaceId {
+        EncodingKeyspace::Schema.id()
     }
 
     pub fn into_owned(self) -> TypeVertex<'static> {
@@ -80,11 +100,11 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
-        EncodingKeyspace::Schema.id()
+        Self::keyspace_id()
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> { }
+impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}
 
 impl<'a> Typed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}
 
@@ -108,7 +128,7 @@ impl<'a> TypeID<'a> {
         TypeID { bytes: ByteArrayOrRef::Array(ByteArray::inline(id.to_be_bytes(), TypeID::LENGTH)) }
     }
 
-    pub(crate) fn as_u16(&self) -> u16 {
+    pub fn as_u16(&self) -> u16 {
         u16::from_be_bytes(self.bytes.bytes()[0..Self::LENGTH].try_into().unwrap())
     }
 }

@@ -57,6 +57,10 @@ impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
     pub fn length(&self) -> usize {
         self.bytes.length()
     }
+
+    pub fn into_owned(self) -> StringBytes<'static, INLINE_LENGTH> {
+        StringBytes { bytes: self.bytes.into_owned() }
+    }
 }
 
 impl<'a, const INLINE_LENGTH: usize> AsBytes<'a, INLINE_LENGTH> for StringBytes<'a, INLINE_LENGTH> {

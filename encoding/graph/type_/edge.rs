@@ -28,7 +28,7 @@ use crate::{AsBytes, EncodingKeyspace, Keyable};
 use crate::graph::type_::vertex::TypeVertex;
 use crate::layout::infix::{InfixID, InfixType};
 
-struct TypeEdge<'a> {
+pub struct TypeEdge<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }
 

@@ -16,9 +16,9 @@
  */
 
 use tracing;
-pub use tracing::{error, trace, info};
+pub use tracing::{error, info, trace};
 use tracing::dispatcher::DefaultGuard;
-use tracing_subscriber::{prelude::*};
+use tracing_subscriber::prelude::*;
 
 pub mod result;
 

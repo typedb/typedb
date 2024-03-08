@@ -15,31 +15,35 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::{AsBytes, Keyable};
-use encoding::graph::type_::property::TypeToLabelProperty;
+use encoding::graph::type_::property::{LabelToTypeProperty, TypeToLabelProperty};
 use encoding::graph::type_::vertex::TypeVertex;
 use encoding::primitive::label::Label;
 use encoding::primitive::string::StringBytes;
 use resource::constants::encoding::LABEL_SCOPED_NAME_STRING_INLINE;
 use storage::snapshot::snapshot::Snapshot;
 
-use crate::{ConceptAPI, IIDAPI};
+use crate::ConceptAPI;
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::owns::Owns;
 
 pub mod attribute_type;
+pub mod relation_type;
 pub mod entity_type;
 pub mod type_manager;
 mod owns;
 mod plays;
+mod sub;
+mod type_cache;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized {
     fn vertex(&'a self) -> &TypeVertex<'a>;
 
     fn get_label(&self, snapshot: &Snapshot) -> &Label;
 
-    fn _fetch_label(&'a self, snapshot: &Snapshot<'a>) -> Label<'static> {
+    fn _get_storage_label(&'a self, snapshot: &Snapshot<'a>) -> Option<Label<'static>> {
         let key = TypeToLabelProperty::build(self.vertex());
         snapshot.get_mapped(key.into_storage_key().as_reference(), |reference| {
             let value = StringBytes::new(ByteArrayOrRef::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(reference));
@@ -51,12 +55,43 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized {
             } else {
                 Label::build(first)
             }
-        }).unwrap()
+        })
     }
 
-    // fn set_label(&self, label: &Label);
+    fn set_label(&mut self, label: &Label, snapshot: &Snapshot);
+
+    fn _set_storage_label(&'a self, label: &Label, snapshot: &Snapshot<'a>) {
+        self._may_delete_storage_label(snapshot);
+        if let Snapshot::Write(write_snapshot) = snapshot {
+            let vertex_to_label_key = TypeToLabelProperty::build(self.vertex());
+            let label_value = ByteArray::from(label.scoped_name.bytes());
+            write_snapshot.put_val(vertex_to_label_key.into_storage_key().to_owned_array(), label_value);
+
+            let label_to_vertex_key = LabelToTypeProperty::build(label);
+            let vertex_value = ByteArray::from(self.vertex().bytes());
+            write_snapshot.put_val(label_to_vertex_key.into_storage_key().to_owned_array(), vertex_value);
+        } else {
+            panic!("Illegal state: creating types requires write snapshot")
+        }
+    }
+
+    fn _may_delete_storage_label(&'a self, snapshot: &Snapshot<'a>) {
+        let existing_label = self._get_storage_label(snapshot);
+        if let Some(label) = existing_label {
+            if let Snapshot::Write(write_snapshot) = snapshot {
+                let vertex_to_label_key = TypeToLabelProperty::build(self.vertex());
+                write_snapshot.delete(vertex_to_label_key.into_storage_key().to_owned_array());
+                let label_to_vertex_key = LabelToTypeProperty::build(&label);
+                write_snapshot.delete(label_to_vertex_key.into_storage_key().to_owned_array());
+            } else {
+                panic!("Illegal state: creating types requires write snapshot")
+            }
+        }
+    }
+
+    // fn get_supertype(&self) -> Option<Self> {
     //
-    // fn get_supertype(&self) -> Option<Self>;
+    // }
 }
 
 pub trait EntityTypeAPI<'a>: TypeAPI<'a> {

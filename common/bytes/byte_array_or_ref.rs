@@ -16,7 +16,6 @@
  */
 
 use std::fmt::{Display, Formatter};
-use std::fs::remove_file;
 
 use crate::byte_array::ByteArray;
 use crate::byte_reference::ByteReference;

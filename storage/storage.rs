@@ -29,13 +29,13 @@ use durability::{DurabilityService, SequenceNumber, Sequencer, wal::WAL};
 use iterator::State;
 use logger::error;
 use logger::result::ResultExt;
-use primitive::U80;
+use primitive::u80::U80;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use snapshot::write::Write;
 
 use crate::error::{MVCCStorageError, MVCCStorageErrorKind};
 use crate::isolation_manager::{CommitRecord, IsolationManager};
-use crate::key_value::{StorageKey, StorageKeyReference};
+use crate::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
 use crate::keyspace::keyspace::{Keyspace, KEYSPACE_ID_MAX, KEYSPACE_ID_RESERVED_UNSET, KEYSPACE_MAXIMUM_COUNT, KeyspaceError, KeyspaceId, KeyspacePrefixIterator};
 use crate::snapshot::buffer::KeyspaceBuffers;
 use crate::snapshot::snapshot::{ReadSnapshot, WriteSnapshot};
@@ -359,7 +359,7 @@ pub struct MVCCPrefixIterator<'a, const PS: usize> {
 
 impl<'s, const P: usize> MVCCPrefixIterator<'s, P> {
     //
-    // TODO: optimisations for fixed-width keyspaces
+    // TODO: optimisation for fixed-width keyspaces: we can skip to key[len(key) - 1] = key[len(key) - 1] + 1 once we find a successful key, to skip all 'older' versions of the key
     //
     fn new(storage: &'s MVCCStorage, prefix: StorageKey<'s, P>, open_sequence_number: &SequenceNumber) -> Self {
         debug_assert!(prefix.bytes().len() > 0);
@@ -470,7 +470,24 @@ impl<'s, const P: usize> MVCCPrefixIterator<'s, P> {
     fn advance(&mut self) {
         let _ = self.iterator.next();
     }
+
+    pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(mut self) -> Vec<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)> {
+        let vec: Vec<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)> = vec!();
+        let mut vec = Vec::new();
+        loop {
+            let item = self.next();
+            if item.is_none() {
+                break;
+            }
+            let (key_ref, value_ref) = item.unwrap().unwrap();
+            let key = StorageKeyArray::from(key_ref);
+            let value = ByteArray::from(value_ref);
+            vec.push((key, value));
+        }
+        vec
+    }
 }
+
 
 
 ///

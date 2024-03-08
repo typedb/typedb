@@ -161,7 +161,7 @@ impl<'a> AttributeVertex<'a> {
         Self { bytes: ByteArrayOrRef::Array(bytes) }
     }
 
-    pub fn attribute_id(&'a self) -> AttributeID<'a> {
+    fn attribute_id(&'a self) -> AttributeID<'a> {
         AttributeID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_attribute_id()])))
     }
 

@@ -21,7 +21,7 @@ use std::ops::DerefMut;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 
-use primitive::U80;
+use primitive::u80::U80;
 
 use crate::{DurabilityError, DurabilityErrorKind, DurabilityRecord, DurabilityRecordType, DurabilityService, SequenceNumber, Sequencer};
 

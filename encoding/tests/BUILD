@@ -15,32 +15,29 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-package(default_visibility = [
-    ":__subpackages__",
-    "//database:__pkg__",
-])
+load("@rules_rust//rust:defs.bzl", "rust_test")
+package(default_visibility = ["//visibility:public",])
 
-rust_library(
-    name = "concept",
+rust_test(
+    name = "test_type_vertex",
     srcs = glob([
-        "*.rs",
-        "type_/*.rs",
-        "thing/*.rs",
+        "test_type_vertex.rs",
     ]),
     deps = [
         "//common/bytes",
-        "//common/primitive",
+        "//common/logger",
         "//encoding",
         "//storage",
-        "//storage/durability",
-        "//resource",
-    ],
+        "//util/test:test_utils",
+
+        "@crates//:rand",
+        "@crates//:tracing",
+    ]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob(["*", "*/*", "*/*/*"]),
     license_type = "agpl-header",
 )

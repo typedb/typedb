@@ -20,7 +20,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::graph::thing::vertex::{ObjectID, ObjectVertex};
 use crate::graph::type_::vertex::{TypeID, TypeIDUInt};
-use crate::layout::prefix::PrefixType;
 
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,

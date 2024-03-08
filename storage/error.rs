@@ -18,7 +18,9 @@
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
+
 use durability::DurabilityError;
+
 use crate::isolation_manager::IsolationError;
 use crate::keyspace::keyspace::{KeyspaceError, KeyspaceId};
 

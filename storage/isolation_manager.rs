@@ -26,7 +26,7 @@ use serde::{Deserialize, Serialize};
 
 use durability::{DurabilityRecord, DurabilityRecordType, SequenceNumber};
 use logger::result::ResultExt;
-use primitive::U80;
+use primitive::u80::U80;
 
 use crate::keyspace::keyspace::KeyspaceId;
 use crate::snapshot::buffer::KeyspaceBuffers;

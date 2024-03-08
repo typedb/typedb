@@ -17,8 +17,6 @@
 
 use std::rc::Rc;
 
-use rand;
-
 use database::database::Database;
 use encoding::graph::type_::Root;
 use test_utils::{create_tmp_dir, delete_dir, init_logging};

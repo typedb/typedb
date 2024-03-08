@@ -17,11 +17,12 @@
 
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-use std::io::{Write};
+use std::io::Write;
 use std::ops::{Add, Sub};
-use primitive::{U80};
 
 use serde::{Deserialize, Serialize};
+
+use primitive::u80::U80;
 
 pub mod wal;
 
@@ -140,7 +141,6 @@ pub trait Sequencer {
 
     fn previous(&self) -> SequenceNumber;
 }
-
 
 #[derive(Debug)]
 pub struct DurabilityError {

@@ -90,8 +90,8 @@ macro_rules! prefix_functions {
             let bytes = match self {
                 $(
                     Self::$name => {
-                        const successor: [u8; PrefixID::LENGTH] = increment_fixed($bytes);
-                        &successor
+                        const SUCCESSOR: [u8; PrefixID::LENGTH] = increment_fixed($bytes);
+                        &SUCCESSOR
                     }
                 )*
             };

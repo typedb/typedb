@@ -26,7 +26,7 @@ use storage::snapshot::snapshot::Snapshot;
 use crate::ConceptAPI;
 use crate::type_::TypeAPI;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct AttributeType<'a> {
     vertex: TypeVertex<'a>,
     label: OnceCell<Label<'static>>,
@@ -55,7 +55,12 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
     }
 
     fn get_label(&self, snapshot: &Snapshot) -> &Label {
-        self.label.get_or_init(|| self._fetch_label(snapshot))
+        self.label.get_or_init(|| self._get_storage_label(snapshot).unwrap())
+    }
+
+    fn set_label(&mut self, label: &Label, snapshot: &Snapshot) {
+        self._set_storage_label(label, snapshot);
+        self.label = OnceCell::from(label.clone().into_owned());
     }
 }
 //

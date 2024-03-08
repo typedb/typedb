@@ -16,16 +16,13 @@
  */
 
 use bytes::byte_reference::ByteReference;
-use encoding::AsBytes;
-use thing::{AttributeAPI, ObjectAPI};
-use type_::TypeAPI;
 
 pub mod type_;
 pub mod thing;
 pub mod error;
 pub mod iterator;
 
-trait ConceptAPI<'a>: Eq + PartialEq {}
+pub trait ConceptAPI<'a>: Eq + PartialEq {}
 
 // ---- IID implementations ---
 

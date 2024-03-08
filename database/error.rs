@@ -17,6 +17,7 @@
 
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use std::io;
 
 use storage::error::MVCCStorageError;
 
@@ -28,6 +29,7 @@ pub struct DatabaseError {
 
 #[derive(Debug)]
 pub enum DatabaseErrorKind {
+    FailedToCreateDirectory(io::Error),
     FailedToCreateStorage(MVCCStorageError),
     FailedToSetupStorage(MVCCStorageError),
 }
@@ -41,6 +43,7 @@ impl Display for DatabaseError {
 impl Error for DatabaseError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
+            DatabaseErrorKind::FailedToCreateDirectory(io_error) => Some(io_error),
             DatabaseErrorKind::FailedToCreateStorage(storage_error) => Some(storage_error),
             DatabaseErrorKind::FailedToSetupStorage(storage_error) => Some(storage_error),
         }

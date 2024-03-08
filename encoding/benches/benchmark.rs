@@ -18,14 +18,13 @@
 use std::sync::Arc;
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use encoding::graph::thing::vertex::ObjectVertex;
 
+use encoding::graph::thing::vertex::ObjectVertex;
 use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
 use encoding::graph::type_::vertex::TypeID;
 use encoding::Keyable;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
-use resource::constants::snapshot::{BUFFER_KEY_INLINE};
-
 
 fn vertex_generation(thing_iid_generator: Arc<ThingVertexGenerator>, type_id: &TypeID<'_>) -> ObjectVertex<'static> {
     thing_iid_generator.take_entity_vertex(type_id)

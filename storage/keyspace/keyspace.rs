@@ -24,7 +24,6 @@ use speedb::{DB, DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOption
 
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
 use iterator::State;
 use logger::result::ResultExt;
 

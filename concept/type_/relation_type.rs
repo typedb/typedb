@@ -15,10 +15,11 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+
 use std::cell::OnceCell;
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
-use encoding::graph::type_::vertex::{new_entity_type_vertex, TypeVertex};
+use encoding::graph::type_::vertex::{new_relation_type_vertex, TypeVertex};
 use encoding::layout::prefix::PrefixType;
 use encoding::Prefixed;
 use encoding::primitive::label::Label;
@@ -31,29 +32,29 @@ use crate::error::{ConceptError, ConceptErrorKind};
 use crate::type_::TypeAPI;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct EntityType<'a> {
+pub struct RelationType<'a> {
     vertex: TypeVertex<'a>,
     label: OnceCell<Label<'static>>,
 }
 
-impl<'a> EntityType<'a> {
-    pub fn new(vertex: TypeVertex<'a>) -> EntityType {
-        if vertex.prefix() != PrefixType::VertexEntityType {
-            panic!("Type IID prefix was expected to be Prefix::EntityType ({:?}) but was {:?}",
-                   PrefixType::VertexEntityType, vertex.prefix())
+impl<'a> RelationType<'a> {
+    pub fn new(vertex: TypeVertex<'a>) -> RelationType {
+        if vertex.prefix() != PrefixType::VertexRelationType {
+            panic!("Type IID prefix was expected to be Prefix::RelationType ({:?}) but was {:?}",
+                   PrefixType::VertexRelationType, vertex.prefix())
         }
-        EntityType { vertex: vertex, label: OnceCell::new() }
+        RelationType { vertex: vertex, label: OnceCell::new() }
     }
 
-    fn into_owned(self) -> EntityType<'static> {
+    fn into_owned(self) -> RelationType<'static> {
         let v = self.vertex.into_owned();
-        EntityType { vertex: v, label: self.label }
+        RelationType { vertex: v, label: self.label }
     }
 }
 
-impl<'a> ConceptAPI<'a> for EntityType<'a> {}
+impl<'a> ConceptAPI<'a> for RelationType<'a> {}
 
-impl<'a> TypeAPI<'a> for EntityType<'a> {
+impl<'a> TypeAPI<'a> for RelationType<'a> {
     fn vertex(&'a self) -> &TypeVertex<'a> {
         &self.vertex
     }
@@ -69,19 +70,19 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
 }
 
 //
-// impl<'a> EntityTypeAPI<'a> for EntityType<'a> {
+// impl<'a> RelationTypeAPI<'a> for RelationType<'a> {
 //
 // }
 
-// impl<'a> IIDAPI<'a> for EntityType<'a> {
+// impl<'a> IIDAPI<'a> for RelationType<'a> {
 //     fn iid(&'a self) -> ByteReference<'a> {
 //         self.vertex.bytes()
 //     }
 // }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_entity_type<'a>(storage_key_ref: StorageKeyReference<'a>) -> EntityType<'a> {
-    EntityType::new(new_entity_type_vertex(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
+fn storage_key_to_relation_type<'a>(storage_key_ref: StorageKeyReference<'a>) -> RelationType<'a> {
+    RelationType::new(new_relation_type_vertex(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
 }
 
-concept_iterator!(EntityTypeIterator, EntityType, storage_key_to_entity_type);
+concept_iterator!(RelationTypeIterator, RelationType, storage_key_to_relation_type);
