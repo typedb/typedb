@@ -61,6 +61,13 @@ impl<'storage> Snapshot<'storage> {
             Snapshot::Write(snapshot) => snapshot.close_resources(),
         }
     }
+
+    pub fn open_sequence_number(&self) -> SequenceNumber {
+        match self {
+            Snapshot::Read(snapshot) => snapshot.open_sequence_number,
+            Snapshot::Write(snapshot) => snapshot.open_sequence_number,
+        }
+    }
 }
 
 #[derive(Debug)]

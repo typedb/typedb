@@ -23,7 +23,7 @@ use concept::thing::thing_manager::ThingManager;
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
-use encoding::initialise_storage;
+use encoding::create_keyspaces;
 use storage::MVCCStorage;
 use storage::snapshot::snapshot::Snapshot;
 
@@ -52,7 +52,7 @@ impl Database {
                 kind: FailedToCreateStorage(storage_error),
             })?;
 
-        initialise_storage(&mut storage).map_err(|storage_error| DatabaseError {
+        create_keyspaces(&mut storage).map_err(|storage_error| DatabaseError {
             database_name: database_name.to_string(),
             kind: FailedToSetupStorage(storage_error),
         })?;

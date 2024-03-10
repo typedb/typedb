@@ -19,7 +19,7 @@ use std::cell::OnceCell;
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::graph::type_::Root;
-use encoding::graph::type_::vertex::{new_entity_type_vertex, TypeVertex};
+use encoding::graph::type_::vertex::{new_vertex_entity_type, TypeVertex};
 use encoding::layout::prefix::PrefixType;
 use encoding::Prefixed;
 use encoding::primitive::label::Label;
@@ -29,12 +29,14 @@ use storage::snapshot::iterator::SnapshotPrefixIterator;
 use crate::{concept_iterator, ConceptAPI};
 use crate::error::{ConceptError, ConceptErrorKind};
 use crate::type_::type_manager::TypeManager;
-use crate::type_::TypeAPI;
+use crate::type_::{EntityTypeAPI, TypeAPI};
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct EntityType<'a> {
     vertex: TypeVertex<'a>,
+    // TODO: these should not cache the label here in case we're in a writable transaction?
     label: OnceCell<Label<'static>>,
+    // Note: this is safe to cache since it can never be user-set
     is_root: OnceCell<bool>,
 }
 
@@ -70,14 +72,22 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
     }
 
     fn is_root(&self, type_manager: &TypeManager) -> bool {
-        *self.is_root.get_or_init(|| self.get_label(type_manager) == &Root::Attribute.label())
+        *self.is_root.get_or_init(|| self.get_label(type_manager) == &Root::Entity.label())
     }
 }
 
-//
-// impl<'a> EntityTypeAPI<'a> for EntityType<'a> {
-//
-// }
+
+impl<'a> EntityTypeAPI<'a> for EntityType<'a> {
+
+}
+
+impl<'a> PartialEq<Self> for EntityType<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.vertex.eq(other.vertex())
+    }
+}
+
+impl<'a> Eq for EntityType<'a> {}
 
 // impl<'a> IIDAPI<'a> for EntityType<'a> {
 //     fn iid(&'a self) -> ByteReference<'a> {
@@ -87,7 +97,7 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_to_entity_type<'a>(storage_key_ref: StorageKeyReference<'a>) -> EntityType<'a> {
-    EntityType::new(new_entity_type_vertex(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
+    EntityType::new(new_vertex_entity_type(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
 }
 
 concept_iterator!(EntityTypeIterator, EntityType, storage_key_to_entity_type);

@@ -56,18 +56,18 @@ macro_rules! type_vertex_constructors {
 }
 
 type_vertex_constructors!(
-    new_entity_type_vertex, build_entity_type_vertex, build_entity_type_vertex_prefix,
-    is_entity_type_vertex,
+    new_vertex_entity_type, build_vertex_entity_type, build_vertex_entity_type_prefix,
+    is_vertex_entity_type,
     PrefixType::VertexEntityType
 );
 type_vertex_constructors!(
-    new_relation_type_vertex, build_relation_type_vertex, build_relation_type_vertex_prefix,
-    is_relation_type_vertex,
+    new_vertex_relation_type, build_vertex_relation_type, build_vertex_relation_type_prefix,
+    is_vertex_relation_type,
     PrefixType::VertexRelationType
 );
 type_vertex_constructors!(
-    new_attribute_type_vertex, build_attribute_type_vertex, build_attribute_type_vertex_prefix,
-    is_attribute_type_vertex,
+    new_vertex_attribute_type, build_vertex_attribute_type, build_vertex_attribute_type_prefix,
+    is_vertex_attribute_type,
     PrefixType::VertexAttributeType
 );
 

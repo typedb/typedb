@@ -18,7 +18,7 @@
 
 use std::rc::Rc;
 
-use encoding::initialise_storage;
+use encoding::create_keyspaces;
 use storage::MVCCStorage;
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
@@ -28,7 +28,7 @@ fn entity_type_vertexes_are_reused() {
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::new_db_options();
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-    initialise_storage(&mut storage);
+    create_keyspaces(&mut storage);
 
     // TODO: create a bunch of types, delete, and assert that the IDs are re-used
 

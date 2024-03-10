@@ -20,7 +20,7 @@ use std::cell::OnceCell;
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::graph::type_::Root;
-use encoding::graph::type_::vertex::{new_relation_type_vertex, TypeVertex};
+use encoding::graph::type_::vertex::{new_vertex_relation_type, TypeVertex};
 use encoding::layout::prefix::PrefixType;
 use encoding::Prefixed;
 use encoding::primitive::label::Label;
@@ -29,10 +29,10 @@ use storage::snapshot::iterator::SnapshotPrefixIterator;
 
 use crate::{concept_iterator, ConceptAPI};
 use crate::error::{ConceptError, ConceptErrorKind};
+use crate::type_::{RelationTypeAPI, TypeAPI};
 use crate::type_::type_manager::TypeManager;
-use crate::type_::TypeAPI;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct RelationType<'a> {
     vertex: TypeVertex<'a>,
     label: OnceCell<Label<'static>>,
@@ -45,7 +45,7 @@ impl<'a> RelationType<'a> {
             panic!("Type IID prefix was expected to be Prefix::RelationType ({:?}) but was {:?}",
                    PrefixType::VertexRelationType, vertex.prefix())
         }
-        RelationType { vertex: vertex, label: OnceCell::new(), is_root: OnceCell::new(), }
+        RelationType { vertex: vertex, label: OnceCell::new(), is_root: OnceCell::new() }
     }
 
     fn into_owned(self) -> RelationType<'static> {
@@ -71,14 +71,20 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
     }
 
     fn is_root(&self, type_manager: &TypeManager) -> bool {
-        *self.is_root.get_or_init(|| self.get_label(type_manager) == &Root::Attribute.label())
+        *self.is_root.get_or_init(|| self.get_label(type_manager) == &Root::Relation.label())
     }
 }
 
-//
-// impl<'a> RelationTypeAPI<'a> for RelationType<'a> {
-//
-// }
+
+impl<'a> RelationTypeAPI<'a> for RelationType<'a> {}
+
+impl<'a> PartialEq<Self> for RelationType<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.vertex.eq(other.vertex())
+    }
+}
+
+impl<'a> Eq for RelationType<'a> {}
 
 // impl<'a> IIDAPI<'a> for RelationType<'a> {
 //     fn iid(&'a self) -> ByteReference<'a> {
@@ -88,7 +94,7 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_to_relation_type<'a>(storage_key_ref: StorageKeyReference<'a>) -> RelationType<'a> {
-    RelationType::new(new_relation_type_vertex(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
+    RelationType::new(new_vertex_relation_type(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
 }
 
 concept_iterator!(RelationTypeIterator, RelationType, storage_key_to_relation_type);

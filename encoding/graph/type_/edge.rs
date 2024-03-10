@@ -22,6 +22,7 @@ use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::{AsBytes, EncodingKeyspace, Keyable};
@@ -33,15 +34,19 @@ pub struct TypeEdge<'a> {
 }
 
 macro_rules! type_edge_constructors {
-    ($new_name:ident, $build_name:ident, $is_name:ident, InfixType::$infix:ident) => {
+    ($new_name:ident, $build_name:ident, $build_prefix:ident, $is_name:ident, InfixType::$infix:ident) => {
         pub fn $new_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeEdge<'a> {
             let edge = TypeEdge::new(bytes);
             debug_assert_eq!(edge.infix(), InfixType::$infix);
             edge
         }
 
-        pub(crate) fn $build_name(from: &TypeVertex, to: &TypeVertex) -> TypeEdge<'static> {
+        pub fn $build_name(from: &TypeVertex, to: &TypeVertex) -> TypeEdge<'static> {
             TypeEdge::build(from, InfixType::$infix, to)
+        }
+
+        pub fn $build_prefix(from: &TypeVertex) -> StorageKey<'static, {TypeEdge::LENGTH_PREFIX}> {
+            TypeEdge::build_prefix(from, InfixType::$infix)
         }
 
         pub fn $is_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> bool {
@@ -50,17 +55,50 @@ macro_rules! type_edge_constructors {
     };
 }
 
-type_edge_constructors!(new_sub_edge_forward, build_sub_edge_forward, is_sub_edge_forward, InfixType::SubForward);
-type_edge_constructors!(new_sub_edge_backward, build_sub_edge_backward, is_sub_edge_backward, InfixType::SubBackward);
-type_edge_constructors!(new_owns_edge_forward, build_owns_edge_forward, is_owns_edge_forward, InfixType::OwnsForward);
-type_edge_constructors!(new_owns_edge_backward, build_owns_edge_backward, is_owns_edge_backward, InfixType::OwnsBackward);
-type_edge_constructors!(new_plays_edge_forward, build_plays_edge_forward, is_plays_edge_forward, InfixType::PlaysForward);
-type_edge_constructors!(new_plays_edge_backward, build_plays_edge_backward,  is_plays_edge_backward,InfixType::PlaysBackward);
-type_edge_constructors!(new_relates_edge_forward, build_relates_edge_forward, is_relates_edge_forward, InfixType::RelatesForward);
-type_edge_constructors!(new_relates_edge_backward, build_relates_edge_backward, is_relates_edge_backward, InfixType::RelatesBackward);
+type_edge_constructors!(
+    new_edge_sub_forward, build_edge_sub_forward, build_edge_sub_forward_prefix,
+    is_edge_sub_forward,
+    InfixType::SubForward
+);
+type_edge_constructors!(
+    new_edge_sub_backward, build_edge_sub_backward, build_edge_sub_backward_prefix,
+    is_edge_sub_backward,
+    InfixType::SubBackward
+);
+type_edge_constructors!(
+    new_edge_owns_forward, build_edge_owns_forward, build_edge_owns_forward_prefix,
+    is_edge_owns_forward,
+    InfixType::OwnsForward
+);
+type_edge_constructors!(
+    new_edge_owns_backward, build_edge_owns_backward, build_edge_owns_backward_prefix,
+    is_edge_owns_backward,
+    InfixType::OwnsBackward
+);
+type_edge_constructors!(
+    new_edge_plays_forward, build_edge_plays_forward, build_edge_plays_forward_prefix,
+    is_edge_plays_forward,
+    InfixType::PlaysForward
+);
+type_edge_constructors!(
+    new_edge_plays_backward, build_edge_plays_backward, build_edge_plays_backward_prefix,
+    is_edge_plays_backward,
+    InfixType::PlaysBackward
+);
+type_edge_constructors!(
+    new_edge_relates_forward, build_edge_relates_forward, build_edge_relates_forward_prefix,
+    is_edge_relates_forward,
+    InfixType::RelatesForward
+);
+type_edge_constructors!(
+    new_edge_relates_backward, build_edge_relates_backward, build_edge_relates_backward_prefix,
+    is_edge_relates_backward,
+    InfixType::RelatesBackward
+);
 
 impl<'a> TypeEdge<'a> {
     const LENGTH: usize = 2 * TypeVertex::LENGTH + InfixID::LENGTH;
+    const LENGTH_PREFIX: usize = TypeVertex::LENGTH + InfixID::LENGTH;
 
     fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
@@ -76,6 +114,13 @@ impl<'a> TypeEdge<'a> {
         Self { bytes: ByteArrayOrRef::Array(bytes) }
     }
 
+    fn build_prefix(from: &TypeVertex<'_>, infix: InfixType) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX);
+        bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
+        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(infix.infix_id().bytes().bytes());
+        StorageKey::new_owned(Self::keyspace_id(), bytes)
+    }
+
     pub fn from(&'a self) -> TypeVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[Self::range_from()]);
         TypeVertex::new(ByteArrayOrRef::Reference(reference))
@@ -88,6 +133,10 @@ impl<'a> TypeEdge<'a> {
 
     fn infix(&self) -> InfixType {
         InfixType::from_infix_id(InfixID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_infix()]))))
+    }
+
+    const fn keyspace_id() -> KeyspaceId {
+        EncodingKeyspace::Schema.id()
     }
 
     const fn range_from() -> Range<usize> {
@@ -115,6 +164,6 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
-        EncodingKeyspace::Schema.id()
+        Self::keyspace_id()
     }
 }

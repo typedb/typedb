@@ -22,7 +22,9 @@ use primitive::maybe_owns::MaybeOwns;
 
 use crate::ConceptAPI;
 use crate::type_::attribute_type::AttributeType;
+use crate::type_::entity_type::EntityType;
 use crate::type_::owns::Owns;
+use crate::type_::relation_type::RelationType;
 use crate::type_::type_manager::TypeManager;
 
 pub mod attribute_type;
@@ -32,24 +34,27 @@ pub mod type_manager;
 mod owns;
 mod plays;
 mod sub;
-mod type_cache;
+pub mod type_cache;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized {
     fn vertex(&'a self) -> &TypeVertex<'a>;
 
     fn get_label(&self, type_manager: &TypeManager) -> &Label;
 
+    // TODO: impls of setLabel should fail is setting label on Root type
     fn set_label(&mut self, type_manager: &TypeManager, label: &Label);
 
     fn is_root(&self, type_manager: &TypeManager) -> bool;
-
 }
 
 pub trait EntityTypeAPI<'a>: TypeAPI<'a> {
+    // TODO: not so pretty to return EntityType directly, but is a win on efficiency. However, should reconsider the trait's necessity.
+    fn get_supertype<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, EntityType<'static>>> {
+        type_manager.get_entity_type_supertype(self)
+    }
 
-    fn get_supertype<'b>(&self, type_manager: &'b TypeManager) -> Option<MaybeOwns<'a, Self>> {
-        // type_manager.get_entity_type_supertype(self)
-        todo!()
+    fn set_supertype<'b>(&'a self, type_manager: &TypeManager, supertype: &'b impl EntityTypeAPI<'b>) {
+        type_manager.set_storage_supertype(self.vertex(), supertype.vertex())
     }
 
     // fn get_supertypes(&'a self) -> EntityTypeIterator<'static, 1>; // TODO: correct prefix size
@@ -58,10 +63,12 @@ pub trait EntityTypeAPI<'a>: TypeAPI<'a> {
 }
 
 pub trait RelationTypeAPI<'a>: TypeAPI<'a> {
+    fn get_supertype<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, RelationType<'static>>> {
+        type_manager.get_relation_type_supertype(self)
+    }
 
-    fn get_supertype<'b>(&self, type_manager: &'b TypeManager) -> Option<MaybeOwns<'a, Self>> {
-        // type_manager.get_relation_type_supertype(self.vertex())
-        todo!()
+    fn set_supertype<'b>(&'a self, type_manager: &TypeManager, supertype: &'b impl RelationTypeAPI<'b>) {
+        type_manager.set_storage_supertype(self.vertex(), supertype.vertex())
     }
 
     // fn get_supertypes(&'a self) -> EntityTypeIterator<'static, 1>; // TODO: correct prefix size
@@ -70,10 +77,12 @@ pub trait RelationTypeAPI<'a>: TypeAPI<'a> {
 }
 
 pub trait AttributeTypeAPI<'a>: TypeAPI<'a> {
+    fn get_supertype<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, AttributeType<'static>>> {
+        type_manager.get_attribute_type_supertype(self)
+    }
 
-    fn get_supertype<'b>(&self, type_manager: &'b TypeManager) -> Option<MaybeOwns<'a, Self>> {
-        // type_manager.get_attribute_type_supertype(self.vertex())
-        todo!()
+    fn set_supertype<'b>(&'a self, type_manager: &TypeManager, supertype: &'b impl AttributeTypeAPI<'b>) {
+        type_manager.set_storage_supertype(self.vertex(), supertype.vertex())
     }
 }
 

@@ -31,7 +31,7 @@ fn create_delete_database() {
 
     let txn = db.transaction_read();
     let types = txn.type_manager();
-    let root_entity_type = types.get_entity_type(&Root::Entity.label());
+    let root_entity_type = types.get_entity_type(Root::Entity.label());
     dbg!("Root entity type: {}", root_entity_type);
     // let delete_result = db.delete();
     // assert!(delete_result.is_ok());

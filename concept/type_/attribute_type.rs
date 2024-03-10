@@ -24,10 +24,11 @@ use encoding::Prefixed;
 use encoding::primitive::label::Label;
 
 use crate::ConceptAPI;
+use crate::type_::entity_type::EntityType;
 use crate::type_::type_manager::TypeManager;
-use crate::type_::TypeAPI;
+use crate::type_::{AttributeTypeAPI, TypeAPI};
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct AttributeType<'a> {
     vertex: TypeVertex<'a>,
     label: OnceCell<Label<'static>>,
@@ -40,12 +41,12 @@ impl<'a> AttributeType<'a> {
             panic!("Type IID prefix was expected to be Prefix::AttributeType ({:?}) but was {:?}",
                    PrefixType::VertexAttributeType, vertex.prefix())
         }
-        AttributeType { vertex: vertex, label: OnceCell::new(), is_root: OnceCell::new(), }
+        AttributeType { vertex: vertex, label: OnceCell::new(), is_root: OnceCell::new() }
     }
 
     fn into_owned(self) -> AttributeType<'static> {
         let v = self.vertex.into_owned();
-        AttributeType { vertex: v, label: self.label, is_root: self.is_root, }
+        AttributeType { vertex: v, label: self.label, is_root: self.is_root }
     }
 }
 
@@ -69,10 +70,17 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         *self.is_root.get_or_init(|| self.get_label(type_manager) == &Root::Attribute.label())
     }
 }
-//
-// impl<'a> AttributeTypeAPI<'a> for AttributeType<'a> {
-//
-// }
+
+impl<'a> AttributeTypeAPI<'a> for AttributeType<'a> {}
+
+impl<'a> PartialEq<Self> for AttributeType<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.vertex.eq(other.vertex())
+    }
+}
+
+impl<'a> Eq for AttributeType<'a> {}
+
 //
 // impl<'a> IIDAPI<'a> for AttributeType<'a> {
 //     fn iid(&'a self) -> ByteReference<'a> {

@@ -19,7 +19,7 @@ use std::sync::atomic::{AtomicU16, Ordering};
 
 use storage::MVCCStorage;
 
-use crate::graph::type_::vertex::{build_attribute_type_vertex, build_entity_type_vertex, build_relation_type_vertex, TypeID, TypeVertex};
+use crate::graph::type_::vertex::{build_vertex_attribute_type, build_vertex_entity_type, build_vertex_relation_type, TypeID, TypeVertex};
 use crate::Keyable;
 use crate::layout::prefix::PrefixType;
 
@@ -78,17 +78,17 @@ impl TypeVertexGenerator {
 
     pub fn take_entity_type(&self) -> TypeVertex {
         let next = TypeID::build(self.next_entity.fetch_add(1, Ordering::Relaxed));
-        build_entity_type_vertex(&next)
+        build_vertex_entity_type(&next)
     }
 
     pub fn take_relation_type(&self) -> TypeVertex {
         let next = TypeID::build(self.next_relation.fetch_add(1, Ordering::Relaxed));
-        build_relation_type_vertex(&next)
+        build_vertex_relation_type(&next)
     }
 
     pub fn take_attribute_type(&self) -> TypeVertex {
         let next = TypeID::build(self.next_attribute.fetch_add(1, Ordering::Relaxed));
-        build_attribute_type_vertex(&next)
+        build_vertex_attribute_type(&next)
     }
 }
 

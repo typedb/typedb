@@ -36,7 +36,7 @@ pub struct SnapshotPrefixIterator<'a, const PS: usize> {
 }
 
 impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
-    pub(crate) fn new(mvcc_iterator: MVCCPrefixIterator<'a, PS>, buffered_iterator: Option<BufferedPrefixIterator>) -> Self{
+    pub(crate) fn new(mvcc_iterator: MVCCPrefixIterator<'a, PS>, buffered_iterator: Option<BufferedPrefixIterator>) -> Self {
         SnapshotPrefixIterator {
             storage_iterator: mvcc_iterator,
             buffered_iterator: buffered_iterator,
@@ -211,19 +211,26 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         )
     }
 
-    pub fn collect_cloned(mut self) -> Vec<(StorageKey<'static, BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)> {
+    pub fn collect_cloned(mut self) -> Result<Vec<(StorageKey<'static, BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, SnapshotError> {
         let mut vec = Vec::new();
         loop {
             let item = self.next();
-            if item.is_none() {
-                break;
+            match item {
+                None => { break; }
+                Some(Result::Err(e)) => { return Err(e) }
+                Some(Ok((key, value))) => {
+                    vec.push((StorageKey::Array(StorageKeyArray::from(key.clone())), ByteArray::from(value)));
+                }
             }
-            let (key, value) = item.unwrap().unwrap();
-            let key = StorageKey::Array(StorageKeyArray::from(key.clone()));
-            let value = ByteArray::from(value);
-            vec.push((key, value));
         }
-        vec
+        Ok(vec)
+    }
+
+    pub fn first_cloned(mut self) -> Result<Option<(StorageKey<'static, BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, SnapshotError> {
+        let item = self.next();
+        item.transpose().map(|option| option.map(|(key, value)|
+            (StorageKey::Array(StorageKeyArray::from(key.clone())), ByteArray::from(value))
+        ))
     }
 }
 

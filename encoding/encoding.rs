@@ -52,15 +52,15 @@ impl EncodingKeyspace {
         }
     }
 
-    fn initialise_storage(&self, storage: &mut MVCCStorage) -> Result<(), MVCCStorageError> {
+    fn setup_storage(&self, storage: &mut MVCCStorage) -> Result<(), MVCCStorageError> {
         let options = MVCCStorage::new_db_options();
         storage.create_keyspace(self.name(), self.id(), &options)
     }
 }
 
-pub fn initialise_storage(storage: &mut MVCCStorage) -> Result<(), MVCCStorageError> {
-    EncodingKeyspace::Schema.initialise_storage(storage)?;
-    EncodingKeyspace::Data.initialise_storage(storage)
+pub fn create_keyspaces(storage: &mut MVCCStorage) -> Result<(), MVCCStorageError> {
+    EncodingKeyspace::Schema.setup_storage(storage)?;
+    EncodingKeyspace::Data.setup_storage(storage)
 }
 
 pub trait AsBytes<'a, const INLINE_SIZE: usize> {

@@ -37,6 +37,24 @@ rust_test(
     ]
 )
 
+rust_test(
+    name = "test_type",
+    srcs = glob([
+        "test_type.rs",
+    ]),
+    deps = [
+        "//common/bytes",
+        "//common/logger",
+        "//concept",
+        "//encoding",
+        "//storage",
+        "//util/test:test_utils",
+
+        "@crates//:rand",
+        "@crates//:tracing",
+    ]
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*", "*/*/*"]),
