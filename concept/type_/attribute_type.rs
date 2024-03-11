@@ -16,6 +16,7 @@
  */
 
 use std::cell::OnceCell;
+use std::ops::Deref;
 use encoding::graph::type_::Root;
 
 use encoding::graph::type_::vertex::TypeVertex;
@@ -57,17 +58,8 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         &self.vertex
     }
 
-    fn get_label(&self, type_manager: &TypeManager) -> &Label {
-        self.label.get_or_init(|| type_manager.get_storage_label(self.vertex()).unwrap())
-    }
-
-    fn set_label(&mut self, type_manager: &TypeManager, label: &Label) {
-        type_manager.set_storage_label(self.vertex(), label);
-        self.label = OnceCell::from(label.clone().into_owned());
-    }
-
     fn is_root(&self, type_manager: &TypeManager) -> bool {
-        *self.is_root.get_or_init(|| self.get_label(type_manager) == &Root::Attribute.label())
+        *self.is_root.get_or_init(|| self.get_label(type_manager).unwrap().deref() == &Root::Attribute.label())
     }
 }
 

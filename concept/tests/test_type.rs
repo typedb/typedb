@@ -16,6 +16,7 @@
  */
 
 
+use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -46,17 +47,17 @@ fn entity_creation() {
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
 
         let root_entity = type_manager.get_entity_type(&Root::Entity.label());
-        assert_eq!(root_entity.get_label(&type_manager), &Root::Entity.label());
+        assert_eq!(root_entity.get_label(&type_manager).unwrap().deref(), &Root::Entity.label());
         assert!(root_entity.is_root(&type_manager));
 
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&person_label);
 
         assert!(!person_type.is_root(&type_manager));
-        assert_eq!(person_type.get_label(&type_manager), &person_label);
+        assert_eq!(person_type.get_label(&type_manager).unwrap().deref(), &person_label);
 
         let supertype = person_type.get_supertype(&type_manager);
-        assert_eq!(supertype, Some(root_entity));
+        assert_eq!(supertype.unwrap(), root_entity);
     }
     if let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();
@@ -71,16 +72,16 @@ fn entity_creation() {
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
 
         let root_entity = type_manager.get_entity_type(&Root::Entity.label());
-        assert_eq!(root_entity.get_label(&type_manager), &Root::Entity.label());
+        assert_eq!(root_entity.get_label(&type_manager).unwrap().deref(), &Root::Entity.label());
         assert!(root_entity.is_root(&type_manager));
 
         let person_label = Label::build("person");
         let person_type = type_manager.get_entity_type(&person_label);
         assert!(!person_type.is_root(&type_manager));
-        assert_eq!(person_type.get_label(&type_manager), &person_label);
+        assert_eq!(person_type.get_label(&type_manager).unwrap().deref(), &person_label);
 
         let supertype = person_type.get_supertype(&type_manager);
-        assert_eq!(supertype, Some(root_entity));
+        assert_eq!(supertype.unwrap(), root_entity);
     }
 
     delete_dir(storage_path)

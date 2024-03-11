@@ -21,6 +21,7 @@ use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use storage::key_value::{StorageKey, StorageKeyArray};
 use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
@@ -38,10 +39,13 @@ pub struct TypeToLabelProperty<'a> {
 
 impl<'a> TypeToLabelProperty<'a> {
     const LENGTH: usize = PrefixID::LENGTH + TypeVertex::LENGTH;
+    const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
     pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        TypeToLabelProperty { bytes: bytes }
+        let property = TypeToLabelProperty { bytes: bytes };
+        debug_assert_eq!(property.prefix(), PrefixType::PropertyTypeToLabel);
+        property
     }
 
     pub fn build(vertex: &TypeVertex<'_>) -> Self {
@@ -49,6 +53,20 @@ impl<'a> TypeToLabelProperty<'a> {
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::PropertyTypeToLabel.prefix_id().bytes().bytes());
         array.bytes_mut()[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
         TypeToLabelProperty { bytes: ByteArrayOrRef::Array(array) }
+    }
+
+    pub fn build_prefix() -> StorageKey<'static, { TypeToLabelProperty::LENGTH_PREFIX }> {
+        let mut array = ByteArray::zeros(Self::LENGTH_PREFIX);
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::PropertyTypeToLabel.prefix_id().bytes().bytes());
+        StorageKey::Array(StorageKeyArray::new(Self::keyspace_id(), array))
+    }
+
+    pub fn type_vertex(&'a self) -> TypeVertex<'a> {
+        TypeVertex::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes().bytes()[Self::range_type_vertex()])))
+    }
+
+    const fn keyspace_id() -> KeyspaceId {
+        EncodingKeyspace::Schema.id()
     }
 
     const fn range_type_vertex() -> Range<usize> {
@@ -69,7 +87,7 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeToLabelProperty<'a> {
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeToLabelProperty<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
-        EncodingKeyspace::Schema.id()
+        Self::keyspace_id()
     }
 }
 

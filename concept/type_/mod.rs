@@ -15,6 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::cell::OnceCell;
 use encoding::{AsBytes, Keyable};
 use encoding::graph::type_::vertex::TypeVertex;
 use encoding::primitive::label::Label;
@@ -39,15 +40,20 @@ pub mod type_cache;
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized {
     fn vertex(&'a self) -> &TypeVertex<'a>;
 
-    fn get_label(&self, type_manager: &TypeManager) -> &Label;
-
-    // TODO: impls of setLabel should fail is setting label on Root type
-    fn set_label(&mut self, type_manager: &TypeManager, label: &Label);
+    fn set_label<'b>(&'a self, type_manager: &'b TypeManager, label: &Label) {
+        // TODO: setLabel should fail is setting label on Root type
+        type_manager.set_storage_label(self.vertex(), label);
+    }
 
     fn is_root(&self, type_manager: &TypeManager) -> bool;
 }
 
 pub trait EntityTypeAPI<'a>: TypeAPI<'a> {
+
+    fn get_label<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, Label<'static>>> {
+        type_manager.get_entity_type_label(self)
+    }
+
     // TODO: not so pretty to return EntityType directly, but is a win on efficiency. However, should reconsider the trait's necessity.
     fn get_supertype<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, EntityType<'static>>> {
         type_manager.get_entity_type_supertype(self)
@@ -63,6 +69,11 @@ pub trait EntityTypeAPI<'a>: TypeAPI<'a> {
 }
 
 pub trait RelationTypeAPI<'a>: TypeAPI<'a> {
+
+    fn get_label<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, Label<'static>>> {
+        type_manager.get_relation_type_label(self)
+    }
+
     fn get_supertype<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, RelationType<'static>>> {
         type_manager.get_relation_type_supertype(self)
     }
@@ -77,6 +88,11 @@ pub trait RelationTypeAPI<'a>: TypeAPI<'a> {
 }
 
 pub trait AttributeTypeAPI<'a>: TypeAPI<'a> {
+
+    fn get_label<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, Label<'static>>> {
+        type_manager.get_attribute_type_label(self)
+    }
+
     fn get_supertype<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, AttributeType<'static>>> {
         type_manager.get_attribute_type_supertype(self)
     }

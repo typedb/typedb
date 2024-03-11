@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use bytes::byte_array_or_ref::ByteArrayOrRef;
 use resource::constants::encoding::{LABEL_NAME_STRING_INLINE, LABEL_SCOPE_STRING_INLINE, LABEL_SCOPED_NAME_STRING_INLINE};
 
 use crate::primitive::string::StringBytes;
@@ -27,7 +28,19 @@ pub struct Label<'a> {
 }
 
 impl<'a> Label<'a> {
-    pub fn build(name: &'a str) -> Label<'static> {
+
+    pub fn parse_from<const INLINE_BYTES: usize>(string_bytes: StringBytes<'a, INLINE_BYTES>) -> Label<'static> {
+        let as_str = string_bytes.decode();
+        let mut splits = as_str.split(":");
+        let first = splits.next().unwrap();
+        if let Some(second) = splits.next() {
+            Self::build_scoped(first, second)
+        } else {
+            Self::build(first)
+        }
+    }
+
+    pub fn build(name: &str) -> Label<'static> {
         Label {
             name: StringBytes::build_owned(name),
             scope: None,
@@ -35,7 +48,7 @@ impl<'a> Label<'a> {
         }
     }
 
-    pub fn build_scoped(name: &'a str, scope: &'a str) -> Label<'static> {
+    pub fn build_scoped(name: &str, scope: &str) -> Label<'static> {
         let concatenated = format!("{}:{}", scope, name);
         Label {
             name: StringBytes::build_owned(name),

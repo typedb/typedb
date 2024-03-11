@@ -47,6 +47,12 @@ pub struct TypeManager<'txn, 'storage: 'txn> {
     schema_cache: Option<Arc<TypeCache<'storage>>>,
 }
 
+
+// TODO:
+//   if we drop/close without committing, then we need to release all the IDs taken back to the IDGenerator
+//   this is only applicable for type manager where we can only have 1 concurrent txn and IDs are precious
+
+
 impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     pub fn new(snapshot: Rc<Snapshot<'storage>>, vertex_generator: &'txn TypeVertexGenerator, schema_cache: Option<Arc<TypeCache<'storage>>>) -> TypeManager<'txn, 'storage> {
         TypeManager {
@@ -188,24 +194,35 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
+    pub(crate) fn get_entity_type_label<'this, 'b>(&'this self, entity_type: &'b impl EntityTypeAPI<'b>) -> Option<MaybeOwns<'this, Label<'static>>> {
+        if let Some(cache) = &self.schema_cache {
+            cache.get_entity_type_label(entity_type).map(|t| MaybeOwns::borrowed(t))
+        } else {
+            self.get_storage_label(entity_type.vertex()).map(|label| MaybeOwns::owned(label))
+        }
+    }
 
-    // TODO:
-    //   if we drop/close without committing, then we need to release all the IDs taken back to the IDGenerator
-    //   this is only applicable for type manager where we can only have 1 concurrent txn and IDs are precious
+    pub(crate) fn get_relation_type_label<'this, 'b>(&'this self, relation_type: &'b impl RelationTypeAPI<'b>) -> Option<MaybeOwns<'this, Label<'static>>> {
+        if let Some(cache) = &self.schema_cache {
+            cache.get_relation_type_label(relation_type).map(|t| MaybeOwns::borrowed(t))
+        } else {
+            self.get_storage_label(relation_type.vertex()).map(|label| MaybeOwns::owned(label))
+        }
+    }
 
+    pub(crate) fn get_attribute_type_label<'this, 'b>(&'this self, attribute_type: &'b impl AttributeTypeAPI<'b>) -> Option<MaybeOwns<'this, Label<'static>>> {
+        if let Some(cache) = &self.schema_cache {
+            cache.get_attribute_type_label(attribute_type).map(|t| MaybeOwns::borrowed(t))
+        } else {
+            self.get_storage_label(attribute_type.vertex()).map(|label| MaybeOwns::owned(label))
+        }
+    }
 
-    pub(crate) fn get_storage_label(&self, owner: &TypeVertex<'_>) -> Option<Label<'static>> {
+    fn get_storage_label(&self, owner: &TypeVertex<'_>) -> Option<Label<'static>> {
         let key = TypeToLabelProperty::build(owner);
         self.snapshot.get_mapped(key.into_storage_key().as_reference(), |reference| {
             let value = StringBytes::new(ByteArrayOrRef::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(reference));
-            let as_str = value.decode();
-            let mut splits = as_str.split(":");
-            let first = splits.next().unwrap();
-            if let Some(second) = splits.next() {
-                Label::build_scoped(first, second)
-            } else {
-                Label::build(first)
-            }
+            Label::parse_from(value)
         })
     }
 

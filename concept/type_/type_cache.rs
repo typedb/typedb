@@ -15,18 +15,20 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::BTreeSet;
-use std::sync::Arc;
+use std::collections::BTreeMap;
 
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
 use durability::SequenceNumber;
 use encoding::graph::type_::edge::{is_edge_sub_forward, new_edge_sub_forward};
+use encoding::graph::type_::property::TypeToLabelProperty;
 use encoding::graph::type_::vertex::{build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix, is_vertex_attribute_type, is_vertex_entity_type, is_vertex_relation_type, new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, TypeVertex};
 use encoding::graph::Typed;
 use encoding::layout::prefix::PrefixType;
 use encoding::Prefixed;
+use encoding::primitive::label::Label;
+use encoding::primitive::string::StringBytes;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::key_value::StorageKeyArray;
 use storage::MVCCStorage;
@@ -46,10 +48,13 @@ pub struct TypeCache<'storage> {
     relation_types: Box<[Option<RelationType<'static>>]>,
     attribute_types: Box<[Option<AttributeType<'static>>]>,
 
-    // Supertypes indexed into the set of Types
     entity_types_supertypes: Box<[Option<TypeVertex<'static>>]>,
-    pub relation_types_supertypes: Box<[Option<TypeVertex<'static>>]>,
-    pub attribute_types_supertypes: Box<[Option<TypeVertex<'static>>]>,
+    relation_types_supertypes: Box<[Option<TypeVertex<'static>>]>,
+    attribute_types_supertypes: Box<[Option<TypeVertex<'static>>]>,
+
+    entity_type_labels: Box<[Option<Label<'static>>]>,
+    relation_type_labels: Box<[Option<Label<'static>>]>,
+    attribute_type_labels: Box<[Option<Label<'static>>]>,
 }
 
 impl<'storage> TypeCache<'storage> {
@@ -61,33 +66,62 @@ impl<'storage> TypeCache<'storage> {
         // note: since we will parse out many heterogenous properties/edges from the schema, we will scan once into a vector,
         //       then go through it again to pull out the type information.
 
-        let mut entity_types_data = BTreeSet::new();
-        storage.iterate_prefix(build_vertex_entity_type_prefix(), &open_sequence_number)
-            .collect_cloned::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>(&mut entity_types_data);
-        let entities_count = entity_types_data.iter().filter(|(key, _)| {
-            is_vertex_entity_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array())))
-        }).count();
-        let entity_types = Self::read_entity_types(&entity_types_data, entities_count);
+        let snapshot = storage.open_snapshot_read_at(open_sequence_number);
 
-        let mut relation_types_data = BTreeSet::new();
-        storage.iterate_prefix(build_vertex_relation_type_prefix(), &open_sequence_number)
-            .collect_cloned::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>(&mut relation_types_data);
-        let relations_count = relation_types_data.iter().filter(|(key, _)| {
-            is_vertex_relation_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array())))
-        }).count();
-        let relation_types = Self::read_relation_types(&relation_types_data, relations_count);
+        let mut entity_types_data = snapshot.iterate_prefix(build_vertex_entity_type_prefix())
+            .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>().unwrap();
+        let max_entity_id = entity_types_data.iter().filter_map(|(key, _)| {
+            if is_vertex_entity_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))) {
+                Some(new_vertex_entity_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))).type_id().as_u16())
+            } else {
+                None
+            }
+        }).max().unwrap_or(0);
+        let entity_types = Self::read_entity_types(&entity_types_data, max_entity_id);
 
-        let mut attribute_types_data = BTreeSet::new();
-        storage.iterate_prefix(build_vertex_attribute_type_prefix(), &open_sequence_number)
-            .collect_cloned::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>(&mut attribute_types_data);
-        let attributes_count = attribute_types_data.iter().filter(|(key, _)| {
-            is_vertex_attribute_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array())))
-        }).count();
-        let attribute_types = Self::read_attribute_types(&attribute_types_data, attributes_count);
+        let mut relation_types_data = snapshot.iterate_prefix(build_vertex_relation_type_prefix())
+            .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>().unwrap();
+        let max_relation_id = relation_types_data.iter().filter_map(|(key, _)| {
+            if is_vertex_relation_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))) {
+                Some(new_vertex_relation_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))).type_id().as_u16())
+            } else {
+                None
+            }
+        }).max().unwrap_or(0);
+        let relation_types = Self::read_relation_types(&relation_types_data, max_relation_id);
+
+        let mut attribute_types_data = snapshot.iterate_prefix(build_vertex_attribute_type_prefix())
+            .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>().unwrap();
+        let max_attribute_id = attribute_types_data.iter().filter_map(|(key, _)| {
+            if is_vertex_attribute_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))) {
+                Some(new_vertex_attribute_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))).type_id().as_u16())
+            } else {
+                None
+            }
+        }).max().unwrap_or(0);
+        let attribute_types = Self::read_attribute_types(&attribute_types_data, max_attribute_id);
 
         let entity_types_supertypes = Self::read_supertypes(&entity_types_data, &entity_types);
         let relation_types_supertypes = Self::read_supertypes(&relation_types_data, &relation_types);
         let attribute_types_supertypes = Self::read_supertypes(&attribute_types_data, &attribute_types);
+
+        let type_label_properties = snapshot.iterate_prefix(TypeToLabelProperty::build_prefix())
+            .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>().unwrap();
+        let mut entity_type_labels = (0..entity_types.len()).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let mut relation_type_labels = (0..relation_types.len()).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let mut attribute_type_labels = (0..attribute_types.len()).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        for (key, value) in type_label_properties.into_iter() {
+            let property = TypeToLabelProperty::new(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array())));
+            let label = Label::parse_from(StringBytes::new(ByteArrayOrRef::Array(value)));
+            let vertex = property.type_vertex();
+            match vertex.prefix() {
+                PrefixType::VertexEntityType => entity_type_labels[vertex.type_id().as_u16() as usize] = Some(label),
+                PrefixType::VertexRelationType => relation_type_labels[vertex.type_id().as_u16() as usize] = Some(label),
+                PrefixType::VertexAttributeType => attribute_type_labels[vertex.type_id().as_u16() as usize] = Some(label),
+                _ => unreachable!("Unrecognised labeled vertex type")
+            }
+        }
+
 
         TypeCache {
             storage: storage,
@@ -100,55 +134,53 @@ impl<'storage> TypeCache<'storage> {
             entity_types_supertypes: entity_types_supertypes,
             relation_types_supertypes: relation_types_supertypes,
             attribute_types_supertypes: attribute_types_supertypes,
+
+            entity_type_labels: entity_type_labels,
+            relation_type_labels: relation_type_labels,
+            attribute_type_labels: attribute_type_labels,
         }
     }
 
-    fn read_entity_types(entity_types_data: &BTreeSet<(StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>)>,
-                         entities_count: usize) -> Box<[Option<EntityType<'static>>]> {
-        let mut entity_types: Box<[Option<EntityType<'static>>]> = (0..entities_count).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+    fn read_entity_types(entity_types_data: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+                         max_entity: u16) -> Box<[Option<EntityType<'static>>]> {
+        let mut entity_types: Box<[Option<EntityType<'static>>]> = (0..=max_entity).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         entity_types_data.iter().for_each(|(key, _)|
-            {
-                if (is_vertex_entity_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array())))) {
-                    let entity_type = EntityType::new(new_vertex_entity_type(ByteArrayOrRef::Array(ByteArray::copy(key.bytes()))));
-                    let type_index = Typed::type_id(entity_type.vertex()).as_u16();
-                    entity_types[type_index as usize] = Some(entity_type);
-                }
+            if is_vertex_entity_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))) {
+                let entity_type = EntityType::new(new_vertex_entity_type(ByteArrayOrRef::Array(ByteArray::copy(key.bytes()))));
+                let type_index = Typed::type_id(entity_type.vertex()).as_u16();
+                entity_types[type_index as usize] = Some(entity_type);
             }
         );
         entity_types
     }
 
-    fn read_relation_types(relation_types_data: &BTreeSet<(StorageKeyArray<64>, ByteArray<64>)>,
-                           relations_count: usize) -> Box<[Option<RelationType<'static>>]> {
-        let mut relation_types: Box<[Option<RelationType<'static>>]> = (0..relations_count).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+    fn read_relation_types(relation_types_data: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_KEY_INLINE }>>,
+                           max_relation: u16) -> Box<[Option<RelationType<'static>>]> {
+        let mut relation_types: Box<[Option<RelationType<'static>>]> = (0..=max_relation).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         relation_types_data.iter().for_each(|(key, _)|
-            {
-                if (is_vertex_relation_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array())))) {
-                    let relation_type = RelationType::new(new_vertex_relation_type(ByteArrayOrRef::Array(ByteArray::copy(key.bytes()))));
-                    let type_index = Typed::type_id(relation_type.vertex()).as_u16();
-                    relation_types[type_index as usize] = Some(relation_type);
-                }
+            if is_vertex_relation_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))) {
+                let relation_type = RelationType::new(new_vertex_relation_type(ByteArrayOrRef::Array(ByteArray::copy(key.bytes()))));
+                let type_index = Typed::type_id(relation_type.vertex()).as_u16();
+                relation_types[type_index as usize] = Some(relation_type);
             }
         );
         relation_types
     }
 
-    fn read_attribute_types(attribute_types_data: &BTreeSet<(StorageKeyArray<64>, ByteArray<64>)>,
-                            attributes_count: usize) -> Box<[Option<AttributeType<'static>>]> {
-        let mut attribute_types: Box<[Option<AttributeType<'static>>]> = (0..attributes_count).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+    fn read_attribute_types(attribute_types_data: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_KEY_INLINE }>>,
+                            max_attribute: u16) -> Box<[Option<AttributeType<'static>>]> {
+        let mut attribute_types: Box<[Option<AttributeType<'static>>]> = (0..=max_attribute).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         attribute_types_data.iter().for_each(|(key, _)|
-            {
-                if (is_vertex_attribute_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array())))) {
-                    let attribute_type = AttributeType::new(new_vertex_attribute_type(ByteArrayOrRef::Array(ByteArray::copy(key.bytes()))));
-                    let type_index = Typed::type_id(attribute_type.vertex()).as_u16();
-                    attribute_types[type_index as usize] = Some(attribute_type);
-                }
+            if is_vertex_attribute_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))) {
+                let attribute_type = AttributeType::new(new_vertex_attribute_type(ByteArrayOrRef::Array(ByteArray::copy(key.bytes()))));
+                let type_index = Typed::type_id(attribute_type.vertex()).as_u16();
+                attribute_types[type_index as usize] = Some(attribute_type);
             }
         );
         attribute_types
     }
 
-    fn read_supertypes<T>(types_data: &BTreeSet<(StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>)>,
+    fn read_supertypes<T>(types_data: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
                           types: &Box<[Option<T>]>) -> Box<[Option<TypeVertex<'static>>]> {
         let mut super_types: Box<[Option<TypeVertex<'static>>]> = (0..types.len()).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         types_data.iter().for_each(|(key, _)|
@@ -180,7 +212,7 @@ impl<'storage> TypeCache<'storage> {
         self.attribute_types.get(as_u16 as usize).unwrap().as_ref().unwrap()
     }
 
-    pub(crate) fn get_entity_type_supertype<'this, 'a>(&'this self, entity_type: &'a impl EntityTypeAPI<'a>) -> Option<&'this EntityType<'static>> {
+    pub(crate) fn get_entity_type_supertype<'a>(&self, entity_type: &'a impl EntityTypeAPI<'a>) -> Option<&EntityType<'static>> {
         (&self.entity_types_supertypes[entity_type.vertex().type_id().as_u16() as usize]).as_ref()
             .map(|super_vertex| self.get_entity_type(super_vertex))
     }
@@ -193,5 +225,17 @@ impl<'storage> TypeCache<'storage> {
     pub(crate) fn get_attribute_type_supertype<'a>(&self, attribute_type: &'a impl AttributeTypeAPI<'a>) -> Option<&AttributeType<'static>> {
         (&self.attribute_types_supertypes[attribute_type.vertex().type_id().as_u16() as usize]).as_ref()
             .map(|super_vertex| self.get_attribute_type(super_vertex))
+    }
+
+    pub(crate) fn get_entity_type_label<'this, 'a>(&'this self, entity_type: &'a impl EntityTypeAPI<'a>) -> Option<&Label<'static>> {
+        self.entity_type_labels[entity_type.vertex().type_id().as_u16() as usize].as_ref()
+    }
+
+    pub(crate) fn get_relation_type_label<'this, 'a>(&'this self, relation_type: &'a impl RelationTypeAPI<'a>) -> Option<&Label<'static>> {
+        self.relation_type_labels[relation_type.vertex().type_id().as_u16() as usize].as_ref()
+    }
+
+    pub(crate) fn get_attribute_type_label<'this, 'a>(&'this self, attribute_type: &'a impl AttributeTypeAPI<'a>) -> Option<&Label<'static>> {
+        self.attribute_type_labels[attribute_type.vertex().type_id().as_u16() as usize].as_ref()
     }
 }

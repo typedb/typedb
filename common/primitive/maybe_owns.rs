@@ -17,13 +17,13 @@
 
 use std::ops::Deref;
 
-#[derive(Debug, Eq, PartialEq)]
-pub enum MaybeOwns<'a, T> {
+#[derive(Debug)]
+pub enum MaybeOwns<'a, T> where T: Eq {
     Owned(T),
     Borrowed(&'a T),
 }
 
-impl<'a, T> MaybeOwns<'a, T> {
+impl<'a, T: Eq> MaybeOwns<'a, T> {
 
     pub fn owned(t: T) -> Self {
         Self::Owned(t)
@@ -34,7 +34,7 @@ impl<'a, T> MaybeOwns<'a, T> {
     }
 }
 
-impl<T> Deref for MaybeOwns<'_, T> {
+impl<T: Eq> Deref for MaybeOwns<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &T {
@@ -44,4 +44,12 @@ impl<T> Deref for MaybeOwns<'_, T> {
         }
     }
 }
+
+impl<'a, T: Eq> PartialEq<Self> for MaybeOwns<'a, T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.deref().eq(other.deref())
+    }
+}
+
+impl<'a, T: Eq> Eq for MaybeOwns<'a, T> { }
 

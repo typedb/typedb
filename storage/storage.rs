@@ -26,7 +26,7 @@ use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
 use durability::{DurabilityService, SequenceNumber, Sequencer, wal::WAL};
-use iterator::{State, Collector};
+use iterator::{Collector, State};
 use logger::error;
 use logger::result::ResultExt;
 use primitive::u80::U80;
@@ -175,6 +175,11 @@ impl MVCCStorage {
     pub fn open_snapshot_read<'storage>(&'storage self) -> ReadSnapshot<'storage> {
         let open_sequence_number = self.isolation_manager.watermark();
         ReadSnapshot::new(self, open_sequence_number)
+    }
+
+    pub fn open_snapshot_read_at<'storage>(&'storage self, sequence_number: SequenceNumber) -> ReadSnapshot<'storage> {
+        // TODO: validate sequence number is before or equal to watermark
+        ReadSnapshot::new(self, sequence_number)
     }
 
     pub fn snapshot_commit<'storage>(&'storage self, snapshot: WriteSnapshot<'storage>) -> Result<(), MVCCStorageError> {
@@ -471,20 +476,21 @@ impl<'s, const P: usize> MVCCPrefixIterator<'s, P> {
         let _ = self.iterator.next();
     }
 
-    pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(mut self, collector: &mut impl Collector<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)>) {
+    pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(mut self) -> Result<Vec<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)>, MVCCStorageError> {
+        let mut vec = Vec::new();
         loop {
             let item = self.next();
-            if item.is_none() {
-                break;
+            match item {
+                None => { break; }
+                Some(Err(err)) => { return Err(err); }
+                Some(Ok((key_ref, value_ref))) => {
+                    vec.push((StorageKeyArray::from(key_ref), ByteArray::from(value_ref)))
+                }
             }
-            let (key_ref, value_ref) = item.unwrap().unwrap();
-            let key = StorageKeyArray::from(key_ref);
-            let value = ByteArray::from(value_ref);
-            collector.add((key, value));
         }
+        Ok(vec)
     }
 }
-
 
 
 ///

@@ -16,6 +16,7 @@
  */
 
 use std::cell::OnceCell;
+use std::ops::Deref;
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::graph::type_::Root;
@@ -23,6 +24,7 @@ use encoding::graph::type_::vertex::{new_vertex_entity_type, TypeVertex};
 use encoding::layout::prefix::PrefixType;
 use encoding::Prefixed;
 use encoding::primitive::label::Label;
+use primitive::maybe_owns::MaybeOwns;
 use storage::key_value::StorageKeyReference;
 use storage::snapshot::iterator::SnapshotPrefixIterator;
 
@@ -34,8 +36,6 @@ use crate::type_::{EntityTypeAPI, TypeAPI};
 #[derive(Debug)]
 pub struct EntityType<'a> {
     vertex: TypeVertex<'a>,
-    // TODO: these should not cache the label here in case we're in a writable transaction?
-    label: OnceCell<Label<'static>>,
     // Note: this is safe to cache since it can never be user-set
     is_root: OnceCell<bool>,
 }
@@ -46,12 +46,12 @@ impl<'a> EntityType<'a> {
             panic!("Type IID prefix was expected to be Prefix::EntityType ({:?}) but was {:?}",
                    PrefixType::VertexEntityType, vertex.prefix())
         }
-        EntityType { vertex: vertex, label: OnceCell::new(), is_root: OnceCell::new(), }
+        EntityType { vertex: vertex, is_root: OnceCell::new(), }
     }
 
     fn into_owned(self) -> EntityType<'static> {
         let v = self.vertex.into_owned();
-        EntityType { vertex: v, label: self.label, is_root: self.is_root, }
+        EntityType { vertex: v, is_root: self.is_root, }
     }
 }
 
@@ -62,17 +62,9 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
         &self.vertex
     }
 
-    fn get_label(&self, type_manager: &TypeManager) -> &Label {
-        self.label.get_or_init(|| type_manager.get_storage_label(self.vertex()).unwrap())
-    }
-
-    fn set_label(&mut self, type_manager: &TypeManager, label: &Label) {
-        type_manager.set_storage_label(self.vertex(), label);
-        self.label = OnceCell::from(label.clone().into_owned());
-    }
 
     fn is_root(&self, type_manager: &TypeManager) -> bool {
-        *self.is_root.get_or_init(|| self.get_label(type_manager) == &Root::Entity.label())
+        *self.is_root.get_or_init(|| self.get_label(type_manager).unwrap().deref() == &Root::Entity.label())
     }
 }
 

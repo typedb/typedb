@@ -16,11 +16,12 @@
  */
 
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
-use iterator::State;
+use iterator::{Collector, State};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use crate::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
@@ -211,7 +212,7 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         )
     }
 
-    pub fn collect_cloned(mut self) -> Result<Vec<(StorageKey<'static, BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, SnapshotError> {
+    pub fn collect_cloned_vec<const INLINE_KEY: usize, const INLINE_VALUE: usize>(mut self) -> Result<Vec<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)>, SnapshotError> {
         let mut vec = Vec::new();
         loop {
             let item = self.next();
@@ -219,11 +220,26 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
                 None => { break; }
                 Some(Result::Err(e)) => { return Err(e) }
                 Some(Ok((key, value))) => {
-                    vec.push((StorageKey::Array(StorageKeyArray::from(key.clone())), ByteArray::from(value)));
+                    vec.push((StorageKeyArray::from(key.clone()), ByteArray::from(value)));
                 }
             }
         }
         Ok(vec)
+    }
+
+    pub fn collect_cloned_bmap<const INLINE_KEY: usize, const INLINE_VALUE: usize>(mut self) -> Result<BTreeMap<StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>>, SnapshotError> {
+        let mut btree_map = BTreeMap::new();
+        loop {
+            let item = self.next();
+            match item {
+                None => { break; }
+                Some(Result::Err(e)) => { return Err(e) }
+                Some(Ok((key, value))) => {
+                    btree_map.insert(StorageKeyArray::from(key.clone()), ByteArray::from(value));
+                }
+            }
+        }
+        Ok(btree_map)
     }
 
     pub fn first_cloned(mut self) -> Result<Option<(StorageKey<'static, BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, SnapshotError> {
