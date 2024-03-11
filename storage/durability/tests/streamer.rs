@@ -18,37 +18,12 @@
 #![deny(unused_must_use)]
 #![deny(rust_2018_idioms)]
 
-use std::path::Path;
-
-use durability::{wal::WAL, DurabilityRecord, DurabilityRecordType, DurabilityService};
+use durability::DurabilityService;
 use itertools::Itertools;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-struct TestRecord {
-    bytes: Vec<u8>,
-}
+mod common;
 
-impl DurabilityRecord for TestRecord {
-    const RECORD_TYPE: DurabilityRecordType = 0;
-    const RECORD_NAME: &'static str = "TEST";
-
-    fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
-        writer.write_all(&self.bytes)?;
-        Ok(())
-    }
-
-    fn deserialize_from(reader: &mut impl std::io::Read) -> bincode::Result<Self> {
-        let mut bytes = Vec::new();
-        reader.read_to_end(&mut bytes)?;
-        Ok(Self { bytes })
-    }
-}
-
-fn open_wal(directory: impl AsRef<Path>) -> WAL {
-    let mut wal = WAL::open(directory).unwrap();
-    wal.register_record_type::<TestRecord>();
-    wal
-}
+use self::common::{open_wal, TestRecord};
 
 fn main() {
     let wal = open_wal(std::env::args().nth(1).unwrap());
