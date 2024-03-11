@@ -21,7 +21,7 @@ use std::rc::Rc;
 
 use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::error::{MVCCStorageError, MVCCStorageErrorKind};
 use storage::isolation_manager::{IsolationError, IsolationErrorKind};
 use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
@@ -68,13 +68,13 @@ fn commits_isolated() {
     let get: Option<ByteArray<{ BUFFER_KEY_INLINE }>> = snapshot_2.get(StorageKeyReference::from(&key_3));
     assert!(get.is_none());
     let prefix: StorageKey<'_, { BUFFER_KEY_INLINE }> = StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&[0x0 as u8])));
-    let iterated = snapshot_2.iterate_prefix(prefix.clone()).collect_cloned();
+    let iterated = snapshot_2.iterate_prefix(prefix.clone()).collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>().unwrap();
     assert_eq!(iterated.len(), 2);
 
     let snapshot_3 = storage.open_snapshot_read();
     let get: Option<ByteArray<{ BUFFER_KEY_INLINE }>> = snapshot_3.get(StorageKeyReference::from(&key_3));
     assert!(matches!(get, Some(value_3)));
-    let iterated = snapshot_3.iterate_prefix(prefix.clone()).collect_cloned();
+    let iterated = snapshot_3.iterate_prefix(prefix.clone()).collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>().unwrap();
     assert_eq!(iterated.len(), 3);
 }
 

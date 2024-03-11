@@ -48,7 +48,7 @@ impl<'a> TypeToLabelProperty<'a> {
         property
     }
 
-    pub fn build(vertex: &TypeVertex<'_>) -> Self {
+    pub fn build(vertex: TypeVertex<'_>) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::PropertyTypeToLabel.prefix_id().bytes().bytes());
         array.bytes_mut()[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());

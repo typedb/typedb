@@ -19,6 +19,7 @@ use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
+use std::hash::{Hash, Hasher};
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{MapAccess, SeqAccess, Visitor};
@@ -121,6 +122,11 @@ impl<const BYTES: usize> From<ByteReference<'_>> for ByteArray<BYTES> {
     }
 }
 
+impl<const INLINE_BYTES: usize> Hash for  ByteArray<INLINE_BYTES>  {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.bytes().hash(state)
+    }
+}
 
 #[derive(Clone)]
 pub struct ByteArrayInline<const BYTES: usize> {

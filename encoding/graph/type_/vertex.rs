@@ -40,13 +40,13 @@ macro_rules! type_vertex_constructors {
             vertex
         }
 
-        pub fn $build_name(type_id: &TypeID) -> TypeVertex<'static> {
-            TypeVertex::build(&PrefixType::$prefix.prefix_id(), type_id)
+        pub fn $build_name(type_id: TypeID) -> TypeVertex<'static> {
+            TypeVertex::build(PrefixType::$prefix.prefix_id(), type_id)
         }
 
         // TODO: this could be static/allocated only once
         pub fn $build_name_prefix() ->  StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
-            TypeVertex::build_prefix(&PrefixType::$prefix.prefix_id())
+            TypeVertex::build_prefix(PrefixType::$prefix.prefix_id())
         }
 
         pub fn $is_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> bool {
@@ -80,14 +80,14 @@ impl<'a> TypeVertex<'a> {
         TypeVertex { bytes: bytes }
     }
 
-    fn build(prefix: &PrefixID<'a>, type_id: &TypeID) -> Self {
+    fn build(prefix: PrefixID<'a>, type_id: TypeID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_id.bytes().bytes());
         TypeVertex { bytes: ByteArrayOrRef::Array(array) }
     }
 
-    fn build_prefix(prefix: &PrefixID<'a>) -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
+    fn build_prefix(prefix: PrefixID<'a>) -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
         StorageKey::new_owned(Self::keyspace_id(), bytes)
@@ -122,7 +122,7 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}
 
 impl<'a> Typed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeID<'a> {
     bytes: ByteArrayOrRef<'a, { TypeID::LENGTH }>,
 }

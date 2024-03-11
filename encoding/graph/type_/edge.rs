@@ -41,11 +41,11 @@ macro_rules! type_edge_constructors {
             edge
         }
 
-        pub fn $build_name(from: &TypeVertex, to: &TypeVertex) -> TypeEdge<'static> {
+        pub fn $build_name(from: TypeVertex<'static>, to: TypeVertex<'static>) -> TypeEdge<'static> {
             TypeEdge::build(from, InfixType::$infix, to)
         }
 
-        pub fn $build_prefix(from: &TypeVertex) -> StorageKey<'static, {TypeEdge::LENGTH_PREFIX}> {
+        pub fn $build_prefix(from: TypeVertex<'static>) -> StorageKey<'static, {TypeEdge::LENGTH_PREFIX}> {
             TypeEdge::build_prefix(from, InfixType::$infix)
         }
 
@@ -106,7 +106,7 @@ impl<'a> TypeEdge<'a> {
         edge
     }
 
-    fn build(from: &TypeVertex, infix: InfixType, to: &TypeVertex) -> Self {
+    fn build(from: TypeVertex, infix: InfixType, to: TypeVertex) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         bytes.bytes_mut()[Self::range_infix()].copy_from_slice(infix.infix_id().bytes().bytes());
@@ -114,7 +114,7 @@ impl<'a> TypeEdge<'a> {
         Self { bytes: ByteArrayOrRef::Array(bytes) }
     }
 
-    fn build_prefix(from: &TypeVertex<'_>, infix: InfixType) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX }> {
+    fn build_prefix(from: TypeVertex<'_>, infix: InfixType) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         bytes.bytes_mut()[Self::range_infix()].copy_from_slice(infix.infix_id().bytes().bytes());

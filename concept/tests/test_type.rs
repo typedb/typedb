@@ -20,7 +20,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use concept::type_::{EntityTypeAPI, TypeAPI};
+use concept::type_::{EntityTypeAPI};
 use concept::type_::type_cache::TypeCache;
 use concept::type_::type_manager::TypeManager;
 use encoding::create_keyspaces;
@@ -46,15 +46,15 @@ fn entity_creation() {
         // Without cache, uncommitted
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
 
-        let root_entity = type_manager.get_entity_type(&Root::Entity.label());
-        assert_eq!(root_entity.get_label(&type_manager).unwrap().deref(), &Root::Entity.label());
+        let root_entity = type_manager.get_entity_type(&Root::Entity.label()).unwrap();
+        assert_eq!(root_entity.get_label(&type_manager).deref(), &Root::Entity.label());
         assert!(root_entity.is_root(&type_manager));
 
         let person_label = Label::build("person");
-        let person_type = type_manager.create_entity_type(&person_label);
+        let person_type = type_manager.create_entity_type(&person_label, false);
 
         assert!(!person_type.is_root(&type_manager));
-        assert_eq!(person_type.get_label(&type_manager).unwrap().deref(), &person_label);
+        assert_eq!(person_type.get_label(&type_manager).deref(), &person_label);
 
         let supertype = person_type.get_supertype(&type_manager);
         assert_eq!(supertype.unwrap(), root_entity);
@@ -71,14 +71,14 @@ fn entity_creation() {
         let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()));
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
 
-        let root_entity = type_manager.get_entity_type(&Root::Entity.label());
-        assert_eq!(root_entity.get_label(&type_manager).unwrap().deref(), &Root::Entity.label());
+        let root_entity = type_manager.get_entity_type(&Root::Entity.label()).unwrap();
+        assert_eq!(root_entity.get_label(&type_manager).deref(), &Root::Entity.label());
         assert!(root_entity.is_root(&type_manager));
 
         let person_label = Label::build("person");
-        let person_type = type_manager.get_entity_type(&person_label);
+        let person_type = type_manager.get_entity_type(&person_label).unwrap();
         assert!(!person_type.is_root(&type_manager));
-        assert_eq!(person_type.get_label(&type_manager).unwrap().deref(), &person_label);
+        assert_eq!(person_type.get_label(&type_manager).deref(), &person_label);
 
         let supertype = person_type.get_supertype(&type_manager);
         assert_eq!(supertype.unwrap(), root_entity);

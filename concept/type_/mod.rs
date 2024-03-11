@@ -15,7 +15,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::cell::OnceCell;
 use encoding::{AsBytes, Keyable};
 use encoding::graph::type_::vertex::TypeVertex;
 use encoding::primitive::label::Label;
@@ -37,69 +36,86 @@ mod plays;
 mod sub;
 pub mod type_cache;
 
-pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized {
-    fn vertex(&'a self) -> &TypeVertex<'a>;
+pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
+    fn vertex<'this>(&'this self) -> &'this TypeVertex<'a>;
 
-    fn set_label<'b>(&'a self, type_manager: &'b TypeManager, label: &Label) {
+    fn set_label<'this, 'm>(&'this self, type_manager: &'m TypeManager, label: &Label) {
         // TODO: setLabel should fail is setting label on Root type
-        type_manager.set_storage_label(self.vertex(), label);
+        type_manager.set_storage_label(self.vertex().clone(), label);
     }
-
-    fn is_root(&self, type_manager: &TypeManager) -> bool;
 }
 
 pub trait EntityTypeAPI<'a>: TypeAPI<'a> {
+    fn is_root<'m>(&self, type_manager: &'m TypeManager) -> bool {
+        type_manager.get_entity_type_is_root(self.clone().into_owned())
+    }
 
-    fn get_label<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, Label<'static>>> {
-        type_manager.get_entity_type_label(self)
+    fn get_label<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Label<'static>> {
+        type_manager.get_entity_type_label(self.clone().into_owned())
     }
 
     // TODO: not so pretty to return EntityType directly, but is a win on efficiency. However, should reconsider the trait's necessity.
-    fn get_supertype<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, EntityType<'static>>> {
-        type_manager.get_entity_type_supertype(self)
+    fn get_supertype(&self, type_manager: &TypeManager) -> Option<EntityType<'static>> {
+        type_manager.get_entity_type_supertype(self.clone().into_owned())
     }
 
-    fn set_supertype<'b>(&'a self, type_manager: &TypeManager, supertype: &'b impl EntityTypeAPI<'b>) {
-        type_manager.set_storage_supertype(self.vertex(), supertype.vertex())
+    fn set_supertype(&self, type_manager: &TypeManager, supertype: impl EntityTypeAPI<'static>) {
+        type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
     }
 
-    // fn get_supertypes(&'a self) -> EntityTypeIterator<'static, 1>; // TODO: correct prefix size
+    // TODO: not so pretty to return EntityType directly, but is a win on efficiency. However, should reconsider the trait's necessity.
+    fn get_supertypes<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Vec<EntityType<'static>>> {
+        type_manager.get_entity_type_supertypes(self.clone().into_owned())
+    }
 
     // fn get_subtypes(&self) -> EntityTypeIterator<'static, 1>; // TODO: correct prefix size
+
+    // TODO: not so pretty to return EntityType directly, but is a win on efficiency. However, should reconsider the trait's necessity.
+    fn into_owned(self) -> EntityType<'static>;
 }
 
 pub trait RelationTypeAPI<'a>: TypeAPI<'a> {
-
-    fn get_label<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, Label<'static>>> {
-        type_manager.get_relation_type_label(self)
+    fn is_root(&self, type_manager: &TypeManager) -> bool {
+        type_manager.get_relation_type_is_root(self.clone().into_owned())
     }
 
-    fn get_supertype<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, RelationType<'static>>> {
-        type_manager.get_relation_type_supertype(self)
+    fn get_label<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Label<'static>> {
+        type_manager.get_relation_type_label(self.clone().into_owned())
     }
 
-    fn set_supertype<'b>(&'a self, type_manager: &TypeManager, supertype: &'b impl RelationTypeAPI<'b>) {
-        type_manager.set_storage_supertype(self.vertex(), supertype.vertex())
+    fn get_supertype(&self, type_manager: &TypeManager) -> Option<RelationType<'static>> {
+        type_manager.get_relation_type_supertype(self.clone().into_owned())
+    }
+
+    fn set_supertype(&self, type_manager: &TypeManager, supertype: impl RelationTypeAPI<'static>) {
+        type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
     }
 
     // fn get_supertypes(&'a self) -> EntityTypeIterator<'static, 1>; // TODO: correct prefix size
 
     // fn get_subtypes(&self) -> EntityTypeIterator<'static, 1>; // TODO: correct prefix size
+
+    fn into_owned(self) -> RelationType<'static>;
 }
 
 pub trait AttributeTypeAPI<'a>: TypeAPI<'a> {
-
-    fn get_label<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, Label<'static>>> {
-        type_manager.get_attribute_type_label(self)
+    fn is_root(&self, type_manager: &TypeManager) -> bool {
+        type_manager.get_attribute_type_is_root(self.clone().into_owned())
     }
 
-    fn get_supertype<'m>(&'a self, type_manager: &'m TypeManager) -> Option<MaybeOwns<'m, AttributeType<'static>>> {
-        type_manager.get_attribute_type_supertype(self)
+    fn get_label<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Label<'static>> {
+        type_manager.get_attribute_type_label(self.clone().into_owned())
     }
 
-    fn set_supertype<'b>(&'a self, type_manager: &TypeManager, supertype: &'b impl AttributeTypeAPI<'b>) {
-        type_manager.set_storage_supertype(self.vertex(), supertype.vertex())
+    fn get_supertype(&self, type_manager: &TypeManager) -> Option<AttributeType<'static>> {
+        type_manager.get_attribute_type_supertype(self.clone().into_owned())
     }
+
+    fn set_supertype(&self, type_manager: &TypeManager, supertype: impl AttributeTypeAPI<'static>) {
+        type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
+    }
+
+    fn into_owned(self) -> AttributeType<'static>;
 }
 
 trait OwnerAPI<'a>: TypeAPI<'a> {

@@ -15,25 +15,16 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::cell::OnceCell;
-use std::ops::Deref;
-use encoding::graph::type_::Root;
-
 use encoding::graph::type_::vertex::TypeVertex;
 use encoding::layout::prefix::PrefixType;
 use encoding::Prefixed;
-use encoding::primitive::label::Label;
 
 use crate::ConceptAPI;
-use crate::type_::entity_type::EntityType;
-use crate::type_::type_manager::TypeManager;
 use crate::type_::{AttributeTypeAPI, TypeAPI};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AttributeType<'a> {
     vertex: TypeVertex<'a>,
-    label: OnceCell<Label<'static>>,
-    is_root: OnceCell<bool>,
 }
 
 impl<'a> AttributeType<'a> {
@@ -42,28 +33,28 @@ impl<'a> AttributeType<'a> {
             panic!("Type IID prefix was expected to be Prefix::AttributeType ({:?}) but was {:?}",
                    PrefixType::VertexAttributeType, vertex.prefix())
         }
-        AttributeType { vertex: vertex, label: OnceCell::new(), is_root: OnceCell::new() }
+        AttributeType { vertex: vertex }
     }
 
     fn into_owned(self) -> AttributeType<'static> {
         let v = self.vertex.into_owned();
-        AttributeType { vertex: v, label: self.label, is_root: self.is_root }
+        AttributeType { vertex: v }
     }
 }
 
 impl<'a> ConceptAPI<'a> for AttributeType<'a> {}
 
 impl<'a> TypeAPI<'a> for AttributeType<'a> {
-    fn vertex(&'a self) -> &TypeVertex<'a> {
+    fn vertex<'this>(&'this self) -> &'this TypeVertex<'a> {
         &self.vertex
-    }
-
-    fn is_root(&self, type_manager: &TypeManager) -> bool {
-        *self.is_root.get_or_init(|| self.get_label(type_manager).unwrap().deref() == &Root::Attribute.label())
     }
 }
 
-impl<'a> AttributeTypeAPI<'a> for AttributeType<'a> {}
+impl<'a> AttributeTypeAPI<'a> for AttributeType<'a> {
+    fn into_owned(self) -> AttributeType<'static> {
+        AttributeType { vertex: self.vertex.into_owned() }
+    }
+}
 
 impl<'a> PartialEq<Self> for AttributeType<'a> {
     fn eq(&self, other: &Self) -> bool {

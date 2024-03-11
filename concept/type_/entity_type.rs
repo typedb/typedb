@@ -15,29 +15,20 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::cell::OnceCell;
-use std::ops::Deref;
-
 use bytes::byte_array_or_ref::ByteArrayOrRef;
-use encoding::graph::type_::Root;
 use encoding::graph::type_::vertex::{new_vertex_entity_type, TypeVertex};
 use encoding::layout::prefix::PrefixType;
 use encoding::Prefixed;
-use encoding::primitive::label::Label;
-use primitive::maybe_owns::MaybeOwns;
 use storage::key_value::StorageKeyReference;
 use storage::snapshot::iterator::SnapshotPrefixIterator;
 
 use crate::{concept_iterator, ConceptAPI};
 use crate::error::{ConceptError, ConceptErrorKind};
-use crate::type_::type_manager::TypeManager;
 use crate::type_::{EntityTypeAPI, TypeAPI};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EntityType<'a> {
     vertex: TypeVertex<'a>,
-    // Note: this is safe to cache since it can never be user-set
-    is_root: OnceCell<bool>,
 }
 
 impl<'a> EntityType<'a> {
@@ -46,31 +37,28 @@ impl<'a> EntityType<'a> {
             panic!("Type IID prefix was expected to be Prefix::EntityType ({:?}) but was {:?}",
                    PrefixType::VertexEntityType, vertex.prefix())
         }
-        EntityType { vertex: vertex, is_root: OnceCell::new(), }
+        EntityType { vertex: vertex }
     }
 
     fn into_owned(self) -> EntityType<'static> {
         let v = self.vertex.into_owned();
-        EntityType { vertex: v, is_root: self.is_root, }
+        EntityType { vertex: v }
     }
 }
 
 impl<'a> ConceptAPI<'a> for EntityType<'a> {}
 
 impl<'a> TypeAPI<'a> for EntityType<'a> {
-    fn vertex(&'a self) -> &TypeVertex<'a> {
+    fn vertex<'this>(&'this self) -> &'this TypeVertex<'a> {
         &self.vertex
-    }
-
-
-    fn is_root(&self, type_manager: &TypeManager) -> bool {
-        *self.is_root.get_or_init(|| self.get_label(type_manager).unwrap().deref() == &Root::Entity.label())
     }
 }
 
 
 impl<'a> EntityTypeAPI<'a> for EntityType<'a> {
-
+    fn into_owned(self) -> EntityType<'static> {
+        EntityType { vertex: self.vertex.into_owned() }
+    }
 }
 
 impl<'a> PartialEq<Self> for EntityType<'a> {

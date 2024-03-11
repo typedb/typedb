@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::fmt::{Display, Formatter};
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
@@ -25,7 +26,7 @@ use crate::error::{EncodingError, EncodingErrorKind};
 
 // TODO: when we write this as a key to storage, we must double check that [AA] follows [A] and isn't after [B] (length independent)
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct StringBytes<'a, const INLINE_LENGTH: usize> {
     bytes: ByteArrayOrRef<'a, INLINE_LENGTH>,
 }
@@ -75,3 +76,8 @@ impl<'a, const INLINE_LENGTH: usize> AsBytes<'a, INLINE_LENGTH> for StringBytes<
     }
 }
 
+impl<'a, const INLINE_LENGTH: usize> Display for StringBytes<'a, INLINE_LENGTH> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "bytes(len={}, str='{}')", self.length(), self.decode())
+    }
+}

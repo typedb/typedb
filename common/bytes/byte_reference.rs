@@ -21,7 +21,7 @@ use crate::byte_array::ByteArray;
 TODO: if a ByteReference can be directly sliced (eg. byte_ref[0..10]) this would improve its ergonomics a fair amount
  */
 
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ByteReference<'bytes> {
     bytes: &'bytes [u8],
 }

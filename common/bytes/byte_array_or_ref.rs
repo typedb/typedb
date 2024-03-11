@@ -16,6 +16,7 @@
  */
 
 use std::fmt::{Display, Formatter};
+use std::hash::{Hash, Hasher};
 
 use crate::byte_array::ByteArray;
 use crate::byte_reference::ByteReference;
@@ -114,3 +115,9 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> PartialEq for ByteArrayOrRef<'bytes
 }
 
 impl<'bytes, const ARRAY_INLINE_SIZE: usize> Eq for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {}
+
+impl<'bytes, const ARRAY_INLINE_SIZE: usize> Hash  for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.bytes().hash(state)
+    }
+}

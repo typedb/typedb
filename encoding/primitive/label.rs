@@ -15,12 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::fmt::{Display, Formatter};
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use resource::constants::encoding::{LABEL_NAME_STRING_INLINE, LABEL_SCOPE_STRING_INLINE, LABEL_SCOPED_NAME_STRING_INLINE};
 
 use crate::primitive::string::StringBytes;
 
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub struct Label<'a> {
     pub name: StringBytes<'a, LABEL_NAME_STRING_INLINE>,
     pub scope: Option<StringBytes<'a, LABEL_SCOPE_STRING_INLINE>>,
@@ -28,7 +29,6 @@ pub struct Label<'a> {
 }
 
 impl<'a> Label<'a> {
-
     pub fn parse_from<const INLINE_BYTES: usize>(string_bytes: StringBytes<'a, INLINE_BYTES>) -> Label<'static> {
         let as_str = string_bytes.decode();
         let mut splits = as_str.split(":");
@@ -94,5 +94,11 @@ impl<'a> Label<'a> {
             scope: self.scope.map(|string_bytes| string_bytes.into_owned()),
             scoped_name: self.scoped_name.into_owned(),
         }
+    }
+}
+
+impl<'a> Display for Label<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Label[name={}, scope={}, scoped_name={}", self.name(), self.scope().map(|s| format!("{}", s)).unwrap_or_else(|| String::new()), self.scoped_name())
     }
 }

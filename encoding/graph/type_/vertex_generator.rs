@@ -76,19 +76,19 @@ impl TypeVertexGenerator {
         }
     }
 
-    pub fn take_entity_type(&self) -> TypeVertex {
+    pub fn take_entity_type(&self) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_entity.fetch_add(1, Ordering::Relaxed));
-        build_vertex_entity_type(&next)
+        build_vertex_entity_type(next)
     }
 
-    pub fn take_relation_type(&self) -> TypeVertex {
+    pub fn take_relation_type(&self) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_relation.fetch_add(1, Ordering::Relaxed));
-        build_vertex_relation_type(&next)
+        build_vertex_relation_type(next)
     }
 
-    pub fn take_attribute_type(&self) -> TypeVertex {
+    pub fn take_attribute_type(&self) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_attribute.fetch_add(1, Ordering::Relaxed));
-        build_vertex_attribute_type(&next)
+        build_vertex_attribute_type(next)
     }
 }
 

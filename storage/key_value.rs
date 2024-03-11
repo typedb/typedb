@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::borrow::Borrow;
 use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};
@@ -156,6 +157,14 @@ impl<const INLINE_SIZE: usize> Ord for StorageKeyArray<INLINE_SIZE> {
         self.bytes().cmp(&other.bytes())
     }
 }
+
+
+impl<const INLINE_SIZE: usize> Borrow<[u8]> for StorageKeyArray<INLINE_SIZE> {
+    fn borrow(&self) -> &[u8] {
+        self.bytes()
+    }
+}
+
 
 impl<const INLINE_SIZE: usize> From<StorageKeyReference<'_>> for StorageKeyArray<INLINE_SIZE> {
     fn from(key: StorageKeyReference<'_>) -> Self {

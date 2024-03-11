@@ -16,28 +16,20 @@
  */
 
 
-use std::cell::OnceCell;
-use std::ops::Deref;
-
 use bytes::byte_array_or_ref::ByteArrayOrRef;
-use encoding::graph::type_::Root;
 use encoding::graph::type_::vertex::{new_vertex_relation_type, TypeVertex};
 use encoding::layout::prefix::PrefixType;
 use encoding::Prefixed;
-use encoding::primitive::label::Label;
 use storage::key_value::StorageKeyReference;
 use storage::snapshot::iterator::SnapshotPrefixIterator;
 
 use crate::{concept_iterator, ConceptAPI};
 use crate::error::{ConceptError, ConceptErrorKind};
 use crate::type_::{RelationTypeAPI, TypeAPI};
-use crate::type_::type_manager::TypeManager;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RelationType<'a> {
     vertex: TypeVertex<'a>,
-    label: OnceCell<Label<'static>>,
-    is_root: OnceCell<bool>,
 }
 
 impl<'a> RelationType<'a> {
@@ -46,29 +38,29 @@ impl<'a> RelationType<'a> {
             panic!("Type IID prefix was expected to be Prefix::RelationType ({:?}) but was {:?}",
                    PrefixType::VertexRelationType, vertex.prefix())
         }
-        RelationType { vertex: vertex, label: OnceCell::new(), is_root: OnceCell::new() }
+        RelationType { vertex: vertex }
     }
 
     fn into_owned(self) -> RelationType<'static> {
         let v = self.vertex.into_owned();
-        RelationType { vertex: v, label: self.label, is_root: self.is_root }
+        RelationType { vertex: v }
     }
 }
 
 impl<'a> ConceptAPI<'a> for RelationType<'a> {}
 
 impl<'a> TypeAPI<'a> for RelationType<'a> {
-    fn vertex(&'a self) -> &TypeVertex<'a> {
+    fn vertex<'this>(&'this self) -> &'this TypeVertex<'a> {
         &self.vertex
-    }
-
-    fn is_root(&self, type_manager: &TypeManager) -> bool {
-        *self.is_root.get_or_init(|| self.get_label(type_manager).unwrap().deref() == &Root::Relation.label())
     }
 }
 
 
-impl<'a> RelationTypeAPI<'a> for RelationType<'a> {}
+impl<'a> RelationTypeAPI<'a> for RelationType<'a> {
+    fn into_owned(self) -> RelationType<'static> {
+        RelationType { vertex: self.vertex.into_owned() }
+    }
+}
 
 impl<'a> PartialEq<Self> for RelationType<'a> {
     fn eq(&self, other: &Self) -> bool {

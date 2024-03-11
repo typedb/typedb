@@ -55,7 +55,7 @@ fn populate_storage(storage: &MVCCStorage, keyspace_id: KeyspaceId, key_count: u
     let snapshot = storage.open_snapshot_read();
     let prefix: StorageKey<'_, 48> = StorageKey::Reference(StorageKeyReference::new(keyspace_id, ByteReference::new(&[0 as u8])));
     let iterator = snapshot.iterate_prefix(prefix);
-    let count = iterator.collect_cloned().len();
+    let count = iterator.collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>().unwrap().len();
     println!("Keys confirmed to be written: {}", count);
     count
 }
