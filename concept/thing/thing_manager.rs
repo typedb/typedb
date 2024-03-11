@@ -17,7 +17,7 @@
 
 use std::rc::Rc;
 
-use encoding::{Keyable, Prefixed};
+use encoding::{Keyable};
 use encoding::graph::thing::vertex::ObjectVertex;
 use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
 use encoding::graph::Typed;

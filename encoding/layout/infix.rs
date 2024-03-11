@@ -43,24 +43,30 @@ impl<'a> AsBytes<'a, { InfixID::LENGTH }> for InfixID<'a> {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(crate) enum InfixType {
-    SubForward,
-    SubBackward,
-    OwnsForward,
-    OwnsBackward,
-    PlaysForward,
-    PlaysBackward,
-    RelatesForward,
-    RelatesBackward,
+pub(crate) enum Direction {
+    Canonical,
+    Reverse,
+}
 
-    HasForward,
-    HasBackward,
+#[derive(Debug, Eq, PartialEq)]
+pub(crate) enum InfixType {
+    Sub,
+    SubReverse,
+    Owns,
+    OwnsReverse,
+    Plays,
+    PlaysReverse,
+    Relates,
+    RelatesReverse,
+
+    Has,
+    HasReverse,
 }
 
 macro_rules! infix_functions {
     ($(
-        $name:ident => $bytes:tt
-    ),*) => {
+        $name:ident => $bytes:tt, Direction::$direction:ident
+    );*) => {
         pub(crate) const fn infix_id(&self) -> InfixID {
             let bytes = match self {
                 $(
@@ -78,21 +84,30 @@ macro_rules! infix_functions {
                 _ => unreachable!(),
             }
        }
+
+       pub(crate) const fn direction(&self) -> Direction {
+            match self {
+                $(
+                    Self::$name => {Direction::$direction}
+                )*
+            }
+       }
+
    };
 }
 
 impl InfixType {
     infix_functions!(
-        SubForward => [20],
-        SubBackward => [21],
-        OwnsForward => [22],
-        OwnsBackward => [23],
-        PlaysForward => [24],
-        PlaysBackward => [25],
-        RelatesForward => [26],
-        RelatesBackward => [27],
+        Sub => [20], Direction::Canonical;
+        SubReverse => [21], Direction::Reverse;
+        Owns => [22], Direction::Canonical;
+        OwnsReverse => [23], Direction::Reverse;
+        Plays => [24], Direction::Canonical;
+        PlaysReverse => [25], Direction::Reverse;
+        Relates => [26], Direction::Canonical;
+        RelatesReverse => [27], Direction::Reverse;
 
-        HasForward => [50],
-        HasBackward => [51]
+        Has => [50], Direction::Canonical;
+        HasReverse => [51], Direction::Reverse
     );
 }

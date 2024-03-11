@@ -37,7 +37,7 @@ fn entity_creation() {
     init_logging();
     let storage_path = create_tmp_dir();
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-    create_keyspaces(&mut storage);
+    create_keyspaces(&mut storage).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
     TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 
@@ -50,6 +50,7 @@ fn entity_creation() {
         assert_eq!(root_entity.get_label(&type_manager).deref(), &Root::Entity.label());
         assert!(root_entity.is_root(&type_manager));
 
+        // --- person sub entity ---
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&person_label, false);
 
@@ -58,6 +59,19 @@ fn entity_creation() {
 
         let supertype = person_type.get_supertype(&type_manager);
         assert_eq!(supertype.unwrap(), root_entity);
+
+        // --- child sub person ---
+        let child_label = Label::build("child");
+        let child_type = type_manager.create_entity_type(&child_label, false);
+        child_type.set_supertype(&type_manager, person_type.clone());
+
+        assert!(!child_type.is_root(&type_manager));
+        assert_eq!(child_type.get_label(&type_manager).deref(), &child_label);
+
+        let supertype = child_type.get_supertype(&type_manager);
+        assert_eq!(supertype.unwrap(), person_type);
+        let supertypes = child_type.get_supertypes(&type_manager);
+        assert_eq!(supertypes.len(), 2);
     }
     if let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();
@@ -75,6 +89,7 @@ fn entity_creation() {
         assert_eq!(root_entity.get_label(&type_manager).deref(), &Root::Entity.label());
         assert!(root_entity.is_root(&type_manager));
 
+        // --- person sub entity ---
         let person_label = Label::build("person");
         let person_type = type_manager.get_entity_type(&person_label).unwrap();
         assert!(!person_type.is_root(&type_manager));
@@ -82,6 +97,18 @@ fn entity_creation() {
 
         let supertype = person_type.get_supertype(&type_manager);
         assert_eq!(supertype.unwrap(), root_entity);
+
+        // --- child sub person ---
+        let child_label = Label::build("child");
+        let child_type = type_manager.get_entity_type(&child_label).unwrap();
+
+        assert!(!child_type.is_root(&type_manager));
+        assert_eq!(child_type.get_label(&type_manager).deref(), &child_label);
+
+        let supertype = child_type.get_supertype(&type_manager);
+        assert_eq!(supertype.unwrap(), person_type);
+        let supertypes = child_type.get_supertypes(&type_manager);
+        assert_eq!(supertypes.len(), 2);
     }
 
     delete_dir(storage_path)

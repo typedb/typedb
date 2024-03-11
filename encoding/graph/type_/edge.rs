@@ -56,44 +56,44 @@ macro_rules! type_edge_constructors {
 }
 
 type_edge_constructors!(
-    new_edge_sub_forward, build_edge_sub_forward, build_edge_sub_forward_prefix,
-    is_edge_sub_forward,
-    InfixType::SubForward
+    new_edge_sub, build_edge_sub, build_edge_sub_prefix,
+    is_edge_sub,
+    InfixType::Sub
 );
 type_edge_constructors!(
-    new_edge_sub_backward, build_edge_sub_backward, build_edge_sub_backward_prefix,
-    is_edge_sub_backward,
-    InfixType::SubBackward
+    new_edge_sub_reverse, build_edge_sub_reverse, build_edge_sub_reverse_prefix,
+    is_edge_sub_reverse,
+    InfixType::SubReverse
 );
 type_edge_constructors!(
-    new_edge_owns_forward, build_edge_owns_forward, build_edge_owns_forward_prefix,
-    is_edge_owns_forward,
-    InfixType::OwnsForward
+    new_edge_owns, build_edge_owns, build_edge_owns_prefix,
+    is_edge_owns,
+    InfixType::Owns
 );
 type_edge_constructors!(
-    new_edge_owns_backward, build_edge_owns_backward, build_edge_owns_backward_prefix,
-    is_edge_owns_backward,
-    InfixType::OwnsBackward
+    new_edge_owns_reverse, build_edge_owns_reverse, build_edge_owns_reverse_prefix,
+    is_edge_owns_reverse,
+    InfixType::OwnsReverse
 );
 type_edge_constructors!(
-    new_edge_plays_forward, build_edge_plays_forward, build_edge_plays_forward_prefix,
-    is_edge_plays_forward,
-    InfixType::PlaysForward
+    new_edge_plays, build_edge_plays, build_edge_plays_prefix,
+    is_edge_plays,
+    InfixType::Plays
 );
 type_edge_constructors!(
-    new_edge_plays_backward, build_edge_plays_backward, build_edge_plays_backward_prefix,
-    is_edge_plays_backward,
-    InfixType::PlaysBackward
+    new_edge_plays_reverse, build_edge_plays_reverse, build_edge_plays_reverse_prefix,
+    is_edge_plays_reverse,
+    InfixType::PlaysReverse
 );
 type_edge_constructors!(
-    new_edge_relates_forward, build_edge_relates_forward, build_edge_relates_forward_prefix,
-    is_edge_relates_forward,
-    InfixType::RelatesForward
+    new_edge_relates, build_edge_relates, build_edge_relates_prefix,
+    is_edge_relates,
+    InfixType::Relates
 );
 type_edge_constructors!(
-    new_edge_relates_backward, build_edge_relates_backward, build_edge_relates_backward_prefix,
-    is_edge_relates_backward,
-    InfixType::RelatesBackward
+    new_edge_relates_reverse, build_edge_relates_reverse, build_edge_relates_reverse_prefix,
+    is_edge_relates_reverse,
+    InfixType::RelatesReverse
 );
 
 impl<'a> TypeEdge<'a> {

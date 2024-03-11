@@ -16,6 +16,10 @@
  */
 
 
-pub struct Owns {
+use crate::type_::attribute_type::AttributeType;
+use crate::type_::object_type::ObjectType;
 
+pub struct Owns<'a> {
+    owner: ObjectType<'a>,
+    attribute: AttributeType<'a>,
 }

@@ -15,7 +15,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use encoding::{AsBytes, Keyable};
 use encoding::graph::type_::vertex::TypeVertex;
 use encoding::primitive::label::Label;
 use primitive::maybe_owns::MaybeOwns;
@@ -35,6 +34,8 @@ mod owns;
 mod plays;
 mod sub;
 pub mod type_cache;
+mod relates;
+mod object_type;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
     fn vertex<'this>(&'this self) -> &'this TypeVertex<'a>;
@@ -68,7 +69,7 @@ pub trait EntityTypeAPI<'a>: TypeAPI<'a> {
         type_manager.get_entity_type_supertypes(self.clone().into_owned())
     }
 
-    // fn get_subtypes(&self) -> EntityTypeIterator<'static, 1>; // TODO: correct prefix size
+    // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<EntityType<'static>>>;
 
     // TODO: not so pretty to return EntityType directly, but is a win on efficiency. However, should reconsider the trait's necessity.
     fn into_owned(self) -> EntityType<'static>;
@@ -91,9 +92,12 @@ pub trait RelationTypeAPI<'a>: TypeAPI<'a> {
         type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
     }
 
-    // fn get_supertypes(&'a self) -> EntityTypeIterator<'static, 1>; // TODO: correct prefix size
+    // TODO: not so pretty to return Type directly, but is a win on efficiency. However, should reconsider the trait's necessity.
+    fn get_supertypes<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Vec<RelationType<'static>>> {
+        type_manager.get_relation_type_supertypes(self.clone().into_owned())
+    }
 
-    // fn get_subtypes(&self) -> EntityTypeIterator<'static, 1>; // TODO: correct prefix size
+    // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<RelationType<'static>>>;
 
     fn into_owned(self) -> RelationType<'static>;
 }
@@ -115,11 +119,18 @@ pub trait AttributeTypeAPI<'a>: TypeAPI<'a> {
         type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
     }
 
+    // TODO: not so pretty to return Type directly, but is a win on efficiency. However, should reconsider the trait's necessity.
+    fn get_supertypes<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Vec<AttributeType<'static>>> {
+        type_manager.get_attribute_type_supertypes(self.clone().into_owned())
+    }
+
+    // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<AttributeType<'static>>>;
+
     fn into_owned(self) -> AttributeType<'static>;
 }
 
 trait OwnerAPI<'a>: TypeAPI<'a> {
-    fn create_owns(&self, attribute_type: &AttributeType) -> Owns {
+    fn set_owns(&self, attribute_type: &AttributeType) -> Owns {
         // create Owns
         todo!()
     }
@@ -153,7 +164,7 @@ trait OwnedAPI<'a>: AttributeTypeAPI<'a> {
 
 trait PlayerAPI<'a>: TypeAPI<'a> {
 
-    // fn create_plays(&self, role_type: &RoleType) -> Plays;
+    // fn set_plays(&self, role_type: &RoleType) -> Plays;
 
     fn get_plays(&self) {
         // return iterator of Plays

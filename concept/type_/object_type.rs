@@ -15,22 +15,10 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use encoding::graph::thing::vertex::{AttributeVertex, ObjectVertex};
+use crate::type_::entity_type::EntityType;
+use crate::type_::relation_type::RelationType;
 
-use crate::{ConceptAPI};
-
-pub mod attribute;
-pub mod entity;
-pub mod thing_manager;
-mod relation;
-
-trait ThingAPI<'a>: ConceptAPI<'a> {}
-
-pub trait ObjectAPI<'a>: ThingAPI<'a> {
-    fn vertex(&'a self) -> &ObjectVertex<'a>;
+pub enum ObjectType<'a> {
+    Entity(EntityType<'a>),
+    Relation(RelationType<'a>),
 }
-
-pub trait AttributeAPI<'a>: ThingAPI<'a> {
-    fn vertex(&'a self) -> &AttributeVertex<'a>;
-}
-

@@ -23,7 +23,7 @@ use std::sync::Arc;
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::{AsBytes, Keyable};
-use encoding::graph::type_::edge::{build_edge_sub_forward, build_edge_sub_forward_prefix, new_edge_sub_forward};
+use encoding::graph::type_::edge::{build_edge_sub, build_edge_sub_prefix, build_edge_sub_reverse, new_edge_sub};
 use encoding::graph::type_::property::{LabelToTypeProperty, TypeToLabelProperty};
 use encoding::graph::type_::Root;
 use encoding::graph::type_::vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, TypeVertex};
@@ -115,8 +115,8 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             cache.get_entity_type_supertype(entity_type)
         } else {
             // TODO: handle possible errors
-            self.snapshot.iterate_prefix(build_edge_sub_forward_prefix(entity_type.vertex().clone().into_owned())).first_cloned().unwrap()
-                .map(|(key, _)| EntityType::new(new_edge_sub_forward(key.into_byte_array_or_ref()).to().into_owned()))
+            self.snapshot.iterate_prefix(build_edge_sub_prefix(entity_type.vertex().clone().into_owned())).first_cloned().unwrap()
+                .map(|(key, _)| EntityType::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
         }
     }
 
@@ -125,8 +125,8 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             cache.get_relation_type_supertype(relation_type)
         } else {
             // TODO: handle possible errors
-            self.snapshot.iterate_prefix(build_edge_sub_forward_prefix(relation_type.vertex().clone())).first_cloned().unwrap()
-                .map(|(key, _)| RelationType::new(new_edge_sub_forward(key.into_byte_array_or_ref()).to().into_owned()))
+            self.snapshot.iterate_prefix(build_edge_sub_prefix(relation_type.vertex().clone())).first_cloned().unwrap()
+                .map(|(key, _)| RelationType::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
         }
     }
 
@@ -135,11 +135,12 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             cache.get_attribute_type_supertype(attribute_type)
         } else {
             // TODO: handle possible errors
-            self.snapshot.iterate_prefix(build_edge_sub_forward_prefix(attribute_type.vertex().clone())).first_cloned().unwrap()
-                .map(|(key, _)| AttributeType::new(new_edge_sub_forward(key.into_byte_array_or_ref()).to().into_owned()))
+            self.snapshot.iterate_prefix(build_edge_sub_prefix(attribute_type.vertex().clone())).first_cloned().unwrap()
+                .map(|(key, _)| AttributeType::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
         }
     }
 
+    // WARN: supertypes currently do NOT include themselves
     pub(crate) fn get_entity_type_supertypes<'this>(&'this self, entity_type: EntityType<'static>) -> MaybeOwns<'this, Vec<EntityType<'static>>> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_entity_type_supertypes(entity_type))
@@ -185,7 +186,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub fn create_entity_type(&self, label: &Label, is_root: bool) -> EntityType {
+    pub fn create_entity_type(&self, label: &Label, is_root: bool) -> EntityType<'static> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_vertex = self.vertex_generator.take_entity_type();
@@ -318,20 +319,33 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
 
     pub(crate) fn get_storage_supertype(&self, subtype: TypeVertex<'static>) -> Option<TypeVertex<'static>> {
         // TODO: handle possible errors
-        self.snapshot.iterate_prefix(build_edge_sub_forward_prefix(subtype.clone()))
-            .first_cloned().unwrap().map(|(key, _)| new_edge_sub_forward(key.into_byte_array_or_ref()).to().into_owned())
+        self.snapshot.iterate_prefix(build_edge_sub_prefix(subtype.clone()))
+            .first_cloned().unwrap().map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned())
     }
 
     pub(crate) fn set_storage_supertype(&self, subtype: TypeVertex<'static>, supertype: TypeVertex<'static>) {
-        // TODO: delete previous supertype edge
-
-        // TODO: place the reverse edge
-
+        self.may_delete_storage_supertype(subtype.clone());
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let vertex_to_label_key = build_edge_sub_forward(subtype, supertype);
-            write_snapshot.put(vertex_to_label_key.into_storage_key().to_owned_array());
+            let sub = build_edge_sub(subtype.clone(), supertype.clone());
+            write_snapshot.put(sub.into_storage_key().to_owned_array());
+            let sub_reverse = build_edge_sub_reverse(supertype, subtype);
+            write_snapshot.put(sub_reverse.into_storage_key().to_owned_array());
         } else {
             panic!("Illegal state: creating supertype edge requires write snapshot")
+        }
+    }
+
+    pub(crate) fn may_delete_storage_supertype(&self, subtype: TypeVertex<'static>) {
+        let supertype = self.get_storage_supertype(subtype.clone());
+        if let Some(supertype) = supertype {
+            if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+                let sub = build_edge_sub(subtype.clone(), supertype.clone());
+                write_snapshot.delete(sub.into_storage_key().to_owned_array());
+                let sub_reverse = build_edge_sub_reverse(supertype, subtype);
+                write_snapshot.delete(sub_reverse.into_storage_key().to_owned_array());
+            } else {
+                panic!("Illegal state: deleting supertype edge requires write snapshot")
+            }
         }
     }
 }

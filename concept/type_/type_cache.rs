@@ -16,14 +16,13 @@
  */
 
 use std::collections::{Bound, BTreeMap, HashMap};
-use std::hash::Hash;
 
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
 use durability::SequenceNumber;
 use encoding::{Keyable, Prefixed};
-use encoding::graph::type_::edge::{build_edge_sub_forward_prefix, new_edge_sub_forward};
+use encoding::graph::type_::edge::{build_edge_sub_prefix, new_edge_sub};
 use encoding::graph::type_::property::TypeToLabelProperty;
 use encoding::graph::type_::Root;
 use encoding::graph::type_::vertex::{build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix, is_vertex_attribute_type, is_vertex_entity_type, is_vertex_relation_type, new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, TypeVertex};
@@ -63,8 +62,9 @@ struct EntityTypeCache {
 
     supertype: Option<EntityType<'static>>,
     supertypes: Vec<EntityType<'static>>, // TODO: use smallvec if we want to have some inline
-    // subtypes: Vec<EntityType<'static>>, // TODO: use smallvec
-    // subtypes_direct: Vec<EntityType<'static>>, // TODO: use smallvec
+
+    // subtypes_direct: Vec<AttributeType<'static>>, // TODO: use smallvec
+    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: use smallvec
 
     // owns
     // owns_direct
@@ -79,8 +79,9 @@ struct RelationTypeCache {
 
     supertype: Option<RelationType<'static>>,
     supertypes: Vec<RelationType<'static>>, // TODO: use smallvec
-    // subtypes: Vec<RelationType<'static>>, // TODO: use smallvec
-    // subtypes_direct: Vec<RelationType<'static>>, // TODO: use smallvec
+
+    // subtypes_direct: Vec<AttributeType<'static>>, // TODO: use smallvec
+    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: use smallvec
 }
 
 struct AttributeTypeCache {
@@ -90,8 +91,9 @@ struct AttributeTypeCache {
 
     supertype: Option<AttributeType<'static>>,
     supertypes: Vec<AttributeType<'static>>, // TODO: use smallvec
-    // subtypes: Vec<AttributeType<'static>>, // TODO: use smallvec
+
     // subtypes_direct: Vec<AttributeType<'static>>, // TODO: use smallvec
+    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: use smallvec
 }
 
 impl TypeCache {
@@ -115,7 +117,6 @@ impl TypeCache {
         let entity_type_index_labels = entity_type_caches.iter().filter_map(|entry|
             entry.as_ref().map(|cache| (cache.label.clone(), cache.type_.clone()))
         ).collect();
-        dbg!(&entity_type_index_labels);
 
         let mut relation_types_data = snapshot.iterate_prefix(build_vertex_relation_type_prefix())
             .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>().unwrap();
@@ -174,7 +175,6 @@ impl TypeCache {
                 };
                 let i = type_index as usize;
                 caches[i] = Some(cache);
-                dbg!(&caches);
             }
         }
         Self::set_entity_supertypes_transitive(&mut caches);
@@ -279,10 +279,10 @@ impl TypeCache {
 
     fn read_supertype_vertex(types_data: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
                              type_vertex: TypeVertex<'static>) -> Option<TypeVertex<'static>> {
-        let edge_prefix = build_edge_sub_forward_prefix(type_vertex).to_owned_array();
+        let edge_prefix = build_edge_sub_prefix(type_vertex).to_owned_array();
         let mut edges = types_data.range::<[u8], _>((Bound::Included(edge_prefix.bytes()), Bound::Unbounded))
             .take_while(|(key, _)| key.bytes().starts_with(edge_prefix.bytes()));
-        let supertype = edges.next().map(|(key, _)| new_edge_sub_forward(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))).to().into_owned());
+        let supertype = edges.next().map(|(key, _)| new_edge_sub(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))).to().into_owned());
         debug_assert!(edges.next().is_none());
         supertype
     }
