@@ -141,11 +141,13 @@ impl DurabilityService for WAL {
     fn checkpoint(&self) -> Result<()> {
         let mut files = self.files.lock().unwrap();
 
-        let checkpointed_path = files.current.path.with_file_name(
-            files.current.path.file_name().and_then(|s| s.to_str()).unwrap().to_owned() + CHECKPOINTED_SUFFIX,
+        let active = &mut files.current;
+        active.handle.sync_all()?;
+        let checkpointed_path = active.path.with_file_name(
+            active.path.file_name().and_then(OsStr::to_str).unwrap().to_owned() + CHECKPOINTED_SUFFIX,
         );
-        fs::rename(&files.current.path, &checkpointed_path)?;
-        files.current = File::open(checkpointed_path)?;
+        fs::rename(&active.path, &checkpointed_path)?;
+        *active = File::open(checkpointed_path)?;
 
         let next = self.current();
         files.open_new_file_at(next)?;
