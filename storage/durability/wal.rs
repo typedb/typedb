@@ -19,12 +19,11 @@ use std::{
     collections::HashMap,
     ffi::OsStr,
     fs::{self, File as StdFile, OpenOptions},
-    io::{self, Read, Seek, Write},
-    iter,
+    io::{self, BufReader, BufWriter, Read, Seek, Write},
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicU64, Ordering},
-        Mutex, MutexGuard,
+        RwLock, RwLockReadGuard,
     },
 };
 
@@ -50,7 +49,7 @@ pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, &'static str>,
     next_sequence_number: AtomicU64,
     checkpoint: AtomicU64,
-    files: Mutex<Files>,
+    files: RwLock<Files>,
 }
 
 impl WAL {
@@ -70,8 +69,8 @@ impl WAL {
             .map(|f| f.start.number().number() as u64)
             .unwrap_or(0);
 
-        let files = Mutex::new(files);
-        let next = RecordIterator::new(files.lock().unwrap())
+        let files = RwLock::new(files);
+        let next = RecordIterator::new(files.read().unwrap())?
             .last()
             .map(|rr| rr.unwrap().sequence_number.number().number() as u64 + 1)
             .unwrap_or(0);
@@ -87,15 +86,15 @@ impl WAL {
 
 impl Sequencer for WAL {
     fn increment(&self) -> SequenceNumber {
-        SequenceNumber::new(U80::new(self.next_sequence_number.fetch_add(1, Ordering::Relaxed) as u128))
+        SequenceNumber::from(self.next_sequence_number.fetch_add(1, Ordering::Relaxed) as u128)
     }
 
     fn current(&self) -> SequenceNumber {
-        SequenceNumber::new(U80::new(self.next_sequence_number.load(Ordering::Relaxed) as u128))
+        SequenceNumber::from(self.next_sequence_number.load(Ordering::Relaxed) as u128)
     }
 
     fn previous(&self) -> SequenceNumber {
-        SequenceNumber::new(U80::new(self.next_sequence_number.load(Ordering::Relaxed) as u128 - 1))
+        SequenceNumber::from(self.next_sequence_number.load(Ordering::Relaxed) as u128 - 1)
     }
 }
 
@@ -112,59 +111,35 @@ impl DurabilityService for WAL {
         Record: DurabilityRecord,
     {
         debug_assert!(self.registered_types.get(&Record::RECORD_TYPE) == Some(&Record::RECORD_NAME));
-        let mut files = self.files.lock().unwrap();
-
-        let file = &mut files.current;
-        file.handle.seek(io::SeekFrom::End(0))?;
+        let mut files = self.files.write().unwrap();
         let seq = self.increment();
-
-        let mut buf = Vec::new();
-        record.serialise_into(&mut buf)?;
-
-        file.write_header::<Record>(seq, buf.len() as u32)?;
-        file.handle.write_all(&buf)?;
-
-        file.len = file.handle.stream_position()?;
-
-        if file.len >= MAX_WAL_FILE_SIZE {
-            files.open_new_file_at(self.current())?;
-        }
-
+        files.write_record(record, seq)?;
         Ok(seq)
     }
 
-    fn iter_from(&self, sequence_number: SequenceNumber) -> impl Iterator<Item = io::Result<RawRecord>> {
-        let files = self.files.lock().unwrap();
-        RecordIterator::new(files).skip_while(move |r| r.as_ref().is_ok_and(|r| r.sequence_number < sequence_number))
+    fn iter_from(&self, sequence_number: SequenceNumber) -> io::Result<impl Iterator<Item = io::Result<RawRecord>>> {
+        Ok(RecordIterator::new(self.files.read().unwrap())?
+            .skip_while(move |r| r.as_ref().is_ok_and(|r| r.sequence_number < sequence_number)))
     }
 
     fn checkpoint(&self) -> Result<()> {
-        let mut files = self.files.lock().unwrap();
+        let mut files = self.files.write().unwrap();
+        files.checkpoint(self.current())?;
 
-        let active = &mut files.current;
-        active.handle.sync_all()?;
-        let checkpointed_path = active.path.with_file_name(
-            active.path.file_name().and_then(OsStr::to_str).unwrap().to_owned() + CHECKPOINTED_SUFFIX,
-        );
-        fs::rename(&active.path, &checkpointed_path)?;
-        *active = File::open(checkpointed_path)?;
-
-        let next = self.current();
-        files.open_new_file_at(next)?;
         self.checkpoint.store(self.next_sequence_number.load(Ordering::Relaxed), Ordering::Relaxed);
         Ok(())
     }
 
-    fn recover(&self) -> impl Iterator<Item = io::Result<RawRecord>> {
-        self.iter_from(SequenceNumber::new(U80::new(self.checkpoint.load(Ordering::Relaxed) as u128)))
+    fn recover(&self) -> io::Result<impl Iterator<Item = io::Result<RawRecord>>> {
+        self.iter_from(SequenceNumber::from(self.checkpoint.load(Ordering::Relaxed) as u128))
     }
 }
 
 #[derive(Debug)]
 struct Files {
     directory: PathBuf,
-    current: File,
-    previous: Vec<File>,
+    writer: BufWriter<StdFile>,
+    files: Vec<File>,
 }
 
 impl Files {
@@ -179,28 +154,73 @@ impl Files {
             .try_collect()?;
         files.sort_unstable_by(|lhs, rhs| lhs.path.cmp(&rhs.path));
 
-        let last = (files.pop().map(Ok))
-            .unwrap_or_else(|| File::open_at(directory.clone(), SequenceNumber::new(U80::new(0))))?;
+        if files.is_empty() {
+            files.push(File::open_at(directory.clone(), 0.into())?);
+        }
 
-        Ok(Self { directory, current: last, previous: files })
+        let handle = OpenOptions::new().read(true).append(true).create(true).open(&files.last().unwrap().path)?;
+        let writer = BufWriter::new(handle);
+
+        Ok(Self { directory, writer, files })
     }
 
     fn open_new_file_at(&mut self, start: SequenceNumber) -> io::Result<()> {
-        let mut file = File::open_at(self.directory.clone(), start)?;
-        std::mem::swap(&mut self.current, &mut file);
-        self.previous.push(file);
+        self.files.push(File::open_at(self.directory.clone(), start)?);
+        let handle = OpenOptions::new().read(true).append(true).create(true).open(&self.files.last().unwrap().path)?;
+        self.writer = BufWriter::new(handle);
+        Ok(())
+    }
+
+    fn write_record<Record>(&mut self, record: &Record, seq: SequenceNumber) -> Result<()>
+    where
+        Record: DurabilityRecord,
+    {
+        if self.files.last().unwrap().len >= MAX_WAL_FILE_SIZE {
+            self.open_new_file_at(seq)?;
+        }
+
+        let mut buf = Vec::new();
+        record.serialise_into(&mut buf)?;
+        write_header::<Record>(&mut self.writer, seq, buf.len() as u32)?;
+        self.writer.write_all(&buf)?;
+
+        self.files.last_mut().unwrap().len = self.writer.stream_position()?;
+        Ok(())
+    }
+
+    fn checkpoint(&mut self, next: SequenceNumber) -> io::Result<()> {
+        self.writer.flush()?;
+        let current_path = &self.files.last().unwrap().path;
+        let checkpointed_path = current_path
+            .with_file_name(current_path.file_name().and_then(OsStr::to_str).unwrap().to_owned() + CHECKPOINTED_SUFFIX);
+        fs::rename(current_path, &checkpointed_path)?;
+        self.files.last_mut().unwrap().path = checkpointed_path;
+
+        self.files.push(File::open_at(self.directory.clone(), next)?);
+        let handle = OpenOptions::new().read(true).append(true).create(true).open(&self.files.last().unwrap().path)?;
+        self.writer = BufWriter::new(handle);
         Ok(())
     }
 
     fn iter(&self) -> impl Iterator<Item = &File> {
-        self.previous.iter().chain(iter::once(&self.current))
+        self.files.iter()
     }
 }
 
-#[derive(Debug)]
+fn write_header<Record: DurabilityRecord>(
+    file: &mut BufWriter<StdFile>,
+    seq: SequenceNumber,
+    len: u32,
+) -> io::Result<()> {
+    file.write_all(&seq.to_be_bytes())?;
+    file.write_all(&len.to_be_bytes())?;
+    file.write_all(&[Record::RECORD_TYPE])?;
+    Ok(())
+}
+
+#[derive(Clone, Debug)]
 struct File {
     start: SequenceNumber,
-    handle: StdFile,
     len: u64,
     path: PathBuf,
 }
@@ -212,82 +232,77 @@ impl File {
 
     fn open_at(directory: PathBuf, start: SequenceNumber) -> io::Result<Self> {
         let path = directory.join(Self::format_file_name(start));
-        let mut handle = OpenOptions::new().read(true).append(true).create(true).open(&path)?;
-        let len = handle.seek(io::SeekFrom::End(0))?;
-        Ok(Self { start, handle, len, path })
+        let len = fs::metadata(&path).map(|md| md.len()).unwrap_or(0);
+        Ok(Self { start, len, path })
     }
 
     fn open(path: PathBuf) -> io::Result<Self> {
-        let num = path.file_name().and_then(|s| s.to_str()).and_then(|s| s.split('-').nth(1)).unwrap().parse().unwrap();
-        let mut handle = OpenOptions::new().read(true).append(true).create(true).open(&path)?;
-        let len = handle.seek(io::SeekFrom::End(0))?;
-        Ok(Self { start: SequenceNumber::new(U80::new(num)), handle, len, path })
+        let num: u128 =
+            path.file_name().and_then(|s| s.to_str()).and_then(|s| s.split('-').nth(1)).unwrap().parse().unwrap();
+        let len = fs::metadata(&path).map(|md| md.len()).unwrap_or(0);
+        Ok(Self { start: SequenceNumber::from(num), len, path })
     }
+}
 
-    fn write_header<Record: DurabilityRecord>(&mut self, seq: SequenceNumber, len: u32) -> io::Result<()> {
-        self.handle.write_all(&seq.to_be_bytes())?;
-        self.handle.write_all(&len.to_be_bytes())?;
-        self.handle.write_all(&[Record::RECORD_TYPE])?;
-        Ok(())
+#[derive(Debug)]
+struct FileReader {
+    file: File,
+    reader: BufReader<StdFile>,
+}
+
+impl FileReader {
+    fn new(file: File) -> io::Result<Self> {
+        Ok(Self { reader: BufReader::new(StdFile::open(&file.path)?), file })
     }
 
     fn read_one_record(&mut self) -> io::Result<Option<RawRecord>> {
-        if self.handle.stream_position()? == self.len {
+        if self.reader.stream_position()? == self.file.len {
             return Ok(None);
         }
         let RecordHeader { sequence_number, len, record_type } = self.read_header()?;
         let mut bytes = vec![0; len as usize].into_boxed_slice();
-        self.handle.read_exact(&mut bytes)?;
+        self.reader.read_exact(&mut bytes)?;
         Ok(Some(RawRecord { sequence_number, record_type, bytes }))
     }
 
     fn read_header(&mut self) -> io::Result<RecordHeader> {
         let mut buf = [0; U80::BYTES];
-        self.handle.read_exact(&mut buf)?;
+        self.reader.read_exact(&mut buf)?;
         let sequence_number = SequenceNumber::new(U80::from_be_bytes(&buf));
 
         let mut buf = [0; std::mem::size_of::<u32>()];
-        self.handle.read_exact(&mut buf)?;
+        self.reader.read_exact(&mut buf)?;
         let len = u32::from_be_bytes(buf);
 
         let mut buf = [0; 1];
-        self.handle.read_exact(&mut buf)?;
+        self.reader.read_exact(&mut buf)?;
         let [record_type] = buf;
 
         Ok(RecordHeader { sequence_number, len, record_type })
     }
 }
 
+#[derive(Debug)]
 struct RecordIterator<'a> {
-    files: MutexGuard<'a, Files>,
-    current: Option<usize>,
+    files: RwLockReadGuard<'a, Files>,
+    current: usize,
+    reader: Option<FileReader>,
 }
 
 impl<'a> RecordIterator<'a> {
-    fn new(files: MutexGuard<'a, Files>) -> Self {
-        let mut this = Self { current: (!files.previous.is_empty()).then_some(0), files };
-        this.rewind_current();
-        this
+    fn new(files: RwLockReadGuard<'a, Files>) -> io::Result<Self> {
+        let reader = Some(FileReader::new(files.files[0].clone())?);
+        Ok(Self { current: 0, files, reader })
     }
 
-    fn rewind_current(&mut self) {
-        self.current().handle.rewind().unwrap();
-    }
-
-    fn advance_file(&mut self) -> Option<()> {
-        if let Some(n) = self.current {
-            self.current = if n + 1 < self.files.previous.len() { Some(n + 1) } else { None };
-            self.rewind_current();
-            Some(())
+    fn advance_file(&mut self) -> io::Result<Option<()>> {
+        self.current += 1;
+        if self.current < self.files.files.len() {
+            self.reader = Some(FileReader::new(self.files.files[self.current].clone())?);
+            Ok(Some(()))
         } else {
-            None
-        }
-    }
-
-    fn current(&mut self) -> &mut File {
-        match self.current {
-            None => &mut self.files.current,
-            Some(n) => self.files.previous.get_mut(n).unwrap(),
+            self.reader.take();
+            Ok(None)
         }
     }
 }
@@ -296,16 +311,15 @@ impl<'a> Iterator for RecordIterator<'a> {
     type Item = io::Result<RawRecord>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let file = self.current();
-        match file.read_one_record().transpose() {
-            None => {
-                if self.current.is_none() {
-                    None
-                } else {
-                    self.advance_file()?;
-                    self.next()
+        let reader = self.reader.as_mut()?;
+        match reader.read_one_record().transpose() {
+            None => match self.advance_file().transpose()? {
+                Ok(()) => self.next(),
+                Err(err) => {
+                    self.reader = None;
+                    Some(Err(err))
                 }
-            }
+            },
             Some(Err(err)) if err.kind() == io::ErrorKind::UnexpectedEof => None,
             some => some,
         }
@@ -356,7 +370,7 @@ mod test {
         let wal = open_wal(&directory);
         wal.sequenced_write(&record).unwrap();
 
-        let RawRecord { record_type, bytes, .. } = wal.recover().next().unwrap().unwrap();
+        let RawRecord { record_type, bytes, .. } = wal.recover().unwrap().next().unwrap().unwrap();
         assert_eq!(record_type, TestRecord::RECORD_TYPE);
 
         let read_record = TestRecord::deserialize_from(&mut &*bytes).unwrap();
@@ -374,6 +388,7 @@ mod test {
 
         let read_records = wal
             .recover()
+            .unwrap()
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
@@ -396,7 +411,7 @@ mod test {
         drop(wal);
 
         let wal = open_wal(&directory);
-        let RawRecord { record_type, bytes, .. } = wal.recover().next().unwrap().unwrap();
+        let RawRecord { record_type, bytes, .. } = wal.recover().unwrap().next().unwrap().unwrap();
         assert_eq!(record_type, TestRecord::RECORD_TYPE);
 
         let read_record = TestRecord::deserialize_from(&mut &*bytes).unwrap();
@@ -416,6 +431,7 @@ mod test {
         let wal = open_wal(&directory);
         let read_records = wal
             .recover()
+            .unwrap()
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
@@ -440,6 +456,7 @@ mod test {
 
         let read_records = wal
             .recover()
+            .unwrap()
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
@@ -453,6 +470,7 @@ mod test {
         let wal = open_wal(&directory);
         let read_records = wal
             .recover()
+            .unwrap()
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
@@ -475,6 +493,7 @@ mod test {
 
         let read_records: Vec<TestRecord> = wal
             .iter_from(iter_start)
+            .unwrap()
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
@@ -488,6 +507,7 @@ mod test {
         let wal = open_wal(&directory);
         let read_records = wal
             .iter_from(iter_start)
+            .unwrap()
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);

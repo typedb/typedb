@@ -37,7 +37,7 @@ fn basic() {
     drop(wal);
 
     let wal = open_wal(&directory);
-    let raw_record = wal.iter_from(written_entry_id).next().unwrap().unwrap();
+    let raw_record = wal.iter_from(written_entry_id).unwrap().next().unwrap().unwrap();
     let read_record = TestRecord::deserialize_from(&mut &*raw_record.bytes).unwrap();
     assert_eq!(read_record, message);
     wal.checkpoint().unwrap();
@@ -47,7 +47,7 @@ fn basic() {
 
     let wal = open_wal(&directory);
 
-    let mut recovery_iterator = wal.recover();
+    let mut recovery_iterator = wal.recover().unwrap();
     let RawRecord { sequence_number, record_type, bytes } = recovery_iterator.next().unwrap().unwrap();
     assert_eq!(sequence_number, written_entry_id);
     assert_eq!(record_type, TestRecord::RECORD_TYPE);
@@ -59,6 +59,6 @@ fn basic() {
     drop(wal);
 
     let wal = open_wal(&directory);
-    let mut recovery_iterator = wal.recover();
+    let mut recovery_iterator = wal.recover().unwrap();
     assert!(recovery_iterator.next().is_none());
 }

@@ -85,10 +85,10 @@ pub trait DurabilityService: Sequencer {
     where
         Record: DurabilityRecord;
 
-    fn iter_from(&self, sequence_number: SequenceNumber) -> impl Iterator<Item = io::Result<RawRecord>>;
+    fn iter_from(&self, sequence_number: SequenceNumber) -> io::Result<impl Iterator<Item = io::Result<RawRecord>>>;
 
     fn checkpoint(&self) -> Result<()>;
-    fn recover(&self) -> impl Iterator<Item = io::Result<RawRecord>>;
+    fn recover(&self) -> io::Result<impl Iterator<Item = io::Result<RawRecord>>>;
 }
 
 pub type DurabilityRecordType = u8;
@@ -146,6 +146,12 @@ impl SequenceNumber {
 
     pub const fn serialised_len() -> usize {
         U80::BYTES
+    }
+}
+
+impl From<u128> for SequenceNumber {
+    fn from(value: u128) -> Self {
+        Self::new(U80::new(value))
     }
 }
 
