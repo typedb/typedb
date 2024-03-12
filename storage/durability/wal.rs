@@ -28,7 +28,7 @@ use std::{
 };
 
 use itertools::Itertools;
-use primitive::U80;
+use primitive::u80::U80;
 
 use crate::{
     DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, RecordHeader, Result, SequenceNumber,

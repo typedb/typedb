@@ -24,10 +24,8 @@ use std::{
     io::{self, Read, Write},
 };
 
-use primitive::U80;
-use serde::{Deserialize, Serialize};
-
 use primitive::u80::U80;
+use serde::{Deserialize, Serialize};
 
 pub mod wal;
 
