@@ -154,16 +154,15 @@ impl Files {
             files.push(File::open_at(directory.clone(), 0.into())?);
         }
 
-        let handle = OpenOptions::new().read(true).append(true).create(true).open(&files.last().unwrap().path)?;
-        let writer = BufWriter::new(handle);
+        let writer = files.last().unwrap().writer()?;
 
         Ok(Self { directory, writer, files })
     }
 
     fn open_new_file_at(&mut self, start: SequenceNumber) -> io::Result<()> {
-        self.files.push(File::open_at(self.directory.clone(), start)?);
-        let handle = OpenOptions::new().read(true).append(true).create(true).open(&self.files.last().unwrap().path)?;
-        self.writer = BufWriter::new(handle);
+        let file = File::open_at(self.directory.clone(), start)?;
+        self.writer = file.writer()?;
+        self.files.push(file);
         Ok(())
     }
 
@@ -198,9 +197,9 @@ impl Files {
         fs::rename(current_path, &checkpointed_path)?;
         self.files.last_mut().unwrap().path = checkpointed_path;
 
-        self.files.push(File::open_at(self.directory.clone(), next)?);
-        let handle = OpenOptions::new().read(true).append(true).create(true).open(&self.files.last().unwrap().path)?;
-        self.writer = BufWriter::new(handle);
+        let file = File::open_at(self.directory.clone(), next)?;
+        self.writer = file.writer()?;
+        self.files.push(file);
         Ok(())
     }
 
@@ -243,6 +242,10 @@ impl File {
             path.file_name().and_then(|s| s.to_str()).and_then(|s| s.split('-').nth(1)).unwrap().parse().unwrap();
         let len = fs::metadata(&path).map(|md| md.len()).unwrap_or(0);
         Ok(Self { start: SequenceNumber::from(num), len, path })
+    }
+
+    fn writer(&self) -> io::Result<BufWriter<StdFile>> {
+        Ok(BufWriter::new(OpenOptions::new().read(true).append(true).create(true).open(&self.path)?))
     }
 }
 
