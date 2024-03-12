@@ -19,6 +19,7 @@ use std::path::Path;
 
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 use durability::{wal::WAL, DurabilityRecord, DurabilityRecordType, DurabilityService};
+use itertools::Itertools;
 use tempdir::TempDir;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -48,7 +49,7 @@ pub fn open_wal(directory: impl AsRef<Path>) -> WAL {
     wal
 }
 
-fn criterion_benchmark(c: &mut Criterion) {
+fn throughput_small(c: &mut Criterion) {
     let directory = TempDir::new("wal-test").unwrap();
     let wal = open_wal(&directory);
 
@@ -65,5 +66,22 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, criterion_benchmark);
+fn throughput_large(c: &mut Criterion) {
+    let directory = TempDir::new("wal-test").unwrap();
+    let wal = open_wal(&directory);
+
+    let message = TestRecord { bytes: std::iter::repeat(*b"hello world").take(100).flatten().collect_vec() };
+    let serialized_len = {
+        let mut buf = Vec::new();
+        message.serialise_into(&mut buf).unwrap();
+        buf.len()
+    };
+
+    let mut group = c.benchmark_group("throughput");
+    group.throughput(Throughput::Bytes(serialized_len as u64));
+    group.bench_function("write", |b| b.iter(|| wal.sequenced_write(&message).unwrap()));
+    group.finish();
+}
+
+criterion_group!(benches, throughput_small, throughput_large);
 criterion_main!(benches);
