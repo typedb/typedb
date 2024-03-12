@@ -35,15 +35,11 @@ use crate::{
     Sequencer,
 };
 
-const MAX_WAL_FILE_SIZE: u64 = 1024;
+const MAX_WAL_FILE_SIZE: u64 = 16 * 1024 * 1024;
 
 const FILE_PREFIX: &str = "wal-";
 const CHECKPOINTED_SUFFIX: &str = "-checkpoint";
 
-//
-// I think we could use an MMAP append-only file to allow records to serialise themselves directly into the right place
-// We could also use a Writer/Stream compressor to reduce the write bandwidth requirements
-//
 #[derive(Debug)]
 pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, &'static str>,
@@ -180,9 +176,15 @@ impl Files {
         }
 
         let mut buf = Vec::new();
-        record.serialise_into(&mut buf)?;
+
+        let mut encoder = lz4::EncoderBuilder::new().build(&mut buf).unwrap();
+        record.serialise_into(&mut encoder)?;
+        encoder.finish().1.unwrap();
+
         write_header::<Record>(&mut self.writer, seq, buf.len() as u32)?;
+
         self.writer.write_all(&buf)?;
+        self.writer.flush()?;
 
         self.files.last_mut().unwrap().len = self.writer.stream_position()?;
         Ok(())
@@ -260,8 +262,13 @@ impl FileReader {
             return Ok(None);
         }
         let RecordHeader { sequence_number, len, record_type } = self.read_header()?;
-        let mut bytes = vec![0; len as usize].into_boxed_slice();
-        self.reader.read_exact(&mut bytes)?;
+
+        let mut buf = vec![0; len as usize].into_boxed_slice();
+        self.reader.read_exact(&mut buf)?;
+        let mut bytes = Vec::new();
+        lz4::Decoder::new(&mut &*buf).unwrap().read_to_end(&mut bytes)?;
+        let bytes = bytes.into_boxed_slice();
+
         Ok(Some(RawRecord { sequence_number, record_type, bytes }))
     }
 
@@ -320,7 +327,6 @@ impl<'a> Iterator for RecordIterator<'a> {
                     Some(Err(err))
                 }
             },
-            Some(Err(err)) if err.kind() == io::ErrorKind::UnexpectedEof => None,
             some => some,
         }
     }
