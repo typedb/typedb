@@ -28,7 +28,7 @@ use crate::error::{ConceptError, ConceptErrorKind};
 use crate::type_::{RelationTypeAPI, TypeAPI};
 use crate::type_::annotation::AnnotationAbstract;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RelationType<'a> {
     vertex: TypeVertex<'a>,
 }
@@ -61,16 +61,9 @@ impl<'a> RelationTypeAPI<'a> for RelationType<'a> {
     }
 }
 
-impl<'a> PartialEq<Self> for RelationType<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        self.vertex.eq(other.vertex())
-    }
-}
 
-impl<'a> Eq for RelationType<'a> {}
-
-#[derive(Debug, Eq, PartialEq)]
-pub(crate) enum RelationTypeAnnotation {
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum RelationTypeAnnotation {
     Abstract(AnnotationAbstract),
 }
 

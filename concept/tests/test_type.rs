@@ -22,13 +22,16 @@ use std::sync::Arc;
 
 use concept::type_::annotation::AnnotationAbstract;
 use concept::type_::entity_type::EntityTypeAnnotation;
-use concept::type_::EntityTypeAPI;
+use concept::type_::{AttributeTypeAPI, EntityTypeAPI, OwnerAPI};
+use concept::type_::owns::Owns;
+use concept::type_::object_type::ObjectType;
 use concept::type_::type_cache::TypeCache;
 use concept::type_::type_manager::TypeManager;
 use encoding::create_keyspaces;
 use encoding::graph::type_::Root;
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
 use encoding::primitive::label::Label;
+use primitive::maybe_owns::MaybeOwns;
 use storage::MVCCStorage;
 use storage::snapshot::snapshot::Snapshot;
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
@@ -56,6 +59,14 @@ fn entity_creation() {
         assert_eq!(root_entity.get_label(&type_manager).deref(), &Root::Entity.label());
         assert!(root_entity.is_root(&type_manager));
 
+        // --- age sub attribute ---
+        let age_label = Label::build("age");
+        let age_type = type_manager.create_attribute_type(&age_label, false);
+
+        assert!(!age_type.is_root(&type_manager));
+        assert!(age_type.get_annotations(&type_manager).is_empty());
+        assert_eq!(age_type.get_label(&type_manager).deref(), &age_label);
+        
         // --- person sub entity @abstract ---
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&person_label, false);
@@ -80,6 +91,15 @@ fn entity_creation() {
         assert_eq!(supertype.unwrap(), person_type);
         let supertypes = child_type.get_supertypes(&type_manager);
         assert_eq!(supertypes.len(), 2);
+
+        let owns = child_type.set_owns(&type_manager, age_type.clone().into_owned());
+        // TODO: test 'owns' structure directly
+
+        let all_owns = child_type.get_owns(&type_manager);
+        assert_eq!(all_owns.len(), 1);
+        assert!(all_owns.contains(&owns));
+        assert!(matches!(child_type.get_owns_attribute(&type_manager, age_type.clone()), Some(owns)));
+        assert!(child_type.has_owns_attribute(&type_manager, age_type.clone()));
     }
     if let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();
@@ -96,6 +116,14 @@ fn entity_creation() {
         let root_entity = type_manager.get_entity_type(&Root::Entity.label()).unwrap();
         assert_eq!(root_entity.get_label(&type_manager).deref(), &Root::Entity.label());
         assert!(root_entity.is_root(&type_manager));
+
+        // --- age sub attribute ---
+        let age_label = Label::build("age");
+        let age_type = type_manager.get_attribute_type(&age_label).unwrap();
+
+        assert!(!age_type.is_root(&type_manager));
+        assert!(age_type.get_annotations(&type_manager).is_empty());
+        assert_eq!(age_type.get_label(&type_manager).deref(), &age_label);
 
         // --- person sub entity ---
         let person_label = Label::build("person");
@@ -118,6 +146,13 @@ fn entity_creation() {
         assert_eq!(supertype.unwrap(), person_type);
         let supertypes = child_type.get_supertypes(&type_manager);
         assert_eq!(supertypes.len(), 2);
+
+        let all_owns = child_type.get_owns(&type_manager);
+        assert_eq!(all_owns.len(), 1);
+        let expected_owns = Owns::new(ObjectType::Entity(child_type.clone()), age_type.clone());
+        assert!(all_owns.contains(&expected_owns));
+        assert!(matches!(child_type.get_owns_attribute(&type_manager, age_type.clone()), Some(expected_owns)));
+        assert!(child_type.has_owns_attribute(&type_manager, age_type.clone()));
     }
 
     delete_dir(storage_path)

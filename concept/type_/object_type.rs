@@ -18,6 +18,7 @@
 use crate::type_::entity_type::EntityType;
 use crate::type_::relation_type::RelationType;
 
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum ObjectType<'a> {
     Entity(EntityType<'a>),
     Relation(RelationType<'a>),

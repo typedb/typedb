@@ -19,7 +19,14 @@
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::object_type::ObjectType;
 
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<'a> {
     owner: ObjectType<'a>,
     attribute: AttributeType<'a>,
+}
+
+impl<'a> Owns<'a> {
+    pub fn new(owner_type: ObjectType<'a>, attribute_type: AttributeType<'a>) -> Self {
+        Owns { owner: owner_type, attribute: attribute_type }
+    }
 }

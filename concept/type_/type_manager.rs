@@ -16,6 +16,7 @@
  */
 
 
+use std::collections::HashSet;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -23,7 +24,7 @@ use std::sync::Arc;
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::{AsBytes, Keyable};
-use encoding::graph::type_::edge::{build_edge_sub, build_edge_sub_prefix, build_edge_sub_reverse, new_edge_sub};
+use encoding::graph::type_::edge::{build_edge_owns, build_edge_owns_prefix, build_edge_owns_reverse, build_edge_sub, build_edge_sub_prefix, build_edge_sub_reverse, new_edge_owns, new_edge_sub};
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
 use encoding::graph::type_::property::{build_property_type_annotation_abstract, build_property_type_label};
 use encoding::graph::type_::Root;
@@ -41,6 +42,8 @@ use crate::type_::{AttributeTypeAPI, EntityTypeAPI, RelationTypeAPI, TypeAPI};
 use crate::type_::annotation::AnnotationAbstract;
 use crate::type_::attribute_type::{AttributeType, AttributeTypeAnnotation};
 use crate::type_::entity_type::{EntityType, EntityTypeAnnotation};
+use crate::type_::object_type::ObjectType;
+use crate::type_::owns::Owns;
 use crate::type_::relation_type::{RelationType, RelationTypeAnnotation};
 use crate::type_::type_cache::TypeCache;
 
@@ -50,11 +53,9 @@ pub struct TypeManager<'txn, 'storage: 'txn> {
     type_cache: Option<Arc<TypeCache>>,
 }
 
-
 // TODO:
 //   if we drop/close without committing, then we need to release all the IDs taken back to the IDGenerator
 //   this is only applicable for type manager where we can only have 1 concurrent txn and IDs are precious
-
 
 impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     pub fn new(snapshot: Rc<Snapshot<'storage>>, vertex_generator: &'txn TypeVertexGenerator, schema_cache: Option<Arc<TypeCache>>) -> TypeManager<'txn, 'storage> {
@@ -117,7 +118,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             cache.get_entity_type_supertype(entity_type)
         } else {
             // TODO: handle possible errors
-            self.snapshot.iterate_prefix(build_edge_sub_prefix(entity_type.vertex().clone().into_owned())).first_cloned().unwrap()
+            self.snapshot.iterate_prefix(build_edge_sub_prefix(entity_type.into_vertex().into_owned())).first_cloned().unwrap()
                 .map(|(key, _)| EntityType::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
         }
     }
@@ -127,7 +128,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             cache.get_relation_type_supertype(relation_type)
         } else {
             // TODO: handle possible errors
-            self.snapshot.iterate_prefix(build_edge_sub_prefix(relation_type.vertex().clone())).first_cloned().unwrap()
+            self.snapshot.iterate_prefix(build_edge_sub_prefix(relation_type.into_vertex().clone())).first_cloned().unwrap()
                 .map(|(key, _)| RelationType::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
         }
     }
@@ -137,7 +138,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             cache.get_attribute_type_supertype(attribute_type)
         } else {
             // TODO: handle possible errors
-            self.snapshot.iterate_prefix(build_edge_sub_prefix(attribute_type.vertex().clone())).first_cloned().unwrap()
+            self.snapshot.iterate_prefix(build_edge_sub_prefix(attribute_type.into_vertex().clone())).first_cloned().unwrap()
                 .map(|(key, _)| AttributeType::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
         }
     }
@@ -195,7 +196,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             write_snapshot.put(type_vertex.as_storage_key().into_owned_array());
             self.set_storage_label(type_vertex.clone().into_owned(), label);
             if !is_root {
-                self.set_storage_supertype(type_vertex.clone().into_owned(), self.get_entity_type(&Root::Entity.label()).unwrap().vertex().clone());
+                self.set_storage_supertype(type_vertex.clone().into_owned(), self.get_entity_type(&Root::Entity.label()).unwrap().into_vertex());
             }
             EntityType::new(type_vertex)
         } else {
@@ -211,7 +212,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             write_snapshot.put(type_vertex.as_storage_key().into_owned_array());
             self.set_storage_label(type_vertex.clone().into_owned(), label);
             if !is_root {
-                self.set_storage_supertype(type_vertex.clone().into_owned(), self.get_relation_type(&Root::Relation.label()).unwrap().vertex().clone());
+                self.set_storage_supertype(type_vertex.clone().into_owned(), self.get_relation_type(&Root::Relation.label()).unwrap().into_vertex());
             }
             RelationType::new(type_vertex)
         } else {
@@ -226,7 +227,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             write_snapshot.put(type_vertex.as_storage_key().into_owned_array());
             self.set_storage_label(type_vertex.clone(), label);
             if !is_root {
-                self.set_storage_supertype(type_vertex.clone(), self.get_attribute_type(&Root::Attribute.label()).unwrap().vertex().clone());
+                self.set_storage_supertype(type_vertex.clone(), self.get_attribute_type(&Root::Attribute.label()).unwrap().into_vertex());
             }
             AttributeType::new(type_vertex)
         } else {
@@ -262,7 +263,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_entity_type_label(entity_type))
         } else {
-            MaybeOwns::owned(self.get_storage_label(entity_type.vertex().clone()).unwrap())
+            MaybeOwns::owned(self.get_storage_label(entity_type.into_vertex()).unwrap())
         }
     }
 
@@ -270,7 +271,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_relation_type_label(relation_type))
         } else {
-            MaybeOwns::owned(self.get_storage_label(relation_type.vertex().clone()).unwrap())
+            MaybeOwns::owned(self.get_storage_label(relation_type.into_vertex()).unwrap())
         }
     }
 
@@ -278,39 +279,61 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_attribute_type_label(attribute_type))
         } else {
-            MaybeOwns::owned(self.get_storage_label(attribute_type.vertex().clone()).unwrap())
+            MaybeOwns::owned(self.get_storage_label(attribute_type.into_vertex()).unwrap())
         }
     }
 
-    pub(crate) fn get_entity_type_annotations<'this>(&'this self, entity_type: impl EntityTypeAPI<'static>) -> MaybeOwns<'this, Vec<EntityTypeAnnotation>> {
+    pub(crate) fn get_entity_type_owns<'this>(&'this self, entity_type: EntityType<'static>) -> MaybeOwns<'this, HashSet<Owns<'static>>> {
+        if let Some(cache) = &self.type_cache {
+            MaybeOwns::borrowed(cache.get_entity_type_owns(entity_type))
+        } else {
+            let owns = self.get_storage_owns(entity_type.clone().into_vertex().into_owned(), |attr_vertex| {
+                Owns::new(ObjectType::Entity(entity_type.clone()), AttributeType::new(attr_vertex.clone().into_owned()))
+            });
+            MaybeOwns::owned(owns)
+        }
+    }
+
+    pub(crate) fn get_relation_type_owns<'this>(&'this self, relation_type: RelationType<'static>) -> MaybeOwns<'this, HashSet<Owns<'static>>> {
+        if let Some(cache) = &self.type_cache {
+            MaybeOwns::borrowed(cache.get_relation_type_owns(relation_type))
+        } else {
+            let owns = self.get_storage_owns(relation_type.clone().into_vertex().into_owned(), |attr_vertex| {
+                Owns::new(ObjectType::Relation(relation_type.clone()), AttributeType::new(attr_vertex.clone().into_owned()))
+            });
+            MaybeOwns::owned(owns)
+        }
+    }
+
+    pub(crate) fn get_entity_type_annotations<'this>(&'this self, entity_type: impl EntityTypeAPI<'static>) -> MaybeOwns<'this, HashSet<EntityTypeAnnotation>> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_entity_type_annotations(entity_type))
         } else {
-            let mut annotations = Vec::new();
-            self.get_storage_vertex_annotation_abstract(entity_type.vertex().clone())
-                .map(|ann| annotations.push(EntityTypeAnnotation::from(ann)));
+            let mut annotations = HashSet::new();
+            self.get_storage_vertex_annotation_abstract(entity_type.into_vertex())
+                .map(|ann| annotations.insert(EntityTypeAnnotation::from(ann)));
             MaybeOwns::owned(annotations)
         }
     }
 
-    pub(crate) fn get_relation_type_annotations<'this>(&'this self, relation_type: impl RelationTypeAPI<'static>) -> MaybeOwns<'this, Vec<RelationTypeAnnotation>> {
+    pub(crate) fn get_relation_type_annotations<'this>(&'this self, relation_type: impl RelationTypeAPI<'static>) -> MaybeOwns<'this, HashSet<RelationTypeAnnotation>> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_relation_type_annotations(relation_type))
         } else {
-            let mut annotations = Vec::new();
-            self.get_storage_vertex_annotation_abstract(relation_type.vertex().clone())
-                .map(|ann| annotations.push(RelationTypeAnnotation::Abstract(ann)));
+            let mut annotations = HashSet::new();
+            self.get_storage_vertex_annotation_abstract(relation_type.into_vertex())
+                .map(|ann| annotations.insert(RelationTypeAnnotation::Abstract(ann)));
             MaybeOwns::owned(annotations)
         }
     }
 
-    pub(crate) fn get_attribute_type_annotations<'this>(&'this self, attribute_type: impl AttributeTypeAPI<'static>) -> MaybeOwns<'this, Vec<AttributeTypeAnnotation>> {
+    pub(crate) fn get_attribute_type_annotations<'this>(&'this self, attribute_type: impl AttributeTypeAPI<'static>) -> MaybeOwns<'this, HashSet<AttributeTypeAnnotation>> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_attribute_type_annotations(attribute_type))
         } else {
-            let mut annotations = Vec::new();
-            self.get_storage_vertex_annotation_abstract(attribute_type.vertex().clone())
-                .map(|ann| annotations.push(AttributeTypeAnnotation::Abstract(ann)));
+            let mut annotations = HashSet::new();
+            self.get_storage_vertex_annotation_abstract(attribute_type.into_vertex())
+                .map(|ann| annotations.insert(AttributeTypeAnnotation::Abstract(ann)));
             MaybeOwns::owned(annotations)
         }
     }
@@ -383,6 +406,38 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             } else {
                 panic!("Illegal state: deleting supertype edge requires write snapshot")
             }
+        }
+    }
+
+    fn get_storage_owns<F>(&self, owner: TypeVertex<'static>, mapper: F) -> HashSet<Owns<'static>>
+        where F: for<'b> Fn(TypeVertex<'b>) -> Owns<'static> {
+        let owns_prefix = build_edge_owns_prefix(owner);
+        // TODO: handle possible errors
+        self.snapshot.iterate_prefix(owns_prefix).collect_cloned_key_hashset(|key| {
+            let owns_edge = new_edge_owns(ByteArrayOrRef::Reference(key.byte_ref()));
+            mapper(owns_edge.to())
+        }).unwrap()
+    }
+
+    pub(crate) fn set_storage_owns(&self, owner: TypeVertex<'static>, attribute: TypeVertex<'static>) {
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            let owns = build_edge_owns(owner.clone(), attribute.clone());
+            write_snapshot.put(owns.into_storage_key().into_owned_array());
+            let owns_reverse = build_edge_owns_reverse(attribute, owner);
+            write_snapshot.put(owns_reverse.into_storage_key().into_owned_array());
+        } else {
+            panic!("Illegal state: creating supertype edge requires write snapshot")
+        }
+    }
+
+    pub(crate) fn delete_storage_owns(&self, owner: TypeVertex<'static>, attribute: TypeVertex<'static>) {
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            let owns = build_edge_owns(owner.clone(), attribute.clone());
+            write_snapshot.delete(owns.into_storage_key().into_owned_array());
+            let owns_reverse = build_edge_owns_reverse(attribute, owner);
+            write_snapshot.delete(owns_reverse.into_storage_key().into_owned_array());
+        } else {
+            panic!("Illegal state: creating supertype edge requires write snapshot")
         }
     }
 

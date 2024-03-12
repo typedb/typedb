@@ -16,7 +16,8 @@
  */
 
 use std::cmp::Ordering;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
+use std::hash::Hash;
 use std::sync::Arc;
 
 use bytes::byte_array::ByteArray;
@@ -218,7 +219,7 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
             let item = self.next();
             match item {
                 None => { break; }
-                Some(Result::Err(e)) => { return Err(e) }
+                Some(Result::Err(e)) => { return Err(e); }
                 Some(Ok((key, value))) => {
                     vec.push((StorageKeyArray::from(key.clone()), ByteArray::from(value)));
                 }
@@ -233,13 +234,30 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
             let item = self.next();
             match item {
                 None => { break; }
-                Some(Result::Err(e)) => { return Err(e) }
+                Some(Result::Err(e)) => { return Err(e); }
                 Some(Ok((key, value))) => {
                     btree_map.insert(StorageKeyArray::from(key.clone()), ByteArray::from(value));
                 }
             }
         }
         Ok(btree_map)
+    }
+
+    pub fn collect_cloned_key_hashset<F, M>(mut self, mapper: F) -> Result<HashSet<M>, SnapshotError> where
+        F: for<'b> Fn(StorageKeyReference<'b>) -> (M),
+        M: Hash + Eq + PartialEq {
+        let mut set = HashSet::new();
+        loop {
+            let item = self.next();
+            match item {
+                None => { break; }
+                Some(Result::Err(e)) => { return Err(e); }
+                Some(Ok((key, _))) => {
+                    set.insert(mapper(key));
+                }
+            }
+        }
+        Ok(set)
     }
 
     pub fn first_cloned(mut self) -> Result<Option<(StorageKey<'static, BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, SnapshotError> {

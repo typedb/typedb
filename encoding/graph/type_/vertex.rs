@@ -27,7 +27,10 @@ use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
 use crate::graph::Typed;
 use crate::layout::prefix::{PrefixID, PrefixType};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+// TODO: we could make all Type constructs contain plain byte arrays, since they will always be 64 bytes, then make Types all Copy
+//       However, we should benchmark this first...
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TypeVertex<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }

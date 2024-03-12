@@ -23,7 +23,7 @@ use crate::ConceptAPI;
 use crate::type_::{AttributeTypeAPI, TypeAPI};
 use crate::type_::annotation::AnnotationAbstract;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct AttributeType<'a> {
     vertex: TypeVertex<'a>,
 }
@@ -56,16 +56,8 @@ impl<'a> AttributeTypeAPI<'a> for AttributeType<'a> {
     }
 }
 
-impl<'a> PartialEq<Self> for AttributeType<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        self.vertex.eq(other.vertex())
-    }
-}
-
-impl<'a> Eq for AttributeType<'a> {}
-
-#[derive(Debug, Eq, PartialEq)]
-pub(crate) enum AttributeTypeAnnotation {
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum AttributeTypeAnnotation {
     Abstract(AnnotationAbstract),
 }
 

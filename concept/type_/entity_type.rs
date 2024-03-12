@@ -15,19 +15,25 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::collections::HashSet;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::graph::type_::vertex::{new_vertex_entity_type, TypeVertex};
 use encoding::layout::prefix::PrefixType;
 use encoding::Prefixed;
+use primitive::maybe_owns::MaybeOwns;
 use storage::key_value::StorageKeyReference;
 use storage::snapshot::iterator::SnapshotPrefixIterator;
 
 use crate::{concept_iterator, ConceptAPI};
 use crate::error::{ConceptError, ConceptErrorKind};
-use crate::type_::{EntityTypeAPI, TypeAPI};
+use crate::type_::{AttributeTypeAPI, EntityTypeAPI, OwnerAPI, TypeAPI};
 use crate::type_::annotation::AnnotationAbstract;
+use crate::type_::attribute_type::AttributeType;
+use crate::type_::object_type::ObjectType;
+use crate::type_::owns::Owns;
+use crate::type_::type_manager::TypeManager;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct EntityType<'a> {
     vertex: TypeVertex<'a>,
 }
@@ -60,15 +66,17 @@ impl<'a> EntityTypeAPI<'a> for EntityType<'a> {
     }
 }
 
-impl<'a> PartialEq<Self> for EntityType<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        self.vertex.eq(other.vertex())
+impl<'a> OwnerAPI<'a> for EntityType<'a> {
+    fn _construct_owns(&self, attribute_type: AttributeType<'static>) -> Owns<'static> {
+        Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type)
+    }
+
+    fn get_owns<'this, 'm>(&'this self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
+        type_manager.get_entity_type_owns(self.clone().into_owned())
     }
 }
 
-impl<'a> Eq for EntityType<'a> {}
-
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum EntityTypeAnnotation {
     Abstract(AnnotationAbstract),
 }
