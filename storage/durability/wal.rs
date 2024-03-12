@@ -191,16 +191,16 @@ impl Files {
 
     fn checkpoint(&mut self, next: SequenceNumber) -> io::Result<()> {
         self.writer.flush()?;
-        let current_path = &self.files.last().unwrap().path;
-        let checkpointed_path = current_path
-            .with_file_name(current_path.file_name().and_then(OsStr::to_str).unwrap().to_owned() + CHECKPOINTED_SUFFIX);
-        fs::rename(current_path, &checkpointed_path)?;
-        self.files.last_mut().unwrap().path = checkpointed_path;
-
-        let file = File::open_at(self.directory.clone(), next)?;
-        self.writer = file.writer()?;
-        self.files.push(file);
-        Ok(())
+        for file in self.files.iter_mut() {
+            let current_path = &file.path;
+            let current_file_name = current_path.file_name().and_then(OsStr::to_str).unwrap().to_owned();
+            if !current_file_name.ends_with(CHECKPOINTED_SUFFIX) {
+                let checkpointed_path = current_path.with_file_name(current_file_name + CHECKPOINTED_SUFFIX);
+                fs::rename(current_path, &checkpointed_path)?;
+                file.path = checkpointed_path;
+            }
+        }
+        self.open_new_file_at(next)
     }
 
     fn iter(&self) -> impl Iterator<Item = &File> {
