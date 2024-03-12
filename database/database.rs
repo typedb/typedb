@@ -21,9 +21,9 @@ use std::rc::Rc;
 
 use concept::thing::thing_manager::ThingManager;
 use concept::type_::type_manager::TypeManager;
+use encoding::create_keyspaces;
 use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
-use encoding::create_keyspaces;
 use storage::MVCCStorage;
 use storage::snapshot::snapshot::Snapshot;
 

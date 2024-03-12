@@ -24,24 +24,31 @@ use crate::{AsBytes, EncodingKeyspace, Keyable};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PrefixID<'a> {
-    bytes: ByteArrayOrRef<'a, { PrefixID::LENGTH }>,
+    bytes: ByteReference<'a>,
 }
 
 impl<'a> PrefixID<'a> {
     pub(crate) const LENGTH: usize = 1;
 
-    pub(crate) const fn new(bytes: ByteArrayOrRef<'a, { PrefixID::LENGTH }>) -> Self {
+    pub(crate) const fn new(bytes: ByteReference<'a>) -> Self {
+        if (bytes.length() != Self::LENGTH) {
+            panic!("PrefixID requires bytes of length 1.")
+        }
         PrefixID { bytes: bytes }
+    }
+
+    pub(crate) const fn byte_ref_const(&self) -> ByteReference<'a> {
+        self.bytes
     }
 }
 
 impl<'a> AsBytes<'a, { PrefixID::LENGTH }> for PrefixID<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
+        self.bytes
     }
 
     fn into_bytes(self) -> ByteArrayOrRef<'a, { PrefixID::LENGTH }> {
-        self.bytes
+        ByteArrayOrRef::Reference(self.bytes)
     }
 }
 
@@ -52,10 +59,11 @@ impl<'a> Keyable<'a, { PrefixID::LENGTH }> for PrefixID<'a> {
             PrefixType::VertexEntityType |
             PrefixType::VertexRelationType |
             PrefixType::VertexAttributeType |
-            PrefixType::PropertyTypeToLabel |
-            PrefixType::PropertyLabelToType => EncodingKeyspace::Schema.id(),
+            PrefixType::PropertyType |
+            PrefixType::IndexLabelToType |
+            PrefixType::PropertyTypeEdge => EncodingKeyspace::Schema.id(),
             PrefixType::VertexEntity => todo!(),
-            PrefixType::VertexAttribute => todo!()
+            PrefixType::VertexAttribute => todo!(),
         }
     }
 }
@@ -69,8 +77,10 @@ pub enum PrefixType {
     VertexEntity,
     VertexAttribute,
 
-    PropertyTypeToLabel,
-    PropertyLabelToType,
+    PropertyType,
+    PropertyTypeEdge,
+
+    IndexLabelToType,
 }
 
 macro_rules! prefix_functions {
@@ -83,7 +93,7 @@ macro_rules! prefix_functions {
                     Self::$name => {&$bytes}
                 )*
             };
-            PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
+            PrefixID::new(ByteReference::new(bytes))
         }
 
         pub const fn successor_prefix_id(&self) -> PrefixID {
@@ -95,7 +105,7 @@ macro_rules! prefix_functions {
                     }
                 )*
             };
-            PrefixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
+            PrefixID::new(ByteReference::new(bytes))
         }
 
         pub fn from_prefix_id(prefix: PrefixID) -> Self {
@@ -118,7 +128,8 @@ impl PrefixType {
            VertexEntity => [60],
            VertexAttribute => [61],
 
-           PropertyTypeToLabel => [100],
-           PropertyLabelToType => [101]
+           PropertyType => [100],
+           PropertyTypeEdge => [101],
+           IndexLabelToType => [120]
     );
 }

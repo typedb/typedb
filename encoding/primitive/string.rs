@@ -16,6 +16,7 @@
  */
 
 use std::fmt::{Display, Formatter};
+
 use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;

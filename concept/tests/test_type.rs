@@ -20,7 +20,9 @@ use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use concept::type_::{EntityTypeAPI};
+use concept::type_::annotation::AnnotationAbstract;
+use concept::type_::entity_type::EntityTypeAnnotation;
+use concept::type_::EntityTypeAPI;
 use concept::type_::type_cache::TypeCache;
 use concept::type_::type_manager::TypeManager;
 use encoding::create_keyspaces;
@@ -31,6 +33,10 @@ use storage::MVCCStorage;
 use storage::snapshot::snapshot::Snapshot;
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
+/*
+This test is used to help develop the API of Types.
+We don't aim for complete coverage of all APIs, and will rely on the BDD scenarios for coverage.
+ */
 
 #[test]
 fn entity_creation() {
@@ -50,11 +56,13 @@ fn entity_creation() {
         assert_eq!(root_entity.get_label(&type_manager).deref(), &Root::Entity.label());
         assert!(root_entity.is_root(&type_manager));
 
-        // --- person sub entity ---
+        // --- person sub entity @abstract ---
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&person_label, false);
+        person_type.set_annotation(&type_manager, EntityTypeAnnotation::from(AnnotationAbstract::new()));
 
         assert!(!person_type.is_root(&type_manager));
+        assert!(person_type.get_annotations(&type_manager).contains(&EntityTypeAnnotation::from(AnnotationAbstract::new())));
         assert_eq!(person_type.get_label(&type_manager).deref(), &person_label);
 
         let supertype = person_type.get_supertype(&type_manager);
@@ -93,6 +101,7 @@ fn entity_creation() {
         let person_label = Label::build("person");
         let person_type = type_manager.get_entity_type(&person_label).unwrap();
         assert!(!person_type.is_root(&type_manager));
+        assert!(person_type.get_annotations(&type_manager).contains(&EntityTypeAnnotation::from(AnnotationAbstract::new())));
         assert_eq!(person_type.get_label(&type_manager).deref(), &person_label);
 
         let supertype = person_type.get_supertype(&type_manager);

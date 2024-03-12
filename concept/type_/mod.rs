@@ -20,10 +20,10 @@ use encoding::primitive::label::Label;
 use primitive::maybe_owns::MaybeOwns;
 
 use crate::ConceptAPI;
-use crate::type_::attribute_type::AttributeType;
-use crate::type_::entity_type::EntityType;
+use crate::type_::attribute_type::{AttributeType, AttributeTypeAnnotation};
+use crate::type_::entity_type::{EntityType, EntityTypeAnnotation};
 use crate::type_::owns::Owns;
-use crate::type_::relation_type::RelationType;
+use crate::type_::relation_type::{RelationType, RelationTypeAnnotation};
 use crate::type_::type_manager::TypeManager;
 
 pub mod attribute_type;
@@ -36,14 +36,17 @@ mod sub;
 pub mod type_cache;
 mod relates;
 mod object_type;
+pub mod annotation;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
     fn vertex<'this>(&'this self) -> &'this TypeVertex<'a>;
 
     fn set_label<'this, 'm>(&'this self, type_manager: &'m TypeManager, label: &Label) {
         // TODO: setLabel should fail is setting label on Root type
-        type_manager.set_storage_label(self.vertex().clone(), label);
+        type_manager.set_storage_label(self.vertex().clone().into_owned(), label);
     }
+
+    fn into_vertex(self) -> TypeVertex<'a>;
 }
 
 pub trait EntityTypeAPI<'a>: TypeAPI<'a> {
@@ -70,6 +73,26 @@ pub trait EntityTypeAPI<'a>: TypeAPI<'a> {
     }
 
     // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<EntityType<'static>>>;
+
+    fn get_annotations<'this, 'm>(&'this self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Vec<EntityTypeAnnotation>> {
+        type_manager.get_entity_type_annotations(self.clone().into_owned())
+    }
+
+    fn set_annotation<'this, 'm>(&'this self, type_manager: &'m TypeManager, annotation: EntityTypeAnnotation) {
+        match annotation {
+            EntityTypeAnnotation::Abstract(_) => {
+                type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
+            }
+        }
+    }
+
+    fn delete_annotation<'this, 'm>(&'this self, type_manager: &'m TypeManager, annotation: EntityTypeAnnotation) {
+        match annotation {
+            EntityTypeAnnotation::Abstract(_) => {
+                type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
+            }
+        }
+    }
 
     // TODO: not so pretty to return EntityType directly, but is a win on efficiency. However, should reconsider the trait's necessity.
     fn into_owned(self) -> EntityType<'static>;
@@ -99,6 +122,26 @@ pub trait RelationTypeAPI<'a>: TypeAPI<'a> {
 
     // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<RelationType<'static>>>;
 
+    fn get_annotations<'this, 'm>(&'this self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Vec<RelationTypeAnnotation>> {
+        type_manager.get_relation_type_annotations(self.clone().into_owned())
+    }
+
+    fn set_annotation<'this, 'm>(&'this self, type_manager: &'m TypeManager, annotation: RelationTypeAnnotation) {
+        match annotation {
+            RelationTypeAnnotation::Abstract(_) => {
+                type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
+            }
+        }
+    }
+
+    fn delete_annotation<'this, 'm>(&'this self, type_manager: &'m TypeManager, annotation: RelationTypeAnnotation) {
+        match annotation {
+            RelationTypeAnnotation::Abstract(_) => {
+                type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
+            }
+        }
+    }
+
     fn into_owned(self) -> RelationType<'static>;
 }
 
@@ -125,6 +168,26 @@ pub trait AttributeTypeAPI<'a>: TypeAPI<'a> {
     }
 
     // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<AttributeType<'static>>>;
+
+    fn get_annotations<'this, 'm>(&'this self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Vec<AttributeTypeAnnotation>> {
+        type_manager.get_attribute_type_annotations(self.clone().into_owned())
+    }
+
+    fn set_annotation<'this, 'm>(&'this self, type_manager: &'m TypeManager, annotation: AttributeTypeAnnotation) {
+        match annotation {
+            AttributeTypeAnnotation::Abstract(_) => {
+                type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
+            }
+        }
+    }
+
+    fn delete_annotation<'this, 'm>(&'this self, type_manager: &'m TypeManager, annotation: AttributeTypeAnnotation) {
+        match annotation {
+            AttributeTypeAnnotation::Abstract(_) => {
+                type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
+            }
+        }
+    }
 
     fn into_owned(self) -> AttributeType<'static>;
 }

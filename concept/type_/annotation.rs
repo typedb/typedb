@@ -15,33 +15,11 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use encoding::graph::thing::vertex::AttributeVertex;
+#[derive(Debug, Eq, PartialEq)]
+pub struct AnnotationAbstract {}
 
-use crate::ConceptAPI;
-use crate::thing::{AttributeAPI, ThingAPI};
-use crate::type_::TypeAPI;
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Attribute<'a> {
-    vertex: AttributeVertex<'a>,
-}
-
-impl<'a> Attribute<'a> {
-    fn new(vertex: AttributeVertex<'a>) -> Self {
-        Attribute { vertex: vertex }
-    }
-}
-
-impl<'a> ThingAPI<'a> for Attribute<'a> {}
-
-impl<'a> ConceptAPI<'a> for Attribute<'a> {}
-
-impl<'a> AttributeAPI<'a> for Attribute<'a> {
-    fn vertex(&'a self) -> &AttributeVertex<'a> {
-        &self.vertex
-    }
-
-    fn into_owned(self) -> Attribute<'static> {
-        Attribute { vertex: self.vertex.into_owned() }
+impl AnnotationAbstract {
+    pub fn new() -> Self {
+        AnnotationAbstract {}
     }
 }

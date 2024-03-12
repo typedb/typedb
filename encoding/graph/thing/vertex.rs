@@ -169,8 +169,8 @@ impl<'a> AttributeVertex<'a> {
         Self::RANGE_TYPE_ID.end..Self::RANGE_TYPE_ID.end + AttributeID::LENGTH
     }
 
-    fn to_owned(&self) -> AttributeVertex<'static> {
-        AttributeVertex { bytes: self.bytes.to_owned() }
+    pub fn into_owned(self) -> AttributeVertex<'static> {
+        AttributeVertex { bytes: self.bytes.into_owned() }
     }
 }
 

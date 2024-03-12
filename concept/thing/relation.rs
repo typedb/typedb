@@ -22,7 +22,7 @@ use storage::snapshot::iterator::SnapshotPrefixIterator;
 
 use crate::{concept_iterator, ConceptAPI};
 use crate::error::{ConceptError, ConceptErrorKind};
-use crate::thing::{ObjectAPI, ThingAPI};
+use crate::thing::{ObjectAPI, RelationAPI, ThingAPI};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Relation<'a> {
@@ -32,10 +32,6 @@ pub struct Relation<'a> {
 impl<'a> Relation<'a> {
     pub fn new(vertex: ObjectVertex<'a>) -> Self {
         Relation { vertex: vertex }
-    }
-
-    pub fn into_owned(self) -> Relation<'static> {
-        Relation { vertex: self.vertex.into_owned() }
     }
 }
 
@@ -49,8 +45,14 @@ impl<'a> ObjectAPI<'a> for Relation<'a> {
     }
 }
 
+impl<'a> RelationAPI<'a> for Relation<'a> {
+    fn into_owned(self) -> Relation<'static> {
+        Relation { vertex: self.vertex.into_owned() }
+    }
+}
+
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_entity<'a>(storage_key_ref: StorageKeyReference<'a>) -> Relation<'a> {
+fn storage_key_ref_to_entity<'a>(storage_key_ref: StorageKeyReference<'a>) -> Relation<'a> {
     Relation::new(ObjectVertex::new(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
 }
-concept_iterator!(RelationIterator, Relation, storage_key_to_entity);
+concept_iterator!(RelationIterator, Relation, storage_key_ref_to_entity);

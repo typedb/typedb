@@ -40,7 +40,7 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
         }
     }
 
-    pub fn new_ref(keyspace_id: KeyspaceId, bytes: ByteReference<'bytes>) -> Self {
+    pub const fn new_ref(keyspace_id: KeyspaceId, bytes: ByteReference<'bytes>) -> Self {
         StorageKey::Reference(StorageKeyReference::new(keyspace_id, bytes))
     }
 
@@ -76,10 +76,10 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
         }
     }
 
-    pub fn to_owned_array(&self) -> StorageKeyArray<S> {
+    pub fn into_owned_array(self) -> StorageKeyArray<S> {
         match self {
-            StorageKey::Array(array) => array.clone(),
-            StorageKey::Reference(reference) => StorageKeyArray::from(reference.clone()),
+            StorageKey::Array(array) => array,
+            StorageKey::Reference(reference) => StorageKeyArray::from(reference),
         }
     }
 }
@@ -200,7 +200,7 @@ pub struct StorageKeyReference<'bytes> {
 }
 
 impl<'bytes> StorageKeyReference<'bytes> {
-    pub fn new(keyspace_id: KeyspaceId, reference: ByteReference<'bytes>) -> StorageKeyReference<'bytes> {
+    pub const fn new(keyspace_id: KeyspaceId, reference: ByteReference<'bytes>) -> StorageKeyReference<'bytes> {
         StorageKeyReference {
             keyspace_id: keyspace_id,
             reference: reference,

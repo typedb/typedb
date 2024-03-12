@@ -44,8 +44,7 @@ macro_rules! type_vertex_constructors {
             TypeVertex::build(PrefixType::$prefix.prefix_id(), type_id)
         }
 
-        // TODO: this could be static/allocated only once
-        pub fn $build_name_prefix() ->  StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
+        pub const fn $build_name_prefix() ->  StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
             TypeVertex::build_prefix(PrefixType::$prefix.prefix_id())
         }
 
@@ -87,13 +86,11 @@ impl<'a> TypeVertex<'a> {
         TypeVertex { bytes: ByteArrayOrRef::Array(array) }
     }
 
-    fn build_prefix(prefix: PrefixID<'a>) -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
-        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
-        StorageKey::new_owned(Self::keyspace_id(), bytes)
+    const fn build_prefix(prefix: PrefixID<'static>) -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
+        StorageKey::new_ref(Self::keyspace_id(), prefix.byte_ref_const())
     }
 
-    fn keyspace_id() -> KeyspaceId {
+    const fn keyspace_id() -> KeyspaceId {
         EncodingKeyspace::Schema.id()
     }
 

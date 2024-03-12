@@ -98,7 +98,7 @@ fn g0_update_conflicts_fail() {
 
     snapshot_1.get_required(key_1.clone());
 
-    snapshot_2.delete(key_1.clone().to_owned_array());
+    snapshot_2.delete(key_1.clone().into_owned_array());
 
     let result_1 = snapshot_1.commit();
     assert!(result_1.is_ok());

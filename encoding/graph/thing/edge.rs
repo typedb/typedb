@@ -55,7 +55,7 @@ impl<'a> HasForwardEdge<'a> {
     fn build(from: &ObjectVertex<'_>, to: &AttributeVertex<'_>) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(InfixType::Has.infix_id().bytes().bytes());
+        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(InfixType::EdgeHas.infix_id().bytes().bytes());
         bytes.bytes_mut()[Self::range_to()].copy_from_slice(to.bytes().bytes());
         HasForwardEdge { bytes: ByteArrayOrRef::Array(bytes) }
     }
@@ -63,14 +63,14 @@ impl<'a> HasForwardEdge<'a> {
     pub fn prefix_from_object(from: &ObjectVertex<'_>) -> StorageKey<'static, { HasForwardEdge::LENGTH_PREFIX_FROM_OBJECT }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(InfixType::Has.infix_id().bytes().bytes());
+        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(InfixType::EdgeHas.infix_id().bytes().bytes());
         StorageKey::new_owned(Self::keyspace_id(), bytes)
     }
 
     pub fn prefix_from_object_to_type(from: &ObjectVertex, to_type: &TypeVertex) -> StorageKey<'static, { HasForwardEdge::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(InfixType::Has.infix_id().bytes().bytes());
+        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(InfixType::EdgeHas.infix_id().bytes().bytes());
         let to_type_range = Self::range_infix().end..Self::range_infix().end + TypeVertex::LENGTH;
         bytes.bytes_mut()[to_type_range].copy_from_slice(to_type.bytes().bytes());
         StorageKey::new_owned(Self::keyspace_id(), bytes)

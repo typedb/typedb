@@ -58,42 +58,42 @@ macro_rules! type_edge_constructors {
 type_edge_constructors!(
     new_edge_sub, build_edge_sub, build_edge_sub_prefix,
     is_edge_sub,
-    InfixType::Sub
+    InfixType::EdgeSub
 );
 type_edge_constructors!(
     new_edge_sub_reverse, build_edge_sub_reverse, build_edge_sub_reverse_prefix,
     is_edge_sub_reverse,
-    InfixType::SubReverse
+    InfixType::EdgeSubReverse
 );
 type_edge_constructors!(
     new_edge_owns, build_edge_owns, build_edge_owns_prefix,
     is_edge_owns,
-    InfixType::Owns
+    InfixType::EdgeOwns
 );
 type_edge_constructors!(
     new_edge_owns_reverse, build_edge_owns_reverse, build_edge_owns_reverse_prefix,
     is_edge_owns_reverse,
-    InfixType::OwnsReverse
+    InfixType::EdgeOwnsReverse
 );
 type_edge_constructors!(
     new_edge_plays, build_edge_plays, build_edge_plays_prefix,
     is_edge_plays,
-    InfixType::Plays
+    InfixType::EdgePlays
 );
 type_edge_constructors!(
     new_edge_plays_reverse, build_edge_plays_reverse, build_edge_plays_reverse_prefix,
     is_edge_plays_reverse,
-    InfixType::PlaysReverse
+    InfixType::EdgePlaysReverse
 );
 type_edge_constructors!(
     new_edge_relates, build_edge_relates, build_edge_relates_prefix,
     is_edge_relates,
-    InfixType::Relates
+    InfixType::EdgeRelates
 );
 type_edge_constructors!(
     new_edge_relates_reverse, build_edge_relates_reverse, build_edge_relates_reverse_prefix,
     is_edge_relates_reverse,
-    InfixType::RelatesReverse
+    InfixType::EdgeRelatesReverse
 );
 
 impl<'a> TypeEdge<'a> {

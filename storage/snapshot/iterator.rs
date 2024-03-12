@@ -21,7 +21,7 @@ use std::sync::Arc;
 
 use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
-use iterator::{Collector, State};
+use iterator::State;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use crate::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};

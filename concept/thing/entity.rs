@@ -22,7 +22,7 @@ use storage::snapshot::iterator::SnapshotPrefixIterator;
 
 use crate::{concept_iterator, ConceptAPI};
 use crate::error::{ConceptError, ConceptErrorKind};
-use crate::thing::{ObjectAPI, ThingAPI};
+use crate::thing::{EntityAPI, ObjectAPI, ThingAPI};
 use crate::type_::TypeAPI;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,10 +34,6 @@ impl<'a> Entity<'a> {
     pub fn new(vertex: ObjectVertex<'a>) -> Self {
         Entity { vertex: vertex }
     }
-
-    pub fn into_owned(self) -> Entity<'static> {
-        Entity { vertex: self.vertex.into_owned() }
-    }
 }
 
 impl<'a> ConceptAPI<'a> for Entity<'a> {}
@@ -47,6 +43,12 @@ impl<'a> ThingAPI<'a> for Entity<'a> {}
 impl<'a> ObjectAPI<'a> for Entity<'a> {
     fn vertex(&'a self) -> &ObjectVertex<'a> {
         &self.vertex
+    }
+}
+
+impl<'a> EntityAPI<'a> for Entity<'a> {
+    fn into_owned(self) -> Entity<'static> {
+        Entity { vertex: self.vertex.into_owned() }
     }
 }
 

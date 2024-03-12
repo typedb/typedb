@@ -17,7 +17,10 @@
 
 use encoding::graph::thing::vertex::{AttributeVertex, ObjectVertex};
 
-use crate::{ConceptAPI};
+use crate::ConceptAPI;
+use crate::thing::attribute::Attribute;
+use crate::thing::entity::Entity;
+use crate::thing::relation::Relation;
 
 pub mod attribute;
 pub mod entity;
@@ -30,7 +33,17 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> {
     fn vertex(&'a self) -> &ObjectVertex<'a>;
 }
 
+pub trait EntityAPI<'a>: ObjectAPI<'a> {
+    fn into_owned(self) -> Entity<'static>;
+}
+
+pub trait RelationAPI<'a>: ObjectAPI<'a> {
+    fn into_owned(self) -> Relation<'static>;
+}
+
 pub trait AttributeAPI<'a>: ThingAPI<'a> {
     fn vertex(&'a self) -> &AttributeVertex<'a>;
+
+    fn into_owned(self) -> Attribute<'static>;
 }
 

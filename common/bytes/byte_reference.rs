@@ -31,7 +31,7 @@ impl<'bytes> ByteReference<'bytes> {
         ByteReference { bytes: bytes }
     }
 
-    pub fn bytes(&self) -> &'bytes [u8] {
+    pub const fn bytes(&self) -> &'bytes [u8] {
         self.bytes
     }
 
@@ -39,7 +39,7 @@ impl<'bytes> ByteReference<'bytes> {
         self.bytes
     }
 
-    pub fn length(&self) -> usize {
+    pub const fn length(&self) -> usize {
         self.bytes().len()
     }
 

@@ -16,7 +16,7 @@
  */
 
 use std::fmt::{Display, Formatter};
-use bytes::byte_array_or_ref::ByteArrayOrRef;
+
 use resource::constants::encoding::{LABEL_NAME_STRING_INLINE, LABEL_SCOPE_STRING_INLINE, LABEL_SCOPED_NAME_STRING_INLINE};
 
 use crate::primitive::string::StringBytes;

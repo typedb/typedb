@@ -25,6 +25,7 @@ use storage::snapshot::iterator::SnapshotPrefixIterator;
 use crate::{concept_iterator, ConceptAPI};
 use crate::error::{ConceptError, ConceptErrorKind};
 use crate::type_::{EntityTypeAPI, TypeAPI};
+use crate::type_::annotation::AnnotationAbstract;
 
 #[derive(Debug, Clone)]
 pub struct EntityType<'a> {
@@ -39,11 +40,6 @@ impl<'a> EntityType<'a> {
         }
         EntityType { vertex: vertex }
     }
-
-    fn into_owned(self) -> EntityType<'static> {
-        let v = self.vertex.into_owned();
-        EntityType { vertex: v }
-    }
 }
 
 impl<'a> ConceptAPI<'a> for EntityType<'a> {}
@@ -52,8 +48,11 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
     fn vertex<'this>(&'this self) -> &'this TypeVertex<'a> {
         &self.vertex
     }
-}
 
+    fn into_vertex(self) -> TypeVertex<'a> {
+        self.vertex
+    }
+}
 
 impl<'a> EntityTypeAPI<'a> for EntityType<'a> {
     fn into_owned(self) -> EntityType<'static> {
@@ -69,6 +68,17 @@ impl<'a> PartialEq<Self> for EntityType<'a> {
 
 impl<'a> Eq for EntityType<'a> {}
 
+#[derive(Debug, Eq, PartialEq)]
+pub enum EntityTypeAnnotation {
+    Abstract(AnnotationAbstract),
+}
+
+impl From<AnnotationAbstract> for EntityTypeAnnotation {
+    fn from(annotation: AnnotationAbstract) -> Self {
+        EntityTypeAnnotation::Abstract(annotation)
+    }
+}
+
 // impl<'a> IIDAPI<'a> for EntityType<'a> {
 //     fn iid(&'a self) -> ByteReference<'a> {
 //         self.vertex.bytes()
@@ -76,8 +86,8 @@ impl<'a> Eq for EntityType<'a> {}
 // }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_entity_type<'a>(storage_key_ref: StorageKeyReference<'a>) -> EntityType<'a> {
+fn storage_key_ref_to_entity_type<'a>(storage_key_ref: StorageKeyReference<'a>) -> EntityType<'a> {
     EntityType::new(new_vertex_entity_type(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
 }
 
-concept_iterator!(EntityTypeIterator, EntityType, storage_key_to_entity_type);
+concept_iterator!(EntityTypeIterator, EntityType, storage_key_ref_to_entity_type);

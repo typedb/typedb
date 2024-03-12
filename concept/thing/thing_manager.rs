@@ -17,10 +17,10 @@
 
 use std::rc::Rc;
 
-use encoding::{Keyable};
 use encoding::graph::thing::vertex::ObjectVertex;
 use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
 use encoding::graph::Typed;
+use encoding::Keyable;
 use encoding::layout::prefix::PrefixType;
 use storage::snapshot::snapshot::Snapshot;
 
@@ -42,7 +42,7 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
     pub fn create_entity(&self, entity_type: &EntityType) -> Entity {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let vertex = self.vertex_generator.take_entity_vertex(&entity_type.vertex().type_id());
-            write_snapshot.put(vertex.as_storage_key().to_owned_array());
+            write_snapshot.put(vertex.as_storage_key().into_owned_array());
             return Entity::new(vertex);
         }
         panic!("Illegal state: create entity requires write snapshot")

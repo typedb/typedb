@@ -26,6 +26,7 @@ use storage::snapshot::iterator::SnapshotPrefixIterator;
 use crate::{concept_iterator, ConceptAPI};
 use crate::error::{ConceptError, ConceptErrorKind};
 use crate::type_::{RelationTypeAPI, TypeAPI};
+use crate::type_::annotation::AnnotationAbstract;
 
 #[derive(Debug, Clone)]
 pub struct RelationType<'a> {
@@ -40,11 +41,6 @@ impl<'a> RelationType<'a> {
         }
         RelationType { vertex: vertex }
     }
-
-    fn into_owned(self) -> RelationType<'static> {
-        let v = self.vertex.into_owned();
-        RelationType { vertex: v }
-    }
 }
 
 impl<'a> ConceptAPI<'a> for RelationType<'a> {}
@@ -53,8 +49,11 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
     fn vertex<'this>(&'this self) -> &'this TypeVertex<'a> {
         &self.vertex
     }
-}
 
+    fn into_vertex(self) -> TypeVertex<'a> {
+        self.vertex
+    }
+}
 
 impl<'a> RelationTypeAPI<'a> for RelationType<'a> {
     fn into_owned(self) -> RelationType<'static> {
@@ -69,6 +68,17 @@ impl<'a> PartialEq<Self> for RelationType<'a> {
 }
 
 impl<'a> Eq for RelationType<'a> {}
+
+#[derive(Debug, Eq, PartialEq)]
+pub(crate) enum RelationTypeAnnotation {
+    Abstract(AnnotationAbstract),
+}
+
+impl From<AnnotationAbstract> for RelationTypeAnnotation {
+    fn from(annotation: AnnotationAbstract) -> Self {
+        RelationTypeAnnotation::Abstract(annotation)
+    }
+}
 
 // impl<'a> IIDAPI<'a> for RelationType<'a> {
 //     fn iid(&'a self) -> ByteReference<'a> {

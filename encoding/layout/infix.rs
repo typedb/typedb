@@ -42,31 +42,43 @@ impl<'a> AsBytes<'a, { InfixID::LENGTH }> for InfixID<'a> {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub(crate) enum Direction {
-    Canonical,
-    Reverse,
-}
+// #[derive(Debug, Eq, PartialEq)]
+// pub(crate) enum Direction {
+//     Canonical,
+//     Reverse,
+// }
+//
+/*
+Infixes are always stored behind certain types Prefixes, so they could be partitioned per prefix.
+For example, type edge infixes are always going to follow type vertex prefixes.
+Also, annotation infixes will always follow an annotation prefix and a vertex.
 
+However, we group them all together for
+1) easier refactoring of prefixes without clashes in the infixes after refactoring
+2) easier overview of what types of 'middle' infix bytes are possible
+*/
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) enum InfixType {
-    Sub,
-    SubReverse,
-    Owns,
-    OwnsReverse,
-    Plays,
-    PlaysReverse,
-    Relates,
-    RelatesReverse,
+    EdgeSub,
+    EdgeSubReverse,
+    EdgeOwns,
+    EdgeOwnsReverse,
+    EdgePlays,
+    EdgePlaysReverse,
+    EdgeRelates,
+    EdgeRelatesReverse,
 
-    Has,
-    HasReverse,
+    EdgeHas,
+    EdgeHasReverse,
+
+    PropertyLabel,
+    PropertyAnnotationAbstract,
 }
 
 macro_rules! infix_functions {
     ($(
-        $name:ident => $bytes:tt, Direction::$direction:ident
-    );*) => {
+        $name:ident => $bytes:tt //, Direction::$direction:ident
+    ),*) => {
         pub(crate) const fn infix_id(&self) -> InfixID {
             let bytes = match self {
                 $(
@@ -85,29 +97,32 @@ macro_rules! infix_functions {
             }
        }
 
-       pub(crate) const fn direction(&self) -> Direction {
-            match self {
-                $(
-                    Self::$name => {Direction::$direction}
-                )*
-            }
-       }
+       // pub(crate) const fn direction(&self) -> Direction {
+       //      match self {
+       //          $(
+       //              Self::$name => {Direction::$direction}
+       //          )*
+       //      }
+       // }
 
    };
 }
 
 impl InfixType {
     infix_functions!(
-        Sub => [20], Direction::Canonical;
-        SubReverse => [21], Direction::Reverse;
-        Owns => [22], Direction::Canonical;
-        OwnsReverse => [23], Direction::Reverse;
-        Plays => [24], Direction::Canonical;
-        PlaysReverse => [25], Direction::Reverse;
-        Relates => [26], Direction::Canonical;
-        RelatesReverse => [27], Direction::Reverse;
+        EdgeSub => [20], // Direction::Canonical;
+        EdgeSubReverse => [21], // Direction::Reverse;
+        EdgeOwns => [22], // Direction::Canonical;
+        EdgeOwnsReverse => [23], // Direction::Reverse;
+        EdgePlays => [24], // Direction::Canonical;
+        EdgePlaysReverse => [25], // Direction::Reverse;
+        EdgeRelates => [26], // Direction::Canonical;
+        EdgeRelatesReverse => [27], // Direction::Reverse;
 
-        Has => [50], Direction::Canonical;
-        HasReverse => [51], Direction::Reverse
+        EdgeHas => [50], // Direction::Canonical;
+        EdgeHasReverse => [51], // Direction::Reverse
+
+        PropertyLabel => [100],
+        PropertyAnnotationAbstract => [110]
     );
 }

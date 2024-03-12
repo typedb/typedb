@@ -21,6 +21,7 @@ pub mod vertex;
 pub mod vertex_generator;
 pub mod edge;
 pub mod property;
+pub mod index;
 
 
 pub enum Root {

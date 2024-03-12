@@ -24,7 +24,8 @@ use bytes::byte_array::ByteArray;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::{AsBytes, Keyable};
 use encoding::graph::type_::edge::{build_edge_sub, build_edge_sub_prefix, build_edge_sub_reverse, new_edge_sub};
-use encoding::graph::type_::property::{LabelToTypeProperty, TypeToLabelProperty};
+use encoding::graph::type_::index::LabelToTypeVertexIndex;
+use encoding::graph::type_::property::{build_property_type_annotation_abstract, build_property_type_label};
 use encoding::graph::type_::Root;
 use encoding::graph::type_::vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, TypeVertex};
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
@@ -37,9 +38,10 @@ use storage::MVCCStorage;
 use storage::snapshot::snapshot::Snapshot;
 
 use crate::type_::{AttributeTypeAPI, EntityTypeAPI, RelationTypeAPI, TypeAPI};
-use crate::type_::attribute_type::AttributeType;
-use crate::type_::entity_type::EntityType;
-use crate::type_::relation_type::RelationType;
+use crate::type_::annotation::AnnotationAbstract;
+use crate::type_::attribute_type::{AttributeType, AttributeTypeAnnotation};
+use crate::type_::entity_type::{EntityType, EntityTypeAnnotation};
+use crate::type_::relation_type::{RelationType, RelationTypeAnnotation};
 use crate::type_::type_cache::TypeCache;
 
 pub struct TypeManager<'txn, 'storage: 'txn> {
@@ -104,7 +106,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     }
 
     fn get_labelled_type<M, U>(&self, label: &Label, mapper: M) -> Option<U> where M: FnOnce(ByteArrayOrRef<'static, BUFFER_KEY_INLINE>) -> U {
-        let key = LabelToTypeProperty::build(label).into_storage_key();
+        let key = LabelToTypeVertexIndex::build(label).into_storage_key();
         self.snapshot.get::<{ BUFFER_KEY_INLINE }>(key.as_reference()).map(|value| {
             mapper(ByteArrayOrRef::Array(value))
         })
@@ -190,7 +192,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_vertex = self.vertex_generator.take_entity_type();
-            write_snapshot.put(type_vertex.as_storage_key().to_owned_array());
+            write_snapshot.put(type_vertex.as_storage_key().into_owned_array());
             self.set_storage_label(type_vertex.clone().into_owned(), label);
             if !is_root {
                 self.set_storage_supertype(type_vertex.clone().into_owned(), self.get_entity_type(&Root::Entity.label()).unwrap().vertex().clone());
@@ -206,7 +208,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_vertex = self.vertex_generator.take_relation_type();
-            write_snapshot.put(type_vertex.as_storage_key().to_owned_array());
+            write_snapshot.put(type_vertex.as_storage_key().into_owned_array());
             self.set_storage_label(type_vertex.clone().into_owned(), label);
             if !is_root {
                 self.set_storage_supertype(type_vertex.clone().into_owned(), self.get_relation_type(&Root::Relation.label()).unwrap().vertex().clone());
@@ -221,7 +223,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_vertex = self.vertex_generator.take_attribute_type();
-            write_snapshot.put(type_vertex.as_storage_key().to_owned_array());
+            write_snapshot.put(type_vertex.as_storage_key().into_owned_array());
             self.set_storage_label(type_vertex.clone(), label);
             if !is_root {
                 self.set_storage_supertype(type_vertex.clone(), self.get_attribute_type(&Root::Attribute.label()).unwrap().vertex().clone());
@@ -280,44 +282,79 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
+    pub(crate) fn get_entity_type_annotations<'this>(&'this self, entity_type: impl EntityTypeAPI<'static>) -> MaybeOwns<'this, Vec<EntityTypeAnnotation>> {
+        if let Some(cache) = &self.type_cache {
+            MaybeOwns::borrowed(cache.get_entity_type_annotations(entity_type))
+        } else {
+            let mut annotations = Vec::new();
+            self.get_storage_vertex_annotation_abstract(entity_type.vertex().clone())
+                .map(|ann| annotations.push(EntityTypeAnnotation::from(ann)));
+            MaybeOwns::owned(annotations)
+        }
+    }
+
+    pub(crate) fn get_relation_type_annotations<'this>(&'this self, relation_type: impl RelationTypeAPI<'static>) -> MaybeOwns<'this, Vec<RelationTypeAnnotation>> {
+        if let Some(cache) = &self.type_cache {
+            MaybeOwns::borrowed(cache.get_relation_type_annotations(relation_type))
+        } else {
+            let mut annotations = Vec::new();
+            self.get_storage_vertex_annotation_abstract(relation_type.vertex().clone())
+                .map(|ann| annotations.push(RelationTypeAnnotation::Abstract(ann)));
+            MaybeOwns::owned(annotations)
+        }
+    }
+
+    pub(crate) fn get_attribute_type_annotations<'this>(&'this self, attribute_type: impl AttributeTypeAPI<'static>) -> MaybeOwns<'this, Vec<AttributeTypeAnnotation>> {
+        if let Some(cache) = &self.type_cache {
+            MaybeOwns::borrowed(cache.get_attribute_type_annotations(attribute_type))
+        } else {
+            let mut annotations = Vec::new();
+            self.get_storage_vertex_annotation_abstract(attribute_type.vertex().clone())
+                .map(|ann| annotations.push(AttributeTypeAnnotation::Abstract(ann)));
+            MaybeOwns::owned(annotations)
+        }
+    }
+
+    // --- storage operations ---
+
     fn get_storage_label(&self, owner: TypeVertex<'_>) -> Option<Label<'static>> {
-        let key = TypeToLabelProperty::build(owner.clone());
+        let key = build_property_type_label(owner.clone().into_owned());
         self.snapshot.get_mapped(key.into_storage_key().as_reference(), |reference| {
             let value = StringBytes::new(ByteArrayOrRef::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(reference));
             Label::parse_from(value)
         })
     }
 
-    pub(crate) fn set_storage_label(&self, owner: TypeVertex<'_>, label: &Label) {
+    pub(crate) fn set_storage_label(&self, owner: TypeVertex<'static>, label: &Label) {
         self.may_delete_storage_label(owner.clone());
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let vertex_to_label_key = TypeToLabelProperty::build(owner.clone());
+            let vertex_to_label_key = build_property_type_label(owner.clone().into_owned());
             let label_value = ByteArray::from(label.scoped_name.bytes());
-            write_snapshot.put_val(vertex_to_label_key.into_storage_key().to_owned_array(), label_value);
+            write_snapshot.put_val(vertex_to_label_key.into_storage_key().into_owned_array(), label_value);
 
-            let label_to_vertex_key = LabelToTypeProperty::build(label);
+            let label_to_vertex_key = LabelToTypeVertexIndex::build(label);
             let vertex_value = ByteArray::from(owner.bytes());
-            write_snapshot.put_val(label_to_vertex_key.into_storage_key().to_owned_array(), vertex_value);
+            write_snapshot.put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
         } else {
             panic!("Illegal state: creating types requires write snapshot")
         }
     }
 
-    pub(crate) fn may_delete_storage_label(&self, owner: TypeVertex<'_>) {
+    fn may_delete_storage_label(&self, owner: TypeVertex<'_>) {
         let existing_label = self.get_storage_label(owner.clone());
         if let Some(label) = existing_label {
             if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-                let vertex_to_label_key = TypeToLabelProperty::build(owner.clone());
-                write_snapshot.delete(vertex_to_label_key.into_storage_key().to_owned_array());
-                let label_to_vertex_key = LabelToTypeProperty::build(&label);
-                write_snapshot.delete(label_to_vertex_key.into_storage_key().to_owned_array());
+                let vertex_to_label_key = build_property_type_label(owner.clone().into_owned());
+                write_snapshot.delete(vertex_to_label_key.into_storage_key().into_owned_array());
+                let label_to_vertex_key = LabelToTypeVertexIndex::build(&label);
+                write_snapshot.delete(label_to_vertex_key.into_storage_key().into_owned_array());
             } else {
                 panic!("Illegal state: creating types requires write snapshot")
             }
         }
     }
 
-    pub(crate) fn get_storage_supertype(&self, subtype: TypeVertex<'static>) -> Option<TypeVertex<'static>> {
+    fn get_storage_supertype(&self, subtype: TypeVertex<'static>) -> Option<TypeVertex<'static>> {
         // TODO: handle possible errors
         self.snapshot.iterate_prefix(build_edge_sub_prefix(subtype.clone()))
             .first_cloned().unwrap().map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned())
@@ -327,25 +364,49 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         self.may_delete_storage_supertype(subtype.clone());
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let sub = build_edge_sub(subtype.clone(), supertype.clone());
-            write_snapshot.put(sub.into_storage_key().to_owned_array());
+            write_snapshot.put(sub.into_storage_key().into_owned_array());
             let sub_reverse = build_edge_sub_reverse(supertype, subtype);
-            write_snapshot.put(sub_reverse.into_storage_key().to_owned_array());
+            write_snapshot.put(sub_reverse.into_storage_key().into_owned_array());
         } else {
             panic!("Illegal state: creating supertype edge requires write snapshot")
         }
     }
 
-    pub(crate) fn may_delete_storage_supertype(&self, subtype: TypeVertex<'static>) {
+    fn may_delete_storage_supertype(&self, subtype: TypeVertex<'static>) {
         let supertype = self.get_storage_supertype(subtype.clone());
         if let Some(supertype) = supertype {
             if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
                 let sub = build_edge_sub(subtype.clone(), supertype.clone());
-                write_snapshot.delete(sub.into_storage_key().to_owned_array());
+                write_snapshot.delete(sub.into_storage_key().into_owned_array());
                 let sub_reverse = build_edge_sub_reverse(supertype, subtype);
-                write_snapshot.delete(sub_reverse.into_storage_key().to_owned_array());
+                write_snapshot.delete(sub_reverse.into_storage_key().into_owned_array());
             } else {
                 panic!("Illegal state: deleting supertype edge requires write snapshot")
             }
+        }
+    }
+
+    fn get_storage_vertex_annotation_abstract(&self, vertex: TypeVertex<'static>) -> Option<AnnotationAbstract> {
+        self.snapshot.get_mapped(build_property_type_annotation_abstract(vertex).into_storage_key().as_reference(), |bytes| {
+            AnnotationAbstract::new()
+        })
+    }
+
+    pub(crate) fn set_storage_annotation_abstract(&self, vertex: TypeVertex<'static>) {
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            let annotation_property = build_property_type_annotation_abstract(vertex);
+            write_snapshot.put(annotation_property.into_storage_key().into_owned_array());
+        } else {
+            panic!("Illegal state: setting annotation requires write snapshot.")
+        }
+    }
+
+    pub(crate) fn delete_storage_annotation_abstract(&self, vertex: TypeVertex<'static>) {
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            let annotation_property = build_property_type_annotation_abstract(vertex);
+            write_snapshot.delete(annotation_property.into_storage_key().into_owned_array());
+        } else {
+            panic!("Illegal state: deleting annotation requires write snapshot.")
         }
     }
 }

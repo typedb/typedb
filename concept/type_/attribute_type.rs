@@ -21,6 +21,7 @@ use encoding::Prefixed;
 
 use crate::ConceptAPI;
 use crate::type_::{AttributeTypeAPI, TypeAPI};
+use crate::type_::annotation::AnnotationAbstract;
 
 #[derive(Debug, Clone)]
 pub struct AttributeType<'a> {
@@ -35,11 +36,6 @@ impl<'a> AttributeType<'a> {
         }
         AttributeType { vertex: vertex }
     }
-
-    fn into_owned(self) -> AttributeType<'static> {
-        let v = self.vertex.into_owned();
-        AttributeType { vertex: v }
-    }
 }
 
 impl<'a> ConceptAPI<'a> for AttributeType<'a> {}
@@ -47,6 +43,10 @@ impl<'a> ConceptAPI<'a> for AttributeType<'a> {}
 impl<'a> TypeAPI<'a> for AttributeType<'a> {
     fn vertex<'this>(&'this self) -> &'this TypeVertex<'a> {
         &self.vertex
+    }
+
+    fn into_vertex(self) -> TypeVertex<'a> {
+        self.vertex
     }
 }
 
@@ -64,6 +64,16 @@ impl<'a> PartialEq<Self> for AttributeType<'a> {
 
 impl<'a> Eq for AttributeType<'a> {}
 
+#[derive(Debug, Eq, PartialEq)]
+pub(crate) enum AttributeTypeAnnotation {
+    Abstract(AnnotationAbstract),
+}
+
+impl From<AnnotationAbstract> for AttributeTypeAnnotation {
+    fn from(annotation: AnnotationAbstract) -> Self {
+        AttributeTypeAnnotation::Abstract(annotation)
+    }
+}
 //
 // impl<'a> IIDAPI<'a> for AttributeType<'a> {
 //     fn iid(&'a self) -> ByteReference<'a> {
