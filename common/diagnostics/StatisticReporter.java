@@ -18,15 +18,20 @@
 
 package com.vaticle.typedb.core.common.diagnostics;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.net.ssl.HttpsURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
 public class StatisticReporter {
+    protected static final Logger LOG = LoggerFactory.getLogger(StatisticReporter.class);
 
     private final String reportingURI;
     private final Metrics metrics;
@@ -57,8 +62,9 @@ public class StatisticReporter {
 
             conn.getInputStream().readAllBytes();
         } catch (Exception e) {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Failed to push metrics to {}:\n{}\n", reportingURI, Arrays.toString(e.getStackTrace()));
             // do nothing
-            // FIXME debug log?
         } finally {
             pushScheduledTask = scheduled.schedule(this::push, 1, HOURS);
         }
