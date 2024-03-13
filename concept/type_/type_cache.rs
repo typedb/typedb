@@ -23,13 +23,14 @@ use bytes::byte_reference::ByteReference;
 use durability::SequenceNumber;
 use encoding::{Keyable, Prefixed};
 use encoding::graph::type_::edge::{build_edge_owns_prefix, build_edge_sub_prefix, new_edge_owns, new_edge_sub};
-use encoding::graph::type_::property::{build_property_type_annotation_abstract, build_property_type_label, TypeVertexProperty};
+use encoding::graph::type_::property::{build_property_type_annotation_abstract, build_property_type_label, build_property_type_value_type, TypeVertexProperty};
 use encoding::graph::type_::Root;
 use encoding::graph::type_::vertex::{build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix, is_vertex_attribute_type, is_vertex_entity_type, is_vertex_relation_type, new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, TypeVertex};
 use encoding::graph::Typed;
 use encoding::layout::prefix::PrefixType;
 use encoding::property::label::Label;
 use encoding::property::string::StringBytes;
+use encoding::property::value_type::{ValueType, ValueTypeID};
 use resource::constants::encoding::LABEL_SCOPED_NAME_STRING_INLINE;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::key_value::StorageKeyArray;
@@ -97,6 +98,7 @@ struct AttributeTypeCache {
     label: Label<'static>,
     is_root: bool,
     annotations: HashSet<AttributeTypeAnnotation>,
+    value_type: Option<ValueType>,
 
     supertype: Option<AttributeType<'static>>,
     supertypes: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
@@ -277,13 +279,15 @@ impl TypeCache {
 
                 let label = Self::read_type_label(type_vertex_properties, attribute_type.vertex().clone());
                 let is_root = label == Root::Attribute.label();
-                let supertype = Self::read_supertype_vertex(attribute_types_data, attribute_type.vertex().clone()).map(|v| AttributeType::new(v));
                 let annotations = Self::read_attribute_annotations(type_vertex_properties, attribute_type.clone());
+                let value_type = Self::read_value_type(type_vertex_properties, attribute_type.vertex().clone());
+                let supertype = Self::read_supertype_vertex(attribute_types_data, attribute_type.vertex().clone()).map(|v| AttributeType::new(v));
                 let cache = AttributeTypeCache {
                     type_: attribute_type,
                     label: label,
                     is_root: is_root,
                     annotations: annotations,
+                    value_type: value_type,
                     supertype: supertype,
                     supertypes: Vec::new(),
                 };
@@ -320,6 +324,13 @@ impl TypeCache {
         type_vertex_properties.get(&property.into_storage_key().into_owned_array())
             .map(|bytes| Label::parse_from(StringBytes::new(ByteArrayOrRef::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(ByteReference::from(bytes)))))
             .unwrap()
+    }
+
+    fn read_value_type(type_vertex_properties: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+                       type_vertex: TypeVertex<'static>) -> Option<ValueType> {
+        let property = build_property_type_value_type(type_vertex);
+        type_vertex_properties.get(&property.into_storage_key().into_owned_array())
+            .map(|bytes| ValueType::from_value_type_id(ValueTypeID::new(bytes.bytes().try_into().unwrap())))
     }
 
     fn read_annotation_abstract(type_vertex_properties: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
@@ -414,6 +425,10 @@ impl TypeCache {
 
     pub(crate) fn get_relation_type_owns<'this>(&'this self, relation_type: RelationType<'static>) -> &HashSet<Owns<'static>> {
         &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().owns_direct
+    }
+
+    pub(crate) fn get_attribute_type_value_type(&self, attribute_type: AttributeType<'static>) -> Option<ValueType> {
+        Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().value_type.clone()
     }
 
     pub(crate) fn get_entity_type_annotations<'this>(&'this self, entity_type: impl EntityTypeAPI<'static>) -> &HashSet<EntityTypeAnnotation> {

@@ -30,7 +30,8 @@ use concept::type_::type_manager::TypeManager;
 use encoding::create_keyspaces;
 use encoding::graph::type_::Root;
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
-use encoding::primitive::label::Label;
+use encoding::property::label::Label;
+use encoding::property::value_type::ValueType;
 use primitive::maybe_owns::MaybeOwns;
 use storage::MVCCStorage;
 use storage::snapshot::snapshot::Snapshot;
@@ -62,11 +63,13 @@ fn entity_creation() {
         // --- age sub attribute ---
         let age_label = Label::build("age");
         let age_type = type_manager.create_attribute_type(&age_label, false);
+        age_type.set_value_type(&type_manager, ValueType::Long);
 
         assert!(!age_type.is_root(&type_manager));
         assert!(age_type.get_annotations(&type_manager).is_empty());
         assert_eq!(age_type.get_label(&type_manager).deref(), &age_label);
-        
+        assert_eq!(age_type.get_value_type(&type_manager), Some(ValueType::Long));
+
         // --- person sub entity @abstract ---
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&person_label, false);
@@ -124,6 +127,7 @@ fn entity_creation() {
         assert!(!age_type.is_root(&type_manager));
         assert!(age_type.get_annotations(&type_manager).is_empty());
         assert_eq!(age_type.get_label(&type_manager).deref(), &age_label);
+        assert_eq!(age_type.get_value_type(&type_manager), Some(ValueType::Long));
 
         // --- person sub entity ---
         let person_label = Label::build("person");

@@ -20,6 +20,7 @@ use std::ops::Deref;
 
 use encoding::graph::type_::vertex::TypeVertex;
 use encoding::property::label::Label;
+use encoding::property::value_type::ValueType;
 use primitive::maybe_owns::MaybeOwns;
 
 use crate::ConceptAPI;
@@ -150,6 +151,14 @@ pub trait RelationTypeAPI<'a>: TypeAPI<'a> {
 pub trait AttributeTypeAPI<'a>: TypeAPI<'a> {
     fn is_root(&self, type_manager: &TypeManager) -> bool {
         type_manager.get_attribute_type_is_root(self.clone().into_owned())
+    }
+
+    fn set_value_type(&self, type_manager: &TypeManager, value_type: ValueType) {
+        type_manager.set_storage_value_type(self.vertex().clone().into_owned(), value_type)
+    }
+
+    fn get_value_type(&self, type_manager: &TypeManager) -> Option<ValueType> {
+        type_manager.get_attribute_type_value_type(self.clone().into_owned())
     }
 
     fn get_label<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Label<'static>> {

@@ -17,6 +17,7 @@
 
 
 use std::collections::HashSet;
+use std::io::Read;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -26,12 +27,13 @@ use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::{AsBytes, Keyable};
 use encoding::graph::type_::edge::{build_edge_owns, build_edge_owns_prefix, build_edge_owns_reverse, build_edge_sub, build_edge_sub_prefix, build_edge_sub_reverse, new_edge_owns, new_edge_sub};
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
-use encoding::graph::type_::property::{build_property_type_annotation_abstract, build_property_type_label};
+use encoding::graph::type_::property::{build_property_type_annotation_abstract, build_property_type_label, build_property_type_value_type};
 use encoding::graph::type_::Root;
 use encoding::graph::type_::vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, TypeVertex};
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
 use encoding::property::label::Label;
 use encoding::property::string::StringBytes;
+use encoding::property::value_type::{ValueType, ValueTypeID};
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::encoding::LABEL_SCOPED_NAME_STRING_INLINE;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -305,6 +307,14 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
+    pub(crate) fn get_attribute_type_value_type(&self, attribute_type: AttributeType<'static>) -> Option<ValueType> {
+        if let Some(cache) = &self.type_cache {
+            cache.get_attribute_type_value_type(attribute_type)
+        } else {
+            self.get_storage_value_type(attribute_type.into_vertex())
+        }
+    }
+
     pub(crate) fn get_entity_type_annotations<'this>(&'this self, entity_type: impl EntityTypeAPI<'static>) -> MaybeOwns<'this, HashSet<EntityTypeAnnotation>> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_entity_type_annotations(entity_type))
@@ -438,6 +448,23 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             write_snapshot.delete(owns_reverse.into_storage_key().into_owned_array());
         } else {
             panic!("Illegal state: creating supertype edge requires write snapshot")
+        }
+    }
+
+    fn get_storage_value_type(&self, vertex: TypeVertex<'static>) -> Option<ValueType> {
+        self.snapshot.get_mapped(build_property_type_value_type(vertex).into_storage_key().as_reference(),
+                                 |bytes| {
+                                     ValueType::from_value_type_id(ValueTypeID::new(bytes.bytes().try_into().unwrap()))
+                                 })
+    }
+
+    pub(crate) fn set_storage_value_type(&self, vertex: TypeVertex<'static>, value_type: ValueType) {
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            let property_key = build_property_type_value_type(vertex).into_storage_key().into_owned_array();
+            let property_value = ByteArray::copy(&value_type.value_type_id().bytes());
+            write_snapshot.put_val(property_key, property_value);
+        } else {
+            panic!("Illegal state: setting value type requires write snapshot.")
         }
     }
 

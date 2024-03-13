@@ -58,6 +58,11 @@ type_vertex_property_constructors!(
 );
 
 type_vertex_property_constructors!(
+    new_property_type_value_type, build_property_type_value_type, is_property_type_value_type,
+    InfixType::PropertyValueType
+);
+
+type_vertex_property_constructors!(
     new_property_type_annotation_abstract, build_property_type_annotation_abstract, is_property_type_annotation_abstract,
     InfixType::PropertyAnnotationAbstract
 );
