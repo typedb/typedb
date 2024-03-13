@@ -15,17 +15,21 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use encoding::graph::thing::vertex::{AttributeVertex, ObjectVertex};
+use encoding::graph::thing::vertex_attribute::AttributeVertex;
+use encoding::graph::thing::vertex_object::ObjectVertex;
+use encoding::property::value_type::ValueType;
 
 use crate::ConceptAPI;
 use crate::thing::attribute::Attribute;
 use crate::thing::entity::Entity;
 use crate::thing::relation::Relation;
+use crate::thing::value::Value;
 
 pub mod attribute;
 pub mod entity;
 pub mod thing_manager;
 mod relation;
+mod value;
 
 trait ThingAPI<'a>: ConceptAPI<'a> {}
 
@@ -42,8 +46,12 @@ pub trait RelationAPI<'a>: ObjectAPI<'a> {
 }
 
 pub trait AttributeAPI<'a>: ThingAPI<'a> {
-    fn vertex(&'a self) -> &AttributeVertex<'a>;
+    fn vertex(&self) -> &AttributeVertex<'a>;
 
     fn into_owned(self) -> Attribute<'static>;
+
+    fn value_type(&self) -> ValueType;
+
+    fn value(&self) -> Value;
 }
 

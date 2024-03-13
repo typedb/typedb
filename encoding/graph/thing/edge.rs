@@ -26,7 +26,8 @@ use storage::key_value::StorageKey;
 use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::{AsBytes, EncodingKeyspace, Keyable};
-use crate::graph::thing::vertex::{AttributeVertex, ObjectVertex};
+use crate::graph::thing::vertex_attribute::AttributeVertex;
+use crate::graph::thing::vertex_object::ObjectVertex;
 use crate::graph::type_::vertex::TypeVertex;
 use crate::layout::infix::{InfixID, InfixType};
 
@@ -43,20 +44,18 @@ We could save 1 storage byte per edge by removing the prefix for from/to with a 
 3) Alternatively, the API exposes incomplete vertices (just the Type+ID) and we deal with using them elsewhere
  */
 impl<'a> HasForwardEdge<'a> {
-    const LENGTH: usize = ObjectVertex::LENGTH + InfixID::LENGTH + AttributeVertex::LENGTH;
     const LENGTH_PREFIX_FROM_OBJECT: usize = ObjectVertex::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize = ObjectVertex::LENGTH + InfixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
 
     fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
-        debug_assert_eq!(bytes.length(), Self::LENGTH);
         HasForwardEdge { bytes: bytes }
     }
 
     fn build(from: &ObjectVertex<'_>, to: &AttributeVertex<'_>) -> Self {
-        let mut bytes = ByteArray::zeros(Self::LENGTH);
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT + to.length());
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         bytes.bytes_mut()[Self::range_infix()].copy_from_slice(&InfixType::EdgeHas.infix_id().bytes());
-        bytes.bytes_mut()[Self::range_to()].copy_from_slice(to.bytes().bytes());
+        bytes.bytes_mut()[Self::range_to_for_vertex(to)].copy_from_slice(to.bytes().bytes());
         HasForwardEdge { bytes: ByteArrayOrRef::Array(bytes) }
     }
 
@@ -86,7 +85,7 @@ impl<'a> HasForwardEdge<'a> {
     }
 
     fn to(&'a self) -> AttributeVertex<'a> {
-        let reference = ByteReference::new(&self.bytes.bytes()[Self::range_to()]);
+        let reference = ByteReference::new(&self.bytes.bytes()[self.range_to()]);
         AttributeVertex::new(ByteArrayOrRef::Reference(reference))
     }
 
@@ -98,8 +97,16 @@ impl<'a> HasForwardEdge<'a> {
         Self::range_from().end..Self::range_from().end + InfixID::LENGTH
     }
 
-    const fn range_to() -> Range<usize> {
-        Self::range_infix().end..Self::range_infix().end + AttributeVertex::LENGTH
+    fn length(&self) -> usize {
+        self.bytes.length()
+    }
+
+    fn range_to(&self) -> Range<usize> {
+        Self::range_infix().end..self.length()
+    }
+
+    fn range_to_for_vertex(to: &AttributeVertex) -> Range<usize> {
+        Self::range_infix().end..Self::range_infix().end + to.length()
     }
 }
 

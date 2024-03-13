@@ -19,7 +19,7 @@ use std::sync::Arc;
 
 use criterion::{Criterion, criterion_group, criterion_main};
 
-use encoding::graph::thing::vertex::ObjectVertex;
+use encoding::graph::thing::vertex_object::ObjectVertex;
 use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
 use encoding::graph::type_::vertex::TypeID;
 use encoding::Keyable;

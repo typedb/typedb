@@ -18,7 +18,7 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::graph::thing::vertex::{ObjectID, ObjectVertex};
+use crate::graph::thing::vertex_object::{ObjectID, ObjectVertex};
 use crate::graph::type_::vertex::{TypeID, TypeIDUInt};
 
 pub struct ThingVertexGenerator {

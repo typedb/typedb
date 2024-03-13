@@ -35,6 +35,7 @@ impl ValueTypeID {
     }
 }
 
+// TODO: how do we handle user-created compound structs?
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ValueType {
     Boolean,

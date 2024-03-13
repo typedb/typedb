@@ -15,20 +15,22 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use encoding::graph::thing::vertex::AttributeVertex;
+use encoding::graph::thing::vertex_attribute::AttributeVertex;
+use encoding::property::value_type::ValueType;
 
 use crate::ConceptAPI;
 use crate::thing::{AttributeAPI, ThingAPI};
-use crate::type_::TypeAPI;
+use crate::thing::value::Value;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub struct Attribute<'a> {
     vertex: AttributeVertex<'a>,
+    value: Option<Value>, // TODO: if we end up doing traversals over Vertex instead of Concept, we could embed the Value cache into the AttributeVertex
 }
 
 impl<'a> Attribute<'a> {
     fn new(vertex: AttributeVertex<'a>) -> Self {
-        Attribute { vertex: vertex }
+        Attribute { vertex: vertex, value: None }
     }
 }
 
@@ -37,11 +39,27 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {}
 impl<'a> ConceptAPI<'a> for Attribute<'a> {}
 
 impl<'a> AttributeAPI<'a> for Attribute<'a> {
-    fn vertex(&'a self) -> &AttributeVertex<'a> {
+    fn vertex(&self) -> &AttributeVertex<'a> {
         &self.vertex
     }
 
     fn into_owned(self) -> Attribute<'static> {
-        Attribute { vertex: self.vertex.into_owned() }
+        Attribute::new(self.vertex.into_owned())
+    }
+
+    fn value_type(&self) -> ValueType {
+        self.vertex.value_type()
+    }
+
+    fn value(&self) -> Value {
+        todo!()
     }
 }
+
+impl<'a> PartialEq<Self> for Attribute<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.vertex().eq(other.vertex())
+    }
+}
+
+impl<'a> Eq for Attribute<'a> {}
