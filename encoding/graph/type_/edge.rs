@@ -109,7 +109,7 @@ impl<'a> TypeEdge<'a> {
     fn build(from: TypeVertex, infix: InfixType, to: TypeVertex) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(infix.infix_id().bytes().bytes());
+        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
         bytes.bytes_mut()[Self::range_to()].copy_from_slice(to.bytes().bytes());
         Self { bytes: ByteArrayOrRef::Array(bytes) }
     }
@@ -117,7 +117,7 @@ impl<'a> TypeEdge<'a> {
     fn build_prefix(from: TypeVertex<'_>, infix: InfixType) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(infix.infix_id().bytes().bytes());
+        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
         StorageKey::new_owned(Self::keyspace_id(), bytes)
     }
 
@@ -132,7 +132,7 @@ impl<'a> TypeEdge<'a> {
     }
 
     fn infix(&self) -> InfixType {
-        InfixType::from_infix_id(InfixID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_infix()]))))
+        InfixType::from_infix_id(InfixID::new(self.bytes.bytes()[Self::range_infix()].try_into().unwrap()))
     }
 
     const fn keyspace_id() -> KeyspaceId {

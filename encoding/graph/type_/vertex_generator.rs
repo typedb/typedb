@@ -19,7 +19,7 @@ use std::sync::atomic::{AtomicU16, Ordering};
 
 use storage::MVCCStorage;
 
-use crate::graph::type_::vertex::{build_vertex_attribute_type, build_vertex_entity_type, build_vertex_relation_type, TypeID, TypeVertex};
+use crate::graph::type_::vertex::{build_vertex_attribute_type, build_vertex_attribute_type_prefix, build_vertex_entity_type, build_vertex_entity_type_prefix, build_vertex_relation_type, build_vertex_relation_type_prefix, TypeID, TypeVertex};
 use crate::Keyable;
 use crate::layout::prefix::PrefixType;
 
@@ -44,7 +44,7 @@ impl TypeVertexGenerator {
 
     pub fn load(storage: &MVCCStorage) -> TypeVertexGenerator {
         let next_entity: AtomicU16 = storage.get_prev_raw(
-            PrefixType::VertexEntityType.successor_prefix_id().as_storage_key().as_reference(),
+            build_vertex_entity_type_prefix().as_reference(),
             |_, value| {
                 debug_assert_eq!(value.len(), Self::U16_LENGTH);
                 let array: [u8; Self::U16_LENGTH] = value[0..Self::U16_LENGTH].try_into().unwrap();
@@ -53,7 +53,7 @@ impl TypeVertexGenerator {
             },
         ).unwrap_or_else(|| AtomicU16::new(0));
         let next_relation: AtomicU16 = storage.get_prev_raw(
-            PrefixType::VertexRelationType.successor_prefix_id().as_storage_key().as_reference(),
+            build_vertex_relation_type_prefix().as_reference(),
             |_, value| {
                 debug_assert_eq!(value.len(), Self::U16_LENGTH);
                 let array: [u8; Self::U16_LENGTH] = value[0..Self::U16_LENGTH].try_into().unwrap();
@@ -62,7 +62,7 @@ impl TypeVertexGenerator {
             },
         ).unwrap_or_else(|| AtomicU16::new(0));
         let next_attribute: AtomicU16 = storage.get_prev_raw(
-            PrefixType::VertexAttributeType.successor_prefix_id().as_storage_key().as_reference(),
+            build_vertex_attribute_type_prefix().as_reference(),
             |_, value| {
                 debug_assert_eq!(value.len(), Self::U16_LENGTH);
                 let array: [u8; Self::U16_LENGTH] = value[0..Self::U16_LENGTH].try_into().unwrap();

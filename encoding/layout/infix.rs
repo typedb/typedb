@@ -18,26 +18,20 @@
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
 
-use crate::AsBytes;
-
-pub(crate) struct InfixID<'a> {
-    bytes: ByteArrayOrRef<'a, { InfixID::LENGTH }>,
+// A tiny struct will always be more efficient owning its own data and being Copy
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub(crate) struct InfixID {
+    bytes: [u8; { InfixID::LENGTH }],
 }
 
-impl<'a> InfixID<'a> {
+impl InfixID {
     pub(crate) const LENGTH: usize = 1;
 
-    pub const fn new(bytes: ByteArrayOrRef<'a, { InfixID::LENGTH }>) -> Self {
+    pub(crate) const fn new(bytes: [u8; { InfixID::LENGTH }]) -> Self {
         InfixID { bytes: bytes }
     }
-}
 
-impl<'a> AsBytes<'a, { InfixID::LENGTH }> for InfixID<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
-    }
-
-    fn into_bytes(self) -> ByteArrayOrRef<'a, { InfixID::LENGTH }> {
+    pub(crate) fn bytes(&self) -> [u8; {InfixID::LENGTH}] {
         self.bytes
     }
 }
@@ -72,6 +66,7 @@ pub(crate) enum InfixType {
     EdgeHasReverse,
 
     PropertyLabel,
+    PropertyValueType,
     PropertyAnnotationAbstract,
 }
 
@@ -85,11 +80,11 @@ macro_rules! infix_functions {
                     Self::$name => {&$bytes}
                 )*
             };
-            InfixID::new(ByteArrayOrRef::Reference(ByteReference::new(bytes)))
+            InfixID::new(*bytes)
         }
 
         pub(crate) fn from_infix_id(infix_id: InfixID) -> Self {
-            match infix_id.bytes.bytes() {
+            match infix_id.bytes() {
                 $(
                     $bytes => {Self::$name}
                 )*
@@ -123,6 +118,7 @@ impl InfixType {
         EdgeHasReverse => [51], // Direction::Reverse
 
         PropertyLabel => [100],
+        PropertyValueType => [101],
         PropertyAnnotationAbstract => [110]
     );
 }

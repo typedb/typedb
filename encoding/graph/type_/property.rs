@@ -76,15 +76,17 @@ impl<'a> TypeVertexProperty<'a> {
 
     fn build(vertex: TypeVertex<'_>, infix: InfixType) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::PropertyType.prefix_id().bytes().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&PrefixType::PropertyType.prefix_id().bytes());
         array.bytes_mut()[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
-        array.bytes_mut()[Self::range_infix()].copy_from_slice(infix.infix_id().bytes().bytes());
+        array.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
         TypeVertexProperty { bytes: ByteArrayOrRef::Array(array) }
     }
 
+    // TODO: is it better to have a const fn that is a reference to owned memory, or
+    //       to always induce a tiny copy have a non-const function?
     pub const fn build_prefix() -> StorageKey<'static, { TypeVertexProperty::LENGTH_PREFIX }> {
-        let prefix_bytes = PrefixType::PropertyType.prefix_id().byte_ref_const();
-        StorageKey::new_ref(Self::keyspace_id(), prefix_bytes)
+        const prefix_bytes: [u8; PrefixID::LENGTH] = PrefixType::PropertyType.prefix_id().bytes();
+        StorageKey::new_ref(Self::keyspace_id(), ByteReference::new(&prefix_bytes))
     }
 
     pub fn type_vertex(&'a self) -> TypeVertex<'a> {
@@ -93,7 +95,7 @@ impl<'a> TypeVertexProperty<'a> {
 
     fn infix(&self) -> InfixType {
         let infix_bytes = &self.bytes.bytes()[Self::range_infix()];
-        InfixType::from_infix_id(InfixID::new(ByteArrayOrRef::Reference(ByteReference::new(infix_bytes))))
+        InfixType::from_infix_id(InfixID::new(infix_bytes.try_into().unwrap()))
     }
 
     const fn keyspace_id() -> KeyspaceId {

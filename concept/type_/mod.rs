@@ -19,7 +19,7 @@ use std::collections::HashSet;
 use std::ops::Deref;
 
 use encoding::graph::type_::vertex::TypeVertex;
-use encoding::primitive::label::Label;
+use encoding::property::label::Label;
 use primitive::maybe_owns::MaybeOwns;
 
 use crate::ConceptAPI;

@@ -47,8 +47,11 @@ macro_rules! type_vertex_constructors {
             TypeVertex::build(PrefixType::$prefix.prefix_id(), type_id)
         }
 
+        // TODO: is it better to have a const fn that is a reference to owned memory, or
+        //       to always induce a tiny copy have a non-const function?
         pub const fn $build_name_prefix() ->  StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
-            TypeVertex::build_prefix(PrefixType::$prefix.prefix_id())
+            const bytes: [u8; TypeVertex::LENGTH_PREFIX] = PrefixType::$prefix.prefix_id().bytes();
+            StorageKey::new_ref(TypeVertex::keyspace_id(), ByteReference::new(&bytes))
         }
 
         pub fn $is_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> bool {
@@ -82,15 +85,11 @@ impl<'a> TypeVertex<'a> {
         TypeVertex { bytes: bytes }
     }
 
-    fn build(prefix: PrefixID<'a>, type_id: TypeID) -> Self {
+    fn build(prefix: PrefixID, type_id: TypeID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_id.bytes().bytes());
         TypeVertex { bytes: ByteArrayOrRef::Array(array) }
-    }
-
-    const fn build_prefix(prefix: PrefixID<'static>) -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
-        StorageKey::new_ref(Self::keyspace_id(), prefix.byte_ref_const())
     }
 
     const fn keyspace_id() -> KeyspaceId {

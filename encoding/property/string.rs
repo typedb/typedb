@@ -25,8 +25,13 @@ use logger::result::ResultExt;
 use crate::AsBytes;
 use crate::error::{EncodingError, EncodingErrorKind};
 
-// TODO: when we write this as a key to storage, we must double check that [AA] follows [A] and isn't after [B] (length independent)
-
+/*
+Both Rust and RocksDB use lexicographical ordering for comparing byte slices.
+This is the natural representation we want, which guarantees that:
+"a" < "aa" < "b"
+So we automatically have the correct sort order for strings, where longer strings come after shorter ones
+with the same prefix.
+ */
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct StringBytes<'a, const INLINE_LENGTH: usize> {
     bytes: ByteArrayOrRef<'a, INLINE_LENGTH>,

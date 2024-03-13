@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::primitive::label::Label;
+use crate::property::label::Label;
 
 pub mod vertex;
 pub mod vertex_generator;

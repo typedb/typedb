@@ -25,8 +25,8 @@ use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
 use crate::layout::prefix::{PrefixID, PrefixType};
-use crate::primitive::label::Label;
-use crate::primitive::string::StringBytes;
+use crate::property::label::Label;
+use crate::property::string::StringBytes;
 
 pub struct LabelToTypeVertexIndex<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
@@ -41,7 +41,7 @@ impl<'a> LabelToTypeVertexIndex<'a> {
     pub fn build(label: &Label) -> Self {
         let label_string_bytes = label.scoped_name();
         let mut array = ByteArray::zeros(label_string_bytes.bytes().length() + PrefixID::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::IndexLabelToType.prefix_id().bytes().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&PrefixType::IndexLabelToType.prefix_id().bytes());
         array.bytes_mut()[Self::range_label(label_string_bytes.bytes().length())].copy_from_slice(label_string_bytes.bytes().bytes());
         LabelToTypeVertexIndex { bytes: ByteArrayOrRef::Array(array) }
     }

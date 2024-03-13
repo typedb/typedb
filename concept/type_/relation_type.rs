@@ -16,17 +16,24 @@
  */
 
 
+use std::collections::HashSet;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::graph::type_::vertex::{new_vertex_relation_type, TypeVertex};
 use encoding::layout::prefix::PrefixType;
 use encoding::Prefixed;
+use primitive::maybe_owns::MaybeOwns;
 use storage::key_value::StorageKeyReference;
 use storage::snapshot::iterator::SnapshotPrefixIterator;
 
 use crate::{concept_iterator, ConceptAPI};
 use crate::error::{ConceptError, ConceptErrorKind};
-use crate::type_::{RelationTypeAPI, TypeAPI};
+use crate::type_::{OwnerAPI, RelationTypeAPI, TypeAPI};
 use crate::type_::annotation::AnnotationAbstract;
+use crate::type_::attribute_type::AttributeType;
+use crate::type_::entity_type::EntityType;
+use crate::type_::object_type::ObjectType;
+use crate::type_::owns::Owns;
+use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RelationType<'a> {
@@ -61,6 +68,15 @@ impl<'a> RelationTypeAPI<'a> for RelationType<'a> {
     }
 }
 
+impl<'a> OwnerAPI<'a> for RelationType<'a> {
+    fn _construct_owns(&self, attribute_type: AttributeType<'static>) -> Owns<'static> {
+        Owns::new(ObjectType::Relation(self.clone().into_owned()), attribute_type)
+    }
+
+    fn get_owns<'this, 'm>(&'this self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
+        type_manager.get_relation_type_owns(self.clone().into_owned())
+    }
+}
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum RelationTypeAnnotation {

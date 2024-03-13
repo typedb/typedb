@@ -30,7 +30,7 @@ use crate::layout::prefix::{PrefixID, PrefixType};
 pub mod graph;
 pub mod layout;
 mod error;
-pub mod primitive;
+pub mod property;
 
 pub enum EncodingKeyspace {
     Schema,
@@ -90,6 +90,7 @@ pub trait Prefixed<'a, const INLINE_SIZE: usize> : AsBytes<'a, INLINE_SIZE> {
     const RANGE_PREFIX: Range<usize> = 0..PrefixID::LENGTH;
 
     fn prefix(&'a self) -> PrefixType {
-        PrefixType::from_prefix_id(PrefixID::new(ByteReference::new(&self.bytes().bytes()[Self::RANGE_PREFIX])))
+        let bytes = &self.bytes().bytes()[Self::RANGE_PREFIX].try_into().unwrap();
+        PrefixType::from_prefix_id(PrefixID::new(*bytes))
     }
 }

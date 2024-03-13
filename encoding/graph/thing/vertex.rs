@@ -47,7 +47,7 @@ impl<'a> ObjectVertex<'a> {
 
     pub fn build_entity(type_id: &TypeID<'_>, object_id: ObjectID<'_>) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::VertexEntity.prefix_id().bytes().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&PrefixType::VertexEntity.prefix_id().bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_id.bytes().bytes());
         array.bytes_mut()[Self::range_object_id()].copy_from_slice(object_id.bytes().bytes());
         ObjectVertex { bytes: ByteArrayOrRef::Array(array) }
@@ -61,14 +61,14 @@ impl<'a> ObjectVertex<'a> {
     //     ObjectVertex { bytes: ByteArrayOrRef::Array(array) }
     // }
 
-    pub fn build_prefix_prefix(prefix: &PrefixID<'_>) -> StorageKey<'static, {ObjectVertex::LENGTH_PREFIX_PREFIX}> {
+    pub fn build_prefix_prefix(prefix: PrefixID) -> StorageKey<'static, {ObjectVertex::LENGTH_PREFIX_PREFIX}> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_PREFIX);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
         StorageKey::new(Self::keyspace_id(), ByteArrayOrRef::Array(array))
     }
-    fn build_prefix_type(prefix: &PrefixID<'_>, type_id: &TypeID<'_>) -> StorageKey<'static, {ObjectVertex::LENGTH_PREFIX_TYPE}> {
+    fn build_prefix_type(prefix: PrefixID, type_id: &TypeID<'_>) -> StorageKey<'static, {ObjectVertex::LENGTH_PREFIX_TYPE}> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_id.bytes().bytes());
         StorageKey::new(Self::keyspace_id(), ByteArrayOrRef::Array(array))
     }
@@ -153,9 +153,9 @@ impl<'a> AttributeVertex<'a> {
         AttributeVertex { bytes: bytes }
     }
 
-    fn build(prefix: &PrefixID<'a>, type_id: &TypeID<'_>, attribute_id: AttributeID) -> Self {
+    fn build(prefix: PrefixID, type_id: &TypeID<'_>, attribute_id: AttributeID) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(prefix.bytes().bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_id.bytes().bytes());
         bytes.bytes_mut()[Self::range_attribute_id()].copy_from_slice(attribute_id.bytes().bytes());
         Self { bytes: ByteArrayOrRef::Array(bytes) }

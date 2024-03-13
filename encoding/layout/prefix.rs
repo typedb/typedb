@@ -15,45 +15,33 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use bytes::byte_array_or_ref::ByteArrayOrRef;
 use bytes::byte_reference::ByteReference;
 use bytes::increment_fixed;
 use storage::keyspace::keyspace::KeyspaceId;
 
-use crate::{AsBytes, EncodingKeyspace, Keyable};
+use crate::EncodingKeyspace;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PrefixID<'a> {
-    bytes: ByteReference<'a>,
+// A tiny struct will always be more efficient owning its own data and being Copy
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct PrefixID {
+    pub(crate) bytes: [u8; { PrefixID::LENGTH }],
 }
 
-impl<'a> PrefixID<'a> {
+impl PrefixID {
     pub(crate) const LENGTH: usize = 1;
 
-    pub(crate) const fn new(bytes: ByteReference<'a>) -> Self {
-        if (bytes.length() != Self::LENGTH) {
-            panic!("PrefixID requires bytes of length 1.")
-        }
+    pub(crate) const fn new(bytes: [u8; { PrefixID::LENGTH }]) -> Self {
         PrefixID { bytes: bytes }
     }
 
-    pub(crate) const fn byte_ref_const(&self) -> ByteReference<'a> {
-        self.bytes
-    }
-}
-
-impl<'a> AsBytes<'a, { PrefixID::LENGTH }> for PrefixID<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
+    pub(crate) const fn bytes(& self) -> [u8; { PrefixID::LENGTH }] {
         self.bytes
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, { PrefixID::LENGTH }> {
-        ByteArrayOrRef::Reference(self.bytes)
-    }
-}
+    // fn as_storage_key<const INLINE_BYTES: usize>(&self) -> StorageKey<'static, INLINE_BYTES> {
+    //     StorageKey::new_owned(self.keyspace_id(), ByteArray::copy(&self.bytes))
+    // }
 
-// used as prefix key
-impl<'a> Keyable<'a, { PrefixID::LENGTH }> for PrefixID<'a> {
     fn keyspace_id(&self) -> KeyspaceId {
         match PrefixType::from_prefix_id(self.clone()) {
             PrefixType::VertexEntityType |
@@ -67,6 +55,7 @@ impl<'a> Keyable<'a, { PrefixID::LENGTH }> for PrefixID<'a> {
         }
     }
 }
+
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum PrefixType {
@@ -93,7 +82,7 @@ macro_rules! prefix_functions {
                     Self::$name => {&$bytes}
                 )*
             };
-            PrefixID::new(ByteReference::new(bytes))
+            PrefixID::new(*bytes)
         }
 
         pub const fn successor_prefix_id(&self) -> PrefixID {
@@ -105,11 +94,11 @@ macro_rules! prefix_functions {
                     }
                 )*
             };
-            PrefixID::new(ByteReference::new(bytes))
+            PrefixID::new(*bytes)
         }
 
         pub fn from_prefix_id(prefix: PrefixID) -> Self {
-            match prefix.bytes.bytes() {
+            match prefix.bytes() {
                 $(
                     $bytes => {Self::$name}
                 )*

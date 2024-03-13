@@ -30,8 +30,8 @@ use encoding::graph::type_::property::{build_property_type_annotation_abstract, 
 use encoding::graph::type_::Root;
 use encoding::graph::type_::vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, TypeVertex};
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
-use encoding::primitive::label::Label;
-use encoding::primitive::string::StringBytes;
+use encoding::property::label::Label;
+use encoding::property::string::StringBytes;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::encoding::LABEL_SCOPED_NAME_STRING_INLINE;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;

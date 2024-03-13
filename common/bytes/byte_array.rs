@@ -122,7 +122,7 @@ impl<const BYTES: usize> From<ByteReference<'_>> for ByteArray<BYTES> {
     }
 }
 
-impl<const INLINE_BYTES: usize> Hash for  ByteArray<INLINE_BYTES>  {
+impl<const INLINE_BYTES: usize> Hash for ByteArray<INLINE_BYTES> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bytes().hash(state)
     }

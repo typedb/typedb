@@ -17,3 +17,4 @@
 
 pub mod label;
 pub mod string;
+mod value_type;
