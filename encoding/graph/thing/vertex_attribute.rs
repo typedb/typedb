@@ -42,10 +42,10 @@ impl<'a> AttributeVertex<'a> {
         AttributeVertex { bytes: bytes }
     }
 
-    fn build(prefix: PrefixID, type_id: &TypeID<'_>, attribute_id: AttributeID) -> Self {
+    fn build(prefix: PrefixID, type_id: TypeID, attribute_id: AttributeID) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE + attribute_id.length());
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
-        bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_id.bytes().bytes());
+        bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes.bytes_mut()[Self::range_for_attribute_id(&attribute_id)].copy_from_slice(attribute_id.bytes().bytes());
         Self { bytes: ByteArrayOrRef::Array(bytes) }
     }

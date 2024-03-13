@@ -27,8 +27,8 @@ use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
 use crate::graph::Typed;
 use crate::layout::prefix::{PrefixID, PrefixType};
 
-// TODO: we could make all Type constructs contain plain byte arrays, since they will always be 64 bytes, then make Types all Copy
-//       However, we should benchmark this first...
+// TODO: we could make all Type constructs contain plain byte arrays, since they will always be 64 bytes (BUFFER_KEY_INLINE), then make Types all Copy
+//       However, we should benchmark this first, since 64 bytes may be better off referenced
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TypeVertex<'a> {
@@ -88,7 +88,7 @@ impl<'a> TypeVertex<'a> {
     fn build(prefix: PrefixID, type_id: TypeID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
-        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_id.bytes().bytes());
+        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         TypeVertex { bytes: ByteArrayOrRef::Array(array) }
     }
 
@@ -121,38 +121,32 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}
 
 impl<'a> Typed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TypeID<'a> {
-    bytes: ByteArrayOrRef<'a, { TypeID::LENGTH }>,
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct TypeID {
+    bytes: [u8; { TypeID::LENGTH }],
 }
 
 pub type TypeIDUInt = u16;
 
-impl<'a> TypeID<'a> {
+impl TypeID {
     pub(crate) const LENGTH: usize = std::mem::size_of::<TypeIDUInt>();
 
-    pub fn new(bytes: ByteArrayOrRef<'a, { TypeID::LENGTH }>) -> TypeID<'a> {
-        debug_assert_eq!(bytes.length(), TypeID::LENGTH);
+    pub fn new(bytes: [u8; { TypeID::LENGTH }]) -> TypeID {
         TypeID { bytes: bytes }
     }
 
     pub fn build(id: TypeIDUInt) -> Self {
         debug_assert_eq!(std::mem::size_of_val(&id), TypeID::LENGTH);
-        TypeID { bytes: ByteArrayOrRef::Array(ByteArray::inline(id.to_be_bytes(), TypeID::LENGTH)) }
+        TypeID { bytes: id.to_be_bytes() }
     }
 
     pub fn as_u16(&self) -> u16 {
-        u16::from_be_bytes(self.bytes.bytes()[0..Self::LENGTH].try_into().unwrap())
-    }
-}
-
-impl<'a> AsBytes<'a, { TypeID::LENGTH }> for TypeID<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
+        u16::from_be_bytes(self.bytes)
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, { TypeID::LENGTH }> {
+    pub fn bytes(&self) -> [u8; { TypeID::LENGTH }] {
         self.bytes
     }
 }
+
 
