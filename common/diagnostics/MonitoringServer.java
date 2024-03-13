@@ -38,10 +38,13 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpServerExpectContinueHandler;
 import io.netty.handler.ssl.SslContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Objects;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONNECTION;
@@ -54,6 +57,8 @@ import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 public class MonitoringServer {
+    protected static final Logger LOG = LoggerFactory.getLogger(MonitoringServer.class);
+
     private final Metrics metrics;
     private final int scrapePort;
 
@@ -74,6 +79,7 @@ public class MonitoringServer {
             Channel channel = bootstrap.bind(scrapePort).sync().channel();
             channel.closeFuture().sync();
         } catch (InterruptedException ignored) {
+            if (LOG.isDebugEnabled()) LOG.debug("Monitoring server interrupted.");
             // do nothing
         } finally {
             group.shutdownGracefully();
@@ -140,8 +146,9 @@ public class MonitoringServer {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            // do nothing, print nothing
-            // FIXME debug log?
+            if (LOG.isDebugEnabled())
+                LOG.debug("Failed to respond to a metrics request:\n{}\n", Arrays.toString(cause.getStackTrace()));
+            // do nothing
         }
     }
 }
