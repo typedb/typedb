@@ -19,21 +19,14 @@
 package com.vaticle.typedb.core.common.diagnostics;
 
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.security.cert.X509Certificate;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
 public class StatisticReporter {
-    // FIXME this should either go away with either the metrics push endpoint providing a trusted cert,
-    // or this should be initialized with correct certs
-    private SSLContext sslContext;
 
     private final String reportingURI;
     private final Metrics metrics;
@@ -44,27 +37,12 @@ public class StatisticReporter {
     public StatisticReporter(Metrics metrics, String reportingURI) {
         this.metrics = metrics;
         this.reportingURI = reportingURI;
-
-        try {
-            sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, new TrustManager[] {
-                    new X509TrustManager() {
-                        @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
-                        @Override public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
-                        @Override public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
-                    }
-            }, new java.security.SecureRandom());
-            push();
-        } catch (Exception ignored) {
-            sslContext = null;
-        }
+        push();
     }
 
     private void push() {
         try {
             HttpsURLConnection conn = (HttpsURLConnection)(new URL(reportingURI)).openConnection();
-
-            conn.setSSLSocketFactory(sslContext.getSocketFactory());
 
             conn.setRequestMethod("POST");
 
