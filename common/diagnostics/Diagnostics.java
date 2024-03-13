@@ -116,6 +116,7 @@ public abstract class Diagnostics {
                 options.setEnableTracing(true);
                 options.setSendDefaultPii(false);
                 options.setRelease(releaseName(distributionName, version));
+                options.setPrintUncaughtStackTrace(true);
             });
             User user = new User();
             user.setUsername(serverID);
