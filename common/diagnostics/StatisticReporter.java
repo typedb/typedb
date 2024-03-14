@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import javax.net.ssl.HttpsURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
@@ -62,8 +61,7 @@ public class StatisticReporter {
 
             conn.getInputStream().readAllBytes();
         } catch (Exception e) {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Failed to push metrics to {}:\n{}\n", reportingURI, Arrays.toString(e.getStackTrace()));
+            if (LOG.isTraceEnabled()) LOG.trace("Failed to push metrics to {}:", reportingURI, e);
             // do nothing
         } finally {
             pushScheduledTask = scheduled.schedule(this::push, 1, HOURS);

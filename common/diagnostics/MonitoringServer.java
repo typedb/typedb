@@ -44,7 +44,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Objects;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONNECTION;
@@ -79,7 +78,7 @@ public class MonitoringServer {
             Channel channel = bootstrap.bind(scrapePort).sync().channel();
             channel.closeFuture().sync();
         } catch (InterruptedException ignored) {
-            if (LOG.isDebugEnabled()) LOG.debug("Monitoring server interrupted.");
+            if (LOG.isTraceEnabled()) LOG.trace("Monitoring server interrupted.");
             // do nothing
         } finally {
             group.shutdownGracefully();
@@ -146,8 +145,7 @@ public class MonitoringServer {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Failed to respond to a metrics request:\n{}\n", Arrays.toString(cause.getStackTrace()));
+            if (LOG.isTraceEnabled()) LOG.trace("Failed to respond to a metrics request", cause);
             // do nothing
         }
     }
