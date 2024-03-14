@@ -16,30 +16,50 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test")
 package(default_visibility = ["//visibility:public",])
 
-rust_library(
-    name = "durability",
-    crate_root = "durability.rs",
-    srcs = glob([
-        "*.rs",
-    ]),
+rust_test(
+    name = "basic",
+    crate_root = "basic.rs",
+    srcs = glob(["common/*.rs"]) + ["basic.rs"],
     deps = [
-        "//common/logger",
-        "//common/primitive",
-
+        "//storage/durability:durability",
         "@crates//:bincode",
-        "@crates//:lz4",
+        "@crates//:tempdir",
+    ],
+)
+
+rust_binary(
+    name = "streamer",
+    crate_root = "streamer.rs",
+    srcs = glob(["common/*.rs"]) + ["streamer.rs"],
+    deps = [
+        "//storage/durability:durability",
+        "@crates//:bincode",
         "@crates//:itertools",
-        "@crates//:serde",
-        "@crates//:tracing",
-    ]
+    ],
+)
+
+rust_binary(
+    name = "recoverer",
+    crate_root = "recoverer.rs",
+    srcs = glob(["common/*.rs"]) + ["recoverer.rs"],
+    deps = [
+        "//storage/durability:durability",
+        "@crates//:bincode",
+    ],
 )
 
 rust_test(
-    name = "durability_unit_tests",
-    crate = ":durability",
+    name = "crash",
+    crate_root = "crash.rs",
+    srcs = ["crash.rs"],
+    env = {
+        "TEST_WAL_STREAMER": "$(rootpath :streamer)",
+        "TEST_WAL_RECOVERER": "$(rootpath :recoverer)",
+    },
+    data = [":streamer", ":recoverer"],
     deps = ["@crates//:tempdir"],
 )
 
