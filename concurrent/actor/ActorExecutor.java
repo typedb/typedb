@@ -76,11 +76,13 @@ public class ActorExecutor {
     }
 
     public void submit(Runnable runnable, Consumer<Throwable> errorHandler) {
+        if (isStopped.get()) return;
         assert active;
         submittedTasks.offer(new Task(runnable, errorHandler));
     }
 
     public void submitFirst(Runnable runnable, Consumer<Throwable> errorHandler) {
+        if (isStopped.get()) return;
         assert active;
         submittedTasks.addFirst(new Task(runnable, errorHandler));
     }
