@@ -33,7 +33,7 @@ public class AssemblyTest {
 
     @Test
     public void bootup() throws InterruptedException, TimeoutException, IOException {
-        TypeDBCoreRunner server = new TypeDBCoreRunner(map(pair("--diagnostics.reporting.enable", "false")));
+        TypeDBCoreRunner server = new TypeDBCoreRunner(map(pair("--diagnostics.reporting.errors", "false")));
         try {
             server.start();
         } finally {

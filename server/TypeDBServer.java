@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.server;
 import ch.qos.logback.classic.LoggerContext;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.common.util.Java;
-import com.vaticle.typedb.core.common.diagnostics.CoreErrorReporter;
 import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
@@ -32,7 +31,6 @@ import com.vaticle.typedb.core.database.CoreFactory;
 import com.vaticle.typedb.core.database.Factory;
 import com.vaticle.typedb.core.migrator.CoreMigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
-import com.vaticle.typedb.core.server.common.Constants;
 import com.vaticle.typedb.core.server.logging.CoreLogback;
 import com.vaticle.typedb.core.server.parameters.CoreConfig;
 import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
@@ -72,6 +70,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOM
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PORT_IN_USE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
+import static com.vaticle.typedb.core.server.common.Constants.DIAGNOSTICS_REPORTING_URI;
+import static com.vaticle.typedb.core.server.common.Constants.USAGE_STATISTICS_REPORTING_URI;
 import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_ALPHABET;
 import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_FILE_NAME;
 import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_LENGTH;
@@ -126,6 +126,7 @@ public class TypeDBServer implements AutoCloseable {
         this.factory = factory;
         databaseMgr = factory.databaseManager(options);
         server = rpcServer();
+
         Thread.setDefaultUncaughtExceptionHandler(
                 (t, e) -> {
                     try {
@@ -193,9 +194,11 @@ public class TypeDBServer implements AutoCloseable {
 
     protected void configureDiagnostics() {
         try {
-            Diagnostics.initialise(
-                    config.diagnostics().reporting().enable(), serverID(), name(), Version.VERSION,
-                    Constants.DIAGNOSTICS_REPORTING_URI, new CoreErrorReporter()
+            Diagnostics.Core.initialise(
+                    serverID(), name(), Version.VERSION,
+                    config.diagnostics().reporting().errors(), DIAGNOSTICS_REPORTING_URI,
+                    config.diagnostics().reporting().statistics(), USAGE_STATISTICS_REPORTING_URI,
+                    config.diagnostics().monitoring().enable(), config.diagnostics().monitoring().port()
             );
         } catch (Throwable e) {
             LOG.debug("Failed to initialise diagnostics: ", e);
@@ -352,6 +355,7 @@ public class TypeDBServer implements AutoCloseable {
         TypeDBServer server = TypeDBServer.create(subcmdServer.config(), subcmdServer.isDebug());
         try {
             server.start();
+            Diagnostics.get().mayStartServing(null);
         } catch (TypeDBCheckedException e) {
             server.logger().error(e.getMessage());
             System.exit(1);

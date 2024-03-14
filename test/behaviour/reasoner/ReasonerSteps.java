@@ -103,7 +103,7 @@ public class ReasonerSteps {
     @Given("typedb starts")
     public void typedb_starts() throws IOException {
         assertNull(databaseMgr);
-        Diagnostics.initialiseNoop();
+        Diagnostics.Noop.initialise();
         resetDirectory();
         System.out.println("Connecting to TypeDB ...");
         databaseMgr = CoreDatabaseManager.open(options);

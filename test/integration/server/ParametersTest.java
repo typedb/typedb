@@ -59,7 +59,7 @@ public class ParametersTest {
                             new Option("log.output.file.archive-age-limit", "2 minutes"),
                             new Option("log.logger.default.level", "trace"),
                             new Option("log.logger.storage.level", "trace"),
-                            new Option("diagnostics.reporting.enable", "false")
+                            new Option("diagnostics.reporting.errors", "false")
                     ),
                     new CoreConfigParser()
             );

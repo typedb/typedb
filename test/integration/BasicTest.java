@@ -70,7 +70,7 @@ public class BasicTest {
 
     @BeforeClass
     public static void beforeClass() {
-        Diagnostics.initialiseNoop();
+        Diagnostics.Noop.initialise();
     }
 
     private static void assert_transaction_read(TypeDB.Transaction transaction) {

@@ -72,7 +72,7 @@ public class TypeInferenceTest {
 
     @BeforeClass
     public static void open() throws IOException {
-        Diagnostics.initialiseNoop();
+        Diagnostics.Noop.initialise();
         Util.resetDirectory(dataDir);
         databaseMgr = CoreDatabaseManager.open(options);
     }

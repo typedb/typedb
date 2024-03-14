@@ -18,63 +18,146 @@
 
 package com.vaticle.typedb.core.common.diagnostics;
 
-import io.sentry.ITransaction;
-import io.sentry.NoOpTransaction;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.ssl.SslContext;
 import io.sentry.Sentry;
-import io.sentry.TransactionContext;
 import io.sentry.protocol.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
 
-import static java.util.concurrent.TimeUnit.HOURS;
+public abstract class Diagnostics {
 
-public class Diagnostics {
+    protected static final Logger LOG = LoggerFactory.getLogger(Diagnostics.class);
 
-    private static final Logger LOG = LoggerFactory.getLogger(Diagnostics.class);
+    protected static Diagnostics diagnostics = null;
 
-    public static long INITIAL_DELAY_MILLIS = HOURS.toMillis(1);
+    protected final Metrics metrics;
 
-    private static Diagnostics diagnostics = null;
-
-    private final ErrorReporter errorReporter;
+    /* separate services, kept here so that they don't get GC'd */
+    private final StatisticReporter statisticReporter;
+    protected final MonitoringServer monitoringServer;
 
     /*
-     * Private singleton constructor
+     * Protected singleton constructor
      */
-    private Diagnostics(ErrorReporter errorReporter) {
-        this.errorReporter = errorReporter;
+    protected Diagnostics(Metrics metrics, StatisticReporter statisticReporter, MonitoringServer monitoringServer) {
+        this.metrics = metrics;
+        this.statisticReporter = statisticReporter;
+        this.monitoringServer = monitoringServer;
     }
 
-    public static synchronized void initialise(boolean enable, String serverID, String distributionName, String version, String diagnosticsURI,
-                                               ErrorReporter errorReporter) {
-        if (diagnostics != null) {
-            LOG.debug("Skipping re-initialising diagnostics");
-            return;
+    public static class Noop extends Diagnostics {
+        private Noop() {
+            super(null, null, null);
         }
-        Sentry.init(options -> {
-            options.setEnabled(enable);
-            options.setDsn(diagnosticsURI);
-            options.setEnableTracing(true);
-            options.setSendDefaultPii(false);
-            options.setRelease(releaseName(distributionName, version));
-        });
-        User user = new User();
-        user.setUsername(serverID);
-        Sentry.setUser(user);
-        diagnostics = new Diagnostics(errorReporter);
+
+        public static synchronized void initialise() {
+            Sentry.init(options -> options.setEnabled(false));
+            diagnostics = new Diagnostics.Noop();
+        }
+
+        @Override
+        public void mayStartServing(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {}
+        @Override
+        public void submitError(Throwable error) {}
+        @Override
+        public void requestAttempt(Metrics.NetworkRequests.Kind kind) {}
+        @Override
+        public void requestSuccess(Metrics.NetworkRequests.Kind kind) {}
+        @Override
+        public void setCurrentCount(Metrics.CurrentCounts.Kind kind, long value) {}
     }
 
-    public static synchronized void initialiseNoop() {
-        Sentry.init(options -> options.setEnabled(false));
-        diagnostics = new Diagnostics(new ErrorReporter.NoopReporter());
+    public static class Core extends Diagnostics {
+        protected Core(Metrics metrics, StatisticReporter statisticReporter, MonitoringServer monitoringServer) {
+            super(metrics, statisticReporter, monitoringServer);
+        }
+
+        public static synchronized void initialise(
+                String serverID, String distributionName, String version,
+                boolean errorReportingEnable, String errorReportingURI,
+                boolean statisticsReportingEnable, String statisticsReportingURI,
+                boolean monitoringEnable, int monitoringPort
+        ) {
+            if (diagnostics != null) {
+                LOG.debug("Skipping re-initialising diagnostics");
+                return;
+            }
+
+            initSentry(serverID, distributionName, version, errorReportingEnable, errorReportingURI);
+
+            Metrics metrics = new Metrics(serverID, distributionName, version);
+            StatisticReporter statisticReporter = initStatisticReporter(statisticsReportingEnable, statisticsReportingURI, metrics);
+            MonitoringServer monitoringServer = initMonitoringServer(monitoringEnable, monitoringPort, metrics);
+
+            diagnostics = new Core(metrics, statisticReporter, monitoringServer);
+        }
+
+        @Nullable
+        protected static MonitoringServer initMonitoringServer(boolean monitoringEnable, int monitoringPort, Metrics metrics) {
+            if (monitoringEnable) return new MonitoringServer(metrics, monitoringPort);
+            else return null;
+        }
+
+        @Nullable
+        protected static StatisticReporter initStatisticReporter(boolean statisticsReportingEnable, String statisticsReportingURI, Metrics metrics) {
+            if (statisticsReportingEnable) return new StatisticReporter(metrics, statisticsReportingURI);
+            else return null;
+        }
+
+        protected static void initSentry(String serverID, String distributionName, String version, boolean errorReportingEnable, String errorReportingURI) {
+            Sentry.init(options -> {
+                options.setEnabled(errorReportingEnable);
+                options.setDsn(errorReportingURI);
+                options.setEnableTracing(true);
+                options.setSendDefaultPii(false);
+                options.setRelease(releaseName(distributionName, version));
+                options.setPrintUncaughtStackTrace(true);
+            });
+            User user = new User();
+            user.setUsername(serverID);
+            Sentry.setUser(user);
+        }
+
+        @Override
+        public void mayStartServing(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
+            if (monitoringServer != null) monitoringServer.startServing(sslContext, middleware);
+        }
+
+        @Override
+        public void submitError(Throwable error) {
+            if (error instanceof TypeDBException) {
+                TypeDBException typeDBException = (TypeDBException) error;
+                if (isUserError(typeDBException)) {
+                    metrics.registerError(typeDBException.errorMessage().code());
+                    return;
+                }
+            }
+            Sentry.captureException(error);
+        }
+
+        private boolean isUserError(TypeDBException exception) {
+            return !(exception.errorMessage() instanceof ErrorMessage.Internal);
+        }
+
+        @Override
+        public void requestAttempt(Metrics.NetworkRequests.Kind kind) {
+            metrics.requestAttempt(kind);
+        }
+
+        @Override
+        public void requestSuccess(Metrics.NetworkRequests.Kind kind) {
+            metrics.requestSuccess(kind);
+        }
+
+        @Override
+        public void setCurrentCount(Metrics.CurrentCounts.Kind kind, long value) {
+            metrics.setCurrentCount(kind, value);
+        }
     }
 
     private static String releaseName(String distributionName, String version) {
@@ -86,89 +169,13 @@ public class Diagnostics {
         return diagnostics;
     }
 
-    public void submitError(Throwable error) {
-        this.errorReporter.reportError(error);
-    }
+    public abstract void mayStartServing(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware);
 
-    public ScheduledDiagnosticProvider scheduledProvider(long initialDelayMillis, long delayMillis, String name,
-                                                         String operation, @Nullable String description) {
-        return new ScheduledDiagnosticProvider(initialDelayMillis, delayMillis, transactionContext(name, operation, description));
-    }
+    public abstract void submitError(Throwable error);
 
-    public ScheduledFuture<?> scheduledRunner(long initialDelayMillis, long delayMillis, String name, String operation,
-                                              @Nullable String description, Consumer<TransactionContext> run,
-                                              ScheduledThreadPoolExecutor executor) {
-        TransactionContext transactionContext = transactionContext(name, operation, description);
-        return executor.scheduleWithFixedDelay(
-                () -> run.accept(transactionContext),
-                initialDelayMillis, delayMillis, TimeUnit.MILLISECONDS
-        );
-    }
+    public abstract void requestAttempt(Metrics.NetworkRequests.Kind kind);
 
-    private static TransactionContext transactionContext(String name, String operation, @Nullable String description) {
-        TransactionContext context = new TransactionContext(name, operation);
-        if (description != null) context.setDescription(description);
-        return context;
-    }
+    public abstract void requestSuccess(Metrics.NetworkRequests.Kind kind);
 
-    /**
-     * Poll-based scheduled diagnostics provider.
-     * Given an initial delay and subsequent period, many threads can compete to get the 'real' diagnostic
-     * transaction in the current time window. Only 1 'real' diagnostic transaction is used per time window,
-     * and the remainder receive a No-op diagnostic transaction.
-     */
-    public static class ScheduledDiagnosticProvider {
-
-        private final long initialDelayMillis;
-        private final long delayMillis;
-        private final TransactionContext context;
-        private final long initialTime;
-        private final AtomicLong lastWindow;
-
-        private ScheduledDiagnosticProvider(long initialDelayMillis, long delayMillis, TransactionContext transactionContext) {
-            this.initialDelayMillis = initialDelayMillis;
-            this.delayMillis = delayMillis;
-            this.context = transactionContext;
-            this.initialTime = System.currentTimeMillis();
-            this.lastWindow = new AtomicLong(-1); // last consumed delay windows after initial delay window
-        }
-
-        /**
-         * Fetch a diagnostic transaction which is a no-op if the time window has already been taken previously.
-         *
-         * @return A real or no-op diagnostic transaction
-         */
-        public ITransaction get(BiFunction<ITransaction, Long, ITransaction> mayTransform) {
-            long time = System.currentTimeMillis();
-            ITransaction txn;
-            long timeSinceLast;
-            if (time < initialTime + initialDelayMillis) {
-                // initial delay window
-                txn = NoOpTransaction.getInstance();
-                timeSinceLast = time - initialTime;
-            } else {
-                // number of current delay window since initial delay window ended
-                long currentWindow = (time - (initialTime + initialDelayMillis)) / delayMillis;
-                long lastWindowValue = this.lastWindow.get();
-
-                // if the current window is equal to the last window (or last window has moved forward by another thread)
-                // then the current thread should not sample
-                if (currentWindow <= lastWindowValue) {
-                    txn = NoOpTransaction.getInstance();
-                    timeSinceLast = 0;
-                } else {
-                    // one thread will be allowed to populate the lastWindow with the current one
-                    if (this.lastWindow.compareAndSet(lastWindowValue, currentWindow)) {
-                        txn = Sentry.startTransaction(context);
-                        timeSinceLast = (currentWindow - lastWindowValue) * delayMillis;
-                    } else {
-                        txn = NoOpTransaction.getInstance();
-                        timeSinceLast = 0;
-                    }
-                }
-            }
-            if (!txn.isNoOp()) return mayTransform.apply(txn, timeSinceLast);
-            else return txn;
-        }
-    }
+    public abstract void setCurrentCount(Metrics.CurrentCounts.Kind kind, long value);
 }

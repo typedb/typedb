@@ -91,7 +91,7 @@ public class UnifyRelationConcludableTest {
 
     @BeforeClass
     public static void setUp() throws IOException {
-        Diagnostics.initialiseNoop();
+        Diagnostics.Noop.initialise();
         Util.resetDirectory(dataDir);
         databaseMgr = CoreDatabaseManager.open(options);
         databaseMgr.create(database);
