@@ -28,13 +28,13 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Metrics {
     private final SystemProperties system;
     private final NetworkRequests requests;
-    private final UsageCounters usage;
+    private final CurrentCounts usage;
     private final UserErrorStatistics userErrors;
 
     public Metrics(String serverID, String name, String version) {
         this.system = new SystemProperties(serverID, name, version);
         this.requests = new NetworkRequests();
-        this.usage = new UsageCounters();
+        this.usage = new CurrentCounts();
         this.userErrors = new UserErrorStatistics();
     }
 
@@ -46,7 +46,7 @@ public class Metrics {
         requests.success(kind);
     }
 
-    public void setCurrentCount(UsageCounters.Kind kind, long value) {
+    public void setCurrentCount(CurrentCounts.Kind kind, long value) {
         usage.set(kind, value);
     }
 
@@ -155,27 +155,27 @@ public class Metrics {
         }
     }
 
-    public static class UsageCounters {
+    public static class CurrentCounts {
         public enum Kind {
             DATABASES, SESSIONS, TRANSACTIONS, USERS,
         }
 
-        private final ConcurrentMap<Kind, AtomicLong> gauges = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Kind, AtomicLong> counts = new ConcurrentHashMap<>();
 
-        UsageCounters() {
+        CurrentCounts() {
             for (Kind kind : Kind.values()) {
-                gauges.put(kind, new AtomicLong(0));
+                counts.put(kind, new AtomicLong(0));
             }
         }
 
         public void set(Kind kind, long value) {
-            gauges.get(kind).set(value);
+            counts.get(kind).set(value);
         }
 
         JsonObject asJSON() {
             JsonObject current = new JsonObject();
             for (Kind kind : Kind.values()) {
-                current.add(kind.name(), gauges.get(kind).get());
+                current.add(kind.name(), counts.get(kind).get());
             }
             return current;
         }
@@ -183,7 +183,7 @@ public class Metrics {
         String formatPrometheus() {
             StringBuilder buf  = new StringBuilder("# TYPE typedb_current_count gauge\n");
             for (Kind kind : Kind.values()) {
-                buf.append("typedb_current_count{kind=\"").append(kind).append("\"} ").append(gauges.get(kind)).append("\n");
+                buf.append("typedb_current_count{kind=\"").append(kind).append("\"} ").append(counts.get(kind)).append("\n");
             }
             return buf.toString();
         }

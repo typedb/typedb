@@ -59,9 +59,9 @@ import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests
 import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.SESSION;
 import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.USER;
 import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.USER_MANAGEMENT;
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.UsageCounters.Kind.DATABASES;
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.UsageCounters.Kind.SESSIONS;
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.UsageCounters.Kind.TRANSACTIONS;
+import static com.vaticle.typedb.core.common.diagnostics.Metrics.CurrentCounts.Kind.DATABASES;
+import static com.vaticle.typedb.core.common.diagnostics.Metrics.CurrentCounts.Kind.SESSIONS;
+import static com.vaticle.typedb.core.common.diagnostics.Metrics.CurrentCounts.Kind.TRANSACTIONS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;

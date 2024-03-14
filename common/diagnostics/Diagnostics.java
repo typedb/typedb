@@ -69,7 +69,7 @@ public abstract class Diagnostics {
         @Override
         public void requestSuccess(Metrics.NetworkRequests.Kind kind) {}
         @Override
-        public void setCurrentCount(Metrics.UsageCounters.Kind kind, long value) {}
+        public void setCurrentCount(Metrics.CurrentCounts.Kind kind, long value) {}
     }
 
     public static class Core extends Diagnostics {
@@ -155,7 +155,7 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void setCurrentCount(Metrics.UsageCounters.Kind kind, long value) {
+        public void setCurrentCount(Metrics.CurrentCounts.Kind kind, long value) {
             metrics.setCurrentCount(kind, value);
         }
     }
@@ -177,5 +177,5 @@ public abstract class Diagnostics {
 
     public abstract void requestSuccess(Metrics.NetworkRequests.Kind kind);
 
-    public abstract void setCurrentCount(Metrics.UsageCounters.Kind kind, long value);
+    public abstract void setCurrentCount(Metrics.CurrentCounts.Kind kind, long value);
 }
