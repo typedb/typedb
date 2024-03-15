@@ -31,7 +31,7 @@ mod relation;
 pub mod thing_manager;
 mod value;
 
-trait ThingAPI<'a>: ConceptAPI<'a> {}
+pub trait ThingAPI<'a>: ConceptAPI<'a> {}
 
 pub trait ObjectAPI<'a>: ThingAPI<'a> {
     fn vertex(&'a self) -> &ObjectVertex<'a>;

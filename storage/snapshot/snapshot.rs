@@ -88,7 +88,7 @@ impl<'storage> ReadSnapshot<'storage> {
         ReadSnapshot { storage, open_sequence_number }
     }
 
-    pub fn get<'snapshot, const KS: usize>(&self, key: StorageKeyReference<'_>) -> Option<ByteArray<KS>> {
+    pub fn get<const KS: usize>(&self, key: StorageKeyReference<'_>) -> Option<ByteArray<KS>> {
         // TODO: this clone may not be necessary - we could pass a reference up?
         self.storage.get(key, &self.open_sequence_number, |reference| ByteArray::from(reference))
     }

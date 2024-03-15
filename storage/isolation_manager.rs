@@ -137,9 +137,7 @@ impl IsolationManager {
                     Ok(())
                 }
             }
-            CommitStatus::Committed(predecessor_record) => {
-                self.validate_isolation(commit_record, predecessor_record)
-            }
+            CommitStatus::Committed(predecessor_record) => self.validate_isolation(commit_record, predecessor_record),
             CommitStatus::Closed => Ok(()),
         }
     }

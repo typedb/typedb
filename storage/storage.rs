@@ -23,10 +23,10 @@ use std::{
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use durability::{wal::WAL, DurabilityService, SequenceNumber, Sequencer};
-use iterator::{State};
+use iterator::State;
 use logger::{error, result::ResultExt};
 use primitive::u80::U80;
-use resource::constants::snapshot::{BUFFER_VALUE_INLINE};
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use snapshot::write::Write;
 use speedb::{Options, WriteBatch};
 

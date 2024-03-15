@@ -28,10 +28,7 @@ use encoding::{
 use storage::snapshot::snapshot::Snapshot;
 
 use crate::{
-    thing::{
-        entity::{Entity, EntityIterator},
-        ObjectAPI,
-    },
+    thing::entity::{Entity, EntityIterator},
     type_::{entity_type::EntityType, TypeAPI},
 };
 

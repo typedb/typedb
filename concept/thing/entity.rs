@@ -23,7 +23,6 @@ use crate::{
     concept_iterator,
     error::{ConceptError, ConceptErrorKind},
     thing::{EntityAPI, ObjectAPI, ThingAPI},
-    type_::TypeAPI,
     ConceptAPI,
 };
 
