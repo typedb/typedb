@@ -17,10 +17,9 @@
 
 use std::{collections::HashSet, ops::Deref};
 
-use encoding::{
-    graph::type_::vertex::TypeVertex,
-    property::{label::Label, value_type::ValueType},
-};
+use encoding::graph::type_::vertex::TypeVertex;
+use encoding::value::label::Label;
+use encoding::value::value_type::ValueType;
 use primitive::maybe_owns::MaybeOwns;
 
 use crate::{

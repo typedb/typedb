@@ -19,36 +19,20 @@ use std::collections::{BTreeMap, Bound, HashMap, HashSet};
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use durability::SequenceNumber;
-use encoding::{
-    graph::{
-        type_::{
-            edge::{build_edge_owns_prefix, build_edge_sub_prefix, new_edge_owns, new_edge_sub},
-            property::{
-                build_property_type_annotation_abstract, build_property_type_label, build_property_type_value_type,
-                TypeVertexProperty,
-            },
-            vertex::{
-                build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
-                is_vertex_attribute_type, is_vertex_entity_type, is_vertex_relation_type, new_vertex_attribute_type,
-                new_vertex_entity_type, new_vertex_relation_type, TypeVertex,
-            },
-            Root,
-        },
-        Typed,
-    },
-    layout::prefix::PrefixType,
-    property::{
-        label::Label,
-        string::StringBytes,
-        value_type::{ValueType, ValueTypeID},
-    },
-    Keyable, Prefixed,
-};
-use resource::constants::{
-    encoding::LABEL_SCOPED_NAME_STRING_INLINE,
-    snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
-};
-use storage::{key_value::StorageKeyArray, MVCCStorage};
+use encoding::{Keyable, Prefixed};
+use encoding::graph::type_::edge::{build_edge_owns_prefix, build_edge_sub_prefix, new_edge_owns, new_edge_sub};
+use encoding::graph::type_::property::{build_property_type_annotation_abstract, build_property_type_label, build_property_type_value_type, TypeVertexProperty};
+use encoding::graph::type_::Root;
+use encoding::graph::type_::vertex::{build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix, is_vertex_attribute_type, is_vertex_entity_type, is_vertex_relation_type, new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, TypeVertex};
+use encoding::graph::Typed;
+use encoding::layout::prefix::PrefixType;
+use encoding::value::label::Label;
+use encoding::value::string::StringBytes;
+use encoding::value::value_type::{ValueType, ValueTypeID};
+use resource::constants::encoding::LABEL_SCOPED_NAME_STRING_INLINE;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
+use storage::key_value::StorageKeyArray;
+use storage::MVCCStorage;
 
 use crate::type_::{
     annotation::AnnotationAbstract,

@@ -50,7 +50,9 @@ impl PrefixID {
             | PrefixType::IndexLabelToType
             | PrefixType::PropertyTypeEdge => EncodingKeyspace::Schema.id(),
             PrefixType::VertexEntity => todo!(),
+            PrefixType::VertexRelation => todo!(),
             PrefixType::VertexAttributeLong => todo!(),
+            PrefixType::VertexAttributeString => todo!(),
         }
     }
 }
@@ -62,7 +64,9 @@ pub enum PrefixType {
     VertexAttributeType,
 
     VertexEntity,
+    VertexRelation,
     VertexAttributeLong,
+    VertexAttributeString,
 
     PropertyType,
     PropertyTypeEdge,
@@ -113,7 +117,9 @@ impl PrefixType {
            VertexAttributeType => [22],
 
            VertexEntity => [60],
-           VertexAttributeLong => [61],
+           VertexRelation => [61],
+           VertexAttributeLong => [71],
+           VertexAttributeString => [72],
 
            PropertyType => [100],
            PropertyTypeEdge => [101],

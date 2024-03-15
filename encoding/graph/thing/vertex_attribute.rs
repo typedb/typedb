@@ -15,17 +15,18 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{mem, ops::Range};
+use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use storage::key_value::StorageKey;
+use storage::keyspace::keyspace::KeyspaceId;
 
-use crate::{
-    graph::{type_::vertex::TypeID, Typed},
-    layout::prefix::{PrefixID, PrefixType},
-    property::value_type::ValueType,
-    AsBytes, Prefixed,
-};
+use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
+use crate::graph::type_::vertex::TypeID;
+use crate::graph::Typed;
+use crate::layout::prefix::{PrefixID, PrefixType};
+use crate::value::value_type::ValueType;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AttributeVertex<'a> {
@@ -40,12 +41,20 @@ impl<'a> AttributeVertex<'a> {
         AttributeVertex { bytes }
     }
 
-    fn build(prefix: PrefixID, type_id: TypeID, attribute_id: AttributeID) -> Self {
+    pub(crate) fn build(prefix: PrefixType, type_id: TypeID, attribute_id: AttributeID) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE + attribute_id.length());
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
-        bytes.bytes_mut()[Self::range_for_attribute_id(&attribute_id)].copy_from_slice(attribute_id.bytes().bytes());
+        bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id.length())].copy_from_slice(attribute_id.bytes());
         Self { bytes: ByteArrayOrRef::Array(bytes) }
+    }
+
+    pub(crate) fn build_prefix(prefix: PrefixType, type_id: TypeID, attribute_id_part: &[u8]) -> StorageKey<'static, BUFFER_KEY_INLINE> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE + attribute_id_part.len());
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
+        bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id_part.len())].copy_from_slice(attribute_id_part);
+        StorageKey::new_owned(Self::keyspace_id(), bytes)
     }
 
     pub fn value_type(&self) -> ValueType {
@@ -55,18 +64,18 @@ impl<'a> AttributeVertex<'a> {
         }
     }
 
-    fn attribute_id(&'a self) -> AttributeID<'a> {
-        AttributeID::new(ByteArrayOrRef::Reference(ByteReference::new(
+    pub fn attribute_id(&self) -> AttributeID {
+        AttributeID::new(
             &self.bytes.bytes()[self.range_of_attribute_id()],
-        )))
+        )
     }
 
     fn range_of_attribute_id(&self) -> Range<usize> {
         Self::RANGE_TYPE_ID.end..self.length()
     }
 
-    fn range_for_attribute_id(attribute_id: &AttributeID) -> Range<usize> {
-        Self::RANGE_TYPE_ID.end..Self::RANGE_TYPE_ID.end + attribute_id.length()
+    fn range_for_attribute_id(id_length: usize) -> Range<usize> {
+        Self::RANGE_TYPE_ID.end..Self::RANGE_TYPE_ID.end + id_length
     }
 
     pub fn length(&self) -> usize {
@@ -75,6 +84,10 @@ impl<'a> AttributeVertex<'a> {
 
     pub fn into_owned(self) -> AttributeVertex<'static> {
         AttributeVertex { bytes: self.bytes.into_owned() }
+    }
+
+    fn keyspace_id() -> KeyspaceId {
+        EncodingKeyspace::Data.id()
     }
 }
 
@@ -92,57 +105,79 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {}
 
 impl<'a> Typed<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {}
 
-#[derive(Debug, PartialEq, Eq)]
-struct AttributeID<'a> {
-    bytes: ByteArrayOrRef<'a, { AttributeID::LENGTH }>,
-}
-
-impl<'a> AttributeID<'a> {
-    const HEADER_LENGTH: usize = 4;
-    const NUMBER_LENGTH: usize = 8;
-    const LENGTH: usize = Self::HEADER_LENGTH + Self::NUMBER_LENGTH;
-
-    pub fn new(bytes: ByteArrayOrRef<'a, { AttributeID::LENGTH }>) -> Self {
-        debug_assert_eq!(bytes.length(), Self::LENGTH);
-        AttributeID { bytes }
-    }
-
-    pub fn build(header: &[u8; AttributeID::HEADER_LENGTH], id: u64) -> Self {
-        debug_assert_eq!(mem::size_of_val(&id), Self::NUMBER_LENGTH);
-        let id_bytes = id.to_be_bytes();
-        let mut array = ByteArray::zeros(Self::LENGTH);
-        array.bytes_mut()[Self::range_header()].copy_from_slice(header);
-        array.bytes_mut()[Self::range_id()].copy_from_slice(&id_bytes);
-        AttributeID { bytes: ByteArrayOrRef::Array(array) }
-    }
-
-    fn header(&'a self) -> ByteReference<'a> {
-        ByteReference::new(&self.bytes.bytes()[Self::range_header()])
-    }
-
-    fn id(&'a self) -> ByteReference<'a> {
-        ByteReference::new(&self.bytes.bytes()[Self::range_id()])
-    }
-
-    fn length(&self) -> usize {
-        self.bytes.length()
-    }
-
-    const fn range_header() -> Range<usize> {
-        0..Self::HEADER_LENGTH
-    }
-
-    const fn range_id() -> Range<usize> {
-        Self::range_header().end..Self::range_header().end + Self::NUMBER_LENGTH
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
+    fn keyspace_id(&self) -> KeyspaceId {
+        Self::keyspace_id()
     }
 }
 
-impl<'a> AsBytes<'a, { AttributeID::LENGTH }> for AttributeID<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum AttributeID {
+    Bytes_8(AttributeID_8),
+    Bytes_16(AttributeID_16),
+}
+
+impl AttributeID {
+    pub(crate) fn new(bytes: &[u8]) -> Self {
+        match bytes.len() {
+            8 => Self::Bytes_8(AttributeID_8::new(bytes.try_into().unwrap())),
+            16 => Self::Bytes_16(AttributeID_16::new(bytes.try_into().unwrap())),
+            _ => panic!("Unknown Attribute ID encoding length: {}", bytes.len())
+        }
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, { AttributeID::LENGTH }> {
+    pub(crate) fn bytes(&self) -> &[u8] {
+        match self {
+            AttributeID::Bytes_8(id_8) => &id_8.bytes,
+            AttributeID::Bytes_16(id_16) => &id_16.bytes,
+        }
+    }
+
+    pub(crate) const fn length(&self) -> usize {
+        match self {
+            AttributeID::Bytes_8(_) => AttributeID_8::LENGTH,
+            AttributeID::Bytes_16(_) => AttributeID_16::LENGTH,
+        }
+    }
+
+    pub fn unwrap_bytes_16(self) -> AttributeID_16 {
+        match self {
+            AttributeID::Bytes_8(_) => panic!("Cannot unwrap bytes_16 from AttributeID::Bytes_8"),
+            AttributeID::Bytes_16(bytes) => bytes,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub(crate) struct AttributeID_8 {
+    bytes: [u8; AttributeID_8::LENGTH],
+}
+
+impl AttributeID_8 {
+    const LENGTH: usize = 8;
+
+    pub fn new(bytes: [u8; AttributeID_8::LENGTH]) -> Self {
+        Self { bytes: bytes }
+    }
+
+    fn bytes(&self) -> [u8; AttributeID_8::LENGTH] {
+        self.bytes
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct AttributeID_16 {
+    bytes: [u8; AttributeID_16::LENGTH],
+}
+
+impl AttributeID_16 {
+    pub(crate) const LENGTH: usize = 16;
+
+    pub fn new(bytes: [u8; AttributeID_16::LENGTH]) -> Self {
+        Self { bytes: bytes }
+    }
+
+    pub(crate) fn bytes(&self) -> [u8; AttributeID_16::LENGTH] {
         self.bytes
     }
 }

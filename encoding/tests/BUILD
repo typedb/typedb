@@ -36,6 +36,26 @@ rust_test(
     ]
 )
 
+rust_test(
+    name = "test_attribute_vertex",
+    srcs = glob([
+        "test_attribute_vertex.rs",
+    ]),
+    deps = [
+        "//common/bytes",
+        "//common/logger",
+        "//encoding",
+        "//storage",
+        "//resource",
+        "//util/test:test_utils",
+
+        "@crates//:rand",
+        "@crates//:tracing",
+    ]
+)
+
+
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*", "*/*/*"]),

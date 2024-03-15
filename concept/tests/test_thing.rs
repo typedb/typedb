@@ -17,13 +17,14 @@
 
 use std::rc::Rc;
 
-use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use encoding::{
-    create_keyspaces,
-    graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
-    primitive::label::Label,
-};
-use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
+use concept::thing::thing_manager::ThingManager;
+use concept::type_::type_manager::TypeManager;
+use encoding::create_keyspaces;
+use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
+use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
+use encoding::value::label::Label;
+use storage::MVCCStorage;
+use storage::snapshot::snapshot::Snapshot;
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
 #[test]
@@ -31,14 +32,15 @@ fn thing_create_iterate() {
     init_logging();
     let storage_path = create_tmp_dir();
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let type_vertex_generator = TypeVertexGenerator::new();
     create_keyspaces(&mut storage);
+    TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 
     let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
     {
         let thing_vertex_generator = ThingVertexGenerator::new();
         let thing_manager = ThingManager::new(snapshot.clone(), &thing_vertex_generator);
 
-        let type_vertex_generator = TypeVertexGenerator::new();
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
 
         let person_label = Label::build("person");

@@ -15,27 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use encoding::value::value_type::ValueType;
-
-// TODO: how do we handle user-created compound structs?
-
-// TODO: careful with equality here: Doubles don't have a well defined equality
-
-#[derive(Debug, Clone)]
-pub enum Value {
-    Boolean(bool),
-    Long(i64),
-    Double(f64),
-    String(Box<str>),
-}
-
-impl Value {
-    pub fn value_type(&self) -> ValueType {
-        match self {
-            Value::Boolean(_) => ValueType::Boolean,
-            Value::Long(_) => ValueType::Long,
-            Value::Double(_) => ValueType::Double,
-            Value::String(_) => ValueType::String,
-        }
-    }
-}
+pub mod label;
+pub mod string;
+pub mod value_type;
+pub mod long;

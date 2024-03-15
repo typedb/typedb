@@ -25,7 +25,7 @@ use crate::layout::prefix::{PrefixID, PrefixType};
 mod error;
 pub mod graph;
 pub mod layout;
-pub mod property;
+pub mod value;
 
 pub enum EncodingKeyspace {
     Schema,

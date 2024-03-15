@@ -50,10 +50,6 @@ impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
         StringBytes { bytes: ByteArrayOrRef::Reference(ByteReference::new(value.as_bytes())) }
     }
 
-    pub fn clone_as_ref(&'a self) -> StringBytes<'a, INLINE_LENGTH> {
-        StringBytes { bytes: ByteArrayOrRef::Reference(self.bytes.as_reference()) }
-    }
-
     pub fn decode(&self) -> &str {
         std::str::from_utf8(self.bytes.bytes())
             .map_err(|err| EncodingError {
@@ -67,6 +63,10 @@ impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
 
     pub fn length(&self) -> usize {
         self.bytes.length()
+    }
+
+    pub fn clone_as_ref(&'a self) -> StringBytes<'a, INLINE_LENGTH> {
+        StringBytes { bytes: ByteArrayOrRef::Reference(self.bytes.as_reference()) }
     }
 
     pub fn into_owned(self) -> StringBytes<'static, INLINE_LENGTH> {

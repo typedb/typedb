@@ -18,14 +18,10 @@
 use std::sync::atomic::{AtomicU16, Ordering};
 
 use storage::MVCCStorage;
+use storage::snapshot::snapshot::WriteSnapshot;
 
-use crate::{
-    graph::type_::vertex::{
-        build_vertex_attribute_type, build_vertex_attribute_type_prefix, build_vertex_entity_type,
-        build_vertex_entity_type_prefix, build_vertex_relation_type, build_vertex_relation_type_prefix, TypeID,
-        TypeVertex,
-    },
-};
+use crate::graph::type_::vertex::{build_vertex_attribute_type, build_vertex_attribute_type_prefix, build_vertex_entity_type, build_vertex_entity_type_prefix, build_vertex_relation_type, build_vertex_relation_type_prefix, TypeID, TypeVertex};
+use crate::Keyable;
 
 // TODO: if we always scan for the next available TypeID, we automatically recycle deleted TypeIDs?
 //          -> If we do reuse TypeIDs, this we also need to make sure to reset the Thing ID generators on delete! (test should exist to confirm this).
@@ -80,18 +76,24 @@ impl TypeVertexGenerator {
         TypeVertexGenerator { next_entity, next_relation, next_attribute }
     }
 
-    pub fn take_entity_type(&self) -> TypeVertex<'static> {
+    pub fn create_entity_type(&self, snapshot: &WriteSnapshot<'_>) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_entity.fetch_add(1, Ordering::Relaxed));
-        build_vertex_entity_type(next)
+        let vertex = build_vertex_entity_type(next);
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        vertex
     }
 
-    pub fn take_relation_type(&self) -> TypeVertex<'static> {
+    pub fn create_relation_type(&self, snapshot: &WriteSnapshot<'_>) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_relation.fetch_add(1, Ordering::Relaxed));
-        build_vertex_relation_type(next)
+        let vertex = build_vertex_relation_type(next);
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        vertex
     }
 
-    pub fn take_attribute_type(&self) -> TypeVertex<'static> {
+    pub fn create_attribute_type(&self, snapshot: &WriteSnapshot<'_>) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_attribute.fetch_add(1, Ordering::Relaxed));
-        build_vertex_attribute_type(next)
+        let vertex = build_vertex_attribute_type(next);
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        vertex
     }
 }

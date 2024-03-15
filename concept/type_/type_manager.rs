@@ -17,28 +17,24 @@
 
 use std::{collections::HashSet, ops::Deref, rc::Rc, sync::Arc};
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
-use encoding::{
-    graph::type_::{
-        edge::{
-            build_edge_owns, build_edge_owns_prefix, build_edge_owns_reverse, build_edge_sub, build_edge_sub_prefix,
-            build_edge_sub_reverse, new_edge_owns, new_edge_sub,
-        },
-        index::LabelToTypeVertexIndex,
-        property::{
-            build_property_type_annotation_abstract, build_property_type_label, build_property_type_value_type,
-        },
-        vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, TypeVertex},
-        vertex_generator::TypeVertexGenerator,
-        Root,
-    },
-    property::{
-        label::Label,
-        string::StringBytes,
-        value_type::{ValueType, ValueTypeID},
-    },
-    AsBytes, Keyable,
-};
+use std::collections::HashSet;
+use std::io::Read;
+use std::ops::Deref;
+use std::rc::Rc;
+use std::sync::Arc;
+
+use bytes::byte_array::ByteArray;
+use bytes::byte_array_or_ref::ByteArrayOrRef;
+use encoding::{AsBytes, Keyable};
+use encoding::graph::type_::edge::{build_edge_owns, build_edge_owns_prefix, build_edge_owns_reverse, build_edge_sub, build_edge_sub_prefix, build_edge_sub_reverse, new_edge_owns, new_edge_sub};
+use encoding::graph::type_::index::LabelToTypeVertexIndex;
+use encoding::graph::type_::property::{build_property_type_annotation_abstract, build_property_type_label, build_property_type_value_type};
+use encoding::graph::type_::Root;
+use encoding::graph::type_::vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, TypeVertex};
+use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
+use encoding::value::label::Label;
+use encoding::value::string::StringBytes;
+use encoding::value::value_type::{ValueType, ValueTypeID};
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
@@ -227,8 +223,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     pub fn create_entity_type(&self, label: &Label, is_root: bool) -> EntityType<'static> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let type_vertex = self.vertex_generator.take_entity_type();
-            write_snapshot.put(type_vertex.as_storage_key().into_owned_array());
+            let type_vertex = self.vertex_generator.create_entity_type(write_snapshot);
             self.set_storage_label(type_vertex.clone().into_owned(), label);
             if !is_root {
                 self.set_storage_supertype(
@@ -246,8 +241,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     pub fn create_relation_type(&self, label: &Label, is_root: bool) -> RelationType<'static> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let type_vertex = self.vertex_generator.take_relation_type();
-            write_snapshot.put(type_vertex.as_storage_key().into_owned_array());
+            let type_vertex = self.vertex_generator.create_relation_type(write_snapshot);
             self.set_storage_label(type_vertex.clone().into_owned(), label);
             if !is_root {
                 self.set_storage_supertype(
@@ -264,8 +258,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     pub fn create_attribute_type(&self, label: &Label, is_root: bool) -> AttributeType<'static> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let type_vertex = self.vertex_generator.take_attribute_type();
-            write_snapshot.put(type_vertex.as_storage_key().into_owned_array());
+            let type_vertex = self.vertex_generator.create_attribute_type(write_snapshot);
             self.set_storage_label(type_vertex.clone(), label);
             if !is_root {
                 self.set_storage_supertype(

@@ -44,11 +44,10 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
 
     pub fn create_entity(&self, entity_type: &EntityType) -> Entity {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let vertex = self.vertex_generator.take_entity_vertex(entity_type.vertex().type_id());
-            write_snapshot.put(vertex.as_storage_key().into_owned_array());
-            return Entity::new(vertex);
+            return Entity::new(self.vertex_generator.create_entity(entity_type.vertex().type_id(), write_snapshot));
+        } else {
+            panic!("Illegal state: create entity requires write snapshot")
         }
-        panic!("Illegal state: create entity requires write snapshot")
     }
 
     pub fn get_entities(&self) -> EntityIterator<'_, 1> {

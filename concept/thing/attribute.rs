@@ -15,7 +15,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use encoding::{graph::thing::vertex_attribute::AttributeVertex, property::value_type::ValueType};
+use encoding::graph::thing::vertex_attribute::AttributeVertex;
+use encoding::value::value_type::ValueType;
 
 use crate::{
     thing::{value::Value, AttributeAPI, ThingAPI},

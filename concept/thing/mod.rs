@@ -15,10 +15,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use encoding::{
-    graph::thing::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex},
-    property::value_type::ValueType,
-};
+use encoding::graph::thing::vertex_attribute::AttributeVertex;
+use encoding::graph::thing::vertex_object::ObjectVertex;
+use encoding::value::value_type::ValueType;
 
 use crate::{
     thing::{attribute::Attribute, entity::Entity, relation::Relation, value::Value},

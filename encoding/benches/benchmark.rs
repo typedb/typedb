@@ -29,14 +29,14 @@ use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
 fn vertex_generation(thing_iid_generator: Arc<ThingVertexGenerator>, type_id: &TypeID<'_>) -> ObjectVertex<'static> {
-    thing_iid_generator.take_entity_vertex(type_id)
+    thing_iid_generator.create_entity(type_id)
 }
 
 fn vertex_generation_to_key(
     thing_iid_generator: Arc<ThingVertexGenerator>,
     type_id: &TypeID<'_>,
 ) -> StorageKey<'static, { BUFFER_KEY_INLINE }> {
-    thing_iid_generator.take_entity_vertex(type_id).into_storage_key()
+    thing_iid_generator.create_entity(type_id).into_storage_key()
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

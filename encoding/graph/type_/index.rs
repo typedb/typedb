@@ -21,11 +21,10 @@ use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_refer
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::keyspace::keyspace::KeyspaceId;
 
-use crate::{
-    layout::prefix::{PrefixID, PrefixType},
-    property::{label::Label, string::StringBytes},
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
-};
+use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
+use crate::layout::prefix::{PrefixID, PrefixType};
+use crate::value::label::Label;
+use crate::value::string::StringBytes;
 
 pub struct LabelToTypeVertexIndex<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,

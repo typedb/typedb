@@ -15,6 +15,28 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub mod label;
-pub mod string;
-pub mod value_type;
+
+#[derive(Debug, Copy, Clone)]
+pub struct Long {
+    bytes: [u8; Long::LENGTH],
+}
+
+impl Long {
+    const LENGTH: usize = 8;
+
+    fn new(bytes: [u8; Long::LENGTH]) -> Self {
+        Self { bytes: bytes }
+    }
+
+    pub fn build(long: i64) -> Self {
+        Self { bytes: (long ^ i64::MIN) .to_be_bytes() }
+    }
+
+    pub fn as_i64(&self) -> i64 {
+        i64::from_be_bytes(self.bytes) ^ i64::MIN
+    }
+
+    pub(crate) fn bytes(&self) -> [u8; Self::LENGTH] {
+        self.bytes
+    }
+}
