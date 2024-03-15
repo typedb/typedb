@@ -54,6 +54,16 @@ pub trait DurabilityService: Sequencer {
 
     fn iter_from(&self, sequence_number: SequenceNumber) -> io::Result<impl Iterator<Item = io::Result<RawRecord>>>;
 
+    fn iter_type_from<Record: DurabilityRecord>(
+        &self,
+        sequence_number: SequenceNumber,
+    ) -> io::Result<impl Iterator<Item = Result<(SequenceNumber, Record)>>> {
+        Ok(self.iter_from(sequence_number)?.map(|res| {
+            let raw = res?;
+            Ok((raw.sequence_number, Record::deserialize_from(&mut &*raw.bytes)?))
+        }))
+    }
+
     fn checkpoint(&self) -> Result<()>;
     fn recover(&self) -> io::Result<impl Iterator<Item = io::Result<RawRecord>>>;
 }
