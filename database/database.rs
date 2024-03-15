@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{fs, path::PathBuf, rc::Rc};
+use std::{fs, path::{Path, PathBuf}, rc::Rc};
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::{
@@ -41,7 +41,7 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn new(path: &PathBuf, database_name: Rc<str>) -> Result<Database, DatabaseError> {
+    pub fn new(path: &Path, database_name: Rc<str>) -> Result<Database, DatabaseError> {
         let database_path = path.with_extension(String::from(database_name.as_ref()));
         fs::create_dir(database_path.as_path()).map_err(|io_error| DatabaseError {
             database_name: database_name.to_string(),

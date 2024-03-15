@@ -16,7 +16,7 @@
  */
 
 use std::{
-    path::PathBuf,
+    path::{Path, PathBuf},
     rc::Rc,
     sync::{atomic::Ordering, Arc},
 };
@@ -64,7 +64,7 @@ pub struct MVCCStorage {
 impl MVCCStorage {
     const STORAGE_DIR_NAME: &'static str = "storage";
 
-    pub fn new(owner_name: Rc<str>, path: &PathBuf) -> Result<Self, MVCCStorageError> {
+    pub fn new(owner_name: Rc<str>, path: &Path) -> Result<Self, MVCCStorageError> {
         let storage_dir = path.with_extension(MVCCStorage::STORAGE_DIR_NAME);
         let mut durability_service = WAL::open("/tmp/wal").expect("Could not create WAL directory");
         durability_service.register_record_type::<CommitRecord>();
@@ -80,7 +80,7 @@ impl MVCCStorage {
 
     // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options
     fn load_from_checkpoint(
-        _path: &PathBuf,
+        _path: &Path,
         _durability_service: impl DurabilityService,
     ) -> Result<Self, MVCCStorageError> {
         todo!("Booting from checkpoint not yet implemented")

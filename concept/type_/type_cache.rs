@@ -271,7 +271,7 @@ impl TypeCache {
         annotations
     }
 
-    fn set_entity_supertypes_transitive(entity_type_caches: &mut Box<[Option<EntityTypeCache>]>) {
+    fn set_entity_supertypes_transitive(entity_type_caches: &mut [Option<EntityTypeCache>]) {
         for index in 0..entity_type_caches.len() {
             if entity_type_caches[index].is_none() {
                 continue;
@@ -598,7 +598,7 @@ impl TypeCache {
     }
 
     fn get_entity_type_cache<'c>(
-        entity_type_caches: &'c Box<[Option<EntityTypeCache>]>,
+        entity_type_caches: &'c [Option<EntityTypeCache>],
         type_vertex: TypeVertex<'_>,
     ) -> Option<&'c EntityTypeCache> {
         debug_assert_eq!(type_vertex.prefix(), PrefixType::VertexEntityType);
@@ -607,7 +607,7 @@ impl TypeCache {
     }
 
     fn get_relation_type_cache<'c>(
-        relation_type_caches: &'c Box<[Option<RelationTypeCache>]>,
+        relation_type_caches: &'c [Option<RelationTypeCache>],
         type_vertex: TypeVertex<'_>,
     ) -> Option<&'c RelationTypeCache> {
         debug_assert_eq!(type_vertex.prefix(), PrefixType::VertexRelationType);
@@ -616,7 +616,7 @@ impl TypeCache {
     }
 
     fn get_attribute_type_cache<'c>(
-        attribute_type_caches: &'c Box<[Option<AttributeTypeCache>]>,
+        attribute_type_caches: &'c [Option<AttributeTypeCache>],
         type_vertex: TypeVertex<'_>,
     ) -> Option<&'c AttributeTypeCache> {
         debug_assert_eq!(type_vertex.prefix(), PrefixType::VertexAttributeType);
