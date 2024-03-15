@@ -157,8 +157,8 @@ impl<'storage> WriteSnapshot<'storage> {
                 }
             });
             let byte_array = key.into_byte_array();
-            if existing_stored.is_some() && existing_stored.as_ref().unwrap().is_some() {
-                buffer.insert_preexisting(byte_array, existing_stored.unwrap().unwrap());
+            if let Some(Some(existing_stored)) = existing_stored {
+                buffer.insert_preexisting(byte_array, existing_stored);
             } else {
                 buffer.insert(byte_array, value)
             }
@@ -180,7 +180,9 @@ impl<'storage> WriteSnapshot<'storage> {
         let keyspace_id = key.keyspace_id();
         let buffer = self.buffers.get(keyspace_id);
         let existing = buffer.get(key.bytes());
-        if existing.is_none() {
+        if let Some(existing) = existing {
+            existing
+        } else {
             let storage_value = self
                 .storage
                 .get(key.as_reference(), &self.open_sequence_number, |reference| ByteArray::from(reference));
@@ -191,8 +193,6 @@ impl<'storage> WriteSnapshot<'storage> {
                 // TODO: what if the user concurrent requires a concept while deleting it in another query
                 unreachable!("Require key exists in snapshot or in storage.");
             }
-        } else {
-            existing.unwrap()
         }
     }
 

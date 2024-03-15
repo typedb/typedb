@@ -363,12 +363,7 @@ impl Timeline {
     }
 
     fn get_or_create_window(&self, sequence_number: &SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
-        let window = self.try_get_window(sequence_number);
-        if window.is_none() {
-            self.create_windows_to(sequence_number)
-        } else {
-            window.unwrap().clone()
-        }
+        self.try_get_window(sequence_number).clone().unwrap_or_else(|| self.create_windows_to(sequence_number))
     }
 
     fn get_window(&self, sequence_number: &SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
@@ -392,8 +387,9 @@ impl Timeline {
 
         // re-check if another thread created required window before we acquired lock
         let window = Self::find_window(sequence_number, windows);
-        if window.is_none() {
-            
+        if let Some(window) = window {
+            window.clone()
+        } else {
             loop {
                 let new_window = TimelineWindow::new(*next_window);
                 *next_window = new_window.end_sequence_number;
@@ -403,8 +399,6 @@ impl Timeline {
                     break shared_new_window;
                 }
             }
-        } else {
-            window.unwrap().clone()
         }
     }
 
