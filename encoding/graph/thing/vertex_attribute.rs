@@ -60,6 +60,7 @@ impl<'a> AttributeVertex<'a> {
     pub fn value_type(&self) -> ValueType {
         match self.prefix() {
             PrefixType::VertexAttributeLong => ValueType::Long,
+            PrefixType::VertexAttributeString => ValueType::String,
             _ => unreachable!("Unexpected prefix."),
         }
     }
@@ -146,10 +147,17 @@ impl AttributeID {
             AttributeID::Bytes_16(bytes) => bytes,
         }
     }
+
+    pub fn unwrap_bytes_8(self) -> AttributeID_8 {
+        match self {
+            AttributeID::Bytes_8(bytes) => bytes,
+            AttributeID::Bytes_16(_) => panic!("Cannot unwrap bytes_8 from AttributeID::Bytes_16"),
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(crate) struct AttributeID_8 {
+pub struct AttributeID_8 {
     bytes: [u8; AttributeID_8::LENGTH],
 }
 
@@ -160,7 +168,7 @@ impl AttributeID_8 {
         Self { bytes: bytes }
     }
 
-    fn bytes(&self) -> [u8; AttributeID_8::LENGTH] {
+    pub fn bytes(&self) -> [u8; AttributeID_8::LENGTH] {
         self.bytes
     }
 }

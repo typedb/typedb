@@ -19,16 +19,18 @@ use encoding::graph::thing::vertex_attribute::AttributeVertex;
 use encoding::graph::thing::vertex_object::ObjectVertex;
 use encoding::value::value_type::ValueType;
 
-use crate::{
-    thing::{attribute::Attribute, entity::Entity, relation::Relation, value::Value},
-    ConceptAPI,
-};
+use crate::ConceptAPI;
+use crate::thing::attribute::Attribute;
+use crate::thing::entity::Entity;
+use crate::thing::relation::Relation;
+use crate::thing::thing_manager::ThingManager;
+use crate::thing::value::Value;
 
 pub mod attribute;
 pub mod entity;
 mod relation;
+pub mod value;
 pub mod thing_manager;
-mod value;
 
 pub trait ThingAPI<'a>: ConceptAPI<'a> {}
 
@@ -51,5 +53,5 @@ pub trait AttributeAPI<'a>: ThingAPI<'a> {
 
     fn value_type(&self) -> ValueType;
 
-    fn value(&self) -> Value;
+    fn value(&self, thing_manager: &ThingManager) -> Value;
 }

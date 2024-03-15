@@ -16,12 +16,14 @@
  */
 
 use encoding::graph::thing::vertex_attribute::AttributeVertex;
+use encoding::graph::thing::vertex_generator::StringAttributeID;
+use encoding::value::long::Long;
 use encoding::value::value_type::ValueType;
 
-use crate::{
-    thing::{value::Value, AttributeAPI, ThingAPI},
-    ConceptAPI,
-};
+use crate::ConceptAPI;
+use crate::thing::{AttributeAPI, ThingAPI};
+use crate::thing::thing_manager::ThingManager;
+use crate::thing::value::Value;
 
 #[derive(Clone, Debug)]
 pub struct Attribute<'a> {
@@ -30,7 +32,7 @@ pub struct Attribute<'a> {
 }
 
 impl<'a> Attribute<'a> {
-    fn new(vertex: AttributeVertex<'a>) -> Self {
+    pub(crate) fn new(vertex: AttributeVertex<'a>) -> Self {
         Attribute { vertex, value: None }
     }
 }
@@ -52,8 +54,9 @@ impl<'a> AttributeAPI<'a> for Attribute<'a> {
         self.vertex.value_type()
     }
 
-    fn value(&self) -> Value {
-        todo!()
+    fn value(&self, thing_manager: &ThingManager) -> Value {
+        thing_manager.get_attribute_value(self)
+
     }
 }
 

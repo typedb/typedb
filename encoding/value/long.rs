@@ -24,7 +24,7 @@ pub struct Long {
 impl Long {
     const LENGTH: usize = 8;
 
-    fn new(bytes: [u8; Long::LENGTH]) -> Self {
+    pub fn new(bytes: [u8; Long::LENGTH]) -> Self {
         Self { bytes: bytes }
     }
 

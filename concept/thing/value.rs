@@ -19,9 +19,7 @@ use encoding::value::value_type::ValueType;
 
 // TODO: how do we handle user-created compound structs?
 
-// TODO: careful with equality here: Doubles don't have a well defined equality
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Boolean(bool),
     Long(i64),

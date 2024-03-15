@@ -111,18 +111,14 @@ impl ThingVertexGenerator {
     /// We do not need to retain a reverse index from String -> ID, since 99.9% of the time the prefix + hash
     /// lets us retrieve the ID from the forward index by prefix (ID -> String).
     ///
-    pub fn create_attribute_string<'a, const INLINE_LENGTH: usize>(&self, type_id: TypeID, value: StringBytes<'a, INLINE_LENGTH>, snapshot: &Snapshot<'_>) -> AttributeVertex<'static> {
-        if let Snapshot::Write(write_snapshot) = snapshot {
-            let attribute_id = AttributeID::Bytes_16(self.string_to_attribute_id(type_id, value.clone_as_ref(), snapshot));
-            let vertex = AttributeVertex::build(PrefixType::VertexAttributeString, type_id, attribute_id);
-            write_snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
-            vertex
-        } else {
-            panic!("Illegal state: create entity requires write snapshot")
-        }
+    pub fn create_attribute_string<'a, const INLINE_LENGTH: usize>(&self, type_id: TypeID, value: StringBytes<'a, INLINE_LENGTH>, snapshot: &WriteSnapshot<'_>) -> AttributeVertex<'static> {
+        let attribute_id = AttributeID::Bytes_16(self.string_to_attribute_id(type_id, value.clone_as_ref(), snapshot));
+        let vertex = AttributeVertex::build(PrefixType::VertexAttributeString, type_id, attribute_id);
+        snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
+        vertex
     }
 
-    fn string_to_attribute_id<const INLINE_LENGTH: usize>(&self, type_id: TypeID, string: StringBytes<'_, INLINE_LENGTH>, snapshot: &Snapshot<'_>) -> AttributeID_16 {
+    fn string_to_attribute_id<const INLINE_LENGTH: usize>(&self, type_id: TypeID, string: StringBytes<'_, INLINE_LENGTH>, snapshot: &WriteSnapshot<'_>) -> AttributeID_16 {
         if string.length() <= StringAttributeID::ENCODING_INLINE_CAPACITY {
             StringAttributeID::build_inline_id(string).attribute_id
         } else {
@@ -187,7 +183,7 @@ impl StringAttributeID {
     }
 
     fn build_hashed_id<const INLINE_LENGTH: usize>(type_id: TypeID, string: StringBytes<'_, INLINE_LENGTH>,
-                                                   snapshot: &Snapshot<'_>, hasher: &impl Fn(&[u8]) -> u64) -> Self {
+                                                   snapshot: &WriteSnapshot<'_>, hasher: &impl Fn(&[u8]) -> u64) -> Self {
         let mut bytes = [0u8; AttributeID_16::LENGTH];
         let string_bytes = string.bytes().bytes();
         bytes[Self::ENCODING_STRING_PREFIX_RANGE].copy_from_slice(&string_bytes[Self::ENCODING_STRING_PREFIX_RANGE]);

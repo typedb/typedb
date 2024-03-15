@@ -76,15 +76,15 @@ impl Database {
 
     pub fn transaction_read(&self) -> TransactionRead {
         let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(self.storage.open_snapshot_read()));
-        let type_manager = TypeManager::new(snapshot.clone(), &self.type_vertex_generator, None); // TODO pass cache
-        let thing_manager = ThingManager::new(snapshot.clone(), &self.thing_vertex_generator);
+        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &self.type_vertex_generator, None)); // TODO pass cache
+        let thing_manager = ThingManager::new(snapshot.clone(), &self.thing_vertex_generator, type_manager.clone());
         TransactionRead { snapshot, type_manager, thing_manager }
     }
 
     fn transaction_write(&self) -> TransactionWrite {
         let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(self.storage.open_snapshot_write()));
-        let type_manager = TypeManager::new(snapshot.clone(), &self.type_vertex_generator, None); // TODO pass cache for data write txn
-        let thing_manager = ThingManager::new(snapshot.clone(), &self.thing_vertex_generator);
+        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &self.type_vertex_generator, None)); // TODO pass cache for data write txn
+        let thing_manager = ThingManager::new(snapshot.clone(), &self.thing_vertex_generator, type_manager.clone());
         TransactionWrite { snapshot, type_manager, thing_manager }
     }
 }
