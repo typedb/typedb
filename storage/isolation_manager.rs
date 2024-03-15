@@ -582,9 +582,6 @@ pub(crate) struct CommitRecord {
 }
 
 impl CommitRecord {
-    pub(crate) const DURABILITY_RECORD_TYPE: DurabilityRecordType = 0;
-    pub(crate) const DURABILITY_RECORD_NAME: &'static str = "commit_record";
-
     pub(crate) fn new(buffers: KeyspaceBuffers, open_sequence_number: SequenceNumber) -> CommitRecord {
         CommitRecord { buffers: buffers, open_sequence_number: open_sequence_number }
     }
@@ -601,16 +598,16 @@ impl CommitRecord {
     where
         Self: Sized,
     {
-        assert_eq!(Self::DURABILITY_RECORD_TYPE, record_type);
+        assert_eq!(Self::RECORD_TYPE, record_type);
         // TODO: handle error with a better message
         bincode::deserialize_from(reader).unwrap_or_log()
     }
 }
 
 impl DurabilityRecord for CommitRecord {
-    fn record_type(&self) -> DurabilityRecordType {
-        return Self::DURABILITY_RECORD_TYPE;
-    }
+    const RECORD_TYPE: DurabilityRecordType = 0;
+
+    const RECORD_NAME: &'static str = "commit_record";
 
     fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
         debug_assert_eq!(
@@ -621,6 +618,10 @@ impl DurabilityRecord for CommitRecord {
             bincode::serialize(self).unwrap()
         );
         bincode::serialize_into(writer, &self.buffers)
+    }
+
+    fn deserialize_from(reader: &mut impl Read) -> bincode::Result<Self> {
+        bincode::deserialize_from(reader)
     }
 }
 

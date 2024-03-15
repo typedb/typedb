@@ -74,7 +74,7 @@ pub trait DurabilityRecord: Sized {
     const RECORD_TYPE: DurabilityRecordType;
     const RECORD_NAME: &'static str;
     fn serialise_into(&self, writer: &mut impl Write) -> bincode::Result<()>;
-    fn deserialize_from(writer: &mut impl Read) -> bincode::Result<Self>;
+    fn deserialize_from(reader: &mut impl Read) -> bincode::Result<Self>;
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
