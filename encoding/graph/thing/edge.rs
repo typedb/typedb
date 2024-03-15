@@ -48,7 +48,7 @@ impl<'a> HasForwardEdge<'a> {
         ObjectVertex::LENGTH + InfixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
 
     fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
-        HasForwardEdge { bytes: bytes }
+        HasForwardEdge { bytes }
     }
 
     fn build(from: &ObjectVertex<'_>, to: &AttributeVertex<'_>) -> Self {

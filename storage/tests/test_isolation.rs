@@ -39,7 +39,7 @@ const VALUE_3: [u8; 1] = [0x88];
 const VALUE_4: [u8; 1] = [0x99];
 
 fn setup_storage(storage_path: &PathBuf) -> MVCCStorage {
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::new(Rc::from("storage"), storage_path).unwrap();
     storage.create_keyspace("keyspace", KEYSPACE_ID, &MVCCStorage::new_db_options()).unwrap();
 
     let snapshot = storage.open_snapshot_write();
@@ -67,7 +67,7 @@ fn commits_isolated() {
     let get: Option<ByteArray<{ BUFFER_KEY_INLINE }>> = snapshot_2.get(StorageKeyReference::from(&key_3));
     assert!(get.is_none());
     let prefix: StorageKey<'_, { BUFFER_KEY_INLINE }> =
-        StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&[0x0 as u8])));
+        StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&[0x0_u8])));
     let iterated = snapshot_2
         .iterate_prefix(prefix.clone())
         .collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
@@ -76,7 +76,7 @@ fn commits_isolated() {
 
     let snapshot_3 = storage.open_snapshot_read();
     let get: Option<ByteArray<{ BUFFER_KEY_INLINE }>> = snapshot_3.get(StorageKeyReference::from(&key_3));
-    assert!(matches!(get, Some(value_3)));
+    assert!(matches!(get, Some(_value_3)));
     let iterated = snapshot_3
         .iterate_prefix(prefix.clone())
         .collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
@@ -101,7 +101,7 @@ fn g0_update_conflicts_fail() {
 
     let key_1: StorageKey<'_, { BUFFER_KEY_INLINE }> =
         StorageKey::Reference(StorageKeyReference::new(KEYSPACE_ID, ByteReference::new(&KEY_1)));
-    let key_2: StorageKey<'_, { BUFFER_KEY_INLINE }> =
+    let _key_2: StorageKey<'_, { BUFFER_KEY_INLINE }> =
         StorageKey::Reference(StorageKeyReference::new(KEYSPACE_ID, ByteReference::new(&KEY_2)));
 
     snapshot_1.get_required(key_1.clone());

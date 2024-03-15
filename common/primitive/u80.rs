@@ -38,7 +38,7 @@ impl U80 {
 
     pub fn new(number: u128) -> U80 {
         assert!(number < U80::MAX.number);
-        U80 { number: number }
+        U80 { number }
     }
 
     pub fn number(&self) -> u128 {

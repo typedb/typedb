@@ -75,7 +75,7 @@ pub(crate) struct KeyspaceBuffer {
 
 impl KeyspaceBuffer {
     pub(crate) fn new(keyspace_id: KeyspaceId) -> KeyspaceBuffer {
-        KeyspaceBuffer { keyspace_id: keyspace_id, buffer: RwLock::new(BTreeMap::new()) }
+        KeyspaceBuffer { keyspace_id, buffer: RwLock::new(BTreeMap::new()) }
     }
     pub(crate) fn is_empty(&self) -> bool {
         let map = self.buffer.read().unwrap();
@@ -128,7 +128,7 @@ impl KeyspaceBuffer {
         }
     }
 
-    pub(crate) fn iterate_prefix<'a>(&self, prefix: &'a [u8]) -> BufferedPrefixIterator {
+    pub(crate) fn iterate_prefix(&self, prefix: &[u8]) -> BufferedPrefixIterator {
         let map = self.buffer.read().unwrap();
         let range = map
             .range::<[u8], _>((Bound::Included(prefix), Bound::Unbounded))
@@ -152,7 +152,7 @@ pub(crate) struct BufferedPrefixIterator {
 
 impl BufferedPrefixIterator {
     fn new(range: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)>) -> BufferedPrefixIterator {
-        BufferedPrefixIterator { state: State::Init, index: 0, range: range }
+        BufferedPrefixIterator { state: State::Init, index: 0, range }
     }
 
     pub(crate) fn peek(&mut self) -> Option<Result<(&StorageKeyArray<BUFFER_KEY_INLINE>, &Write), SnapshotError>> {
@@ -312,7 +312,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffers {
                 }
 
                 let buffers = unsafe { mem::transmute(buffers_init) };
-                Ok(KeyspaceBuffers { buffers: buffers })
+                Ok(KeyspaceBuffers { buffers })
             }
 
             // fn visit_map<V>(self, mut map: V) -> Result<KeyspaceBuffers, V::Error>
@@ -409,7 +409,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffer {
                 let keyspace_id = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 let buffer: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> =
                     seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                Ok(KeyspaceBuffer { keyspace_id: keyspace_id, buffer: RwLock::new(buffer) })
+                Ok(KeyspaceBuffer { keyspace_id, buffer: RwLock::new(buffer) })
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<KeyspaceBuffer, V::Error>
@@ -438,7 +438,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffer {
                 let keyspace_id = keyspace_id.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 let buffer: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> =
                     buffer.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                Ok(KeyspaceBuffer { keyspace_id: keyspace_id, buffer: RwLock::new(buffer) })
+                Ok(KeyspaceBuffer { keyspace_id, buffer: RwLock::new(buffer) })
             }
         }
 

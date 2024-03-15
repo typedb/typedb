@@ -33,7 +33,7 @@ pub fn increment(bytes: &mut [u8]) -> Result<(), BytesError> {
             return Ok(());
         }
     }
-    return Err(BytesError { kind: BytesErrorKind::IncrementOverflow {} });
+    Err(BytesError { kind: BytesErrorKind::IncrementOverflow {} })
 }
 
 ///
@@ -63,7 +63,7 @@ pub enum BytesErrorKind {
 }
 
 impl fmt::Display for BytesError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

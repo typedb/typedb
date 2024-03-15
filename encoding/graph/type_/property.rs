@@ -37,7 +37,7 @@ pub struct TypeVertexProperty<'a> {
 
 macro_rules! type_vertex_property_constructors {
     ($new_name:ident, $build_name:ident, $is_name:ident, InfixType::$infix:ident) => {
-        pub fn $new_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeVertexProperty<'a> {
+        pub fn $new_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> TypeVertexProperty<'_> {
             let vertex = TypeVertexProperty::new(bytes);
             debug_assert_eq!(vertex.infix(), InfixType::$infix);
             vertex
@@ -47,7 +47,7 @@ macro_rules! type_vertex_property_constructors {
             TypeVertexProperty::build(type_vertex, InfixType::$infix)
         }
 
-        pub fn $is_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> bool {
+        pub fn $is_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> bool {
             bytes.length() == TypeVertexProperty::LENGTH && TypeVertexProperty::new(bytes).infix() == InfixType::$infix
         }
     };
@@ -81,7 +81,7 @@ impl<'a> TypeVertexProperty<'a> {
 
     fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        let property = TypeVertexProperty { bytes: bytes };
+        let property = TypeVertexProperty { bytes };
         debug_assert_eq!(property.prefix(), PrefixType::PropertyType);
         property
     }

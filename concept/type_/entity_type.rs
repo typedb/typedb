@@ -50,7 +50,7 @@ impl<'a> EntityType<'a> {
                 vertex.prefix()
             )
         }
-        EntityType { vertex: vertex }
+        EntityType { vertex }
     }
 }
 
@@ -100,7 +100,7 @@ impl From<AnnotationAbstract> for EntityTypeAnnotation {
 // }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_ref_to_entity_type<'a>(storage_key_ref: StorageKeyReference<'a>) -> EntityType<'a> {
+fn storage_key_ref_to_entity_type(storage_key_ref: StorageKeyReference<'_>) -> EntityType<'_> {
     EntityType::new(new_vertex_entity_type(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
 }
 

@@ -30,7 +30,7 @@ pub struct Attribute<'a> {
 
 impl<'a> Attribute<'a> {
     fn new(vertex: AttributeVertex<'a>) -> Self {
-        Attribute { vertex: vertex, value: None }
+        Attribute { vertex, value: None }
     }
 }
 

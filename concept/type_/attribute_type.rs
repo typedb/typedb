@@ -36,7 +36,7 @@ impl<'a> AttributeType<'a> {
                 vertex.prefix()
             )
         }
-        AttributeType { vertex: vertex }
+        AttributeType { vertex }
     }
 }
 

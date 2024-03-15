@@ -133,7 +133,7 @@ impl TypeCache {
             .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
             .unwrap();
 
-        let mut entity_types_data = snapshot
+        let entity_types_data = snapshot
             .iterate_prefix(build_vertex_entity_type_prefix())
             .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
             .unwrap();
@@ -158,7 +158,7 @@ impl TypeCache {
             .filter_map(|entry| entry.as_ref().map(|cache| (cache.label.clone(), cache.type_.clone())))
             .collect();
 
-        let mut relation_types_data = snapshot
+        let relation_types_data = snapshot
             .iterate_prefix(build_vertex_relation_type_prefix())
             .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
             .unwrap();
@@ -184,7 +184,7 @@ impl TypeCache {
             .filter_map(|entry| entry.as_ref().map(|cache| (cache.label.clone(), cache.type_.clone())))
             .collect();
 
-        let mut attribute_types_data = snapshot
+        let attribute_types_data = snapshot
             .iterate_prefix(build_vertex_attribute_type_prefix())
             .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
             .unwrap();
@@ -211,7 +211,7 @@ impl TypeCache {
             .collect();
 
         TypeCache {
-            open_sequence_number: open_sequence_number,
+            open_sequence_number,
             entity_types: entity_type_caches,
             relation_types: relation_type_caches,
             attribute_types: attribute_type_caches,
@@ -237,8 +237,8 @@ impl TypeCache {
 
                 let label = Self::read_type_label(type_vertex_properties, entity_type.vertex().clone());
                 let is_root = label == Root::Entity.label();
-                let supertype = Self::read_supertype_vertex(entity_types_data, entity_type.vertex().clone())
-                    .map(|v| EntityType::new(v));
+                let supertype =
+                    Self::read_supertype_vertex(entity_types_data, entity_type.vertex().clone()).map(EntityType::new);
                 let annotations = Self::read_entity_annotations(type_vertex_properties, entity_type.clone());
                 let owns_direct = Self::read_owns_attribute_vertexes(entity_types_data, entity_type.vertex().clone())
                     .into_iter()
@@ -246,10 +246,10 @@ impl TypeCache {
                     .collect();
                 let cache = EntityTypeCache {
                     type_: entity_type,
-                    label: label,
-                    is_root: is_root,
-                    annotations: annotations,
-                    supertype: supertype,
+                    label,
+                    is_root,
+                    annotations,
+                    supertype,
                     supertypes: Vec::new(),
                     owns_direct: owns_direct,
                 };
@@ -272,7 +272,7 @@ impl TypeCache {
     }
 
     fn set_entity_supertypes_transitive(entity_type_caches: &mut Box<[Option<EntityTypeCache>]>) {
-        for index in (0..entity_type_caches.len()) {
+        for index in 0..entity_type_caches.len() {
             if entity_type_caches[index].is_none() {
                 continue;
             }
@@ -280,7 +280,7 @@ impl TypeCache {
             while let Some(current_supertype) = supertype {
                 let next_super_cache =
                     Self::get_entity_type_cache(entity_type_caches, current_supertype.vertex().clone()).unwrap();
-                supertype = next_super_cache.supertype.as_ref().map(|t| t.clone());
+                supertype = next_super_cache.supertype.as_ref().cloned();
                 entity_type_caches[index].as_mut().unwrap().supertypes.push(current_supertype);
             }
         }
@@ -302,7 +302,7 @@ impl TypeCache {
                 let label = Self::read_type_label(type_vertex_properties, relation_type.vertex().clone());
                 let is_root = label == Root::Relation.label();
                 let supertype = Self::read_supertype_vertex(relation_types_data, relation_type.vertex().clone())
-                    .map(|v| RelationType::new(v));
+                    .map(RelationType::new);
                 let annotations = Self::read_relation_annotations(type_vertex_properties, relation_type.clone());
                 let owns_direct =
                     Self::read_owns_attribute_vertexes(relation_types_data, relation_type.vertex().clone())
@@ -311,10 +311,10 @@ impl TypeCache {
                         .collect();
                 let cache = RelationTypeCache {
                     type_: relation_type,
-                    label: label,
-                    is_root: is_root,
-                    annotations: annotations,
-                    supertype: supertype,
+                    label,
+                    is_root,
+                    annotations,
+                    supertype,
                     supertypes: Vec::new(),
                     owns_direct: owns_direct,
                 };
@@ -336,7 +336,7 @@ impl TypeCache {
     }
 
     fn set_relation_supertypes_transitive(relation_type_caches: &mut Box<[Option<RelationTypeCache>]>) {
-        for index in (0..relation_type_caches.len()) {
+        for index in 0..relation_type_caches.len() {
             if relation_type_caches[index].is_none() {
                 continue;
             }
@@ -344,7 +344,7 @@ impl TypeCache {
             while let Some(current_supertype) = supertype {
                 let next_super_cache =
                     Self::get_relation_type_cache(relation_type_caches, current_supertype.vertex().clone()).unwrap();
-                supertype = next_super_cache.supertype.as_ref().map(|t| t.clone());
+                supertype = next_super_cache.supertype.as_ref().cloned();
                 relation_type_caches[index].as_mut().unwrap().supertypes.push(current_supertype);
             }
         }
@@ -396,7 +396,7 @@ impl TypeCache {
     }
 
     fn set_attribute_supertypes_transitive(attribute_type_caches: &mut Box<[Option<AttributeTypeCache>]>) {
-        for index in (0..attribute_type_caches.len()) {
+        for index in 0..attribute_type_caches.len() {
             if attribute_type_caches[index].is_none() {
                 continue;
             }
@@ -404,7 +404,7 @@ impl TypeCache {
             while let Some(current_supertype) = supertype {
                 let next_super_cache =
                     Self::get_attribute_type_cache(attribute_type_caches, current_supertype.vertex().clone()).unwrap();
-                supertype = next_super_cache.supertype.as_ref().map(|t| t.clone());
+                supertype = next_super_cache.supertype.as_ref().cloned();
                 attribute_type_caches[index].as_mut().unwrap().supertypes.push(current_supertype);
             }
         }
@@ -442,7 +442,7 @@ impl TypeCache {
         let property = build_property_type_annotation_abstract(type_vertex);
         type_vertex_properties
             .get(&property.into_storage_key().into_owned_array())
-            .map(|bytes| AnnotationAbstract::new())
+            .map(|_bytes| AnnotationAbstract::new())
     }
 
     fn read_supertype_vertex(
@@ -473,104 +473,88 @@ impl TypeCache {
     }
 
     pub(crate) fn get_entity_type(&self, label: &Label<'_>) -> Option<EntityType<'static>> {
-        self.entity_types_index_label.get(label).map(|t| t.clone())
+        self.entity_types_index_label.get(label).cloned()
     }
 
     pub(crate) fn get_relation_type(&self, label: &Label<'_>) -> Option<RelationType<'static>> {
-        self.relation_types_index_label.get(label).map(|t| t.clone())
+        self.relation_types_index_label.get(label).cloned()
     }
 
     pub(crate) fn get_attribute_type(&self, label: &Label<'_>) -> Option<AttributeType<'static>> {
-        self.attribute_types_index_label.get(label).map(|t| t.clone())
+        self.attribute_types_index_label.get(label).cloned()
     }
 
-    pub(crate) fn get_entity_type_supertype<'this>(
-        &'this self,
+    pub(crate) fn get_entity_type_supertype(
+        &self,
         entity_type: impl EntityTypeAPI<'static>,
     ) -> Option<EntityType<'static>> {
-        Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex())
-            .unwrap()
-            .supertype
-            .as_ref()
-            .map(|t| t.clone())
+        Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().supertype.as_ref().cloned()
     }
 
-    pub(crate) fn get_relation_type_supertype<'this>(
-        &'this self,
+    pub(crate) fn get_relation_type_supertype(
+        &self,
         relation_type: impl RelationTypeAPI<'static>,
     ) -> Option<RelationType<'static>> {
         Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
             .unwrap()
             .supertype
             .as_ref()
-            .map(|t| t.clone())
+            .cloned()
     }
 
-    pub(crate) fn get_attribute_type_supertype<'this>(
-        &'this self,
+    pub(crate) fn get_attribute_type_supertype(
+        &self,
         attribute_type: impl AttributeTypeAPI<'static>,
     ) -> Option<AttributeType<'static>> {
         Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
             .unwrap()
             .supertype
             .as_ref()
-            .map(|t| t.clone())
+            .cloned()
     }
 
-    pub(crate) fn get_entity_type_supertypes<'this>(
-        &'this self,
+    pub(crate) fn get_entity_type_supertypes(
+        &self,
         entity_type: impl EntityTypeAPI<'static>,
     ) -> &Vec<EntityType<'static>> {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().supertypes
     }
 
-    pub(crate) fn get_relation_type_supertypes<'this>(
-        &'this self,
+    pub(crate) fn get_relation_type_supertypes(
+        &self,
         relation_type: impl RelationTypeAPI<'static>,
     ) -> &Vec<RelationType<'static>> {
         &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().supertypes
     }
 
-    pub(crate) fn get_attribute_type_supertypes<'this>(
-        &'this self,
+    pub(crate) fn get_attribute_type_supertypes(
+        &self,
         attribute_type: impl AttributeTypeAPI<'static>,
     ) -> &Vec<AttributeType<'static>> {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().supertypes
     }
 
-    pub(crate) fn get_entity_type_label<'this>(
-        &'this self,
-        entity_type: impl EntityTypeAPI<'static>,
-    ) -> &Label<'static> {
+    pub(crate) fn get_entity_type_label(&self, entity_type: impl EntityTypeAPI<'static>) -> &Label<'static> {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().label
     }
 
-    pub(crate) fn get_relation_type_label<'this>(
-        &'this self,
-        relation_type: impl RelationTypeAPI<'static>,
-    ) -> &Label<'static> {
+    pub(crate) fn get_relation_type_label(&self, relation_type: impl RelationTypeAPI<'static>) -> &Label<'static> {
         &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().label
     }
 
-    pub(crate) fn get_attribute_type_label<'this>(
-        &'this self,
-        attribute_type: impl AttributeTypeAPI<'static>,
-    ) -> &Label<'static> {
+    pub(crate) fn get_attribute_type_label(&self, attribute_type: impl AttributeTypeAPI<'static>) -> &Label<'static> {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().label
     }
 
-    pub(crate) fn get_entity_type_is_root<'this>(&'this self, entity_type: impl EntityTypeAPI<'static>) -> bool {
+    pub(crate) fn get_entity_type_is_root(&self, entity_type: impl EntityTypeAPI<'static>) -> bool {
         Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().is_root
     }
 
-    pub(crate) fn get_relation_type_is_root<'this>(&'this self, relation_type: impl RelationTypeAPI<'static>) -> bool {
+    pub(crate) fn get_relation_type_is_root(&self, relation_type: impl RelationTypeAPI<'static>) -> bool {
         Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().is_root
     }
 
-    pub(crate) fn get_attribute_type_is_root<'this>(
-        &'this self,
-        attribute_type: impl AttributeTypeAPI<'static>,
-    ) -> bool {
+    pub(crate) fn get_attribute_type_is_root(&self, attribute_type: impl AttributeTypeAPI<'static>) -> bool {
         Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().is_root
     }
 
@@ -599,15 +583,15 @@ impl TypeCache {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().annotations
     }
 
-    pub(crate) fn get_relation_type_annotations<'this>(
-        &'this self,
+    pub(crate) fn get_relation_type_annotations(
+        &self,
         relation_type: impl RelationTypeAPI<'static>,
     ) -> &HashSet<RelationTypeAnnotation> {
         &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().annotations
     }
 
-    pub(crate) fn get_attribute_type_annotations<'this>(
-        &'this self,
+    pub(crate) fn get_attribute_type_annotations(
+        &self,
         attribute_type: impl AttributeTypeAPI<'static>,
     ) -> &HashSet<AttributeTypeAnnotation> {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().annotations

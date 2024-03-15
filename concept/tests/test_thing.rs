@@ -33,7 +33,7 @@ fn thing_create_iterate() {
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
     create_keyspaces(&mut storage);
 
-    let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
+    let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
     {
         let thing_vertex_generator = ThingVertexGenerator::new();
         let thing_manager = ThingManager::new(snapshot.clone(), &thing_vertex_generator);
@@ -44,10 +44,10 @@ fn thing_create_iterate() {
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&person_label, false);
 
-        let person_1 = thing_manager.create_entity(&person_type);
-        let person_2 = thing_manager.create_entity(&person_type);
-        let person_3 = thing_manager.create_entity(&person_type);
-        let person_4 = thing_manager.create_entity(&person_type);
+        let _person_1 = thing_manager.create_entity(&person_type);
+        let _person_2 = thing_manager.create_entity(&person_type);
+        let _person_3 = thing_manager.create_entity(&person_type);
+        let _person_4 = thing_manager.create_entity(&person_type);
     }
     if let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();

@@ -33,10 +33,10 @@ pub enum Root {
 impl Root {
     pub const fn label(&self) -> Label {
         match self {
-            Root::Entity => Label::new_static(&"entity"),
-            Root::Attribute => Label::new_static(&"attribute"),
-            Root::Relation => Label::new_static(&"relation"),
-            Root::Role => Label::new_static_scoped(&"role", &"relation", &"relation:role"),
+            Root::Entity => Label::new_static("entity"),
+            Root::Attribute => Label::new_static("attribute"),
+            Root::Relation => Label::new_static("relation"),
+            Root::Role => Label::new_static_scoped("role", "relation", "relation:role"),
         }
     }
 }

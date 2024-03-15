@@ -35,7 +35,7 @@ pub struct TypeVertex<'a> {
 
 macro_rules! type_vertex_constructors {
     ($new_name:ident, $build_name:ident, $build_name_prefix:ident, $is_name:ident, PrefixType::$prefix:ident) => {
-        pub fn $new_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeVertex<'a> {
+        pub fn $new_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> TypeVertex<'_> {
             let vertex = TypeVertex::new(bytes);
             debug_assert_eq!(vertex.prefix(), PrefixType::$prefix);
             vertex
@@ -52,7 +52,7 @@ macro_rules! type_vertex_constructors {
             StorageKey::new_ref(TypeVertex::keyspace_id(), ByteReference::new(&bytes))
         }
 
-        pub fn $is_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> bool {
+        pub fn $is_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> bool {
             bytes.length() == TypeVertex::LENGTH && TypeVertex::new(bytes).prefix() == PrefixType::$prefix
         }
     };
@@ -86,7 +86,7 @@ impl<'a> TypeVertex<'a> {
 
     pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeVertex<'a> {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        TypeVertex { bytes: bytes }
+        TypeVertex { bytes }
     }
 
     fn build(prefix: PrefixID, type_id: TypeID) -> Self {
@@ -136,7 +136,7 @@ impl TypeID {
     pub(crate) const LENGTH: usize = std::mem::size_of::<TypeIDUInt>();
 
     pub fn new(bytes: [u8; { TypeID::LENGTH }]) -> TypeID {
-        TypeID { bytes: bytes }
+        TypeID { bytes }
     }
 
     pub fn build(id: TypeIDUInt) -> Self {

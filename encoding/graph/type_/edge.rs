@@ -33,7 +33,7 @@ pub struct TypeEdge<'a> {
 
 macro_rules! type_edge_constructors {
     ($new_name:ident, $build_name:ident, $build_prefix:ident, $is_name:ident, InfixType::$infix:ident) => {
-        pub fn $new_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeEdge<'a> {
+        pub fn $new_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> TypeEdge<'_> {
             let edge = TypeEdge::new(bytes);
             debug_assert_eq!(edge.infix(), InfixType::$infix);
             edge
@@ -47,7 +47,7 @@ macro_rules! type_edge_constructors {
             TypeEdge::build_prefix(from, InfixType::$infix)
         }
 
-        pub fn $is_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> bool {
+        pub fn $is_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> bool {
             return bytes.length() == TypeEdge::LENGTH && TypeEdge::new(bytes).infix() == InfixType::$infix
         }
     };
@@ -98,8 +98,8 @@ impl<'a> TypeEdge<'a> {
 
     fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        let edge = TypeEdge { bytes: bytes };
-        edge
+        
+        TypeEdge { bytes }
     }
 
     fn build(from: TypeVertex, infix: InfixType, to: TypeVertex) -> Self {

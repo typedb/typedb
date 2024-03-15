@@ -46,7 +46,7 @@ pub(crate) struct Keyspace {
 
 impl Keyspace {
     pub(crate) fn new(path: PathBuf, options: &Options, id: KeyspaceId) -> Result<Keyspace, KeyspaceError> {
-        let kv_storage = DB::open(&options, &path)
+        let kv_storage = DB::open(options, &path)
             .map_err(|e| KeyspaceError { kind: KeyspaceErrorKind::FailedKeyspaceCreate { source: e } })?;
         // initial read options, should be customised to this storage's properties
         let read_options = ReadOptions::default();
@@ -54,17 +54,17 @@ impl Keyspace {
         write_options.disable_wal(true);
 
         Ok(Keyspace {
-            path: path,
-            kv_storage: kv_storage,
+            path,
+            kv_storage,
             keyspace_id: id,
             next_checkpoint_id: 0,
-            read_options: read_options,
-            write_options: write_options,
+            read_options,
+            write_options,
         })
     }
 
     // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options
-    pub(crate) fn load_from_checkpoint(path: PathBuf) {
+    pub(crate) fn load_from_checkpoint(_path: PathBuf) {
         todo!()
         // Steps:
         //  WARNING: this is intended to be DESTRUCTIVE since we may wipe anything partially written in the active directory
@@ -123,7 +123,7 @@ impl Keyspace {
         &'s self,
         prefix: ByteArrayOrRef<'s, PREFIX_INLINE_SIZE>,
     ) -> KeyspacePrefixIterator<'s, PREFIX_INLINE_SIZE> {
-        KeyspacePrefixIterator::new(&self, prefix)
+        KeyspacePrefixIterator::new(self, prefix)
     }
 
     pub(crate) fn write(&self, write_batch: WriteBatch) -> Result<(), KeyspaceError> {
@@ -172,10 +172,10 @@ impl<'a, const PS: usize> KeyspacePrefixIterator<'a, PS> {
     fn new(keyspace: &'a Keyspace, prefix: ByteArrayOrRef<'a, PS>) -> Self {
         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
         // read_opts.set_prefix_same_as_start(true);
-        let mut read_opts = keyspace.new_read_options();
+        let read_opts = keyspace.new_read_options();
         let raw_iterator: DBRawIteratorWithThreadMode<'a, DB> = keyspace.kv_storage.raw_iterator_opt(read_opts);
 
-        KeyspacePrefixIterator { prefix: prefix, iterator: raw_iterator, state: State::Init }
+        KeyspacePrefixIterator { prefix, iterator: raw_iterator, state: State::Init }
     }
 
     pub(crate) fn peek(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
@@ -314,7 +314,7 @@ pub enum KeyspaceErrorKind {
 }
 
 impl fmt::Display for KeyspaceError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

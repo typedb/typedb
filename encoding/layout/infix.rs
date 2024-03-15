@@ -27,10 +27,10 @@ impl InfixID {
     pub(crate) const LENGTH: usize = 1;
 
     pub(crate) const fn new(bytes: [u8; { InfixID::LENGTH }]) -> Self {
-        InfixID { bytes: bytes }
+        InfixID { bytes }
     }
 
-    pub(crate) fn bytes(&self) -> [u8; {InfixID::LENGTH}] {
+    pub(crate) fn bytes(&self) -> [u8; { InfixID::LENGTH }] {
         self.bytes
     }
 }

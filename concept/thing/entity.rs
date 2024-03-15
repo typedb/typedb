@@ -34,7 +34,7 @@ pub struct Entity<'a> {
 
 impl<'a> Entity<'a> {
     pub fn new(vertex: ObjectVertex<'a>) -> Self {
-        Entity { vertex: vertex }
+        Entity { vertex }
     }
 }
 
@@ -55,7 +55,7 @@ impl<'a> EntityAPI<'a> for Entity<'a> {
 }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_entity<'a>(storage_key_ref: StorageKeyReference<'a>) -> Entity<'a> {
+fn storage_key_to_entity(storage_key_ref: StorageKeyReference<'_>) -> Entity<'_> {
     Entity::new(ObjectVertex::new(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
 }
 concept_iterator!(EntityIterator, Entity, storage_key_to_entity);

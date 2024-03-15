@@ -39,7 +39,7 @@ impl<'a> ObjectVertex<'a> {
 
     pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> ObjectVertex<'a> {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        ObjectVertex { bytes: bytes }
+        ObjectVertex { bytes }
     }
 
     pub fn build_entity(type_id: &TypeID<'_>, object_id: ObjectID<'_>) -> Self {
@@ -120,7 +120,7 @@ impl<'a> ObjectID<'a> {
 
     fn new(bytes: ByteArrayOrRef<'a, { ObjectID::LENGTH }>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        ObjectID { bytes: bytes }
+        ObjectID { bytes }
     }
 
     pub fn build(id: u64) -> Self {
@@ -150,7 +150,7 @@ impl<'a> AttributeVertex<'a> {
 
     pub(crate) fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        AttributeVertex { bytes: bytes }
+        AttributeVertex { bytes }
     }
 
     fn build(prefix: &PrefixID<'a>, type_id: &TypeID<'_>, attribute_id: AttributeID) -> Self {
@@ -200,7 +200,7 @@ impl<'a> AttributeID<'a> {
 
     pub fn new(bytes: ByteArrayOrRef<'a, { AttributeID::LENGTH }>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        AttributeID { bytes: bytes }
+        AttributeID { bytes }
     }
 
     pub fn build(header: &[u8; AttributeID::HEADER_LENGTH], id: u64) -> Self {

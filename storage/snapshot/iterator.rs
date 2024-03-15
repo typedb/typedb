@@ -49,14 +49,14 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
     ) -> Self {
         SnapshotPrefixIterator {
             storage_iterator: mvcc_iterator,
-            buffered_iterator: buffered_iterator,
+            buffered_iterator,
             iterator_state: IteratorState::new(),
         }
     }
 
-    pub fn peek<'this>(
-        &'this mut self,
-    ) -> Option<Result<(StorageKeyReference<'this>, ByteReference<'this>), SnapshotError>> {
+    pub fn peek(
+        &mut self,
+    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), SnapshotError>> {
         match self.iterator_state.state().clone() {
             State::Init => {
                 self.find_next_state();
@@ -79,9 +79,9 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         }
     }
 
-    pub fn next<'this>(
-        &'this mut self,
-    ) -> Option<Result<(StorageKeyReference<'this>, ByteReference<'this>), SnapshotError>> {
+    pub fn next(
+        &mut self,
+    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), SnapshotError>> {
         match self.iterator_state.state().clone() {
             State::Init => {
                 self.find_next_state();
@@ -184,9 +184,9 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         (advance_storage, advance_buffered)
     }
 
-    fn buffered_peek<'this>(
-        buffered_iterator: &'this mut Option<BufferedPrefixIterator>,
-    ) -> Option<Result<(StorageKeyReference<'this>, &Write), SnapshotError>> {
+    fn buffered_peek(
+        buffered_iterator: &mut Option<BufferedPrefixIterator>,
+    ) -> Option<Result<(StorageKeyReference<'_>, &Write), SnapshotError>> {
         if let Some(buffered_iterator) = buffered_iterator {
             let buffered_peek = buffered_iterator.peek();
             match buffered_peek {
@@ -229,9 +229,9 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         self.find_next_state();
     }
 
-    fn get_buffered_peek<'this>(
-        buffered_iterator: &'this mut BufferedPrefixIterator,
-    ) -> (StorageKeyReference<'this>, ByteReference<'this>) {
+    fn get_buffered_peek(
+        buffered_iterator: &mut BufferedPrefixIterator,
+    ) -> (StorageKeyReference<'_>, ByteReference<'_>) {
         let (key, write) = buffered_iterator.peek().unwrap().unwrap();
         (StorageKeyReference::from(key), ByteReference::from(write.get_value()))
     }

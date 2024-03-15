@@ -70,7 +70,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         vertex_generator: &'txn TypeVertexGenerator,
         schema_cache: Option<Arc<TypeCache>>,
     ) -> TypeManager<'txn, 'storage> {
-        TypeManager { snapshot: snapshot, vertex_generator, type_cache: schema_cache }
+        TypeManager { snapshot, vertex_generator, type_cache: schema_cache }
     }
 
     pub fn initialise_types(storage: &mut MVCCStorage, vertex_generator: &TypeVertexGenerator) {
@@ -89,7 +89,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub fn get_entity_type<'this>(&'this self, label: &Label) -> Option<EntityType<'static>> {
+    pub fn get_entity_type(&self, label: &Label) -> Option<EntityType<'static>> {
         if let Some(cache) = &self.type_cache {
             cache.get_entity_type(label)
         } else {
@@ -97,7 +97,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub fn get_relation_type<'this>(&'this self, label: &Label) -> Option<RelationType<'static>> {
+    pub fn get_relation_type(&self, label: &Label) -> Option<RelationType<'static>> {
         if let Some(cache) = &self.type_cache {
             cache.get_relation_type(label)
         } else {
@@ -121,8 +121,8 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         self.snapshot.get::<{ BUFFER_KEY_INLINE }>(key.as_reference()).map(|value| mapper(ByteArrayOrRef::Array(value)))
     }
 
-    pub(crate) fn get_entity_type_supertype<'this>(
-        &'this self,
+    pub(crate) fn get_entity_type_supertype(
+        &self,
         entity_type: impl EntityTypeAPI<'static>,
     ) -> Option<EntityType<'static>> {
         if let Some(cache) = &self.type_cache {
@@ -137,8 +137,8 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub(crate) fn get_relation_type_supertype<'this>(
-        &'this self,
+    pub(crate) fn get_relation_type_supertype(
+        &self,
         relation_type: impl RelationTypeAPI<'static>,
     ) -> Option<RelationType<'static>> {
         if let Some(cache) = &self.type_cache {
@@ -153,8 +153,8 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub(crate) fn get_attribute_type_supertype<'this>(
-        &'this self,
+    pub(crate) fn get_attribute_type_supertype(
+        &self,
         attribute_type: impl AttributeTypeAPI<'static>,
     ) -> Option<AttributeType<'static>> {
         if let Some(cache) = &self.type_cache {
@@ -303,10 +303,10 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub(crate) fn get_entity_type_label<'this>(
-        &'this self,
+    pub(crate) fn get_entity_type_label(
+        &self,
         entity_type: impl EntityTypeAPI<'static>,
-    ) -> MaybeOwns<'this, Label<'static>> {
+    ) -> MaybeOwns<'_, Label<'static>> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_entity_type_label(entity_type))
         } else {
@@ -314,10 +314,10 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub(crate) fn get_relation_type_label<'this>(
-        &'this self,
+    pub(crate) fn get_relation_type_label(
+        &self,
         relation_type: impl RelationTypeAPI<'static>,
-    ) -> MaybeOwns<'this, Label<'static>> {
+    ) -> MaybeOwns<'_, Label<'static>> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_relation_type_label(relation_type))
         } else {
@@ -325,10 +325,10 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub(crate) fn get_attribute_type_label<'this>(
-        &'this self,
+    pub(crate) fn get_attribute_type_label(
+        &self,
         attribute_type: impl AttributeTypeAPI<'static>,
-    ) -> MaybeOwns<'this, Label<'static>> {
+    ) -> MaybeOwns<'_, Label<'static>> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_attribute_type_label(attribute_type))
         } else {
@@ -375,10 +375,10 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub(crate) fn get_entity_type_annotations<'this>(
-        &'this self,
+    pub(crate) fn get_entity_type_annotations(
+        &self,
         entity_type: impl EntityTypeAPI<'static>,
-    ) -> MaybeOwns<'this, HashSet<EntityTypeAnnotation>> {
+    ) -> MaybeOwns<'_, HashSet<EntityTypeAnnotation>> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_entity_type_annotations(entity_type))
         } else {
@@ -389,10 +389,10 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub(crate) fn get_relation_type_annotations<'this>(
-        &'this self,
+    pub(crate) fn get_relation_type_annotations(
+        &self,
         relation_type: impl RelationTypeAPI<'static>,
-    ) -> MaybeOwns<'this, HashSet<RelationTypeAnnotation>> {
+    ) -> MaybeOwns<'_, HashSet<RelationTypeAnnotation>> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_relation_type_annotations(relation_type))
         } else {
@@ -403,10 +403,10 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub(crate) fn get_attribute_type_annotations<'this>(
-        &'this self,
+    pub(crate) fn get_attribute_type_annotations(
+        &self,
         attribute_type: impl AttributeTypeAPI<'static>,
-    ) -> MaybeOwns<'this, HashSet<AttributeTypeAnnotation>> {
+    ) -> MaybeOwns<'_, HashSet<AttributeTypeAnnotation>> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_attribute_type_annotations(attribute_type))
         } else {
@@ -546,7 +546,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
 
     fn get_storage_vertex_annotation_abstract(&self, vertex: TypeVertex<'static>) -> Option<AnnotationAbstract> {
         self.snapshot
-            .get_mapped(build_property_type_annotation_abstract(vertex).into_storage_key().as_reference(), |bytes| {
+            .get_mapped(build_property_type_annotation_abstract(vertex).into_storage_key().as_reference(), |_bytes| {
                 AnnotationAbstract::new()
             })
     }

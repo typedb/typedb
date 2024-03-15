@@ -30,7 +30,7 @@ impl PrefixID {
     pub(crate) const LENGTH: usize = 1;
 
     pub(crate) const fn new(bytes: [u8; { PrefixID::LENGTH }]) -> Self {
-        PrefixID { bytes: bytes }
+        PrefixID { bytes }
     }
 
     pub(crate) const fn bytes(&self) -> [u8; { PrefixID::LENGTH }] {

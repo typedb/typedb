@@ -34,7 +34,7 @@ pub struct LabelToTypeVertexIndex<'a> {
 impl<'a> LabelToTypeVertexIndex<'a> {
     pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= PrefixID::LENGTH);
-        LabelToTypeVertexIndex { bytes: bytes }
+        LabelToTypeVertexIndex { bytes }
     }
 
     pub fn build(label: &Label) -> Self {

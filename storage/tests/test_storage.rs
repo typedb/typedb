@@ -18,7 +18,7 @@
 use std::rc::Rc;
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
-use rand;
+
 use storage::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
@@ -115,11 +115,11 @@ fn get_put_iterate() {
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_4), &ByteArrayOrRef::Array(ByteArray::empty()));
 
     let first_value: Option<ByteArray<48>> =
-        storage.get_raw(StorageKeyReference::from(&keyspace_1_key_1), |value| ByteArray::copy(value));
+        storage.get_raw(StorageKeyReference::from(&keyspace_1_key_1), ByteArray::copy);
     assert_eq!(first_value, Some(ByteArray::empty()));
 
     let second_value: Option<ByteArray<48>> =
-        storage.get_raw(StorageKeyReference::from(&keyspace_2_key_1), |value| ByteArray::copy(value));
+        storage.get_raw(StorageKeyReference::from(&keyspace_2_key_1), ByteArray::copy);
     assert_eq!(second_value, Some(ByteArray::empty()));
 
     let prefix = StorageKeyArray::<64>::from((vec![0x1], keyspace_1_id));

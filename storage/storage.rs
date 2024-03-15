@@ -23,10 +23,10 @@ use std::{
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use durability::{wal::WAL, DurabilityService, SequenceNumber, Sequencer};
-use iterator::{Collector, State};
+use iterator::{State};
 use logger::{error, result::ResultExt};
 use primitive::u80::U80;
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
+use resource::constants::snapshot::{BUFFER_VALUE_INLINE};
 use snapshot::write::Write;
 use speedb::{Options, WriteBatch};
 
@@ -80,8 +80,8 @@ impl MVCCStorage {
 
     // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options
     fn load_from_checkpoint(
-        path: &PathBuf,
-        durability_service: impl DurabilityService,
+        _path: &PathBuf,
+        _durability_service: impl DurabilityService,
     ) -> Result<Self, MVCCStorageError> {
         todo!("Booting from checkpoint not yet implemented")
 
@@ -125,19 +125,19 @@ impl MVCCStorage {
         if keyspace_id == KEYSPACE_ID_RESERVED_UNSET {
             return Err(MVCCStorageError {
                 storage_name: self.owner_name.as_ref().to_owned(),
-                kind: MVCCStorageErrorKind::KeyspaceIdReserved { keyspace: name.to_owned(), keyspace_id: keyspace_id },
+                kind: MVCCStorageErrorKind::KeyspaceIdReserved { keyspace: name.to_owned(), keyspace_id },
             });
         } else if keyspace_id > KEYSPACE_ID_MAX {
             return Err(MVCCStorageError {
                 storage_name: self.owner_name.as_ref().to_owned(),
                 kind: MVCCStorageErrorKind::KeyspaceIdTooLarge {
                     keyspace: name.to_owned(),
-                    keyspace_id: keyspace_id,
+                    keyspace_id,
                     max_keyspace_id: KEYSPACE_ID_MAX,
                 },
             });
         }
-        for existing_keyspace_id in (0..self.keyspaces_index.len()) {
+        for existing_keyspace_id in 0..self.keyspaces_index.len() {
             if let Some(existing_keyspace_index) = self.keyspaces_index[existing_keyspace_id] {
                 let keyspace = &self.keyspaces[existing_keyspace_index as usize];
                 if keyspace.name() == name {
@@ -150,7 +150,7 @@ impl MVCCStorage {
                         storage_name: self.owner_name.as_ref().to_owned(),
                         kind: MVCCStorageErrorKind::KeyspaceIdExists {
                             new_keyspace: name.to_owned(),
-                            keyspace_id: keyspace_id,
+                            keyspace_id,
                             existing_keyspace: keyspace.name().to_owned(),
                         },
                     });
@@ -160,7 +160,7 @@ impl MVCCStorage {
         Ok(())
     }
 
-    pub fn open_snapshot_write<'storage>(&'storage self) -> WriteSnapshot<'storage> {
+    pub fn open_snapshot_write(&self) -> WriteSnapshot<'_> {
         /*
 
         How to pick a sequence number:
@@ -179,12 +179,12 @@ impl MVCCStorage {
         WriteSnapshot::new(self, open_sequence_number)
     }
 
-    pub fn open_snapshot_read<'storage>(&'storage self) -> ReadSnapshot<'storage> {
+    pub fn open_snapshot_read(&self) -> ReadSnapshot<'_> {
         let open_sequence_number = self.isolation_manager.watermark();
         ReadSnapshot::new(self, open_sequence_number)
     }
 
-    pub fn open_snapshot_read_at<'storage>(&'storage self, sequence_number: SequenceNumber) -> ReadSnapshot<'storage> {
+    pub fn open_snapshot_read_at(&self, sequence_number: SequenceNumber) -> ReadSnapshot<'_> {
         // TODO: validate sequence number is before or equal to watermark
         ReadSnapshot::new(self, sequence_number)
     }
@@ -290,7 +290,7 @@ impl MVCCStorage {
         //  Each keyspace should checkpoint
     }
 
-    pub fn delete_storage(mut self) -> Result<(), Vec<MVCCStorageError>> {
+    pub fn delete_storage(self) -> Result<(), Vec<MVCCStorageError>> {
         let errors: Vec<MVCCStorageError> = self
             .keyspaces
             .into_iter()
@@ -303,7 +303,7 @@ impl MVCCStorage {
             .collect();
         if errors.is_empty() {
             if !self.path.exists() {
-                return Ok(());
+                Ok(())
             } else {
                 match std::fs::remove_dir_all(self.path.clone()) {
                     Ok(_) => Ok(()),
@@ -387,7 +387,7 @@ impl MVCCStorage {
         &'this self,
         prefix: StorageKey<'this, PREFIX_INLINE>,
     ) -> KeyspacePrefixIterator<'this, PREFIX_INLINE> {
-        debug_assert!(prefix.bytes().len() > 0);
+        debug_assert!(!prefix.bytes().is_empty());
         self.get_keyspace(prefix.keyspace_id()).iterate_prefix(prefix.into_byte_array_or_ref())
     }
 }
@@ -406,13 +406,13 @@ impl<'s, const P: usize> MVCCPrefixIterator<'s, P> {
     // TODO: optimisation for fixed-width keyspaces: we can skip to key[len(key) - 1] = key[len(key) - 1] + 1 once we find a successful key, to skip all 'older' versions of the key
     //
     fn new(storage: &'s MVCCStorage, prefix: StorageKey<'s, P>, open_sequence_number: &SequenceNumber) -> Self {
-        debug_assert!(prefix.bytes().len() > 0);
+        debug_assert!(!prefix.bytes().is_empty());
         let keyspace = storage.get_keyspace(prefix.keyspace_id());
         let iterator = keyspace.iterate_prefix(prefix.into_byte_array_or_ref());
         MVCCPrefixIterator {
-            storage: storage,
-            keyspace: keyspace,
-            iterator: iterator,
+            storage,
+            keyspace,
+            iterator,
             open_sequence_number: *open_sequence_number,
             last_visible_key: None,
             state: State::Init,

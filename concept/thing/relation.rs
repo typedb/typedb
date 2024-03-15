@@ -33,7 +33,7 @@ pub struct Relation<'a> {
 
 impl<'a> Relation<'a> {
     pub fn new(vertex: ObjectVertex<'a>) -> Self {
-        Relation { vertex: vertex }
+        Relation { vertex }
     }
 }
 
@@ -54,7 +54,7 @@ impl<'a> RelationAPI<'a> for Relation<'a> {
 }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_ref_to_entity<'a>(storage_key_ref: StorageKeyReference<'a>) -> Relation<'a> {
+fn storage_key_ref_to_entity(storage_key_ref: StorageKeyReference<'_>) -> Relation<'_> {
     Relation::new(ObjectVertex::new(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
 }
 concept_iterator!(RelationIterator, Relation, storage_key_ref_to_entity);

@@ -33,7 +33,7 @@ pub struct Label<'a> {
 impl<'a> Label<'a> {
     pub fn parse_from<const INLINE_BYTES: usize>(string_bytes: StringBytes<'a, INLINE_BYTES>) -> Label<'static> {
         let as_str = string_bytes.decode();
-        let mut splits = as_str.split(":");
+        let mut splits = as_str.split(':');
         let first = splits.next().unwrap();
         if let Some(second) = splits.next() {
             Self::build_scoped(first, second)
@@ -101,7 +101,7 @@ impl<'a> fmt::Display for Label<'a> {
             f,
             "Label[name={}, scope={}, scoped_name={}",
             self.name(),
-            self.scope().map(|s| format!("{}", s)).unwrap_or_else(|| String::new()),
+            self.scope().map(|s| format!("{}", s)).unwrap_or_default(),
             self.scoped_name()
         )
     }

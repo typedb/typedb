@@ -99,7 +99,7 @@ impl<'bytes, const INLINE_SIZE: usize> PartialOrd<Self> for StorageKey<'bytes, I
 
 impl<'bytes, const INLINE_SIZE: usize> Ord for StorageKey<'bytes, INLINE_SIZE> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.bytes().cmp(&other.bytes())
+        self.bytes().cmp(other.bytes())
     }
 }
 
@@ -112,7 +112,7 @@ pub struct StorageKeyArray<const INLINE_SIZE: usize> {
 
 impl<const INLINE_SIZE: usize> StorageKeyArray<INLINE_SIZE> {
     pub fn new(keyspace_id: KeyspaceId, array: ByteArray<INLINE_SIZE>) -> StorageKeyArray<INLINE_SIZE> {
-        StorageKeyArray { keyspace_id: keyspace_id, byte_array: array }
+        StorageKeyArray { keyspace_id, byte_array: array }
     }
 
     pub(crate) fn keyspace_id(&self) -> KeyspaceId {
@@ -149,7 +149,7 @@ impl<const INLINE_SIZE: usize> PartialOrd<Self> for StorageKeyArray<INLINE_SIZE>
 
 impl<const INLINE_SIZE: usize> Ord for StorageKeyArray<INLINE_SIZE> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.bytes().cmp(&other.bytes())
+        self.bytes().cmp(other.bytes())
     }
 }
 
@@ -188,7 +188,7 @@ pub struct StorageKeyReference<'bytes> {
 
 impl<'bytes> StorageKeyReference<'bytes> {
     pub const fn new(keyspace_id: KeyspaceId, reference: ByteReference<'bytes>) -> StorageKeyReference<'bytes> {
-        StorageKeyReference { keyspace_id: keyspace_id, reference: reference }
+        StorageKeyReference { keyspace_id, reference }
     }
 
     pub(crate) fn keyspace_id(&self) -> KeyspaceId {
@@ -200,7 +200,7 @@ impl<'bytes> StorageKeyReference<'bytes> {
     }
 
     pub fn byte_ref(&self) -> ByteReference<'bytes> {
-        self.reference.clone()
+        self.reference
     }
 
     pub(crate) fn into_byte_ref(self) -> ByteReference<'bytes> {
@@ -231,6 +231,6 @@ impl<'bytes> PartialOrd<Self> for StorageKeyReference<'bytes> {
 
 impl<'bytes> Ord for StorageKeyReference<'bytes> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.bytes().cmp(&other.bytes())
+        self.bytes().cmp(other.bytes())
     }
 }

@@ -37,7 +37,7 @@ pub enum Snapshot<'storage> {
 }
 
 impl<'storage> Snapshot<'storage> {
-    pub fn get<'snapshot, const KS: usize>(&'snapshot self, key: StorageKeyReference<'_>) -> Option<ByteArray<KS>> {
+    pub fn get<const KS: usize>(&self, key: StorageKeyReference<'_>) -> Option<ByteArray<KS>> {
         match self {
             Snapshot::Read(snapshot) => snapshot.get(key),
             Snapshot::Write(snapshot) => snapshot.get(key),
@@ -85,7 +85,7 @@ pub struct ReadSnapshot<'storage> {
 impl<'storage> ReadSnapshot<'storage> {
     pub(crate) fn new(storage: &'storage MVCCStorage, open_sequence_number: SequenceNumber) -> ReadSnapshot {
         // Note: for serialisability, we would need to register the open transaction to the IsolationManager
-        ReadSnapshot { storage: storage, open_sequence_number: open_sequence_number }
+        ReadSnapshot { storage, open_sequence_number }
     }
 
     pub fn get<'snapshot, const KS: usize>(&self, key: StorageKeyReference<'_>) -> Option<ByteArray<KS>> {
@@ -96,9 +96,9 @@ impl<'storage> ReadSnapshot<'storage> {
     pub fn get_mapped<T>(
         &self,
         key: StorageKeyReference<'_>,
-        mut mapper: impl FnMut(ByteReference<'_>) -> T,
+        mapper: impl FnMut(ByteReference<'_>) -> T,
     ) -> Option<T> {
-        self.storage.get(key, &self.open_sequence_number, |reference| mapper(reference))
+        self.storage.get(key, &self.open_sequence_number, mapper)
     }
 
     pub fn iterate_prefix<'this, const PS: usize>(
@@ -122,7 +122,7 @@ pub struct WriteSnapshot<'storage> {
 impl<'storage> WriteSnapshot<'storage> {
     pub(crate) fn new(storage: &'storage MVCCStorage, open_sequence_number: SequenceNumber) -> WriteSnapshot {
         storage.isolation_manager.opened(&open_sequence_number);
-        WriteSnapshot { storage: storage, buffers: KeyspaceBuffers::new(), open_sequence_number: open_sequence_number }
+        WriteSnapshot { storage, buffers: KeyspaceBuffers::new(), open_sequence_number }
     }
 
     /// Insert a key with a new version
@@ -186,7 +186,7 @@ impl<'storage> WriteSnapshot<'storage> {
                 .get(key.as_reference(), &self.open_sequence_number, |reference| ByteArray::from(reference));
             if let Some(value) = storage_value {
                 buffer.require_exists(ByteArray::copy(key.bytes()), value.clone());
-                return value;
+                value
             } else {
                 // TODO: what if the user concurrent requires a concept while deleting it in another query
                 unreachable!("Require key exists in snapshot or in storage.");
@@ -202,7 +202,7 @@ impl<'storage> WriteSnapshot<'storage> {
         let existing_value = self.buffers.get(keyspace_id).get(key.bytes());
         existing_value.map_or_else(
             || self.storage.get(key, &self.open_sequence_number, |reference| ByteArray::from(reference)),
-            |existing| Some(existing),
+            Some,
         )
     }
 
@@ -215,7 +215,7 @@ impl<'storage> WriteSnapshot<'storage> {
         let existing_value = self.buffers.get(keyspace_id).get(key.bytes());
         existing_value
             .map(|value: ByteArray<BUFFER_VALUE_INLINE>| mapper(ByteReference::from(&value)))
-            .or_else(|| self.storage.get(key, &self.open_sequence_number, |reference| mapper(reference)))
+            .or_else(|| self.storage.get(key, &self.open_sequence_number, mapper))
     }
 
     pub fn iterate_prefix<'this, const PS: usize>(

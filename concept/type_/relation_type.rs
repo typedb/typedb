@@ -50,7 +50,7 @@ impl<'a> RelationType<'a> {
                 vertex.prefix()
             )
         }
-        RelationType { vertex: vertex }
+        RelationType { vertex }
     }
 }
 
@@ -100,7 +100,7 @@ impl From<AnnotationAbstract> for RelationTypeAnnotation {
 // }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_relation_type<'a>(storage_key_ref: StorageKeyReference<'a>) -> RelationType<'a> {
+fn storage_key_to_relation_type(storage_key_ref: StorageKeyReference<'_>) -> RelationType<'_> {
     RelationType::new(new_vertex_relation_type(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
 }
 

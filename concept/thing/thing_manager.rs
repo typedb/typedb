@@ -42,7 +42,7 @@ pub struct ThingManager<'txn, 'storage: 'txn> {
 
 impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
     pub fn new(snapshot: Rc<Snapshot<'storage>>, vertex_generator: &'txn ThingVertexGenerator) -> Self {
-        ThingManager { snapshot: snapshot, vertex_generator: vertex_generator }
+        ThingManager { snapshot, vertex_generator }
     }
 
     pub fn create_entity(&self, entity_type: &EntityType) -> Entity {
@@ -54,7 +54,7 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
         panic!("Illegal state: create entity requires write snapshot")
     }
 
-    pub fn get_entities<'this>(&'this self) -> EntityIterator<'this, 1> {
+    pub fn get_entities(&self) -> EntityIterator<'_, 1> {
         let prefix = ObjectVertex::build_prefix_prefix(PrefixType::VertexEntity.prefix_id());
         let snapshot_iterator = self.snapshot.iterate_prefix(prefix);
         EntityIterator::new(snapshot_iterator)

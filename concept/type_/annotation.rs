@@ -18,6 +18,12 @@
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationAbstract {}
 
+impl Default for AnnotationAbstract {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AnnotationAbstract {
     pub fn new() -> Self {
         AnnotationAbstract {}

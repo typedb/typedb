@@ -32,7 +32,7 @@ impl<'bytes, const INLINE_SIZE: usize> Clone for ByteArrayOrRef<'bytes, INLINE_S
     fn clone(&self) -> ByteArrayOrRef<'static, INLINE_SIZE> {
         match self {
             ByteArrayOrRef::Array(array) => ByteArrayOrRef::Array(array.clone()),
-            ByteArrayOrRef::Reference(reference) => ByteArrayOrRef::Array(ByteArray::from(reference.clone())),
+            ByteArrayOrRef::Reference(reference) => ByteArrayOrRef::Array(ByteArray::from(*reference)),
         }
     }
 }
@@ -74,7 +74,7 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> ByteArrayOrRef<'bytes, ARRAY_INLINE
     pub fn as_reference(&'bytes self) -> ByteReference<'bytes> {
         match self {
             ByteArrayOrRef::Array(array) => ByteReference::from(array),
-            ByteArrayOrRef::Reference(reference) => reference.clone(),
+            ByteArrayOrRef::Reference(reference) => *reference,
         }
     }
 
@@ -96,7 +96,7 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> ByteArrayOrRef<'bytes, ARRAY_INLINE
     pub fn to_array(&self) -> ByteArray<ARRAY_INLINE_SIZE> {
         match self {
             ByteArrayOrRef::Array(array) => array.clone(),
-            ByteArrayOrRef::Reference(byte_reference) => ByteArray::from(byte_reference.clone()),
+            ByteArrayOrRef::Reference(byte_reference) => ByteArray::from(*byte_reference),
         }
     }
 }

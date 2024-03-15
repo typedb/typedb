@@ -24,20 +24,20 @@ macro_rules! concept_iterator {
 
         impl<'a, const S: usize> $name<'a, S> {
             pub(crate) fn new(snapshot_iterator: SnapshotPrefixIterator<'a, S>) -> Self {
-                $name { snapshot_iterator: snapshot_iterator }
+                $name { snapshot_iterator }
             }
 
-            pub fn peek<'this>(&'this mut self) -> Option<Result<$concept_type<'this>, ConceptError>> {
+            pub fn peek(&mut self) -> Option<Result<$concept_type<'_>, ConceptError>> {
                 self.snapshot_iterator.peek().map(|result| {
-                    result.map(|(storage_key, value_bytes)| $map_fn(storage_key)).map_err(|snapshot_error| {
+                    result.map(|(storage_key, _value_bytes)| $map_fn(storage_key)).map_err(|snapshot_error| {
                         ConceptError { kind: ConceptErrorKind::SnapshotError { source: snapshot_error } }
                     })
                 })
             }
 
-            pub fn next<'this>(&'this mut self) -> Option<Result<$concept_type<'this>, ConceptError>> {
+            pub fn next(&mut self) -> Option<Result<$concept_type<'_>, ConceptError>> {
                 self.snapshot_iterator.next().map(|result| {
-                    result.map(|(storage_key, value_bytes)| $map_fn(storage_key)).map_err(|snapshot_error| {
+                    result.map(|(storage_key, _value_bytes)| $map_fn(storage_key)).map_err(|snapshot_error| {
                         ConceptError { kind: ConceptErrorKind::SnapshotError { source: snapshot_error } }
                     })
                 })

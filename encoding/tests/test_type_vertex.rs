@@ -25,7 +25,7 @@ use test_utils::{create_tmp_dir, delete_dir, init_logging};
 fn entity_type_vertexes_are_reused() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let options = MVCCStorage::new_db_options();
+    let _options = MVCCStorage::new_db_options();
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
     create_keyspaces(&mut storage);
 

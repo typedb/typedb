@@ -151,7 +151,7 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
         assert!(length < BYTES);
         let mut data = [0; BYTES];
         data[0..length].copy_from_slice(bytes);
-        ByteArrayInline { data: data, length: length as u64 }
+        ByteArrayInline { data, length: length as u64 }
     }
 
     fn from_2(bytes_1: &[u8], bytes_2: &[u8]) -> ByteArrayInline<BYTES> {
@@ -164,7 +164,7 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
 
         data[0..end_1].copy_from_slice(bytes_1);
         data[end_1..end_2].copy_from_slice(bytes_2);
-        ByteArrayInline { data: data, length: length as u64 }
+        ByteArrayInline { data, length: length as u64 }
     }
 
     fn from_3(bytes_1: &[u8], bytes_2: &[u8], bytes_3: &[u8]) -> ByteArrayInline<BYTES> {
@@ -179,7 +179,7 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
         data[0..end_1].copy_from_slice(bytes_1);
         data[end_1..end_2].copy_from_slice(bytes_2);
         data[end_2..end_3].copy_from_slice(bytes_3);
-        ByteArrayInline { data: data, length: length as u64 }
+        ByteArrayInline { data, length: length as u64 }
     }
 
     fn new(bytes: [u8; BYTES], length: usize) -> ByteArrayInline<BYTES> {
@@ -304,7 +304,7 @@ pub struct ByteArrayBoxed {
 
 impl ByteArrayBoxed {
     fn zeros(length: usize) -> ByteArrayBoxed {
-        ByteArrayBoxed { data: vec![0; length].into_boxed_slice(), length: length }
+        ByteArrayBoxed { data: vec![0; length].into_boxed_slice(), length }
     }
 
     fn from(bytes: &[u8]) -> ByteArrayBoxed {
@@ -321,7 +321,7 @@ impl ByteArrayBoxed {
         data[0..end_1].copy_from_slice(bytes_1);
         data[end_1..end_2].copy_from_slice(bytes_2);
 
-        ByteArrayBoxed { data: data, length: length }
+        ByteArrayBoxed { data, length }
     }
 
     fn from_3(bytes_1: &[u8], bytes_2: &[u8], bytes_3: &[u8]) -> ByteArrayBoxed {
@@ -336,7 +336,7 @@ impl ByteArrayBoxed {
         data[end_1..end_2].copy_from_slice(bytes_2);
         data[end_2..end_3].copy_from_slice(bytes_3);
 
-        ByteArrayBoxed { data: data, length: length }
+        ByteArrayBoxed { data, length }
     }
 
     fn wrap(bytes: Box<[u8]>) -> ByteArrayBoxed {

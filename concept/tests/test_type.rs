@@ -44,7 +44,7 @@ fn entity_creation() {
     let type_vertex_generator = TypeVertexGenerator::new();
     TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 
-    let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
+    let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
     {
         // Without cache, uncommitted
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);

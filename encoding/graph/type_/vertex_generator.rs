@@ -37,6 +37,12 @@ pub struct TypeVertexGenerator {
     next_attribute: AtomicU16,
 }
 
+impl Default for TypeVertexGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TypeVertexGenerator {
     const U16_LENGTH: usize = std::mem::size_of::<u16>();
 
@@ -73,7 +79,7 @@ impl TypeVertexGenerator {
                 AtomicU16::new(val)
             })
             .unwrap_or_else(|| AtomicU16::new(0));
-        TypeVertexGenerator { next_entity: next_entity, next_relation: next_relation, next_attribute: next_attribute }
+        TypeVertexGenerator { next_entity, next_relation, next_attribute }
     }
 
     pub fn take_entity_type(&self) -> TypeVertex<'static> {

@@ -28,6 +28,12 @@ pub struct ThingVertexGenerator {
     attribute_ids: Box<[AtomicU64]>,
 }
 
+impl Default for ThingVertexGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ThingVertexGenerator {
     pub fn new() -> ThingVertexGenerator {
         // TODO: we should create a resizable Vector linked to the id of types/highest id of each type

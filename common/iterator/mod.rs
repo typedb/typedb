@@ -31,7 +31,7 @@ pub enum State<E> {
 
 impl<E> PartialEq for State<E> {
     fn eq(&self, other: &Self) -> bool {
-        return std::mem::discriminant(self) == std::mem::discriminant(other);
+        std::mem::discriminant(self) == std::mem::discriminant(other)
     }
 }
 
