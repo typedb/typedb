@@ -81,7 +81,7 @@ public class RuleTest {
 
     @BeforeClass
     public static void beforeClass() {
-        Diagnostics.initialiseNoop();
+        Diagnostics.Noop.initialise();
     }
 
     @Test

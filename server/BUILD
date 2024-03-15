@@ -74,12 +74,16 @@ native_java_libraries(
         "@vaticle_typedb_protocol//grpc/java:typedb-protocol",
 
         # External dependencies from Maven
+        "@maven//:com_eclipsesource_minimal_json_minimal_json",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_protobuf_protobuf_java",
         "@maven//:io_grpc_grpc_api",
         "@maven//:io_grpc_grpc_netty",
         "@maven//:io_grpc_grpc_stub",
         "@maven//:io_netty_netty_all",
+        "@maven//:io_netty_netty_handler",
+        "@maven//:io_netty_netty_buffer",
+        "@maven//:io_netty_netty_codec_http",
         "@maven//:io_netty_netty_transport",
         "@maven//:org_slf4j_slf4j_api",
         "@maven//:ch_qos_logback_logback_classic",

@@ -35,7 +35,9 @@ import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
 import com.vaticle.typedb.core.encoding.iid.InfixIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -241,7 +243,10 @@ public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIE
                     );
             if (isReadOnly) storageIterator = storageIterator.onConsumed(() -> fetched.add(encoding));
             if ((bufferedEdges = edges.get(encoding)) == null) return storageIterator;
-            else return iterateSorted(bufferedEdges, ASC).merge(storageIterator).distinct();
+            else {
+                Set<EDGE_VIEW> originalBufferedEdges = new HashSet<>(bufferedEdges);
+                return iterateSorted(bufferedEdges, ASC).merge(storageIterator.filter(e -> !originalBufferedEdges.contains(e))).distinct();
+            }
         }
 
         @Override

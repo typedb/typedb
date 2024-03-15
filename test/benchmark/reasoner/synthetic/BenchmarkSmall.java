@@ -58,7 +58,7 @@ public class BenchmarkSmall {
 
     @BeforeClass
     public static void beforeClass() {
-        Diagnostics.initialiseNoop();
+        Diagnostics.Noop.initialise();
     }
 
     @Before

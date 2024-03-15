@@ -404,31 +404,56 @@ public class CoreConfig {
     public static class Diagnostics {
 
         private final Reporting reporting;
+        private final Monitoring monitoring;
 
-        public Diagnostics(Reporting reporting) {
+        public Diagnostics(Reporting reporting, Monitoring monitoring) {
             this.reporting = reporting;
+            this.monitoring = monitoring;
         }
 
         public Reporting reporting() {
             return reporting;
         }
 
+        public Monitoring monitoring() {
+            return monitoring;
+        }
+
         public static class Reporting {
 
-            private final boolean enable;
-            private final String uri;
+            private final boolean errors;
+            private final boolean statistics;
 
-            Reporting(boolean enable, @Nullable String uri) {
+            Reporting(boolean errors, boolean statistics) {
+                this.errors = errors;
+                this.statistics = statistics;
+            }
+
+            public boolean errors() {
+                return errors;
+            }
+
+            public boolean statistics() {
+                return statistics;
+            }
+        }
+
+        public static class Monitoring {
+
+            private final boolean enable;
+            private final int port;
+
+            public Monitoring(boolean enable, int port) {
                 this.enable = enable;
-                this.uri = uri;
+                this.port = port;
             }
 
             public boolean enable() {
                 return enable;
             }
 
-            public Optional<String> uri() {
-                return Optional.ofNullable(uri);
+            public int port() {
+                return port;
             }
         }
     }

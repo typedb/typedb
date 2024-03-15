@@ -84,7 +84,7 @@ public class TraversalTest {
 
     @BeforeClass
     public static void beforeClass() {
-        Diagnostics.initialiseNoop();
+        Diagnostics.Noop.initialise();
     }
 
     @Before

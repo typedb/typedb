@@ -503,11 +503,15 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         @Override
         public void setOverridden(TypeVertex overridden) {
             this.overridden = Either.second(overridden);
+            from().setModified();
+            to().setModified();
         }
 
         @Override
         public void unsetOverridden() {
             this.overridden = Either.second(null);
+            from().setModified();
+            to().setModified();
         }
 
         @Override

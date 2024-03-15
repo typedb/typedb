@@ -109,13 +109,13 @@ public interface ThingType extends Type {
 
     interface Owns extends Comparable<Owns> {
 
+        ThingType owner();
+
         AttributeType attributeType();
 
         Set<Annotation> effectiveAnnotations();
 
         Optional<AttributeType> overridden();
-
-        void delete();
 
         void getSyntax(StringBuilder builder);
     }

@@ -105,7 +105,7 @@ public class ConnectionSteps {
     public void typedb_starts() throws IOException {
         assertNull(databaseMgr);
         resetDirectory();
-        Diagnostics.initialiseNoop();
+        Diagnostics.Noop.initialise();
         System.out.println("Connecting to TypeDB ...");
         databaseMgr = CoreDatabaseManager.open(options);
     }

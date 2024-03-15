@@ -149,7 +149,7 @@ public class Encoding {
      * The values in this class will be used as 'prefixes' within an IID for every database object,
      * and must not overlap with each other.
      * <p>
-     * A prefix is 1 unsigned byte, up to the value of 179. Values 180-255 are reserved for TypeDB Enterprise.
+     * A prefix is 1 unsigned byte, up to the value of 179. Values 180-255 are reserved for TypeDB Cloud.
      */
     public enum Prefix {
         SYSTEM(0, PrefixType.SYSTEM),
@@ -191,7 +191,7 @@ public class Encoding {
         private final ByteArray bytes;
 
         Prefix(int key, PrefixType type) {
-            assert key < 180 : "The encoding range >= 180 is reserved for TypeDB Enterprise.";
+            assert key < 180 : "The encoding range >= 180 is reserved for TypeDB Cloud.";
             this.key = unsignedByte(key);
             this.type = type;
             this.bytes = ByteArray.of(new byte[]{this.key});

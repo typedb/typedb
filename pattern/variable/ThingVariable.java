@@ -42,7 +42,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.ILLEGAL_IMPLICIT_THING_CONSTRAINT_ISA;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.ILLEGAL_TYPE_SPECIFIER;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_IID;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_ISA;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_RELATION;
@@ -71,7 +71,7 @@ public class ThingVariable extends com.vaticle.typedb.core.pattern.variable.Vari
                                  com.vaticle.typedb.core.pattern.variable.VariableRegistry registry) {
         constraints.forEach(constraint -> {
             if (constraint.isIsa() && constraint.asIsa().isDerived() && !registry.allowsDerived()) {
-                throw TypeDBException.of(ILLEGAL_IMPLICIT_THING_CONSTRAINT_ISA, id(), constraint.asIsa().type());
+                throw TypeDBException.of(ILLEGAL_TYPE_SPECIFIER, id(), constraint.asIsa().type());
             }
             this.constrain(ThingConstraint.of(this, constraint, registry));
         });

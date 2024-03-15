@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.database;
 
 import com.google.ortools.Loader;
 import com.vaticle.typedb.core.TypeDB;
-import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -41,7 +40,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -51,12 +49,10 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DAT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.TYPEDB_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNKNOWN_ERROR;
-import static java.util.concurrent.TimeUnit.HOURS;
 
 public class CoreDatabaseManager implements TypeDB.DatabaseManager {
 
     static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
-    private static final long DIAGNOSTICS_DB_PERIOD = HOURS.toMillis(24);
 
     static {
         RocksDB.loadLibrary();
@@ -70,7 +66,6 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
     protected final ConcurrentMap<String, CoreDatabase> databases;
     protected final Factory.Database databaseFactory;
     protected final AtomicBoolean isOpen;
-    private final ScheduledFuture<?> scheduledDiagnostics;
 
     public static CoreDatabaseManager open(Path directory, Factory factory) {
         return open(new Options.Database().dataDir(directory), factory);
@@ -91,11 +86,6 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
         databases = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean(true);
         loadAll();
-        this.scheduledDiagnostics = Diagnostics.get().scheduledRunner(
-                Diagnostics.INITIAL_DELAY_MILLIS, DIAGNOSTICS_DB_PERIOD,
-                "db_statistics", "db_statistics",
-                null, this::submitDiagnostics, Executors.scheduled()
-        );
     }
 
     @Override
@@ -209,7 +199,6 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            if (scheduledDiagnostics != null) scheduledDiagnostics.cancel(true);
             databases.values().parallelStream().forEach(CoreDatabase::close);
         }
     }

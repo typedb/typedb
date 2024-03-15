@@ -51,7 +51,7 @@ public class RuleScaling {
 
     @BeforeClass
     public static void beforeClass() {
-        Diagnostics.initialiseNoop();
+        Diagnostics.Noop.initialise();
     }
 
     @Before

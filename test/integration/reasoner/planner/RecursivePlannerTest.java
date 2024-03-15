@@ -58,7 +58,7 @@ public class RecursivePlannerTest {
 
     @BeforeClass
     public static void beforeClass() {
-        Diagnostics.initialiseNoop();
+        Diagnostics.Noop.initialise();
     }
 
     @Before

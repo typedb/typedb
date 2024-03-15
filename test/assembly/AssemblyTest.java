@@ -33,7 +33,10 @@ public class AssemblyTest {
 
     @Test
     public void bootup() throws InterruptedException, TimeoutException, IOException {
-        TypeDBCoreRunner server = new TypeDBCoreRunner(map(pair("--diagnostics.reporting.enable", "false")));
+        TypeDBCoreRunner server = new TypeDBCoreRunner(map(
+            pair("--diagnostics.reporting.errors", "false"),
+            pair("--diagnostics.monitoring.enable", "false")
+        ));
         try {
             server.start();
         } finally {
@@ -43,7 +46,10 @@ public class AssemblyTest {
 
     @Test
     public void console() throws InterruptedException, TimeoutException, IOException {
-        TypeDBCoreRunner server = new TypeDBCoreRunner();
+        TypeDBCoreRunner server = new TypeDBCoreRunner(map(
+            pair("--diagnostics.reporting.errors", "false"),
+            pair("--diagnostics.monitoring.enable", "false")
+        ));
         try {
             server.start();
             TypeDBConsoleRunner console = new TypeDBConsoleRunner();

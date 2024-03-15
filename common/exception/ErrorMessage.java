@@ -110,7 +110,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Server ERROR_LOGGING_CONNECTIONS =
                 new Server(36, "An error occurred while logging server connection info.");
         public static final Server USER_MANAGEMENT_NOT_AVAILABLE =
-                new Server(37, "User management is only available in TypeDB Enterprise.");
+                new Server(37, "User management is only available in TypeDB Cloud.");
 
         private static final String codePrefix = "SRV";
         private static final String messagePrefix = "Invalid Server Operation";
@@ -293,8 +293,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Pattern(9, "The thing variable '%s' has multiple 'isa' constraints, '%s' and '%s'.");
         public static final Pattern MULTIPLE_THING_CONSTRAINT_RELATION =
                 new Pattern(10, "The relation variable '%s' has multiple 'relation' constraints");
-        public static final Pattern ILLEGAL_IMPLICIT_THING_CONSTRAINT_ISA =
-                new Pattern(11, "The thing variable '%s' has an implicit 'isa' constraint, in a query that does not allow it.");
+        public static final Pattern ILLEGAL_TYPE_SPECIFIER =
+                new Pattern(11, "The variable '%s' is specified with a type '%s', which is not allowed in this part of the query.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_SUB =
                 new Pattern(12, "The type variable '%s' has multiple 'sub' constraints.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_LABEL =
@@ -562,8 +562,6 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(11, "In the type '%s', the played role type '%s' cannot override '%s' as it is not a supertype.");
         public static final TypeWrite OVERRIDDEN_RELATED_ROLE_TYPE_NOT_INHERITED =
                 new TypeWrite(12, "In the relation type '%s', the related role type '%s' cannot override '%s' as it is not an inherited role type.");
-        public static final TypeWrite OVERRIDE_NOT_AVAILABLE = // TODO: this can be split between 'has', 'key' and 'plays' once pushed to commit
-                new TypeWrite(13, "The type '%s' cannot override '%s' as it is either directly declared or not inherited.");
         public static final TypeWrite ATTRIBUTE_SUPERTYPE_VALUE_TYPE =
                 new TypeWrite(14, "The attribute type '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_MISSING =
@@ -586,14 +584,14 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(23, "The native root 'role' type cannot be played.");
         public static final TypeWrite OWNS_ATTRIBUTE_WAS_OVERRIDDEN =
                 new TypeWrite(24, "Type '%s' cannot own '%s' since it was overridden in a supertype, and cannot be redeclared as an ownership.");
-        public static final TypeWrite OWNS_ATTRIBUTE_REDECLARATION =
-                new TypeWrite(25, "Type '%s' cannot redeclare inherited ownership '%s' without annotation specialisation or as an override.");
+        public static final TypeWrite REDUNDANT_OWNS_DECLARATION =
+                new TypeWrite(25, "Type '%s' cannot redeclare inherited ownership '%s' without annotation specialisation.");
         public static final TypeWrite OWNS_VALUE_TYPE_NO_EXACT_EQUALITY =
                 new TypeWrite(26, "Type '%s' cannot own '%s' with annotations '%s' since it has has value type '%s', which does not have an exact equality.");
         public static final TypeWrite OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE =
                 new TypeWrite(27, "Type '%s' cannot own '%s' with incompatible declared annotations '%s' and '%s'");
-        public static final TypeWrite OWNS_ANNOTATION_REDECLARATION =
-                new TypeWrite(28, "Type '%s' cannot declare ownership of '%s' with annotations '%s' since these annotations are inherited.");
+        public static final TypeWrite OWNS_OVERRIDE_ANNOTATIONS_REDUNDANT =
+                new TypeWrite(28, "Type '%s' cannot declare ownership of '%s' with annotations '%s' since these annotations are inherited from overriding '%s'.");
         public static final TypeWrite OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT =
                 new TypeWrite(29, "Type '%s' cannot declare ownership of '%s' with annotations '%s' since this annotation is not stricter than the parent ownership '%s'.");
         public static final TypeWrite OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY =
@@ -606,8 +604,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(33, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to unique.");
         public static final TypeWrite ILLEGAL_ROLE_TYPE_ALIAS =
                 new TypeWrite(34, "The role type '%s' cannot be used as an alias for the inherited role type '%s' - use the inherited role type or define a new role type overriding it with a new name.");
-        public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE =
-                new TypeWrite(35, "Type '%s' cannot declare plays role type '%s' as it has been inherited or overridden and cannot be redeclared.");
+        public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE_OVERRIDDEN =
+                new TypeWrite(35, "Type '%s' cannot declare plays role type '%s' as it has been overridden and cannot be redeclared.");
         public static final TypeWrite PLAYS_ABSTRACT_ROLE_TYPE =
                 new TypeWrite(36, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
         public static final TypeWrite RELATION_NO_ROLE =
@@ -650,8 +648,20 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(55, "The type constraint '%s' is not accepted in a define/undefine query.");
         public static final TypeWrite ILLEGAL_SUPERTYPE_ENCODING =
                 new TypeWrite(56, "Unable to set type with class '%s' as a supertype.");
+        public static final TypeWrite SCHEMA_VALIDATION_INVALID_DEFINE =
+                new TypeWrite(57, "Defining '%s' failed because resulting schema would be invalid: %s.");
+        public static final TypeWrite SCHEMA_VALIDATION_INVALID_UNDEFINE =
+                new TypeWrite(58, "Undefining '%s' failed because the resulting schema would be invalid: %s.");
+        public static final TypeWrite SCHEMA_VALIDATION_INVALID_SET_SUPERTYPE =
+                new TypeWrite(59, "Setting the supertype of '%s' to '%s' failed because the resulting schema would be invalid: %s.");
+        public static final TypeWrite OVERRIDDEN_PLAYED_ROLE_NOT_AVAILABLE =
+                new TypeWrite(60, "The type '%s' cannot override playing '%s' with '%s' as it is either directly declared or not inherited.");
+        public static final TypeWrite OVERRIDDEN_OWNED_ATTRIBUTE_NOT_AVAILABLE =
+                new TypeWrite(61, "The type '%s' cannot override the ownership of '%s' with '%s' as it is either directly declared or not inherited.");
+        public static final TypeWrite REDUNDANT_PLAYS_DECLARATION =
+                new TypeWrite(62, "Type '%s' cannot declare plays role type '%s' as it is already inherited.");
         public static final TypeWrite MAX_SUBTYPE_REACHED =
-                new TypeWrite(57, "The maximum number of '%s' types has been reached: '%s'.");
+                new TypeWrite(63, "The maximum number of '%s' types has been reached: '%s'.");
 
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";
