@@ -182,3 +182,31 @@ fn snapshot_read_through() {
 
     delete_dir(storage_path)
 }
+
+#[test]
+fn snapshot_delete_reinserted() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let options = MVCCStorage::new_db_options();
+    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let keyspace_id: KeyspaceId = 0x0;
+    storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
+
+    let key_1 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x0, 0x0, 0x1], keyspace_id));
+    let value_0 = ByteArray::copy(&[0, 0, 0, 0]);
+    let value_1 = ByteArray::copy(&[0, 0, 0, 1]);
+
+    let snapshot_0 = storage.open_snapshot_write();
+    snapshot_0.put_val(key_1.clone(), value_0);
+    snapshot_0.commit();
+
+    let snapshot_1 = storage.open_snapshot_write();
+    snapshot_1.put_val(key_1.clone(), value_1);
+    snapshot_1.delete(key_1.clone());
+    snapshot_1.commit();
+
+    let snapshot_2 = storage.open_snapshot_read();
+    assert_eq!(snapshot_2.get::<48>(StorageKey::Array(key_1).as_reference()), None);
+    snapshot_2.close_resources();
+    delete_dir(storage_path);
+}
