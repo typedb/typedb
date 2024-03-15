@@ -16,31 +16,22 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_test", "rust_binary")
 package(default_visibility = ["//visibility:public",])
 
-rust_library(
-    name = "durability",
-    crate_root = "durability.rs",
-    srcs = glob([
-        "*.rs",
-    ]),
+# bazel test --compilation_mode=opt //storage/durability/benches:throughput --test_arg=--bench
+rust_test(
+    name = "throughput",
+    srcs = ["throughput.rs"],
     deps = [
-        "//common/logger",
-        "//common/primitive",
+        "//storage/durability:durability",
 
         "@crates//:bincode",
-        "@crates//:lz4",
+        "@crates//:criterion",
         "@crates//:itertools",
-        "@crates//:serde",
-        "@crates//:tracing",
-    ]
-)
-
-rust_test(
-    name = "durability_unit_tests",
-    crate = ":durability",
-    deps = ["@crates//:tempdir"],
+        "@crates//:tempdir",
+    ],
+    use_libtest_harness = False,
 )
 
 checkstyle_test(
@@ -48,3 +39,4 @@ checkstyle_test(
     include = glob(["*"]),
     license_type = "agpl-header",
 )
+

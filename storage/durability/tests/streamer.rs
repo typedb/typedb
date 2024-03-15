@@ -15,6 +15,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub mod maybe_owns;
-pub mod u80;
+#![deny(unused_must_use)]
+#![deny(rust_2018_idioms)]
 
+use durability::DurabilityService;
+use itertools::Itertools;
+
+mod common;
+
+use self::common::{open_wal, TestRecord};
+
+fn main() {
+    let wal = open_wal(std::env::args().nth(1).unwrap());
+    let message = std::env::args().nth(2).unwrap().bytes().collect_vec();
+    for i in 0.. {
+        let record = TestRecord { bytes: message.iter().copied().chain(format!(" {i}").bytes()).collect_vec() };
+        wal.sequenced_write(&record).unwrap();
+    }
+}
