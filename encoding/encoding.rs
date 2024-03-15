@@ -15,21 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 use std::ops::Range;
 
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
-use storage::error::MVCCStorageError;
-use storage::key_value::StorageKey;
-use storage::keyspace::keyspace::KeyspaceId;
-use storage::MVCCStorage;
+use bytes::{byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use storage::{error::MVCCStorageError, key_value::StorageKey, keyspace::keyspace::KeyspaceId, MVCCStorage};
 
 use crate::layout::prefix::{PrefixID, PrefixType};
 
+mod error;
+mod error;
 pub mod graph;
 pub mod layout;
-mod error;
 pub mod property;
 
 pub enum EncodingKeyspace {
@@ -64,15 +60,12 @@ pub fn create_keyspaces(storage: &mut MVCCStorage) -> Result<(), MVCCStorageErro
 }
 
 pub trait AsBytes<'a, const INLINE_SIZE: usize> {
-
     fn bytes(&'a self) -> ByteReference<'a>;
 
     fn into_bytes(self) -> ByteArrayOrRef<'a, INLINE_SIZE>;
-
 }
 
-pub trait Keyable<'a, const INLINE_SIZE: usize> : AsBytes<'a, INLINE_SIZE> + Sized {
-
+pub trait Keyable<'a, const INLINE_SIZE: usize>: AsBytes<'a, INLINE_SIZE> + Sized {
     fn keyspace_id(&self) -> KeyspaceId;
 
     fn as_storage_key(&'a self) -> StorageKey<'a, INLINE_SIZE> {
@@ -84,9 +77,7 @@ pub trait Keyable<'a, const INLINE_SIZE: usize> : AsBytes<'a, INLINE_SIZE> + Siz
     }
 }
 
-
-pub trait Prefixed<'a, const INLINE_SIZE: usize> : AsBytes<'a, INLINE_SIZE> {
-
+pub trait Prefixed<'a, const INLINE_SIZE: usize>: AsBytes<'a, INLINE_SIZE> {
     const RANGE_PREFIX: Range<usize> = 0..PrefixID::LENGTH;
 
     fn prefix(&'a self) -> PrefixType {

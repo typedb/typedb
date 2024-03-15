@@ -15,17 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
-use bytes::byte_array::ByteArray;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKey;
-use storage::keyspace::keyspace::KeyspaceId;
+use storage::{key_value::StorageKey, keyspace::keyspace::KeyspaceId};
 
-use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
-use crate::graph::Typed;
-use crate::layout::prefix::{PrefixID, PrefixType};
+use crate::{
+    graph::Typed,
+    layout::prefix::{PrefixID, PrefixType},
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+};
 
 // TODO: we could make all Type constructs contain plain byte arrays, since they will always be 64 bytes (BUFFER_KEY_INLINE), then make Types all Copy
 //       However, we should benchmark this first, since 64 bytes may be better off referenced
@@ -49,7 +47,7 @@ macro_rules! type_vertex_constructors {
 
         // TODO: is it better to have a const fn that is a reference to owned memory, or
         //       to always induce a tiny copy have a non-const function?
-        pub const fn $build_name_prefix() ->  StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
+        pub const fn $build_name_prefix() -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
             const bytes: [u8; TypeVertex::LENGTH_PREFIX] = PrefixType::$prefix.prefix_id().bytes();
             StorageKey::new_ref(TypeVertex::keyspace_id(), ByteReference::new(&bytes))
         }
@@ -61,17 +59,23 @@ macro_rules! type_vertex_constructors {
 }
 
 type_vertex_constructors!(
-    new_vertex_entity_type, build_vertex_entity_type, build_vertex_entity_type_prefix,
+    new_vertex_entity_type,
+    build_vertex_entity_type,
+    build_vertex_entity_type_prefix,
     is_vertex_entity_type,
     PrefixType::VertexEntityType
 );
 type_vertex_constructors!(
-    new_vertex_relation_type, build_vertex_relation_type, build_vertex_relation_type_prefix,
+    new_vertex_relation_type,
+    build_vertex_relation_type,
+    build_vertex_relation_type_prefix,
     is_vertex_relation_type,
     PrefixType::VertexRelationType
 );
 type_vertex_constructors!(
-    new_vertex_attribute_type, build_vertex_attribute_type, build_vertex_attribute_type_prefix,
+    new_vertex_attribute_type,
+    build_vertex_attribute_type,
+    build_vertex_attribute_type_prefix,
     is_vertex_attribute_type,
     PrefixType::VertexAttributeType
 );
@@ -148,5 +152,3 @@ impl TypeID {
         self.bytes
     }
 }
-
-

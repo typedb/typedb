@@ -15,8 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::type_::entity_type::EntityType;
-use crate::type_::relation_type::RelationType;
+use crate::type_::{entity_type::EntityType, relation_type::RelationType};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum ObjectType<'a> {

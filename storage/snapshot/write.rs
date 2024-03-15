@@ -15,13 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-
-use serde::{Deserialize, Serialize};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 
 use bytes::byte_array::ByteArray;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) enum Write {
@@ -48,8 +49,7 @@ impl PartialEq<Self> for Write {
             }
             Write::InsertPreexisting(value, reinsert) => {
                 if let Write::InsertPreexisting(other_value, other_reinsert) = other {
-                    other_value == value &&
-                        reinsert.load(Ordering::SeqCst) == other_reinsert.load(Ordering::SeqCst)
+                    other_value == value && reinsert.load(Ordering::SeqCst) == other_reinsert.load(Ordering::SeqCst)
                 } else {
                     false
                 }

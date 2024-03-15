@@ -15,8 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 
 // A tiny struct will always be more efficient owning its own data and being Copy
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

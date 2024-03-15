@@ -15,13 +15,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use encoding::graph::type_::vertex::TypeVertex;
-use encoding::layout::prefix::PrefixType;
-use encoding::Prefixed;
+use encoding::{graph::type_::vertex::TypeVertex, layout::prefix::PrefixType, Prefixed};
 
-use crate::ConceptAPI;
-use crate::type_::{AttributeTypeAPI, TypeAPI};
-use crate::type_::annotation::AnnotationAbstract;
+use crate::{
+    type_::{annotation::AnnotationAbstract, AttributeTypeAPI, TypeAPI},
+    ConceptAPI,
+};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct AttributeType<'a> {
@@ -31,8 +30,11 @@ pub struct AttributeType<'a> {
 impl<'a> AttributeType<'a> {
     pub fn new(vertex: TypeVertex<'a>) -> AttributeType {
         if vertex.prefix() != PrefixType::VertexAttributeType {
-            panic!("Type IID prefix was expected to be Prefix::AttributeType ({:?}) but was {:?}",
-                   PrefixType::VertexAttributeType, vertex.prefix())
+            panic!(
+                "Type IID prefix was expected to be Prefix::AttributeType ({:?}) but was {:?}",
+                PrefixType::VertexAttributeType,
+                vertex.prefix()
+            )
         }
         AttributeType { vertex: vertex }
     }

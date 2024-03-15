@@ -15,31 +15,35 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::HashSet;
-use std::ops::Deref;
+use std::{collections::HashSet, ops::Deref};
 
-use encoding::graph::type_::vertex::TypeVertex;
-use encoding::property::label::Label;
-use encoding::property::value_type::ValueType;
+use encoding::{
+    graph::type_::vertex::TypeVertex,
+    property::{label::Label, value_type::ValueType},
+};
 use primitive::maybe_owns::MaybeOwns;
 
-use crate::ConceptAPI;
-use crate::type_::attribute_type::{AttributeType, AttributeTypeAnnotation};
-use crate::type_::entity_type::{EntityType, EntityTypeAnnotation};
-use crate::type_::owns::Owns;
-use crate::type_::relation_type::{RelationType, RelationTypeAnnotation};
-use crate::type_::type_manager::TypeManager;
+use crate::{
+    type_::{
+        attribute_type::{AttributeType, AttributeTypeAnnotation},
+        entity_type::{EntityType, EntityTypeAnnotation},
+        owns::Owns,
+        relation_type::{RelationType, RelationTypeAnnotation},
+        type_manager::TypeManager,
+    },
+    ConceptAPI,
+};
 
+pub mod annotation;
+pub mod annotation;
 pub mod attribute_type;
-pub mod relation_type;
 pub mod entity_type;
-pub mod type_manager;
+pub mod object_type;
 pub mod owns;
 mod plays;
-pub mod type_cache;
 mod relates;
-pub mod object_type;
-pub mod annotation;
+pub mod type_cache;
+pub mod type_manager;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
     fn vertex<'this>(&'this self) -> &'this TypeVertex<'a>;
@@ -77,7 +81,10 @@ pub trait EntityTypeAPI<'a>: TypeAPI<'a> {
 
     // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<EntityType<'static>>>;
 
-    fn get_annotations<'this, 'm>(&'this self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<EntityTypeAnnotation>> {
+    fn get_annotations<'this, 'm>(
+        &'this self,
+        type_manager: &'m TypeManager,
+    ) -> MaybeOwns<'m, HashSet<EntityTypeAnnotation>> {
         type_manager.get_entity_type_annotations(self.clone().into_owned())
     }
 
@@ -125,7 +132,10 @@ pub trait RelationTypeAPI<'a>: TypeAPI<'a> {
 
     // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<RelationType<'static>>>;
 
-    fn get_annotations<'this, 'm>(&'this self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<RelationTypeAnnotation>> {
+    fn get_annotations<'this, 'm>(
+        &'this self,
+        type_manager: &'m TypeManager,
+    ) -> MaybeOwns<'m, HashSet<RelationTypeAnnotation>> {
         type_manager.get_relation_type_annotations(self.clone().into_owned())
     }
 
@@ -180,7 +190,10 @@ pub trait AttributeTypeAPI<'a>: TypeAPI<'a> {
 
     // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<AttributeType<'static>>>;
 
-    fn get_annotations<'this, 'm>(&'this self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<AttributeTypeAnnotation>> {
+    fn get_annotations<'this, 'm>(
+        &'this self,
+        type_manager: &'m TypeManager,
+    ) -> MaybeOwns<'m, HashSet<AttributeTypeAnnotation>> {
         type_manager.get_attribute_type_annotations(self.clone().into_owned())
     }
 
@@ -204,7 +217,11 @@ pub trait AttributeTypeAPI<'a>: TypeAPI<'a> {
 }
 
 pub trait OwnerAPI<'a>: TypeAPI<'a> {
-    fn set_owns<'this, 'm>(&'this self, type_manager: &'m TypeManager, attribute_type: AttributeType<'static>) -> Owns<'static> {
+    fn set_owns<'this, 'm>(
+        &'this self,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Owns<'static> {
         type_manager.set_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex());
         self.get_owns_attribute(type_manager, attribute_type).unwrap()
     }
@@ -217,7 +234,11 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
 
     fn get_owns<'this, 'm>(&'this self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<Owns<'static>>>;
 
-    fn get_owns_attribute<'m>(&self, type_manager: &'m TypeManager, attribute_type: AttributeType<'static>) -> Option<Owns<'static>> {
+    fn get_owns_attribute<'m>(
+        &self,
+        type_manager: &'m TypeManager,
+        attribute_type: AttributeType<'static>,
+    ) -> Option<Owns<'static>> {
         let expected_owns = self._construct_owns(attribute_type);
         if self.get_owns(type_manager).deref().contains(&expected_owns) {
             Some(expected_owns)
@@ -243,7 +264,6 @@ trait OwnedAPI<'a>: AttributeTypeAPI<'a> {
 }
 
 trait PlayerAPI<'a>: TypeAPI<'a> {
-
     // fn set_plays(&self, role_type: &RoleType) -> Plays;
 
     fn get_plays(&self) {

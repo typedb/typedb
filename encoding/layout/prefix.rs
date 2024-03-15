@@ -15,8 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use bytes::byte_reference::ByteReference;
-use bytes::increment_fixed;
+use bytes::{byte_reference::ByteReference, increment_fixed};
 use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::EncodingKeyspace;
@@ -34,7 +33,7 @@ impl PrefixID {
         PrefixID { bytes: bytes }
     }
 
-    pub(crate) const fn bytes(& self) -> [u8; { PrefixID::LENGTH }] {
+    pub(crate) const fn bytes(&self) -> [u8; { PrefixID::LENGTH }] {
         self.bytes
     }
 
@@ -44,18 +43,17 @@ impl PrefixID {
 
     fn keyspace_id(&self) -> KeyspaceId {
         match PrefixType::from_prefix_id(self.clone()) {
-            PrefixType::VertexEntityType |
-            PrefixType::VertexRelationType |
-            PrefixType::VertexAttributeType |
-            PrefixType::PropertyType |
-            PrefixType::IndexLabelToType |
-            PrefixType::PropertyTypeEdge => EncodingKeyspace::Schema.id(),
+            PrefixType::VertexEntityType
+            | PrefixType::VertexRelationType
+            | PrefixType::VertexAttributeType
+            | PrefixType::PropertyType
+            | PrefixType::IndexLabelToType
+            | PrefixType::PropertyTypeEdge => EncodingKeyspace::Schema.id(),
             PrefixType::VertexEntity => todo!(),
             PrefixType::VertexAttributeLong => todo!(),
         }
     }
 }
-
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum PrefixType {

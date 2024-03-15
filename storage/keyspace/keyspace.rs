@@ -15,17 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::cmp::Ordering;
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
-use std::path::PathBuf;
+use std::{
+    cmp::Ordering,
+    error::Error,
+    fmt::{Debug, Display, Formatter},
+    path::PathBuf,
+};
 
-use speedb::{DB, DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions};
-
-use bytes::byte_array::ByteArray;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
+use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
 use iterator::State;
 use logger::result::ResultExt;
+use speedb::{DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 
 pub type KeyspaceId = u8;
 
@@ -35,7 +35,6 @@ pub type KeyspaceId = u8;
 pub(crate) const KEYSPACE_MAXIMUM_COUNT: usize = 10;
 pub(crate) const KEYSPACE_ID_MAX: KeyspaceId = KEYSPACE_MAXIMUM_COUNT as u8 - 1;
 pub(crate) const KEYSPACE_ID_RESERVED_UNSET: KeyspaceId = KEYSPACE_ID_MAX + 1;
-
 
 ///
 /// A non-durable key-value store that supports put, get, delete, iterate
@@ -53,9 +52,7 @@ pub(crate) struct Keyspace {
 impl Keyspace {
     pub(crate) fn new(path: PathBuf, options: &Options, id: KeyspaceId) -> Result<Keyspace, KeyspaceError> {
         let kv_storage = DB::open(&options, &path)
-            .map_err(|e| KeyspaceError {
-                kind: KeyspaceErrorKind::FailedKeyspaceCreate { source: e },
-            })?;
+            .map_err(|e| KeyspaceError { kind: KeyspaceErrorKind::FailedKeyspaceCreate { source: e } })?;
         // initial read options, should be customised to this storage's properties
         let read_options = ReadOptions::default();
         let mut write_options = WriteOptions::default();
@@ -102,40 +99,42 @@ impl Keyspace {
     }
 
     pub(crate) fn put(&self, key: &[u8], value: &[u8]) -> Result<(), KeyspaceError> {
-        self.kv_storage.put_opt(key, value, &self.write_options)
-            .map_err(|e| KeyspaceError {
-                kind: KeyspaceErrorKind::FailedPut { source: e },
-            })
+        self.kv_storage
+            .put_opt(key, value, &self.write_options)
+            .map_err(|e| KeyspaceError { kind: KeyspaceErrorKind::FailedPut { source: e } })
     }
 
     pub(crate) fn get<M, V>(&self, key: &[u8], mut mapper: M) -> Result<Option<V>, KeyspaceError>
-        where M: FnMut(&[u8]) -> V {
-        self.kv_storage.get_pinned_opt(key, &self.read_options)
-            .map(|option| option.map(|value|
-                mapper(value.as_ref())
-            )).map_err(|err| KeyspaceError {
-            kind: KeyspaceErrorKind::FailedGet { source: err }
-        })
+    where
+        M: FnMut(&[u8]) -> V,
+    {
+        self.kv_storage
+            .get_pinned_opt(key, &self.read_options)
+            .map(|option| option.map(|value| mapper(value.as_ref())))
+            .map_err(|err| KeyspaceError { kind: KeyspaceErrorKind::FailedGet { source: err } })
     }
 
-    pub(crate) fn get_prev<M,T>(&self, key: &[u8], mut mapper: M) -> Option<T>
-        where M: FnMut(&[u8], &[u8]) -> T {
+    pub(crate) fn get_prev<M, T>(&self, key: &[u8], mut mapper: M) -> Option<T>
+    where
+        M: FnMut(&[u8], &[u8]) -> T,
+    {
         let mut iterator = self.kv_storage.raw_iterator_opt(self.new_read_options());
         iterator.seek_for_prev(key);
         iterator.item().map(|(k, v)| mapper(k, v))
     }
 
     // TODO: we should benchmark using iterator pools, which would require changing prefix/range on read options
-    pub(crate) fn iterate_prefix<'s, const PREFIX_INLINE_SIZE: usize>(&'s self, prefix: ByteArrayOrRef<'s, PREFIX_INLINE_SIZE>) -> KeyspacePrefixIterator<'s, PREFIX_INLINE_SIZE> {
+    pub(crate) fn iterate_prefix<'s, const PREFIX_INLINE_SIZE: usize>(
+        &'s self,
+        prefix: ByteArrayOrRef<'s, PREFIX_INLINE_SIZE>,
+    ) -> KeyspacePrefixIterator<'s, PREFIX_INLINE_SIZE> {
         KeyspacePrefixIterator::new(&self, prefix)
     }
 
     pub(crate) fn write(&self, write_batch: WriteBatch) -> Result<(), KeyspaceError> {
-        self.kv_storage.write_opt(write_batch, &self.write_options).map_err(|error| {
-            KeyspaceError {
-                kind: KeyspaceErrorKind::FailedBatchWrite { source: error },
-            }
-        })
+        self.kv_storage
+            .write_opt(write_batch, &self.write_options)
+            .map_err(|error| KeyspaceError { kind: KeyspaceErrorKind::FailedBatchWrite { source: error } })
     }
 
     pub(crate) fn checkpoint(&self) -> Result<(), KeyspaceError> {
@@ -150,42 +149,38 @@ impl Keyspace {
     pub(crate) fn delete(self) -> Result<(), KeyspaceError> {
         match std::fs::remove_dir_all(self.path.clone()) {
             Ok(_) => Ok(()),
-            Err(e) => {
-                Err(KeyspaceError {
-                    kind: KeyspaceErrorKind::FailedKeyspaceDelete { source: e },
-                })
-            }
+            Err(e) => Err(KeyspaceError { kind: KeyspaceErrorKind::FailedKeyspaceDelete { source: e } }),
         }
     }
 }
 
 impl Debug for Keyspace {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Keyspace[name={}, path={}, id={}, next_checkpoint_id={}]",
-               self.name(), self.path.to_str().unwrap(), self.keyspace_id, self.next_checkpoint_id
+        write!(
+            f,
+            "Keyspace[name={}, path={}, id={}, next_checkpoint_id={}]",
+            self.name(),
+            self.path.to_str().unwrap(),
+            self.keyspace_id,
+            self.next_checkpoint_id
         )
     }
 }
 
 pub struct KeyspacePrefixIterator<'a, const PS: usize> {
-    prefix:  ByteArrayOrRef<'a, PS>,
+    prefix: ByteArrayOrRef<'a, PS>,
     iterator: DBRawIterator<'a>,
     state: State<speedb::Error>,
 }
 
 impl<'a, const PS: usize> KeyspacePrefixIterator<'a, PS> {
-
-    fn new(keyspace: &'a Keyspace, prefix:  ByteArrayOrRef<'a, PS>) -> Self {
+    fn new(keyspace: &'a Keyspace, prefix: ByteArrayOrRef<'a, PS>) -> Self {
         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
         // read_opts.set_prefix_same_as_start(true);
         let mut read_opts = keyspace.new_read_options();
         let raw_iterator: DBRawIteratorWithThreadMode<'a, DB> = keyspace.kv_storage.raw_iterator_opt(read_opts);
 
-        KeyspacePrefixIterator {
-            prefix: prefix,
-            iterator: raw_iterator,
-            state: State::Init,
-        }
+        KeyspacePrefixIterator { prefix: prefix, iterator: raw_iterator, state: State::Init }
     }
 
     pub(crate) fn peek(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
@@ -204,10 +199,10 @@ impl<'a, const PS: usize> KeyspacePrefixIterator<'a, PS> {
                 self.advance_and_update_state();
                 self.peek()
             }
-            State::Error(error) => Some(Err(KeyspaceError {
-                kind: KeyspaceErrorKind::FailedIterate { source: error.clone() }
-            })),
-            State::Done => None
+            State::Error(error) => {
+                Some(Err(KeyspaceError { kind: KeyspaceErrorKind::FailedIterate { source: error.clone() } }))
+            }
+            State::Done => None,
         }
     }
 
@@ -228,10 +223,10 @@ impl<'a, const PS: usize> KeyspacePrefixIterator<'a, PS> {
                 self.advance_and_update_state();
                 self.next()
             }
-            State::Error(error) => Some(Err(KeyspaceError {
-                kind: KeyspaceErrorKind::FailedIterate { source: error.clone() }
-            })),
-            State::Done => None
+            State::Error(error) => {
+                Some(Err(KeyspaceError { kind: KeyspaceErrorKind::FailedIterate { source: error.clone() } }))
+            }
+            State::Done => None,
         }
     }
 
@@ -255,7 +250,7 @@ impl<'a, const PS: usize> KeyspacePrefixIterator<'a, PS> {
                             self.update_state();
                         }
                         Ordering::Equal => {}
-                        Ordering::Greater => unreachable!("Cannot seek backward.")
+                        Ordering::Greater => unreachable!("Cannot seek backward."),
                     }
                 } else {
                     self.state = State::Done;
@@ -292,7 +287,9 @@ impl<'a, const PS: usize> KeyspacePrefixIterator<'a, PS> {
         return key.len() >= self.prefix.length() && &key[0..self.prefix.length()] == self.prefix.bytes();
     }
 
-    pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(mut self) -> Vec<(ByteArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)> {
+    pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(
+        mut self,
+    ) -> Vec<(ByteArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)> {
         let mut vec = Vec::new();
         loop {
             let item = self.next();
@@ -339,5 +336,3 @@ impl Error for KeyspaceError {
         }
     }
 }
-
-

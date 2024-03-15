@@ -15,7 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 use std::rc::Rc;
 
 use encoding::create_keyspaces;
@@ -40,7 +39,6 @@ fn entity_type_vertex_reuse_resets_thing_vertex() {
 
     // TODO: when deleting an existing type vertex that had instances (which are deleted as well),
     //       and this type vertex ID is re-used, confirm that new Thing ID's start from 0 again for this type.
-
 }
 
 #[test]
@@ -48,7 +46,6 @@ fn max_entity_type_vertexes() {
 
     // TODO: test that the maximum number of type vertices for one group (entity type) is actually U16.MAX_INT
     //       and that we throw a good error message if exceeded.
-
 }
 
 #[test]
@@ -57,5 +54,3 @@ fn loading_storage_assigns_next_vertex() {
     // TODO: test that when loading an existing database (create database, create types, close database, then re-open)
     //       that the next Type vertex ID is the expected one
 }
-
-

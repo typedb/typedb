@@ -15,17 +15,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::path::PathBuf;
-use std::rc::Rc;
+use std::{path::PathBuf, rc::Rc};
 
-use criterion::{Criterion, criterion_group, criterion_main};
-
-use bytes::byte_array::ByteArray;
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use criterion::{criterion_group, criterion_main, Criterion};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
-use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
-use storage::keyspace::keyspace::KeyspaceId;
-use storage::MVCCStorage;
+use storage::{
+    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
+    keyspace::keyspace::KeyspaceId,
+    MVCCStorage,
+};
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
 fn random_key_24(keyspace_id: KeyspaceId) -> StorageKeyArray<{ BUFFER_KEY_INLINE }> {
@@ -53,25 +52,32 @@ fn populate_storage(storage: &MVCCStorage, keyspace_id: KeyspaceId, key_count: u
     snapshot.commit();
     println!("Keys written: {}", key_count);
     let snapshot = storage.open_snapshot_read();
-    let prefix: StorageKey<'_, 48> = StorageKey::Reference(StorageKeyReference::new(keyspace_id, ByteReference::new(&[0 as u8])));
+    let prefix: StorageKey<'_, 48> =
+        StorageKey::Reference(StorageKeyReference::new(keyspace_id, ByteReference::new(&[0 as u8])));
     let iterator = snapshot.iterate_prefix(prefix);
     let count = iterator.collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>().unwrap().len();
     println!("Keys confirmed to be written: {}", count);
     count
 }
 
-fn bench_snapshot_read_get(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Option<ByteArray<{ BUFFER_VALUE_INLINE }>> {
+fn bench_snapshot_read_get(
+    storage: &MVCCStorage,
+    keyspace_id: KeyspaceId,
+) -> Option<ByteArray<{ BUFFER_VALUE_INLINE }>> {
     let snapshot = storage.open_snapshot_read();
-    let mut last: Option<ByteArray<{BUFFER_VALUE_INLINE}>> = None;
+    let mut last: Option<ByteArray<{ BUFFER_VALUE_INLINE }>> = None;
     for _ in 0..1 {
         last = snapshot.get(StorageKey::Array(random_key_24(keyspace_id)).as_reference());
     }
     last
 }
 
-fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(storage: &MVCCStorage, keyspace_id: KeyspaceId) -> Option<ByteArray<{ BUFFER_VALUE_INLINE }>> {
+fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(
+    storage: &MVCCStorage,
+    keyspace_id: KeyspaceId,
+) -> Option<ByteArray<{ BUFFER_VALUE_INLINE }>> {
     let snapshot = storage.open_snapshot_read();
-    let mut last: Option<ByteArray<{BUFFER_VALUE_INLINE}>> = None;
+    let mut last: Option<ByteArray<{ BUFFER_VALUE_INLINE }>> = None;
     for _ in 0..ITERATE_COUNT {
         last = snapshot.get(StorageKey::Array(random_key_4(keyspace_id)).as_reference())
     }
@@ -102,30 +108,25 @@ fn criterion_benchmark(c: &mut Criterion) {
     const KEYSPACE_ID: KeyspaceId = 0;
     {
         let (storage, storage_path) = setup_storage(KEYSPACE_ID, INITIAL_KEY_COUNT);
-        c.bench_function("snapshot_read_get", |b| b.iter(|| {
-            bench_snapshot_read_get(&storage, KEYSPACE_ID)
-        }));
+        c.bench_function("snapshot_read_get", |b| b.iter(|| bench_snapshot_read_get(&storage, KEYSPACE_ID)));
         delete_dir(storage_path);
     }
     {
         let (storage, storage_path) = setup_storage(KEYSPACE_ID, INITIAL_KEY_COUNT);
-        c.bench_function("snapshot_write_put", |b| b.iter(|| {
-            bench_snapshot_write_put(&storage, KEYSPACE_ID, 100)
-        }));
+        c.bench_function("snapshot_write_put", |b| b.iter(|| bench_snapshot_write_put(&storage, KEYSPACE_ID, 100)));
         delete_dir(storage_path);
     }
     {
         let (storage, storage_path) = setup_storage(KEYSPACE_ID, INITIAL_KEY_COUNT);
-        c.bench_function("snapshot_read_iterate", |b| b.iter(|| {
-            bench_snapshot_read_iterate::<1>(&storage, KEYSPACE_ID)
-        }));
+        c.bench_function("snapshot_read_iterate", |b| {
+            b.iter(|| bench_snapshot_read_iterate::<1>(&storage, KEYSPACE_ID))
+        });
         delete_dir(storage_path);
     }
 }
 
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
-
 
 // --- TODO: this flame graph output isn't working. Copied from https://www.jibbow.com/posts/criterion-flamegraphs/ ---
 

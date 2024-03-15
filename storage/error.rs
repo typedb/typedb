@@ -15,14 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
-use std::sync::Arc;
+use std::{
+    error::Error,
+    fmt::{Debug, Display, Formatter},
+    sync::Arc,
+};
 
 use durability::DurabilityError;
 
-use crate::isolation_manager::IsolationError;
-use crate::keyspace::keyspace::{KeyspaceError, KeyspaceId};
+use crate::{
+    isolation_manager::IsolationError,
+    keyspace::keyspace::{KeyspaceError, KeyspaceId},
+};
 
 #[derive(Debug)]
 pub struct MVCCStorageError {
@@ -86,7 +90,7 @@ impl Error for MVCCStorageError {
             MVCCStorageErrorKind::DurabilityError { source, .. } => Some(source),
             MVCCStorageErrorKind::KeyspaceNameExists { .. } => None,
             MVCCStorageErrorKind::KeyspaceIdReserved { .. } => None,
-            MVCCStorageErrorKind::KeyspaceIdTooLarge{  .. } => None,
+            MVCCStorageErrorKind::KeyspaceIdTooLarge { .. } => None,
             MVCCStorageErrorKind::KeyspaceIdExists { .. } => None,
             MVCCStorageErrorKind::KeyspaceDeleteError { source } => Some(source),
         }

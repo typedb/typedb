@@ -15,17 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 use std::rc::Rc;
 
-use concept::thing::thing_manager::ThingManager;
-use concept::type_::type_manager::TypeManager;
-use encoding::create_keyspaces;
-use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
-use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
-use encoding::primitive::label::Label;
-use storage::MVCCStorage;
-use storage::snapshot::snapshot::Snapshot;
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+use encoding::{
+    create_keyspaces,
+    graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
+    primitive::label::Label,
+};
+use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
 #[test]

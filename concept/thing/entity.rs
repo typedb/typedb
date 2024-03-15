@@ -17,13 +17,15 @@
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::graph::thing::vertex_object::ObjectVertex;
-use storage::key_value::StorageKeyReference;
-use storage::snapshot::iterator::SnapshotPrefixIterator;
+use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotPrefixIterator};
 
-use crate::{concept_iterator, ConceptAPI};
-use crate::error::{ConceptError, ConceptErrorKind};
-use crate::thing::{EntityAPI, ObjectAPI, ThingAPI};
-use crate::type_::TypeAPI;
+use crate::{
+    concept_iterator,
+    error::{ConceptError, ConceptErrorKind},
+    thing::{EntityAPI, ObjectAPI, ThingAPI},
+    type_::TypeAPI,
+    ConceptAPI,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Entity<'a> {

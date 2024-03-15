@@ -16,13 +16,15 @@
  */
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
-use encoding::graph::thing::vertex_object::ObjectVertex;
-use storage::key_value::StorageKeyReference;
-use storage::snapshot::iterator::SnapshotPrefixIterator;
+use encoding::graph::thing::vertex::ObjectVertex;
+use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotPrefixIterator};
 
-use crate::{concept_iterator, ConceptAPI};
-use crate::error::{ConceptError, ConceptErrorKind};
-use crate::thing::{ObjectAPI, RelationAPI, ThingAPI};
+use crate::{
+    concept_iterator,
+    error::{ConceptError, ConceptErrorKind},
+    thing::{ObjectAPI, RelationAPI, ThingAPI},
+    ConceptAPI,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Relation<'a> {

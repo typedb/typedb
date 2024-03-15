@@ -15,19 +15,17 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 use std::ops::Range;
 
-use bytes::byte_array::ByteArray;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKey;
-use storage::keyspace::keyspace::KeyspaceId;
+use storage::{key_value::StorageKey, keyspace::keyspace::KeyspaceId};
 
-use crate::{AsBytes, EncodingKeyspace, Keyable};
-use crate::graph::type_::vertex::TypeVertex;
-use crate::layout::infix::{InfixID, InfixType};
+use crate::{
+    graph::type_::vertex::TypeVertex,
+    layout::infix::{InfixID, InfixType},
+    AsBytes, EncodingKeyspace, Keyable,
+};
 
 pub struct TypeEdge<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
@@ -45,7 +43,7 @@ macro_rules! type_edge_constructors {
             TypeEdge::build(from, InfixType::$infix, to)
         }
 
-        pub fn $build_prefix(from: TypeVertex<'static>) -> StorageKey<'static, {TypeEdge::LENGTH_PREFIX}> {
+        pub fn $build_prefix(from: TypeVertex<'static>) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX }> {
             TypeEdge::build_prefix(from, InfixType::$infix)
         }
 
@@ -55,43 +53,41 @@ macro_rules! type_edge_constructors {
     };
 }
 
+type_edge_constructors!(new_edge_sub, build_edge_sub, build_edge_sub_prefix, is_edge_sub, InfixType::EdgeSub);
 type_edge_constructors!(
-    new_edge_sub, build_edge_sub, build_edge_sub_prefix,
-    is_edge_sub,
-    InfixType::EdgeSub
-);
-type_edge_constructors!(
-    new_edge_sub_reverse, build_edge_sub_reverse, build_edge_sub_reverse_prefix,
+    new_edge_sub_reverse,
+    build_edge_sub_reverse,
+    build_edge_sub_reverse_prefix,
     is_edge_sub_reverse,
     InfixType::EdgeSubReverse
 );
+type_edge_constructors!(new_edge_owns, build_edge_owns, build_edge_owns_prefix, is_edge_owns, InfixType::EdgeOwns);
 type_edge_constructors!(
-    new_edge_owns, build_edge_owns, build_edge_owns_prefix,
-    is_edge_owns,
-    InfixType::EdgeOwns
-);
-type_edge_constructors!(
-    new_edge_owns_reverse, build_edge_owns_reverse, build_edge_owns_reverse_prefix,
+    new_edge_owns_reverse,
+    build_edge_owns_reverse,
+    build_edge_owns_reverse_prefix,
     is_edge_owns_reverse,
     InfixType::EdgeOwnsReverse
 );
+type_edge_constructors!(new_edge_plays, build_edge_plays, build_edge_plays_prefix, is_edge_plays, InfixType::EdgePlays);
 type_edge_constructors!(
-    new_edge_plays, build_edge_plays, build_edge_plays_prefix,
-    is_edge_plays,
-    InfixType::EdgePlays
-);
-type_edge_constructors!(
-    new_edge_plays_reverse, build_edge_plays_reverse, build_edge_plays_reverse_prefix,
+    new_edge_plays_reverse,
+    build_edge_plays_reverse,
+    build_edge_plays_reverse_prefix,
     is_edge_plays_reverse,
     InfixType::EdgePlaysReverse
 );
 type_edge_constructors!(
-    new_edge_relates, build_edge_relates, build_edge_relates_prefix,
+    new_edge_relates,
+    build_edge_relates,
+    build_edge_relates_prefix,
     is_edge_relates,
     InfixType::EdgeRelates
 );
 type_edge_constructors!(
-    new_edge_relates_reverse, build_edge_relates_reverse, build_edge_relates_reverse_prefix,
+    new_edge_relates_reverse,
+    build_edge_relates_reverse,
+    build_edge_relates_reverse_prefix,
     is_edge_relates_reverse,
     InfixType::EdgeRelatesReverse
 );

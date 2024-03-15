@@ -16,22 +16,25 @@
  */
 
 use std::collections::HashSet;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use encoding::graph::type_::vertex::{new_vertex_entity_type, TypeVertex};
-use encoding::layout::prefix::PrefixType;
-use encoding::Prefixed;
-use primitive::maybe_owns::MaybeOwns;
-use storage::key_value::StorageKeyReference;
-use storage::snapshot::iterator::SnapshotPrefixIterator;
 
-use crate::{concept_iterator, ConceptAPI};
-use crate::error::{ConceptError, ConceptErrorKind};
-use crate::type_::{AttributeTypeAPI, EntityTypeAPI, OwnerAPI, TypeAPI};
-use crate::type_::annotation::AnnotationAbstract;
-use crate::type_::attribute_type::AttributeType;
-use crate::type_::object_type::ObjectType;
-use crate::type_::owns::Owns;
-use crate::type_::type_manager::TypeManager;
+use bytes::byte_array_or_ref::ByteArrayOrRef;
+use encoding::{
+    graph::type_::vertex::{new_vertex_entity_type, TypeVertex},
+    layout::prefix::PrefixType,
+    Prefixed,
+};
+use primitive::maybe_owns::MaybeOwns;
+use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotPrefixIterator};
+
+use crate::{
+    concept_iterator,
+    error::{ConceptError, ConceptErrorKind},
+    type_::{
+        annotation::AnnotationAbstract, attribute_type::AttributeType, object_type::ObjectType, owns::Owns,
+        type_manager::TypeManager, AttributeTypeAPI, EntityTypeAPI, OwnerAPI, TypeAPI,
+    },
+    ConceptAPI,
+};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct EntityType<'a> {
@@ -41,8 +44,11 @@ pub struct EntityType<'a> {
 impl<'a> EntityType<'a> {
     pub fn new(vertex: TypeVertex<'a>) -> EntityType {
         if vertex.prefix() != PrefixType::VertexEntityType {
-            panic!("Type IID prefix was expected to be Prefix::EntityType ({:?}) but was {:?}",
-                   PrefixType::VertexEntityType, vertex.prefix())
+            panic!(
+                "Type IID prefix was expected to be Prefix::EntityType ({:?}) but was {:?}",
+                PrefixType::VertexEntityType,
+                vertex.prefix()
+            )
         }
         EntityType { vertex: vertex }
     }

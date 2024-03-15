@@ -17,8 +17,8 @@
 
 use std::fmt::{Display, Formatter};
 
-pub mod byte_array_or_ref;
 pub mod byte_array;
+pub mod byte_array_or_ref;
 pub mod byte_reference;
 
 // TODO: this needs to be optimised using bigger strides than a single byte!
@@ -51,7 +51,6 @@ pub const fn increment_fixed<const SIZE: usize>(mut bytes: [u8; SIZE]) -> [u8; S
     }
     bytes
 }
-
 
 #[derive(Debug)]
 pub struct BytesError {

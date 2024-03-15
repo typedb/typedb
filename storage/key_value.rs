@@ -15,14 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::borrow::Borrow;
-use std::cmp::Ordering;
+use std::{borrow::Borrow, cmp::Ordering};
 
+use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use serde::{Deserialize, Serialize};
-
-use bytes::byte_array::ByteArray;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
 
 use crate::keyspace::keyspace::KeyspaceId;
 
@@ -36,7 +32,9 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
     pub fn new(keyspace_id: KeyspaceId, bytes: ByteArrayOrRef<'bytes, S>) -> Self {
         match bytes {
             ByteArrayOrRef::Array(array) => StorageKey::Array(StorageKeyArray::new(keyspace_id, array)),
-            ByteArrayOrRef::Reference(reference) => StorageKey::Reference(StorageKeyReference::new(keyspace_id, reference)),
+            ByteArrayOrRef::Reference(reference) => {
+                StorageKey::Reference(StorageKeyReference::new(keyspace_id, reference))
+            }
         }
     }
 
@@ -114,10 +112,7 @@ pub struct StorageKeyArray<const INLINE_SIZE: usize> {
 
 impl<const INLINE_SIZE: usize> StorageKeyArray<INLINE_SIZE> {
     pub fn new(keyspace_id: KeyspaceId, array: ByteArray<INLINE_SIZE>) -> StorageKeyArray<INLINE_SIZE> {
-        StorageKeyArray {
-            keyspace_id: keyspace_id,
-            byte_array: array,
-        }
+        StorageKeyArray { keyspace_id: keyspace_id, byte_array: array }
     }
 
     pub(crate) fn keyspace_id(&self) -> KeyspaceId {
@@ -158,20 +153,15 @@ impl<const INLINE_SIZE: usize> Ord for StorageKeyArray<INLINE_SIZE> {
     }
 }
 
-
 impl<const INLINE_SIZE: usize> Borrow<[u8]> for StorageKeyArray<INLINE_SIZE> {
     fn borrow(&self) -> &[u8] {
         self.bytes()
     }
 }
 
-
 impl<const INLINE_SIZE: usize> From<StorageKeyReference<'_>> for StorageKeyArray<INLINE_SIZE> {
     fn from(key: StorageKeyReference<'_>) -> Self {
-        StorageKeyArray {
-            keyspace_id: key.keyspace_id(),
-            byte_array: ByteArray::copy(key.bytes()),
-        }
+        StorageKeyArray { keyspace_id: key.keyspace_id(), byte_array: ByteArray::copy(key.bytes()) }
     }
 }
 
@@ -186,10 +176,7 @@ impl<const INLINE_SIZE: usize> From<(&[u8], u8)> for StorageKeyArray<INLINE_SIZE
     // For tests
     fn from((bytes, section_id): (&[u8], u8)) -> Self {
         let bytes = ByteArray::<INLINE_SIZE>::copy(bytes);
-        StorageKeyArray {
-            keyspace_id: section_id,
-            byte_array: bytes,
-        }
+        StorageKeyArray { keyspace_id: section_id, byte_array: bytes }
     }
 }
 
@@ -201,10 +188,7 @@ pub struct StorageKeyReference<'bytes> {
 
 impl<'bytes> StorageKeyReference<'bytes> {
     pub const fn new(keyspace_id: KeyspaceId, reference: ByteReference<'bytes>) -> StorageKeyReference<'bytes> {
-        StorageKeyReference {
-            keyspace_id: keyspace_id,
-            reference: reference,
-        }
+        StorageKeyReference { keyspace_id: keyspace_id, reference: reference }
     }
 
     pub(crate) fn keyspace_id(&self) -> KeyspaceId {

@@ -15,25 +15,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 use std::collections::HashSet;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use encoding::graph::type_::vertex::{new_vertex_relation_type, TypeVertex};
-use encoding::layout::prefix::PrefixType;
-use encoding::Prefixed;
-use primitive::maybe_owns::MaybeOwns;
-use storage::key_value::StorageKeyReference;
-use storage::snapshot::iterator::SnapshotPrefixIterator;
 
-use crate::{concept_iterator, ConceptAPI};
-use crate::error::{ConceptError, ConceptErrorKind};
-use crate::type_::{OwnerAPI, RelationTypeAPI, TypeAPI};
-use crate::type_::annotation::AnnotationAbstract;
-use crate::type_::attribute_type::AttributeType;
-use crate::type_::entity_type::EntityType;
-use crate::type_::object_type::ObjectType;
-use crate::type_::owns::Owns;
-use crate::type_::type_manager::TypeManager;
+use bytes::byte_array_or_ref::ByteArrayOrRef;
+use encoding::{
+    graph::type_::vertex::{new_vertex_relation_type, TypeVertex},
+    layout::prefix::PrefixType,
+    Prefixed,
+};
+use primitive::maybe_owns::MaybeOwns;
+use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotPrefixIterator};
+
+use crate::{
+    concept_iterator,
+    error::{ConceptError, ConceptErrorKind},
+    type_::{
+        annotation::AnnotationAbstract, attribute_type::AttributeType, entity_type::EntityType,
+        object_type::ObjectType, owns::Owns, type_manager::TypeManager, OwnerAPI, RelationTypeAPI, TypeAPI,
+    },
+    ConceptAPI,
+};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RelationType<'a> {
@@ -43,8 +44,11 @@ pub struct RelationType<'a> {
 impl<'a> RelationType<'a> {
     pub fn new(vertex: TypeVertex<'a>) -> RelationType {
         if vertex.prefix() != PrefixType::VertexRelationType {
-            panic!("Type IID prefix was expected to be Prefix::RelationType ({:?}) but was {:?}",
-                   PrefixType::VertexRelationType, vertex.prefix())
+            panic!(
+                "Type IID prefix was expected to be Prefix::RelationType ({:?}) but was {:?}",
+                PrefixType::VertexRelationType,
+                vertex.prefix()
+            )
         }
         RelationType { vertex: vertex }
     }

@@ -28,8 +28,8 @@ pub trait ResultExt<T, E> {
     ///
     /// [`ERROR`]: /tracing/0.1/tracing/struct.Level.html#associatedconstant.ERROR
     fn unwrap_or_log(self) -> T
-        where
-            E: fmt::Debug;
+    where
+        E: fmt::Debug;
 
     /// Unwraps a result, yielding the content of an [`Ok`].
     ///
@@ -40,8 +40,8 @@ pub trait ResultExt<T, E> {
     ///
     /// [`ERROR`]: /tracing/0.1/tracing/struct.Level.html#associatedconstant.ERROR
     fn expect_or_log(self, msg: &str) -> T
-        where
-            E: fmt::Debug;
+    where
+        E: fmt::Debug;
 
     /// Unwraps a result, yielding the content of an [`Err`].
     ///
@@ -52,8 +52,8 @@ pub trait ResultExt<T, E> {
     ///
     /// [`ERROR`]: /tracing/0.1/tracing/struct.Level.html#associatedconstant.ERROR
     fn unwrap_err_or_log(self) -> E
-        where
-            T: fmt::Debug;
+    where
+        T: fmt::Debug;
 
     /// Unwraps a result, yielding the content of an [`Err`].
     ///
@@ -64,16 +64,16 @@ pub trait ResultExt<T, E> {
     ///
     /// [`ERROR`]: /tracing/0.1/tracing/struct.Level.html#associatedconstant.ERROR
     fn expect_err_or_log(self, msg: &str) -> E
-        where
-            T: fmt::Debug;
+    where
+        T: fmt::Debug;
 }
 
 impl<T, E> ResultExt<T, E> for Result<T, E> {
     #[inline]
     #[track_caller]
     fn unwrap_or_log(self) -> T
-        where
-            E: fmt::Debug,
+    where
+        E: fmt::Debug,
     {
         match self {
             Ok(t) => t,
@@ -84,8 +84,8 @@ impl<T, E> ResultExt<T, E> for Result<T, E> {
     #[inline]
     #[track_caller]
     fn expect_or_log(self, msg: &str) -> T
-        where
-            E: fmt::Debug,
+    where
+        E: fmt::Debug,
     {
         match self {
             Ok(t) => t,
@@ -96,8 +96,8 @@ impl<T, E> ResultExt<T, E> for Result<T, E> {
     #[inline]
     #[track_caller]
     fn unwrap_err_or_log(self) -> E
-        where
-            T: fmt::Debug,
+    where
+        T: fmt::Debug,
     {
         match self {
             Ok(t) => failed_with("called `Result::unwrap_err_or_log()` on an `Ok` value", &t),
@@ -108,8 +108,8 @@ impl<T, E> ResultExt<T, E> for Result<T, E> {
     #[inline]
     #[track_caller]
     fn expect_err_or_log(self, msg: &str) -> E
-        where
-            T: fmt::Debug,
+    where
+        T: fmt::Debug,
     {
         match self {
             Ok(t) => failed_with(msg, &t),
@@ -117,7 +117,6 @@ impl<T, E> ResultExt<T, E> for Result<T, E> {
         }
     }
 }
-
 
 //
 // Helper functions.

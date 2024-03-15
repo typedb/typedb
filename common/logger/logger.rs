@@ -15,9 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use tracing;
+use tracing::{self, dispatcher::DefaultGuard};
 pub use tracing::{error, info, trace};
-use tracing::dispatcher::DefaultGuard;
 use tracing_subscriber::prelude::*;
 
 pub mod result;

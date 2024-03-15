@@ -15,9 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
-use crate::type_::attribute_type::AttributeType;
-use crate::type_::object_type::ObjectType;
+use crate::type_::{attribute_type::AttributeType, object_type::ObjectType};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<'a> {

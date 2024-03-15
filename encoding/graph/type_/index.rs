@@ -17,16 +17,15 @@
 
 use std::ops::Range;
 
-use bytes::byte_array::ByteArray;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::keyspace::keyspace::KeyspaceId;
 
-use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
-use crate::layout::prefix::{PrefixID, PrefixType};
-use crate::property::label::Label;
-use crate::property::string::StringBytes;
+use crate::{
+    layout::prefix::{PrefixID, PrefixType},
+    property::{label::Label, string::StringBytes},
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+};
 
 pub struct LabelToTypeVertexIndex<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
@@ -42,12 +41,15 @@ impl<'a> LabelToTypeVertexIndex<'a> {
         let label_string_bytes = label.scoped_name();
         let mut array = ByteArray::zeros(label_string_bytes.bytes().length() + PrefixID::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&PrefixType::IndexLabelToType.prefix_id().bytes());
-        array.bytes_mut()[Self::range_label(label_string_bytes.bytes().length())].copy_from_slice(label_string_bytes.bytes().bytes());
+        array.bytes_mut()[Self::range_label(label_string_bytes.bytes().length())]
+            .copy_from_slice(label_string_bytes.bytes().bytes());
         LabelToTypeVertexIndex { bytes: ByteArrayOrRef::Array(array) }
     }
 
     fn label(&'a self) -> StringBytes<'a, BUFFER_KEY_INLINE> {
-        StringBytes::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::range_label(self.label_length())])))
+        StringBytes::new(ByteArrayOrRef::Reference(ByteReference::new(
+            &self.bytes.bytes()[Self::range_label(self.label_length())],
+        )))
     }
 
     fn label_length(&self) -> usize {
@@ -76,4 +78,3 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {
 }
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {}
-

@@ -18,13 +18,15 @@
 use std::ops::Deref;
 
 #[derive(Debug)]
-pub enum MaybeOwns<'a, T> where T: Eq {
+pub enum MaybeOwns<'a, T>
+where
+    T: Eq,
+{
     Owned(T),
     Borrowed(&'a T),
 }
 
 impl<'a, T: Eq> MaybeOwns<'a, T> {
-
     pub fn owned(t: T) -> Self {
         Self::Owned(t)
     }
@@ -51,5 +53,4 @@ impl<'a, T: Eq> PartialEq<Self> for MaybeOwns<'a, T> {
     }
 }
 
-impl<'a, T: Eq> Eq for MaybeOwns<'a, T> { }
-
+impl<'a, T: Eq> Eq for MaybeOwns<'a, T> {}

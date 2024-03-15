@@ -15,26 +15,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::{ops::Deref, rc::Rc, sync::Arc};
 
-use std::ops::Deref;
-use std::rc::Rc;
-use std::sync::Arc;
-
-use concept::type_::annotation::AnnotationAbstract;
-use concept::type_::entity_type::EntityTypeAnnotation;
-use concept::type_::{AttributeTypeAPI, EntityTypeAPI, OwnerAPI};
-use concept::type_::owns::Owns;
-use concept::type_::object_type::ObjectType;
-use concept::type_::type_cache::TypeCache;
-use concept::type_::type_manager::TypeManager;
-use encoding::create_keyspaces;
-use encoding::graph::type_::Root;
-use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
-use encoding::property::label::Label;
-use encoding::property::value_type::ValueType;
+use concept::type_::{
+    annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, owns::Owns,
+    type_cache::TypeCache, type_manager::TypeManager, AttributeTypeAPI, EntityTypeAPI, OwnerAPI,
+};
+use encoding::{
+    create_keyspaces,
+    graph::type_::{vertex_generator::TypeVertexGenerator, Root},
+    property::{label::Label, value_type::ValueType},
+};
 use primitive::maybe_owns::MaybeOwns;
-use storage::MVCCStorage;
-use storage::snapshot::snapshot::Snapshot;
+use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
 /*
@@ -76,7 +69,9 @@ fn entity_creation() {
         person_type.set_annotation(&type_manager, EntityTypeAnnotation::from(AnnotationAbstract::new()));
 
         assert!(!person_type.is_root(&type_manager));
-        assert!(person_type.get_annotations(&type_manager).contains(&EntityTypeAnnotation::from(AnnotationAbstract::new())));
+        assert!(person_type
+            .get_annotations(&type_manager)
+            .contains(&EntityTypeAnnotation::from(AnnotationAbstract::new())));
         assert_eq!(person_type.get_label(&type_manager).deref(), &person_label);
 
         let supertype = person_type.get_supertype(&type_manager);
@@ -133,7 +128,9 @@ fn entity_creation() {
         let person_label = Label::build("person");
         let person_type = type_manager.get_entity_type(&person_label).unwrap();
         assert!(!person_type.is_root(&type_manager));
-        assert!(person_type.get_annotations(&type_manager).contains(&EntityTypeAnnotation::from(AnnotationAbstract::new())));
+        assert!(person_type
+            .get_annotations(&type_manager)
+            .contains(&EntityTypeAnnotation::from(AnnotationAbstract::new())));
         assert_eq!(person_type.get_label(&type_manager).deref(), &person_label);
 
         let supertype = person_type.get_supertype(&type_manager);

@@ -17,24 +17,25 @@
 
 use std::ops::Range;
 
-use bytes::byte_array::ByteArray;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKey;
-use storage::keyspace::keyspace::KeyspaceId;
+use storage::{key_value::StorageKey, keyspace::keyspace::KeyspaceId};
 
-use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
-use crate::graph::type_::vertex::TypeVertex;
-use crate::layout::infix::{InfixID, InfixType};
-use crate::layout::prefix::{PrefixID, PrefixType};
+use crate::{
+    graph::type_::vertex::TypeVertex,
+    layout::{
+        infix::{InfixID, InfixType},
+        prefix::{PrefixID, PrefixType},
+    },
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct TypeVertexProperty<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }
 
-macro_rules! type_vertex_property_constructors{
+macro_rules! type_vertex_property_constructors {
     ($new_name:ident, $build_name:ident, $is_name:ident, InfixType::$infix:ident) => {
         pub fn $new_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeVertexProperty<'a> {
             let vertex = TypeVertexProperty::new(bytes);
@@ -53,17 +54,23 @@ macro_rules! type_vertex_property_constructors{
 }
 
 type_vertex_property_constructors!(
-    new_property_type_label, build_property_type_label, is_property_type_label_prefix,
+    new_property_type_label,
+    build_property_type_label,
+    is_property_type_label_prefix,
     InfixType::PropertyLabel
 );
 
 type_vertex_property_constructors!(
-    new_property_type_value_type, build_property_type_value_type, is_property_type_value_type,
+    new_property_type_value_type,
+    build_property_type_value_type,
+    is_property_type_value_type,
     InfixType::PropertyValueType
 );
 
 type_vertex_property_constructors!(
-    new_property_type_annotation_abstract, build_property_type_annotation_abstract, is_property_type_annotation_abstract,
+    new_property_type_annotation_abstract,
+    build_property_type_annotation_abstract,
+    is_property_type_annotation_abstract,
     InfixType::PropertyAnnotationAbstract
 );
 
@@ -120,7 +127,6 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
-
 
     fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
         self.bytes

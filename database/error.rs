@@ -15,9 +15,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::error::Error;
-use std::fmt::{Display, Formatter};
-use std::io;
+use std::{
+    error::Error,
+    fmt::{Display, Formatter},
+    io,
+};
 
 use storage::error::MVCCStorageError;
 

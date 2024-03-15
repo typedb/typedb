@@ -15,17 +15,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 use std::rc::Rc;
 
+use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
 use rand;
-
-use bytes::byte_array::ByteArray;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use storage::error::{MVCCStorageError, MVCCStorageErrorKind};
-use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
-use storage::keyspace::keyspace::KeyspaceId;
-use storage::MVCCStorage;
+use storage::{
+    error::{MVCCStorageError, MVCCStorageErrorKind},
+    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
+    keyspace::keyspace::KeyspaceId,
+    MVCCStorage,
+};
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
 #[test]
@@ -69,21 +68,19 @@ fn create_keyspaces_errors() {
 
     let keyspace_2_id: KeyspaceId = 0x1;
     let name_error = storage.create_keyspace("keyspace_1", keyspace_2_id, &options);
-    assert!(matches!(name_error, Err(MVCCStorageError{
-        kind: MVCCStorageErrorKind::KeyspaceNameExists {
-            ..
-        },
-        ..
-    })), "{}", name_error.unwrap_err());
+    assert!(
+        matches!(name_error, Err(MVCCStorageError { kind: MVCCStorageErrorKind::KeyspaceNameExists { .. }, .. })),
+        "{}",
+        name_error.unwrap_err()
+    );
 
     let duplicate_prefix: KeyspaceId = 0x0;
     let prefix_error = storage.create_keyspace("keyspace_2", duplicate_prefix, &options);
-    assert!(matches!(prefix_error, Err(MVCCStorageError{
-        kind: MVCCStorageErrorKind::KeyspaceIdExists {
-            ..
-        },
-        ..
-    })), "{}", prefix_error.unwrap_err());
+    assert!(
+        matches!(prefix_error, Err(MVCCStorageError { kind: MVCCStorageErrorKind::KeyspaceIdExists { .. }, .. })),
+        "{}",
+        prefix_error.unwrap_err()
+    );
 
     delete_dir(storage_path)
 }
@@ -117,19 +114,25 @@ fn get_put_iterate() {
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_3), &ByteArrayOrRef::Array(ByteArray::empty()));
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_4), &ByteArrayOrRef::Array(ByteArray::empty()));
 
-    let first_value: Option<ByteArray<48>> = storage.get_raw(StorageKeyReference::from(&keyspace_1_key_1), |value| ByteArray::copy(value));
+    let first_value: Option<ByteArray<48>> =
+        storage.get_raw(StorageKeyReference::from(&keyspace_1_key_1), |value| ByteArray::copy(value));
     assert_eq!(first_value, Some(ByteArray::empty()));
 
-    let second_value: Option<ByteArray<48>> = storage.get_raw(StorageKeyReference::from(&keyspace_2_key_1), |value| ByteArray::copy(value));
+    let second_value: Option<ByteArray<48>> =
+        storage.get_raw(StorageKeyReference::from(&keyspace_2_key_1), |value| ByteArray::copy(value));
     assert_eq!(second_value, Some(ByteArray::empty()));
 
     let prefix = StorageKeyArray::<64>::from((vec![0x1], keyspace_1_id));
-    let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage.iterate_keyspace_prefix(StorageKey::<64>::Reference(StorageKeyReference::from(&prefix))).collect_cloned::<64, 128>();
-    assert_eq!(items, vec![
-        (keyspace_1_key_2.into_byte_array(), ByteArray::<128>::empty()),
-        (keyspace_1_key_3.into_byte_array(), ByteArray::<128>::empty()),
-    ]);
+    let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage
+        .iterate_keyspace_prefix(StorageKey::<64>::Reference(StorageKeyReference::from(&prefix)))
+        .collect_cloned::<64, 128>();
+    assert_eq!(
+        items,
+        vec![
+            (keyspace_1_key_2.into_byte_array(), ByteArray::<128>::empty()),
+            (keyspace_1_key_3.into_byte_array(), ByteArray::<128>::empty()),
+        ]
+    );
 
     delete_dir(storage_path)
 }
-
