@@ -16,7 +16,7 @@
  */
 
 use std::{
-    fmt::{Display, Formatter},
+    fmt,
     hash::{Hash, Hasher},
 };
 
@@ -101,8 +101,8 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> ByteArrayOrRef<'bytes, ARRAY_INLINE
     }
 }
 
-impl<'bytes, const ARRAY_INLINE_SIZE: usize> Display for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'bytes, const ARRAY_INLINE_SIZE: usize> fmt::Display for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", dbg!(self))
     }
 }

@@ -18,7 +18,7 @@
 use std::{
     collections::VecDeque,
     error::Error,
-    fmt::{Display, Formatter},
+    fmt,
     io::Read,
     sync::{
         atomic::{AtomicU64, AtomicU8, AtomicUsize, Ordering},
@@ -41,8 +41,8 @@ pub(crate) struct IsolationManager {
     timeline: Timeline,
 }
 
-impl Display for IsolationManager {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for IsolationManager {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "Timeline[windows={}, next_window_sequence_number={}, watermark={}]",
@@ -635,8 +635,8 @@ pub enum IsolationErrorKind {
     RequiredDeleteViolation,
 }
 
-impl Display for IsolationError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for IsolationError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.kind {
             IsolationErrorKind::DeleteRequiredViolation => write!(f, "Isolation violation: Delete-Require conflict. A preceding concurrent commit has deleted a key required by this transaction. Please retry."),
             IsolationErrorKind::RequiredDeleteViolation => write!(f, "Isolation violation: Require-Delete conflict. This commit has deleted a key required by a preceding concurrent transaction. Please retry."),

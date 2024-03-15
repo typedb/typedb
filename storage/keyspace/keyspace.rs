@@ -15,12 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{
-    cmp::Ordering,
-    error::Error,
-    fmt::{Debug, Display, Formatter},
-    path::PathBuf,
-};
+use std::{cmp::Ordering, error::Error, fmt, path::PathBuf};
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
 use iterator::State;
@@ -154,8 +149,8 @@ impl Keyspace {
     }
 }
 
-impl Debug for Keyspace {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Debug for Keyspace {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "Keyspace[name={}, path={}, id={}, next_checkpoint_id={}]",
@@ -318,8 +313,8 @@ pub enum KeyspaceErrorKind {
     FailedIterate { source: speedb::Error },
 }
 
-impl Display for KeyspaceError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for KeyspaceError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

@@ -15,11 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{
-    error::Error,
-    fmt::{Debug, Display, Formatter},
-    sync::Arc,
-};
+use std::{error::Error, fmt, sync::Arc};
 
 use durability::DurabilityError;
 
@@ -47,8 +43,8 @@ pub enum MVCCStorageErrorKind {
     DurabilityError { source: DurabilityError },
 }
 
-impl Display for MVCCStorageError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for MVCCStorageError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.kind {
             MVCCStorageErrorKind::FailedToDeleteStorage { source, .. } => {
                 write!(f, "MVCCStorageError.FailedToDeleteStorage caused by: '{}'", source)

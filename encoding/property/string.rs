@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::fmt::{Display, Formatter};
+use std::fmt;
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use logger::result::ResultExt;
@@ -84,8 +84,8 @@ impl<'a, const INLINE_LENGTH: usize> AsBytes<'a, INLINE_LENGTH> for StringBytes<
     }
 }
 
-impl<'a, const INLINE_LENGTH: usize> Display for StringBytes<'a, INLINE_LENGTH> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a, const INLINE_LENGTH: usize> fmt::Display for StringBytes<'a, INLINE_LENGTH> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "bytes(len={}, str='{}')", self.length(), self.decode())
     }
 }

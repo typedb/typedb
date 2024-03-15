@@ -290,8 +290,8 @@ impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
     }
 }
 
-impl<const BYTES: usize> Debug for ByteArrayInline<BYTES> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl<const BYTES: usize> fmt::Debug for ByteArrayInline<BYTES> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{:?}, allocated_size: {}]", self.bytes(), self.length)
     }
 }

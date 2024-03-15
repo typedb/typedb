@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::fmt::{Display, Formatter};
+use std::fmt;
 
 pub mod byte_array;
 pub mod byte_array_or_ref;
@@ -62,8 +62,8 @@ pub enum BytesErrorKind {
     IncrementOverflow {},
 }
 
-impl Display for BytesError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for BytesError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

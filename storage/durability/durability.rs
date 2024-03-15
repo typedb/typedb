@@ -20,7 +20,7 @@
 
 use std::{
     error::Error,
-    fmt::{Display, Formatter},
+    fmt,
     io::{self, Read, Write},
 };
 
@@ -82,8 +82,8 @@ pub struct SequenceNumber {
     number: U80,
 }
 
-impl Display for SequenceNumber {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for SequenceNumber {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "SeqNr[{}]", self.number.number())
     }
 }
@@ -154,8 +154,8 @@ pub enum DurabilityErrorKind {
     IOError { source: io::Error },
 }
 
-impl Display for DurabilityError {
-    fn fmt(&self, _: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for DurabilityError {
+    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }
