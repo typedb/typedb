@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{collections::HashSet, io::Read, ops::Deref, rc::Rc, sync::Arc};
+use std::{collections::HashSet, ops::Deref, rc::Rc, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
 use encoding::{

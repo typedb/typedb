@@ -31,7 +31,7 @@ use crate::{
     error::{ConceptError, ConceptErrorKind},
     type_::{
         annotation::AnnotationAbstract, attribute_type::AttributeType, object_type::ObjectType, owns::Owns,
-        type_manager::TypeManager, AttributeTypeAPI, EntityTypeAPI, OwnerAPI, TypeAPI,
+        type_manager::TypeManager, EntityTypeAPI, OwnerAPI, TypeAPI,
     },
     ConceptAPI,
 };
