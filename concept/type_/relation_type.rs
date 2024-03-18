@@ -30,7 +30,7 @@ use crate::{
     concept_iterator,
     error::{ConceptError, ConceptErrorKind},
     type_::{
-        annotation::AnnotationAbstract, attribute_type::AttributeType, entity_type::EntityType,
+        annotation::AnnotationAbstract, attribute_type::AttributeType,
         object_type::ObjectType, owns::Owns, type_manager::TypeManager, OwnerAPI, RelationTypeAPI, TypeAPI,
     },
     ConceptAPI,
@@ -77,7 +77,7 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         Owns::new(ObjectType::Relation(self.clone().into_owned()), attribute_type)
     }
 
-    fn get_owns<'this, 'm>(&'this self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
+    fn get_owns<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
         type_manager.get_relation_type_owns(self.clone().into_owned())
     }
 }

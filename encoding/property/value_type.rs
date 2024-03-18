@@ -20,17 +20,17 @@ use crate::layout::infix::InfixID;
 // A tiny struct will always be more efficient owning its own data and being Copy
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct ValueTypeID {
-    bytes: [u8; { ValueTypeID::LENGTH }],
+    bytes: [u8; ValueTypeID::LENGTH],
 }
 
 impl ValueTypeID {
     const LENGTH: usize = 1;
 
-    pub const fn new(bytes: [u8; { ValueTypeID::LENGTH }]) -> Self {
-        ValueTypeID { bytes: bytes }
+    pub const fn new(bytes: [u8; ValueTypeID::LENGTH]) -> Self {
+        ValueTypeID { bytes }
     }
 
-    pub fn bytes(&self) -> [u8; { InfixID::LENGTH }] {
+    pub fn bytes(&self) -> [u8; InfixID::LENGTH] {
         self.bytes
     }
 }

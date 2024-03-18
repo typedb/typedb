@@ -276,7 +276,7 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
 
     pub fn collect_cloned_key_hashset<F, M>(mut self, mapper: F) -> Result<HashSet<M>, SnapshotError>
     where
-        F: for<'b> Fn(StorageKeyReference<'b>) -> (M),
+        F: for<'b> Fn(StorageKeyReference<'b>) -> M,
         M: Hash + Eq + PartialEq,
     {
         let mut set = HashSet::new();

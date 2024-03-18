@@ -127,7 +127,7 @@ impl<'a> Typed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct TypeID {
-    bytes: [u8; { TypeID::LENGTH }],
+    bytes: [u8; TypeID::LENGTH],
 }
 
 pub type TypeIDUInt = u16;
@@ -135,7 +135,7 @@ pub type TypeIDUInt = u16;
 impl TypeID {
     pub(crate) const LENGTH: usize = std::mem::size_of::<TypeIDUInt>();
 
-    pub fn new(bytes: [u8; { TypeID::LENGTH }]) -> TypeID {
+    pub fn new(bytes: [u8; TypeID::LENGTH]) -> TypeID {
         TypeID { bytes }
     }
 
@@ -148,7 +148,7 @@ impl TypeID {
         u16::from_be_bytes(self.bytes)
     }
 
-    pub fn bytes(&self) -> [u8; { TypeID::LENGTH }] {
+    pub fn bytes(&self) -> [u8; TypeID::LENGTH] {
         self.bytes
     }
 }

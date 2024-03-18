@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use bytes::{byte_reference::ByteReference, increment_fixed};
+use bytes::{increment_fixed};
 use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::EncodingKeyspace;
@@ -23,17 +23,17 @@ use crate::EncodingKeyspace;
 // A tiny struct will always be more efficient owning its own data and being Copy
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct PrefixID {
-    pub(crate) bytes: [u8; { PrefixID::LENGTH }],
+    pub(crate) bytes: [u8; PrefixID::LENGTH],
 }
 
 impl PrefixID {
     pub(crate) const LENGTH: usize = 1;
 
-    pub(crate) const fn new(bytes: [u8; { PrefixID::LENGTH }]) -> Self {
+    pub(crate) const fn new(bytes: [u8; PrefixID::LENGTH]) -> Self {
         PrefixID { bytes }
     }
 
-    pub(crate) const fn bytes(&self) -> [u8; { PrefixID::LENGTH }] {
+    pub(crate) const fn bytes(&self) -> [u8; PrefixID::LENGTH] {
         self.bytes
     }
 
@@ -42,7 +42,7 @@ impl PrefixID {
     // }
 
     fn keyspace_id(&self) -> KeyspaceId {
-        match PrefixType::from_prefix_id(self.clone()) {
+        match PrefixType::from_prefix_id(*self) {
             PrefixType::VertexEntityType
             | PrefixType::VertexRelationType
             | PrefixType::VertexAttributeType

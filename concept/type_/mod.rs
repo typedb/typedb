@@ -213,17 +213,17 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         self.get_owns_attribute(type_manager, attribute_type).unwrap()
     }
 
-    fn delete_owns<'this, 'm>(&'this self, type_manager: &'m TypeManager, attribute_type: AttributeType<'static>) {
+    fn delete_owns(&self, type_manager: &TypeManager, attribute_type: AttributeType<'static>) {
         type_manager.delete_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex());
     }
 
     fn _construct_owns(&self, attribute_type: AttributeType<'static>) -> Owns<'static>;
 
-    fn get_owns<'this, 'm>(&'this self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<Owns<'static>>>;
+    fn get_owns<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<Owns<'static>>>;
 
-    fn get_owns_attribute<'m>(
+    fn get_owns_attribute(
         &self,
-        type_manager: &'m TypeManager,
+        type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Option<Owns<'static>> {
         let expected_owns = self._construct_owns(attribute_type);
@@ -240,7 +240,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
 }
 
 trait OwnedAPI<'a>: AttributeTypeAPI<'a> {
-    fn get_owns<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
+    fn get_owns<'m>(&self, _type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
         todo!()
     }
 

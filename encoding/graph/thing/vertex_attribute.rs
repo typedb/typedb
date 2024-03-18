@@ -37,7 +37,7 @@ impl<'a> AttributeVertex<'a> {
 
     pub(crate) fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() > Self::LENGTH_PREFIX_TYPE);
-        AttributeVertex { bytes: bytes }
+        AttributeVertex { bytes }
     }
 
     fn build(prefix: PrefixID, type_id: TypeID, attribute_id: AttributeID) -> Self {
@@ -104,7 +104,7 @@ impl<'a> AttributeID<'a> {
 
     pub fn new(bytes: ByteArrayOrRef<'a, { AttributeID::LENGTH }>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        AttributeID { bytes: bytes }
+        AttributeID { bytes }
     }
 
     pub fn build(header: &[u8; AttributeID::HEADER_LENGTH], id: u64) -> Self {

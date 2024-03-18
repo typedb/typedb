@@ -25,8 +25,6 @@ use crate::{
         build_vertex_entity_type_prefix, build_vertex_relation_type, build_vertex_relation_type_prefix, TypeID,
         TypeVertex,
     },
-    layout::prefix::PrefixType,
-    Keyable,
 };
 
 // TODO: if we always scan for the next available TypeID, we automatically recycle deleted TypeIDs?

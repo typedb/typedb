@@ -39,7 +39,7 @@ impl<'a> ObjectVertex<'a> {
 
     pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> ObjectVertex<'a> {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        ObjectVertex { bytes: bytes }
+        ObjectVertex { bytes }
     }
 
     pub fn build_entity(type_id: TypeID, object_id: ObjectID) -> Self {
@@ -112,14 +112,14 @@ impl<'a> Typed<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ObjectID {
-    bytes: [u8; { ObjectID::LENGTH }],
+    bytes: [u8; ObjectID::LENGTH],
 }
 
 impl ObjectID {
     const LENGTH: usize = 8;
 
-    fn new(bytes: [u8; { ObjectID::LENGTH }]) -> Self {
-        ObjectID { bytes: bytes }
+    fn new(bytes: [u8; ObjectID::LENGTH]) -> Self {
+        ObjectID { bytes }
     }
 
     pub fn build(id: u64) -> Self {
@@ -127,7 +127,7 @@ impl ObjectID {
         ObjectID { bytes: id.to_be_bytes() }
     }
 
-    fn bytes(&self) -> [u8; { ObjectID::LENGTH }] {
+    fn bytes(&self) -> [u8; ObjectID::LENGTH] {
         self.bytes
     }
 }

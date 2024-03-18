@@ -77,7 +77,7 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type)
     }
 
-    fn get_owns<'this, 'm>(&'this self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
+    fn get_owns<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
         type_manager.get_entity_type_owns(self.clone().into_owned())
     }
 }

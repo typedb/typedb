@@ -251,7 +251,7 @@ impl TypeCache {
                     annotations,
                     supertype,
                     supertypes: Vec::new(),
-                    owns_direct: owns_direct,
+                    owns_direct,
                 };
                 let i = type_index as usize;
                 caches[i] = Some(cache);
@@ -316,7 +316,7 @@ impl TypeCache {
                     annotations,
                     supertype,
                     supertypes: Vec::new(),
-                    owns_direct: owns_direct,
+                    owns_direct,
                 };
                 caches[type_index as usize] = Some(cache);
             }
@@ -368,14 +368,14 @@ impl TypeCache {
                 let annotations = Self::read_attribute_annotations(type_vertex_properties, attribute_type.clone());
                 let value_type = Self::read_value_type(type_vertex_properties, attribute_type.vertex().clone());
                 let supertype = Self::read_supertype_vertex(attribute_types_data, attribute_type.vertex().clone())
-                    .map(|v| AttributeType::new(v));
+                    .map(AttributeType::new);
                 let cache = AttributeTypeCache {
                     type_: attribute_type,
-                    label: label,
-                    is_root: is_root,
-                    annotations: annotations,
-                    value_type: value_type,
-                    supertype: supertype,
+                    label,
+                    is_root,
+                    annotations,
+                    value_type,
+                    supertype,
                     supertypes: Vec::new(),
                 };
                 caches[type_index as usize] = Some(cache);
@@ -558,26 +558,26 @@ impl TypeCache {
         Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().is_root
     }
 
-    pub(crate) fn get_entity_type_owns<'this>(
-        &'this self,
+    pub(crate) fn get_entity_type_owns(
+        &self,
         entity_type: EntityType<'static>,
     ) -> &HashSet<Owns<'static>> {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().owns_direct
     }
 
-    pub(crate) fn get_relation_type_owns<'this>(
-        &'this self,
+    pub(crate) fn get_relation_type_owns(
+        &self,
         relation_type: RelationType<'static>,
     ) -> &HashSet<Owns<'static>> {
         &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().owns_direct
     }
 
     pub(crate) fn get_attribute_type_value_type(&self, attribute_type: AttributeType<'static>) -> Option<ValueType> {
-        Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().value_type.clone()
+        Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().value_type
     }
 
-    pub(crate) fn get_entity_type_annotations<'this>(
-        &'this self,
+    pub(crate) fn get_entity_type_annotations(
+        &self,
         entity_type: impl EntityTypeAPI<'static>,
     ) -> &HashSet<EntityTypeAnnotation> {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().annotations
