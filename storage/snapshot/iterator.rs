@@ -77,6 +77,8 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         }
     }
 
+    // a lending iterator trait is infeasible with the current borrow checker
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), SnapshotError>> {
         match self.iterator_state.state().clone() {
             State::Init => {

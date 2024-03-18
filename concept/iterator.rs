@@ -35,6 +35,8 @@ macro_rules! concept_iterator {
                 })
             }
 
+            // a lending iterator trait is infeasible with the current borrow checker
+            #[allow(clippy::should_implement_trait)]
             pub fn next(&mut self) -> Option<Result<$concept_type<'_>, ConceptError>> {
                 self.snapshot_iterator.next().map(|result| {
                     result.map(|(storage_key, _value_bytes)| $map_fn(storage_key)).map_err(|snapshot_error| {
