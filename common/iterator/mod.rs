@@ -15,8 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::{BTreeSet, HashSet};
-use std::hash::Hash;
+use std::{
+    collections::{BTreeSet, HashSet},
+    hash::Hash,
+};
 
 #[derive(Debug, Clone)]
 pub enum State<E> {
@@ -29,12 +31,11 @@ pub enum State<E> {
 
 impl<E> PartialEq for State<E> {
     fn eq(&self, other: &Self) -> bool {
-        return std::mem::discriminant(self) == std::mem::discriminant(other)
+        std::mem::discriminant(self) == std::mem::discriminant(other)
     }
 }
 
 impl<E> Eq for State<E> {}
-
 
 pub trait Collector<T> {
     fn add(&mut self, element: T);
@@ -51,7 +52,6 @@ impl<T: PartialOrd + Ord> Collector<T> for BTreeSet<T> {
         self.insert(element);
     }
 }
-
 
 impl<T: Hash + Eq + PartialEq> Collector<T> for HashSet<T> {
     fn add(&mut self, element: T) {

@@ -15,23 +15,22 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
+
 
 // A tiny struct will always be more efficient owning its own data and being Copy
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub(crate) struct InfixID {
-    bytes: [u8; { InfixID::LENGTH }],
+    bytes: [u8; InfixID::LENGTH],
 }
 
 impl InfixID {
     pub(crate) const LENGTH: usize = 1;
 
-    pub(crate) const fn new(bytes: [u8; { InfixID::LENGTH }]) -> Self {
-        InfixID { bytes: bytes }
+    pub(crate) const fn new(bytes: [u8; InfixID::LENGTH]) -> Self {
+        InfixID { bytes }
     }
 
-    pub(crate) fn bytes(&self) -> [u8; {InfixID::LENGTH}] {
+    pub(crate) fn bytes(&self) -> [u8; InfixID::LENGTH] {
         self.bytes
     }
 }

@@ -17,17 +17,20 @@
 
 use std::rc::Rc;
 
-use encoding::graph::thing::vertex_object::ObjectVertex;
-use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
-use encoding::graph::Typed;
-use encoding::Keyable;
-use encoding::layout::prefix::PrefixType;
+use encoding::{
+    graph::{
+        thing::{vertex_generator::ThingVertexGenerator, vertex_object::ObjectVertex},
+        Typed,
+    },
+    layout::prefix::PrefixType,
+    Keyable,
+};
 use storage::snapshot::snapshot::Snapshot;
 
-use crate::thing::entity::{Entity, EntityIterator};
-use crate::thing::ObjectAPI;
-use crate::type_::entity_type::EntityType;
-use crate::type_::TypeAPI;
+use crate::{
+    thing::entity::{Entity, EntityIterator},
+    type_::{entity_type::EntityType, TypeAPI},
+};
 
 pub struct ThingManager<'txn, 'storage: 'txn> {
     snapshot: Rc<Snapshot<'storage>>,
@@ -36,7 +39,7 @@ pub struct ThingManager<'txn, 'storage: 'txn> {
 
 impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
     pub fn new(snapshot: Rc<Snapshot<'storage>>, vertex_generator: &'txn ThingVertexGenerator) -> Self {
-        ThingManager { snapshot: snapshot, vertex_generator: vertex_generator }
+        ThingManager { snapshot, vertex_generator }
     }
 
     pub fn create_entity(&self, entity_type: &EntityType) -> Entity {
@@ -48,7 +51,7 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
         panic!("Illegal state: create entity requires write snapshot")
     }
 
-    pub fn get_entities<'this>(&'this self) -> EntityIterator<'this, 1>  {
+    pub fn get_entities(&self) -> EntityIterator<'_, 1> {
         let prefix = ObjectVertex::build_prefix_prefix(PrefixType::VertexEntity.prefix_id());
         let snapshot_iterator = self.snapshot.iterate_prefix(prefix);
         EntityIterator::new(snapshot_iterator)

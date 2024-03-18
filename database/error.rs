@@ -15,9 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::error::Error;
-use std::fmt::{Display, Formatter};
-use std::io;
+use std::{error::Error, fmt, io};
 
 use storage::error::MVCCStorageError;
 
@@ -34,8 +32,8 @@ pub enum DatabaseErrorKind {
     FailedToSetupStorage(MVCCStorageError),
 }
 
-impl Display for DatabaseError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for DatabaseError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

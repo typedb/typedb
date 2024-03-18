@@ -15,9 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::error::Error;
-use std::fmt::{Display, Formatter};
-use std::str::Utf8Error;
+use std::{error::Error, fmt, str::Utf8Error};
 
 #[derive(Debug)]
 pub struct EncodingError {
@@ -26,11 +24,11 @@ pub struct EncodingError {
 
 #[derive(Debug)]
 pub enum EncodingErrorKind {
-    FailedUFT8Decode { bytes: Box<[u8]>, source: Utf8Error }
+    FailedUFT8Decode { bytes: Box<[u8]>, source: Utf8Error },
 }
 
-impl Display for EncodingError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for EncodingError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

@@ -15,17 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
-use bytes::byte_array::ByteArray;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKey;
-use storage::keyspace::keyspace::KeyspaceId;
+use storage::{key_value::StorageKey, keyspace::keyspace::KeyspaceId};
 
-use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
-use crate::graph::Typed;
-use crate::layout::prefix::{PrefixID, PrefixType};
+use crate::{
+    graph::Typed,
+    layout::prefix::{PrefixID, PrefixType},
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+};
 
 // TODO: we could make all Type constructs contain plain byte arrays, since they will always be 64 bytes (BUFFER_KEY_INLINE), then make Types all Copy
 //       However, we should benchmark this first, since 64 bytes may be better off referenced
@@ -37,7 +35,7 @@ pub struct TypeVertex<'a> {
 
 macro_rules! type_vertex_constructors {
     ($new_name:ident, $build_name:ident, $build_name_prefix:ident, $is_name:ident, PrefixType::$prefix:ident) => {
-        pub fn $new_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeVertex<'a> {
+        pub fn $new_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> TypeVertex<'_> {
             let vertex = TypeVertex::new(bytes);
             debug_assert_eq!(vertex.prefix(), PrefixType::$prefix);
             vertex
@@ -49,29 +47,35 @@ macro_rules! type_vertex_constructors {
 
         // TODO: is it better to have a const fn that is a reference to owned memory, or
         //       to always induce a tiny copy have a non-const function?
-        pub const fn $build_name_prefix() ->  StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
-            const bytes: [u8; TypeVertex::LENGTH_PREFIX] = PrefixType::$prefix.prefix_id().bytes();
-            StorageKey::new_ref(TypeVertex::keyspace_id(), ByteReference::new(&bytes))
+        pub const fn $build_name_prefix() -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
+            const BYTES: [u8; TypeVertex::LENGTH_PREFIX] = PrefixType::$prefix.prefix_id().bytes();
+            StorageKey::new_ref(TypeVertex::keyspace_id(), ByteReference::new(&BYTES))
         }
 
-        pub fn $is_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> bool {
+        pub fn $is_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> bool {
             bytes.length() == TypeVertex::LENGTH && TypeVertex::new(bytes).prefix() == PrefixType::$prefix
         }
     };
 }
 
 type_vertex_constructors!(
-    new_vertex_entity_type, build_vertex_entity_type, build_vertex_entity_type_prefix,
+    new_vertex_entity_type,
+    build_vertex_entity_type,
+    build_vertex_entity_type_prefix,
     is_vertex_entity_type,
     PrefixType::VertexEntityType
 );
 type_vertex_constructors!(
-    new_vertex_relation_type, build_vertex_relation_type, build_vertex_relation_type_prefix,
+    new_vertex_relation_type,
+    build_vertex_relation_type,
+    build_vertex_relation_type_prefix,
     is_vertex_relation_type,
     PrefixType::VertexRelationType
 );
 type_vertex_constructors!(
-    new_vertex_attribute_type, build_vertex_attribute_type, build_vertex_attribute_type_prefix,
+    new_vertex_attribute_type,
+    build_vertex_attribute_type,
+    build_vertex_attribute_type_prefix,
     is_vertex_attribute_type,
     PrefixType::VertexAttributeType
 );
@@ -82,7 +86,7 @@ impl<'a> TypeVertex<'a> {
 
     pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeVertex<'a> {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        TypeVertex { bytes: bytes }
+        TypeVertex { bytes }
     }
 
     fn build(prefix: PrefixID, type_id: TypeID) -> Self {
@@ -123,7 +127,7 @@ impl<'a> Typed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct TypeID {
-    bytes: [u8; { TypeID::LENGTH }],
+    bytes: [u8; TypeID::LENGTH],
 }
 
 pub type TypeIDUInt = u16;
@@ -131,8 +135,8 @@ pub type TypeIDUInt = u16;
 impl TypeID {
     pub(crate) const LENGTH: usize = std::mem::size_of::<TypeIDUInt>();
 
-    pub fn new(bytes: [u8; { TypeID::LENGTH }]) -> TypeID {
-        TypeID { bytes: bytes }
+    pub fn new(bytes: [u8; TypeID::LENGTH]) -> TypeID {
+        TypeID { bytes }
     }
 
     pub fn build(id: TypeIDUInt) -> Self {
@@ -144,9 +148,7 @@ impl TypeID {
         u16::from_be_bytes(self.bytes)
     }
 
-    pub fn bytes(&self) -> [u8; { TypeID::LENGTH }] {
+    pub fn bytes(&self) -> [u8; TypeID::LENGTH] {
         self.bytes
     }
 }
-
-

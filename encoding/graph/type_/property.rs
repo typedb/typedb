@@ -17,26 +17,27 @@
 
 use std::ops::Range;
 
-use bytes::byte_array::ByteArray;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKey;
-use storage::keyspace::keyspace::KeyspaceId;
+use storage::{key_value::StorageKey, keyspace::keyspace::KeyspaceId};
 
-use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
-use crate::graph::type_::vertex::TypeVertex;
-use crate::layout::infix::{InfixID, InfixType};
-use crate::layout::prefix::{PrefixID, PrefixType};
+use crate::{
+    graph::type_::vertex::TypeVertex,
+    layout::{
+        infix::{InfixID, InfixType},
+        prefix::{PrefixID, PrefixType},
+    },
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct TypeVertexProperty<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }
 
-macro_rules! type_vertex_property_constructors{
+macro_rules! type_vertex_property_constructors {
     ($new_name:ident, $build_name:ident, $is_name:ident, InfixType::$infix:ident) => {
-        pub fn $new_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeVertexProperty<'a> {
+        pub fn $new_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> TypeVertexProperty<'_> {
             let vertex = TypeVertexProperty::new(bytes);
             debug_assert_eq!(vertex.infix(), InfixType::$infix);
             vertex
@@ -46,24 +47,30 @@ macro_rules! type_vertex_property_constructors{
             TypeVertexProperty::build(type_vertex, InfixType::$infix)
         }
 
-        pub fn $is_name<'a>(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> bool {
+        pub fn $is_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> bool {
             bytes.length() == TypeVertexProperty::LENGTH && TypeVertexProperty::new(bytes).infix() == InfixType::$infix
         }
     };
 }
 
 type_vertex_property_constructors!(
-    new_property_type_label, build_property_type_label, is_property_type_label_prefix,
+    new_property_type_label,
+    build_property_type_label,
+    is_property_type_label_prefix,
     InfixType::PropertyLabel
 );
 
 type_vertex_property_constructors!(
-    new_property_type_value_type, build_property_type_value_type, is_property_type_value_type,
+    new_property_type_value_type,
+    build_property_type_value_type,
+    is_property_type_value_type,
     InfixType::PropertyValueType
 );
 
 type_vertex_property_constructors!(
-    new_property_type_annotation_abstract, build_property_type_annotation_abstract, is_property_type_annotation_abstract,
+    new_property_type_annotation_abstract,
+    build_property_type_annotation_abstract,
+    is_property_type_annotation_abstract,
     InfixType::PropertyAnnotationAbstract
 );
 
@@ -74,7 +81,7 @@ impl<'a> TypeVertexProperty<'a> {
 
     fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        let property = TypeVertexProperty { bytes: bytes };
+        let property = TypeVertexProperty { bytes };
         debug_assert_eq!(property.prefix(), PrefixType::PropertyType);
         property
     }
@@ -90,8 +97,8 @@ impl<'a> TypeVertexProperty<'a> {
     // TODO: is it better to have a const fn that is a reference to owned memory, or
     //       to always induce a tiny copy have a non-const function?
     pub const fn build_prefix() -> StorageKey<'static, { TypeVertexProperty::LENGTH_PREFIX }> {
-        const prefix_bytes: [u8; PrefixID::LENGTH] = PrefixType::PropertyType.prefix_id().bytes();
-        StorageKey::new_ref(Self::keyspace_id(), ByteReference::new(&prefix_bytes))
+        const PREFIX_BYTES: [u8; PrefixID::LENGTH] = PrefixType::PropertyType.prefix_id().bytes();
+        StorageKey::new_ref(Self::keyspace_id(), ByteReference::new(&PREFIX_BYTES))
     }
 
     pub fn type_vertex(&'a self) -> TypeVertex<'a> {
@@ -120,7 +127,6 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
-
 
     fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
         self.bytes

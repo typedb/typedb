@@ -16,6 +16,4 @@
  */
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-struct Relates {
-
-}
+struct Relates {}

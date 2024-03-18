@@ -15,21 +15,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::cmp::Ordering;
-use std::collections::{BTreeMap, HashSet};
-use std::hash::Hash;
-use std::sync::Arc;
+use std::{
+    cmp::Ordering,
+    collections::{BTreeMap, HashSet},
+    hash::Hash,
+    sync::Arc,
+};
 
-use bytes::byte_array::ByteArray;
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use iterator::State;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
-use crate::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
-use crate::MVCCPrefixIterator;
-use crate::snapshot::buffer::BufferedPrefixIterator;
-use crate::snapshot::error::{SnapshotError, SnapshotErrorKind};
-use crate::snapshot::write::Write;
+use crate::{
+    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
+    snapshot::{
+        buffer::BufferedPrefixIterator,
+        error::{SnapshotError, SnapshotErrorKind},
+        write::Write,
+    },
+    MVCCPrefixIterator,
+};
 
 pub struct SnapshotPrefixIterator<'a, const PS: usize> {
     storage_iterator: MVCCPrefixIterator<'a, PS>,
@@ -38,38 +43,43 @@ pub struct SnapshotPrefixIterator<'a, const PS: usize> {
 }
 
 impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
-    pub(crate) fn new(mvcc_iterator: MVCCPrefixIterator<'a, PS>, buffered_iterator: Option<BufferedPrefixIterator>) -> Self {
+    pub(crate) fn new(
+        mvcc_iterator: MVCCPrefixIterator<'a, PS>,
+        buffered_iterator: Option<BufferedPrefixIterator>,
+    ) -> Self {
         SnapshotPrefixIterator {
             storage_iterator: mvcc_iterator,
-            buffered_iterator: buffered_iterator,
+            buffered_iterator,
             iterator_state: IteratorState::new(),
         }
     }
 
-    pub fn peek<'this>(&'this mut self) -> Option<Result<(StorageKeyReference<'this>, ByteReference<'this>), SnapshotError>> {
+    pub fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), SnapshotError>> {
         match self.iterator_state.state().clone() {
             State::Init => {
                 self.find_next_state();
                 self.peek()
             }
-            State::ItemReady => {
-                match self.iterator_state.source() {
-                    ReadyItemSource::Storage | ReadyItemSource::Both => Self::storage_peek(&mut self.storage_iterator),
-                    ReadyItemSource::Buffered => Some(Ok(Self::get_buffered_peek(self.buffered_iterator.as_mut().unwrap()))),
+            State::ItemReady => match self.iterator_state.source() {
+                ReadyItemSource::Storage | ReadyItemSource::Both => Self::storage_peek(&mut self.storage_iterator),
+                ReadyItemSource::Buffered => {
+                    Some(Ok(Self::get_buffered_peek(self.buffered_iterator.as_mut().unwrap())))
                 }
-            }
+            },
             State::ItemUsed => {
                 self.advance_and_find_next_state();
                 self.peek()
             }
-            State::Error(error) => Some(Err(SnapshotError {
-                kind: SnapshotErrorKind::FailedIterate { source: error.clone() }
-            })),
+            State::Error(error) => {
+                Some(Err(SnapshotError { kind: SnapshotErrorKind::FailedIterate { source: error.clone() } }))
+            }
             State::Done => None,
         }
     }
 
-    pub fn next<'this>(&'this mut self) -> Option<Result<(StorageKeyReference<'this>, ByteReference<'this>), SnapshotError>> {
+    // a lending iterator trait is infeasible with the current borrow checker
+    #[allow(clippy::should_implement_trait)]
+    pub fn next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), SnapshotError>> {
         match self.iterator_state.state().clone() {
             State::Init => {
                 self.find_next_state();
@@ -78,7 +88,9 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
             State::ItemReady => {
                 let item = match self.iterator_state.source() {
                     ReadyItemSource::Storage | ReadyItemSource::Both => Self::storage_peek(&mut self.storage_iterator),
-                    ReadyItemSource::Buffered => Some(Ok(Self::get_buffered_peek(self.buffered_iterator.as_mut().unwrap()))),
+                    ReadyItemSource::Buffered => {
+                        Some(Ok(Self::get_buffered_peek(self.buffered_iterator.as_mut().unwrap())))
+                    }
                 };
                 self.iterator_state.set_item_used();
                 item
@@ -87,10 +99,10 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
                 self.advance_and_find_next_state();
                 self.next()
             }
-            State::Error(error) => Some(Err(SnapshotError {
-                kind: SnapshotErrorKind::FailedIterate { source: error.clone() }
-            })),
-            State::Done => None
+            State::Error(error) => {
+                Some(Err(SnapshotError { kind: SnapshotErrorKind::FailedIterate { source: error.clone() } }))
+            }
+            State::Done => None,
         }
     }
 
@@ -104,8 +116,13 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
     }
 
     fn find_next_state(&mut self) {
-        assert!(matches!(self.iterator_state.state(), &State::Init) || matches!(self.iterator_state.state(), &State::ItemUsed));
-        while matches!(self.iterator_state.state(), &State::Init) || matches!(self.iterator_state.state(), &State::ItemUsed) {
+        assert!(
+            matches!(self.iterator_state.state(), &State::Init)
+                || matches!(self.iterator_state.state(), &State::ItemUsed)
+        );
+        while matches!(self.iterator_state.state(), &State::Init)
+            || matches!(self.iterator_state.state(), &State::ItemUsed)
+        {
             let mut advance_storage = false;
             let mut advance_buffered = false;
             let storage_peek = Self::storage_peek(&mut self.storage_iterator).transpose();
@@ -116,7 +133,8 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
                 (None, Ok(Some(_))) => self.iterator_state.set_item_ready(ReadyItemSource::Storage),
                 (Some(Err(error)), _) | (_, Err(error)) => self.iterator_state.set_error(Arc::new(error)),
                 (Some(Ok((buffered_key, buffered_write))), Ok(storage_peek)) => {
-                    (advance_storage, advance_buffered) = Self::merge_buffered(&mut self.iterator_state, (buffered_key, buffered_write), storage_peek);
+                    (advance_storage, advance_buffered) =
+                        Self::merge_buffered(&mut self.iterator_state, (buffered_key, buffered_write), storage_peek);
                 }
             }
             if advance_storage {
@@ -128,42 +146,50 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         }
     }
 
-    fn merge_buffered(iterator_state: &mut IteratorState, buffered_peek: (StorageKeyReference<'_>, &Write), storage_peek: Option<(StorageKeyReference<'_>, ByteReference<'_>)>) -> (bool, bool) {
+    fn merge_buffered(
+        iterator_state: &mut IteratorState,
+        buffered_peek: (StorageKeyReference<'_>, &Write),
+        storage_peek: Option<(StorageKeyReference<'_>, ByteReference<'_>)>,
+    ) -> (bool, bool) {
         let (buffered_key, buffered_write) = buffered_peek;
         let mut advance_storage = false;
         let mut advance_buffered = false;
         let ordering = storage_peek.as_ref().map(|(storage_key, _)| buffered_key.cmp(storage_key));
 
         match ordering {
-            None | Some(Ordering::Less) => if buffered_write.is_delete() {
-                // SKIP buffered
-                advance_buffered = true;
-            } else {
-                // ACCEPT buffered
-                iterator_state.set_item_ready(ReadyItemSource::Buffered);
-            },
-            Some(Ordering::Equal) => if buffered_write.is_delete() {
-                // SKIP both
-                advance_storage = true;
-                advance_buffered = true;
-            } else {
-                debug_assert_eq!(storage_peek.unwrap().1.bytes(), buffered_write.get_value().bytes());
-                // ACCEPT both
-                iterator_state.set_item_ready(ReadyItemSource::Both);
-            },
+            None | Some(Ordering::Less) => {
+                if buffered_write.is_delete() {
+                    // SKIP buffered
+                    advance_buffered = true;
+                } else {
+                    // ACCEPT buffered
+                    iterator_state.set_item_ready(ReadyItemSource::Buffered);
+                }
+            }
+            Some(Ordering::Equal) => {
+                if buffered_write.is_delete() {
+                    // SKIP both
+                    advance_storage = true;
+                    advance_buffered = true;
+                } else {
+                    debug_assert_eq!(storage_peek.unwrap().1.bytes(), buffered_write.get_value().bytes());
+                    // ACCEPT both
+                    iterator_state.set_item_ready(ReadyItemSource::Both);
+                }
+            }
             Some(Ordering::Greater) => iterator_state.set_item_ready(ReadyItemSource::Storage),
         }
         (advance_storage, advance_buffered)
     }
 
-    fn buffered_peek<'this>(buffered_iterator: &'this mut Option<BufferedPrefixIterator>) -> Option<Result<(StorageKeyReference<'this>, &Write), SnapshotError>> {
+    fn buffered_peek(
+        buffered_iterator: &mut Option<BufferedPrefixIterator>,
+    ) -> Option<Result<(StorageKeyReference<'_>, &Write), SnapshotError>> {
         if let Some(buffered_iterator) = buffered_iterator {
             let buffered_peek = buffered_iterator.peek();
             match buffered_peek {
                 None => None,
-                Some(Ok((key, value))) => {
-                    Some(Ok((StorageKeyReference::from(key), value)))
-                }
+                Some(Ok((key, value))) => Some(Ok((StorageKeyReference::from(key), value))),
                 Some(Err(error)) => Some(Err(error)),
             }
         } else {
@@ -171,19 +197,15 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         }
     }
 
-    fn storage_peek<'this>(storage_iterator: &'this mut MVCCPrefixIterator<'_, PS>) -> Option<Result<(StorageKeyReference<'this>, ByteReference<'this>), SnapshotError>> {
+    fn storage_peek<'this>(
+        storage_iterator: &'this mut MVCCPrefixIterator<'_, PS>,
+    ) -> Option<Result<(StorageKeyReference<'this>, ByteReference<'this>), SnapshotError>> {
         let storage_peek = storage_iterator.peek();
         match storage_peek {
             None => None,
-            Some(Ok((key, value))) => {
-                Some(Ok((key, value)))
-            }
+            Some(Ok((key, value))) => Some(Ok((key, value))),
             Some(Err(error)) => {
-                Some(Err(SnapshotError {
-                    kind: SnapshotErrorKind::FailedMVCCStorageIterate {
-                        source: error
-                    }
-                }))
+                Some(Err(SnapshotError { kind: SnapshotErrorKind::FailedMVCCStorageIterate { source: error } }))
             }
         }
     }
@@ -205,21 +227,26 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         self.find_next_state();
     }
 
-    fn get_buffered_peek<'this>(buffered_iterator: &'this mut BufferedPrefixIterator) -> (StorageKeyReference<'this>, ByteReference<'this>) {
+    fn get_buffered_peek(
+        buffered_iterator: &mut BufferedPrefixIterator,
+    ) -> (StorageKeyReference<'_>, ByteReference<'_>) {
         let (key, write) = buffered_iterator.peek().unwrap().unwrap();
-        (
-            StorageKeyReference::from(key),
-            ByteReference::from(write.get_value())
-        )
+        (StorageKeyReference::from(key), ByteReference::from(write.get_value()))
     }
 
-    pub fn collect_cloned_vec<const INLINE_KEY: usize, const INLINE_VALUE: usize>(mut self) -> Result<Vec<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)>, SnapshotError> {
+    pub fn collect_cloned_vec<const INLINE_KEY: usize, const INLINE_VALUE: usize>(
+        mut self,
+    ) -> Result<Vec<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)>, SnapshotError> {
         let mut vec = Vec::new();
         loop {
             let item = self.next();
             match item {
-                None => { break; }
-                Some(Result::Err(e)) => { return Err(e); }
+                None => {
+                    break;
+                }
+                Some(Result::Err(e)) => {
+                    return Err(e);
+                }
                 Some(Ok((key, value))) => {
                     vec.push((StorageKeyArray::from(key.clone()), ByteArray::from(value)));
                 }
@@ -228,13 +255,19 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         Ok(vec)
     }
 
-    pub fn collect_cloned_bmap<const INLINE_KEY: usize, const INLINE_VALUE: usize>(mut self) -> Result<BTreeMap<StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>>, SnapshotError> {
+    pub fn collect_cloned_bmap<const INLINE_KEY: usize, const INLINE_VALUE: usize>(
+        mut self,
+    ) -> Result<BTreeMap<StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>>, SnapshotError> {
         let mut btree_map = BTreeMap::new();
         loop {
             let item = self.next();
             match item {
-                None => { break; }
-                Some(Result::Err(e)) => { return Err(e); }
+                None => {
+                    break;
+                }
+                Some(Result::Err(e)) => {
+                    return Err(e);
+                }
                 Some(Ok((key, value))) => {
                     btree_map.insert(StorageKeyArray::from(key.clone()), ByteArray::from(value));
                 }
@@ -243,15 +276,21 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         Ok(btree_map)
     }
 
-    pub fn collect_cloned_key_hashset<F, M>(mut self, mapper: F) -> Result<HashSet<M>, SnapshotError> where
-        F: for<'b> Fn(StorageKeyReference<'b>) -> (M),
-        M: Hash + Eq + PartialEq {
+    pub fn collect_cloned_key_hashset<F, M>(mut self, mapper: F) -> Result<HashSet<M>, SnapshotError>
+    where
+        F: for<'b> Fn(StorageKeyReference<'b>) -> M,
+        M: Hash + Eq + PartialEq,
+    {
         let mut set = HashSet::new();
         loop {
             let item = self.next();
             match item {
-                None => { break; }
-                Some(Result::Err(e)) => { return Err(e); }
+                None => {
+                    break;
+                }
+                Some(Result::Err(e)) => {
+                    return Err(e);
+                }
                 Some(Ok((key, _))) => {
                     set.insert(mapper(key));
                 }
@@ -260,14 +299,15 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         Ok(set)
     }
 
-    pub fn first_cloned(mut self) -> Result<Option<(StorageKey<'static, BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, SnapshotError> {
+    pub fn first_cloned(
+        mut self,
+    ) -> Result<Option<(StorageKey<'static, BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, SnapshotError> {
         let item = self.next();
-        item.transpose().map(|option| option.map(|(key, value)|
-            (StorageKey::Array(StorageKeyArray::from(key.clone())), ByteArray::from(value))
-        ))
+        item.transpose().map(|option| {
+            option.map(|(key, value)| (StorageKey::Array(StorageKeyArray::from(key.clone())), ByteArray::from(value)))
+        })
     }
 }
-
 
 #[derive(Debug)]
 struct IteratorState {
@@ -277,10 +317,7 @@ struct IteratorState {
 
 impl IteratorState {
     fn new() -> IteratorState {
-        IteratorState {
-            state: State::Init,
-            ready_item_source: ReadyItemSource::Storage,
-        }
+        IteratorState { state: State::Init, ready_item_source: ReadyItemSource::Storage }
     }
 
     fn state(&self) -> &State<Arc<SnapshotError>> {

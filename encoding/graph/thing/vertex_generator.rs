@@ -15,16 +15,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::graph::thing::vertex_object::{ObjectID, ObjectVertex};
-use crate::graph::type_::vertex::{TypeID, TypeIDUInt};
+use crate::graph::{
+    thing::vertex_object::{ObjectID, ObjectVertex},
+    type_::vertex::{TypeID, TypeIDUInt},
+};
 
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,
     relation_ids: Box<[AtomicU64]>,
     attribute_ids: Box<[AtomicU64]>,
+}
+
+impl Default for ThingVertexGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ThingVertexGenerator {
@@ -33,11 +40,17 @@ impl ThingVertexGenerator {
         //       this will speed up booting time on load (loading this will require MAX types * 3 iterator searches) and reduce memory footprint
         ThingVertexGenerator {
             entity_ids: (0..TypeIDUInt::MAX as usize)
-                .map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice(),
+                .map(|_| AtomicU64::new(0))
+                .collect::<Vec<AtomicU64>>()
+                .into_boxed_slice(),
             relation_ids: (0..TypeIDUInt::MAX as usize)
-                .map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice(),
+                .map(|_| AtomicU64::new(0))
+                .collect::<Vec<AtomicU64>>()
+                .into_boxed_slice(),
             attribute_ids: (0..TypeIDUInt::MAX as usize)
-                .map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice(),
+                .map(|_| AtomicU64::new(0))
+                .collect::<Vec<AtomicU64>>()
+                .into_boxed_slice(),
         }
     }
 

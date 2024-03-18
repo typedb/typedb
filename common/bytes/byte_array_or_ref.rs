@@ -15,11 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::fmt::{Display, Formatter};
-use std::hash::{Hash, Hasher};
+use std::{
+    fmt,
+    hash::{Hash, Hasher},
+};
 
-use crate::byte_array::ByteArray;
-use crate::byte_reference::ByteReference;
+use crate::{byte_array::ByteArray, byte_reference::ByteReference};
 
 #[derive(Debug)]
 pub enum ByteArrayOrRef<'bytes, const ARRAY_INLINE_SIZE: usize> {
@@ -31,7 +32,7 @@ impl<'bytes, const INLINE_SIZE: usize> Clone for ByteArrayOrRef<'bytes, INLINE_S
     fn clone(&self) -> ByteArrayOrRef<'static, INLINE_SIZE> {
         match self {
             ByteArrayOrRef::Array(array) => ByteArrayOrRef::Array(array.clone()),
-            ByteArrayOrRef::Reference(reference) => ByteArrayOrRef::Array(ByteArray::from(reference.clone())),
+            ByteArrayOrRef::Reference(reference) => ByteArrayOrRef::Array(ByteArray::from(*reference)),
         }
     }
 }
@@ -58,9 +59,7 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> ByteArrayOrRef<'bytes, ARRAY_INLINE
                 array.truncate(length);
                 ByteArrayOrRef::Array(array)
             }
-            ByteArrayOrRef::Reference(reference) => ByteArrayOrRef::Reference(
-                reference.truncate(length)
-            )
+            ByteArrayOrRef::Reference(reference) => ByteArrayOrRef::Reference(reference.truncate(length)),
         }
     }
 
@@ -75,7 +74,7 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> ByteArrayOrRef<'bytes, ARRAY_INLINE
     pub fn as_reference(&'bytes self) -> ByteReference<'bytes> {
         match self {
             ByteArrayOrRef::Array(array) => ByteReference::from(array),
-            ByteArrayOrRef::Reference(reference) => reference.clone()
+            ByteArrayOrRef::Reference(reference) => *reference,
         }
     }
 
@@ -97,13 +96,13 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> ByteArrayOrRef<'bytes, ARRAY_INLINE
     pub fn to_array(&self) -> ByteArray<ARRAY_INLINE_SIZE> {
         match self {
             ByteArrayOrRef::Array(array) => array.clone(),
-            ByteArrayOrRef::Reference(byte_reference) => ByteArray::from(byte_reference.clone()),
+            ByteArrayOrRef::Reference(byte_reference) => ByteArray::from(*byte_reference),
         }
     }
 }
 
-impl<'bytes, const ARRAY_INLINE_SIZE: usize> Display for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'bytes, const ARRAY_INLINE_SIZE: usize> fmt::Display for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", dbg!(self))
     }
 }
@@ -116,7 +115,7 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> PartialEq for ByteArrayOrRef<'bytes
 
 impl<'bytes, const ARRAY_INLINE_SIZE: usize> Eq for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {}
 
-impl<'bytes, const ARRAY_INLINE_SIZE: usize> Hash  for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
+impl<'bytes, const ARRAY_INLINE_SIZE: usize> Hash for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bytes().hash(state)
     }

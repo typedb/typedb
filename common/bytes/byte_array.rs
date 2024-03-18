@@ -15,18 +15,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::borrow::Borrow;
-use std::cmp::Ordering;
-use std::fmt;
-use std::fmt::{Debug, Display, Formatter};
-use std::hash::{Hash, Hasher};
+use std::{
+    borrow::Borrow,
+    cmp::Ordering,
+    fmt,
+    hash::{Hash, Hasher},
+};
 
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use serde::de::{MapAccess, SeqAccess, Visitor};
-use serde::ser::SerializeStruct;
+use serde::{
+    de::{self, MapAccess, SeqAccess, Visitor},
+    ser::SerializeStruct,
+    Deserialize, Deserializer, Serialize, Serializer,
+};
 
-use crate::{BytesError, increment};
-use crate::byte_reference::ByteReference;
+use crate::{byte_reference::ByteReference, increment, BytesError};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ByteArray<const INLINE_BYTES: usize> {
@@ -136,18 +138,12 @@ pub struct ByteArrayInline<const BYTES: usize> {
 
 impl<const BYTES: usize> ByteArrayInline<BYTES> {
     const fn empty() -> ByteArrayInline<BYTES> {
-        ByteArrayInline {
-            data: [0; BYTES],
-            length: 0,
-        }
+        ByteArrayInline { data: [0; BYTES], length: 0 }
     }
 
     fn zeros(length: usize) -> ByteArrayInline<BYTES> {
         assert!(length < BYTES);
-        ByteArrayInline {
-            data: [0; BYTES],
-            length: length as u64,
-        }
+        ByteArrayInline { data: [0; BYTES], length: length as u64 }
     }
 
     fn from(bytes: &[u8]) -> ByteArrayInline<BYTES> {
@@ -155,10 +151,7 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
         assert!(length < BYTES);
         let mut data = [0; BYTES];
         data[0..length].copy_from_slice(bytes);
-        ByteArrayInline {
-            data: data,
-            length: length as u64,
-        }
+        ByteArrayInline { data, length: length as u64 }
     }
 
     fn from_2(bytes_1: &[u8], bytes_2: &[u8]) -> ByteArrayInline<BYTES> {
@@ -171,10 +164,7 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
 
         data[0..end_1].copy_from_slice(bytes_1);
         data[end_1..end_2].copy_from_slice(bytes_2);
-        ByteArrayInline {
-            data: data,
-            length: length as u64,
-        }
+        ByteArrayInline { data, length: length as u64 }
     }
 
     fn from_3(bytes_1: &[u8], bytes_2: &[u8], bytes_3: &[u8]) -> ByteArrayInline<BYTES> {
@@ -189,17 +179,11 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
         data[0..end_1].copy_from_slice(bytes_1);
         data[end_1..end_2].copy_from_slice(bytes_2);
         data[end_2..end_3].copy_from_slice(bytes_3);
-        ByteArrayInline {
-            data: data,
-            length: length as u64,
-        }
+        ByteArrayInline { data, length: length as u64 }
     }
 
     fn new(bytes: [u8; BYTES], length: usize) -> ByteArrayInline<BYTES> {
-        ByteArrayInline {
-            data: bytes,
-            length: length as u64,
-        }
+        ByteArrayInline { data: bytes, length: length as u64 }
     }
 
     pub fn bytes(&self) -> &[u8] {
@@ -217,7 +201,10 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
 }
 
 impl<const SIZE: usize> Serialize for ByteArrayInline<SIZE> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
         let mut state = serializer.serialize_struct("ByteArrayInline", 1)?;
         state.serialize_field("data", self.bytes())?;
         state.end()
@@ -225,13 +212,18 @@ impl<const SIZE: usize> Serialize for ByteArrayInline<SIZE> {
 }
 
 impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-        enum Field { Data }
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        enum Field {
+            Data,
+        }
 
         impl<'de> Deserialize<'de> for Field {
             fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
-                where
-                    D: Deserializer<'de>,
+            where
+                D: Deserializer<'de>,
             {
                 struct FieldVisitor;
 
@@ -243,8 +235,8 @@ impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
                     }
 
                     fn visit_str<E>(self, value: &str) -> Result<Field, E>
-                        where
-                            E: de::Error,
+                    where
+                        E: de::Error,
                     {
                         match value {
                             "data" => Ok(Field::Data),
@@ -267,16 +259,16 @@ impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
             }
 
             fn visit_seq<V>(self, mut seq: V) -> Result<ByteArrayInline<SIZE>, V::Error>
-                where
-                    V: SeqAccess<'de>,
+            where
+                V: SeqAccess<'de>,
             {
                 let bytes: &[u8] = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 Ok(ByteArrayInline::from(bytes))
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<ByteArrayInline<SIZE>, V::Error>
-                where
-                    V: MapAccess<'de>,
+            where
+                V: MapAccess<'de>,
             {
                 let mut bytes: Option<&[u8]> = None;
                 while let Some(key) = map.next_key()? {
@@ -298,8 +290,8 @@ impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
     }
 }
 
-impl<const BYTES: usize> Debug for ByteArrayInline<BYTES> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl<const BYTES: usize> fmt::Debug for ByteArrayInline<BYTES> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{:?}, allocated_size: {}]", self.bytes(), self.length)
     }
 }
@@ -312,17 +304,11 @@ pub struct ByteArrayBoxed {
 
 impl ByteArrayBoxed {
     fn zeros(length: usize) -> ByteArrayBoxed {
-        ByteArrayBoxed {
-            data: vec![0; length].into_boxed_slice(),
-            length: length,
-        }
+        ByteArrayBoxed { data: vec![0; length].into_boxed_slice(), length }
     }
 
     fn from(bytes: &[u8]) -> ByteArrayBoxed {
-        ByteArrayBoxed {
-            data: Box::from(bytes),
-            length: bytes.len(),
-        }
+        ByteArrayBoxed { data: Box::from(bytes), length: bytes.len() }
     }
 
     fn from_2(bytes_1: &[u8], bytes_2: &[u8]) -> ByteArrayBoxed {
@@ -335,10 +321,7 @@ impl ByteArrayBoxed {
         data[0..end_1].copy_from_slice(bytes_1);
         data[end_1..end_2].copy_from_slice(bytes_2);
 
-        ByteArrayBoxed {
-            data: data,
-            length: length,
-        }
+        ByteArrayBoxed { data, length }
     }
 
     fn from_3(bytes_1: &[u8], bytes_2: &[u8], bytes_3: &[u8]) -> ByteArrayBoxed {
@@ -353,17 +336,11 @@ impl ByteArrayBoxed {
         data[end_1..end_2].copy_from_slice(bytes_2);
         data[end_2..end_3].copy_from_slice(bytes_3);
 
-        ByteArrayBoxed {
-            data: data,
-            length: length,
-        }
+        ByteArrayBoxed { data, length }
     }
 
     fn wrap(bytes: Box<[u8]>) -> ByteArrayBoxed {
-        ByteArrayBoxed {
-            length: bytes.len(),
-            data: bytes,
-        }
+        ByteArrayBoxed { length: bytes.len(), data: bytes }
     }
 
     fn bytes(&self) -> &[u8] {
@@ -412,4 +389,3 @@ impl<const INLINE_BYTES: usize> PartialEq<Self> for ByteArray<INLINE_BYTES> {
 }
 
 impl<const INLINE_BYTES: usize> Eq for ByteArray<INLINE_BYTES> {}
-

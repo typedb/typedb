@@ -17,10 +17,10 @@
 
 use bytes::byte_reference::ByteReference;
 
-pub mod type_;
-pub mod thing;
 pub mod error;
 pub mod iterator;
+pub mod thing;
+pub mod type_;
 
 pub trait ConceptAPI<'a>: Eq + PartialEq {}
 
@@ -30,11 +30,9 @@ trait IIDAPI<'a> {
     fn iid(&'a self) -> ByteReference<'a>;
 }
 
-
 // --- Annotations ---
 
 trait Annotatable<'a>: IIDAPI<'a> {
-
     fn set_annotation(&self) {
         // set annotation on this structure
         todo!()

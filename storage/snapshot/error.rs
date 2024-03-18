@@ -15,9 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::error::Error;
-use std::fmt::{Display, Formatter};
-use std::sync::Arc;
+use std::{error::Error, fmt, sync::Arc};
 
 use crate::error::MVCCStorageError;
 
@@ -35,14 +33,20 @@ pub enum SnapshotErrorKind {
     FailedCommit { source: MVCCStorageError },
 }
 
-impl Display for SnapshotError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for SnapshotError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.kind {
-            SnapshotErrorKind::FailedIterate { source, .. } => write!(f, "SnapshotError.FailedIterate caused by: {}", source),
+            SnapshotErrorKind::FailedIterate { source, .. } => {
+                write!(f, "SnapshotError.FailedIterate caused by: {}", source)
+            }
             SnapshotErrorKind::FailedGet { source, .. } => write!(f, "SnapshotError.FailedGet caused by: {}", source),
             SnapshotErrorKind::FailedPut { source, .. } => write!(f, "SnapshotError.FailedPut caused by: {}", source),
-            SnapshotErrorKind::FailedMVCCStorageIterate { source, .. } => write!(f, "SnapshotError.FailedMVCCStorageIterate caused by: {}", source),
-            SnapshotErrorKind::FailedCommit { source, .. } => write!(f, "SnapshotError.FailedCommit caused by: {}", source),
+            SnapshotErrorKind::FailedMVCCStorageIterate { source, .. } => {
+                write!(f, "SnapshotError.FailedMVCCStorageIterate caused by: {}", source)
+            }
+            SnapshotErrorKind::FailedCommit { source, .. } => {
+                write!(f, "SnapshotError.FailedCommit caused by: {}", source)
+            }
         }
     }
 }
@@ -58,4 +62,3 @@ impl Error for SnapshotError {
         }
     }
 }
-

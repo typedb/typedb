@@ -28,7 +28,7 @@ pub struct ByteReference<'bytes> {
 
 impl<'bytes> ByteReference<'bytes> {
     pub const fn new(bytes: &'bytes [u8]) -> ByteReference<'bytes> {
-        ByteReference { bytes: bytes }
+        ByteReference { bytes }
     }
 
     pub const fn bytes(&self) -> &'bytes [u8] {

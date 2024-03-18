@@ -17,12 +17,14 @@
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::graph::thing::vertex_object::ObjectVertex;
-use storage::key_value::StorageKeyReference;
-use storage::snapshot::iterator::SnapshotPrefixIterator;
+use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotPrefixIterator};
 
-use crate::{concept_iterator, ConceptAPI};
-use crate::error::{ConceptError, ConceptErrorKind};
-use crate::thing::{ObjectAPI, RelationAPI, ThingAPI};
+use crate::{
+    concept_iterator,
+    error::{ConceptError, ConceptErrorKind},
+    thing::{ObjectAPI, RelationAPI, ThingAPI},
+    ConceptAPI,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Relation<'a> {
@@ -31,7 +33,7 @@ pub struct Relation<'a> {
 
 impl<'a> Relation<'a> {
     pub fn new(vertex: ObjectVertex<'a>) -> Self {
-        Relation { vertex: vertex }
+        Relation { vertex }
     }
 }
 
@@ -52,7 +54,7 @@ impl<'a> RelationAPI<'a> for Relation<'a> {
 }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_ref_to_entity<'a>(storage_key_ref: StorageKeyReference<'a>) -> Relation<'a> {
+fn storage_key_ref_to_entity(storage_key_ref: StorageKeyReference<'_>) -> Relation<'_> {
     Relation::new(ObjectVertex::new(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
 }
 concept_iterator!(RelationIterator, Relation, storage_key_ref_to_entity);

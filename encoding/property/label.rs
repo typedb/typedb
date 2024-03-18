@@ -15,9 +15,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::fmt::{Display, Formatter};
+use std::fmt;
 
-use resource::constants::encoding::{LABEL_NAME_STRING_INLINE, LABEL_SCOPE_STRING_INLINE, LABEL_SCOPED_NAME_STRING_INLINE};
+use resource::constants::encoding::{
+    LABEL_NAME_STRING_INLINE, LABEL_SCOPED_NAME_STRING_INLINE, LABEL_SCOPE_STRING_INLINE,
+};
 
 use crate::property::string::StringBytes;
 
@@ -31,7 +33,7 @@ pub struct Label<'a> {
 impl<'a> Label<'a> {
     pub fn parse_from<const INLINE_BYTES: usize>(string_bytes: StringBytes<'a, INLINE_BYTES>) -> Label<'static> {
         let as_str = string_bytes.decode();
-        let mut splits = as_str.split(":");
+        let mut splits = as_str.split(':');
         let first = splits.next().unwrap();
         if let Some(second) = splits.next() {
             Self::build_scoped(first, second)
@@ -41,11 +43,7 @@ impl<'a> Label<'a> {
     }
 
     pub fn build(name: &str) -> Label<'static> {
-        Label {
-            name: StringBytes::build_owned(name),
-            scope: None,
-            scoped_name: StringBytes::build_owned(name),
-        }
+        Label { name: StringBytes::build_owned(name), scope: None, scoped_name: StringBytes::build_owned(name) }
     }
 
     pub fn build_scoped(name: &str, scope: &str) -> Label<'static> {
@@ -58,14 +56,14 @@ impl<'a> Label<'a> {
     }
 
     pub const fn new_static(name: &'static str) -> Label<'static> {
-        Label {
-            name: StringBytes::build_ref(name),
-            scope: None,
-            scoped_name: StringBytes::build_ref(name),
-        }
+        Label { name: StringBytes::build_ref(name), scope: None, scoped_name: StringBytes::build_ref(name) }
     }
 
-    pub const fn new_static_scoped(name: &'static str, scope: &'static str, scoped_name: &'static str) -> Label<'static> {
+    pub const fn new_static_scoped(
+        name: &'static str,
+        scope: &'static str,
+        scoped_name: &'static str,
+    ) -> Label<'static> {
         if name.len() + scope.len() + 1 != scoped_name.len() {
             panic!("Provided scoped name has a different length to (name+scope+1).");
         }
@@ -97,8 +95,14 @@ impl<'a> Label<'a> {
     }
 }
 
-impl<'a> Display for Label<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Label[name={}, scope={}, scoped_name={}", self.name(), self.scope().map(|s| format!("{}", s)).unwrap_or_else(|| String::new()), self.scoped_name())
+impl<'a> fmt::Display for Label<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Label[name={}, scope={}, scoped_name={}",
+            self.name(),
+            self.scope().map(|s| format!("{}", s)).unwrap_or_default(),
+            self.scoped_name()
+        )
     }
 }

@@ -16,5 +16,5 @@
  */
 
 pub mod database;
-mod transaction;
 mod error;
+mod transaction;

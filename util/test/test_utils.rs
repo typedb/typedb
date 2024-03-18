@@ -15,13 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::cell::OnceCell;
-use std::path::{Path, PathBuf};
-use std::sync::Mutex;
-
-use tracing::subscriber::DefaultGuard;
+use std::{
+    cell::OnceCell,
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 
 use logger::initialise_logging;
+use tracing::subscriber::DefaultGuard;
 
 pub static LOGGING_GUARD: Mutex<OnceCell<DefaultGuard>> = Mutex::new(OnceCell::new());
 

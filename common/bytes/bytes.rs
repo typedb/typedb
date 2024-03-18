@@ -15,10 +15,10 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::fmt::{Display, Formatter};
+use std::fmt;
 
-pub mod byte_array_or_ref;
 pub mod byte_array;
+pub mod byte_array_or_ref;
 pub mod byte_reference;
 
 // TODO: this needs to be optimised using bigger strides than a single byte!
@@ -33,7 +33,7 @@ pub fn increment(bytes: &mut [u8]) -> Result<(), BytesError> {
             return Ok(());
         }
     }
-    return Err(BytesError { kind: BytesErrorKind::IncrementOverflow {} });
+    Err(BytesError { kind: BytesErrorKind::IncrementOverflow {} })
 }
 
 ///
@@ -52,7 +52,6 @@ pub const fn increment_fixed<const SIZE: usize>(mut bytes: [u8; SIZE]) -> [u8; S
     bytes
 }
 
-
 #[derive(Debug)]
 pub struct BytesError {
     pub kind: BytesErrorKind,
@@ -63,8 +62,8 @@ pub enum BytesErrorKind {
     IncrementOverflow {},
 }
 
-impl Display for BytesError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for BytesError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

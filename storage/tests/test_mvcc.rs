@@ -15,7 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 /*
 This file should comprise a set of low-level tests relating to MVCC.
 

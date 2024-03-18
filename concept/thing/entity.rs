@@ -17,13 +17,14 @@
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::graph::thing::vertex_object::ObjectVertex;
-use storage::key_value::StorageKeyReference;
-use storage::snapshot::iterator::SnapshotPrefixIterator;
+use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotPrefixIterator};
 
-use crate::{concept_iterator, ConceptAPI};
-use crate::error::{ConceptError, ConceptErrorKind};
-use crate::thing::{EntityAPI, ObjectAPI, ThingAPI};
-use crate::type_::TypeAPI;
+use crate::{
+    concept_iterator,
+    error::{ConceptError, ConceptErrorKind},
+    thing::{EntityAPI, ObjectAPI, ThingAPI},
+    ConceptAPI,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Entity<'a> {
@@ -32,7 +33,7 @@ pub struct Entity<'a> {
 
 impl<'a> Entity<'a> {
     pub fn new(vertex: ObjectVertex<'a>) -> Self {
-        Entity { vertex: vertex }
+        Entity { vertex }
     }
 }
 
@@ -53,7 +54,7 @@ impl<'a> EntityAPI<'a> for Entity<'a> {
 }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_entity<'a>(storage_key_ref: StorageKeyReference<'a>) -> Entity<'a> {
+fn storage_key_to_entity(storage_key_ref: StorageKeyReference<'_>) -> Entity<'_> {
     Entity::new(ObjectVertex::new(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
 }
 concept_iterator!(EntityIterator, Entity, storage_key_to_entity);

@@ -15,19 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::{path::PathBuf, rc::Rc};
 
-use std::path::PathBuf;
-use std::rc::Rc;
-
-use bytes::byte_array::ByteArray;
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
-use storage::error::{MVCCStorageError, MVCCStorageErrorKind};
-use storage::isolation_manager::{IsolationError, IsolationErrorKind};
-use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
-use storage::keyspace::keyspace::KeyspaceId;
-use storage::MVCCStorage;
-use storage::snapshot::error::{SnapshotError, SnapshotErrorKind};
+use storage::{
+    error::{MVCCStorageError, MVCCStorageErrorKind},
+    isolation_manager::{IsolationError, IsolationErrorKind},
+    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
+    keyspace::keyspace::KeyspaceId,
+    snapshot::error::{SnapshotError, SnapshotErrorKind},
+    MVCCStorage,
+};
 use test_utils::{create_tmp_dir, init_logging};
 
 const KEYSPACE_ID: KeyspaceId = 0;
@@ -40,7 +39,7 @@ const VALUE_3: [u8; 1] = [0x88];
 const VALUE_4: [u8; 1] = [0x99];
 
 fn setup_storage(storage_path: &PathBuf) -> MVCCStorage {
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::new(Rc::from("storage"), storage_path).unwrap();
     storage.create_keyspace("keyspace", KEYSPACE_ID, &MVCCStorage::new_db_options()).unwrap();
 
     let snapshot = storage.open_snapshot_write();
@@ -67,14 +66,21 @@ fn commits_isolated() {
 
     let get: Option<ByteArray<{ BUFFER_KEY_INLINE }>> = snapshot_2.get(StorageKeyReference::from(&key_3));
     assert!(get.is_none());
-    let prefix: StorageKey<'_, { BUFFER_KEY_INLINE }> = StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&[0x0 as u8])));
-    let iterated = snapshot_2.iterate_prefix(prefix.clone()).collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>().unwrap();
+    let prefix: StorageKey<'_, { BUFFER_KEY_INLINE }> =
+        StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&[0x0_u8])));
+    let iterated = snapshot_2
+        .iterate_prefix(prefix.clone())
+        .collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
+        .unwrap();
     assert_eq!(iterated.len(), 2);
 
     let snapshot_3 = storage.open_snapshot_read();
     let get: Option<ByteArray<{ BUFFER_KEY_INLINE }>> = snapshot_3.get(StorageKeyReference::from(&key_3));
-    assert!(matches!(get, Some(value_3)));
-    let iterated = snapshot_3.iterate_prefix(prefix.clone()).collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>().unwrap();
+    assert!(matches!(get, Some(_value_3)));
+    let iterated = snapshot_3
+        .iterate_prefix(prefix.clone())
+        .collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
+        .unwrap();
     assert_eq!(iterated.len(), 3);
 }
 
@@ -93,8 +99,10 @@ fn g0_update_conflicts_fail() {
     let snapshot_1 = storage.open_snapshot_write();
     let snapshot_2 = storage.open_snapshot_write();
 
-    let key_1: StorageKey<'_, { BUFFER_KEY_INLINE }> = StorageKey::Reference(StorageKeyReference::new(KEYSPACE_ID, ByteReference::new(&KEY_1)));
-    let key_2: StorageKey<'_, { BUFFER_KEY_INLINE }> = StorageKey::Reference(StorageKeyReference::new(KEYSPACE_ID, ByteReference::new(&KEY_2)));
+    let key_1: StorageKey<'_, { BUFFER_KEY_INLINE }> =
+        StorageKey::Reference(StorageKeyReference::new(KEYSPACE_ID, ByteReference::new(&KEY_1)));
+    let _key_2: StorageKey<'_, { BUFFER_KEY_INLINE }> =
+        StorageKey::Reference(StorageKeyReference::new(KEYSPACE_ID, ByteReference::new(&KEY_2)));
 
     snapshot_1.get_required(key_1.clone());
 
@@ -104,22 +112,24 @@ fn g0_update_conflicts_fail() {
     assert!(result_1.is_ok());
 
     let result_2 = snapshot_2.commit();
-    assert!(matches!(
-        result_2,
-        Err(SnapshotError {
-            kind: SnapshotErrorKind::FailedCommit {
-                source: MVCCStorageError {
-                    kind: MVCCStorageErrorKind::IsolationError {
-                        source: IsolationError {
-                            kind: IsolationErrorKind::RequiredDeleteViolation
+    assert!(
+        matches!(
+            result_2,
+            Err(SnapshotError {
+                kind: SnapshotErrorKind::FailedCommit {
+                    source: MVCCStorageError {
+                        kind: MVCCStorageErrorKind::IsolationError {
+                            source: IsolationError { kind: IsolationErrorKind::RequiredDeleteViolation },
+                            ..
                         },
                         ..
                     },
                     ..
                 },
                 ..
-            },
-            ..
-        })
-    ), "{}", result_2.unwrap_err());
+            })
+        ),
+        "{}",
+        result_2.unwrap_err()
+    );
 }

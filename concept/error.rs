@@ -15,9 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
-use std::error::Error;
-use std::fmt::{Display, Formatter};
+use std::{error::Error, fmt};
 
 use storage::snapshot::error::SnapshotError;
 
@@ -28,11 +26,11 @@ pub struct ConceptError {
 
 #[derive(Debug)]
 pub enum ConceptErrorKind {
-    SnapshotError { source: SnapshotError }
+    SnapshotError { source: SnapshotError },
 }
 
-impl Display for ConceptError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ConceptError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }
@@ -40,7 +38,7 @@ impl Display for ConceptError {
 impl Error for ConceptError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
-            ConceptErrorKind::SnapshotError { source, .. } => Some(source)
+            ConceptErrorKind::SnapshotError { source, .. } => Some(source),
         }
     }
 }

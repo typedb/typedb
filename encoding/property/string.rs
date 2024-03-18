@@ -15,15 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::fmt::{Display, Formatter};
+use std::fmt;
 
-use bytes::byte_array::ByteArray;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use logger::result::ResultExt;
 
-use crate::AsBytes;
-use crate::error::{EncodingError, EncodingErrorKind};
+use crate::{
+    error::{EncodingError, EncodingErrorKind},
+    AsBytes,
+};
 
 /*
 Both Rust and RocksDB use lexicographical ordering for comparing byte slices.
@@ -56,11 +56,13 @@ impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
 
     pub fn decode(&self) -> &str {
         std::str::from_utf8(self.bytes.bytes())
-            .map_err(|err| {
-                EncodingError {
-                    kind: EncodingErrorKind::FailedUFT8Decode { bytes: self.bytes.bytes().to_vec().into_boxed_slice(), source: err }
-                }
-            }).unwrap_or_log()
+            .map_err(|err| EncodingError {
+                kind: EncodingErrorKind::FailedUFT8Decode {
+                    bytes: self.bytes.bytes().to_vec().into_boxed_slice(),
+                    source: err,
+                },
+            })
+            .unwrap_or_log()
     }
 
     pub fn length(&self) -> usize {
@@ -82,8 +84,8 @@ impl<'a, const INLINE_LENGTH: usize> AsBytes<'a, INLINE_LENGTH> for StringBytes<
     }
 }
 
-impl<'a, const INLINE_LENGTH: usize> Display for StringBytes<'a, INLINE_LENGTH> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<'a, const INLINE_LENGTH: usize> fmt::Display for StringBytes<'a, INLINE_LENGTH> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "bytes(len={}, str='{}')", self.length(), self.decode())
     }
 }

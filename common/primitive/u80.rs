@@ -29,14 +29,16 @@ pub struct U80 {
 }
 
 impl U80 {
-    pub const MAX: U80 = U80 { number: u128::from_be_bytes([0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]) };
+    pub const MAX: U80 = U80 {
+        number: u128::from_be_bytes([
+            0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        ]),
+    };
     pub const BYTES: usize = 10;
 
     pub fn new(number: u128) -> U80 {
         assert!(number < U80::MAX.number);
-        U80 {
-            number: number,
-        }
+        U80 { number }
     }
 
     pub fn number(&self) -> u128 {
@@ -63,17 +65,13 @@ impl U80 {
 impl Add for U80 {
     type Output = U80;
     fn add(self, rhs: Self) -> Self::Output {
-        U80 {
-            number: self.number + rhs.number
-        }
+        U80 { number: self.number + rhs.number }
     }
 }
 
 impl Sub for U80 {
     type Output = U80;
     fn sub(self, rhs: Self) -> Self::Output {
-        U80 {
-            number: self.number - rhs.number
-        }
+        U80 { number: self.number - rhs.number }
     }
 }

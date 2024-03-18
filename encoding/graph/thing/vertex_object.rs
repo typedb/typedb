@@ -15,20 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::mem;
-use std::ops::Range;
+use std::{mem, ops::Range};
 
-use bytes::byte_array::ByteArray;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKey;
-use storage::keyspace::keyspace::KeyspaceId;
+use storage::{key_value::StorageKey, keyspace::keyspace::KeyspaceId};
 
-use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
-use crate::graph::type_::vertex::TypeID;
-use crate::graph::Typed;
-use crate::layout::prefix::{PrefixID, PrefixType};
+use crate::{
+    graph::{type_::vertex::TypeID, Typed},
+    layout::prefix::{PrefixID, PrefixType},
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObjectVertex<'a> {
@@ -42,7 +39,7 @@ impl<'a> ObjectVertex<'a> {
 
     pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> ObjectVertex<'a> {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        ObjectVertex { bytes: bytes }
+        ObjectVertex { bytes }
     }
 
     pub fn build_entity(type_id: TypeID, object_id: ObjectID) -> Self {
@@ -66,7 +63,10 @@ impl<'a> ObjectVertex<'a> {
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
         StorageKey::new(Self::keyspace_id(), ByteArrayOrRef::Array(array))
     }
-    fn build_prefix_type(prefix: PrefixID, type_id: TypeID) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_TYPE }> {
+    fn build_prefix_type(
+        prefix: PrefixID,
+        type_id: TypeID,
+    ) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_TYPE }> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
@@ -112,14 +112,14 @@ impl<'a> Typed<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ObjectID {
-    bytes: [u8; { ObjectID::LENGTH }],
+    bytes: [u8; ObjectID::LENGTH],
 }
 
 impl ObjectID {
     const LENGTH: usize = 8;
 
-    fn new(bytes: [u8; { ObjectID::LENGTH }]) -> Self {
-        ObjectID { bytes: bytes }
+    fn new(bytes: [u8; ObjectID::LENGTH]) -> Self {
+        ObjectID { bytes }
     }
 
     pub fn build(id: u64) -> Self {
@@ -127,7 +127,7 @@ impl ObjectID {
         ObjectID { bytes: id.to_be_bytes() }
     }
 
-    fn bytes(&self) -> [u8; { ObjectID::LENGTH }] {
+    fn bytes(&self) -> [u8; ObjectID::LENGTH] {
         self.bytes
     }
 }

@@ -17,8 +17,7 @@
 
 use std::rc::Rc;
 
-use concept::thing::thing_manager::ThingManager;
-use concept::type_::type_manager::TypeManager;
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use storage::snapshot::snapshot::Snapshot;
 
 pub struct TransactionRead<'txn, 'storage: 'txn> {
@@ -27,8 +26,7 @@ pub struct TransactionRead<'txn, 'storage: 'txn> {
     pub(crate) thing_manager: ThingManager<'txn, 'storage>,
 }
 
-impl<'txn, 'storage: 'txn> TransactionRead <'txn, 'storage> {
-
+impl<'txn, 'storage: 'txn> TransactionRead<'txn, 'storage> {
     pub fn type_manager(&self) -> &TypeManager<'txn, 'storage> {
         &self.type_manager
     }
@@ -41,9 +39,7 @@ pub struct TransactionWrite<'txn, 'storage: 'txn> {
 }
 
 impl<'txn, 'storage: 'txn> TransactionWrite<'txn, 'storage> {
-
     pub fn type_manager(&self) -> &TypeManager<'txn, 'storage> {
         &self.type_manager
     }
 }
-

@@ -17,12 +17,14 @@
 
 use std::sync::Arc;
 
-use criterion::{Criterion, criterion_group, criterion_main};
-
-use encoding::graph::thing::vertex_object::ObjectVertex;
-use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
-use encoding::graph::type_::vertex::TypeID;
-use encoding::Keyable;
+use criterion::{criterion_group, criterion_main, Criterion};
+use encoding::{
+    graph::{
+        thing::{vertex_generator::ThingVertexGenerator, vertex_object::ObjectVertex},
+        type_::vertex::TypeID,
+    },
+    Keyable,
+};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
@@ -30,7 +32,10 @@ fn vertex_generation(thing_iid_generator: Arc<ThingVertexGenerator>, type_id: &T
     thing_iid_generator.take_entity_vertex(type_id)
 }
 
-fn vertex_generation_to_key(thing_iid_generator: Arc<ThingVertexGenerator>, type_id: &TypeID<'_>) -> StorageKey<'static, { BUFFER_KEY_INLINE }> {
+fn vertex_generation_to_key(
+    thing_iid_generator: Arc<ThingVertexGenerator>,
+    type_id: &TypeID<'_>,
+) -> StorageKey<'static, { BUFFER_KEY_INLINE }> {
     thing_iid_generator.take_entity_vertex(type_id).into_storage_key()
 }
 
@@ -38,12 +43,10 @@ fn criterion_benchmark(c: &mut Criterion) {
     let vertex_generator = Arc::new(ThingVertexGenerator::new());
     let type_id = TypeID::build(0);
 
-    c.bench_function("vertex_generation", |b| b.iter(|| {
-        vertex_generation(vertex_generator.clone(), &type_id)
-    }));
-    c.bench_function("vertex_generation_to_storage_key", |b| b.iter(|| {
-        vertex_generation_to_key(vertex_generator.clone(), &type_id)
-    }));
+    c.bench_function("vertex_generation", |b| b.iter(|| vertex_generation(vertex_generator.clone(), &type_id)));
+    c.bench_function("vertex_generation_to_storage_key", |b| {
+        b.iter(|| vertex_generation_to_key(vertex_generator.clone(), &type_id))
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

@@ -15,14 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
-use std::sync::Arc;
+use std::{error::Error, fmt, sync::Arc};
 
 use durability::DurabilityError;
 
-use crate::isolation_manager::IsolationError;
-use crate::keyspace::keyspace::{KeyspaceError, KeyspaceId};
+use crate::{
+    isolation_manager::IsolationError,
+    keyspace::keyspace::{KeyspaceError, KeyspaceId},
+};
 
 #[derive(Debug)]
 pub struct MVCCStorageError {
@@ -43,8 +43,8 @@ pub enum MVCCStorageErrorKind {
     DurabilityError { source: DurabilityError },
 }
 
-impl Display for MVCCStorageError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for MVCCStorageError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.kind {
             MVCCStorageErrorKind::FailedToDeleteStorage { source, .. } => {
                 write!(f, "MVCCStorageError.FailedToDeleteStorage caused by: '{}'", source)
@@ -86,7 +86,7 @@ impl Error for MVCCStorageError {
             MVCCStorageErrorKind::DurabilityError { source, .. } => Some(source),
             MVCCStorageErrorKind::KeyspaceNameExists { .. } => None,
             MVCCStorageErrorKind::KeyspaceIdReserved { .. } => None,
-            MVCCStorageErrorKind::KeyspaceIdTooLarge{  .. } => None,
+            MVCCStorageErrorKind::KeyspaceIdTooLarge { .. } => None,
             MVCCStorageErrorKind::KeyspaceIdExists { .. } => None,
             MVCCStorageErrorKind::KeyspaceDeleteError { source } => Some(source),
         }

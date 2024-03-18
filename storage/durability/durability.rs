@@ -20,7 +20,7 @@
 
 use std::{
     error::Error,
-    fmt::{Display, Formatter},
+    fmt,
     io::{self, Read, Write},
 };
 
@@ -74,7 +74,7 @@ pub trait DurabilityRecord: Sized {
     const RECORD_TYPE: DurabilityRecordType;
     const RECORD_NAME: &'static str;
     fn serialise_into(&self, writer: &mut impl Write) -> bincode::Result<()>;
-    fn deserialize_from(writer: &mut impl Read) -> bincode::Result<Self>;
+    fn deserialize_from(reader: &mut impl Read) -> bincode::Result<Self>;
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
@@ -82,8 +82,8 @@ pub struct SequenceNumber {
     number: U80,
 }
 
-impl Display for SequenceNumber {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for SequenceNumber {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "SeqNr[{}]", self.number.number())
     }
 }
@@ -154,8 +154,8 @@ pub enum DurabilityErrorKind {
     IOError { source: io::Error },
 }
 
-impl Display for DurabilityError {
-    fn fmt(&self, _: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for DurabilityError {
+    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

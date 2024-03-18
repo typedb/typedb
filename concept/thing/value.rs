@@ -24,7 +24,7 @@ pub enum Value {
     Boolean(bool),
     Long(i64),
     Double(f64),
-    String(Box<String>),
+    String(Box<str>),
 }
 
 impl Value {

@@ -15,12 +15,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use encoding::graph::thing::vertex_attribute::AttributeVertex;
-use encoding::property::value_type::ValueType;
+use encoding::{graph::thing::vertex_attribute::AttributeVertex, property::value_type::ValueType};
 
-use crate::ConceptAPI;
-use crate::thing::{AttributeAPI, ThingAPI};
-use crate::thing::value::Value;
+use crate::{
+    thing::{value::Value, AttributeAPI, ThingAPI},
+    ConceptAPI,
+};
 
 #[derive(Clone, Debug)]
 pub struct Attribute<'a> {
@@ -30,7 +30,7 @@ pub struct Attribute<'a> {
 
 impl<'a> Attribute<'a> {
     fn new(vertex: AttributeVertex<'a>) -> Self {
-        Attribute { vertex: vertex, value: None }
+        Attribute { vertex, value: None }
     }
 }
 
