@@ -51,7 +51,9 @@ impl PrefixID {
             | PrefixType::PropertyTypeEdge => EncodingKeyspace::Schema.id(),
             PrefixType::VertexEntity => todo!(),
             PrefixType::VertexRelation => todo!(),
+            PrefixType::VertexAttributeBoolean => todo!(),
             PrefixType::VertexAttributeLong => todo!(),
+            PrefixType::VertexAttributeDouble => todo!(),
             PrefixType::VertexAttributeString => todo!(),
         }
     }
@@ -65,7 +67,10 @@ pub enum PrefixType {
 
     VertexEntity,
     VertexRelation,
+
+    VertexAttributeBoolean,
     VertexAttributeLong,
+    VertexAttributeDouble,
     VertexAttributeString,
 
     PropertyType,
@@ -112,17 +117,21 @@ macro_rules! prefix_functions {
 
 impl PrefixType {
     prefix_functions!(
-           VertexEntityType => [20],
-           VertexRelationType => [21],
-           VertexAttributeType => [22],
+           VertexEntityType => [16],
+           VertexRelationType => [17],
+           VertexAttributeType => [18],
 
-           VertexEntity => [60],
-           VertexRelation => [61],
-           VertexAttributeLong => [71],
-           VertexAttributeString => [72],
+           VertexEntity => [40],
+           VertexRelation => [41],
+
+           // We reserve the range 50 - 100 to store attribute instances with a value type
+           VertexAttributeBoolean => [50],
+           VertexAttributeLong => [51],
+           VertexAttributeDouble => [52],
+           VertexAttributeString => [53],
 
            PropertyType => [100],
            PropertyTypeEdge => [101],
-           IndexLabelToType => [120]
+           IndexLabelToType => [102]
     );
 }

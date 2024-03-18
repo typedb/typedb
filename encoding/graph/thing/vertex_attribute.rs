@@ -36,7 +36,7 @@ pub struct AttributeVertex<'a> {
 impl<'a> AttributeVertex<'a> {
     pub(crate) const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
 
-    pub(crate) fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() > Self::LENGTH_PREFIX_TYPE);
         AttributeVertex { bytes }
     }

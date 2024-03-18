@@ -106,7 +106,7 @@ fn attribute_create() {
         let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &type_vertex_generator, None));
         let thing_vertex_generator = ThingVertexGenerator::new();
         let thing_manager = ThingManager::new(snapshot.clone(), &thing_vertex_generator, type_manager);
-        let entities = thing_manager.get_entities().collect_cloned();
+        let attribute = thing_manager.get_attributes().collect_cloned();
 
         // TODO: get attribute and check value
     }

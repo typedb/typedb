@@ -15,12 +15,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::graph::thing::vertex_attribute::AttributeVertex;
-use encoding::graph::thing::vertex_generator::StringAttributeID;
-use encoding::value::long::Long;
 use encoding::value::value_type::ValueType;
+use storage::key_value::StorageKeyReference;
+use storage::snapshot::iterator::SnapshotPrefixIterator;
 
-use crate::ConceptAPI;
+use crate::{concept_iterator, ConceptAPI};
+use crate::error::{ConceptError, ConceptErrorKind};
 use crate::thing::{AttributeAPI, ThingAPI};
 use crate::thing::thing_manager::ThingManager;
 use crate::thing::value::Value;
@@ -67,3 +69,8 @@ impl<'a> PartialEq<Self> for Attribute<'a> {
 }
 
 impl<'a> Eq for Attribute<'a> {}
+
+fn storage_key_to_attribute<'a>(storage_key_ref: StorageKeyReference<'a>) -> Attribute<'a> {
+    Attribute::new(AttributeVertex::new(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
+}
+concept_iterator!(AttributeIterator, Attribute, storage_key_to_attribute);

@@ -17,6 +17,7 @@
 
 use std::rc::Rc;
 use bytes::byte_array_or_ref::ByteArrayOrRef;
+use encoding::graph::thing::vertex_attribute::AttributeVertex;
 
 use encoding::graph::thing::vertex_generator::{StringAttributeID, ThingVertexGenerator};
 use encoding::graph::thing::vertex_object::ObjectVertex;
@@ -30,7 +31,7 @@ use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::snapshot::Snapshot;
 
 use crate::error::{ConceptError, ConceptErrorKind};
-use crate::thing::attribute::Attribute;
+use crate::thing::attribute::{Attribute, AttributeIterator};
 use crate::thing::AttributeAPI;
 use crate::thing::entity::{Entity, EntityIterator};
 use crate::thing::value::Value;
@@ -93,6 +94,12 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
         EntityIterator::new(snapshot_iterator)
     }
 
+    pub fn get_attributes<'this>(&'this self) -> AttributeIterator<'this, 1> {
+        // let prefix = AttributeVertex::build_prefix_prefix(PrefixType::VertexAttributeBoolean.prefix_id());
+        // let snapshot_iterator = self.snapshot.iterate_prefix()
+        todo!()
+    }
+
     pub(crate) fn get_attribute_value(&self, attribute: &Attribute) -> Value {
         match attribute.value_type() {
             ValueType::Boolean => {
@@ -118,3 +125,4 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
         }
     }
 }
+
