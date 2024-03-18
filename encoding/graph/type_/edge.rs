@@ -98,7 +98,7 @@ impl<'a> TypeEdge<'a> {
 
     fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        
+
         TypeEdge { bytes }
     }
 

@@ -15,19 +15,17 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::mem;
-use std::ops::Range;
+use std::{mem, ops::Range};
 
-use bytes::byte_array::ByteArray;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
-use crate::{AsBytes, Prefixed};
-use crate::graph::type_::vertex::TypeID;
-use crate::graph::Typed;
-use crate::layout::prefix::{PrefixID, PrefixType};
-use crate::property::value_type::ValueType;
+use crate::{
+    graph::{type_::vertex::TypeID, Typed},
+    layout::prefix::{PrefixID, PrefixType},
+    property::value_type::ValueType,
+    AsBytes, Prefixed,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AttributeVertex<'a> {
@@ -53,12 +51,14 @@ impl<'a> AttributeVertex<'a> {
     pub fn value_type(&self) -> ValueType {
         match self.prefix() {
             PrefixType::VertexAttributeLong => ValueType::Long,
-            _ => unreachable!("Unexpected prefix.")
+            _ => unreachable!("Unexpected prefix."),
         }
     }
 
     fn attribute_id(&'a self) -> AttributeID<'a> {
-        AttributeID::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[self.range_of_attribute_id()])))
+        AttributeID::new(ByteArrayOrRef::Reference(ByteReference::new(
+            &self.bytes.bytes()[self.range_of_attribute_id()],
+        )))
     }
 
     fn range_of_attribute_id(&self) -> Range<usize> {

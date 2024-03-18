@@ -30,7 +30,7 @@ impl ValueTypeID {
         ValueTypeID { bytes: bytes }
     }
 
-    pub fn bytes(&self) -> [u8; {InfixID::LENGTH}] {
+    pub fn bytes(&self) -> [u8; { InfixID::LENGTH }] {
         self.bytes
     }
 }

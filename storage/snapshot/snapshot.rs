@@ -93,11 +93,7 @@ impl<'storage> ReadSnapshot<'storage> {
         self.storage.get(key, &self.open_sequence_number, |reference| ByteArray::from(reference))
     }
 
-    pub fn get_mapped<T>(
-        &self,
-        key: StorageKeyReference<'_>,
-        mapper: impl FnMut(ByteReference<'_>) -> T,
-    ) -> Option<T> {
+    pub fn get_mapped<T>(&self, key: StorageKeyReference<'_>, mapper: impl FnMut(ByteReference<'_>) -> T) -> Option<T> {
         self.storage.get(key, &self.open_sequence_number, mapper)
     }
 

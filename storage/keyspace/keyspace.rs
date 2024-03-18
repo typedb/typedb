@@ -53,14 +53,7 @@ impl Keyspace {
         let mut write_options = WriteOptions::default();
         write_options.disable_wal(true);
 
-        Ok(Keyspace {
-            path,
-            kv_storage,
-            keyspace_id: id,
-            next_checkpoint_id: 0,
-            read_options,
-            write_options,
-        })
+        Ok(Keyspace { path, kv_storage, keyspace_id: id, next_checkpoint_id: 0, read_options, write_options })
     }
 
     // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options

@@ -54,9 +54,7 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         }
     }
 
-    pub fn peek(
-        &mut self,
-    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), SnapshotError>> {
+    pub fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), SnapshotError>> {
         match self.iterator_state.state().clone() {
             State::Init => {
                 self.find_next_state();
@@ -79,9 +77,7 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
         }
     }
 
-    pub fn next(
-        &mut self,
-    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), SnapshotError>> {
+    pub fn next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), SnapshotError>> {
         match self.iterator_state.state().clone() {
             State::Init => {
                 self.find_next_state();
