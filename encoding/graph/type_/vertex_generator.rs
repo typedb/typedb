@@ -17,11 +17,16 @@
 
 use std::sync::atomic::{AtomicU16, Ordering};
 
-use storage::MVCCStorage;
-use storage::snapshot::snapshot::WriteSnapshot;
+use storage::{snapshot::snapshot::WriteSnapshot, MVCCStorage};
 
-use crate::graph::type_::vertex::{build_vertex_attribute_type, build_vertex_attribute_type_prefix, build_vertex_entity_type, build_vertex_entity_type_prefix, build_vertex_relation_type, build_vertex_relation_type_prefix, TypeID, TypeVertex};
-use crate::Keyable;
+use crate::{
+    graph::type_::vertex::{
+        build_vertex_attribute_type, build_vertex_attribute_type_prefix, build_vertex_entity_type,
+        build_vertex_entity_type_prefix, build_vertex_relation_type, build_vertex_relation_type_prefix, TypeID,
+        TypeVertex,
+    },
+    Keyable,
+};
 
 // TODO: if we always scan for the next available TypeID, we automatically recycle deleted TypeIDs?
 //          -> If we do reuse TypeIDs, this we also need to make sure to reset the Thing ID generators on delete! (test should exist to confirm this).

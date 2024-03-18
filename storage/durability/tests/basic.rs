@@ -19,11 +19,8 @@
 #![deny(rust_2018_idioms)]
 
 use durability::{DurabilityRecord, DurabilityService, RawRecord};
+use durability_test_common::{open_wal, TestRecord};
 use tempdir::TempDir;
-
-mod common;
-
-use self::common::{open_wal, TestRecord};
 
 #[test]
 fn basic() {

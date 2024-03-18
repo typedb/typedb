@@ -16,16 +16,15 @@
  */
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
-use encoding::graph::thing::vertex_attribute::AttributeVertex;
-use encoding::value::value_type::ValueType;
-use storage::key_value::StorageKeyReference;
-use storage::snapshot::iterator::SnapshotPrefixIterator;
+use encoding::{graph::thing::vertex_attribute::AttributeVertex, value::value_type::ValueType};
+use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotPrefixIterator};
 
-use crate::{concept_iterator, ConceptAPI};
-use crate::error::{ConceptError, ConceptErrorKind};
-use crate::thing::{AttributeAPI, ThingAPI};
-use crate::thing::thing_manager::ThingManager;
-use crate::thing::value::Value;
+use crate::{
+    concept_iterator,
+    error::{ConceptError, ConceptErrorKind},
+    thing::{thing_manager::ThingManager, value::Value, AttributeAPI, ThingAPI},
+    ConceptAPI,
+};
 
 #[derive(Clone, Debug)]
 pub struct Attribute<'a> {
@@ -58,7 +57,6 @@ impl<'a> AttributeAPI<'a> for Attribute<'a> {
 
     fn value(&self, thing_manager: &ThingManager) -> Value {
         thing_manager.get_attribute_value(self)
-
     }
 }
 

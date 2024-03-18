@@ -17,24 +17,28 @@
 
 use std::{collections::HashSet, ops::Deref, rc::Rc, sync::Arc};
 
-use std::collections::HashSet;
-use std::io::Read;
-use std::ops::Deref;
-use std::rc::Rc;
-use std::sync::Arc;
-
-use bytes::byte_array::ByteArray;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use encoding::{AsBytes, Keyable};
-use encoding::graph::type_::edge::{build_edge_owns, build_edge_owns_prefix, build_edge_owns_reverse, build_edge_sub, build_edge_sub_prefix, build_edge_sub_reverse, new_edge_owns, new_edge_sub};
-use encoding::graph::type_::index::LabelToTypeVertexIndex;
-use encoding::graph::type_::property::{build_property_type_annotation_abstract, build_property_type_label, build_property_type_value_type};
-use encoding::graph::type_::Root;
-use encoding::graph::type_::vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, TypeVertex};
-use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
-use encoding::value::label::Label;
-use encoding::value::string::StringBytes;
-use encoding::value::value_type::{ValueType, ValueTypeID};
+use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
+use encoding::{
+    graph::type_::{
+        edge::{
+            build_edge_owns, build_edge_owns_prefix, build_edge_owns_reverse, build_edge_sub, build_edge_sub_prefix,
+            build_edge_sub_reverse, new_edge_owns, new_edge_sub,
+        },
+        index::LabelToTypeVertexIndex,
+        property::{
+            build_property_type_annotation_abstract, build_property_type_label, build_property_type_value_type,
+        },
+        vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, TypeVertex},
+        vertex_generator::TypeVertexGenerator,
+        Root,
+    },
+    value::{
+        label::Label,
+        string::StringBytes,
+        value_type::{ValueType, ValueTypeID},
+    },
+    AsBytes, Keyable,
+};
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{snapshot::snapshot::Snapshot, MVCCStorage};

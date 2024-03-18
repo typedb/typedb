@@ -16,8 +16,8 @@
  */
 
 use std::{error::Error, fmt};
-use encoding::value::value_type::ValueType;
 
+use encoding::value::value_type::ValueType;
 use storage::snapshot::error::SnapshotError;
 
 #[derive(Debug)]
@@ -28,7 +28,7 @@ pub struct ConceptError {
 #[derive(Debug)]
 pub enum ConceptErrorKind {
     SnapshotError { source: SnapshotError },
-    AttributeValueTypeMismatch { attribute_type_value_type: Option<ValueType>, provided_value_type: ValueType }
+    AttributeValueTypeMismatch { attribute_type_value_type: Option<ValueType>, provided_value_type: ValueType },
 }
 
 impl fmt::Display for ConceptError {

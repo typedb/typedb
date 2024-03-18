@@ -17,16 +17,16 @@
 
 use std::rc::Rc;
 
-use concept::thing::thing_manager::ThingManager;
-use concept::type_::type_manager::TypeManager;
-use concept::thing::{AttributeAPI};
-use concept::thing::value::Value;
-use encoding::create_keyspaces;
-use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
-use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
-use encoding::value::label::Label;
-use storage::MVCCStorage;
-use storage::snapshot::snapshot::Snapshot;
+use concept::{
+    thing::{thing_manager::ThingManager, value::Value, AttributeAPI},
+    type_::type_manager::TypeManager,
+};
+use encoding::{
+    create_keyspaces,
+    graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
+    value::label::Label,
+};
+use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
 #[test]
@@ -93,7 +93,6 @@ fn attribute_create() {
         let age_value: i64 = 10;
         let age_1 = thing_manager.create_attribute(&age_type, Value::Long(age_value)).unwrap();
         assert_eq!(age_1.value(&thing_manager), Value::Long(age_value));
-
     }
     if let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();

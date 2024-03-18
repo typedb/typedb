@@ -15,14 +15,20 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-struct PrefixRange<T> where T: Ord {
+struct PrefixRange<T>
+where
+    T: Ord,
+{
     // inclusive
     start: T,
     // exclusive or unbounded
     end: Option<T>,
 }
 
-impl<T> PrefixRange<T> where T: Ord {
+impl<T> PrefixRange<T>
+where
+    T: Ord,
+{
     pub fn new_unbounded(start: T) -> Self {
         Self { start, end: None }
     }

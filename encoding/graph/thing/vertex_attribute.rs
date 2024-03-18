@@ -19,14 +19,14 @@ use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKey;
-use storage::keyspace::keyspace::KeyspaceId;
+use storage::{key_value::StorageKey, keyspace::keyspace::KeyspaceId};
 
-use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
-use crate::graph::type_::vertex::TypeID;
-use crate::graph::Typed;
-use crate::layout::prefix::{PrefixID, PrefixType};
-use crate::value::value_type::ValueType;
+use crate::{
+    graph::{type_::vertex::TypeID, Typed},
+    layout::prefix::{PrefixID, PrefixType},
+    value::value_type::ValueType,
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AttributeVertex<'a> {
@@ -49,7 +49,11 @@ impl<'a> AttributeVertex<'a> {
         Self { bytes: ByteArrayOrRef::Array(bytes) }
     }
 
-    pub(crate) fn build_prefix(prefix: PrefixType, type_id: TypeID, attribute_id_part: &[u8]) -> StorageKey<'static, BUFFER_KEY_INLINE> {
+    pub(crate) fn build_prefix(
+        prefix: PrefixType,
+        type_id: TypeID,
+        attribute_id_part: &[u8],
+    ) -> StorageKey<'static, BUFFER_KEY_INLINE> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE + attribute_id_part.len());
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
@@ -66,9 +70,7 @@ impl<'a> AttributeVertex<'a> {
     }
 
     pub fn attribute_id(&self) -> AttributeID {
-        AttributeID::new(
-            &self.bytes.bytes()[self.range_of_attribute_id()],
-        )
+        AttributeID::new(&self.bytes.bytes()[self.range_of_attribute_id()])
     }
 
     fn range_of_attribute_id(&self) -> Range<usize> {
@@ -123,7 +125,7 @@ impl AttributeID {
         match bytes.len() {
             8 => Self::Bytes_8(AttributeID_8::new(bytes.try_into().unwrap())),
             16 => Self::Bytes_16(AttributeID_16::new(bytes.try_into().unwrap())),
-            _ => panic!("Unknown Attribute ID encoding length: {}", bytes.len())
+            _ => panic!("Unknown Attribute ID encoding length: {}", bytes.len()),
         }
     }
 

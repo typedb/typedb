@@ -18,18 +18,16 @@
 #![deny(unused_must_use)]
 #![deny(rust_2018_idioms)]
 
-use durability::DurabilityService;
-use itertools::Itertools;
+use std::str;
 
-mod common;
-
-use self::common::{open_wal, TestRecord};
+use durability::{DurabilityRecord, DurabilityService, RawRecord};
+use durability_test_common::{open_wal, TestRecord};
 
 fn main() {
     let wal = open_wal(std::env::args().nth(1).unwrap());
-    let message = std::env::args().nth(2).unwrap().bytes().collect_vec();
-    for i in 0.. {
-        let record = TestRecord { bytes: message.iter().copied().chain(format!(" {i}").bytes()).collect_vec() };
-        wal.sequenced_write(&record).unwrap();
+    for RawRecord { sequence_number, record_type, bytes } in wal.recover().unwrap().map(|r| r.unwrap()) {
+        assert_eq!(record_type, TestRecord::RECORD_TYPE);
+        let number = sequence_number.number().number();
+        println!(r#"{} "{}""#, number, str::from_utf8(&bytes).unwrap());
     }
 }

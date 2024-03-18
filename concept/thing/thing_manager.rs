@@ -16,29 +16,36 @@
  */
 
 use std::rc::Rc;
-use bytes::byte_array_or_ref::ByteArrayOrRef;
-use encoding::graph::thing::vertex_attribute::AttributeVertex;
 
-use encoding::graph::thing::vertex_generator::{StringAttributeID, ThingVertexGenerator};
-use encoding::graph::thing::vertex_object::ObjectVertex;
-use encoding::graph::Typed;
-use encoding::Keyable;
-use encoding::layout::prefix::PrefixType;
-use encoding::value::long::Long;
-use encoding::value::string::StringBytes;
-use encoding::value::value_type::ValueType;
+use bytes::byte_array_or_ref::ByteArrayOrRef;
+use encoding::{
+    graph::{
+        thing::{
+            vertex_attribute::AttributeVertex,
+            vertex_generator::{StringAttributeID, ThingVertexGenerator},
+            vertex_object::ObjectVertex,
+        },
+        Typed,
+    },
+    layout::prefix::PrefixType,
+    value::{long::Long, string::StringBytes, value_type::ValueType},
+    Keyable,
+};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::snapshot::Snapshot;
 
-use crate::error::{ConceptError, ConceptErrorKind};
-use crate::thing::attribute::{Attribute, AttributeIterator};
-use crate::thing::AttributeAPI;
-use crate::thing::entity::{Entity, EntityIterator};
-use crate::thing::value::Value;
-use crate::type_::{AttributeTypeAPI, TypeAPI};
-use crate::type_::attribute_type::AttributeType;
-use crate::type_::entity_type::EntityType;
-use crate::type_::type_manager::TypeManager;
+use crate::{
+    error::{ConceptError, ConceptErrorKind},
+    thing::{
+        attribute::{Attribute, AttributeIterator},
+        entity::{Entity, EntityIterator},
+        value::Value,
+        AttributeAPI,
+    },
+    type_::{
+        attribute_type::AttributeType, entity_type::EntityType, type_manager::TypeManager, AttributeTypeAPI, TypeAPI,
+    },
+};
 
 pub struct ThingManager<'txn, 'storage: 'txn> {
     snapshot: Rc<Snapshot<'storage>>,
@@ -47,13 +54,19 @@ pub struct ThingManager<'txn, 'storage: 'txn> {
 }
 
 impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
-    pub fn new(snapshot: Rc<Snapshot<'storage>>, vertex_generator: &'txn ThingVertexGenerator, type_manager: Rc<TypeManager<'txn, 'storage>>) -> Self {
+    pub fn new(
+        snapshot: Rc<Snapshot<'storage>>,
+        vertex_generator: &'txn ThingVertexGenerator,
+        type_manager: Rc<TypeManager<'txn, 'storage>>,
+    ) -> Self {
         ThingManager { snapshot, vertex_generator, type_manager }
     }
 
     pub fn create_entity(&self, entity_type: &EntityType) -> Entity {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            return Entity::new(self.vertex_generator.create_entity(Typed::type_id(entity_type.vertex()), write_snapshot));
+            return Entity::new(
+                self.vertex_generator.create_entity(Typed::type_id(entity_type.vertex()), write_snapshot),
+            );
         } else {
             panic!("Illegal state: create entity requires write snapshot")
         }
@@ -69,19 +82,32 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
                     }
                     Value::Long(long) => {
                         let encoded_long = Long::build(long);
-                        self.vertex_generator.create_attribute_long(Typed::type_id(attribute_type.vertex()), encoded_long, write_snapshot)
+                        self.vertex_generator.create_attribute_long(
+                            Typed::type_id(attribute_type.vertex()),
+                            encoded_long,
+                            write_snapshot,
+                        )
                     }
                     Value::Double(double) => {
                         todo!()
                     }
                     Value::String(string) => {
                         let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);
-                        self.vertex_generator.create_attribute_string(Typed::type_id(attribute_type.vertex()), encoded_string, write_snapshot)
+                        self.vertex_generator.create_attribute_string(
+                            Typed::type_id(attribute_type.vertex()),
+                            encoded_string,
+                            write_snapshot,
+                        )
                     }
                 };
                 Ok(Attribute::new(vertex))
             } else {
-                Err(ConceptError { kind: ConceptErrorKind::AttributeValueTypeMismatch { attribute_type_value_type: value_type, provided_value_type: value.value_type() } })
+                Err(ConceptError {
+                    kind: ConceptErrorKind::AttributeValueTypeMismatch {
+                        attribute_type_value_type: value_type,
+                        provided_value_type: value.value_type(),
+                    },
+                })
             }
         } else {
             panic!("Illegal state: create entity requires write snapshot")
@@ -115,14 +141,18 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
             ValueType::String => {
                 let attribute_id = StringAttributeID::new(attribute.vertex().attribute_id().unwrap_bytes_16());
                 if attribute_id.is_inline() {
-                    Value::String(Box::new(String::from(attribute_id.get_inline_string_bytes().decode())))
+                    Value::String(String::from(attribute_id.get_inline_string_bytes().decode()).into_boxed_str())
                 } else {
-                    self.snapshot.get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
-                        Value::String(Box::new(String::from(StringBytes::new(ByteArrayOrRef::<1>::Reference(bytes)).decode())))
-                    }).unwrap()
+                    self.snapshot
+                        .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
+                            Value::String(
+                                String::from(StringBytes::new(ByteArrayOrRef::<1>::Reference(bytes)).decode())
+                                    .into_boxed_str(),
+                            )
+                        })
+                        .unwrap()
                 }
             }
         }
     }
 }
-

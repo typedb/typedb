@@ -15,7 +15,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 #[derive(Debug, Copy, Clone)]
 pub struct Long {
     bytes: [u8; Long::LENGTH],
@@ -29,7 +28,7 @@ impl Long {
     }
 
     pub fn build(long: i64) -> Self {
-        Self { bytes: (long ^ i64::MIN) .to_be_bytes() }
+        Self { bytes: (long ^ i64::MIN).to_be_bytes() }
     }
 
     pub fn as_i64(&self) -> i64 {

@@ -16,49 +16,22 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 package(default_visibility = ["//visibility:public",])
 
-rust_test(
-    name = "test_type_vertex",
-    srcs = glob([
-        "test_type_vertex.rs",
-    ]),
+
+rust_library(
+    name = "durability_test_common",
+    crate_root = "test_common.rs",
+    srcs = ["test_common.rs"],
     deps = [
-        "//common/bytes",
-        "//common/logger",
-        "//encoding",
-        "//storage",
-        "//util/test:test_utils",
-
-        "@crates//:rand",
-        "@crates//:tracing",
-    ]
+        "//storage/durability:durability",
+        "@crates//:bincode",
+    ],
 )
-
-rust_test(
-    name = "test_attribute_vertex",
-    srcs = glob([
-        "test_attribute_vertex.rs",
-    ]),
-    deps = [
-        "//common/bytes",
-        "//common/logger",
-        "//encoding",
-        "//storage",
-        "//resource",
-        "//util/test:test_utils",
-
-        "@crates//:rand",
-        "@crates//:tracing",
-        "@crates//:seahash",
-    ]
-)
-
-
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*", "*/*/*"]),
+    include = glob(["*"]),
     license_type = "agpl-header",
 )

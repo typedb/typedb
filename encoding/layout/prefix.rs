@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use bytes::{increment_fixed};
+use bytes::increment_fixed;
 use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::EncodingKeyspace;

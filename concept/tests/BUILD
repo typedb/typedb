@@ -27,6 +27,7 @@ rust_test(
     deps = [
         "//common/bytes",
         "//common/logger",
+        "//common/primitive",
         "//concept",
         "//encoding",
         "//storage",
@@ -45,6 +46,7 @@ rust_test(
     deps = [
         "//common/bytes",
         "//common/logger",
+        "//common/primitive",
         "//concept",
         "//encoding",
         "//storage",

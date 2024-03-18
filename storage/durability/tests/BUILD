@@ -22,32 +22,12 @@ package(default_visibility = ["//visibility:public",])
 rust_test(
     name = "basic",
     crate_root = "basic.rs",
-    srcs = glob(["common/*.rs"]) + ["basic.rs"],
+    srcs =  ["basic.rs"],
     deps = [
         "//storage/durability:durability",
+        "//storage/durability/tests/common:durability_test_common",
         "@crates//:bincode",
         "@crates//:tempdir",
-    ],
-)
-
-rust_binary(
-    name = "streamer",
-    crate_root = "streamer.rs",
-    srcs = glob(["common/*.rs"]) + ["streamer.rs"],
-    deps = [
-        "//storage/durability:durability",
-        "@crates//:bincode",
-        "@crates//:itertools",
-    ],
-)
-
-rust_binary(
-    name = "recoverer",
-    crate_root = "recoverer.rs",
-    srcs = glob(["common/*.rs"]) + ["recoverer.rs"],
-    deps = [
-        "//storage/durability:durability",
-        "@crates//:bincode",
     ],
 )
 
@@ -56,11 +36,17 @@ rust_test(
     crate_root = "crash.rs",
     srcs = ["crash.rs"],
     env = {
-        "TEST_WAL_STREAMER": "$(rootpath :streamer)",
-        "TEST_WAL_RECOVERER": "$(rootpath :recoverer)",
+        "TEST_WAL_STREAMER": "$(rootpath //storage/durability/tests/crash/streamer:streamer)",
+        "TEST_WAL_RECOVERER": "$(rootpath //storage/durability/tests/crash/recoverer:recoverer)",
     },
-    data = [":streamer", ":recoverer"],
-    deps = ["@crates//:tempdir"],
+    data = [
+        "//storage/durability/tests/crash/streamer:streamer",
+        "//storage/durability/tests/crash/recoverer:recoverer"
+    ],
+    deps = [
+        "//storage/durability/tests/common:durability_test_common",
+        "@crates//:tempdir"
+    ],
 )
 
 checkstyle_test(

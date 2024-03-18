@@ -30,8 +30,8 @@ use crate::{
     concept_iterator,
     error::{ConceptError, ConceptErrorKind},
     type_::{
-        annotation::AnnotationAbstract, attribute_type::AttributeType,
-        object_type::ObjectType, owns::Owns, type_manager::TypeManager, OwnerAPI, RelationTypeAPI, TypeAPI,
+        annotation::AnnotationAbstract, attribute_type::AttributeType, object_type::ObjectType, owns::Owns,
+        type_manager::TypeManager, OwnerAPI, RelationTypeAPI, TypeAPI,
     },
     ConceptAPI,
 };

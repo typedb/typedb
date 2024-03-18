@@ -15,8 +15,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
-
 // A tiny struct will always be more efficient owning its own data and being Copy
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub(crate) struct InfixID {

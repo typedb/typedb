@@ -17,22 +17,15 @@
 
 use std::{ops::Deref, rc::Rc, sync::Arc};
 
-use std::ops::Deref;
-use std::rc::Rc;
-use std::sync::Arc;
-
-use concept::type_::annotation::AnnotationAbstract;
-use concept::type_::entity_type::EntityTypeAnnotation;
-use concept::type_::{AttributeTypeAPI, EntityTypeAPI, OwnerAPI};
-use concept::type_::owns::Owns;
-use concept::type_::object_type::ObjectType;
-use concept::type_::type_cache::TypeCache;
-use concept::type_::type_manager::TypeManager;
-use encoding::create_keyspaces;
-use encoding::graph::type_::Root;
-use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
-use encoding::value::label::Label;
-use encoding::value::value_type::ValueType;
+use concept::type_::{
+    annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, owns::Owns,
+    type_cache::TypeCache, type_manager::TypeManager, AttributeTypeAPI, EntityTypeAPI, OwnerAPI,
+};
+use encoding::{
+    create_keyspaces,
+    graph::type_::{vertex_generator::TypeVertexGenerator, Root},
+    value::{label::Label, value_type::ValueType},
+};
 use primitive::maybe_owns::MaybeOwns;
 use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
