@@ -35,13 +35,13 @@ use crate::{
 };
 
 pub mod annotation;
-pub mod annotation;
 pub mod attribute_type;
 pub mod entity_type;
 pub mod object_type;
 pub mod owns;
 mod plays;
 mod relates;
+pub mod relation_type;
 pub mod type_cache;
 pub mod type_manager;
 
@@ -81,10 +81,7 @@ pub trait EntityTypeAPI<'a>: TypeAPI<'a> {
 
     // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<EntityType<'static>>>;
 
-    fn get_annotations<'m>(
-        &self,
-        type_manager: &'m TypeManager,
-    ) -> MaybeOwns<'m, HashSet<EntityTypeAnnotation>> {
+    fn get_annotations<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<EntityTypeAnnotation>> {
         type_manager.get_entity_type_annotations(self.clone().into_owned())
     }
 
@@ -132,10 +129,7 @@ pub trait RelationTypeAPI<'a>: TypeAPI<'a> {
 
     // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<RelationType<'static>>>;
 
-    fn get_annotations<'m>(
-        &self,
-        type_manager: &'m TypeManager,
-    ) -> MaybeOwns<'m, HashSet<RelationTypeAnnotation>> {
+    fn get_annotations<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<RelationTypeAnnotation>> {
         type_manager.get_relation_type_annotations(self.clone().into_owned())
     }
 
@@ -190,10 +184,7 @@ pub trait AttributeTypeAPI<'a>: TypeAPI<'a> {
 
     // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<AttributeType<'static>>>;
 
-    fn get_annotations<'m>(
-        &self,
-        type_manager: &'m TypeManager,
-    ) -> MaybeOwns<'m, HashSet<AttributeTypeAnnotation>> {
+    fn get_annotations<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<AttributeTypeAnnotation>> {
         type_manager.get_attribute_type_annotations(self.clone().into_owned())
     }
 
@@ -217,11 +208,7 @@ pub trait AttributeTypeAPI<'a>: TypeAPI<'a> {
 }
 
 pub trait OwnerAPI<'a>: TypeAPI<'a> {
-    fn set_owns(
-        &self,
-        type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Owns<'static> {
+    fn set_owns(&self, type_manager: &TypeManager, attribute_type: AttributeType<'static>) -> Owns<'static> {
         type_manager.set_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex());
         self.get_owns_attribute(type_manager, attribute_type).unwrap()
     }

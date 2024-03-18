@@ -23,7 +23,6 @@ use storage::{error::MVCCStorageError, key_value::StorageKey, keyspace::keyspace
 use crate::layout::prefix::{PrefixID, PrefixType};
 
 mod error;
-mod error;
 pub mod graph;
 pub mod layout;
 pub mod property;
