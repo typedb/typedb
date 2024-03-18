@@ -48,8 +48,8 @@ macro_rules! type_vertex_constructors {
         // TODO: is it better to have a const fn that is a reference to owned memory, or
         //       to always induce a tiny copy have a non-const function?
         pub const fn $build_name_prefix() -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
-            const bytes: [u8; TypeVertex::LENGTH_PREFIX] = PrefixType::$prefix.prefix_id().bytes();
-            StorageKey::new_ref(TypeVertex::keyspace_id(), ByteReference::new(&bytes))
+            const BYTES: [u8; TypeVertex::LENGTH_PREFIX] = PrefixType::$prefix.prefix_id().bytes();
+            StorageKey::new_ref(TypeVertex::keyspace_id(), ByteReference::new(&BYTES))
         }
 
         pub fn $is_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> bool {

@@ -97,8 +97,8 @@ impl<'a> TypeVertexProperty<'a> {
     // TODO: is it better to have a const fn that is a reference to owned memory, or
     //       to always induce a tiny copy have a non-const function?
     pub const fn build_prefix() -> StorageKey<'static, { TypeVertexProperty::LENGTH_PREFIX }> {
-        const prefix_bytes: [u8; PrefixID::LENGTH] = PrefixType::PropertyType.prefix_id().bytes();
-        StorageKey::new_ref(Self::keyspace_id(), ByteReference::new(&prefix_bytes))
+        const PREFIX_BYTES: [u8; PrefixID::LENGTH] = PrefixType::PropertyType.prefix_id().bytes();
+        StorageKey::new_ref(Self::keyspace_id(), ByteReference::new(&PREFIX_BYTES))
     }
 
     pub fn type_vertex(&'a self) -> TypeVertex<'a> {
