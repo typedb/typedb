@@ -44,6 +44,7 @@ checkstyle_test(
         ".circleci/windows/*",
         "docs/*",
         "tools/**",
+        "Cargo.*",
     ]) + [
         ".bazelversion",
         ".bazel-remote-cache.rc",

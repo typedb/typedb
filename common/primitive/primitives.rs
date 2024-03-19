@@ -16,5 +16,5 @@
  */
 
 pub mod maybe_owns;
-mod prefix_range;
+pub mod prefix_range;
 pub mod u80;

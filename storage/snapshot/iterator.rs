@@ -33,21 +33,21 @@ use crate::{
         error::{SnapshotError, SnapshotErrorKind},
         write::Write,
     },
-    MVCCPrefixIterator,
+    MVCCRangeIterator,
 };
 
-pub struct SnapshotPrefixIterator<'a, const PS: usize> {
-    storage_iterator: MVCCPrefixIterator<'a, PS>,
+pub struct SnapshotRangeIterator<'a, const PS: usize> {
+    storage_iterator: MVCCRangeIterator<'a, PS>,
     buffered_iterator: Option<BufferedPrefixIterator>,
     iterator_state: IteratorState,
 }
 
-impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
+impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
     pub(crate) fn new(
-        mvcc_iterator: MVCCPrefixIterator<'a, PS>,
+        mvcc_iterator: MVCCRangeIterator<'a, PS>,
         buffered_iterator: Option<BufferedPrefixIterator>,
     ) -> Self {
-        SnapshotPrefixIterator {
+        SnapshotRangeIterator {
             storage_iterator: mvcc_iterator,
             buffered_iterator,
             iterator_state: IteratorState::new(),
@@ -198,7 +198,7 @@ impl<'a, const PS: usize> SnapshotPrefixIterator<'a, PS> {
     }
 
     fn storage_peek<'this>(
-        storage_iterator: &'this mut MVCCPrefixIterator<'_, PS>,
+        storage_iterator: &'this mut MVCCRangeIterator<'_, PS>,
     ) -> Option<Result<(StorageKeyReference<'this>, ByteReference<'this>), SnapshotError>> {
         let storage_peek = storage_iterator.peek();
         match storage_peek {

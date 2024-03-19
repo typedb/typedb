@@ -19,6 +19,9 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
 };
+use std::borrow::Borrow;
+use std::cmp::Ordering;
+use primitive::prefix_range::Prefix;
 
 use crate::{byte_array::ByteArray, byte_reference::ByteReference};
 
@@ -115,8 +118,32 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> PartialEq for ByteArrayOrRef<'bytes
 
 impl<'bytes, const ARRAY_INLINE_SIZE: usize> Eq for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {}
 
+impl<'bytes, const ARRAY_INLINE_SIZE: usize> PartialOrd for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<'bytes, const ARRAY_INLINE_SIZE: usize> Ord for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.bytes().cmp(other.bytes())
+    }
+}
+
 impl<'bytes, const ARRAY_INLINE_SIZE: usize> Hash for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bytes().hash(state)
+    }
+}
+
+impl<'bytes, const ARRAY_INLINE_SIZE: usize> Borrow<[u8]> for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
+    fn borrow(&self) -> &[u8] {
+        self.bytes()
+    }
+}
+
+impl<'bytes, const ARRAY_INLINE_SIZE: usize> Prefix for ByteArrayOrRef<'bytes, ARRAY_INLINE_SIZE> {
+    fn starts_with(&self, other: &Self) -> bool {
+        self.bytes().starts_with(other.bytes())
     }
 }

@@ -69,7 +69,7 @@ impl WAL {
         let next = RecordIterator::new(files.read().unwrap())?
             .last()
             .map(|rr| rr.unwrap().sequence_number.number().number() as u64 + 1)
-            .unwrap_or(0);
+            .unwrap_or(1);
 
         Ok(Self {
             registered_types: HashMap::new(),

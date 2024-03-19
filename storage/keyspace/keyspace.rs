@@ -21,6 +21,8 @@ use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
 use iterator::State;
 use logger::result::ResultExt;
 use speedb::{DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
+use bytes::byte_reference::ByteReference;
+use primitive::prefix_range::PrefixRange;
 
 pub type KeyspaceId = u8;
 
@@ -112,11 +114,11 @@ impl Keyspace {
     }
 
     // TODO: we should benchmark using iterator pools, which would require changing prefix/range on read options
-    pub(crate) fn iterate_prefix<'s, const PREFIX_INLINE_SIZE: usize>(
+    pub(crate) fn iterate_range<'s, const PREFIX_INLINE_SIZE: usize>(
         &'s self,
-        prefix: ByteArrayOrRef<'s, PREFIX_INLINE_SIZE>,
-    ) -> KeyspacePrefixIterator<'s, PREFIX_INLINE_SIZE> {
-        KeyspacePrefixIterator::new(self, prefix)
+        range: PrefixRange<ByteArrayOrRef<'s, { PREFIX_INLINE_SIZE }>>,
+    ) -> KeyspaceRangeIterator<'s, PREFIX_INLINE_SIZE> {
+        KeyspaceRangeIterator::new(self, range)
     }
 
     pub(crate) fn write(&self, write_batch: WriteBatch) -> Result<(), KeyspaceError> {
@@ -155,26 +157,26 @@ impl fmt::Debug for Keyspace {
     }
 }
 
-pub struct KeyspacePrefixIterator<'a, const PS: usize> {
-    prefix: ByteArrayOrRef<'a, PS>,
+pub struct KeyspaceRangeIterator<'a, const INLINE_BYTES: usize> {
+    range: PrefixRange<ByteArrayOrRef<'a, { INLINE_BYTES }>>,
     iterator: DBRawIterator<'a>,
     state: State<speedb::Error>,
 }
 
-impl<'a, const PS: usize> KeyspacePrefixIterator<'a, PS> {
-    fn new(keyspace: &'a Keyspace, prefix: ByteArrayOrRef<'a, PS>) -> Self {
+impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
+    fn new(keyspace: &'a Keyspace, range: PrefixRange<ByteArrayOrRef<'a, { INLINE_BYTES }>>) -> Self {
         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
         // read_opts.set_prefix_same_as_start(true);
         let read_opts = keyspace.new_read_options();
         let raw_iterator: DBRawIteratorWithThreadMode<'a, DB> = keyspace.kv_storage.raw_iterator_opt(read_opts);
 
-        KeyspacePrefixIterator { prefix, iterator: raw_iterator, state: State::Init }
+        KeyspaceRangeIterator { range, iterator: raw_iterator, state: State::Init }
     }
 
     pub(crate) fn peek(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
         match &self.state {
             State::Init => {
-                self.iterator.seek(self.prefix.bytes());
+                self.iterator.seek(self.range.start().bytes());
                 self.update_state();
                 self.peek()
             }
@@ -197,7 +199,7 @@ impl<'a, const PS: usize> KeyspacePrefixIterator<'a, PS> {
     pub(crate) fn next(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
         match &self.state {
             State::Init => {
-                self.iterator.seek(self.prefix.bytes());
+                self.iterator.seek(self.range.start().bytes());
                 self.update_state();
                 self.next()
             }
@@ -222,7 +224,7 @@ impl<'a, const PS: usize> KeyspacePrefixIterator<'a, PS> {
         match &self.state {
             State::Done | State::Error(_) => {}
             State::Init => {
-                if self.has_valid_prefix(key) {
+                if self.is_in_range(key) {
                     self.iterator.seek(key);
                     self.update_state();
                 } else {
@@ -230,7 +232,7 @@ impl<'a, const PS: usize> KeyspacePrefixIterator<'a, PS> {
                 }
             }
             State::ItemReady => {
-                let valid_prefix = self.has_valid_prefix(key);
+                let valid_prefix = self.is_in_range(key);
                 if valid_prefix {
                     match self.peek().unwrap().unwrap().0.cmp(key) {
                         Ordering::Less => {
@@ -259,7 +261,7 @@ impl<'a, const PS: usize> KeyspacePrefixIterator<'a, PS> {
 
     fn update_state(&mut self) {
         if self.iterator.valid() {
-            if self.has_valid_prefix(self.iterator.key().unwrap()) {
+            if self.is_in_range(self.iterator.key().unwrap()) {
                 self.state = State::ItemReady;
             } else {
                 self.state = State::Done;
@@ -271,8 +273,8 @@ impl<'a, const PS: usize> KeyspacePrefixIterator<'a, PS> {
         }
     }
 
-    fn has_valid_prefix(&self, key: &[u8]) -> bool {
-        return key.len() >= self.prefix.length() && &key[0..self.prefix.length()] == self.prefix.bytes();
+    fn is_in_range(&self, key: &[u8]) -> bool {
+        self.range.contains(ByteArrayOrRef::Reference(ByteReference::new(key)))
     }
 
     pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(

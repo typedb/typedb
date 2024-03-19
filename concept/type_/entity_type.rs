@@ -24,7 +24,7 @@ use encoding::{
     Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
-use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotPrefixIterator};
+use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotRangeIterator};
 
 use crate::{
     concept_iterator,

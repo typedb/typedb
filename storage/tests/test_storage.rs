@@ -18,6 +18,7 @@
 use std::rc::Rc;
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
+use primitive::prefix_range::PrefixRange;
 use storage::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
@@ -123,7 +124,7 @@ fn get_put_iterate() {
 
     let prefix = StorageKeyArray::<64>::from((vec![0x1], keyspace_1_id));
     let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage
-        .iterate_keyspace_prefix(StorageKey::<64>::Reference(StorageKeyReference::from(&prefix)))
+        .iterate_keyspace_range(PrefixRange::new_within(StorageKey::<64>::Reference(StorageKeyReference::from(&prefix))))
         .collect_cloned::<64, 128>();
     assert_eq!(
         items,

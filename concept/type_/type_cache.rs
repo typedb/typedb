@@ -44,6 +44,7 @@ use encoding::{
     },
     Keyable, Prefixed,
 };
+use primitive::prefix_range::PrefixRange;
 use resource::constants::{
     encoding::LABEL_SCOPED_NAME_STRING_INLINE,
     snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
@@ -129,12 +130,12 @@ impl TypeCache {
         let snapshot = storage.open_snapshot_read_at(open_sequence_number);
 
         let type_vertex_properties = snapshot
-            .iterate_prefix(TypeVertexProperty::build_prefix())
+            .iterate_range(PrefixRange::new_within(TypeVertexProperty::build_prefix()))
             .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
             .unwrap();
 
         let entity_types_data = snapshot
-            .iterate_prefix(build_vertex_entity_type_prefix())
+            .iterate_range(PrefixRange::new_within(build_vertex_entity_type_prefix()))
             .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
             .unwrap();
         let max_entity_id = entity_types_data
@@ -159,7 +160,7 @@ impl TypeCache {
             .collect();
 
         let relation_types_data = snapshot
-            .iterate_prefix(build_vertex_relation_type_prefix())
+            .iterate_range(PrefixRange::new_within(build_vertex_relation_type_prefix()))
             .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
             .unwrap();
         let max_relation_id = relation_types_data
@@ -185,7 +186,7 @@ impl TypeCache {
             .collect();
 
         let attribute_types_data = snapshot
-            .iterate_prefix(build_vertex_attribute_type_prefix())
+            .iterate_range(PrefixRange::new_within(build_vertex_attribute_type_prefix()))
             .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
             .unwrap();
         let max_attribute_id = attribute_types_data

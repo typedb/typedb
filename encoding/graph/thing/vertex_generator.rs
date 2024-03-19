@@ -21,7 +21,8 @@ use std::{
 };
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
-use storage::snapshot::snapshot::{Snapshot, WriteSnapshot};
+use primitive::prefix_range::PrefixRange;
+use storage::snapshot::snapshot::{WriteSnapshot};
 
 use crate::{
     graph::{
@@ -217,9 +218,9 @@ impl StringAttributeID {
 
         // find first unused tail value
         bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = Self::ENCODING_STRING_TAIL_MASK;
-        let prefix_search = AttributeVertex::build_prefix(PrefixType::VertexAttributeString, type_id, &bytes);
+        let prefix_search = PrefixRange::new_within(AttributeVertex::build_prefix_type_attribute_id(PrefixType::VertexAttributeString, type_id, &bytes));
 
-        let mut iter = snapshot.iterate_prefix(prefix_search);
+        let mut iter = snapshot.iterate_range(prefix_search);
         let mut next = iter.next().transpose().unwrap(); // TODO: handle error
         let mut tail: u8 = 0;
         while let Some((key, value)) = next {

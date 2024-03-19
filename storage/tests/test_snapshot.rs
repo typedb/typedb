@@ -19,6 +19,7 @@ use std::rc::Rc;
 
 use bytes::byte_array::ByteArray;
 use logger::result::ResultExt;
+use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyArray},
@@ -40,10 +41,10 @@ fn snapshot_buffered_put_get() {
 
     let snapshot = storage.open_snapshot_write();
 
-    let key_1 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x0, 0x0, 0x1], keyspace_id));
-    let key_2 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x1, 0x0, 0x10], keyspace_id));
-    let key_3 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x1, 0x0, 0xff], keyspace_id));
-    let key_4 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x2, 0x0, 0xff], keyspace_id));
+    let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x0, 0x0, 0x1], keyspace_id));
+    let key_2 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1, 0x0, 0x10], keyspace_id));
+    let key_3 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1, 0x0, 0xff], keyspace_id));
+    let key_4 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x2, 0x0, 0xff], keyspace_id));
     let value_1 = ByteArray::copy(&[0, 0, 0, 0]);
     snapshot.put_val(key_1.clone(), value_1.clone());
     snapshot.put(key_2.clone());
@@ -53,7 +54,7 @@ fn snapshot_buffered_put_get() {
     assert_eq!(snapshot.get(StorageKey::Array(key_1).as_reference()), Some(value_1));
     assert_eq!(snapshot.get::<48>(StorageKey::Array(key_2).as_reference()), Some(ByteArray::empty()));
 
-    let key_5 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0xff, 0xff, 0xff], keyspace_id));
+    let key_5 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0xff, 0xff, 0xff], keyspace_id));
     assert_eq!(snapshot.get::<48>(StorageKey::Array(key_5).as_reference()), None);
     snapshot.close_resources();
 
@@ -71,20 +72,20 @@ fn snapshot_buffered_put_iterate() {
 
     let snapshot = storage.open_snapshot_write();
 
-    let key_1 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x0, 0x0, 0x1], keyspace_id));
-    let key_2 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x1, 0x0, 0x10], keyspace_id));
-    let key_3 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x1, 0x0, 0xff], keyspace_id));
-    let key_4 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x2, 0x0, 0xff], keyspace_id));
+    let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x0, 0x0, 0x1], keyspace_id));
+    let key_2 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1, 0x0, 0x10], keyspace_id));
+    let key_3 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1, 0x0, 0xff], keyspace_id));
+    let key_4 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x2, 0x0, 0xff], keyspace_id));
     snapshot.put(key_1);
     snapshot.put(key_2.clone());
     snapshot.put(key_3.clone());
     snapshot.put(key_4.clone());
 
-    let key_prefix = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x1], keyspace_id));
+    let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1], keyspace_id));
     let items: Result<
-        Vec<(StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>)>,
+        Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<{ BUFFER_VALUE_INLINE }>)>,
         SnapshotError,
-    > = snapshot.iterate_prefix(StorageKey::Array(key_prefix)).collect_cloned_vec();
+    > = snapshot.iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix))).collect_cloned_vec();
     assert_eq!(items.unwrap(), vec![(key_2, ByteArray::empty()), (key_3, ByteArray::empty()),]);
     snapshot.close_resources();
 
@@ -102,10 +103,10 @@ fn snapshot_buffered_delete() {
 
     let snapshot = storage.open_snapshot_write();
 
-    let key_1 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x0, 0x0, 0x1], keyspace_id));
-    let key_2 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x1, 0x0, 0x10], keyspace_id));
-    let key_3 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x1, 0x0, 0xff], keyspace_id));
-    let key_4 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x2, 0x0, 0xff], keyspace_id));
+    let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x0, 0x0, 0x1], keyspace_id));
+    let key_2 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1, 0x0, 0x10], keyspace_id));
+    let key_3 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1, 0x0, 0xff], keyspace_id));
+    let key_4 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x2, 0x0, 0xff], keyspace_id));
     snapshot.put(key_1);
     snapshot.put(key_2.clone());
     snapshot.put(key_3.clone());
@@ -115,9 +116,9 @@ fn snapshot_buffered_delete() {
 
     assert_eq!(snapshot.get::<48>(StorageKey::Array(key_3).as_reference()), None);
 
-    let key_prefix = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x1], keyspace_id));
-    let items: Vec<(StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>)> =
-        snapshot.iterate_prefix(StorageKey::Array(key_prefix)).collect_cloned_vec().unwrap();
+    let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1], keyspace_id));
+    let items: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<{ BUFFER_VALUE_INLINE }>)> =
+        snapshot.iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix))).collect_cloned_vec().unwrap();
     assert_eq!(items, vec![(key_2, ByteArray::empty()),]);
     snapshot.close_resources();
 
@@ -133,10 +134,10 @@ fn snapshot_read_through() {
     let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 
-    let key_1 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x0, 0x0, 0x1], keyspace_id));
-    let key_2 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x1, 0x0, 0x10], keyspace_id));
-    let key_3 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x1, 0x0, 0xff], keyspace_id));
-    let key_4 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x2, 0x0, 0xff], keyspace_id));
+    let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x0, 0x0, 0x1], keyspace_id));
+    let key_2 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1, 0x0, 0x10], keyspace_id));
+    let key_3 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1, 0x0, 0xff], keyspace_id));
+    let key_4 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x2, 0x0, 0xff], keyspace_id));
 
     let snapshot = storage.open_snapshot_write();
     snapshot.put(key_1.clone());
@@ -145,15 +146,15 @@ fn snapshot_read_through() {
     snapshot.put(key_4.clone());
     snapshot.commit().unwrap_or_log();
 
-    let key_5 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x1, 0x2, 0x0], keyspace_id));
+    let key_5 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1, 0x2, 0x0], keyspace_id));
 
     // test put - iterate read-through
     let snapshot = storage.open_snapshot_write();
     snapshot.put(key_5.clone());
 
-    let key_prefix = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x1], keyspace_id));
-    let key_values: Vec<(StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>)> =
-        snapshot.iterate_prefix(StorageKey::Array(key_prefix.clone())).collect_cloned_vec().unwrap();
+    let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1], keyspace_id));
+    let key_values: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<{ BUFFER_VALUE_INLINE }>)> =
+        snapshot.iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix.clone()))).collect_cloned_vec().unwrap();
     assert_eq!(
         key_values,
         vec![
@@ -165,8 +166,8 @@ fn snapshot_read_through() {
 
     // test delete-iterate read-through
     snapshot.delete(key_2.clone());
-    let key_values: Vec<(StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>)> =
-        snapshot.iterate_prefix(StorageKey::Array(key_prefix)).collect_cloned_vec().unwrap();
+    let key_values: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<{ BUFFER_VALUE_INLINE }>)> =
+        snapshot.iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix))).collect_cloned_vec().unwrap();
     assert_eq!(key_values, vec![(key_3, ByteArray::empty()), (key_5, ByteArray::empty()),]);
     snapshot.close_resources();
 
@@ -182,21 +183,21 @@ fn snapshot_delete_reinserted() {
     let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 
-    let key_1 = StorageKeyArray::<{ BUFFER_KEY_INLINE }>::from((vec![0x0, 0x0, 0x1], keyspace_id));
+    let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x0, 0x0, 0x1], keyspace_id));
     let value_0 = ByteArray::copy(&[0, 0, 0, 0]);
     let value_1 = ByteArray::copy(&[0, 0, 0, 1]);
 
     let snapshot_0 = storage.open_snapshot_write();
     snapshot_0.put_val(key_1.clone(), value_0);
-    snapshot_0.commit();
+    snapshot_0.commit().unwrap();
 
     let snapshot_1 = storage.open_snapshot_write();
     snapshot_1.put_val(key_1.clone(), value_1);
     snapshot_1.delete(key_1.clone());
-    snapshot_1.commit();
+    snapshot_1.commit().unwrap();
 
     let snapshot_2 = storage.open_snapshot_read();
-    assert_eq!(snapshot_2.get::<48>(StorageKey::Array(key_1).as_reference()), None);
+    assert_eq!(snapshot_2.get::<BUFFER_KEY_INLINE>(StorageKey::Array(key_1).as_reference()), None);
     snapshot_2.close_resources();
     delete_dir(storage_path);
 }

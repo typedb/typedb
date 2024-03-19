@@ -52,5 +52,8 @@ rust_library(
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
+    exclude = glob([
+        "Cargo.*",
+    ]),
     license_type = "agpl-header",
 )

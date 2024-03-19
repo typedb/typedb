@@ -31,6 +31,8 @@ use encoding::{
     value::{long::Long, string::StringBytes, value_type::ValueType},
     Keyable,
 };
+use encoding::layout::prefix::PrefixID;
+use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::snapshot::Snapshot;
 
@@ -116,14 +118,15 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
 
     pub fn get_entities(&self) -> EntityIterator<'_, 1> {
         let prefix = ObjectVertex::build_prefix_prefix(PrefixType::VertexEntity.prefix_id());
-        let snapshot_iterator = self.snapshot.iterate_prefix(prefix);
+        let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_within(prefix));
         EntityIterator::new(snapshot_iterator)
     }
 
-    pub fn get_attributes<'this>(&'this self) -> AttributeIterator<'this, 1> {
-        // let prefix = AttributeVertex::build_prefix_prefix(PrefixType::VertexAttributeBoolean.prefix_id());
-        // let snapshot_iterator = self.snapshot.iterate_prefix()
-        todo!()
+    pub fn get_attributes(&self) -> AttributeIterator<'_, 1> {
+        let start = AttributeVertex::build_prefix_prefix(PrefixID::VERTEX_ATTRIBUTE_MIN);
+        let end = AttributeVertex::build_prefix_prefix(PrefixID::VERTEX_ATTRIBUTE_MAX);
+        let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_inclusive(start, end));
+        AttributeIterator::new(snapshot_iterator)
     }
 
     pub(crate) fn get_attribute_value(&self, attribute: &Attribute) -> Value {

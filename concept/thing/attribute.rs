@@ -17,7 +17,7 @@
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::{graph::thing::vertex_attribute::AttributeVertex, value::value_type::ValueType};
-use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotPrefixIterator};
+use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotRangeIterator};
 
 use crate::{
     concept_iterator,

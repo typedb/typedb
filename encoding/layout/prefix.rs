@@ -27,6 +27,9 @@ pub struct PrefixID {
 }
 
 impl PrefixID {
+    pub const VERTEX_ATTRIBUTE_MIN: PrefixID = Self::new([50]);
+    pub const VERTEX_ATTRIBUTE_MAX: PrefixID = Self::new([100]);
+
     pub(crate) const LENGTH: usize = 1;
 
     pub(crate) const fn new(bytes: [u8; PrefixID::LENGTH]) -> Self {
@@ -124,7 +127,7 @@ impl PrefixType {
            VertexEntity => [40],
            VertexRelation => [41],
 
-           // We reserve the range 50 - 100 to store attribute instances with a value type
+           // We reserve the range 50 - 99 (inclusive) to store attribute instances with a value type - see PrefixID::<CONSTANTS>
            VertexAttributeBoolean => [50],
            VertexAttributeLong => [51],
            VertexAttributeDouble => [52],

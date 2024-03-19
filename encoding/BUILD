@@ -34,6 +34,7 @@ rust_library(
     deps = [
         "//common/logger",
         "//common/bytes",
+        "//common/primitive",
         "//resource",
         "//storage",
         "//storage/durability",
@@ -46,5 +47,8 @@ rust_library(
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*"]),
+    exclude = glob([
+        "Cargo.*",
+    ]),
     license_type = "agpl-header",
 )

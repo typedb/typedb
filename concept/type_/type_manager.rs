@@ -40,6 +40,7 @@ use encoding::{
     AsBytes, Keyable,
 };
 use primitive::maybe_owns::MaybeOwns;
+use primitive::prefix_range::PrefixRange;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
 
@@ -130,7 +131,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         } else {
             // TODO: handle possible errors
             self.snapshot
-                .iterate_prefix(build_edge_sub_prefix(entity_type.into_vertex().into_owned()))
+                .iterate_range(PrefixRange::new_within(build_edge_sub_prefix(entity_type.into_vertex().into_owned())))
                 .first_cloned()
                 .unwrap()
                 .map(|(key, _)| EntityType::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
@@ -146,7 +147,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         } else {
             // TODO: handle possible errors
             self.snapshot
-                .iterate_prefix(build_edge_sub_prefix(relation_type.into_vertex().clone()))
+                .iterate_range(PrefixRange::new_within(build_edge_sub_prefix(relation_type.into_vertex().clone())))
                 .first_cloned()
                 .unwrap()
                 .map(|(key, _)| RelationType::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
@@ -162,7 +163,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         } else {
             // TODO: handle possible errors
             self.snapshot
-                .iterate_prefix(build_edge_sub_prefix(attribute_type.into_vertex().clone()))
+                .iterate_range(PrefixRange::new_within(build_edge_sub_prefix(attribute_type.into_vertex().clone())))
                 .first_cloned()
                 .unwrap()
                 .map(|(key, _)| AttributeType::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
@@ -456,7 +457,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     fn get_storage_supertype(&self, subtype: TypeVertex<'static>) -> Option<TypeVertex<'static>> {
         // TODO: handle possible errors
         self.snapshot
-            .iterate_prefix(build_edge_sub_prefix(subtype.clone()))
+            .iterate_range(PrefixRange::new_within(build_edge_sub_prefix(subtype.clone())))
             .first_cloned()
             .unwrap()
             .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned())
@@ -495,7 +496,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         let owns_prefix = build_edge_owns_prefix(owner);
         // TODO: handle possible errors
         self.snapshot
-            .iterate_prefix(owns_prefix)
+            .iterate_range(PrefixRange::new_within(owns_prefix))
             .collect_cloned_key_hashset(|key| {
                 let owns_edge = new_edge_owns(ByteArrayOrRef::Reference(key.byte_ref()));
                 mapper(owns_edge.to())

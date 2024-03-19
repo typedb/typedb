@@ -18,25 +18,27 @@
 use std::{
     path::{Path, PathBuf},
     rc::Rc,
-    sync::{atomic::Ordering, Arc},
+    sync::{Arc, atomic::Ordering},
 };
 
+use speedb::{Options, WriteBatch};
+
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
-use durability::{wal::WAL, DurabilityService, SequenceNumber, Sequencer};
+use durability::{DurabilityService, SequenceNumber, Sequencer, wal::WAL};
 use iterator::State;
 use logger::{error, result::ResultExt};
+use primitive::prefix_range::PrefixRange;
 use primitive::u80::U80;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use snapshot::write::Write;
-use speedb::{Options, WriteBatch};
 
 use crate::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{CommitRecord, IsolationManager},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::keyspace::{
-        Keyspace, KeyspaceError, KeyspaceId, KeyspacePrefixIterator, KEYSPACE_ID_MAX, KEYSPACE_ID_RESERVED_UNSET,
-        KEYSPACE_MAXIMUM_COUNT,
+        Keyspace, KEYSPACE_ID_MAX, KEYSPACE_ID_RESERVED_UNSET, KEYSPACE_MAXIMUM_COUNT, KeyspaceError, KeyspaceId,
+        KeyspaceRangeIterator,
     },
     snapshot::{
         buffer::KeyspaceBuffers,
@@ -257,7 +259,7 @@ impl MVCCStorage {
                                     commit_sequence_number,
                                     StorageOperation::Insert,
                                 )
-                                .bytes(),
+                                    .bytes(),
                                 value.bytes(),
                             )
                         }
@@ -327,20 +329,23 @@ impl MVCCStorage {
         open_sequence_number: &SequenceNumber,
         mut mapper: M,
     ) -> Option<V>
-    where
-        M: FnMut(ByteReference<'_>) -> V,
+        where
+            M: FnMut(ByteReference<'_>) -> V,
     {
-        let mut iterator = self.iterate_prefix(StorageKey::<8>::Reference(key), open_sequence_number);
+        let mut iterator = self.iterate_range(
+            PrefixRange::new_inclusive(StorageKey::<8>::Reference(key.clone()), StorageKey::<8>::Reference(key)),
+            open_sequence_number
+        );
         // TODO: we don't want to panic on unwrap here
         iterator.next().transpose().unwrap_or_log().map(|(_, value)| mapper(value))
     }
 
-    pub fn iterate_prefix<'this, const PS: usize>(
+    pub fn iterate_range<'this, const PS: usize>(
         &'this self,
-        prefix: StorageKey<'this, PS>,
+        range: PrefixRange<StorageKey<'this, { PS }>>,
         open_sequence_number: &SequenceNumber,
-    ) -> MVCCPrefixIterator<'this, PS> {
-        MVCCPrefixIterator::new(self, prefix, open_sequence_number)
+    ) -> MVCCRangeIterator<'this, PS> {
+        MVCCRangeIterator::new(self, range, open_sequence_number)
     }
 
     // --- direct access to storage, bypassing MVCC and returning raw key/value pairs ---
@@ -360,8 +365,8 @@ impl MVCCStorage {
     }
 
     pub fn get_raw<M, V>(&self, key: StorageKeyReference<'_>, mut mapper: M) -> Option<V>
-    where
-        M: FnMut(&[u8]) -> V,
+        where
+            M: FnMut(&[u8]) -> V,
     {
         self.get_keyspace(key.keyspace_id())
             .get(key.bytes(), |value| mapper(value))
@@ -377,39 +382,39 @@ impl MVCCStorage {
     }
 
     pub fn get_prev_raw<M, T>(&self, key: StorageKeyReference<'_>, mut key_value_mapper: M) -> Option<T>
-    where
-        M: FnMut(&[u8], &[u8]) -> T,
+        where
+            M: FnMut(&[u8], &[u8]) -> T,
     {
         self.get_keyspace(key.keyspace_id()).get_prev(key.bytes(), |k, v| key_value_mapper(k, v))
     }
 
-    pub fn iterate_keyspace_prefix<'this, const PREFIX_INLINE: usize>(
+    pub fn iterate_keyspace_range<'this, const PREFIX_INLINE: usize>(
         &'this self,
-        prefix: StorageKey<'this, PREFIX_INLINE>,
-    ) -> KeyspacePrefixIterator<'this, PREFIX_INLINE> {
-        debug_assert!(!prefix.bytes().is_empty());
-        self.get_keyspace(prefix.keyspace_id()).iterate_prefix(prefix.into_byte_array_or_ref())
+        range: PrefixRange<StorageKey<'this, PREFIX_INLINE>>,
+    ) -> KeyspaceRangeIterator<'this, PREFIX_INLINE> {
+        debug_assert!(!range.start().bytes().is_empty());
+        self.get_keyspace(range.start().keyspace_id()).iterate_range(range.map(|k| k.into_byte_array_or_ref()))
     }
 }
 
-pub struct MVCCPrefixIterator<'a, const PS: usize> {
+pub struct MVCCRangeIterator<'a, const PS: usize> {
     storage: &'a MVCCStorage,
     keyspace: &'a Keyspace,
-    iterator: KeyspacePrefixIterator<'a, PS>,
+    iterator: KeyspaceRangeIterator<'a, PS>,
     open_sequence_number: SequenceNumber,
     last_visible_key: Option<ByteArray<MVCC_KEY_INLINE_SIZE>>,
     state: State<Arc<KeyspaceError>>,
 }
 
-impl<'s, const P: usize> MVCCPrefixIterator<'s, P> {
+impl<'s, const P: usize> MVCCRangeIterator<'s, P> {
     //
     // TODO: optimisation for fixed-width keyspaces: we can skip to key[len(key) - 1] = key[len(key) - 1] + 1 once we find a successful key, to skip all 'older' versions of the key
     //
-    fn new(storage: &'s MVCCStorage, prefix: StorageKey<'s, P>, open_sequence_number: &SequenceNumber) -> Self {
-        debug_assert!(!prefix.bytes().is_empty());
-        let keyspace = storage.get_keyspace(prefix.keyspace_id());
-        let iterator = keyspace.iterate_prefix(prefix.into_byte_array_or_ref());
-        MVCCPrefixIterator {
+    fn new(storage: &'s MVCCStorage, range: PrefixRange<StorageKey<'s, P>>, open_sequence_number: &SequenceNumber) -> Self {
+        debug_assert!(!range.start().bytes().is_empty());
+        let keyspace = storage.get_keyspace(range.start().keyspace_id());
+        let iterator = keyspace.iterate_range(range.map(|k| k.into_byte_array_or_ref()));
+        MVCCRangeIterator {
             storage,
             keyspace,
             iterator,
@@ -643,7 +648,6 @@ impl StorageOperation {
             _ => panic!("Unrecognised storage operation bytes."),
         }
     }
-
     const fn serialised_len() -> usize {
         StorageOperation::BYTES
     }

@@ -19,6 +19,7 @@ use std::{borrow::Borrow, cmp::Ordering};
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use serde::{Deserialize, Serialize};
+use primitive::prefix_range::Prefix;
 
 use crate::keyspace::keyspace::KeyspaceId;
 
@@ -100,6 +101,12 @@ impl<'bytes, const INLINE_SIZE: usize> PartialOrd<Self> for StorageKey<'bytes, I
 impl<'bytes, const INLINE_SIZE: usize> Ord for StorageKey<'bytes, INLINE_SIZE> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.bytes().cmp(other.bytes())
+    }
+}
+
+impl<'bytes, const INLINE_SIZE: usize> Prefix for StorageKey<'bytes, INLINE_SIZE> {
+    fn starts_with(&self, other: &Self) -> bool {
+        self.bytes().starts_with(other.bytes())
     }
 }
 

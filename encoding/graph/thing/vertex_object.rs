@@ -63,6 +63,7 @@ impl<'a> ObjectVertex<'a> {
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
         StorageKey::new(Self::keyspace_id(), ByteArrayOrRef::Array(array))
     }
+
     fn build_prefix_type(
         prefix: PrefixID,
         type_id: TypeID,

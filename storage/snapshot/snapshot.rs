@@ -17,18 +17,14 @@
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use durability::SequenceNumber;
+use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
-use crate::{
-    isolation_manager::CommitRecord,
-    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    snapshot::{
-        buffer::KeyspaceBuffers,
-        error::{SnapshotError, SnapshotErrorKind},
-        iterator::SnapshotPrefixIterator,
-    },
-    MVCCStorage,
-};
+use crate::{isolation_manager::CommitRecord, key_value::{StorageKey, StorageKeyArray, StorageKeyReference}, MVCCStorage, snapshot::{
+    buffer::KeyspaceBuffers,
+    error::{SnapshotError, SnapshotErrorKind},
+    iterator::SnapshotRangeIterator,
+}};
 
 #[derive(Debug)]
 pub enum Snapshot<'storage> {
@@ -51,13 +47,13 @@ impl<'storage> Snapshot<'storage> {
         }
     }
 
-    pub fn iterate_prefix<'this, const PS: usize>(
+    pub fn iterate_range<'this, const PS: usize>(
         &'this self,
-        prefix: StorageKey<'this, PS>,
-    ) -> SnapshotPrefixIterator<'this, PS> {
+        range: PrefixRange<StorageKey<'this, PS>>,
+    ) -> SnapshotRangeIterator<'this, PS> {
         match self {
-            Snapshot::Read(snapshot) => snapshot.iterate_prefix(prefix),
-            Snapshot::Write(snapshot) => snapshot.iterate_prefix(prefix),
+            Snapshot::Read(snapshot) => snapshot.iterate_range(range),
+            Snapshot::Write(snapshot) => snapshot.iterate_range(range),
         }
     }
 
@@ -97,12 +93,12 @@ impl<'storage> ReadSnapshot<'storage> {
         self.storage.get(key, &self.open_sequence_number, mapper)
     }
 
-    pub fn iterate_prefix<'this, const PS: usize>(
+    pub fn iterate_range<'this, const PS: usize>(
         &'this self,
-        prefix: StorageKey<'this, PS>,
-    ) -> SnapshotPrefixIterator<'this, PS> {
-        let mvcc_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
-        SnapshotPrefixIterator::new(mvcc_iterator, None)
+        range: PrefixRange<StorageKey<'this, { PS }>>,
+    ) -> SnapshotRangeIterator<'this, PS> {
+        let mvcc_iterator = self.storage.iterate_range(range, &self.open_sequence_number);
+        SnapshotRangeIterator::new(mvcc_iterator, None)
     }
 
     pub fn close_resources(self) {}
@@ -214,13 +210,13 @@ impl<'storage> WriteSnapshot<'storage> {
             .or_else(|| self.storage.get(key, &self.open_sequence_number, mapper))
     }
 
-    pub fn iterate_prefix<'this, const PS: usize>(
+    pub fn iterate_range<'this, const PS: usize>(
         &'this self,
-        prefix: StorageKey<'this, PS>,
-    ) -> SnapshotPrefixIterator<'this, PS> {
-        let buffered_iterator = self.buffers.get(prefix.keyspace_id()).iterate_prefix(prefix.bytes());
-        let storage_iterator = self.storage.iterate_prefix(prefix, &self.open_sequence_number);
-        SnapshotPrefixIterator::new(storage_iterator, Some(buffered_iterator))
+        range: PrefixRange<StorageKey<'this, PS>>,
+    ) -> SnapshotRangeIterator<'this, PS> {
+        let buffered_iterator = self.buffers.get(range.start().keyspace_id()).iterate_range(range.clone().map(|k| k.into_byte_array_or_ref()));
+        let storage_iterator = self.storage.iterate_range(range, &self.open_sequence_number);
+        SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
 
     pub fn commit(self) -> Result<(), SnapshotError> {
