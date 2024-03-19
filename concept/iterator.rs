@@ -19,16 +19,20 @@
 macro_rules! concept_iterator {
     ($name:ident, $concept_type:ident, $map_fn: expr) => {
         pub struct $name<'a, const S: usize> {
-            snapshot_iterator: SnapshotRangeIterator<'a, S>,
+            snapshot_iterator: Option<SnapshotRangeIterator<'a, S>>,
         }
 
         impl<'a, const S: usize> $name<'a, S> {
             pub(crate) fn new(snapshot_iterator: SnapshotRangeIterator<'a, S>) -> Self {
-                $name { snapshot_iterator }
+                $name { snapshot_iterator: Some(snapshot_iterator) }
+            }
+
+            pub(crate) fn new_empty() -> Self {
+                $name { snapshot_iterator: None }
             }
 
             pub fn peek(&mut self) -> Option<Result<$concept_type<'_>, ConceptError>> {
-                self.snapshot_iterator.peek().map(|result| {
+                self.iter_peek().map(|result| {
                     result.map(|(storage_key, _value_bytes)| $map_fn(storage_key)).map_err(|snapshot_error| {
                         ConceptError { kind: ConceptErrorKind::SnapshotError { source: snapshot_error } }
                     })
@@ -38,7 +42,7 @@ macro_rules! concept_iterator {
             // a lending iterator trait is infeasible with the current borrow checker
             #[allow(clippy::should_implement_trait)]
             pub fn next(&mut self) -> Option<Result<$concept_type<'_>, ConceptError>> {
-                self.snapshot_iterator.next().map(|result| {
+                self.iter_next().map(|result| {
                     result.map(|(storage_key, _value_bytes)| $map_fn(storage_key)).map_err(|snapshot_error| {
                         ConceptError { kind: ConceptErrorKind::SnapshotError { source: snapshot_error } }
                     })
@@ -47,6 +51,22 @@ macro_rules! concept_iterator {
 
             pub fn seek(&mut self) {
                 todo!()
+            }
+
+            fn iter_peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), SnapshotError>> {
+                if let Some(iter) = self.snapshot_iterator.as_mut() {
+                    iter.peek()
+                } else {
+                    None
+                }
+            }
+
+            fn iter_next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), SnapshotError>> {
+                if let Some(iter) = self.snapshot_iterator.as_mut() {
+                    iter.next()
+                } else {
+                    None
+                }
             }
 
             pub fn collect_cloned(mut self) -> Vec<$concept_type<'static>> {

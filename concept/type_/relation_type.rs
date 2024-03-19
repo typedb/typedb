@@ -25,16 +25,18 @@ use encoding::{
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotRangeIterator};
+use storage::snapshot::error::SnapshotError;
 
 use crate::{
     concept_iterator,
+    ConceptAPI,
     error::{ConceptError, ConceptErrorKind},
     type_::{
-        annotation::AnnotationAbstract, attribute_type::AttributeType, object_type::ObjectType, owns::Owns,
-        type_manager::TypeManager, OwnerAPI, RelationTypeAPI, TypeAPI,
+        annotation::AnnotationAbstract, attribute_type::AttributeType, object_type::ObjectType, OwnerAPI,
+        owns::Owns, RelationTypeAPI, type_manager::TypeManager, TypeAPI,
     },
-    ConceptAPI,
 };
+use crate::ByteReference;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RelationType<'a> {

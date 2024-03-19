@@ -15,6 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::any::Any;
 use std::rc::Rc;
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
@@ -77,7 +78,7 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
     pub fn create_attribute(&self, attribute_type: &AttributeType, value: Value) -> Result<Attribute, ConceptError> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let value_type = attribute_type.get_value_type(self.type_manager.as_ref());
-            if Some(value.value_type()) != value_type {
+            if Some(value.value_type()) == value_type {
                 let vertex = match value {
                     Value::Boolean(bool) => {
                         todo!()
@@ -127,6 +128,15 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
         let end = AttributeVertex::build_prefix_prefix(PrefixID::VERTEX_ATTRIBUTE_MAX);
         let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_inclusive(start, end));
         AttributeIterator::new(snapshot_iterator)
+    }
+
+    pub fn get_attributes_in(&self, attribute_type: AttributeType<'_>) -> AttributeIterator<'_, 3> {
+        attribute_type.get_value_type(self.type_manager.as_ref())
+            .map(|value_type| {
+                let prefix = AttributeVertex::build_prefix_type(value_type, Typed::type_id(attribute_type.vertex()));
+                let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_within(prefix));
+                AttributeIterator::new(snapshot_iterator)
+            }).unwrap_or_else(|| AttributeIterator::new_empty())
     }
 
     pub(crate) fn get_attribute_value(&self, attribute: &Attribute) -> Value {

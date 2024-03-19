@@ -42,23 +42,39 @@ impl<'a> AttributeVertex<'a> {
         AttributeVertex { bytes }
     }
 
-    pub(crate) fn build(prefix: PrefixType, type_id: TypeID, attribute_id: AttributeID) -> Self {
+    fn value_type_to_prefix_type(value_type: ValueType) -> PrefixType {
+        match value_type {
+            ValueType::Boolean => PrefixType::VertexAttributeBoolean,
+            ValueType::Long => PrefixType::VertexAttributeLong,
+            ValueType::Double => PrefixType::VertexAttributeDouble,
+            ValueType::String => PrefixType::VertexAttributeString,
+        }
+    }
+
+    pub(crate) fn build(value_type: ValueType, type_id: TypeID, attribute_id: AttributeID) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE + attribute_id.length());
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id.length())].copy_from_slice(attribute_id.bytes());
         Self { bytes: ByteArrayOrRef::Array(bytes) }
     }
 
     pub(crate) fn build_prefix_type_attribute_id(
-        prefix: PrefixType,
+        value_type: ValueType,
         type_id: TypeID,
         attribute_id_part: &[u8],
     ) -> StorageKey<'static, BUFFER_KEY_INLINE> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE + attribute_id_part.len());
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id_part.len())].copy_from_slice(attribute_id_part);
+        StorageKey::new_owned(Self::keyspace_id(), bytes)
+    }
+
+    pub fn build_prefix_type(value_type: ValueType, type_id: TypeID) -> StorageKey<'static, { AttributeVertex::LENGTH_PREFIX_TYPE }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         StorageKey::new_owned(Self::keyspace_id(), bytes)
     }
 

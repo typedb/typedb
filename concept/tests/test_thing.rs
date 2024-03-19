@@ -21,11 +21,13 @@ use concept::{
     thing::{thing_manager::ThingManager, value::Value, AttributeAPI},
     type_::type_manager::TypeManager,
 };
+use concept::type_::AttributeTypeAPI;
 use encoding::{
     create_keyspaces,
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
     value::label::Label,
 };
+use encoding::value::value_type::ValueType;
 use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
@@ -79,20 +81,28 @@ fn attribute_create() {
     create_keyspaces(&mut storage);
     TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 
+    let age_label = Label::build("age");
+    let name_label = Label::build("name");
+
+    let age_value: i64 = 10;
+    let name_value: &str = "TypeDB Fan";
+
     let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
     {
         let thing_vertex_generator = ThingVertexGenerator::new();
         let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &type_vertex_generator, None));
         let thing_manager = ThingManager::new(snapshot.clone(), &thing_vertex_generator, type_manager.clone());
 
-        let person_label = Label::build("person");
-        let person_type = type_manager.create_entity_type(&person_label, false);
-        let age_label = Label::build("age");
         let age_type = type_manager.create_attribute_type(&age_label, false);
+        age_type.set_value_type(&type_manager, ValueType::Long);
+        let name_type = type_manager.create_attribute_type(&name_label, false);
+        name_type.set_value_type(&type_manager, ValueType::String);
 
-        let age_value: i64 = 10;
         let age_1 = thing_manager.create_attribute(&age_type, Value::Long(age_value)).unwrap();
         assert_eq!(age_1.value(&thing_manager), Value::Long(age_value));
+
+        let name_1 = thing_manager.create_attribute(&name_type, Value::String(String::from(name_value).into_boxed_str())).unwrap();
+        assert_eq!(name_1.value(&thing_manager), Value::String(String::from(name_value).into_boxed_str()));
     }
     if let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();
@@ -104,10 +114,14 @@ fn attribute_create() {
         let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
         let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &type_vertex_generator, None));
         let thing_vertex_generator = ThingVertexGenerator::new();
-        let thing_manager = ThingManager::new(snapshot.clone(), &thing_vertex_generator, type_manager);
-        let attribute = thing_manager.get_attributes().collect_cloned();
+        let thing_manager = ThingManager::new(snapshot.clone(), &thing_vertex_generator, type_manager.clone());
+        let attributes = thing_manager.get_attributes().collect_cloned();
+        assert_eq!(attributes.len(), 2);
 
-        // TODO: get attribute and check value
+        let age_type = type_manager.get_attribute_type(&age_label).unwrap();
+        let ages = thing_manager.get_attributes_in(age_type).collect_cloned();
+        assert_eq!(ages.len(), 1);
+        assert_eq!(ages.get(0).unwrap().value(&thing_manager), Value::Long(age_value));
     }
 
     delete_dir(storage_path)

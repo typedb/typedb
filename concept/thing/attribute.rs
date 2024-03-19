@@ -14,17 +14,18 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 use bytes::byte_array_or_ref::ByteArrayOrRef;
 use encoding::{graph::thing::vertex_attribute::AttributeVertex, value::value_type::ValueType};
 use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotRangeIterator};
+use storage::snapshot::error::SnapshotError;
 
 use crate::{
     concept_iterator,
-    error::{ConceptError, ConceptErrorKind},
-    thing::{thing_manager::ThingManager, value::Value, AttributeAPI, ThingAPI},
     ConceptAPI,
+    error::{ConceptError, ConceptErrorKind},
+    thing::{AttributeAPI, thing_manager::ThingManager, ThingAPI, value::Value},
 };
+use crate::ByteReference;
 
 #[derive(Clone, Debug)]
 pub struct Attribute<'a> {

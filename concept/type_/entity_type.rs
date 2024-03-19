@@ -14,7 +14,6 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 use std::collections::HashSet;
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
@@ -25,16 +24,18 @@ use encoding::{
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotRangeIterator};
+use storage::snapshot::error::SnapshotError;
 
 use crate::{
     concept_iterator,
+    ConceptAPI,
     error::{ConceptError, ConceptErrorKind},
     type_::{
-        annotation::AnnotationAbstract, attribute_type::AttributeType, object_type::ObjectType, owns::Owns,
-        type_manager::TypeManager, EntityTypeAPI, OwnerAPI, TypeAPI,
+        annotation::AnnotationAbstract, attribute_type::AttributeType, EntityTypeAPI, object_type::ObjectType,
+        OwnerAPI, owns::Owns, type_manager::TypeManager, TypeAPI,
     },
-    ConceptAPI,
 };
+use crate::ByteReference;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct EntityType<'a> {

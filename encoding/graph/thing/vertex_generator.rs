@@ -36,6 +36,7 @@ use crate::{
     value::{long::Long, string::StringBytes},
     AsBytes, Keyable,
 };
+use crate::value::value_type::ValueType;
 
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,
@@ -107,7 +108,7 @@ impl ThingVertexGenerator {
         snapshot: &WriteSnapshot<'_>,
     ) -> AttributeVertex<'static> {
         let attribute_id = AttributeID::Bytes_8(AttributeID_8::new(value.bytes()));
-        let vertex = AttributeVertex::build(PrefixType::VertexAttributeLong, type_id, attribute_id);
+        let vertex = AttributeVertex::build(ValueType::Long, type_id, attribute_id);
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
@@ -129,7 +130,7 @@ impl ThingVertexGenerator {
         snapshot: &WriteSnapshot<'_>,
     ) -> AttributeVertex<'static> {
         let attribute_id = AttributeID::Bytes_16(self.string_to_attribute_id(type_id, value.clone_as_ref(), snapshot));
-        let vertex = AttributeVertex::build(PrefixType::VertexAttributeString, type_id, attribute_id);
+        let vertex = AttributeVertex::build(ValueType::String, type_id, attribute_id);
         snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
         vertex
     }
@@ -218,7 +219,9 @@ impl StringAttributeID {
 
         // find first unused tail value
         bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = Self::ENCODING_STRING_TAIL_MASK;
-        let prefix_search = PrefixRange::new_within(AttributeVertex::build_prefix_type_attribute_id(PrefixType::VertexAttributeString, type_id, &bytes));
+        let prefix_search = PrefixRange::new_within(
+            AttributeVertex::build_prefix_type_attribute_id(ValueType::String, type_id, &bytes)
+        );
 
         let mut iter = snapshot.iterate_range(prefix_search);
         let mut next = iter.next().transpose().unwrap(); // TODO: handle error
