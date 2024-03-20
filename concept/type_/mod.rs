@@ -33,6 +33,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::role_type::{RoleType, RoleTypeAnnotation};
 
 pub mod annotation;
 pub mod attribute_type;
@@ -44,16 +45,12 @@ mod relates;
 pub mod relation_type;
 pub mod type_cache;
 pub mod type_manager;
+pub mod role_type;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
     fn vertex<'this>(&'this self) -> &'this TypeVertex<'a>;
 
     fn into_vertex(self) -> TypeVertex<'a>;
-
-    fn set_label(&self, type_manager: &TypeManager, label: &Label) {
-        // TODO: setLabel should fail is setting label on Root type
-        type_manager.set_storage_label(self.vertex().clone().into_owned(), label);
-    }
 }
 
 pub trait EntityTypeAPI<'a>: TypeAPI<'a> {
@@ -63,6 +60,11 @@ pub trait EntityTypeAPI<'a>: TypeAPI<'a> {
 
     fn get_label<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Label<'static>> {
         type_manager.get_entity_type_label(self.clone().into_owned())
+    }
+
+    fn set_label(&self, type_manager: &TypeManager, label: &Label) {
+        // TODO: setLabel should fail is setting label on Root type
+        type_manager.set_storage_label(self.vertex().clone().into_owned(), label);
     }
 
     // TODO: not so pretty to return EntityType directly, but is a win on efficiency. However, should reconsider the trait's necessity.
@@ -114,6 +116,11 @@ pub trait RelationTypeAPI<'a>: TypeAPI<'a> {
         type_manager.get_relation_type_label(self.clone().into_owned())
     }
 
+    fn set_label(&self, type_manager: &TypeManager, label: &Label) {
+        // TODO: setLabel should fail is setting label on Root type
+        type_manager.set_storage_label(self.vertex().clone().into_owned(), label);
+    }
+
     fn get_supertype(&self, type_manager: &TypeManager) -> Option<RelationType<'static>> {
         type_manager.get_relation_type_supertype(self.clone().into_owned())
     }
@@ -149,7 +156,63 @@ pub trait RelationTypeAPI<'a>: TypeAPI<'a> {
         }
     }
 
+    fn create_role(&self, type_manager: &TypeManager, name: &str) -> RoleType<'static> {
+        let label = Label::build_scoped(name, self.get_label(type_manager).name().decode());
+        let role_type = type_manager.create_role_type(&label, false);
+
+        // TODO: create Relates
+
+        role_type
+    }
+
     fn into_owned(self) -> RelationType<'static>;
+}
+
+pub trait RoleTypeAPI<'a>: TypeAPI<'a> {
+    fn is_root(&self, type_manager: &TypeManager) -> bool {
+        type_manager.get_role_type_is_root(self.clone().into_owned())
+    }
+
+    fn get_label<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Label<'static>> {
+        type_manager.get_role_type_label(self.clone().into_owned())
+    }
+
+    fn get_supertype(&self, type_manager: &TypeManager) -> Option<RoleType<'static>> {
+        type_manager.get_role_type_supertype(self.clone().into_owned())
+    }
+
+    fn set_supertype(&self, type_manager: &TypeManager, supertype: impl RoleTypeAPI<'static>) {
+        type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
+    }
+
+    // TODO: not so pretty to return Type directly, but is a win on efficiency. However, should reconsider the trait's necessity.
+    fn get_supertypes<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Vec<RoleType<'static>>> {
+        type_manager.get_role_type_supertypes(self.clone().into_owned())
+    }
+
+    // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<RoleType<'static>>>;
+
+    fn get_annotations<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<RoleTypeAnnotation>> {
+        type_manager.get_role_type_annotations(self.clone().into_owned())
+    }
+
+    fn set_annotation(&self, type_manager: &TypeManager, annotation: RoleTypeAnnotation) {
+        match annotation {
+            RoleTypeAnnotation::Abstract(_) => {
+                type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
+            }
+        }
+    }
+
+    fn delete_annotation(&self, type_manager: &TypeManager, annotation: RoleTypeAnnotation) {
+        match annotation {
+            RoleTypeAnnotation::Abstract(_) => {
+                type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
+            }
+        }
+    }
+
+    fn into_owned(self) -> RoleType<'static>;
 }
 
 pub trait AttributeTypeAPI<'a>: TypeAPI<'a> {
@@ -167,6 +230,11 @@ pub trait AttributeTypeAPI<'a>: TypeAPI<'a> {
 
     fn get_label<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Label<'static>> {
         type_manager.get_attribute_type_label(self.clone().into_owned())
+    }
+
+    fn set_label(&self, type_manager: &TypeManager, label: &Label) {
+        // TODO: setLabel should fail is setting label on Root type
+        type_manager.set_storage_label(self.vertex().clone().into_owned(), label);
     }
 
     fn get_supertype(&self, type_manager: &TypeManager) -> Option<AttributeType<'static>> {
@@ -276,4 +344,17 @@ trait PlayedAPI<'a>: TypeAPI<'a> {
         // return iterator of player types
         todo!()
     }
+}
+
+trait RelaterAPI<'a>: TypeAPI<'a> {
+
+}
+
+trait RelatedAPI<'a>: TypeAPI<'a> {
+
+    fn set_name(&self, type_manager: &TypeManager, name: &str) {
+        // TODO: setLabel should fail is setting label on Root type
+        type_manager.set_storage_label(self.vertex().clone().into_owned(), label);
+    }
+
 }

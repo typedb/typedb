@@ -32,11 +32,11 @@ use crate::{
     ConceptAPI,
     error::{ConceptError, ConceptErrorKind},
     type_::{
-        annotation::AnnotationAbstract, attribute_type::AttributeType, object_type::ObjectType, OwnerAPI,
+        annotation::{Annotation, AnnotationAbstract}, attribute_type::AttributeType, object_type::ObjectType, OwnerAPI,
         owns::Owns, RelationTypeAPI, type_manager::TypeManager, TypeAPI,
     },
 };
-use crate::ByteReference;
+use bytes::byte_reference::ByteReference;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RelationType<'a> {
@@ -69,6 +69,7 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
 }
 
 impl<'a> RelationTypeAPI<'a> for RelationType<'a> {
+
     fn into_owned(self) -> RelationType<'static> {
         RelationType { vertex: self.vertex.into_owned() }
     }
@@ -89,9 +90,13 @@ pub enum RelationTypeAnnotation {
     Abstract(AnnotationAbstract),
 }
 
-impl From<AnnotationAbstract> for RelationTypeAnnotation {
-    fn from(annotation: AnnotationAbstract) -> Self {
-        RelationTypeAnnotation::Abstract(annotation)
+impl From<Annotation> for RelationTypeAnnotation {
+    fn from(annotation: Annotation) -> Self {
+        match annotation {
+            Annotation::Abstract(annotation) => {
+                RelationTypeAnnotation::Abstract(annotation)
+            }
+        }
     }
 }
 

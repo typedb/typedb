@@ -16,6 +16,11 @@
  */
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum Annotation {
+    Abstract(AnnotationAbstract)
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationAbstract {}
 
 impl Default for AnnotationAbstract {

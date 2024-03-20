@@ -27,12 +27,14 @@ use crate::{
     },
     Keyable,
 };
+use crate::graph::type_::vertex::{build_vertex_role_type, build_vertex_role_type_prefix};
 
 // TODO: if we always scan for the next available TypeID, we automatically recycle deleted TypeIDs?
 //          -> If we do reuse TypeIDs, this we also need to make sure to reset the Thing ID generators on delete! (test should exist to confirm this).
 pub struct TypeVertexGenerator {
     next_entity: AtomicU16,
     next_relation: AtomicU16,
+    next_role: AtomicU16,
     next_attribute: AtomicU16,
 }
 
@@ -49,6 +51,7 @@ impl TypeVertexGenerator {
         TypeVertexGenerator {
             next_entity: AtomicU16::new(0),
             next_relation: AtomicU16::new(0),
+            next_role: AtomicU16::new(0),
             next_attribute: AtomicU16::new(0),
         }
     }
@@ -70,6 +73,14 @@ impl TypeVertexGenerator {
                 AtomicU16::new(val)
             })
             .unwrap_or_else(|| AtomicU16::new(0));
+        let next_role: AtomicU16 = storage
+            .get_prev_raw(build_vertex_role_type_prefix().as_reference(), |_, value| {
+                debug_assert_eq!(value.len(), Self::U16_LENGTH);
+                let array: [u8; Self::U16_LENGTH] = value[0..Self::U16_LENGTH].try_into().unwrap();
+                let val = u16::from_be_bytes(array);
+                AtomicU16::new(val)
+            })
+            .unwrap_or_else(|| AtomicU16::new(0));
         let next_attribute: AtomicU16 = storage
             .get_prev_raw(build_vertex_attribute_type_prefix().as_reference(), |_, value| {
                 debug_assert_eq!(value.len(), Self::U16_LENGTH);
@@ -78,7 +89,7 @@ impl TypeVertexGenerator {
                 AtomicU16::new(val)
             })
             .unwrap_or_else(|| AtomicU16::new(0));
-        TypeVertexGenerator { next_entity, next_relation, next_attribute }
+        TypeVertexGenerator { next_entity, next_relation, next_role, next_attribute }
     }
 
     pub fn create_entity_type(&self, snapshot: &WriteSnapshot<'_>) -> TypeVertex<'static> {
@@ -91,6 +102,13 @@ impl TypeVertexGenerator {
     pub fn create_relation_type(&self, snapshot: &WriteSnapshot<'_>) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_relation.fetch_add(1, Ordering::Relaxed));
         let vertex = build_vertex_relation_type(next);
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        vertex
+    }
+
+    pub fn create_role_type(&self, snapshot: &WriteSnapshot<'_>) -> TypeVertex<'static> {
+        let next = TypeID::build(self.next_role.fetch_add(1, Ordering::Relaxed));
+        let vertex = build_vertex_role_type(next);
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }

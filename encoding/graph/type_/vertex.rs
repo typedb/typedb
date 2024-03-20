@@ -79,6 +79,13 @@ type_vertex_constructors!(
     is_vertex_attribute_type,
     PrefixType::VertexAttributeType
 );
+type_vertex_constructors!(
+    new_vertex_role_type,
+    build_vertex_role_type,
+    build_vertex_role_type_prefix,
+    is_vertex_role_type,
+    PrefixType::VertexRoleType
+);
 
 impl<'a> TypeVertex<'a> {
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;

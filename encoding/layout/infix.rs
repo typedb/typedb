@@ -15,7 +15,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// A tiny struct will always be more efficient owning its own data and being Copy
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub(crate) struct InfixID {
     bytes: [u8; InfixID::LENGTH],
@@ -33,12 +32,12 @@ impl InfixID {
     }
 }
 
-// #[derive(Debug, Eq, PartialEq)]
-// pub(crate) enum Direction {
-//     Canonical,
-//     Reverse,
-// }
-//
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub(crate) enum InfixGroup {
+    Edge,
+    Property,
+}
+
 /*
 Infixes are always stored behind certain types Prefixes, so they could be partitioned per prefix.
 For example, type edge infixes are always going to follow type vertex prefixes.
@@ -49,7 +48,7 @@ However, we group them all together for
 2) easier overview of what types of 'middle' infix bytes are possible
 */
 #[derive(Debug, Eq, PartialEq)]
-pub(crate) enum InfixType {
+pub enum InfixType {
     EdgeSub,
     EdgeSubReverse,
     EdgeOwns,
@@ -69,8 +68,8 @@ pub(crate) enum InfixType {
 
 macro_rules! infix_functions {
     ($(
-        $name:ident => $bytes:tt //, Direction::$direction:ident
-    ),*) => {
+        $name:ident => $bytes:tt, InfixGroup::$group:ident
+    );*) => {
         pub(crate) const fn infix_id(&self) -> InfixID {
             let bytes = match self {
                 $(
@@ -89,33 +88,32 @@ macro_rules! infix_functions {
             }
        }
 
-       // pub(crate) const fn direction(&self) -> Direction {
-       //      match self {
-       //          $(
-       //              Self::$name => {Direction::$direction}
-       //          )*
-       //      }
-       // }
-
+       pub(crate) const fn group(&self) -> InfixGroup {
+            match self {
+                $(
+                    Self::$name => {InfixGroup::$group}
+                )*
+            }
+       }
    };
 }
 
 impl InfixType {
     infix_functions!(
-        EdgeSub => [20], // Direction::Canonical;
-        EdgeSubReverse => [21], // Direction::Reverse;
-        EdgeOwns => [22], // Direction::Canonical;
-        EdgeOwnsReverse => [23], // Direction::Reverse;
-        EdgePlays => [24], // Direction::Canonical;
-        EdgePlaysReverse => [25], // Direction::Reverse;
-        EdgeRelates => [26], // Direction::Canonical;
-        EdgeRelatesReverse => [27], // Direction::Reverse;
+        EdgeSub => [20], InfixGroup::Edge;
+        EdgeSubReverse => [21], InfixGroup::Edge;
+        EdgeOwns => [22], InfixGroup::Edge;
+        EdgeOwnsReverse => [23], InfixGroup::Edge;
+        EdgePlays => [24], InfixGroup::Edge;
+        EdgePlaysReverse => [25], InfixGroup::Edge;
+        EdgeRelates => [26], InfixGroup::Edge;
+        EdgeRelatesReverse => [27], InfixGroup::Edge;
 
-        EdgeHas => [50], // Direction::Canonical;
-        EdgeHasReverse => [51], // Direction::Reverse
+        EdgeHas => [50], InfixGroup::Edge;
+        EdgeHasReverse => [51], InfixGroup::Edge;
 
-        PropertyLabel => [100],
-        PropertyValueType => [101],
-        PropertyAnnotationAbstract => [110]
+        PropertyLabel => [100], InfixGroup::Property;
+        PropertyValueType => [101], InfixGroup::Property;
+        PropertyAnnotationAbstract => [110], InfixGroup::Property
     );
 }

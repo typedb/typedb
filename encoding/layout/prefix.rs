@@ -20,7 +20,6 @@ use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::EncodingKeyspace;
 
-// A tiny struct will always be more efficient owning its own data and being Copy
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct PrefixID {
     pub(crate) bytes: [u8; PrefixID::LENGTH],
@@ -40,15 +39,12 @@ impl PrefixID {
         self.bytes
     }
 
-    // fn as_storage_key<const INLINE_BYTES: usize>(&self) -> StorageKey<'static, INLINE_BYTES> {
-    //     StorageKey::new_owned(self.keyspace_id(), ByteArray::copy(&self.bytes))
-    // }
-
     fn keyspace_id(&self) -> KeyspaceId {
         match PrefixType::from_prefix_id(*self) {
             PrefixType::VertexEntityType
             | PrefixType::VertexRelationType
             | PrefixType::VertexAttributeType
+            | PrefixType::VertexRoleType
             | PrefixType::PropertyType
             | PrefixType::IndexLabelToType
             | PrefixType::PropertyTypeEdge => EncodingKeyspace::Schema.id(),
@@ -67,6 +63,7 @@ pub enum PrefixType {
     VertexEntityType,
     VertexRelationType,
     VertexAttributeType,
+    VertexRoleType,
 
     VertexEntity,
     VertexRelation,
@@ -120,9 +117,10 @@ macro_rules! prefix_functions {
 
 impl PrefixType {
     prefix_functions!(
-           VertexEntityType => [16],
-           VertexRelationType => [17],
-           VertexAttributeType => [18],
+           VertexEntityType => [10],
+           VertexRelationType => [11],
+           VertexAttributeType => [12],
+           VertexRoleType => [20],
 
            VertexEntity => [40],
            VertexRelation => [41],

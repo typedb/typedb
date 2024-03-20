@@ -36,7 +36,7 @@ impl<'a> Label<'a> {
         let mut splits = as_str.split(':');
         let first = splits.next().unwrap();
         if let Some(second) = splits.next() {
-            Self::build_scoped(first, second)
+            Self::build_scoped(second, first)
         } else {
             Self::build(first)
         }

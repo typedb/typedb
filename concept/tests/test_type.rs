@@ -17,10 +17,7 @@
 
 use std::{ops::Deref, rc::Rc, sync::Arc};
 
-use concept::type_::{
-    annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, owns::Owns,
-    type_cache::TypeCache, type_manager::TypeManager, AttributeTypeAPI, EntityTypeAPI, OwnerAPI,
-};
+use concept::type_::{annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, role_type::RoleTypeAnnotation, object_type::ObjectType, owns::Owns, type_cache::TypeCache, type_manager::TypeManager, AttributeTypeAPI, EntityTypeAPI, OwnerAPI, RoleTypeAPI};
 use encoding::{
     create_keyspaces,
     graph::type_::{vertex_generator::TypeVertexGenerator, Root},
@@ -66,12 +63,12 @@ fn entity_creation() {
         // --- person sub entity @abstract ---
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&person_label, false);
-        person_type.set_annotation(&type_manager, EntityTypeAnnotation::from(AnnotationAbstract::new()));
+        person_type.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()));
 
         assert!(!person_type.is_root(&type_manager));
         assert!(person_type
             .get_annotations(&type_manager)
-            .contains(&EntityTypeAnnotation::from(AnnotationAbstract::new())));
+            .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract::new())));
         assert_eq!(person_type.get_label(&type_manager).deref(), &person_label);
 
         let supertype = person_type.get_supertype(&type_manager);
@@ -130,7 +127,7 @@ fn entity_creation() {
         assert!(!person_type.is_root(&type_manager));
         assert!(person_type
             .get_annotations(&type_manager)
-            .contains(&EntityTypeAnnotation::from(AnnotationAbstract::new())));
+            .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract::new())));
         assert_eq!(person_type.get_label(&type_manager).deref(), &person_label);
 
         let supertype = person_type.get_supertype(&type_manager);
@@ -154,6 +151,49 @@ fn entity_creation() {
         assert!(all_owns.contains(&expected_owns));
         assert!(matches!(child_type.get_owns_attribute(&type_manager, age_type.clone()), Some(expected_owns)));
         assert!(child_type.has_owns_attribute(&type_manager, age_type.clone()));
+    }
+
+    delete_dir(storage_path)
+}
+
+#[test]
+fn role_creation() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    create_keyspaces(&mut storage).unwrap();
+    let type_vertex_generator = TypeVertexGenerator::new();
+    TypeManager::initialise_types(&mut storage, &type_vertex_generator);
+
+    let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
+    {
+        // Without cache, uncommitted
+        let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
+        let root_role = type_manager.get_role_type(&Root::Role.label()).unwrap();
+        assert_eq!(root_role.get_label(&type_manager).deref(), &Root::Role.label());
+        assert!(root_role.is_root(&type_manager));
+        assert!(root_role.get_supertype(&type_manager).is_none());
+        assert_eq!(root_role.get_supertypes(&type_manager).len(), 0);
+        assert!(root_role.get_annotations(&type_manager).deref().contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract::new())));
+
+        // TODO create a new relation subtype with a role
+
+    }
+    if let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() {
+        write_snapshot.commit().unwrap();
+    } else {
+        unreachable!();
+    }
+
+    {
+        // With cache, committed
+        let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
+        let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()));
+        let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
+
+
+        // TODO
+
     }
 
     delete_dir(storage_path)

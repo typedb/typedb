@@ -21,6 +21,7 @@ use crate::{
     type_::{annotation::AnnotationAbstract, AttributeTypeAPI, TypeAPI},
     ConceptAPI,
 };
+use crate::type_::annotation::Annotation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct AttributeType<'a> {
@@ -63,9 +64,13 @@ pub enum AttributeTypeAnnotation {
     Abstract(AnnotationAbstract),
 }
 
-impl From<AnnotationAbstract> for AttributeTypeAnnotation {
-    fn from(annotation: AnnotationAbstract) -> Self {
-        AttributeTypeAnnotation::Abstract(annotation)
+impl From<Annotation> for AttributeTypeAnnotation {
+    fn from(annotation: Annotation) -> Self {
+        match annotation {
+            Annotation::Abstract(annotation) => {
+                AttributeTypeAnnotation::Abstract(annotation)
+            }
+        }
     }
 }
 //

@@ -15,51 +15,45 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::{BTreeMap, Bound, HashMap, HashSet};
+use std::collections::{Bound, BTreeMap, HashMap, HashSet};
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use durability::SequenceNumber;
-use encoding::{
-    graph::{
-        type_::{
-            edge::{build_edge_owns_prefix, build_edge_sub_prefix, new_edge_owns, new_edge_sub},
-            property::{
-                build_property_type_annotation_abstract, build_property_type_label, build_property_type_value_type,
-                TypeVertexProperty,
-            },
-            vertex::{
-                build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
-                is_vertex_attribute_type, is_vertex_entity_type, is_vertex_relation_type, new_vertex_attribute_type,
-                new_vertex_entity_type, new_vertex_relation_type, TypeVertex,
-            },
-            Root,
+use encoding::{graph::{
+    type_::{
+        edge::{build_edge_owns_prefix, build_edge_sub_prefix, new_edge_owns, new_edge_sub},
+        property::{
+            build_property_type_label, build_property_type_value_type,
+            TypeVertexProperty,
         },
-        Typed,
+        Root,
+        vertex::{
+            build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
+            is_vertex_attribute_type, is_vertex_entity_type, is_vertex_relation_type, new_vertex_attribute_type,
+            new_vertex_entity_type, new_vertex_relation_type, TypeVertex,
+        },
     },
-    layout::prefix::PrefixType,
-    value::{
-        label::Label,
-        string::StringBytes,
-        value_type::{ValueType, ValueTypeID},
-    },
-    Keyable, Prefixed,
+    Typed,
+}, Keyable, layout, layout::prefix::PrefixType, Prefixed, value::{
+    label::Label,
+    string::StringBytes,
+    value_type::{ValueType, ValueTypeID},
+}};
+use encoding::{
+    layout::infix::InfixType,
+    graph::type_::vertex::{build_vertex_role_type_prefix, is_vertex_role_type, new_vertex_role_type},
 };
 use primitive::prefix_range::PrefixRange;
 use resource::constants::{
     encoding::LABEL_SCOPED_NAME_STRING_INLINE,
     snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
 };
-use storage::{key_value::StorageKeyArray, MVCCStorage};
+use storage::MVCCStorage;
+use storage::snapshot::snapshot::ReadSnapshot;
 
-use crate::type_::{
-    annotation::AnnotationAbstract,
-    attribute_type::{AttributeType, AttributeTypeAnnotation},
-    entity_type::{EntityType, EntityTypeAnnotation},
-    object_type::ObjectType,
-    owns::Owns,
-    relation_type::{RelationType, RelationTypeAnnotation},
-    AttributeTypeAPI, EntityTypeAPI, RelationTypeAPI, TypeAPI,
-};
+use crate::type_::{annotation::AnnotationAbstract, attribute_type::{AttributeType, AttributeTypeAnnotation}, AttributeTypeAPI, entity_type::{EntityType, EntityTypeAnnotation}, EntityTypeAPI, object_type::ObjectType, owns::Owns, relation_type::{RelationType, RelationTypeAnnotation}, RelationTypeAPI, RoleTypeAPI, TypeAPI};
+use crate::type_::annotation::Annotation;
+use crate::type_::role_type::{RoleType, RoleTypeAnnotation};
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -68,10 +62,12 @@ pub struct TypeCache {
     // Types that are borrowable and returned from the cache
     entity_types: Box<[Option<EntityTypeCache>]>,
     relation_types: Box<[Option<RelationTypeCache>]>,
+    role_types: Box<[Option<RoleTypeCache>]>,
     attribute_types: Box<[Option<AttributeTypeCache>]>,
 
     entity_types_index_label: HashMap<Label<'static>, EntityType<'static>>,
     relation_types_index_label: HashMap<Label<'static>, RelationType<'static>>,
+    role_types_index_label: HashMap<Label<'static>, RoleType<'static>>,
     attribute_types_index_label: HashMap<Label<'static>, AttributeType<'static>>,
 }
 
@@ -94,6 +90,7 @@ struct EntityTypeCache {
     // ...
 }
 
+#[derive(Debug)]
 struct RelationTypeCache {
     type_: RelationType<'static>,
     label: Label<'static>,
@@ -108,6 +105,21 @@ struct RelationTypeCache {
     owns_direct: HashSet<Owns<'static>>,
 }
 
+#[derive(Debug)]
+struct RoleTypeCache {
+    type_: RoleType<'static>,
+    label: Label<'static>,
+    is_root: bool,
+    annotations: HashSet<RoleTypeAnnotation>,
+
+    supertype: Option<RoleType<'static>>,
+    supertypes: Vec<RoleType<'static>>, // TODO: benchmark smallvec
+
+    // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+}
+
+#[derive(Debug)]
 struct AttributeTypeCache {
     type_: AttributeType<'static>,
     label: Label<'static>,
@@ -118,8 +130,8 @@ struct AttributeTypeCache {
     supertype: Option<AttributeType<'static>>,
     supertypes: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 
-                                             // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
-                                             // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 }
 
 impl TypeCache {
@@ -128,84 +140,32 @@ impl TypeCache {
         //       then go through it again to pull out the type information.
 
         let snapshot = storage.open_snapshot_read_at(open_sequence_number);
-
-        let type_vertex_properties = snapshot
+        let vertex_properties = snapshot
             .iterate_range(PrefixRange::new_within(TypeVertexProperty::build_prefix()))
-            .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
+            .collect_cloned_bmap(|key, value| {
+                (TypeVertexProperty::new(ByteArrayOrRef::Array(ByteArray::from(key.byte_ref()))), ByteArray::from(value))
+            })
             .unwrap();
 
-        let entity_types_data = snapshot
-            .iterate_range(PrefixRange::new_within(build_vertex_entity_type_prefix()))
-            .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
-            .unwrap();
-        let max_entity_id = entity_types_data
-            .iter()
-            .filter_map(|(key, _)| {
-                if is_vertex_entity_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))) {
-                    Some(
-                        new_vertex_entity_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array())))
-                            .type_id()
-                            .as_u16(),
-                    )
-                } else {
-                    None
-                }
-            })
-            .max()
-            .unwrap_or(0);
-        let entity_type_caches = Self::create_entity_caches(&entity_types_data, &type_vertex_properties, max_entity_id);
+        let entity_type_caches = Self::create_entity_caches(&snapshot, &vertex_properties);
         let entity_type_index_labels = entity_type_caches
             .iter()
             .filter_map(|entry| entry.as_ref().map(|cache| (cache.label.clone(), cache.type_.clone())))
             .collect();
 
-        let relation_types_data = snapshot
-            .iterate_range(PrefixRange::new_within(build_vertex_relation_type_prefix()))
-            .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
-            .unwrap();
-        let max_relation_id = relation_types_data
-            .iter()
-            .filter_map(|(key, _)| {
-                if is_vertex_relation_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))) {
-                    Some(
-                        new_vertex_relation_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array())))
-                            .type_id()
-                            .as_u16(),
-                    )
-                } else {
-                    None
-                }
-            })
-            .max()
-            .unwrap_or(0);
-        let relation_type_caches =
-            Self::create_relation_caches(&relation_types_data, &type_vertex_properties, max_relation_id);
+        let relation_type_caches = Self::create_relation_caches(&snapshot, &vertex_properties);
         let relation_type_index_labels = relation_type_caches
             .iter()
             .filter_map(|entry| entry.as_ref().map(|cache| (cache.label.clone(), cache.type_.clone())))
             .collect();
 
-        let attribute_types_data = snapshot
-            .iterate_range(PrefixRange::new_within(build_vertex_attribute_type_prefix()))
-            .collect_cloned_bmap::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
-            .unwrap();
-        let max_attribute_id = attribute_types_data
+        let role_type_caches = Self::create_role_caches(&snapshot, &vertex_properties);
+        let role_type_index_labels = role_type_caches
             .iter()
-            .filter_map(|(key, _)| {
-                if is_vertex_attribute_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))) {
-                    Some(
-                        new_vertex_attribute_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array())))
-                            .type_id()
-                            .as_u16(),
-                    )
-                } else {
-                    None
-                }
-            })
-            .max()
-            .unwrap_or(0);
-        let attribute_type_caches =
-            Self::create_attribute_caches(&attribute_types_data, &type_vertex_properties, max_attribute_id);
+            .filter_map(|entry| entry.as_ref().map(|cache| (cache.label.clone(), cache.type_.clone())))
+            .collect();
+
+        let attribute_type_caches = Self::create_attribute_caches(snapshot, &vertex_properties);
         let attribute_type_index_labels = attribute_type_caches
             .iter()
             .filter_map(|entry| entry.as_ref().map(|cache| (cache.label.clone(), cache.type_.clone())))
@@ -215,33 +175,59 @@ impl TypeCache {
             open_sequence_number,
             entity_types: entity_type_caches,
             relation_types: relation_type_caches,
+            role_types: role_type_caches,
             attribute_types: attribute_type_caches,
 
             entity_types_index_label: entity_type_index_labels,
             relation_types_index_label: relation_type_index_labels,
+            role_types_index_label: role_type_index_labels,
             attribute_types_index_label: attribute_type_index_labels,
         }
     }
 
-    fn create_entity_caches(
-        entity_types_data: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
-        type_vertex_properties: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+    fn create_entity_caches(snapshot: &ReadSnapshot, vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>) -> Box<[Option<EntityTypeCache>]> {
+        let entity_data = snapshot
+            .iterate_range(PrefixRange::new_within(build_vertex_entity_type_prefix()))
+            .collect_cloned_bmap(|key, value| (ByteArray::from(key.byte_ref()), ByteArray::from(value)))
+            .unwrap();
+        let max_entity_id = entity_data
+            .iter()
+            .filter_map(|(key, _)| {
+                if is_vertex_entity_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
+                    Some(
+                        new_vertex_entity_type(ByteArrayOrRef::Reference(ByteReference::from(key)))
+                            .type_id()
+                            .as_u16(),
+                    )
+                } else {
+                    None
+                }
+            })
+            .max()
+            .unwrap_or(0);
+        let entity_type_caches = Self::build_entity_caches(&entity_data, &vertex_properties, max_entity_id);
+        entity_type_caches
+    }
+
+    fn build_entity_caches(
+        entity_data: &BTreeMap<ByteArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>,
         max_entity: u16,
     ) -> Box<[Option<EntityTypeCache>]> {
         let mut caches: Box<[Option<EntityTypeCache>]> =
             (0..=max_entity).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
-        for (key, _) in entity_types_data.iter() {
-            if is_vertex_entity_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))) {
+        for (key, _) in entity_data.iter() {
+            if is_vertex_entity_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
                 let entity_type: EntityType<'static> =
-                    EntityType::new(new_vertex_entity_type(ByteArrayOrRef::Array(ByteArray::copy(key.bytes()))));
+                    EntityType::new(new_vertex_entity_type(ByteArrayOrRef::Array(key.clone())));
                 let type_index = Typed::type_id(entity_type.vertex()).as_u16();
 
-                let label = Self::read_type_label(type_vertex_properties, entity_type.vertex().clone());
+                let label = Self::read_type_label(vertex_properties, entity_type.vertex().clone());
                 let is_root = label == Root::Entity.label();
                 let supertype =
-                    Self::read_supertype_vertex(entity_types_data, entity_type.vertex().clone()).map(EntityType::new);
-                let annotations = Self::read_entity_annotations(type_vertex_properties, entity_type.clone());
-                let owns_direct = Self::read_owns_attribute_vertexes(entity_types_data, entity_type.vertex().clone())
+                    Self::read_supertype_vertex(entity_data, entity_type.vertex().clone()).map(EntityType::new);
+                let annotations = Self::read_entity_annotations(vertex_properties, entity_type.clone());
+                let owns_direct = Self::read_owns_attribute_vertexes(entity_data, entity_type.vertex().clone())
                     .into_iter()
                     .map(|v| Owns::new(ObjectType::Entity(entity_type.clone()), AttributeType::new(v)))
                     .collect();
@@ -263,12 +249,13 @@ impl TypeCache {
     }
 
     fn read_entity_annotations(
-        type_vertex_properties: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>,
         entity_type: EntityType<'static>,
     ) -> HashSet<EntityTypeAnnotation> {
         let mut annotations = HashSet::new();
-        Self::read_annotation_abstract(type_vertex_properties, entity_type.into_vertex())
-            .map(|a| annotations.insert(EntityTypeAnnotation::from(a)));
+        for annotation in Self::read_annotations(vertex_properties, entity_type.into_vertex()).into_iter() {
+            annotations.insert(EntityTypeAnnotation::from(annotation));
+        }
         annotations
     }
 
@@ -287,26 +274,51 @@ impl TypeCache {
         }
     }
 
-    fn create_relation_caches(
-        relation_types_data: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
-        type_vertex_properties: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+    fn create_relation_caches(snapshot: &ReadSnapshot, vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>) -> Box<[Option<RelationTypeCache>]> {
+        let relation_data = snapshot
+            .iterate_range(PrefixRange::new_within(build_vertex_relation_type_prefix()))
+            .collect_cloned_bmap(|key, value| (ByteArray::from(key.byte_ref()), ByteArray::from(value)))
+            .unwrap();
+        let max_relation_id = relation_data
+            .iter()
+            .filter_map(|(key, _)| {
+                if is_vertex_relation_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
+                    Some(
+                        new_vertex_relation_type(ByteArrayOrRef::Reference(ByteReference::from(key)))
+                            .type_id()
+                            .as_u16(),
+                    )
+                } else {
+                    None
+                }
+            })
+            .max()
+            .unwrap_or(0);
+        let relation_type_caches =
+            Self::build_relation_caches(&relation_data, &vertex_properties, max_relation_id);
+        relation_type_caches
+    }
+
+    fn build_relation_caches(
+        relation_data: &BTreeMap<ByteArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>,
         max_relation: u16,
     ) -> Box<[Option<RelationTypeCache>]> {
         let mut caches: Box<[Option<RelationTypeCache>]> =
             (0..=max_relation).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
-        for (key, _) in relation_types_data.iter() {
-            if is_vertex_relation_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))) {
+        for (key, _) in relation_data.iter() {
+            if is_vertex_relation_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
                 let relation_type =
-                    RelationType::new(new_vertex_relation_type(ByteArrayOrRef::Array(ByteArray::copy(key.bytes()))));
+                    RelationType::new(new_vertex_relation_type(ByteArrayOrRef::Array(key.clone())));
                 let type_index = Typed::type_id(relation_type.vertex()).as_u16();
 
-                let label = Self::read_type_label(type_vertex_properties, relation_type.vertex().clone());
+                let label = Self::read_type_label(vertex_properties, relation_type.vertex().clone());
                 let is_root = label == Root::Relation.label();
-                let supertype = Self::read_supertype_vertex(relation_types_data, relation_type.vertex().clone())
+                let supertype = Self::read_supertype_vertex(relation_data, relation_type.vertex().clone())
                     .map(RelationType::new);
-                let annotations = Self::read_relation_annotations(type_vertex_properties, relation_type.clone());
+                let annotations = Self::read_relation_annotations(vertex_properties, relation_type.clone());
                 let owns_direct =
-                    Self::read_owns_attribute_vertexes(relation_types_data, relation_type.vertex().clone())
+                    Self::read_owns_attribute_vertexes(relation_data, relation_type.vertex().clone())
                         .into_iter()
                         .map(|v| Owns::new(ObjectType::Relation(relation_type.clone()), AttributeType::new(v)))
                         .collect();
@@ -327,12 +339,13 @@ impl TypeCache {
     }
 
     fn read_relation_annotations(
-        type_vertex_properties: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>,
         relation_type: RelationType<'static>,
     ) -> HashSet<RelationTypeAnnotation> {
         let mut annotations = HashSet::new();
-        Self::read_annotation_abstract(type_vertex_properties, relation_type.into_vertex())
-            .map(|a| annotations.insert(RelationTypeAnnotation::from(a)));
+        for annotation in Self::read_annotations(vertex_properties, relation_type.into_vertex()).into_iter() {
+            annotations.insert(RelationTypeAnnotation::from(annotation));
+        }
         annotations
     }
 
@@ -351,24 +364,133 @@ impl TypeCache {
         }
     }
 
-    fn create_attribute_caches(
-        attribute_types_data: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
-        type_vertex_properties: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+    fn create_role_caches(snapshot: &ReadSnapshot, vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>) -> Box<[Option<RoleTypeCache>]> {
+        let role_data = snapshot
+            .iterate_range(PrefixRange::new_within(build_vertex_role_type_prefix()))
+            .collect_cloned_bmap(|key, value| (ByteArray::from(key.byte_ref()), ByteArray::from(value)))
+            .unwrap();
+        let max_role_id = role_data
+            .iter()
+            .filter_map(|(key, _)| {
+                if is_vertex_role_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
+                    Some(
+                        new_vertex_role_type(ByteArrayOrRef::Reference(ByteReference::from(key)))
+                            .type_id()
+                            .as_u16(),
+                    )
+                } else {
+                    None
+                }
+            })
+            .max()
+            .unwrap_or(0);
+        let role_type_caches =
+            Self::build_role_caches(&role_data, &vertex_properties, max_role_id);
+        role_type_caches
+    }
+
+    fn build_role_caches(
+        role_data: &BTreeMap<ByteArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        max_role: u16,
+    ) -> Box<[Option<RoleTypeCache>]> {
+        let mut caches: Box<[Option<RoleTypeCache>]> =
+            (0..=max_role).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        for (key, _) in role_data.iter() {
+            if is_vertex_role_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
+                let role_type =
+                    RoleType::new(new_vertex_role_type(ByteArrayOrRef::Array(key.clone())));
+                let type_index = Typed::type_id(role_type.vertex()).as_u16();
+
+                let label = Self::read_type_label(vertex_properties, role_type.vertex().clone());
+                let is_root = label == Root::Role.label();
+                let supertype = Self::read_supertype_vertex(role_data, role_type.vertex().clone())
+                    .map(RoleType::new);
+                let annotations = Self::read_role_annotations(vertex_properties, role_type.clone());
+                let cache = RoleTypeCache {
+                    type_: role_type,
+                    label,
+                    is_root,
+                    annotations,
+                    supertype,
+                    supertypes: Vec::new(),
+                };
+                caches[type_index as usize] = Some(cache);
+            }
+        }
+        Self::set_role_supertypes_transitive(&mut caches);
+        caches
+    }
+
+    fn read_role_annotations(
+        vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        role_type: RoleType<'static>,
+    ) -> HashSet<RoleTypeAnnotation> {
+        let mut annotations = HashSet::new();
+        for annotation in Self::read_annotations(vertex_properties, role_type.into_vertex()).into_iter() {
+            annotations.insert(RoleTypeAnnotation::from(annotation));
+        }
+        annotations
+    }
+
+    fn set_role_supertypes_transitive(role_type_caches: &mut Box<[Option<RoleTypeCache>]>) {
+        for index in 0..role_type_caches.len() {
+            if role_type_caches[index].is_none() {
+                continue;
+            }
+            let mut supertype = role_type_caches[index].as_ref().unwrap().supertype.clone();
+            while let Some(current_supertype) = supertype {
+                let next_super_cache =
+                    Self::get_role_type_cache(role_type_caches, current_supertype.vertex().clone()).unwrap();
+                supertype = next_super_cache.supertype.as_ref().cloned();
+                role_type_caches[index].as_mut().unwrap().supertypes.push(current_supertype);
+            }
+        }
+    }
+
+    fn create_attribute_caches(snapshot: ReadSnapshot, vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>) -> Box<[Option<AttributeTypeCache>]> {
+        let attribute_data = snapshot
+            .iterate_range(PrefixRange::new_within(build_vertex_attribute_type_prefix()))
+            .collect_cloned_bmap(|key, value| (ByteArray::from(key.byte_ref()), ByteArray::from(value)))
+            .unwrap();
+        let max_attribute_id = attribute_data
+            .iter()
+            .filter_map(|(key, _)| {
+                if is_vertex_attribute_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
+                    Some(
+                        new_vertex_attribute_type(ByteArrayOrRef::Reference(ByteReference::from(key)))
+                            .type_id()
+                            .as_u16(),
+                    )
+                } else {
+                    None
+                }
+            })
+            .max()
+            .unwrap_or(0);
+        let attribute_type_caches =
+            Self::build_attribute_caches(&attribute_data, &vertex_properties, max_attribute_id);
+        attribute_type_caches
+    }
+
+    fn build_attribute_caches(
+        attribute_data: &BTreeMap<ByteArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>,
         max_attribute: u16,
     ) -> Box<[Option<AttributeTypeCache>]> {
         let mut caches: Box<[Option<AttributeTypeCache>]> =
             (0..=max_attribute).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
-        for (key, _) in attribute_types_data.iter() {
-            if is_vertex_attribute_type(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))) {
+        for (key, _) in attribute_data.iter() {
+            if is_vertex_attribute_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
                 let attribute_type =
-                    AttributeType::new(new_vertex_attribute_type(ByteArrayOrRef::Array(ByteArray::copy(key.bytes()))));
+                    AttributeType::new(new_vertex_attribute_type(ByteArrayOrRef::Array(key.clone())));
                 let type_index = Typed::type_id(attribute_type.vertex()).as_u16();
 
-                let label = Self::read_type_label(type_vertex_properties, attribute_type.vertex().clone());
+                let label = Self::read_type_label(vertex_properties, attribute_type.vertex().clone());
                 let is_root = label == Root::Attribute.label();
-                let annotations = Self::read_attribute_annotations(type_vertex_properties, attribute_type.clone());
-                let value_type = Self::read_value_type(type_vertex_properties, attribute_type.vertex().clone());
-                let supertype = Self::read_supertype_vertex(attribute_types_data, attribute_type.vertex().clone())
+                let annotations = Self::read_attribute_annotations(vertex_properties, attribute_type.clone());
+                let value_type = Self::read_value_type(vertex_properties, attribute_type.vertex().clone());
+                let supertype = Self::read_supertype_vertex(attribute_data, attribute_type.vertex().clone())
                     .map(AttributeType::new);
                 let cache = AttributeTypeCache {
                     type_: attribute_type,
@@ -387,12 +509,13 @@ impl TypeCache {
     }
 
     fn read_attribute_annotations(
-        type_vertex_properties: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>,
         attribute_type: AttributeType<'static>,
     ) -> HashSet<AttributeTypeAnnotation> {
         let mut annotations = HashSet::new();
-        Self::read_annotation_abstract(type_vertex_properties, attribute_type.into_vertex())
-            .map(|a| annotations.insert(AttributeTypeAnnotation::from(a)));
+        for annotation in Self::read_annotations(vertex_properties, attribute_type.into_vertex()).into_iter() {
+            annotations.insert(AttributeTypeAnnotation::from(annotation));
+        }
         annotations
     }
 
@@ -412,12 +535,11 @@ impl TypeCache {
     }
 
     fn read_type_label(
-        type_vertex_properties: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>,
         type_vertex: TypeVertex<'static>,
     ) -> Label<'static> {
-        let property = build_property_type_label(type_vertex);
-        type_vertex_properties
-            .get(&property.into_storage_key().into_owned_array())
+        vertex_properties
+            .get(&build_property_type_label(type_vertex))
             .map(|bytes| {
                 Label::parse_from(StringBytes::new(ByteArrayOrRef::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(
                     ByteReference::from(bytes),
@@ -427,27 +549,44 @@ impl TypeCache {
     }
 
     fn read_value_type(
-        type_vertex_properties: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>,
         type_vertex: TypeVertex<'static>,
     ) -> Option<ValueType> {
-        let property = build_property_type_value_type(type_vertex);
-        type_vertex_properties
-            .get(&property.into_storage_key().into_owned_array())
+        vertex_properties
+            .get(&build_property_type_value_type(type_vertex))
             .map(|bytes| ValueType::from_value_type_id(ValueTypeID::new(bytes.bytes().try_into().unwrap())))
     }
 
-    fn read_annotation_abstract(
-        type_vertex_properties: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+    fn read_annotations(
+        vertex_properties: &BTreeMap<TypeVertexProperty, ByteArray<{ BUFFER_VALUE_INLINE }>>,
         type_vertex: TypeVertex<'static>,
-    ) -> Option<AnnotationAbstract> {
-        let property = build_property_type_annotation_abstract(type_vertex);
-        type_vertex_properties
-            .get(&property.into_storage_key().into_owned_array())
-            .map(|_bytes| AnnotationAbstract::new())
+    ) -> Vec<Annotation> {
+        vertex_properties.iter().filter_map(|(property, value)| {
+            if property.type_vertex() != type_vertex {
+                None
+            } else {
+                // WARNING: do _not_ remove the explicit enumeration, as this will help us catch when future annotations are added
+                match property.infix() {
+                    InfixType::PropertyAnnotationAbstract => Some(Annotation::Abstract(AnnotationAbstract::new())),
+                    | InfixType::EdgeSub
+                    | InfixType::EdgeSubReverse
+                    | InfixType::EdgeOwns
+                    | InfixType::EdgeOwnsReverse
+                    | InfixType::EdgePlays
+                    | InfixType::EdgePlaysReverse
+                    | InfixType::EdgeRelates
+                    | InfixType::EdgeRelatesReverse
+                    | InfixType::EdgeHas
+                    | InfixType::EdgeHasReverse
+                    | InfixType::PropertyLabel
+                    | InfixType::PropertyValueType => None
+                }
+            }
+        }).collect()
     }
 
     fn read_supertype_vertex(
-        types_data: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        types_data: &BTreeMap<ByteArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
         type_vertex: TypeVertex<'static>,
     ) -> Option<TypeVertex<'static>> {
         let edge_prefix = build_edge_sub_prefix(type_vertex).into_owned_array();
@@ -455,21 +594,21 @@ impl TypeCache {
             .range::<[u8], _>((Bound::Included(edge_prefix.bytes()), Bound::Unbounded))
             .take_while(|(key, _)| key.bytes().starts_with(edge_prefix.bytes()));
         let supertype = edges.next().map(|(key, _)| {
-            new_edge_sub(ByteArrayOrRef::Reference(ByteReference::from(key.byte_array()))).to().into_owned()
+            new_edge_sub(ByteArrayOrRef::Reference(ByteReference::from(key))).to().into_owned()
         });
         debug_assert!(edges.next().is_none());
         supertype
     }
 
     fn read_owns_attribute_vertexes(
-        types_data: &BTreeMap<StorageKeyArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        types_data: &BTreeMap<ByteArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
         type_vertex: TypeVertex<'static>,
     ) -> Vec<TypeVertex<'static>> {
         let edge_prefix = build_edge_owns_prefix(type_vertex).into_owned_array();
         types_data
             .range::<[u8], _>((Bound::Included(edge_prefix.bytes()), Bound::Unbounded))
             .take_while(|(key, _)| key.bytes().starts_with(edge_prefix.bytes()))
-            .map(|(key, _)| new_edge_owns(ByteArrayOrRef::Array(key.byte_array().clone())).to().into_owned())
+            .map(|(key, _)| new_edge_owns(ByteArrayOrRef::Reference(ByteReference::from(key))).to().into_owned())
             .collect()
     }
 
@@ -481,6 +620,10 @@ impl TypeCache {
         self.relation_types_index_label.get(label).cloned()
     }
 
+    pub(crate) fn get_role_type(&self, label: &Label<'_>) -> Option<RoleType<'static>> {
+        self.role_types_index_label.get(label).cloned()
+    }
+
     pub(crate) fn get_attribute_type(&self, label: &Label<'_>) -> Option<AttributeType<'static>> {
         self.attribute_types_index_label.get(label).cloned()
     }
@@ -489,34 +632,33 @@ impl TypeCache {
         &self,
         entity_type: impl EntityTypeAPI<'static>,
     ) -> Option<EntityType<'static>> {
-        Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().supertype.as_ref().cloned()
+        Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().supertype.clone()
     }
 
     pub(crate) fn get_relation_type_supertype(
         &self,
         relation_type: impl RelationTypeAPI<'static>,
     ) -> Option<RelationType<'static>> {
-        Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
-            .unwrap()
-            .supertype
-            .as_ref()
-            .cloned()
+        Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().supertype.clone()
+    }
+
+    pub(crate) fn get_role_type_supertype(
+        &self,
+        role_type: impl RoleTypeAPI<'static>,
+    ) -> Option<RoleType<'static>> {
+        Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().supertype.clone()
     }
 
     pub(crate) fn get_attribute_type_supertype(
         &self,
         attribute_type: impl AttributeTypeAPI<'static>,
     ) -> Option<AttributeType<'static>> {
-        Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
-            .unwrap()
-            .supertype
-            .as_ref()
-            .cloned()
+        Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().supertype.clone()
     }
 
-    pub(crate) fn get_entity_type_supertypes(
+    pub(crate) fn get_entity_type_supertypes<'a>(
         &self,
-        entity_type: impl EntityTypeAPI<'static>,
+        entity_type: impl EntityTypeAPI<'a>,
     ) -> &Vec<EntityType<'static>> {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().supertypes
     }
@@ -528,6 +670,13 @@ impl TypeCache {
         &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().supertypes
     }
 
+    pub(crate) fn get_role_type_supertypes(
+        &self,
+        role_type: impl RoleTypeAPI<'static>,
+    ) -> &Vec<RoleType<'static>> {
+        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().supertypes
+    }
+    
     pub(crate) fn get_attribute_type_supertypes(
         &self,
         attribute_type: impl AttributeTypeAPI<'static>,
@@ -543,6 +692,10 @@ impl TypeCache {
         &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().label
     }
 
+    pub(crate) fn get_role_type_label(&self, role_type: impl RoleTypeAPI<'static>) -> &Label<'static> {
+        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().label
+    }
+
     pub(crate) fn get_attribute_type_label(&self, attribute_type: impl AttributeTypeAPI<'static>) -> &Label<'static> {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().label
     }
@@ -553,6 +706,10 @@ impl TypeCache {
 
     pub(crate) fn get_relation_type_is_root(&self, relation_type: impl RelationTypeAPI<'static>) -> bool {
         Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().is_root
+    }
+
+    pub(crate) fn get_role_type_is_root(&self, role_type: impl RoleTypeAPI<'static>) -> bool {
+        Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().is_root
     }
 
     pub(crate) fn get_attribute_type_is_root(&self, attribute_type: impl AttributeTypeAPI<'static>) -> bool {
@@ -584,6 +741,13 @@ impl TypeCache {
     ) -> &HashSet<RelationTypeAnnotation> {
         &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().annotations
     }
+    
+    pub(crate) fn get_role_type_annotations(
+        &self,
+        role_type: impl RoleTypeAPI<'static>,
+    ) -> &HashSet<RoleTypeAnnotation> {
+        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().annotations
+    }
 
     pub(crate) fn get_attribute_type_annotations(
         &self,
@@ -608,6 +772,15 @@ impl TypeCache {
         debug_assert_eq!(type_vertex.prefix(), PrefixType::VertexRelationType);
         let as_u16 = Typed::type_id(&type_vertex).as_u16();
         relation_type_caches[as_u16 as usize].as_ref()
+    }
+
+    fn get_role_type_cache<'c>(
+        role_type_caches: &'c [Option<RoleTypeCache>],
+        type_vertex: TypeVertex<'_>,
+    ) -> Option<&'c RoleTypeCache> {
+        debug_assert_eq!(type_vertex.prefix(), PrefixType::VertexRoleType);
+        let as_u16 = Typed::type_id(&type_vertex).as_u16();
+        role_type_caches[as_u16 as usize].as_ref()
     }
 
     fn get_attribute_type_cache<'c>(
