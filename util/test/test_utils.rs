@@ -32,10 +32,8 @@ pub fn init_logging() {
 
 pub fn create_tmp_dir() -> PathBuf {
     let id = rand::random::<u64>();
-    let mut fs_tmp_dir = std::env::temp_dir();
     let dir_name = format!("test_storage_{}", id);
-    fs_tmp_dir.push(Path::new(&dir_name));
-    fs_tmp_dir
+    std::env::temp_dir().join(Path::new(&dir_name))
 }
 
 pub fn delete_dir(path: PathBuf) {
