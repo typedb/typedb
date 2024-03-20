@@ -18,6 +18,7 @@
 use std::rc::Rc;
 
 use bytes::byte_array::ByteArray;
+use durability::wal::WAL;
 use logger::result::ResultExt;
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -34,8 +35,8 @@ fn snapshot_buffered_put_get() {
     init_logging();
 
     let storage_path = create_tmp_dir();
-    let options = MVCCStorage::new_db_options();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let options = MVCCStorage::<WAL>::new_db_options();
+    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
     let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 
@@ -65,8 +66,8 @@ fn snapshot_buffered_put_get() {
 fn snapshot_buffered_put_iterate() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let options = MVCCStorage::new_db_options();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let options = MVCCStorage::<WAL>::new_db_options();
+    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
     let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 
@@ -96,8 +97,8 @@ fn snapshot_buffered_put_iterate() {
 fn snapshot_buffered_delete() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let options = MVCCStorage::new_db_options();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let options = MVCCStorage::<WAL>::new_db_options();
+    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
     let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 
@@ -129,8 +130,8 @@ fn snapshot_buffered_delete() {
 fn snapshot_read_through() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let options = MVCCStorage::new_db_options();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let options = MVCCStorage::<WAL>::new_db_options();
+    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
     let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 
@@ -178,8 +179,8 @@ fn snapshot_read_through() {
 fn snapshot_delete_reinserted() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let options = MVCCStorage::new_db_options();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let options = MVCCStorage::<WAL>::new_db_options();
+    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
     let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 

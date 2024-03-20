@@ -18,6 +18,7 @@
 use std::{path::PathBuf, rc::Rc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use durability::wal::WAL;
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
@@ -39,9 +40,9 @@ const VALUE_2: [u8; 1] = [0x1];
 const VALUE_3: [u8; 1] = [0x88];
 const VALUE_4: [u8; 1] = [0x99];
 
-fn setup_storage(storage_path: &PathBuf) -> MVCCStorage {
+fn setup_storage(storage_path: &PathBuf) -> MVCCStorage<WAL> {
     let mut storage = MVCCStorage::new(Rc::from("storage"), storage_path).unwrap();
-    storage.create_keyspace("keyspace", KEYSPACE_ID, &MVCCStorage::new_db_options()).unwrap();
+    storage.create_keyspace("keyspace", KEYSPACE_ID, &MVCCStorage::<WAL>::new_db_options()).unwrap();
 
     let snapshot = storage.open_snapshot_write();
     snapshot.put_val(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));

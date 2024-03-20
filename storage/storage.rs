@@ -15,30 +15,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#![deny(unused_must_use)]
+#![deny(elided_lifetimes_in_paths)]
+
+#![allow(dead_code)]
+#![allow(clippy::module_inception)]
+
 use std::{
     path::{Path, PathBuf},
     rc::Rc,
-    sync::{Arc, atomic::Ordering},
+    sync::{atomic::Ordering, Arc},
 };
 
-use speedb::{Options, WriteBatch};
-
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
-use durability::{DurabilityService, SequenceNumber, Sequencer, wal::WAL};
+use durability::{DurabilityService, SequenceNumber};
 use iterator::State;
 use logger::{error, result::ResultExt};
-use primitive::prefix_range::PrefixRange;
-use primitive::u80::U80;
+use primitive::{prefix_range::PrefixRange, u80::U80};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use snapshot::write::Write;
+use speedb::{Options, WriteBatch};
 
 use crate::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{CommitRecord, IsolationManager},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::keyspace::{
-        Keyspace, KEYSPACE_ID_MAX, KEYSPACE_ID_RESERVED_UNSET, KEYSPACE_MAXIMUM_COUNT, KeyspaceError, KeyspaceId,
-        KeyspaceRangeIterator,
+        Keyspace, KeyspaceError, KeyspaceId, KeyspaceRangeIterator, KEYSPACE_ID_MAX, KEYSPACE_ID_RESERVED_UNSET,
+        KEYSPACE_MAXIMUM_COUNT,
     },
     snapshot::{
         buffer::KeyspaceBuffers,
@@ -53,26 +57,30 @@ pub mod keyspace;
 pub mod snapshot;
 
 #[derive(Debug)]
-pub struct MVCCStorage {
+pub struct MVCCStorage<D> {
     owner_name: Rc<str>,
-    path: PathBuf,
+    storage_dir: PathBuf,
     keyspaces: Vec<Keyspace>,
     keyspaces_index: [Option<KeyspaceId>; KEYSPACE_MAXIMUM_COUNT],
-    // TODO: inject either a remote or local service
-    durability_service: WAL,
+    durability_service: D,
     isolation_manager: IsolationManager,
 }
 
-impl MVCCStorage {
+impl<D> MVCCStorage<D> {
     const STORAGE_DIR_NAME: &'static str = "storage";
 
-    pub fn new(owner_name: Rc<str>, path: &Path) -> Result<Self, MVCCStorageError> {
-        let storage_dir = path.with_extension(MVCCStorage::STORAGE_DIR_NAME);
-        let mut durability_service = WAL::open("/tmp/wal").expect("Could not create WAL directory");
+    pub fn new(owner_name: Rc<str>, path: &Path) -> Result<Self, MVCCStorageError>
+    where
+        D: DurabilityService,
+    {
+        let storage_dir = path.join(Self::STORAGE_DIR_NAME);
+
+        let mut durability_service = D::open("/tmp/wal").expect("Could not create WAL directory");
         durability_service.register_record_type::<CommitRecord>();
-        Ok(MVCCStorage {
-            owner_name: owner_name.clone(),
-            path: storage_dir,
+
+        Ok(Self {
+            owner_name,
+            storage_dir,
             keyspaces: Vec::new(),
             keyspaces_index: core::array::from_fn(|_| None),
             isolation_manager: IsolationManager::new(durability_service.current()),
@@ -80,11 +88,12 @@ impl MVCCStorage {
         })
     }
 
+    fn owner_name(&self) -> &str {
+        &self.owner_name
+    }
+
     // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options
-    fn load_from_checkpoint(
-        _path: &Path,
-        _durability_service: impl DurabilityService,
-    ) -> Result<Self, MVCCStorageError> {
+    fn load_from_checkpoint(_path: &Path, _durability_service: D) -> Result<Self, MVCCStorageError> {
         todo!("Booting from checkpoint not yet implemented")
 
         // Steps:
@@ -102,8 +111,7 @@ impl MVCCStorage {
         keyspace_id: KeyspaceId,
         options: &Options,
     ) -> Result<(), MVCCStorageError> {
-        let mut keyspace_path = self.path.clone();
-        keyspace_path.push(name);
+        let keyspace_path = self.storage_dir.join(name);
         self.validate_new_keyspace(name, keyspace_id)?;
 
         self.keyspaces.push(Keyspace::new(keyspace_path, options, keyspace_id).map_err(|err| MVCCStorageError {
@@ -129,7 +137,9 @@ impl MVCCStorage {
                 storage_name: self.owner_name.as_ref().to_owned(),
                 kind: MVCCStorageErrorKind::KeyspaceIdReserved { keyspace: name.to_owned(), keyspace_id },
             });
-        } else if keyspace_id > KEYSPACE_ID_MAX {
+        }
+
+        if keyspace_id > KEYSPACE_ID_MAX {
             return Err(MVCCStorageError {
                 storage_name: self.owner_name.as_ref().to_owned(),
                 kind: MVCCStorageErrorKind::KeyspaceIdTooLarge {
@@ -139,6 +149,7 @@ impl MVCCStorage {
                 },
             });
         }
+
         for existing_keyspace_id in 0..self.keyspaces_index.len() {
             if let Some(existing_keyspace_index) = self.keyspaces_index[existing_keyspace_id] {
                 let keyspace = &self.keyspaces[existing_keyspace_index as usize];
@@ -147,7 +158,9 @@ impl MVCCStorage {
                         storage_name: self.owner_name.as_ref().to_owned(),
                         kind: MVCCStorageErrorKind::KeyspaceNameExists { keyspace: name.to_owned() },
                     });
-                } else if existing_keyspace_id as KeyspaceId == keyspace_id {
+                }
+
+                if existing_keyspace_id as KeyspaceId == keyspace_id {
                     return Err(MVCCStorageError {
                         storage_name: self.owner_name.as_ref().to_owned(),
                         kind: MVCCStorageErrorKind::KeyspaceIdExists {
@@ -162,7 +175,7 @@ impl MVCCStorage {
         Ok(())
     }
 
-    pub fn open_snapshot_write(&self) -> WriteSnapshot<'_> {
+    pub fn open_snapshot_write(&self) -> WriteSnapshot<'_, D> {
         /*
 
         How to pick a sequence number:
@@ -181,20 +194,15 @@ impl MVCCStorage {
         WriteSnapshot::new(self, open_sequence_number)
     }
 
-    pub fn open_snapshot_read(&self) -> ReadSnapshot<'_> {
+    pub fn open_snapshot_read(&self) -> ReadSnapshot<'_, D> {
         let open_sequence_number = self.isolation_manager.watermark();
         ReadSnapshot::new(self, open_sequence_number)
     }
 
-    pub fn open_snapshot_read_at(&self, sequence_number: SequenceNumber) -> ReadSnapshot<'_> {
-        // TODO: validate sequence number is before or equal to watermark
-        ReadSnapshot::new(self, sequence_number)
-    }
-
-    pub fn snapshot_commit<'storage>(
-        &'storage self,
-        snapshot: WriteSnapshot<'storage>,
-    ) -> Result<(), MVCCStorageError> {
+    fn snapshot_commit<'storage>(&'storage self, snapshot: WriteSnapshot<'storage, D>) -> Result<(), MVCCStorageError>
+    where
+        D: DurabilityService,
+    {
         let commit_record = snapshot.into_commit_record();
 
         //  1. make durable and get sequence number
@@ -234,46 +242,36 @@ impl MVCCStorage {
 
     fn to_write_batches(
         &self,
-        commit_sequence_number: &SequenceNumber,
+        seq: &SequenceNumber,
         buffers: &KeyspaceBuffers,
     ) -> [Option<WriteBatch>; KEYSPACE_MAXIMUM_COUNT] {
         let mut write_batches: [Option<WriteBatch>; KEYSPACE_MAXIMUM_COUNT] = core::array::from_fn(|_| None);
 
-        buffers.iter().enumerate().for_each(|(index, buffer)| {
+        for (index, buffer) in buffers.iter().enumerate() {
             let map = buffer.map().read().unwrap();
-            if map.is_empty() {
-                write_batches[index] = None
-            } else {
+            if !map.is_empty() {
                 let mut write_batch = WriteBatch::default();
-                map.iter().for_each(|(key, write)| match write {
-                    Write::Insert(value) => write_batch.put(
-                        MVCCKey::<'static>::build(key.bytes(), commit_sequence_number, StorageOperation::Insert)
-                            .bytes(),
-                        value.bytes(),
-                    ),
-                    Write::InsertPreexisting(value, reinsert) => {
-                        if reinsert.load(Ordering::SeqCst) {
-                            write_batch.put(
-                                MVCCKey::<'static>::build(
-                                    key.bytes(),
-                                    commit_sequence_number,
-                                    StorageOperation::Insert,
+                for (key, write) in &*map {
+                    match write {
+                        Write::Insert(value) => write_batch
+                            .put(MVCCKey::build(key.bytes(), seq, StorageOperation::Insert).bytes(), value.bytes()),
+                        Write::InsertPreexisting(value, reinsert) => {
+                            if reinsert.load(Ordering::SeqCst) {
+                                write_batch.put(
+                                    MVCCKey::build(key.bytes(), seq, StorageOperation::Insert).bytes(),
+                                    value.bytes(),
                                 )
-                                    .bytes(),
-                                value.bytes(),
-                            )
+                            }
+                        }
+                        Write::RequireExists(_) => {}
+                        Write::Delete => {
+                            write_batch.put(MVCCKey::build(key.bytes(), seq, StorageOperation::Delete).bytes(), [])
                         }
                     }
-                    Write::RequireExists(_) => {}
-                    Write::Delete => write_batch.put(
-                        MVCCKey::<'static>::build(key.bytes(), commit_sequence_number, StorageOperation::Delete)
-                            .bytes(),
-                        [],
-                    ),
-                });
+                }
                 write_batches[index] = Some(write_batch);
             }
-        });
+        }
         write_batches
     }
 
@@ -283,7 +281,7 @@ impl MVCCStorage {
 
     fn get_keyspace(&self, keyspace_id: KeyspaceId) -> &Keyspace {
         let keyspace_index = self.keyspaces_index[keyspace_id as usize].unwrap();
-        self.keyspaces.get(keyspace_index as usize).unwrap()
+        &self.keyspaces[keyspace_index as usize]
     }
 
     fn checkpoint(&self) {
@@ -303,24 +301,22 @@ impl MVCCStorage {
                 kind: MVCCStorageErrorKind::KeyspaceDeleteError { source: result.unwrap_err() },
             })
             .collect();
-        if errors.is_empty() {
-            if !self.path.exists() {
-                Ok(())
-            } else {
-                match std::fs::remove_dir_all(self.path.clone()) {
-                    Ok(_) => Ok(()),
-                    Err(e) => {
-                        error!("Failed to delete storage {}, received error: {}", self.owner_name, e);
-                        Err(vec![MVCCStorageError {
-                            storage_name: self.owner_name.as_ref().to_owned(),
-                            kind: MVCCStorageErrorKind::FailedToDeleteStorage { source: e },
-                        }])
-                    }
-                }
-            }
-        } else {
-            Err(errors)
+
+        if !errors.is_empty() {
+            return Err(errors);
         }
+
+        if self.storage_dir.exists() {
+            std::fs::remove_dir_all(self.storage_dir.clone()).map_err(|err| {
+                error!("Failed to delete storage {}, received error: {}", self.owner_name, err);
+                vec![MVCCStorageError {
+                    storage_name: self.owner_name.as_ref().to_owned(),
+                    kind: MVCCStorageErrorKind::FailedToDeleteStorage { source: err },
+                }]
+            })?;
+        }
+
+        Ok(())
     }
 
     pub fn get<M, V>(
@@ -329,12 +325,12 @@ impl MVCCStorage {
         open_sequence_number: &SequenceNumber,
         mut mapper: M,
     ) -> Option<V>
-        where
-            M: FnMut(ByteReference<'_>) -> V,
+    where
+        M: FnMut(ByteReference<'_>) -> V,
     {
         let mut iterator = self.iterate_range(
             PrefixRange::new_within(StorageKey::<8>::Reference(key.clone())),
-            open_sequence_number
+            open_sequence_number,
         );
         // TODO: we don't want to panic on unwrap here
         loop {
@@ -351,9 +347,9 @@ impl MVCCStorage {
 
     pub fn iterate_range<'this, const PS: usize>(
         &'this self,
-        range: PrefixRange<StorageKey<'this, { PS }>>,
+        range: PrefixRange<StorageKey<'this, PS>>,
         open_sequence_number: &SequenceNumber,
-    ) -> MVCCRangeIterator<'this, PS> {
+    ) -> MVCCRangeIterator<'this, PS, D> {
         MVCCRangeIterator::new(self, range, open_sequence_number)
     }
 
@@ -364,7 +360,7 @@ impl MVCCStorage {
         self.get_keyspace(key.keyspace_id())
             .put(key.bytes(), value.bytes())
             .map_err(|e| MVCCStorageError {
-                storage_name: self.owner_name.as_ref().to_owned(),
+                storage_name: self.owner_name().to_owned(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
                     source: Arc::new(e),
                     keyspace: self.get_keyspace(key.keyspace_id()).name().to_owned(),
@@ -374,13 +370,13 @@ impl MVCCStorage {
     }
 
     pub fn get_raw<M, V>(&self, key: StorageKeyReference<'_>, mut mapper: M) -> Option<V>
-        where
-            M: FnMut(&[u8]) -> V,
+    where
+        M: FnMut(&[u8]) -> V,
     {
         self.get_keyspace(key.keyspace_id())
             .get(key.bytes(), |value| mapper(value))
             .map_err(|e| MVCCStorageError {
-                storage_name: self.owner_name.as_ref().to_owned(),
+                storage_name: self.owner_name().to_owned(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
                     source: Arc::new(e),
                     keyspace: self.get_keyspace(key.keyspace_id()).name().to_owned(),
@@ -390,9 +386,9 @@ impl MVCCStorage {
             .unwrap_or_log()
     }
 
-    pub fn get_prev_raw<M, T>(&self, key: StorageKeyReference<'_>, mut key_value_mapper: M) -> Option<T>
-        where
-            M: FnMut(&[u8], &[u8]) -> T,
+    fn get_prev_raw<M, T>(&self, key: StorageKeyReference<'_>, mut key_value_mapper: M) -> Option<T>
+    where
+        M: FnMut(&[u8], &[u8]) -> T,
     {
         self.get_keyspace(key.keyspace_id()).get_prev(key.bytes(), |k, v| key_value_mapper(k, v))
     }
@@ -406,8 +402,8 @@ impl MVCCStorage {
     }
 }
 
-pub struct MVCCRangeIterator<'a, const PS: usize> {
-    storage: &'a MVCCStorage,
+pub struct MVCCRangeIterator<'a, const PS: usize, D> {
+    storage: &'a MVCCStorage<D>,
     keyspace: &'a Keyspace,
     iterator: KeyspaceRangeIterator<'a, PS>,
     open_sequence_number: SequenceNumber,
@@ -415,11 +411,15 @@ pub struct MVCCRangeIterator<'a, const PS: usize> {
     state: State<Arc<KeyspaceError>>,
 }
 
-impl<'s, const P: usize> MVCCRangeIterator<'s, P> {
+impl<'s, const P: usize, D> MVCCRangeIterator<'s, P, D> {
     //
     // TODO: optimisation for fixed-width keyspaces: we can skip to key[len(key) - 1] = key[len(key) - 1] + 1 once we find a successful key, to skip all 'older' versions of the key
     //
-    fn new(storage: &'s MVCCStorage, range: PrefixRange<StorageKey<'s, P>>, open_sequence_number: &SequenceNumber) -> Self {
+    fn new(
+        storage: &'s MVCCStorage<D>,
+        range: PrefixRange<StorageKey<'s, P>>,
+        open_sequence_number: &SequenceNumber,
+    ) -> Self {
         debug_assert!(!range.start().bytes().is_empty());
         let keyspace = storage.get_keyspace(range.start().keyspace_id());
         let iterator = keyspace.iterate_range(range.map(|k| k.into_byte_array_or_ref()));
@@ -433,7 +433,7 @@ impl<'s, const P: usize> MVCCRangeIterator<'s, P> {
         }
     }
 
-    fn peek(&mut self) -> Option<Result<(StorageKeyReference, ByteReference), MVCCStorageError>> {
+    fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCStorageError>> {
         match &self.state {
             State::Init => {
                 self.find_next_state();
@@ -452,7 +452,7 @@ impl<'s, const P: usize> MVCCRangeIterator<'s, P> {
                 self.peek()
             }
             State::Error(error) => Some(Err(MVCCStorageError {
-                storage_name: self.storage.owner_name.to_string(),
+                storage_name: self.storage.owner_name().to_string(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
                     source: error.clone(),
                     keyspace: self.keyspace.name().to_owned(),
@@ -462,7 +462,7 @@ impl<'s, const P: usize> MVCCRangeIterator<'s, P> {
         }
     }
 
-    fn next(&mut self) -> Option<Result<(StorageKeyReference, ByteReference), MVCCStorageError>> {
+    fn next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCStorageError>> {
         match &self.state {
             State::Init => {
                 self.find_next_state();
@@ -483,7 +483,7 @@ impl<'s, const P: usize> MVCCRangeIterator<'s, P> {
                 self.next()
             }
             State::Error(error) => Some(Err(MVCCStorageError {
-                storage_name: self.storage.owner_name.to_string(),
+                storage_name: self.storage.owner_name().to_owned(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
                     source: error.clone(),
                     keyspace: self.keyspace.name().to_owned(),
@@ -525,7 +525,7 @@ impl<'s, const P: usize> MVCCRangeIterator<'s, P> {
     fn is_visible_key(
         open_sequence_number: &SequenceNumber,
         last_visible_key: &Option<ByteArray<128>>,
-        mvcc_key: &MVCCKey,
+        mvcc_key: &MVCCKey<'_>,
     ) -> bool {
         (last_visible_key.is_none() || last_visible_key.as_ref().unwrap().bytes() != mvcc_key.key())
             && mvcc_key.is_visible_to(open_sequence_number)
@@ -657,6 +657,7 @@ impl StorageOperation {
             _ => panic!("Unrecognised storage operation bytes."),
         }
     }
+
     const fn serialised_len() -> usize {
         StorageOperation::BYTES
     }

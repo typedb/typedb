@@ -36,15 +36,15 @@ use crate::{
     MVCCRangeIterator,
 };
 
-pub struct SnapshotRangeIterator<'a, const PS: usize> {
-    storage_iterator: MVCCRangeIterator<'a, PS>,
+pub struct SnapshotRangeIterator<'a, const PS: usize, Storage> {
+    storage_iterator: MVCCRangeIterator<'a, PS, Storage>,
     buffered_iterator: Option<BufferedPrefixIterator>,
     iterator_state: IteratorState,
 }
 
-impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
+impl<'a, const PS: usize, D> SnapshotRangeIterator<'a, PS, D> {
     pub(crate) fn new(
-        mvcc_iterator: MVCCRangeIterator<'a, PS>,
+        mvcc_iterator: MVCCRangeIterator<'a, PS, D>,
         buffered_iterator: Option<BufferedPrefixIterator>,
     ) -> Self {
         SnapshotRangeIterator {
@@ -196,9 +196,8 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
             None
         }
     }
-
     fn storage_peek<'this>(
-        storage_iterator: &'this mut MVCCRangeIterator<'_, PS>,
+        storage_iterator: &'this mut MVCCRangeIterator<'_, PS, D>,
     ) -> Option<Result<(StorageKeyReference<'this>, ByteReference<'this>), SnapshotError>> {
         let storage_peek = storage_iterator.peek();
         match storage_peek {

@@ -22,6 +22,7 @@ use std::{
     error::Error,
     fmt,
     io::{self, Read, Write},
+    path::Path,
 };
 
 use primitive::u80::U80;
@@ -46,6 +47,10 @@ pub struct RawRecord {
 }
 
 pub trait DurabilityService: Sequencer {
+    fn open(directory: impl AsRef<Path>) -> io::Result<Self>
+    where
+        Self: Sized;
+
     fn register_record_type<Record: DurabilityRecord>(&mut self);
 
     fn sequenced_write<Record>(&self, record: &Record) -> Result<SequenceNumber>

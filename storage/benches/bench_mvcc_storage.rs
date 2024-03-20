@@ -16,22 +16,17 @@
  */
 
 use std::{
-    path::Path,
-    path::PathBuf,
-    rc::Rc,
     fs::File,
     os::raw::c_int,
+    path::{Path, PathBuf},
+    rc::Rc,
 };
+
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
-use criterion::{
-    criterion_group,
-    criterion_main,
-    Criterion,
-    profiler::Profiler,
-};
+use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
+use durability::wal::WAL;
 use pprof::ProfilerGuard;
 use primitive::prefix_range::PrefixRange;
-
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
@@ -52,7 +47,7 @@ fn random_key_4(keyspace_id: KeyspaceId) -> StorageKeyArray<{ BUFFER_KEY_INLINE 
     StorageKeyArray::from((bytes.as_slice(), keyspace_id))
 }
 
-fn populate_storage(storage: &MVCCStorage, keyspace_id: KeyspaceId, key_count: usize) -> usize {
+fn populate_storage(storage: &MVCCStorage<WAL>, keyspace_id: KeyspaceId, key_count: usize) -> usize {
     const BATCH_SIZE: usize = 1_000;
     let mut snapshot = storage.open_snapshot_write();
     for i in 0..key_count {
@@ -74,7 +69,7 @@ fn populate_storage(storage: &MVCCStorage, keyspace_id: KeyspaceId, key_count: u
 }
 
 fn bench_snapshot_read_get(
-    storage: &MVCCStorage,
+    storage: &MVCCStorage<WAL>,
     keyspace_id: KeyspaceId,
 ) -> Option<ByteArray<{ BUFFER_VALUE_INLINE }>> {
     let snapshot = storage.open_snapshot_read();
@@ -86,7 +81,7 @@ fn bench_snapshot_read_get(
 }
 
 fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(
-    storage: &MVCCStorage,
+    storage: &MVCCStorage<WAL>,
     keyspace_id: KeyspaceId,
 ) -> Option<ByteArray<{ BUFFER_VALUE_INLINE }>> {
     let snapshot = storage.open_snapshot_read();
@@ -97,7 +92,7 @@ fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(
     last
 }
 
-fn bench_snapshot_write_put(storage: &MVCCStorage, keyspace_id: KeyspaceId, batch_size: usize) {
+fn bench_snapshot_write_put(storage: &MVCCStorage<WAL>, keyspace_id: KeyspaceId, batch_size: usize) {
     let snapshot = storage.open_snapshot_write();
     for _ in 0..batch_size {
         snapshot.put(random_key_24(keyspace_id));
@@ -105,10 +100,10 @@ fn bench_snapshot_write_put(storage: &MVCCStorage, keyspace_id: KeyspaceId, batc
     snapshot.commit().unwrap()
 }
 
-fn setup_storage(keyspace_id: KeyspaceId, key_count: usize) -> (MVCCStorage, PathBuf) {
+fn setup_storage(keyspace_id: KeyspaceId, key_count: usize) -> (MVCCStorage<WAL>, PathBuf) {
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::new(Rc::from("storage_bench"), &storage_path).unwrap();
-    let options = MVCCStorage::new_db_options();
+    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage_bench"), &storage_path).unwrap();
+    let options = MVCCStorage::<WAL>::new_db_options();
     storage.create_keyspace("default", keyspace_id, &options).unwrap();
     let keys = populate_storage(&storage, keyspace_id, key_count);
     println!("Initialised storage with '{}' keys", keys);
@@ -148,10 +143,7 @@ pub struct FlamegraphProfiler<'a> {
 impl<'a> FlamegraphProfiler<'a> {
     #[allow(dead_code)]
     pub fn new(frequency: c_int) -> Self {
-        FlamegraphProfiler {
-            frequency,
-            active_profiler: None,
-        }
+        FlamegraphProfiler { frequency, active_profiler: None }
     }
 }
 
@@ -163,15 +155,9 @@ impl<'a> Profiler for FlamegraphProfiler<'a> {
     fn stop_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
         std::fs::create_dir_all(benchmark_dir).unwrap();
         let flamegraph_path = benchmark_dir.join("flamegraph.svg");
-        let flamegraph_file = File::create(&flamegraph_path)
-            .expect("File system error while creating flamegraph.svg");
+        let flamegraph_file = File::create(flamegraph_path).expect("File system error while creating flamegraph.svg");
         if let Some(profiler) = self.active_profiler.take() {
-            profiler
-                .report()
-                .build()
-                .unwrap()
-                .flamegraph(flamegraph_file)
-                .expect("Error writing flamegraph");
+            profiler.report().build().unwrap().flamegraph(flamegraph_file).expect("Error writing flamegraph");
         }
     }
 }

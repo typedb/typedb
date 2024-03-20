@@ -18,6 +18,7 @@
 use std::rc::Rc;
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
+use durability::wal::WAL;
 use primitive::prefix_range::PrefixRange;
 use storage::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
@@ -31,7 +32,7 @@ use test_utils::{create_tmp_dir, delete_dir, init_logging};
 fn create_delete() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage_result = MVCCStorage::new(Rc::from("storage"), &storage_path);
+    let storage_result = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path);
     assert!(storage_result.is_ok());
     let storage = storage_result.unwrap();
     let delete_result = storage.delete_storage();
@@ -43,8 +44,8 @@ fn create_delete() {
 fn create_keyspaces() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let options = MVCCStorage::new_db_options();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let options = MVCCStorage::<WAL>::new_db_options();
+    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
     let keyspace_1_id: KeyspaceId = 0x0;
     let create_1_result = storage.create_keyspace("keyspace_1", keyspace_1_id, &options);
     assert!(create_1_result.is_ok());
@@ -61,8 +62,8 @@ fn create_keyspaces() {
 fn create_keyspaces_errors() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let options = MVCCStorage::new_db_options();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let options = MVCCStorage::<WAL>::new_db_options();
+    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
     let keyspace_1_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace_1", keyspace_1_id, &options).unwrap();
 
@@ -89,8 +90,8 @@ fn create_keyspaces_errors() {
 fn get_put_iterate() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let options = MVCCStorage::new_db_options();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let options = MVCCStorage::<WAL>::new_db_options();
+    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
     let keyspace_1_id: u8 = 0x0;
     storage.create_keyspace("keyspace_1", keyspace_1_id, &options).unwrap();
     let keyspace_2_id: u8 = 0x1;
@@ -124,7 +125,9 @@ fn get_put_iterate() {
 
     let prefix = StorageKeyArray::<64>::from((vec![0x1], keyspace_1_id));
     let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage
-        .iterate_keyspace_range(PrefixRange::new_within(StorageKey::<64>::Reference(StorageKeyReference::from(&prefix))))
+        .iterate_keyspace_range(PrefixRange::new_within(StorageKey::<64>::Reference(StorageKeyReference::from(
+            &prefix,
+        ))))
         .collect_cloned::<64, 128>();
     assert_eq!(
         items,

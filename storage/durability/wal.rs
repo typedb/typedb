@@ -49,10 +49,6 @@ pub struct WAL {
 }
 
 impl WAL {
-    pub fn open(directory: impl AsRef<Path>) -> io::Result<Self> {
-        Self::open_impl(directory.as_ref().to_owned())
-    }
-
     fn open_impl(directory: PathBuf) -> io::Result<Self> {
         if !directory.exists() {
             fs::create_dir_all(&directory)?;
@@ -95,6 +91,10 @@ impl Sequencer for WAL {
 }
 
 impl DurabilityService for WAL {
+    fn open(directory: impl AsRef<Path>) -> io::Result<Self> {
+        Self::open_impl(directory.as_ref().to_owned())
+    }
+
     fn register_record_type<Record: DurabilityRecord>(&mut self) {
         if self.registered_types.get(&Record::RECORD_TYPE).is_some_and(|name| name != &Record::RECORD_NAME) {
             panic!("Illegal state: two types of WAL records registered with same ID and different names.")

@@ -16,23 +16,28 @@
  */
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
-use durability::SequenceNumber;
+use durability::{DurabilityService, SequenceNumber};
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
-use crate::{isolation_manager::CommitRecord, key_value::{StorageKey, StorageKeyArray, StorageKeyReference}, MVCCStorage, snapshot::{
-    buffer::KeyspaceBuffers,
-    error::{SnapshotError, SnapshotErrorKind},
-    iterator::SnapshotRangeIterator,
-}};
+use crate::{
+    isolation_manager::CommitRecord,
+    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
+    snapshot::{
+        buffer::KeyspaceBuffers,
+        error::{SnapshotError, SnapshotErrorKind},
+        iterator::SnapshotRangeIterator,
+    },
+    MVCCStorage,
+};
 
 #[derive(Debug)]
-pub enum Snapshot<'storage> {
-    Read(ReadSnapshot<'storage>),
-    Write(WriteSnapshot<'storage>),
+pub enum Snapshot<'storage, D> {
+    Read(ReadSnapshot<'storage, D>),
+    Write(WriteSnapshot<'storage, D>),
 }
 
-impl<'storage> Snapshot<'storage> {
+impl<'storage, D> Snapshot<'storage, D> {
     pub fn get<const KS: usize>(&self, key: StorageKeyReference<'_>) -> Option<ByteArray<KS>> {
         match self {
             Snapshot::Read(snapshot) => snapshot.get(key),
@@ -50,7 +55,7 @@ impl<'storage> Snapshot<'storage> {
     pub fn iterate_range<'this, const PS: usize>(
         &'this self,
         range: PrefixRange<StorageKey<'this, PS>>,
-    ) -> SnapshotRangeIterator<'this, PS> {
+    ) -> SnapshotRangeIterator<'this, PS, D> {
         match self {
             Snapshot::Read(snapshot) => snapshot.iterate_range(range),
             Snapshot::Write(snapshot) => snapshot.iterate_range(range),
@@ -73,17 +78,19 @@ impl<'storage> Snapshot<'storage> {
 }
 
 #[derive(Debug)]
-pub struct ReadSnapshot<'storage> {
-    storage: &'storage MVCCStorage,
+pub struct ReadSnapshot<'storage, D> {
+    storage: &'storage MVCCStorage<D>,
     open_sequence_number: SequenceNumber,
 }
 
-impl<'storage> ReadSnapshot<'storage> {
-    pub(crate) fn new(storage: &'storage MVCCStorage, open_sequence_number: SequenceNumber) -> ReadSnapshot {
+impl<'storage, D> ReadSnapshot<'storage, D> {
+    pub(crate) fn new(storage: &'storage MVCCStorage<D>, open_sequence_number: SequenceNumber) -> Self {
         // Note: for serialisability, we would need to register the open transaction to the IsolationManager
         ReadSnapshot { storage, open_sequence_number }
     }
+}
 
+impl<'storage, D> ReadSnapshot<'storage, D> {
     pub fn get<const KS: usize>(&self, key: StorageKeyReference<'_>) -> Option<ByteArray<KS>> {
         // TODO: this clone may not be necessary - we could pass a reference up?
         self.storage.get(key, &self.open_sequence_number, |reference| ByteArray::from(reference))
@@ -95,8 +102,8 @@ impl<'storage> ReadSnapshot<'storage> {
 
     pub fn iterate_range<'this, const PS: usize>(
         &'this self,
-        range: PrefixRange<StorageKey<'this, { PS }>>,
-    ) -> SnapshotRangeIterator<'this, PS> {
+        range: PrefixRange<StorageKey<'this, PS>>,
+    ) -> SnapshotRangeIterator<'this, PS, D> {
         let mvcc_iterator = self.storage.iterate_range(range, &self.open_sequence_number);
         SnapshotRangeIterator::new(mvcc_iterator, None)
     }
@@ -105,18 +112,20 @@ impl<'storage> ReadSnapshot<'storage> {
 }
 
 #[derive(Debug)]
-pub struct WriteSnapshot<'storage> {
-    storage: &'storage MVCCStorage,
+pub struct WriteSnapshot<'storage, D> {
+    storage: &'storage MVCCStorage<D>,
     buffers: KeyspaceBuffers,
     open_sequence_number: SequenceNumber,
 }
 
-impl<'storage> WriteSnapshot<'storage> {
-    pub(crate) fn new(storage: &'storage MVCCStorage, open_sequence_number: SequenceNumber) -> WriteSnapshot {
+impl<'storage, D> WriteSnapshot<'storage, D> {
+    pub(crate) fn new(storage: &'storage MVCCStorage<D>, open_sequence_number: SequenceNumber) -> Self {
         storage.isolation_manager.opened(&open_sequence_number);
         WriteSnapshot { storage, buffers: KeyspaceBuffers::new(), open_sequence_number }
     }
+}
 
+impl<'storage, D> WriteSnapshot<'storage, D> {
     /// Insert a key with a new version
     pub fn insert(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
         self.insert_val(key, ByteArray::empty())
@@ -212,14 +221,20 @@ impl<'storage> WriteSnapshot<'storage> {
 
     pub fn iterate_range<'this, const PS: usize>(
         &'this self,
-        range: PrefixRange<StorageKey<'this, PS>>,
-    ) -> SnapshotRangeIterator<'this, PS> {
-        let buffered_iterator = self.buffers.get(range.start().keyspace_id()).iterate_range(range.clone().map(|k| k.into_byte_array_or_ref()));
+        range: PrefixRange<StorageKey<'this, { PS }>>,
+    ) -> SnapshotRangeIterator<'this, PS, D> {
+        let buffered_iterator = self
+            .buffers
+            .get(range.start().keyspace_id())
+            .iterate_range(range.clone().map(|k| k.into_byte_array_or_ref()));
         let storage_iterator = self.storage.iterate_range(range, &self.open_sequence_number);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
 
-    pub fn commit(self) -> Result<(), SnapshotError> {
+    pub fn commit(self) -> Result<(), SnapshotError>
+    where
+        D: DurabilityService,
+    {
         if self.buffers.is_empty() {
             Ok(())
         } else {
@@ -241,7 +256,7 @@ impl<'storage> WriteSnapshot<'storage> {
         self.storage.closed_snapshot_write(self.open_sequence_number());
     }
 }
-//
+
 //  TODO: in the current version, we should need to close resouces on drop because we need to notify Isolation the txn is closed.
 //        However in the next iteration of IsolationManager, we don't need to record readers at all.
 //
