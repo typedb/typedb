@@ -68,21 +68,18 @@ fn commits_isolated() {
 
     let get: Option<ByteArray<{ BUFFER_KEY_INLINE }>> = snapshot_2.get(StorageKeyReference::from(&key_3));
     assert!(get.is_none());
-    let prefix: StorageKey<'_, BUFFER_KEY_INLINE> = StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&[0x0_u8])));
+    let prefix: StorageKey<'_, BUFFER_KEY_INLINE> =
+        StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&[0x0_u8])));
     let range = PrefixRange::new_within(prefix);
-    let iterated = snapshot_2
-        .iterate_range(range.clone())
-        .collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
-        .unwrap();
+    let iterated =
+        snapshot_2.iterate_range(range.clone()).collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>().unwrap();
     assert_eq!(iterated.len(), 2);
 
     let snapshot_3 = storage.open_snapshot_read();
     let get: Option<ByteArray<{ BUFFER_KEY_INLINE }>> = snapshot_3.get(StorageKeyReference::from(&key_3));
     assert!(matches!(get, Some(_value_3)));
-    let iterated = snapshot_3
-        .iterate_range(range.clone())
-        .collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>()
-        .unwrap();
+    let iterated =
+        snapshot_3.iterate_range(range.clone()).collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>().unwrap();
     assert_eq!(iterated.len(), 3);
 }
 

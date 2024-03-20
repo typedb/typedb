@@ -131,24 +131,28 @@ impl KeyspaceBuffer {
         range: PrefixRange<ByteArrayOrRef<'_, INLINE>>,
     ) -> BufferedPrefixIterator {
         let map = self.buffer.read().unwrap();
-        let (start, end) = range.into();
+        let (start, end) = range.into_raw();
         let range_start = Bound::Included(start.bytes());
 
-        let exclusive_end_bytes = match end.as_ref() {
-            None => ByteArray::empty(),
-            Some(RangeEnd::PrefixSameAsStart) => {
+        let exclusive_end_bytes = match &end {
+            RangeEnd::SameAsStart => {
                 let mut start_plus_1 = start.clone().into_array();
                 increment(start_plus_1.bytes_mut()).unwrap();
                 start_plus_1
             }
-            Some(RangeEnd::Inclusive(value)) => {
+            RangeEnd::Inclusive(value) => {
                 let mut end_plus_1 = value.clone().into_array();
                 increment(end_plus_1.bytes_mut()).unwrap();
                 end_plus_1
             }
-            Some(RangeEnd::Exclusive(value)) => value.clone().into_array(),
+            RangeEnd::Exclusive(value) => value.clone().into_array(),
+            RangeEnd::Unbounded => ByteArray::empty(),
         };
-        let range_end = if end.is_none() { Bound::Unbounded } else { Bound::Excluded(exclusive_end_bytes.bytes()) };
+        let range_end = if matches!(end, RangeEnd::Unbounded) {
+            Bound::Unbounded
+        } else {
+            Bound::Excluded(exclusive_end_bytes.bytes())
+        };
 
         let values = map
             .range::<[u8], _>((range_start, range_end))
