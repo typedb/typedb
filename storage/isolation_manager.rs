@@ -305,7 +305,7 @@ impl Timeline {
         let (next_sequence_number, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
         windows
             .iter()
-            .filter_map(|w| {
+            .find_map(|w| {
                 if w.is_finished() {
                     None
                 } else {
@@ -313,7 +313,6 @@ impl Timeline {
                     w.watermark()
                 }
             })
-            .next()
             .unwrap_or_else(|| SequenceNumber::new(next_sequence_number.number() - U80::new(1)))
     }
 
@@ -459,19 +458,15 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
     }
 
     fn watermark(&self) -> Option<SequenceNumber> {
-        self.slots
-            .iter()
-            .enumerate()
-            .filter_map(|(index, status)| {
-                let marker = SlotMarker::from(status.load(Ordering::SeqCst));
-                match marker {
-                    SlotMarker::Empty | SlotMarker::Pending => {
-                        Some(SequenceNumber::new(self.start().number() + U80::new(index as u128 - 1)))
-                    }
-                    SlotMarker::Committed | SlotMarker::Closed => None,
+        self.slots.iter().enumerate().find_map(|(index, status)| {
+            let marker = SlotMarker::from(status.load(Ordering::SeqCst));
+            match marker {
+                SlotMarker::Empty | SlotMarker::Pending => {
+                    Some(SequenceNumber::new(self.start().number() + U80::new(index as u128 - 1)))
                 }
-            })
-            .next()
+                SlotMarker::Committed | SlotMarker::Closed => None,
+            }
+        })
     }
 
     fn set_pending(&self, sequence_number: &SequenceNumber, commit_record: CommitRecord) {
