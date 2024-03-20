@@ -39,6 +39,7 @@ use encoding::{
         value_type::{ValueType, ValueTypeID},
     },
 };
+use encoding::graph::type_::edge::{build_edge_relates, build_edge_relates_prefix, build_edge_relates_reverse, new_edge_relates};
 use encoding::graph::type_::vertex::new_vertex_role_type;
 use primitive::maybe_owns::MaybeOwns;
 use primitive::prefix_range::PrefixRange;
@@ -46,6 +47,7 @@ use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::B
 use storage::{MVCCStorage, snapshot::snapshot::Snapshot};
 
 use crate::type_::{annotation::AnnotationAbstract, attribute_type::{AttributeType, AttributeTypeAnnotation}, AttributeTypeAPI, entity_type::{EntityType, EntityTypeAnnotation}, EntityTypeAPI, object_type::ObjectType, owns::Owns, relation_type::{RelationType, RelationTypeAnnotation}, RelationTypeAPI, RoleTypeAPI, type_cache::TypeCache, TypeAPI};
+use crate::type_::relates::Relates;
 use crate::type_::role_type::{RoleType, RoleTypeAnnotation};
 
 pub struct TypeManager<'txn, 'storage: 'txn> {
@@ -57,6 +59,127 @@ pub struct TypeManager<'txn, 'storage: 'txn> {
 // TODO:
 //   if we drop/close without committing, then we need to release all the IDs taken back to the IDGenerator
 //   this is only applicable for type manager where we can only have 1 concurrent txn and IDs are precious
+
+macro_rules! get_type_methods {
+    ($(
+        $method_name:ident, $cache_method:ident, $output_type:ident, $new_vertex_method:ident
+    );*) => {
+        $(
+            pub fn $method_name(&self, label: &Label) -> Option<$output_type<'static>> {
+                if let Some(cache) = &self.type_cache {
+                    cache.$cache_method(label)
+                } else {
+                    self.get_labelled_type(label, |bytes| $output_type::new($new_vertex_method(bytes)))
+                }
+            }
+        )*
+
+        fn get_labelled_type<M, U>(&self, label: &Label, mapper: M) -> Option<U>
+            where
+                M: FnOnce(ByteArrayOrRef<'static, BUFFER_KEY_INLINE>) -> U,
+        {
+            let key = LabelToTypeVertexIndex::build(label).into_storage_key();
+            self.snapshot.get::<{ BUFFER_KEY_INLINE }>(key.as_reference()).map(|value| mapper(ByteArrayOrRef::Array(value)))
+        }
+    }
+}
+
+macro_rules! get_supertype_methods {
+    ($(
+        $method_name:ident, $cache_method:ident, $type_:ident
+    );*) => {
+        $(
+            // WARN: supertypes currently do NOT include themselves
+            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Option<$type_<'static>> {
+                if let Some(cache) = &self.type_cache {
+                    cache.$cache_method(type_)
+                } else {
+                    // TODO: handle possible errors
+                    self.snapshot
+                        .iterate_range(PrefixRange::new_within(build_edge_sub_prefix(type_.into_vertex().clone())))
+                        .first_cloned()
+                        .unwrap()
+                        .map(|(key, _)| $type_::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
+                }
+            }
+        )*
+    }
+}
+
+macro_rules! get_supertypes_methods {
+    ($(
+        $method_name:ident, $cache_method:ident, $type_:ident
+    );*) => {
+        $(
+            // WARN: supertypes currently do NOT include themselves
+            pub(crate) fn $method_name<'this>(&'this self, type_: $type_<'static>) -> MaybeOwns<'this, Vec<$type_<'static>>> {
+                if let Some(cache) = &self.type_cache {
+                    MaybeOwns::borrowed(cache.$cache_method(type_))
+                } else {
+                    let mut supertypes = Vec::new();
+                    let mut super_vertex = self.get_storage_supertype(type_.vertex().clone().into_owned());
+                    while super_vertex.is_some() {
+                        let super_type = $type_::new(super_vertex.as_ref().unwrap().clone());
+                        super_vertex = self.get_storage_supertype(super_type.vertex().clone());
+                        supertypes.push(super_type);
+                    }
+                    MaybeOwns::owned(supertypes)
+                }
+            }
+        )*
+    }
+}
+
+macro_rules! get_type_is_root_methods {
+    ($(
+        $method_name:ident, $cache_method:ident, $type_:ident, $root_variant:expr
+    );*) => {
+        $(
+            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> bool {
+                if let Some(cache) = &self.type_cache {
+                    cache.$cache_method(type_)
+                } else {
+                    type_.get_label(self).deref() == &$root_variant.label()
+                }
+            }
+        )*
+    }
+}
+
+macro_rules! get_type_label_methods {
+    ($(
+        $method_name:ident, $cache_method:ident, $type_:ident
+    );*) => {
+        $(
+            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> MaybeOwns<'_, Label<'static>> {
+                if let Some(cache) = &self.type_cache {
+                    MaybeOwns::borrowed(cache.$cache_method(type_))
+                } else {
+                    MaybeOwns::owned(self.get_storage_label(type_.into_vertex()).unwrap())
+                }
+            }
+        )*
+    }
+}
+
+macro_rules! get_type_annotations {
+    ($(
+        $method_name:ident, $cache_method:ident, $type_:ident, $annotation_type:ident
+    );*) => {
+        $(
+            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> MaybeOwns<'_, HashSet<$annotation_type>> {
+                 if let Some(cache) = &self.type_cache {
+                    MaybeOwns::borrowed(cache.$cache_method(type_))
+                } else {
+                    let mut annotations = HashSet::new();
+                    self.get_storage_vertex_annotation_abstract(type_.into_vertex())
+                        .map(|ann| annotations.insert($annotation_type::Abstract(ann)));
+                    MaybeOwns::owned(annotations)
+                }
+            }
+        )*
+    }
+}
 
 impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     pub fn new(
@@ -75,7 +198,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             root_entity.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()));
             let root_relation = type_manager.create_relation_type(&Root::Relation.label(), true);
             root_relation.set_annotation(&type_manager, RelationTypeAnnotation::Abstract(AnnotationAbstract::new()));
-            let root_role = type_manager.create_role_type(&Root::Role.label(), true);
+            let root_role = type_manager.create_role_type(&Root::Role.label(), root_relation.clone(), true);
             root_role.set_annotation(&type_manager, RoleTypeAnnotation::Abstract(AnnotationAbstract::new()));
             let root_attribute = type_manager.create_attribute_type(&Root::Attribute.label(), true);
             root_attribute.set_annotation(&type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()));
@@ -87,183 +210,27 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             panic!()
         }
     }
+    
+    get_type_methods!(
+        get_entity_type, get_entity_type, EntityType, new_vertex_entity_type;
+        get_relation_type, get_relation_type, RelationType, new_vertex_relation_type;
+        get_role_type, get_role_type, RoleType, new_vertex_role_type;
+        get_attribute_type, get_attribute_type, AttributeType, new_vertex_attribute_type
+    );
 
-    pub fn get_entity_type(&self, label: &Label) -> Option<EntityType<'static>> {
-        if let Some(cache) = &self.type_cache {
-            cache.get_entity_type(label)
-        } else {
-            self.get_labelled_type(label, |bytes| EntityType::new(new_vertex_entity_type(bytes)))
-        }
-    }
+    get_supertype_methods!(
+        get_entity_type_supertype, get_entity_type_supertype, EntityType;
+        get_relation_type_supertype, get_relation_type_supertype, RelationType;
+        get_role_type_supertype, get_role_type_supertype, RoleType;
+        get_attribute_type_supertype, get_attribute_type_supertype, AttributeType
+    );
 
-    pub fn get_relation_type(&self, label: &Label) -> Option<RelationType<'static>> {
-        if let Some(cache) = &self.type_cache {
-            cache.get_relation_type(label)
-        } else {
-            self.get_labelled_type(label, |bytes| RelationType::new(new_vertex_relation_type(bytes)))
-        }
-    }
-
-    pub fn get_role_type(&self, label: &Label) -> Option<RoleType<'static>> {
-        if let Some(cache) = &self.type_cache {
-            cache.get_role_type(label)
-        } else {
-            self.get_labelled_type(label, |bytes| RoleType::new(new_vertex_role_type(bytes)))
-        }
-    }
-
-    pub fn get_attribute_type(&self, label: &Label) -> Option<AttributeType<'static>> {
-        if let Some(cache) = &self.type_cache {
-            cache.get_attribute_type(label)
-        } else {
-            self.get_labelled_type(label, |bytes| AttributeType::new(new_vertex_attribute_type(bytes)))
-        }
-    }
-
-    fn get_labelled_type<M, U>(&self, label: &Label, mapper: M) -> Option<U>
-        where
-            M: FnOnce(ByteArrayOrRef<'static, BUFFER_KEY_INLINE>) -> U,
-    {
-        let key = LabelToTypeVertexIndex::build(label).into_storage_key();
-        self.snapshot.get::<{ BUFFER_KEY_INLINE }>(key.as_reference()).map(|value| mapper(ByteArrayOrRef::Array(value)))
-    }
-
-    pub(crate) fn get_entity_type_supertype(
-        &self,
-        entity_type: impl EntityTypeAPI<'static>,
-    ) -> Option<EntityType<'static>> {
-        if let Some(cache) = &self.type_cache {
-            cache.get_entity_type_supertype(entity_type)
-        } else {
-            // TODO: handle possible errors
-            self.snapshot
-                .iterate_range(PrefixRange::new_within(build_edge_sub_prefix(entity_type.into_vertex().into_owned())))
-                .first_cloned()
-                .unwrap()
-                .map(|(key, _)| EntityType::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
-        }
-    }
-
-    pub(crate) fn get_relation_type_supertype(
-        &self,
-        relation_type: impl RelationTypeAPI<'static>,
-    ) -> Option<RelationType<'static>> {
-        if let Some(cache) = &self.type_cache {
-            cache.get_relation_type_supertype(relation_type)
-        } else {
-            // TODO: handle possible errors
-            self.snapshot
-                .iterate_range(PrefixRange::new_within(build_edge_sub_prefix(relation_type.into_vertex().clone())))
-                .first_cloned()
-                .unwrap()
-                .map(|(key, _)| RelationType::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
-        }
-    }
-
-    pub(crate) fn get_role_type_supertype(
-        &self,
-        role_type: impl RoleTypeAPI<'static>,
-    ) -> Option<RoleType<'static>> {
-        if let Some(cache) = &self.type_cache {
-            cache.get_role_type_supertype(role_type)
-        } else {
-            // TODO: handle possible errors
-            self.snapshot
-                .iterate_range(PrefixRange::new_within(build_edge_sub_prefix(role_type.into_vertex().clone())))
-                .first_cloned()
-                .unwrap()
-                .map(|(key, _)| RoleType::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
-        }
-    }
-
-    pub(crate) fn get_attribute_type_supertype(
-        &self,
-        attribute_type: impl AttributeTypeAPI<'static>,
-    ) -> Option<AttributeType<'static>> {
-        if let Some(cache) = &self.type_cache {
-            cache.get_attribute_type_supertype(attribute_type)
-        } else {
-            // TODO: handle possible errors
-            self.snapshot
-                .iterate_range(PrefixRange::new_within(build_edge_sub_prefix(attribute_type.into_vertex().clone())))
-                .first_cloned()
-                .unwrap()
-                .map(|(key, _)| AttributeType::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
-        }
-    }
-
-    // WARN: supertypes currently do NOT include themselves
-    pub(crate) fn get_entity_type_supertypes<'this>(
-        &'this self,
-        entity_type: EntityType<'static>,
-    ) -> MaybeOwns<'this, Vec<EntityType<'static>>> {
-        if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_entity_type_supertypes(entity_type))
-        } else {
-            let mut supertypes = Vec::new();
-            let mut supertype = self.get_storage_supertype(entity_type.vertex().clone().into_owned());
-            while supertype.is_some() {
-                let super_entity = EntityType::new(supertype.as_ref().unwrap().clone());
-                supertype = self.get_storage_supertype(super_entity.vertex().clone());
-                supertypes.push(super_entity);
-            }
-            MaybeOwns::owned(supertypes)
-        }
-    }
-
-    pub(crate) fn get_relation_type_supertypes<'this>(
-        &'this self,
-        relation_type: RelationType<'static>,
-    ) -> MaybeOwns<'this, Vec<RelationType<'static>>> {
-        if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_relation_type_supertypes(relation_type))
-        } else {
-            let mut supertypes = Vec::new();
-            let mut supertype = self.get_storage_supertype(relation_type.vertex().clone().into_owned());
-            while supertype.is_some() {
-                let super_relation = RelationType::new(supertype.as_ref().unwrap().clone());
-                supertype = self.get_storage_supertype(super_relation.vertex().clone());
-                supertypes.push(super_relation);
-            }
-            MaybeOwns::owned(supertypes)
-        }
-    }
-
-    pub(crate) fn get_role_type_supertypes<'this>(
-        &'this self,
-        role_type: RoleType<'static>,
-    ) -> MaybeOwns<'this, Vec<RoleType<'static>>> {
-        if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_role_type_supertypes(role_type))
-        } else {
-            let mut supertypes = Vec::new();
-            let mut supertype = self.get_storage_supertype(role_type.vertex().clone().into_owned());
-            while supertype.is_some() {
-                let super_role = RoleType::new(supertype.as_ref().unwrap().clone());
-                supertype = self.get_storage_supertype(super_role.vertex().clone());
-                supertypes.push(super_role);
-            }
-            MaybeOwns::owned(supertypes)
-        }
-    }
-
-    pub(crate) fn get_attribute_type_supertypes<'this>(
-        &'this self,
-        attribute_type: AttributeType<'static>,
-    ) -> MaybeOwns<'this, Vec<AttributeType<'static>>> {
-        if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_attribute_type_supertypes(attribute_type))
-        } else {
-            let mut supertypes = Vec::new();
-            let mut supertype = self.get_storage_supertype(attribute_type.vertex().clone());
-            while supertype.is_some() {
-                let super_attribute = AttributeType::new(supertype.as_ref().unwrap().clone());
-                supertype = self.get_storage_supertype(super_attribute.vertex().clone());
-                supertypes.push(super_attribute);
-            }
-            MaybeOwns::owned(supertypes)
-        }
-    }
+    get_supertypes_methods!(
+        get_entity_type_supertypes, get_entity_type_supertypes, EntityType;
+        get_relation_type_supertypes, get_relation_type_supertypes, RelationType;
+        get_role_type_supertypes, get_role_type_supertypes, RoleType;
+        get_attribute_type_supertypes, get_attribute_type_supertypes, AttributeType
+    );
 
     pub fn create_entity_type(&self, label: &Label, is_root: bool) -> EntityType<'static> {
         // TODO: validate type doesn't exist already
@@ -300,15 +267,16 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub(crate) fn create_role_type(&self, label: &Label, is_root: bool) -> RoleType<'static> {
+    pub(crate) fn create_role_type(&self, label: &Label, relation_type: impl RelationTypeAPI<'static>, is_root: bool) -> RoleType<'static> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_vertex = self.vertex_generator.create_role_type(write_snapshot);
             self.set_storage_label(type_vertex.clone(), label);
+            self.set_storage_relates(relation_type.into_vertex(), type_vertex.clone());
             if !is_root {
                 self.set_storage_supertype(
                     type_vertex.clone(),
-                    self.get_relation_type(&Root::Role.label()).unwrap().into_vertex(),
+                    self.get_role_type(&Root::Role.label()).unwrap().into_vertex(),
                 );
             }
             RoleType::new(type_vertex)
@@ -334,82 +302,19 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub(crate) fn get_entity_type_is_root(&self, entity_type: impl EntityTypeAPI<'static>) -> bool {
-        if let Some(cache) = &self.type_cache {
-            cache.get_entity_type_is_root(entity_type)
-        } else {
-            entity_type.get_label(self).deref() == &Root::Entity.label()
-        }
-    }
+    get_type_is_root_methods!(
+        get_entity_type_is_root, get_entity_type_is_root, EntityType, Root::Entity;
+        get_relation_type_is_root, get_relation_type_is_root, RelationType, Root::Relation;
+        get_role_type_is_root, get_role_type_is_root, RoleType, Root::Role;
+        get_attribute_type_is_root, get_attribute_type_is_root, AttributeType, Root::Attribute
+    );
 
-    pub(crate) fn get_relation_type_is_root(&self, relation_type: impl RelationTypeAPI<'static>) -> bool {
-        if let Some(cache) = &self.type_cache {
-            cache.get_relation_type_is_root(relation_type)
-        } else {
-            relation_type.get_label(self).deref() == &Root::Relation.label()
-        }
-    }
-
-    pub(crate) fn get_role_type_is_root(&self, role_type: impl RoleTypeAPI<'static>) -> bool {
-        if let Some(cache) = &self.type_cache {
-            cache.get_role_type_is_root(role_type)
-        } else {
-            role_type.get_label(self).deref() == &Root::Role.label()
-        }
-    }
-
-    pub(crate) fn get_attribute_type_is_root(&self, attribute_type: impl AttributeTypeAPI<'static>) -> bool {
-        if let Some(cache) = &self.type_cache {
-            cache.get_attribute_type_is_root(attribute_type)
-        } else {
-            attribute_type.get_label(self).deref() == &Root::Attribute.label()
-        }
-    }
-
-    pub(crate) fn get_entity_type_label(
-        &self,
-        entity_type: impl EntityTypeAPI<'static>,
-    ) -> MaybeOwns<'_, Label<'static>> {
-        if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_entity_type_label(entity_type))
-        } else {
-            MaybeOwns::owned(self.get_storage_label(entity_type.into_vertex()).unwrap())
-        }
-    }
-
-    pub(crate) fn get_relation_type_label(
-        &self,
-        relation_type: impl RelationTypeAPI<'static>,
-    ) -> MaybeOwns<'_, Label<'static>> {
-        if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_relation_type_label(relation_type))
-        } else {
-            MaybeOwns::owned(self.get_storage_label(relation_type.into_vertex()).unwrap())
-        }
-    }
-
-    pub(crate) fn get_role_type_label(
-        &self,
-        role_type: impl RoleTypeAPI<'static>,
-    ) -> MaybeOwns<'_, Label<'static>> {
-        if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_role_type_label(role_type))
-        } else {
-            MaybeOwns::owned(self.get_storage_label(role_type.into_vertex()).unwrap())
-        }
-    }
-
-
-    pub(crate) fn get_attribute_type_label(
-        &self,
-        attribute_type: impl AttributeTypeAPI<'static>,
-    ) -> MaybeOwns<'_, Label<'static>> {
-        if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_attribute_type_label(attribute_type))
-        } else {
-            MaybeOwns::owned(self.get_storage_label(attribute_type.into_vertex()).unwrap())
-        }
-    }
+    get_type_label_methods!(
+        get_entity_type_label, get_entity_type_label, EntityType;
+        get_relation_type_label, get_relation_type_label, RelationType;
+        get_role_type_label, get_role_type_label, RoleType;
+        get_attribute_type_label, get_attribute_type_label, AttributeType
+    );
 
     pub(crate) fn get_entity_type_owns<'this>(
         &'this self,
@@ -442,6 +347,19 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
+    pub(crate) fn get_relation_type_relates<'this>(
+        &'this self, relation_type: RelationType<'static>
+    ) -> MaybeOwns<'this, HashSet<Relates<'static>>> {
+        if let Some(cache) = &self.type_cache {
+            MaybeOwns::borrowed(cache.get_relation_type_relates(relation_type))
+        } else {
+            let relates = self.get_storage_relates(relation_type.clone().into_vertex(), |role_vertex| {
+                Relates::new(relation_type.clone(), RoleType::new(role_vertex.clone().into_owned()))
+            });
+            MaybeOwns::owned(relates)
+        }
+    }
+
     pub(crate) fn get_attribute_type_value_type(&self, attribute_type: AttributeType<'static>) -> Option<ValueType> {
         if let Some(cache) = &self.type_cache {
             cache.get_attribute_type_value_type(attribute_type)
@@ -450,63 +368,15 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub(crate) fn get_entity_type_annotations(
-        &self,
-        entity_type: impl EntityTypeAPI<'static>,
-    ) -> MaybeOwns<'_, HashSet<EntityTypeAnnotation>> {
-        if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_entity_type_annotations(entity_type))
-        } else {
-            let mut annotations = HashSet::new();
-            self.get_storage_vertex_annotation_abstract(entity_type.into_vertex())
-                .map(|ann| annotations.insert(EntityTypeAnnotation::Abstract(ann)));
-            MaybeOwns::owned(annotations)
-        }
-    }
-
-    pub(crate) fn get_relation_type_annotations(
-        &self,
-        relation_type: impl RelationTypeAPI<'static>,
-    ) -> MaybeOwns<'_, HashSet<RelationTypeAnnotation>> {
-        if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_relation_type_annotations(relation_type))
-        } else {
-            let mut annotations = HashSet::new();
-            self.get_storage_vertex_annotation_abstract(relation_type.into_vertex())
-                .map(|ann| annotations.insert(RelationTypeAnnotation::Abstract(ann)));
-            MaybeOwns::owned(annotations)
-        }
-    }
-
-    pub(crate) fn get_role_type_annotations(
-        &self,
-        role_type: impl RoleTypeAPI<'static>,
-    ) -> MaybeOwns<'_, HashSet<RoleTypeAnnotation>> {
-        if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_role_type_annotations(role_type))
-        } else {
-            let mut annotations = HashSet::new();
-            self.get_storage_vertex_annotation_abstract(role_type.into_vertex())
-                .map(|ann| annotations.insert(RoleTypeAnnotation::Abstract(ann)));
-            MaybeOwns::owned(annotations)
-        }
-    }
-
-    pub(crate) fn get_attribute_type_annotations(
-        &self,
-        attribute_type: impl AttributeTypeAPI<'static>,
-    ) -> MaybeOwns<'_, HashSet<AttributeTypeAnnotation>> {
-        if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_attribute_type_annotations(attribute_type))
-        } else {
-            let mut annotations = HashSet::new();
-            self.get_storage_vertex_annotation_abstract(attribute_type.into_vertex())
-                .map(|ann| annotations.insert(AttributeTypeAnnotation::Abstract(ann)));
-            MaybeOwns::owned(annotations)
-        }
-    }
+    get_type_annotations!(
+       get_entity_type_annotations, get_entity_type_annotations, EntityType, EntityTypeAnnotation;
+       get_relation_type_annotations, get_relation_type_annotations, RelationType, RelationTypeAnnotation;
+       get_role_type_annotations, get_role_type_annotations, RoleType, RoleTypeAnnotation;
+       get_attribute_type_annotations, get_attribute_type_annotations, AttributeType, AttributeTypeAnnotation
+    );
 
     // --- storage operations ---
+    // TODO: these should take Concepts instead of Vertices
 
     fn get_storage_label(&self, owner: TypeVertex<'_>) -> Option<Label<'static>> {
         let key = build_property_type_label(owner.clone().into_owned());
@@ -602,7 +472,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             let owns_reverse = build_edge_owns_reverse(attribute, owner);
             write_snapshot.put(owns_reverse.into_storage_key().into_owned_array());
         } else {
-            panic!("Illegal state: creating supertype edge requires write snapshot")
+            panic!("Illegal state: creating owns edge requires write snapshot")
         }
     }
 
@@ -613,7 +483,44 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             let owns_reverse = build_edge_owns_reverse(attribute, owner);
             write_snapshot.delete(owns_reverse.into_storage_key().into_owned_array());
         } else {
-            panic!("Illegal state: creating supertype edge requires write snapshot")
+            panic!("Illegal state: deleting owns edge requires write snapshot")
+        }
+    }
+
+    fn get_storage_relates<F>(&self, relation: TypeVertex<'static>, mapper: F) -> HashSet<Relates<'static>>
+        where
+            F: for<'b> Fn(TypeVertex<'b>) -> Relates<'static>,
+    {
+        let relates_prefix = build_edge_relates_prefix(relation);
+        // TODO: handle possible errors
+        self.snapshot
+            .iterate_range(PrefixRange::new_within(relates_prefix))
+            .collect_cloned_key_hashset(|key| {
+                let relates_edge = new_edge_relates(ByteArrayOrRef::Reference(key.byte_ref()));
+                mapper(relates_edge.to())
+            })
+            .unwrap()
+    }
+
+    pub(crate) fn set_storage_relates(&self, relation: TypeVertex<'static>, role: TypeVertex<'static>) {
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            let relates = build_edge_relates(relation.clone(), role.clone());
+            write_snapshot.put(relates.into_storage_key().into_owned_array());
+            let relates_reverse = build_edge_relates_reverse(role, relation);
+            write_snapshot.put(relates_reverse.into_storage_key().into_owned_array());
+        } else {
+            panic!("Illegal state: creating relates edge requires write snapshot")
+        }
+    }
+
+    pub(crate) fn delete_storage_relates(&self, relation: TypeVertex<'static>, role: TypeVertex<'static>) {
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            let relates = build_edge_relates(relation.clone(), role.clone());
+            write_snapshot.delete(relates.into_storage_key().into_owned_array());
+            let relates_reverse = build_edge_relates_reverse(role, relation);
+            write_snapshot.delete(relates_reverse.into_storage_key().into_owned_array());
+        } else {
+            panic!("Illegal state: deleting relates edge requires write snapshot")
         }
     }
 

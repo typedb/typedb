@@ -15,5 +15,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use crate::type_::relation_type::RelationType;
+use crate::type_::{RelationTypeAPI, RoleTypeAPI};
+use crate::type_::role_type::RoleType;
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-struct Relates {}
+pub struct Relates<'a> {
+    relation: RelationType<'a>,
+    role: RoleType<'a>
+}
+
+impl<'a> Relates<'a> {
+    pub(crate) fn new(relation: RelationType<'a>, role: RoleType<'a>) -> Self {
+        Relates { relation: relation, role: role }
+    }
+
+    pub fn relation(&self) -> RelationType<'static> {
+        self.relation.clone().into_owned()
+    }
+
+    pub fn role(&self) -> RoleType<'static> {
+        self.role.clone().into_owned()
+    }
+}

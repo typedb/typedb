@@ -33,6 +33,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::relates::Relates;
 use crate::type_::role_type::{RoleType, RoleTypeAnnotation};
 
 pub mod annotation;
@@ -156,13 +157,33 @@ pub trait RelationTypeAPI<'a>: TypeAPI<'a> {
         }
     }
 
-    fn create_role(&self, type_manager: &TypeManager, name: &str) -> RoleType<'static> {
+    fn get_role(&self, type_manager: &TypeManager, name: &str) -> Option<RoleType<'static>> {
         let label = Label::build_scoped(name, self.get_label(type_manager).name().decode());
-        let role_type = type_manager.create_role_type(&label, false);
+        type_manager.get_role_type(&label)
+    }
 
-        // TODO: create Relates
+    fn create_relates(&self, type_manager: &TypeManager, name: &str) -> Relates<'static> {
+        let label = Label::build_scoped(name, self.get_label(type_manager).name().decode());
+        let role_type = type_manager.create_role_type(&label, self.clone().into_owned(), false);
+        self.get_relates_role(type_manager, name).unwrap()
+    }
 
-        role_type
+    fn delete_relates(&self, type_manager: &TypeManager, role_type: RoleType<'static>) {
+        type_manager.delete_storage_relates(self.vertex().clone().into_owned(), role_type.into_vertex());
+    }
+
+    fn get_relates<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<Relates<'static>>> {
+        type_manager.get_relation_type_relates(self.clone().into_owned())
+    }
+
+    fn get_relates_role(&self, type_manager: &TypeManager, name: &str) -> Option<Relates<'static>> {
+        self.get_role(type_manager, name).map(|role_type|
+            Relates::new(self.clone().into_owned(), role_type)
+        )
+    }
+
+    fn has_relates_role(&self, type_manager: &TypeManager, name: &str) -> bool {
+        self.get_relates_role(type_manager, name).is_some()
     }
 
     fn into_owned(self) -> RelationType<'static>;
@@ -175,6 +196,14 @@ pub trait RoleTypeAPI<'a>: TypeAPI<'a> {
 
     fn get_label<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, Label<'static>> {
         type_manager.get_role_type_label(self.clone().into_owned())
+    }
+
+    fn set_name(&self, type_manager: &TypeManager, name: &str) {
+        // // TODO: setLabel should fail is setting label on Root type
+        // type_manager.set_storage_label(self.vertex().clone().into_owned(), label);
+
+
+        todo!()
     }
 
     fn get_supertype(&self, type_manager: &TypeManager) -> Option<RoleType<'static>> {
@@ -210,6 +239,10 @@ pub trait RoleTypeAPI<'a>: TypeAPI<'a> {
                 type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
             }
         }
+    }
+
+    fn get_relates(&self, type_manager: &TypeManager) -> Relates<'static> {
+        todo!()
     }
 
     fn into_owned(self) -> RoleType<'static>;
@@ -344,17 +377,4 @@ trait PlayedAPI<'a>: TypeAPI<'a> {
         // return iterator of player types
         todo!()
     }
-}
-
-trait RelaterAPI<'a>: TypeAPI<'a> {
-
-}
-
-trait RelatedAPI<'a>: TypeAPI<'a> {
-
-    fn set_name(&self, type_manager: &TypeManager, name: &str) {
-        // TODO: setLabel should fail is setting label on Root type
-        type_manager.set_storage_label(self.vertex().clone().into_owned(), label);
-    }
-
 }

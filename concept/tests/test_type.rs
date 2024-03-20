@@ -17,13 +17,13 @@
 
 use std::{ops::Deref, rc::Rc, sync::Arc};
 
-use concept::type_::{annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, role_type::RoleTypeAnnotation, object_type::ObjectType, owns::Owns, type_cache::TypeCache, type_manager::TypeManager, AttributeTypeAPI, EntityTypeAPI, OwnerAPI, RoleTypeAPI};
+use concept::type_::{annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, role_type::RoleTypeAnnotation, object_type::ObjectType, owns::Owns, type_cache::TypeCache, type_manager::TypeManager, AttributeTypeAPI, EntityTypeAPI, OwnerAPI, RoleTypeAPI, RelationTypeAPI};
+use concept::type_::relation_type::RelationTypeAnnotation;
 use encoding::{
     create_keyspaces,
     graph::type_::{vertex_generator::TypeVertexGenerator, Root},
     value::{label::Label, value_type::ValueType},
 };
-use primitive::maybe_owns::MaybeOwns;
 use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
@@ -33,7 +33,7 @@ We don't aim for complete coverage of all APIs, and will rely on the BDD scenari
  */
 
 #[test]
-fn entity_creation() {
+fn entity_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
@@ -157,7 +157,7 @@ fn entity_creation() {
 }
 
 #[test]
-fn role_creation() {
+fn role_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
     let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
@@ -169,6 +169,13 @@ fn role_creation() {
     {
         // Without cache, uncommitted
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
+        let root_relation = type_manager.get_relation_type(&Root::Relation.label()).unwrap();
+        assert_eq!(root_relation.get_label(&type_manager).deref(), &Root::Relation.label());
+        assert!(root_relation.is_root(&type_manager));
+        assert!(root_relation.get_supertype(&type_manager).is_none());
+        assert_eq!(root_relation.get_supertypes(&type_manager).len(), 0);
+        assert!(root_relation.get_annotations(&type_manager).deref().contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract::new())));
+
         let root_role = type_manager.get_role_type(&Root::Role.label()).unwrap();
         assert_eq!(root_role.get_label(&type_manager).deref(), &Root::Role.label());
         assert!(root_role.is_root(&type_manager));
@@ -176,8 +183,13 @@ fn role_creation() {
         assert_eq!(root_role.get_supertypes(&type_manager).len(), 0);
         assert!(root_role.get_annotations(&type_manager).deref().contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract::new())));
 
-        // TODO create a new relation subtype with a role
-
+        let friendship_label = Label::build("friendship");
+        let friendship_type = type_manager.create_relation_type(&friendship_label, false);
+        let friend_name = "friend";
+        let relates = friendship_type.create_relates(&type_manager, friend_name);
+        let role_type = friendship_type.get_role(&type_manager, friend_name).unwrap();
+        debug_assert_eq!(relates.relation(), friendship_type);
+        debug_assert_eq!(relates.role(), role_type);
     }
     if let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();
@@ -191,8 +203,15 @@ fn role_creation() {
         let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()));
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
 
-
-        // TODO
+        let friendship_label = Label::build("friendship");
+        let friendship_type = type_manager.get_relation_type(&friendship_label).unwrap();
+        let friend_name = "friend";
+        let relates = friendship_type.get_relates_role(&type_manager, friend_name);
+        debug_assert!(relates.is_some());
+        let role_type = friendship_type.get_role(&type_manager, friend_name).unwrap();
+        let relates = relates.unwrap();
+        debug_assert_eq!(relates.relation(), friendship_type);
+        debug_assert_eq!(relates.role(), role_type);
 
     }
 

@@ -73,18 +73,18 @@ type_vertex_constructors!(
     PrefixType::VertexRelationType
 );
 type_vertex_constructors!(
-    new_vertex_attribute_type,
-    build_vertex_attribute_type,
-    build_vertex_attribute_type_prefix,
-    is_vertex_attribute_type,
-    PrefixType::VertexAttributeType
-);
-type_vertex_constructors!(
     new_vertex_role_type,
     build_vertex_role_type,
     build_vertex_role_type_prefix,
     is_vertex_role_type,
     PrefixType::VertexRoleType
+);
+type_vertex_constructors!(
+    new_vertex_attribute_type,
+    build_vertex_attribute_type,
+    build_vertex_attribute_type_prefix,
+    is_vertex_attribute_type,
+    PrefixType::VertexAttributeType
 );
 
 impl<'a> TypeVertex<'a> {

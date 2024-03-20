@@ -333,11 +333,20 @@ impl MVCCStorage {
             M: FnMut(ByteReference<'_>) -> V,
     {
         let mut iterator = self.iterate_range(
-            PrefixRange::new_inclusive(StorageKey::<8>::Reference(key.clone()), StorageKey::<8>::Reference(key)),
+            PrefixRange::new_within(StorageKey::<8>::Reference(key.clone())),
             open_sequence_number
         );
         // TODO: we don't want to panic on unwrap here
-        iterator.next().transpose().unwrap_or_log().map(|(_, value)| mapper(value))
+        loop {
+            let next = iterator.next().transpose().unwrap_or_log();
+            if let Some((k, v)) = next {
+                if k.bytes() == key.bytes() {
+                    return Some(mapper(v));
+                }
+            } else {
+                return None
+            }
+        }
     }
 
     pub fn iterate_range<'this, const PS: usize>(

@@ -36,7 +36,7 @@ impl Root {
             Root::Entity => Label::new_static("entity"),
             Root::Attribute => Label::new_static("attribute"),
             Root::Relation => Label::new_static("relation"),
-            Root::Role => Label::new_static_scoped("role", "relation", "relation:role"),
+            Root::Role => Label::new_static_scoped("role", "y", "y:role"),
         }
     }
 }

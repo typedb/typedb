@@ -99,7 +99,7 @@ impl<'a> fmt::Display for Label<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Label[name={}, scope={}, scoped_name={}",
+            "Label[name={}, scope={}, scoped_name={}]",
             self.name(),
             self.scope().map(|s| format!("{}", s)).unwrap_or_default(),
             self.scoped_name()
