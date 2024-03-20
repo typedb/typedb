@@ -19,7 +19,6 @@ use std::{
     fs::File,
     os::raw::c_int,
     path::{Path, PathBuf},
-    rc::Rc,
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
@@ -52,12 +51,12 @@ fn populate_storage(storage: &MVCCStorage<WAL>, keyspace_id: KeyspaceId, key_cou
     let mut snapshot = storage.open_snapshot_write();
     for i in 0..key_count {
         if i % BATCH_SIZE == 0 {
-            snapshot.commit();
+            snapshot.commit().unwrap();
             snapshot = storage.open_snapshot_write();
         }
         snapshot.put(random_key_24(keyspace_id));
     }
-    snapshot.commit();
+    snapshot.commit().unwrap();
     println!("Keys written: {}", key_count);
     let snapshot = storage.open_snapshot_read();
     let prefix: StorageKey<'_, 48> =
@@ -102,7 +101,7 @@ fn bench_snapshot_write_put(storage: &MVCCStorage<WAL>, keyspace_id: KeyspaceId,
 
 fn setup_storage(keyspace_id: KeyspaceId, key_count: usize) -> (MVCCStorage<WAL>, PathBuf) {
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage_bench"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::new("storage_bench", &storage_path).unwrap();
     let options = MVCCStorage::<WAL>::new_db_options();
     storage.create_keyspace("default", keyspace_id, &options).unwrap();
     let keys = populate_storage(&storage, keyspace_id, key_count);

@@ -15,8 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::rc::Rc;
-
 use bytes::byte_array::ByteArray;
 use durability::wal::WAL;
 use logger::result::ResultExt;
@@ -26,7 +24,7 @@ use storage::{
     key_value::{StorageKey, StorageKeyArray},
     keyspace::keyspace::KeyspaceId,
     snapshot::error::SnapshotError,
-    *,
+    MVCCStorage,
 };
 use test_utils::{create_tmp_dir, delete_dir, init_logging};
 
@@ -36,7 +34,7 @@ fn snapshot_buffered_put_get() {
 
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::<WAL>::new_db_options();
-    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::new("storage", &storage_path).unwrap();
     let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 
@@ -67,7 +65,7 @@ fn snapshot_buffered_put_iterate() {
     init_logging();
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::<WAL>::new_db_options();
-    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::new("storage", &storage_path).unwrap();
     let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 
@@ -83,10 +81,8 @@ fn snapshot_buffered_put_iterate() {
     snapshot.put(key_4.clone());
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1], keyspace_id));
-    let items: Result<
-        Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<{ BUFFER_VALUE_INLINE }>)>,
-        SnapshotError,
-    > = snapshot.iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix))).collect_cloned_vec();
+    let items: Result<Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<{ BUFFER_VALUE_INLINE }>)>, SnapshotError> =
+        snapshot.iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix))).collect_cloned_vec();
     assert_eq!(items.unwrap(), vec![(key_2, ByteArray::empty()), (key_3, ByteArray::empty()),]);
     snapshot.close_resources();
 
@@ -98,7 +94,7 @@ fn snapshot_buffered_delete() {
     init_logging();
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::<WAL>::new_db_options();
-    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::new("storage", &storage_path).unwrap();
     let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 
@@ -131,7 +127,7 @@ fn snapshot_read_through() {
     init_logging();
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::<WAL>::new_db_options();
-    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::new("storage", &storage_path).unwrap();
     let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 
@@ -154,8 +150,10 @@ fn snapshot_read_through() {
     snapshot.put(key_5.clone());
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1], keyspace_id));
-    let key_values: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<{ BUFFER_VALUE_INLINE }>)> =
-        snapshot.iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix.clone()))).collect_cloned_vec().unwrap();
+    let key_values: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<{ BUFFER_VALUE_INLINE }>)> = snapshot
+        .iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix.clone())))
+        .collect_cloned_vec()
+        .unwrap();
     assert_eq!(
         key_values,
         vec![
@@ -180,7 +178,7 @@ fn snapshot_delete_reinserted() {
     init_logging();
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::<WAL>::new_db_options();
-    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::new("storage", &storage_path).unwrap();
     let keyspace_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace", keyspace_id, &options).unwrap();
 

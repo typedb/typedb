@@ -37,7 +37,7 @@ use crate::{
 };
 
 pub struct Database {
-    name: Rc<str>,
+    name: String,
     path: PathBuf,
     storage: MVCCStorage,
     type_vertex_generator: TypeVertexGenerator,
@@ -45,13 +45,13 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn new(path: &Path, database_name: Rc<str>) -> Result<Database, DatabaseError> {
+    pub fn new(path: &Path, database_name: impl AsRef<str>) -> Result<Database, DatabaseError> {
         let database_path = path.with_extension(String::from(database_name.as_ref()));
         fs::create_dir(database_path.as_path()).map_err(|io_error| DatabaseError {
             database_name: database_name.to_string(),
             kind: FailedToCreateDirectory(io_error),
         })?;
-        let mut storage = MVCCStorage::new(database_name.clone(), path).map_err(|storage_error| DatabaseError {
+        let mut storage = MVCCStorage::new(database_name, path).map_err(|storage_error| DatabaseError {
             database_name: database_name.to_string(),
             kind: FailedToCreateStorage(storage_error),
         })?;

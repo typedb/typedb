@@ -17,13 +17,11 @@
 
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
-
 #![allow(dead_code)]
 #![allow(clippy::module_inception)]
 
 use std::{
     path::{Path, PathBuf},
-    rc::Rc,
     sync::{atomic::Ordering, Arc},
 };
 
@@ -58,7 +56,7 @@ pub mod snapshot;
 
 #[derive(Debug)]
 pub struct MVCCStorage<D> {
-    owner_name: Rc<str>,
+    name: String,
     storage_dir: PathBuf,
     keyspaces: Vec<Keyspace>,
     keyspaces_index: [Option<KeyspaceId>; KEYSPACE_MAXIMUM_COUNT],
@@ -69,7 +67,7 @@ pub struct MVCCStorage<D> {
 impl<D> MVCCStorage<D> {
     const STORAGE_DIR_NAME: &'static str = "storage";
 
-    pub fn new(owner_name: Rc<str>, path: &Path) -> Result<Self, MVCCStorageError>
+    pub fn new(name: impl AsRef<str>, path: &Path) -> Result<Self, MVCCStorageError>
     where
         D: DurabilityService,
     {
@@ -79,7 +77,7 @@ impl<D> MVCCStorage<D> {
         durability_service.register_record_type::<CommitRecord>();
 
         Ok(Self {
-            owner_name,
+            name: name.as_ref().to_owned(),
             storage_dir,
             keyspaces: Vec::new(),
             keyspaces_index: core::array::from_fn(|_| None),
@@ -88,12 +86,12 @@ impl<D> MVCCStorage<D> {
         })
     }
 
-    fn owner_name(&self) -> &str {
-        &self.owner_name
-    }
-
     // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options
-    fn load_from_checkpoint(_path: &Path, _durability_service: D) -> Result<Self, MVCCStorageError> {
+    pub fn load_from_checkpoint(
+        owner_name: impl AsRef<str>,
+        path: &Path,
+        durability_service: D,
+    ) -> Result<Self, MVCCStorageError> {
         todo!("Booting from checkpoint not yet implemented")
 
         // Steps:
@@ -103,6 +101,10 @@ impl<D> MVCCStorage<D> {
         //   For each record, commit the records. Some keyspaces will write duplicates, but all writes are idempotent so this is OK.
 
         // TODO: we have to be careful when we resume from a checkpoint and reapply the Records.Write.InsertPreexisting, to re-check if previous commits have deleted these keys
+    }
+
+    fn owner_name(&self) -> &str {
+        &self.name
     }
 
     pub fn create_keyspace(
@@ -115,7 +117,7 @@ impl<D> MVCCStorage<D> {
         self.validate_new_keyspace(name, keyspace_id)?;
 
         self.keyspaces.push(Keyspace::new(keyspace_path, options, keyspace_id).map_err(|err| MVCCStorageError {
-            storage_name: self.owner_name.as_ref().to_owned(),
+            storage_name: self.name.clone(),
             kind: MVCCStorageErrorKind::KeyspaceError { source: Arc::new(err), keyspace: name.to_owned() },
         })?);
         self.keyspaces_index[keyspace_id as usize] = Some(self.keyspaces.len() as KeyspaceId - 1);
@@ -134,14 +136,14 @@ impl<D> MVCCStorage<D> {
     fn validate_new_keyspace(&self, name: &str, keyspace_id: KeyspaceId) -> Result<(), MVCCStorageError> {
         if keyspace_id == KEYSPACE_ID_RESERVED_UNSET {
             return Err(MVCCStorageError {
-                storage_name: self.owner_name.as_ref().to_owned(),
+                storage_name: self.name.clone(),
                 kind: MVCCStorageErrorKind::KeyspaceIdReserved { keyspace: name.to_owned(), keyspace_id },
             });
         }
 
         if keyspace_id > KEYSPACE_ID_MAX {
             return Err(MVCCStorageError {
-                storage_name: self.owner_name.as_ref().to_owned(),
+                storage_name: self.name.clone(),
                 kind: MVCCStorageErrorKind::KeyspaceIdTooLarge {
                     keyspace: name.to_owned(),
                     keyspace_id,
@@ -155,14 +157,14 @@ impl<D> MVCCStorage<D> {
                 let keyspace = &self.keyspaces[existing_keyspace_index as usize];
                 if keyspace.name() == name {
                     return Err(MVCCStorageError {
-                        storage_name: self.owner_name.as_ref().to_owned(),
+                        storage_name: self.name.clone(),
                         kind: MVCCStorageErrorKind::KeyspaceNameExists { keyspace: name.to_owned() },
                     });
                 }
 
                 if existing_keyspace_id as KeyspaceId == keyspace_id {
                     return Err(MVCCStorageError {
-                        storage_name: self.owner_name.as_ref().to_owned(),
+                        storage_name: self.name.clone(),
                         kind: MVCCStorageErrorKind::KeyspaceIdExists {
                             new_keyspace: name.to_owned(),
                             keyspace_id,
@@ -208,13 +210,13 @@ impl<D> MVCCStorage<D> {
         //  1. make durable and get sequence number
         let commit_sequence_number =
             self.durability_service.sequenced_write(&commit_record).map_err(|err| MVCCStorageError {
-                storage_name: self.owner_name.to_string(),
+                storage_name: self.name.to_string(),
                 kind: MVCCStorageErrorKind::DurabilityError { source: err },
             })?;
 
         // 2. validate commit isolation
         self.isolation_manager.try_commit(commit_sequence_number, commit_record).map_err(|err| MVCCStorageError {
-            storage_name: self.owner_name.as_ref().to_owned(),
+            storage_name: self.name.clone(),
             kind: MVCCStorageErrorKind::IsolationError { source: err },
         })?;
 
@@ -228,7 +230,7 @@ impl<D> MVCCStorage<D> {
             if write_batch.is_some() {
                 self.get_keyspace(index as KeyspaceId).write(write_batch.unwrap()).map_err(|error| {
                     MVCCStorageError {
-                        storage_name: self.owner_name.as_ref().to_owned(),
+                        storage_name: self.name.clone(),
                         kind: MVCCStorageErrorKind::KeyspaceError {
                             source: Arc::new(error),
                             keyspace: self.get_keyspace(index as KeyspaceId).name().to_owned(),
@@ -297,7 +299,7 @@ impl<D> MVCCStorage<D> {
             .map(|keyspace| keyspace.delete())
             .filter(|result| result.is_err())
             .map(|result| MVCCStorageError {
-                storage_name: self.owner_name.as_ref().to_owned(),
+                storage_name: self.name.clone(),
                 kind: MVCCStorageErrorKind::KeyspaceDeleteError { source: result.unwrap_err() },
             })
             .collect();
@@ -308,9 +310,9 @@ impl<D> MVCCStorage<D> {
 
         if self.storage_dir.exists() {
             std::fs::remove_dir_all(self.storage_dir.clone()).map_err(|err| {
-                error!("Failed to delete storage {}, received error: {}", self.owner_name, err);
+                error!("Failed to delete storage {}, received error: {}", self.name, err);
                 vec![MVCCStorageError {
-                    storage_name: self.owner_name.as_ref().to_owned(),
+                    storage_name: self.name.clone(),
                     kind: MVCCStorageErrorKind::FailedToDeleteStorage { source: err },
                 }]
             })?;
@@ -386,7 +388,7 @@ impl<D> MVCCStorage<D> {
             .unwrap_or_log()
     }
 
-    fn get_prev_raw<M, T>(&self, key: StorageKeyReference<'_>, mut key_value_mapper: M) -> Option<T>
+    pub fn get_prev_raw<M, T>(&self, key: StorageKeyReference<'_>, mut key_value_mapper: M) -> Option<T>
     where
         M: FnMut(&[u8], &[u8]) -> T,
     {

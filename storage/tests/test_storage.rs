@@ -15,8 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::rc::Rc;
-
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
 use durability::wal::WAL;
 use primitive::prefix_range::PrefixRange;
@@ -32,7 +30,7 @@ use test_utils::{create_tmp_dir, delete_dir, init_logging};
 fn create_delete() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage_result = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path);
+    let storage_result = MVCCStorage::<WAL>::new("storage", &storage_path);
     assert!(storage_result.is_ok());
     let storage = storage_result.unwrap();
     let delete_result = storage.delete_storage();
@@ -45,7 +43,7 @@ fn create_keyspaces() {
     init_logging();
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::<WAL>::new_db_options();
-    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::new("storage", &storage_path).unwrap();
     let keyspace_1_id: KeyspaceId = 0x0;
     let create_1_result = storage.create_keyspace("keyspace_1", keyspace_1_id, &options);
     assert!(create_1_result.is_ok());
@@ -63,7 +61,7 @@ fn create_keyspaces_errors() {
     init_logging();
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::<WAL>::new_db_options();
-    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::new("storage", &storage_path).unwrap();
     let keyspace_1_id: KeyspaceId = 0x0;
     storage.create_keyspace("keyspace_1", keyspace_1_id, &options).unwrap();
 
@@ -91,7 +89,7 @@ fn get_put_iterate() {
     init_logging();
     let storage_path = create_tmp_dir();
     let options = MVCCStorage::<WAL>::new_db_options();
-    let mut storage = MVCCStorage::<WAL>::new(Rc::from("storage"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::new("storage", &storage_path).unwrap();
     let keyspace_1_id: u8 = 0x0;
     storage.create_keyspace("keyspace_1", keyspace_1_id, &options).unwrap();
     let keyspace_2_id: u8 = 0x1;
