@@ -32,6 +32,7 @@ use test_utils::{create_tmp_dir, init_logging};
 
 macro_rules! test_keyspace_set {
     {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
+        #[derive(Clone, Copy)]
         enum TestKeyspaceSet { $($variant),* }
         impl KeyspaceSet for TestKeyspaceSet {
             fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }

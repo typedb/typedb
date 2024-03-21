@@ -73,7 +73,7 @@ fn new_db_options() -> Options {
     options
 }
 
-pub trait KeyspaceSet: Sized {
+pub trait KeyspaceSet: Copy {
     fn iter() -> impl Iterator<Item = Self>;
     fn id(&self) -> u8;
     fn name(&self) -> &'static str;
