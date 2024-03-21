@@ -29,6 +29,7 @@ rust_test(
         "//common/logger",
         "//encoding",
         "//storage",
+        "//storage/durability",
         "//util/test:test_utils",
 
         "@crates//:rand",
@@ -46,6 +47,7 @@ rust_test(
         "//common/logger",
         "//encoding",
         "//storage",
+        "//storage/durability",
         "//resource",
         "//util/test:test_utils",
 

@@ -29,9 +29,11 @@ rust_test(
         "//common/logger",
         "//common/primitive",
         "//storage",
+        "//storage/durability",
         "//resource",
         "//util/test:test_utils",
 
+        "@crates//:itertools",
         "@crates//:rand",
         "@crates//:tracing",
     ]
@@ -47,6 +49,7 @@ rust_test(
         "//common/logger",
         "//common/primitive",
         "//storage",
+        "//storage/durability",
         "//resource",
         "//util/test:test_utils",
         "@crates//:rand",
@@ -81,6 +84,7 @@ rust_test(
         "//common/logger",
         "//common/primitive",
         "//storage",
+        "//storage/durability",
         "//resource",
         "//util/test:test_utils",
 

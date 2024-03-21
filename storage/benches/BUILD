@@ -32,6 +32,7 @@ rust_test(
         "//common/primitive",
         "//resource",
         "//storage",
+        "//storage/durability",
         "//util/test:test_utils",
 
         "@crates//:rand",

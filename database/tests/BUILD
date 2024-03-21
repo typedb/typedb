@@ -25,9 +25,10 @@ rust_test(
         "*.rs",
     ]),
     deps = [
+        "//common/logger",
         "//database",
         "//encoding",
-        "//common/logger",
+        "//storage/durability",
         "//util/test:test_utils",
 
         "@crates//:speedb",

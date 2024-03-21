@@ -30,6 +30,7 @@ rust_test(
         "//encoding",
         "//resource",
         "//storage",
+        "//storage/durability",
         "//util/test:test_utils",
 
         "@crates//:criterion",
