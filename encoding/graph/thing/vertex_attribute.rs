@@ -139,78 +139,78 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum AttributeID {
-    Bytes_8(AttributeID_8),
-    Bytes_16(AttributeID_16),
+    Bytes8(AttributeID8),
+    Bytes16(AttributeID16),
 }
 
 impl AttributeID {
     pub(crate) fn new(bytes: &[u8]) -> Self {
         match bytes.len() {
-            8 => Self::Bytes_8(AttributeID_8::new(bytes.try_into().unwrap())),
-            16 => Self::Bytes_16(AttributeID_16::new(bytes.try_into().unwrap())),
+            8 => Self::Bytes8(AttributeID8::new(bytes.try_into().unwrap())),
+            16 => Self::Bytes16(AttributeID16::new(bytes.try_into().unwrap())),
             _ => panic!("Unknown Attribute ID encoding length: {}", bytes.len()),
         }
     }
 
     pub(crate) fn bytes(&self) -> &[u8] {
         match self {
-            AttributeID::Bytes_8(id_8) => &id_8.bytes,
-            AttributeID::Bytes_16(id_16) => &id_16.bytes,
+            AttributeID::Bytes8(id_8) => &id_8.bytes,
+            AttributeID::Bytes16(id_16) => &id_16.bytes,
         }
     }
 
     pub(crate) const fn length(&self) -> usize {
         match self {
-            AttributeID::Bytes_8(_) => AttributeID_8::LENGTH,
-            AttributeID::Bytes_16(_) => AttributeID_16::LENGTH,
+            AttributeID::Bytes8(_) => AttributeID8::LENGTH,
+            AttributeID::Bytes16(_) => AttributeID16::LENGTH,
         }
     }
 
-    pub fn unwrap_bytes_16(self) -> AttributeID_16 {
+    pub fn unwrap_bytes_16(self) -> AttributeID16 {
         match self {
-            AttributeID::Bytes_8(_) => panic!("Cannot unwrap bytes_16 from AttributeID::Bytes_8"),
-            AttributeID::Bytes_16(bytes) => bytes,
+            AttributeID::Bytes8(_) => panic!("Cannot unwrap bytes_16 from AttributeID::Bytes_8"),
+            AttributeID::Bytes16(bytes) => bytes,
         }
     }
 
-    pub fn unwrap_bytes_8(self) -> AttributeID_8 {
+    pub fn unwrap_bytes_8(self) -> AttributeID8 {
         match self {
-            AttributeID::Bytes_8(bytes) => bytes,
-            AttributeID::Bytes_16(_) => panic!("Cannot unwrap bytes_8 from AttributeID::Bytes_16"),
+            AttributeID::Bytes8(bytes) => bytes,
+            AttributeID::Bytes16(_) => panic!("Cannot unwrap bytes_8 from AttributeID::Bytes_16"),
         }
     }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct AttributeID_8 {
-    bytes: [u8; AttributeID_8::LENGTH],
+pub struct AttributeID8 {
+    bytes: [u8; Self::LENGTH],
 }
 
-impl AttributeID_8 {
+impl AttributeID8 {
     const LENGTH: usize = 8;
 
-    pub fn new(bytes: [u8; AttributeID_8::LENGTH]) -> Self {
+    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
     }
 
-    pub fn bytes(&self) -> [u8; AttributeID_8::LENGTH] {
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
         self.bytes
     }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct AttributeID_16 {
-    bytes: [u8; AttributeID_16::LENGTH],
+pub struct AttributeID16 {
+    bytes: [u8; Self::LENGTH],
 }
 
-impl AttributeID_16 {
+impl AttributeID16 {
     pub(crate) const LENGTH: usize = 16;
 
-    pub fn new(bytes: [u8; AttributeID_16::LENGTH]) -> Self {
+    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
     }
 
-    pub(crate) fn bytes(&self) -> [u8; AttributeID_16::LENGTH] {
+    pub(crate) fn bytes(&self) -> [u8; Self::LENGTH] {
         self.bytes
     }
 }

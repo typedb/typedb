@@ -218,8 +218,7 @@ impl TypeCache {
             })
             .max()
             .unwrap_or(0);
-        let entity_type_caches = Self::build_entity_caches(&entity_data, &vertex_properties, max_entity_id);
-        entity_type_caches
+        Self::build_entity_caches(&entity_data, vertex_properties, max_entity_id)
     }
 
     fn build_entity_caches(
@@ -310,8 +309,7 @@ impl TypeCache {
             })
             .max()
             .unwrap_or(0);
-        let relation_type_caches = Self::build_relation_caches(&relation_data, &vertex_properties, max_relation_id);
-        relation_type_caches
+        Self::build_relation_caches(&relation_data, vertex_properties, max_relation_id)
     }
 
     fn build_relation_caches(
@@ -413,8 +411,7 @@ impl TypeCache {
             })
             .max()
             .unwrap_or(0);
-        let role_type_caches = Self::build_role_caches(&role_data, &vertex_properties, max_role_id);
-        role_type_caches
+        Self::build_role_caches(&role_data, vertex_properties, max_role_id)
     }
 
     fn build_role_caches(
@@ -518,8 +515,7 @@ impl TypeCache {
             })
             .max()
             .unwrap_or(0);
-        let attribute_type_caches = Self::build_attribute_caches(&attribute_data, &vertex_properties, max_attribute_id);
-        attribute_type_caches
+        Self::build_attribute_caches(&attribute_data, vertex_properties, max_attribute_id)
     }
 
     fn build_attribute_caches(
@@ -611,7 +607,7 @@ impl TypeCache {
     ) -> Vec<Annotation> {
         vertex_properties
             .iter()
-            .filter_map(|(property, value)| {
+            .filter_map(|(property, _value)| {
                 if property.type_vertex() != type_vertex {
                     None
                 } else {

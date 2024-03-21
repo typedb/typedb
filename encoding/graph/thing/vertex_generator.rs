@@ -27,7 +27,7 @@ use storage::snapshot::snapshot::WriteSnapshot;
 use crate::{
     graph::{
         thing::{
-            vertex_attribute::{AttributeID, AttributeID_16, AttributeID_8, AttributeVertex},
+            vertex_attribute::{AttributeID, AttributeID16, AttributeID8, AttributeVertex},
             vertex_object::{ObjectID, ObjectVertex},
         },
         type_::vertex::{TypeID, TypeIDUInt},
@@ -105,7 +105,7 @@ impl ThingVertexGenerator {
         value: Long,
         snapshot: &WriteSnapshot<'_, D>,
     ) -> AttributeVertex<'static> {
-        let attribute_id = AttributeID::Bytes_8(AttributeID_8::new(value.bytes()));
+        let attribute_id = AttributeID::Bytes8(AttributeID8::new(value.bytes()));
         let vertex = AttributeVertex::build(ValueType::Long, type_id, attribute_id);
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
@@ -121,13 +121,13 @@ impl ThingVertexGenerator {
     /// We do not need to retain a reverse index from String -> ID, since 99.9% of the time the prefix + hash
     /// lets us retrieve the ID from the forward index by prefix (ID -> String).
     ///
-    pub fn create_attribute_string<'a, const INLINE_LENGTH: usize, D>(
+    pub fn create_attribute_string<const INLINE_LENGTH: usize, D>(
         &self,
         type_id: TypeID,
-        value: StringBytes<'a, INLINE_LENGTH>,
+        value: StringBytes<'_, INLINE_LENGTH>,
         snapshot: &WriteSnapshot<'_, D>,
     ) -> AttributeVertex<'static> {
-        let attribute_id = AttributeID::Bytes_16(self.string_to_attribute_id(type_id, value.clone_as_ref(), snapshot));
+        let attribute_id = AttributeID::Bytes16(self.string_to_attribute_id(type_id, value.clone_as_ref(), snapshot));
         let vertex = AttributeVertex::build(ValueType::String, type_id, attribute_id);
         snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
         vertex
@@ -138,7 +138,7 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         string: StringBytes<'_, INLINE_LENGTH>,
         snapshot: &WriteSnapshot<'_, D>,
-    ) -> AttributeID_16 {
+    ) -> AttributeID16 {
         if string.length() <= StringAttributeID::ENCODING_INLINE_CAPACITY {
             StringAttributeID::build_inline_id(string).attribute_id
         } else {
@@ -168,7 +168,7 @@ impl ThingVertexGenerator {
 ///  We also allow disambiguation in the tail byte of the ID, so we can tolerate up to 127 collsions, or approximately 2TB of data with above assumptions.
 ///
 pub struct StringAttributeID {
-    attribute_id: AttributeID_16,
+    attribute_id: AttributeID16,
 }
 
 impl StringAttributeID {
@@ -181,22 +181,22 @@ impl StringAttributeID {
     const ENCODING_STRING_TAIL_BYTE_INDEX: usize = Self::ENCODING_STRING_HASH_RANGE.end;
     const ENCODING_STRING_TAIL_MASK: u8 = 0b10000000;
 
-    pub fn new(attribute_id: AttributeID_16) -> Self {
+    pub fn new(attribute_id: AttributeID16) -> Self {
         Self { attribute_id }
     }
 
     fn build_inline_id<const INLINE_LENGTH: usize>(string: StringBytes<'_, INLINE_LENGTH>) -> Self {
         debug_assert!(string.length() < Self::ENCODING_INLINE_CAPACITY);
-        let mut bytes = [0u8; AttributeID_16::LENGTH];
+        let mut bytes = [0u8; AttributeID16::LENGTH];
         bytes[0..string.length()].copy_from_slice(string.bytes().bytes());
         Self::set_tail_inline_length(&mut bytes, string.length() as u8);
-        Self::new(AttributeID_16::new(bytes))
+        Self::new(AttributeID16::new(bytes))
     }
 
     ///
     /// Encode the last byte by setting 0b0[7 bits representing length of the prefix characters]
     ///
-    fn set_tail_inline_length(bytes: &mut [u8; AttributeID_16::LENGTH], length: u8) {
+    fn set_tail_inline_length(bytes: &mut [u8; AttributeID16::LENGTH], length: u8) {
         assert!(length & Self::ENCODING_STRING_TAIL_MASK == 0); // ie < 128, high bit not set
                                                                 // because the high bit is not set, we already conform to the required mask of high bit = 0
         bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = length;
@@ -208,7 +208,7 @@ impl StringAttributeID {
         snapshot: &WriteSnapshot<'_, D>,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Self {
-        let mut bytes = [0u8; AttributeID_16::LENGTH];
+        let mut bytes = [0u8; AttributeID16::LENGTH];
         let string_bytes = string.bytes().bytes();
         bytes[Self::ENCODING_STRING_PREFIX_RANGE].copy_from_slice(&string_bytes[Self::ENCODING_STRING_PREFIX_RANGE]);
         let hash_bytes: [u8; Self::ENCODING_STRING_HASH_LENGTH] =
@@ -227,7 +227,7 @@ impl StringAttributeID {
         let mut next = iter.next().transpose().unwrap(); // TODO: handle error
         let mut tail: u8 = 0;
         while let Some((key, value)) = next {
-            let mapped_string = StringBytes::new(ByteArrayOrRef::Reference(value.clone()));
+            let mapped_string = StringBytes::new(ByteArrayOrRef::Reference(value));
             let existing_attribute_id =
                 AttributeVertex::new(ByteArrayOrRef::Reference(key.byte_ref())).attribute_id().unwrap_bytes_16();
             if mapped_string == string {
@@ -245,13 +245,13 @@ impl StringAttributeID {
             panic!("String encoding space has no space remaining within the prefix and hash prefix.")
         }
         Self::set_tail_hash_disambiguator(&mut bytes, tail);
-        Self::new(AttributeID_16::new(bytes))
+        Self::new(AttributeID16::new(bytes))
     }
 
     ///
     /// Encode the last byte by setting 0b1[7 bits representing disambiguator]
     ///
-    fn set_tail_hash_disambiguator(bytes: &mut [u8; AttributeID_16::LENGTH], disambiguator: u8) {
+    fn set_tail_hash_disambiguator(bytes: &mut [u8; AttributeID16::LENGTH], disambiguator: u8) {
         debug_assert!(disambiguator & Self::ENCODING_STRING_TAIL_MASK == 0); // ie. disambiguator < 128, not using high bit
                                                                              // sets 0x1[disambiguator]
         bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = disambiguator | Self::ENCODING_STRING_TAIL_MASK;
@@ -263,7 +263,7 @@ impl StringAttributeID {
 
     pub fn get_inline_string_bytes(&self) -> StringBytes<'static, 16> {
         debug_assert!(self.is_inline());
-        let mut bytes = ByteArray::zeros(AttributeID_16::LENGTH);
+        let mut bytes = ByteArray::zeros(AttributeID16::LENGTH);
         let inline_string_length = self.get_inline_length();
         bytes.bytes_mut()[0..inline_string_length as usize]
             .copy_from_slice(&self.attribute_id.bytes()[0..inline_string_length as usize]);

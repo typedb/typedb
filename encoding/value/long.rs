@@ -24,7 +24,7 @@ impl Long {
     const LENGTH: usize = 8;
 
     pub fn new(bytes: [u8; Long::LENGTH]) -> Self {
-        Self { bytes: bytes }
+        Self { bytes }
     }
 
     pub fn build(long: i64) -> Self {
