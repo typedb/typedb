@@ -56,7 +56,7 @@ impl<'a> AttributeAPI<'a> for Attribute<'a> {
         self.vertex.value_type()
     }
 
-    fn value(&self, thing_manager: &ThingManager) -> Value {
+    fn value<D>(&self, thing_manager: &ThingManager<'_, '_, D>) -> Value {
         thing_manager.get_attribute_value(self)
     }
 }

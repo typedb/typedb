@@ -19,7 +19,7 @@ use std::{mem, ops::Range};
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{key_value::StorageKey, keyspace::keyspace::KeyspaceId};
+use storage::key_value::StorageKey;
 
 use crate::{
     graph::{type_::vertex::TypeID, Typed},
@@ -61,7 +61,7 @@ impl<'a> ObjectVertex<'a> {
     pub fn build_prefix_prefix(prefix: PrefixID) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_PREFIX }> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_PREFIX);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
-        StorageKey::new(Self::keyspace_id(), ByteArrayOrRef::Array(array))
+        StorageKey::new(Self::KEYSPACE_ID, ByteArrayOrRef::Array(array))
     }
 
     fn build_prefix_type(
@@ -71,12 +71,7 @@ impl<'a> ObjectVertex<'a> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
-        StorageKey::new(Self::keyspace_id(), ByteArrayOrRef::Array(array))
-    }
-
-    fn keyspace_id() -> KeyspaceId {
-        // TODO: partition
-        EncodingKeyspace::Data.id()
+        StorageKey::new(Self::KEYSPACE_ID, ByteArrayOrRef::Array(array))
     }
 
     pub fn object_id(&self) -> ObjectID {
@@ -102,9 +97,7 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {
 }
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {
-    fn keyspace_id(&self) -> KeyspaceId {
-        Self::keyspace_id()
-    }
+    const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Data;
 }
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {}

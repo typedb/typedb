@@ -17,7 +17,7 @@
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{key_value::StorageKey, keyspace::keyspace::KeyspaceId};
+use storage::key_value::StorageKey;
 
 use crate::{
     graph::Typed,
@@ -47,9 +47,9 @@ macro_rules! type_vertex_constructors {
 
         // TODO: is it better to have a const fn that is a reference to owned memory, or
         //       to always induce a tiny copy have a non-const function?
-        pub const fn $build_name_prefix() -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
+        pub fn $build_name_prefix() -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
             const BYTES: [u8; TypeVertex::LENGTH_PREFIX] = PrefixType::$prefix.prefix_id().bytes();
-            StorageKey::new_ref(TypeVertex::keyspace_id(), ByteReference::new(&BYTES))
+            StorageKey::new_ref(TypeVertex::KEYSPACE_ID, ByteReference::new(&BYTES))
         }
 
         pub fn $is_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> bool {
@@ -103,10 +103,6 @@ impl<'a> TypeVertex<'a> {
         TypeVertex { bytes: ByteArrayOrRef::Array(array) }
     }
 
-    const fn keyspace_id() -> KeyspaceId {
-        EncodingKeyspace::Schema.id()
-    }
-
     pub fn into_owned(self) -> TypeVertex<'static> {
         TypeVertex { bytes: self.bytes.into_owned() }
     }
@@ -123,9 +119,7 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {
 }
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {
-    fn keyspace_id(&self) -> KeyspaceId {
-        Self::keyspace_id()
-    }
+    const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Schema;
 }
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}

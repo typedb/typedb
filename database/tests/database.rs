@@ -18,15 +18,17 @@
 use std::rc::Rc;
 
 use database::database::Database;
+use durability::wal::WAL;
 use encoding::graph::type_::Root;
-use test_utils::{create_tmp_dir, delete_dir, init_logging};
+use test_utils::{create_tmp_dir, init_logging};
 
 #[test]
 fn create_delete_database() {
     init_logging();
     let database_path = create_tmp_dir();
-    let db_result = Database::new(&database_path, Rc::from("create_delete"));
-    assert!(db_result.is_ok());
+    dbg!(database_path.exists());
+    let db_result = Database::<WAL>::new(&database_path, Rc::from("create_delete"));
+    assert!(db_result.is_ok(), "{:?}", db_result.unwrap_err());
     let db = db_result.unwrap();
 
     let txn = db.transaction_read();
@@ -35,5 +37,4 @@ fn create_delete_database() {
     dbg!("Root entity type: {}", root_entity_type);
     // let delete_result = db.delete();
     // assert!(delete_result.is_ok());
-    delete_dir(database_path)
 }

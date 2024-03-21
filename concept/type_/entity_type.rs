@@ -16,27 +16,31 @@
  */
 use std::collections::HashSet;
 
-use bytes::byte_array_or_ref::ByteArrayOrRef;
+use bytes::{byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use encoding::{
     graph::type_::vertex::{new_vertex_entity_type, TypeVertex},
     layout::prefix::PrefixType,
     Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
-use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotRangeIterator};
-use storage::snapshot::error::SnapshotError;
+use storage::{
+    key_value::StorageKeyReference,
+    snapshot::{error::SnapshotError, iterator::SnapshotRangeIterator},
+};
 
 use crate::{
     concept_iterator,
-    ConceptAPI,
     error::{ConceptError, ConceptErrorKind},
     type_::{
         annotation::{Annotation, AnnotationAbstract},
-        attribute_type::AttributeType, EntityTypeAPI, object_type::ObjectType,
-        OwnerAPI, owns::Owns, type_manager::TypeManager, TypeAPI,
+        attribute_type::AttributeType,
+        object_type::ObjectType,
+        owns::Owns,
+        type_manager::TypeManager,
+        EntityTypeAPI, OwnerAPI, TypeAPI,
     },
+    ConceptAPI,
 };
-use bytes::byte_reference::ByteReference;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct EntityType<'a> {
@@ -44,7 +48,7 @@ pub struct EntityType<'a> {
 }
 
 impl<'a> EntityType<'a> {
-    pub fn new(vertex: TypeVertex<'a>) -> EntityType {
+    pub fn new(vertex: TypeVertex<'a>) -> EntityType<'_> {
         if vertex.prefix() != PrefixType::VertexEntityType {
             panic!(
                 "Type IID prefix was expected to be Prefix::EntityType ({:?}) but was {:?}",
@@ -79,7 +83,7 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type)
     }
 
-    fn get_owns<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
+    fn get_owns<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
         type_manager.get_entity_type_owns(self.clone().into_owned())
     }
 }
@@ -92,9 +96,7 @@ pub enum EntityTypeAnnotation {
 impl From<Annotation> for EntityTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
-            Annotation::Abstract(annotation) => {
-                EntityTypeAnnotation::Abstract(annotation)
-            }
+            Annotation::Abstract(annotation) => EntityTypeAnnotation::Abstract(annotation),
         }
     }
 }

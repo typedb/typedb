@@ -22,7 +22,7 @@ use std::{
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
 use primitive::prefix_range::PrefixRange;
-use storage::snapshot::snapshot::{WriteSnapshot};
+use storage::snapshot::snapshot::WriteSnapshot;
 
 use crate::{
     graph::{
@@ -32,11 +32,9 @@ use crate::{
         },
         type_::vertex::{TypeID, TypeIDUInt},
     },
-    layout::prefix::PrefixType,
-    value::{long::Long, string::StringBytes},
+    value::{long::Long, string::StringBytes, value_type::ValueType},
     AsBytes, Keyable,
 };
-use crate::value::value_type::ValueType;
 
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,
@@ -79,7 +77,7 @@ impl ThingVertexGenerator {
                 .map(|_| AtomicU64::new(0))
                 .collect::<Vec<AtomicU64>>()
                 .into_boxed_slice(),
-            large_value_hasher: large_value_hasher,
+            large_value_hasher,
         }
     }
 
@@ -87,25 +85,25 @@ impl ThingVertexGenerator {
         todo!()
     }
 
-    pub fn create_entity(&self, type_id: TypeID, snapshot: &WriteSnapshot<'_>) -> ObjectVertex<'static> {
+    pub fn create_entity<D>(&self, type_id: TypeID, snapshot: &WriteSnapshot<'_, D>) -> ObjectVertex<'static> {
         let entity_id = self.entity_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_entity(type_id, ObjectID::build(entity_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_relation(&self, type_id: TypeID, snapshot: &WriteSnapshot<'_>) -> ObjectVertex<'static> {
+    pub fn create_relation<D>(&self, type_id: TypeID, snapshot: &WriteSnapshot<'_, D>) -> ObjectVertex<'static> {
         let relation_id = self.relation_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_entity(type_id, ObjectID::build(relation_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_attribute_long(
+    pub fn create_attribute_long<D>(
         &self,
         type_id: TypeID,
         value: Long,
-        snapshot: &WriteSnapshot<'_>,
+        snapshot: &WriteSnapshot<'_, D>,
     ) -> AttributeVertex<'static> {
         let attribute_id = AttributeID::Bytes_8(AttributeID_8::new(value.bytes()));
         let vertex = AttributeVertex::build(ValueType::Long, type_id, attribute_id);
@@ -123,11 +121,11 @@ impl ThingVertexGenerator {
     /// We do not need to retain a reverse index from String -> ID, since 99.9% of the time the prefix + hash
     /// lets us retrieve the ID from the forward index by prefix (ID -> String).
     ///
-    pub fn create_attribute_string<'a, const INLINE_LENGTH: usize>(
+    pub fn create_attribute_string<'a, const INLINE_LENGTH: usize, D>(
         &self,
         type_id: TypeID,
         value: StringBytes<'a, INLINE_LENGTH>,
-        snapshot: &WriteSnapshot<'_>,
+        snapshot: &WriteSnapshot<'_, D>,
     ) -> AttributeVertex<'static> {
         let attribute_id = AttributeID::Bytes_16(self.string_to_attribute_id(type_id, value.clone_as_ref(), snapshot));
         let vertex = AttributeVertex::build(ValueType::String, type_id, attribute_id);
@@ -135,11 +133,11 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    fn string_to_attribute_id<const INLINE_LENGTH: usize>(
+    fn string_to_attribute_id<const INLINE_LENGTH: usize, D>(
         &self,
         type_id: TypeID,
         string: StringBytes<'_, INLINE_LENGTH>,
-        snapshot: &WriteSnapshot<'_>,
+        snapshot: &WriteSnapshot<'_, D>,
     ) -> AttributeID_16 {
         if string.length() <= StringAttributeID::ENCODING_INLINE_CAPACITY {
             StringAttributeID::build_inline_id(string).attribute_id
@@ -184,7 +182,7 @@ impl StringAttributeID {
     const ENCODING_STRING_TAIL_MASK: u8 = 0b10000000;
 
     pub fn new(attribute_id: AttributeID_16) -> Self {
-        Self { attribute_id: attribute_id }
+        Self { attribute_id }
     }
 
     fn build_inline_id<const INLINE_LENGTH: usize>(string: StringBytes<'_, INLINE_LENGTH>) -> Self {
@@ -204,10 +202,10 @@ impl StringAttributeID {
         bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = length;
     }
 
-    fn build_hashed_id<const INLINE_LENGTH: usize>(
+    fn build_hashed_id<const INLINE_LENGTH: usize, D>(
         type_id: TypeID,
         string: StringBytes<'_, INLINE_LENGTH>,
-        snapshot: &WriteSnapshot<'_>,
+        snapshot: &WriteSnapshot<'_, D>,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Self {
         let mut bytes = [0u8; AttributeID_16::LENGTH];
@@ -219,9 +217,11 @@ impl StringAttributeID {
 
         // find first unused tail value
         bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = Self::ENCODING_STRING_TAIL_MASK;
-        let prefix_search = PrefixRange::new_within(
-            AttributeVertex::build_prefix_type_attribute_id(ValueType::String, type_id, &bytes)
-        );
+        let prefix_search = PrefixRange::new_within(AttributeVertex::build_prefix_type_attribute_id(
+            ValueType::String,
+            type_id,
+            &bytes,
+        ));
 
         let mut iter = snapshot.iterate_range(prefix_search);
         let mut next = iter.next().transpose().unwrap(); // TODO: handle error

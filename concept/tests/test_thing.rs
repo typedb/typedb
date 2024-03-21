@@ -19,28 +19,26 @@ use std::rc::Rc;
 
 use concept::{
     thing::{thing_manager::ThingManager, value::Value, AttributeAPI},
-    type_::type_manager::TypeManager,
+    type_::{type_manager::TypeManager, AttributeTypeAPI},
 };
-use concept::type_::AttributeTypeAPI;
+use durability::wal::WAL;
 use encoding::{
-    create_keyspaces,
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
-    value::label::Label,
+    value::{label::Label, value_type::ValueType},
+    EncodingKeyspace,
 };
-use encoding::value::value_type::ValueType;
 use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
-use test_utils::{create_tmp_dir, delete_dir, init_logging};
+use test_utils::{create_tmp_dir, init_logging};
 
 #[test]
 fn thing_create_iterate() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::new::<EncodingKeyspace>("storage", &storage_path).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
-    create_keyspaces(&mut storage);
     TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 
-    let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
+    let snapshot: Rc<Snapshot<'_, WAL>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
     {
         let thing_vertex_generator = ThingVertexGenerator::new();
         let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &type_vertex_generator, None));
@@ -61,24 +59,21 @@ fn thing_create_iterate() {
     }
 
     {
-        let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
+        let snapshot: Rc<Snapshot<'_, WAL>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
         let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &type_vertex_generator, None));
         let thing_vertex_generator = ThingVertexGenerator::new();
         let thing_manager = ThingManager::new(snapshot.clone(), &thing_vertex_generator, type_manager);
         let entities = thing_manager.get_entities().collect_cloned();
         assert_eq!(entities.len(), 4);
     }
-
-    delete_dir(storage_path)
 }
 
 #[test]
 fn attribute_create() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::new::<EncodingKeyspace>("storage", &storage_path).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
-    create_keyspaces(&mut storage);
     TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 
     let age_label = Label::build("age");
@@ -87,7 +82,7 @@ fn attribute_create() {
     let age_value: i64 = 10;
     let name_value: &str = "TypeDB Fan";
 
-    let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
+    let snapshot: Rc<Snapshot<'_, WAL>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
     {
         let thing_vertex_generator = ThingVertexGenerator::new();
         let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &type_vertex_generator, None));
@@ -101,17 +96,16 @@ fn attribute_create() {
         let age_1 = thing_manager.create_attribute(&age_type, Value::Long(age_value)).unwrap();
         assert_eq!(age_1.value(&thing_manager), Value::Long(age_value));
 
-        let name_1 = thing_manager.create_attribute(&name_type, Value::String(String::from(name_value).into_boxed_str())).unwrap();
+        let name_1 = thing_manager
+            .create_attribute(&name_type, Value::String(String::from(name_value).into_boxed_str()))
+            .unwrap();
         assert_eq!(name_1.value(&thing_manager), Value::String(String::from(name_value).into_boxed_str()));
     }
-    if let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() {
-        write_snapshot.commit().unwrap();
-    } else {
-        assert!(false);
-    }
+    let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() else { unreachable!() };
+    write_snapshot.commit().unwrap();
 
     {
-        let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
+        let snapshot: Rc<Snapshot<'_, WAL>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
         let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &type_vertex_generator, None));
         let thing_vertex_generator = ThingVertexGenerator::new();
         let thing_manager = ThingManager::new(snapshot.clone(), &thing_vertex_generator, type_manager.clone());
@@ -121,8 +115,6 @@ fn attribute_create() {
         let age_type = type_manager.get_attribute_type(&age_label).unwrap();
         let ages = thing_manager.get_attributes_in(age_type).collect_cloned();
         assert_eq!(ages.len(), 1);
-        assert_eq!(ages.get(0).unwrap().value(&thing_manager), Value::Long(age_value));
+        assert_eq!(ages.first().unwrap().value(&thing_manager), Value::Long(age_value));
     }
-
-    delete_dir(storage_path)
 }

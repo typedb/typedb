@@ -15,7 +15,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::any::Any;
 use std::rc::Rc;
 
 use bytes::byte_array_or_ref::ByteArrayOrRef;
@@ -28,11 +27,10 @@ use encoding::{
         },
         Typed,
     },
-    layout::prefix::PrefixType,
+    layout::prefix::{PrefixID, PrefixType},
     value::{long::Long, string::StringBytes, value_type::ValueType},
     Keyable,
 };
-use encoding::layout::prefix::PrefixID;
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::snapshot::Snapshot;
@@ -50,32 +48,34 @@ use crate::{
     },
 };
 
-pub struct ThingManager<'txn, 'storage: 'txn> {
-    snapshot: Rc<Snapshot<'storage>>,
+pub struct ThingManager<'txn, 'storage: 'txn, D> {
+    snapshot: Rc<Snapshot<'storage, D>>,
     vertex_generator: &'txn ThingVertexGenerator,
-    type_manager: Rc<TypeManager<'txn, 'storage>>,
+    type_manager: Rc<TypeManager<'txn, 'storage, D>>,
 }
 
-impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
+impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
     pub fn new(
-        snapshot: Rc<Snapshot<'storage>>,
+        snapshot: Rc<Snapshot<'storage, D>>,
         vertex_generator: &'txn ThingVertexGenerator,
-        type_manager: Rc<TypeManager<'txn, 'storage>>,
+        type_manager: Rc<TypeManager<'txn, 'storage, D>>,
     ) -> Self {
         ThingManager { snapshot, vertex_generator, type_manager }
     }
 
-    pub fn create_entity(&self, entity_type: &EntityType) -> Entity {
+    pub fn create_entity(&self, entity_type: &EntityType<'_>) -> Entity<'_> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            return Entity::new(
-                self.vertex_generator.create_entity(Typed::type_id(entity_type.vertex()), write_snapshot),
-            );
+            Entity::new(self.vertex_generator.create_entity(Typed::type_id(entity_type.vertex()), write_snapshot))
         } else {
             panic!("Illegal state: create entity requires write snapshot")
         }
     }
 
-    pub fn create_attribute(&self, attribute_type: &AttributeType, value: Value) -> Result<Attribute, ConceptError> {
+    pub fn create_attribute(
+        &self,
+        attribute_type: &AttributeType<'_>,
+        value: Value,
+    ) -> Result<Attribute<'_>, ConceptError> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let value_type = attribute_type.get_value_type(self.type_manager.as_ref());
             if Some(value.value_type()) == value_type {
@@ -117,29 +117,31 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
         }
     }
 
-    pub fn get_entities(&self) -> EntityIterator<'_, 1> {
+    pub fn get_entities(&self) -> EntityIterator<'_, 1, D> {
         let prefix = ObjectVertex::build_prefix_prefix(PrefixType::VertexEntity.prefix_id());
         let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_within(prefix));
         EntityIterator::new(snapshot_iterator)
     }
 
-    pub fn get_attributes(&self) -> AttributeIterator<'_, 1> {
+    pub fn get_attributes(&self) -> AttributeIterator<'_, 1, D> {
         let start = AttributeVertex::build_prefix_prefix(PrefixID::VERTEX_ATTRIBUTE_MIN);
         let end = AttributeVertex::build_prefix_prefix(PrefixID::VERTEX_ATTRIBUTE_MAX);
         let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_inclusive(start, end));
         AttributeIterator::new(snapshot_iterator)
     }
 
-    pub fn get_attributes_in(&self, attribute_type: AttributeType<'_>) -> AttributeIterator<'_, 3> {
-        attribute_type.get_value_type(self.type_manager.as_ref())
+    pub fn get_attributes_in(&self, attribute_type: AttributeType<'_>) -> AttributeIterator<'_, 3, D> {
+        attribute_type
+            .get_value_type(self.type_manager.as_ref())
             .map(|value_type| {
                 let prefix = AttributeVertex::build_prefix_type(value_type, Typed::type_id(attribute_type.vertex()));
                 let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_within(prefix));
                 AttributeIterator::new(snapshot_iterator)
-            }).unwrap_or_else(|| AttributeIterator::new_empty())
+            })
+            .unwrap_or_else(|| AttributeIterator::new_empty())
     }
 
-    pub(crate) fn get_attribute_value(&self, attribute: &Attribute) -> Value {
+    pub(crate) fn get_attribute_value(&self, attribute: &Attribute<'_>) -> Value {
         match attribute.value_type() {
             ValueType::Boolean => {
                 todo!()

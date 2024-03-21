@@ -19,7 +19,7 @@ use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{key_value::StorageKey, keyspace::keyspace::KeyspaceId};
+use storage::key_value::StorageKey;
 
 use crate::{
     graph::type_::vertex::TypeVertex,
@@ -114,7 +114,7 @@ impl<'a> TypeEdge<'a> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         bytes.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
-        StorageKey::new_owned(Self::keyspace_id(), bytes)
+        StorageKey::new_owned(Self::KEYSPACE_ID, bytes)
     }
 
     pub fn from(&'a self) -> TypeVertex<'a> {
@@ -129,10 +129,6 @@ impl<'a> TypeEdge<'a> {
 
     fn infix(&self) -> InfixType {
         InfixType::from_infix_id(InfixID::new(self.bytes.bytes()[Self::range_infix()].try_into().unwrap()))
-    }
-
-    const fn keyspace_id() -> KeyspaceId {
-        EncodingKeyspace::Schema.id()
     }
 
     const fn range_from() -> Range<usize> {
@@ -159,7 +155,5 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
 }
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
-    fn keyspace_id(&self) -> KeyspaceId {
-        Self::keyspace_id()
-    }
+    const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Schema;
 }

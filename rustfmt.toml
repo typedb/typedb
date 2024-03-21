@@ -24,3 +24,4 @@ imports_granularity = "Crate"
 group_imports = "StdExternalCrate"
 use_small_heuristics = "Max"
 max_width = 120
+match_arm_leading_pipes = "Preserve"

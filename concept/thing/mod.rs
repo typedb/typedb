@@ -52,5 +52,5 @@ pub trait AttributeAPI<'a>: ThingAPI<'a> {
 
     fn value_type(&self) -> ValueType;
 
-    fn value(&self, thing_manager: &ThingManager) -> Value;
+    fn value<D>(&self, thing_manager: &ThingManager<'_, '_, D>) -> Value;
 }

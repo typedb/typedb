@@ -42,7 +42,7 @@ pub struct RoleType<'a> {
 }
 
 impl<'a> RoleType<'a> {
-    pub fn new(vertex: TypeVertex<'a>) -> RoleType {
+    pub fn new(vertex: TypeVertex<'a>) -> RoleType<'_> {
         if vertex.prefix() != PrefixType::VertexRoleType {
             panic!(
                 "Type IID prefix was expected to be Prefix::RoleType ({:?}) but was {:?}",

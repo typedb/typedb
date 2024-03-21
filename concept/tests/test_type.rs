@@ -17,15 +17,19 @@
 
 use std::{ops::Deref, rc::Rc, sync::Arc};
 
-use concept::type_::{annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, role_type::RoleTypeAnnotation, object_type::ObjectType, owns::Owns, type_cache::TypeCache, type_manager::TypeManager, AttributeTypeAPI, EntityTypeAPI, OwnerAPI, RoleTypeAPI, RelationTypeAPI};
-use concept::type_::relation_type::RelationTypeAnnotation;
+use concept::type_::{
+    annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, owns::Owns,
+    relation_type::RelationTypeAnnotation, role_type::RoleTypeAnnotation, type_cache::TypeCache,
+    type_manager::TypeManager, AttributeTypeAPI, EntityTypeAPI, OwnerAPI, RelationTypeAPI, RoleTypeAPI,
+};
+use durability::wal::WAL;
 use encoding::{
-    create_keyspaces,
     graph::type_::{vertex_generator::TypeVertexGenerator, Root},
     value::{label::Label, value_type::ValueType},
+    EncodingKeyspace,
 };
 use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
-use test_utils::{create_tmp_dir, delete_dir, init_logging};
+use test_utils::{create_tmp_dir, init_logging};
 
 /*
 This test is used to help develop the API of Types.
@@ -36,12 +40,11 @@ We don't aim for complete coverage of all APIs, and will rely on the BDD scenari
 fn entity_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-    create_keyspaces(&mut storage).unwrap();
+    let mut storage = MVCCStorage::<WAL>::new::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
     TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 
-    let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
+    let snapshot: Rc<Snapshot<'_, _>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
     {
         // Without cache, uncommitted
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
@@ -93,7 +96,7 @@ fn entity_usage() {
         let all_owns = child_type.get_owns(&type_manager);
         assert_eq!(all_owns.len(), 1);
         assert!(all_owns.contains(&owns));
-        assert!(matches!(child_type.get_owns_attribute(&type_manager, age_type.clone()), Some(owns)));
+        assert_eq!(child_type.get_owns_attribute(&type_manager, age_type.clone()), Some(owns));
         assert!(child_type.has_owns_attribute(&type_manager, age_type.clone()));
     }
     if let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() {
@@ -104,7 +107,7 @@ fn entity_usage() {
 
     {
         // With cache, committed
-        let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
+        let snapshot: Rc<Snapshot<'_, _>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
         let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()));
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
 
@@ -149,23 +152,20 @@ fn entity_usage() {
         assert_eq!(all_owns.len(), 1);
         let expected_owns = Owns::new(ObjectType::Entity(child_type.clone()), age_type.clone());
         assert!(all_owns.contains(&expected_owns));
-        assert!(matches!(child_type.get_owns_attribute(&type_manager, age_type.clone()), Some(expected_owns)));
+        assert_eq!(child_type.get_owns_attribute(&type_manager, age_type.clone()), Some(expected_owns));
         assert!(child_type.has_owns_attribute(&type_manager, age_type.clone()));
     }
-
-    delete_dir(storage_path)
 }
 
 #[test]
 fn role_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-    create_keyspaces(&mut storage).unwrap();
+    let mut storage = MVCCStorage::<WAL>::new::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
     TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 
-    let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
+    let snapshot: Rc<Snapshot<'_, _>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
     {
         // Without cache, uncommitted
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
@@ -174,14 +174,20 @@ fn role_usage() {
         assert!(root_relation.is_root(&type_manager));
         assert!(root_relation.get_supertype(&type_manager).is_none());
         assert_eq!(root_relation.get_supertypes(&type_manager).len(), 0);
-        assert!(root_relation.get_annotations(&type_manager).deref().contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract::new())));
+        assert!(root_relation
+            .get_annotations(&type_manager)
+            .deref()
+            .contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract::new())));
 
         let root_role = type_manager.get_role_type(&Root::Role.label()).unwrap();
         assert_eq!(root_role.get_label(&type_manager).deref(), &Root::Role.label());
         assert!(root_role.is_root(&type_manager));
         assert!(root_role.get_supertype(&type_manager).is_none());
         assert_eq!(root_role.get_supertypes(&type_manager).len(), 0);
-        assert!(root_role.get_annotations(&type_manager).deref().contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract::new())));
+        assert!(root_role
+            .get_annotations(&type_manager)
+            .deref()
+            .contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract::new())));
 
         let friendship_label = Label::build("friendship");
         let friendship_type = type_manager.create_relation_type(&friendship_label, false);
@@ -199,7 +205,7 @@ fn role_usage() {
 
     {
         // With cache, committed
-        let snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
+        let snapshot: Rc<Snapshot<'_, _>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
         let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()));
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
 
@@ -212,8 +218,5 @@ fn role_usage() {
         let relates = relates.unwrap();
         debug_assert_eq!(relates.relation(), friendship_type);
         debug_assert_eq!(relates.role(), role_type);
-
     }
-
-    delete_dir(storage_path)
 }

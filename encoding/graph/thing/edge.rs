@@ -19,7 +19,7 @@ use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{key_value::StorageKey, keyspace::keyspace::KeyspaceId};
+use storage::key_value::StorageKey;
 
 use crate::{
     graph::{
@@ -65,7 +65,7 @@ impl<'a> HasForwardEdge<'a> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         bytes.bytes_mut()[Self::range_infix()].copy_from_slice(&InfixType::EdgeHas.infix_id().bytes());
-        StorageKey::new_owned(Self::keyspace_id(), bytes)
+        StorageKey::new_owned(Self::KEYSPACE_ID, bytes)
     }
 
     pub fn prefix_from_object_to_type(
@@ -77,11 +77,7 @@ impl<'a> HasForwardEdge<'a> {
         bytes.bytes_mut()[Self::range_infix()].copy_from_slice(&InfixType::EdgeHas.infix_id().bytes());
         let to_type_range = Self::range_infix().end..Self::range_infix().end + TypeVertex::LENGTH;
         bytes.bytes_mut()[to_type_range].copy_from_slice(to_type.bytes().bytes());
-        StorageKey::new_owned(Self::keyspace_id(), bytes)
-    }
-
-    fn keyspace_id() -> KeyspaceId {
-        EncodingKeyspace::Data.id()
+        StorageKey::new_owned(Self::KEYSPACE_ID, bytes)
     }
 
     fn from(&'a self) -> ObjectVertex<'a> {
@@ -126,7 +122,5 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for HasForwardEdge<'a> {
 }
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for HasForwardEdge<'a> {
-    fn keyspace_id(&self) -> KeyspaceId {
-        Self::keyspace_id()
-    }
+    const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Data;
 }

@@ -15,33 +15,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 
 use criterion::{criterion_group, criterion_main, Criterion};
+use durability::wal::WAL;
 use encoding::{
-    create_keyspaces,
     graph::{
         thing::{vertex_generator::ThingVertexGenerator, vertex_object::ObjectVertex},
         type_::vertex::TypeID,
     },
-    Keyable,
+    EncodingKeyspace, Keyable,
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{key_value::StorageKey, snapshot::snapshot::WriteSnapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, init_logging};
 
-fn vertex_generation(
+fn vertex_generation<D>(
     thing_vertex_generator: Arc<ThingVertexGenerator>,
     type_id: TypeID,
-    write_snapshot: &WriteSnapshot<'_>,
+    write_snapshot: &WriteSnapshot<'_, D>,
 ) -> ObjectVertex<'static> {
     thing_vertex_generator.create_entity(type_id, write_snapshot)
 }
 
-fn vertex_generation_to_key(
+fn vertex_generation_to_key<D>(
     thing_vertex_generator: Arc<ThingVertexGenerator>,
     type_id: TypeID,
-    write_snapshot: &WriteSnapshot<'_>,
+    write_snapshot: &WriteSnapshot<'_, D>,
 ) -> StorageKey<'static, { BUFFER_KEY_INLINE }> {
     thing_vertex_generator.create_entity(type_id, write_snapshot).into_storage_key()
 }
@@ -49,8 +49,7 @@ fn vertex_generation_to_key(
 fn criterion_benchmark(c: &mut Criterion) {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-    create_keyspaces(&mut storage);
+    let storage = MVCCStorage::<WAL>::new::<EncodingKeyspace>("storage", &storage_path).unwrap();
 
     let type_id = TypeID::build(0);
     let vertex_generator = Arc::new(ThingVertexGenerator::new());
@@ -60,7 +59,6 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| vertex_generation(vertex_generator.clone(), type_id, &snapshot))
     });
 
-    let snapshot = storage.open_snapshot_write();
     let snapshot = storage.open_snapshot_write();
     c.bench_function("vertex_generation_to_storage_key", |b| {
         b.iter(|| vertex_generation_to_key(vertex_generator.clone(), type_id, &snapshot))

@@ -16,10 +16,7 @@
  */
 
 use std::{
-    cell::OnceCell,
-    ops::Deref,
-    path::{Path, PathBuf},
-    sync::Mutex,
+    cell::OnceCell, fs, ops::Deref, path::{Path, PathBuf}, sync::Mutex
 };
 
 use logger::initialise_logging;
@@ -50,5 +47,7 @@ impl Deref for TempDir {
 pub fn create_tmp_dir() -> TempDir {
     let id = rand::random::<u64>();
     let dir_name = format!("test_storage_{}", id);
-    TempDir(std::env::temp_dir().join(Path::new(&dir_name)))
+    let dir = std::env::temp_dir().join(Path::new(&dir_name));
+    fs::create_dir_all(&dir).unwrap();
+    TempDir(dir)
 }

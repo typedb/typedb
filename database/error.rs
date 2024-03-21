@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{error::Error, fmt, io};
+use std::{error::Error, fmt, io, path::PathBuf};
 
 use storage::error::MVCCStorageError;
 
@@ -27,7 +27,7 @@ pub struct DatabaseError {
 
 #[derive(Debug)]
 pub enum DatabaseErrorKind {
-    FailedToCreateDirectory(io::Error),
+    FailedToCreateDirectory { at: PathBuf, source: io::Error },
     FailedToCreateStorage(MVCCStorageError),
     FailedToSetupStorage(MVCCStorageError),
 }
@@ -41,7 +41,7 @@ impl fmt::Display for DatabaseError {
 impl Error for DatabaseError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
-            DatabaseErrorKind::FailedToCreateDirectory(io_error) => Some(io_error),
+            DatabaseErrorKind::FailedToCreateDirectory { source, .. } => Some(source),
             DatabaseErrorKind::FailedToCreateStorage(storage_error) => Some(storage_error),
             DatabaseErrorKind::FailedToSetupStorage(storage_error) => Some(storage_error),
         }

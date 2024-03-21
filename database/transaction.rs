@@ -20,26 +20,26 @@ use std::rc::Rc;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use storage::snapshot::snapshot::Snapshot;
 
-pub struct TransactionRead<'txn, 'storage: 'txn> {
-    pub(crate) snapshot: Rc<Snapshot<'storage>>,
-    pub(crate) type_manager: Rc<TypeManager<'txn, 'storage>>,
-    pub(crate) thing_manager: ThingManager<'txn, 'storage>,
+pub struct TransactionRead<'txn, 'storage: 'txn, D> {
+    pub(crate) snapshot: Rc<Snapshot<'storage, D>>,
+    pub(crate) type_manager: Rc<TypeManager<'txn, 'storage, D>>,
+    pub(crate) thing_manager: ThingManager<'txn, 'storage, D>,
 }
 
-impl<'txn, 'storage: 'txn> TransactionRead<'txn, 'storage> {
-    pub fn type_manager(&self) -> &TypeManager<'txn, 'storage> {
+impl<'txn, 'storage: 'txn, D> TransactionRead<'txn, 'storage, D> {
+    pub fn type_manager(&self) -> &TypeManager<'txn, 'storage, D> {
         &self.type_manager
     }
 }
 
-pub struct TransactionWrite<'txn, 'storage: 'txn> {
-    pub(crate) snapshot: Rc<Snapshot<'storage>>,
-    pub(crate) type_manager: Rc<TypeManager<'txn, 'storage>>,
-    pub(crate) thing_manager: ThingManager<'txn, 'storage>,
+pub struct TransactionWrite<'txn, 'storage: 'txn, D> {
+    pub(crate) snapshot: Rc<Snapshot<'storage, D>>,
+    pub(crate) type_manager: Rc<TypeManager<'txn, 'storage, D>>,
+    pub(crate) thing_manager: ThingManager<'txn, 'storage, D>,
 }
 
-impl<'txn, 'storage: 'txn> TransactionWrite<'txn, 'storage> {
-    pub fn type_manager(&self) -> &TypeManager<'txn, 'storage> {
+impl<'txn, 'storage: 'txn, D> TransactionWrite<'txn, 'storage, D> {
+    pub fn type_manager(&self) -> &TypeManager<'txn, 'storage, D> {
         &self.type_manager
     }
 }

@@ -16,7 +16,6 @@
  */
 
 use bytes::increment_fixed;
-use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::EncodingKeyspace;
 
@@ -39,15 +38,15 @@ impl PrefixID {
         self.bytes
     }
 
-    fn keyspace_id(&self) -> KeyspaceId {
+    fn keyspace_id(&self) -> EncodingKeyspace {
         match PrefixType::from_prefix_id(*self) {
-            PrefixType::VertexEntityType
+            | PrefixType::VertexEntityType
             | PrefixType::VertexRelationType
             | PrefixType::VertexAttributeType
             | PrefixType::VertexRoleType
             | PrefixType::PropertyType
             | PrefixType::IndexLabelToType
-            | PrefixType::PropertyTypeEdge => EncodingKeyspace::Schema.id(),
+            | PrefixType::PropertyTypeEdge => EncodingKeyspace::Schema,
             PrefixType::VertexEntity => todo!(),
             PrefixType::VertexRelation => todo!(),
             PrefixType::VertexAttributeBoolean => todo!(),

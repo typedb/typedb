@@ -17,26 +17,31 @@
 
 use std::collections::HashSet;
 
-use bytes::byte_array_or_ref::ByteArrayOrRef;
+use bytes::{byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use encoding::{
     graph::type_::vertex::{new_vertex_relation_type, TypeVertex},
     layout::prefix::PrefixType,
     Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
-use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotRangeIterator};
-use storage::snapshot::error::SnapshotError;
+use storage::{
+    key_value::StorageKeyReference,
+    snapshot::{error::SnapshotError, iterator::SnapshotRangeIterator},
+};
 
 use crate::{
     concept_iterator,
-    ConceptAPI,
     error::{ConceptError, ConceptErrorKind},
     type_::{
-        annotation::{Annotation, AnnotationAbstract}, attribute_type::AttributeType, object_type::ObjectType, OwnerAPI,
-        owns::Owns, RelationTypeAPI, type_manager::TypeManager, TypeAPI,
+        annotation::{Annotation, AnnotationAbstract},
+        attribute_type::AttributeType,
+        object_type::ObjectType,
+        owns::Owns,
+        type_manager::TypeManager,
+        OwnerAPI, RelationTypeAPI, TypeAPI,
     },
+    ConceptAPI,
 };
-use bytes::byte_reference::ByteReference;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RelationType<'a> {
@@ -44,7 +49,7 @@ pub struct RelationType<'a> {
 }
 
 impl<'a> RelationType<'a> {
-    pub fn new(vertex: TypeVertex<'a>) -> RelationType {
+    pub fn new(vertex: TypeVertex<'a>) -> RelationType<'_> {
         if vertex.prefix() != PrefixType::VertexRelationType {
             panic!(
                 "Type IID prefix was expected to be Prefix::RelationType ({:?}) but was {:?}",
@@ -69,7 +74,6 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
 }
 
 impl<'a> RelationTypeAPI<'a> for RelationType<'a> {
-
     fn into_owned(self) -> RelationType<'static> {
         RelationType { vertex: self.vertex.into_owned() }
     }
@@ -80,7 +84,7 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         Owns::new(ObjectType::Relation(self.clone().into_owned()), attribute_type)
     }
 
-    fn get_owns<'m>(&self, type_manager: &'m TypeManager) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
+    fn get_owns<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
         type_manager.get_relation_type_owns(self.clone().into_owned())
     }
 }
@@ -93,9 +97,7 @@ pub enum RelationTypeAnnotation {
 impl From<Annotation> for RelationTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
-            Annotation::Abstract(annotation) => {
-                RelationTypeAnnotation::Abstract(annotation)
-            }
+            Annotation::Abstract(annotation) => RelationTypeAnnotation::Abstract(annotation),
         }
     }
 }

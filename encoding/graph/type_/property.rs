@@ -19,17 +19,16 @@ use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{key_value::StorageKey, keyspace::keyspace::KeyspaceId};
+use storage::key_value::StorageKey;
 
 use crate::{
-    AsBytes,
-    EncodingKeyspace,
-    graph::type_::vertex::TypeVertex, Keyable, layout::{
-        infix::{InfixID, InfixType},
+    graph::type_::vertex::TypeVertex,
+    layout::{
+        infix::{InfixGroup, InfixID, InfixType},
         prefix::{PrefixID, PrefixType},
-    }, Prefixed,
+    },
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::layout::infix::InfixGroup;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct TypeVertexProperty<'a> {
@@ -49,7 +48,8 @@ macro_rules! type_vertex_property_constructors {
         }
 
         pub fn $is_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> bool {
-            bytes.length() == TypeVertexProperty::LENGTH_NO_SUFFIX && TypeVertexProperty::new(bytes).infix() == InfixType::$infix
+            bytes.length() == TypeVertexProperty::LENGTH_NO_SUFFIX
+                && TypeVertexProperty::new(bytes).infix() == InfixType::$infix
         }
     };
 }
@@ -96,7 +96,11 @@ impl<'a> TypeVertexProperty<'a> {
         TypeVertexProperty { bytes: ByteArrayOrRef::Array(array) }
     }
 
-    fn build_suffixed<const INLINE_BYTES: usize>(vertex: TypeVertex<'_>, infix: InfixType, suffix: ByteArrayOrRef<'_, INLINE_BYTES>) -> Self {
+    fn build_suffixed<const INLINE_BYTES: usize>(
+        vertex: TypeVertex<'_>,
+        infix: InfixType,
+        suffix: ByteArrayOrRef<'_, INLINE_BYTES>,
+    ) -> Self {
         debug_assert!(infix.group() == InfixGroup::Property);
         let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX + suffix.length());
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&PrefixType::PropertyType.prefix_id().bytes());
@@ -106,11 +110,11 @@ impl<'a> TypeVertexProperty<'a> {
         TypeVertexProperty { bytes: ByteArrayOrRef::Array(array) }
     }
 
-    pub const fn build_prefix() -> StorageKey<'static, { TypeVertexProperty::LENGTH_PREFIX }> {
+    pub fn build_prefix() -> StorageKey<'static, { TypeVertexProperty::LENGTH_PREFIX }> {
         // TODO: is it better to have a const fn that is a reference to owned memory, or
         //       to always induce a tiny copy have a non-const function?
         const PREFIX_BYTES: [u8; PrefixID::LENGTH] = PrefixType::PropertyType.prefix_id().bytes();
-        StorageKey::new_ref(Self::keyspace_id(), ByteReference::new(&PREFIX_BYTES))
+        StorageKey::new_ref(Self::KEYSPACE_ID, ByteReference::new(&PREFIX_BYTES))
     }
 
     pub fn type_vertex(&'a self) -> TypeVertex<'a> {
@@ -133,10 +137,6 @@ impl<'a> TypeVertexProperty<'a> {
         } else {
             None
         }
-    }
-
-    const fn keyspace_id() -> KeyspaceId {
-        EncodingKeyspace::Schema.id()
     }
 
     const fn range_type_vertex() -> Range<usize> {
@@ -163,9 +163,7 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {
 }
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {
-    fn keyspace_id(&self) -> KeyspaceId {
-        Self::keyspace_id()
-    }
+    const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Schema;
 }
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {}

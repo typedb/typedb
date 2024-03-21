@@ -202,7 +202,7 @@ impl<'bytes> StorageKeyReference<'bytes> {
         Self::new_raw(KeyspaceId(keyspace_id.id()), reference)
     }
 
-    pub(crate) fn new_raw(keyspace_id: KeyspaceId, reference: ByteReference<'bytes>) -> Self {
+    pub(crate) const fn new_raw(keyspace_id: KeyspaceId, reference: ByteReference<'bytes>) -> Self {
         Self { keyspace_id, reference }
     }
 

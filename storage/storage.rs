@@ -174,10 +174,7 @@ fn open_keyspaces<KS: KeyspaceSet>(
         validate_new_keyspace(storage_name, keyspace_id, &keyspaces, &keyspaces_index)?;
         keyspaces.push(Keyspace::open(path, keyspace_id, &options).map_err(|err| MVCCStorageError {
             storage_name: storage_name.to_owned(),
-            kind: MVCCStorageErrorKind::KeyspaceOpenError {
-                source: Arc::new(err),
-                keyspace_name: keyspace_id.name(),
-            },
+            kind: MVCCStorageErrorKind::KeyspaceOpenError { source: Arc::new(err), keyspace_name: keyspace_id.name() },
         })?);
         keyspaces_index[keyspace_id.id() as usize] = Some(KeyspaceId(keyspaces.len() as u8 - 1));
     }
@@ -291,6 +288,11 @@ impl<D> MVCCStorage<D> {
     pub fn open_snapshot_read(&self) -> ReadSnapshot<'_, D> {
         let open_sequence_number = self.isolation_manager.watermark();
         ReadSnapshot::new(self, open_sequence_number)
+    }
+
+    pub fn open_snapshot_read_at(&self, sequence_number: SequenceNumber) -> ReadSnapshot<'_, D> {
+        // TODO: validate sequence number is before or equal to watermark
+        ReadSnapshot::new(self, sequence_number)
     }
 
     fn snapshot_commit<'storage>(&'storage self, snapshot: WriteSnapshot<'storage, D>) -> Result<(), MVCCStorageError>
@@ -422,10 +424,8 @@ impl<D> MVCCStorage<D> {
     where
         M: FnMut(ByteReference<'_>) -> V,
     {
-        let mut iterator = self.iterate_range(
-            PrefixRange::new_within(StorageKey::<8>::Reference(key.clone())),
-            open_sequence_number,
-        );
+        let mut iterator =
+            self.iterate_range(PrefixRange::new_within(StorageKey::<8>::Reference(key.clone())), open_sequence_number);
         // TODO: we don't want to panic on unwrap here
         loop {
             let next = iterator.next().transpose().unwrap_or_log();
@@ -434,7 +434,7 @@ impl<D> MVCCStorage<D> {
                     return Some(mapper(v));
                 }
             } else {
-                return None
+                return None;
             }
         }
     }

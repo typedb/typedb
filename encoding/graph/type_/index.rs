@@ -19,7 +19,6 @@ use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::keyspace::keyspace::KeyspaceId;
 
 use crate::{
     layout::prefix::{PrefixID, PrefixType},
@@ -72,9 +71,7 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {
 }
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {
-    fn keyspace_id(&self) -> KeyspaceId {
-        EncodingKeyspace::Schema.id()
-    }
+    const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Schema;
 }
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {}

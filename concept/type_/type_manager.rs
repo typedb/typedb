@@ -18,40 +18,51 @@
 use std::{collections::HashSet, ops::Deref, rc::Rc, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
+use durability::DurabilityService;
 use encoding::{
-    AsBytes,
     graph::type_::{
         edge::{
-            build_edge_owns, build_edge_owns_prefix, build_edge_owns_reverse, build_edge_sub, build_edge_sub_prefix,
-            build_edge_sub_reverse, new_edge_owns, new_edge_sub,
+            build_edge_owns, build_edge_owns_prefix, build_edge_owns_reverse, build_edge_relates,
+            build_edge_relates_prefix, build_edge_relates_reverse, build_edge_sub, build_edge_sub_prefix,
+            build_edge_sub_reverse, new_edge_owns, new_edge_relates, new_edge_sub,
         },
         index::LabelToTypeVertexIndex,
         property::{
             build_property_type_annotation_abstract, build_property_type_label, build_property_type_value_type,
         },
-        Root,
-        vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, TypeVertex},
+        vertex::{
+            new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type,
+            TypeVertex,
+        },
         vertex_generator::TypeVertexGenerator,
+        Root,
     },
-    Keyable, value::{
+    value::{
         label::Label,
         string::StringBytes,
         value_type::{ValueType, ValueTypeID},
     },
+    AsBytes, Keyable,
 };
-use encoding::graph::type_::edge::{build_edge_relates, build_edge_relates_prefix, build_edge_relates_reverse, new_edge_relates};
-use encoding::graph::type_::vertex::new_vertex_role_type;
-use primitive::maybe_owns::MaybeOwns;
-use primitive::prefix_range::PrefixRange;
+use primitive::{maybe_owns::MaybeOwns, prefix_range::PrefixRange};
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
-use storage::{MVCCStorage, snapshot::snapshot::Snapshot};
+use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
 
-use crate::type_::{annotation::AnnotationAbstract, attribute_type::{AttributeType, AttributeTypeAnnotation}, AttributeTypeAPI, entity_type::{EntityType, EntityTypeAnnotation}, EntityTypeAPI, object_type::ObjectType, owns::Owns, relation_type::{RelationType, RelationTypeAnnotation}, RelationTypeAPI, RoleTypeAPI, type_cache::TypeCache, TypeAPI};
-use crate::type_::relates::Relates;
-use crate::type_::role_type::{RoleType, RoleTypeAnnotation};
+use crate::type_::{
+    annotation::AnnotationAbstract,
+    attribute_type::{AttributeType, AttributeTypeAnnotation},
+    entity_type::{EntityType, EntityTypeAnnotation},
+    object_type::ObjectType,
+    owns::Owns,
+    relates::Relates,
+    relation_type::{RelationType, RelationTypeAnnotation},
+    role_type::{RoleType, RoleTypeAnnotation},
+    type_cache::TypeCache,
+    AttributeTypeAPI, EntityTypeAPI, RelationTypeAPI, RoleTypeAPI, TypeAPI,
+};
 
-pub struct TypeManager<'txn, 'storage: 'txn> {
-    snapshot: Rc<Snapshot<'storage>>,
+pub struct TypeManager<'txn, 'storage: 'txn, D> {
+    snapshot: Rc<Snapshot<'storage, D>>,
     vertex_generator: &'txn TypeVertexGenerator,
     type_cache: Option<Arc<TypeCache>>,
 }
@@ -65,7 +76,7 @@ macro_rules! get_type_methods {
         $method_name:ident, $cache_method:ident, $output_type:ident, $new_vertex_method:ident
     );*) => {
         $(
-            pub fn $method_name(&self, label: &Label) -> Option<$output_type<'static>> {
+            pub fn $method_name(&self, label: &Label<'_>) -> Option<$output_type<'static>> {
                 if let Some(cache) = &self.type_cache {
                     cache.$cache_method(label)
                 } else {
@@ -74,7 +85,7 @@ macro_rules! get_type_methods {
             }
         )*
 
-        fn get_labelled_type<M, U>(&self, label: &Label, mapper: M) -> Option<U>
+        fn get_labelled_type<M, U>(&self, label: &Label<'_>, mapper: M) -> Option<U>
             where
                 M: FnOnce(ByteArrayOrRef<'static, BUFFER_KEY_INLINE>) -> U,
         {
@@ -181,16 +192,19 @@ macro_rules! get_type_annotations {
     }
 }
 
-impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
+impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     pub fn new(
-        snapshot: Rc<Snapshot<'storage>>,
+        snapshot: Rc<Snapshot<'storage, D>>,
         vertex_generator: &'txn TypeVertexGenerator,
         schema_cache: Option<Arc<TypeCache>>,
-    ) -> TypeManager<'txn, 'storage> {
+    ) -> Self {
         TypeManager { snapshot, vertex_generator, type_cache: schema_cache }
     }
 
-    pub fn initialise_types(storage: &mut MVCCStorage, vertex_generator: &TypeVertexGenerator) {
+    pub fn initialise_types(storage: &mut MVCCStorage<D>, vertex_generator: &TypeVertexGenerator)
+    where
+        D: DurabilityService,
+    {
         let snapshot = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
         {
             let type_manager = TypeManager::new(snapshot.clone(), vertex_generator, None);
@@ -210,7 +224,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             panic!()
         }
     }
-    
+
     get_type_methods!(
         get_entity_type, get_entity_type, EntityType, new_vertex_entity_type;
         get_relation_type, get_relation_type, RelationType, new_vertex_relation_type;
@@ -232,7 +246,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         get_attribute_type_supertypes, get_attribute_type_supertypes, AttributeType
     );
 
-    pub fn create_entity_type(&self, label: &Label, is_root: bool) -> EntityType<'static> {
+    pub fn create_entity_type(&self, label: &Label<'_>, is_root: bool) -> EntityType<'static> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_vertex = self.vertex_generator.create_entity_type(write_snapshot);
@@ -250,7 +264,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub fn create_relation_type(&self, label: &Label, is_root: bool) -> RelationType<'static> {
+    pub fn create_relation_type(&self, label: &Label<'_>, is_root: bool) -> RelationType<'static> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_vertex = self.vertex_generator.create_relation_type(write_snapshot);
@@ -267,7 +281,12 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub(crate) fn create_role_type(&self, label: &Label, relation_type: impl RelationTypeAPI<'static>, is_root: bool) -> RoleType<'static> {
+    pub(crate) fn create_role_type(
+        &self,
+        label: &Label<'_>,
+        relation_type: impl RelationTypeAPI<'static>,
+        is_root: bool,
+    ) -> RoleType<'static> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_vertex = self.vertex_generator.create_role_type(write_snapshot);
@@ -285,7 +304,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    pub fn create_attribute_type(&self, label: &Label, is_root: bool) -> AttributeType<'static> {
+    pub fn create_attribute_type(&self, label: &Label<'_>, is_root: bool) -> AttributeType<'static> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_vertex = self.vertex_generator.create_attribute_type(write_snapshot);
@@ -348,7 +367,8 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     }
 
     pub(crate) fn get_relation_type_relates<'this>(
-        &'this self, relation_type: RelationType<'static>
+        &'this self,
+        relation_type: RelationType<'static>,
     ) -> MaybeOwns<'this, HashSet<Relates<'static>>> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_relation_type_relates(relation_type))
@@ -386,7 +406,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         })
     }
 
-    pub(crate) fn set_storage_label(&self, owner: TypeVertex<'static>, label: &Label) {
+    pub(crate) fn set_storage_label(&self, owner: TypeVertex<'static>, label: &Label<'_>) {
         self.may_delete_storage_label(owner.clone());
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let vertex_to_label_key = build_property_type_label(owner.clone());
@@ -451,8 +471,8 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     }
 
     fn get_storage_owns<F>(&self, owner: TypeVertex<'static>, mapper: F) -> HashSet<Owns<'static>>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Owns<'static>,
+    where
+        F: for<'b> Fn(TypeVertex<'b>) -> Owns<'static>,
     {
         let owns_prefix = build_edge_owns_prefix(owner);
         // TODO: handle possible errors
@@ -488,8 +508,8 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
     }
 
     fn get_storage_relates<F>(&self, relation: TypeVertex<'static>, mapper: F) -> HashSet<Relates<'static>>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Relates<'static>,
+    where
+        F: for<'b> Fn(TypeVertex<'b>) -> Relates<'static>,
     {
         let relates_prefix = build_edge_relates_prefix(relation);
         // TODO: handle possible errors

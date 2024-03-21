@@ -17,25 +17,24 @@
 
 use std::rc::Rc;
 
+use durability::wal::WAL;
 use encoding::{
-    create_keyspaces,
     graph::{
         thing::vertex_generator::{StringAttributeID, ThingVertexGenerator},
         type_::vertex::TypeID,
     },
     value::string::StringBytes,
-    AsBytes,
+    AsBytes, EncodingKeyspace,
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::MVCCStorage;
-use test_utils::{create_tmp_dir, delete_dir, init_logging};
+use test_utils::{create_tmp_dir, init_logging};
 
 #[test]
 fn generate_string_attribute_vertex() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-    create_keyspaces(&mut storage);
+    let storage = MVCCStorage::<WAL>::new::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
 
     let snapshot = storage.open_snapshot_write();
     let type_id = TypeID::build(0);
@@ -75,7 +74,7 @@ fn generate_string_attribute_vertex() {
 
     // 3. use a constant hasher to force collisions
     const CONSTANT_HASH: u64 = 0;
-    let thing_vertex_generator = ThingVertexGenerator::new_with_hasher(|bytes| CONSTANT_HASH);
+    let thing_vertex_generator = ThingVertexGenerator::new_with_hasher(|_bytes| CONSTANT_HASH);
 
     {
         let string = "Hello world, this is a long attribute string to be encoded with a constant hash.";
@@ -111,6 +110,4 @@ fn generate_string_attribute_vertex() {
         );
         assert_eq!(collide_id.get_hash_disambiguator(), 1u8);
     }
-
-    delete_dir(storage_path)
 }

@@ -19,7 +19,7 @@ use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{key_value::StorageKey, keyspace::keyspace::KeyspaceId};
+use storage::key_value::StorageKey;
 
 use crate::{
     graph::{type_::vertex::TypeID, Typed},
@@ -53,7 +53,8 @@ impl<'a> AttributeVertex<'a> {
 
     pub(crate) fn build(value_type: ValueType, type_id: TypeID, attribute_id: AttributeID) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE + attribute_id.length());
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX]
+            .copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id.length())].copy_from_slice(attribute_id.bytes());
         Self { bytes: ByteArrayOrRef::Array(bytes) }
@@ -65,23 +66,28 @@ impl<'a> AttributeVertex<'a> {
         attribute_id_part: &[u8],
     ) -> StorageKey<'static, BUFFER_KEY_INLINE> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE + attribute_id_part.len());
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX]
+            .copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id_part.len())].copy_from_slice(attribute_id_part);
-        StorageKey::new_owned(Self::keyspace_id(), bytes)
+        StorageKey::new_owned(Self::KEYSPACE_ID, bytes)
     }
 
-    pub fn build_prefix_type(value_type: ValueType, type_id: TypeID) -> StorageKey<'static, { AttributeVertex::LENGTH_PREFIX_TYPE }> {
+    pub fn build_prefix_type(
+        value_type: ValueType,
+        type_id: TypeID,
+    ) -> StorageKey<'static, { AttributeVertex::LENGTH_PREFIX_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE);
-        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX]
+            .copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
-        StorageKey::new_owned(Self::keyspace_id(), bytes)
+        StorageKey::new_owned(Self::KEYSPACE_ID, bytes)
     }
 
     pub fn build_prefix_prefix(prefix: PrefixID) -> StorageKey<'static, { AttributeVertex::LENGTH_PREFIX_PREFIX }> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_PREFIX);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
-        StorageKey::new(Self::keyspace_id(), ByteArrayOrRef::Array(array))
+        StorageKey::new(Self::KEYSPACE_ID, ByteArrayOrRef::Array(array))
     }
 
     pub fn value_type(&self) -> ValueType {
@@ -111,10 +117,6 @@ impl<'a> AttributeVertex<'a> {
     pub fn into_owned(self) -> AttributeVertex<'static> {
         AttributeVertex { bytes: self.bytes.into_owned() }
     }
-
-    fn keyspace_id() -> KeyspaceId {
-        EncodingKeyspace::Data.id()
-    }
 }
 
 impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
@@ -132,9 +134,7 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {}
 impl<'a> Typed<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {}
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
-    fn keyspace_id(&self) -> KeyspaceId {
-        Self::keyspace_id()
-    }
+    const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Data;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -190,7 +190,7 @@ impl AttributeID_8 {
     const LENGTH: usize = 8;
 
     pub fn new(bytes: [u8; AttributeID_8::LENGTH]) -> Self {
-        Self { bytes: bytes }
+        Self { bytes }
     }
 
     pub fn bytes(&self) -> [u8; AttributeID_8::LENGTH] {
@@ -207,7 +207,7 @@ impl AttributeID_16 {
     pub(crate) const LENGTH: usize = 16;
 
     pub fn new(bytes: [u8; AttributeID_16::LENGTH]) -> Self {
-        Self { bytes: bytes }
+        Self { bytes }
     }
 
     pub(crate) fn bytes(&self) -> [u8; AttributeID_16::LENGTH] {

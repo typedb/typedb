@@ -15,23 +15,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::rc::Rc;
-
-use encoding::create_keyspaces;
+use durability::wal::WAL;
+use encoding::EncodingKeyspace;
 use storage::MVCCStorage;
-use test_utils::{create_tmp_dir, delete_dir, init_logging};
+use test_utils::{create_tmp_dir, init_logging};
 
 #[test]
 fn entity_type_vertexes_are_reused() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let _options = MVCCStorage::new_db_options();
-    let mut storage = MVCCStorage::new(Rc::from("storage"), &storage_path).unwrap();
-    create_keyspaces(&mut storage);
+    #[allow(unused)]  // TODO
+    let mut storage = MVCCStorage::<WAL>::new::<EncodingKeyspace>("storage", &storage_path).unwrap();
 
     // TODO: create a bunch of types, delete, and assert that the IDs are re-used
-
-    delete_dir(storage_path)
 }
 
 #[test]
