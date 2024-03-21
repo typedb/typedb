@@ -44,22 +44,16 @@ use encoding::{
     },
     AsBytes, Keyable,
 };
-use primitive::{maybe_owns::MaybeOwns, prefix_range::PrefixRange};
+use encoding::graph::type_::edge::{build_edge_plays, build_edge_plays_prefix, build_edge_plays_reverse, new_edge_plays};
+use primitive::maybe_owns::MaybeOwns;
+use primitive::prefix_range::PrefixRange;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
 
-use crate::type_::{
-    annotation::AnnotationAbstract,
-    attribute_type::{AttributeType, AttributeTypeAnnotation},
-    entity_type::{EntityType, EntityTypeAnnotation},
-    object_type::ObjectType,
-    owns::Owns,
-    relates::Relates,
-    relation_type::{RelationType, RelationTypeAnnotation},
-    role_type::{RoleType, RoleTypeAnnotation},
-    type_cache::TypeCache,
-    AttributeTypeAPI, EntityTypeAPI, RelationTypeAPI, RoleTypeAPI, TypeAPI,
-};
+use crate::type_::{annotation::AnnotationAbstract, attribute_type::{AttributeType, AttributeTypeAnnotation}, AttributeTypeAPI, entity_type::{EntityType, EntityTypeAnnotation}, EntityTypeAPI, object_type::ObjectType, owns::Owns, relation_type::{RelationType, RelationTypeAnnotation}, RelationTypeAPI, RoleTypeAPI, type_cache::TypeCache, TypeAPI};
+use crate::type_::plays::Plays;
+use crate::type_::relates::Relates;
+use crate::type_::role_type::{RoleType, RoleTypeAnnotation};
 
 pub struct TypeManager<'txn, 'storage: 'txn, D> {
     snapshot: Rc<Snapshot<'storage, D>>,
@@ -380,6 +374,20 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         }
     }
 
+    pub(crate) fn get_entity_type_plays<'this>(
+        &'this self, entity_type: EntityType<'static>
+    ) -> MaybeOwns<'this, HashSet<Plays<'static>>> {
+        if let Some(cache) = &self.type_cache {
+            MaybeOwns::borrowed(cache.get_entity_type_plays(entity_type))
+        } else {
+            let plays = self.get_storage_plays(entity_type.clone().into_vertex(), |role_vertex| {
+                Plays::new(ObjectType::Entity(entity_type.clone()), RoleType::new(role_vertex.clone().into_owned()))
+            });
+            MaybeOwns::owned(plays)
+        }
+    }
+
+
     pub(crate) fn get_attribute_type_value_type(&self, attribute_type: AttributeType<'static>) -> Option<ValueType> {
         if let Some(cache) = &self.type_cache {
             cache.get_attribute_type_value_type(attribute_type)
@@ -504,6 +512,43 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
             write_snapshot.delete(owns_reverse.into_storage_key().into_owned_array());
         } else {
             panic!("Illegal state: deleting owns edge requires write snapshot")
+        }
+    }
+
+    fn get_storage_plays<F>(&self, player: TypeVertex<'static>, mapper: F) -> HashSet<Plays<'static>>
+        where
+            F: for<'b> Fn(TypeVertex<'b>) -> Plays<'static>,
+    {
+        let plays_prefix = build_edge_plays_prefix(player);
+        // TODO: handle possible errors
+        self.snapshot
+            .iterate_range(PrefixRange::new_within(plays_prefix))
+            .collect_cloned_key_hashset(|key| {
+                let plays_edge = new_edge_plays(ByteArrayOrRef::Reference(key.byte_ref()));
+                mapper(plays_edge.to())
+            })
+            .unwrap()
+    }
+
+    pub(crate) fn set_storage_plays(&self, player: TypeVertex<'static>, role: TypeVertex<'static>) {
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            let plays = build_edge_plays(player.clone(), role.clone());
+            write_snapshot.put(plays.into_storage_key().into_owned_array());
+            let plays_reverse = build_edge_plays_reverse(role, player);
+            write_snapshot.put(plays_reverse.into_storage_key().into_owned_array());
+        } else {
+            panic!("Illegal state: creating plays edge requires write snapshot")
+        }
+    }
+
+    pub(crate) fn delete_storage_plays(&self, player: TypeVertex<'static>, role: TypeVertex<'static>) {
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            let plays = build_edge_plays(player.clone(), role.clone());
+            write_snapshot.delete(plays.into_storage_key().into_owned_array());
+            let plays_reverse = build_edge_plays_reverse(role, player);
+            write_snapshot.delete(plays_reverse.into_storage_key().into_owned_array());
+        } else {
+            panic!("Illegal state: deleting plays edge requires write snapshot")
         }
     }
 

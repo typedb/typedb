@@ -45,6 +45,7 @@ use encoding::{
     },
     Prefixed,
 };
+use encoding::graph::type_::edge::{build_edge_plays_prefix, new_edge_plays};
 use primitive::prefix_range::PrefixRange;
 use resource::constants::{
     encoding::LABEL_SCOPED_NAME_STRING_INLINE,
@@ -52,17 +53,11 @@ use resource::constants::{
 };
 use storage::{snapshot::snapshot::ReadSnapshot, MVCCStorage};
 
-use crate::type_::{
-    annotation::{Annotation, AnnotationAbstract},
-    attribute_type::{AttributeType, AttributeTypeAnnotation},
-    entity_type::{EntityType, EntityTypeAnnotation},
-    object_type::ObjectType,
-    owns::Owns,
-    relates::Relates,
-    relation_type::{RelationType, RelationTypeAnnotation},
-    role_type::{RoleType, RoleTypeAnnotation},
-    AttributeTypeAPI, EntityTypeAPI, RelationTypeAPI, RoleTypeAPI, TypeAPI,
-};
+use crate::type_::{annotation::AnnotationAbstract, attribute_type::{AttributeType, AttributeTypeAnnotation}, AttributeTypeAPI, entity_type::{EntityType, EntityTypeAnnotation}, EntityTypeAPI, object_type::ObjectType, owns::Owns, relation_type::{RelationType, RelationTypeAnnotation}, RelationTypeAPI, RoleTypeAPI, TypeAPI};
+use crate::type_::annotation::Annotation;
+use crate::type_::plays::Plays;
+use crate::type_::relates::Relates;
+use crate::type_::role_type::{RoleType, RoleTypeAnnotation};
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -94,7 +89,8 @@ struct EntityTypeCache {
     // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec.
     // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
     owns_direct: HashSet<Owns<'static>>,
-    // owns_direct
+
+    plays_direct: HashSet<Plays<'static>>,
 
     // ...
 }
@@ -111,8 +107,11 @@ struct RelationTypeCache {
 
     // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
     // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
-    owns_direct: HashSet<Owns<'static>>,
+
     relates_direct: HashSet<Relates<'static>>,
+    owns_direct: HashSet<Owns<'static>>,
+
+    plays_direct: HashSet<Plays<'static>>,
 }
 
 #[derive(Debug)]
@@ -243,6 +242,10 @@ impl TypeCache {
                     .into_iter()
                     .map(|v| Owns::new(ObjectType::Entity(entity_type.clone()), AttributeType::new(v)))
                     .collect();
+                let plays_direct = Self::read_plays_role_vertexes(entity_data, entity_type.vertex().clone())
+                    .into_iter()
+                    .map(|v| Plays::new(ObjectType::Entity(entity_type.clone()), RoleType::new(v)))
+                    .collect();
                 let cache = EntityTypeCache {
                     type_: entity_type,
                     label,
@@ -251,6 +254,7 @@ impl TypeCache {
                     supertype,
                     supertypes: Vec::new(),
                     owns_direct,
+                    plays_direct,
                 };
                 let i = type_index as usize;
                 caches[i] = Some(cache);
@@ -329,13 +333,17 @@ impl TypeCache {
                 let supertype =
                     Self::read_supertype_vertex(relation_data, relation_type.vertex().clone()).map(RelationType::new);
                 let annotations = Self::read_relation_annotations(vertex_properties, relation_type.clone());
-                let owns_direct = Self::read_owns_attribute_vertexes(relation_data, relation_type.vertex().clone())
+                let relates_direct =
+                    Self::read_relates_vertexes(relation_data, relation_type.vertex().clone())
+                        .into_iter()
+                        .map(|v| Relates::new(relation_type.clone(), RoleType::new(v)))
+                        .collect();let owns_direct = Self::read_owns_attribute_vertexes(relation_data, relation_type.vertex().clone())
                     .into_iter()
                     .map(|v| Owns::new(ObjectType::Relation(relation_type.clone()), AttributeType::new(v)))
                     .collect();
-                let relates_direct = Self::read_relates_vertexes(relation_data, relation_type.vertex().clone())
+                let plays_direct = Self::read_plays_role_vertexes(relation_data, relation_type.clone().into_vertex())
                     .into_iter()
-                    .map(|v| Relates::new(relation_type.clone(), RoleType::new(v)))
+                    .map(|v| Plays::new(ObjectType::Relation(relation_type.clone()), RoleType::new(v)))
                     .collect();
                 let cache = RelationTypeCache {
                     type_: relation_type,
@@ -344,8 +352,9 @@ impl TypeCache {
                     annotations,
                     supertype,
                     supertypes: Vec::new(),
-                    owns_direct,
                     relates_direct,
+                    owns_direct,
+                    plays_direct,
                 };
                 caches[type_index as usize] = Some(cache);
             }
@@ -659,6 +668,19 @@ impl TypeCache {
             .collect()
     }
 
+    fn read_plays_role_vertexes(
+        types_data: &BTreeMap<ByteArray<{ BUFFER_KEY_INLINE }>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        type_vertex: TypeVertex<'static>,
+    ) -> Vec<TypeVertex<'static>> {
+        let edge_prefix = build_edge_plays_prefix(type_vertex).into_owned_array();
+        types_data
+            .range::<[u8], _>((Bound::Included(edge_prefix.bytes()), Bound::Unbounded))
+            .take_while(|(key, _)| key.bytes().starts_with(edge_prefix.bytes()))
+            .map(|(key, _)| new_edge_plays(ByteArrayOrRef::Reference(ByteReference::from(key))).to().into_owned())
+            .collect()
+    }
+
+
     pub(crate) fn get_entity_type(&self, label: &Label<'_>) -> Option<EntityType<'static>> {
         self.entity_types_index_label.get(label).cloned()
     }
@@ -767,6 +789,14 @@ impl TypeCache {
 
     pub(crate) fn get_relation_type_relates(&self, relation_type: RelationType<'static>) -> &HashSet<Relates<'static>> {
         &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().relates_direct
+    }
+
+    pub(crate) fn get_entity_type_plays(&self, entity_type: EntityType<'static>) -> &HashSet<Plays<'static>> {
+        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().plays_direct
+    }
+
+    pub(crate) fn get_relation_type_plays(&self, relation_type: RelationType<'static>) -> &HashSet<Plays<'static>> {
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().plays_direct
     }
 
     pub(crate) fn get_attribute_type_value_type(&self, attribute_type: AttributeType<'static>) -> Option<ValueType> {

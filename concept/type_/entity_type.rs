@@ -41,6 +41,9 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::PlayerAPI;
+use crate::type_::plays::Plays;
+use crate::type_::role_type::RoleType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct EntityType<'a> {
@@ -79,14 +82,25 @@ impl<'a> EntityTypeAPI<'a> for EntityType<'a> {
 }
 
 impl<'a> OwnerAPI<'a> for EntityType<'a> {
-    fn _construct_owns(&self, attribute_type: AttributeType<'static>) -> Owns<'static> {
-        Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type)
-    }
-
     fn get_owns<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
         type_manager.get_entity_type_owns(self.clone().into_owned())
     }
+
+    fn _construct_owns(&self, attribute_type: AttributeType<'static>) -> Owns<'static> {
+        Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type)
+    }
 }
+
+impl<'a> PlayerAPI<'a> for EntityType<'a> {
+    fn get_plays<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Plays<'static>>> {
+        type_manager.get_entity_type_plays(self.clone().into_owned())
+    }
+
+    fn _construct_plays(&self, role_type: RoleType<'static>) -> Plays<'static> {
+        Plays::new(ObjectType::Entity(self.clone().into_owned()), role_type)
+    }
+}
+
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum EntityTypeAnnotation {

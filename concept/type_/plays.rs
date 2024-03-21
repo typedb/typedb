@@ -15,5 +15,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use crate::type_::object_type::ObjectType;
+use crate::type_::role_type::RoleType;
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-struct Plays {}
+pub struct Plays<'a> {
+    player: ObjectType<'a>,
+    role: RoleType<'a>,
+}
+
+impl<'a> Plays<'a> {
+    pub(crate) fn new(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
+        Self { player, role }
+    }
+
+    pub fn player(&self) -> ObjectType<'a> {
+        self.player.clone()
+    }
+
+    pub fn role(&self) -> RoleType<'a> {
+        self.role.clone()
+    }
+}
+

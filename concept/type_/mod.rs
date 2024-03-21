@@ -24,6 +24,7 @@ use encoding::{
 use primitive::maybe_owns::MaybeOwns;
 
 use crate::{
+    ConceptAPI,
     type_::{
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::{EntityType, EntityTypeAnnotation},
@@ -33,8 +34,8 @@ use crate::{
         role_type::{RoleType, RoleTypeAnnotation},
         type_manager::TypeManager,
     },
-    ConceptAPI,
 };
+use crate::type_::plays::Plays;
 
 pub mod annotation;
 pub mod attribute_type;
@@ -176,7 +177,7 @@ pub trait RelationTypeAPI<'a>: TypeAPI<'a> {
 
     fn create_relates<D>(&self, type_manager: &TypeManager<'_, '_, D>, name: &str) -> Relates<'static> {
         let label = Label::build_scoped(name, self.get_label(type_manager).name().decode());
-        let role_type = type_manager.create_role_type(&label, self.clone().into_owned(), false);
+        type_manager.create_role_type(&label, self.clone().into_owned(), false);
         self.get_relates_role(type_manager, name).unwrap()
     }
 
@@ -328,15 +329,15 @@ pub trait AttributeTypeAPI<'a>: TypeAPI<'a> {
 
 pub trait OwnerAPI<'a>: TypeAPI<'a> {
     fn set_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) -> Owns<'static> {
+        // TODO: decide behaviour (ok or error) if already owning
         type_manager.set_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex());
         self.get_owns_attribute(type_manager, attribute_type).unwrap()
     }
 
     fn delete_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) {
-        type_manager.delete_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex());
+        // TODO: error if not owned
+        type_manager.delete_storage_owns(self.vertex().clone().into_owned(), attribute_type.into_vertex());
     }
-
-    fn _construct_owns(&self, attribute_type: AttributeType<'static>) -> Owns<'static>;
 
     fn get_owns<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Owns<'static>>>;
 
@@ -360,6 +361,8 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
     ) -> bool {
         self.get_owns_attribute(type_manager, attribute_type).is_some()
     }
+
+    fn _construct_owns(&self, attribute_type: AttributeType<'static>) -> Owns<'static>;
 }
 
 trait OwnedAPI<'a>: AttributeTypeAPI<'a> {
@@ -373,30 +376,38 @@ trait OwnedAPI<'a>: AttributeTypeAPI<'a> {
     }
 }
 
-trait PlayerAPI<'a>: TypeAPI<'a> {
-    // fn set_plays(&self, role_type: &RoleType) -> Plays;
-
-    fn get_plays(&self) {
-        // return iterator of Plays
-        todo!()
+pub trait PlayerAPI<'a>: TypeAPI<'a> {
+    fn set_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) -> Plays<'static> {
+        // TODO: decide behaviour (ok or error) if already playing
+        type_manager.set_storage_plays(self.vertex().clone().into_owned(), role_type.clone().into_vertex());
+        self.get_plays_role(type_manager, role_type).unwrap()
     }
 
-    fn get_plays_played(&self) {
-        // return iterator of played types
-        todo!()
+    fn delete_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) {
+        // TODO: error if not playing
+        type_manager.delete_storage_plays(self.vertex().clone().into_owned(), role_type.into_vertex())
     }
 
-    // fn has_plays_played(&self, role_type: &RoleType);
+    fn get_plays<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Plays<'static>>>;
+
+    fn get_plays_role<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) -> Option<Plays<'static>> {
+        let expected_plays = self._construct_plays(role_type);
+        if self.get_plays(type_manager).deref().contains(&expected_plays) {
+            Some(expected_plays)
+        } else {
+            None
+        }
+    }
+
+    fn has_plays_role<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) -> bool {
+        self.get_plays_role(type_manager, role_type).is_some()
+    }
+
+    fn _construct_plays(&self, role_type: RoleType<'static>) -> Plays<'static>;
 }
 
 trait PlayedAPI<'a>: TypeAPI<'a> {
-    fn get_plays(&self) {
-        // return iterator of Plays
-        todo!()
-    }
-
-    fn get_plays_players(&self) {
-        // return iterator of player types
+    fn get_plays<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Plays<'static>>> {
         todo!()
     }
 }

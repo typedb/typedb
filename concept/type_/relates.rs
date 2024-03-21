@@ -30,11 +30,11 @@ impl<'a> Relates<'a> {
         Relates { relation: relation, role: role }
     }
 
-    pub fn relation(&self) -> RelationType<'static> {
-        self.relation.clone().into_owned()
+    pub fn relation(&self) -> RelationType<'a> {
+        self.relation.clone()
     }
 
-    pub fn role(&self) -> RoleType<'static> {
-        self.role.clone().into_owned()
+    pub fn role(&self) -> RoleType<'a> {
+        self.role.clone()
     }
 }
