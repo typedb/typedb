@@ -18,7 +18,7 @@
 use std::ops::Range;
 
 use bytes::{byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
-use storage::{error::MVCCStorageError, key_value::StorageKey, keyspace::keyspace::KeyspaceId, MVCCStorage};
+use storage::{error::MVCCStorageError, key_value::StorageKey, MVCCStorage};
 
 use crate::layout::prefix::{PrefixID, PrefixType};
 

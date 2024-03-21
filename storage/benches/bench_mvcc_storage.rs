@@ -15,11 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{
-    fs::File,
-    os::raw::c_int,
-    path::{Path, PathBuf},
-};
+use std::{fs::File, os::raw::c_int, path::Path};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
@@ -29,24 +25,44 @@ use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::keyspace::KeyspaceId,
-    MVCCStorage,
+    KeyspaceSet, MVCCStorage,
 };
-use test_utils::{create_tmp_dir, delete_dir, init_logging};
+use test_utils::{create_tmp_dir, init_logging};
 
-fn random_key_24(keyspace_id: KeyspaceId) -> StorageKeyArray<{ BUFFER_KEY_INLINE }> {
+macro_rules! test_keyspace_set {
+    {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
+        #[derive(Copy, Clone)]
+        enum TestKeyspaceSet { $($variant),* }
+        impl KeyspaceSet for TestKeyspaceSet {
+            fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
+            fn id(&self) -> u8 {
+                match *self { $(Self::$variant => $id),* }
+            }
+            fn name(&self) -> &'static str {
+                match *self { $(Self::$variant => $name),* }
+            }
+        }
+    };
+}
+
+test_keyspace_set! {
+    Keyspace => 0: "keyspace",
+}
+use self::TestKeyspaceSet::Keyspace;
+
+fn random_key_24(keyspace_id: TestKeyspaceSet) -> StorageKeyArray<BUFFER_KEY_INLINE> {
     let mut bytes: [u8; 24] = rand::random();
     bytes[0] = 0b0;
     StorageKeyArray::from((bytes.as_slice(), keyspace_id))
 }
 
-fn random_key_4(keyspace_id: KeyspaceId) -> StorageKeyArray<{ BUFFER_KEY_INLINE }> {
+fn random_key_4(keyspace_id: TestKeyspaceSet) -> StorageKeyArray<BUFFER_KEY_INLINE> {
     let mut bytes: [u8; 4] = rand::random();
     bytes[0] = 0b0;
     StorageKeyArray::from((bytes.as_slice(), keyspace_id))
 }
 
-fn populate_storage(storage: &MVCCStorage<WAL>, keyspace_id: KeyspaceId, key_count: usize) -> usize {
+fn populate_storage(storage: &MVCCStorage<WAL>, keyspace_id: TestKeyspaceSet, key_count: usize) -> usize {
     const BATCH_SIZE: usize = 1_000;
     let mut snapshot = storage.open_snapshot_write();
     for i in 0..key_count {
@@ -69,10 +85,10 @@ fn populate_storage(storage: &MVCCStorage<WAL>, keyspace_id: KeyspaceId, key_cou
 
 fn bench_snapshot_read_get(
     storage: &MVCCStorage<WAL>,
-    keyspace_id: KeyspaceId,
-) -> Option<ByteArray<{ BUFFER_VALUE_INLINE }>> {
+    keyspace_id: TestKeyspaceSet,
+) -> Option<ByteArray<BUFFER_VALUE_INLINE>> {
     let snapshot = storage.open_snapshot_read();
-    let mut last: Option<ByteArray<{ BUFFER_VALUE_INLINE }>> = None;
+    let mut last: Option<ByteArray<BUFFER_VALUE_INLINE>> = None;
     for _ in 0..1 {
         last = snapshot.get(StorageKey::Array(random_key_24(keyspace_id)).as_reference());
     }
@@ -81,17 +97,17 @@ fn bench_snapshot_read_get(
 
 fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(
     storage: &MVCCStorage<WAL>,
-    keyspace_id: KeyspaceId,
-) -> Option<ByteArray<{ BUFFER_VALUE_INLINE }>> {
+    keyspace_id: TestKeyspaceSet,
+) -> Option<ByteArray<BUFFER_VALUE_INLINE>> {
     let snapshot = storage.open_snapshot_read();
-    let mut last: Option<ByteArray<{ BUFFER_VALUE_INLINE }>> = None;
+    let mut last: Option<ByteArray<BUFFER_VALUE_INLINE>> = None;
     for _ in 0..ITERATE_COUNT {
         last = snapshot.get(StorageKey::Array(random_key_4(keyspace_id)).as_reference())
     }
     last
 }
 
-fn bench_snapshot_write_put(storage: &MVCCStorage<WAL>, keyspace_id: KeyspaceId, batch_size: usize) {
+fn bench_snapshot_write_put(storage: &MVCCStorage<WAL>, keyspace_id: TestKeyspaceSet, batch_size: usize) {
     let snapshot = storage.open_snapshot_write();
     for _ in 0..batch_size {
         snapshot.put(random_key_24(keyspace_id));
@@ -99,36 +115,30 @@ fn bench_snapshot_write_put(storage: &MVCCStorage<WAL>, keyspace_id: KeyspaceId,
     snapshot.commit().unwrap()
 }
 
-fn setup_storage(keyspace_id: KeyspaceId, key_count: usize) -> (MVCCStorage<WAL>, PathBuf) {
-    let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::<WAL>::new("storage_bench", &storage_path).unwrap();
-    let options = MVCCStorage::<WAL>::new_db_options();
-    storage.create_keyspace("default", keyspace_id, &options).unwrap();
-    let keys = populate_storage(&storage, keyspace_id, key_count);
+fn setup_storage(storage_path: &Path, key_count: usize) -> MVCCStorage<WAL> {
+    let storage = MVCCStorage::new::<TestKeyspaceSet>("storage_bench", storage_path).unwrap();
+    let keys = populate_storage(&storage, Keyspace, key_count);
     println!("Initialised storage with '{}' keys", keys);
-    (storage, storage_path)
+    storage
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
     init_logging();
     const INITIAL_KEY_COUNT: usize = 10_000; // 10 million = approximately 0.2 GB of keys
-    const KEYSPACE_ID: KeyspaceId = 0;
     {
-        let (storage, storage_path) = setup_storage(KEYSPACE_ID, INITIAL_KEY_COUNT);
-        c.bench_function("snapshot_read_get", |b| b.iter(|| bench_snapshot_read_get(&storage, KEYSPACE_ID)));
-        delete_dir(storage_path);
+        let storage_path = create_tmp_dir();
+        let storage = setup_storage(&storage_path, INITIAL_KEY_COUNT);
+        c.bench_function("snapshot_read_get", |b| b.iter(|| bench_snapshot_read_get(&storage, Keyspace)));
     }
     {
-        let (storage, storage_path) = setup_storage(KEYSPACE_ID, INITIAL_KEY_COUNT);
-        c.bench_function("snapshot_write_put", |b| b.iter(|| bench_snapshot_write_put(&storage, KEYSPACE_ID, 100)));
-        delete_dir(storage_path);
+        let storage_path = create_tmp_dir();
+        let storage = setup_storage(&storage_path, INITIAL_KEY_COUNT);
+        c.bench_function("snapshot_write_put", |b| b.iter(|| bench_snapshot_write_put(&storage, Keyspace, 100)));
     }
     {
-        let (storage, storage_path) = setup_storage(KEYSPACE_ID, INITIAL_KEY_COUNT);
-        c.bench_function("snapshot_read_iterate", |b| {
-            b.iter(|| bench_snapshot_read_iterate::<1>(&storage, KEYSPACE_ID))
-        });
-        delete_dir(storage_path);
+        let storage_path = create_tmp_dir();
+        let storage = setup_storage(&storage_path, INITIAL_KEY_COUNT);
+        c.bench_function("snapshot_read_iterate", |b| b.iter(|| bench_snapshot_read_iterate::<1>(&storage, Keyspace)));
     }
 }
 // --- Code to generate flamegraphs copied from https://www.jibbow.com/posts/criterion-flamegraphs/ ---

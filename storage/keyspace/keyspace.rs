@@ -17,27 +17,35 @@
 
 use std::{cmp::Ordering, error::Error, fmt, path::PathBuf};
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
+use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use iterator::State;
 use logger::result::ResultExt;
-use speedb::{DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
-use bytes::byte_reference::ByteReference;
 use primitive::prefix_range::PrefixRange;
+use serde::{Deserialize, Serialize};
+use speedb::{DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 
-pub type KeyspaceId = u8;
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct KeyspaceId(pub(crate) u8);
+
+impl fmt::Display for KeyspaceId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // WARNING: adjusting these constants affects many things, including serialised WAL records and in-memory data structures.  //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 pub(crate) const KEYSPACE_MAXIMUM_COUNT: usize = 10;
-pub(crate) const KEYSPACE_ID_MAX: KeyspaceId = KEYSPACE_MAXIMUM_COUNT as u8 - 1;
-pub(crate) const KEYSPACE_ID_RESERVED_UNSET: KeyspaceId = KEYSPACE_ID_MAX + 1;
+pub(crate) const KEYSPACE_ID_MAX: KeyspaceId = KeyspaceId(KEYSPACE_MAXIMUM_COUNT as u8 - 1);
+pub(crate) const KEYSPACE_ID_RESERVED_UNSET: KeyspaceId = KeyspaceId(KEYSPACE_ID_MAX.0 + 1);
 
 ///
 /// A non-durable key-value store that supports put, get, delete, iterate
 /// and checkpointing.
 ///
 pub(crate) struct Keyspace {
+    name: &'static str,
     path: PathBuf,
     kv_storage: DB,
     keyspace_id: KeyspaceId,
@@ -47,15 +55,26 @@ pub(crate) struct Keyspace {
 }
 
 impl Keyspace {
-    pub(crate) fn new(path: PathBuf, options: &Options, id: KeyspaceId) -> Result<Keyspace, KeyspaceError> {
-        let kv_storage = DB::open(options, &path)
-            .map_err(|e| KeyspaceError { kind: KeyspaceErrorKind::FailedKeyspaceCreate { source: e } })?;
+    pub(crate) fn create(
+        name: &'static str,
+        path: PathBuf,
+        options: &Options,
+        id: KeyspaceId,
+    ) -> Result<Keyspace, KeyspaceCreateError> {
+        use KeyspaceCreateError::{AlreadyExists, SpeeDB};
+
+        if path.exists() {
+            return Err(AlreadyExists { name });
+        }
+
+        let kv_storage = DB::open(options, &path).map_err(|error| SpeeDB { name, source: error })?;
+
         // initial read options, should be customised to this storage's properties
         let read_options = ReadOptions::default();
         let mut write_options = WriteOptions::default();
         write_options.disable_wal(true);
 
-        Ok(Keyspace { path, kv_storage, keyspace_id: id, next_checkpoint_id: 0, read_options, write_options })
+        Ok(Keyspace { name, path, kv_storage, keyspace_id: id, next_checkpoint_id: 0, read_options, write_options })
     }
 
     // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options
@@ -84,14 +103,14 @@ impl Keyspace {
         self.keyspace_id
     }
 
-    pub(crate) fn name(&self) -> &str {
-        self.path.file_name().unwrap().to_str().unwrap()
+    pub(crate) fn name(&self) -> &'static str {
+        self.name
     }
 
     pub(crate) fn put(&self, key: &[u8], value: &[u8]) -> Result<(), KeyspaceError> {
         self.kv_storage
             .put_opt(key, value, &self.write_options)
-            .map_err(|e| KeyspaceError { kind: KeyspaceErrorKind::FailedPut { source: e } })
+            .map_err(|e| KeyspaceError { kind: KeyspaceErrorKind::Put { source: e } })
     }
 
     pub(crate) fn get<M, V>(&self, key: &[u8], mut mapper: M) -> Result<Option<V>, KeyspaceError>
@@ -101,7 +120,7 @@ impl Keyspace {
         self.kv_storage
             .get_pinned_opt(key, &self.read_options)
             .map(|option| option.map(|value| mapper(value.as_ref())))
-            .map_err(|err| KeyspaceError { kind: KeyspaceErrorKind::FailedGet { source: err } })
+            .map_err(|err| KeyspaceError { kind: KeyspaceErrorKind::Get { source: err } })
     }
 
     pub(crate) fn get_prev<M, T>(&self, key: &[u8], mut mapper: M) -> Option<T>
@@ -124,7 +143,7 @@ impl Keyspace {
     pub(crate) fn write(&self, write_batch: WriteBatch) -> Result<(), KeyspaceError> {
         self.kv_storage
             .write_opt(write_batch, &self.write_options)
-            .map_err(|error| KeyspaceError { kind: KeyspaceErrorKind::FailedBatchWrite { source: error } })
+            .map_err(|error| KeyspaceError { kind: KeyspaceErrorKind::BatchWrite { source: error } })
     }
 
     pub(crate) fn checkpoint(&self) -> Result<(), KeyspaceError> {
@@ -139,7 +158,7 @@ impl Keyspace {
     pub(crate) fn delete(self) -> Result<(), KeyspaceError> {
         match std::fs::remove_dir_all(self.path.clone()) {
             Ok(_) => Ok(()),
-            Err(e) => Err(KeyspaceError { kind: KeyspaceErrorKind::FailedKeyspaceDelete { source: e } }),
+            Err(e) => Err(KeyspaceError { kind: KeyspaceErrorKind::KeyspaceDelete { source: e } }),
         }
     }
 }
@@ -190,7 +209,7 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
                 self.peek()
             }
             State::Error(error) => {
-                Some(Err(KeyspaceError { kind: KeyspaceErrorKind::FailedIterate { source: error.clone() } }))
+                Some(Err(KeyspaceError { kind: KeyspaceErrorKind::Iterate { source: error.clone() } }))
             }
             State::Done => None,
         }
@@ -214,7 +233,7 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
                 self.next()
             }
             State::Error(error) => {
-                Some(Err(KeyspaceError { kind: KeyspaceErrorKind::FailedIterate { source: error.clone() } }))
+                Some(Err(KeyspaceError { kind: KeyspaceErrorKind::Iterate { source: error.clone() } }))
             }
             State::Done => None,
         }
@@ -294,18 +313,32 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
 }
 
 #[derive(Debug)]
+pub enum KeyspaceCreateError {
+    AlreadyExists { name: &'static str },
+    SpeeDB { name: &'static str, source: speedb::Error },
+}
+
+impl fmt::Display for KeyspaceCreateError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::AlreadyExists { .. } => todo!(),
+            Self::SpeeDB { .. } => todo!(),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct KeyspaceError {
     pub kind: KeyspaceErrorKind,
 }
 
 #[derive(Debug)]
 pub enum KeyspaceErrorKind {
-    FailedKeyspaceCreate { source: speedb::Error },
-    FailedKeyspaceDelete { source: std::io::Error },
-    FailedGet { source: speedb::Error },
-    FailedPut { source: speedb::Error },
-    FailedBatchWrite { source: speedb::Error },
-    FailedIterate { source: speedb::Error },
+    KeyspaceDelete { source: std::io::Error },
+    Get { source: speedb::Error },
+    Put { source: speedb::Error },
+    BatchWrite { source: speedb::Error },
+    Iterate { source: speedb::Error },
 }
 
 impl fmt::Display for KeyspaceError {
@@ -317,12 +350,11 @@ impl fmt::Display for KeyspaceError {
 impl Error for KeyspaceError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
-            KeyspaceErrorKind::FailedKeyspaceDelete { source, .. } => Some(source),
-            KeyspaceErrorKind::FailedGet { source, .. } => Some(source),
-            KeyspaceErrorKind::FailedPut { source, .. } => Some(source),
-            KeyspaceErrorKind::FailedBatchWrite { source, .. } => Some(source),
-            KeyspaceErrorKind::FailedIterate { source, .. } => Some(source),
-            KeyspaceErrorKind::FailedKeyspaceCreate { source } => Some(source),
+            KeyspaceErrorKind::KeyspaceDelete { source, .. } => Some(source),
+            KeyspaceErrorKind::Get { source, .. } => Some(source),
+            KeyspaceErrorKind::Put { source, .. } => Some(source),
+            KeyspaceErrorKind::BatchWrite { source, .. } => Some(source),
+            KeyspaceErrorKind::Iterate { source, .. } => Some(source),
         }
     }
 }

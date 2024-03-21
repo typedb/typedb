@@ -173,7 +173,7 @@ impl IsolationManager {
                 continue;
             }
 
-            let predecessor_map = predecessor.buffers.get(index as KeyspaceId).map().read().unwrap();
+            let predecessor_map = predecessor.buffers.get(KeyspaceId(index as _)).map().read().unwrap();
             if predecessor_map.is_empty() {
                 continue;
             }

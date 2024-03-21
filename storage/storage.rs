@@ -64,10 +64,100 @@ pub struct MVCCStorage<D> {
     isolation_manager: IsolationManager,
 }
 
+fn new_db_options() -> Options {
+    let mut options = Options::default();
+    options.create_if_missing(true);
+    options.create_missing_column_families(true);
+    options.enable_statistics();
+    // TODO optimise per-keyspace
+    options
+}
+
+pub trait KeyspaceSet: Sized {
+    fn iter() -> impl Iterator<Item = Self>;
+    fn id(&self) -> u8;
+    fn name(&self) -> &'static str;
+}
+
+fn validate_new_keyspace(
+    storage_name: &str,
+    keyspace_name: &'static str,
+    keyspace_id: KeyspaceId,
+    keyspaces: &[Keyspace],
+    keyspaces_index: &[Option<KeyspaceId>],
+) -> Result<(), MVCCStorageError> {
+    if keyspace_id == KEYSPACE_ID_RESERVED_UNSET {
+        return Err(MVCCStorageError {
+            storage_name: storage_name.to_owned(),
+            kind: MVCCStorageErrorKind::KeyspaceIdReserved { keyspace_name, keyspace_id: keyspace_id.0 },
+        });
+    }
+
+    if keyspace_id > KEYSPACE_ID_MAX {
+        return Err(MVCCStorageError {
+            storage_name: storage_name.to_owned(),
+            kind: MVCCStorageErrorKind::KeyspaceIdTooLarge {
+                keyspace_name,
+                keyspace_id: keyspace_id.0,
+                max_keyspace_id: KEYSPACE_ID_MAX.0,
+            },
+        });
+    }
+
+    for (existing_keyspace_id, existing_keyspace_index) in keyspaces_index.iter().enumerate() {
+        if let Some(existing_keyspace_index) = existing_keyspace_index {
+            let keyspace = &keyspaces[existing_keyspace_index.0 as usize];
+            if keyspace.name() == keyspace_name {
+                return Err(MVCCStorageError {
+                    storage_name: storage_name.to_owned(),
+                    kind: MVCCStorageErrorKind::KeyspaceNameExists { keyspace_name },
+                });
+            }
+
+            if existing_keyspace_id == keyspace_id.0 as _ {
+                return Err(MVCCStorageError {
+                    storage_name: storage_name.to_owned(),
+                    kind: MVCCStorageErrorKind::KeyspaceIdExists {
+                        new_keyspace_name: keyspace_name,
+                        keyspace_id: keyspace_id.0,
+                        existing_keyspace_name: keyspace.name(),
+                    },
+                });
+            }
+        }
+    }
+    Ok(())
+}
+
+fn create_keyspaces<KS: KeyspaceSet>(
+    storage_name: &str,
+    storage_dir: impl AsRef<Path>,
+) -> Result<(Vec<Keyspace>, [Option<KeyspaceId>; KEYSPACE_MAXIMUM_COUNT]), MVCCStorageError> {
+    let path = storage_dir.as_ref();
+    let mut keyspaces = Vec::new();
+    let mut keyspaces_index = core::array::from_fn(|_| None);
+    for keyspace_id in KS::iter() {
+        let keyspace_name = keyspace_id.name();
+        let id = KeyspaceId(keyspace_id.id());
+
+        validate_new_keyspace(storage_name, keyspace_name, id, &keyspaces, &keyspaces_index)?;
+
+        let keyspace_path = path.join(keyspace_name);
+        keyspaces.push(Keyspace::create(keyspace_name, keyspace_path, &new_db_options(), id).map_err(|err| {
+            MVCCStorageError {
+                storage_name: keyspace_name.to_owned(),
+                kind: MVCCStorageErrorKind::KeyspaceCreateError { source: Arc::new(err), keyspace_name },
+            }
+        })?);
+        keyspaces_index[id.0 as usize] = Some(KeyspaceId(keyspaces.len() as u8 - 1));
+    }
+    Ok((keyspaces, keyspaces_index))
+}
+
 impl<D> MVCCStorage<D> {
     const STORAGE_DIR_NAME: &'static str = "storage";
 
-    pub fn new(name: impl AsRef<str>, path: &Path) -> Result<Self, MVCCStorageError>
+    pub fn new<KS: KeyspaceSet>(name: impl AsRef<str>, path: &Path) -> Result<Self, MVCCStorageError>
     where
         D: DurabilityService,
     {
@@ -76,105 +166,58 @@ impl<D> MVCCStorage<D> {
         let mut durability_service = D::open("/tmp/wal").expect("Could not create WAL directory");
         durability_service.register_record_type::<CommitRecord>();
 
-        Ok(Self {
-            name: name.as_ref().to_owned(),
-            storage_dir,
-            keyspaces: Vec::new(),
-            keyspaces_index: core::array::from_fn(|_| None),
-            isolation_manager: IsolationManager::new(durability_service.current()),
-            durability_service,
-        })
+        let name = name.as_ref();
+        let (keyspaces, keyspaces_index) = create_keyspaces::<KS>(name, &storage_dir)?;
+
+        let isolation_manager = IsolationManager::new(durability_service.current());
+
+        let name = name.to_owned();
+
+        Ok(Self { name, storage_dir, keyspaces, keyspaces_index, isolation_manager, durability_service })
     }
 
     // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options
     pub fn load_from_checkpoint(
-        owner_name: impl AsRef<str>,
+        name: impl AsRef<str>,
         path: &Path,
-        durability_service: D,
-    ) -> Result<Self, MVCCStorageError> {
-        todo!("Booting from checkpoint not yet implemented")
-
+        mut durability_service: D,
+    ) -> Result<Self, MVCCStorageError>
+    where
+        D: DurabilityService,
+    {
         // Steps:
         //   Load each keyspace from their latest checkpoint
-        //   Get the last known committed sequence number from each keyspace (if we want to do this at all... could probably just replay)
-        //   Iterate over records from Durability Service from the earliest sequence number
-        //   For each record, commit the records. Some keyspaces will write duplicates, but all writes are idempotent so this is OK.
 
-        // TODO: we have to be careful when we resume from a checkpoint and reapply the Records.Write.InsertPreexisting, to re-check if previous commits have deleted these keys
+        //   Get the last known committed sequence number from each keyspace (if we want to do this
+        //   at all... could probably just replay)
+
+        //   Iterate over records from Durability Service from the earliest sequence number
+
+        //   For each record, commit the records. Some keyspaces will write duplicates, but all
+        //   writes are idempotent so this is OK.
+
+        // TODO: we have to be careful when we resume from a checkpoint and reapply the
+        // Records.Write.InsertPreexisting, to re-check if previous commits have deleted these keys
+        let storage_dir = path.join(Self::STORAGE_DIR_NAME);
+
+        durability_service.register_record_type::<CommitRecord>();
+
+        let keyspaces = Vec::new();
+        let keyspaces_index = core::array::from_fn(|_| None);
+        let isolation_manager = IsolationManager::new(durability_service.current());
+
+        Ok(Self {
+            name: name.as_ref().to_owned(),
+            storage_dir,
+            keyspaces,
+            keyspaces_index,
+            isolation_manager,
+            durability_service,
+        })
     }
 
     fn owner_name(&self) -> &str {
         &self.name
-    }
-
-    pub fn create_keyspace(
-        &mut self,
-        name: &str,
-        keyspace_id: KeyspaceId,
-        options: &Options,
-    ) -> Result<(), MVCCStorageError> {
-        let keyspace_path = self.storage_dir.join(name);
-        self.validate_new_keyspace(name, keyspace_id)?;
-
-        self.keyspaces.push(Keyspace::new(keyspace_path, options, keyspace_id).map_err(|err| MVCCStorageError {
-            storage_name: self.name.clone(),
-            kind: MVCCStorageErrorKind::KeyspaceError { source: Arc::new(err), keyspace: name.to_owned() },
-        })?);
-        self.keyspaces_index[keyspace_id as usize] = Some(self.keyspaces.len() as KeyspaceId - 1);
-        Ok(())
-    }
-
-    pub fn new_db_options() -> Options {
-        let mut options = Options::default();
-        options.create_if_missing(true);
-        options.create_missing_column_families(true);
-        options.enable_statistics();
-        // TODO optimise per-keyspace
-        options
-    }
-
-    fn validate_new_keyspace(&self, name: &str, keyspace_id: KeyspaceId) -> Result<(), MVCCStorageError> {
-        if keyspace_id == KEYSPACE_ID_RESERVED_UNSET {
-            return Err(MVCCStorageError {
-                storage_name: self.name.clone(),
-                kind: MVCCStorageErrorKind::KeyspaceIdReserved { keyspace: name.to_owned(), keyspace_id },
-            });
-        }
-
-        if keyspace_id > KEYSPACE_ID_MAX {
-            return Err(MVCCStorageError {
-                storage_name: self.name.clone(),
-                kind: MVCCStorageErrorKind::KeyspaceIdTooLarge {
-                    keyspace: name.to_owned(),
-                    keyspace_id,
-                    max_keyspace_id: KEYSPACE_ID_MAX,
-                },
-            });
-        }
-
-        for existing_keyspace_id in 0..self.keyspaces_index.len() {
-            if let Some(existing_keyspace_index) = self.keyspaces_index[existing_keyspace_id] {
-                let keyspace = &self.keyspaces[existing_keyspace_index as usize];
-                if keyspace.name() == name {
-                    return Err(MVCCStorageError {
-                        storage_name: self.name.clone(),
-                        kind: MVCCStorageErrorKind::KeyspaceNameExists { keyspace: name.to_owned() },
-                    });
-                }
-
-                if existing_keyspace_id as KeyspaceId == keyspace_id {
-                    return Err(MVCCStorageError {
-                        storage_name: self.name.clone(),
-                        kind: MVCCStorageErrorKind::KeyspaceIdExists {
-                            new_keyspace: name.to_owned(),
-                            keyspace_id,
-                            existing_keyspace: keyspace.name().to_owned(),
-                        },
-                    });
-                }
-            }
-        }
-        Ok(())
     }
 
     pub fn open_snapshot_write(&self) -> WriteSnapshot<'_, D> {
@@ -228,12 +271,12 @@ impl<D> MVCCStorage<D> {
         for (index, write_batch) in write_batches.into_iter().enumerate() {
             debug_assert!(index < KEYSPACE_MAXIMUM_COUNT);
             if write_batch.is_some() {
-                self.get_keyspace(index as KeyspaceId).write(write_batch.unwrap()).map_err(|error| {
+                self.get_keyspace(KeyspaceId(index as _)).write(write_batch.unwrap()).map_err(|error| {
                     MVCCStorageError {
                         storage_name: self.name.clone(),
                         kind: MVCCStorageErrorKind::KeyspaceError {
                             source: Arc::new(error),
-                            keyspace: self.get_keyspace(index as KeyspaceId).name().to_owned(),
+                            keyspace_name: self.get_keyspace(KeyspaceId(index as _)).name(),
                         },
                     }
                 })?;
@@ -282,8 +325,8 @@ impl<D> MVCCStorage<D> {
     }
 
     fn get_keyspace(&self, keyspace_id: KeyspaceId) -> &Keyspace {
-        let keyspace_index = self.keyspaces_index[keyspace_id as usize].unwrap();
-        &self.keyspaces[keyspace_index as usize]
+        let keyspace_index = self.keyspaces_index[keyspace_id.0 as usize].unwrap();
+        &self.keyspaces[keyspace_index.0 as usize]
     }
 
     fn checkpoint(&self) {
@@ -365,7 +408,7 @@ impl<D> MVCCStorage<D> {
                 storage_name: self.owner_name().to_owned(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
                     source: Arc::new(e),
-                    keyspace: self.get_keyspace(key.keyspace_id()).name().to_owned(),
+                    keyspace_name: self.get_keyspace(key.keyspace_id()).name(),
                 },
             })
             .unwrap_or_log()
@@ -381,7 +424,7 @@ impl<D> MVCCStorage<D> {
                 storage_name: self.owner_name().to_owned(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
                     source: Arc::new(e),
-                    keyspace: self.get_keyspace(key.keyspace_id()).name().to_owned(),
+                    keyspace_name: self.get_keyspace(key.keyspace_id()).name(),
                 },
                 // TODO: unwrap_or_log may be incorrect: this could trigger if the DB is deleted for example?
             })
@@ -445,7 +488,7 @@ impl<'s, const P: usize, D> MVCCRangeIterator<'s, P, D> {
                 let (key, value) = self.iterator.peek().unwrap().unwrap();
                 let mvcc_key = MVCCKey::wrap_slice(key);
                 Some(Ok((
-                    StorageKeyReference::new(self.keyspace.id(), mvcc_key.into_key().unwrap_reference()),
+                    StorageKeyReference::new_raw(self.keyspace.id(), mvcc_key.into_key().unwrap_reference()),
                     ByteReference::new(value),
                 )))
             }
@@ -457,7 +500,7 @@ impl<'s, const P: usize, D> MVCCRangeIterator<'s, P, D> {
                 storage_name: self.storage.owner_name().to_string(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
                     source: error.clone(),
-                    keyspace: self.keyspace.name().to_owned(),
+                    keyspace_name: self.keyspace.name(),
                 },
             })),
             State::Done => None,
@@ -474,7 +517,7 @@ impl<'s, const P: usize, D> MVCCRangeIterator<'s, P, D> {
                 let (key, value) = self.iterator.peek().unwrap().unwrap();
                 let mvcc_key = MVCCKey::wrap_slice(key);
                 let item = Some(Ok((
-                    StorageKeyReference::new(self.keyspace.id(), mvcc_key.into_key().unwrap_reference()),
+                    StorageKeyReference::new_raw(self.keyspace.id(), mvcc_key.into_key().unwrap_reference()),
                     ByteReference::new(value),
                 )));
                 self.state = State::ItemUsed;
@@ -488,7 +531,7 @@ impl<'s, const P: usize, D> MVCCRangeIterator<'s, P, D> {
                 storage_name: self.storage.owner_name().to_owned(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
                     source: error.clone(),
-                    keyspace: self.keyspace.name().to_owned(),
+                    keyspace_name: self.keyspace.name(),
                 },
             })),
             State::Done => None,

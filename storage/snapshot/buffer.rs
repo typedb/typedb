@@ -48,7 +48,7 @@ pub(crate) struct KeyspaceBuffers {
 
 impl KeyspaceBuffers {
     pub(crate) fn new() -> KeyspaceBuffers {
-        KeyspaceBuffers { buffers: core::array::from_fn(|i| KeyspaceBuffer::new(i as KeyspaceId)) }
+        KeyspaceBuffers { buffers: core::array::from_fn(|i| KeyspaceBuffer::new(KeyspaceId(i as u8))) }
     }
 
     pub(crate) fn is_empty(&self) -> bool {
@@ -56,7 +56,7 @@ impl KeyspaceBuffers {
     }
 
     pub(crate) fn get(&self, keyspace_id: KeyspaceId) -> &KeyspaceBuffer {
-        &self.buffers[keyspace_id as usize]
+        &self.buffers[keyspace_id.0 as usize]
     }
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = &KeyspaceBuffer> {
@@ -156,7 +156,7 @@ impl KeyspaceBuffer {
 
         let values = map
             .range::<[u8], _>((range_start, range_end))
-            .map(|(key, val)| (StorageKeyArray::new(self.keyspace_id, key.clone()), val.clone()))
+            .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
             .collect::<Vec<_>>();
         BufferedPrefixIterator::new(values)
     }
@@ -174,8 +174,8 @@ pub(crate) struct BufferedPrefixIterator {
 }
 
 impl BufferedPrefixIterator {
-    fn new(range: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)>) -> BufferedPrefixIterator {
-        BufferedPrefixIterator { state: State::Init, index: 0, range }
+    fn new(range: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)>) -> Self {
+        Self { state: State::Init, index: 0, range }
     }
 
     pub(crate) fn peek(&mut self) -> Option<Result<(&StorageKeyArray<BUFFER_KEY_INLINE>, &Write), SnapshotError>> {
@@ -331,7 +331,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffers {
 
                 while let Some(keyspace_buffer) = seq.next_element()? {
                     let keyspace_buffer: KeyspaceBuffer = keyspace_buffer;
-                    buffers_init[keyspace_buffer.keyspace_id as usize].write(keyspace_buffer);
+                    buffers_init[keyspace_buffer.keyspace_id.0 as usize].write(keyspace_buffer);
                 }
 
                 let buffers = unsafe { mem::transmute(buffers_init) };

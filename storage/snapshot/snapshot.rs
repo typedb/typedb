@@ -221,7 +221,7 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
 
     pub fn iterate_range<'this, const PS: usize>(
         &'this self,
-        range: PrefixRange<StorageKey<'this, { PS }>>,
+        range: PrefixRange<StorageKey<'this, PS>>,
     ) -> SnapshotRangeIterator<'this, PS, D> {
         let buffered_iterator = self
             .buffers

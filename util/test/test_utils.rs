@@ -17,6 +17,7 @@
 
 use std::{
     cell::OnceCell,
+    ops::Deref,
     path::{Path, PathBuf},
     sync::Mutex,
 };
@@ -30,12 +31,24 @@ pub fn init_logging() {
     LOGGING_GUARD.lock().unwrap().get_or_init(initialise_logging);
 }
 
-pub fn create_tmp_dir() -> PathBuf {
-    let id = rand::random::<u64>();
-    let dir_name = format!("test_storage_{}", id);
-    std::env::temp_dir().join(Path::new(&dir_name))
+pub struct TempDir(PathBuf);
+
+impl Drop for TempDir {
+    fn drop(&mut self) {
+        std::fs::remove_dir_all(&self.0).ok();
+    }
 }
 
-pub fn delete_dir(path: PathBuf) {
-    std::fs::remove_dir_all(path).ok();
+impl Deref for TempDir {
+    type Target = Path;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+pub fn create_tmp_dir() -> TempDir {
+    let id = rand::random::<u64>();
+    let dir_name = format!("test_storage_{}", id);
+    TempDir(std::env::temp_dir().join(Path::new(&dir_name)))
 }

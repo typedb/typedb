@@ -18,10 +18,10 @@
 use std::{borrow::Borrow, cmp::Ordering};
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
-use serde::{Deserialize, Serialize};
 use primitive::prefix_range::Prefix;
+use serde::{Deserialize, Serialize};
 
-use crate::keyspace::keyspace::KeyspaceId;
+use crate::{keyspace::keyspace::KeyspaceId, KeyspaceSet};
 
 #[derive(Debug, Clone)]
 pub enum StorageKey<'bytes, const S: usize> {
@@ -30,20 +30,18 @@ pub enum StorageKey<'bytes, const S: usize> {
 }
 
 impl<'bytes, const S: usize> StorageKey<'bytes, S> {
-    pub fn new(keyspace_id: KeyspaceId, bytes: ByteArrayOrRef<'bytes, S>) -> Self {
+    pub fn new<KS: KeyspaceSet>(keyspace_id: KS, bytes: ByteArrayOrRef<'bytes, S>) -> Self {
         match bytes {
-            ByteArrayOrRef::Array(array) => StorageKey::Array(StorageKeyArray::new(keyspace_id, array)),
-            ByteArrayOrRef::Reference(reference) => {
-                StorageKey::Reference(StorageKeyReference::new(keyspace_id, reference))
-            }
+            ByteArrayOrRef::Array(array) => Self::Array(StorageKeyArray::new(keyspace_id, array)),
+            ByteArrayOrRef::Reference(reference) => Self::Reference(StorageKeyReference::new(keyspace_id, reference)),
         }
     }
 
-    pub const fn new_ref(keyspace_id: KeyspaceId, bytes: ByteReference<'bytes>) -> Self {
+    pub fn new_ref<KS: KeyspaceSet>(keyspace_id: KS, bytes: ByteReference<'bytes>) -> Self {
         StorageKey::Reference(StorageKeyReference::new(keyspace_id, bytes))
     }
 
-    pub fn new_owned(keyspace_id: KeyspaceId, bytes: ByteArray<S>) -> Self {
+    pub fn new_owned<KS: KeyspaceSet>(keyspace_id: KS, bytes: ByteArray<S>) -> Self {
         StorageKey::Array(StorageKeyArray::new(keyspace_id, bytes))
     }
 
@@ -71,7 +69,9 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
     pub fn as_reference(&'bytes self) -> StorageKeyReference<'bytes> {
         match self {
             StorageKey::Array(array) => StorageKeyReference::from(array),
-            StorageKey::Reference(reference) => StorageKeyReference::new(reference.keyspace_id(), reference.byte_ref()),
+            StorageKey::Reference(reference) => {
+                StorageKeyReference::new_raw(reference.keyspace_id(), reference.byte_ref())
+            }
         }
     }
 
@@ -83,43 +83,47 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
     }
 }
 
-impl<'bytes, const INLINE_SIZE: usize> PartialEq<Self> for StorageKey<'bytes, INLINE_SIZE> {
+impl<'bytes, const SZ: usize> PartialEq<Self> for StorageKey<'bytes, SZ> {
     fn eq(&self, other: &Self) -> bool {
         self.keyspace_id() == other.keyspace_id() && self.bytes() == other.bytes()
     }
 }
 
-impl<'bytes, const INLINE_SIZE: usize> Eq for StorageKey<'bytes, INLINE_SIZE> {}
+impl<'bytes, const SZ: usize> Eq for StorageKey<'bytes, SZ> {}
 
-impl<'bytes, const INLINE_SIZE: usize> PartialOrd<Self> for StorageKey<'bytes, INLINE_SIZE> {
+impl<'bytes, const SZ: usize> PartialOrd<Self> for StorageKey<'bytes, SZ> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         // TODO: should this take into account Keyspace ID?
         Some(self.cmp(other))
     }
 }
 
-impl<'bytes, const INLINE_SIZE: usize> Ord for StorageKey<'bytes, INLINE_SIZE> {
+impl<'bytes, const SZ: usize> Ord for StorageKey<'bytes, SZ> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.bytes().cmp(other.bytes())
     }
 }
 
-impl<'bytes, const INLINE_SIZE: usize> Prefix for StorageKey<'bytes, INLINE_SIZE> {
+impl<'bytes, const SZ: usize> Prefix for StorageKey<'bytes, SZ> {
     fn starts_with(&self, other: &Self) -> bool {
         self.bytes().starts_with(other.bytes())
     }
 }
 
-// TODO: we may want to fix the INLINE_SIZE for all storage keys here
+// TODO: we may want to fix the SZ for all storage keys here
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct StorageKeyArray<const INLINE_SIZE: usize> {
+pub struct StorageKeyArray<const SZ: usize> {
     keyspace_id: KeyspaceId,
-    byte_array: ByteArray<INLINE_SIZE>,
+    byte_array: ByteArray<SZ>,
 }
 
-impl<const INLINE_SIZE: usize> StorageKeyArray<INLINE_SIZE> {
-    pub fn new(keyspace_id: KeyspaceId, array: ByteArray<INLINE_SIZE>) -> StorageKeyArray<INLINE_SIZE> {
-        StorageKeyArray { keyspace_id, byte_array: array }
+impl<const SZ: usize> StorageKeyArray<SZ> {
+    pub fn new<KS: KeyspaceSet>(keyspace_id: KS, array: ByteArray<SZ>) -> Self {
+        Self::new_raw(KeyspaceId(keyspace_id.id()), array)
+    }
+
+    pub(crate) fn new_raw(keyspace_id: KeyspaceId, array: ByteArray<SZ>) -> Self {
+        Self { keyspace_id, byte_array: array }
     }
 
     pub(crate) fn keyspace_id(&self) -> KeyspaceId {
@@ -130,60 +134,60 @@ impl<const INLINE_SIZE: usize> StorageKeyArray<INLINE_SIZE> {
         self.byte_array.bytes()
     }
 
-    pub fn byte_array(&self) -> &ByteArray<INLINE_SIZE> {
+    pub fn byte_array(&self) -> &ByteArray<SZ> {
         &self.byte_array
     }
 
-    pub fn into_byte_array(self) -> ByteArray<INLINE_SIZE> {
+    pub fn into_byte_array(self) -> ByteArray<SZ> {
         self.byte_array
     }
 }
 
-impl<const INLINE_SIZE: usize> PartialEq<Self> for StorageKeyArray<INLINE_SIZE> {
+impl<const SZ: usize> PartialEq<Self> for StorageKeyArray<SZ> {
     fn eq(&self, other: &Self) -> bool {
         self.keyspace_id() == other.keyspace_id() && self.bytes() == other.bytes()
     }
 }
 
-impl<const INLINE_SIZE: usize> Eq for StorageKeyArray<INLINE_SIZE> {}
+impl<const SZ: usize> Eq for StorageKeyArray<SZ> {}
 
-impl<const INLINE_SIZE: usize> PartialOrd<Self> for StorageKeyArray<INLINE_SIZE> {
+impl<const SZ: usize> PartialOrd<Self> for StorageKeyArray<SZ> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         // TODO: should this take into account Keyspace ID?
         Some(self.cmp(other))
     }
 }
 
-impl<const INLINE_SIZE: usize> Ord for StorageKeyArray<INLINE_SIZE> {
+impl<const SZ: usize> Ord for StorageKeyArray<SZ> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.bytes().cmp(other.bytes())
     }
 }
 
-impl<const INLINE_SIZE: usize> Borrow<[u8]> for StorageKeyArray<INLINE_SIZE> {
+impl<const SZ: usize> Borrow<[u8]> for StorageKeyArray<SZ> {
     fn borrow(&self) -> &[u8] {
         self.bytes()
     }
 }
 
-impl<const INLINE_SIZE: usize> From<StorageKeyReference<'_>> for StorageKeyArray<INLINE_SIZE> {
+impl<const SZ: usize> From<StorageKeyReference<'_>> for StorageKeyArray<SZ> {
     fn from(key: StorageKeyReference<'_>) -> Self {
         StorageKeyArray { keyspace_id: key.keyspace_id(), byte_array: ByteArray::copy(key.bytes()) }
     }
 }
 
-impl<const INLINE_SIZE: usize> From<(Vec<u8>, u8)> for StorageKeyArray<INLINE_SIZE> {
+impl<const SZ: usize, KS: KeyspaceSet> From<(Vec<u8>, KS)> for StorageKeyArray<SZ> {
     // For tests
-    fn from((bytes, section_id): (Vec<u8>, u8)) -> Self {
+    fn from((bytes, section_id): (Vec<u8>, KS)) -> Self {
         From::from((bytes.as_slice(), section_id))
     }
 }
 
-impl<const INLINE_SIZE: usize> From<(&[u8], u8)> for StorageKeyArray<INLINE_SIZE> {
+impl<const SZ: usize, KS: KeyspaceSet> From<(&[u8], KS)> for StorageKeyArray<SZ> {
     // For tests
-    fn from((bytes, section_id): (&[u8], u8)) -> Self {
-        let bytes = ByteArray::<INLINE_SIZE>::copy(bytes);
-        StorageKeyArray { keyspace_id: section_id, byte_array: bytes }
+    fn from((bytes, section_id): (&[u8], KS)) -> Self {
+        let bytes = ByteArray::<SZ>::copy(bytes);
+        StorageKeyArray { keyspace_id: KeyspaceId(section_id.id()), byte_array: bytes }
     }
 }
 
@@ -194,8 +198,12 @@ pub struct StorageKeyReference<'bytes> {
 }
 
 impl<'bytes> StorageKeyReference<'bytes> {
-    pub const fn new(keyspace_id: KeyspaceId, reference: ByteReference<'bytes>) -> StorageKeyReference<'bytes> {
-        StorageKeyReference { keyspace_id, reference }
+    pub fn new<KS: KeyspaceSet>(keyspace_id: KS, reference: ByteReference<'bytes>) -> StorageKeyReference<'bytes> {
+        Self::new_raw(KeyspaceId(keyspace_id.id()), reference)
+    }
+
+    pub(crate) fn new_raw(keyspace_id: KeyspaceId, reference: ByteReference<'bytes>) -> Self {
+        Self { keyspace_id, reference }
     }
 
     pub(crate) fn keyspace_id(&self) -> KeyspaceId {
@@ -215,9 +223,9 @@ impl<'bytes> StorageKeyReference<'bytes> {
     }
 }
 
-impl<'bytes, const INLINE_SIZE: usize> From<&'bytes StorageKeyArray<INLINE_SIZE>> for StorageKeyReference<'bytes> {
-    fn from(array_ref: &'bytes StorageKeyArray<INLINE_SIZE>) -> Self {
-        StorageKeyReference::new(array_ref.keyspace_id, ByteReference::from(array_ref.byte_array()))
+impl<'bytes, const SZ: usize> From<&'bytes StorageKeyArray<SZ>> for StorageKeyReference<'bytes> {
+    fn from(array_ref: &'bytes StorageKeyArray<SZ>) -> Self {
+        StorageKeyReference::new_raw(array_ref.keyspace_id, ByteReference::from(array_ref.byte_array()))
     }
 }
 

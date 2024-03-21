@@ -254,12 +254,11 @@ impl<'a, const PS: usize, D> SnapshotRangeIterator<'a, PS, D> {
         Ok(vec)
     }
 
-    pub fn collect_cloned_bmap<F, M, N>(
-        mut self, mapper: F
-    ) -> Result<BTreeMap<M, N>, SnapshotError>
+    pub fn collect_cloned_bmap<F, M, N>(mut self, mapper: F) -> Result<BTreeMap<M, N>, SnapshotError>
     where
-        F: for <'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> (M, N),
-        M: Ord + Eq + PartialEq {
+        F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> (M, N),
+        M: Ord + Eq + PartialEq,
+    {
         let mut btree_map = BTreeMap::new();
         loop {
             let item = self.next();

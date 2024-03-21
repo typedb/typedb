@@ -25,28 +25,44 @@ use storage::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{IsolationError, IsolationErrorKind},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::keyspace::KeyspaceId,
     snapshot::error::{SnapshotError, SnapshotErrorKind},
-    MVCCStorage,
+    KeyspaceSet, MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
 
-const KEYSPACE_ID: KeyspaceId = 0;
+macro_rules! test_keyspace_set {
+    {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
+        enum TestKeyspaceSet { $($variant),* }
+        impl KeyspaceSet for TestKeyspaceSet {
+            fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
+            fn id(&self) -> u8 {
+                match *self { $(Self::$variant => $id),* }
+            }
+            fn name(&self) -> &'static str {
+                match *self { $(Self::$variant => $name),* }
+            }
+        }
+    };
+}
+
+test_keyspace_set! {
+    Keyspace => 0: "keyspace",
+}
+use self::TestKeyspaceSet::Keyspace;
+
 const KEY_1: [u8; 4] = [0x0, 0x0, 0x0, 0x1];
 const KEY_2: [u8; 4] = [0x0, 0x0, 0x0, 0x2];
 const KEY_3: [u8; 4] = [0x0, 0x0, 0x0, 0x3];
 const VALUE_1: [u8; 1] = [0x0];
 const VALUE_2: [u8; 1] = [0x1];
 const VALUE_3: [u8; 1] = [0x88];
-const VALUE_4: [u8; 1] = [0x99];
 
 fn setup_storage(storage_path: &Path) -> MVCCStorage<WAL> {
-    let mut storage = MVCCStorage::new("storage", storage_path).unwrap();
-    storage.create_keyspace("keyspace", KEYSPACE_ID, &MVCCStorage::<WAL>::new_db_options()).unwrap();
+    let storage = MVCCStorage::new::<TestKeyspaceSet>("storage", storage_path).unwrap();
 
     let snapshot = storage.open_snapshot_write();
-    snapshot.put_val(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
-    snapshot.put_val(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_2));
+    snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
+    snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_2));
     snapshot.commit().unwrap();
 
     storage
@@ -61,7 +77,7 @@ fn commits_isolated() {
     let snapshot_1 = storage.open_snapshot_write();
     let snapshot_2 = storage.open_snapshot_read();
 
-    let key_3 = StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&KEY_3));
+    let key_3 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_3));
     let value_3 = ByteArray::copy(&VALUE_3);
     snapshot_1.put_val(key_3.clone(), value_3.clone());
     snapshot_1.commit().unwrap();
@@ -69,7 +85,7 @@ fn commits_isolated() {
     let get: Option<ByteArray<{ BUFFER_KEY_INLINE }>> = snapshot_2.get(StorageKeyReference::from(&key_3));
     assert!(get.is_none());
     let prefix: StorageKey<'_, BUFFER_KEY_INLINE> =
-        StorageKey::Array(StorageKeyArray::new(KEYSPACE_ID, ByteArray::copy(&[0x0_u8])));
+        StorageKey::Array(StorageKeyArray::new(Keyspace, ByteArray::copy(&[0x0_u8])));
     let range = PrefixRange::new_within(prefix);
     let iterated =
         snapshot_2.iterate_range(range.clone()).collect_cloned_vec::<BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE>().unwrap();
@@ -99,9 +115,9 @@ fn g0_update_conflicts_fail() {
     let snapshot_2 = storage.open_snapshot_write();
 
     let key_1: StorageKey<'_, { BUFFER_KEY_INLINE }> =
-        StorageKey::Reference(StorageKeyReference::new(KEYSPACE_ID, ByteReference::new(&KEY_1)));
+        StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
     let _key_2: StorageKey<'_, { BUFFER_KEY_INLINE }> =
-        StorageKey::Reference(StorageKeyReference::new(KEYSPACE_ID, ByteReference::new(&KEY_2)));
+        StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_2)));
 
     snapshot_1.get_required(key_1.clone());
 

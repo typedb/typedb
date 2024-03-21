@@ -21,93 +21,116 @@ use primitive::prefix_range::PrefixRange;
 use storage::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::keyspace::KeyspaceId,
-    MVCCStorage,
+    KeyspaceSet, MVCCStorage,
 };
-use test_utils::{create_tmp_dir, delete_dir, init_logging};
+use test_utils::{create_tmp_dir, init_logging};
+
+macro_rules! test_keyspace_set {
+    {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
+        enum TestKeyspaceSet { $($variant),* }
+        impl KeyspaceSet for TestKeyspaceSet {
+            fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
+            fn id(&self) -> u8 {
+                match *self { $(Self::$variant => $id),* }
+            }
+            fn name(&self) -> &'static str {
+                match *self { $(Self::$variant => $name),* }
+            }
+        }
+    };
+}
 
 #[test]
 fn create_delete() {
+    test_keyspace_set! {}
+
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage_result = MVCCStorage::<WAL>::new("storage", &storage_path);
+    let storage_result = MVCCStorage::<WAL>::new::<TestKeyspaceSet>("storage", &storage_path);
     assert!(storage_result.is_ok());
     let storage = storage_result.unwrap();
     let delete_result = storage.delete_storage();
     assert!(delete_result.is_ok());
-    delete_dir(storage_path)
 }
 
 #[test]
 fn create_keyspaces() {
+    test_keyspace_set! {
+        Keyspace1 => 0: "keyspace_1",
+        Keyspace2 => 1: "keyspace_2",
+    }
+
     init_logging();
     let storage_path = create_tmp_dir();
-    let options = MVCCStorage::<WAL>::new_db_options();
-    let mut storage = MVCCStorage::<WAL>::new("storage", &storage_path).unwrap();
-    let keyspace_1_id: KeyspaceId = 0x0;
-    let create_1_result = storage.create_keyspace("keyspace_1", keyspace_1_id, &options);
-    assert!(create_1_result.is_ok());
-    let keyspace_2_id: KeyspaceId = 0x1;
-    let create_2_result = storage.create_keyspace("keyspace_2", keyspace_2_id, &options);
-    assert!(create_2_result.is_ok(), "{create_2_result:?}");
-    let delete_result = storage.delete_storage();
-    assert!(delete_result.is_ok(), "{:?}", delete_result);
 
-    delete_dir(storage_path)
+    let create_result = MVCCStorage::<WAL>::new::<TestKeyspaceSet>("storage", &storage_path);
+    assert!(create_result.is_ok(), "{create_result:?}");
+
+    let storage = create_result.unwrap();
+
+    let delete_result = storage.delete_storage();
+    assert!(delete_result.is_ok(), "{delete_result:?}");
 }
 
 #[test]
-fn create_keyspaces_errors() {
+fn create_keyspaces_duplicate_name_error() {
+    test_keyspace_set! {
+        Keyspace1 => 0: "keyspace_1",
+        Keyspace2 => 1: "keyspace_1",
+    }
+
     init_logging();
     let storage_path = create_tmp_dir();
-    let options = MVCCStorage::<WAL>::new_db_options();
-    let mut storage = MVCCStorage::<WAL>::new("storage", &storage_path).unwrap();
-    let keyspace_1_id: KeyspaceId = 0x0;
-    storage.create_keyspace("keyspace_1", keyspace_1_id, &options).unwrap();
-
-    let keyspace_2_id: KeyspaceId = 0x1;
-    let name_error = storage.create_keyspace("keyspace_1", keyspace_2_id, &options);
+    let create_result = MVCCStorage::<WAL>::new::<TestKeyspaceSet>("storage", &storage_path);
     assert!(
-        matches!(name_error, Err(MVCCStorageError { kind: MVCCStorageErrorKind::KeyspaceNameExists { .. }, .. })),
+        matches!(create_result, Err(MVCCStorageError { kind: MVCCStorageErrorKind::KeyspaceNameExists { .. }, .. })),
         "{}",
-        name_error.unwrap_err()
+        create_result.unwrap_err()
     );
+}
 
-    let duplicate_prefix: KeyspaceId = 0x0;
-    let prefix_error = storage.create_keyspace("keyspace_2", duplicate_prefix, &options);
+#[test]
+fn create_keyspaces_duplicate_id_error() {
+    test_keyspace_set! {
+        Keyspace1 => 0: "keyspace_1",
+        Keyspace2 => 0: "keyspace_2",
+    }
+
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let create_result = MVCCStorage::<WAL>::new::<TestKeyspaceSet>("storage", &storage_path);
     assert!(
-        matches!(prefix_error, Err(MVCCStorageError { kind: MVCCStorageErrorKind::KeyspaceIdExists { .. }, .. })),
+        matches!(create_result, Err(MVCCStorageError { kind: MVCCStorageErrorKind::KeyspaceIdExists { .. }, .. })),
         "{}",
-        prefix_error.unwrap_err()
+        create_result.unwrap_err()
     );
-
-    delete_dir(storage_path)
 }
 
 #[test]
 fn get_put_iterate() {
+    test_keyspace_set! {
+        Keyspace1 => 0: "keyspace_1",
+        Keyspace2 => 1: "keyspace_2",
+    }
+    use TestKeyspaceSet::{Keyspace1, Keyspace2};
+
     init_logging();
     let storage_path = create_tmp_dir();
-    let options = MVCCStorage::<WAL>::new_db_options();
-    let mut storage = MVCCStorage::<WAL>::new("storage", &storage_path).unwrap();
-    let keyspace_1_id: u8 = 0x0;
-    storage.create_keyspace("keyspace_1", keyspace_1_id, &options).unwrap();
-    let keyspace_2_id: u8 = 0x1;
-    storage.create_keyspace("keyspace_2", keyspace_2_id, &options).unwrap();
+    let storage = MVCCStorage::<WAL>::new::<TestKeyspaceSet>("storage", &storage_path).unwrap();
 
-    let keyspace_1_key_1 = StorageKeyArray::<64>::from((vec![0x0, 0x0, 0x1], keyspace_1_id));
-    let keyspace_1_key_2 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0x10], keyspace_1_id));
-    let keyspace_1_key_3 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0xff], keyspace_1_id));
-    let keyspace_1_key_4 = StorageKeyArray::<64>::from((vec![0x2, 0x0, 0xff], keyspace_1_id));
+    let keyspace_1_key_1 = StorageKeyArray::<64>::from((vec![0x0, 0x0, 0x1], Keyspace1));
+    let keyspace_1_key_2 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0x10], Keyspace1));
+    let keyspace_1_key_3 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0xff], Keyspace1));
+    let keyspace_1_key_4 = StorageKeyArray::<64>::from((vec![0x2, 0x0, 0xff], Keyspace1));
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_1), &ByteArrayOrRef::Array(ByteArray::empty()));
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_2), &ByteArrayOrRef::Array(ByteArray::empty()));
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_3), &ByteArrayOrRef::Array(ByteArray::empty()));
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_4), &ByteArrayOrRef::Array(ByteArray::empty()));
 
-    let keyspace_2_key_1 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0x1], keyspace_2_id));
-    let keyspace_2_key_2 = StorageKeyArray::<64>::from((vec![0xb, 0x0, 0x10], keyspace_2_id));
-    let keyspace_2_key_3 = StorageKeyArray::<64>::from((vec![0x5, 0x0, 0xff], keyspace_2_id));
-    let keyspace_2_key_4 = StorageKeyArray::<64>::from((vec![0x2, 0x0, 0xff], keyspace_2_id));
+    let keyspace_2_key_1 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0x1], Keyspace2));
+    let keyspace_2_key_2 = StorageKeyArray::<64>::from((vec![0xb, 0x0, 0x10], Keyspace2));
+    let keyspace_2_key_3 = StorageKeyArray::<64>::from((vec![0x5, 0x0, 0xff], Keyspace2));
+    let keyspace_2_key_4 = StorageKeyArray::<64>::from((vec![0x2, 0x0, 0xff], Keyspace2));
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_1), &ByteArrayOrRef::Array(ByteArray::empty()));
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_2), &ByteArrayOrRef::Array(ByteArray::empty()));
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_3), &ByteArrayOrRef::Array(ByteArray::empty()));
@@ -121,7 +144,7 @@ fn get_put_iterate() {
         storage.get_raw(StorageKeyReference::from(&keyspace_2_key_1), ByteArray::copy);
     assert_eq!(second_value, Some(ByteArray::empty()));
 
-    let prefix = StorageKeyArray::<64>::from((vec![0x1], keyspace_1_id));
+    let prefix = StorageKeyArray::<64>::from((vec![0x1], Keyspace1));
     let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage
         .iterate_keyspace_range(PrefixRange::new_within(StorageKey::<64>::Reference(StorageKeyReference::from(
             &prefix,
@@ -134,6 +157,4 @@ fn get_put_iterate() {
             (keyspace_1_key_3.into_byte_array(), ByteArray::<128>::empty()),
         ]
     );
-
-    delete_dir(storage_path)
 }
