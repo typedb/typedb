@@ -17,6 +17,7 @@
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
 use durability::wal::WAL;
+use itertools::Itertools;
 use primitive::prefix_range::PrefixRange;
 use storage::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
@@ -107,6 +108,42 @@ fn create_keyspaces_duplicate_id_error() {
     );
 }
 
+fn empty_value<const SZ: usize>() -> ByteArrayOrRef<'static, SZ> {
+    ByteArrayOrRef::Array(ByteArray::empty())
+}
+
+#[test]
+fn create_reopen() {
+    test_keyspace_set! { Keyspace => 0: "keyspace" }
+    use TestKeyspaceSet::Keyspace;
+
+    let keys = [[0x0, 0x0, 0x1], [0x1, 0x0, 0x10], [0x1, 0x0, 0xff], [0x2, 0x0, 0xff]]
+        .into_iter()
+        .map(|v| StorageKeyArray::<64>::from((v.as_slice(), Keyspace)))
+        .collect_vec();
+
+    init_logging();
+    let storage_path = create_tmp_dir();
+
+    {
+        let storage = MVCCStorage::<WAL>::new::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+        for key in &keys {
+            storage.put_raw(StorageKeyReference::from(key), &empty_value());
+        }
+    }
+
+    {
+        let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+        let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage
+            .iterate_keyspace_range(PrefixRange::new_unbounded(StorageKey::<64>::Reference(StorageKeyReference::from(
+                &StorageKeyArray::<64>::from((vec![0x0], Keyspace)),
+            ))))
+            .collect_cloned::<64, 128>();
+        let items = items.into_iter().map(|(key, _)| key).collect_vec();
+        assert_eq!(items, keys.into_iter().map(StorageKeyArray::into_byte_array).collect_vec());
+    }
+}
+
 #[test]
 fn get_put_iterate() {
     test_keyspace_set! {
@@ -123,19 +160,19 @@ fn get_put_iterate() {
     let keyspace_1_key_2 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0x10], Keyspace1));
     let keyspace_1_key_3 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0xff], Keyspace1));
     let keyspace_1_key_4 = StorageKeyArray::<64>::from((vec![0x2, 0x0, 0xff], Keyspace1));
-    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_1), &ByteArrayOrRef::Array(ByteArray::empty()));
-    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_2), &ByteArrayOrRef::Array(ByteArray::empty()));
-    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_3), &ByteArrayOrRef::Array(ByteArray::empty()));
-    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_4), &ByteArrayOrRef::Array(ByteArray::empty()));
+    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_1), &empty_value());
+    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_2), &empty_value());
+    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_3), &empty_value());
+    storage.put_raw(StorageKeyReference::from(&keyspace_1_key_4), &empty_value());
 
     let keyspace_2_key_1 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0x1], Keyspace2));
     let keyspace_2_key_2 = StorageKeyArray::<64>::from((vec![0xb, 0x0, 0x10], Keyspace2));
     let keyspace_2_key_3 = StorageKeyArray::<64>::from((vec![0x5, 0x0, 0xff], Keyspace2));
     let keyspace_2_key_4 = StorageKeyArray::<64>::from((vec![0x2, 0x0, 0xff], Keyspace2));
-    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_1), &ByteArrayOrRef::Array(ByteArray::empty()));
-    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_2), &ByteArrayOrRef::Array(ByteArray::empty()));
-    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_3), &ByteArrayOrRef::Array(ByteArray::empty()));
-    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_4), &ByteArrayOrRef::Array(ByteArray::empty()));
+    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_1), &empty_value());
+    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_2), &empty_value());
+    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_3), &empty_value());
+    storage.put_raw(StorageKeyReference::from(&keyspace_2_key_4), &empty_value());
 
     let first_value: Option<ByteArray<48>> =
         storage.get_raw(StorageKeyReference::from(&keyspace_1_key_1), ByteArray::copy);

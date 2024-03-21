@@ -21,7 +21,7 @@ use durability::DurabilityError;
 
 use crate::{
     isolation_manager::IsolationError,
-    keyspace::keyspace::{KeyspaceCreateError, KeyspaceError},
+    keyspace::keyspace::{KeyspaceCreateError, KeyspaceError, KeyspaceOpenError},
 };
 
 #[derive(Debug)]
@@ -42,6 +42,7 @@ pub enum MVCCStorageErrorKind {
     IsolationError { source: IsolationError },
     DurabilityError { source: DurabilityError },
     KeyspaceCreateError { source: Arc<KeyspaceCreateError>, keyspace_name: &'static str },
+    KeyspaceOpenError { source: Arc<KeyspaceOpenError>, keyspace_name: &'static str },
 }
 
 impl fmt::Display for MVCCStorageError {

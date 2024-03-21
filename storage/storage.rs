@@ -81,11 +81,13 @@ pub trait KeyspaceSet: Copy {
 
 fn validate_new_keyspace(
     storage_name: &str,
-    keyspace_name: &'static str,
-    keyspace_id: KeyspaceId,
+    keyspace_id: impl KeyspaceSet,
     keyspaces: &[Keyspace],
     keyspaces_index: &[Option<KeyspaceId>],
 ) -> Result<(), MVCCStorageError> {
+    let keyspace_name = keyspace_id.name();
+    let keyspace_id = KeyspaceId(keyspace_id.id());
+
     if keyspace_id == KEYSPACE_ID_RESERVED_UNSET {
         return Err(MVCCStorageError {
             storage_name: storage_name.to_owned(),
@@ -114,7 +116,7 @@ fn validate_new_keyspace(
                 });
             }
 
-            if existing_keyspace_id == keyspace_id.0 as _ {
+            if existing_keyspace_id == keyspace_id.0 as usize {
                 return Err(MVCCStorageError {
                     storage_name: storage_name.to_owned(),
                     kind: MVCCStorageErrorKind::KeyspaceIdExists {
@@ -136,20 +138,48 @@ fn create_keyspaces<KS: KeyspaceSet>(
     let path = storage_dir.as_ref();
     let mut keyspaces = Vec::new();
     let mut keyspaces_index = core::array::from_fn(|_| None);
+    let options = new_db_options();
     for keyspace_id in KS::iter() {
-        let keyspace_name = keyspace_id.name();
-        let id = KeyspaceId(keyspace_id.id());
-
-        validate_new_keyspace(storage_name, keyspace_name, id, &keyspaces, &keyspaces_index)?;
-
-        let keyspace_path = path.join(keyspace_name);
-        keyspaces.push(Keyspace::create(keyspace_name, keyspace_path, &new_db_options(), id).map_err(|err| {
-            MVCCStorageError {
-                storage_name: keyspace_name.to_owned(),
-                kind: MVCCStorageErrorKind::KeyspaceCreateError { source: Arc::new(err), keyspace_name },
-            }
+        validate_new_keyspace(storage_name, keyspace_id, &keyspaces, &keyspaces_index)?;
+        keyspaces.push(Keyspace::create(path, keyspace_id, &options).map_err(|err| MVCCStorageError {
+            storage_name: storage_name.to_owned(),
+            kind: MVCCStorageErrorKind::KeyspaceCreateError {
+                source: Arc::new(err),
+                keyspace_name: keyspace_id.name(),
+            },
         })?);
-        keyspaces_index[id.0 as usize] = Some(KeyspaceId(keyspaces.len() as u8 - 1));
+        keyspaces_index[keyspace_id.id() as usize] = Some(KeyspaceId(keyspaces.len() as u8 - 1));
+    }
+    Ok((keyspaces, keyspaces_index))
+}
+
+fn open_db_options() -> Options {
+    let mut options = Options::default();
+    options.create_if_missing(false);
+    options.create_missing_column_families(true);
+    options.enable_statistics();
+    // TODO optimise per-keyspace
+    options
+}
+
+fn open_keyspaces<KS: KeyspaceSet>(
+    storage_name: &str,
+    storage_dir: impl AsRef<Path>,
+) -> Result<(Vec<Keyspace>, [Option<KeyspaceId>; KEYSPACE_MAXIMUM_COUNT]), MVCCStorageError> {
+    let path = storage_dir.as_ref();
+    let mut keyspaces = Vec::new();
+    let mut keyspaces_index = core::array::from_fn(|_| None);
+    let options = open_db_options();
+    for keyspace_id in KS::iter() {
+        validate_new_keyspace(storage_name, keyspace_id, &keyspaces, &keyspaces_index)?;
+        keyspaces.push(Keyspace::open(path, keyspace_id, &options).map_err(|err| MVCCStorageError {
+            storage_name: storage_name.to_owned(),
+            kind: MVCCStorageErrorKind::KeyspaceOpenError {
+                source: Arc::new(err),
+                keyspace_name: keyspace_id.name(),
+            },
+        })?);
+        keyspaces_index[keyspace_id.id() as usize] = Some(KeyspaceId(keyspaces.len() as u8 - 1));
     }
     Ok((keyspaces, keyspaces_index))
 }
@@ -168,6 +198,25 @@ impl<D> MVCCStorage<D> {
 
         let name = name.as_ref();
         let (keyspaces, keyspaces_index) = create_keyspaces::<KS>(name, &storage_dir)?;
+
+        let isolation_manager = IsolationManager::new(durability_service.current());
+
+        let name = name.to_owned();
+
+        Ok(Self { name, storage_dir, keyspaces, keyspaces_index, isolation_manager, durability_service })
+    }
+
+    pub fn open<KS: KeyspaceSet>(name: impl AsRef<str>, path: &Path) -> Result<Self, MVCCStorageError>
+    where
+        D: DurabilityService,
+    {
+        let storage_dir = path.join(Self::STORAGE_DIR_NAME);
+
+        let mut durability_service = D::open("/tmp/wal").expect("Could not create WAL directory");
+        durability_service.register_record_type::<CommitRecord>();
+
+        let name = name.as_ref();
+        let (keyspaces, keyspaces_index) = open_keyspaces::<KS>(name, &storage_dir)?;
 
         let isolation_manager = IsolationManager::new(durability_service.current());
 
