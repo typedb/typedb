@@ -15,7 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{cmp::Ordering, error::Error, fmt, path::PathBuf};
+use std::{
+    cmp::Ordering,
+    error::Error,
+    fmt, io,
+    path::{Path, PathBuf},
+};
 
 use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
 use iterator::State;
@@ -23,6 +28,8 @@ use logger::result::ResultExt;
 use primitive::prefix_range::PrefixRange;
 use serde::{Deserialize, Serialize};
 use speedb::{DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
+
+use crate::KeyspaceSet;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct KeyspaceId(pub(crate) u8);
@@ -45,36 +52,58 @@ pub(crate) const KEYSPACE_ID_RESERVED_UNSET: KeyspaceId = KeyspaceId(KEYSPACE_ID
 /// and checkpointing.
 ///
 pub(crate) struct Keyspace {
-    name: &'static str,
     path: PathBuf,
+    name: &'static str,
+    id: KeyspaceId,
     kv_storage: DB,
-    keyspace_id: KeyspaceId,
-    next_checkpoint_id: u64,
     read_options: ReadOptions,
     write_options: WriteOptions,
 }
 
 impl Keyspace {
     pub(crate) fn create(
-        name: &'static str,
-        path: PathBuf,
+        storage_path: &Path,
+        keyspace_id: impl KeyspaceSet,
         options: &Options,
-        id: KeyspaceId,
     ) -> Result<Keyspace, KeyspaceCreateError> {
         use KeyspaceCreateError::{AlreadyExists, SpeeDB};
+
+        let name = keyspace_id.name();
+        let path = storage_path.join(name);
 
         if path.exists() {
             return Err(AlreadyExists { name });
         }
 
         let kv_storage = DB::open(options, &path).map_err(|error| SpeeDB { name, source: error })?;
+        Ok(Self::new(path, keyspace_id, kv_storage))
+    }
 
+    pub(crate) fn open(
+        storage_path: &Path,
+        keyspace_id: impl KeyspaceSet,
+        options: &Options,
+    ) -> Result<Keyspace, KeyspaceOpenError> {
+        use KeyspaceOpenError::*;
+        let name = keyspace_id.name();
+        let path = storage_path.join(name);
+        let kv_storage = DB::open(options, &path).map_err(|error| SpeeDB { source: error })?;
+        Ok(Self::new(path, keyspace_id, kv_storage))
+    }
+
+    fn new(path: PathBuf, keyspace_id: impl KeyspaceSet, kv_storage: DB) -> Self {
         // initial read options, should be customised to this storage's properties
         let read_options = ReadOptions::default();
         let mut write_options = WriteOptions::default();
         write_options.disable_wal(true);
-
-        Ok(Keyspace { name, path, kv_storage, keyspace_id: id, next_checkpoint_id: 0, read_options, write_options })
+        Self {
+            path,
+            name: keyspace_id.name(),
+            id: KeyspaceId(keyspace_id.id()),
+            kv_storage,
+            read_options,
+            write_options,
+        }
     }
 
     // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options
@@ -100,7 +129,7 @@ impl Keyspace {
     }
 
     pub(crate) fn id(&self) -> KeyspaceId {
-        self.keyspace_id
+        self.id
     }
 
     pub(crate) fn name(&self) -> &'static str {
@@ -165,14 +194,7 @@ impl Keyspace {
 
 impl fmt::Debug for Keyspace {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Keyspace[name={}, path={}, id={}, next_checkpoint_id={}]",
-            self.name(),
-            self.path.to_str().unwrap(),
-            self.keyspace_id,
-            self.next_checkpoint_id
-        )
+        write!(f, "Keyspace[name={}, path={}, id={}]", self.name(), self.path.to_str().unwrap(), self.id,)
     }
 }
 
@@ -324,6 +346,19 @@ impl fmt::Display for KeyspaceCreateError {
             Self::AlreadyExists { .. } => todo!(),
             Self::SpeeDB { .. } => todo!(),
         }
+    }
+}
+
+#[derive(Debug)]
+pub enum KeyspaceOpenError {
+    UnrecognizedName { name: String },
+    DoesNotExist { source: io::Error },
+    SpeeDB { source: speedb::Error },
+}
+
+impl fmt::Display for KeyspaceOpenError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
     }
 }
 
