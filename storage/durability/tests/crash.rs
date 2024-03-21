@@ -40,7 +40,7 @@ fn crash() {
         assert!(output.status.success(), "{}\n{}", output.status, String::from_utf8_lossy(&output.stderr));
 
         let stdout = String::from_utf8(output.stdout).unwrap();
-        for (i, line) in stdout.lines().enumerate() {
+        for (i, line) in (1..).zip(stdout.lines()) {
             assert_eq!(line, format!(r#"{i} "{message} {i}""#));
         }
     }
