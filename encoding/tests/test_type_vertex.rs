@@ -24,8 +24,8 @@ use test_utils::{create_tmp_dir, init_logging};
 fn entity_type_vertexes_are_reused() {
     init_logging();
     let storage_path = create_tmp_dir();
-    #[allow(unused)]  // TODO
-    let mut storage = MVCCStorage::<WAL>::new::<EncodingKeyspace>("storage", &storage_path).unwrap();
+    #[allow(unused)] // TODO
+    let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
 
     // TODO: create a bunch of types, delete, and assert that the IDs are re-used
 }

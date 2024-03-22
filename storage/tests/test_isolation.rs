@@ -59,7 +59,7 @@ const VALUE_2: [u8; 1] = [0x1];
 const VALUE_3: [u8; 1] = [0x88];
 
 fn setup_storage(storage_path: &Path) -> MVCCStorage<WAL> {
-    let storage = MVCCStorage::new::<TestKeyspaceSet>("storage", storage_path).unwrap();
+    let storage = MVCCStorage::recover::<TestKeyspaceSet>("storage", storage_path).unwrap();
 
     let snapshot = storage.open_snapshot_write();
     snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));

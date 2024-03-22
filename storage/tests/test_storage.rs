@@ -48,7 +48,7 @@ fn create_delete() {
 
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage_result = MVCCStorage::<WAL>::new::<TestKeyspaceSet>("storage", &storage_path);
+    let storage_result = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path);
     assert!(storage_result.is_ok());
     let storage = storage_result.unwrap();
     let delete_result = storage.delete_storage();
@@ -65,7 +65,7 @@ fn create_keyspaces() {
     init_logging();
     let storage_path = create_tmp_dir();
 
-    let create_result = MVCCStorage::<WAL>::new::<TestKeyspaceSet>("storage", &storage_path);
+    let create_result = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path);
     assert!(create_result.is_ok(), "{create_result:?}");
 
     let storage = create_result.unwrap();
@@ -83,7 +83,7 @@ fn create_keyspaces_duplicate_name_error() {
 
     init_logging();
     let storage_path = create_tmp_dir();
-    let create_result = MVCCStorage::<WAL>::new::<TestKeyspaceSet>("storage", &storage_path);
+    let create_result = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path);
     assert!(
         matches!(create_result, Err(MVCCStorageError { kind: MVCCStorageErrorKind::KeyspaceNameExists { .. }, .. })),
         "{}",
@@ -100,7 +100,7 @@ fn create_keyspaces_duplicate_id_error() {
 
     init_logging();
     let storage_path = create_tmp_dir();
-    let create_result = MVCCStorage::<WAL>::new::<TestKeyspaceSet>("storage", &storage_path);
+    let create_result = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path);
     assert!(
         matches!(create_result, Err(MVCCStorageError { kind: MVCCStorageErrorKind::KeyspaceIdExists { .. }, .. })),
         "{}",
@@ -126,14 +126,14 @@ fn create_reopen() {
     let storage_path = create_tmp_dir();
 
     {
-        let storage = MVCCStorage::<WAL>::new::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+        let storage = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
         for key in &keys {
             storage.put_raw(StorageKeyReference::from(key), &empty_value());
         }
     }
 
     {
-        let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+        let storage = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
         let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage
             .iterate_keyspace_range(PrefixRange::new_unbounded(StorageKey::<64>::Reference(StorageKeyReference::from(
                 &StorageKeyArray::<64>::from((vec![0x0], Keyspace)),
@@ -154,7 +154,7 @@ fn get_put_iterate() {
 
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = MVCCStorage::<WAL>::new::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+    let storage = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
 
     let keyspace_1_key_1 = StorageKeyArray::<64>::from((vec![0x0, 0x0, 0x1], Keyspace1));
     let keyspace_1_key_2 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0x10], Keyspace1));

@@ -17,7 +17,7 @@
 
 use std::rc::Rc;
 
-use database::database::Database;
+use database::Database;
 use durability::wal::WAL;
 use encoding::graph::type_::Root;
 use test_utils::{create_tmp_dir, init_logging};
@@ -27,7 +27,7 @@ fn create_delete_database() {
     init_logging();
     let database_path = create_tmp_dir();
     dbg!(database_path.exists());
-    let db_result = Database::<WAL>::new(&database_path, Rc::from("create_delete"));
+    let db_result = Database::<WAL>::recover(&database_path, Rc::from("create_delete"));
     assert!(db_result.is_ok(), "{:?}", db_result.unwrap_err());
     let db = db_result.unwrap();
 

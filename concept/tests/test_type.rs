@@ -37,7 +37,7 @@ We don't aim for complete coverage of all APIs, and will rely on the BDD scenari
 fn entity_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::<WAL>::new::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
     TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 
@@ -160,7 +160,7 @@ fn entity_usage() {
 fn role_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::<WAL>::new::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
     TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 

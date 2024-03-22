@@ -17,7 +17,8 @@
 
 use core::fmt;
 use std::{
-    fs,
+    error::Error,
+    fs, io,
     path::{Path, PathBuf},
     rc::Rc,
 };
@@ -28,15 +29,9 @@ use encoding::{
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
     EncodingKeyspace,
 };
-use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
+use storage::{error::MVCCStorageError, snapshot::snapshot::Snapshot, MVCCStorage};
 
-use crate::{
-    error::{
-        DatabaseError,
-        DatabaseErrorKind::{FailedToCreateDirectory, FailedToCreateStorage},
-    },
-    transaction::{TransactionRead, TransactionWrite},
-};
+use crate::transaction::{TransactionRead, TransactionWrite};
 
 pub struct Database<D> {
     name: String,
@@ -53,30 +48,23 @@ impl<D> fmt::Debug for Database<D> {
 }
 
 impl<D> Database<D> {
-    pub fn new(path: &Path, database_name: impl AsRef<str>) -> Result<Self, DatabaseError>
+    pub fn recover(path: &Path, database_name: impl AsRef<str>) -> Result<Self, DatabaseRecoverError>
     where
         D: DurabilityService,
     {
-        let database_name = database_name.as_ref();
-        let database_path = path.join(database_name);
-        fs::create_dir(database_path.as_path()).map_err(|error| DatabaseError {
-            database_name: database_name.to_owned(),
-            kind: FailedToCreateDirectory { at: path.to_owned(), source: error },
-        })?;
-        let mut storage = MVCCStorage::new::<EncodingKeyspace>(database_name, path).map_err(|storage_error| {
-            DatabaseError { database_name: database_name.to_string(), kind: FailedToCreateStorage(storage_error) }
-        })?;
+        use DatabaseRecoverError::*;
+
+        let name = database_name.as_ref();
+        let path = path.join(name);
+        fs::create_dir(path.as_path())
+            .map_err(|error| FailedToCreateDirectory { path: path.to_owned(), source: error })?;
+        let mut storage = MVCCStorage::recover::<EncodingKeyspace>(name, &path)
+            .map_err(|error| FailedToCreateStorage { source: error })?;
         let type_vertex_generator = TypeVertexGenerator::new();
         let thing_vertex_generator = ThingVertexGenerator::new();
         TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 
-        Ok(Self {
-            name: database_name.to_owned(),
-            path: database_path,
-            storage,
-            type_vertex_generator,
-            thing_vertex_generator,
-        })
+        Ok(Self { name: name.to_owned(), path, storage, type_vertex_generator, thing_vertex_generator })
     }
 
     pub fn transaction_read(&self) -> TransactionRead<'_, '_, D> {
@@ -91,5 +79,26 @@ impl<D> Database<D> {
         let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &self.type_vertex_generator, None)); // TODO pass cache for data write txn
         let thing_manager = ThingManager::new(snapshot.clone(), &self.thing_vertex_generator, type_manager.clone());
         TransactionWrite { snapshot, type_manager, thing_manager }
+    }
+}
+
+#[derive(Debug)]
+pub enum DatabaseRecoverError {
+    FailedToCreateDirectory { path: PathBuf, source: io::Error },
+    FailedToCreateStorage { source: MVCCStorageError },
+}
+
+impl fmt::Display for DatabaseRecoverError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for DatabaseRecoverError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::FailedToCreateDirectory { source, .. } => Some(source),
+            Self::FailedToCreateStorage { source } => Some(source),
+        }
     }
 }

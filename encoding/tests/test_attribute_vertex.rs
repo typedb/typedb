@@ -34,7 +34,7 @@ use test_utils::{create_tmp_dir, init_logging};
 fn generate_string_attribute_vertex() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = MVCCStorage::<WAL>::new::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
+    let storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
 
     let snapshot = storage.open_snapshot_write();
     let type_id = TypeID::build(0);

@@ -15,4 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod typedb;
+#![deny(unused_must_use)]
+#![deny(elided_lifetimes_in_paths)]
+
+pub mod typedb;

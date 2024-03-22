@@ -28,11 +28,16 @@ exports_files(
 rust_binary(
     name = "typedb_server_bin",
     srcs = [
-        "main.rs"
+        "main.rs",
+    ],
+    compile_data = [
+        ":typedb-ascii.txt",
     ],
     deps = [
+        "//common/logger",
+        "//database",
         "//server",
-    ]
+    ],
 )
 
 

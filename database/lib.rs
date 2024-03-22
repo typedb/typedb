@@ -18,6 +18,7 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-pub mod database;
-mod error;
+mod database;
 mod transaction;
+
+pub use self::database::{Database, DatabaseRecoverError};

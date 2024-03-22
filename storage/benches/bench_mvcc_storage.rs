@@ -116,7 +116,7 @@ fn bench_snapshot_write_put(storage: &MVCCStorage<WAL>, keyspace_id: TestKeyspac
 }
 
 fn setup_storage(storage_path: &Path, key_count: usize) -> MVCCStorage<WAL> {
-    let storage = MVCCStorage::new::<TestKeyspaceSet>("storage_bench", storage_path).unwrap();
+    let storage = MVCCStorage::recover::<TestKeyspaceSet>("storage_bench", storage_path).unwrap();
     let keys = populate_storage(&storage, Keyspace, key_count);
     println!("Initialised storage with '{}' keys", keys);
     storage

@@ -34,7 +34,7 @@ use test_utils::{create_tmp_dir, init_logging};
 fn thing_create_iterate() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::<WAL>::new::<EncodingKeyspace>("storage", &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
     TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 
@@ -72,7 +72,7 @@ fn thing_create_iterate() {
 fn attribute_create() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::<WAL>::new::<EncodingKeyspace>("storage", &storage_path).unwrap();
+    let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
     TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 

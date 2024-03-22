@@ -21,6 +21,7 @@
 #![allow(clippy::module_inception)]
 
 use std::{
+    fs,
     path::{Path, PathBuf},
     sync::{atomic::Ordering, Arc},
 };
@@ -131,38 +132,16 @@ fn validate_new_keyspace(
     Ok(())
 }
 
-fn create_keyspaces<KS: KeyspaceSet>(
-    storage_name: &str,
-    storage_dir: impl AsRef<Path>,
-) -> Result<(Vec<Keyspace>, [Option<KeyspaceId>; KEYSPACE_MAXIMUM_COUNT]), MVCCStorageError> {
-    let path = storage_dir.as_ref();
-    let mut keyspaces = Vec::new();
-    let mut keyspaces_index = core::array::from_fn(|_| None);
-    let options = new_db_options();
-    for keyspace_id in KS::iter() {
-        validate_new_keyspace(storage_name, keyspace_id, &keyspaces, &keyspaces_index)?;
-        keyspaces.push(Keyspace::create(path, keyspace_id, &options).map_err(|err| MVCCStorageError {
-            storage_name: storage_name.to_owned(),
-            kind: MVCCStorageErrorKind::KeyspaceCreateError {
-                source: Arc::new(err),
-                keyspace_name: keyspace_id.name(),
-            },
-        })?);
-        keyspaces_index[keyspace_id.id() as usize] = Some(KeyspaceId(keyspaces.len() as u8 - 1));
-    }
-    Ok((keyspaces, keyspaces_index))
-}
-
 fn open_db_options() -> Options {
     let mut options = Options::default();
-    options.create_if_missing(false);
+    options.create_if_missing(true);
     options.create_missing_column_families(true);
     options.enable_statistics();
     // TODO optimise per-keyspace
     options
 }
 
-fn open_keyspaces<KS: KeyspaceSet>(
+fn recover_keyspaces<KS: KeyspaceSet>(
     storage_name: &str,
     storage_dir: impl AsRef<Path>,
 ) -> Result<(Vec<Keyspace>, [Option<KeyspaceId>; KEYSPACE_MAXIMUM_COUNT]), MVCCStorageError> {
@@ -184,36 +163,21 @@ fn open_keyspaces<KS: KeyspaceSet>(
 impl<D> MVCCStorage<D> {
     const STORAGE_DIR_NAME: &'static str = "storage";
 
-    pub fn new<KS: KeyspaceSet>(name: impl AsRef<str>, path: &Path) -> Result<Self, MVCCStorageError>
+    pub fn recover<KS: KeyspaceSet>(name: impl AsRef<str>, path: &Path) -> Result<Self, MVCCStorageError>
     where
         D: DurabilityService,
     {
         let storage_dir = path.join(Self::STORAGE_DIR_NAME);
 
-        let mut durability_service = D::open("/tmp/wal").expect("Could not create WAL directory");
+        if !storage_dir.exists() {
+            fs::create_dir_all(&storage_dir).map_err(|error| todo!())?;
+        }
+
+        let mut durability_service = D::open(path.join("wal")).expect("Could not create WAL directory"); // FIXME proper error
         durability_service.register_record_type::<CommitRecord>();
 
         let name = name.as_ref();
-        let (keyspaces, keyspaces_index) = create_keyspaces::<KS>(name, &storage_dir)?;
-
-        let isolation_manager = IsolationManager::new(durability_service.current());
-
-        let name = name.to_owned();
-
-        Ok(Self { name, storage_dir, keyspaces, keyspaces_index, isolation_manager, durability_service })
-    }
-
-    pub fn open<KS: KeyspaceSet>(name: impl AsRef<str>, path: &Path) -> Result<Self, MVCCStorageError>
-    where
-        D: DurabilityService,
-    {
-        let storage_dir = path.join(Self::STORAGE_DIR_NAME);
-
-        let mut durability_service = D::open("/tmp/wal").expect("Could not create WAL directory");
-        durability_service.register_record_type::<CommitRecord>();
-
-        let name = name.as_ref();
-        let (keyspaces, keyspaces_index) = open_keyspaces::<KS>(name, &storage_dir)?;
+        let (keyspaces, keyspaces_index) = recover_keyspaces::<KS>(name, &storage_dir)?;
 
         let isolation_manager = IsolationManager::new(durability_service.current());
 
