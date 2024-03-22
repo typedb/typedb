@@ -22,8 +22,7 @@ use std::process::Command;
 
 use tempdir::TempDir;
 
-#[test]
-fn crash() {
+fn main() {
     let message = "hello there";
 
     let streamer = std::env::var("TEST_WAL_STREAMER").unwrap();

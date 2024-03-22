@@ -47,6 +47,7 @@ rust_test(
         "//storage/durability/tests/common:durability_test_common",
         "@crates//:tempdir"
     ],
+    use_libtest_harness = False,
 )
 
 checkstyle_test(
