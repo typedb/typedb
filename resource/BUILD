@@ -25,8 +25,11 @@ rust_library(
     srcs = glob([
         "*.rs",
     ]),
+    compile_data = [
+        "typedb-ascii.txt",
+    ],
     deps = [
-    ]
+    ],
 )
 
 checkstyle_test(

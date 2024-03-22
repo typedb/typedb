@@ -30,12 +30,10 @@ rust_binary(
     srcs = [
         "main.rs",
     ],
-    compile_data = [
-        ":typedb-ascii.txt",
-    ],
     deps = [
         "//common/logger",
         "//database",
+        "//resource",
         "//server",
     ],
 )

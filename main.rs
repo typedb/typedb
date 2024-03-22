@@ -15,22 +15,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// use database::database::Database;
+#![deny(unused_must_use)]
+#![deny(elided_lifetimes_in_paths)]
+
+use logger::initialise_logging;
+use server::typedb;
+use resource::constants::server::ASCII_LOGO;
 
 fn main() {
-    // let guard = initialise_logging();
-    // let id = rand::random::<u64>();
-    // let fs_tmp_dir = std::env::temp_dir().with_extension(format!("test_storage_{}", id));
+    print_ascii_logo(); // very important
 
-    // Database::new();
-    //
-    // let (storage_path, _log_guard) = setup();
-    // let storage_result = Storage::new(Rc::from("storage"), &storage_path);
-    // assert!(storage_result.is_ok());
-    // let storage = storage_result.unwrap();
-    // let delete_result = storage.delete_storage();
-    // assert!(delete_result.is_ok());
-    // cleanup(storage_path)
+    let _guard = initialise_logging();
 
-    // std::fs::remove_dir_all(fs_tmp_dir).ok();
+    typedb::Server::recover("runtimedata/server/data").unwrap().serve();
 }
+
+fn print_ascii_logo() {
+    println!("{ASCII_LOGO}");
+}
+
