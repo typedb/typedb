@@ -31,6 +31,11 @@ pub mod value;
 pub enum EncodingKeyspace {
     Schema,
     Data, // TODO: partition into sub-keyspaces for write optimisation
+
+    // ThingVertex
+    // ThingEdgeShortPrefix
+    // ThingEdgeLongPrefix
+    // Metadata -- statistics
 }
 
 impl KeyspaceSet for EncodingKeyspace {

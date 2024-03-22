@@ -30,25 +30,140 @@ use crate::{
     AsBytes, EncodingKeyspace, Keyable,
 };
 
-struct HasForwardEdge<'a> {
+/*
+
+[keyspace]
+ThingEdgeHasAttribute8
+ThingEdgeHasReverseAttribute8
+
+[keyspace]
+ThingEdgeHasAttribute16
+ThingEdgeHasReverseAttribute16
+
+[keyspace]
+[object][role_type_id][relation] --> repetitions
++reverse
+
+
+
+Edge layouts:
+-- small attribute ownership, size = 11 + 1 + 11 = 23. Prefix = 11 + 1 = 12 and 11 + 1 + 3 = 15
+[Object][has][Attribute_8]
+[Object][has][Attribute_16]
+[Attribute_8][has_reverse][Object]
+
+-- large attribute ownership, size = 17 + 1 + 11 = 29. Prefix = 17 + 1 = 18 and 17 + 1 + 3 = 21
+[Attribute_16][has_reverse][Object]
+
+-- relation role player, size = 11 + 1 + 11 + 2 = 25. Prefix = 11 + 1 = 12 and 11 + 1 + 3 = 15
+[Object][roleplayer][Relation][RoleTypeID]
+[Relation][roleplayer_reverse][Object][RoleTypeID]
+
+-- role player indexed, size = 11 + 1 + 11 + 11 + 2 + 2 = 38. Prefix = 11 + 1 = 12 and 11 + 1 + 3 = 15
+[Object][roleplayer_index][Object][Relation][RoleType1][RoleType2] * note: no reverse type, undirected
+Note: we may reorder this to include relation type in the infix? If so, have to reorder.
+
+Technically could group by prefix extractors:
+1. ThingEdgeSmallPrefix (12, 15)
+2. ThingEdgeLargePrefix (18, 21)
+
+We still need to decide if we will group all HAS together (probably sensible?),
+and separately, all ROLEPLAYER together,
+and separately, all ROLEPLAYER_INDEX together.
+
+We could also group everything together.
+
+Note: if we use Infixes to designate edge type, then we lose the ability to quickly search/drop indexes or ranges.
+For example layout:
+[EdgeHas][Object][Attribute]
+[EdgeRP][Object][Relation]
+
+[RPIndex][Object][Object][Relation]
+
+With the RelIndex prefix, we only need to scan through [RelIndex][3 bytes indicating types included in the index] for each type that is affected.
+Without the RelIndex prefix, we have to scan through [3 bytes indicating types included in the index] for each
+
+*/
+
+
+/*
+[Object][roleplayer_index][Object][Relation][RoleID1][RoleID2]
+
+This allows
+1. optimal lookup from an object to all indexed neighbors (common case: small result set)
+2. optimal lookup from an object to all indexed neighbors of a specific type (common case: tiny result set)
+--> This is going to be very efficient in most cases, where we do not have supernodes.
+--> Most supernodes are probably going to be supernodes relation and role structure (schema << supernode size), so putting relation types first is not useful.
+--> Best solution for supernodes is to apply intersections to traverse away from them or into them.
+ */
+struct ThingEdgeRelationIndex<'a> {
+    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+}
+
+impl<'a> ThingEdgeRelationIndex<'a> {
+    const RANGE_FROM: Range<usize> = 0..ObjectVertex::LENGTH;
+    const RANGE_INFIX: Range<usize> = Self::RANGE_FROM.end..Self::RANGE_FROM.end + InfixID::LENGTH;
+    const RANGE_TO: Range<usize> = Self::RANGE_INFIX.end..Self::RANGE_INFIX.end + ObjectVertex::LENGTH;
+
+    fn from(&'a self) -> ObjectVertex<'a> {
+        // TODO: copy?
+        ObjectVertex::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_FROM])))
+    }
+
+    fn to(&'a self) -> ObjectVertex<'a> {
+        // TODO: copy?
+        ObjectVertex::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_TO])))
+    }
+}
+
+/*
+TODO: choose role player edge direction
+[Object][roleplayer_reverse][Relation][RoleTypeID]
+[Relation][roleplayer][Object][RoleTypeID]
+
+This allows
+1. optimal lookup from an object to all relations (common case: small result set)
+2. optimal lookup from an object to a specific relation type (common case: tiny result set)
+--> This is very efficient in most cases, unless we have supernode/huge relations. In this case, role players might help partition the space
+--> However, the best remedy is still intersections on the relations
+ */
+struct ThingEdgeRolePlayer<'a> {
+    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+}
+
+// TODO: implement separately from above so we can type the from/to correctly
+struct ThingEdgeRolePlayerReverse<'a> {
     bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
 }
 
 /*
-Extensions:
+[Attribute8][has_reverse][object]
+OR
+[Attribute16][has_reverse][object]
 
-We could save 1 storage byte per edge by removing the prefix for from/to with a static prefix. However:
-1) this adds significant complexity in the API (the from/to will not return a ref to a valid whole Vertex)
-2) Making the API return valid vertices from the from/to would require an extra memcopy to add the known prefix
-3) Alternatively, the API exposes incomplete vertices (just the Type+ID) and we deal with using them elsewhere
+Note that these are represented here together, but belong in different keyspaces due to different prefix lengths
+OR we can merge them and use multiple extractors?
  */
-impl<'a> HasForwardEdge<'a> {
+struct ThingEdgeHasReverse<'a> {
+    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+}
+
+/*
+[object][has][attribute8]
+or
+[object][has][attribute16]
+ */
+struct ThingEdgeHas<'a> {
+    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+}
+
+impl<'a> ThingEdgeHas<'a> {
     const LENGTH_PREFIX_FROM_OBJECT: usize = ObjectVertex::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize =
         ObjectVertex::LENGTH + InfixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
 
     fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
-        HasForwardEdge { bytes }
+        ThingEdgeHas { bytes }
     }
 
     fn build(from: &ObjectVertex<'_>, to: &AttributeVertex<'_>) -> Self {
@@ -56,12 +171,12 @@ impl<'a> HasForwardEdge<'a> {
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         bytes.bytes_mut()[Self::range_infix()].copy_from_slice(&InfixType::EdgeHas.infix_id().bytes());
         bytes.bytes_mut()[Self::range_to_for_vertex(to)].copy_from_slice(to.bytes().bytes());
-        HasForwardEdge { bytes: ByteArrayOrRef::Array(bytes) }
+        ThingEdgeHas { bytes: ByteArrayOrRef::Array(bytes) }
     }
 
     pub fn prefix_from_object(
         from: &ObjectVertex<'_>,
-    ) -> StorageKey<'static, { HasForwardEdge::LENGTH_PREFIX_FROM_OBJECT }> {
+    ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         bytes.bytes_mut()[Self::range_infix()].copy_from_slice(&InfixType::EdgeHas.infix_id().bytes());
@@ -71,7 +186,7 @@ impl<'a> HasForwardEdge<'a> {
     pub fn prefix_from_object_to_type(
         from: &ObjectVertex,
         to_type: &TypeVertex,
-    ) -> StorageKey<'static, { HasForwardEdge::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
+    ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT);
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         bytes.bytes_mut()[Self::range_infix()].copy_from_slice(&InfixType::EdgeHas.infix_id().bytes());
@@ -111,7 +226,7 @@ impl<'a> HasForwardEdge<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for HasForwardEdge<'a> {
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ThingEdgeHas<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
@@ -121,6 +236,6 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for HasForwardEdge<'a> {
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for HasForwardEdge<'a> {
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeHas<'a> {
     const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Data;
 }
