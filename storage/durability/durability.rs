@@ -29,6 +29,7 @@ use primitive::u80::U80;
 use serde::{Deserialize, Serialize};
 
 pub mod wal;
+pub mod sequence_number;
 
 pub type Result<T> = std::result::Result<T, DurabilityError>;
 
