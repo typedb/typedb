@@ -132,7 +132,7 @@ fn validate_new_keyspace(
     Ok(())
 }
 
-fn open_db_options() -> Options {
+fn db_options() -> Options {
     let mut options = Options::default();
     options.create_if_missing(true);
     options.create_missing_column_families(true);
@@ -148,7 +148,7 @@ fn recover_keyspaces<KS: KeyspaceSet>(
     let path = storage_dir.as_ref();
     let mut keyspaces = Vec::new();
     let mut keyspaces_index = core::array::from_fn(|_| None);
-    let options = open_db_options();
+    let options = db_options();
     for keyspace_id in KS::iter() {
         validate_new_keyspace(storage_name, keyspace_id, &keyspaces, &keyspaces_index)?;
         keyspaces.push(Keyspace::open(path, keyspace_id, &options).map_err(|err| MVCCStorageError {
@@ -170,10 +170,10 @@ impl<D> MVCCStorage<D> {
         let storage_dir = path.join(Self::STORAGE_DIR_NAME);
 
         if !storage_dir.exists() {
-            fs::create_dir_all(&storage_dir).map_err(|error| todo!())?;
+            fs::create_dir_all(&storage_dir).map_err(|_error| todo!())?;
         }
 
-        let mut durability_service = D::open(path.join("wal")).expect("Could not create WAL directory"); // FIXME proper error
+        let mut durability_service = D::recover(path.join("wal")).expect("Could not create WAL directory"); // FIXME proper error
         durability_service.register_record_type::<CommitRecord>();
 
         let name = name.as_ref();
@@ -183,47 +183,27 @@ impl<D> MVCCStorage<D> {
 
         let name = name.to_owned();
 
-        Ok(Self { name, storage_dir, keyspaces, keyspaces_index, isolation_manager, durability_service })
+        let storage = Self { name, storage_dir, keyspaces, keyspaces_index, isolation_manager, durability_service };
+
+        storage.reload()?;
+
+        Ok(storage)
     }
 
-    // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options
-    pub fn load_from_checkpoint(
-        name: impl AsRef<str>,
-        path: &Path,
-        mut durability_service: D,
-    ) -> Result<Self, MVCCStorageError>
+    fn reload(&self) -> Result<(), MVCCStorageError>
     where
         D: DurabilityService,
     {
-        // Steps:
-        //   Load each keyspace from their latest checkpoint
-
-        //   Get the last known committed sequence number from each keyspace (if we want to do this
-        //   at all... could probably just replay)
-
-        //   Iterate over records from Durability Service from the earliest sequence number
-
-        //   For each record, commit the records. Some keyspaces will write duplicates, but all
-        //   writes are idempotent so this is OK.
-
-        // TODO: we have to be careful when we resume from a checkpoint and reapply the
-        // Records.Write.InsertPreexisting, to re-check if previous commits have deleted these keys
-        let storage_dir = path.join(Self::STORAGE_DIR_NAME);
-
-        durability_service.register_record_type::<CommitRecord>();
-
-        let keyspaces = Vec::new();
-        let keyspaces_index = core::array::from_fn(|_| None);
-        let isolation_manager = IsolationManager::new(durability_service.current());
-
-        Ok(Self {
-            name: name.as_ref().to_owned(),
-            storage_dir,
-            keyspaces,
-            keyspaces_index,
-            isolation_manager,
-            durability_service,
-        })
+        for record in
+            self.durability_service.iter_type_from::<CommitRecord>(self.durability_service.watermark()).unwrap()
+        {
+            if let Ok((commit_sequence_number, commit_record)) = record {
+                self.write_commit_record(commit_sequence_number, commit_record)?;
+            } else {
+                panic!() // FIXME
+            }
+        }
+        Ok(())
     }
 
     fn owner_name(&self) -> &str {
@@ -259,7 +239,7 @@ impl<D> MVCCStorage<D> {
         ReadSnapshot::new(self, sequence_number)
     }
 
-    fn snapshot_commit<'storage>(&'storage self, snapshot: WriteSnapshot<'storage, D>) -> Result<(), MVCCStorageError>
+    fn snapshot_commit(&self, snapshot: WriteSnapshot<'_, D>) -> Result<(), MVCCStorageError>
     where
         D: DurabilityService,
     {
@@ -272,6 +252,14 @@ impl<D> MVCCStorage<D> {
                 kind: MVCCStorageErrorKind::DurabilityError { source: err },
             })?;
 
+        self.write_commit_record(commit_sequence_number, commit_record)
+    }
+
+    fn write_commit_record(
+        &self,
+        commit_sequence_number: SequenceNumber,
+        commit_record: CommitRecord,
+    ) -> Result<(), MVCCStorageError> {
         // 2. validate commit isolation
         self.isolation_manager.try_commit(commit_sequence_number, commit_record).map_err(|err| MVCCStorageError {
             storage_name: self.name.clone(),

@@ -44,12 +44,12 @@ const CHECKPOINTED_SUFFIX: &str = "-checkpoint";
 pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, &'static str>,
     next_sequence_number: AtomicU64,
-    checkpoint: AtomicU64,
+    watermark: AtomicU64,
     files: RwLock<Files>,
 }
 
 impl WAL {
-    fn open_impl(directory: PathBuf) -> io::Result<Self> {
+    fn recover_impl(directory: PathBuf) -> io::Result<Self> {
         if !directory.exists() {
             fs::create_dir_all(&directory)?;
         }
@@ -70,7 +70,7 @@ impl WAL {
         Ok(Self {
             registered_types: HashMap::new(),
             next_sequence_number: AtomicU64::new(next),
-            checkpoint: AtomicU64::new(checkpoint),
+            watermark: AtomicU64::new(checkpoint),
             files,
         })
     }
@@ -91,8 +91,8 @@ impl Sequencer for WAL {
 }
 
 impl DurabilityService for WAL {
-    fn open(directory: impl AsRef<Path>) -> io::Result<Self> {
-        Self::open_impl(directory.as_ref().to_owned())
+    fn recover(directory: impl AsRef<Path>) -> io::Result<Self> {
+        Self::recover_impl(directory.as_ref().to_owned())
     }
 
     fn register_record_type<Record: DurabilityRecord>(&mut self) {
@@ -122,12 +122,12 @@ impl DurabilityService for WAL {
         let mut files = self.files.write().unwrap();
         files.checkpoint(self.current())?;
 
-        self.checkpoint.store(self.next_sequence_number.load(Ordering::Relaxed), Ordering::Relaxed);
+        self.watermark.store(self.next_sequence_number.load(Ordering::Relaxed), Ordering::Relaxed);
         Ok(())
     }
 
-    fn recover(&self) -> io::Result<impl Iterator<Item = io::Result<RawRecord>>> {
-        self.iter_from(SequenceNumber::from(self.checkpoint.load(Ordering::Relaxed) as u128))
+    fn watermark(&self) -> SequenceNumber {
+        SequenceNumber::new(U80::new(self.watermark.load(Ordering::Acquire) as u128))
     }
 }
 
@@ -365,7 +365,7 @@ mod test {
     }
 
     fn open_wal(directory: &TempDir) -> WAL {
-        let mut wal = WAL::open(directory).unwrap();
+        let mut wal = WAL::recover(directory).unwrap();
         wal.register_record_type::<TestRecord>();
         wal
     }
@@ -379,7 +379,7 @@ mod test {
         let wal = open_wal(&directory);
         wal.sequenced_write(&record).unwrap();
 
-        let RawRecord { record_type, bytes, .. } = wal.recover().unwrap().next().unwrap().unwrap();
+        let RawRecord { record_type, bytes, .. } = wal.iter_from(wal.watermark()).unwrap().next().unwrap().unwrap();
         assert_eq!(record_type, TestRecord::RECORD_TYPE);
 
         let read_record = TestRecord::deserialize_from(&mut &*bytes).unwrap();
@@ -396,7 +396,7 @@ mod test {
         records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ())).unwrap();
 
         let read_records = wal
-            .recover()
+            .iter_from(wal.watermark())
             .unwrap()
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();
@@ -420,7 +420,7 @@ mod test {
         drop(wal);
 
         let wal = open_wal(&directory);
-        let RawRecord { record_type, bytes, .. } = wal.recover().unwrap().next().unwrap().unwrap();
+        let RawRecord { record_type, bytes, .. } = wal.iter_from(wal.watermark()).unwrap().next().unwrap().unwrap();
         assert_eq!(record_type, TestRecord::RECORD_TYPE);
 
         let read_record = TestRecord::deserialize_from(&mut &*bytes).unwrap();
@@ -439,7 +439,7 @@ mod test {
 
         let wal = open_wal(&directory);
         let read_records = wal
-            .recover()
+            .iter_from(wal.watermark())
             .unwrap()
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();
@@ -464,7 +464,7 @@ mod test {
         records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ())).unwrap();
 
         let read_records = wal
-            .recover()
+            .iter_from(wal.watermark())
             .unwrap()
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();
@@ -478,7 +478,7 @@ mod test {
 
         let wal = open_wal(&directory);
         let read_records = wal
-            .recover()
+            .iter_from(wal.watermark())
             .unwrap()
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();

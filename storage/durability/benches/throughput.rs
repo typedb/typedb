@@ -44,7 +44,7 @@ impl DurabilityRecord for TestRecord {
 }
 
 pub fn open_wal(directory: impl AsRef<Path>) -> WAL {
-    let mut wal = WAL::open(directory).unwrap();
+    let mut wal = WAL::recover(directory).unwrap();
     wal.register_record_type::<TestRecord>();
     wal
 }

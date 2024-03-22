@@ -47,7 +47,7 @@ pub struct RawRecord {
 }
 
 pub trait DurabilityService: Sequencer {
-    fn open(directory: impl AsRef<Path>) -> io::Result<Self>
+    fn recover(directory: impl AsRef<Path>) -> io::Result<Self>
     where
         Self: Sized;
 
@@ -70,7 +70,8 @@ pub trait DurabilityService: Sequencer {
     }
 
     fn checkpoint(&self) -> Result<()>;
-    fn recover(&self) -> io::Result<impl Iterator<Item = io::Result<RawRecord>>>;
+
+    fn watermark(&self) -> SequenceNumber;
 }
 
 pub type DurabilityRecordType = u8;
