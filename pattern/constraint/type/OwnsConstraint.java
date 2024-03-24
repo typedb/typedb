@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.OVERRIDDEN_TYPES_IN_TRAVERSAL;
@@ -118,7 +119,7 @@ public class OwnsConstraint extends TypeConstraint {
     public String toString() {
         return owner.toString() + SPACE + OWNS + SPACE + attributeType.toString()
                 + (overriddenAttributeType != null ? "" + SPACE + AS + SPACE + overriddenAttributeType : "")
-                + (annotations.stream().map(annotation -> AT + annotation.toString()).collect(SPACE.joiner()));
+                + (annotations.stream().map(Annotation::toString).collect(Collectors.joining(SPACE.toString(), SPACE.toString(), "")));
     }
 
     @Override

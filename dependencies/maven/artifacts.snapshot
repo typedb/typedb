@@ -31,7 +31,7 @@
 @maven//:com_googlecode_java_diff_utils_diffutils_1_3_0
 @maven//:com_squareup_okhttp_okhttp_2_7_5
 @maven//:com_squareup_okio_okio_1_17_5
-@maven//:com_vaticle_typedb_typedb_console_runner_0_0_0_232d20d581e9d5be814cb3a1a922a9098ac75b0a
+@maven//:com_vaticle_typedb_typedb_console_runner_2_27_0
 @maven//:commons_codec_commons_codec_1_11
 @maven//:commons_io_commons_io_2_3
 @maven//:commons_logging_commons_logging_1_2
@@ -114,7 +114,7 @@
 @maven//:org_codehaus_mojo_animal_sniffer_annotations_1_21
 @maven//:org_hamcrest_hamcrest_core_1_3
 @maven//:org_hamcrest_hamcrest_library_1_3
-@maven//:org_jetbrains_compose_compiler_compiler_1_3_2
+@maven//:org_jetbrains_compose_compiler_compiler_1_5_7
 @maven//:org_jsoup_jsoup_1_16_1
 @maven//:org_slf4j_slf4j_api_2_0_0
 @maven//:org_yaml_snakeyaml_1_25

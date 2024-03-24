@@ -449,7 +449,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final ThingWrite ILLEGAL_VALUE_VARIABLE_IN_DELETE =
                 new ThingWrite(16, "Illegal value variable '%s' in delete query. You can only delete named variables that were matched.");
         public static final ThingWrite ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE =
-                new ThingWrite(17, "Illegal anonymous delete variable in constraint '%s'.  You can only delete named variables that were matched.");
+                new ThingWrite(17, "Illegal anonymous delete variable in pattern '%s'.  You can only delete named variables that were matched.");
         public static final ThingWrite INVALID_DELETE_THING =
                 new ThingWrite(18, "The thing '%s' cannot be deleted, as the provided type '%s' is not its direct type nor supertype.");
         public static final ThingWrite INVALID_DELETE_THING_DIRECT =

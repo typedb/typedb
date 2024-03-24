@@ -25,9 +25,9 @@ def vaticle_typedb_console_artifact():
         artifact_name = "typedb-console-{platform}-{version}.{ext}",
         tag_source = deployment["artifact"]["release"]["download"],
         commit_source = deployment["artifact"]["snapshot"]["download"],
-        tag = "2.27.0-rc0",
+        tag = "2.27.0",
     )
 
 maven_artifacts = {
-    "com.vaticle.typedb:typedb-console-runner": "0.0.0-232d20d581e9d5be814cb3a1a922a9098ac75b0a",
+    "com.vaticle.typedb:typedb-console-runner": "2.27.0",
 }

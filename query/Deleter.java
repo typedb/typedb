@@ -94,6 +94,9 @@ public class Deleter {
 
     private static void validateTypeQLVariables(TypeQLDelete query) {
         for (Statement statement : query.statements()) {
+            if (statement.headVariable().isAnonymised()) {
+                throw TypeDBException.of(ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE, statement);
+            }
             for (Constraint constraint : statement.constraints()) {
                 Optional<? extends TypeQLVariable> var = constraint.variables().stream().filter(v ->  v.isValueVar() || v.isAnonymised()).findFirst();
                 if (var.isPresent()) {

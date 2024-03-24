@@ -353,7 +353,8 @@ release_validate_deps(
         "@vaticle_typeql",
         "@vaticle_typedb_protocol",
     ],
-    tags = ["manual"]  # in order for bazel test //... to not fail
+    tags = ["manual"],  # in order for bazel test //... to not fail
+    version_file = "VERSION",
 )
 
 docker_container_image(
