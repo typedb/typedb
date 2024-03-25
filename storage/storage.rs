@@ -206,7 +206,7 @@ impl<D> MVCCStorage<D> {
         Ok(())
     }
 
-    fn owner_name(&self) -> &str {
+    fn name(&self) -> &str {
         &self.name
     }
 
@@ -406,7 +406,7 @@ impl<D> MVCCStorage<D> {
         self.get_keyspace(key.keyspace_id())
             .put(key.bytes(), value.bytes())
             .map_err(|e| MVCCStorageError {
-                storage_name: self.owner_name().to_owned(),
+                storage_name: self.name().to_owned(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
                     source: Arc::new(e),
                     keyspace_name: self.get_keyspace(key.keyspace_id()).name(),
@@ -422,7 +422,7 @@ impl<D> MVCCStorage<D> {
         self.get_keyspace(key.keyspace_id())
             .get(key.bytes(), |value| mapper(value))
             .map_err(|e| MVCCStorageError {
-                storage_name: self.owner_name().to_owned(),
+                storage_name: self.name().to_owned(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
                     source: Arc::new(e),
                     keyspace_name: self.get_keyspace(key.keyspace_id()).name(),
@@ -498,7 +498,7 @@ impl<'s, const P: usize, D> MVCCRangeIterator<'s, P, D> {
                 self.peek()
             }
             State::Error(error) => Some(Err(MVCCStorageError {
-                storage_name: self.storage.owner_name().to_string(),
+                storage_name: self.storage.name().to_string(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
                     source: error.clone(),
                     keyspace_name: self.keyspace.name(),
@@ -529,7 +529,7 @@ impl<'s, const P: usize, D> MVCCRangeIterator<'s, P, D> {
                 self.next()
             }
             State::Error(error) => Some(Err(MVCCStorageError {
-                storage_name: self.storage.owner_name().to_owned(),
+                storage_name: self.storage.name().to_owned(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
                     source: error.clone(),
                     keyspace_name: self.keyspace.name(),
