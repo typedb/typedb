@@ -17,7 +17,7 @@
 
 use std::{collections::HashSet, ops::Deref, rc::Rc, sync::Arc};
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
+use bytes::{byte_array::ByteArray, Bytes};
 use durability::DurabilityService;
 use encoding::{
     graph::type_::{
@@ -81,10 +81,10 @@ macro_rules! get_type_methods {
 
         fn get_labelled_type<M, U>(&self, label: &Label<'_>, mapper: M) -> Option<U>
             where
-                M: FnOnce(ByteArrayOrRef<'static, BUFFER_KEY_INLINE>) -> U,
+                M: FnOnce(Bytes<'static, BUFFER_KEY_INLINE>) -> U,
         {
             let key = LabelToTypeVertexIndex::build(label).into_storage_key();
-            self.snapshot.get::<{ BUFFER_KEY_INLINE }>(key.as_reference()).map(|value| mapper(ByteArrayOrRef::Array(value)))
+            self.snapshot.get::<{ BUFFER_KEY_INLINE }>(key.as_reference()).map(|value| mapper(Bytes::Array(value)))
         }
     }
 }
@@ -409,7 +409,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     fn get_storage_label(&self, owner: TypeVertex<'_>) -> Option<Label<'static>> {
         let key = build_property_type_label(owner.clone().into_owned());
         self.snapshot.get_mapped(key.into_storage_key().as_reference(), |reference| {
-            let value = StringBytes::new(ByteArrayOrRef::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(reference));
+            let value = StringBytes::new(Bytes::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(reference));
             Label::parse_from(value)
         })
     }
@@ -487,7 +487,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         self.snapshot
             .iterate_range(PrefixRange::new_within(owns_prefix))
             .collect_cloned_key_hashset(|key| {
-                let owns_edge = new_edge_owns(ByteArrayOrRef::Reference(key.byte_ref()));
+                let owns_edge = new_edge_owns(Bytes::Reference(key.byte_ref()));
                 mapper(owns_edge.to())
             })
             .unwrap()
@@ -524,7 +524,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         self.snapshot
             .iterate_range(PrefixRange::new_within(plays_prefix))
             .collect_cloned_key_hashset(|key| {
-                let plays_edge = new_edge_plays(ByteArrayOrRef::Reference(key.byte_ref()));
+                let plays_edge = new_edge_plays(Bytes::Reference(key.byte_ref()));
                 mapper(plays_edge.to())
             })
             .unwrap()
@@ -561,7 +561,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         self.snapshot
             .iterate_range(PrefixRange::new_within(relates_prefix))
             .collect_cloned_key_hashset(|key| {
-                let relates_edge = new_edge_relates(ByteArrayOrRef::Reference(key.byte_ref()));
+                let relates_edge = new_edge_relates(Bytes::Reference(key.byte_ref()));
                 mapper(relates_edge.to())
             })
             .unwrap()

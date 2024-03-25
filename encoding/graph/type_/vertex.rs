@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
@@ -30,12 +30,12 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TypeVertex<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 macro_rules! type_vertex_constructors {
     ($new_name:ident, $build_name:ident, $build_name_prefix:ident, $is_name:ident, PrefixType::$prefix:ident) => {
-        pub fn $new_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> TypeVertex<'_> {
+        pub fn $new_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> TypeVertex<'_> {
             let vertex = TypeVertex::new(bytes);
             debug_assert_eq!(vertex.prefix(), PrefixType::$prefix);
             vertex
@@ -52,7 +52,7 @@ macro_rules! type_vertex_constructors {
             StorageKey::new_ref(TypeVertex::KEYSPACE_ID, ByteReference::new(&BYTES))
         }
 
-        pub fn $is_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> bool {
+        pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
             bytes.length() == TypeVertex::LENGTH && TypeVertex::new(bytes).prefix() == PrefixType::$prefix
         }
     };
@@ -91,7 +91,7 @@ impl<'a> TypeVertex<'a> {
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;
     pub(crate) const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
-    pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> TypeVertex<'a> {
+    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> TypeVertex<'a> {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         TypeVertex { bytes }
     }
@@ -100,7 +100,7 @@ impl<'a> TypeVertex<'a> {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
-        TypeVertex { bytes: ByteArrayOrRef::Array(array) }
+        TypeVertex { bytes: Bytes::Array(array) }
     }
 
     pub fn into_owned(self) -> TypeVertex<'static> {
@@ -113,7 +113,7 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
+    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }

@@ -24,7 +24,7 @@ use std::{
     sync::{atomic::AtomicBool, Arc, RwLock},
 };
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, increment};
+use bytes::{byte_array::ByteArray, Bytes, util::{increment}};
 use iterator::State;
 use primitive::prefix_range::{PrefixRange, RangeEnd};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -128,7 +128,7 @@ impl KeyspaceBuffer {
 
     pub(crate) fn iterate_range<const INLINE: usize>(
         &self,
-        range: PrefixRange<ByteArrayOrRef<'_, INLINE>>,
+        range: PrefixRange<Bytes<'_, INLINE>>,
     ) -> BufferedPrefixIterator {
         let map = self.buffer.read().unwrap();
         let (start, end) = range.into_raw();

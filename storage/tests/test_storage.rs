@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
+use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;
 use itertools::Itertools;
 use primitive::prefix_range::PrefixRange;
@@ -108,8 +108,8 @@ fn create_keyspaces_duplicate_id_error() {
     );
 }
 
-fn empty_value<const SZ: usize>() -> ByteArrayOrRef<'static, SZ> {
-    ByteArrayOrRef::Array(ByteArray::empty())
+fn empty_value<const SZ: usize>() -> Bytes<'static, SZ> {
+    Bytes::Array(ByteArray::empty())
 }
 
 #[test]

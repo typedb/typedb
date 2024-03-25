@@ -17,7 +17,7 @@
 
 use std::{mem, ops::Range};
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
@@ -29,7 +29,7 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObjectVertex<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 impl<'a> ObjectVertex<'a> {
@@ -37,7 +37,7 @@ impl<'a> ObjectVertex<'a> {
     const LENGTH_PREFIX_PREFIX: usize = PrefixID::LENGTH;
     const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
 
-    pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> ObjectVertex<'a> {
+    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ObjectVertex<'a> {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         ObjectVertex { bytes }
     }
@@ -47,7 +47,7 @@ impl<'a> ObjectVertex<'a> {
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&PrefixType::VertexEntity.prefix_id().bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         array.bytes_mut()[Self::range_object_id()].copy_from_slice(&object_id.bytes());
-        ObjectVertex { bytes: ByteArrayOrRef::Array(array) }
+        ObjectVertex { bytes: Bytes::Array(array) }
     }
 
     // pub fn build_relation(type_id: &TypeID<'_>, object_id: ObjectID<'_>) -> Self {
@@ -55,13 +55,13 @@ impl<'a> ObjectVertex<'a> {
     //     array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::VertexEntity.prefix_id().bytes().bytes());
     //     array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_id.bytes().bytes());
     //     array.bytes_mut()[Self::range_object_id()].copy_from_slice(object_id.bytes().bytes());
-    //     ObjectVertex { bytes: ByteArrayOrRef::Array(array) }
+    //     ObjectVertex { bytes: Bytes::Array(array) }
     // }
 
     pub fn build_prefix_prefix(prefix: PrefixID) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_PREFIX }> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_PREFIX);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
-        StorageKey::new(Self::KEYSPACE_ID, ByteArrayOrRef::Array(array))
+        StorageKey::new(Self::KEYSPACE_ID, Bytes::Array(array))
     }
 
     fn build_prefix_type(
@@ -71,7 +71,7 @@ impl<'a> ObjectVertex<'a> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
-        StorageKey::new(Self::KEYSPACE_ID, ByteArrayOrRef::Array(array))
+        StorageKey::new(Self::KEYSPACE_ID, Bytes::Array(array))
     }
 
     pub fn object_id(&self) -> ObjectID {
@@ -91,7 +91,7 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
+    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }

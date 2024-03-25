@@ -17,7 +17,7 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
@@ -32,12 +32,12 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct TypeVertexProperty<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 macro_rules! type_vertex_property_constructors {
     ($new_name:ident, $build_name:ident, $is_name:ident, InfixType::$infix:ident) => {
-        pub fn $new_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> TypeVertexProperty<'_> {
+        pub fn $new_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> TypeVertexProperty<'_> {
             let vertex = TypeVertexProperty::new(bytes);
             debug_assert_eq!(vertex.infix(), InfixType::$infix);
             vertex
@@ -47,7 +47,7 @@ macro_rules! type_vertex_property_constructors {
             TypeVertexProperty::build(type_vertex, InfixType::$infix)
         }
 
-        pub fn $is_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> bool {
+        pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
             bytes.length() == TypeVertexProperty::LENGTH_NO_SUFFIX
                 && TypeVertexProperty::new(bytes).infix() == InfixType::$infix
         }
@@ -80,7 +80,7 @@ impl<'a> TypeVertexProperty<'a> {
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
     const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeVertex::LENGTH;
 
-    pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
         let property = TypeVertexProperty { bytes };
         debug_assert_eq!(property.prefix(), PrefixType::PropertyType);
@@ -93,13 +93,13 @@ impl<'a> TypeVertexProperty<'a> {
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&PrefixType::PropertyType.prefix_id().bytes());
         array.bytes_mut()[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
         array.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
-        TypeVertexProperty { bytes: ByteArrayOrRef::Array(array) }
+        TypeVertexProperty { bytes: Bytes::Array(array) }
     }
 
     fn build_suffixed<const INLINE_BYTES: usize>(
         vertex: TypeVertex<'_>,
         infix: InfixType,
-        suffix: ByteArrayOrRef<'_, INLINE_BYTES>,
+        suffix: Bytes<'_, INLINE_BYTES>,
     ) -> Self {
         debug_assert!(infix.group() == InfixGroup::Property);
         let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX + suffix.length());
@@ -107,7 +107,7 @@ impl<'a> TypeVertexProperty<'a> {
         array.bytes_mut()[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
         array.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
         array.bytes_mut()[Self::range_suffix(suffix.length())].copy_from_slice(suffix.bytes());
-        TypeVertexProperty { bytes: ByteArrayOrRef::Array(array) }
+        TypeVertexProperty { bytes: Bytes::Array(array) }
     }
 
     pub fn build_prefix() -> StorageKey<'static, { TypeVertexProperty::LENGTH_PREFIX }> {
@@ -118,7 +118,7 @@ impl<'a> TypeVertexProperty<'a> {
     }
 
     pub fn type_vertex(&'a self) -> TypeVertex<'a> {
-        TypeVertex::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes().bytes()[Self::range_type_vertex()])))
+        TypeVertex::new(Bytes::Reference(ByteReference::new(&self.bytes().bytes()[Self::range_type_vertex()])))
     }
 
     pub fn infix(&self) -> InfixType {
@@ -157,7 +157,7 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
+    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }

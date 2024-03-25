@@ -26,7 +26,7 @@ use std::{
     sync::{atomic::Ordering, Arc},
 };
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use durability::{DurabilityService, SequenceNumber};
 use iterator::State;
 use logger::{error, result::ResultExt};
@@ -401,7 +401,7 @@ impl<D> MVCCStorage<D> {
 
     // --- direct access to storage, bypassing MVCC and returning raw key/value pairs ---
 
-    pub fn put_raw(&self, key: StorageKeyReference<'_>, value: &ByteArrayOrRef<'_, BUFFER_VALUE_INLINE>) {
+    pub fn put_raw(&self, key: StorageKeyReference<'_>, value: &Bytes<'_, BUFFER_VALUE_INLINE>) {
         // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
         self.get_keyspace(key.keyspace_id())
             .put(key.bytes(), value.bytes())
@@ -613,7 +613,7 @@ impl<'s, const P: usize, D> MVCCRangeIterator<'s, P, D> {
 /// MVCC keys are made of three parts: the [KEY][SEQ][OP]
 ///
 struct MVCCKey<'bytes> {
-    bytes: ByteArrayOrRef<'bytes, MVCC_KEY_INLINE_SIZE>,
+    bytes: Bytes<'bytes, MVCC_KEY_INLINE_SIZE>,
 }
 
 // byte array inline size can be adjusted to avoid allocation since these key are often short-lived
@@ -637,11 +637,11 @@ impl<'bytes> MVCCKey<'bytes> {
         sequence_number.invert().serialise_be_into(&mut bytes[key_end..sequence_number_end]);
         bytes[sequence_number_end..operation_end].copy_from_slice(storage_operation.bytes());
 
-        MVCCKey { bytes: ByteArrayOrRef::Array(byte_array) }
+        MVCCKey { bytes: Bytes::Array(byte_array) }
     }
 
     fn wrap_slice(bytes: &'bytes [u8]) -> MVCCKey<'bytes> {
-        MVCCKey { bytes: ByteArrayOrRef::Reference(ByteReference::new(bytes)) }
+        MVCCKey { bytes: Bytes::Reference(ByteReference::new(bytes)) }
     }
 
     pub(crate) fn is_visible_to(&self, sequence_number: &SequenceNumber) -> bool {
@@ -660,7 +660,7 @@ impl<'bytes> MVCCKey<'bytes> {
         &self.bytes()[0..(self.length() - MVCCKey::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET)]
     }
 
-    fn into_key(self) -> ByteArrayOrRef<'bytes, MVCC_KEY_INLINE_SIZE> {
+    fn into_key(self) -> Bytes<'bytes, MVCC_KEY_INLINE_SIZE> {
         let end = self.length() - MVCCKey::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
         let bytes = self.bytes;
         bytes.truncate(end)

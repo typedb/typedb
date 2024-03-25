@@ -17,7 +17,7 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
@@ -28,12 +28,12 @@ use crate::{
 };
 
 pub struct TypeEdge<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 macro_rules! type_edge_constructors {
     ($new_name:ident, $build_name:ident, $build_prefix:ident, $is_name:ident, InfixType::$infix:ident) => {
-        pub fn $new_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> TypeEdge<'_> {
+        pub fn $new_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> TypeEdge<'_> {
             let edge = TypeEdge::new(bytes);
             debug_assert_eq!(edge.infix(), InfixType::$infix);
             edge
@@ -47,7 +47,7 @@ macro_rules! type_edge_constructors {
             TypeEdge::build_prefix(from, InfixType::$infix)
         }
 
-        pub fn $is_name(bytes: ByteArrayOrRef<'_, BUFFER_KEY_INLINE>) -> bool {
+        pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
             return bytes.length() == TypeEdge::LENGTH && TypeEdge::new(bytes).infix() == InfixType::$infix
         }
     };
@@ -96,7 +96,7 @@ impl<'a> TypeEdge<'a> {
     const LENGTH: usize = 2 * TypeVertex::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX: usize = TypeVertex::LENGTH + InfixID::LENGTH;
 
-    fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
+    fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
 
         TypeEdge { bytes }
@@ -107,7 +107,7 @@ impl<'a> TypeEdge<'a> {
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         bytes.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
         bytes.bytes_mut()[Self::range_to()].copy_from_slice(to.bytes().bytes());
-        Self { bytes: ByteArrayOrRef::Array(bytes) }
+        Self { bytes: Bytes::Array(bytes) }
     }
 
     fn build_prefix(from: TypeVertex<'_>, infix: InfixType) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX }> {
@@ -119,12 +119,12 @@ impl<'a> TypeEdge<'a> {
 
     pub fn from(&'a self) -> TypeVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[Self::range_from()]);
-        TypeVertex::new(ByteArrayOrRef::Reference(reference))
+        TypeVertex::new(Bytes::Reference(reference))
     }
 
     pub fn to(&'a self) -> TypeVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[Self::range_to()]);
-        TypeVertex::new(ByteArrayOrRef::Reference(reference))
+        TypeVertex::new(Bytes::Reference(reference))
     }
 
     fn infix(&self) -> InfixType {
@@ -149,7 +149,7 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
+    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }

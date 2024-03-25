@@ -17,7 +17,7 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use bytes::{Bytes, byte_reference::ByteReference};
 use storage::{key_value::StorageKey, KeyspaceSet};
 
 use crate::layout::prefix::{PrefixID, PrefixType};
@@ -61,7 +61,7 @@ impl KeyspaceSet for EncodingKeyspace {
 pub trait AsBytes<'a, const INLINE_SIZE: usize> {
     fn bytes(&'a self) -> ByteReference<'a>;
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, INLINE_SIZE>;
+    fn into_bytes(self) -> Bytes<'a, INLINE_SIZE>;
 }
 
 pub trait Keyable<'a, const INLINE_SIZE: usize>: AsBytes<'a, INLINE_SIZE> + Sized {

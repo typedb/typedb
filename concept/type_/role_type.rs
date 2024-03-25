@@ -16,7 +16,7 @@
  */
 
 
-use bytes::byte_array_or_ref::ByteArrayOrRef;
+use bytes::Bytes;
 use encoding::graph::type_::vertex::{new_vertex_role_type, TypeVertex};
 use encoding::layout::prefix::PrefixType;
 use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotRangeIterator};
@@ -96,7 +96,7 @@ impl From<Annotation> for RoleTypeAnnotation {
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_to_role_type(storage_key_ref: StorageKeyReference<'_>) -> RoleType<'_> {
-    RoleType::new(new_vertex_role_type(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
+    RoleType::new(new_vertex_role_type(Bytes::Reference(storage_key_ref.byte_ref())))
 }
 
 concept_iterator!(RoleTypeIterator, RoleType, storage_key_to_role_type);

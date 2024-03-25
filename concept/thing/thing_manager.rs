@@ -17,7 +17,7 @@
 
 use std::rc::Rc;
 
-use bytes::byte_array_or_ref::ByteArrayOrRef;
+use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{
@@ -161,7 +161,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
                     self.snapshot
                         .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
                             Value::String(
-                                String::from(StringBytes::new(ByteArrayOrRef::<1>::Reference(bytes)).decode())
+                                String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).decode())
                                     .into_boxed_str(),
                             )
                         })

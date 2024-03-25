@@ -20,7 +20,7 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef};
+use bytes::{byte_array::ByteArray, Bytes};
 use primitive::prefix_range::PrefixRange;
 use storage::snapshot::snapshot::WriteSnapshot;
 
@@ -227,9 +227,9 @@ impl StringAttributeID {
         let mut next = iter.next().transpose().unwrap(); // TODO: handle error
         let mut tail: u8 = 0;
         while let Some((key, value)) = next {
-            let mapped_string = StringBytes::new(ByteArrayOrRef::Reference(value));
+            let mapped_string = StringBytes::new(Bytes::Reference(value));
             let existing_attribute_id =
-                AttributeVertex::new(ByteArrayOrRef::Reference(key.byte_ref())).attribute_id().unwrap_bytes_16();
+                AttributeVertex::new(Bytes::Reference(key.byte_ref())).attribute_id().unwrap_bytes_16();
             if mapped_string == string {
                 return Self::new(existing_attribute_id);
             } else if tail != StringAttributeID::new(existing_attribute_id).get_hash_disambiguator() {
@@ -268,7 +268,7 @@ impl StringAttributeID {
         bytes.bytes_mut()[0..inline_string_length as usize]
             .copy_from_slice(&self.attribute_id.bytes()[0..inline_string_length as usize]);
         bytes.truncate(inline_string_length as usize);
-        StringBytes::new(ByteArrayOrRef::Array(bytes))
+        StringBytes::new(Bytes::Array(bytes))
     }
 
     pub fn get_inline_length(&self) -> u8 {

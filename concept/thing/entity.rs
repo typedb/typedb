@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use bytes::byte_array_or_ref::ByteArrayOrRef;
+use bytes::Bytes;
 use encoding::graph::thing::vertex_object::ObjectVertex;
 use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotRangeIterator};
 use storage::snapshot::error::SnapshotError;
@@ -56,6 +56,6 @@ impl<'a> EntityAPI<'a> for Entity<'a> {
 }
 
 fn storage_key_to_entity(storage_key_ref: StorageKeyReference<'_>) -> Entity<'_> {
-    Entity::new(ObjectVertex::new(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
+    Entity::new(ObjectVertex::new(Bytes::Reference(storage_key_ref.byte_ref())))
 }
 concept_iterator!(EntityIterator, Entity, storage_key_to_entity);

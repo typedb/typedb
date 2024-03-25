@@ -17,7 +17,7 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
@@ -30,14 +30,14 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AttributeVertex<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 impl<'a> AttributeVertex<'a> {
     pub(crate) const LENGTH_PREFIX_PREFIX: usize = PrefixID::LENGTH;
     pub(crate) const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
 
-    pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() > Self::LENGTH_PREFIX_TYPE);
         AttributeVertex { bytes }
     }
@@ -57,7 +57,7 @@ impl<'a> AttributeVertex<'a> {
             .copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id.length())].copy_from_slice(attribute_id.bytes());
-        Self { bytes: ByteArrayOrRef::Array(bytes) }
+        Self { bytes: Bytes::Array(bytes) }
     }
 
     pub(crate) fn build_prefix_type_attribute_id(
@@ -87,7 +87,7 @@ impl<'a> AttributeVertex<'a> {
     pub fn build_prefix_prefix(prefix: PrefixID) -> StorageKey<'static, { AttributeVertex::LENGTH_PREFIX_PREFIX }> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_PREFIX);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
-        StorageKey::new(Self::KEYSPACE_ID, ByteArrayOrRef::Array(array))
+        StorageKey::new(Self::KEYSPACE_ID, Bytes::Array(array))
     }
 
     pub fn value_type(&self) -> ValueType {
@@ -124,7 +124,7 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
+    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }

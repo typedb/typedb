@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use bytes::byte_array_or_ref::ByteArrayOrRef;
+use bytes::Bytes;
 use encoding::graph::thing::vertex_object::ObjectVertex;
 use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotRangeIterator};
 use storage::snapshot::error::SnapshotError;
@@ -57,6 +57,6 @@ impl<'a> RelationAPI<'a> for Relation<'a> {
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_ref_to_entity(storage_key_ref: StorageKeyReference<'_>) -> Relation<'_> {
-    Relation::new(ObjectVertex::new(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
+    Relation::new(ObjectVertex::new(Bytes::Reference(storage_key_ref.byte_ref())))
 }
 concept_iterator!(RelationIterator, Relation, storage_key_ref_to_entity);

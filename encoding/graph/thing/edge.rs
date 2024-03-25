@@ -17,7 +17,7 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
@@ -97,7 +97,7 @@ This allows
 --> Best solution for supernodes is to apply intersections to traverse away from them or into them.
  */
 struct ThingEdgeRelationIndex<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 impl<'a> ThingEdgeRelationIndex<'a> {
@@ -107,12 +107,12 @@ impl<'a> ThingEdgeRelationIndex<'a> {
 
     fn from(&'a self) -> ObjectVertex<'a> {
         // TODO: copy?
-        ObjectVertex::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_FROM])))
+        ObjectVertex::new(Bytes::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_FROM])))
     }
 
     fn to(&'a self) -> ObjectVertex<'a> {
         // TODO: copy?
-        ObjectVertex::new(ByteArrayOrRef::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_TO])))
+        ObjectVertex::new(Bytes::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_TO])))
     }
 }
 
@@ -128,12 +128,12 @@ This allows
 --> However, the best remedy is still intersections on the relations
  */
 struct ThingEdgeRolePlayer<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 // TODO: implement separately from above so we can type the from/to correctly
 struct ThingEdgeRolePlayerReverse<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 /*
@@ -145,7 +145,7 @@ Note that these are represented here together, but belong in different keyspaces
 OR we can merge them and use multiple extractors?
  */
 struct ThingEdgeHasReverse<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 /*
@@ -154,7 +154,7 @@ or
 [object][has][attribute16]
  */
 struct ThingEdgeHas<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 impl<'a> ThingEdgeHas<'a> {
@@ -162,7 +162,7 @@ impl<'a> ThingEdgeHas<'a> {
     const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize =
         ObjectVertex::LENGTH + InfixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
 
-    fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
+    fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         ThingEdgeHas { bytes }
     }
 
@@ -171,7 +171,7 @@ impl<'a> ThingEdgeHas<'a> {
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         bytes.bytes_mut()[Self::range_infix()].copy_from_slice(&InfixType::EdgeHas.infix_id().bytes());
         bytes.bytes_mut()[Self::range_to_for_vertex(to)].copy_from_slice(to.bytes().bytes());
-        ThingEdgeHas { bytes: ByteArrayOrRef::Array(bytes) }
+        ThingEdgeHas { bytes: Bytes::Array(bytes) }
     }
 
     pub fn prefix_from_object(
@@ -197,12 +197,12 @@ impl<'a> ThingEdgeHas<'a> {
 
     fn from(&'a self) -> ObjectVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[Self::range_from()]);
-        ObjectVertex::new(ByteArrayOrRef::Reference(reference))
+        ObjectVertex::new(Bytes::Reference(reference))
     }
 
     fn to(&'a self) -> AttributeVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[self.range_to()]);
-        AttributeVertex::new(ByteArrayOrRef::Reference(reference))
+        AttributeVertex::new(Bytes::Reference(reference))
     }
 
     const fn range_from() -> Range<usize> {
@@ -231,7 +231,7 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ThingEdgeHas<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
+    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }

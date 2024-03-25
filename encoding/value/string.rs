@@ -17,7 +17,7 @@
 
 use std::fmt;
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use logger::result::ResultExt;
 
 use crate::{
@@ -34,20 +34,20 @@ with the same prefix.
  */
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct StringBytes<'a, const INLINE_LENGTH: usize> {
-    bytes: ByteArrayOrRef<'a, INLINE_LENGTH>,
+    bytes: Bytes<'a, INLINE_LENGTH>,
 }
 
 impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
-    pub fn new(value: ByteArrayOrRef<'a, INLINE_LENGTH>) -> Self {
+    pub fn new(value: Bytes<'a, INLINE_LENGTH>) -> Self {
         StringBytes { bytes: value }
     }
 
     pub fn build_owned(value: &str) -> Self {
-        StringBytes { bytes: ByteArrayOrRef::Array(ByteArray::copy(value.as_bytes())) }
+        StringBytes { bytes: Bytes::Array(ByteArray::copy(value.as_bytes())) }
     }
 
     pub const fn build_ref(value: &'a str) -> Self {
-        StringBytes { bytes: ByteArrayOrRef::Reference(ByteReference::new(value.as_bytes())) }
+        StringBytes { bytes: Bytes::Reference(ByteReference::new(value.as_bytes())) }
     }
 
     pub fn decode(&self) -> &str {
@@ -66,7 +66,7 @@ impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
     }
 
     pub fn clone_as_ref(&'a self) -> StringBytes<'a, INLINE_LENGTH> {
-        StringBytes { bytes: ByteArrayOrRef::Reference(self.bytes.as_reference()) }
+        StringBytes { bytes: Bytes::Reference(self.bytes.as_reference()) }
     }
 
     pub fn into_owned(self) -> StringBytes<'static, INLINE_LENGTH> {
@@ -79,7 +79,7 @@ impl<'a, const INLINE_LENGTH: usize> AsBytes<'a, INLINE_LENGTH> for StringBytes<
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, INLINE_LENGTH> {
+    fn into_bytes(self) -> Bytes<'a, INLINE_LENGTH> {
         self.bytes
     }
 }

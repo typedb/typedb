@@ -17,7 +17,7 @@
 
 use std::{borrow::Borrow, cmp::Ordering};
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use primitive::prefix_range::Prefix;
 use serde::{Deserialize, Serialize};
 
@@ -30,10 +30,10 @@ pub enum StorageKey<'bytes, const S: usize> {
 }
 
 impl<'bytes, const S: usize> StorageKey<'bytes, S> {
-    pub fn new<KS: KeyspaceSet>(keyspace_id: KS, bytes: ByteArrayOrRef<'bytes, S>) -> Self {
+    pub fn new<KS: KeyspaceSet>(keyspace_id: KS, bytes: Bytes<'bytes, S>) -> Self {
         match bytes {
-            ByteArrayOrRef::Array(array) => Self::Array(StorageKeyArray::new(keyspace_id, array)),
-            ByteArrayOrRef::Reference(reference) => Self::Reference(StorageKeyReference::new(keyspace_id, reference)),
+            Bytes::Array(array) => Self::Array(StorageKeyArray::new(keyspace_id, array)),
+            Bytes::Reference(reference) => Self::Reference(StorageKeyReference::new(keyspace_id, reference)),
         }
     }
 
@@ -52,10 +52,10 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
         }
     }
 
-    pub fn into_byte_array_or_ref(self) -> ByteArrayOrRef<'bytes, S> {
+    pub fn into_byte_array_or_ref(self) -> Bytes<'bytes, S> {
         match self {
-            StorageKey::Array(array) => ByteArrayOrRef::Array(array.into_byte_array()),
-            StorageKey::Reference(reference) => ByteArrayOrRef::Reference(reference.into_byte_ref()),
+            StorageKey::Array(array) => Bytes::Array(array.into_byte_array()),
+            StorageKey::Reference(reference) => Bytes::Reference(reference.into_byte_ref()),
         }
     }
 

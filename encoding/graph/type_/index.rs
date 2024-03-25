@@ -17,7 +17,7 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
 use crate::{
@@ -27,11 +27,11 @@ use crate::{
 };
 
 pub struct LabelToTypeVertexIndex<'a> {
-    bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>,
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 impl<'a> LabelToTypeVertexIndex<'a> {
-    pub fn new(bytes: ByteArrayOrRef<'a, BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= PrefixID::LENGTH);
         LabelToTypeVertexIndex { bytes }
     }
@@ -42,11 +42,11 @@ impl<'a> LabelToTypeVertexIndex<'a> {
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&PrefixType::IndexLabelToType.prefix_id().bytes());
         array.bytes_mut()[Self::range_label(label_string_bytes.bytes().length())]
             .copy_from_slice(label_string_bytes.bytes().bytes());
-        LabelToTypeVertexIndex { bytes: ByteArrayOrRef::Array(array) }
+        LabelToTypeVertexIndex { bytes: Bytes::Array(array) }
     }
 
     fn label(&'a self) -> StringBytes<'a, BUFFER_KEY_INLINE> {
-        StringBytes::new(ByteArrayOrRef::Reference(ByteReference::new(
+        StringBytes::new(Bytes::Reference(ByteReference::new(
             &self.bytes.bytes()[Self::range_label(self.label_length())],
         )))
     }
@@ -65,7 +65,7 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {
         self.bytes.as_reference()
     }
 
-    fn into_bytes(self) -> ByteArrayOrRef<'a, BUFFER_KEY_INLINE> {
+    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
         self.bytes
     }
 }

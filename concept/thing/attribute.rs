@@ -14,7 +14,7 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-use bytes::byte_array_or_ref::ByteArrayOrRef;
+use bytes::Bytes;
 use encoding::{graph::thing::vertex_attribute::AttributeVertex, value::value_type::ValueType};
 use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotRangeIterator};
 use storage::snapshot::error::SnapshotError;
@@ -70,6 +70,6 @@ impl<'a> PartialEq<Self> for Attribute<'a> {
 impl<'a> Eq for Attribute<'a> {}
 
 fn storage_key_to_attribute<'a>(storage_key_ref: StorageKeyReference<'a>) -> Attribute<'a> {
-    Attribute::new(AttributeVertex::new(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
+    Attribute::new(AttributeVertex::new(Bytes::Reference(storage_key_ref.byte_ref())))
 }
 concept_iterator!(AttributeIterator, Attribute, storage_key_to_attribute);

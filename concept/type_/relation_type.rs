@@ -17,7 +17,7 @@
 
 use std::collections::HashSet;
 
-use bytes::{byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use bytes::{Bytes, byte_reference::ByteReference};
 use encoding::{
     graph::type_::vertex::{new_vertex_relation_type, TypeVertex},
     layout::prefix::PrefixType,
@@ -110,7 +110,7 @@ impl From<Annotation> for RelationTypeAnnotation {
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_to_relation_type(storage_key_ref: StorageKeyReference<'_>) -> RelationType<'_> {
-    RelationType::new(new_vertex_relation_type(ByteArrayOrRef::Reference(storage_key_ref.byte_ref())))
+    RelationType::new(new_vertex_relation_type(Bytes::Reference(storage_key_ref.byte_ref())))
 }
 
 concept_iterator!(RelationTypeIterator, RelationType, storage_key_to_relation_type);

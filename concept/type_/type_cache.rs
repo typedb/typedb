@@ -17,7 +17,7 @@
 
 use std::collections::{BTreeMap, Bound, HashMap, HashSet};
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use durability::SequenceNumber;
 use encoding::{
     graph::{
@@ -154,7 +154,7 @@ impl TypeCache {
             .iterate_range(PrefixRange::new_within(TypeVertexProperty::build_prefix()))
             .collect_cloned_bmap(|key, value| {
                 (
-                    TypeVertexProperty::new(ByteArrayOrRef::Array(ByteArray::from(key.byte_ref()))),
+                    TypeVertexProperty::new(Bytes::Array(ByteArray::from(key.byte_ref()))),
                     ByteArray::from(value),
                 )
             })
@@ -209,8 +209,8 @@ impl TypeCache {
         let max_entity_id = entity_data
             .iter()
             .filter_map(|(key, _)| {
-                if is_vertex_entity_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
-                    Some(new_vertex_entity_type(ByteArrayOrRef::Reference(ByteReference::from(key))).type_id().as_u16())
+                if is_vertex_entity_type(Bytes::Reference(ByteReference::from(key))) {
+                    Some(new_vertex_entity_type(Bytes::Reference(ByteReference::from(key))).type_id().as_u16())
                 } else {
                     None
                 }
@@ -228,9 +228,9 @@ impl TypeCache {
         let mut caches: Box<[Option<EntityTypeCache>]> =
             (0..=max_entity).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         for (key, _) in entity_data.iter() {
-            if is_vertex_entity_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
+            if is_vertex_entity_type(Bytes::Reference(ByteReference::from(key))) {
                 let entity_type: EntityType<'static> =
-                    EntityType::new(new_vertex_entity_type(ByteArrayOrRef::Array(key.clone())));
+                    EntityType::new(new_vertex_entity_type(Bytes::Array(key.clone())));
                 let type_index = Typed::type_id(entity_type.vertex()).as_u16();
 
                 let label = Self::read_type_label(vertex_properties, entity_type.vertex().clone());
@@ -301,9 +301,9 @@ impl TypeCache {
         let max_relation_id = relation_data
             .iter()
             .filter_map(|(key, _)| {
-                if is_vertex_relation_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
+                if is_vertex_relation_type(Bytes::Reference(ByteReference::from(key))) {
                     Some(
-                        new_vertex_relation_type(ByteArrayOrRef::Reference(ByteReference::from(key)))
+                        new_vertex_relation_type(Bytes::Reference(ByteReference::from(key)))
                             .type_id()
                             .as_u16(),
                     )
@@ -324,8 +324,8 @@ impl TypeCache {
         let mut caches: Box<[Option<RelationTypeCache>]> =
             (0..=max_relation).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         for (key, _) in relation_data.iter() {
-            if is_vertex_relation_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
-                let relation_type = RelationType::new(new_vertex_relation_type(ByteArrayOrRef::Array(key.clone())));
+            if is_vertex_relation_type(Bytes::Reference(ByteReference::from(key))) {
+                let relation_type = RelationType::new(new_vertex_relation_type(Bytes::Array(key.clone())));
                 let type_index = Typed::type_id(relation_type.vertex()).as_u16();
 
                 let label = Self::read_type_label(vertex_properties, relation_type.vertex().clone());
@@ -382,7 +382,7 @@ impl TypeCache {
         types_data
             .range::<[u8], _>((Bound::Included(edge_prefix.bytes()), Bound::Unbounded))
             .take_while(|(key, _)| key.bytes().starts_with(edge_prefix.bytes()))
-            .map(|(key, _)| new_edge_relates(ByteArrayOrRef::Reference(ByteReference::from(key))).to().into_owned())
+            .map(|(key, _)| new_edge_relates(Bytes::Reference(ByteReference::from(key))).to().into_owned())
             .collect()
     }
 
@@ -412,8 +412,8 @@ impl TypeCache {
         let max_role_id = role_data
             .iter()
             .filter_map(|(key, _)| {
-                if is_vertex_role_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
-                    Some(new_vertex_role_type(ByteArrayOrRef::Reference(ByteReference::from(key))).type_id().as_u16())
+                if is_vertex_role_type(Bytes::Reference(ByteReference::from(key))) {
+                    Some(new_vertex_role_type(Bytes::Reference(ByteReference::from(key))).type_id().as_u16())
                 } else {
                     None
                 }
@@ -431,8 +431,8 @@ impl TypeCache {
         let mut caches: Box<[Option<RoleTypeCache>]> =
             (0..=max_role).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         for (key, _) in role_data.iter() {
-            if is_vertex_role_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
-                let role_type = RoleType::new(new_vertex_role_type(ByteArrayOrRef::Array(key.clone())));
+            if is_vertex_role_type(Bytes::Reference(ByteReference::from(key))) {
+                let role_type = RoleType::new(new_vertex_role_type(Bytes::Array(key.clone())));
                 let type_index = Typed::type_id(role_type.vertex()).as_u16();
 
                 let label = Self::read_type_label(vertex_properties, role_type.vertex().clone());
@@ -479,7 +479,7 @@ impl TypeCache {
             .range::<[u8], _>((Bound::Included(prefix.bytes()), Bound::Unbounded))
             .take_while(|(key, _)| key.bytes().starts_with(prefix.bytes()))
             .map(|(key, _)| {
-                new_edge_relates_reverse(ByteArrayOrRef::Reference(ByteReference::from(key))).to().into_owned()
+                new_edge_relates_reverse(Bytes::Reference(ByteReference::from(key))).to().into_owned()
             })
             .collect();
         debug_assert_eq!(relater.len(), 1);
@@ -512,9 +512,9 @@ impl TypeCache {
         let max_attribute_id = attribute_data
             .iter()
             .filter_map(|(key, _)| {
-                if is_vertex_attribute_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
+                if is_vertex_attribute_type(Bytes::Reference(ByteReference::from(key))) {
                     Some(
-                        new_vertex_attribute_type(ByteArrayOrRef::Reference(ByteReference::from(key)))
+                        new_vertex_attribute_type(Bytes::Reference(ByteReference::from(key)))
                             .type_id()
                             .as_u16(),
                     )
@@ -535,8 +535,8 @@ impl TypeCache {
         let mut caches: Box<[Option<AttributeTypeCache>]> =
             (0..=max_attribute).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         for (key, _) in attribute_data.iter() {
-            if is_vertex_attribute_type(ByteArrayOrRef::Reference(ByteReference::from(key))) {
-                let attribute_type = AttributeType::new(new_vertex_attribute_type(ByteArrayOrRef::Array(key.clone())));
+            if is_vertex_attribute_type(Bytes::Reference(ByteReference::from(key))) {
+                let attribute_type = AttributeType::new(new_vertex_attribute_type(Bytes::Array(key.clone())));
                 let type_index = Typed::type_id(attribute_type.vertex()).as_u16();
 
                 let label = Self::read_type_label(vertex_properties, attribute_type.vertex().clone());
@@ -594,7 +594,7 @@ impl TypeCache {
         vertex_properties
             .get(&build_property_type_label(type_vertex))
             .map(|bytes| {
-                Label::parse_from(StringBytes::new(ByteArrayOrRef::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(
+                Label::parse_from(StringBytes::new(Bytes::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(
                     ByteReference::from(bytes),
                 )))
             })
@@ -651,7 +651,7 @@ impl TypeCache {
             .take_while(|(key, _)| key.bytes().starts_with(edge_prefix.bytes()));
         let supertype = edges
             .next()
-            .map(|(key, _)| new_edge_sub(ByteArrayOrRef::Reference(ByteReference::from(key))).to().into_owned());
+            .map(|(key, _)| new_edge_sub(Bytes::Reference(ByteReference::from(key))).to().into_owned());
         debug_assert!(edges.next().is_none());
         supertype
     }
@@ -664,7 +664,7 @@ impl TypeCache {
         types_data
             .range::<[u8], _>((Bound::Included(edge_prefix.bytes()), Bound::Unbounded))
             .take_while(|(key, _)| key.bytes().starts_with(edge_prefix.bytes()))
-            .map(|(key, _)| new_edge_owns(ByteArrayOrRef::Reference(ByteReference::from(key))).to().into_owned())
+            .map(|(key, _)| new_edge_owns(Bytes::Reference(ByteReference::from(key))).to().into_owned())
             .collect()
     }
 
@@ -676,7 +676,7 @@ impl TypeCache {
         types_data
             .range::<[u8], _>((Bound::Included(edge_prefix.bytes()), Bound::Unbounded))
             .take_while(|(key, _)| key.bytes().starts_with(edge_prefix.bytes()))
-            .map(|(key, _)| new_edge_plays(ByteArrayOrRef::Reference(ByteReference::from(key))).to().into_owned())
+            .map(|(key, _)| new_edge_plays(Bytes::Reference(ByteReference::from(key))).to().into_owned())
             .collect()
     }
 

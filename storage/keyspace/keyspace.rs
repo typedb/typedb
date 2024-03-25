@@ -22,7 +22,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use bytes::{byte_array::ByteArray, byte_array_or_ref::ByteArrayOrRef, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use iterator::State;
 use logger::result::ResultExt;
 use primitive::prefix_range::PrefixRange;
@@ -164,7 +164,7 @@ impl Keyspace {
     // TODO: we should benchmark using iterator pools, which would require changing prefix/range on read options
     pub(crate) fn iterate_range<'s, const PREFIX_INLINE_SIZE: usize>(
         &'s self,
-        range: PrefixRange<ByteArrayOrRef<'s, { PREFIX_INLINE_SIZE }>>,
+        range: PrefixRange<Bytes<'s, { PREFIX_INLINE_SIZE }>>,
     ) -> KeyspaceRangeIterator<'s, PREFIX_INLINE_SIZE> {
         KeyspaceRangeIterator::new(self, range)
     }
@@ -199,13 +199,13 @@ impl fmt::Debug for Keyspace {
 }
 
 pub struct KeyspaceRangeIterator<'a, const INLINE_BYTES: usize> {
-    range: PrefixRange<ByteArrayOrRef<'a, { INLINE_BYTES }>>,
+    range: PrefixRange<Bytes<'a, { INLINE_BYTES }>>,
     iterator: DBRawIterator<'a>,
     state: State<speedb::Error>,
 }
 
 impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
-    fn new(keyspace: &'a Keyspace, range: PrefixRange<ByteArrayOrRef<'a, { INLINE_BYTES }>>) -> Self {
+    fn new(keyspace: &'a Keyspace, range: PrefixRange<Bytes<'a, { INLINE_BYTES }>>) -> Self {
         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
         // read_opts.set_prefix_same_as_start(true);
         let read_opts = keyspace.new_read_options();
@@ -315,7 +315,7 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
     }
 
     fn is_in_range(&self, key: &[u8]) -> bool {
-        self.range.contains(ByteArrayOrRef::Reference(ByteReference::new(key)))
+        self.range.contains(Bytes::Reference(ByteReference::new(key)))
     }
 
     pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(
