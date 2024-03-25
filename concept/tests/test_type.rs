@@ -17,15 +17,15 @@
 
 use std::{ops::Deref, rc::Rc, sync::Arc};
 
-use concept::type_::{annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, role_type::RoleTypeAnnotation, object_type::ObjectType, owns::Owns, type_cache::TypeCache, type_manager::TypeManager, AttributeTypeAPI, EntityTypeAPI, OwnerAPI, PlayerAPI, RoleTypeAPI, RelationTypeAPI};
+use concept::type_::{annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, OwnerAPI, owns::Owns, PlayerAPI, role_type::RoleTypeAnnotation, type_cache::TypeCache, type_manager::TypeManager};
 use concept::type_::relation_type::RelationTypeAnnotation;
 use durability::wal::WAL;
 use encoding::{
-    graph::type_::{vertex_generator::TypeVertexGenerator, Kind},
-    value::{label::Label, value_type::ValueType},
     EncodingKeyspace,
+    graph::type_::{Kind, vertex_generator::TypeVertexGenerator},
+    value::{label::Label, value_type::ValueType},
 };
-use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
+use storage::{MVCCStorage, snapshot::snapshot::Snapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
 /*

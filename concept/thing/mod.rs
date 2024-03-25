@@ -21,8 +21,8 @@ use encoding::{
 };
 
 use crate::{
-    thing::{attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, value::Value},
     ConceptAPI,
+    thing::{attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, value::Value},
 };
 
 pub mod attribute;

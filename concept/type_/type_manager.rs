@@ -20,6 +20,7 @@ use std::{collections::HashSet, ops::Deref, rc::Rc, sync::Arc};
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::DurabilityService;
 use encoding::{
+    AsBytes,
     graph::type_::{
         edge::{
             build_edge_owns, build_edge_owns_prefix, build_edge_owns_reverse, build_edge_relates,
@@ -27,6 +28,7 @@ use encoding::{
             build_edge_sub_reverse, new_edge_owns, new_edge_relates, new_edge_sub,
         },
         index::LabelToTypeVertexIndex,
+        Kind,
         property::{
             build_property_type_annotation_abstract, build_property_type_label, build_property_type_value_type,
         },
@@ -35,22 +37,20 @@ use encoding::{
             TypeVertex,
         },
         vertex_generator::TypeVertexGenerator,
-        Kind,
     },
-    value::{
+    Keyable, value::{
         label::Label,
         string::StringBytes,
         value_type::{ValueType, ValueTypeID},
     },
-    AsBytes, Keyable,
 };
 use encoding::graph::type_::edge::{build_edge_plays, build_edge_plays_prefix, build_edge_plays_reverse, new_edge_plays};
 use primitive::maybe_owns::MaybeOwns;
 use primitive::prefix_range::PrefixRange;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
-use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
+use storage::{MVCCStorage, snapshot::snapshot::Snapshot};
 
-use crate::type_::{annotation::AnnotationAbstract, attribute_type::{AttributeType, AttributeTypeAnnotation}, AttributeTypeAPI, entity_type::{EntityType, EntityTypeAnnotation}, EntityTypeAPI, object_type::ObjectType, owns::Owns, relation_type::{RelationType, RelationTypeAnnotation}, RelationTypeAPI, RoleTypeAPI, type_cache::TypeCache, TypeAPI};
+use crate::type_::{annotation::AnnotationAbstract, attribute_type::{AttributeType, AttributeTypeAnnotation}, entity_type::{EntityType, EntityTypeAnnotation}, object_type::ObjectType, owns::Owns, relation_type::{RelationType, RelationTypeAnnotation}, type_cache::TypeCache, TypeAPI};
 use crate::type_::plays::Plays;
 use crate::type_::relates::Relates;
 use crate::type_::role_type::{RoleType, RoleTypeAnnotation};
@@ -278,7 +278,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     pub(crate) fn create_role_type(
         &self,
         label: &Label<'_>,
-        relation_type: impl RelationTypeAPI<'static>,
+        relation_type: RelationType<'static>,
         is_root: bool,
     ) -> RoleType<'static> {
         // TODO: validate type doesn't exist already

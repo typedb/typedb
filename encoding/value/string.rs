@@ -50,7 +50,7 @@ impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
         StringBytes { bytes: Bytes::Reference(ByteReference::new(value.as_bytes())) }
     }
 
-    pub fn decode(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         std::str::from_utf8(self.bytes.bytes())
             .map_err(|err| EncodingError {
                 kind: EncodingErrorKind::FailedUFT8Decode {
@@ -86,6 +86,6 @@ impl<'a, const INLINE_LENGTH: usize> AsBytes<'a, INLINE_LENGTH> for StringBytes<
 
 impl<'a, const INLINE_LENGTH: usize> fmt::Display for StringBytes<'a, INLINE_LENGTH> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "bytes(len={}, str='{}')", self.length(), self.decode())
+        write!(f, "bytes(len={}, str='{}')", self.length(), self.as_str())
     }
 }

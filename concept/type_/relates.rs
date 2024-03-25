@@ -16,7 +16,6 @@
  */
 
 use crate::type_::relation_type::RelationType;
-use crate::type_::{RelationTypeAPI, RoleTypeAPI};
 use crate::type_::role_type::RoleType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

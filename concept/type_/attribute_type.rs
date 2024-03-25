@@ -15,13 +15,20 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::collections::HashSet;
+
 use encoding::{graph::type_::vertex::TypeVertex, layout::prefix::PrefixType, Prefixed};
+use encoding::value::label::Label;
+use encoding::value::value_type::ValueType;
+use primitive::maybe_owns::MaybeOwns;
 
 use crate::{
-    type_::{annotation::AnnotationAbstract, AttributeTypeAPI, TypeAPI},
     ConceptAPI,
+    type_::{annotation::AnnotationAbstract, TypeAPI},
 };
 use crate::type_::annotation::Annotation;
+use crate::type_::owns::Owns;
+use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct AttributeType<'a> {
@@ -53,9 +60,84 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
     }
 }
 
-impl<'a> AttributeTypeAPI<'a> for AttributeType<'a> {
-    fn into_owned(self) -> AttributeType<'static> {
+impl<'a> AttributeType<'a> {
+
+    pub fn is_root<D>(&self, type_manager: &TypeManager<'_, '_, D>) -> bool {
+        type_manager.get_attribute_type_is_root(self.clone().into_owned())
+    }
+
+    pub fn set_value_type<D>(&self, type_manager: &TypeManager<'_, '_, D>, value_type: ValueType) {
+        type_manager.set_storage_value_type(self.vertex().clone().into_owned(), value_type)
+    }
+
+    pub fn get_value_type<D>(&self, type_manager: &TypeManager<'_, '_, D>) -> Option<ValueType> {
+        type_manager.get_attribute_type_value_type(self.clone().into_owned())
+    }
+
+    pub fn get_label<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, Label<'static>> {
+        type_manager.get_attribute_type_label(self.clone().into_owned())
+    }
+
+    fn set_label<D>(&self, type_manager: &TypeManager<'_, '_, D>, label: &Label<'_>) {
+        // TODO: setLabel should fail is setting label on Root type
+        type_manager.set_storage_label(self.vertex().clone().into_owned(), label);
+    }
+
+    fn get_supertype<D>(&self, type_manager: &TypeManager<'_, '_, D>) -> Option<AttributeType<'static>> {
+        type_manager.get_attribute_type_supertype(self.clone().into_owned())
+    }
+
+    fn set_supertype<D>(&self, type_manager: &TypeManager<'_, '_, D>, supertype: AttributeType<'static>) {
+        type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
+    }
+
+    fn get_supertypes<'m, D>(
+        &self,
+        type_manager: &'m TypeManager<'_, '_, D>,
+    ) -> MaybeOwns<'m, Vec<AttributeType<'static>>> {
+        type_manager.get_attribute_type_supertypes(self.clone().into_owned())
+    }
+
+    // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<AttributeType<'static>>>;
+
+    pub fn get_annotations<'m, D>(
+        &self,
+        type_manager: &'m TypeManager<'_, '_, D>,
+    ) -> MaybeOwns<'m, HashSet<AttributeTypeAnnotation>> {
+        type_manager.get_attribute_type_annotations(self.clone().into_owned())
+    }
+
+    pub(crate) fn set_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: AttributeTypeAnnotation) {
+        match annotation {
+            AttributeTypeAnnotation::Abstract(_) => {
+                type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
+            }
+        }
+    }
+
+    fn delete_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: AttributeTypeAnnotation) {
+        match annotation {
+            AttributeTypeAnnotation::Abstract(_) => {
+                type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
+            }
+        }
+    }
+
+    pub fn into_owned(self) -> AttributeType<'static> {
         AttributeType { vertex: self.vertex.into_owned() }
+    }
+}
+
+
+// --- Owned API ---
+impl<'a> AttributeType<'a> {
+    fn get_owns<'m,D>(&self, _type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
+        todo!()
+    }
+
+    fn get_owns_owners(&self) {
+        // return iterator of Owns
+        todo!()
     }
 }
 

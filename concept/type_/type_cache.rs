@@ -15,9 +15,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::{BTreeMap, Bound, HashMap, HashSet};
+use std::collections::{Bound, BTreeMap, HashMap, HashSet};
 
-use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use durability::SequenceNumber;
 use encoding::{
     graph::{
@@ -26,6 +26,7 @@ use encoding::{
                 build_edge_owns_prefix, build_edge_relates_prefix, build_edge_relates_reverse_prefix,
                 build_edge_sub_prefix, new_edge_owns, new_edge_relates, new_edge_relates_reverse, new_edge_sub,
             },
+            Kind,
             property::{build_property_type_label, build_property_type_value_type, TypeVertexProperty},
             vertex::{
                 build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
@@ -33,17 +34,16 @@ use encoding::{
                 is_vertex_relation_type, is_vertex_role_type, new_vertex_attribute_type, new_vertex_entity_type,
                 new_vertex_relation_type, new_vertex_role_type, TypeVertex,
             },
-            Kind,
         },
         Typed,
     },
     layout::{infix::InfixType, prefix::PrefixType},
+    Prefixed,
     value::{
         label::Label,
         string::StringBytes,
         value_type::{ValueType, ValueTypeID},
     },
-    Prefixed,
 };
 use encoding::graph::type_::edge::{build_edge_plays_prefix, new_edge_plays};
 use primitive::prefix_range::PrefixRange;
@@ -51,9 +51,9 @@ use resource::constants::{
     encoding::LABEL_SCOPED_NAME_STRING_INLINE,
     snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
 };
-use storage::{snapshot::snapshot::ReadSnapshot, MVCCStorage};
+use storage::{MVCCStorage, snapshot::snapshot::ReadSnapshot};
 
-use crate::type_::{annotation::AnnotationAbstract, attribute_type::{AttributeType, AttributeTypeAnnotation}, AttributeTypeAPI, entity_type::{EntityType, EntityTypeAnnotation}, EntityTypeAPI, object_type::ObjectType, owns::Owns, relation_type::{RelationType, RelationTypeAnnotation}, RelationTypeAPI, RoleTypeAPI, TypeAPI};
+use crate::type_::{annotation::AnnotationAbstract, attribute_type::{AttributeType, AttributeTypeAnnotation}, entity_type::{EntityType, EntityTypeAnnotation}, object_type::ObjectType, owns::Owns, relation_type::{RelationType, RelationTypeAnnotation}, TypeAPI};
 use crate::type_::annotation::Annotation;
 use crate::type_::plays::Plays;
 use crate::type_::relates::Relates;
@@ -699,83 +699,83 @@ impl TypeCache {
 
     pub(crate) fn get_entity_type_supertype(
         &self,
-        entity_type: impl EntityTypeAPI<'static>,
+        entity_type: EntityType<'static>,
     ) -> Option<EntityType<'static>> {
         Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().supertype.clone()
     }
 
     pub(crate) fn get_relation_type_supertype(
         &self,
-        relation_type: impl RelationTypeAPI<'static>,
+        relation_type:RelationType<'static>,
     ) -> Option<RelationType<'static>> {
         Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().supertype.clone()
     }
 
-    pub(crate) fn get_role_type_supertype(&self, role_type: impl RoleTypeAPI<'static>) -> Option<RoleType<'static>> {
+    pub(crate) fn get_role_type_supertype(&self, role_type: RoleType<'static>) -> Option<RoleType<'static>> {
         Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().supertype.clone()
     }
 
     pub(crate) fn get_attribute_type_supertype(
         &self,
-        attribute_type: impl AttributeTypeAPI<'static>,
+        attribute_type: AttributeType<'static>,
     ) -> Option<AttributeType<'static>> {
         Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().supertype.clone()
     }
 
     pub(crate) fn get_entity_type_supertypes<'a>(
         &self,
-        entity_type: impl EntityTypeAPI<'a>,
+        entity_type: EntityType<'a>,
     ) -> &Vec<EntityType<'static>> {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().supertypes
     }
 
     pub(crate) fn get_relation_type_supertypes(
         &self,
-        relation_type: impl RelationTypeAPI<'static>,
+        relation_type:RelationType<'static>,
     ) -> &Vec<RelationType<'static>> {
         &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().supertypes
     }
 
-    pub(crate) fn get_role_type_supertypes(&self, role_type: impl RoleTypeAPI<'static>) -> &Vec<RoleType<'static>> {
+    pub(crate) fn get_role_type_supertypes(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
         &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().supertypes
     }
 
     pub(crate) fn get_attribute_type_supertypes(
         &self,
-        attribute_type: impl AttributeTypeAPI<'static>,
+        attribute_type: AttributeType<'static>,
     ) -> &Vec<AttributeType<'static>> {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().supertypes
     }
 
-    pub(crate) fn get_entity_type_label(&self, entity_type: impl EntityTypeAPI<'static>) -> &Label<'static> {
+    pub(crate) fn get_entity_type_label(&self, entity_type: EntityType<'static>) -> &Label<'static> {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().label
     }
 
-    pub(crate) fn get_relation_type_label(&self, relation_type: impl RelationTypeAPI<'static>) -> &Label<'static> {
+    pub(crate) fn get_relation_type_label(&self, relation_type:RelationType<'static>) -> &Label<'static> {
         &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().label
     }
 
-    pub(crate) fn get_role_type_label(&self, role_type: impl RoleTypeAPI<'static>) -> &Label<'static> {
+    pub(crate) fn get_role_type_label(&self, role_type: RoleType<'static>) -> &Label<'static> {
         &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().label
     }
 
-    pub(crate) fn get_attribute_type_label(&self, attribute_type: impl AttributeTypeAPI<'static>) -> &Label<'static> {
+    pub(crate) fn get_attribute_type_label(&self, attribute_type: AttributeType<'static>) -> &Label<'static> {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().label
     }
 
-    pub(crate) fn get_entity_type_is_root(&self, entity_type: impl EntityTypeAPI<'static>) -> bool {
+    pub(crate) fn get_entity_type_is_root(&self, entity_type: EntityType<'static>) -> bool {
         Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().is_root
     }
 
-    pub(crate) fn get_relation_type_is_root(&self, relation_type: impl RelationTypeAPI<'static>) -> bool {
+    pub(crate) fn get_relation_type_is_root(&self, relation_type:RelationType<'static>) -> bool {
         Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().is_root
     }
 
-    pub(crate) fn get_role_type_is_root(&self, role_type: impl RoleTypeAPI<'static>) -> bool {
+    pub(crate) fn get_role_type_is_root(&self, role_type: RoleType<'static>) -> bool {
         Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().is_root
     }
 
-    pub(crate) fn get_attribute_type_is_root(&self, attribute_type: impl AttributeTypeAPI<'static>) -> bool {
+    pub(crate) fn get_attribute_type_is_root(&self, attribute_type: AttributeType<'static>) -> bool {
         Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().is_root
     }
 
@@ -805,28 +805,28 @@ impl TypeCache {
 
     pub(crate) fn get_entity_type_annotations(
         &self,
-        entity_type: impl EntityTypeAPI<'static>,
+        entity_type: EntityType<'static>,
     ) -> &HashSet<EntityTypeAnnotation> {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().annotations
     }
 
     pub(crate) fn get_relation_type_annotations(
         &self,
-        relation_type: impl RelationTypeAPI<'static>,
+        relation_type:RelationType<'static>,
     ) -> &HashSet<RelationTypeAnnotation> {
         &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().annotations
     }
 
     pub(crate) fn get_role_type_annotations(
         &self,
-        role_type: impl RoleTypeAPI<'static>,
+        role_type: RoleType<'static>,
     ) -> &HashSet<RoleTypeAnnotation> {
         &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().annotations
     }
 
     pub(crate) fn get_attribute_type_annotations(
         &self,
-        attribute_type: impl AttributeTypeAPI<'static>,
+        attribute_type: AttributeType<'static>,
     ) -> &HashSet<AttributeTypeAnnotation> {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().annotations
     }

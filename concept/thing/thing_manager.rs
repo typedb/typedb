@@ -27,9 +27,9 @@ use encoding::{
         },
         Typed,
     },
+    Keyable,
     layout::prefix::{PrefixID, PrefixType},
     value::{long::Long, string::StringBytes, value_type::ValueType},
-    Keyable,
 };
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -39,12 +39,12 @@ use crate::{
     error::{ConceptError, ConceptErrorKind},
     thing::{
         attribute::{Attribute, AttributeIterator},
+        AttributeAPI,
         entity::{Entity, EntityIterator},
         value::Value,
-        AttributeAPI,
     },
     type_::{
-        attribute_type::AttributeType, entity_type::EntityType, type_manager::TypeManager, AttributeTypeAPI, TypeAPI,
+        attribute_type::AttributeType, entity_type::EntityType, type_manager::TypeManager, TypeAPI,
     },
 };
 
@@ -156,12 +156,12 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
             ValueType::String => {
                 let attribute_id = StringAttributeID::new(attribute.vertex().attribute_id().unwrap_bytes_16());
                 if attribute_id.is_inline() {
-                    Value::String(String::from(attribute_id.get_inline_string_bytes().decode()).into_boxed_str())
+                    Value::String(String::from(attribute_id.get_inline_string_bytes().as_str()).into_boxed_str())
                 } else {
                     self.snapshot
                         .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
                             Value::String(
-                                String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).decode())
+                                String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str())
                                     .into_boxed_str(),
                             )
                         })

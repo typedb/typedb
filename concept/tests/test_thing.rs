@@ -18,16 +18,16 @@
 use std::rc::Rc;
 
 use concept::{
-    thing::{thing_manager::ThingManager, value::Value, AttributeAPI},
-    type_::{type_manager::TypeManager, AttributeTypeAPI},
+    thing::{AttributeAPI, thing_manager::ThingManager, value::Value},
+    type_::type_manager::TypeManager,
 };
 use durability::wal::WAL;
 use encoding::{
+    EncodingKeyspace,
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
     value::{label::Label, value_type::ValueType},
-    EncodingKeyspace,
 };
-use storage::{snapshot::snapshot::Snapshot, MVCCStorage};
+use storage::{MVCCStorage, snapshot::snapshot::Snapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
 #[test]

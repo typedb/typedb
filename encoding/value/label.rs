@@ -32,7 +32,7 @@ pub struct Label<'a> {
 
 impl<'a> Label<'a> {
     pub fn parse_from<const INLINE_BYTES: usize>(string_bytes: StringBytes<'a, INLINE_BYTES>) -> Label<'static> {
-        let as_str = string_bytes.decode();
+        let as_str = string_bytes.as_str();
         let mut splits = as_str.split(':');
         let first = splits.next().unwrap();
         if let Some(second) = splits.next() {
