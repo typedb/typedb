@@ -21,7 +21,7 @@ use concept::type_::{annotation::AnnotationAbstract, entity_type::EntityTypeAnno
 use concept::type_::relation_type::RelationTypeAnnotation;
 use durability::wal::WAL;
 use encoding::{
-    graph::type_::{vertex_generator::TypeVertexGenerator, Root},
+    graph::type_::{vertex_generator::TypeVertexGenerator, Kind},
     value::{label::Label, value_type::ValueType},
     EncodingKeyspace,
 };
@@ -46,8 +46,8 @@ fn entity_usage() {
         // Without cache, uncommitted
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
 
-        let root_entity = type_manager.get_entity_type(&Root::Entity.label()).unwrap();
-        assert_eq!(root_entity.get_label(&type_manager).deref(), &Root::Entity.label());
+        let root_entity = type_manager.get_entity_type(&Kind::Entity.root_label()).unwrap();
+        assert_eq!(root_entity.get_label(&type_manager).deref(), &Kind::Entity.root_label());
         assert!(root_entity.is_root(&type_manager));
 
         // --- age sub attribute ---
@@ -109,8 +109,8 @@ fn entity_usage() {
         let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()));
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
 
-        let root_entity = type_manager.get_entity_type(&Root::Entity.label()).unwrap();
-        assert_eq!(root_entity.get_label(&type_manager).deref(), &Root::Entity.label());
+        let root_entity = type_manager.get_entity_type(&Kind::Entity.root_label()).unwrap();
+        assert_eq!(root_entity.get_label(&type_manager).deref(), &Kind::Entity.root_label());
         assert!(root_entity.is_root(&type_manager));
 
         // --- age sub attribute ---
@@ -172,8 +172,8 @@ fn role_usage() {
     {
         // Without cache, uncommitted
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
-        let root_relation = type_manager.get_relation_type(&Root::Relation.label()).unwrap();
-        assert_eq!(root_relation.get_label(&type_manager).deref(), &Root::Relation.label());
+        let root_relation = type_manager.get_relation_type(&Kind::Relation.root_label()).unwrap();
+        assert_eq!(root_relation.get_label(&type_manager).deref(), &Kind::Relation.root_label());
         assert!(root_relation.is_root(&type_manager));
         assert!(root_relation.get_supertype(&type_manager).is_none());
         assert_eq!(root_relation.get_supertypes(&type_manager).len(), 0);
@@ -182,8 +182,8 @@ fn role_usage() {
             .deref()
             .contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract::new())));
 
-        let root_role = type_manager.get_role_type(&Root::Role.label()).unwrap();
-        assert_eq!(root_role.get_label(&type_manager).deref(), &Root::Role.label());
+        let root_role = type_manager.get_role_type(&Kind::Role.root_label()).unwrap();
+        assert_eq!(root_role.get_label(&type_manager).deref(), &Kind::Role.root_label());
         assert!(root_role.is_root(&type_manager));
         assert!(root_role.get_supertype(&type_manager).is_none());
         assert_eq!(root_role.get_supertypes(&type_manager).len(), 0);

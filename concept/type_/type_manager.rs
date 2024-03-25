@@ -35,7 +35,7 @@ use encoding::{
             TypeVertex,
         },
         vertex_generator::TypeVertexGenerator,
-        Root,
+        Kind,
     },
     value::{
         label::Label,
@@ -137,14 +137,14 @@ macro_rules! get_supertypes_methods {
 
 macro_rules! get_type_is_root_methods {
     ($(
-        $method_name:ident, $cache_method:ident, $type_:ident, $root_variant:expr
+        $method_name:ident, $cache_method:ident, $type_:ident, $base_variant:expr
     );*) => {
         $(
             pub(crate) fn $method_name(&self, type_: $type_<'static>) -> bool {
                 if let Some(cache) = &self.type_cache {
                     cache.$cache_method(type_)
                 } else {
-                    type_.get_label(self).deref() == &$root_variant.label()
+                    type_.get_label(self).deref() == &$base_variant.root_label()
                 }
             }
         )*
@@ -202,13 +202,13 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         let snapshot = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
         {
             let type_manager = TypeManager::new(snapshot.clone(), vertex_generator, None);
-            let root_entity = type_manager.create_entity_type(&Root::Entity.label(), true);
+            let root_entity = type_manager.create_entity_type(&Kind::Entity.root_label(), true);
             root_entity.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()));
-            let root_relation = type_manager.create_relation_type(&Root::Relation.label(), true);
+            let root_relation = type_manager.create_relation_type(&Kind::Relation.root_label(), true);
             root_relation.set_annotation(&type_manager, RelationTypeAnnotation::Abstract(AnnotationAbstract::new()));
-            let root_role = type_manager.create_role_type(&Root::Role.label(), root_relation.clone(), true);
+            let root_role = type_manager.create_role_type(&Kind::Role.root_label(), root_relation.clone(), true);
             root_role.set_annotation(&type_manager, RoleTypeAnnotation::Abstract(AnnotationAbstract::new()));
-            let root_attribute = type_manager.create_attribute_type(&Root::Attribute.label(), true);
+            let root_attribute = type_manager.create_attribute_type(&Kind::Attribute.root_label(), true);
             root_attribute.set_annotation(&type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()));
         }
         // TODO: handle error properly
@@ -248,7 +248,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
             if !is_root {
                 self.set_storage_supertype(
                     type_vertex.clone(),
-                    self.get_entity_type(&Root::Entity.label()).unwrap().into_vertex(),
+                    self.get_entity_type(&Kind::Entity.root_label()).unwrap().into_vertex(),
                 );
             }
             EntityType::new(type_vertex)
@@ -266,7 +266,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
             if !is_root {
                 self.set_storage_supertype(
                     type_vertex.clone(),
-                    self.get_relation_type(&Root::Relation.label()).unwrap().into_vertex(),
+                    self.get_relation_type(&Kind::Relation.root_label()).unwrap().into_vertex(),
                 );
             }
             RelationType::new(type_vertex)
@@ -289,7 +289,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
             if !is_root {
                 self.set_storage_supertype(
                     type_vertex.clone(),
-                    self.get_role_type(&Root::Role.label()).unwrap().into_vertex(),
+                    self.get_role_type(&Kind::Role.root_label()).unwrap().into_vertex(),
                 );
             }
             RoleType::new(type_vertex)
@@ -306,7 +306,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
             if !is_root {
                 self.set_storage_supertype(
                     type_vertex.clone(),
-                    self.get_attribute_type(&Root::Attribute.label()).unwrap().into_vertex(),
+                    self.get_attribute_type(&Kind::Attribute.root_label()).unwrap().into_vertex(),
                 );
             }
             AttributeType::new(type_vertex)
@@ -316,10 +316,10 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     }
 
     get_type_is_root_methods!(
-        get_entity_type_is_root, get_entity_type_is_root, EntityType, Root::Entity;
-        get_relation_type_is_root, get_relation_type_is_root, RelationType, Root::Relation;
-        get_role_type_is_root, get_role_type_is_root, RoleType, Root::Role;
-        get_attribute_type_is_root, get_attribute_type_is_root, AttributeType, Root::Attribute
+        get_entity_type_is_root, get_entity_type_is_root, EntityType, Kind::Entity;
+        get_relation_type_is_root, get_relation_type_is_root, RelationType, Kind::Relation;
+        get_role_type_is_root, get_role_type_is_root, RoleType, Kind::Role;
+        get_attribute_type_is_root, get_attribute_type_is_root, AttributeType, Kind::Attribute
     );
 
     get_type_label_methods!(

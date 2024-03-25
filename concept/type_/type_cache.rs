@@ -33,7 +33,7 @@ use encoding::{
                 is_vertex_relation_type, is_vertex_role_type, new_vertex_attribute_type, new_vertex_entity_type,
                 new_vertex_relation_type, new_vertex_role_type, TypeVertex,
             },
-            Root,
+            Kind,
         },
         Typed,
     },
@@ -234,7 +234,7 @@ impl TypeCache {
                 let type_index = Typed::type_id(entity_type.vertex()).as_u16();
 
                 let label = Self::read_type_label(vertex_properties, entity_type.vertex().clone());
-                let is_root = label == Root::Entity.label();
+                let is_root = label == Kind::Entity.root_label();
                 let supertype =
                     Self::read_supertype_vertex(entity_data, entity_type.vertex().clone()).map(EntityType::new);
                 let annotations = Self::read_entity_annotations(vertex_properties, entity_type.clone());
@@ -329,7 +329,7 @@ impl TypeCache {
                 let type_index = Typed::type_id(relation_type.vertex()).as_u16();
 
                 let label = Self::read_type_label(vertex_properties, relation_type.vertex().clone());
-                let is_root = label == Root::Relation.label();
+                let is_root = label == Kind::Relation.root_label();
                 let supertype =
                     Self::read_supertype_vertex(relation_data, relation_type.vertex().clone()).map(RelationType::new);
                 let annotations = Self::read_relation_annotations(vertex_properties, relation_type.clone());
@@ -436,7 +436,7 @@ impl TypeCache {
                 let type_index = Typed::type_id(role_type.vertex()).as_u16();
 
                 let label = Self::read_type_label(vertex_properties, role_type.vertex().clone());
-                let is_root = label == Root::Role.label();
+                let is_root = label == Kind::Role.root_label();
                 let supertype = Self::read_supertype_vertex(role_data, role_type.vertex().clone()).map(RoleType::new);
                 let relates = Relates::new(
                     RelationType::new(Self::read_role_relater(role_data, role_type.vertex().clone())),
@@ -540,7 +540,7 @@ impl TypeCache {
                 let type_index = Typed::type_id(attribute_type.vertex()).as_u16();
 
                 let label = Self::read_type_label(vertex_properties, attribute_type.vertex().clone());
-                let is_root = label == Root::Attribute.label();
+                let is_root = label == Kind::Attribute.root_label();
                 let annotations = Self::read_attribute_annotations(vertex_properties, attribute_type.clone());
                 let value_type = Self::read_value_type(vertex_properties, attribute_type.vertex().clone());
                 let supertype = Self::read_supertype_vertex(attribute_data, attribute_type.vertex().clone())

@@ -23,20 +23,20 @@ pub mod property;
 pub mod vertex;
 pub mod vertex_generator;
 
-pub enum Root {
+pub enum Kind {
     Entity,
     Attribute,
     Relation,
     Role,
 }
 
-impl Root {
-    pub const fn label(&self) -> Label {
+impl Kind {
+    pub const fn root_label(&self) -> Label {
         match self {
-            Root::Entity => Label::new_static("entity"),
-            Root::Attribute => Label::new_static("attribute"),
-            Root::Relation => Label::new_static("relation"),
-            Root::Role => Label::new_static_scoped("role", "y", "y:role"),
+            Kind::Entity => Label::new_static("entity"),
+            Kind::Attribute => Label::new_static("attribute"),
+            Kind::Relation => Label::new_static("relation"),
+            Kind::Role => Label::new_static_scoped("role", "y", "y:role"),
         }
     }
 }
