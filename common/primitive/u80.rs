@@ -29,11 +29,8 @@ pub struct U80 {
 }
 
 impl U80 {
-    pub const MAX: U80 = U80 {
-        number: u128::from_be_bytes([
-            0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-        ]),
-    };
+    pub const MIN: U80 = U80 { number: 0x0000_0000_0000_0000_0000_0000_0000_0000 };
+    pub const MAX: U80 = U80 { number: 0x0000_0000_0000_ffff_ffff_ffff_ffff_ffff };
     pub const BYTES: usize = 10;
 
     pub fn new(number: u128) -> U80 {

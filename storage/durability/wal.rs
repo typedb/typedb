@@ -38,13 +38,11 @@ use crate::{
 const MAX_WAL_FILE_SIZE: u64 = 16 * 1024 * 1024;
 
 const FILE_PREFIX: &str = "wal-";
-const CHECKPOINTED_SUFFIX: &str = "-checkpoint";
 
 #[derive(Debug)]
 pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, &'static str>,
     next_sequence_number: AtomicU64,
-    watermark: AtomicU64,
     files: RwLock<Files>,
 }
 
@@ -55,11 +53,6 @@ impl WAL {
         }
 
         let files = Files::open(directory.clone())?;
-        let checkpoint = files
-            .iter()
-            .find(|f| !f.path.file_name().and_then(|s| s.to_str()).unwrap().ends_with(CHECKPOINTED_SUFFIX))
-            .map(|f| f.start.number().number() as u64)
-            .unwrap_or(0);
 
         let files = RwLock::new(files);
         let next = RecordIterator::new(files.read().unwrap())?
@@ -67,12 +60,7 @@ impl WAL {
             .map(|rr| rr.unwrap().sequence_number.number().number() as u64 + 1)
             .unwrap_or(1);
 
-        Ok(Self {
-            registered_types: HashMap::new(),
-            next_sequence_number: AtomicU64::new(next),
-            watermark: AtomicU64::new(checkpoint),
-            files,
-        })
+        Ok(Self { registered_types: HashMap::new(), next_sequence_number: AtomicU64::new(next), files })
     }
 }
 
@@ -116,18 +104,6 @@ impl DurabilityService for WAL {
     fn iter_from(&self, sequence_number: SequenceNumber) -> io::Result<impl Iterator<Item = io::Result<RawRecord>>> {
         Ok(RecordIterator::new(self.files.read().unwrap())?
             .skip_while(move |r| r.as_ref().is_ok_and(|r| r.sequence_number < sequence_number)))
-    }
-
-    fn checkpoint(&self) -> Result<()> {
-        let mut files = self.files.write().unwrap();
-        files.checkpoint(self.current())?;
-
-        self.watermark.store(self.next_sequence_number.load(Ordering::Relaxed), Ordering::Relaxed);
-        Ok(())
-    }
-
-    fn watermark(&self) -> SequenceNumber {
-        SequenceNumber::new(U80::new(self.watermark.load(Ordering::Acquire) as u128))
     }
 }
 
@@ -187,20 +163,6 @@ impl Files {
 
         self.files.last_mut().unwrap().len = self.writer.stream_position()?;
         Ok(())
-    }
-
-    fn checkpoint(&mut self, next: SequenceNumber) -> io::Result<()> {
-        self.writer.flush()?;
-        for file in self.files.iter_mut() {
-            let current_path = &file.path;
-            let current_file_name = current_path.file_name().and_then(OsStr::to_str).unwrap().to_owned();
-            if !current_file_name.ends_with(CHECKPOINTED_SUFFIX) {
-                let checkpointed_path = current_path.with_file_name(current_file_name + CHECKPOINTED_SUFFIX);
-                fs::rename(current_path, &checkpointed_path)?;
-                file.path = checkpointed_path;
-            }
-        }
-        self.open_new_file_at(next)
     }
 
     fn iter(&self) -> impl Iterator<Item = &File> {
@@ -379,7 +341,7 @@ mod test {
         let wal = open_wal(&directory);
         wal.sequenced_write(&record).unwrap();
 
-        let RawRecord { record_type, bytes, .. } = wal.iter_from(wal.watermark()).unwrap().next().unwrap().unwrap();
+        let RawRecord { record_type, bytes, .. } = wal.iter_from_start().unwrap().next().unwrap().unwrap();
         assert_eq!(record_type, TestRecord::RECORD_TYPE);
 
         let read_record = TestRecord::deserialize_from(&mut &*bytes).unwrap();
@@ -396,7 +358,7 @@ mod test {
         records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ())).unwrap();
 
         let read_records = wal
-            .iter_from(wal.watermark())
+            .iter_from_start()
             .unwrap()
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();
@@ -420,7 +382,7 @@ mod test {
         drop(wal);
 
         let wal = open_wal(&directory);
-        let RawRecord { record_type, bytes, .. } = wal.iter_from(wal.watermark()).unwrap().next().unwrap().unwrap();
+        let RawRecord { record_type, bytes, .. } = wal.iter_from_start().unwrap().next().unwrap().unwrap();
         assert_eq!(record_type, TestRecord::RECORD_TYPE);
 
         let read_record = TestRecord::deserialize_from(&mut &*bytes).unwrap();
@@ -439,46 +401,7 @@ mod test {
 
         let wal = open_wal(&directory);
         let read_records = wal
-            .iter_from(wal.watermark())
-            .unwrap()
-            .map(|res| {
-                let RawRecord { record_type, bytes, .. } = res.unwrap();
-                assert_eq!(record_type, TestRecord::RECORD_TYPE);
-                TestRecord::deserialize_from(&mut &*bytes).unwrap()
-            })
-            .collect_vec();
-
-        assert_eq!(records, &*read_records);
-    }
-
-    #[test]
-    fn test_wal_checkpoint_recover() {
-        let directory = TempDir::new("wal-test").unwrap();
-
-        let committed_record = TestRecord { bytes: *b"1234" };
-        let records = [TestRecord { bytes: *b"test" }, TestRecord { bytes: *b"abcd" }];
-
-        let wal = open_wal(&directory);
-        wal.sequenced_write(&committed_record).unwrap();
-        wal.checkpoint().unwrap();
-        records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ())).unwrap();
-
-        let read_records = wal
-            .iter_from(wal.watermark())
-            .unwrap()
-            .map(|res| {
-                let RawRecord { record_type, bytes, .. } = res.unwrap();
-                assert_eq!(record_type, TestRecord::RECORD_TYPE);
-                TestRecord::deserialize_from(&mut &*bytes).unwrap()
-            })
-            .collect_vec();
-        assert_eq!(records, &*read_records);
-
-        drop(wal);
-
-        let wal = open_wal(&directory);
-        let read_records = wal
-            .iter_from(wal.watermark())
+            .iter_from_start()
             .unwrap()
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();

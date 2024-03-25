@@ -195,7 +195,7 @@ impl<D> MVCCStorage<D> {
         D: DurabilityService,
     {
         for record in
-            self.durability_service.iter_type_from::<CommitRecord>(self.durability_service.watermark()).unwrap()
+            self.durability_service.iter_type_from_start::<CommitRecord>().unwrap()
         {
             if let Ok((commit_sequence_number, commit_record)) = record {
                 self.write_commit_record(commit_sequence_number, commit_record)?;

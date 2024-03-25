@@ -18,7 +18,7 @@
 #![deny(unused_must_use)]
 #![deny(rust_2018_idioms)]
 
-use durability::{DurabilityRecord, DurabilityService, RawRecord};
+use durability::{DurabilityRecord, DurabilityService};
 use durability_test_common::{open_wal, TestRecord};
 use tempdir::TempDir;
 
@@ -37,25 +37,4 @@ fn basic() {
     let raw_record = wal.iter_from(written_entry_id).unwrap().next().unwrap().unwrap();
     let read_record = TestRecord::deserialize_from(&mut &*raw_record.bytes).unwrap();
     assert_eq!(read_record, message);
-    wal.checkpoint().unwrap();
-    let written_entry_id = wal.sequenced_write(&message).unwrap();
-    println!("hello world written to WAL in {written_entry_id}");
-    drop(wal);
-
-    let wal = open_wal(&directory);
-
-    let mut recovery_iterator = wal.iter_from(wal.watermark()).unwrap();
-    let RawRecord { sequence_number, record_type, bytes } = recovery_iterator.next().unwrap().unwrap();
-    assert_eq!(sequence_number, written_entry_id);
-    assert_eq!(record_type, TestRecord::RECORD_TYPE);
-    assert_eq!(message, TestRecord::deserialize_from(&mut &*bytes).unwrap());
-    assert!(recovery_iterator.next().is_none());
-    drop(recovery_iterator);
-
-    wal.checkpoint().unwrap();
-    drop(wal);
-
-    let wal = open_wal(&directory);
-    let mut recovery_iterator = wal.iter_from(wal.watermark()).unwrap();
-    assert!(recovery_iterator.next().is_none());
 }

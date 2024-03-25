@@ -25,7 +25,7 @@ use durability_test_common::{open_wal, TestRecord};
 
 fn main() {
     let wal = open_wal(std::env::args().nth(1).unwrap());
-    for RawRecord { sequence_number, record_type, bytes } in wal.iter_from(wal.watermark()).unwrap().map(|r| r.unwrap())
+    for RawRecord { sequence_number, record_type, bytes } in wal.iter_from_start().unwrap().map(|r| r.unwrap())
     {
         assert_eq!(record_type, TestRecord::RECORD_TYPE);
         let number = sequence_number.number().number();

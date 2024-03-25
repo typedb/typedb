@@ -59,6 +59,10 @@ pub trait DurabilityService: Sequencer {
 
     fn iter_from(&self, sequence_number: SequenceNumber) -> io::Result<impl Iterator<Item = io::Result<RawRecord>>>;
 
+    fn iter_from_start(&self) -> io::Result<impl Iterator<Item = io::Result<RawRecord>>> {
+        self.iter_from(SequenceNumber::MIN)
+    }
+
     fn iter_type_from<Record: DurabilityRecord>(
         &self,
         sequence_number: SequenceNumber,
@@ -69,9 +73,11 @@ pub trait DurabilityService: Sequencer {
         }))
     }
 
-    fn checkpoint(&self) -> Result<()>;
-
-    fn watermark(&self) -> SequenceNumber;
+    fn iter_type_from_start<Record: DurabilityRecord>(
+        &self,
+    ) -> io::Result<impl Iterator<Item = Result<(SequenceNumber, Record)>>> {
+        self.iter_type_from(SequenceNumber::MIN)
+    }
 }
 
 pub type DurabilityRecordType = u8;
@@ -95,6 +101,7 @@ impl fmt::Display for SequenceNumber {
 }
 
 impl SequenceNumber {
+    pub const MIN: Self = Self { number: U80::MIN };
     pub const MAX: Self = Self { number: U80::MAX };
 
     pub fn new(number: U80) -> Self {
