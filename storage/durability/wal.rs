@@ -55,7 +55,7 @@ impl WAL {
         let files = Files::open(directory.clone())?;
 
         let files = RwLock::new(files);
-        let next = RecordIterator::new(files.read().unwrap())?
+        let next = RecordIterator::new(files.read().unwrap(), SequenceNumber::MIN)?
             .last()
             .map(|rr| rr.unwrap().sequence_number.number().number() as u64 + 1)
             .unwrap_or(1);
@@ -102,8 +102,7 @@ impl DurabilityService for WAL {
     }
 
     fn iter_from(&self, sequence_number: SequenceNumber) -> io::Result<impl Iterator<Item = io::Result<RawRecord>>> {
-        Ok(RecordIterator::new(self.files.read().unwrap())?
-            .skip_while(move |r| r.as_ref().is_ok_and(|r| r.sequence_number < sequence_number)))
+        RecordIterator::new(self.files.read().unwrap(), sequence_number)
     }
 }
 
@@ -127,7 +126,7 @@ impl Files {
         files.sort_unstable_by(|lhs, rhs| lhs.path.cmp(&rhs.path));
 
         if files.is_empty() {
-            files.push(File::open_at(directory.clone(), 0.into())?);
+            files.push(File::open_at(directory.clone(), SequenceNumber::from(1))?);
         }
 
         let writer = files.last().unwrap().writer()?;
@@ -262,9 +261,27 @@ struct RecordIterator<'a> {
 }
 
 impl<'a> RecordIterator<'a> {
-    fn new(files: RwLockReadGuard<'a, Files>) -> io::Result<Self> {
-        let reader = Some(FileReader::new(files.files[0].clone())?);
-        Ok(Self { current: 0, files, reader })
+    fn new(files: RwLockReadGuard<'a, Files>, start: SequenceNumber) -> io::Result<Self> {
+        let (current, mut current_start) = files
+            .iter()
+            .map_while(|file| (file.start <= start).then_some(file.start))
+            .enumerate()
+            .last()
+            .unwrap_or((0, files.files[0].start));
+        let mut reader = FileReader::new(files.files[current].clone())?;
+        while current_start < start {
+            match reader.read_one_record().transpose() {
+                None => {
+                    // sequence number is past the end
+                    return Ok(Self { files, current, reader: None });
+                }
+                Some(Err(err)) => return Err(err),
+                Some(Ok(RawRecord { sequence_number, .. })) => {
+                    current_start = SequenceNumber::from(sequence_number.number().number() + 1)
+                }
+            }
+        }
+        Ok(Self { files, current, reader: Some(reader) })
     }
 
     fn advance_file(&mut self) -> io::Result<Option<()>> {
@@ -303,7 +320,7 @@ mod test {
     use tempdir::TempDir;
 
     use super::WAL;
-    use crate::{DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord};
+    use crate::{DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, SequenceNumber};
 
     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
     struct TestRecord {
@@ -447,5 +464,9 @@ mod test {
             })
             .collect_vec();
         assert_eq!(&records[1..], &*read_records);
+
+        let wal = open_wal(&directory);
+        let read_records = wal.iter_from(SequenceNumber::MAX).unwrap().map(|res| res.unwrap()).collect_vec();
+        assert!(read_records.is_empty());
     }
 }
