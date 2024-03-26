@@ -187,7 +187,7 @@ impl<D> MVCCStorage<D> {
         let name = name.as_ref();
         let (keyspaces, keyspaces_index) = recover_keyspaces::<KS>(name, &storage_dir)?;
 
-        let isolation_manager = IsolationManager::new(durability_service.current());
+        let isolation_manager = IsolationManager::new(SequenceNumber::from(1));
 
         let name = name.to_owned();
 
