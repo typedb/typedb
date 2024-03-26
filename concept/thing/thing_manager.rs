@@ -28,7 +28,7 @@ use encoding::{
         Typed,
     },
     Keyable,
-    layout::prefix::{PrefixID, PrefixType},
+    layout::prefix::{PrefixID, Prefix},
     value::{long::Long, string::StringBytes, value_type::ValueType},
 };
 use primitive::prefix_range::PrefixRange;

@@ -20,7 +20,7 @@ use std::path::Path;
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use durability::wal::WAL;
 use primitive::prefix_range::PrefixRange;
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{IsolationError, IsolationErrorKind},
@@ -89,13 +89,13 @@ fn commits_isolated() {
         StorageKey::Array(StorageKeyArray::new(Keyspace, ByteArray::copy(&[0x0_u8])));
     let range = PrefixRange::new_within(prefix);
     let retrieved_count = snapshot_2.iterate_range(range.clone()).count();
-    assert_eq!(retrieved_count.len(), 2);
+    assert_eq!(retrieved_count, 2);
 
     let snapshot_3 = storage.open_snapshot_read();
     let get: Option<ByteArray<{ BUFFER_KEY_INLINE }>> = snapshot_3.get(StorageKeyReference::from(&key_3));
     assert!(matches!(get, Some(_value_3)));
     let retrieved_count = snapshot_3.iterate_range(range.clone()).count();
-    assert_eq!(retrieved_count.len(), 3);
+    assert_eq!(retrieved_count, 3);
 }
 
 ///

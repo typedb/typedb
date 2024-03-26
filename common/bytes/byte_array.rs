@@ -28,7 +28,10 @@ use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
 };
 
-use crate::{byte_reference::ByteReference, util::{increment, BytesError}};
+use crate::{
+    byte_reference::ByteReference,
+    util::{increment, BytesError},
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ByteArray<const INLINE_BYTES: usize> {
@@ -57,21 +60,12 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
         }
     }
 
-    pub fn copy_concat_2(bytes_1: &[u8], bytes_2: &[u8]) -> ByteArray<INLINE_BYTES> {
-        let length = bytes_1.len() + bytes_2.len();
+    pub fn copy_concat<const N: usize>(slices: [&[u8]; N]) -> ByteArray<INLINE_BYTES> {
+        let length: usize = slices.iter().map(|slice| slice.len()).sum();
         if length < INLINE_BYTES {
-            ByteArray::Inline(ByteArrayInline::from_2(bytes_1, bytes_2))
+            ByteArray::Inline(ByteArrayInline::concat(slices))
         } else {
-            ByteArray::Boxed(ByteArrayBoxed::from_2(bytes_1, bytes_2))
-        }
-    }
-
-    pub fn copy_concat_3(bytes_1: &[u8], bytes_2: &[u8], bytes_3: &[u8]) -> ByteArray<INLINE_BYTES> {
-        let length = bytes_1.len() + bytes_2.len() + bytes_3.len();
-        if length < INLINE_BYTES {
-            ByteArray::Inline(ByteArrayInline::from_3(bytes_1, bytes_2, bytes_3))
-        } else {
-            ByteArray::Boxed(ByteArrayBoxed::from_3(bytes_1, bytes_2, bytes_3))
+            ByteArray::Boxed(ByteArrayBoxed::concat(slices))
         }
     }
 
@@ -141,7 +135,7 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
         ByteArrayInline { data: [0; BYTES], length: 0 }
     }
 
-    fn zeros(length: usize) -> ByteArrayInline<BYTES> {
+    const fn zeros(length: usize) -> ByteArrayInline<BYTES> {
         assert!(length < BYTES);
         ByteArrayInline { data: [0; BYTES], length: length as u64 }
     }
@@ -154,31 +148,15 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
         ByteArrayInline { data, length: length as u64 }
     }
 
-    fn from_2(bytes_1: &[u8], bytes_2: &[u8]) -> ByteArrayInline<BYTES> {
-        let length = bytes_1.len() + bytes_2.len();
+    fn concat<const N: usize>(slices: [&[u8]; N]) -> ByteArrayInline<BYTES> {
+        let length: usize = slices.iter().map(|slice| slice.len()).sum();
         assert!(length < BYTES);
         let mut data = [0; BYTES];
-
-        let end_1 = bytes_1.len();
-        let end_2 = end_1 + bytes_2.len();
-
-        data[0..end_1].copy_from_slice(bytes_1);
-        data[end_1..end_2].copy_from_slice(bytes_2);
-        ByteArrayInline { data, length: length as u64 }
-    }
-
-    fn from_3(bytes_1: &[u8], bytes_2: &[u8], bytes_3: &[u8]) -> ByteArrayInline<BYTES> {
-        let length = bytes_1.len() + bytes_2.len() + bytes_3.len();
-        assert!(length < BYTES);
-        let mut data = [0; BYTES];
-
-        let end_1 = bytes_1.len();
-        let end_2 = end_1 + bytes_2.len();
-        let end_3 = end_2 + bytes_3.len();
-
-        data[0..end_1].copy_from_slice(bytes_1);
-        data[end_1..end_2].copy_from_slice(bytes_2);
-        data[end_2..end_3].copy_from_slice(bytes_3);
+        let mut end = 0;
+        for slice in slices {
+            data[end..][..slice.len()].copy_from_slice(slice);
+            end += slice.len();
+        }
         ByteArrayInline { data, length: length as u64 }
     }
 
@@ -311,32 +289,9 @@ impl ByteArrayBoxed {
         ByteArrayBoxed { data: Box::from(bytes), length: bytes.len() }
     }
 
-    fn from_2(bytes_1: &[u8], bytes_2: &[u8]) -> ByteArrayBoxed {
-        let length = bytes_1.len() + bytes_2.len();
-        let mut data = vec![0; length].into_boxed_slice();
-
-        let end_1 = bytes_1.len();
-        let end_2 = end_1 + bytes_2.len();
-
-        data[0..end_1].copy_from_slice(bytes_1);
-        data[end_1..end_2].copy_from_slice(bytes_2);
-
-        ByteArrayBoxed { data, length }
-    }
-
-    fn from_3(bytes_1: &[u8], bytes_2: &[u8], bytes_3: &[u8]) -> ByteArrayBoxed {
-        let length = bytes_1.len() + bytes_2.len() + bytes_3.len();
-        let mut data = vec![0; length].into_boxed_slice();
-
-        let end_1 = bytes_1.len();
-        let end_2 = end_1 + bytes_2.len();
-        let end_3 = end_2 + bytes_3.len();
-
-        data[0..end_1].copy_from_slice(bytes_1);
-        data[end_1..end_2].copy_from_slice(bytes_2);
-        data[end_2..end_3].copy_from_slice(bytes_3);
-
-        ByteArrayBoxed { data, length }
+    fn concat<const N: usize>(slices: [&[u8]; N]) -> ByteArrayBoxed {
+        let data = slices.concat().into_boxed_slice();
+        ByteArrayBoxed { length: data.len(), data }
     }
 
     fn wrap(bytes: Box<[u8]>) -> ByteArrayBoxed {
@@ -363,7 +318,7 @@ impl<const INLINE_SIZE: usize> Borrow<[u8]> for ByteArray<INLINE_SIZE> {
     }
 }
 
-impl<const INLINE_BYTES: usize> PartialOrd<Self> for ByteArray<INLINE_BYTES> {
+impl<const INLINE_BYTES: usize> PartialOrd for ByteArray<INLINE_BYTES> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
@@ -375,17 +330,20 @@ impl<const INLINE_BYTES: usize> Ord for ByteArray<INLINE_BYTES> {
     }
 }
 
-impl<const INLINE_BYTES: usize> PartialEq<Self> for ByteArray<INLINE_BYTES> {
+impl<const INLINE_BYTES: usize> PartialEq for ByteArray<INLINE_BYTES> {
     fn eq(&self, other: &Self) -> bool {
-        // Note: we assume boxed and inline will never be equal since they are split by size
-        if matches!(self, ByteArray::Inline(_)) && matches!(other, ByteArray::Boxed(_)) {
-            false
-        } else if matches!(self, ByteArray::Boxed(_)) && matches!(other, ByteArray::Inline(_)) {
-            return false;
-        } else {
-            self.bytes() == other.bytes()
+        match (self, other) {
+            // Note: we assume boxed and inline will never be equal since they are split by size
+            (ByteArray::Inline(_), ByteArray::Boxed(_)) | (ByteArray::Boxed(_), ByteArray::Inline(_)) => false,
+            (_, _) => self.bytes() == other.bytes(),
         }
     }
 }
 
 impl<const INLINE_BYTES: usize> Eq for ByteArray<INLINE_BYTES> {}
+
+impl<const INLINE_BYTES: usize> PartialEq<[u8]> for ByteArray<INLINE_BYTES> {
+    fn eq(&self, other: &[u8]) -> bool {
+        self.bytes() == other
+    }
+}

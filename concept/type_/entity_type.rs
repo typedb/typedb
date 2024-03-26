@@ -19,7 +19,7 @@ use std::{collections::HashSet, ops::Deref};
 use bytes::{byte_reference::ByteReference, Bytes};
 use encoding::{
     graph::type_::vertex::{new_vertex_entity_type, TypeVertex},
-    layout::prefix::PrefixType,
+    layout::prefix::Prefix,
     value::label::Label,
     Prefixed,
 };
