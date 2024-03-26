@@ -233,9 +233,10 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
         (StorageKeyReference::from(key), ByteReference::from(write.get_value()))
     }
 
-    pub fn collect_cloned_vec<const INLINE_KEY: usize, const INLINE_VALUE: usize>(
-        mut self,
-    ) -> Result<Vec<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)>, SnapshotError> {
+    pub fn collect_cloned_vec<F, M>(mut self, mapper: F) -> Result<Vec<M>, SnapshotError>
+        where
+            F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> M,
+    {
         let mut vec = Vec::new();
         loop {
             let item = self.next();
@@ -243,7 +244,7 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
                 None => break,
                 Some(Err(e)) => return Err(e),
                 Some(Ok((key, value))) => {
-                    vec.push((StorageKeyArray::from(key), ByteArray::from(value)));
+                    vec.push(mapper(key, value));
                 }
             }
         }
@@ -251,9 +252,9 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
     }
 
     pub fn collect_cloned_bmap<F, M, N>(mut self, mapper: F) -> Result<BTreeMap<M, N>, SnapshotError>
-    where
-        F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> (M, N),
-        M: Ord + Eq + PartialEq,
+        where
+            F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> (M, N),
+            M: Ord + Eq + PartialEq,
     {
         let mut btree_map = BTreeMap::new();
         loop {
@@ -271,9 +272,9 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
     }
 
     pub fn collect_cloned_key_hashset<F, M>(mut self, mapper: F) -> Result<HashSet<M>, SnapshotError>
-    where
-        F: for<'b> Fn(StorageKeyReference<'b>) -> M,
-        M: Hash + Eq + PartialEq,
+        where
+            F: for<'b> Fn(StorageKeyReference<'b>) -> M,
+            M: Hash + Eq + PartialEq,
     {
         let mut set = HashSet::new();
         loop {
@@ -296,6 +297,16 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
         item.transpose().map(|option| {
             option.map(|(key, value)| (StorageKey::Array(StorageKeyArray::from(key)), ByteArray::from(value)))
         })
+    }
+
+    pub fn count(mut self) -> usize {
+        let mut count = 0;
+        let mut next = self.next();
+        while next.is_some() {
+            next = self.next();
+            count += 1;
+        }
+        count
     }
 }
 

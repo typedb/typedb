@@ -32,35 +32,8 @@ impl InfixID {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub(crate) enum InfixGroup {
-    Edge,
-    Property,
-}
-
-/*
-Infixes are always stored behind certain types Prefixes, so they could be partitioned per prefix.
-For example, type edge infixes are always going to follow type vertex prefixes.
-Also, annotation infixes will always follow an annotation prefix and a vertex.
-
-However, we group them all together for
-1) easier refactoring of prefixes without clashes in the infixes after refactoring
-2) easier overview of what types of 'middle' infix bytes are possible
-*/
 #[derive(Debug, Eq, PartialEq)]
-pub enum InfixType {
-    EdgeSub,
-    EdgeSubReverse,
-    EdgeOwns,
-    EdgeOwnsReverse,
-    EdgePlays,
-    EdgePlaysReverse,
-    EdgeRelates,
-    EdgeRelatesReverse,
-
-    EdgeHas,
-    EdgeHasReverse,
-
+pub enum Infix {
     PropertyLabel,
     PropertyValueType,
     PropertyAnnotationAbstract,
@@ -68,7 +41,7 @@ pub enum InfixType {
 
 macro_rules! infix_functions {
     ($(
-        $name:ident => $bytes:tt, InfixGroup::$group:ident
+        $name:ident => $bytes:tt
     );*) => {
         pub(crate) const fn infix_id(&self) -> InfixID {
             let bytes = match self {
@@ -87,33 +60,13 @@ macro_rules! infix_functions {
                 _ => unreachable!(),
             }
        }
-
-       pub(crate) const fn group(&self) -> InfixGroup {
-            match self {
-                $(
-                    Self::$name => {InfixGroup::$group}
-                )*
-            }
-       }
    };
 }
 
-impl InfixType {
+impl Infix {
     infix_functions!(
-        EdgeSub => [20], InfixGroup::Edge;
-        EdgeSubReverse => [21], InfixGroup::Edge;
-        EdgeOwns => [22], InfixGroup::Edge;
-        EdgeOwnsReverse => [23], InfixGroup::Edge;
-        EdgePlays => [24], InfixGroup::Edge;
-        EdgePlaysReverse => [25], InfixGroup::Edge;
-        EdgeRelates => [26], InfixGroup::Edge;
-        EdgeRelatesReverse => [27], InfixGroup::Edge;
-
-        EdgeHas => [50], InfixGroup::Edge;
-        EdgeHasReverse => [51], InfixGroup::Edge;
-
-        PropertyLabel => [100], InfixGroup::Property;
-        PropertyValueType => [101], InfixGroup::Property;
-        PropertyAnnotationAbstract => [110], InfixGroup::Property
+        PropertyLabel => [0];
+        PropertyValueType => [1];
+        PropertyAnnotationAbstract => [20]
     );
 }

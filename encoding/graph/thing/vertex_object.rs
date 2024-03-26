@@ -23,7 +23,7 @@ use storage::key_value::StorageKey;
 
 use crate::{
     graph::{type_::vertex::TypeID, Typed},
-    layout::prefix::{PrefixID, PrefixType},
+    layout::prefix::{PrefixID, Prefix},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
@@ -44,7 +44,7 @@ impl<'a> ObjectVertex<'a> {
 
     pub fn build_entity(type_id: TypeID, object_id: ObjectID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&PrefixType::VertexEntity.prefix_id().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::VertexEntity.prefix_id().bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         array.bytes_mut()[Self::range_object_id()].copy_from_slice(&object_id.bytes());
         ObjectVertex { bytes: Bytes::Array(array) }
@@ -77,6 +77,7 @@ impl<'a> ObjectVertex<'a> {
     pub fn object_id(&self) -> ObjectID {
         ObjectID::new(self.bytes.bytes()[Self::range_object_id()].try_into().unwrap())
     }
+
     const fn range_object_id() -> Range<usize> {
         Self::RANGE_TYPE_ID.end..Self::RANGE_TYPE_ID.end + ObjectID::LENGTH
     }

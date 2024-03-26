@@ -94,7 +94,8 @@ fn snapshot_buffered_put_iterate() {
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1], Keyspace));
     let items: Result<Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, SnapshotError> =
-        snapshot.iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix))).collect_cloned_vec();
+        snapshot.iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix)))
+            .collect_cloned_vec(|k, v|(StorageKeyArray::from(k), ByteArray::from(v)));
     assert_eq!(items.unwrap(), vec![(key_2, ByteArray::empty()), (key_3, ByteArray::empty()),]);
     snapshot.close_resources();
 }
@@ -122,7 +123,9 @@ fn snapshot_buffered_delete() {
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1], Keyspace));
     let items: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)> =
-        snapshot.iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix))).collect_cloned_vec().unwrap();
+        snapshot.iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix)))
+            .collect_cloned_vec(|k, v|(StorageKeyArray::from(k), ByteArray::from(v)))
+            .unwrap();
     assert_eq!(items, vec![(key_2, ByteArray::empty()),]);
     snapshot.close_resources();
 }
@@ -154,7 +157,7 @@ fn snapshot_read_through() {
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1], Keyspace));
     let key_values: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)> = snapshot
         .iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix.clone())))
-        .collect_cloned_vec()
+        .collect_cloned_vec(|k, v|(StorageKeyArray::from(k), ByteArray::from(v)))
         .unwrap();
     assert_eq!(
         key_values,
@@ -168,7 +171,8 @@ fn snapshot_read_through() {
     // test delete-iterate read-through
     snapshot.delete(key_2.clone());
     let key_values: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)> =
-        snapshot.iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix))).collect_cloned_vec().unwrap();
+        snapshot.iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix)))
+            .collect_cloned_vec(|k, v|(StorageKeyArray::from(k), ByteArray::from(v))).unwrap();
     assert_eq!(key_values, vec![(key_3, ByteArray::empty()), (key_5, ByteArray::empty()),]);
     snapshot.close_resources();
 }

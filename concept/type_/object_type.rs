@@ -26,7 +26,7 @@ use crate::type_::plays::Plays;
 use crate::type_::role_type::RoleType;
 use crate::type_::type_manager::TypeManager;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ObjectType<'a> {
     Entity(EntityType<'a>),
     Relation(RelationType<'a>),

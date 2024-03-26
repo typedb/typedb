@@ -28,7 +28,7 @@ use encoding::{
         Typed,
     },
     Keyable,
-    layout::prefix::{PrefixID, PrefixType},
+    layout::prefix::{PrefixID, Prefix},
     value::{long::Long, string::StringBytes, value_type::ValueType},
 };
 use primitive::prefix_range::PrefixRange;
@@ -118,7 +118,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
     }
 
     pub fn get_entities(&self) -> EntityIterator<'_, 1> {
-        let prefix = ObjectVertex::build_prefix_prefix(PrefixType::VertexEntity.prefix_id());
+        let prefix = ObjectVertex::build_prefix_prefix(Prefix::VertexEntity.prefix_id());
         let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_within(prefix));
         EntityIterator::new(snapshot_iterator)
     }
@@ -154,7 +154,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
                 todo!()
             }
             ValueType::String => {
-                let attribute_id = StringAttributeID::new(attribute.vertex().attribute_id().unwrap_bytes_16());
+                let attribute_id = StringAttributeID::new(attribute.vertex().attribute_id().unwrap_bytes_17());
                 if attribute_id.is_inline() {
                     Value::String(String::from(attribute_id.get_inline_string_bytes().as_str()).into_boxed_str())
                 } else {

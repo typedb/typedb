@@ -23,9 +23,11 @@ use encoding::{
     AsBytes,
     graph::type_::{
         edge::{
-            build_edge_owns, build_edge_owns_prefix, build_edge_owns_reverse, build_edge_relates,
-            build_edge_relates_prefix, build_edge_relates_reverse, build_edge_sub, build_edge_sub_prefix,
+            build_edge_owns, build_edge_owns_reverse, build_edge_relates,
+            build_edge_relates_reverse, build_edge_sub,
             build_edge_sub_reverse, new_edge_owns, new_edge_relates, new_edge_sub,
+            build_edge_owns_prefix_from, build_edge_plays, build_edge_plays_prefix_from, build_edge_plays_reverse,
+            build_edge_relates_prefix_from, build_edge_sub_prefix_from, new_edge_plays,
         },
         index::LabelToTypeVertexIndex,
         Kind,
@@ -44,7 +46,6 @@ use encoding::{
         value_type::{ValueType, ValueTypeID},
     },
 };
-use encoding::graph::type_::edge::{build_edge_plays, build_edge_plays_prefix, build_edge_plays_reverse, new_edge_plays};
 use primitive::maybe_owns::MaybeOwns;
 use primitive::prefix_range::PrefixRange;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
@@ -101,7 +102,7 @@ macro_rules! get_supertype_methods {
                 } else {
                     // TODO: handle possible errors
                     self.snapshot
-                        .iterate_range(PrefixRange::new_within(build_edge_sub_prefix(type_.into_vertex().clone())))
+                        .iterate_range(PrefixRange::new_within(build_edge_sub_prefix_from(type_.into_vertex().clone())))
                         .first_cloned()
                         .unwrap()
                         .map(|(key, _)| $type_::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
@@ -196,8 +197,8 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     }
 
     pub fn initialise_types(storage: &mut MVCCStorage<D>, vertex_generator: &TypeVertexGenerator)
-    where
-        D: DurabilityService,
+        where
+            D: DurabilityService,
     {
         let snapshot = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
         {
@@ -375,7 +376,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     }
 
     pub(crate) fn get_entity_type_plays<'this>(
-        &'this self, entity_type: EntityType<'static>
+        &'this self, entity_type: EntityType<'static>,
     ) -> MaybeOwns<'this, HashSet<Plays<'static>>> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_entity_type_plays(entity_type))
@@ -446,7 +447,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     fn get_storage_supertype(&self, subtype: TypeVertex<'static>) -> Option<TypeVertex<'static>> {
         // TODO: handle possible errors
         self.snapshot
-            .iterate_range(PrefixRange::new_within(build_edge_sub_prefix(subtype.clone())))
+            .iterate_range(PrefixRange::new_within(build_edge_sub_prefix_from(subtype.clone())))
             .first_cloned()
             .unwrap()
             .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned())
@@ -479,10 +480,10 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     }
 
     fn get_storage_owns<F>(&self, owner: TypeVertex<'static>, mapper: F) -> HashSet<Owns<'static>>
-    where
-        F: for<'b> Fn(TypeVertex<'b>) -> Owns<'static>,
+        where
+            F: for<'b> Fn(TypeVertex<'b>) -> Owns<'static>,
     {
-        let owns_prefix = build_edge_owns_prefix(owner);
+        let owns_prefix = build_edge_owns_prefix_from(owner);
         // TODO: handle possible errors
         self.snapshot
             .iterate_range(PrefixRange::new_within(owns_prefix))
@@ -519,7 +520,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         where
             F: for<'b> Fn(TypeVertex<'b>) -> Plays<'static>,
     {
-        let plays_prefix = build_edge_plays_prefix(player);
+        let plays_prefix = build_edge_plays_prefix_from(player);
         // TODO: handle possible errors
         self.snapshot
             .iterate_range(PrefixRange::new_within(plays_prefix))
@@ -553,10 +554,10 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     }
 
     fn get_storage_relates<F>(&self, relation: TypeVertex<'static>, mapper: F) -> HashSet<Relates<'static>>
-    where
-        F: for<'b> Fn(TypeVertex<'b>) -> Relates<'static>,
+        where
+            F: for<'b> Fn(TypeVertex<'b>) -> Relates<'static>,
     {
-        let relates_prefix = build_edge_relates_prefix(relation);
+        let relates_prefix = build_edge_relates_prefix_from(relation);
         // TODO: handle possible errors
         self.snapshot
             .iterate_range(PrefixRange::new_within(relates_prefix))

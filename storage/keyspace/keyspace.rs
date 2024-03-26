@@ -308,7 +308,7 @@ pub struct KeyspaceRangeIterator<'a, const INLINE_BYTES: usize> {
 
 impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
     fn new(keyspace: &'a Keyspace, range: PrefixRange<Bytes<'a, { INLINE_BYTES }>>) -> Self {
-        // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
+        // TODO: if range is within a prefix and self.has_prefix_extractor_for(prefix), we can enable bloom filters
         // read_opts.set_prefix_same_as_start(true);
         let read_opts = keyspace.new_read_options();
         let raw_iterator: DBRawIteratorWithThreadMode<'a, DB> = keyspace.kv_storage.raw_iterator_opt(read_opts);

@@ -17,7 +17,7 @@
 
 use std::collections::HashSet;
 
-use encoding::{graph::type_::vertex::TypeVertex, layout::prefix::PrefixType, Prefixed};
+use encoding::{graph::type_::vertex::TypeVertex, layout::prefix::Prefix, Prefixed};
 use encoding::value::label::Label;
 use encoding::value::value_type::ValueType;
 use primitive::maybe_owns::MaybeOwns;
@@ -30,17 +30,17 @@ use crate::type_::annotation::Annotation;
 use crate::type_::owns::Owns;
 use crate::type_::type_manager::TypeManager;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
     vertex: TypeVertex<'a>,
 }
 
 impl<'a> AttributeType<'a> {
     pub fn new(vertex: TypeVertex<'a>) -> AttributeType<'_> {
-        if vertex.prefix() != PrefixType::VertexAttributeType {
+        if vertex.prefix() != Prefix::VertexAttributeType {
             panic!(
                 "Type IID prefix was expected to be Prefix::AttributeType ({:?}) but was {:?}",
-                PrefixType::VertexAttributeType,
+                Prefix::VertexAttributeType,
                 vertex.prefix()
             )
         }

@@ -21,7 +21,7 @@ use std::collections::HashSet;
 use bytes::byte_reference::ByteReference;
 use bytes::Bytes;
 use encoding::graph::type_::vertex::{new_vertex_role_type, TypeVertex};
-use encoding::layout::prefix::PrefixType;
+use encoding::layout::prefix::Prefix;
 use encoding::Prefixed;
 use encoding::value::label::Label;
 use primitive::maybe_owns::MaybeOwns;
@@ -38,17 +38,17 @@ use crate::type_::plays::Plays;
 use crate::type_::relates::Relates;
 use crate::type_::type_manager::TypeManager;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
     vertex: TypeVertex<'a>,
 }
 
 impl<'a> RoleType<'a> {
     pub fn new(vertex: TypeVertex<'a>) -> RoleType<'_> {
-        if vertex.prefix() != PrefixType::VertexRoleType {
+        if vertex.prefix() != Prefix::VertexRoleType {
             panic!(
                 "Type IID prefix was expected to be Prefix::RoleType ({:?}) but was {:?}",
-                PrefixType::VertexRoleType,
+                Prefix::VertexRoleType,
                 vertex.prefix()
             )
         }

@@ -62,7 +62,6 @@ pub trait OwnerAPI<'a> {
 }
 
 
-// --- Player API ---
 pub trait PlayerAPI<'a> {
     fn set_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) -> Plays<'static>;
 

@@ -20,12 +20,18 @@ use std::ops::Range;
 use bytes::{Bytes, byte_reference::ByteReference};
 use storage::{key_value::StorageKey, KeyspaceSet};
 
-use crate::layout::prefix::{PrefixID, PrefixType};
+use crate::layout::prefix::{PrefixID, Prefix};
 
 mod error;
 pub mod graph;
 pub mod layout;
 pub mod value;
+
+/*
+TODO: things we may want to allow the user to configure, per database:
+- Bytes per TypeID (max number of types per kind)
+- Bytes per Entity/Relation (ObjectID) (max number of instances per type)
+ */
 
 #[derive(Clone, Copy, Debug)]
 pub enum EncodingKeyspace {
@@ -79,8 +85,8 @@ pub trait Keyable<'a, const INLINE_SIZE: usize>: AsBytes<'a, INLINE_SIZE> + Size
 pub trait Prefixed<'a, const INLINE_SIZE: usize>: AsBytes<'a, INLINE_SIZE> {
     const RANGE_PREFIX: Range<usize> = 0..PrefixID::LENGTH;
 
-    fn prefix(&'a self) -> PrefixType {
+    fn prefix(&'a self) -> Prefix {
         let bytes = &self.bytes().bytes()[Self::RANGE_PREFIX].try_into().unwrap();
-        PrefixType::from_prefix_id(PrefixID::new(*bytes))
+        Prefix::from_prefix_id(PrefixID::new(*bytes))
     }
 }

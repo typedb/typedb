@@ -20,7 +20,7 @@ use std::ops::Deref;
 use bytes::{byte_reference::ByteReference, Bytes};
 use encoding::{
     graph::type_::vertex::{new_vertex_entity_type, TypeVertex},
-    layout::prefix::PrefixType,
+    layout::prefix::Prefix,
     Prefixed,
 };
 use encoding::value::label::Label;
@@ -45,17 +45,17 @@ use crate::type_::{OwnerAPI, PlayerAPI};
 use crate::type_::plays::Plays;
 use crate::type_::role_type::RoleType;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType<'a> {
     vertex: TypeVertex<'a>,
 }
 
 impl<'a> EntityType<'a> {
     pub fn new(vertex: TypeVertex<'a>) -> EntityType<'_> {
-        if vertex.prefix() != PrefixType::VertexEntityType {
+        if vertex.prefix() != Prefix::VertexEntityType {
             panic!(
                 "Type IID prefix was expected to be Prefix::EntityType ({:?}) but was {:?}",
-                PrefixType::VertexEntityType,
+                Prefix::VertexEntityType,
                 vertex.prefix()
             )
         }

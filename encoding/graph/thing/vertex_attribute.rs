@@ -23,7 +23,7 @@ use storage::key_value::StorageKey;
 
 use crate::{
     graph::{type_::vertex::TypeID, Typed},
-    layout::prefix::{PrefixID, PrefixType},
+    layout::prefix::{PrefixID, Prefix},
     value::value_type::ValueType,
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
@@ -42,12 +42,12 @@ impl<'a> AttributeVertex<'a> {
         AttributeVertex { bytes }
     }
 
-    fn value_type_to_prefix_type(value_type: ValueType) -> PrefixType {
+    fn value_type_to_prefix_type(value_type: ValueType) -> Prefix {
         match value_type {
-            ValueType::Boolean => PrefixType::VertexAttributeBoolean,
-            ValueType::Long => PrefixType::VertexAttributeLong,
-            ValueType::Double => PrefixType::VertexAttributeDouble,
-            ValueType::String => PrefixType::VertexAttributeString,
+            ValueType::Boolean => Prefix::VertexAttributeBoolean,
+            ValueType::Long => Prefix::VertexAttributeLong,
+            ValueType::Double => Prefix::VertexAttributeDouble,
+            ValueType::String => Prefix::VertexAttributeString,
         }
     }
 
@@ -92,8 +92,8 @@ impl<'a> AttributeVertex<'a> {
 
     pub fn value_type(&self) -> ValueType {
         match self.prefix() {
-            PrefixType::VertexAttributeLong => ValueType::Long,
-            PrefixType::VertexAttributeString => ValueType::String,
+            Prefix::VertexAttributeLong => ValueType::Long,
+            Prefix::VertexAttributeString => ValueType::String,
             _ => unreachable!("Unexpected prefix."),
         }
     }
@@ -140,14 +140,14 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum AttributeID {
     Bytes8(AttributeID8),
-    Bytes16(AttributeID16),
+    Bytes17(AttributeID17),
 }
 
 impl AttributeID {
     pub(crate) fn new(bytes: &[u8]) -> Self {
         match bytes.len() {
-            8 => Self::Bytes8(AttributeID8::new(bytes.try_into().unwrap())),
-            16 => Self::Bytes16(AttributeID16::new(bytes.try_into().unwrap())),
+            AttributeID8::LENGTH => Self::Bytes8(AttributeID8::new(bytes.try_into().unwrap())),
+            AttributeID17::LENGTH => Self::Bytes17(AttributeID17::new(bytes.try_into().unwrap())),
             _ => panic!("Unknown Attribute ID encoding length: {}", bytes.len()),
         }
     }
@@ -155,28 +155,28 @@ impl AttributeID {
     pub(crate) fn bytes(&self) -> &[u8] {
         match self {
             AttributeID::Bytes8(id_8) => &id_8.bytes,
-            AttributeID::Bytes16(id_16) => &id_16.bytes,
+            AttributeID::Bytes17(id_17) => &id_17.bytes,
         }
     }
 
     pub(crate) const fn length(&self) -> usize {
         match self {
             AttributeID::Bytes8(_) => AttributeID8::LENGTH,
-            AttributeID::Bytes16(_) => AttributeID16::LENGTH,
+            AttributeID::Bytes17(_) => AttributeID17::LENGTH,
         }
     }
 
-    pub fn unwrap_bytes_16(self) -> AttributeID16 {
+    pub fn unwrap_bytes_17(self) -> AttributeID17 {
         match self {
-            AttributeID::Bytes8(_) => panic!("Cannot unwrap bytes_16 from AttributeID::Bytes_8"),
-            AttributeID::Bytes16(bytes) => bytes,
+            AttributeID::Bytes8(_) => panic!("Cannot unwrap bytes_17 from AttributeID::Bytes_8"),
+            AttributeID::Bytes17(bytes) => bytes,
         }
     }
 
     pub fn unwrap_bytes_8(self) -> AttributeID8 {
         match self {
             AttributeID::Bytes8(bytes) => bytes,
-            AttributeID::Bytes16(_) => panic!("Cannot unwrap bytes_8 from AttributeID::Bytes_16"),
+            AttributeID::Bytes17(_) => panic!("Cannot unwrap bytes_8 from AttributeID::Bytes_17"),
         }
     }
 }
@@ -199,12 +199,17 @@ impl AttributeID8 {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct AttributeID16 {
+pub struct AttributeID17 {
     bytes: [u8; Self::LENGTH],
 }
 
-impl AttributeID16 {
-    pub(crate) const LENGTH: usize = 16;
+///
+/// 17 bytes lets us use 1 bit of the last byte to determine if the previous 16 bytes represent a hash,
+/// or an inline value. Leaving 16 bytes for an inline attribute value is important since many standardised data types,
+/// such as UUID, IPv6, are created to fit in a 16 byte encoding scheme.
+///
+impl AttributeID17 {
+    pub(crate) const LENGTH: usize = 17;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }

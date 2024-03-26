@@ -21,39 +21,39 @@ use storage::key_value::StorageKey;
 
 use crate::{
     graph::Typed,
-    layout::prefix::{PrefixID, PrefixType},
+    layout::prefix::{PrefixID, Prefix},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 // TODO: we could make all Type constructs contain plain byte arrays, since they will always be 64 bytes (BUFFER_KEY_INLINE), then make Types all Copy
 //       However, we should benchmark this first, since 64 bytes may be better off referenced
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct TypeVertex<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 macro_rules! type_vertex_constructors {
-    ($new_name:ident, $build_name:ident, $build_name_prefix:ident, $is_name:ident, PrefixType::$prefix:ident) => {
+    ($new_name:ident, $build_name:ident, $build_name_prefix:ident, $is_name:ident, Prefix::$prefix:ident) => {
         pub fn $new_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> TypeVertex<'_> {
             let vertex = TypeVertex::new(bytes);
-            debug_assert_eq!(vertex.prefix(), PrefixType::$prefix);
+            debug_assert_eq!(vertex.prefix(), Prefix::$prefix);
             vertex
         }
 
         pub fn $build_name(type_id: TypeID) -> TypeVertex<'static> {
-            TypeVertex::build(PrefixType::$prefix.prefix_id(), type_id)
+            TypeVertex::build(Prefix::$prefix.prefix_id(), type_id)
         }
 
         // TODO: is it better to have a const fn that is a reference to owned memory, or
         //       to always induce a tiny copy have a non-const function?
         pub fn $build_name_prefix() -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
-            const BYTES: [u8; TypeVertex::LENGTH_PREFIX] = PrefixType::$prefix.prefix_id().bytes();
+            const BYTES: [u8; TypeVertex::LENGTH_PREFIX] = Prefix::$prefix.prefix_id().bytes();
             StorageKey::new_ref(TypeVertex::KEYSPACE_ID, ByteReference::new(&BYTES))
         }
 
         pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-            bytes.length() == TypeVertex::LENGTH && TypeVertex::new(bytes).prefix() == PrefixType::$prefix
+            bytes.length() == TypeVertex::LENGTH && TypeVertex::new(bytes).prefix() == Prefix::$prefix
         }
     };
 }
@@ -63,28 +63,28 @@ type_vertex_constructors!(
     build_vertex_entity_type,
     build_vertex_entity_type_prefix,
     is_vertex_entity_type,
-    PrefixType::VertexEntityType
+    Prefix::VertexEntityType
 );
 type_vertex_constructors!(
     new_vertex_relation_type,
     build_vertex_relation_type,
     build_vertex_relation_type_prefix,
     is_vertex_relation_type,
-    PrefixType::VertexRelationType
+    Prefix::VertexRelationType
 );
 type_vertex_constructors!(
     new_vertex_role_type,
     build_vertex_role_type,
     build_vertex_role_type_prefix,
     is_vertex_role_type,
-    PrefixType::VertexRoleType
+    Prefix::VertexRoleType
 );
 type_vertex_constructors!(
     new_vertex_attribute_type,
     build_vertex_attribute_type,
     build_vertex_attribute_type_prefix,
     is_vertex_attribute_type,
-    PrefixType::VertexAttributeType
+    Prefix::VertexAttributeType
 );
 
 impl<'a> TypeVertex<'a> {

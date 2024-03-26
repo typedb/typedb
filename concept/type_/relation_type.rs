@@ -21,7 +21,7 @@ use std::ops::Deref;
 use bytes::{byte_reference::ByteReference, Bytes};
 use encoding::{
     graph::type_::vertex::{new_vertex_relation_type, TypeVertex},
-    layout::prefix::PrefixType,
+    layout::prefix::Prefix,
     Prefixed,
 };
 use encoding::value::label::Label;
@@ -49,17 +49,17 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {
     vertex: TypeVertex<'a>,
 }
 
 impl<'a> RelationType<'a> {
     pub fn new(vertex: TypeVertex<'a>) -> RelationType<'_> {
-        if vertex.prefix() != PrefixType::VertexRelationType {
+        if vertex.prefix() != Prefix::VertexRelationType {
             panic!(
                 "Type IID prefix was expected to be Prefix::RelationType ({:?}) but was {:?}",
-                PrefixType::VertexRelationType,
+                Prefix::VertexRelationType,
                 vertex.prefix()
             )
         }

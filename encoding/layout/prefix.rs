@@ -39,26 +39,39 @@ impl PrefixID {
     }
 
     fn keyspace_id(&self) -> EncodingKeyspace {
-        match PrefixType::from_prefix_id(*self) {
-            | PrefixType::VertexEntityType
-            | PrefixType::VertexRelationType
-            | PrefixType::VertexAttributeType
-            | PrefixType::VertexRoleType
-            | PrefixType::PropertyType
-            | PrefixType::IndexLabelToType
-            | PrefixType::PropertyTypeEdge => EncodingKeyspace::Schema,
-            PrefixType::VertexEntity => todo!(),
-            PrefixType::VertexRelation => todo!(),
-            PrefixType::VertexAttributeBoolean => todo!(),
-            PrefixType::VertexAttributeLong => todo!(),
-            PrefixType::VertexAttributeDouble => todo!(),
-            PrefixType::VertexAttributeString => todo!(),
+        match Prefix::from_prefix_id(*self) {
+            | Prefix::VertexEntityType
+            | Prefix::VertexRelationType
+            | Prefix::VertexAttributeType
+            | Prefix::VertexRoleType
+            | Prefix::EdgeSub
+            | Prefix::EdgeSubReverse
+            | Prefix::EdgeOwns
+            | Prefix::EdgeOwnsReverse
+            | Prefix::EdgePlays
+            | Prefix::EdgePlaysReverse
+            | Prefix::EdgeRelates
+            | Prefix::EdgeRelatesReverse
+            | Prefix::PropertyType
+            | Prefix::IndexLabelToType
+            | Prefix::PropertyTypeEdge => EncodingKeyspace::Schema,
+            Prefix::VertexEntity => todo!(),
+            Prefix::VertexRelation => todo!(),
+            Prefix::VertexAttributeBoolean => todo!(),
+            Prefix::VertexAttributeLong => todo!(),
+            Prefix::VertexAttributeDouble => todo!(),
+            Prefix::VertexAttributeString => todo!(),
+            Prefix::EdgeHas => todo!(),
+            Prefix::EdgeHasReverse => todo!(),
+            Prefix::EdgeRolePlayer => todo!(),
+            Prefix::EdgeRolePlayerReverse => todo!(),
+            Prefix::EdgeRolePlayerIndex => todo!(),
         }
     }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum PrefixType {
+pub enum Prefix {
     VertexEntityType,
     VertexRelationType,
     VertexAttributeType,
@@ -72,6 +85,21 @@ pub enum PrefixType {
     VertexAttributeDouble,
     VertexAttributeString,
 
+    EdgeSub,
+    EdgeSubReverse,
+    EdgeOwns,
+    EdgeOwnsReverse,
+    EdgePlays,
+    EdgePlaysReverse,
+    EdgeRelates,
+    EdgeRelatesReverse,
+
+    EdgeHas,
+    EdgeHasReverse,
+    EdgeRolePlayer,
+    EdgeRolePlayerReverse,
+    EdgeRolePlayerIndex,
+
     PropertyType,
     PropertyTypeEdge,
 
@@ -81,7 +109,7 @@ pub enum PrefixType {
 macro_rules! prefix_functions {
     ($(
         $name:ident => $bytes:tt
-    ),*) => {
+    );*) => {
         pub const fn prefix_id(&self) -> PrefixID {
             let bytes = match self {
                 $(
@@ -114,24 +142,44 @@ macro_rules! prefix_functions {
    };
 }
 
-impl PrefixType {
+impl Prefix {
     prefix_functions!(
-           VertexEntityType => [10],
-           VertexRelationType => [11],
-           VertexAttributeType => [12],
-           VertexRoleType => [20],
+           // Reserved: 0-9
 
-           VertexEntity => [40],
-           VertexRelation => [41],
+           VertexEntityType => [10];
+           VertexRelationType => [11];
+           VertexAttributeType => [12];
+           VertexRoleType => [15];
 
-           // We reserve the range 50 - 99 (inclusive) to store attribute instances with a value type - see PrefixID::<CONSTANTS>
-           VertexAttributeBoolean => [50],
-           VertexAttributeLong => [51],
-           VertexAttributeDouble => [52],
-           VertexAttributeString => [53],
+           VertexEntity => [30];
+           VertexRelation => [31];
 
-           PropertyType => [100],
-           PropertyTypeEdge => [101],
-           IndexLabelToType => [102]
+           // Reserve: range 50 - 99 to store attribute instances with a value type - see PrefixID::<CONSTANTS>
+           VertexAttributeBoolean => [50];
+           VertexAttributeLong => [51];
+           VertexAttributeDouble => [52];
+           VertexAttributeString => [53];
+
+           EdgeSub => [100];
+           EdgeSubReverse => [101];
+           EdgeOwns => [102];
+           EdgeOwnsReverse => [103];
+           EdgePlays => [104];
+           EdgePlaysReverse => [105];
+           EdgeRelates => [106];
+           EdgeRelatesReverse => [107];
+
+           EdgeHas => [130];
+           EdgeHasReverse => [131];
+           EdgeRolePlayer => [132];
+           EdgeRolePlayerReverse => [133];
+           EdgeRolePlayerIndex => [140];
+
+           PropertyType => [160];
+           PropertyTypeEdge => [161];
+
+           IndexLabelToType => [182]
+
+           // Reserved: 200-255
     );
 }

@@ -47,7 +47,7 @@ fn generate_string_attribute_vertex() {
         let short_string_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(short_string);
         let vertex =
             thing_vertex_generator.create_attribute_string(type_id, short_string_bytes.clone_as_ref(), &snapshot);
-        let vertex_id = StringAttributeID::new(vertex.attribute_id().unwrap_bytes_16());
+        let vertex_id = StringAttributeID::new(vertex.attribute_id().unwrap_bytes_17());
         assert!(vertex_id.is_inline());
         assert_eq!(vertex_id.get_inline_length() as usize, short_string_bytes.length());
         assert_eq!(vertex_id.get_inline_string_bytes().bytes(), short_string_bytes.bytes());
@@ -58,7 +58,7 @@ fn generate_string_attribute_vertex() {
         let string = "Hello world, this is a long attribute string to be encoded.";
         let string_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
         let vertex = thing_vertex_generator.create_attribute_string(type_id, string_bytes.clone_as_ref(), &snapshot);
-        let vertex_id = StringAttributeID::new(vertex.attribute_id().unwrap_bytes_16());
+        let vertex_id = StringAttributeID::new(vertex.attribute_id().unwrap_bytes_17());
         assert!(!vertex_id.is_inline());
         assert_eq!(
             vertex_id.get_hash_prefix(),
@@ -81,7 +81,7 @@ fn generate_string_attribute_vertex() {
         let string_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
         let vertex = thing_vertex_generator.create_attribute_string(type_id, string_bytes.clone_as_ref(), &snapshot);
 
-        let vertex_id = StringAttributeID::new(vertex.attribute_id().unwrap_bytes_16());
+        let vertex_id = StringAttributeID::new(vertex.attribute_id().unwrap_bytes_17());
         assert!(!vertex_id.is_inline());
         assert_eq!(
             vertex_id.get_hash_prefix(),
@@ -98,7 +98,7 @@ fn generate_string_attribute_vertex() {
         let collide_vertex =
             thing_vertex_generator.create_attribute_string(type_id, string_collide_bytes.clone_as_ref(), &snapshot);
 
-        let collide_id = StringAttributeID::new(collide_vertex.attribute_id().unwrap_bytes_16());
+        let collide_id = StringAttributeID::new(collide_vertex.attribute_id().unwrap_bytes_17());
         assert!(!collide_id.is_inline());
         assert_eq!(
             collide_id.get_hash_prefix(),

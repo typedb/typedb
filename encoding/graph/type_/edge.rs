@@ -17,103 +17,140 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
-use crate::{
-    graph::type_::vertex::TypeVertex,
-    layout::infix::{InfixID, InfixType},
-    AsBytes, EncodingKeyspace, Keyable,
-};
+use crate::{AsBytes, EncodingKeyspace, graph::type_::vertex::TypeVertex, Keyable, layout::{
+    prefix::Prefix,
+}, Prefixed};
+use crate::layout::prefix::PrefixID;
 
 pub struct TypeEdge<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 macro_rules! type_edge_constructors {
-    ($new_name:ident, $build_name:ident, $build_prefix:ident, $is_name:ident, InfixType::$infix:ident) => {
+    (Prefix::$prefix:ident, $new_name:ident, $build_name:ident, $build_prefix_from:ident, $build_prefix_prefix:ident, $is_name:ident) => {
         pub fn $new_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> TypeEdge<'_> {
             let edge = TypeEdge::new(bytes);
-            debug_assert_eq!(edge.infix(), InfixType::$infix);
+            debug_assert_eq!(edge.prefix(), Prefix::$prefix);
             edge
         }
 
         pub fn $build_name(from: TypeVertex<'static>, to: TypeVertex<'static>) -> TypeEdge<'static> {
-            TypeEdge::build(from, InfixType::$infix, to)
+            TypeEdge::build(Prefix::$prefix, from, to)
         }
 
-        pub fn $build_prefix(from: TypeVertex<'static>) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX }> {
-            TypeEdge::build_prefix(from, InfixType::$infix)
+        pub fn $build_prefix_from(from: TypeVertex<'static>) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM }> {
+            TypeEdge::build_prefix_from(Prefix::$prefix, from)
+        }
+
+        pub fn $build_prefix_prefix(from_prefix: Prefix) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
+            TypeEdge::build_prefix_prefix(Prefix::$prefix, from_prefix)
         }
 
         pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-            return bytes.length() == TypeEdge::LENGTH && TypeEdge::new(bytes).infix() == InfixType::$infix
+            bytes.length() == TypeEdge::LENGTH && TypeEdge::new(bytes).prefix() == Prefix::$prefix
         }
     };
 }
 
-type_edge_constructors!(new_edge_sub, build_edge_sub, build_edge_sub_prefix, is_edge_sub, InfixType::EdgeSub);
 type_edge_constructors!(
+    Prefix::EdgeSub,
+    new_edge_sub,
+    build_edge_sub,
+    build_edge_sub_prefix_from,
+    build_edge_sub_prefix_prefix,
+    is_edge_sub
+);
+type_edge_constructors!(
+    Prefix::EdgeSubReverse,
     new_edge_sub_reverse,
     build_edge_sub_reverse,
-    build_edge_sub_reverse_prefix,
-    is_edge_sub_reverse,
-    InfixType::EdgeSubReverse
+    build_edge_sub_reverse_prefix_from,
+    build_edge_sub_reverse_prefix_prefix,
+    is_edge_sub_reverse
 );
-type_edge_constructors!(new_edge_owns, build_edge_owns, build_edge_owns_prefix, is_edge_owns, InfixType::EdgeOwns);
 type_edge_constructors!(
+    Prefix::EdgeOwns,
+    new_edge_owns,
+    build_edge_owns,
+    build_edge_owns_prefix_from,
+    build_edge_owns_prefix_prefix,
+    is_edge_owns
+);
+type_edge_constructors!(
+    Prefix::EdgeOwnsReverse,
     new_edge_owns_reverse,
     build_edge_owns_reverse,
-    build_edge_owns_reverse_prefix,
-    is_edge_owns_reverse,
-    InfixType::EdgeOwnsReverse
+    build_edge_owns_reverse_prefix_from,
+    build_edge_owns_reverse_prefix_prefix,
+    is_edge_owns_reverse
 );
-type_edge_constructors!(new_edge_plays, build_edge_plays, build_edge_plays_prefix, is_edge_plays, InfixType::EdgePlays);
 type_edge_constructors!(
+    Prefix::EdgePlays,
+    new_edge_plays,
+    build_edge_plays,
+    build_edge_plays_prefix_from,
+    build_edge_plays_prefix_prefix,
+    is_edge_plays
+);
+type_edge_constructors!(
+    Prefix::EdgePlaysReverse,
     new_edge_plays_reverse,
     build_edge_plays_reverse,
-    build_edge_plays_reverse_prefix,
-    is_edge_plays_reverse,
-    InfixType::EdgePlaysReverse
+    build_edge_plays_reverse_prefix_from,
+    build_edge_plays_reverse_prefix_prefix,
+    is_edge_plays_reverse
 );
 type_edge_constructors!(
+    Prefix::EdgeRelates,
     new_edge_relates,
     build_edge_relates,
-    build_edge_relates_prefix,
-    is_edge_relates,
-    InfixType::EdgeRelates
+    build_edge_relates_prefix_from,
+    build_edge_relates_prefix_prefix,
+    is_edge_relates
 );
 type_edge_constructors!(
+    Prefix::EdgeRelatesReverse,
     new_edge_relates_reverse,
     build_edge_relates_reverse,
-    build_edge_relates_reverse_prefix,
-    is_edge_relates_reverse,
-    InfixType::EdgeRelatesReverse
+    build_edge_relates_reverse_prefix_from,
+    build_edge_relates_reverse_prefix_prefix,
+    is_edge_relates_reverse
 );
 
 impl<'a> TypeEdge<'a> {
-    const LENGTH: usize = 2 * TypeVertex::LENGTH + InfixID::LENGTH;
-    const LENGTH_PREFIX: usize = TypeVertex::LENGTH + InfixID::LENGTH;
+    const LENGTH: usize = PrefixID::LENGTH +  2 * TypeVertex::LENGTH;
+    const LENGTH_PREFIX_FROM: usize =  PrefixID::LENGTH + TypeVertex::LENGTH;
+    const LENGTH_PREFIX_FROM_PREFIX: usize =  PrefixID::LENGTH + TypeVertex::LENGTH_PREFIX;
 
     fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-
         TypeEdge { bytes }
     }
 
-    fn build(from: TypeVertex, infix: InfixType, to: TypeVertex) -> Self {
+    fn build(prefix: Prefix, from: TypeVertex, to: TypeVertex) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
         bytes.bytes_mut()[Self::range_to()].copy_from_slice(to.bytes().bytes());
         Self { bytes: Bytes::Array(bytes) }
     }
 
-    fn build_prefix(from: TypeVertex<'_>, infix: InfixType) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX }> {
-        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX);
+    fn build_prefix_from(prefix: Prefix, from: TypeVertex<'_>) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        bytes.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
+        StorageKey::new_owned(Self::KEYSPACE_ID, bytes)
+    }
+
+    fn build_prefix_prefix(prefix: Prefix, from_prefix: Prefix) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_PREFIX);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeVertex::LENGTH_PREFIX]
+            .copy_from_slice(&from_prefix.prefix_id().bytes());
         StorageKey::new_owned(Self::KEYSPACE_ID, bytes)
     }
 
@@ -127,20 +164,16 @@ impl<'a> TypeEdge<'a> {
         TypeVertex::new(Bytes::Reference(reference))
     }
 
-    fn infix(&self) -> InfixType {
-        InfixType::from_infix_id(InfixID::new(self.bytes.bytes()[Self::range_infix()].try_into().unwrap()))
+    fn prefix(&self) -> Prefix {
+        Prefix::from_prefix_id(PrefixID::new(self.bytes.bytes()[Self::RANGE_PREFIX].try_into().unwrap()))
     }
 
     const fn range_from() -> Range<usize> {
-        0..TypeVertex::LENGTH
-    }
-
-    const fn range_infix() -> Range<usize> {
-        Self::range_from().end..Self::range_from().end + InfixID::LENGTH
+        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeVertex::LENGTH
     }
 
     const fn range_to() -> Range<usize> {
-        Self::range_infix().end..Self::range_infix().end + TypeVertex::LENGTH
+        Self::range_from().end..Self::range_from().end + TypeVertex::LENGTH
     }
 }
 
@@ -153,6 +186,8 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
         self.bytes
     }
 }
+
+impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {}
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
     const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Schema;

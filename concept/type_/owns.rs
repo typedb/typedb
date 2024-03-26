@@ -27,4 +27,12 @@ impl<'a> Owns<'a> {
     pub fn new(owner_type: ObjectType<'a>, attribute_type: AttributeType<'a>) -> Self {
         Owns { owner: owner_type, attribute: attribute_type }
     }
+
+    pub(crate) fn owner(&self) -> ObjectType<'a> {
+        self.owner.clone()
+    }
+
+    fn attribute(&self) -> AttributeType<'a> {
+        self.attribute.clone()
+    }
 }
