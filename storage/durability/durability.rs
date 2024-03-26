@@ -35,7 +35,7 @@ pub type Result<T> = std::result::Result<T, DurabilityError>;
 #[derive(Debug)]
 struct RecordHeader {
     sequence_number: SequenceNumber,
-    len: u32,
+    len: u64,
     record_type: DurabilityRecordType,
 }
 

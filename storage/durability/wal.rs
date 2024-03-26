@@ -141,12 +141,12 @@ impl Files {
         Ok(())
     }
 
-    fn write_record<Record>(&mut self, record: &Record, seq: SequenceNumber) -> Result<()>
+    fn write_record<Record>(&mut self, record: &Record, sequence_number: SequenceNumber) -> Result<()>
     where
         Record: DurabilityRecord,
     {
         if self.files.last().unwrap().len >= MAX_WAL_FILE_SIZE {
-            self.open_new_file_at(seq)?;
+            self.open_new_file_at(sequence_number)?;
         }
 
         // TODO if this proves a bottleneck, encode directly into the file and rewind to write the
@@ -157,7 +157,10 @@ impl Files {
         record.serialise_into(&mut encoder)?;
         encoder.finish().1.unwrap();
 
-        write_header::<Record>(&mut self.writer, seq, buf.len() as u32)?;
+        write_header(
+            &mut self.writer,
+            RecordHeader { sequence_number, len: buf.len() as u64, record_type: Record::RECORD_TYPE },
+        )?;
 
         self.writer.write_all(&buf)?;
         self.writer.flush()?;
@@ -171,14 +174,10 @@ impl Files {
     }
 }
 
-fn write_header<Record: DurabilityRecord>(
-    file: &mut BufWriter<StdFile>,
-    seq: SequenceNumber,
-    len: u32,
-) -> io::Result<()> {
-    file.write_all(&seq.to_be_bytes())?;
-    file.write_all(&len.to_be_bytes())?;
-    file.write_all(&[Record::RECORD_TYPE])?;
+fn write_header(file: &mut BufWriter<StdFile>, header: RecordHeader) -> io::Result<()> {
+    file.write_all(&header.sequence_number.to_be_bytes())?;
+    file.write_all(&header.len.to_be_bytes())?;
+    file.write_all(&[header.record_type])?;
     Ok(())
 }
 
@@ -243,9 +242,9 @@ impl FileReader {
         self.reader.read_exact(&mut buf)?;
         let sequence_number = SequenceNumber::new(U80::from_be_bytes(&buf));
 
-        let mut buf = [0; std::mem::size_of::<u32>()];
+        let mut buf = [0; std::mem::size_of::<u64>()];
         self.reader.read_exact(&mut buf)?;
-        let len = u32::from_be_bytes(buf);
+        let len = u64::from_be_bytes(buf);
 
         let mut buf = [0; 1];
         self.reader.read_exact(&mut buf)?;
