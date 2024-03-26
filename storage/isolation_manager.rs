@@ -101,18 +101,20 @@ impl IsolationManager {
         // TODO: decide if we should block until all predecessors finish, allow out of order (non-Calvin model/traditional model)
         //       We could also validate against all predecessors even if they are validating and fail eagerly.
 
-        let mut predecessor_number = commit_sequence_number.number().number() - 1;
-        let mut predecessor_sequence_number = SequenceNumber::new(U80::new(predecessor_number));
-        let mut predecessor_window = self.timeline.get_window(&predecessor_sequence_number);
+        let mut predecessor_number = commit_sequence_number.number() - 1;
+        let mut predecessor_sequence_number = SequenceNumber::new(predecessor_number);
+        let Some(mut predecessor_window) = self.timeline.try_get_window(&predecessor_sequence_number) else {
+            return Ok(()); // nothing to validate
+        };
 
-        let last_predecessor_number = commit_record.open_sequence_number.number().number() + 1;
+        let last_predecessor_number = commit_record.open_sequence_number.number() + 1;
         while predecessor_number <= last_predecessor_number {
             if !predecessor_window.contains(&predecessor_sequence_number) {
                 predecessor_window = self.timeline.get_window(&predecessor_sequence_number);
             }
             self.validate_concurrent(commit_record, &predecessor_sequence_number, &predecessor_window)?;
             predecessor_number += 1;
-            predecessor_sequence_number = SequenceNumber::new(U80::new(predecessor_number));
+            predecessor_sequence_number = SequenceNumber::new(predecessor_number);
         }
         Ok(())
     }
@@ -266,7 +268,7 @@ struct Timeline {
 
 impl Timeline {
     fn new(starting_sequence_number: SequenceNumber) -> Timeline {
-        debug_assert!(starting_sequence_number.number().number() > 0);
+        debug_assert!(starting_sequence_number.number() > 0);
         let last_sequence_number_value = starting_sequence_number.number() - U80::new(1);
         let initial_window = Arc::new(TimelineWindow::new(SequenceNumber::new(last_sequence_number_value)));
         let next_window_start = *initial_window.end();
@@ -517,10 +519,8 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
     }
 
     fn index_of(&self, sequence_number: &SequenceNumber) -> usize {
-        debug_assert!(
-            sequence_number.number().number() - self.starting_sequence_number.number().number() < usize::MAX as u128
-        );
-        (sequence_number.number().number() - self.starting_sequence_number.number().number()) as usize
+        debug_assert!(sequence_number.number() - self.starting_sequence_number.number() < usize::MAX as u128);
+        (sequence_number.number() - self.starting_sequence_number.number()).number() as usize
     }
 }
 

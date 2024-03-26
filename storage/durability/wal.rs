@@ -190,7 +190,7 @@ struct File {
 
 impl File {
     fn format_file_name(seq: SequenceNumber) -> String {
-        format!("{}{:025}", FILE_PREFIX, seq.number().number())
+        format!("{}{:025}", FILE_PREFIX, seq.number())
     }
 
     fn open_at(directory: PathBuf, start: SequenceNumber) -> io::Result<Self> {
@@ -278,7 +278,7 @@ impl<'a> RecordIterator<'a> {
                 }
                 Some(Err(err)) => return Err(err),
                 Some(Ok(RawRecord { sequence_number, .. })) => {
-                    current_start = SequenceNumber::from(sequence_number.number().number() + 1)
+                    current_start = SequenceNumber::new(sequence_number.number() + 1)
                 }
             }
         }

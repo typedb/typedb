@@ -28,7 +28,7 @@ fn main() {
     for RawRecord { sequence_number, record_type, bytes } in wal.iter_from_start().unwrap().map(|r| r.unwrap())
     {
         assert_eq!(record_type, TestRecord::RECORD_TYPE);
-        let number = sequence_number.number().number();
+        let number = sequence_number.number();
         println!(r#"{} "{}""#, number, str::from_utf8(&bytes).unwrap());
     }
 }

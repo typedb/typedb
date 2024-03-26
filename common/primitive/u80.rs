@@ -15,7 +15,11 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::ops::{Add, Sub};
+use std::{
+    cmp::Ordering,
+    fmt,
+    ops::{Add, AddAssign, Sub},
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -66,9 +70,59 @@ impl Add for U80 {
     }
 }
 
+impl Add<u128> for U80 {
+    type Output = U80;
+    fn add(self, rhs: u128) -> Self::Output {
+        U80 { number: self.number + rhs }
+    }
+}
+
+impl AddAssign<u128> for U80 {
+    fn add_assign(&mut self, rhs: u128) {
+        *self = *self + rhs;
+    }
+}
+
 impl Sub for U80 {
     type Output = U80;
     fn sub(self, rhs: Self) -> Self::Output {
         U80 { number: self.number - rhs.number }
+    }
+}
+
+impl Sub<u128> for U80 {
+    type Output = U80;
+    fn sub(self, rhs: u128) -> Self::Output {
+        U80 { number: self.number - rhs }
+    }
+}
+
+impl PartialEq<U80> for u128 {
+    fn eq(&self, other: &U80) -> bool {
+        other.eq(self)
+    }
+}
+
+impl PartialEq<u128> for U80 {
+    fn eq(&self, other: &u128) -> bool {
+        self.number().eq(other)
+    }
+}
+
+impl PartialOrd<U80> for u128 {
+    fn partial_cmp(&self, other: &U80) -> Option<Ordering> {
+        self.partial_cmp(&other.number())
+    }
+}
+
+impl PartialOrd<u128> for U80 {
+    fn partial_cmp(&self, other: &u128) -> Option<Ordering> {
+        self.number().partial_cmp(other)
+    }
+}
+
+impl fmt::Display for U80 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.number.fmt(f)
     }
 }
