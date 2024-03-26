@@ -336,7 +336,7 @@ mod test {
             Ok(())
         }
 
-        fn deserialize_from(reader: &mut impl std::io::Read) -> bincode::Result<Self> {
+        fn deserialise_from(reader: &mut impl std::io::Read) -> bincode::Result<Self> {
             let mut bytes = [0; 4];
             reader.read_exact(&mut bytes).unwrap();
             Ok(Self { bytes })
@@ -361,7 +361,7 @@ mod test {
         let RawRecord { record_type, bytes, .. } = wal.iter_from_start().unwrap().next().unwrap().unwrap();
         assert_eq!(record_type, TestRecord::RECORD_TYPE);
 
-        let read_record = TestRecord::deserialize_from(&mut &*bytes).unwrap();
+        let read_record = TestRecord::deserialise_from(&mut &*bytes).unwrap();
         assert_eq!(record, read_record);
     }
 
@@ -380,7 +380,7 @@ mod test {
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
-                TestRecord::deserialize_from(&mut &*bytes).unwrap()
+                TestRecord::deserialise_from(&mut &*bytes).unwrap()
             })
             .collect_vec();
 
@@ -402,7 +402,7 @@ mod test {
         let RawRecord { record_type, bytes, .. } = wal.iter_from_start().unwrap().next().unwrap().unwrap();
         assert_eq!(record_type, TestRecord::RECORD_TYPE);
 
-        let read_record = TestRecord::deserialize_from(&mut &*bytes).unwrap();
+        let read_record = TestRecord::deserialise_from(&mut &*bytes).unwrap();
         assert_eq!(record, read_record);
     }
 
@@ -423,7 +423,7 @@ mod test {
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
-                TestRecord::deserialize_from(&mut &*bytes).unwrap()
+                TestRecord::deserialise_from(&mut &*bytes).unwrap()
             })
             .collect_vec();
 
@@ -446,7 +446,7 @@ mod test {
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
-                TestRecord::deserialize_from(&mut &*bytes).unwrap()
+                TestRecord::deserialise_from(&mut &*bytes).unwrap()
             })
             .collect_vec();
         assert_eq!(&records[1..], &*read_records);
@@ -460,7 +460,7 @@ mod test {
             .map(|res| {
                 let RawRecord { record_type, bytes, .. } = res.unwrap();
                 assert_eq!(record_type, TestRecord::RECORD_TYPE);
-                TestRecord::deserialize_from(&mut &*bytes).unwrap()
+                TestRecord::deserialise_from(&mut &*bytes).unwrap()
             })
             .collect_vec();
         assert_eq!(&records[1..], &*read_records);

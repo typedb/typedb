@@ -36,7 +36,7 @@ impl DurabilityRecord for TestRecord {
         Ok(())
     }
 
-    fn deserialize_from(reader: &mut impl std::io::Read) -> bincode::Result<Self> {
+    fn deserialise_from(reader: &mut impl std::io::Read) -> bincode::Result<Self> {
         let mut bytes = Vec::new();
         reader.read_to_end(&mut bytes)?;
         Ok(Self { bytes })

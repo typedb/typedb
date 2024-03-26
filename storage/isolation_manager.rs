@@ -604,11 +604,14 @@ impl DurabilityRecord for CommitRecord {
             .unwrap(),
             bincode::serialize(self).unwrap()
         );
-        bincode::serialize_into(writer, &self.buffers)
+        bincode::serialize_into(writer, &self)
     }
 
-    fn deserialize_from(reader: &mut impl Read) -> bincode::Result<Self> {
-        bincode::deserialize_from(reader)
+    fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self> {
+        // https://github.com/bincode-org/bincode/issues/633
+        let mut buf = Vec::new();
+        reader.read_to_end(&mut buf).unwrap();
+        bincode::deserialize(&buf)
     }
 }
 

@@ -69,7 +69,7 @@ pub trait DurabilityService: Sequencer {
     ) -> io::Result<impl Iterator<Item = Result<(SequenceNumber, Record)>>> {
         Ok(self.iter_from(sequence_number)?.map(|res| {
             let raw = res?;
-            Ok((raw.sequence_number, Record::deserialize_from(&mut &*raw.bytes)?))
+            Ok((raw.sequence_number, Record::deserialise_from(&mut &*raw.bytes)?))
         }))
     }
 
@@ -86,7 +86,7 @@ pub trait DurabilityRecord: Sized {
     const RECORD_TYPE: DurabilityRecordType;
     const RECORD_NAME: &'static str;
     fn serialise_into(&self, writer: &mut impl Write) -> bincode::Result<()>;
-    fn deserialize_from(reader: &mut impl Read) -> bincode::Result<Self>;
+    fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self>;
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
