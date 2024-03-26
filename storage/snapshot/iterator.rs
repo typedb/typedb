@@ -27,13 +27,13 @@ use iterator::State;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use crate::{
+    iterator::MVCCRangeIterator,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{
         buffer::BufferedPrefixIterator,
         error::{SnapshotError, SnapshotErrorKind},
         write::Write,
     },
-    MVCCRangeIterator,
 };
 
 pub struct SnapshotRangeIterator<'a, const PS: usize, Storage> {

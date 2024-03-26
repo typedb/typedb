@@ -93,18 +93,18 @@ impl<'storage, D> ReadSnapshot<'storage, D> {
 impl<'storage, D> ReadSnapshot<'storage, D> {
     pub fn get<const KS: usize>(&self, key: StorageKeyReference<'_>) -> Option<ByteArray<KS>> {
         // TODO: this clone may not be necessary - we could pass a reference up?
-        self.storage.get(key, &self.open_sequence_number, |reference| ByteArray::from(reference))
+        self.storage.get(key, self.open_sequence_number, |reference| ByteArray::from(reference))
     }
 
     pub fn get_mapped<T>(&self, key: StorageKeyReference<'_>, mapper: impl FnMut(ByteReference<'_>) -> T) -> Option<T> {
-        self.storage.get(key, &self.open_sequence_number, mapper)
+        self.storage.get(key, self.open_sequence_number, mapper)
     }
 
     pub fn iterate_range<'this, const PS: usize>(
         &'this self,
         range: PrefixRange<StorageKey<'this, PS>>,
     ) -> SnapshotRangeIterator<'this, PS, D> {
-        let mvcc_iterator = self.storage.iterate_range(range, &self.open_sequence_number);
+        let mvcc_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(mvcc_iterator, None)
     }
 
@@ -149,7 +149,7 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
         let existing_buffered = buffer.contains(key.byte_array());
         if !existing_buffered {
             let wrapped = StorageKeyReference::from(&key);
-            let existing_stored = self.storage.get(wrapped, &self.open_sequence_number, |reference| {
+            let existing_stored = self.storage.get(wrapped, self.open_sequence_number, |reference| {
                 // Only copy if the value is the same
                 if reference.bytes() == value.bytes() {
                     Some(ByteArray::from(reference))
@@ -186,7 +186,7 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
         } else {
             let storage_value = self
                 .storage
-                .get(key.as_reference(), &self.open_sequence_number, |reference| ByteArray::from(reference));
+                .get(key.as_reference(), self.open_sequence_number, |reference| ByteArray::from(reference));
             if let Some(value) = storage_value {
                 buffer.require_exists(ByteArray::copy(key.bytes()), value.clone());
                 value
@@ -202,7 +202,7 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
         let keyspace_id = key.keyspace_id();
         let existing_value = self.buffers.get(keyspace_id).get(key.bytes());
         existing_value.map_or_else(
-            || self.storage.get(key, &self.open_sequence_number, |reference| ByteArray::from(reference)),
+            || self.storage.get(key, self.open_sequence_number, |reference| ByteArray::from(reference)),
             Some,
         )
     }
@@ -216,7 +216,7 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
         let existing_value = self.buffers.get(keyspace_id).get(key.bytes());
         existing_value
             .map(|value: ByteArray<BUFFER_VALUE_INLINE>| mapper(ByteReference::from(&value)))
-            .or_else(|| self.storage.get(key, &self.open_sequence_number, mapper))
+            .or_else(|| self.storage.get(key, self.open_sequence_number, mapper))
     }
 
     pub fn iterate_range<'this, const PS: usize>(
@@ -227,7 +227,7 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
             .buffers
             .get(range.start().keyspace_id())
             .iterate_range(range.clone().map(|k| k.into_byte_array_or_ref()));
-        let storage_iterator = self.storage.iterate_range(range, &self.open_sequence_number);
+        let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
 
