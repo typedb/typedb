@@ -16,3 +16,4 @@
  */
 
 pub mod keyspace;
+pub mod iterator;

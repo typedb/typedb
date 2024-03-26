@@ -16,22 +16,17 @@
  */
 
 use std::{
-    cmp::Ordering,
     error::Error,
-    fmt, fs, io,
+    fmt,
     path::{Path, PathBuf},
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
-use iterator::State;
-use logger::result::ResultExt;
+use bytes::Bytes;
 use primitive::prefix_range::PrefixRange;
 use serde::{Deserialize, Serialize};
-use speedb::{
-    checkpoint::Checkpoint, DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions,
-    DB,
-};
+use speedb::{checkpoint::Checkpoint, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 
+use super::iterator;
 use crate::KeyspaceSet;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -58,7 +53,7 @@ pub(crate) struct Keyspace {
     path: PathBuf,
     name: &'static str,
     id: KeyspaceId,
-    kv_storage: DB,
+    pub(super) kv_storage: DB,
     read_options: ReadOptions,
     write_options: WriteOptions,
 }
@@ -121,7 +116,7 @@ impl Keyspace {
         //  open storage at 'active'
     }
 
-    fn new_read_options(&self) -> ReadOptions {
+    pub(super) fn new_read_options(&self) -> ReadOptions {
         ReadOptions::default()
     }
 
@@ -168,8 +163,8 @@ impl Keyspace {
     pub(crate) fn iterate_range<'s, const PREFIX_INLINE_SIZE: usize>(
         &'s self,
         range: PrefixRange<Bytes<'s, { PREFIX_INLINE_SIZE }>>,
-    ) -> KeyspaceRangeIterator<'s, PREFIX_INLINE_SIZE> {
-        KeyspaceRangeIterator::new(self, range)
+    ) -> iterator::KeyspaceRangeIterator<'s, PREFIX_INLINE_SIZE> {
+        iterator::KeyspaceRangeIterator::new(self, range)
     }
 
     pub(crate) fn write(&self, write_batch: WriteBatch) -> Result<(), KeyspaceError> {
@@ -298,140 +293,5 @@ impl Error for KeyspaceError {
             KeyspaceErrorKind::BatchWrite { source, .. } => Some(source),
             KeyspaceErrorKind::Iterate { source, .. } => Some(source),
         }
-    }
-}
-pub struct KeyspaceRangeIterator<'a, const INLINE_BYTES: usize> {
-    range: PrefixRange<Bytes<'a, { INLINE_BYTES }>>,
-    iterator: DBRawIterator<'a>,
-    state: State<speedb::Error>,
-}
-
-impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
-    fn new(keyspace: &'a Keyspace, range: PrefixRange<Bytes<'a, { INLINE_BYTES }>>) -> Self {
-        // TODO: if range is within a prefix and self.has_prefix_extractor_for(prefix), we can enable bloom filters
-        // read_opts.set_prefix_same_as_start(true);
-        let read_opts = keyspace.new_read_options();
-        let raw_iterator: DBRawIteratorWithThreadMode<'a, DB> = keyspace.kv_storage.raw_iterator_opt(read_opts);
-
-        KeyspaceRangeIterator { range, iterator: raw_iterator, state: State::Init }
-    }
-
-    pub(crate) fn peek(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
-        match &self.state {
-            State::Init => {
-                self.iterator.seek(self.range.start().bytes());
-                self.update_state();
-                self.peek()
-            }
-            State::ItemReady => {
-                let key = self.iterator.key().unwrap();
-                let value = self.iterator.value().unwrap();
-                Some(Ok((key, value)))
-            }
-            State::ItemUsed => {
-                self.advance_and_update_state();
-                self.peek()
-            }
-            State::Error(error) => {
-                Some(Err(KeyspaceError { kind: KeyspaceErrorKind::Iterate { source: error.clone() } }))
-            }
-            State::Done => None,
-        }
-    }
-
-    pub(crate) fn next(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
-        match &self.state {
-            State::Init => {
-                self.iterator.seek(self.range.start().bytes());
-                self.update_state();
-                self.next()
-            }
-            State::ItemReady => {
-                self.state = State::ItemUsed;
-                let key = self.iterator.key().unwrap();
-                let value = self.iterator.value().unwrap();
-                Some(Ok((key, value)))
-            }
-            State::ItemUsed => {
-                self.advance_and_update_state();
-                self.next()
-            }
-            State::Error(error) => {
-                Some(Err(KeyspaceError { kind: KeyspaceErrorKind::Iterate { source: error.clone() } }))
-            }
-            State::Done => None,
-        }
-    }
-
-    pub(crate) fn seek(&mut self, key: &[u8]) {
-        match &self.state {
-            State::Done | State::Error(_) => {}
-            State::Init => {
-                if self.is_in_range(key) {
-                    self.iterator.seek(key);
-                    self.update_state();
-                } else {
-                    self.state = State::Done;
-                }
-            }
-            State::ItemReady => {
-                let valid_prefix = self.is_in_range(key);
-                if valid_prefix {
-                    match self.peek().unwrap().unwrap().0.cmp(key) {
-                        Ordering::Less => {
-                            self.iterator.seek(key);
-                            self.update_state();
-                        }
-                        Ordering::Equal => {}
-                        Ordering::Greater => unreachable!("Cannot seek backward."),
-                    }
-                } else {
-                    self.state = State::Done;
-                }
-            }
-            State::ItemUsed => {
-                self.advance_and_update_state();
-                self.seek(key)
-            }
-        }
-    }
-
-    pub(crate) fn advance_and_update_state(&mut self) {
-        assert!(matches!(self.state, State::ItemUsed));
-        self.iterator.next();
-        self.update_state();
-    }
-
-    fn update_state(&mut self) {
-        if self.iterator.valid() {
-            if self.is_in_range(self.iterator.key().unwrap()) {
-                self.state = State::ItemReady;
-            } else {
-                self.state = State::Done;
-            }
-        } else if self.iterator.status().is_err() {
-            self.state = State::Error(self.iterator.status().err().unwrap().clone());
-        } else {
-            self.state = State::Done;
-        }
-    }
-
-    fn is_in_range(&self, key: &[u8]) -> bool {
-        self.range.contains(Bytes::Reference(ByteReference::new(key)))
-    }
-
-    pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(
-        mut self,
-    ) -> Vec<(ByteArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)> {
-        let mut vec = Vec::new();
-        loop {
-            let item = self.next();
-            if item.is_none() {
-                break;
-            }
-            let (key, value) = item.unwrap().unwrap_or_log();
-            vec.push((ByteArray::<INLINE_KEY>::copy(key), ByteArray::<INLINE_VALUE>::copy(value)));
-        }
-        vec
     }
 }

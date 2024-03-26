@@ -17,7 +17,7 @@
 
 use std::{error::Error, fmt, sync::Arc};
 
-use crate::error::MVCCStorageError;
+use crate::{error::MVCCStorageError, iterator::MVCCReadError};
 
 #[derive(Debug)]
 pub struct SnapshotError {
@@ -29,7 +29,7 @@ pub enum SnapshotErrorKind {
     FailedIterate { source: Arc<SnapshotError> },
     FailedGet { source: MVCCStorageError },
     FailedPut { source: MVCCStorageError },
-    FailedMVCCStorageIterate { source: MVCCStorageError },
+    FailedMVCCStorageIterate { source: MVCCReadError },
     FailedCommit { source: MVCCStorageError },
 }
 

@@ -43,9 +43,12 @@ use crate::{
     isolation_manager::{CommitRecord, IsolationManager},
     iterator::MVCCRangeIterator,
     key_value::{StorageKey, StorageKeyReference},
-    keyspace::keyspace::{
-        Keyspace, KeyspaceCheckpointError, KeyspaceId, KeyspaceRangeIterator, KEYSPACE_ID_MAX,
-        KEYSPACE_ID_RESERVED_UNSET, KEYSPACE_MAXIMUM_COUNT,
+    keyspace::{
+        iterator::KeyspaceRangeIterator,
+        keyspace::{
+            Keyspace, KeyspaceCheckpointError, KeyspaceId, KEYSPACE_ID_MAX, KEYSPACE_ID_RESERVED_UNSET,
+            KEYSPACE_MAXIMUM_COUNT,
+        },
     },
     snapshot::{
         buffer::KeyspaceBuffers,

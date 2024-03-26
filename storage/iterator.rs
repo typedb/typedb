@@ -1,4 +1,5 @@
-use std::{marker::PhantomData, sync::Arc};
+use core::fmt;
+use std::{error::Error, marker::PhantomData, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use durability::SequenceNumber;
@@ -7,13 +8,14 @@ use primitive::prefix_range::PrefixRange;
 
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
-    error::{MVCCStorageError, MVCCStorageErrorKind},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::keyspace::{Keyspace, KeyspaceError, KeyspaceRangeIterator},
+    keyspace::{
+        iterator::KeyspaceRangeIterator,
+        keyspace::{Keyspace, KeyspaceError},
+    },
 };
 
 pub struct MVCCRangeIterator<'a, const PS: usize> {
-    storage_name: &'a str,
     keyspace: &'a Keyspace,
     iterator: KeyspaceRangeIterator<'a, PS>,
     open_sequence_number: SequenceNumber,
@@ -36,7 +38,6 @@ impl<'s, const P: usize> MVCCRangeIterator<'s, P> {
         let keyspace = storage.get_keyspace(range.start().keyspace_id());
         let iterator = keyspace.iterate_range(range.map(|k| k.into_byte_array_or_ref()));
         MVCCRangeIterator {
-            storage_name: storage.name(),
             keyspace,
             iterator,
             open_sequence_number,
@@ -46,14 +47,15 @@ impl<'s, const P: usize> MVCCRangeIterator<'s, P> {
         }
     }
 
-    pub(crate) fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCStorageError>> {
+    pub(crate) fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCReadError>> {
+        use MVCCReadError::Keyspace;
         match &self.state {
             State::Init => {
                 self.find_next_state();
                 self.peek()
             }
             State::ItemReady => {
-                let (key, value) = self.iterator.peek().unwrap().unwrap();
+                let (key, value) = self.iterator.peek().unwrap().unwrap(); // TODO a closer look
                 let mvcc_key = MVCCKey::wrap_slice(key);
                 Some(Ok((
                     StorageKeyReference::new_raw(self.keyspace.id(), mvcc_key.into_key().unwrap_reference()),
@@ -64,18 +66,12 @@ impl<'s, const P: usize> MVCCRangeIterator<'s, P> {
                 self.advance_and_find_next_state();
                 self.peek()
             }
-            State::Error(error) => Some(Err(MVCCStorageError {
-                storage_name: self.storage_name.to_string(),
-                kind: MVCCStorageErrorKind::KeyspaceError {
-                    source: error.clone(),
-                    keyspace_name: self.keyspace.name(),
-                },
-            })),
+            State::Error(error) => Some(Err(Keyspace { source: error.clone() })),
             State::Done => None,
         }
     }
 
-    pub(crate) fn next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCStorageError>> {
+    pub(crate) fn next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCReadError>> {
         match &self.state {
             State::Init => {
                 self.find_next_state();
@@ -95,13 +91,7 @@ impl<'s, const P: usize> MVCCRangeIterator<'s, P> {
                 self.advance_and_find_next_state();
                 self.next()
             }
-            State::Error(error) => Some(Err(MVCCStorageError {
-                storage_name: self.storage_name.to_owned(),
-                kind: MVCCStorageErrorKind::KeyspaceError {
-                    source: error.clone(),
-                    keyspace_name: self.keyspace.name(),
-                },
-            })),
+            State::Error(error) => Some(Err(MVCCReadError::Keyspace { source: error.clone() })),
             State::Done => None,
         }
     }
@@ -152,22 +142,35 @@ impl<'s, const P: usize> MVCCRangeIterator<'s, P> {
 
     pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(
         mut self,
-    ) -> Result<Vec<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)>, MVCCStorageError> {
+    ) -> Result<Vec<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)>, MVCCReadError> {
         let mut vec = Vec::new();
         loop {
             let item = self.next();
             match item {
-                None => {
-                    break;
-                }
-                Some(Err(err)) => {
-                    return Err(err);
-                }
-                Some(Ok((key_ref, value_ref))) => {
-                    vec.push((StorageKeyArray::from(key_ref), ByteArray::from(value_ref)))
-                }
+                None => break,
+                Some(Err(err)) => return Err(err),
+                Some(Ok((key, value))) => vec.push((StorageKeyArray::from(key), ByteArray::from(value))),
             }
         }
         Ok(vec)
+    }
+}
+
+#[derive(Debug)]
+pub enum MVCCReadError {
+    Keyspace { source: Arc<KeyspaceError> },
+}
+
+impl fmt::Display for MVCCReadError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for MVCCReadError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::Keyspace { source, .. } => Some(source),
+        }
     }
 }
