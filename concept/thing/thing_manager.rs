@@ -80,7 +80,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
             let value_type = attribute_type.get_value_type(self.type_manager.as_ref());
             if Some(value.value_type()) == value_type {
                 let vertex = match value {
-                    Value::Boolean(bool) => {
+                    Value::Boolean(_bool) => {
                         todo!()
                     }
                     Value::Long(long) => {
@@ -91,7 +91,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
                             write_snapshot,
                         )
                     }
-                    Value::Double(double) => {
+                    Value::Double(_double) => {
                         todo!()
                     }
                     Value::String(string) => {
