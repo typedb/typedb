@@ -35,6 +35,6 @@ fn basic() {
 
     let wal = open_wal(&directory);
     let raw_record = wal.iter_from(written_entry_id).unwrap().next().unwrap().unwrap();
-    let read_record = TestRecord::deserialize_from(&mut &*raw_record.bytes).unwrap();
+    let read_record = TestRecord::deserialise_from(&mut &*raw_record.bytes).unwrap();
     assert_eq!(read_record, message);
 }
