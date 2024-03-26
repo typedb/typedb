@@ -149,6 +149,8 @@ impl Files {
             self.open_new_file_at(seq)?;
         }
 
+        // TODO if this proves a bottleneck, encode directly into the file and rewind to write the
+        // length into the header after the fact
         let mut buf = Vec::new();
 
         let mut encoder = lz4::EncoderBuilder::new().build(&mut buf).unwrap();
