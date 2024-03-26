@@ -191,7 +191,7 @@ impl<const SZ: usize, KS: KeyspaceSet> From<(&[u8], KS)> for StorageKeyArray<SZ>
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct StorageKeyReference<'bytes> {
     keyspace_id: KeyspaceId,
     reference: ByteReference<'bytes>,

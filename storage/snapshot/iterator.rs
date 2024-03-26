@@ -240,14 +240,10 @@ impl<'a, const PS: usize, D> SnapshotRangeIterator<'a, PS, D> {
         loop {
             let item = self.next();
             match item {
-                None => {
-                    break;
-                }
-                Some(Result::Err(e)) => {
-                    return Err(e);
-                }
+                None => break,
+                Some(Err(e)) => return Err(e),
                 Some(Ok((key, value))) => {
-                    vec.push((StorageKeyArray::from(key.clone()), ByteArray::from(value)));
+                    vec.push((StorageKeyArray::from(key), ByteArray::from(value)));
                 }
             }
         }
@@ -263,12 +259,8 @@ impl<'a, const PS: usize, D> SnapshotRangeIterator<'a, PS, D> {
         loop {
             let item = self.next();
             match item {
-                None => {
-                    break;
-                }
-                Some(Result::Err(e)) => {
-                    return Err(e);
-                }
+                None => break,
+                Some(Err(e)) => return Err(e),
                 Some(Ok((key, value))) => {
                     let (m, n) = mapper(key, value);
                     btree_map.insert(m, n);
@@ -287,12 +279,8 @@ impl<'a, const PS: usize, D> SnapshotRangeIterator<'a, PS, D> {
         loop {
             let item = self.next();
             match item {
-                None => {
-                    break;
-                }
-                Some(Result::Err(e)) => {
-                    return Err(e);
-                }
+                None => break,
+                Some(Err(e)) => return Err(e),
                 Some(Ok((key, _))) => {
                     set.insert(mapper(key));
                 }
@@ -306,7 +294,7 @@ impl<'a, const PS: usize, D> SnapshotRangeIterator<'a, PS, D> {
     ) -> Result<Option<(StorageKey<'static, BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, SnapshotError> {
         let item = self.next();
         item.transpose().map(|option| {
-            option.map(|(key, value)| (StorageKey::Array(StorageKeyArray::from(key.clone())), ByteArray::from(value)))
+            option.map(|(key, value)| (StorageKey::Array(StorageKeyArray::from(key)), ByteArray::from(value)))
         })
     }
 }
