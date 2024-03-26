@@ -14,36 +14,36 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-use std::collections::HashSet;
-use std::ops::Deref;
+use std::{collections::HashSet, ops::Deref};
 
 use bytes::{byte_reference::ByteReference, Bytes};
 use encoding::{
     graph::type_::vertex::{new_vertex_entity_type, TypeVertex},
-    layout::prefix::Prefix,
+    layout::prefix::PrefixType,
+    value::label::Label,
     Prefixed,
 };
-use encoding::value::label::Label;
 use primitive::maybe_owns::MaybeOwns;
 use storage::{
     key_value::StorageKeyReference,
-    snapshot::{error::SnapshotError, iterator::SnapshotRangeIterator},
+    snapshot::{iterator::SnapshotRangeIterator, SnapshotError},
 };
 
 use crate::{
     concept_iterator,
-    ConceptAPI,
     error::{ConceptError, ConceptErrorKind},
     type_::{
         annotation::{Annotation, AnnotationAbstract},
         attribute_type::AttributeType,
         object_type::ObjectType,
-        owns::Owns, type_manager::TypeManager, TypeAPI,
+        owns::Owns,
+        plays::Plays,
+        role_type::RoleType,
+        type_manager::TypeManager,
+        OwnerAPI, PlayerAPI, TypeAPI,
     },
+    ConceptAPI,
 };
-use crate::type_::{OwnerAPI, PlayerAPI};
-use crate::type_::plays::Plays;
-use crate::type_::role_type::RoleType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType<'a> {
@@ -97,7 +97,10 @@ impl<'a> EntityType<'a> {
         type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
     }
 
-    pub fn get_supertypes<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, Vec<EntityType<'static>>> {
+    pub fn get_supertypes<'m, D>(
+        &self,
+        type_manager: &'m TypeManager<'_, '_, D>,
+    ) -> MaybeOwns<'m, Vec<EntityType<'static>>> {
         type_manager.get_entity_type_supertypes(self.clone().into_owned())
     }
 
@@ -132,7 +135,11 @@ impl<'a> EntityType<'a> {
 }
 
 impl<'a> OwnerAPI<'a> for EntityType<'a> {
-    fn set_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) -> Owns<'static> {
+    fn set_owns<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        attribute_type: AttributeType<'static>,
+    ) -> Owns<'static> {
         type_manager.set_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex());
         self.get_owns_attribute(type_manager, attribute_type).unwrap()
     }
@@ -146,7 +153,11 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         type_manager.get_entity_type_owns(self.clone().into_owned())
     }
 
-    fn get_owns_attribute<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) -> Option<Owns<'static>> {
+    fn get_owns_attribute<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        attribute_type: AttributeType<'static>,
+    ) -> Option<Owns<'static>> {
         let expected_owns = Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type);
         if self.get_owns(type_manager).deref().contains(&expected_owns) {
             Some(expected_owns)
@@ -172,7 +183,11 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         type_manager.get_entity_type_plays(self.clone().into_owned())
     }
 
-    fn get_plays_role<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) -> Option<Plays<'static>> {
+    fn get_plays_role<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        role_type: RoleType<'static>,
+    ) -> Option<Plays<'static>> {
         let expected_plays = Plays::new(ObjectType::Entity(self.clone().into_owned()), role_type);
         if self.get_plays(type_manager).deref().contains(&expected_plays) {
             Some(expected_plays)

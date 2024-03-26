@@ -22,7 +22,7 @@ use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyArray},
-    snapshot::error::SnapshotError,
+    snapshot::SnapshotError,
     KeyspaceSet, MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};

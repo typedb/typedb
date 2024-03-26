@@ -18,7 +18,7 @@
 use std::{error::Error, fmt};
 
 use encoding::value::value_type::ValueType;
-use storage::snapshot::error::SnapshotError;
+use storage::snapshot::SnapshotError;
 
 #[derive(Debug)]
 pub struct ConceptError {

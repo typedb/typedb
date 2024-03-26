@@ -24,7 +24,7 @@ use std::{
     sync::{atomic::AtomicBool, Arc, RwLock},
 };
 
-use bytes::{byte_array::ByteArray, Bytes, util::{increment}};
+use bytes::{byte_array::ByteArray, util::increment, Bytes};
 use iterator::State;
 use primitive::prefix_range::{PrefixRange, RangeEnd};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -38,7 +38,7 @@ use serde::{
 use crate::{
     key_value::StorageKeyArray,
     keyspace::keyspace::{KeyspaceId, KEYSPACE_MAXIMUM_COUNT},
-    snapshot::{error::SnapshotError, write::Write},
+    snapshot::{snapshot::SnapshotError, write::Write},
 };
 
 #[derive(Debug)]

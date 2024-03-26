@@ -16,16 +16,17 @@
  */
 use bytes::Bytes;
 use encoding::{graph::thing::vertex_attribute::AttributeVertex, value::value_type::ValueType};
-use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotRangeIterator};
-use storage::snapshot::error::SnapshotError;
+use storage::{
+    key_value::StorageKeyReference,
+    snapshot::{iterator::SnapshotRangeIterator, SnapshotError},
+};
 
 use crate::{
     concept_iterator,
-    ConceptAPI,
     error::{ConceptError, ConceptErrorKind},
-    thing::{AttributeAPI, thing_manager::ThingManager, ThingAPI, value::Value},
+    thing::{thing_manager::ThingManager, value::Value, AttributeAPI, ThingAPI},
+    ByteReference, ConceptAPI,
 };
-use crate::ByteReference;
 
 #[derive(Clone, Debug)]
 pub struct Attribute<'a> {

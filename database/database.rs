@@ -29,7 +29,7 @@ use encoding::{
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
     EncodingKeyspace,
 };
-use storage::{error::MVCCStorageError, snapshot::snapshot::Snapshot, MVCCStorage};
+use storage::{error::MVCCStorageError, snapshot::Snapshot, MVCCStorage};
 
 use crate::transaction::{TransactionRead, TransactionWrite};
 

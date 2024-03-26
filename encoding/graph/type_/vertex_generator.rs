@@ -17,7 +17,7 @@
 
 use std::sync::atomic::{AtomicU16, Ordering};
 
-use storage::{snapshot::snapshot::WriteSnapshot, MVCCStorage};
+use storage::{snapshot::WriteSnapshot, MVCCStorage};
 
 use crate::{
     graph::type_::vertex::{

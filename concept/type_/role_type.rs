@@ -1,42 +1,47 @@
 /*
  *  Copyright (C) 2023 Vaticle
- *  
+ *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
  *  published by the Free Software Foundation, either version 3 of the
  *  License, or (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Affero General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 use std::collections::HashSet;
 
-use bytes::byte_reference::ByteReference;
-use bytes::Bytes;
-use encoding::graph::type_::vertex::{new_vertex_role_type, TypeVertex};
-use encoding::layout::prefix::Prefix;
-use encoding::Prefixed;
-use encoding::value::label::Label;
+use bytes::{byte_reference::ByteReference, Bytes};
+use encoding::{
+    graph::type_::vertex::{new_vertex_role_type, TypeVertex},
+    layout::prefix::Prefix,
+    value::label::Label,
+    Prefixed,
+};
 use primitive::maybe_owns::MaybeOwns;
-use storage::{key_value::StorageKeyReference, snapshot::iterator::SnapshotRangeIterator};
-use storage::snapshot::error::SnapshotError;
+use storage::{
+    key_value::StorageKeyReference,
+    snapshot::{iterator::SnapshotRangeIterator, SnapshotError},
+};
 
 use crate::{
     concept_iterator,
-    ConceptAPI,
     error::{ConceptError, ConceptErrorKind},
-    type_::{annotation::{Annotation, AnnotationAbstract}, TypeAPI},
+    type_::{
+        annotation::{Annotation, AnnotationAbstract},
+        plays::Plays,
+        relates::Relates,
+        type_manager::TypeManager,
+        TypeAPI,
+    },
+    ConceptAPI,
 };
-use crate::type_::plays::Plays;
-use crate::type_::relates::Relates;
-use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -92,7 +97,10 @@ impl<'a> RoleType<'a> {
         type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
     }
 
-    pub fn get_supertypes<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, Vec<RoleType<'static>>> {
+    pub fn get_supertypes<'m, D>(
+        &self,
+        type_manager: &'m TypeManager<'_, '_, D>,
+    ) -> MaybeOwns<'m, Vec<RoleType<'static>>> {
         type_manager.get_role_type_supertypes(self.clone().into_owned())
     }
 
@@ -137,7 +145,6 @@ impl<'a> RoleType<'a> {
     }
 }
 
-
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum RoleTypeAnnotation {
     Abstract(AnnotationAbstract),
@@ -146,9 +153,7 @@ pub enum RoleTypeAnnotation {
 impl From<Annotation> for RoleTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
-            Annotation::Abstract(annotation) => {
-                RoleTypeAnnotation::Abstract(annotation)
-            }
+            Annotation::Abstract(annotation) => RoleTypeAnnotation::Abstract(annotation),
         }
     }
 }

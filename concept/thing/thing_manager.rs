@@ -28,24 +28,22 @@ use encoding::{
         Typed,
     },
     Keyable,
-    layout::prefix::{PrefixID, Prefix},
+    layout::prefix::{PrefixID, PrefixType},
     value::{long::Long, string::StringBytes, value_type::ValueType},
 };
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::snapshot::snapshot::Snapshot;
+use storage::snapshot::Snapshot;
 
 use crate::{
     error::{ConceptError, ConceptErrorKind},
     thing::{
         attribute::{Attribute, AttributeIterator},
-        AttributeAPI,
         entity::{Entity, EntityIterator},
         value::Value,
+        AttributeAPI,
     },
-    type_::{
-        attribute_type::AttributeType, entity_type::EntityType, type_manager::TypeManager, TypeAPI,
-    },
+    type_::{attribute_type::AttributeType, entity_type::EntityType, type_manager::TypeManager, TypeAPI},
 };
 
 pub struct ThingManager<'txn, 'storage: 'txn, D> {
@@ -161,8 +159,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
                     self.snapshot
                         .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
                             Value::String(
-                                String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str())
-                                    .into_boxed_str(),
+                                String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str()).into_boxed_str(),
                             )
                         })
                         .unwrap()

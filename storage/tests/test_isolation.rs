@@ -25,7 +25,7 @@ use storage::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{IsolationError, IsolationErrorKind},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    snapshot::error::{SnapshotError, SnapshotErrorKind},
+    snapshot::SnapshotError,
     KeyspaceSet, MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
@@ -129,8 +129,8 @@ fn g0_update_conflicts_fail() {
     assert!(
         matches!(
             result_2,
-            Err(SnapshotError {
-                kind: SnapshotErrorKind::FailedCommit {
+            Err(
+                SnapshotError::Commit {
                     source: MVCCStorageError {
                         kind: MVCCStorageErrorKind::IsolationError {
                             source: IsolationError { kind: IsolationErrorKind::RequiredDeleteViolation },
@@ -141,7 +141,7 @@ fn g0_update_conflicts_fail() {
                     ..
                 },
                 ..
-            })
+            )
         ),
         "{}",
         result_2.unwrap_err()

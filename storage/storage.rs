@@ -50,11 +50,7 @@ use crate::{
             KEYSPACE_MAXIMUM_COUNT,
         },
     },
-    snapshot::{
-        buffer::KeyspaceBuffers,
-        snapshot::{ReadSnapshot, WriteSnapshot},
-        write::Write,
-    },
+    snapshot::{buffer::KeyspaceBuffers, write::Write, ReadSnapshot, WriteSnapshot},
 };
 
 pub mod error;
@@ -442,7 +438,7 @@ impl<D> MVCCStorage<D> {
         }
     }
 
-    pub fn iterate_range<'this, const PS: usize>(
+    pub(crate) fn iterate_range<'this, const PS: usize>(
         &'this self,
         range: PrefixRange<StorageKey<'this, PS>>,
         open_sequence_number: SequenceNumber,

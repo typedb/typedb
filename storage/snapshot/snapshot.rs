@@ -15,19 +15,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::{error::Error, fmt, sync::Arc};
+
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use durability::{DurabilityService, SequenceNumber};
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use crate::{
+    error::MVCCStorageError,
     isolation_manager::CommitRecord,
+    iterator::MVCCReadError,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    snapshot::{
-        buffer::KeyspaceBuffers,
-        error::{SnapshotError, SnapshotErrorKind},
-        iterator::SnapshotRangeIterator,
-    },
+    snapshot::{buffer::KeyspaceBuffers, iterator::SnapshotRangeIterator},
     MVCCStorage,
 };
 
@@ -237,9 +237,7 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
         if self.buffers.is_empty() {
             Ok(())
         } else {
-            self.storage
-                .snapshot_commit(self)
-                .map_err(|err| SnapshotError { kind: SnapshotErrorKind::FailedCommit { source: err } })
+            self.storage.snapshot_commit(self).map_err(|err| SnapshotError::Commit { source: err })
         }
     }
 
@@ -264,3 +262,42 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
 //         self.close_resources();
 //     }
 // }
+
+#[derive(Debug)]
+pub enum SnapshotError {
+    Iterate { source: Arc<SnapshotError> },
+    Get { source: MVCCStorageError },
+    Put { source: MVCCStorageError },
+    MVCC { source: MVCCReadError },
+    Commit { source: MVCCStorageError },
+}
+
+impl fmt::Display for SnapshotError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self {
+            Self::Iterate { source, .. } => {
+                write!(f, "SnapshotError.FailedIterate caused by: {}", source)
+            }
+            Self::Get { source, .. } => write!(f, "SnapshotError.FailedGet caused by: {}", source),
+            Self::Put { source, .. } => write!(f, "SnapshotError.FailedPut caused by: {}", source),
+            Self::MVCC { source, .. } => {
+                write!(f, "SnapshotError.FailedMVCCStorageIterate caused by: {}", source)
+            }
+            Self::Commit { source, .. } => {
+                write!(f, "SnapshotError.FailedCommit caused by: {}", source)
+            }
+        }
+    }
+}
+
+impl Error for SnapshotError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match &self {
+            Self::Iterate { source, .. } => Some(source),
+            Self::Get { source, .. } => Some(source),
+            Self::Put { source, .. } => Some(source),
+            Self::MVCC { source, .. } => Some(source),
+            Self::Commit { source, .. } => Some(source),
+        }
+    }
+}

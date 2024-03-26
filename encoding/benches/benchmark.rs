@@ -27,7 +27,7 @@ use encoding::{
     EncodingKeyspace, Keyable,
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{key_value::StorageKey, snapshot::snapshot::WriteSnapshot, MVCCStorage};
+use storage::{key_value::StorageKey, snapshot::WriteSnapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, init_logging};
 
 fn vertex_generation<D>(

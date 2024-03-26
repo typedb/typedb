@@ -22,7 +22,7 @@ use std::{
 
 use bytes::{byte_array::ByteArray, Bytes};
 use primitive::prefix_range::PrefixRange;
-use storage::snapshot::snapshot::WriteSnapshot;
+use storage::snapshot::WriteSnapshot;
 
 use crate::{
     graph::{

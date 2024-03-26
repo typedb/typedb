@@ -20,17 +20,14 @@ use std::{collections::HashSet, ops::Deref, rc::Rc, sync::Arc};
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::DurabilityService;
 use encoding::{
-    AsBytes,
     graph::type_::{
         edge::{
-            build_edge_owns, build_edge_owns_reverse, build_edge_relates,
-            build_edge_relates_reverse, build_edge_sub,
-            build_edge_sub_reverse, new_edge_owns, new_edge_relates, new_edge_sub,
-            build_edge_owns_prefix_from, build_edge_plays, build_edge_plays_prefix_from, build_edge_plays_reverse,
-            build_edge_relates_prefix_from, build_edge_sub_prefix_from, new_edge_plays,
+            build_edge_owns, build_edge_owns_prefix_from, build_edge_owns_reverse, build_edge_plays,
+            build_edge_plays_prefix_from, build_edge_plays_reverse, build_edge_relates, build_edge_relates_prefix_from,
+            build_edge_relates_reverse, build_edge_sub, build_edge_sub_prefix_from, build_edge_sub_reverse,
+            new_edge_owns, new_edge_plays, new_edge_relates, new_edge_sub,
         },
         index::LabelToTypeVertexIndex,
-        Kind,
         property::{
             build_property_type_annotation_abstract, build_property_type_label, build_property_type_value_type,
         },
@@ -39,22 +36,32 @@ use encoding::{
             TypeVertex,
         },
         vertex_generator::TypeVertexGenerator,
+        Kind,
     },
-    Keyable, value::{
+    value::{
         label::Label,
         string::StringBytes,
         value_type::{ValueType, ValueTypeID},
     },
+    AsBytes, Keyable,
 };
-use primitive::maybe_owns::MaybeOwns;
-use primitive::prefix_range::PrefixRange;
+use primitive::{maybe_owns::MaybeOwns, prefix_range::PrefixRange};
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
-use storage::{MVCCStorage, snapshot::snapshot::Snapshot};
+use storage::{snapshot::Snapshot, MVCCStorage};
 
-use crate::type_::{annotation::AnnotationAbstract, attribute_type::{AttributeType, AttributeTypeAnnotation}, entity_type::{EntityType, EntityTypeAnnotation}, object_type::ObjectType, owns::Owns, relation_type::{RelationType, RelationTypeAnnotation}, type_cache::TypeCache, TypeAPI};
-use crate::type_::plays::Plays;
-use crate::type_::relates::Relates;
-use crate::type_::role_type::{RoleType, RoleTypeAnnotation};
+use crate::type_::{
+    annotation::AnnotationAbstract,
+    attribute_type::{AttributeType, AttributeTypeAnnotation},
+    entity_type::{EntityType, EntityTypeAnnotation},
+    object_type::ObjectType,
+    owns::Owns,
+    plays::Plays,
+    relates::Relates,
+    relation_type::{RelationType, RelationTypeAnnotation},
+    role_type::{RoleType, RoleTypeAnnotation},
+    type_cache::TypeCache,
+    TypeAPI,
+};
 
 pub struct TypeManager<'txn, 'storage: 'txn, D> {
     snapshot: Rc<Snapshot<'storage, D>>,
@@ -197,8 +204,8 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     }
 
     pub fn initialise_types(storage: &mut MVCCStorage<D>, vertex_generator: &TypeVertexGenerator)
-        where
-            D: DurabilityService,
+    where
+        D: DurabilityService,
     {
         let snapshot = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
         {
@@ -376,7 +383,8 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     }
 
     pub(crate) fn get_entity_type_plays<'this>(
-        &'this self, entity_type: EntityType<'static>,
+        &'this self,
+        entity_type: EntityType<'static>,
     ) -> MaybeOwns<'this, HashSet<Plays<'static>>> {
         if let Some(cache) = &self.type_cache {
             MaybeOwns::borrowed(cache.get_entity_type_plays(entity_type))
@@ -387,7 +395,6 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
             MaybeOwns::owned(plays)
         }
     }
-
 
     pub(crate) fn get_attribute_type_value_type(&self, attribute_type: AttributeType<'static>) -> Option<ValueType> {
         if let Some(cache) = &self.type_cache {
@@ -480,8 +487,8 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     }
 
     fn get_storage_owns<F>(&self, owner: TypeVertex<'static>, mapper: F) -> HashSet<Owns<'static>>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Owns<'static>,
+    where
+        F: for<'b> Fn(TypeVertex<'b>) -> Owns<'static>,
     {
         let owns_prefix = build_edge_owns_prefix_from(owner);
         // TODO: handle possible errors
@@ -517,8 +524,8 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     }
 
     fn get_storage_plays<F>(&self, player: TypeVertex<'static>, mapper: F) -> HashSet<Plays<'static>>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Plays<'static>,
+    where
+        F: for<'b> Fn(TypeVertex<'b>) -> Plays<'static>,
     {
         let plays_prefix = build_edge_plays_prefix_from(player);
         // TODO: handle possible errors
@@ -554,8 +561,8 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     }
 
     fn get_storage_relates<F>(&self, relation: TypeVertex<'static>, mapper: F) -> HashSet<Relates<'static>>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Relates<'static>,
+    where
+        F: for<'b> Fn(TypeVertex<'b>) -> Relates<'static>,
     {
         let relates_prefix = build_edge_relates_prefix_from(relation);
         // TODO: handle possible errors

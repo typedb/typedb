@@ -16,7 +16,8 @@
  */
 
 pub mod buffer;
-pub mod error;
 pub mod iterator;
-pub mod snapshot;
+mod snapshot;
 pub(crate) mod write;
+
+pub use snapshot::{ReadSnapshot, Snapshot, SnapshotError, WriteSnapshot};

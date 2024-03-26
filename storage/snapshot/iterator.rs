@@ -29,11 +29,7 @@ use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use crate::{
     iterator::MVCCRangeIterator,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    snapshot::{
-        buffer::BufferedPrefixIterator,
-        error::{SnapshotError, SnapshotErrorKind},
-        write::Write,
-    },
+    snapshot::{buffer::BufferedPrefixIterator, snapshot::SnapshotError, write::Write},
 };
 
 pub struct SnapshotRangeIterator<'a, const PS: usize> {
@@ -70,9 +66,7 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
                 self.advance_and_find_next_state();
                 self.peek()
             }
-            State::Error(error) => {
-                Some(Err(SnapshotError { kind: SnapshotErrorKind::FailedIterate { source: error.clone() } }))
-            }
+            State::Error(error) => Some(Err(SnapshotError::Iterate { source: error.clone() })),
             State::Done => None,
         }
     }
@@ -99,9 +93,7 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
                 self.advance_and_find_next_state();
                 self.next()
             }
-            State::Error(error) => {
-                Some(Err(SnapshotError { kind: SnapshotErrorKind::FailedIterate { source: error.clone() } }))
-            }
+            State::Error(error) => Some(Err(SnapshotError::Iterate { source: error.clone() })),
             State::Done => None,
         }
     }
@@ -196,6 +188,7 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
             None
         }
     }
+
     fn storage_peek<'this>(
         storage_iterator: &'this mut MVCCRangeIterator<'_, PS>,
     ) -> Option<Result<(StorageKeyReference<'this>, ByteReference<'this>), SnapshotError>> {
@@ -203,9 +196,7 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
         match storage_peek {
             None => None,
             Some(Ok((key, value))) => Some(Ok((key, value))),
-            Some(Err(error)) => {
-                Some(Err(SnapshotError { kind: SnapshotErrorKind::FailedMVCCStorageIterate { source: error } }))
-            }
+            Some(Err(error)) => Some(Err(SnapshotError::MVCC { source: error })),
         }
     }
 
