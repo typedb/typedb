@@ -18,16 +18,19 @@
 use std::{
     cmp::Ordering,
     error::Error,
-    fmt, io,
+    fmt, fs, io,
     path::{Path, PathBuf},
 };
 
-use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use iterator::State;
 use logger::result::ResultExt;
 use primitive::prefix_range::PrefixRange;
 use serde::{Deserialize, Serialize};
-use speedb::{DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
+use speedb::{
+    checkpoint::Checkpoint, DBRawIterator, DBRawIteratorWithThreadMode, Options, ReadOptions, WriteBatch, WriteOptions,
+    DB,
+};
 
 use crate::KeyspaceSet;
 
@@ -84,7 +87,7 @@ impl Keyspace {
         keyspace_id: impl KeyspaceSet,
         options: &Options,
     ) -> Result<Keyspace, KeyspaceOpenError> {
-        use KeyspaceOpenError::*;
+        use KeyspaceOpenError::SpeeDB;
         let name = keyspace_id.name();
         let path = storage_path.join(name);
         let kv_storage = DB::open(options, &path).map_err(|error| SpeeDB { source: error })?;
@@ -175,13 +178,17 @@ impl Keyspace {
             .map_err(|error| KeyspaceError { kind: KeyspaceErrorKind::BatchWrite { source: error } })
     }
 
-    pub(crate) fn checkpoint(&self) -> Result<(), KeyspaceError> {
-        todo!()
-        // Steps:
-        //  Create new checkpoint directory at 'checkpoint_{next_checkpoint_id}'
-        //  Take the last sequence number watermark
-        //  Take a storage checkpoint into directory (may end up containing some more commits, which is OK)
-        //  Write properties file: timestamp and last sequence number watermark
+    pub(crate) fn checkpoint(&self, checkpoint_dir: &Path) -> Result<(), KeyspaceCheckpointError> {
+        use KeyspaceCheckpointError::{CheckpointExists, CreateSpeeDBCheckpoint};
+        let checkpoint_dir = checkpoint_dir.join(self.name);
+        if checkpoint_dir.exists() {
+            return Err(CheckpointExists { dir: checkpoint_dir });
+        }
+
+        let checkpoint = Checkpoint::new(&self.kv_storage).map_err(|error| CreateSpeeDBCheckpoint { source: error })?;
+        checkpoint.create_checkpoint(&checkpoint_dir).map_err(|error| CreateSpeeDBCheckpoint { source: error })?;
+
+        Ok(())
     }
 
     pub(crate) fn delete(self) -> Result<(), KeyspaceError> {
@@ -198,6 +205,101 @@ impl fmt::Debug for Keyspace {
     }
 }
 
+#[derive(Debug)]
+pub enum KeyspaceCreateError {
+    AlreadyExists { name: &'static str },
+    SpeeDB { name: &'static str, source: speedb::Error },
+}
+
+impl fmt::Display for KeyspaceCreateError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::AlreadyExists { .. } => todo!(),
+            Self::SpeeDB { .. } => todo!(),
+        }
+    }
+}
+
+impl Error for KeyspaceCreateError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::AlreadyExists { .. } => None,
+            Self::SpeeDB { source, .. } => Some(source),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum KeyspaceOpenError {
+    SpeeDB { source: speedb::Error },
+}
+
+impl fmt::Display for KeyspaceOpenError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for KeyspaceOpenError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::SpeeDB { source } => Some(source),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum KeyspaceCheckpointError {
+    CheckpointExists { dir: PathBuf },
+    CreateSpeeDBCheckpoint { source: speedb::Error },
+}
+
+impl fmt::Display for KeyspaceCheckpointError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for KeyspaceCheckpointError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::CheckpointExists { .. } => None,
+            Self::CreateSpeeDBCheckpoint { source } => Some(source),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct KeyspaceError {
+    pub kind: KeyspaceErrorKind,
+}
+
+#[derive(Debug)]
+pub enum KeyspaceErrorKind {
+    KeyspaceDelete { source: std::io::Error },
+    Get { source: speedb::Error },
+    Put { source: speedb::Error },
+    BatchWrite { source: speedb::Error },
+    Iterate { source: speedb::Error },
+}
+
+impl fmt::Display for KeyspaceError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for KeyspaceError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match &self.kind {
+            KeyspaceErrorKind::KeyspaceDelete { source, .. } => Some(source),
+            KeyspaceErrorKind::Get { source, .. } => Some(source),
+            KeyspaceErrorKind::Put { source, .. } => Some(source),
+            KeyspaceErrorKind::BatchWrite { source, .. } => Some(source),
+            KeyspaceErrorKind::Iterate { source, .. } => Some(source),
+        }
+    }
+}
 pub struct KeyspaceRangeIterator<'a, const INLINE_BYTES: usize> {
     range: PrefixRange<Bytes<'a, { INLINE_BYTES }>>,
     iterator: DBRawIterator<'a>,
@@ -331,65 +433,5 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
             vec.push((ByteArray::<INLINE_KEY>::copy(key), ByteArray::<INLINE_VALUE>::copy(value)));
         }
         vec
-    }
-}
-
-#[derive(Debug)]
-pub enum KeyspaceCreateError {
-    AlreadyExists { name: &'static str },
-    SpeeDB { name: &'static str, source: speedb::Error },
-}
-
-impl fmt::Display for KeyspaceCreateError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::AlreadyExists { .. } => todo!(),
-            Self::SpeeDB { .. } => todo!(),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum KeyspaceOpenError {
-    UnrecognizedName { name: String },
-    DoesNotExist { source: io::Error },
-    SpeeDB { source: speedb::Error },
-}
-
-impl fmt::Display for KeyspaceOpenError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-#[derive(Debug)]
-pub struct KeyspaceError {
-    pub kind: KeyspaceErrorKind,
-}
-
-#[derive(Debug)]
-pub enum KeyspaceErrorKind {
-    KeyspaceDelete { source: std::io::Error },
-    Get { source: speedb::Error },
-    Put { source: speedb::Error },
-    BatchWrite { source: speedb::Error },
-    Iterate { source: speedb::Error },
-}
-
-impl fmt::Display for KeyspaceError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for KeyspaceError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match &self.kind {
-            KeyspaceErrorKind::KeyspaceDelete { source, .. } => Some(source),
-            KeyspaceErrorKind::Get { source, .. } => Some(source),
-            KeyspaceErrorKind::Put { source, .. } => Some(source),
-            KeyspaceErrorKind::BatchWrite { source, .. } => Some(source),
-            KeyspaceErrorKind::Iterate { source, .. } => Some(source),
-        }
     }
 }

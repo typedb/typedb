@@ -42,6 +42,7 @@ rust_library(
         "//resource",
 
         "@crates//:bincode",
+        "@crates//:chrono",
         "@crates//:itertools",
         "@crates//:speedb",
         "@crates//:tracing",

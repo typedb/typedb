@@ -21,14 +21,20 @@
 #![allow(clippy::module_inception)]
 
 use std::{
-    fs,
+    error::Error,
+    fmt,
+    fs::{self, File},
+    io::{self, Write as _},
     path::{Path, PathBuf},
     sync::{atomic::Ordering, Arc},
 };
 
-use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use chrono::Utc;
 use durability::{DurabilityService, SequenceNumber};
 use iterator::State;
+use itertools::Itertools;
+use keyspace::keyspace::KeyspaceCheckpointError;
 use logger::{error, result::ResultExt};
 use primitive::{prefix_range::PrefixRange, u80::U80};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
@@ -58,7 +64,7 @@ pub mod snapshot;
 #[derive(Debug)]
 pub struct MVCCStorage<D> {
     name: String,
-    storage_dir: PathBuf,
+    path: PathBuf,
     keyspaces: Vec<Keyspace>,
     keyspaces_index: [Option<KeyspaceId>; KEYSPACE_MAXIMUM_COUNT],
     durability_service: D,
@@ -162,6 +168,8 @@ fn recover_keyspaces<KS: KeyspaceSet>(
 
 impl<D> MVCCStorage<D> {
     const STORAGE_DIR_NAME: &'static str = "storage";
+    const CHECKPOINT_DIR_NAME: &'static str = "checkpoint";
+    const CHECKPOINT_METADATA_FILE_NAME: &'static str = "METADATA";
 
     pub fn recover<KS: KeyspaceSet>(name: impl AsRef<str>, path: &Path) -> Result<Self, MVCCStorageError>
     where
@@ -183,7 +191,8 @@ impl<D> MVCCStorage<D> {
 
         let name = name.to_owned();
 
-        let storage = Self { name, storage_dir, keyspaces, keyspaces_index, isolation_manager, durability_service };
+        let storage =
+            Self { name, path: path.to_owned(), keyspaces, keyspaces_index, isolation_manager, durability_service };
 
         storage.reload()?;
 
@@ -194,13 +203,11 @@ impl<D> MVCCStorage<D> {
     where
         D: DurabilityService,
     {
-        for record in
-            self.durability_service.iter_type_from_start::<CommitRecord>().unwrap()
-        {
+        for record in self.durability_service.iter_type_from_start::<CommitRecord>().unwrap() {
             if let Ok((commit_sequence_number, commit_record)) = record {
                 self.write_commit_record(commit_sequence_number, commit_record)?;
             } else {
-                panic!() // FIXME
+                record.unwrap(); // FIXME
             }
         }
         Ok(())
@@ -332,10 +339,54 @@ impl<D> MVCCStorage<D> {
         &self.keyspaces[keyspace_index.0 as usize]
     }
 
-    fn checkpoint(&self) {
-        todo!("Checkpointing not yet implemented")
-        // Steps:
-        //  Each keyspace should checkpoint
+    pub fn checkpoint(&self) -> Result<(), StorageCheckpointError> {
+        use StorageCheckpointError::{
+            CreateCheckpointDir, CreateMetadataFile, KeyspaceCheckpoint, ReadCheckpointDir, RemoveOldCheckpoint,
+            WriteMetadata,
+        };
+
+        let watermark = self.isolation_manager.watermark();
+
+        let checkpoint_dir = self.path.join(Self::CHECKPOINT_DIR_NAME);
+        if !checkpoint_dir.exists() {
+            fs::create_dir_all(&checkpoint_dir)
+                .map_err(|error| CreateCheckpointDir { dir: checkpoint_dir.clone(), source: error })?
+        }
+
+        let previous_checkpoints: Vec<_> = fs::read_dir(&checkpoint_dir)
+            .map_err(|error| ReadCheckpointDir { dir: checkpoint_dir.clone(), source: error })?
+            .map_ok(|entry| entry.path())
+            .try_collect()
+            .map_err(|error| ReadCheckpointDir { dir: checkpoint_dir.clone(), source: error })?;
+
+        let current_checkpoint_dir = checkpoint_dir.join(format!("{}", Utc::now().timestamp_micros()));
+        fs::create_dir_all(&current_checkpoint_dir)
+            .map_err(|error| CreateCheckpointDir { dir: checkpoint_dir.clone(), source: error })?;
+
+        for keyspace in &self.keyspaces {
+            keyspace.checkpoint(&current_checkpoint_dir).map_err(|error| KeyspaceCheckpoint {
+                keyspace_name: keyspace.name().to_owned(),
+                dir: current_checkpoint_dir.clone(),
+                source: error,
+            })?;
+        }
+
+        let metadata_file_path = current_checkpoint_dir.join(Self::CHECKPOINT_METADATA_FILE_NAME);
+        let mut metadata_file = File::create(&metadata_file_path)
+            .map_err(|error| CreateMetadataFile { file_path: metadata_file_path.clone(), source: error })?;
+        metadata_file
+            .write_all(watermark.number().to_string().as_bytes())
+            .map_err(|error| WriteMetadata { file_path: metadata_file_path.clone(), source: error })?;
+        metadata_file
+            .sync_all()
+            .map_err(|error| WriteMetadata { file_path: metadata_file_path.clone(), source: error })?;
+
+        for previous_checkpoint in previous_checkpoints {
+            fs::remove_dir_all(&previous_checkpoint)
+                .map_err(|error| RemoveOldCheckpoint { dir: previous_checkpoint, source: error })?
+        }
+
+        Ok(())
     }
 
     pub fn delete_storage(self) -> Result<(), Vec<MVCCStorageError>> {
@@ -354,8 +405,8 @@ impl<D> MVCCStorage<D> {
             return Err(errors);
         }
 
-        if self.storage_dir.exists() {
-            std::fs::remove_dir_all(self.storage_dir.clone()).map_err(|err| {
+        if self.path.exists() {
+            std::fs::remove_dir_all(&self.path).map_err(|err| {
                 error!("Failed to delete storage {}, received error: {}", self.name, err);
                 vec![MVCCStorageError {
                     storage_name: self.name.clone(),
@@ -445,6 +496,38 @@ impl<D> MVCCStorage<D> {
     ) -> KeyspaceRangeIterator<'this, PREFIX_INLINE> {
         debug_assert!(!range.start().bytes().is_empty());
         self.get_keyspace(range.start().keyspace_id()).iterate_range(range.map(|k| k.into_byte_array_or_ref()))
+    }
+}
+
+#[derive(Debug)]
+pub enum StorageCheckpointError {
+    CreateCheckpointDir { dir: PathBuf, source: io::Error },
+    ReadCheckpointDir { dir: PathBuf, source: io::Error },
+
+    KeyspaceCheckpoint { keyspace_name: String, dir: PathBuf, source: KeyspaceCheckpointError },
+
+    CreateMetadataFile { file_path: PathBuf, source: io::Error },
+    WriteMetadata { file_path: PathBuf, source: io::Error },
+
+    RemoveOldCheckpoint { dir: PathBuf, source: io::Error },
+}
+
+impl fmt::Display for StorageCheckpointError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for StorageCheckpointError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::CreateCheckpointDir { source, .. } => Some(source),
+            Self::ReadCheckpointDir { source, .. } => Some(source),
+            Self::KeyspaceCheckpoint { source, .. } => Some(source),
+            Self::CreateMetadataFile { source, .. } => Some(source),
+            Self::WriteMetadata { source, .. } => Some(source),
+            Self::RemoveOldCheckpoint { source, .. } => Some(source),
+        }
     }
 }
 

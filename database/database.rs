@@ -55,16 +55,24 @@ impl<D> Database<D> {
         use DatabaseRecoverError::*;
 
         let name = database_name.as_ref();
-        let path = path.join(name);
-        fs::create_dir(path.as_path())
-            .map_err(|error| FailedToCreateDirectory { path: path.to_owned(), source: error })?;
-        let mut storage = MVCCStorage::recover::<EncodingKeyspace>(name, &path)
+        if !path.exists() {
+            fs::create_dir(path).map_err(|error| FailedToCreateDirectory { path: path.to_owned(), source: error })?;
+        }
+        let mut storage = MVCCStorage::recover::<EncodingKeyspace>(name, path)
             .map_err(|error| FailedToCreateStorage { source: error })?;
         let type_vertex_generator = TypeVertexGenerator::new();
         let thing_vertex_generator = ThingVertexGenerator::new();
         TypeManager::initialise_types(&mut storage, &type_vertex_generator);
 
-        Ok(Self { name: name.to_owned(), path, storage, type_vertex_generator, thing_vertex_generator })
+        storage.checkpoint().unwrap();
+
+        Ok(Self {
+            name: name.to_owned(),
+            path: path.to_owned(),
+            storage,
+            type_vertex_generator,
+            thing_vertex_generator,
+        })
     }
 
     pub fn transaction_read(&self) -> TransactionRead<'_, '_, D> {
