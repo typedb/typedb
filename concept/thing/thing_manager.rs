@@ -117,20 +117,20 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         }
     }
 
-    pub fn get_entities(&self) -> EntityIterator<'_, 1, D> {
+    pub fn get_entities(&self) -> EntityIterator<'_, 1> {
         let prefix = ObjectVertex::build_prefix_prefix(PrefixType::VertexEntity.prefix_id());
         let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_within(prefix));
         EntityIterator::new(snapshot_iterator)
     }
 
-    pub fn get_attributes(&self) -> AttributeIterator<'_, 1, D> {
+    pub fn get_attributes(&self) -> AttributeIterator<'_, 1> {
         let start = AttributeVertex::build_prefix_prefix(PrefixID::VERTEX_ATTRIBUTE_MIN);
         let end = AttributeVertex::build_prefix_prefix(PrefixID::VERTEX_ATTRIBUTE_MAX);
         let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_inclusive(start, end));
         AttributeIterator::new(snapshot_iterator)
     }
 
-    pub fn get_attributes_in(&self, attribute_type: AttributeType<'_>) -> AttributeIterator<'_, 3, D> {
+    pub fn get_attributes_in(&self, attribute_type: AttributeType<'_>) -> AttributeIterator<'_, 3> {
         attribute_type
             .get_value_type(self.type_manager.as_ref())
             .map(|value_type| {

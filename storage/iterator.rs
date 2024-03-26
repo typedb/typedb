@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use durability::SequenceNumber;
@@ -12,20 +12,22 @@ use crate::{
     keyspace::keyspace::{Keyspace, KeyspaceError, KeyspaceRangeIterator},
 };
 
-pub struct MVCCRangeIterator<'a, const PS: usize, D> {
-    storage: &'a MVCCStorage<D>,
+pub struct MVCCRangeIterator<'a, const PS: usize> {
+    storage_name: &'a str,
     keyspace: &'a Keyspace,
     iterator: KeyspaceRangeIterator<'a, PS>,
     open_sequence_number: SequenceNumber,
     last_visible_key: Option<ByteArray<MVCC_KEY_INLINE_SIZE>>,
     state: State<Arc<KeyspaceError>>,
+    _storage: PhantomData<&'a ()>,
 }
 
-impl<'s, const P: usize, D> MVCCRangeIterator<'s, P, D> {
+impl<'s, const P: usize> MVCCRangeIterator<'s, P> {
     //
-    // TODO: optimisation for fixed-width keyspaces: we can skip to key[len(key) - 1] = key[len(key) - 1] + 1 once we find a successful key, to skip all 'older' versions of the key
+    // TODO: optimisation for fixed-width keyspaces: we can skip to key[len(key) - 1] = key[len(key) - 1] + 1
+    // once we find a successful key, to skip all 'older' versions of the key
     //
-    pub(crate) fn new(
+    pub(crate) fn new<D>(
         storage: &'s MVCCStorage<D>,
         range: PrefixRange<StorageKey<'s, P>>,
         open_sequence_number: SequenceNumber,
@@ -34,18 +36,17 @@ impl<'s, const P: usize, D> MVCCRangeIterator<'s, P, D> {
         let keyspace = storage.get_keyspace(range.start().keyspace_id());
         let iterator = keyspace.iterate_range(range.map(|k| k.into_byte_array_or_ref()));
         MVCCRangeIterator {
-            storage,
+            storage_name: storage.name(),
             keyspace,
             iterator,
             open_sequence_number,
             last_visible_key: None,
             state: State::Init,
+            _storage: PhantomData,
         }
     }
 
-    pub(crate) fn peek(
-        &mut self,
-    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCStorageError>> {
+    pub(crate) fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCStorageError>> {
         match &self.state {
             State::Init => {
                 self.find_next_state();
@@ -64,7 +65,7 @@ impl<'s, const P: usize, D> MVCCRangeIterator<'s, P, D> {
                 self.peek()
             }
             State::Error(error) => Some(Err(MVCCStorageError {
-                storage_name: self.storage.name().to_string(),
+                storage_name: self.storage_name.to_string(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
                     source: error.clone(),
                     keyspace_name: self.keyspace.name(),
@@ -74,9 +75,7 @@ impl<'s, const P: usize, D> MVCCRangeIterator<'s, P, D> {
         }
     }
 
-    pub(crate) fn next(
-        &mut self,
-    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCStorageError>> {
+    pub(crate) fn next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCStorageError>> {
         match &self.state {
             State::Init => {
                 self.find_next_state();
@@ -97,7 +96,7 @@ impl<'s, const P: usize, D> MVCCRangeIterator<'s, P, D> {
                 self.next()
             }
             State::Error(error) => Some(Err(MVCCStorageError {
-                storage_name: self.storage.name().to_owned(),
+                storage_name: self.storage_name.to_owned(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
                     source: error.clone(),
                     keyspace_name: self.keyspace.name(),
@@ -172,4 +171,3 @@ impl<'s, const P: usize, D> MVCCRangeIterator<'s, P, D> {
         Ok(vec)
     }
 }
-

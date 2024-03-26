@@ -18,12 +18,12 @@
 #[macro_export]
 macro_rules! concept_iterator {
     ($name:ident, $concept_type:ident, $map_fn: expr) => {
-        pub struct $name<'a, const S: usize, D> {
-            snapshot_iterator: Option<SnapshotRangeIterator<'a, S, D>>,
+        pub struct $name<'a, const S: usize> {
+            snapshot_iterator: Option<SnapshotRangeIterator<'a, S>>,
         }
 
-        impl<'a, const S: usize, D> $name<'a, S, D> {
-            pub(crate) fn new(snapshot_iterator: SnapshotRangeIterator<'a, S, D>) -> Self {
+        impl<'a, const S: usize> $name<'a, S> {
+            pub(crate) fn new(snapshot_iterator: SnapshotRangeIterator<'a, S>) -> Self {
                 $name { snapshot_iterator: Some(snapshot_iterator) }
             }
 

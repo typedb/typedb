@@ -443,7 +443,7 @@ impl<D> MVCCStorage<D> {
         &'this self,
         range: PrefixRange<StorageKey<'this, PS>>,
         open_sequence_number: SequenceNumber,
-    ) -> MVCCRangeIterator<'this, PS, D> {
+    ) -> MVCCRangeIterator<'this, PS> {
         MVCCRangeIterator::new(self, range, open_sequence_number)
     }
 

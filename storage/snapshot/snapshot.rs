@@ -55,7 +55,7 @@ impl<'storage, D> Snapshot<'storage, D> {
     pub fn iterate_range<'this, const PS: usize>(
         &'this self,
         range: PrefixRange<StorageKey<'this, PS>>,
-    ) -> SnapshotRangeIterator<'this, PS, D> {
+    ) -> SnapshotRangeIterator<'this, PS> {
         match self {
             Snapshot::Read(snapshot) => snapshot.iterate_range(range),
             Snapshot::Write(snapshot) => snapshot.iterate_range(range),
@@ -103,7 +103,7 @@ impl<'storage, D> ReadSnapshot<'storage, D> {
     pub fn iterate_range<'this, const PS: usize>(
         &'this self,
         range: PrefixRange<StorageKey<'this, PS>>,
-    ) -> SnapshotRangeIterator<'this, PS, D> {
+    ) -> SnapshotRangeIterator<'this, PS> {
         let mvcc_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(mvcc_iterator, None)
     }
@@ -184,9 +184,8 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
         if let Some(existing) = existing {
             existing
         } else {
-            let storage_value = self
-                .storage
-                .get(key.as_reference(), self.open_sequence_number, |reference| ByteArray::from(reference));
+            let storage_value =
+                self.storage.get(key.as_reference(), self.open_sequence_number, |reference| ByteArray::from(reference));
             if let Some(value) = storage_value {
                 buffer.require_exists(ByteArray::copy(key.bytes()), value.clone());
                 value
@@ -222,7 +221,7 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
     pub fn iterate_range<'this, const PS: usize>(
         &'this self,
         range: PrefixRange<StorageKey<'this, PS>>,
-    ) -> SnapshotRangeIterator<'this, PS, D> {
+    ) -> SnapshotRangeIterator<'this, PS> {
         let buffered_iterator = self
             .buffers
             .get(range.start().keyspace_id())
