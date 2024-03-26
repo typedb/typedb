@@ -138,7 +138,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
                 let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_within(prefix));
                 AttributeIterator::new(snapshot_iterator)
             })
-            .unwrap_or_else(|| AttributeIterator::new_empty())
+            .unwrap_or_else(AttributeIterator::new_empty)
     }
 
     pub(crate) fn get_attribute_value(&self, attribute: &Attribute<'_>) -> Value {
