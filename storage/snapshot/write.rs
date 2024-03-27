@@ -26,44 +26,28 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) enum Write {
+    // Mark Key as required from storage. Caches existing storage Value. Conflicts with Delete.
+    RequireExists { value: ByteArray<BUFFER_VALUE_INLINE> },
     // Insert KeyValue with a new version. Never conflicts.
-    Insert(ByteArray<BUFFER_VALUE_INLINE>),
+    Insert { value: ByteArray<BUFFER_VALUE_INLINE> },
     // Insert KeyValue with new version if a concurrent Txn deletes Key. Boolean indicates requires re-insertion. Never conflicts.
     InsertPreexisting(ByteArray<BUFFER_VALUE_INLINE>, Arc<AtomicBool>),
-    // TODO what happens during replay
-    // Mark Key as required from storage. Caches existing storage Value. Conflicts with Delete.
-    RequireExists(ByteArray<BUFFER_VALUE_INLINE>),
     // Delete with a new version. Conflicts with Require.
     Delete,
 }
 
-impl PartialEq<Self> for Write {
+impl PartialEq for Write {
     fn eq(&self, other: &Self) -> bool {
-        match self {
-            Write::Insert(value) => {
-                if let Write::Insert(other_value) = other {
-                    value == other_value
-                } else {
-                    false
-                }
+        match (self, other) {
+            (Write::RequireExists { value }, Write::RequireExists { value: other_value }) => {
+                value == other_value
             }
-            Write::InsertPreexisting(value, reinsert) => {
-                if let Write::InsertPreexisting(other_value, other_reinsert) = other {
-                    other_value == value && reinsert.load(Ordering::SeqCst) == other_reinsert.load(Ordering::SeqCst)
-                } else {
-                    false
-                }
+            (Write::Insert { value }, Write::Insert { value: other_value }) => value == other_value,
+            (Write::InsertPreexisting(value, reinsert), Write::InsertPreexisting(other_value, other_reinsert)) => {
+                other_value == value && reinsert.load(Ordering::Acquire) == other_reinsert.load(Ordering::Acquire)
             }
-            Write::RequireExists(value) => {
-                if let Write::RequireExists(other_value) = other {
-                    value == other_value
-                } else {
-                    false
-                }
-            }
-            Write::Delete => {
-                matches!(other, Write::Delete)
-            }
+            (Write::Delete, Write::Delete) => true,
+            _ => false,
         }
     }
 }
@@ -72,7 +56,7 @@ impl Eq for Write {}
 
 impl Write {
     pub(crate) fn is_insert(&self) -> bool {
-        matches!(self, Write::Insert(_))
+        matches!(self, Write::Insert { .. })
     }
 
     pub(crate) fn is_insert_preexisting(&self) -> bool {
@@ -85,9 +69,9 @@ impl Write {
 
     pub(crate) fn get_value(&self) -> &ByteArray<BUFFER_VALUE_INLINE> {
         match self {
-            Write::Insert(value) => value,
+            Write::Insert { value } => value,
             Write::InsertPreexisting(value, _) => value,
-            Write::RequireExists(value) => value,
+            Write::RequireExists { value } => value,
             Write::Delete => panic!("Buffered delete does not have a value."),
         }
     }

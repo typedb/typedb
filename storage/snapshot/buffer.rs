@@ -65,9 +65,13 @@ impl KeyspaceBuffers {
 }
 
 // TODO: implement our own alternative to BTreeMap, which
-//       1) allows storing StorageKeyArray's directly, while doing lookup with any StorageKey. Then we would not need to allocate one buffer per keyspace ahead of time.
-//       2) stores an initial set of ordered keys inline - BTreeMap immediately allocates on the heap for the first element and amortize allocating all Writes into one.
-//       3) We would benefit hugely from a table where writes are never moved, so we can freely take references to existing writes without having to Clone them out every time... This might lead us to a RocksDB-like Buffer+Index structure
+//       1) allows storing StorageKeyArray's directly, while doing lookup with any StorageKey. Then
+//          we would not need to allocate one buffer per keyspace ahead of time.
+//       2) stores an initial set of ordered keys inline - BTreeMap immediately allocates on the
+//          heap for the first element and amortize allocating all Writes into one.
+//       3) We would benefit hugely from a table where writes are never moved, so we can freely
+//          take references to existing writes without having to Clone them out every time... This
+//          might lead us to a RocksDB-like Buffer+Index structure
 #[derive(Debug)]
 pub(crate) struct KeyspaceBuffer {
     keyspace_id: KeyspaceId,
@@ -78,51 +82,44 @@ impl KeyspaceBuffer {
     pub(crate) fn new(keyspace_id: KeyspaceId) -> KeyspaceBuffer {
         KeyspaceBuffer { keyspace_id, buffer: RwLock::new(BTreeMap::new()) }
     }
+
     pub(crate) fn is_empty(&self) -> bool {
-        let map = self.buffer.read().unwrap();
-        map.is_empty()
+        self.buffer.read().unwrap().is_empty()
     }
 
     pub(crate) fn insert(&self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        let mut map = self.buffer.write().unwrap();
-        map.insert(key, Write::Insert(value));
+        self.buffer.write().unwrap().insert(key, Write::Insert { value });
     }
 
     pub(crate) fn insert_preexisting(&self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        let mut map = self.buffer.write().unwrap();
-        map.insert(key, Write::InsertPreexisting(value, Arc::new(AtomicBool::new(false))));
+        self.buffer.write().unwrap().insert(key, Write::InsertPreexisting(value, Arc::new(AtomicBool::new(false))));
     }
 
     pub(crate) fn require_exists(&self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
         let mut map = self.buffer.write().unwrap();
         // TODO: what if it already has been inserted? Ie. InsertPreexisting?
-        map.insert(key, Write::RequireExists(value));
+        map.insert(key, Write::RequireExists { value });
     }
 
     pub(crate) fn delete(&self, key: ByteArray<BUFFER_KEY_INLINE>) {
         let mut map = self.buffer.write().unwrap();
-        // note: If this snapshot has Inserted the key, we don't know if it's a preexisting key with a different value for overwrite or a brand new key
-        //       so we always have to write a delete marker instead of removing an element from the map in some cases
+        // note: If this snapshot has Inserted the key, we don't know if it's a preexisting key
+        // with a different value for overwrite or a brand new key so we always have to write a
+        // delete marker instead of removing an element from the map in some cases
         map.insert(key, Write::Delete);
     }
 
     pub(crate) fn contains(&self, key: &ByteArray<BUFFER_KEY_INLINE>) -> bool {
-        let map = self.buffer.read().unwrap();
-        map.get(key.bytes()).is_some()
+        self.buffer.read().unwrap().get(key.bytes()).is_some()
     }
 
     pub(crate) fn get<const INLINE_BYTES: usize>(&self, key: &[u8]) -> Option<ByteArray<INLINE_BYTES>> {
         let map = self.buffer.read().unwrap();
-        let existing = map.get(key);
-        if let Some(write) = existing {
-            match write {
-                Write::Insert(value) => Some(ByteArray::copy(value.bytes())),
-                Write::InsertPreexisting(value, _) => Some(ByteArray::copy(value.bytes())),
-                Write::RequireExists(value) => Some(ByteArray::copy(value.bytes())),
-                Write::Delete => None,
-            }
-        } else {
-            None
+        match map.get(key) {
+            Some(Write::Insert { value }) => Some(ByteArray::copy(value.bytes())),
+            Some(Write::InsertPreexisting(value, _)) => Some(ByteArray::copy(value.bytes())),
+            Some(Write::RequireExists { value }) => Some(ByteArray::copy(value.bytes())),
+            Some(Write::Delete) | None => None,
         }
     }
 

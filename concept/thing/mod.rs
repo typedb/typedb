@@ -21,8 +21,9 @@ use encoding::{
 };
 
 use crate::{
-    ConceptAPI,
+    error::ConceptReadError,
     thing::{attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, value::Value},
+    ConceptAPI,
 };
 
 pub mod attribute;
@@ -52,5 +53,5 @@ pub trait AttributeAPI<'a>: ThingAPI<'a> {
 
     fn value_type(&self) -> ValueType;
 
-    fn value<D>(&self, thing_manager: &ThingManager<'_, '_, D>) -> Value;
+    fn value<D>(&self, thing_manager: &ThingManager<'_, '_, D>) -> Result<Value, ConceptReadError>;
 }

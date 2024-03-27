@@ -15,19 +15,16 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::ops::Deref;
+use std::collections::HashSet;
 
 use encoding::graph::type_::vertex::TypeVertex;
 use primitive::maybe_owns::MaybeOwns;
-use std::collections::HashSet;
 
-use crate::ConceptAPI;
-use crate::type_::attribute_type::AttributeType;
-use crate::type_::object_type::ObjectType;
-use crate::type_::owns::Owns;
-use crate::type_::plays::Plays;
-use crate::type_::role_type::RoleType;
-use crate::type_::type_manager::TypeManager;
+use crate::{
+    error::ConceptWriteError,
+    type_::{attribute_type::AttributeType, owns::Owns, plays::Plays, role_type::RoleType, type_manager::TypeManager},
+    ConceptAPI,
+};
 
 pub mod annotation;
 pub mod attribute_type;
@@ -48,28 +45,47 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
 }
 
 pub trait OwnerAPI<'a> {
-    fn set_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) -> Owns<'static>;
+    fn set_owns<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Owns<'static>, ConceptWriteError>;
 
     fn delete_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>);
 
     fn get_owns<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Owns<'static>>>;
 
-    fn get_owns_attribute<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) -> Option<Owns<'static>>;
+    fn get_owns_attribute<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        attribute_type: AttributeType<'static>,
+    ) -> Option<Owns<'static>>;
 
-    fn has_owns_attribute<D>( &self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) -> bool {
+    fn has_owns_attribute<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        attribute_type: AttributeType<'static>,
+    ) -> bool {
         self.get_owns_attribute(type_manager, attribute_type).is_some()
     }
 }
 
-
 pub trait PlayerAPI<'a> {
-    fn set_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) -> Plays<'static>;
+    fn set_plays<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        role_type: RoleType<'static>,
+    ) -> Result<Plays<'static>, ConceptWriteError>;
 
     fn delete_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>);
 
     fn get_plays<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Plays<'static>>>;
 
-    fn get_plays_role<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) -> Option<Plays<'static>>;
+    fn get_plays_role<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        role_type: RoleType<'static>,
+    ) -> Option<Plays<'static>>;
 
     fn has_plays_role<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) -> bool {
         self.get_plays_role(type_manager, role_type).is_some()

@@ -27,16 +27,16 @@ use encoding::{
         },
         Typed,
     },
-    Keyable,
-    layout::prefix::{PrefixID, Prefix},
+    layout::prefix::{Prefix, PrefixID},
     value::{long::Long, string::StringBytes, value_type::ValueType},
+    Keyable,
 };
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::Snapshot;
 
 use crate::{
-    error::{ConceptError, ConceptErrorKind},
+    error::{ConceptReadError, ConceptWriteError},
     thing::{
         attribute::{Attribute, AttributeIterator},
         entity::{Entity, EntityIterator},
@@ -61,9 +61,13 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         ThingManager { snapshot, vertex_generator, type_manager }
     }
 
-    pub fn create_entity(&self, entity_type: &EntityType<'_>) -> Entity<'_> {
+    pub fn create_entity(&self, entity_type: &EntityType<'_>) -> Result<Entity<'_>, ConceptWriteError> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            Entity::new(self.vertex_generator.create_entity(Typed::type_id(entity_type.vertex()), write_snapshot))
+            Ok(Entity::new(
+                self.vertex_generator
+                    .create_entity(Typed::type_id(entity_type.vertex()), write_snapshot)
+                    .map_err(|error| ConceptWriteError::EncodingWrite { source: error })?,
+            ))
         } else {
             panic!("Illegal state: create entity requires write snapshot")
         }
@@ -73,9 +77,9 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         &self,
         attribute_type: &AttributeType<'_>,
         value: Value,
-    ) -> Result<Attribute<'_>, ConceptError> {
+    ) -> Result<Attribute<'_>, ConceptWriteError> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let value_type = attribute_type.get_value_type(self.type_manager.as_ref());
+            let value_type = attribute_type.get_value_type(self.type_manager.as_ref())?;
             if Some(value.value_type()) == value_type {
                 let vertex = match value {
                     Value::Boolean(_bool) => {
@@ -83,32 +87,31 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
                     }
                     Value::Long(long) => {
                         let encoded_long = Long::build(long);
-                        self.vertex_generator.create_attribute_long(
-                            Typed::type_id(attribute_type.vertex()),
-                            encoded_long,
-                            write_snapshot,
-                        )
+                        self.vertex_generator
+                            .create_attribute_long(
+                                Typed::type_id(attribute_type.vertex()),
+                                encoded_long,
+                                write_snapshot,
+                            )
+                            .map_err(|error| ConceptWriteError::EncodingWrite { source: error })?
                     }
                     Value::Double(_double) => {
                         todo!()
                     }
                     Value::String(string) => {
                         let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);
-                        self.vertex_generator.create_attribute_string(
-                            Typed::type_id(attribute_type.vertex()),
-                            encoded_string,
-                            write_snapshot,
-                        )
+                        self.vertex_generator
+                            .create_attribute_string(
+                                Typed::type_id(attribute_type.vertex()),
+                                encoded_string,
+                                write_snapshot,
+                            )
+                            .map_err(|error| ConceptWriteError::EncodingWrite { source: error })?
                     }
                 };
                 Ok(Attribute::new(vertex))
             } else {
-                Err(ConceptError {
-                    kind: ConceptErrorKind::AttributeValueTypeMismatch {
-                        attribute_type_value_type: value_type,
-                        provided_value_type: value.value_type(),
-                    },
-                })
+                Err(ConceptWriteError::ValueTypeMismatch { expected: value_type, provided: value.value_type() })
             }
         } else {
             panic!("Illegal state: create entity requires write snapshot")
@@ -128,25 +131,28 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         AttributeIterator::new(snapshot_iterator)
     }
 
-    pub fn get_attributes_in(&self, attribute_type: AttributeType<'_>) -> AttributeIterator<'_, 3> {
-        attribute_type
-            .get_value_type(self.type_manager.as_ref())
+    pub fn get_attributes_in(
+        &self,
+        attribute_type: AttributeType<'_>,
+    ) -> Result<AttributeIterator<'_, 3>, ConceptReadError> {
+        Ok(attribute_type
+            .get_value_type(self.type_manager.as_ref())?
             .map(|value_type| {
                 let prefix = AttributeVertex::build_prefix_type(value_type, Typed::type_id(attribute_type.vertex()));
                 let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_within(prefix));
                 AttributeIterator::new(snapshot_iterator)
             })
-            .unwrap_or_else(AttributeIterator::new_empty)
+            .unwrap_or_else(AttributeIterator::new_empty))
     }
 
-    pub(crate) fn get_attribute_value(&self, attribute: &Attribute<'_>) -> Value {
+    pub(crate) fn get_attribute_value(&self, attribute: &Attribute<'_>) -> Result<Value, ConceptReadError> {
         match attribute.value_type() {
             ValueType::Boolean => {
                 todo!()
             }
             ValueType::Long => {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_bytes_8();
-                Value::Long(Long::new(attribute_id.bytes()).as_i64())
+                Ok(Value::Long(Long::new(attribute_id.bytes()).as_i64()))
             }
             ValueType::Double => {
                 todo!()
@@ -154,15 +160,17 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
             ValueType::String => {
                 let attribute_id = StringAttributeID::new(attribute.vertex().attribute_id().unwrap_bytes_17());
                 if attribute_id.is_inline() {
-                    Value::String(String::from(attribute_id.get_inline_string_bytes().as_str()).into_boxed_str())
+                    Ok(Value::String(String::from(attribute_id.get_inline_string_bytes().as_str()).into_boxed_str()))
                 } else {
-                    self.snapshot
+                    Ok(self
+                        .snapshot
                         .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
                             Value::String(
                                 String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str()).into_boxed_str(),
                             )
                         })
-                        .unwrap()
+                        .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
+                        .unwrap())
                 }
             }
         }

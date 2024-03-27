@@ -62,7 +62,7 @@ impl<D> Database<D> {
             .map_err(|error| FailedToCreateStorage { source: error })?;
         let type_vertex_generator = TypeVertexGenerator::new();
         let thing_vertex_generator = ThingVertexGenerator::new();
-        TypeManager::initialise_types(&mut storage, &type_vertex_generator);
+        TypeManager::initialise_types(&mut storage, &type_vertex_generator).unwrap();
 
         storage.checkpoint().unwrap();
 

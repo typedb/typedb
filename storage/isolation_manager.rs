@@ -184,7 +184,7 @@ impl IsolationManager {
                 let predecessor_write = predecessor_map.get(key.bytes());
                 if predecessor_write.is_some() {
                     match write {
-                        Write::Insert(_) => {}
+                        Write::Insert { .. } => {}
                         Write::InsertPreexisting(_, reinsert) => {
                             // Re-insert the value if a predecessor has deleted it. This may create extra versions of a key
                             //  in the case that the predecessor ends up failing. However, this will be rare.
@@ -192,7 +192,7 @@ impl IsolationManager {
                                 reinsert.store(true, Ordering::SeqCst);
                             }
                         }
-                        Write::RequireExists(_) => {
+                        Write::RequireExists { .. } => {
                             if matches!(predecessor_write.unwrap(), Write::Delete) {
                                 return Err(IsolationError { kind: IsolationErrorKind::DeleteRequiredViolation });
                             }
@@ -200,7 +200,7 @@ impl IsolationManager {
                         Write::Delete => {
                             // we escalate delete-required to failure, since requires imply dependencies that may be broken
                             // TODO: maybe RequireExists should be RequireDependency to capture this?
-                            if matches!(predecessor_write.unwrap(), Write::RequireExists(_)) {
+                            if matches!(predecessor_write.unwrap(), Write::RequireExists { .. }) {
                                 return Err(IsolationError { kind: IsolationErrorKind::RequiredDeleteViolation });
                             }
                         }

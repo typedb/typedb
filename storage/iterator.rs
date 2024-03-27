@@ -1,5 +1,4 @@
-use core::fmt;
-use std::{error::Error, marker::PhantomData, sync::Arc};
+use std::{error::Error, fmt, marker::PhantomData, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use durability::SequenceNumber;
@@ -51,10 +50,8 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
 
     pub(crate) fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCReadError>> {
         match &self.state {
-            State::Init => {
-                if let Err(err) = self.find_next_state() {
-                    return Some(Err(err));
-                }
+            State::Init | State::ItemUsed => {
+                self.find_next_state();
                 self.peek()
             }
             State::ItemReady => {
@@ -74,12 +71,6 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
                     ByteReference::new(value),
                 )))
             }
-            State::ItemUsed => {
-                if let Err(err) = self.advance().and_then(|()| self.find_next_state()) {
-                    return Some(Err(err));
-                }
-                self.peek()
-            }
             State::Error(error) => Some(Err(MVCCReadError::Keyspace {
                 storage_name: self.storage_name.to_owned(),
                 keyspace_name: self.keyspace.name().to_owned(),
@@ -91,10 +82,8 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
 
     pub(crate) fn next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCReadError>> {
         match &self.state {
-            State::Init => {
-                if let Err(err) = self.find_next_state() {
-                    return Some(Err(err));
-                }
+            State::Init | State::ItemUsed => {
+                self.find_next_state();
                 self.next()
             }
             State::ItemReady => {
@@ -116,12 +105,6 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
                 self.state = State::ItemUsed;
                 item
             }
-            State::ItemUsed => {
-                if let Err(err) = self.advance().and_then(|()| self.find_next_state()) {
-                    return Some(Err(err));
-                }
-                self.next()
-            }
             State::Error(error) => Some(Err(MVCCReadError::Keyspace {
                 storage_name: self.storage_name.to_owned(),
                 keyspace_name: self.keyspace.name().to_owned(),
@@ -131,16 +114,19 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
         }
     }
 
-    fn find_next_state(&mut self) -> Result<(), MVCCReadError> {
+    fn find_next_state(&mut self) {
         assert!(matches!(&self.state, State::Init | State::ItemUsed));
+        if matches!(self.state, State::ItemUsed) {
+            self.advance();
+        }
         while matches!(&self.state, State::Init | State::ItemUsed) {
             let peek = self.iterator.peek();
             match peek {
                 None => self.state = State::Done,
                 Some(Ok((key, _))) => {
                     let mvcc_key = MVCCKey::wrap_slice(key);
-                    let is_visible =
-                        Self::is_visible_key(&self.open_sequence_number, &self.last_visible_key, &mvcc_key);
+                    let is_visible = mvcc_key.is_visible_to(self.open_sequence_number)
+                        && !self.last_visible_key.as_ref().is_some_and(|key| key == mvcc_key.bytes());
                     if is_visible {
                         self.last_visible_key = Some(ByteArray::copy(mvcc_key.key()));
                         match mvcc_key.operation() {
@@ -148,31 +134,20 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
                             StorageOperation::Delete => {}
                         }
                     } else {
-                        self.advance()?
+                        self.advance()
                     }
                 }
                 Some(Err(error)) => self.state = State::Error(Arc::new(error)),
             }
         }
-        Ok(())
     }
 
-    fn is_visible_key(
-        open_sequence_number: &SequenceNumber,
-        last_visible_key: &Option<ByteArray<128>>,
-        mvcc_key: &MVCCKey<'_>,
-    ) -> bool {
-        (last_visible_key.is_none() || last_visible_key.as_ref().is_some_and(|k| k.bytes() != mvcc_key.key()))
-            && mvcc_key.is_visible_to(open_sequence_number)
-    }
-
-    fn advance(&mut self) -> Result<(), MVCCReadError> {
-        self.iterator.next().transpose().map_err(|error| MVCCReadError::Keyspace {
-            storage_name: self.storage_name.to_owned(),
-            keyspace_name: self.keyspace.name().to_owned(),
-            source: Arc::new(error),
-        })?;
-        Ok(())
+    fn advance(&mut self) {
+        match self.iterator.next() {
+            None => self.state = State::Done,
+            Some(Ok(_)) => {}
+            Some(Err(error)) => self.state = State::Error(Arc::new(error)),
+        }
     }
 
     pub(crate) fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(
@@ -180,11 +155,9 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
     ) -> Result<Vec<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)>, MVCCReadError> {
         let mut vec = Vec::new();
         loop {
-            let item = self.next();
-            match item {
+            match self.next().transpose()? {
                 None => break,
-                Some(Err(err)) => return Err(err),
-                Some(Ok((key, value))) => vec.push((StorageKeyArray::from(key), ByteArray::from(value))),
+                Some((key, value)) => vec.push((StorageKeyArray::from(key), ByteArray::from(value))),
             }
         }
         Ok(vec)

@@ -62,8 +62,8 @@ fn setup_storage(storage_path: &Path) -> MVCCStorage<WAL> {
     let storage = MVCCStorage::recover::<TestKeyspaceSet>("storage", storage_path).unwrap();
 
     let snapshot = storage.open_snapshot_write();
-    snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
-    snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_2));
+    snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1)).unwrap();
+    snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_2)).unwrap();
     snapshot.commit().unwrap();
 
     storage
@@ -80,10 +80,10 @@ fn commits_isolated() {
 
     let key_3 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_3));
     let value_3 = ByteArray::copy(&VALUE_3);
-    snapshot_1.put_val(key_3.clone(), value_3.clone());
+    snapshot_1.put_val(key_3.clone(), value_3.clone()).unwrap();
     snapshot_1.commit().unwrap();
 
-    let get: Option<ByteArray<{ BUFFER_KEY_INLINE }>> = snapshot_2.get(StorageKeyReference::from(&key_3));
+    let get: Option<ByteArray<BUFFER_KEY_INLINE>> = snapshot_2.get(StorageKeyReference::from(&key_3)).unwrap();
     assert!(get.is_none());
     let prefix: StorageKey<'_, BUFFER_KEY_INLINE> =
         StorageKey::Array(StorageKeyArray::new(Keyspace, ByteArray::copy(&[0x0_u8])));
@@ -92,7 +92,7 @@ fn commits_isolated() {
     assert_eq!(retrieved_count, 2);
 
     let snapshot_3 = storage.open_snapshot_read();
-    let get: Option<ByteArray<{ BUFFER_KEY_INLINE }>> = snapshot_3.get(StorageKeyReference::from(&key_3));
+    let get: Option<ByteArray<BUFFER_KEY_INLINE>> = snapshot_3.get(StorageKeyReference::from(&key_3)).unwrap();
     assert!(matches!(get, Some(_value_3)));
     let retrieved_count = snapshot_3.iterate_range(range.clone()).count();
     assert_eq!(retrieved_count, 3);
@@ -113,12 +113,12 @@ fn g0_update_conflicts_fail() {
     let snapshot_1 = storage.open_snapshot_write();
     let snapshot_2 = storage.open_snapshot_write();
 
-    let key_1: StorageKey<'_, { BUFFER_KEY_INLINE }> =
+    let key_1: StorageKey<'_, BUFFER_KEY_INLINE> =
         StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
-    let _key_2: StorageKey<'_, { BUFFER_KEY_INLINE }> =
+    let _key_2: StorageKey<'_, BUFFER_KEY_INLINE> =
         StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_2)));
 
-    snapshot_1.get_required(key_1.clone());
+    snapshot_1.get_required(key_1.clone()).unwrap();
 
     snapshot_2.delete(key_1.clone().into_owned_array());
 

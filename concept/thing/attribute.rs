@@ -23,7 +23,7 @@ use storage::{
 
 use crate::{
     concept_iterator,
-    error::{ConceptError, ConceptErrorKind},
+    error::{ConceptError, ConceptErrorKind, ConceptReadError},
     thing::{thing_manager::ThingManager, value::Value, AttributeAPI, ThingAPI},
     ByteReference, ConceptAPI,
 };
@@ -57,7 +57,7 @@ impl<'a> AttributeAPI<'a> for Attribute<'a> {
         self.vertex.value_type()
     }
 
-    fn value<D>(&self, thing_manager: &ThingManager<'_, '_, D>) -> Value {
+    fn value<D>(&self, thing_manager: &ThingManager<'_, '_, D>) -> Result<Value, ConceptReadError> {
         thing_manager.get_attribute_value(self)
     }
 }

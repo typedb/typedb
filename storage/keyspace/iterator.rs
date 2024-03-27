@@ -6,12 +6,12 @@ use logger::result::ResultExt;
 use primitive::prefix_range::PrefixRange;
 use speedb::{self, DBRawIterator, DBRawIteratorWithThreadMode, DB};
 
-use super::keyspace::{Keyspace, KeyspaceError, KeyspaceErrorKind};
+use super::keyspace::{Keyspace, KeyspaceError};
 
 pub struct KeyspaceRangeIterator<'a, const INLINE_BYTES: usize> {
-    pub(crate) range: PrefixRange<Bytes<'a, { INLINE_BYTES }>>,
-    pub(crate) iterator: DBRawIterator<'a>,
-    pub(crate) state: State<speedb::Error>,
+    range: PrefixRange<Bytes<'a, { INLINE_BYTES }>>,
+    iterator: DBRawIterator<'a>,
+    state: State<speedb::Error>,
 }
 
 impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
@@ -26,8 +26,7 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
 
     pub(crate) fn peek(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
         match &self.state {
-            State::Init => {
-                self.iterator.seek(self.range.start().bytes());
+            State::Init | State::ItemUsed => {
                 self.update_state();
                 self.peek()
             }
@@ -36,21 +35,14 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
                 let value = self.iterator.value().unwrap();
                 Some(Ok((key, value)))
             }
-            State::ItemUsed => {
-                self.advance_and_update_state();
-                self.peek()
-            }
-            State::Error(error) => {
-                Some(Err(KeyspaceError { kind: KeyspaceErrorKind::Iterate { source: error.clone() } }))
-            }
+            State::Error(error) => Some(Err(KeyspaceError::Iterate { source: error.clone() })),
             State::Done => None,
         }
     }
 
     pub(crate) fn next(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
         match &self.state {
-            State::Init => {
-                self.iterator.seek(self.range.start().bytes());
+            State::Init | State::ItemUsed => {
                 self.update_state();
                 self.next()
             }
@@ -60,13 +52,7 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
                 let value = self.iterator.value().unwrap();
                 Some(Ok((key, value)))
             }
-            State::ItemUsed => {
-                self.advance_and_update_state();
-                self.next()
-            }
-            State::Error(error) => {
-                Some(Err(KeyspaceError { kind: KeyspaceErrorKind::Iterate { source: error.clone() } }))
-            }
+            State::Error(error) => Some(Err(KeyspaceError::Iterate { source: error.clone() })),
             State::Done => None,
         }
     }
@@ -76,6 +62,7 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
             State::Done | State::Error(_) => {}
             State::Init => {
                 if self.is_in_range(key) {
+                    // TODO is this right?
                     self.iterator.seek(key);
                     self.update_state();
                 } else {
@@ -83,8 +70,9 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
                 }
             }
             State::ItemReady => {
-                let valid_prefix = self.is_in_range(key);
-                if valid_prefix {
+                if !self.is_in_range(key) {
+                    self.state = State::Done;
+                } else {
                     match self.peek().unwrap().unwrap().0.cmp(key) {
                         Ordering::Less => {
                             self.iterator.seek(key);
@@ -93,24 +81,21 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
                         Ordering::Equal => {}
                         Ordering::Greater => unreachable!("Cannot seek backward."),
                     }
-                } else {
-                    self.state = State::Done;
                 }
             }
             State::ItemUsed => {
-                self.advance_and_update_state();
+                self.update_state();
                 self.seek(key)
             }
         }
     }
 
-    pub(crate) fn advance_and_update_state(&mut self) {
-        assert!(matches!(self.state, State::ItemUsed));
-        self.iterator.next();
-        self.update_state();
-    }
-
-    pub(crate) fn update_state(&mut self) {
+    fn update_state(&mut self) {
+        match self.state {
+            State::Init => self.iterator.seek(self.range.start().bytes()),
+            State::ItemUsed => self.iterator.next(),
+            _ => unreachable!(),
+        }
         if self.iterator.valid() {
             if self.is_in_range(self.iterator.key().unwrap()) {
                 self.state = State::ItemReady;
@@ -124,7 +109,7 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
         }
     }
 
-    pub(crate) fn is_in_range(&self, key: &[u8]) -> bool {
+    fn is_in_range(&self, key: &[u8]) -> bool {
         self.range.contains(Bytes::Reference(ByteReference::new(key)))
     }
 

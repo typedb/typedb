@@ -15,6 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#![deny(unused_must_use)]
+
 use std::{ops::Deref, rc::Rc, sync::Arc};
 
 use concept::type_::{
@@ -42,35 +44,36 @@ fn entity_usage() {
     let storage_path = create_tmp_dir();
     let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
-    TypeManager::initialise_types(&mut storage, &type_vertex_generator);
+    TypeManager::initialise_types(&mut storage, &type_vertex_generator).unwrap();
 
     let snapshot: Rc<Snapshot<'_, _>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
     {
         // Without cache, uncommitted
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
 
-        let root_entity = type_manager.get_entity_type(&Kind::Entity.root_label()).unwrap();
+        let root_entity = type_manager.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap();
         assert_eq!(root_entity.get_label(&type_manager).deref(), &Kind::Entity.root_label());
         assert!(root_entity.is_root(&type_manager));
 
         // --- age sub attribute ---
         let age_label = Label::build("age");
-        let age_type = type_manager.create_attribute_type(&age_label, false);
-        age_type.set_value_type(&type_manager, ValueType::Long);
+        let age_type = type_manager.create_attribute_type(&age_label, false).unwrap();
+        age_type.set_value_type(&type_manager, ValueType::Long).unwrap();
 
         assert!(!age_type.is_root(&type_manager));
-        assert!(age_type.get_annotations(&type_manager).is_empty());
+        assert!(age_type.get_annotations(&type_manager).unwrap().is_empty());
         assert_eq!(age_type.get_label(&type_manager).deref(), &age_label);
-        assert_eq!(age_type.get_value_type(&type_manager), Some(ValueType::Long));
+        assert_eq!(age_type.get_value_type(&type_manager).unwrap(), Some(ValueType::Long));
 
         // --- person sub entity @abstract ---
         let person_label = Label::build("person");
-        let person_type = type_manager.create_entity_type(&person_label, false);
-        person_type.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()));
+        let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
+        person_type.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new())).unwrap();
 
         assert!(!person_type.is_root(&type_manager));
         assert!(person_type
             .get_annotations(&type_manager)
+            .unwrap()
             .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract::new())));
         assert_eq!(person_type.get_label(&type_manager).deref(), &person_label);
 
@@ -79,8 +82,8 @@ fn entity_usage() {
 
         // --- child sub person ---
         let child_label = Label::build("child");
-        let child_type = type_manager.create_entity_type(&child_label, false);
-        child_type.set_supertype(&type_manager, person_type.clone());
+        let child_type = type_manager.create_entity_type(&child_label, false).unwrap();
+        child_type.set_supertype(&type_manager, person_type.clone()).unwrap();
 
         assert!(!child_type.is_root(&type_manager));
         assert_eq!(child_type.get_label(&type_manager).deref(), &child_label);
@@ -91,7 +94,7 @@ fn entity_usage() {
         assert_eq!(supertypes.len(), 2);
 
         // --- child owns age ---
-        let owns = child_type.set_owns(&type_manager, age_type.clone().into_owned());
+        let owns = child_type.set_owns(&type_manager, age_type.clone().into_owned()).unwrap();
         // TODO: test 'owns' structure directly
 
         let all_owns = child_type.get_owns(&type_manager);
@@ -112,25 +115,26 @@ fn entity_usage() {
         let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()));
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
 
-        let root_entity = type_manager.get_entity_type(&Kind::Entity.root_label()).unwrap();
+        let root_entity = type_manager.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap();
         assert_eq!(root_entity.get_label(&type_manager).deref(), &Kind::Entity.root_label());
         assert!(root_entity.is_root(&type_manager));
 
         // --- age sub attribute ---
         let age_label = Label::build("age");
-        let age_type = type_manager.get_attribute_type(&age_label).unwrap();
+        let age_type = type_manager.get_attribute_type(&age_label).unwrap().unwrap();
 
         assert!(!age_type.is_root(&type_manager));
-        assert!(age_type.get_annotations(&type_manager).is_empty());
+        assert!(age_type.get_annotations(&type_manager).unwrap().is_empty());
         assert_eq!(age_type.get_label(&type_manager).deref(), &age_label);
-        assert_eq!(age_type.get_value_type(&type_manager), Some(ValueType::Long));
+        assert_eq!(age_type.get_value_type(&type_manager).unwrap(), Some(ValueType::Long));
 
         // --- person sub entity ---
         let person_label = Label::build("person");
-        let person_type = type_manager.get_entity_type(&person_label).unwrap();
+        let person_type = type_manager.get_entity_type(&person_label).unwrap().unwrap();
         assert!(!person_type.is_root(&type_manager));
         assert!(person_type
             .get_annotations(&type_manager)
+            .unwrap()
             .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract::new())));
         assert_eq!(person_type.get_label(&type_manager).deref(), &person_label);
 
@@ -139,7 +143,7 @@ fn entity_usage() {
 
         // --- child sub person ---
         let child_label = Label::build("child");
-        let child_type = type_manager.get_entity_type(&child_label).unwrap();
+        let child_type = type_manager.get_entity_type(&child_label).unwrap().unwrap();
 
         assert!(!child_type.is_root(&type_manager));
         assert_eq!(child_type.get_label(&type_manager).deref(), &child_label);
@@ -165,7 +169,7 @@ fn role_usage() {
     let storage_path = create_tmp_dir();
     let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
-    TypeManager::initialise_types(&mut storage, &type_vertex_generator);
+    TypeManager::initialise_types(&mut storage, &type_vertex_generator).unwrap();
 
     let friendship_label = Label::build("friendship");
     let friend_name = "friend";
@@ -175,36 +179,37 @@ fn role_usage() {
     {
         // Without cache, uncommitted
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
-        let root_relation = type_manager.get_relation_type(&Kind::Relation.root_label()).unwrap();
+        let root_relation = type_manager.get_relation_type(&Kind::Relation.root_label()).unwrap().unwrap();
         assert_eq!(root_relation.get_label(&type_manager).deref(), &Kind::Relation.root_label());
         assert!(root_relation.is_root(&type_manager));
         assert!(root_relation.get_supertype(&type_manager).is_none());
         assert_eq!(root_relation.get_supertypes(&type_manager).len(), 0);
         assert!(root_relation
             .get_annotations(&type_manager)
-            .deref()
+            .unwrap()
             .contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract::new())));
 
-        let root_role = type_manager.get_role_type(&Kind::Role.root_label()).unwrap();
+        let root_role = type_manager.get_role_type(&Kind::Role.root_label()).unwrap().unwrap();
         assert_eq!(root_role.get_label(&type_manager).deref(), &Kind::Role.root_label());
         assert!(root_role.is_root(&type_manager));
         assert!(root_role.get_supertype(&type_manager).is_none());
         assert_eq!(root_role.get_supertypes(&type_manager).len(), 0);
         assert!(root_role
             .get_annotations(&type_manager)
+            .unwrap()
             .deref()
             .contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract::new())));
 
         // --- friendship sub relation, relates friend ---
-        let friendship_type = type_manager.create_relation_type(&friendship_label, false);
-        let relates = friendship_type.create_relates(&type_manager, friend_name);
-        let role_type = friendship_type.get_role(&type_manager, friend_name).unwrap();
+        let friendship_type = type_manager.create_relation_type(&friendship_label, false).unwrap();
+        let relates = friendship_type.create_relates(&type_manager, friend_name).unwrap();
+        let role_type = friendship_type.get_role(&type_manager, friend_name).unwrap().unwrap();
         debug_assert_eq!(relates.relation(), friendship_type);
         debug_assert_eq!(relates.role(), role_type);
 
         // --- person plays friendship:friend ---
-        let person_type = type_manager.create_entity_type(&person_label, false);
-        let plays = person_type.set_plays(&type_manager, role_type.clone().into_owned());
+        let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
+        let plays = person_type.set_plays(&type_manager, role_type.clone().into_owned()).unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type.clone()));
         debug_assert_eq!(plays.role(), role_type);
     }
@@ -221,16 +226,16 @@ fn role_usage() {
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
 
         // --- friendship sub relation, relates friend ---
-        let friendship_type = type_manager.get_relation_type(&friendship_label).unwrap();
-        let relates = friendship_type.get_relates_role(&type_manager, friend_name);
+        let friendship_type = type_manager.get_relation_type(&friendship_label).unwrap().unwrap();
+        let relates = friendship_type.get_relates_role(&type_manager, friend_name).unwrap();
         debug_assert!(relates.is_some());
         let relates = relates.unwrap();
-        let role_type = friendship_type.get_role(&type_manager, friend_name).unwrap();
+        let role_type = friendship_type.get_role(&type_manager, friend_name).unwrap().unwrap();
         debug_assert_eq!(relates.relation(), friendship_type);
         debug_assert_eq!(relates.role(), role_type);
 
         // --- person plays friendship:friend ---
-        let person_type = type_manager.get_entity_type(&person_label).unwrap();
+        let person_type = type_manager.get_entity_type(&person_label).unwrap().unwrap();
         let plays = person_type.get_plays_role(&type_manager, role_type.clone().into_owned()).unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type.clone()));
         debug_assert_eq!(plays.role(), role_type);

@@ -15,6 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#![deny(unused_must_use)]
+
 use std::{fs::File, os::raw::c_int, path::Path};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
@@ -70,7 +72,7 @@ fn populate_storage(storage: &MVCCStorage<WAL>, keyspace_id: TestKeyspaceSet, ke
             snapshot.commit().unwrap();
             snapshot = storage.open_snapshot_write();
         }
-        snapshot.put(random_key_24(keyspace_id));
+        snapshot.put(random_key_24(keyspace_id)).unwrap();
     }
     snapshot.commit().unwrap();
     println!("Keys written: {}", key_count);
@@ -90,7 +92,7 @@ fn bench_snapshot_read_get(
     let snapshot = storage.open_snapshot_read();
     let mut last: Option<ByteArray<BUFFER_VALUE_INLINE>> = None;
     for _ in 0..1 {
-        last = snapshot.get(StorageKey::Array(random_key_24(keyspace_id)).as_reference());
+        last = snapshot.get(StorageKey::Array(random_key_24(keyspace_id)).as_reference()).unwrap();
     }
     last
 }
@@ -102,7 +104,7 @@ fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(
     let snapshot = storage.open_snapshot_read();
     let mut last: Option<ByteArray<BUFFER_VALUE_INLINE>> = None;
     for _ in 0..ITERATE_COUNT {
-        last = snapshot.get(StorageKey::Array(random_key_4(keyspace_id)).as_reference())
+        last = snapshot.get(StorageKey::Array(random_key_4(keyspace_id)).as_reference()).unwrap();
     }
     last
 }
@@ -110,7 +112,7 @@ fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(
 fn bench_snapshot_write_put(storage: &MVCCStorage<WAL>, keyspace_id: TestKeyspaceSet, batch_size: usize) {
     let snapshot = storage.open_snapshot_write();
     for _ in 0..batch_size {
-        snapshot.put(random_key_24(keyspace_id));
+        snapshot.put(random_key_24(keyspace_id)).unwrap();
     }
     snapshot.commit().unwrap()
 }

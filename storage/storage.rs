@@ -32,6 +32,7 @@ use std::{
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use chrono::Utc;
 use durability::{DurabilityService, SequenceNumber};
+use iterator::MVCCReadError;
 use itertools::Itertools;
 use logger::{error, result::ResultExt};
 use primitive::{prefix_range::PrefixRange, u80::U80};
@@ -55,7 +56,7 @@ use crate::{
 
 pub mod error;
 pub mod isolation_manager;
-mod iterator;
+pub mod iterator;
 pub mod key_value;
 pub mod keyspace;
 pub mod snapshot;
@@ -274,7 +275,7 @@ impl<D> MVCCStorage<D> {
 
         //  3. write to kv-storage
         let write_batches = self.isolation_manager.apply_to_commit_record(&commit_sequence_number, |record| {
-            self.to_write_batches(&commit_sequence_number, record.buffers())
+            self.to_write_batches(commit_sequence_number, record.buffers())
         });
 
         for (index, write_batch) in write_batches.into_iter().enumerate() {
@@ -296,7 +297,7 @@ impl<D> MVCCStorage<D> {
 
     fn to_write_batches(
         &self,
-        seq: &SequenceNumber,
+        seq: SequenceNumber,
         buffers: &KeyspaceBuffers,
     ) -> [Option<WriteBatch>; KEYSPACE_MAXIMUM_COUNT] {
         let mut write_batches: [Option<WriteBatch>; KEYSPACE_MAXIMUM_COUNT] = core::array::from_fn(|_| None);
@@ -307,7 +308,7 @@ impl<D> MVCCStorage<D> {
                 let mut write_batch = WriteBatch::default();
                 for (key, write) in &*map {
                     match write {
-                        Write::Insert(value) => write_batch
+                        Write::Insert { value } => write_batch
                             .put(MVCCKey::build(key.bytes(), seq, StorageOperation::Insert).bytes(), value.bytes()),
                         Write::InsertPreexisting(value, reinsert) => {
                             if reinsert.load(Ordering::SeqCst) {
@@ -317,7 +318,7 @@ impl<D> MVCCStorage<D> {
                                 )
                             }
                         }
-                        Write::RequireExists(_) => {}
+                        Write::RequireExists { .. } => (),
                         Write::Delete => {
                             write_batch.put(MVCCKey::build(key.bytes(), seq, StorageOperation::Delete).bytes(), [])
                         }
@@ -417,22 +418,19 @@ impl<D> MVCCStorage<D> {
         Ok(())
     }
 
-    pub fn get<M, V>(
+    pub fn get<V>(
         &self,
         key: StorageKeyReference<'_>,
         open_sequence_number: SequenceNumber,
-        mut mapper: M,
-    ) -> Option<V>
-    where
-        M: FnMut(ByteReference<'_>) -> V,
-    {
+        mut mapper: impl FnMut(ByteReference<'_>) -> V,
+    ) -> Result<Option<V>, MVCCReadError> {
         let mut iterator =
             self.iterate_range(PrefixRange::new_within(StorageKey::<0>::Reference(key)), open_sequence_number);
         // TODO: we don't want to panic on unwrap here
         loop {
-            match iterator.next().transpose().unwrap_or_log() {
-                None => return None,
-                Some((k, v)) if k.bytes() == key.bytes() => return Some(mapper(v)),
+            match iterator.next().transpose()? {
+                None => return Ok(None),
+                Some((k, v)) if k.bytes() == key.bytes() => return Ok(Some(mapper(v))),
                 Some(_) => (),
             }
         }
@@ -540,9 +538,9 @@ const MVCC_KEY_INLINE_SIZE: usize = 128;
 impl<'bytes> MVCCKey<'bytes> {
     const OPERATION_START_NEGATIVE_OFFSET: usize = StorageOperation::serialised_len();
     const SEQUENCE_NUMBER_START_NEGATIVE_OFFSET: usize =
-        MVCCKey::OPERATION_START_NEGATIVE_OFFSET + SequenceNumber::serialised_len();
+        Self::OPERATION_START_NEGATIVE_OFFSET + SequenceNumber::serialised_len();
 
-    fn build(key: &[u8], sequence_number: &SequenceNumber, storage_operation: StorageOperation) -> MVCCKey<'bytes> {
+    fn build(key: &[u8], sequence_number: SequenceNumber, storage_operation: StorageOperation) -> Self {
         let length = key.len() + SequenceNumber::serialised_len() + StorageOperation::serialised_len();
         let mut byte_array = ByteArray::zeros(length);
         let bytes = byte_array.bytes_mut();
@@ -555,18 +553,18 @@ impl<'bytes> MVCCKey<'bytes> {
         sequence_number.invert().serialise_be_into(&mut bytes[key_end..sequence_number_end]);
         bytes[sequence_number_end..operation_end].copy_from_slice(storage_operation.bytes());
 
-        MVCCKey { bytes: Bytes::Array(byte_array) }
+        Self { bytes: Bytes::Array(byte_array) }
     }
 
-    fn wrap_slice(bytes: &'bytes [u8]) -> MVCCKey<'bytes> {
-        MVCCKey { bytes: Bytes::Reference(ByteReference::new(bytes)) }
+    fn wrap_slice(bytes: &'bytes [u8]) -> Self {
+        Self { bytes: Bytes::Reference(ByteReference::new(bytes)) }
     }
 
-    pub(crate) fn is_visible_to(&self, sequence_number: &SequenceNumber) -> bool {
-        self.sequence_number() <= *sequence_number
+    pub(crate) fn is_visible_to(&self, sequence_number: SequenceNumber) -> bool {
+        self.sequence_number() <= sequence_number
     }
 
-    fn bytes(&'bytes self) -> &'bytes [u8] {
+    fn bytes(&self) -> &[u8] {
         self.bytes.bytes()
     }
 
@@ -574,18 +572,18 @@ impl<'bytes> MVCCKey<'bytes> {
         self.bytes.length()
     }
 
-    fn key(&'bytes self) -> &'bytes [u8] {
-        &self.bytes()[0..(self.length() - MVCCKey::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET)]
+    fn key(&self) -> &[u8] {
+        &self.bytes()[0..(self.length() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET)]
     }
 
     fn into_key(self) -> Bytes<'bytes, MVCC_KEY_INLINE_SIZE> {
-        let end = self.length() - MVCCKey::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
+        let end = self.length() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
         let bytes = self.bytes;
         bytes.truncate(end)
     }
 
     fn sequence_number(&self) -> SequenceNumber {
-        let sequence_number_start = self.length() - MVCCKey::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
+        let sequence_number_start = self.length() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET;
         let sequence_number_end = sequence_number_start + SequenceNumber::serialised_len();
         let inverse_sequence_number_bytes = &self.bytes()[sequence_number_start..sequence_number_end];
         debug_assert_eq!(SequenceNumber::serialised_len(), inverse_sequence_number_bytes.len());
@@ -593,7 +591,7 @@ impl<'bytes> MVCCKey<'bytes> {
     }
 
     fn operation(&self) -> StorageOperation {
-        let operation_byte_offset = self.length() - MVCCKey::OPERATION_START_NEGATIVE_OFFSET;
+        let operation_byte_offset = self.length() - Self::OPERATION_START_NEGATIVE_OFFSET;
         let operation_byte_end = operation_byte_offset + StorageOperation::serialised_len();
         StorageOperation::from(&self.bytes()[operation_byte_offset..operation_byte_end])
     }

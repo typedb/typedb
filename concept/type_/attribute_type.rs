@@ -17,18 +17,24 @@
 
 use std::collections::HashSet;
 
-use encoding::{graph::type_::vertex::TypeVertex, layout::prefix::Prefix, Prefixed};
-use encoding::value::label::Label;
-use encoding::value::value_type::ValueType;
+use encoding::{
+    graph::type_::vertex::TypeVertex,
+    layout::prefix::Prefix,
+    value::{label::Label, value_type::ValueType},
+    Prefixed,
+};
 use primitive::maybe_owns::MaybeOwns;
 
 use crate::{
+    error::{ConceptReadError, ConceptWriteError},
+    type_::{
+        annotation::{Annotation, AnnotationAbstract},
+        owns::Owns,
+        type_manager::TypeManager,
+        TypeAPI,
+    },
     ConceptAPI,
-    type_::{annotation::AnnotationAbstract, TypeAPI},
 };
-use crate::type_::annotation::Annotation;
-use crate::type_::owns::Owns;
-use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
@@ -61,16 +67,22 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
 }
 
 impl<'a> AttributeType<'a> {
-
     pub fn is_root<D>(&self, type_manager: &TypeManager<'_, '_, D>) -> bool {
         type_manager.get_attribute_type_is_root(self.clone().into_owned())
     }
 
-    pub fn set_value_type<D>(&self, type_manager: &TypeManager<'_, '_, D>, value_type: ValueType) {
+    pub fn set_value_type<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        value_type: ValueType,
+    ) -> Result<(), ConceptWriteError> {
         type_manager.set_storage_value_type(self.vertex().clone().into_owned(), value_type)
     }
 
-    pub fn get_value_type<D>(&self, type_manager: &TypeManager<'_, '_, D>) -> Option<ValueType> {
+    pub fn get_value_type<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+    ) -> Result<Option<ValueType>, ConceptReadError> {
         type_manager.get_attribute_type_value_type(self.clone().into_owned())
     }
 
@@ -78,16 +90,20 @@ impl<'a> AttributeType<'a> {
         type_manager.get_attribute_type_label(self.clone().into_owned())
     }
 
-    fn set_label<D>(&self, type_manager: &TypeManager<'_, '_, D>, label: &Label<'_>) {
+    fn set_label<D>(&self, type_manager: &TypeManager<'_, '_, D>, label: &Label<'_>) -> Result<(), ConceptWriteError> {
         // TODO: setLabel should fail is setting label on Root type
-        type_manager.set_storage_label(self.vertex().clone().into_owned(), label);
+        type_manager.set_storage_label(self.vertex().clone().into_owned(), label)
     }
 
     fn get_supertype<D>(&self, type_manager: &TypeManager<'_, '_, D>) -> Option<AttributeType<'static>> {
         type_manager.get_attribute_type_supertype(self.clone().into_owned())
     }
 
-    fn set_supertype<D>(&self, type_manager: &TypeManager<'_, '_, D>, supertype: AttributeType<'static>) {
+    fn set_supertype<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        supertype: AttributeType<'static>,
+    ) -> Result<(), ConceptWriteError> {
         type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
     }
 
@@ -103,11 +119,15 @@ impl<'a> AttributeType<'a> {
     pub fn get_annotations<'m, D>(
         &self,
         type_manager: &'m TypeManager<'_, '_, D>,
-    ) -> MaybeOwns<'m, HashSet<AttributeTypeAnnotation>> {
+    ) -> Result<MaybeOwns<'m, HashSet<AttributeTypeAnnotation>>, ConceptReadError> {
         type_manager.get_attribute_type_annotations(self.clone().into_owned())
     }
 
-    pub(crate) fn set_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: AttributeTypeAnnotation) {
+    pub(crate) fn set_annotation<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        annotation: AttributeTypeAnnotation,
+    ) -> Result<(), ConceptWriteError> {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
                 type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
@@ -128,10 +148,9 @@ impl<'a> AttributeType<'a> {
     }
 }
 
-
 // --- Owned API ---
 impl<'a> AttributeType<'a> {
-    fn get_owns<'m,D>(&self, _type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
+    fn get_owns<'m, D>(&self, _type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
         todo!()
     }
 
@@ -149,9 +168,7 @@ pub enum AttributeTypeAnnotation {
 impl From<Annotation> for AttributeTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
-            Annotation::Abstract(annotation) => {
-                AttributeTypeAnnotation::Abstract(annotation)
-            }
+            Annotation::Abstract(annotation) => AttributeTypeAnnotation::Abstract(annotation),
         }
     }
 }

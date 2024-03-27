@@ -135,9 +135,7 @@ impl Keyspace {
     }
 
     pub(crate) fn put(&self, key: &[u8], value: &[u8]) -> Result<(), KeyspaceError> {
-        self.kv_storage
-            .put_opt(key, value, &self.write_options)
-            .map_err(|e| KeyspaceError { kind: KeyspaceErrorKind::Put { source: e } })
+        self.kv_storage.put_opt(key, value, &self.write_options).map_err(|e| KeyspaceError::Put { source: e })
     }
 
     pub(crate) fn get<M, V>(&self, key: &[u8], mut mapper: M) -> Result<Option<V>, KeyspaceError>
@@ -147,7 +145,7 @@ impl Keyspace {
         self.kv_storage
             .get_pinned_opt(key, &self.read_options)
             .map(|option| option.map(|value| mapper(value.as_ref())))
-            .map_err(|err| KeyspaceError { kind: KeyspaceErrorKind::Get { source: err } })
+            .map_err(|err| KeyspaceError::Get { source: err })
     }
 
     pub(crate) fn get_prev<M, T>(&self, key: &[u8], mut mapper: M) -> Option<T>
@@ -170,7 +168,7 @@ impl Keyspace {
     pub(crate) fn write(&self, write_batch: WriteBatch) -> Result<(), KeyspaceError> {
         self.kv_storage
             .write_opt(write_batch, &self.write_options)
-            .map_err(|error| KeyspaceError { kind: KeyspaceErrorKind::BatchWrite { source: error } })
+            .map_err(|error| KeyspaceError::BatchWrite { source: error })
     }
 
     pub(crate) fn checkpoint(&self, checkpoint_dir: &Path) -> Result<(), KeyspaceCheckpointError> {
@@ -189,7 +187,7 @@ impl Keyspace {
     pub(crate) fn delete(self) -> Result<(), KeyspaceError> {
         match std::fs::remove_dir_all(self.path.clone()) {
             Ok(_) => Ok(()),
-            Err(e) => Err(KeyspaceError { kind: KeyspaceErrorKind::KeyspaceDelete { source: e } }),
+            Err(e) => Err(KeyspaceError::KeyspaceDelete { source: e }),
         }
     }
 }
@@ -265,12 +263,7 @@ impl Error for KeyspaceCheckpointError {
 }
 
 #[derive(Debug)]
-pub struct KeyspaceError {
-    pub kind: KeyspaceErrorKind,
-}
-
-#[derive(Debug)]
-pub enum KeyspaceErrorKind {
+pub enum KeyspaceError {
     KeyspaceDelete { source: std::io::Error },
     Get { source: speedb::Error },
     Put { source: speedb::Error },
@@ -286,12 +279,12 @@ impl fmt::Display for KeyspaceError {
 
 impl Error for KeyspaceError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match &self.kind {
-            KeyspaceErrorKind::KeyspaceDelete { source, .. } => Some(source),
-            KeyspaceErrorKind::Get { source, .. } => Some(source),
-            KeyspaceErrorKind::Put { source, .. } => Some(source),
-            KeyspaceErrorKind::BatchWrite { source, .. } => Some(source),
-            KeyspaceErrorKind::Iterate { source, .. } => Some(source),
+        match &self {
+            Self::KeyspaceDelete { source, .. } => Some(source),
+            Self::Get { source, .. } => Some(source),
+            Self::Put { source, .. } => Some(source),
+            Self::BatchWrite { source, .. } => Some(source),
+            Self::Iterate { source, .. } => Some(source),
         }
     }
 }

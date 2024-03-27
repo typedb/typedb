@@ -22,12 +22,12 @@ use durability::{DurabilityService, SequenceNumber};
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
+use super::{buffer::KeyspaceBuffers, iterator::SnapshotRangeIterator};
 use crate::{
     error::MVCCStorageError,
     isolation_manager::CommitRecord,
     iterator::MVCCReadError,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    snapshot::{buffer::KeyspaceBuffers, iterator::SnapshotRangeIterator},
     MVCCStorage,
 };
 
@@ -38,14 +38,21 @@ pub enum Snapshot<'storage, D> {
 }
 
 impl<'storage, D> Snapshot<'storage, D> {
-    pub fn get<const KS: usize>(&self, key: StorageKeyReference<'_>) -> Option<ByteArray<KS>> {
+    pub fn get<const KS: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+    ) -> Result<Option<ByteArray<KS>>, SnapshotGetError> {
         match self {
             Snapshot::Read(snapshot) => snapshot.get(key),
             Snapshot::Write(snapshot) => snapshot.get(key),
         }
     }
 
-    pub fn get_mapped<T>(&self, key: StorageKeyReference<'_>, mapper: impl FnMut(ByteReference<'_>) -> T) -> Option<T> {
+    pub fn get_mapped<T>(
+        &self,
+        key: StorageKeyReference<'_>,
+        mapper: impl FnMut(ByteReference<'_>) -> T,
+    ) -> Result<Option<T>, SnapshotGetError> {
         match self {
             Snapshot::Read(snapshot) => snapshot.get_mapped(key, mapper),
             Snapshot::Write(snapshot) => snapshot.get_mapped(key, mapper),
@@ -88,16 +95,25 @@ impl<'storage, D> ReadSnapshot<'storage, D> {
         // Note: for serialisability, we would need to register the open transaction to the IsolationManager
         ReadSnapshot { storage, open_sequence_number }
     }
-}
 
-impl<'storage, D> ReadSnapshot<'storage, D> {
-    pub fn get<const KS: usize>(&self, key: StorageKeyReference<'_>) -> Option<ByteArray<KS>> {
+    pub fn get<const KS: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+    ) -> Result<Option<ByteArray<KS>>, SnapshotGetError> {
         // TODO: this clone may not be necessary - we could pass a reference up?
-        self.storage.get(key, self.open_sequence_number, |reference| ByteArray::from(reference))
+        self.storage
+            .get(key, self.open_sequence_number, |reference| ByteArray::from(reference))
+            .map_err(|error| SnapshotGetError::MVCCRead { source: error })
     }
 
-    pub fn get_mapped<T>(&self, key: StorageKeyReference<'_>, mapper: impl FnMut(ByteReference<'_>) -> T) -> Option<T> {
-        self.storage.get(key, self.open_sequence_number, mapper)
+    pub fn get_mapped<T>(
+        &self,
+        key: StorageKeyReference<'_>,
+        mapper: impl FnMut(ByteReference<'_>) -> T,
+    ) -> Result<Option<T>, SnapshotGetError> {
+        self.storage
+            .get(key, self.open_sequence_number, mapper)
+            .map_err(|error| SnapshotGetError::MVCCRead { source: error })
     }
 
     pub fn iterate_range<'this, const PS: usize>(
@@ -123,9 +139,7 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
         storage.isolation_manager.opened(&open_sequence_number);
         WriteSnapshot { storage, buffers: KeyspaceBuffers::new(), open_sequence_number }
     }
-}
 
-impl<'storage, D> WriteSnapshot<'storage, D> {
     /// Insert a key with a new version
     pub fn insert(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
         self.insert_val(key, ByteArray::empty())
@@ -139,34 +153,36 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
 
     /// Insert a key with a new version if it does not already exist.
     /// If the key exists, mark it as a preexisting insertion to escalate to Insert if there is a concurrent Delete.
-    pub fn put(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
+    pub fn put(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) -> Result<(), SnapshotPutError> {
         self.put_val(key, ByteArray::empty())
     }
 
-    pub fn put_val(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        let keyspace_id = key.keyspace_id();
-        let buffer = self.buffers.get(keyspace_id);
-        let existing_buffered = buffer.contains(key.byte_array());
-        if !existing_buffered {
-            let wrapped = StorageKeyReference::from(&key);
-            let existing_stored = self.storage.get(wrapped, self.open_sequence_number, |reference| {
-                // Only copy if the value is the same
-                if reference.bytes() == value.bytes() {
-                    Some(ByteArray::from(reference))
-                } else {
-                    None
-                }
-            });
-            let byte_array = key.into_byte_array();
-            if let Some(Some(existing_stored)) = existing_stored {
-                buffer.insert_preexisting(byte_array, existing_stored);
-            } else {
-                buffer.insert(byte_array, value)
-            }
-        } else {
+    // TODO bespoke error
+    pub fn put_val(
+        &self,
+        key: StorageKeyArray<BUFFER_KEY_INLINE>,
+        value: ByteArray<BUFFER_VALUE_INLINE>,
+    ) -> Result<(), SnapshotPutError> {
+        let buffer = self.buffers.get(key.keyspace_id());
+        if buffer.contains(key.byte_array()) {
             // TODO: replace existing buffered write. If it contains a preexisting, we can continue to use it
             todo!()
+        } else {
+            let wrapped = StorageKeyReference::from(&key);
+            let existing_stored = self
+                .storage
+                .get(wrapped, self.open_sequence_number, |reference| {
+                    // Only copy if the value is the same
+                    (reference.bytes() == value.bytes()).then(|| ByteArray::from(reference))
+                })
+                .map_err(|error| SnapshotPutError::MVCCRead { source: error })?;
+            if let Some(Some(existing_stored)) = existing_stored {
+                buffer.insert_preexisting(key.into_byte_array(), existing_stored);
+            } else {
+                buffer.insert(key.into_byte_array(), value);
+            }
         }
+        Ok(())
     }
 
     /// Insert a delete marker for the key with a new version
@@ -177,18 +193,23 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
     }
 
     /// Get a Value, and mark it as a required key
-    pub fn get_required(&self, key: StorageKey<'_, BUFFER_KEY_INLINE>) -> ByteArray<BUFFER_VALUE_INLINE> {
+    pub fn get_required(
+        &self,
+        key: StorageKey<'_, BUFFER_KEY_INLINE>,
+    ) -> Result<ByteArray<BUFFER_VALUE_INLINE>, SnapshotGetError> {
         let keyspace_id = key.keyspace_id();
         let buffer = self.buffers.get(keyspace_id);
         let existing = buffer.get(key.bytes());
         if let Some(existing) = existing {
-            existing
+            Ok(existing)
         } else {
-            let storage_value =
-                self.storage.get(key.as_reference(), self.open_sequence_number, |reference| ByteArray::from(reference));
+            let storage_value = self
+                .storage
+                .get(key.as_reference(), self.open_sequence_number, |reference| ByteArray::from(reference))
+                .map_err(|error| SnapshotGetError::MVCCRead { source: error })?;
             if let Some(value) = storage_value {
                 buffer.require_exists(ByteArray::copy(key.bytes()), value.clone());
-                value
+                Ok(value)
             } else {
                 // TODO: what if the user concurrent requires a concept while deleting it in another query
                 unreachable!("Require key exists in snapshot or in storage.");
@@ -197,25 +218,31 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
     }
 
     /// Get the Value for the key, returning an empty Option if it does not exist
-    pub fn get<const INLINE_BYTES: usize>(&self, key: StorageKeyReference<'_>) -> Option<ByteArray<INLINE_BYTES>> {
-        let keyspace_id = key.keyspace_id();
-        let existing_value = self.buffers.get(keyspace_id).get(key.bytes());
-        existing_value.map_or_else(
-            || self.storage.get(key, self.open_sequence_number, |reference| ByteArray::from(reference)),
-            Some,
-        )
+    pub fn get<const INLINE_BYTES: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
+        match self.buffers.get(key.keyspace_id()).get(key.bytes()) {
+            None => self
+                .storage
+                .get(key, self.open_sequence_number, |reference| ByteArray::from(reference))
+                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+            some => Ok(some),
+        }
     }
 
     pub fn get_mapped<T>(
         &self,
         key: StorageKeyReference<'_>,
         mut mapper: impl FnMut(ByteReference<'_>) -> T,
-    ) -> Option<T> {
-        let keyspace_id = key.keyspace_id();
-        let existing_value = self.buffers.get(keyspace_id).get(key.bytes());
-        existing_value
-            .map(|value: ByteArray<BUFFER_VALUE_INLINE>| mapper(ByteReference::from(&value)))
-            .or_else(|| self.storage.get(key, self.open_sequence_number, mapper))
+    ) -> Result<Option<T>, SnapshotGetError> {
+        match self.buffers.get(key.keyspace_id()).get::<BUFFER_VALUE_INLINE>(key.bytes()) {
+            None => self
+                .storage
+                .get(key, self.open_sequence_number, mapper)
+                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+            Some(value) => Ok(Some(mapper(ByteReference::from(&value)))),
+        }
     }
 
     pub fn iterate_range<'this, const PS: usize>(
@@ -276,15 +303,15 @@ impl fmt::Display for SnapshotError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
             Self::Iterate { source, .. } => {
-                write!(f, "SnapshotError.FailedIterate caused by: {}", source)
+                write!(f, "SnapshotError::Iterate caused by: {}", source)
             }
-            Self::Get { source, .. } => write!(f, "SnapshotError.FailedGet caused by: {}", source),
-            Self::Put { source, .. } => write!(f, "SnapshotError.FailedPut caused by: {}", source),
+            Self::Get { source, .. } => write!(f, "SnapshotError::Get caused by: {}", source),
+            Self::Put { source, .. } => write!(f, "SnapshotError::Put caused by: {}", source),
             Self::MVCC { source, .. } => {
-                write!(f, "SnapshotError.FailedMVCCStorageIterate caused by: {}", source)
+                write!(f, "SnapshotError::MVCC caused by: {}", source)
             }
             Self::Commit { source, .. } => {
-                write!(f, "SnapshotError.FailedCommit caused by: {}", source)
+                write!(f, "SnapshotError::Commit caused by: {}", source)
             }
         }
     }
@@ -292,12 +319,50 @@ impl fmt::Display for SnapshotError {
 
 impl Error for SnapshotError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match &self {
+        match self {
             Self::Iterate { source, .. } => Some(source),
             Self::Get { source, .. } => Some(source),
             Self::Put { source, .. } => Some(source),
             Self::MVCC { source, .. } => Some(source),
             Self::Commit { source, .. } => Some(source),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum SnapshotPutError {
+    MVCCRead { source: MVCCReadError },
+}
+
+impl fmt::Display for SnapshotPutError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for SnapshotPutError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::MVCCRead { source, .. } => Some(source),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum SnapshotGetError {
+    MVCCRead { source: MVCCReadError },
+}
+
+impl fmt::Display for SnapshotGetError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for SnapshotGetError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::MVCCRead { source, .. } => Some(source),
         }
     }
 }

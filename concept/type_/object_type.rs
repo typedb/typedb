@@ -19,12 +19,13 @@ use std::collections::HashSet;
 
 use primitive::maybe_owns::MaybeOwns;
 
-use crate::type_::{entity_type::EntityType, OwnerAPI, PlayerAPI, relation_type::RelationType};
-use crate::type_::attribute_type::AttributeType;
-use crate::type_::owns::Owns;
-use crate::type_::plays::Plays;
-use crate::type_::role_type::RoleType;
-use crate::type_::type_manager::TypeManager;
+use crate::{
+    error::ConceptWriteError,
+    type_::{
+        attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays, relation_type::RelationType,
+        role_type::RoleType, type_manager::TypeManager, OwnerAPI, PlayerAPI,
+    },
+};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ObjectType<'a> {
@@ -32,9 +33,12 @@ pub enum ObjectType<'a> {
     Relation(RelationType<'a>),
 }
 
-
 impl<'a> OwnerAPI<'a> for ObjectType<'a> {
-    fn set_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) -> Owns<'static> {
+    fn set_owns<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Owns<'static>, ConceptWriteError> {
         // TODO: decide behaviour (ok or error) if already owning
         match self {
             ObjectType::Entity(entity) => entity.set_owns(type_manager, attribute_type),
@@ -69,10 +73,14 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
 }
 
 impl<'a> PlayerAPI<'a> for ObjectType<'a> {
-    fn set_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) -> Plays<'static> {
+    fn set_plays<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        role_type: RoleType<'static>,
+    ) -> Result<Plays<'static>, ConceptWriteError> {
         match self {
             ObjectType::Entity(entity) => entity.set_plays(type_manager, role_type),
-            ObjectType::Relation(relation) => relation.set_plays(type_manager, role_type)
+            ObjectType::Relation(relation) => relation.set_plays(type_manager, role_type),
         }
     }
 
@@ -90,7 +98,11 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         }
     }
 
-    fn get_plays_role<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) -> Option<Plays<'static>> {
+    fn get_plays_role<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        role_type: RoleType<'static>,
+    ) -> Option<Plays<'static>> {
         match self {
             ObjectType::Entity(entity) => entity.get_plays_role(type_manager, role_type),
             ObjectType::Relation(relation) => relation.get_plays_role(type_manager, role_type),

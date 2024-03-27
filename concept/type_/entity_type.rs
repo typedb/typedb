@@ -31,7 +31,7 @@ use storage::{
 
 use crate::{
     concept_iterator,
-    error::{ConceptError, ConceptErrorKind},
+    error::{ConceptError, ConceptErrorKind, ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract},
         attribute_type::AttributeType,
@@ -84,16 +84,20 @@ impl<'a> EntityType<'a> {
         type_manager.get_entity_type_label(self.clone().into_owned())
     }
 
-    fn set_label<D>(&self, type_manager: &TypeManager<'_, '_, D>, label: &Label<'_>) {
+    fn set_label<D>(&self, type_manager: &TypeManager<'_, '_, D>, label: &Label<'_>) -> Result<(), ConceptWriteError> {
         // TODO: setLabel should fail is setting label on Root type
-        type_manager.set_storage_label(self.vertex().clone().into_owned(), label);
+        type_manager.set_storage_label(self.vertex().clone().into_owned(), label)
     }
 
     pub fn get_supertype<D>(&self, type_manager: &TypeManager<'_, '_, D>) -> Option<EntityType<'static>> {
         type_manager.get_entity_type_supertype(self.clone().into_owned())
     }
 
-    pub fn set_supertype<D>(&self, type_manager: &TypeManager<'_, '_, D>, supertype: EntityType<'static>) {
+    pub fn set_supertype<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        supertype: EntityType<'static>,
+    ) -> Result<(), ConceptWriteError> {
         type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
     }
 
@@ -109,11 +113,15 @@ impl<'a> EntityType<'a> {
     pub fn get_annotations<'m, D>(
         &self,
         type_manager: &'m TypeManager<'_, '_, D>,
-    ) -> MaybeOwns<'m, HashSet<EntityTypeAnnotation>> {
+    ) -> Result<MaybeOwns<'m, HashSet<EntityTypeAnnotation>>, ConceptReadError> {
         type_manager.get_entity_type_annotations(self.clone().into_owned())
     }
 
-    pub fn set_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: EntityTypeAnnotation) {
+    pub fn set_annotation<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        annotation: EntityTypeAnnotation,
+    ) -> Result<(), ConceptWriteError> {
         match annotation {
             EntityTypeAnnotation::Abstract(_) => {
                 type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
@@ -139,9 +147,9 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         &self,
         type_manager: &TypeManager<'_, '_, D>,
         attribute_type: AttributeType<'static>,
-    ) -> Owns<'static> {
-        type_manager.set_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex());
-        self.get_owns_attribute(type_manager, attribute_type).unwrap()
+    ) -> Result<Owns<'static>, ConceptWriteError> {
+        type_manager.set_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex())?;
+        Ok(self.get_owns_attribute(type_manager, attribute_type).unwrap())
     }
 
     fn delete_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) {
@@ -168,10 +176,14 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
 }
 
 impl<'a> PlayerAPI<'a> for EntityType<'a> {
-    fn set_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) -> Plays<'static> {
+    fn set_plays<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        role_type: RoleType<'static>,
+    ) -> Result<Plays<'static>, ConceptWriteError> {
         // TODO: decide behaviour (ok or error) if already playing
-        type_manager.set_storage_plays(self.vertex().clone().into_owned(), role_type.clone().into_vertex());
-        self.get_plays_role(type_manager, role_type).unwrap()
+        type_manager.set_storage_plays(self.vertex().clone().into_owned(), role_type.clone().into_vertex())?;
+        Ok(self.get_plays_role(type_manager, role_type).unwrap())
     }
 
     fn delete_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) {

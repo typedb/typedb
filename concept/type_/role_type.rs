@@ -32,7 +32,7 @@ use storage::{
 
 use crate::{
     concept_iterator,
-    error::{ConceptError, ConceptErrorKind},
+    error::{ConceptError, ConceptErrorKind, ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract},
         plays::Plays,
@@ -93,7 +93,11 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_type_supertype(self.clone().into_owned())
     }
 
-    fn set_supertype<D>(&self, type_manager: &TypeManager<'_, '_, D>, supertype: RoleType<'static>) {
+    fn set_supertype<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        supertype: RoleType<'static>,
+    ) -> Result<(), ConceptWriteError> {
         type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
     }
 
@@ -109,11 +113,15 @@ impl<'a> RoleType<'a> {
     pub fn get_annotations<'m, D>(
         &self,
         type_manager: &'m TypeManager<'_, '_, D>,
-    ) -> MaybeOwns<'m, HashSet<RoleTypeAnnotation>> {
+    ) -> Result<MaybeOwns<'m, HashSet<RoleTypeAnnotation>>, ConceptReadError> {
         type_manager.get_role_type_annotations(self.clone().into_owned())
     }
 
-    pub(crate) fn set_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: RoleTypeAnnotation) {
+    pub(crate) fn set_annotation<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        annotation: RoleTypeAnnotation,
+    ) -> Result<(), ConceptWriteError> {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
                 type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())

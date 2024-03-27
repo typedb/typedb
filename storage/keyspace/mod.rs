@@ -15,5 +15,5 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub mod keyspace;
 pub mod iterator;
+pub mod keyspace;

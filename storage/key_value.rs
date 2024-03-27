@@ -17,7 +17,7 @@
 
 use std::{borrow::Borrow, cmp::Ordering};
 
-use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use primitive::prefix_range::Prefix;
 use serde::{Deserialize, Serialize};
 

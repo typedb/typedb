@@ -17,8 +17,8 @@
 
 use std::{error::Error, fmt};
 
-use encoding::value::value_type::ValueType;
-use storage::snapshot::SnapshotError;
+use encoding::{error::EncodingWriteError, value::value_type::ValueType};
+use storage::snapshot::{SnapshotError, SnapshotGetError, SnapshotPutError};
 
 #[derive(Debug)]
 pub struct ConceptError {
@@ -42,6 +42,59 @@ impl Error for ConceptError {
         match &self.kind {
             ConceptErrorKind::SnapshotError { source, .. } => Some(source),
             ConceptErrorKind::AttributeValueTypeMismatch { .. } => None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum ConceptWriteError {
+    SnapshotPut { source: SnapshotPutError },
+    SnapshotGet { source: SnapshotGetError },
+
+    EncodingWrite { source: EncodingWriteError },
+    ValueTypeMismatch { expected: Option<ValueType>, provided: ValueType },
+}
+
+impl fmt::Display for ConceptWriteError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for ConceptWriteError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::SnapshotPut { source, .. } => Some(source),
+            Self::SnapshotGet { source, .. } => Some(source),
+            Self::EncodingWrite { source, .. } => Some(source),
+            Self::ValueTypeMismatch {..} => todo!(),
+        }
+    }
+}
+
+impl From<ConceptReadError> for ConceptWriteError {
+    fn from(error: ConceptReadError) -> Self {
+        match error {
+            ConceptReadError::SnapshotGet { source } => Self::SnapshotGet { source },
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum ConceptReadError {
+    SnapshotGet { source: SnapshotGetError },
+}
+
+impl fmt::Display for ConceptReadError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for ConceptReadError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::SnapshotGet { source, .. } => Some(source),
         }
     }
 }

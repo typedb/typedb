@@ -15,14 +15,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#![deny(unused_must_use)]
+
 use std::ops::Range;
 
-use bytes::{Bytes, byte_reference::ByteReference};
+use bytes::{byte_reference::ByteReference, Bytes};
 use storage::{key_value::StorageKey, KeyspaceSet};
 
-use crate::layout::prefix::{PrefixID, Prefix};
+use crate::layout::prefix::{Prefix, PrefixID};
 
-mod error;
+pub mod error;
 pub mod graph;
 pub mod layout;
 pub mod value;
@@ -38,10 +40,10 @@ pub enum EncodingKeyspace {
     Schema,
     Data, // TODO: partition into sub-keyspaces for write optimisation
 
-    // ThingVertex
-    // ThingEdgeShortPrefix
-    // ThingEdgeLongPrefix
-    // Metadata -- statistics
+          // ThingVertex
+          // ThingEdgeShortPrefix
+          // ThingEdgeLongPrefix
+          // Metadata -- statistics
 }
 
 impl KeyspaceSet for EncodingKeyspace {
