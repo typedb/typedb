@@ -34,6 +34,8 @@ pub struct AttributeVertex<'a> {
 }
 
 impl<'a> AttributeVertex<'a> {
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
+
     pub(crate) const LENGTH_PREFIX_PREFIX: usize = PrefixID::LENGTH;
     pub(crate) const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
 
@@ -70,7 +72,7 @@ impl<'a> AttributeVertex<'a> {
             .copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id_part.len())].copy_from_slice(attribute_id_part);
-        StorageKey::new_owned(Self::KEYSPACE_ID, bytes)
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
     pub fn build_prefix_type(
@@ -81,13 +83,13 @@ impl<'a> AttributeVertex<'a> {
         bytes.bytes_mut()[Self::RANGE_PREFIX]
             .copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
-        StorageKey::new_owned(Self::KEYSPACE_ID, bytes)
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
     pub fn build_prefix_prefix(prefix: PrefixID) -> StorageKey<'static, { AttributeVertex::LENGTH_PREFIX_PREFIX }> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_PREFIX);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
-        StorageKey::new(Self::KEYSPACE_ID, Bytes::Array(array))
+        StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
 
     pub fn value_type(&self) -> ValueType {
@@ -134,7 +136,9 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {}
 impl<'a> Typed<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {}
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
-    const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Data;
+    fn keyspace(&self) -> EncodingKeyspace {
+        EncodingKeyspace::Data
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

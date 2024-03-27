@@ -30,19 +30,19 @@ pub enum StorageKey<'bytes, const S: usize> {
 }
 
 impl<'bytes, const S: usize> StorageKey<'bytes, S> {
-    pub fn new<KS: KeyspaceSet>(keyspace_id: KS, bytes: Bytes<'bytes, S>) -> Self {
+    pub fn new<KS: KeyspaceSet>(keyspace: KS, bytes: Bytes<'bytes, S>) -> Self {
         match bytes {
-            Bytes::Array(array) => Self::Array(StorageKeyArray::new(keyspace_id, array)),
-            Bytes::Reference(reference) => Self::Reference(StorageKeyReference::new(keyspace_id, reference)),
+            Bytes::Array(array) => Self::Array(StorageKeyArray::new(keyspace, array)),
+            Bytes::Reference(reference) => Self::Reference(StorageKeyReference::new(keyspace, reference)),
         }
     }
 
-    pub fn new_ref<KS: KeyspaceSet>(keyspace_id: KS, bytes: ByteReference<'bytes>) -> Self {
-        StorageKey::Reference(StorageKeyReference::new(keyspace_id, bytes))
+    pub fn new_ref<KS: KeyspaceSet>(keyspace: KS, bytes: ByteReference<'bytes>) -> Self {
+        StorageKey::Reference(StorageKeyReference::new(keyspace, bytes))
     }
 
-    pub fn new_owned<KS: KeyspaceSet>(keyspace_id: KS, bytes: ByteArray<S>) -> Self {
-        StorageKey::Array(StorageKeyArray::new(keyspace_id, bytes))
+    pub fn new_owned<KS: KeyspaceSet>(keyspace: KS, bytes: ByteArray<S>) -> Self {
+        StorageKey::Array(StorageKeyArray::new(keyspace, bytes))
     }
 
     pub fn bytes(&'bytes self) -> &'bytes [u8] {
@@ -178,16 +178,16 @@ impl<const SZ: usize> From<StorageKeyReference<'_>> for StorageKeyArray<SZ> {
 
 impl<const SZ: usize, KS: KeyspaceSet> From<(Vec<u8>, KS)> for StorageKeyArray<SZ> {
     // For tests
-    fn from((bytes, section_id): (Vec<u8>, KS)) -> Self {
-        From::from((bytes.as_slice(), section_id))
+    fn from((bytes, keyspace): (Vec<u8>, KS)) -> Self {
+        From::from((bytes.as_slice(), keyspace))
     }
 }
 
 impl<const SZ: usize, KS: KeyspaceSet> From<(&[u8], KS)> for StorageKeyArray<SZ> {
     // For tests
-    fn from((bytes, section_id): (&[u8], KS)) -> Self {
+    fn from((bytes, keyspace): (&[u8], KS)) -> Self {
         let bytes = ByteArray::<SZ>::copy(bytes);
-        StorageKeyArray { keyspace_id: KeyspaceId(section_id.id()), byte_array: bytes }
+        StorageKeyArray { keyspace_id: KeyspaceId(keyspace.id()), byte_array: bytes }
     }
 }
 
@@ -198,8 +198,8 @@ pub struct StorageKeyReference<'bytes> {
 }
 
 impl<'bytes> StorageKeyReference<'bytes> {
-    pub fn new<KS: KeyspaceSet>(keyspace_id: KS, reference: ByteReference<'bytes>) -> StorageKeyReference<'bytes> {
-        Self::new_raw(KeyspaceId(keyspace_id.id()), reference)
+    pub fn new<KS: KeyspaceSet>(keyspace: KS, reference: ByteReference<'bytes>) -> StorageKeyReference<'bytes> {
+        Self::new_raw(KeyspaceId(keyspace.id()), reference)
     }
 
     pub(crate) const fn new_raw(keyspace_id: KeyspaceId, reference: ByteReference<'bytes>) -> Self {

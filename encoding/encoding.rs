@@ -73,14 +73,14 @@ pub trait AsBytes<'a, const INLINE_SIZE: usize> {
 }
 
 pub trait Keyable<'a, const INLINE_SIZE: usize>: AsBytes<'a, INLINE_SIZE> + Sized {
-    const KEYSPACE_ID: EncodingKeyspace;
+    fn keyspace(&self) -> EncodingKeyspace;
 
     fn as_storage_key(&'a self) -> StorageKey<'a, INLINE_SIZE> {
-        StorageKey::new_ref(Self::KEYSPACE_ID, self.bytes())
+        StorageKey::new_ref(self.keyspace(), self.bytes())
     }
 
     fn into_storage_key(self) -> StorageKey<'a, INLINE_SIZE> {
-        StorageKey::new(Self::KEYSPACE_ID, self.into_bytes())
+        StorageKey::new(self.keyspace(), self.into_bytes())
     }
 }
 

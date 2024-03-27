@@ -207,11 +207,17 @@ impl TypeCache {
             })
             .unwrap();
         let max_entity_id = entities.iter().map(|e| Typed::type_id(e.vertex()).as_u16()).max().unwrap();
-        let mut caches: Box<[Option<EntityTypeCache>]> =
-            (0..=max_entity_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
-        let supertypes = Self::get_supertypes(snapshot, Prefix::VertexEntityType, EntityType::new);
-        let owns = Self::get_owns(snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)));
-        let plays = Self::get_plays(snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)));
+        let mut caches: Box<[Option<EntityTypeCache>]> = (0..=max_entity_id)
+            .map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let supertypes = Self::fetch_supertypes(
+            snapshot, Prefix::VertexEntityType, EntityType::new,
+        );
+        let owns = Self::fetch_owns(
+            snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)),
+        );
+        let plays = Self::fetch_plays(
+            snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)),
+        );
         for entity in entities.into_iter() {
             let object = ObjectType::Entity(entity.clone());
             let label = Self::read_type_label(vertex_properties, entity.vertex().clone());
@@ -258,49 +264,6 @@ impl TypeCache {
         }
     }
 
-    fn get_owns<D, F>(snapshot: &ReadSnapshot<'_, D>, prefix: Prefix, from_reader: F) -> Vec<Owns<'static>>
-    where
-        F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
-    {
-        snapshot
-            .iterate_range(PrefixRange::new_within(build_edge_owns_prefix_prefix(prefix)))
-            .collect_cloned_vec(|key, _| {
-                let edge = new_edge_owns(Bytes::Reference(key.byte_ref()));
-                Owns::new(from_reader(edge.from().into_owned()), AttributeType::new(edge.to().into_owned()))
-            })
-            .unwrap()
-    }
-
-    fn get_plays<D, F>(snapshot: &ReadSnapshot<'_, D>, prefix: Prefix, from_constructor: F) -> Vec<Plays<'static>>
-    where
-        F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
-    {
-        snapshot
-            .iterate_range(PrefixRange::new_within(build_edge_plays_prefix_prefix(prefix)))
-            .collect_cloned_vec(|key, _| {
-                let edge = new_edge_plays(Bytes::Reference(key.byte_ref()));
-                Plays::new(from_constructor(edge.from().into_owned()), RoleType::new(edge.to().into_owned()))
-            })
-            .unwrap()
-    }
-
-    fn get_supertypes<D, F, T: Ord>(
-        snapshot: &ReadSnapshot<'_, D>,
-        prefix: Prefix,
-        type_constructor: F,
-    ) -> BTreeMap<T, T>
-    where
-        F: Fn(TypeVertex<'static>) -> T,
-    {
-        snapshot
-            .iterate_range(PrefixRange::new_within(build_edge_sub_prefix_prefix(prefix)))
-            .collect_cloned_bmap(|key, _| {
-                let edge = new_edge_sub(Bytes::Reference(key.byte_ref()));
-                (type_constructor(edge.from().into_owned()), type_constructor(edge.to().into_owned()))
-            })
-            .unwrap()
-    }
-
     fn create_relation_caches<D>(
         snapshot: &ReadSnapshot<'_, D>,
         vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
@@ -312,9 +275,11 @@ impl TypeCache {
             })
             .unwrap();
         let max_relation_id = relations.iter().map(|r| Typed::type_id(r.vertex()).as_u16()).max().unwrap();
-        let mut caches: Box<[Option<RelationTypeCache>]> =
-            (0..=max_relation_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
-        let supertypes = Self::get_supertypes(snapshot, Prefix::VertexRelationType, RelationType::new);
+        let mut caches: Box<[Option<RelationTypeCache>]> = (0..=max_relation_id)
+            .map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let supertypes = Self::fetch_supertypes(
+            snapshot, Prefix::VertexRelationType, RelationType::new,
+        );
         let relates = snapshot
             .iterate_range(PrefixRange::new_within(build_edge_relates_prefix_prefix(Prefix::VertexRelationType)))
             .collect_cloned_vec(|k, _| {
@@ -322,9 +287,12 @@ impl TypeCache {
                 (RelationType::new(edge.from().into_owned()), RoleType::new(edge.to().into_owned()))
             })
             .unwrap();
-        let owns = Self::get_owns(snapshot, Prefix::VertexRelationType, |v| ObjectType::Relation(RelationType::new(v)));
-        let plays =
-            Self::get_plays(snapshot, Prefix::VertexRelationType, |v| ObjectType::Relation(RelationType::new(v)));
+        let owns = Self::fetch_owns(
+            snapshot, Prefix::VertexRelationType, |v| ObjectType::Relation(RelationType::new(v)),
+        );
+        let plays = Self::fetch_plays(
+            snapshot, Prefix::VertexRelationType, |v| ObjectType::Relation(RelationType::new(v)),
+        );
         for relation in relations.into_iter() {
             let object = ObjectType::Relation(relation.clone());
             let label = Self::read_type_label(vertex_properties, relation.vertex().clone());
@@ -388,9 +356,11 @@ impl TypeCache {
             })
             .unwrap();
         let max_role_id = roles.iter().map(|r| Typed::type_id(r.vertex()).as_u16()).max().unwrap();
-        let mut caches: Box<[Option<RoleTypeCache>]> =
-            (0..=max_role_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
-        let supertypes = Self::get_supertypes(snapshot, Prefix::VertexRoleType, RoleType::new);
+        let mut caches: Box<[Option<RoleTypeCache>]> = (0..=max_role_id)
+            .map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let supertypes = Self::fetch_supertypes(
+            snapshot, Prefix::VertexRoleType, RoleType::new,
+        );
         let relates = snapshot
             .iterate_range(PrefixRange::new_within(build_edge_relates_reverse_prefix_prefix(Prefix::VertexRoleType)))
             .collect_cloned_vec(|k, _| {
@@ -454,9 +424,11 @@ impl TypeCache {
             })
             .unwrap();
         let max_attribute_id = attributes.iter().map(|a| Typed::type_id(a.vertex()).as_u16()).max().unwrap();
-        let mut caches: Box<[Option<AttributeTypeCache>]> =
-            (0..=max_attribute_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
-        let supertypes = Self::get_supertypes(snapshot, Prefix::VertexAttributeType, AttributeType::new);
+        let mut caches: Box<[Option<AttributeTypeCache>]> = (0..=max_attribute_id).map(|_| None)
+            .collect::<Vec<_>>().into_boxed_slice();
+        let supertypes = Self::fetch_supertypes(
+            snapshot, Prefix::VertexAttributeType, AttributeType::new,
+        );
         for attribute in attributes {
             let label = Self::read_type_label(vertex_properties, attribute.vertex().clone());
             let is_root = label == Kind::Attribute.root_label();
@@ -499,6 +471,43 @@ impl TypeCache {
                 attribute_type_caches[index].as_mut().unwrap().supertypes.push(current_supertype);
             }
         }
+    }
+
+    fn fetch_owns<D, F>(
+        snapshot: &ReadSnapshot<'_, D>, prefix: Prefix, from_reader: F,
+    ) -> Vec<Owns<'static>>
+        where F: Fn(TypeVertex<'static>) -> ObjectType<'static> {
+        snapshot.iterate_range(PrefixRange::new_within(build_edge_owns_prefix_prefix(prefix)))
+            .collect_cloned_vec(|key, _| {
+                let edge = new_edge_owns(Bytes::Reference(key.byte_ref()));
+                Owns::new(from_reader(edge.from().into_owned()), AttributeType::new(edge.to().into_owned()))
+            })
+            .unwrap()
+    }
+
+    fn fetch_plays<D, F>(
+        snapshot: &ReadSnapshot<'_, D>, prefix: Prefix, from_constructor: F,
+    ) -> Vec<Plays<'static>>
+        where F: Fn(TypeVertex<'static>) -> ObjectType<'static> {
+        snapshot.iterate_range(PrefixRange::new_within(build_edge_plays_prefix_prefix(prefix)))
+            .collect_cloned_vec(|key, _| {
+                let edge = new_edge_plays(Bytes::Reference(key.byte_ref()));
+                Plays::new(from_constructor(edge.from().into_owned()), RoleType::new(edge.to().into_owned()))
+            })
+            .unwrap()
+    }
+
+    fn fetch_supertypes<D, F, T: Ord>(
+        snapshot: &ReadSnapshot<'_, D>, prefix: Prefix, type_constructor: F,
+    ) -> BTreeMap<T, T>
+        where F: Fn(TypeVertex<'static>) -> T {
+        snapshot
+            .iterate_range(PrefixRange::new_within(build_edge_sub_prefix_prefix(prefix)))
+            .collect_cloned_bmap(|key, _| {
+                let edge = new_edge_sub(Bytes::Reference(key.byte_ref()));
+                (type_constructor(edge.from().into_owned()), type_constructor(edge.to().into_owned()))
+            })
+            .unwrap()
     }
 
     fn read_type_label(

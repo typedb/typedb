@@ -52,19 +52,19 @@ test_keyspace_set! {
 }
 use self::TestKeyspaceSet::Keyspace;
 
-fn random_key_24(keyspace_id: TestKeyspaceSet) -> StorageKeyArray<BUFFER_KEY_INLINE> {
+fn random_key_24(keyspace: TestKeyspaceSet) -> StorageKeyArray<BUFFER_KEY_INLINE> {
     let mut bytes: [u8; 24] = rand::random();
     bytes[0] = 0b0;
-    StorageKeyArray::from((bytes.as_slice(), keyspace_id))
+    StorageKeyArray::from((bytes.as_slice(), keyspace))
 }
 
-fn random_key_4(keyspace_id: TestKeyspaceSet) -> StorageKeyArray<BUFFER_KEY_INLINE> {
+fn random_key_4(keyspace: TestKeyspaceSet) -> StorageKeyArray<BUFFER_KEY_INLINE> {
     let mut bytes: [u8; 4] = rand::random();
     bytes[0] = 0b0;
-    StorageKeyArray::from((bytes.as_slice(), keyspace_id))
+    StorageKeyArray::from((bytes.as_slice(), keyspace))
 }
 
-fn populate_storage(storage: &MVCCStorage<WAL>, keyspace_id: TestKeyspaceSet, key_count: usize) -> usize {
+fn populate_storage(storage: &MVCCStorage<WAL>, keyspace: TestKeyspaceSet, key_count: usize) -> usize {
     const BATCH_SIZE: usize = 1_000;
     let mut snapshot = storage.open_snapshot_write();
     for i in 0..key_count {
@@ -72,13 +72,13 @@ fn populate_storage(storage: &MVCCStorage<WAL>, keyspace_id: TestKeyspaceSet, ke
             snapshot.commit().unwrap();
             snapshot = storage.open_snapshot_write();
         }
-        snapshot.put(random_key_24(keyspace_id)).unwrap();
+        snapshot.put(random_key_24(keyspace)).unwrap();
     }
     snapshot.commit().unwrap();
     println!("Keys written: {}", key_count);
     let snapshot = storage.open_snapshot_read();
     let prefix: StorageKey<'_, 48> =
-        StorageKey::Reference(StorageKeyReference::new(keyspace_id, ByteReference::new(&[0_u8])));
+        StorageKey::Reference(StorageKeyReference::new(keyspace, ByteReference::new(&[0_u8])));
     let iterator = snapshot.iterate_range(PrefixRange::new_within(prefix));
     let count = iterator.collect_cloned_vec(|_, _| ((), ())).unwrap().len();
     println!("Keys confirmed to be written: {}", count);
@@ -87,32 +87,32 @@ fn populate_storage(storage: &MVCCStorage<WAL>, keyspace_id: TestKeyspaceSet, ke
 
 fn bench_snapshot_read_get(
     storage: &MVCCStorage<WAL>,
-    keyspace_id: TestKeyspaceSet,
+    keyspace: TestKeyspaceSet,
 ) -> Option<ByteArray<BUFFER_VALUE_INLINE>> {
     let snapshot = storage.open_snapshot_read();
     let mut last: Option<ByteArray<BUFFER_VALUE_INLINE>> = None;
     for _ in 0..1 {
-        last = snapshot.get(StorageKey::Array(random_key_24(keyspace_id)).as_reference()).unwrap();
+        last = snapshot.get(StorageKey::Array(random_key_24(keyspace)).as_reference()).unwrap();
     }
     last
 }
 
 fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(
     storage: &MVCCStorage<WAL>,
-    keyspace_id: TestKeyspaceSet,
+    keyspace: TestKeyspaceSet,
 ) -> Option<ByteArray<BUFFER_VALUE_INLINE>> {
     let snapshot = storage.open_snapshot_read();
     let mut last: Option<ByteArray<BUFFER_VALUE_INLINE>> = None;
     for _ in 0..ITERATE_COUNT {
-        last = snapshot.get(StorageKey::Array(random_key_4(keyspace_id)).as_reference()).unwrap();
+        last = snapshot.get(StorageKey::Array(random_key_4(keyspace)).as_reference()).unwrap();
     }
     last
 }
 
-fn bench_snapshot_write_put(storage: &MVCCStorage<WAL>, keyspace_id: TestKeyspaceSet, batch_size: usize) {
+fn bench_snapshot_write_put(storage: &MVCCStorage<WAL>, keyspace: TestKeyspaceSet, batch_size: usize) {
     let snapshot = storage.open_snapshot_write();
     for _ in 0..batch_size {
-        snapshot.put(random_key_24(keyspace_id)).unwrap();
+        snapshot.put(random_key_24(keyspace)).unwrap();
     }
     snapshot.commit().unwrap()
 }

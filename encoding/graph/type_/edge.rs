@@ -15,6 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::f32::consts::E;
 use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
@@ -122,9 +123,10 @@ type_edge_constructors!(
 );
 
 impl<'a> TypeEdge<'a> {
-    const LENGTH: usize = PrefixID::LENGTH +  2 * TypeVertex::LENGTH;
-    const LENGTH_PREFIX_FROM: usize =  PrefixID::LENGTH + TypeVertex::LENGTH;
-    const LENGTH_PREFIX_FROM_PREFIX: usize =  PrefixID::LENGTH + TypeVertex::LENGTH_PREFIX;
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+    const LENGTH: usize = PrefixID::LENGTH + 2 * TypeVertex::LENGTH;
+    const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + TypeVertex::LENGTH;
+    const LENGTH_PREFIX_FROM_PREFIX: usize = PrefixID::LENGTH + TypeVertex::LENGTH_PREFIX;
 
     fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
@@ -143,7 +145,7 @@ impl<'a> TypeEdge<'a> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        StorageKey::new_owned(Self::KEYSPACE_ID, bytes)
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
     fn build_prefix_prefix(prefix: Prefix, from_prefix: Prefix) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
@@ -151,7 +153,7 @@ impl<'a> TypeEdge<'a> {
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeVertex::LENGTH_PREFIX]
             .copy_from_slice(&from_prefix.prefix_id().bytes());
-        StorageKey::new_owned(Self::KEYSPACE_ID, bytes)
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
     pub fn from(&'a self) -> TypeVertex<'a> {
@@ -190,5 +192,7 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {}
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
-    const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Schema;
+    fn keyspace(&self) -> EncodingKeyspace {
+        Self::KEYSPACE
+    }
 }

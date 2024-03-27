@@ -38,7 +38,7 @@ impl PrefixID {
         self.bytes
     }
 
-    fn keyspace_id(&self) -> EncodingKeyspace {
+    fn keyspace(&self) -> EncodingKeyspace {
         match Prefix::from_prefix_id(*self) {
             | Prefix::VertexEntityType
             | Prefix::VertexRelationType

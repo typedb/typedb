@@ -71,7 +71,9 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {
 }
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {
-    const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Schema;
+    fn keyspace(&self) -> EncodingKeyspace {
+        EncodingKeyspace::Schema
+    }
 }
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {}

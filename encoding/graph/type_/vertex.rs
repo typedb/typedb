@@ -49,7 +49,7 @@ macro_rules! type_vertex_constructors {
         //       to always induce a tiny copy have a non-const function?
         pub fn $build_name_prefix() -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
             const BYTES: [u8; TypeVertex::LENGTH_PREFIX] = Prefix::$prefix.prefix_id().bytes();
-            StorageKey::new_ref(TypeVertex::KEYSPACE_ID, ByteReference::new(&BYTES))
+            StorageKey::new_ref(TypeVertex::KEYSPACE, ByteReference::new(&BYTES))
         }
 
         pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
@@ -88,6 +88,8 @@ type_vertex_constructors!(
 );
 
 impl<'a> TypeVertex<'a> {
+    pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;
     pub(crate) const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
@@ -119,7 +121,9 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {
 }
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {
-    const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Schema;
+    fn keyspace(&self) -> EncodingKeyspace {
+        Self::KEYSPACE
+    }
 }
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}

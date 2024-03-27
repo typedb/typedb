@@ -37,7 +37,6 @@ struct ThingEdgeRelationIndex<'a> {
 }
 
 impl<'a> ThingEdgeRelationIndex<'a> {
-    const RANGE_PREFIX: Range<usize> = 0..PrefixID::LENGTH;
     const RANGE_FROM: Range<usize> = Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + ObjectVertex::LENGTH;
     const RANGE_TO: Range<usize> = Self::RANGE_FROM.end..Self::RANGE_FROM.end + ObjectVertex::LENGTH;
     const RANGE_RELATION_ID: Range<usize> = Self::RANGE_TO.end..Self::RANGE_TO.end + TypeID::LENGTH;
@@ -58,6 +57,25 @@ impl<'a> ThingEdgeRelationIndex<'a> {
         ObjectVertex::new(Bytes::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_TO])))
     }
 }
+
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ThingEdgeRelationIndex<'a> {
+    fn bytes(&'a self) -> ByteReference<'a> {
+        self.bytes.as_reference()
+    }
+
+    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
+        self.bytes
+    }
+}
+
+impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for ThingEdgeRelationIndex<'a> {}
+
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeRelationIndex<'a> {
+    fn keyspace(&self) -> EncodingKeyspace {
+        EncodingKeyspace::Data
+    }
+}
+
 
 ///
 /// [rp][object][relation][role_id]
@@ -107,7 +125,7 @@ impl<'a> ThingEdgeHas<'a> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::EdgeHas.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        StorageKey::new_owned(Self::KEYSPACE_ID, bytes)
+        StorageKey::new_owned(Self::keyspace(), bytes)
     }
 
     pub fn prefix_from_object_to_type(
@@ -119,7 +137,7 @@ impl<'a> ThingEdgeHas<'a> {
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         let to_type_range = Self::range_from().end..Self::range_from().end + TypeVertex::LENGTH;
         bytes.bytes_mut()[to_type_range].copy_from_slice(to_type.bytes().bytes());
-        StorageKey::new_owned(Self::KEYSPACE_ID, bytes)
+        StorageKey::new_owned(Self::keyspace(), bytes)
     }
 
     fn from(&'a self) -> ObjectVertex<'a> {
@@ -147,6 +165,10 @@ impl<'a> ThingEdgeHas<'a> {
     fn range_to_for_vertex(to: &AttributeVertex) -> Range<usize> {
         Self::range_from().end..Self::range_from().end + to.length()
     }
+
+    const fn keyspace() -> EncodingKeyspace {
+        EncodingKeyspace::Data
+    }
 }
 
 impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ThingEdgeHas<'a> {
@@ -162,7 +184,9 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ThingEdgeHas<'a> {
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for ThingEdgeHas<'a> {}
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeHas<'a> {
-    const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Data;
+    fn keyspace(&self) -> EncodingKeyspace {
+        Self::keyspace()
+    }
 }
 
 ///

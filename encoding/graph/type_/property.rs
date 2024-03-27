@@ -77,6 +77,8 @@ type_vertex_property_constructors!(
 );
 
 impl<'a> TypeVertexProperty<'a> {
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+
     const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + TypeVertex::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
     const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeVertex::LENGTH;
@@ -113,7 +115,7 @@ impl<'a> TypeVertexProperty<'a> {
         // TODO: is it better to have a const fn that is a reference to owned memory, or
         //       to always induce a tiny copy have a non-const function?
         const PREFIX_BYTES: [u8; PrefixID::LENGTH] = Prefix::PropertyType.prefix_id().bytes();
-        StorageKey::new_ref(Self::KEYSPACE_ID, ByteReference::new(&PREFIX_BYTES))
+        StorageKey::new_ref(Self::KEYSPACE, ByteReference::new(&PREFIX_BYTES))
     }
 
     pub fn type_vertex(&'a self) -> TypeVertex<'a> {
@@ -162,7 +164,9 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {
 }
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {
-    const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Schema;
+    fn keyspace(&self) -> EncodingKeyspace {
+        Self::KEYSPACE
+    }
 }
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {}

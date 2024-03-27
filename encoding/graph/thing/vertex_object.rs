@@ -33,6 +33,8 @@ pub struct ObjectVertex<'a> {
 }
 
 impl<'a> ObjectVertex<'a> {
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
+
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectID::LENGTH;
     const LENGTH_PREFIX_PREFIX: usize = PrefixID::LENGTH;
     const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
@@ -61,7 +63,7 @@ impl<'a> ObjectVertex<'a> {
     pub fn build_prefix_prefix(prefix: PrefixID) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_PREFIX }> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_PREFIX);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
-        StorageKey::new(Self::KEYSPACE_ID, Bytes::Array(array))
+        StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
 
     fn build_prefix_type(
@@ -71,7 +73,7 @@ impl<'a> ObjectVertex<'a> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
-        StorageKey::new(Self::KEYSPACE_ID, Bytes::Array(array))
+        StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
 
     pub fn object_id(&self) -> ObjectID {
@@ -98,7 +100,9 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {
 }
 
 impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {
-    const KEYSPACE_ID: EncodingKeyspace = EncodingKeyspace::Data;
+    fn keyspace(&self) -> EncodingKeyspace {
+        Self::KEYSPACE
+    }
 }
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {}
