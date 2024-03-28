@@ -154,50 +154,14 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
 
     /// Insert a key with a new version if it does not already exist.
     /// If the key exists, mark it as a preexisting insertion to escalate to Insert if there is a concurrent Delete.
-    pub fn put(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) -> Result<(), SnapshotPutError> {
+    pub fn put(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
         self.put_val(key, ByteArray::empty())
     }
 
-    pub fn put_val(
-        &self,
-        key: StorageKeyArray<BUFFER_KEY_INLINE>,
-        value: ByteArray<BUFFER_VALUE_INLINE>,
-    ) -> Result<(), SnapshotPutError> {
+    pub fn put_val(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
         let keyspace_id = key.keyspace_id();
-        let buffer = self.buffers.get(keyspace_id);
-        let mut writes = buffer.map().write().unwrap();
-        match writes.entry(key.into_byte_array()) {
-            Entry::Occupied(entry) => {
-                let buffered = entry.into_mut();
-                match buffered {
-                    | Write::RequireExists { value: preexisting }
-                    | Write::InsertPreexisting { value: preexisting, .. } => {
-                        if &value != preexisting {
-                            *buffered = Write::Insert { value }
-                        }
-                    }
-                    Write::Insert { value: inserted } => *inserted = value, // TODO: should this read storage?
-                    Write::Delete => *buffered = Write::Insert { value },
-                }
-            }
-            Entry::Vacant(entry) => {
-                let reference = ByteReference::new(entry.key().bytes());
-                let wrapped = StorageKeyReference::new_raw(keyspace_id, reference);
-                let existing_stored = self
-                    .storage
-                    .get(wrapped, self.open_sequence_number, |reference| {
-                        // Only copy if the value is the same
-                        (reference.bytes() == value.bytes()).then(|| ByteArray::from(reference))
-                    })
-                    .map_err(|error| SnapshotPutError::MVCCRead { source: error })?;
-                if let Some(Some(existing_stored)) = existing_stored {
-                    entry.insert(Write::InsertPreexisting { value: existing_stored, reinsert: Arc::default() });
-                } else {
-                    entry.insert(Write::Insert { value });
-                }
-            }
-        }
-        Ok(())
+        let byte_array = key.into_byte_array();
+        self.buffers.get(keyspace_id).put(byte_array, value);
     }
 
     /// Insert a delete marker for the key with a new version
@@ -340,25 +304,6 @@ impl Error for SnapshotError {
             Self::Put { source, .. } => Some(source),
             Self::MVCC { source, .. } => Some(source),
             Self::Commit { source, .. } => Some(source),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum SnapshotPutError {
-    MVCCRead { source: MVCCReadError },
-}
-
-impl fmt::Display for SnapshotPutError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for SnapshotPutError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::MVCCRead { source, .. } => Some(source),
         }
     }
 }

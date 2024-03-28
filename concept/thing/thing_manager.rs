@@ -85,26 +85,22 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
                     }
                     Value::Long(long) => {
                         let encoded_long = Long::build(long);
-                        self.vertex_generator
-                            .create_attribute_long(
-                                Typed::type_id(attribute_type.vertex()),
-                                encoded_long,
-                                write_snapshot,
-                            )
-                            .map_err(|error| ConceptWriteError::EncodingWrite { source: error })?
+                        self.vertex_generator.create_attribute_long(
+                            Typed::type_id(attribute_type.vertex()),
+                            encoded_long,
+                            write_snapshot,
+                        )
                     }
                     Value::Double(_double) => {
                         todo!()
                     }
                     Value::String(string) => {
                         let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);
-                        self.vertex_generator
-                            .create_attribute_string(
-                                Typed::type_id(attribute_type.vertex()),
-                                encoded_string,
-                                write_snapshot,
-                            )
-                            .map_err(|error| ConceptWriteError::EncodingWrite { source: error })?
+                        self.vertex_generator.create_attribute_string(
+                            Typed::type_id(attribute_type.vertex()),
+                            encoded_string,
+                            write_snapshot,
+                        )
                     }
                 };
                 Ok(Attribute::new(vertex))

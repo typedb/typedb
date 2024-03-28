@@ -17,8 +17,6 @@
 
 use std::{error::Error, fmt, str::Utf8Error};
 
-use storage::snapshot::SnapshotPutError;
-
 #[derive(Debug)]
 pub struct EncodingError {
     pub kind: EncodingErrorKind,
@@ -39,25 +37,6 @@ impl Error for EncodingError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
             EncodingErrorKind::FailedUFT8Decode { source, .. } => Some(source),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum EncodingWriteError {
-    SnapshotPut { source: SnapshotPutError },
-}
-
-impl fmt::Display for EncodingWriteError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for EncodingWriteError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match &self {
-            Self::SnapshotPut { source, .. } => Some(source),
         }
     }
 }

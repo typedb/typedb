@@ -20,7 +20,6 @@ use std::sync::atomic::{AtomicU16, Ordering};
 use storage::{snapshot::WriteSnapshot, MVCCStorage};
 
 use crate::{
-    error::EncodingWriteError,
     graph::type_::vertex::{
         build_vertex_attribute_type, build_vertex_attribute_type_prefix, build_vertex_entity_type,
         build_vertex_entity_type_prefix, build_vertex_relation_type, build_vertex_relation_type_prefix,
@@ -92,51 +91,31 @@ impl TypeVertexGenerator {
         TypeVertexGenerator { next_entity, next_relation, next_role, next_attribute }
     }
 
-    pub fn create_entity_type<D>(
-        &self,
-        snapshot: &WriteSnapshot<'_, D>,
-    ) -> Result<TypeVertex<'static>, EncodingWriteError> {
+    pub fn create_entity_type<D>(&self, snapshot: &WriteSnapshot<'_, D>) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_entity.fetch_add(1, Ordering::Relaxed));
         let vertex = build_vertex_entity_type(next);
-        snapshot
-            .put(vertex.as_storage_key().into_owned_array())
-            .map_err(|error| EncodingWriteError::SnapshotPut { source: error })?;
-        Ok(vertex)
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        vertex
     }
 
-    pub fn create_relation_type<D>(
-        &self,
-        snapshot: &WriteSnapshot<'_, D>,
-    ) -> Result<TypeVertex<'static>, EncodingWriteError> {
+    pub fn create_relation_type<D>(&self, snapshot: &WriteSnapshot<'_, D>) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_relation.fetch_add(1, Ordering::Relaxed));
         let vertex = build_vertex_relation_type(next);
-        snapshot
-            .put(vertex.as_storage_key().into_owned_array())
-            .map_err(|error| EncodingWriteError::SnapshotPut { source: error })?;
-        Ok(vertex)
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        vertex
     }
 
-    pub fn create_role_type<D>(
-        &self,
-        snapshot: &WriteSnapshot<'_, D>,
-    ) -> Result<TypeVertex<'static>, EncodingWriteError> {
+    pub fn create_role_type<D>(&self, snapshot: &WriteSnapshot<'_, D>) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_role.fetch_add(1, Ordering::Relaxed));
         let vertex = build_vertex_role_type(next);
-        snapshot
-            .put(vertex.as_storage_key().into_owned_array())
-            .map_err(|error| EncodingWriteError::SnapshotPut { source: error })?;
-        Ok(vertex)
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        vertex
     }
 
-    pub fn create_attribute_type<D>(
-        &self,
-        snapshot: &WriteSnapshot<'_, D>,
-    ) -> Result<TypeVertex<'static>, EncodingWriteError> {
+    pub fn create_attribute_type<D>(&self, snapshot: &WriteSnapshot<'_, D>) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_attribute.fetch_add(1, Ordering::Relaxed));
         let vertex = build_vertex_attribute_type(next);
-        snapshot
-            .put(vertex.as_storage_key().into_owned_array())
-            .map_err(|error| EncodingWriteError::SnapshotPut { source: error })?;
-        Ok(vertex)
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        vertex
     }
 }

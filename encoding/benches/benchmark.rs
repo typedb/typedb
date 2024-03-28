@@ -37,7 +37,7 @@ fn vertex_generation<D>(
     type_id: TypeID,
     write_snapshot: &WriteSnapshot<'_, D>,
 ) -> ObjectVertex<'static> {
-    thing_vertex_generator.create_entity(type_id, write_snapshot).unwrap()
+    thing_vertex_generator.create_entity(type_id, write_snapshot)
 }
 
 fn vertex_generation_to_key<D>(
@@ -45,7 +45,7 @@ fn vertex_generation_to_key<D>(
     type_id: TypeID,
     write_snapshot: &WriteSnapshot<'_, D>,
 ) -> StorageKey<'static, { BUFFER_KEY_INLINE }> {
-    thing_vertex_generator.create_entity(type_id, write_snapshot).unwrap().into_storage_key()
+    thing_vertex_generator.create_entity(type_id, write_snapshot).into_storage_key()
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

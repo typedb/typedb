@@ -17,8 +17,8 @@
 
 use std::{error::Error, fmt};
 
-use encoding::{error::EncodingWriteError, value::value_type::ValueType};
-use storage::snapshot::{SnapshotError, SnapshotGetError, SnapshotPutError};
+use encoding::value::value_type::ValueType;
+use storage::snapshot::{SnapshotError, SnapshotGetError};
 
 #[derive(Debug)]
 pub struct ConceptError {
@@ -48,10 +48,8 @@ impl Error for ConceptError {
 
 #[derive(Debug)]
 pub enum ConceptWriteError {
-    SnapshotPut { source: SnapshotPutError },
     SnapshotGet { source: SnapshotGetError },
 
-    EncodingWrite { source: EncodingWriteError },
     ValueTypeMismatch { expected: Option<ValueType>, provided: ValueType },
 }
 
@@ -64,10 +62,8 @@ impl fmt::Display for ConceptWriteError {
 impl Error for ConceptWriteError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::SnapshotPut { source, .. } => Some(source),
             Self::SnapshotGet { source, .. } => Some(source),
-            Self::EncodingWrite { source, .. } => Some(source),
-            Self::ValueTypeMismatch {..} => todo!(),
+            Self::ValueTypeMismatch { .. } => todo!(),
         }
     }
 }

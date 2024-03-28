@@ -62,8 +62,8 @@ fn setup_storage(storage_path: &Path) -> MVCCStorage<WAL> {
     let storage = MVCCStorage::recover::<TestKeyspaceSet>("storage", storage_path).unwrap();
 
     let snapshot = storage.open_snapshot_write();
-    snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1)).unwrap();
-    snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_2)).unwrap();
+    snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
+    snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_2));
     snapshot.commit().unwrap();
 
     storage
@@ -80,7 +80,7 @@ fn commits_isolated() {
 
     let key_3 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_3));
     let value_3 = ByteArray::copy(&VALUE_3);
-    snapshot_1.put_val(key_3.clone(), value_3.clone()).unwrap();
+    snapshot_1.put_val(key_3.clone(), value_3.clone());
     snapshot_1.commit().unwrap();
 
     let get: Option<ByteArray<BUFFER_KEY_INLINE>> = snapshot_2.get(StorageKeyReference::from(&key_3)).unwrap();

@@ -272,10 +272,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     ) -> Result<EntityType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let type_vertex = self
-                .vertex_generator
-                .create_entity_type(write_snapshot)
-                .map_err(|error| ConceptWriteError::EncodingWrite { source: error })?;
+            let type_vertex = self.vertex_generator.create_entity_type(write_snapshot);
             self.set_storage_label(type_vertex.clone(), label)?;
             if !is_root {
                 self.set_storage_supertype(
@@ -297,10 +294,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     ) -> Result<RelationType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let type_vertex = self
-                .vertex_generator
-                .create_relation_type(write_snapshot)
-                .map_err(|error| ConceptWriteError::EncodingWrite { source: error })?;
+            let type_vertex = self.vertex_generator.create_relation_type(write_snapshot);
             self.set_storage_label(type_vertex.clone(), label)?;
             if !is_root {
                 self.set_storage_supertype(
@@ -322,10 +316,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     ) -> Result<RoleType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let type_vertex = self
-                .vertex_generator
-                .create_role_type(write_snapshot)
-                .map_err(|error| ConceptWriteError::EncodingWrite { source: error })?;
+            let type_vertex = self.vertex_generator.create_role_type(write_snapshot);
             self.set_storage_label(type_vertex.clone(), label)?;
             self.set_storage_relates(relation_type.into_vertex(), type_vertex.clone())?;
             if !is_root {
@@ -347,10 +338,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     ) -> Result<AttributeType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let type_vertex = self
-                .vertex_generator
-                .create_attribute_type(write_snapshot)
-                .map_err(|error| ConceptWriteError::EncodingWrite { source: error })?;
+            let type_vertex = self.vertex_generator.create_attribute_type(write_snapshot);
             self.set_storage_label(type_vertex.clone(), label)?;
             if !is_root {
                 self.set_storage_supertype(
@@ -477,15 +465,11 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let vertex_to_label_key = build_property_type_label(owner.clone());
             let label_value = ByteArray::from(label.scoped_name().bytes());
-            write_snapshot
-                .put_val(vertex_to_label_key.into_storage_key().into_owned_array(), label_value)
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put_val(vertex_to_label_key.into_storage_key().into_owned_array(), label_value);
 
             let label_to_vertex_key = LabelToTypeVertexIndex::build(label);
             let vertex_value = ByteArray::from(owner.bytes());
-            write_snapshot
-                .put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value)
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
         } else {
             panic!("Illegal state: creating types requires write snapshot")
         }
@@ -524,13 +508,9 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         self.may_delete_storage_supertype(subtype.clone());
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let sub = build_edge_sub(subtype.clone(), supertype.clone());
-            write_snapshot
-                .put(sub.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put(sub.into_storage_key().into_owned_array());
             let sub_reverse = build_edge_sub_reverse(supertype, subtype);
-            write_snapshot
-                .put(sub_reverse.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put(sub_reverse.into_storage_key().into_owned_array());
         } else {
             panic!("Illegal state: creating supertype edge requires write snapshot")
         }
@@ -573,13 +553,9 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     ) -> Result<(), ConceptWriteError> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let owns = build_edge_owns(owner.clone(), attribute.clone());
-            write_snapshot
-                .put(owns.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put(owns.into_storage_key().into_owned_array());
             let owns_reverse = build_edge_owns_reverse(attribute, owner);
-            write_snapshot
-                .put(owns_reverse.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put(owns_reverse.into_storage_key().into_owned_array());
         } else {
             panic!("Illegal state: creating owns edge requires write snapshot")
         }
@@ -619,13 +595,9 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     ) -> Result<(), ConceptWriteError> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let plays = build_edge_plays(player.clone(), role.clone());
-            write_snapshot
-                .put(plays.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put(plays.into_storage_key().into_owned_array());
             let plays_reverse = build_edge_plays_reverse(role, player);
-            write_snapshot
-                .put(plays_reverse.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put(plays_reverse.into_storage_key().into_owned_array());
         } else {
             panic!("Illegal state: creating plays edge requires write snapshot")
         }
@@ -665,13 +637,9 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     ) -> Result<(), ConceptWriteError> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let relates = build_edge_relates(relation.clone(), role.clone());
-            write_snapshot
-                .put(relates.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put(relates.into_storage_key().into_owned_array());
             let relates_reverse = build_edge_relates_reverse(role, relation);
-            write_snapshot
-                .put(relates_reverse.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put(relates_reverse.into_storage_key().into_owned_array());
         } else {
             panic!("Illegal state: creating relates edge requires write snapshot")
         }
@@ -705,9 +673,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let property_key = build_property_type_value_type(vertex).into_storage_key().into_owned_array();
             let property_value = ByteArray::copy(&value_type.value_type_id().bytes());
-            write_snapshot
-                .put_val(property_key, property_value)
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put_val(property_key, property_value);
         } else {
             panic!("Illegal state: setting value type requires write snapshot.")
         }
@@ -728,9 +694,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     pub(crate) fn set_storage_annotation_abstract(&self, vertex: TypeVertex<'static>) -> Result<(), ConceptWriteError> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let annotation_property = build_property_type_annotation_abstract(vertex);
-            write_snapshot
-                .put(annotation_property.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put(annotation_property.into_storage_key().into_owned_array());
         } else {
             panic!("Illegal state: setting annotation requires write snapshot.")
         }
