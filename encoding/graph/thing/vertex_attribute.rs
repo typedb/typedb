@@ -27,8 +27,9 @@ use crate::{
     value::value_type::ValueType,
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::graph::thing::VertexID;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub struct AttributeVertex<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
@@ -42,15 +43,6 @@ impl<'a> AttributeVertex<'a> {
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() > Self::LENGTH_PREFIX_TYPE);
         AttributeVertex { bytes }
-    }
-
-    fn value_type_to_prefix_type(value_type: ValueType) -> Prefix {
-        match value_type {
-            ValueType::Boolean => Prefix::VertexAttributeBoolean,
-            ValueType::Long => Prefix::VertexAttributeLong,
-            ValueType::Double => Prefix::VertexAttributeDouble,
-            ValueType::String => Prefix::VertexAttributeString,
-        }
     }
 
     pub(crate) fn build(value_type: ValueType, type_id: TypeID, attribute_id: AttributeID) -> Self {
@@ -86,6 +78,15 @@ impl<'a> AttributeVertex<'a> {
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
+    fn value_type_to_prefix_type(value_type: ValueType) -> Prefix {
+        match value_type {
+            ValueType::Boolean => Prefix::VertexAttributeBoolean,
+            ValueType::Long => Prefix::VertexAttributeLong,
+            ValueType::Double => Prefix::VertexAttributeDouble,
+            ValueType::String => Prefix::VertexAttributeString,
+        }
+    }
+
     pub fn build_prefix_prefix(prefix: PrefixID) -> StorageKey<'static, { AttributeVertex::LENGTH_PREFIX_PREFIX }> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_PREFIX);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
@@ -112,8 +113,12 @@ impl<'a> AttributeVertex<'a> {
         Self::RANGE_TYPE_ID.end..Self::RANGE_TYPE_ID.end + id_length
     }
 
-    pub fn length(&self) -> usize {
+    pub(crate) fn length(&self) -> usize {
         self.bytes.length()
+    }
+
+    pub fn as_reference<'this: 'a>(&'this self) -> AttributeVertex<'this> {
+        Self::new(Bytes::Reference(self.bytes.as_reference()))
     }
 
     pub fn into_owned(self) -> AttributeVertex<'static> {
@@ -139,6 +144,12 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
     fn keyspace(&self) -> EncodingKeyspace {
         EncodingKeyspace::Data
     }
+}
+
+pub(crate) trait AsAttributeID {
+    type AttributeIDType: VertexID;
+
+    fn as_attribute_id(&self) -> AttributeID;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -191,8 +202,6 @@ pub struct AttributeID8 {
 }
 
 impl AttributeID8 {
-    const LENGTH: usize = 8;
-
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
     }
@@ -200,6 +209,10 @@ impl AttributeID8 {
     pub fn bytes(&self) -> [u8; Self::LENGTH] {
         self.bytes
     }
+}
+
+impl VertexID for AttributeID8 {
+    const LENGTH: usize = 8;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -213,7 +226,6 @@ pub struct AttributeID17 {
 /// such as UUID, IPv6, are created to fit in a 16 byte encoding scheme.
 ///
 impl AttributeID17 {
-    pub(crate) const LENGTH: usize = 17;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
@@ -222,4 +234,8 @@ impl AttributeID17 {
     pub(crate) fn bytes(&self) -> [u8; Self::LENGTH] {
         self.bytes
     }
+}
+
+impl VertexID for AttributeID17 {
+    const LENGTH: usize = 17;
 }

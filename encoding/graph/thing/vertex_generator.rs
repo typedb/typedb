@@ -36,6 +36,8 @@ use crate::{
     value::{long::Long, string::StringBytes, value_type::ValueType},
     AsBytes, Keyable,
 };
+use crate::graph::thing::vertex_attribute::AsAttributeID;
+use crate::graph::thing::VertexID;
 
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,
@@ -118,8 +120,8 @@ impl ThingVertexGenerator {
         value: Long,
         snapshot: &WriteSnapshot<'_, D>,
     ) -> Result<AttributeVertex<'static>, EncodingWriteError> {
-        let attribute_id = AttributeID::Bytes8(AttributeID8::new(value.bytes()));
-        let vertex = AttributeVertex::build(ValueType::Long, type_id, attribute_id);
+        let long_atribute_id = LongAttributeID::build(value);
+        let vertex = AttributeVertex::build(ValueType::Long, type_id, long_atribute_id.as_attribute_id());
         snapshot.put(vertex.as_storage_key().into_owned_array())
             .map_err(|error| EncodingWriteError::SnapshotPut { source: error })?;
         Ok(vertex)
@@ -141,25 +143,52 @@ impl ThingVertexGenerator {
         value: StringBytes<'_, INLINE_LENGTH>,
         snapshot: &WriteSnapshot<'_, D>,
     ) -> Result<AttributeVertex<'static>, EncodingWriteError> {
-        let attribute_id = AttributeID::Bytes17(self.string_to_attribute_id(type_id, value.clone_as_ref(), snapshot));
-        let vertex = AttributeVertex::build(ValueType::String, type_id, attribute_id);
+        let string_attribute_id = self.create_string_attribute_id(type_id, value.clone_as_ref(), snapshot);
+        let vertex = AttributeVertex::build(ValueType::String, type_id, string_attribute_id.as_attribute_id());
         snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()))
             .map_err(|error| EncodingWriteError::SnapshotPut { source: error })?;
         Ok(vertex)
     }
 
-    fn string_to_attribute_id<const INLINE_LENGTH: usize, D>(
+    fn create_string_attribute_id<const INLINE_LENGTH: usize, D>(
         &self,
         type_id: TypeID,
         string: StringBytes<'_, INLINE_LENGTH>,
         snapshot: &WriteSnapshot<'_, D>,
-    ) -> AttributeID17 {
+    ) -> StringAttributeID {
         if string.length() <= StringAttributeID::ENCODING_INLINE_CAPACITY {
-            StringAttributeID::build_inline_id(string).attribute_id
+            StringAttributeID::build_inline_id(string)
         } else {
-            StringAttributeID::build_hashed_id(type_id, string, snapshot, &self.large_value_hasher).attribute_id
+            StringAttributeID::build_hashed_id(type_id, string, snapshot, &self.large_value_hasher)
             // TODO: mark snapshot BYTES without the tail set as an exclusive key so concurrent txn will fail to commit
         }
+    }
+}
+
+pub struct LongAttributeID {
+    attribute_id: AttributeID8,
+}
+
+impl LongAttributeID {
+
+    pub fn new(attribute_id: AttributeID8) -> Self {
+        Self { attribute_id: attribute_id }
+    }
+
+    fn build(value: Long) -> Self {
+        Self { attribute_id: AttributeID8::new(value.bytes()) }
+    }
+
+    pub fn bytes(&self) -> [u8; AttributeID8::LENGTH] {
+        self.attribute_id.bytes()
+    }
+}
+
+impl AsAttributeID for LongAttributeID {
+    type AttributeIDType = AttributeID8;
+
+    fn as_attribute_id(&self) -> AttributeID {
+        AttributeID::Bytes8(self.attribute_id)
     }
 }
 
@@ -213,7 +242,7 @@ impl StringAttributeID {
     ///
     fn set_tail_inline_length(bytes: &mut [u8; AttributeID17::LENGTH], length: u8) {
         assert!(length & Self::ENCODING_STRING_TAIL_MASK == 0); // ie < 128, high bit not set
-                                                                // because the high bit is not set, we already conform to the required mask of high bit = 0
+        // because the high bit is not set, we already conform to the required mask of high bit = 0
         bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = length;
     }
 
@@ -268,7 +297,7 @@ impl StringAttributeID {
     ///
     fn set_tail_hash_disambiguator(bytes: &mut [u8; AttributeID17::LENGTH], disambiguator: u8) {
         debug_assert!(disambiguator & Self::ENCODING_STRING_TAIL_MASK == 0); // ie. disambiguator < 128, not using high bit
-                                                                             // sets 0x1[disambiguator]
+        // sets 0x1[disambiguator]
         bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = disambiguator | Self::ENCODING_STRING_TAIL_MASK;
     }
 
@@ -305,5 +334,13 @@ impl StringAttributeID {
         debug_assert!(!self.is_inline());
         let byte = self.attribute_id.bytes()[Self::ENCODING_STRING_TAIL_BYTE_INDEX];
         byte & !Self::ENCODING_STRING_TAIL_MASK // unsets 0x1___ high bit
+    }
+}
+
+impl AsAttributeID for StringAttributeID {
+    type AttributeIDType = AttributeID17;
+
+    fn as_attribute_id(&self) -> AttributeID {
+        AttributeID::Bytes17(self.attribute_id)
     }
 }

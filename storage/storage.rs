@@ -250,6 +250,7 @@ impl<D> MVCCStorage<D> {
     where
         D: DurabilityService,
     {
+
         let commit_record = snapshot.into_commit_record();
 
         //  1. make durable and get sequence number
@@ -442,6 +443,10 @@ impl<D> MVCCStorage<D> {
         open_sequence_number: SequenceNumber,
     ) -> MVCCRangeIterator<'this, PS> {
         MVCCRangeIterator::new(self, range, open_sequence_number)
+    }
+
+    pub fn read_watermark(&self) -> SequenceNumber {
+        self.isolation_manager.watermark()
     }
 
     // --- direct access to storage, bypassing MVCC and returning raw key/value pairs ---

@@ -27,7 +27,7 @@ use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct ObjectVertex<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
@@ -78,6 +78,14 @@ impl<'a> ObjectVertex<'a> {
 
     pub fn object_id(&self) -> ObjectID {
         ObjectID::new(self.bytes.bytes()[Self::range_object_id()].try_into().unwrap())
+    }
+
+    pub(crate) fn length(&self) -> usize {
+        self.bytes.length()
+    }
+
+    pub fn as_reference<'this: 'a>(&'this self) -> ObjectVertex<'this> {
+        Self::new(Bytes::Reference(self.bytes.as_reference()))
     }
 
     const fn range_object_id() -> Range<usize> {

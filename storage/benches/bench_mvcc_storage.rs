@@ -127,21 +127,22 @@ fn setup_storage(storage_path: &Path, key_count: usize) -> MVCCStorage<WAL> {
 fn criterion_benchmark(c: &mut Criterion) {
     init_logging();
     const INITIAL_KEY_COUNT: usize = 10_000; // 10 million = approximately 0.2 GB of keys
+    println!("In cirterion benchmark");
     {
         let storage_path = create_tmp_dir();
         let storage = setup_storage(&storage_path, INITIAL_KEY_COUNT);
         c.bench_function("snapshot_read_get", |b| b.iter(|| bench_snapshot_read_get(&storage, Keyspace)));
     }
-    {
-        let storage_path = create_tmp_dir();
-        let storage = setup_storage(&storage_path, INITIAL_KEY_COUNT);
-        c.bench_function("snapshot_write_put", |b| b.iter(|| bench_snapshot_write_put(&storage, Keyspace, 100)));
-    }
-    {
-        let storage_path = create_tmp_dir();
-        let storage = setup_storage(&storage_path, INITIAL_KEY_COUNT);
-        c.bench_function("snapshot_read_iterate", |b| b.iter(|| bench_snapshot_read_iterate::<1>(&storage, Keyspace)));
-    }
+    // {
+    //     let storage_path = create_tmp_dir();
+    //     let storage = setup_storage(&storage_path, INITIAL_KEY_COUNT);
+    //     c.bench_function("snapshot_write_put", |b| b.iter(|| bench_snapshot_write_put(&storage, Keyspace, 100)));
+    // }
+    // {
+    //     let storage_path = create_tmp_dir();
+    //     let storage = setup_storage(&storage_path, INITIAL_KEY_COUNT);
+    //     c.bench_function("snapshot_read_iterate", |b| b.iter(|| bench_snapshot_read_iterate::<1>(&storage, Keyspace)));
+    // }
 }
 // --- Code to generate flamegraphs copied from https://www.jibbow.com/posts/criterion-flamegraphs/ ---
 // This causes a SIGBUS on (mac) arm64 if the frequency is set too high.
@@ -179,7 +180,7 @@ fn profiled() -> Criterion {
 
 criterion_group!(
     name = benches;
-    config= profiled();
+    config = profiled();
     targets = criterion_benchmark
 );
 

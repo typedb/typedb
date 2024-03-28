@@ -15,43 +15,11 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use encoding::{
-    graph::thing::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex},
-    value::value_type::ValueType,
-};
-
-use crate::{
-    error::ConceptReadError,
-    thing::{attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, value::Value},
-    ConceptAPI,
-};
+use crate::ConceptAPI;
 
 pub mod attribute;
 pub mod entity;
 mod relation;
 pub mod thing_manager;
 pub mod value;
-
-pub trait ThingAPI<'a>: ConceptAPI<'a> {}
-
-pub trait ObjectAPI<'a>: ThingAPI<'a> {
-    fn vertex(&'a self) -> &ObjectVertex<'a>;
-}
-
-pub trait EntityAPI<'a>: ObjectAPI<'a> {
-    fn into_owned(self) -> Entity<'static>;
-}
-
-pub trait RelationAPI<'a>: ObjectAPI<'a> {
-    fn into_owned(self) -> Relation<'static>;
-}
-
-pub trait AttributeAPI<'a>: ThingAPI<'a> {
-    fn vertex(&self) -> &AttributeVertex<'a>;
-
-    fn into_owned(self) -> Attribute<'static>;
-
-    fn value_type(&self) -> ValueType;
-
-    fn value<D>(&self, thing_manager: &ThingManager<'_, '_, D>) -> Result<Value, ConceptReadError>;
-}
+mod object;

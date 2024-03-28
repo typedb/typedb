@@ -15,22 +15,20 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::io::Read;
 use std::rc::Rc;
 
 use bytes::Bytes;
-use encoding::{
-    graph::{
-        thing::{
-            vertex_attribute::AttributeVertex,
-            vertex_generator::{StringAttributeID, ThingVertexGenerator},
-            vertex_object::ObjectVertex,
-        },
-        Typed,
+use encoding::{AsBytes, graph::{
+    thing::{
+        vertex_attribute::AttributeVertex,
+        vertex_generator::{StringAttributeID, ThingVertexGenerator},
+        vertex_object::ObjectVertex,
     },
-    layout::prefix::{Prefix, PrefixID},
-    value::{long::Long, string::StringBytes, value_type::ValueType},
-    Keyable,
-};
+    Typed,
+}, Keyable, layout::prefix::{Prefix, PrefixID}, value::{long::Long, string::StringBytes, value_type::ValueType}};
+use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse};
+use encoding::graph::thing::vertex_generator::LongAttributeID;
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::Snapshot;
@@ -41,7 +39,6 @@ use crate::{
         attribute::{Attribute, AttributeIterator},
         entity::{Entity, EntityIterator},
         value::Value,
-        AttributeAPI,
     },
     type_::{attribute_type::AttributeType, entity_type::EntityType, type_manager::TypeManager, TypeAPI},
 };
@@ -61,7 +58,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         ThingManager { snapshot, vertex_generator, type_manager }
     }
 
-    pub fn create_entity(&self, entity_type: &EntityType<'_>) -> Result<Entity<'_>, ConceptWriteError> {
+    pub fn create_entity(&self, entity_type: EntityType<'static>) -> Result<Entity<'_>, ConceptWriteError> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             Ok(Entity::new(
                 self.vertex_generator
@@ -75,7 +72,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
 
     pub fn create_attribute(
         &self,
-        attribute_type: &AttributeType<'_>,
+        attribute_type: AttributeType<'static>,
         value: Value,
     ) -> Result<Attribute<'_>, ConceptWriteError> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
@@ -151,7 +148,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
                 todo!()
             }
             ValueType::Long => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_bytes_8();
+                let attribute_id = LongAttributeID::new(attribute.vertex().attribute_id().unwrap_bytes_8());
                 Ok(Value::Long(Long::new(attribute_id.bytes()).as_i64()))
             }
             ValueType::Double => {
@@ -174,5 +171,33 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
                 }
             }
         }
+    }
+
+    // TODO: this should either accept Concept's and return Concepts, or consume Vertex and return Vertex
+    pub(crate) fn get_storage_has<'this, 'a>(
+        &'this self, owner: ObjectVertex<'a>,
+    ) -> AttributeIterator<'this, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+        let prefix = ThingEdgeHas::prefix_from_object(owner);
+        AttributeIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
+    }
+
+    pub(crate) fn set_storage_has(
+        &self,
+        owner: ObjectVertex<'_>,
+        attribute: AttributeVertex<'_>,
+    ) -> Result<(), ConceptWriteError> {
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            let has = ThingEdgeHas::build(owner.as_reference(), attribute.as_reference());
+            write_snapshot
+                .put(has.into_storage_key().into_owned_array())
+                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            let has_reverse = ThingEdgeHasReverse::build(attribute.as_reference(), owner.as_reference());
+            write_snapshot
+                .put(has_reverse.into_storage_key().into_owned_array())
+                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+        } else {
+            panic!("Illegal state: creating plays edge requires write snapshot")
+        }
+        Ok(())
     }
 }

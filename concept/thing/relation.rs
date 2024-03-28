@@ -16,6 +16,7 @@
  */
 
 use bytes::Bytes;
+use encoding::graph::thing::edge::ThingEdgeHas;
 use encoding::graph::thing::vertex_object::ObjectVertex;
 use storage::{
     key_value::StorageKeyReference,
@@ -25,11 +26,13 @@ use storage::{
 use crate::{
     concept_iterator,
     error::{ConceptError, ConceptErrorKind},
-    thing::{ObjectAPI, RelationAPI, ThingAPI},
     ByteReference, ConceptAPI,
 };
+use crate::error::ConceptWriteError;
+use crate::thing::attribute::{Attribute, AttributeIterator};
+use crate::thing::thing_manager::ThingManager;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Relation<'a> {
     vertex: ObjectVertex<'a>,
 }
@@ -38,23 +41,26 @@ impl<'a> Relation<'a> {
     pub fn new(vertex: ObjectVertex<'a>) -> Self {
         Relation { vertex }
     }
-}
 
-impl<'a> ConceptAPI<'a> for Relation<'a> {}
-
-impl<'a> ThingAPI<'a> for Relation<'a> {}
-
-impl<'a> ObjectAPI<'a> for Relation<'a> {
-    fn vertex(&'a self) -> &ObjectVertex<'a> {
-        &self.vertex
+    pub fn set_has<D>(&self, thing_manager: &ThingManager<'_, '_, D>, attribute: &Attribute<'_>)
+                      -> Result<(), ConceptWriteError> {
+        thing_manager.set_storage_has(self.vertex(), attribute.vertex())
     }
-}
 
-impl<'a> RelationAPI<'a> for Relation<'a> {
-    fn into_owned(self) -> Relation<'static> {
+    pub fn get_has<'m, D>(&self, thing_manager: &'m ThingManager<'_, '_, D>) -> AttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+        thing_manager.get_storage_has(self.vertex())
+    }
+
+    pub(crate) fn vertex<'this: 'a>(&'this self) -> ObjectVertex<'this> {
+        self.vertex.as_reference()
+    }
+
+    pub(crate) fn into_owned(self) -> Relation<'static> {
         Relation { vertex: self.vertex.into_owned() }
     }
 }
+
+impl<'a> ConceptAPI<'a> for Relation<'a> {}
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_ref_to_entity(storage_key_ref: StorageKeyReference<'_>) -> Relation<'_> {
