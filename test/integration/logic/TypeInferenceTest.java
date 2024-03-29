@@ -195,30 +195,6 @@ public class TypeInferenceTest {
     }
 
     @Test
-    public void iid_inference() throws IOException {
-        define_standard_schema("basic-schema");
-        transaction.commit();
-        session.close();
-        session = databaseMgr.session(database, DATA);
-        transaction = session.transaction(WRITE);
-        Entity person = transaction.concepts().getEntityType("person").create();
-
-        TypeInference typeInference = transaction.logic().typeInference();
-
-        // using a person IID, the attribute can only be a name or email, but not a dog label
-        String queryString = "match $p iid " + person.getIID().toHexString() + "; $p has $a; get;";
-        Disjunction disjunction = createDisjunction(queryString);
-        typeInference.applyCombination(disjunction);
-
-        Map<String, Set<String>> expected = map(
-                pair("$p", set("person")),
-                pair("$a", set("name", "email"))
-        );
-
-        assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
-    }
-
-    @Test
     public void has_inference() throws IOException {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();

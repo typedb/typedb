@@ -59,6 +59,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ATTRIBUTE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Type.THING;
 import static java.util.Collections.emptySet;
 
 public class TypeInference {
@@ -152,6 +153,7 @@ public class TypeInference {
 
     private static class InferenceTraversal {
 
+        private static final Identifier.Variable ROOT_THING_ID = Identifier.Variable.label(ATTRIBUTE.toString());
         private static final Identifier.Variable ROOT_ATTRIBUTE_ID = Identifier.Variable.label(ATTRIBUTE.toString());
 
         private final Conjunction conjunction;
@@ -366,10 +368,10 @@ public class TypeInference {
         }
 
         /**
-         * We only extract the type of the IID, and include this information in the type inference
-         * We only look at the type prefix because the static type checker (this class) only read schema, not data
+         * We do not include type inference based on the type embedded in the IID, since
+         * usually we want to check whether the data instance is compatible with type constraints in the query.
          */
-        private void registerIID(TypeVariable resolver, IIDConstraint constraint) {
+        private void registerIID(TypeVariable inferenceVar, IIDConstraint constraint) {
             VertexIID.Thing iid = VertexIID.Thing.of(constraint.iid());
             TypeVertex type = graphMgr.schema().convert(iid.type());
             if (type == null) {
@@ -382,7 +384,7 @@ public class TypeInference {
             if (vertex == null || !vertex.type().equals(type)) {
                 conjunction.setAnswerable(false);
             }
-            restrictTypes(resolver.id(), iterate(type).map(TypeVertex::properLabel));
+            registerSubThing(inferenceVar);
         }
 
         private void registerHas(TypeVariable inferenceVar, HasConstraint hasConstraint) {
@@ -431,6 +433,11 @@ public class TypeInference {
         private void registerSubAttribute(Variable inferenceVar) {
             traversal.labels(ROOT_ATTRIBUTE_ID, Label.of(ATTRIBUTE.toString()));
             traversal.sub(inferenceVar.id(), ROOT_ATTRIBUTE_ID, true);
+        }
+
+        private void registerSubThing(Variable inferenceVar) {
+            traversal.labels(ROOT_THING_ID, Label.of(THING.toString()));
+            traversal.sub(inferenceVar.id(), ROOT_THING_ID, true);
         }
 
         private void register(ValueVariable var) {
