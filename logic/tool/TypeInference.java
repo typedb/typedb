@@ -382,7 +382,8 @@ public class TypeInference {
             if (vertex == null || !vertex.type().equals(type)) {
                 conjunction.setAnswerable(false);
             }
-            restrictTypes(resolver.id(), iterate(type).map(TypeVertex::properLabel));
+            // Note: we should not include type inference based on the type embedded in the IID, since
+            //       usually we want to check whether the data instance is compatible with type constraints in the query.
         }
 
         private void registerHas(TypeVariable inferenceVar, HasConstraint hasConstraint) {
