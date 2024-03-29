@@ -27,7 +27,6 @@ public interface Thing extends Concept, Comparable<Thing> {
      */
     ByteArray getIID();
 
-
     /**
      * Returns the {@code IID} of this {@code Thing} as hexadecimal string.
      *

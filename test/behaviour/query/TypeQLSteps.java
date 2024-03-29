@@ -616,6 +616,18 @@ public class TypeQLSteps {
         }
     }
 
+    @Then("get answers of templated typeql get")
+    public void get_answers_of_templated_typeql_get(String templatedTypeQLQuery) {
+        String templatedQuery = String.join("\n", templatedTypeQLQuery);
+        if (getAnswers.size() > 1) {
+            throw new ScenarioDefinitionException("Answers of templated typeql get requires only 1 previous answer exists.");
+        }
+        ConceptMap answer = getAnswers.get(0);
+        String queryString = applyQueryTemplate(templatedQuery, answer);
+        TypeQLGet query = TypeQL.parseQuery(queryString).asGet();
+        getAnswers = tx().query().get(query).toList();
+    }
+
     @Then("each answer does not satisfy")
     public void each_answer_does_not_satisfy(String templatedTypeQLQuery) {
         String templatedQuery = String.join("\n", templatedTypeQLQuery);
