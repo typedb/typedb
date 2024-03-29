@@ -88,30 +88,18 @@ impl ThingVertexGenerator {
         todo!()
     }
 
-    pub fn create_entity<D>(
-        &self,
-        type_id: TypeID,
-        snapshot: &WriteSnapshot<'_, D>,
-    ) -> Result<ObjectVertex<'static>, EncodingWriteError> {
+    pub fn create_entity<D>(&self, type_id: TypeID, snapshot: &WriteSnapshot<'_, D>) -> ObjectVertex<'static> {
         let entity_id = self.entity_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_entity(type_id, ObjectID::build(entity_id));
-        snapshot
-            .put(vertex.as_storage_key().into_owned_array())
-            .map_err(|error| EncodingWriteError::SnapshotPut { source: error })?;
-        Ok(vertex)
+        snapshot.insert(vertex.as_storage_key().into_owned_array());
+        vertex
     }
 
-    pub fn create_relation<D>(
-        &self,
-        type_id: TypeID,
-        snapshot: &WriteSnapshot<'_, D>,
-    ) -> Result<ObjectVertex<'static>, EncodingWriteError> {
+    pub fn create_relation<D>(&self, type_id: TypeID, snapshot: &WriteSnapshot<'_, D>) -> ObjectVertex<'static> {
         let relation_id = self.relation_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_entity(type_id, ObjectID::build(relation_id));
-        snapshot
-            .put(vertex.as_storage_key().into_owned_array())
-            .map_err(|error| EncodingWriteError::SnapshotPut { source: error })?;
-        Ok(vertex)
+        snapshot.insert(vertex.as_storage_key().into_owned_array());
+        vertex
     }
 
     pub fn create_attribute_long<D>(
@@ -170,7 +158,6 @@ pub struct LongAttributeID {
 }
 
 impl LongAttributeID {
-
     pub fn new(attribute_id: AttributeID8) -> Self {
         Self { attribute_id: attribute_id }
     }

@@ -60,11 +60,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
 
     pub fn create_entity(&self, entity_type: EntityType<'static>) -> Result<Entity<'_>, ConceptWriteError> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            Ok(Entity::new(
-                self.vertex_generator
-                    .create_entity(Typed::type_id(entity_type.vertex()), write_snapshot)
-                    .map_err(|error| ConceptWriteError::EncodingWrite { source: error })?,
-            ))
+            Ok(Entity::new(self.vertex_generator.create_entity(Typed::type_id(entity_type.vertex()), write_snapshot)))
         } else {
             panic!("Illegal state: create entity requires write snapshot")
         }
