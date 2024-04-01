@@ -632,7 +632,6 @@ impl StorageOperation {
 
 #[cfg(test)]
 pub mod tests {
-
     use std::path::Path;
 
     use bytes::byte_array::ByteArray;
@@ -642,14 +641,6 @@ pub mod tests {
     use crate::MVCCStorage;
     use crate::KeyspaceSet;
     use test_utils::{create_tmp_dir, init_logging};
-
-    const KEY_1: [u8; 4] = [0x0, 0x0, 0x0, 0x1];
-    const KEY_2: [u8; 4] = [0x0, 0x0, 0x0, 0x2];
-    const VALUE_0: [u8; 1] = [0x0];
-    const VALUE_1: [u8; 1] = [0x1];
-    const VALUE_2: [u8; 1] = [0x2];
-
-
 
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
@@ -670,7 +661,14 @@ pub mod tests {
     test_keyspace_set! {
         Keyspace => 0: "keyspace",
     }
+
     use self::TestKeyspaceSet::Keyspace;
+
+    const KEY_1: [u8; 4] = [0x0, 0x0, 0x0, 0x1];
+    const KEY_2: [u8; 4] = [0x0, 0x0, 0x0, 0x2];
+    const VALUE_0: [u8; 1] = [0x0];
+    const VALUE_1: [u8; 1] = [0x1];
+    const VALUE_2: [u8; 1] = [0x2];
 
     fn setup_storage(storage_path: &Path) -> MVCCStorage<WAL> {
         let storage = MVCCStorage::recover::<TestKeyspaceSet>("storage", storage_path).unwrap();
@@ -763,5 +761,4 @@ pub mod tests {
 
         assert!(!result_write_12.is_ok()); // Fail
     }
-
 }
