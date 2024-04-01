@@ -26,7 +26,6 @@ This file should comprise a set of low-level tests relating to MVCC.
    Note: edge case is when the commit records have been purged from memory. Isolation manager should be able to retrieve them again from the Durability service on demand.
    Note: let's write this test first, and leave it red. This will induce a refactor of the Timeline - which is the next task.
 
-
 4. We should be able to configure that a cleanup of old versionsn of key is run after T has elapsed that deletes old versions of data we no longer want to retain
    We want the time keeping component to be received from the durability service, which should be able to tell us the last sequence number
    before a specific time (it should be able to binary search its WAL log files and check the dates on them to find this information).
@@ -39,13 +38,13 @@ use std::path::Path;
 
 use bytes::{
     byte_array::ByteArray,
-    byte_reference::ByteReference
+    byte_reference::ByteReference,
 };
 use durability::wal::WAL;
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     MVCCStorage,
-    KeyspaceSet
+    KeyspaceSet,
 };
 use test_utils::{create_tmp_dir, init_logging};
 

@@ -242,7 +242,6 @@ impl<D> MVCCStorage<D> {
         Ok(WriteSnapshot::new(self, sequence_number))
     }
 
-
     pub fn open_snapshot_read(&self) -> ReadSnapshot<'_, D> {
         let open_sequence_number = self.isolation_manager.watermark();
         ReadSnapshot::new(self, open_sequence_number)
