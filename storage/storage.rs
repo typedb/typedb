@@ -236,14 +236,22 @@ impl<D> MVCCStorage<D> {
         WriteSnapshot::new(self, open_sequence_number)
     }
 
+    pub fn open_snapshot_write_at(&self, sequence_number: SequenceNumber) -> Result<WriteSnapshot<'_, D>, MVCCStorageError> {
+        // TODO: Support waiting for watermark to catch up to sequence number when we support causal reading.
+        assert!(sequence_number <= self.read_watermark());
+        Ok(WriteSnapshot::new(self, sequence_number))
+    }
+
+
     pub fn open_snapshot_read(&self) -> ReadSnapshot<'_, D> {
         let open_sequence_number = self.isolation_manager.watermark();
         ReadSnapshot::new(self, open_sequence_number)
     }
 
-    pub fn open_snapshot_read_at(&self, sequence_number: SequenceNumber) -> ReadSnapshot<'_, D> {
-        // TODO: validate sequence number is before or equal to watermark
-        ReadSnapshot::new(self, sequence_number)
+    pub fn open_snapshot_read_at(&self, sequence_number: SequenceNumber) -> Result<ReadSnapshot<'_, D>, MVCCStorageError> {
+        // TODO: Support waiting for watermark to catch up to sequence number when we support causal reading.
+        assert!(sequence_number <= self.read_watermark());
+        Ok(ReadSnapshot::new(self, sequence_number))
     }
 
     fn snapshot_commit(&self, snapshot: WriteSnapshot<'_, D>) -> Result<(), MVCCStorageError>

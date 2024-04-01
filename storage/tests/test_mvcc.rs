@@ -89,6 +89,8 @@ fn test_commit_increments_watermark() {
     let storage = setup_storage(&storage_path);
     let wm_initial = storage.read_watermark();
     let snapshot_0 = storage.open_snapshot_write();
+    let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
+    snapshot_0.put_val(key_1.clone(), ByteArray::copy(&VALUE_1)).unwrap();
     snapshot_0.commit().unwrap();
 
     assert_eq!(wm_initial.next().number().number() + 1, storage.read_watermark().number().number());
@@ -129,42 +131,45 @@ fn test_reading_snapshots() {
     snapshot_read_0.close_resources();
 
     // Read from further in the past.
-    let snapshot_read_02 = storage.open_snapshot_read_at(watermark_0);
+    let snapshot_read_02 = storage.open_snapshot_read_at(watermark_0).unwrap();
     assert_eq!(snapshot_read_02.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
     snapshot_read_02.close_resources();
 }
 
 #[test]
-fn test_writing_same_key_conflicts() {
+fn test_conflicting_update_fails() {
     // TODO: Why does this exist if we have separate isolation tests?
     init_logging();
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let key_1: &StorageKey<'_, 48> = &StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
-    let key_1: &StorageKey<'_, 48> = &StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_2)));
+    let key_1 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_1));
+    let key_2 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_2));
 
     let snapshot_write_0 = storage.open_snapshot_write();
-    snapshot_write_0.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_0)).unwrap();
+    snapshot_write_0.put_val(key_1.clone().into_owned_array(), ByteArray::copy(&VALUE_0)).unwrap();
     snapshot_write_0.commit().unwrap();
 
-    let snapshot_write_11 = storage.open_snapshot_write();
-    let snapshot_write_21 = storage.open_snapshot_write();
-    snapshot_write_11.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1)).unwrap();
-    snapshot_write_21.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_2)).unwrap();
-    let result_write_11 = snapshot_write_11.commit();
-    assert!(result_write_11.is_ok());
-    let result_write_21 = snapshot_write_21.commit();
-    assert!(!result_write_21.is_ok()); // Fails
+    let watermark_after_initial_write = storage.read_watermark();
 
-    let snapshot_write_12 = storage.open_snapshot_write();
-    let snapshot_write_22 = storage.open_snapshot_write();
-    snapshot_write_12.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_1)).unwrap();
-    snapshot_write_22.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_2)).unwrap();
+    {
+        let snapshot_write_11 = storage.open_snapshot_write();
+        let snapshot_write_21 = storage.open_snapshot_write();
+        snapshot_write_11.delete(key_1.clone().into_owned_array());
+        snapshot_write_21.get_required(key_1.clone()).unwrap();
+        snapshot_write_21.put_val(key_2.clone().into_owned_array(), ByteArray::copy(&VALUE_2)).unwrap();
+        let result_write_11 = snapshot_write_11.commit();
+        assert!(result_write_11.is_ok());
+        let result_write_21 = snapshot_write_21.commit();
+        assert!(result_write_21.is_err()); // Fails
+    }
 
-    let result_write_22 = snapshot_write_22.commit();
-    assert!(result_write_22.is_ok());
-    let result_write_12 = snapshot_write_12.commit();
-
-    assert!(!result_write_12.is_ok()); // Fail
+    {
+        // Try the same, with the snapshot opened in the past
+        let snapshot_write_at_0 = storage.open_snapshot_write_at(watermark_after_initial_write).unwrap();
+        snapshot_write_at_0.get_required(key_1.clone()).unwrap();
+        snapshot_write_at_0.put_val(key_2.clone().into_owned_array(), ByteArray::copy(&VALUE_2)).unwrap();
+        let result_write_at_0 = snapshot_write_at_0.commit();
+        assert!(result_write_at_0.is_err()); // Fails
+    }
 }
