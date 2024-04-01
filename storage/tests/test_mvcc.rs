@@ -24,7 +24,6 @@ This file should comprise a set of low-level tests relating to MVCC.
 
 3. We should be able to open a previous snapshot in write, and the commit should fail if a subsequent commit has a conflicting operation
    Note: edge case is when the commit records have been purged from memory. Isolation manager should be able to retrieve them again from the Durability service on demand.
-    // Has all of this been implemented? It's a bit unproductive to test without an implementation.
    Note: let's write this test first, and leave it red. This will induce a refactor of the Timeline - which is the next task.
 
 

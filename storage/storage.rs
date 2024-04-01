@@ -729,7 +729,6 @@ pub mod tests {
         snapshot_read_02.close_resources();
     }
 
-
     #[test]
     fn test_writing_same_key_conflicts() {
         // TODO: Why does this exist if we have separate isolation tests?
@@ -757,6 +756,7 @@ pub mod tests {
         let snapshot_write_22 = storage.open_snapshot_write();
         snapshot_write_12.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_1)).unwrap();
         snapshot_write_22.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_2)).unwrap();
+
         let result_write_22 = snapshot_write_22.commit();
         assert!(result_write_22.is_ok());
         let result_write_12 = snapshot_write_12.commit();
