@@ -161,7 +161,7 @@ fn test_conflicting_update_fails() {
         let result_write_11 = snapshot_write_11.commit();
         assert!(result_write_11.is_ok());
         let result_write_21 = snapshot_write_21.commit();
-        assert!(result_write_21.is_err()); // Fails
+        assert!(result_write_21.is_err());
     }
 
     {
@@ -170,6 +170,6 @@ fn test_conflicting_update_fails() {
         snapshot_write_at_0.get_required(key_1.clone()).unwrap();
         snapshot_write_at_0.put_val(key_2.clone().into_owned_array(), ByteArray::copy(&VALUE_2)).unwrap();
         let result_write_at_0 = snapshot_write_at_0.commit();
-        assert!(result_write_at_0.is_err()); // Fails
+        assert!(result_write_at_0.is_err());
     }
 }

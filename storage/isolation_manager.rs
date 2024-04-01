@@ -101,20 +101,16 @@ impl IsolationManager {
         // TODO: decide if we should block until all predecessors finish, allow out of order (non-Calvin model/traditional model)
         //       We could also validate against all predecessors even if they are validating and fail eagerly.
 
-        let mut predecessor_number = commit_sequence_number.number() - 1;
-        let mut predecessor_sequence_number = SequenceNumber::new(predecessor_number);
-        let Some(mut predecessor_window) = self.timeline.try_get_window(&predecessor_sequence_number) else {
+        let mut at = SequenceNumber::new(commit_record.open_sequence_number.number() + 1);
+        let Some(mut predecessor_window) = self.timeline.try_get_window(&at) else {
             return Ok(()); // nothing to validate
         };
-
-        let last_predecessor_number = commit_record.open_sequence_number.number() + 1;
-        while predecessor_number <= last_predecessor_number {
-            if !predecessor_window.contains(&predecessor_sequence_number) {
-                predecessor_window = self.timeline.get_window(&predecessor_sequence_number);
+        while at < *commit_sequence_number {
+            if !predecessor_window.contains(&at) {
+                predecessor_window = self.timeline.get_window(&at);
             }
-            self.validate_concurrent(commit_record, &predecessor_sequence_number, &predecessor_window)?;
-            predecessor_number += 1;
-            predecessor_sequence_number = SequenceNumber::new(predecessor_number);
+            self.validate_concurrent(commit_record, &at, &predecessor_window)?;
+            at = SequenceNumber::new(at.number() + 1);
         }
         Ok(())
     }
