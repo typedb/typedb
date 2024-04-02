@@ -203,8 +203,7 @@ fn write_entity_attributes(
         let name_type = type_manager.get_attribute_type(NAME_LABEL.get().unwrap()).unwrap().unwrap();
         let person = thing_manager.create_entity(person_type).unwrap();
         let age = thing_manager.create_attribute(age_type, Value::Long(100)).unwrap();
-        let name =
-            thing_manager.create_attribute(name_type, Value::String(String::from("abc").into_boxed_str())).unwrap();
+        let name = thing_manager.create_attribute(name_type, Value::String("abc".into())).unwrap();
         person.set_has(&thing_manager, &age).unwrap();
         person.set_has(&thing_manager, &name).unwrap();
     }
