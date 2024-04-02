@@ -8,10 +8,7 @@ use primitive::prefix_range::PrefixRange;
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::{
-        iterator::KeyspaceRangeIterator,
-        Keyspace, KeyspaceError,
-    },
+    keyspace::{iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError},
 };
 
 pub(crate) struct MVCCRangeIterator<'storage, const PS: usize> {
@@ -120,8 +117,7 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
             self.advance();
         }
         while matches!(&self.state, State::Init | State::ItemUsed) {
-            let peek = self.iterator.peek();
-            match peek {
+            match self.iterator.peek() {
                 None => self.state = State::Done,
                 Some(Ok((key, _))) => {
                     let mvcc_key = MVCCKey::wrap_slice(key);
@@ -145,7 +141,7 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
     fn advance(&mut self) {
         match self.iterator.next() {
             None => self.state = State::Done,
-            Some(Ok(_)) => {}
+            Some(Ok(_)) => (),
             Some(Err(error)) => self.state = State::Error(Arc::new(error)),
         }
     }

@@ -23,7 +23,7 @@ use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
-    isolation_manager::{IsolationError, IsolationErrorKind},
+    isolation_manager::{IsolationError, IsolationConflict},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::SnapshotError,
     KeyspaceSet, MVCCStorage,
@@ -103,7 +103,6 @@ fn commits_isolated() {
 /// 2. S1 - get_required(K1)
 /// 3. S2 - delete(K1)
 ///
-///
 #[test]
 fn g0_update_conflicts_fail() {
     init_logging();
@@ -113,10 +112,7 @@ fn g0_update_conflicts_fail() {
     let snapshot_1 = storage.open_snapshot_write();
     let snapshot_2 = storage.open_snapshot_write();
 
-    let key_1: StorageKey<'_, BUFFER_KEY_INLINE> =
-        StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
-    let _key_2: StorageKey<'_, BUFFER_KEY_INLINE> =
-        StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_2)));
+    let key_1 = StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
 
     snapshot_1.get_required(key_1.clone()).unwrap();
 
@@ -133,7 +129,7 @@ fn g0_update_conflicts_fail() {
                 SnapshotError::Commit {
                     source: MVCCStorageError {
                         kind: MVCCStorageErrorKind::IsolationError {
-                            source: IsolationError { kind: IsolationErrorKind::RequiredDeleteViolation },
+                            source: IsolationError::Conflict(IsolationConflict::RequiredDelete),
                             ..
                         },
                         ..
@@ -143,7 +139,7 @@ fn g0_update_conflicts_fail() {
                 ..
             )
         ),
-        "{}",
-        result_2.unwrap_err()
+        "{:?}",
+        result_2
     );
 }

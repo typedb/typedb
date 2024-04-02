@@ -213,7 +213,7 @@ impl<D> MVCCStorage<D> {
         for record in records {
             match record {
                 Ok((commit_sequence_number, commit_record)) => {
-                    self.write_commit_record(commit_sequence_number, commit_record).unwrap();
+                    self.try_write_commit_record(commit_sequence_number, commit_record).unwrap();
                 }
                 Err(error) => return Err(DurabilityServiceRead { source: error }),
             }
@@ -265,8 +265,27 @@ impl<D> MVCCStorage<D> {
     where
         D: DurabilityService,
     {
-
         let commit_record = snapshot.into_commit_record();
+
+        // 0. Assign whether the put operations need to be performed given storage contents at open
+        //    sequence number
+        for buffer in commit_record.buffers() {
+            let writes = buffer.map().write().unwrap();
+            let puts = writes.iter().filter_map(|(key, write)| match write {
+                Write::Put { value, reinsert } => Some((key, value, reinsert)),
+                _ => None,
+            });
+            for (key, value, reinsert) in puts {
+                let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, ByteReference::new(key.bytes()));
+                let existing_stored: Option<Option<ByteArray<BUFFER_VALUE_INLINE>>> = self
+                    .get(wrapped, commit_record.open_sequence_number(), |reference| {
+                        // Only copy if the value is the same
+                        (reference.bytes() == value.bytes()).then(|| ByteArray::from(reference))
+                    })
+                    .unwrap(); // TODO
+                reinsert.store(existing_stored.flatten().is_none(), Ordering::Release);
+            }
+        }
 
         //  1. make durable and get sequence number
         let commit_sequence_number =
@@ -275,10 +294,10 @@ impl<D> MVCCStorage<D> {
                 kind: MVCCStorageErrorKind::DurabilityError { source: err },
             })?;
 
-        self.write_commit_record(commit_sequence_number, commit_record)
+        self.try_write_commit_record(commit_sequence_number, commit_record)
     }
 
-    fn write_commit_record(
+    fn try_write_commit_record(
         &self,
         commit_sequence_number: SequenceNumber,
         commit_record: CommitRecord,
@@ -290,7 +309,7 @@ impl<D> MVCCStorage<D> {
         })?;
 
         //  3. write to kv-storage
-        let write_batches = self.isolation_manager.apply_to_commit_record(&commit_sequence_number, |record| {
+        let write_batches = self.isolation_manager.apply_to_commit_record(commit_sequence_number, |record| {
             self.to_write_batches(commit_sequence_number, record.buffers())
         });
 
@@ -346,7 +365,7 @@ impl<D> MVCCStorage<D> {
         write_batches
     }
 
-    pub fn closed_snapshot_write(&self, open_sequence_number: &SequenceNumber) {
+    pub fn closed_snapshot_write(&self, open_sequence_number: SequenceNumber) {
         self.isolation_manager.closed(open_sequence_number)
     }
 

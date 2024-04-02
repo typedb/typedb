@@ -67,6 +67,7 @@ rust_test(
         "//common/logger",
         "//common/primitive",
         "//storage",
+        "//storage/durability",
         "//resource",
         "//util/test:test_utils",
         "@crates//:rand",

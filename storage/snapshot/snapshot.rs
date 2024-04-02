@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{collections::btree_map::Entry, error::Error, fmt, sync::Arc};
+use std::{error::Error, fmt, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use durability::{DurabilityService, SequenceNumber};
@@ -28,7 +28,6 @@ use crate::{
     isolation_manager::CommitRecord,
     iterator::MVCCReadError,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    snapshot::write::Write,
     MVCCStorage,
 };
 
@@ -137,7 +136,7 @@ pub struct WriteSnapshot<'storage, D> {
 
 impl<'storage, D> WriteSnapshot<'storage, D> {
     pub(crate) fn new(storage: &'storage MVCCStorage<D>, open_sequence_number: SequenceNumber) -> Self {
-        storage.isolation_manager.opened(&open_sequence_number);
+        storage.isolation_manager.opened(open_sequence_number);
         WriteSnapshot { storage, buffers: KeyspaceBuffers::new(), open_sequence_number }
     }
 
@@ -251,8 +250,8 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
         CommitRecord::new(self.buffers, self.open_sequence_number)
     }
 
-    pub(crate) fn open_sequence_number(&self) -> &SequenceNumber {
-        &self.open_sequence_number
+    pub(crate) fn open_sequence_number(&self) -> SequenceNumber {
+        self.open_sequence_number
     }
 
     pub fn close_resources(&self) {

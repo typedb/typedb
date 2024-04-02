@@ -19,8 +19,8 @@ use std::{
     borrow::Borrow,
     cmp::Ordering,
     collections::{BTreeMap, Bound},
-    fmt, mem,
-    mem::MaybeUninit,
+    fmt,
+    mem::{transmute, MaybeUninit},
     sync::{Arc, RwLock},
 };
 
@@ -64,6 +64,14 @@ impl KeyspaceBuffers {
     }
 }
 
+impl<'a> IntoIterator for &'a KeyspaceBuffers {
+    type Item = &'a KeyspaceBuffer;
+    type IntoIter = <&'a [KeyspaceBuffer] as IntoIterator>::IntoIter;
+    fn into_iter(self) -> Self::IntoIter {
+        self.buffers.iter()
+    }
+}
+
 // TODO: implement our own alternative to BTreeMap, which
 //       1) allows storing StorageKeyArray's directly, while doing lookup with any StorageKey. Then
 //          we would not need to allocate one buffer per keyspace ahead of time.
@@ -74,7 +82,7 @@ impl KeyspaceBuffers {
 //          might lead us to a RocksDB-like Buffer+Index structure
 #[derive(Debug)]
 pub(crate) struct KeyspaceBuffer {
-    keyspace_id: KeyspaceId,
+    pub(crate) keyspace_id: KeyspaceId,
     buffer: RwLock<BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>>,
 }
 
@@ -331,7 +339,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffers {
                     buffers_init[keyspace_buffer.keyspace_id.0 as usize].write(keyspace_buffer);
                 }
 
-                let buffers = unsafe { mem::transmute(buffers_init) };
+                let buffers = unsafe { transmute(buffers_init) };
                 Ok(KeyspaceBuffers { buffers })
             }
 
