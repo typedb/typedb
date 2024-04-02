@@ -15,13 +15,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use encoding::graph::thing::vertex_object::ObjectVertex;
 use crate::error::ConceptWriteError;
 use crate::thing::attribute::Attribute;
 use crate::thing::entity::Entity;
 use crate::thing::relation::Relation;
 use crate::thing::thing_manager::ThingManager;
 
-enum Object<'a> {
+pub enum Object<'a> {
     Entity(Entity<'a>),
     Relation(Relation<'a>),
 }
@@ -32,6 +33,13 @@ impl<'a> Object<'a> {
         match self {
             Object::Entity(entity) => entity.set_has(thing_manager, attribute),
             Object::Relation(relation) => relation.set_has(thing_manager, attribute),
+        }
+    }
+
+    pub fn vertex(&self) -> ObjectVertex<'_> {
+        match self {
+            Object::Entity(entity) => entity.vertex(),
+            Object::Relation(relation) => relation.vertex(),
         }
     }
 

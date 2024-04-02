@@ -61,6 +61,7 @@ use crate::type_::{
     role_type::{RoleType, RoleTypeAnnotation},
     TypeAPI,
 };
+use crate::type_::annotation::AnnotationDuplicate;
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -546,6 +547,7 @@ impl TypeCache {
                     // WARNING: do _not_ remove the explicit enumeration, as this will help us catch when future annotations are added
                     match property.infix() {
                         Infix::PropertyAnnotationAbstract => Some(Annotation::Abstract(AnnotationAbstract::new())),
+                        Infix::PropertyAnnotationDuplicate => Some(Annotation::Duplicate(AnnotationDuplicate::new())),
                         | Infix::PropertyLabel | Infix::PropertyValueType => None,
                     }
                 }

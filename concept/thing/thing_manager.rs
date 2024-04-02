@@ -29,6 +29,7 @@ use encoding::{AsBytes, graph::{
 }, Keyable, layout::prefix::{Prefix, PrefixID}, value::{long::Long, string::StringBytes, value_type::ValueType}};
 use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse};
 use encoding::graph::thing::vertex_generator::LongAttributeID;
+use encoding::graph::type_::vertex::TypeVertex;
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::Snapshot;
@@ -56,6 +57,10 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         type_manager: Rc<TypeManager<'txn, 'storage, D>>,
     ) -> Self {
         ThingManager { snapshot, vertex_generator, type_manager }
+    }
+
+    pub(crate) fn type_manager(&self) -> &TypeManager<'txn, 'storage, D> {
+        self.type_manager.as_ref()
     }
 
     pub fn create_entity(&self, entity_type: EntityType<'static>) -> Result<Entity<'_>, ConceptWriteError> {
@@ -170,14 +175,14 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
     }
 
     // TODO: this should either accept Concept's and return Concepts, or consume Vertex and return Vertex
-    pub(crate) fn get_storage_has<'this, 'a>(
+    pub(crate) fn storage_get_has<'this, 'a>(
         &'this self, owner: ObjectVertex<'a>,
     ) -> AttributeIterator<'this, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         let prefix = ThingEdgeHas::prefix_from_object(owner);
         AttributeIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
     }
 
-    pub(crate) fn set_storage_has(
+    pub(crate) fn storage_set_has(
         &self,
         owner: ObjectVertex<'_>,
         attribute: AttributeVertex<'_>,
@@ -196,4 +201,32 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         }
         Ok(())
     }
+
+    pub fn storage_set_role_player(
+        &self,
+        relation: ObjectVertex<'_>,
+        player: ObjectVertex<'_>,
+        role_type: TypeVertex<'_>,
+    ) -> Result<(), ConceptWriteError> {
+        todo!()
+    }
+
+    pub fn storage_increment_role_player(
+        &self,
+        relation: ObjectVertex<'_>,
+        player: ObjectVertex<'_>,
+        role_type: TypeVertex<'_>,
+    ) -> Result<usize, ConceptWriteError> {
+        todo!()
+    }
+
+    pub fn storage_relation_index_new_player(
+        &self,
+        relation: ObjectVertex<'_>,
+        player: ObjectVertex<'_>,
+        role_type: TypeVertex<'_>,
+    ) -> Result<(), ConceptWriteError> {
+        todo!()
+    }
+
 }

@@ -218,6 +218,7 @@ impl From<Annotation> for EntityTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Abstract(annotation) => EntityTypeAnnotation::Abstract(annotation),
+            Annotation::Duplicate(_) => unreachable!("Duplicate annotation not available for Entity type."),
         }
     }
 }

@@ -42,4 +42,8 @@ impl<'txn, 'storage: 'txn, D> TransactionWrite<'txn, 'storage, D> {
     pub fn type_manager(&self) -> &TypeManager<'txn, 'storage, D> {
         &self.type_manager
     }
+
+    fn commit(self) {
+        // 1. validate cardinality constraints on modified relations
+    }
 }

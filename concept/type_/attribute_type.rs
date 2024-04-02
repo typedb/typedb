@@ -169,16 +169,7 @@ impl From<Annotation> for AttributeTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Abstract(annotation) => AttributeTypeAnnotation::Abstract(annotation),
+            Annotation::Duplicate(_) => unreachable!("Duplicate annotation not ")
         }
     }
 }
-//
-// impl<'a> IIDAPI<'a> for AttributeType<'a> {
-//     fn iid(&'a self) -> ByteReference<'a> {
-//         self.vertex.bytes()
-//     }
-// }
-//
-// impl<'a> OwnedAPI<'a> for AttributeType<'a> {
-//
-// }

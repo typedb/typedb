@@ -37,6 +37,7 @@ pub enum Infix {
     PropertyLabel,
     PropertyValueType,
     PropertyAnnotationAbstract,
+    PropertyAnnotationDuplicate,
 }
 
 macro_rules! infix_functions {
@@ -67,6 +68,7 @@ impl Infix {
     infix_functions!(
         PropertyLabel => [0];
         PropertyValueType => [1];
-        PropertyAnnotationAbstract => [20]
+        PropertyAnnotationAbstract => [20];
+        PropertyAnnotationDuplicate => [25]
     );
 }

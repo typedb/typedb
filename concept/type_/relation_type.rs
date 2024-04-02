@@ -260,15 +260,10 @@ impl From<Annotation> for RelationTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Abstract(annotation) => RelationTypeAnnotation::Abstract(annotation),
+            Annotation::Duplicate(_) => unreachable!("Annotation not available for Relation type."),
         }
     }
 }
-
-// impl<'a> IIDAPI<'a> for RelationType<'a> {
-//     fn iid(&'a self) -> ByteReference<'a> {
-//         self.vertex.bytes()
-//     }
-// }
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_to_relation_type(storage_key_ref: StorageKeyReference<'_>) -> RelationType<'_> {

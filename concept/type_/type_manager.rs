@@ -45,6 +45,7 @@ use encoding::{
     },
     AsBytes, Keyable,
 };
+use encoding::graph::type_::property::build_property_type_annotation_duplicate;
 use primitive::{maybe_owns::MaybeOwns, prefix_range::PrefixRange};
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{snapshot::Snapshot, MVCCStorage};
@@ -65,6 +66,7 @@ use crate::{
         TypeAPI,
     },
 };
+use crate::type_::annotation::AnnotationDuplicate;
 
 pub struct TypeManager<'txn, 'storage: 'txn, D> {
     snapshot: Rc<Snapshot<'storage, D>>,
@@ -738,6 +740,38 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     pub(crate) fn delete_storage_annotation_abstract(&self, vertex: TypeVertex<'static>) {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let annotation_property = build_property_type_annotation_abstract(vertex);
+            write_snapshot.delete(annotation_property.into_storage_key().into_owned_array());
+        } else {
+            panic!("Illegal state: deleting annotation requires write snapshot.")
+        }
+    }
+
+    fn get_storage_vertex_annotation_duplicate(
+        &self,
+        vertex: TypeVertex<'static>,
+    ) -> Result<Option<AnnotationDuplicate>, ConceptReadError> {
+        self.snapshot
+            .get_mapped(build_property_type_annotation_duplicate(vertex).into_storage_key().as_reference(), |_bytes| {
+                AnnotationDuplicate::new()
+            })
+            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
+    }
+
+    pub(crate) fn set_storage_annotation_duplicate(&self, vertex: TypeVertex<'static>) -> Result<(), ConceptWriteError> {
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            let annotation_property = build_property_type_annotation_duplicate(vertex);
+            write_snapshot
+                .put(annotation_property.into_storage_key().into_owned_array())
+                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+        } else {
+            panic!("Illegal state: setting annotation requires write snapshot.")
+        }
+        Ok(())
+    }
+
+    pub(crate) fn delete_storage_annotation_duplicate(&self, vertex: TypeVertex<'static>) {
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            let annotation_property = build_property_type_annotation_duplicate(vertex);
             write_snapshot.delete(annotation_property.into_storage_key().into_owned_array());
         } else {
             panic!("Illegal state: deleting annotation requires write snapshot.")

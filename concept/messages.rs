@@ -15,38 +15,3 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum Annotation {
-    Abstract(AnnotationAbstract),
-    Duplicate(AnnotationDuplicate),
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct AnnotationAbstract {}
-
-impl Default for AnnotationAbstract {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl AnnotationAbstract {
-    pub fn new() -> Self {
-        AnnotationAbstract {}
-    }
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct AnnotationDuplicate {}
-
-impl Default for AnnotationDuplicate {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl AnnotationDuplicate {
-    pub fn new() -> Self {
-        AnnotationDuplicate {}
-    }
-}

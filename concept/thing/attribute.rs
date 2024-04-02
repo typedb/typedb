@@ -17,7 +17,9 @@
 use std::cmp::Ordering;
 
 use bytes::Bytes;
-use encoding::{graph::thing::vertex_attribute::AttributeVertex, value::value_type::ValueType};
+use encoding::{AsBytes, graph::thing::vertex_attribute::AttributeVertex, value::value_type::ValueType};
+use encoding::graph::type_::vertex::{build_vertex_attribute_type, TypeVertex};
+use encoding::graph::Typed;
 use storage::{
     key_value::StorageKeyReference,
     snapshot::{iterator::SnapshotRangeIterator, SnapshotError},
@@ -29,6 +31,7 @@ use crate::{
     ConceptAPI,
     error::{ConceptError, ConceptErrorKind, ConceptReadError}, thing::{thing_manager::ThingManager, value::Value},
 };
+use crate::type_::attribute_type::AttributeType;
 
 #[derive(Clone, Debug)]
 pub struct Attribute<'a> {
@@ -45,8 +48,21 @@ impl<'a> Attribute<'a> {
         self.vertex.value_type()
     }
 
+    pub fn type_(&self) -> AttributeType<'static> {
+        AttributeType::new(build_vertex_attribute_type(self.vertex.type_id()))
+    }
+
+    pub fn iid(&self) -> ByteReference<'_> {
+        self.vertex.bytes()
+    }
+
     pub fn value<D>(&self, thing_manager: &ThingManager<'_, '_, D>) -> Result<Value, ConceptReadError> {
         thing_manager.get_attribute_value(self)
+    }
+
+    pub fn get_owners<'m, D>(&self, thing_manager: &'m ThingManager<'_, '_, D>)  {
+        // -> ObjectIterator<'m, 1>
+        todo!()
     }
 
     pub(crate) fn vertex<'this: 'a>(&'this self) -> AttributeVertex<'this> {
@@ -56,7 +72,6 @@ impl<'a> Attribute<'a> {
     fn into_owned(self) -> Attribute<'static> {
         Attribute::new(self.vertex.into_owned())
     }
-
 }
 
 impl<'a> ConceptAPI<'a> for Attribute<'a> {}

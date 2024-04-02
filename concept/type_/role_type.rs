@@ -42,6 +42,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::annotation::AnnotationDuplicate;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -126,6 +127,9 @@ impl<'a> RoleType<'a> {
             RoleTypeAnnotation::Abstract(_) => {
                 type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
             }
+            RoleTypeAnnotation::Duplicate(_) => {
+                type_manager.set_storage_annotation_duplicate(self.vertex().clone().into_owned())
+            }
         }
     }
 
@@ -133,6 +137,9 @@ impl<'a> RoleType<'a> {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
                 type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
+            }
+            RoleTypeAnnotation::Duplicate(_) => {
+                type_manager.delete_storage_annotation_duplicate(self.vertex().clone().into_owned())
             }
         }
     }
@@ -156,12 +163,14 @@ impl<'a> RoleType<'a> {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum RoleTypeAnnotation {
     Abstract(AnnotationAbstract),
+    Duplicate(AnnotationDuplicate),
 }
 
 impl From<Annotation> for RoleTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Abstract(annotation) => RoleTypeAnnotation::Abstract(annotation),
+            Annotation::Duplicate(annotation) => RoleTypeAnnotation::Duplicate(annotation),
         }
     }
 }

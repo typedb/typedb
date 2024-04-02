@@ -24,35 +24,7 @@ pub mod error;
 pub mod iterator;
 pub mod thing;
 pub mod type_;
+mod messages;
 
 pub trait ConceptAPI<'a>: Eq + PartialEq {}
 
-// ---- IID implementations ---
-
-trait IIDAPI<'a> {
-    fn iid(&'a self) -> ByteReference<'a>;
-}
-
-// --- Annotations ---
-
-trait Annotatable<'a>: IIDAPI<'a> {
-    fn set_annotation(&self) {
-        // set annotation on this structure
-        todo!()
-    }
-
-    fn get_annotations(&self) {
-        // get "effective" annotations
-        todo!()
-    }
-
-    fn get_declared_annotations(&self) {
-        // get annotations declared
-        todo!()
-    }
-
-    fn get_inherited_annotations(&self) {
-        // get annotations inherited
-        todo!()
-    }
-}
