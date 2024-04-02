@@ -126,12 +126,12 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
                 Some(Ok((key, _))) => {
                     let mvcc_key = MVCCKey::wrap_slice(key);
                     let is_visible = mvcc_key.is_visible_to(self.open_sequence_number)
-                        && !self.last_visible_key.as_ref().is_some_and(|key| key == mvcc_key.bytes());
+                        && !self.last_visible_key.as_ref().is_some_and(|key| key == mvcc_key.key());
                     if is_visible {
                         self.last_visible_key = Some(ByteArray::copy(mvcc_key.key()));
                         match mvcc_key.operation() {
                             StorageOperation::Insert => self.state = State::ItemReady,
-                            StorageOperation::Delete => {}
+                            StorageOperation::Delete => self.advance(),
                         }
                     } else {
                         self.advance()
