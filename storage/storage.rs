@@ -244,7 +244,7 @@ impl<D> MVCCStorage<D> {
         WriteSnapshot::new(self, open_sequence_number)
     }
 
-    pub fn open_snapshot_write_at(&self, sequence_number: SequenceNumber) -> Result<WriteSnapshot<'_, D>, MVCCStorageError> {
+    pub fn open_snapshot_write_at(&self, sequence_number: SequenceNumber) -> Result<WriteSnapshot<'_, D>, WriteSnapshotOpenError> {
         // TODO: Support waiting for watermark to catch up to sequence number when we support causal reading.
         assert!(sequence_number <= self.read_watermark());
         Ok(WriteSnapshot::new(self, sequence_number))
@@ -255,7 +255,7 @@ impl<D> MVCCStorage<D> {
         ReadSnapshot::new(self, open_sequence_number)
     }
 
-    pub fn open_snapshot_read_at(&self, sequence_number: SequenceNumber) -> Result<ReadSnapshot<'_, D>, MVCCStorageError> {
+    pub fn open_snapshot_read_at(&self, sequence_number: SequenceNumber) -> Result<ReadSnapshot<'_, D>, ReadSnapshotOpenError> {
         // TODO: Support waiting for watermark to catch up to sequence number when we support causal reading.
         assert!(sequence_number <= self.read_watermark());
         Ok(ReadSnapshot::new(self, sequence_number))
@@ -529,6 +529,36 @@ impl<D> MVCCStorage<D> {
     ) -> KeyspaceRangeIterator<'this, PREFIX_INLINE> {
         debug_assert!(!range.start().bytes().is_empty());
         self.get_keyspace(range.start().keyspace_id()).iterate_range(range.map(|k| k.into_byte_array_or_ref()))
+    }
+}
+
+#[derive(Debug)]
+pub enum ReadSnapshotOpenError {}
+
+impl fmt::Display for ReadSnapshotOpenError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {}
+    }
+}
+
+impl Error for ReadSnapshotOpenError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match *self {}
+    }
+}
+
+#[derive(Debug)]
+pub enum WriteSnapshotOpenError {}
+
+impl fmt::Display for WriteSnapshotOpenError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {}
+    }
+}
+
+impl Error for WriteSnapshotOpenError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match *self {}
     }
 }
 

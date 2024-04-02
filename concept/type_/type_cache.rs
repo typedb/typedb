@@ -15,7 +15,11 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    error::Error,
+    fmt,
+};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use durability::SequenceNumber;
@@ -47,7 +51,7 @@ use encoding::{
 };
 use primitive::prefix_range::PrefixRange;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_VALUE_INLINE};
-use storage::{snapshot::ReadSnapshot, MVCCStorage};
+use storage::{snapshot::ReadSnapshot, MVCCStorage, ReadSnapshotOpenError};
 
 use crate::type_::{
     annotation::{Annotation, AnnotationAbstract, AnnotationDuplicate},
@@ -149,11 +153,13 @@ impl TypeCache {
     pub fn new<D>(
         storage: &MVCCStorage<D>,
         open_sequence_number: SequenceNumber,
-    ) -> Result<Self, Box<dyn std::error::Error>> /* FIXME bespoke error type */ {
+    ) -> Result<Self, TypeCacheCreateError> {
+        use TypeCacheCreateError::SnapshotOpen;
         // note: since we will parse out many heterogenous properties/edges from the schema, we will scan once into a vector,
         //       then go through it again to pull out the type information.
 
-        let snapshot = storage.open_snapshot_read_at(open_sequence_number)?;
+        let snapshot =
+            storage.open_snapshot_read_at(open_sequence_number).map_err(|error| SnapshotOpen { source: error })?;
         let vertex_properties = snapshot
             .iterate_range(PrefixRange::new_within(TypeVertexProperty::build_prefix()))
             .collect_cloned_bmap(|key, value| {
@@ -724,5 +730,26 @@ impl TypeCache {
         debug_assert_eq!(type_vertex.prefix(), Prefix::VertexAttributeType);
         let as_u16 = Typed::type_id(&type_vertex).as_u16();
         attribute_type_caches[as_u16 as usize].as_ref()
+    }
+}
+
+#[derive(Debug)]
+pub enum TypeCacheCreateError {
+    SnapshotOpen { source: ReadSnapshotOpenError },
+}
+
+impl fmt::Display for TypeCacheCreateError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::SnapshotOpen { .. } => todo!(),
+        }
+    }
+}
+
+impl Error for TypeCacheCreateError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::SnapshotOpen { source } => Some(source),
+        }
     }
 }
