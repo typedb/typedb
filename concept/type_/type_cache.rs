@@ -216,8 +216,7 @@ impl TypeCache {
             })
             .unwrap();
         let max_entity_id = entities.iter().map(|e| Typed::type_id(e.vertex()).as_u16()).max().unwrap();
-        let mut caches: Box<[Option<EntityTypeCache>]> =
-            (0..=max_entity_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let mut caches = (0..=max_entity_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexEntityType, EntityType::new);
         let owns = Self::fetch_owns(snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)));
         let plays = Self::fetch_plays(snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)));
@@ -278,8 +277,7 @@ impl TypeCache {
             })
             .unwrap();
         let max_relation_id = relations.iter().map(|r| Typed::type_id(r.vertex()).as_u16()).max().unwrap();
-        let mut caches: Box<[Option<RelationTypeCache>]> =
-            (0..=max_relation_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let mut caches = (0..=max_relation_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexRelationType, RelationType::new);
         let relates = snapshot
             .iterate_range(PrefixRange::new_within(build_edge_relates_prefix_prefix(Prefix::VertexRelationType)))
@@ -355,8 +353,7 @@ impl TypeCache {
             })
             .unwrap();
         let max_role_id = roles.iter().map(|r| Typed::type_id(r.vertex()).as_u16()).max().unwrap();
-        let mut caches: Box<[Option<RoleTypeCache>]> =
-            (0..=max_role_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let mut caches = (0..=max_role_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexRoleType, RoleType::new);
         let relates = snapshot
             .iterate_range(PrefixRange::new_within(build_edge_relates_reverse_prefix_prefix(Prefix::VertexRoleType)))
@@ -421,8 +418,7 @@ impl TypeCache {
             })
             .unwrap();
         let max_attribute_id = attributes.iter().map(|a| Typed::type_id(a.vertex()).as_u16()).max().unwrap();
-        let mut caches: Box<[Option<AttributeTypeCache>]> =
-            (0..=max_attribute_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexAttributeType, AttributeType::new);
         for attribute in attributes {
             let label = Self::read_type_label(vertex_properties, attribute.vertex().clone());
