@@ -29,7 +29,8 @@ use encoding::{
         },
         index::LabelToTypeVertexIndex,
         property::{
-            build_property_type_annotation_abstract, build_property_type_label, build_property_type_value_type,
+            build_property_type_annotation_abstract, build_property_type_annotation_duplicate,
+            build_property_type_label, build_property_type_value_type,
         },
         vertex::{
             new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type,
@@ -45,7 +46,6 @@ use encoding::{
     },
     AsBytes, Keyable,
 };
-use encoding::graph::type_::property::build_property_type_annotation_duplicate;
 use primitive::{maybe_owns::MaybeOwns, prefix_range::PrefixRange};
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{snapshot::Snapshot, MVCCStorage};
@@ -53,7 +53,7 @@ use storage::{snapshot::Snapshot, MVCCStorage};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::AnnotationAbstract,
+        annotation::{AnnotationAbstract, AnnotationDuplicate},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::{EntityType, EntityTypeAnnotation},
         object_type::ObjectType,
@@ -66,7 +66,6 @@ use crate::{
         TypeAPI,
     },
 };
-use crate::type_::annotation::AnnotationDuplicate;
 
 pub struct TypeManager<'txn, 'storage: 'txn, D> {
     snapshot: Rc<Snapshot<'storage, D>>,
@@ -721,12 +720,13 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
-    pub(crate) fn set_storage_annotation_duplicate(&self, vertex: TypeVertex<'static>) -> Result<(), ConceptWriteError> {
+    pub(crate) fn set_storage_annotation_duplicate(
+        &self,
+        vertex: TypeVertex<'static>,
+    ) -> Result<(), ConceptWriteError> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let annotation_property = build_property_type_annotation_duplicate(vertex);
-            write_snapshot
-                .put(annotation_property.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put(annotation_property.into_storage_key().into_owned_array());
         } else {
             panic!("Illegal state: setting annotation requires write snapshot.")
         }

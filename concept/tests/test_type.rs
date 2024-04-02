@@ -112,7 +112,7 @@ fn entity_usage() {
     {
         // With cache, committed
         let snapshot: Rc<Snapshot<'_, _>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
-        let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()));
+        let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()).unwrap());
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
 
         let root_entity = type_manager.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap();
@@ -222,7 +222,7 @@ fn role_usage() {
     {
         // With cache, committed
         let snapshot: Rc<Snapshot<'_, _>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
-        let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()));
+        let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()).unwrap());
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
 
         // --- friendship sub relation, relates friend ---

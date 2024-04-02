@@ -17,15 +17,15 @@
 
 #![deny(unused_must_use)]
 
-use std::rc::Rc;
-use std::sync::{Arc, OnceLock};
+use std::{
+    rc::Rc,
+    sync::{Arc, OnceLock},
+};
 
 use concept::{
     thing::{thing_manager::ThingManager, value::Value},
-    type_::type_manager::TypeManager,
+    type_::{type_cache::TypeCache, type_manager::TypeManager, OwnerAPI},
 };
-use concept::type_::OwnerAPI;
-use concept::type_::type_cache::TypeCache;
 use durability::wal::WAL;
 use encoding::{
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
@@ -177,7 +177,7 @@ fn has() {
         assert_eq!(attributes.len(), 2);
 
         let people = thing_manager.get_entities().collect_cloned();
-        let person_1 = people.get(0).unwrap();
+        let person_1 = people.first().unwrap();
         let retrieved_attributes = person_1.get_has(&thing_manager).collect_cloned();
         assert_eq!(retrieved_attributes.len(), 2);
     }
@@ -188,7 +188,7 @@ static NAME_LABEL: OnceLock<Label> = OnceLock::new();
 static PERSON_LABEL: OnceLock<Label> = OnceLock::new();
 
 fn write_entity_attributes(
-    mut storage: &MVCCStorage<WAL>,
+    storage: &MVCCStorage<WAL>,
     type_vertex_generator: &TypeVertexGenerator,
     thing_vertex_generator: &ThingVertexGenerator,
     schema_cache: Arc<TypeCache>,
@@ -199,11 +199,12 @@ fn write_entity_attributes(
         let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator, type_manager.clone());
 
         let person_type = type_manager.get_entity_type(PERSON_LABEL.get().unwrap()).unwrap().unwrap();
-        let age_type = type_manager.get_attribute_type(&AGE_LABEL.get().unwrap()).unwrap().unwrap();
-        let name_type = type_manager.get_attribute_type(&NAME_LABEL.get().unwrap()).unwrap().unwrap();
+        let age_type = type_manager.get_attribute_type(AGE_LABEL.get().unwrap()).unwrap().unwrap();
+        let name_type = type_manager.get_attribute_type(NAME_LABEL.get().unwrap()).unwrap().unwrap();
         let person = thing_manager.create_entity(person_type).unwrap();
         let age = thing_manager.create_attribute(age_type, Value::Long(100)).unwrap();
-        let name = thing_manager.create_attribute(name_type, Value::String(String::from("abc").into_boxed_str())).unwrap();
+        let name =
+            thing_manager.create_attribute(name_type, Value::String(String::from("abc").into_boxed_str())).unwrap();
         person.set_has(&thing_manager, &age).unwrap();
         person.set_has(&thing_manager, &name).unwrap();
     }
@@ -215,7 +216,7 @@ fn write_entity_attributes(
 fn create_schema(storage: &MVCCStorage<WAL>, type_vertex_generator: &TypeVertexGenerator) {
     let snapshot: Rc<Snapshot<'_, WAL>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
     {
-        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &type_vertex_generator, None));
+        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), type_vertex_generator, None));
         let age_type = type_manager.create_attribute_type(AGE_LABEL.get().unwrap(), false).unwrap();
         age_type.set_value_type(&type_manager, ValueType::Long).unwrap();
         let name_type = type_manager.create_attribute_type(NAME_LABEL.get().unwrap(), false).unwrap();
@@ -242,7 +243,6 @@ fn criterion_benchmark() {
     TypeManager::initialise_types(&mut storage, &type_vertex_generator).unwrap();
 
     create_schema(&storage, &type_vertex_generator);
-    let schema_cache = Arc::new(TypeCache::new(&storage, storage.read_watermark()));
+    let schema_cache = Arc::new(TypeCache::new(&storage, storage.read_watermark()).unwrap());
     write_entity_attributes(&storage, &type_vertex_generator, &thing_vertex_generator, schema_cache.clone());
 }
-

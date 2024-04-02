@@ -50,7 +50,7 @@ use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::B
 use storage::{snapshot::ReadSnapshot, MVCCStorage};
 
 use crate::type_::{
-    annotation::{Annotation, AnnotationAbstract},
+    annotation::{Annotation, AnnotationAbstract, AnnotationDuplicate},
     attribute_type::{AttributeType, AttributeTypeAnnotation},
     entity_type::{EntityType, EntityTypeAnnotation},
     object_type::ObjectType,
@@ -61,7 +61,6 @@ use crate::type_::{
     role_type::{RoleType, RoleTypeAnnotation},
     TypeAPI,
 };
-use crate::type_::annotation::AnnotationDuplicate;
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -127,8 +126,8 @@ struct RoleTypeCache {
     supertype: Option<RoleType<'static>>,
     supertypes: Vec<RoleType<'static>>, // TODO: benchmark smallvec
 
-                                        // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
-                                        // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 }
 
 #[derive(Debug)]
@@ -142,16 +141,19 @@ struct AttributeTypeCache {
     supertype: Option<AttributeType<'static>>,
     supertypes: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 
-                                             // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
-                                             // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 }
 
 impl TypeCache {
-    pub fn new<D>(storage: &MVCCStorage<D>, open_sequence_number: SequenceNumber) -> Self {
+    pub fn new<D>(
+        storage: &MVCCStorage<D>,
+        open_sequence_number: SequenceNumber,
+    ) -> Result<Self, Box<dyn std::error::Error>> /* FIXME bespoke error type */ {
         // note: since we will parse out many heterogenous properties/edges from the schema, we will scan once into a vector,
         //       then go through it again to pull out the type information.
 
-        let snapshot = storage.open_snapshot_read_at(open_sequence_number);
+        let snapshot = storage.open_snapshot_read_at(open_sequence_number)?;
         let vertex_properties = snapshot
             .iterate_range(PrefixRange::new_within(TypeVertexProperty::build_prefix()))
             .collect_cloned_bmap(|key, value| {
@@ -183,7 +185,7 @@ impl TypeCache {
             .filter_map(|entry| entry.as_ref().map(|cache| (cache.label.clone(), cache.type_.clone())))
             .collect();
 
-        TypeCache {
+        Ok(TypeCache {
             open_sequence_number,
             entity_types: entity_type_caches,
             relation_types: relation_type_caches,
@@ -194,7 +196,7 @@ impl TypeCache {
             relation_types_index_label: relation_type_index_labels,
             role_types_index_label: role_type_index_labels,
             attribute_types_index_label: attribute_type_index_labels,
-        }
+        })
     }
 
     fn create_entity_caches<D>(
@@ -208,17 +210,11 @@ impl TypeCache {
             })
             .unwrap();
         let max_entity_id = entities.iter().map(|e| Typed::type_id(e.vertex()).as_u16()).max().unwrap();
-        let mut caches: Box<[Option<EntityTypeCache>]> = (0..=max_entity_id)
-            .map(|_| None).collect::<Vec<_>>().into_boxed_slice();
-        let supertypes = Self::fetch_supertypes(
-            snapshot, Prefix::VertexEntityType, EntityType::new,
-        );
-        let owns = Self::fetch_owns(
-            snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)),
-        );
-        let plays = Self::fetch_plays(
-            snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)),
-        );
+        let mut caches: Box<[Option<EntityTypeCache>]> =
+            (0..=max_entity_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexEntityType, EntityType::new);
+        let owns = Self::fetch_owns(snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)));
+        let plays = Self::fetch_plays(snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)));
         for entity in entities.into_iter() {
             let object = ObjectType::Entity(entity.clone());
             let label = Self::read_type_label(vertex_properties, entity.vertex().clone());
@@ -276,11 +272,9 @@ impl TypeCache {
             })
             .unwrap();
         let max_relation_id = relations.iter().map(|r| Typed::type_id(r.vertex()).as_u16()).max().unwrap();
-        let mut caches: Box<[Option<RelationTypeCache>]> = (0..=max_relation_id)
-            .map(|_| None).collect::<Vec<_>>().into_boxed_slice();
-        let supertypes = Self::fetch_supertypes(
-            snapshot, Prefix::VertexRelationType, RelationType::new,
-        );
+        let mut caches: Box<[Option<RelationTypeCache>]> =
+            (0..=max_relation_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexRelationType, RelationType::new);
         let relates = snapshot
             .iterate_range(PrefixRange::new_within(build_edge_relates_prefix_prefix(Prefix::VertexRelationType)))
             .collect_cloned_vec(|k, _| {
@@ -288,12 +282,10 @@ impl TypeCache {
                 (RelationType::new(edge.from().into_owned()), RoleType::new(edge.to().into_owned()))
             })
             .unwrap();
-        let owns = Self::fetch_owns(
-            snapshot, Prefix::VertexRelationType, |v| ObjectType::Relation(RelationType::new(v)),
-        );
-        let plays = Self::fetch_plays(
-            snapshot, Prefix::VertexRelationType, |v| ObjectType::Relation(RelationType::new(v)),
-        );
+        let owns =
+            Self::fetch_owns(snapshot, Prefix::VertexRelationType, |v| ObjectType::Relation(RelationType::new(v)));
+        let plays =
+            Self::fetch_plays(snapshot, Prefix::VertexRelationType, |v| ObjectType::Relation(RelationType::new(v)));
         for relation in relations.into_iter() {
             let object = ObjectType::Relation(relation.clone());
             let label = Self::read_type_label(vertex_properties, relation.vertex().clone());
@@ -357,11 +349,9 @@ impl TypeCache {
             })
             .unwrap();
         let max_role_id = roles.iter().map(|r| Typed::type_id(r.vertex()).as_u16()).max().unwrap();
-        let mut caches: Box<[Option<RoleTypeCache>]> = (0..=max_role_id)
-            .map(|_| None).collect::<Vec<_>>().into_boxed_slice();
-        let supertypes = Self::fetch_supertypes(
-            snapshot, Prefix::VertexRoleType, RoleType::new,
-        );
+        let mut caches: Box<[Option<RoleTypeCache>]> =
+            (0..=max_role_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexRoleType, RoleType::new);
         let relates = snapshot
             .iterate_range(PrefixRange::new_within(build_edge_relates_reverse_prefix_prefix(Prefix::VertexRoleType)))
             .collect_cloned_vec(|k, _| {
@@ -378,7 +368,7 @@ impl TypeCache {
                 label,
                 is_root,
                 annotations,
-                relates: relates.iter().filter(|relates| relates.role() == role).next().unwrap().clone(),
+                relates: relates.iter().find(|relates| relates.role() == role).unwrap().clone(),
                 supertype: supertypes.get(&role).cloned(),
                 supertypes: Vec::new(),
             };
@@ -425,11 +415,9 @@ impl TypeCache {
             })
             .unwrap();
         let max_attribute_id = attributes.iter().map(|a| Typed::type_id(a.vertex()).as_u16()).max().unwrap();
-        let mut caches: Box<[Option<AttributeTypeCache>]> = (0..=max_attribute_id).map(|_| None)
-            .collect::<Vec<_>>().into_boxed_slice();
-        let supertypes = Self::fetch_supertypes(
-            snapshot, Prefix::VertexAttributeType, AttributeType::new,
-        );
+        let mut caches: Box<[Option<AttributeTypeCache>]> =
+            (0..=max_attribute_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexAttributeType, AttributeType::new);
         for attribute in attributes {
             let label = Self::read_type_label(vertex_properties, attribute.vertex().clone());
             let is_root = label == Kind::Attribute.root_label();
@@ -474,11 +462,12 @@ impl TypeCache {
         }
     }
 
-    fn fetch_owns<D, F>(
-        snapshot: &ReadSnapshot<'_, D>, prefix: Prefix, from_reader: F,
-    ) -> Vec<Owns<'static>>
-        where F: Fn(TypeVertex<'static>) -> ObjectType<'static> {
-        snapshot.iterate_range(PrefixRange::new_within(build_edge_owns_prefix_prefix(prefix)))
+    fn fetch_owns<D, F>(snapshot: &ReadSnapshot<'_, D>, prefix: Prefix, from_reader: F) -> Vec<Owns<'static>>
+    where
+        F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
+    {
+        snapshot
+            .iterate_range(PrefixRange::new_within(build_edge_owns_prefix_prefix(prefix)))
             .collect_cloned_vec(|key, _| {
                 let edge = new_edge_owns(Bytes::Reference(key.byte_ref()));
                 Owns::new(from_reader(edge.from().into_owned()), AttributeType::new(edge.to().into_owned()))
@@ -486,11 +475,12 @@ impl TypeCache {
             .unwrap()
     }
 
-    fn fetch_plays<D, F>(
-        snapshot: &ReadSnapshot<'_, D>, prefix: Prefix, from_constructor: F,
-    ) -> Vec<Plays<'static>>
-        where F: Fn(TypeVertex<'static>) -> ObjectType<'static> {
-        snapshot.iterate_range(PrefixRange::new_within(build_edge_plays_prefix_prefix(prefix)))
+    fn fetch_plays<D, F>(snapshot: &ReadSnapshot<'_, D>, prefix: Prefix, from_constructor: F) -> Vec<Plays<'static>>
+    where
+        F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
+    {
+        snapshot
+            .iterate_range(PrefixRange::new_within(build_edge_plays_prefix_prefix(prefix)))
             .collect_cloned_vec(|key, _| {
                 let edge = new_edge_plays(Bytes::Reference(key.byte_ref()));
                 Plays::new(from_constructor(edge.from().into_owned()), RoleType::new(edge.to().into_owned()))
@@ -499,9 +489,13 @@ impl TypeCache {
     }
 
     fn fetch_supertypes<D, F, T: Ord>(
-        snapshot: &ReadSnapshot<'_, D>, prefix: Prefix, type_constructor: F,
+        snapshot: &ReadSnapshot<'_, D>,
+        prefix: Prefix,
+        type_constructor: F,
     ) -> BTreeMap<T, T>
-        where F: Fn(TypeVertex<'static>) -> T {
+    where
+        F: Fn(TypeVertex<'static>) -> T,
+    {
         snapshot
             .iterate_range(PrefixRange::new_within(build_edge_sub_prefix_prefix(prefix)))
             .collect_cloned_bmap(|key, _| {
@@ -593,7 +587,7 @@ impl TypeCache {
         Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().supertype.clone()
     }
 
-    pub(crate) fn get_entity_type_supertypes<'a>(&self, entity_type: EntityType<'a>) -> &Vec<EntityType<'static>> {
+    pub(crate) fn get_entity_type_supertypes(&self, entity_type: EntityType<'_>) -> &Vec<EntityType<'static>> {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().supertypes
     }
 

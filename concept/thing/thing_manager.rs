@@ -15,21 +15,24 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::io::Read;
 use std::rc::Rc;
 
 use bytes::Bytes;
-use encoding::{AsBytes, graph::{
-    thing::{
-        vertex_attribute::AttributeVertex,
-        vertex_generator::{StringAttributeID, ThingVertexGenerator},
-        vertex_object::ObjectVertex,
+use encoding::{
+    graph::{
+        thing::{
+            edge::{ThingEdgeHas, ThingEdgeHasReverse},
+            vertex_attribute::AttributeVertex,
+            vertex_generator::{LongAttributeID, StringAttributeID, ThingVertexGenerator},
+            vertex_object::ObjectVertex,
+        },
+        type_::vertex::TypeVertex,
+        Typed,
     },
-    Typed,
-}, Keyable, layout::prefix::{Prefix, PrefixID}, value::{long::Long, string::StringBytes, value_type::ValueType}};
-use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse};
-use encoding::graph::thing::vertex_generator::LongAttributeID;
-use encoding::graph::type_::vertex::TypeVertex;
+    layout::prefix::{Prefix, PrefixID},
+    value::{long::Long, string::StringBytes, value_type::ValueType},
+    Keyable,
+};
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::Snapshot;
@@ -172,7 +175,8 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
 
     // TODO: this should either accept Concept's and return Concepts, or consume Vertex and return Vertex
     pub(crate) fn storage_get_has<'this, 'a>(
-        &'this self, owner: ObjectVertex<'a>,
+        &'this self,
+        owner: ObjectVertex<'a>,
     ) -> AttributeIterator<'this, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         let prefix = ThingEdgeHas::prefix_from_object(owner);
         AttributeIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
@@ -185,13 +189,9 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
     ) -> Result<(), ConceptWriteError> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let has = ThingEdgeHas::build(owner.as_reference(), attribute.as_reference());
-            write_snapshot
-                .put(has.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put(has.into_storage_key().into_owned_array());
             let has_reverse = ThingEdgeHasReverse::build(attribute.as_reference(), owner.as_reference());
-            write_snapshot
-                .put(has_reverse.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
+            write_snapshot.put(has_reverse.into_storage_key().into_owned_array());
         } else {
             panic!("Illegal state: creating plays edge requires write snapshot")
         }
@@ -224,5 +224,4 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
     ) -> Result<(), ConceptWriteError> {
         todo!()
     }
-
 }
