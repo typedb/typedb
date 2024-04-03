@@ -103,28 +103,28 @@ impl IsolationManager {
                 predecessor_window = self.timeline.get_window(at);
             }
 
-            let isolation_dependency = match predecessor_window.get_status(at) {
+            let commit_dependency = match predecessor_window.get_status(at) {
                 CommitStatus::Empty => unreachable!("A concurrent status should never be empty at commit time"),
                 CommitStatus::Pending(predecessor_record) => {
                     match commit_record.compute_dependency(predecessor_record) {
-                        IsolationDependency::Independent => IsolationDependency::Independent,
+                        CommitDependency::Independent => CommitDependency::Independent,
                         result => {
                             if self.await_pending_status_commits(at, &predecessor_window) {
                                 result
                             } else {
-                                IsolationDependency::Independent
+                                CommitDependency::Independent
                             }
                         }
                     }
                 }
                 CommitStatus::Committed(predecessor_record) => commit_record.compute_dependency(predecessor_record),
-                CommitStatus::Closed => IsolationDependency::Independent,
+                CommitStatus::Closed => CommitDependency::Independent,
             };
 
-            match isolation_dependency {
-                IsolationDependency::Independent => (),
-                IsolationDependency::DependentPuts { puts } => puts.into_iter().for_each(DependentPut::apply),
-                IsolationDependency::Conflict(conflict) => return Some(conflict),
+            match commit_dependency {
+                CommitDependency::Independent => (),
+                CommitDependency::DependentPuts { puts } => puts.into_iter().for_each(DependentPut::apply),
+                CommitDependency::Conflict(conflict) => return Some(conflict),
             }
 
             at = SequenceNumber::new(at.number() + 1);
@@ -197,7 +197,7 @@ impl DependentPut {
 }
 
 #[derive(Debug)]
-enum IsolationDependency {
+enum CommitDependency {
     Independent,
     DependentPuts { puts: Vec<DependentPut> },
     Conflict(IsolationConflict),
@@ -350,7 +350,7 @@ impl Timeline {
 
     fn last_window(
         windows: &VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
-    ) -> Arc<crate::isolation_manager::TimelineWindow<TIMELINE_WINDOW_SIZE>> {
+    ) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
         debug_assert!(!windows.is_empty());
         windows[windows.len() - 1].clone()
     }
@@ -582,7 +582,7 @@ impl CommitRecord {
         bincode::deserialize_from(reader).unwrap_or_log()
     }
 
-    fn compute_dependency(&self, predecessor: &CommitRecord) -> IsolationDependency {
+    fn compute_dependency(&self, predecessor: &CommitRecord) -> CommitDependency {
         // TODO: this can be optimised by some kind of bit-wise NAND of two bloom filter-like data
         // structures first, since we assume few clashes this should mostly succeed
         // TODO: can be optimised with an intersection of two sorted iterators instead of iterate + gets
@@ -604,12 +604,12 @@ impl CommitRecord {
                 if let Some(predecessor_write) = predecessor_map.get(key.bytes()) {
                     match (predecessor_write, write) {
                         (Write::Delete, Write::RequireExists { .. }) => {
-                            return IsolationDependency::Conflict(IsolationConflict::DeleteRequired);
+                            return CommitDependency::Conflict(IsolationConflict::DeleteRequired);
                         }
                         (Write::RequireExists { .. }, Write::Delete) => {
                             // we escalate required-delete to failure, since requires implies dependencies that may be broken
                             // TODO: maybe RequireExists should be RequireDependency to capture this?
-                            return IsolationDependency::Conflict(IsolationConflict::RequiredDelete);
+                            return CommitDependency::Conflict(IsolationConflict::RequiredDelete);
                         }
                         (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
                             puts_to_update.push(DependentPut { flag: reinsert.clone(), value: false });
@@ -624,9 +624,9 @@ impl CommitRecord {
         }
 
         if puts_to_update.is_empty() {
-            IsolationDependency::Independent
+            CommitDependency::Independent
         } else {
-            IsolationDependency::DependentPuts { puts: puts_to_update }
+            CommitDependency::DependentPuts { puts: puts_to_update }
         }
     }
 }
