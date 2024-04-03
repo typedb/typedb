@@ -31,7 +31,7 @@ pub(crate) enum Write {
     // Insert KeyValue with a new version. Never conflicts.
     Insert { value: ByteArray<BUFFER_VALUE_INLINE> },
     // Insert KeyValue with new version if a concurrent Txn deletes Key. Boolean indicates requires re-insertion. Never conflicts.
-    Put { value: ByteArray<BUFFER_VALUE_INLINE>, reinsert: Arc<AtomicBool> },
+    InsertPreexisting { value: ByteArray<BUFFER_VALUE_INLINE>, reinsert: Arc<AtomicBool> },
     // Delete with a new version. Conflicts with Require.
     Delete,
 }
@@ -41,9 +41,10 @@ impl PartialEq for Write {
         match (self, other) {
             (Self::RequireExists { value }, Self::RequireExists { value: other_value }) => value == other_value,
             (Self::Insert { value }, Self::Insert { value: other_value }) => value == other_value,
-            (Self::Put { value, reinsert }, Self::Put { value: other_value, reinsert: other_reinsert }) => {
-                other_value == value && reinsert.load(Ordering::Acquire) == other_reinsert.load(Ordering::Acquire)
-            }
+            (
+                Self::InsertPreexisting { value, reinsert },
+                Self::InsertPreexisting { value: other_value, reinsert: other_reinsert },
+            ) => other_value == value && reinsert.load(Ordering::Acquire) == other_reinsert.load(Ordering::Acquire),
             (Self::Delete, Self::Delete) => true,
             _ => false,
         }
@@ -57,8 +58,8 @@ impl Write {
         matches!(self, Write::Insert { .. })
     }
 
-    pub(crate) fn is_put(&self) -> bool {
-        matches!(self, Write::Put { .. })
+    pub(crate) fn is_insert_preexisting(&self) -> bool {
+        matches!(self, Write::InsertPreexisting { .. })
     }
 
     pub(crate) fn is_delete(&self) -> bool {
@@ -67,7 +68,7 @@ impl Write {
 
     pub(crate) fn get_value(&self) -> &ByteArray<BUFFER_VALUE_INLINE> {
         match self {
-            Write::Insert { value } | Write::Put { value, .. } | Write::RequireExists { value } => value,
+            Write::Insert { value } | Write::InsertPreexisting { value, .. } | Write::RequireExists { value } => value,
             Write::Delete => panic!("Buffered delete does not have a value."),
         }
     }
