@@ -83,6 +83,13 @@ type_vertex_property_constructors!(
     InfixType::PropertyAnnotationDuplicate
 );
 
+type_vertex_property_constructors!(
+    new_property_type_annotation_independent,
+    build_property_type_annotation_independent,
+    is_property_type_annotation_independent,
+    InfixType::PropertyAnnotationIndependent
+);
+
 impl<'a> TypeVertexProperty<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
 

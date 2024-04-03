@@ -54,7 +54,7 @@ use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::B
 use storage::{snapshot::ReadSnapshot, MVCCStorage, ReadSnapshotOpenError};
 
 use crate::type_::{
-    annotation::{Annotation, AnnotationAbstract, AnnotationDuplicate},
+    annotation::{Annotation, AnnotationAbstract, AnnotationDuplicate, AnnotationIndependent},
     attribute_type::{AttributeType, AttributeTypeAnnotation},
     entity_type::{EntityType, EntityTypeAnnotation},
     object_type::ObjectType,
@@ -158,8 +158,8 @@ impl TypeCache {
         // note: since we will parse out many heterogenous properties/edges from the schema, we will scan once into a vector,
         //       then go through it again to pull out the type information.
 
-        let snapshot =
-            storage.open_snapshot_read_at(open_sequence_number).map_err(|error| SnapshotOpen { source: error })?;
+        let snapshot = storage.open_snapshot_read_at(open_sequence_number)
+            .map_err(|error| SnapshotOpen { source: error })?;
         let vertex_properties = snapshot
             .iterate_range(PrefixRange::new_within(TypeVertexProperty::build_prefix()))
             .collect_cloned_bmap(|key, value| {
@@ -544,6 +544,7 @@ impl TypeCache {
                     match property.infix() {
                         Infix::PropertyAnnotationAbstract => Some(Annotation::Abstract(AnnotationAbstract::new())),
                         Infix::PropertyAnnotationDuplicate => Some(Annotation::Duplicate(AnnotationDuplicate::new())),
+                        Infix::PropertyAnnotationIndependent => Some(Annotation::Independent(AnnotationIndependent::new())),
                         | Infix::PropertyLabel | Infix::PropertyValueType => None,
                     }
                 }

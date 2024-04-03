@@ -96,7 +96,7 @@ impl ThingVertexGenerator {
 
     pub fn create_relation<D>(&self, type_id: TypeID, snapshot: &WriteSnapshot<'_, D>) -> ObjectVertex<'static> {
         let relation_id = self.relation_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
-        let vertex = ObjectVertex::build_entity(type_id, ObjectID::build(relation_id));
+        let vertex = ObjectVertex::build_relation(type_id, ObjectID::build(relation_id));
         snapshot.insert(vertex.as_storage_key().into_owned_array());
         vertex
     }

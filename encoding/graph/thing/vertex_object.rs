@@ -52,13 +52,13 @@ impl<'a> ObjectVertex<'a> {
         ObjectVertex { bytes: Bytes::Array(array) }
     }
 
-    // pub fn build_relation(type_id: &TypeID<'_>, object_id: ObjectID<'_>) -> Self {
-    //     let mut array = ByteArray::zeros(Self::LENGTH);
-    //     array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(PrefixType::VertexEntity.prefix_id().bytes().bytes());
-    //     array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(type_id.bytes().bytes());
-    //     array.bytes_mut()[Self::range_object_id()].copy_from_slice(object_id.bytes().bytes());
-    //     ObjectVertex { bytes: Bytes::Array(array) }
-    // }
+    pub fn build_relation(type_id: TypeID, object_id: ObjectID) -> Self {
+        let mut array = ByteArray::zeros(Self::LENGTH);
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::VertexRelation.prefix_id().bytes());
+        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
+        array.bytes_mut()[Self::range_object_id()].copy_from_slice(&object_id.bytes());
+        ObjectVertex { bytes: Bytes::Array(array) }
+    }
 
     pub fn build_prefix_prefix(prefix: PrefixID) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_PREFIX }> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_PREFIX);

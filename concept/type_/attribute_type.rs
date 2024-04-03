@@ -35,6 +35,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::annotation::AnnotationIndependent;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
@@ -71,11 +72,7 @@ impl<'a> AttributeType<'a> {
         type_manager.get_attribute_type_is_root(self.clone().into_owned())
     }
 
-    pub fn set_value_type<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        value_type: ValueType,
-    ) -> Result<(), ConceptWriteError> {
+    pub fn set_value_type<D>(&self, type_manager: &TypeManager<'_, '_, D>, value_type: ValueType) {
         type_manager.set_storage_value_type(self.vertex().clone().into_owned(), value_type)
     }
 
@@ -93,7 +90,7 @@ impl<'a> AttributeType<'a> {
         type_manager.get_attribute_type_label(self.clone().into_owned())
     }
 
-    fn set_label<D>(&self, type_manager: &TypeManager<'_, '_, D>, label: &Label<'_>) -> Result<(), ConceptWriteError> {
+    fn set_label<D>(&self, type_manager: &TypeManager<'_, '_, D>, label: &Label<'_>) {
         // TODO: setLabel should fail is setting label on Root type
         type_manager.set_storage_label(self.vertex().clone().into_owned(), label)
     }
@@ -105,11 +102,7 @@ impl<'a> AttributeType<'a> {
         type_manager.get_attribute_type_supertype(self.clone().into_owned())
     }
 
-    fn set_supertype<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        supertype: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    fn set_supertype<D>(&self, type_manager: &TypeManager<'_, '_, D>, supertype: AttributeType<'static>) {
         type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
     }
 
@@ -129,26 +122,24 @@ impl<'a> AttributeType<'a> {
         type_manager.get_attribute_type_annotations(self.clone().into_owned())
     }
 
-    pub(crate) fn set_annotation<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        annotation: AttributeTypeAnnotation,
-    ) -> Result<(), ConceptWriteError> {
+    pub(crate) fn set_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: AttributeTypeAnnotation) {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
                 type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
             }
+            AttributeTypeAnnotation::Independent(_) => {
+                type_manager.set_storage_annotation_independent(self.vertex().clone().into_owned())
+            }
         }
     }
 
-    fn delete_annotation<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        annotation: AttributeTypeAnnotation,
-    ) -> Result<(), ConceptWriteError> {
+    fn delete_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: AttributeTypeAnnotation) {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
                 type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
+            }
+            AttributeTypeAnnotation::Independent(_) => {
+                type_manager.delete_storage_annotation_independent(self.vertex().clone().into_owned())
             }
         }
     }
@@ -173,12 +164,14 @@ impl<'a> AttributeType<'a> {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum AttributeTypeAnnotation {
     Abstract(AnnotationAbstract),
+    Independent(AnnotationIndependent),
 }
 
 impl From<Annotation> for AttributeTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Abstract(annotation) => AttributeTypeAnnotation::Abstract(annotation),
+            Annotation::Independent(annotation) => AttributeTypeAnnotation::Independent(annotation),
             Annotation::Duplicate(_) => unreachable!("Duplicate annotation not available for Attribute type."),
         }
     }

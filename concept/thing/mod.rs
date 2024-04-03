@@ -15,6 +15,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use bytes::byte_array::ByteArray;
+use bytes::byte_reference::ByteReference;
 use crate::ConceptAPI;
 
 pub mod attribute;
@@ -22,4 +24,4 @@ pub mod entity;
 mod relation;
 pub mod thing_manager;
 pub mod value;
-mod object;
+pub mod object;

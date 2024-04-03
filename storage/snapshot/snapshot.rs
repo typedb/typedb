@@ -251,6 +251,10 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
 
+    pub fn record_lock(&self, key: StorageKey<'static, BUFFER_KEY_INLINE>) {
+        todo!()
+    }
+
     pub fn commit(self) -> Result<(), SnapshotError>
     where
         D: DurabilityService,

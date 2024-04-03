@@ -15,6 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::any::Any;
 use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
@@ -29,6 +30,7 @@ use crate::graph::thing::vertex_attribute::{AsAttributeID, AttributeID, Attribut
 use crate::graph::thing::vertex_generator::{LongAttributeID, StringAttributeID};
 use crate::graph::thing::VertexID;
 use crate::graph::type_::vertex::TypeID;
+use crate::graph::Typed;
 use crate::layout::prefix::{Prefix, PrefixID};
 
 ///
@@ -137,7 +139,6 @@ pub struct ThingEdgeHasReverse<'a> {
 }
 
 impl<'a> ThingEdgeHasReverse<'a> {
-
     const INDEX_FROM_PREFIX: usize = PrefixID::LENGTH;
 
     fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ThingEdgeHas<'a> {
@@ -257,20 +258,63 @@ impl<'a> ThingEdgeRolePlayer<'a> {
     const RANGE_FROM: Range<usize> = Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + ObjectVertex::LENGTH;
     const RANGE_TO: Range<usize> = Self::RANGE_FROM.end..Self::RANGE_FROM.end + ObjectVertex::LENGTH;
     const RANGE_ROLE_ID: Range<usize> = Self::RANGE_TO.end..Self::RANGE_TO.end + TypeID::LENGTH;
+    const LENGTH: usize = PrefixID::LENGTH + 2 * ObjectVertex::LENGTH + TypeID::LENGTH;
+    pub const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
 
+    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+        debug_assert_eq!(bytes.length(), Self::LENGTH);
+        let edge = ThingEdgeRolePlayer { bytes };
+        debug_assert!(edge.prefix() == Prefix::EdgeRolePlayer || edge.prefix() == Prefix::EdgeRolePlayerReverse);
+        edge
+    }
 
+    pub fn build_role_player(relation: ObjectVertex<'_>, player: ObjectVertex<'_>, role_type: TypeVertex<'_>) -> Self {
+        let mut bytes = ByteArray::zeros(Self::LENGTH);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::EdgeRolePlayer.prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
+        bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(player.bytes().bytes());
+        bytes.bytes_mut()[Self::RANGE_ROLE_ID].copy_from_slice(&Typed::type_id(&role_type).bytes());
+        ThingEdgeRolePlayer { bytes: Bytes::Array(bytes) }
+    }
 
-    fn from(&'a self) -> ObjectVertex<'a> {
+    pub fn build_role_player_reverse(player: ObjectVertex<'_>, relation: ObjectVertex<'_>, role_type: TypeVertex<'_>) -> Self {
+        let mut bytes = ByteArray::zeros(Self::LENGTH);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::EdgeRolePlayerReverse.prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
+        bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(relation.bytes().bytes());
+        bytes.bytes_mut()[Self::RANGE_ROLE_ID].copy_from_slice(&Typed::type_id(&role_type).bytes());
+        ThingEdgeRolePlayer { bytes: Bytes::Array(bytes) }
+    }
+
+    pub fn prefix_from_relation(relation: ObjectVertex<'_>) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::EdgeRolePlayer.prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    pub fn prefix_reverse_from_player(player: ObjectVertex<'_>) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::EdgeRolePlayerReverse.prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    fn from(&self) -> ObjectVertex<'_> {
         // TODO: copy?
         ObjectVertex::new(Bytes::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_FROM])))
     }
 
-    fn to(&'a self) -> ObjectVertex<'a> {
+    fn to(&self) -> ObjectVertex<'_> {
         // TODO: copy?
         ObjectVertex::new(Bytes::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_TO])))
     }
 
-    fn role_id(&'a self) -> TypeID {
+    pub fn into_to(self) -> ObjectVertex<'a> {
+        ObjectVertex::new(self.bytes.into_range(Self::RANGE_TO))
+    }
+
+    pub fn role_id(&'a self) -> TypeID {
         let bytes = &self.bytes.bytes()[Self::RANGE_ROLE_ID];
         TypeID::new(bytes.try_into().unwrap())
     }
@@ -295,11 +339,10 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeRolePlayer<'a> {
 }
 
 ///
-/// [rp_index][from_object][to_object][relation_id][from_role_id][to_role_id]
+/// [rp_index][from_object][to_object][relation][from_role_id][to_role_id]
 ///
 pub struct ThingEdgeRelationIndex<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
-    repetitions: u64,
 }
 
 impl<'a> ThingEdgeRelationIndex<'a> {
@@ -307,18 +350,82 @@ impl<'a> ThingEdgeRelationIndex<'a> {
 
     const RANGE_FROM: Range<usize> = Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + ObjectVertex::LENGTH;
     const RANGE_TO: Range<usize> = Self::RANGE_FROM.end..Self::RANGE_FROM.end + ObjectVertex::LENGTH;
-    const RANGE_RELATION_ID: Range<usize> = Self::RANGE_TO.end..Self::RANGE_TO.end + TypeID::LENGTH;
-    const RANGE_FROM_ROLE_ID: Range<usize> = Self::RANGE_RELATION_ID.end..Self::RANGE_RELATION_ID.end + TypeID::LENGTH;
-    const RANGE_TO_ROLE_ID: Range<usize> = Self::RANGE_FROM_ROLE_ID.end..Self::RANGE_FROM_ROLE_ID.end + TypeID::LENGTH;
+    const RANGE_RELATION: Range<usize> = Self::RANGE_TO.end..Self::RANGE_TO.end + ObjectVertex::LENGTH;
+    const RANGE_FROM_ROLE_TYPE_ID: Range<usize> = Self::RANGE_RELATION.end..Self::RANGE_RELATION.end + TypeID::LENGTH;
+    const RANGE_TO_ROLE_TYPE_ID: Range<usize> = Self::RANGE_FROM_ROLE_TYPE_ID.end..Self::RANGE_FROM_ROLE_TYPE_ID.end + TypeID::LENGTH;
+    const LENGTH: usize = PrefixID::LENGTH + 3 * ObjectVertex::LENGTH + 2 * TypeID::LENGTH;
+    pub const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + 1 * ObjectVertex::LENGTH;
 
-    fn from(&'a self) -> ObjectVertex<'a> {
-        // TODO: copy?
-        ObjectVertex::new(Bytes::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_FROM])))
+    pub(crate) fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+        let index = ThingEdgeRelationIndex { bytes: bytes };
+        debug_assert_eq!(index.prefix(), Prefix::EdgeRolePlayerIndex);
+        index
     }
 
-    fn to(&'a self) -> ObjectVertex<'a> {
+    pub fn build(
+        from: ObjectVertex<'_>,
+        to: ObjectVertex<'_>,
+        relation: ObjectVertex<'_>,
+        from_role_type_id: TypeID,
+        to_role_type_id: TypeID,
+    ) -> ThingEdgeRelationIndex<'static> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::EdgeRolePlayerIndex.prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(from.bytes().bytes());
+        bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(to.bytes().bytes());
+        bytes.bytes_mut()[Self::RANGE_RELATION].copy_from_slice(&relation.bytes().bytes());
+        bytes.bytes_mut()[Self::RANGE_FROM_ROLE_TYPE_ID].copy_from_slice(&from_role_type_id.bytes());
+        bytes.bytes_mut()[Self::RANGE_TO_ROLE_TYPE_ID].copy_from_slice(&to_role_type_id.bytes());
+        ThingEdgeRelationIndex { bytes: Bytes::Array(bytes) }
+    }
+
+    pub fn prefix_from(from: ObjectVertex<'_>) -> StorageKey<'static, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::EdgeRolePlayerIndex.prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(from.bytes().bytes());
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    pub(crate) fn from(&self) -> ObjectVertex<'_> {
+        Self::read_from(self.bytes())
+    }
+
+    pub fn read_from(reference: ByteReference<'_>) -> ObjectVertex<'_> {
         // TODO: copy?
-        ObjectVertex::new(Bytes::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_TO])))
+        ObjectVertex::new(Bytes::Reference(ByteReference::new(&reference.bytes()[Self::RANGE_FROM])))
+    }
+
+    pub(crate) fn to(&self) -> ObjectVertex<'_> {
+        // TODO: copy?
+        Self::read_to(self.bytes())
+    }
+
+    pub fn read_to(reference: ByteReference<'_>) -> ObjectVertex<'_> {
+        ObjectVertex::new(Bytes::Reference(ByteReference::new(&reference.bytes()[Self::RANGE_TO])))
+    }
+
+    pub(crate) fn relation(&self) -> ObjectVertex<'_> {
+        Self::read_relation(self.bytes())
+    }
+
+    pub fn read_relation(reference: ByteReference) -> ObjectVertex<'_> {
+        ObjectVertex::new(Bytes::Reference(ByteReference::new(&reference.bytes()[Self::RANGE_RELATION])))
+    }
+
+    pub(crate) fn from_role_id(&self) -> TypeID {
+        Self::read_from_role_id(self.bytes())
+    }
+
+    pub fn read_from_role_id(reference: ByteReference) -> TypeID {
+        TypeID::new(reference.bytes()[Self::RANGE_FROM_ROLE_TYPE_ID].try_into().unwrap())
+    }
+
+    pub(crate) fn to_role_id(&self) -> TypeID {
+        Self::read_to_role_id(self.bytes())
+    }
+
+    pub fn read_to_role_id(reference: ByteReference) -> TypeID {
+        TypeID::new(reference.bytes()[Self::RANGE_TO_ROLE_TYPE_ID].try_into().unwrap())
     }
 }
 

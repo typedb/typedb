@@ -47,13 +47,7 @@ pub struct RoleType<'a> {
 
 impl<'a> RoleType<'a> {
     pub fn new(vertex: TypeVertex<'a>) -> RoleType<'_> {
-        if vertex.prefix() != Prefix::VertexRoleType {
-            panic!(
-                "Type IID prefix was expected to be Prefix::RoleType ({:?}) but was {:?}",
-                Prefix::VertexRoleType,
-                vertex.prefix()
-            )
-        }
+        debug_assert_eq!(vertex.prefix(), Prefix::VertexRoleType);
         RoleType { vertex }
     }
 }
@@ -96,11 +90,7 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_type_supertype(self.clone().into_owned())
     }
 
-    fn set_supertype<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        supertype: RoleType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    fn set_supertype<D>(&self, type_manager: &TypeManager<'_, '_, D>, supertype: RoleType<'static>) {
         type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
     }
 
@@ -120,11 +110,7 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_type_annotations(self.clone().into_owned())
     }
 
-    pub(crate) fn set_annotation<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        annotation: RoleTypeAnnotation,
-    ) -> Result<(), ConceptWriteError> {
+    pub(crate) fn set_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: RoleTypeAnnotation) {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
                 type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
@@ -135,11 +121,7 @@ impl<'a> RoleType<'a> {
         }
     }
 
-    fn delete_annotation<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        annotation: RoleTypeAnnotation,
-    ) -> Result<(), ConceptWriteError> {
+    fn delete_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: RoleTypeAnnotation) {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
                 type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
@@ -177,6 +159,7 @@ impl From<Annotation> for RoleTypeAnnotation {
         match annotation {
             Annotation::Abstract(annotation) => RoleTypeAnnotation::Abstract(annotation),
             Annotation::Duplicate(annotation) => RoleTypeAnnotation::Duplicate(annotation),
+            Annotation::Independent(_) => unreachable!("Independent annotation not available for Role type."),
         }
     }
 }

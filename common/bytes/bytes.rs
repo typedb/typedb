@@ -21,6 +21,7 @@ use std::{
 };
 use std::borrow::Borrow;
 use std::cmp::Ordering;
+use std::ops::Range;
 use primitive::prefix_range::Prefix;
 
 use crate::{byte_array::ByteArray, byte_reference::ByteReference};
@@ -67,6 +68,17 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> Bytes<'bytes, ARRAY_INLINE_SIZE> {
                 Bytes::Array(array)
             }
             Bytes::Reference(reference) => Bytes::Reference(reference.truncate(length)),
+        }
+    }
+
+    pub fn into_range(self, range: Range<usize>) -> Bytes<'bytes, ARRAY_INLINE_SIZE> {
+        assert!(range.start <= self.length() && range.end <= self.length());
+        match self {
+            Bytes::Array(mut array) => {
+                array.truncate_range(range);
+                Bytes::Array(array)
+            }
+            Bytes::Reference(reference) => Bytes::Reference(reference.into_range(range)),
         }
     }
 

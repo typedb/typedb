@@ -21,6 +21,7 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
 };
+use std::ops::Range;
 
 use serde::{
     de::{self, MapAccess, SeqAccess, Visitor},
@@ -103,6 +104,14 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
         }
     }
 
+    pub fn truncate_range(&mut self, range: Range<usize>) {
+        assert!(range.start <= self.length() && range.end <= self.length());
+        match self {
+            ByteArray::Inline(inline) => inline.truncate_range(range),
+            ByteArray::Boxed(boxed) => boxed.truncate_range(range),
+        }
+    }
+
     pub fn starts_with(&self, bytes: &[u8]) -> bool {
         self.length() >= bytes.len() && &self.bytes()[0..bytes.len()] == bytes
     }
@@ -127,17 +136,18 @@ impl<const INLINE_BYTES: usize> Hash for ByteArray<INLINE_BYTES> {
 #[derive(Clone)]
 pub struct ByteArrayInline<const BYTES: usize> {
     data: [u8; BYTES],
-    length: u64,
+    start: usize,
+    length: usize,
 }
 
 impl<const BYTES: usize> ByteArrayInline<BYTES> {
     const fn empty() -> ByteArrayInline<BYTES> {
-        ByteArrayInline { data: [0; BYTES], length: 0 }
+        ByteArrayInline { data: [0; BYTES], start: 0, length: 0 }
     }
 
     const fn zeros(length: usize) -> ByteArrayInline<BYTES> {
         assert!(length < BYTES);
-        ByteArrayInline { data: [0; BYTES], length: length as u64 }
+        ByteArrayInline { data: [0; BYTES], start: 0, length: length }
     }
 
     fn from(bytes: &[u8]) -> ByteArrayInline<BYTES> {
@@ -145,7 +155,7 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
         assert!(length < BYTES);
         let mut data = [0; BYTES];
         data[0..length].copy_from_slice(bytes);
-        ByteArrayInline { data, length: length as u64 }
+        ByteArrayInline { data, start: 0, length: length }
     }
 
     fn concat<const N: usize>(slices: [&[u8]; N]) -> ByteArrayInline<BYTES> {
@@ -157,31 +167,37 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
             data[end..][..slice.len()].copy_from_slice(slice);
             end += slice.len();
         }
-        ByteArrayInline { data, length: length as u64 }
+        ByteArrayInline { data, start: 0, length: length }
     }
 
     fn new(bytes: [u8; BYTES], length: usize) -> ByteArrayInline<BYTES> {
-        ByteArrayInline { data: bytes, length: length as u64 }
+        ByteArrayInline { data: bytes, start: 0, length: length }
     }
 
     pub fn bytes(&self) -> &[u8] {
-        &self.data[0..(self.length as usize)]
+        &self.data[self.start..self.start + self.length]
     }
 
     pub fn bytes_mut(&mut self) -> &mut [u8] {
-        &mut self.data[0..(self.length as usize)]
+        &mut self.data[self.start..self.start + self.length]
     }
 
     pub fn truncate(&mut self, length: usize) {
-        assert!(length as u64 <= self.length);
-        self.length = length as u64
+        assert!(length <= self.length);
+        self.length = length
+    }
+
+    pub fn truncate_range(&mut self, range: Range<usize>) {
+        assert!(range.start >= self.start && range.end <= self.start + self.length && range.len() <= self.length);
+        self.start = range.start;
+        self.length = range.len();
     }
 }
 
 impl<const SIZE: usize> Serialize for ByteArrayInline<SIZE> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         let mut state = serializer.serialize_struct("ByteArrayInline", 1)?;
         state.serialize_field("data", self.bytes())?;
@@ -191,8 +207,8 @@ impl<const SIZE: usize> Serialize for ByteArrayInline<SIZE> {
 
 impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         enum Field {
             Data,
@@ -200,8 +216,8 @@ impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
 
         impl<'de> Deserialize<'de> for Field {
             fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
-            where
-                D: Deserializer<'de>,
+                where
+                    D: Deserializer<'de>,
             {
                 struct FieldVisitor;
 
@@ -213,8 +229,8 @@ impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
                     }
 
                     fn visit_str<E>(self, value: &str) -> Result<Field, E>
-                    where
-                        E: de::Error,
+                        where
+                            E: de::Error,
                     {
                         match value {
                             "data" => Ok(Field::Data),
@@ -237,16 +253,16 @@ impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
             }
 
             fn visit_seq<V>(self, mut seq: V) -> Result<ByteArrayInline<SIZE>, V::Error>
-            where
-                V: SeqAccess<'de>,
+                where
+                    V: SeqAccess<'de>,
             {
                 let bytes: &[u8] = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 Ok(ByteArrayInline::from(bytes))
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<ByteArrayInline<SIZE>, V::Error>
-            where
-                V: MapAccess<'de>,
+                where
+                    V: MapAccess<'de>,
             {
                 let mut bytes: Option<&[u8]> = None;
                 while let Some(key) = map.next_key()? {
@@ -277,38 +293,45 @@ impl<const BYTES: usize> fmt::Debug for ByteArrayInline<BYTES> {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ByteArrayBoxed {
     data: Box<[u8]>,
+    start: usize,
     length: usize,
 }
 
 impl ByteArrayBoxed {
     fn zeros(length: usize) -> ByteArrayBoxed {
-        ByteArrayBoxed { data: vec![0; length].into_boxed_slice(), length }
+        ByteArrayBoxed { data: vec![0; length].into_boxed_slice(), start: 0, length }
     }
 
     fn from(bytes: &[u8]) -> ByteArrayBoxed {
-        ByteArrayBoxed { data: Box::from(bytes), length: bytes.len() }
+        ByteArrayBoxed { data: Box::from(bytes), start: 0, length: bytes.len() }
     }
 
     fn concat<const N: usize>(slices: [&[u8]; N]) -> ByteArrayBoxed {
         let data = slices.concat().into_boxed_slice();
-        ByteArrayBoxed { length: data.len(), data }
+        ByteArrayBoxed { length: data.len(), start: 0, data }
     }
 
     fn wrap(bytes: Box<[u8]>) -> ByteArrayBoxed {
-        ByteArrayBoxed { length: bytes.len(), data: bytes }
+        ByteArrayBoxed { length: bytes.len(),  start: 0,data: bytes }
     }
 
     fn bytes(&self) -> &[u8] {
-        &self.data[0..self.length]
+        &self.data[self.start..self.start + self.length]
     }
 
     fn bytes_mut(&mut self) -> &mut [u8] {
-        &mut self.data[0..self.length]
+        &mut self.data[self.start..self.start + self.length]
     }
 
     pub fn truncate(&mut self, length: usize) {
         assert!(length <= self.length);
         self.length = length;
+    }
+
+    pub fn truncate_range(&mut self, range: Range<usize>) {
+        assert!(range.start >= self.start && range.end <= self.start + self.length && range.len() <= self.length);
+        self.start = range.start;
+        self.length = range.len();
     }
 }
 

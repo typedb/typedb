@@ -18,6 +18,8 @@
 use std::rc::Rc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+use concept::type_::annotation::AnnotationIndependent;
+use concept::type_::attribute_type::AttributeTypeAnnotation;
 use storage::snapshot::Snapshot;
 
 pub struct TransactionRead<'txn, 'storage: 'txn, D> {
@@ -44,6 +46,7 @@ impl<'txn, 'storage: 'txn, D> TransactionWrite<'txn, 'storage, D> {
     }
 
     fn commit(self) {
-        // 1. validate cardinality constraints on modified relations
+        // 1. validate cardinality constraints on modified relations. For those that have cardinality requirements, we must also put a lock into the snapshot.
+        // 2. check attributes in modified 'has' ownerships to see if they need to be cleaned up (independent & last ownership)
     }
 }

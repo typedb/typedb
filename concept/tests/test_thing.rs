@@ -183,65 +183,81 @@ fn has() {
     }
 }
 
-static AGE_LABEL: OnceLock<Label> = OnceLock::new();
-static NAME_LABEL: OnceLock<Label> = OnceLock::new();
-static PERSON_LABEL: OnceLock<Label> = OnceLock::new();
-
-fn write_entity_attributes(
-    storage: &MVCCStorage<WAL>,
-    type_vertex_generator: &TypeVertexGenerator,
-    thing_vertex_generator: &ThingVertexGenerator,
-    schema_cache: Arc<TypeCache>,
-) {
-    let snapshot = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
-    {
-        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), type_vertex_generator, Some(schema_cache)));
-        let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator, type_manager.clone());
-
-        let person_type = type_manager.get_entity_type(PERSON_LABEL.get().unwrap()).unwrap().unwrap();
-        let age_type = type_manager.get_attribute_type(AGE_LABEL.get().unwrap()).unwrap().unwrap();
-        let name_type = type_manager.get_attribute_type(NAME_LABEL.get().unwrap()).unwrap().unwrap();
-        let person = thing_manager.create_entity(person_type).unwrap();
-        let age = thing_manager.create_attribute(age_type, Value::Long(100)).unwrap();
-        let name = thing_manager.create_attribute(name_type, Value::String("abc".into())).unwrap();
-        person.set_has(&thing_manager, &age).unwrap();
-        person.set_has(&thing_manager, &name).unwrap();
-    }
-
-    let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() else { unreachable!() };
-    write_snapshot.commit().unwrap();
-}
-
-fn create_schema(storage: &MVCCStorage<WAL>, type_vertex_generator: &TypeVertexGenerator) {
-    let snapshot: Rc<Snapshot<'_, WAL>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
-    {
-        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), type_vertex_generator, None));
-        let age_type = type_manager.create_attribute_type(AGE_LABEL.get().unwrap(), false).unwrap();
-        age_type.set_value_type(&type_manager, ValueType::Long).unwrap();
-        let name_type = type_manager.create_attribute_type(NAME_LABEL.get().unwrap(), false).unwrap();
-        name_type.set_value_type(&type_manager, ValueType::String).unwrap();
-        let person_type = type_manager.create_entity_type(PERSON_LABEL.get().unwrap(), false).unwrap();
-        person_type.set_owns(&type_manager, age_type).unwrap();
-        person_type.set_owns(&type_manager, name_type).unwrap();
-    }
-    let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() else { unreachable!() };
-    write_snapshot.commit().unwrap();
-}
-
 #[test]
-fn criterion_benchmark() {
-    AGE_LABEL.set(Label::build("age")).unwrap();
-    NAME_LABEL.set(Label::build("name")).unwrap();
-    PERSON_LABEL.set(Label::build("person")).unwrap();
-
+fn role_player_no_duplicates() {
     init_logging();
     let storage_path = create_tmp_dir();
     let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
-    let thing_vertex_generator = ThingVertexGenerator::new();
     TypeManager::initialise_types(&mut storage, &type_vertex_generator).unwrap();
 
-    create_schema(&storage, &type_vertex_generator);
-    let schema_cache = Arc::new(TypeCache::new(&storage, storage.read_watermark()).unwrap());
-    write_entity_attributes(&storage, &type_vertex_generator, &thing_vertex_generator, schema_cache.clone());
+    let employment_label = Label::build("employment");
+    let employee_role = "employee";
+    let employer_role = "employer";
+    let person_label = Label::build("person");
+    let company_label = Label::build("company");
+
+    let snapshot: Rc<Snapshot<'_, WAL>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
+    {
+        let thing_vertex_generator = ThingVertexGenerator::new();
+        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &type_vertex_generator, None).unwrap());
+        let thing_manager = ThingManager::new(snapshot.clone(), &thing_vertex_generator, type_manager.clone());
+
+        let employment_type = type_manager.create_relation_type(&employment_label, false).unwrap();
+        let employee_type = employment_type.create_relates(&type_manager, employee_role).unwrap().role();
+        let employer_type = employment_type.create_relates(&type_manager, employer_role).unwrap().role();
+        let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
+        let company_type = type_manager.create_entity_type(&company_label, false).unwrap();
+        person_type.set_plays(&type_manager, employee_type.clone()).unwrap();
+        company_type.set_plays(&type_manager, employee_type.clone()).unwrap();
+
+        let person_1 = thing_manager.create_entity(person_type.clone()).unwrap();
+        let company_1 = thing_manager.create_entity(company_type.clone()).unwrap();
+        let company_2 = thing_manager.create_entity(company_type.clone()).unwrap();
+        let company_3 = thing_manager.create_entity(company_type.clone()).unwrap();
+
+        let employment_1 = thing_manager.create_relation(employment_type.clone()).unwrap();
+        employment_1.add_player(&thing_manager, employee_type.clone(), Object::Entity(person_1.as_reference()));
+        employment_1.add_player(&thing_manager, employer_type.clone(), Object::Entity(company_1.as_reference()));
+
+        let employment_2 = thing_manager.create_relation(employment_type.clone()).unwrap();
+        employment_2.add_player(&thing_manager, employee_type.clone(), Object::Entity(person_1.as_reference()));
+        employment_2.add_player(&thing_manager, employer_type.clone(), Object::Entity(company_2.as_reference()));
+        employment_2.add_player(&thing_manager, employer_type.clone(), Object::Entity(company_3.as_reference()));
+
+        assert_eq!(employment_1.get_players(&thing_manager).count(), 2);
+        assert_eq!(employment_2.get_players(&thing_manager).count(), 3);
+
+        assert_eq!(person_1.get_relations(&thing_manager).count(), 2);
+        assert_eq!(company_1.get_relations(&thing_manager).count(), 1);
+        assert_eq!(company_2.get_relations(&thing_manager).count(), 1);
+        assert_eq!(company_3.get_relations(&thing_manager).count(), 1);
+    }
+
+    let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() else { unreachable!() };
+    write_snapshot.commit().unwrap();
+    {
+        let snapshot: Rc<Snapshot<'_, WAL>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
+        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &type_vertex_generator, None));
+        let thing_vertex_generator = ThingVertexGenerator::new();
+        let thing_manager = ThingManager::new(snapshot.clone(), &thing_vertex_generator, type_manager.clone());
+        let entities = thing_manager.get_entities().collect_cloned();
+        assert_eq!(entities.len(), 4);
+        let relations = thing_manager.get_relations().collect_cloned();
+        assert_eq!(relations.len(), 2);
+
+        let players_0 = relations[0].get_players(&thing_manager).count();
+        if players_0 == 2 {
+            assert_eq!(relations[1].get_players(&thing_manager).count(), 3);
+        } else {
+            assert_eq!(relations[1].get_players(&thing_manager).count(), 2);
+        }
+
+        let person_1= entities.iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&person_label).unwrap().unwrap())
+            .unwrap();
+
+        assert_eq!(person_1.get_relations(&thing_manager).count(), 2);
+        assert_eq!(person_1.get_indexed_players(&thing_manager).count(), 3);
+    }
 }

@@ -85,7 +85,7 @@ impl<'a> EntityType<'a> {
         type_manager.get_entity_type_label(self.clone().into_owned())
     }
 
-    fn set_label<D>(&self, type_manager: &TypeManager<'_, '_, D>, label: &Label<'_>) -> Result<(), ConceptWriteError> {
+    fn set_label<D>(&self, type_manager: &TypeManager<'_, '_, D>, label: &Label<'_>) {
         // TODO: setLabel should fail is setting label on Root type
         type_manager.set_storage_label(self.vertex().clone().into_owned(), label)
     }
@@ -97,11 +97,7 @@ impl<'a> EntityType<'a> {
         type_manager.get_entity_type_supertype(self.clone().into_owned())
     }
 
-    pub fn set_supertype<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        supertype: EntityType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    pub fn set_supertype<D>(&self, type_manager: &TypeManager<'_, '_, D>, supertype: EntityType<'static>) {
         type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
     }
 
@@ -121,11 +117,7 @@ impl<'a> EntityType<'a> {
         type_manager.get_entity_type_annotations(self.clone().into_owned())
     }
 
-    pub fn set_annotation<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        annotation: EntityTypeAnnotation,
-    ) -> Result<(), ConceptWriteError> {
+    pub fn set_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: EntityTypeAnnotation) {
         match annotation {
             EntityTypeAnnotation::Abstract(_) => {
                 type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
@@ -133,11 +125,7 @@ impl<'a> EntityType<'a> {
         }
     }
 
-    fn delete_annotation<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        annotation: EntityTypeAnnotation,
-    ) -> Result<(), ConceptWriteError> {
+    fn delete_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: EntityTypeAnnotation) {
         match annotation {
             EntityTypeAnnotation::Abstract(_) => {
                 type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
@@ -155,16 +143,11 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         &self,
         type_manager: &TypeManager<'_, '_, D>,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Owns<'static>, ConceptWriteError> {
-        type_manager.set_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex())?;
-        Ok(self.get_owns_attribute(type_manager, attribute_type)?.unwrap())
+    ) {
+        type_manager.set_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex());
     }
 
-    fn delete_owns<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        attribute_type: AttributeType<'static>,
-    ) -> std::result::Result<(), ConceptWriteError> {
+    fn delete_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) {
         // TODO: error if not owned?
         type_manager.delete_storage_owns(self.vertex().clone().into_owned(), attribute_type.into_vertex())
     }
@@ -191,17 +174,12 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         &self,
         type_manager: &TypeManager<'_, '_, D>,
         role_type: RoleType<'static>,
-    ) -> Result<Plays<'static>, ConceptWriteError> {
+    ) {
         // TODO: decide behaviour (ok or error) if already playing
-        type_manager.set_storage_plays(self.vertex().clone().into_owned(), role_type.clone().into_vertex())?;
-        Ok(self.get_plays_role(type_manager, role_type)?.unwrap())
+        type_manager.set_storage_plays(self.vertex().clone().into_owned(), role_type.clone().into_vertex());
     }
 
-    fn delete_plays<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        role_type: RoleType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    fn delete_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) {
         // TODO: error if not playing
         type_manager.delete_storage_plays(self.vertex().clone().into_owned(), role_type.into_vertex())
     }
@@ -233,6 +211,7 @@ impl From<Annotation> for EntityTypeAnnotation {
         match annotation {
             Annotation::Abstract(annotation) => EntityTypeAnnotation::Abstract(annotation),
             Annotation::Duplicate(_) => unreachable!("Duplicate annotation not available for Entity type."),
+            Annotation::Independent(_) => unreachable!("Independent annotation not available for Entity type."),
         }
     }
 }

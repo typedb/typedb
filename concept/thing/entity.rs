@@ -25,14 +25,17 @@ use encoding::{
     layout::prefix::Prefix,
     AsBytes, Prefixed,
 };
+use encoding::graph::thing::edge::{ThingEdgeRelationIndex, ThingEdgeRolePlayer};
 use storage::key_value::StorageKeyReference;
 
 use crate::{
     concept_iterator,
     error::ConceptWriteError,
     thing::{
+        object::Object,
         attribute::{Attribute, AttributeIterator},
         thing_manager::ThingManager,
+        relation::{IndexedPlayersIterator, RelationRoleIterator},
     },
     type_::entity_type::EntityType,
     ByteReference, ConceptAPI,
@@ -51,6 +54,10 @@ impl<'a> Entity<'a> {
 
     pub fn type_(&self) -> EntityType<'static> {
         EntityType::new(build_vertex_entity_type(self.vertex.type_id()))
+    }
+
+    pub fn as_reference<'this>(&'this self) -> Entity<'this> {
+        Entity { vertex: self.vertex.as_reference() }
     }
 
     pub fn iid(&self) -> ByteReference<'_> {
@@ -79,13 +86,20 @@ impl<'a> Entity<'a> {
         attribute: &Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: validate schema
+
         todo!()
     }
 
-    pub fn get_relations<'m, D>(&self, thing_manager: &'m ThingManager<'_, '_, D>) {
-        // -> RelationRoleIterator<'m, _> {
-        todo!()
-        // TODO: fix return type prefix size
+    pub fn get_relations<'m, D>(
+        &self, thing_manager: &'m ThingManager<'_, '_, D>,
+    ) -> RelationRoleIterator<'m, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
+        thing_manager.storage_get_relations(self.vertex())
+    }
+
+    pub fn get_indexed_players<'m, D>(
+        &self, thing_manager: &'m ThingManager<'_, '_, D>,
+    ) -> IndexedPlayersIterator<'m, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
+        thing_manager.get_indexed_players(Object::Entity(self.as_reference()))
     }
 
     pub(crate) fn vertex<'this: 'a>(&'this self) -> ObjectVertex<'this> {

@@ -38,7 +38,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         type_manager: &TypeManager<'_, '_, D>,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Owns<'static>, ConceptWriteError> {
+    ) {
         // TODO: decide behaviour (ok or error) if already owning
         match self {
             ObjectType::Entity(entity) => entity.set_owns(type_manager, attribute_type),
@@ -46,11 +46,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         }
     }
 
-    fn delete_owns<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    fn delete_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) {
         match self {
             ObjectType::Entity(entity) => entity.delete_owns(type_manager, attribute_type),
             ObjectType::Relation(relation) => relation.delete_owns(type_manager, attribute_type),
@@ -84,18 +80,14 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         &self,
         type_manager: &TypeManager<'_, '_, D>,
         role_type: RoleType<'static>,
-    ) -> Result<Plays<'static>, ConceptWriteError> {
+    ) {
         match self {
             ObjectType::Entity(entity) => entity.set_plays(type_manager, role_type),
             ObjectType::Relation(relation) => relation.set_plays(type_manager, role_type),
         }
     }
 
-    fn delete_plays<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        role_type: RoleType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    fn delete_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) {
         match self {
             ObjectType::Entity(entity) => entity.delete_plays(type_manager, role_type),
             ObjectType::Relation(relation) => relation.delete_plays(type_manager, role_type),

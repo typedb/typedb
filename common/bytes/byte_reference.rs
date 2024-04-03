@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::ops::Range;
 use crate::byte_array::ByteArray;
 
 /*
@@ -46,6 +47,11 @@ impl<'bytes> ByteReference<'bytes> {
     pub(crate) fn truncate(self, length: usize) -> ByteReference<'bytes> {
         assert!(length <= self.bytes.len());
         ByteReference { bytes: &self.bytes[0..length] }
+    }
+
+    pub fn into_range(self, range: Range<usize>) -> ByteReference<'bytes> {
+        assert!(range.len() <= self.bytes.len());
+        ByteReference { bytes: &self.bytes[range.start..range.end] }
     }
 }
 

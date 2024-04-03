@@ -16,12 +16,13 @@
  */
 
 use std::rc::Rc;
+use std::sync::Mutex;
 
 use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{
-            edge::{ThingEdgeHas, ThingEdgeHasReverse},
+            edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeRelationIndex, ThingEdgeRolePlayer},
             vertex_attribute::AttributeVertex,
             vertex_generator::{LongAttributeID, StringAttributeID, ThingVertexGenerator},
             vertex_object::ObjectVertex,
@@ -30,7 +31,10 @@ use encoding::{
         Typed,
     },
     layout::prefix::{Prefix, PrefixID},
-    value::{long::Long, string::StringBytes, value_type::ValueType},
+    value::{
+        decode_value_u64, encode_value_u64,
+        long::Long, string::StringBytes, value_type::ValueType,
+    },
     Keyable,
 };
 use primitive::prefix_range::PrefixRange;
@@ -42,15 +46,23 @@ use crate::{
     thing::{
         attribute::{Attribute, AttributeIterator},
         entity::{Entity, EntityIterator},
+        relation::{IndexedPlayersIterator, Relation, RelationIterator, RelationRoleIterator, RolePlayerIterator},
         value::Value,
+        object::Object,
     },
-    type_::{attribute_type::AttributeType, entity_type::EntityType, type_manager::TypeManager, TypeAPI},
+    type_::{
+        attribute_type::AttributeType, entity_type::EntityType, type_manager::TypeManager,
+        relation_type::RelationType,
+        role_type::RoleType,
+        TypeAPI,
+    },
 };
 
 pub struct ThingManager<'txn, 'storage: 'txn, D> {
     snapshot: Rc<Snapshot<'storage, D>>,
     vertex_generator: &'txn ThingVertexGenerator,
     type_manager: Rc<TypeManager<'txn, 'storage, D>>,
+    relation_lock: Mutex<()>,
 }
 
 impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
@@ -59,7 +71,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         vertex_generator: &'txn ThingVertexGenerator,
         type_manager: Rc<TypeManager<'txn, 'storage, D>>,
     ) -> Self {
-        ThingManager { snapshot, vertex_generator, type_manager }
+        ThingManager { snapshot, vertex_generator, type_manager, relation_lock: Mutex::new(()) }
     }
 
     pub(crate) fn type_manager(&self) -> &TypeManager<'txn, 'storage, D> {
@@ -69,6 +81,14 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
     pub fn create_entity(&self, entity_type: EntityType<'static>) -> Result<Entity<'_>, ConceptWriteError> {
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             Ok(Entity::new(self.vertex_generator.create_entity(Typed::type_id(entity_type.vertex()), write_snapshot)))
+        } else {
+            panic!("Illegal state: create entity requires write snapshot")
+        }
+    }
+
+    pub fn create_relation(&self, relation_type: RelationType<'static>) -> Result<Relation<'_>, ConceptWriteError> {
+        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
+            Ok(Relation::new(self.vertex_generator.create_relation(Typed::type_id(relation_type.vertex()), write_snapshot)))
         } else {
             panic!("Illegal state: create entity requires write snapshot")
         }
@@ -119,6 +139,12 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         let prefix = ObjectVertex::build_prefix_prefix(Prefix::VertexEntity.prefix_id());
         let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_within(prefix));
         EntityIterator::new(snapshot_iterator)
+    }
+
+    pub fn get_relations(&self) -> RelationIterator<'_, 1> {
+        let prefix = ObjectVertex::build_prefix_prefix(Prefix::VertexRelation.prefix_id());
+        let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_within(prefix));
+        RelationIterator::new(snapshot_iterator)
     }
 
     pub fn get_attributes(&self) -> AttributeIterator<'_, 1> {
@@ -173,6 +199,13 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         }
     }
 
+    pub(crate) fn get_indexed_players(
+        &self, from: Object<'_>,
+    ) -> IndexedPlayersIterator<'_, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
+        let prefix = ThingEdgeRelationIndex::prefix_from(from.vertex());
+        IndexedPlayersIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
+    }
+
     // TODO: this should either accept Concept's and return Concepts, or consume Vertex and return Vertex
     pub(crate) fn storage_get_has<'this, 'a>(
         &'this self,
@@ -198,13 +231,41 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         Ok(())
     }
 
+    pub(crate) fn storage_get_relations<'this>(
+        &'this self,
+        player: ObjectVertex<'_>,
+    ) -> RelationRoleIterator<'this, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
+        let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player);
+        RelationRoleIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
+    }
+
+    pub(crate) fn storage_get_role_players<'this, 'a>(
+        &'this self, relation: ObjectVertex<'a>,
+    ) -> RolePlayerIterator<'storage, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> where 'this: 'storage {
+        let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation);
+        RolePlayerIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
+    }
+
     pub fn storage_set_role_player(
         &self,
         relation: ObjectVertex<'_>,
         player: ObjectVertex<'_>,
         role_type: TypeVertex<'_>,
     ) -> Result<(), ConceptWriteError> {
-        todo!()
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
+            panic!("Illegal state: creating plays edge requires write snapshot")
+        };
+        let role_player = ThingEdgeRolePlayer::build_role_player(
+            relation.as_reference(), player.as_reference(), role_type.clone(),
+        );
+        let count: u64 = 1;
+        write_snapshot.put_val(role_player.into_storage_key().into_owned_array(), encode_value_u64(count));
+        let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
+            player.as_reference(), relation.as_reference(), role_type.clone(),
+        );
+        // must be idempotent, so no lock required -- cannot fail
+        write_snapshot.put_val(role_player_reverse.into_storage_key().into_owned_array(), encode_value_u64(count));
+        Ok(())
     }
 
     pub fn storage_increment_role_player(
@@ -212,16 +273,121 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         relation: ObjectVertex<'_>,
         player: ObjectVertex<'_>,
         role_type: TypeVertex<'_>,
-    ) -> Result<usize, ConceptWriteError> {
-        todo!()
+    ) -> Result<u64, ConceptWriteError> {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
+            panic!("Illegal state: creating plays edge requires write snapshot")
+        };
+        let role_player = ThingEdgeRolePlayer::build_role_player(
+            relation.as_reference(), player.as_reference(), role_type.clone(),
+        );
+        let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
+            player.as_reference(), relation.as_reference(), role_type.clone(),
+        );
+
+        let mut count = 0;
+        {
+            let lock = self.relation_lock.lock().unwrap();
+            let rp_count = write_snapshot.get_mapped(role_player.as_storage_key().as_reference(), |val| {
+                decode_value_u64(val)
+            }).unwrap();
+            let rp_reverse_count = write_snapshot.get_mapped(role_player_reverse.as_storage_key().as_reference(), |val| {
+                decode_value_u64(val)
+            }).unwrap();
+            debug_assert_eq!(&rp_count, &rp_reverse_count);
+
+            count = rp_count.unwrap_or(0) + 1;
+            let reverse_count = rp_reverse_count.unwrap_or(0) + 1;
+            write_snapshot.put_val(role_player.as_storage_key().into_owned_array(), encode_value_u64(count));
+            write_snapshot
+                .put_val(role_player_reverse.as_storage_key().into_owned_array(), encode_value_u64(reverse_count));
+        }
+
+        // must lock to fail concurrent transactions updating the same counter
+        write_snapshot.record_lock(role_player.into_storage_key());
+        Ok(count)
     }
 
-    pub fn storage_relation_index_new_player(
+    pub fn relation_index_new_player(
         &self,
-        relation: ObjectVertex<'_>,
-        player: ObjectVertex<'_>,
-        role_type: TypeVertex<'_>,
+        relation: Relation<'_>,
+        player: Object<'_>,
+        role_type: RoleType<'_>,
+        duplicates_allowed: bool,
+        player_count: u64,
     ) -> Result<(), ConceptWriteError> {
-        todo!()
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
+            panic!("Illegal state: creating plays edge requires write snapshot")
+        };
+        let lock = self.relation_lock.lock().unwrap();
+        let mut players = relation.get_players(self);
+        if !duplicates_allowed {
+            let encoded_count = encode_value_u64(1);
+            let mut role_player = players.next().transpose().unwrap();
+            while let Some((rp, count)) = role_player.as_ref() {
+                debug_assert_eq!(*count, 1);
+                if rp.player() != player {
+                    let index = ThingEdgeRelationIndex::build(
+                        player.vertex(),
+                        rp.player().vertex(),
+                        relation.vertex(),
+                        Typed::type_id(role_type.vertex()),
+                        Typed::type_id(rp.role_type().vertex()),
+                    );
+                    write_snapshot.put_val(index.as_storage_key().into_owned_array(), encoded_count.clone());
+                    let index_reverse = ThingEdgeRelationIndex::build(
+                        rp.player().vertex(),
+                        player.vertex(),
+                        relation.vertex(),
+                        Typed::type_id(rp.role_type().vertex()),
+                        Typed::type_id(role_type.vertex()),
+                    );
+                    write_snapshot.put_val(index_reverse.as_storage_key().into_owned_array(), encoded_count.clone());
+                }
+                role_player = players.next().transpose().unwrap();
+            }
+        } else {
+            /// for duplicate players, if we have the same (role: player) entry N times,
+            /// we should end up with a repetition of N-1
+            ///
+            /// for different players, if we have N (role: player) and M (role2: player2)
+            /// both directions of the index should have N*M
+            let mut role_player = players.next().transpose().unwrap();
+            while let Some((rp, count)) = role_player.as_ref() {
+                debug_assert_eq!(*count, 1);
+                if rp.player() == player && rp.role_type() == role_type && *count < player_count {
+                    // only update index if another writer hasn't already incremented the player count and it will handle the index update
+                    let repetitions = player_count - 1;
+                    let index = ThingEdgeRelationIndex::build(
+                        player.vertex(),
+                        player.vertex(),
+                        relation.vertex(),
+                        Typed::type_id(role_type.vertex()),
+                        Typed::type_id(role_type.vertex()),
+                    );
+                    write_snapshot.put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
+                } else {
+                    let repetitions = player_count * count;
+                    let index = ThingEdgeRelationIndex::build(
+                        player.vertex(),
+                        rp.player().vertex(),
+                        relation.vertex(),
+                        Typed::type_id(role_type.vertex()),
+                        Typed::type_id(rp.role_type().vertex()),
+                    );
+                    write_snapshot.put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
+                    let index_reverse = ThingEdgeRelationIndex::build(
+                        rp.player().vertex(),
+                        player.vertex(),
+                        relation.vertex(),
+                        Typed::type_id(rp.role_type().vertex()),
+                        Typed::type_id(role_type.vertex()),
+                    );
+                    write_snapshot
+                        .put_val(index_reverse.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
+                }
+                role_player = players.next().transpose().unwrap();
+            }
+        }
+        Ok(())
     }
 }

@@ -19,6 +19,7 @@
 pub enum Annotation {
     Abstract(AnnotationAbstract),
     Duplicate(AnnotationDuplicate),
+    Independent(AnnotationIndependent),
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -48,5 +49,20 @@ impl Default for AnnotationDuplicate {
 impl AnnotationDuplicate {
     pub fn new() -> Self {
         AnnotationDuplicate {}
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationIndependent {}
+
+impl Default for AnnotationIndependent {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl AnnotationIndependent {
+    pub fn new() -> Self {
+        AnnotationIndependent {}
     }
 }

@@ -21,28 +21,23 @@ use bytes::Bytes;
 use encoding::{
     graph::type_::vertex::{new_vertex_relation_type, TypeVertex},
     layout::prefix::Prefix,
-    value::label::Label,
     Prefixed,
+    value::label::Label,
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::key_value::StorageKeyReference;
 
-use crate::{
-    concept_iterator,
-    error::{ConceptReadError, ConceptWriteError},
-    type_::{
-        annotation::{Annotation, AnnotationAbstract},
-        attribute_type::AttributeType,
-        object_type::ObjectType,
-        owns::Owns,
-        plays::Plays,
-        relates::Relates,
-        role_type::RoleType,
-        type_manager::TypeManager,
-        OwnerAPI, PlayerAPI, TypeAPI,
-    },
-    ConceptAPI,
-};
+use crate::{concept_iterator, ConceptAPI, error::{ConceptReadError, ConceptWriteError}, type_::{
+    annotation::{Annotation, AnnotationAbstract},
+    attribute_type::AttributeType,
+    object_type::ObjectType,
+    OwnerAPI,
+    owns::Owns,
+    PlayerAPI,
+    plays::Plays,
+    relates::Relates,
+    role_type::RoleType, type_manager::TypeManager, TypeAPI,
+}};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {
@@ -86,7 +81,7 @@ impl<'a> RelationType<'a> {
         type_manager.get_relation_type_label(self.clone().into_owned())
     }
 
-    fn set_label<D>(&self, type_manager: &TypeManager<'_, '_, D>, label: &Label<'_>) -> Result<(), ConceptWriteError> {
+    fn set_label<D>(&self, type_manager: &TypeManager<'_, '_, D>, label: &Label<'_>) {
         // TODO: setLabel should fail is setting label on Root type
         type_manager.set_storage_label(self.vertex().clone().into_owned(), label)
     }
@@ -98,11 +93,7 @@ impl<'a> RelationType<'a> {
         type_manager.get_relation_type_supertype(self.clone().into_owned())
     }
 
-    fn set_supertype<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        supertype: RelationType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    fn set_supertype<D>(&self, type_manager: &TypeManager<'_, '_, D>, supertype: RelationType<'static>) {
         type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
     }
 
@@ -122,11 +113,7 @@ impl<'a> RelationType<'a> {
         type_manager.get_relation_type_annotations(self.clone().into_owned())
     }
 
-    pub(crate) fn set_annotation<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        annotation: RelationTypeAnnotation,
-    ) -> Result<(), ConceptWriteError> {
+    pub(crate) fn set_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: RelationTypeAnnotation) {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
                 type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
@@ -134,11 +121,7 @@ impl<'a> RelationType<'a> {
         }
     }
 
-    fn delete_annotation<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        annotation: RelationTypeAnnotation,
-    ) -> Result<(), ConceptWriteError> {
+    fn delete_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: RelationTypeAnnotation) {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
                 type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
@@ -159,17 +142,12 @@ impl<'a> RelationType<'a> {
         &self,
         type_manager: &TypeManager<'_, '_, D>,
         name: &str,
-    ) -> Result<Relates<'static>, ConceptWriteError> {
-        let label = Label::build_scoped(name, self.get_label(type_manager)?.name().as_str());
-        type_manager.create_role_type(&label, self.clone().into_owned(), false)?;
-        Ok(self.get_relates_role(type_manager, name)?.unwrap())
+    ) {
+        let label = Label::build_scoped(name, self.get_label(type_manager).unwrap().name().as_str());
+        type_manager.create_role_type(&label, self.clone().into_owned(), false);
     }
 
-    fn delete_relates<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        role_type: RoleType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    fn delete_relates<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) {
         type_manager.delete_storage_relates(self.vertex().clone().into_owned(), role_type.into_vertex())
     }
 
@@ -202,16 +180,11 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         &self,
         type_manager: &TypeManager<'_, '_, D>,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Owns<'static>, ConceptWriteError> {
-        type_manager.set_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex())?;
-        Ok(self.get_owns_attribute(type_manager, attribute_type)?.unwrap())
+    ) {
+        type_manager.set_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex());
     }
 
-    fn delete_owns<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    fn delete_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) {
         // TODO: error if not owned?
         type_manager.delete_storage_owns(self.vertex().clone().into_owned(), attribute_type.into_vertex())
     }
@@ -238,17 +211,12 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         &self,
         type_manager: &TypeManager<'_, '_, D>,
         role_type: RoleType<'static>,
-    ) -> Result<Plays<'static>, ConceptWriteError> {
+    ) {
         // TODO: decide behaviour (ok or error) if already playing
-        type_manager.set_storage_plays(self.vertex().clone().into_owned(), role_type.clone().into_vertex())?;
-        Ok(self.get_plays_role(type_manager, role_type)?.unwrap())
+        type_manager.set_storage_plays(self.vertex().clone().into_owned(), role_type.clone().into_vertex());
     }
 
-    fn delete_plays<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        role_type: RoleType<'static>,
-    ) -> Result<(), ConceptWriteError> {
+    fn delete_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) {
         // TODO: error if not playing?
         type_manager.delete_storage_plays(self.vertex().clone().into_owned(), role_type.into_vertex())
     }
@@ -280,7 +248,8 @@ impl From<Annotation> for RelationTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Abstract(annotation) => RelationTypeAnnotation::Abstract(annotation),
-            Annotation::Duplicate(_) => unreachable!("Annotation not available for Relation type."),
+            Annotation::Duplicate(_) => unreachable!("Duplicate annotation not available for Relation type."),
+            Annotation::Independent(_) => unreachable!("Independent annotation not available for Relation type."),
         }
     }
 }

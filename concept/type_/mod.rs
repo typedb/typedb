@@ -49,13 +49,9 @@ pub trait OwnerAPI<'a> {
         &self,
         type_manager: &TypeManager<'_, '_, D>,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Owns<'static>, ConceptWriteError>;
+    );
 
-    fn delete_owns<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError>;
+    fn delete_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>);
 
     fn get_owns<'m, D>(
         &self,
@@ -78,17 +74,9 @@ pub trait OwnerAPI<'a> {
 }
 
 pub trait PlayerAPI<'a> {
-    fn set_plays<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        role_type: RoleType<'static>,
-    ) -> Result<Plays<'static>, ConceptWriteError>;
+    fn set_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>);
 
-    fn delete_plays<D>(
-        &self,
-        type_manager: &TypeManager<'_, '_, D>,
-        role_type: RoleType<'static>,
-    ) -> Result<(), ConceptWriteError>;
+    fn delete_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>);
 
     fn get_plays<'m, D>(
         &self,
