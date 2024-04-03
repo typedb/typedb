@@ -17,7 +17,7 @@
 
 use std::collections::HashSet;
 
-use bytes::{byte_reference::ByteReference, Bytes};
+use bytes::Bytes;
 use encoding::{
     graph::type_::vertex::{new_vertex_role_type, TypeVertex},
     layout::prefix::Prefix,
@@ -25,16 +25,13 @@ use encoding::{
     Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
-use storage::{
-    key_value::StorageKeyReference,
-    snapshot::{iterator::SnapshotRangeIterator, SnapshotError},
-};
+use storage::key_value::StorageKeyReference;
 
 use crate::{
     concept_iterator,
-    error::{ConceptError, ConceptErrorKind, ConceptReadError, ConceptWriteError},
+    error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationAbstract},
+        annotation::{Annotation, AnnotationAbstract, AnnotationDuplicate},
         plays::Plays,
         relates::Relates,
         type_manager::TypeManager,
@@ -42,7 +39,6 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::type_::annotation::AnnotationDuplicate;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -75,22 +71,28 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
 }
 
 impl<'a> RoleType<'a> {
-    pub fn is_root<D>(&self, type_manager: &TypeManager<'_, '_, D>) -> bool {
+    pub fn is_root<D>(&self, type_manager: &TypeManager<'_, '_, D>) -> Result<bool, ConceptReadError> {
         type_manager.get_role_type_is_root(self.clone().into_owned())
     }
 
-    pub fn get_label<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, Label<'static>> {
+    pub fn get_label<'m, D>(
+        &self,
+        type_manager: &'m TypeManager<'_, '_, D>,
+    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
         type_manager.get_role_type_label(self.clone().into_owned())
     }
 
-    fn set_name<D>(&self, type_manager: &TypeManager<'_, '_, D>, name: &str) {
+    fn set_name<D>(&self, _type_manager: &TypeManager<'_, '_, D>, _name: &str) {
         // // TODO: setLabel should fail is setting label on Root type
         // type_manager.set_storage_label(self.vertex().clone().into_owned(), label);
 
         todo!()
     }
 
-    pub fn get_supertype<D>(&self, type_manager: &TypeManager<'_, '_, D>) -> Option<RoleType<'static>> {
+    pub fn get_supertype<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+    ) -> Result<Option<RoleType<'_>>, ConceptReadError> {
         type_manager.get_role_type_supertype(self.clone().into_owned())
     }
 
@@ -105,7 +107,7 @@ impl<'a> RoleType<'a> {
     pub fn get_supertypes<'m, D>(
         &self,
         type_manager: &'m TypeManager<'_, '_, D>,
-    ) -> MaybeOwns<'m, Vec<RoleType<'static>>> {
+    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, ConceptReadError> {
         type_manager.get_role_type_supertypes(self.clone().into_owned())
     }
 
@@ -133,7 +135,11 @@ impl<'a> RoleType<'a> {
         }
     }
 
-    fn delete_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: RoleTypeAnnotation) {
+    fn delete_annotation<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        annotation: RoleTypeAnnotation,
+    ) -> Result<(), ConceptWriteError> {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
                 type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
@@ -144,7 +150,7 @@ impl<'a> RoleType<'a> {
         }
     }
 
-    fn get_relates<D>(&self, type_manager: &TypeManager<'_, '_, D>) -> Relates<'static> {
+    fn get_relates<D>(&self, _type_manager: &TypeManager<'_, '_, D>) -> Relates<'static> {
         todo!()
     }
 
@@ -155,7 +161,7 @@ impl<'a> RoleType<'a> {
 
 // --- Played API ---
 impl<'a> RoleType<'a> {
-    fn get_plays<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Plays<'static>>> {
+    fn get_plays<'m, D>(&self, _type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Plays<'static>>> {
         todo!()
     }
 }

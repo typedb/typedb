@@ -16,30 +16,33 @@
  */
 
 use bytes::Bytes;
-use encoding::{AsBytes, Prefixed};
-use encoding::graph::thing::edge::ThingEdgeHas;
-use encoding::graph::thing::vertex_object::ObjectVertex;
-use encoding::graph::type_::vertex::{build_vertex_relation_type};
-use encoding::graph::Typed;
-use encoding::layout::prefix::Prefix;
-use storage::{
-    key_value::StorageKeyReference,
-    snapshot::{iterator::SnapshotRangeIterator, SnapshotError},
+use encoding::{
+    graph::{
+        thing::{edge::ThingEdgeHas, vertex_object::ObjectVertex},
+        type_::vertex::build_vertex_relation_type,
+        Typed,
+    },
+    layout::prefix::Prefix,
+    AsBytes, Prefixed,
 };
+use storage::key_value::StorageKeyReference;
 
 use crate::{
     concept_iterator,
-    error::{ConceptError, ConceptErrorKind},
+    error::ConceptWriteError,
+    thing::{
+        attribute::{Attribute, AttributeIterator},
+        object::Object,
+        thing_manager::ThingManager,
+    },
+    type_::{
+        annotation::AnnotationDuplicate,
+        relation_type::RelationType,
+        role_type::{RoleType, RoleTypeAnnotation},
+        TypeAPI,
+    },
     ByteReference, ConceptAPI,
 };
-use crate::error::ConceptWriteError;
-use crate::thing::attribute::{Attribute, AttributeIterator};
-use crate::thing::object::Object;
-use crate::thing::thing_manager::ThingManager;
-use crate::type_::annotation::AnnotationDuplicate;
-use crate::type_::relation_type::RelationType;
-use crate::type_::role_type::{RoleType, RoleTypeAnnotation};
-use crate::type_::TypeAPI;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Relation<'a> {
@@ -60,19 +63,27 @@ impl<'a> Relation<'a> {
         self.vertex.bytes()
     }
 
-    pub fn get_has<'m, D>(&self, thing_manager: &'m ThingManager<'_, '_, D>)
-                          -> AttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+    pub fn get_has<'m, D>(
+        &self,
+        thing_manager: &'m ThingManager<'_, '_, D>,
+    ) -> AttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         thing_manager.storage_get_has(self.vertex())
     }
 
-    pub fn set_has<D>(&self, thing_manager: &ThingManager<'_, '_, D>, attribute: &Attribute<'_>)
-                      -> Result<(), ConceptWriteError> {
+    pub fn set_has<D>(
+        &self,
+        thing_manager: &ThingManager<'_, '_, D>,
+        attribute: &Attribute<'_>,
+    ) -> Result<(), ConceptWriteError> {
         // TODO: validate schema
         thing_manager.storage_set_has(self.vertex(), attribute.vertex())
     }
 
-    pub fn delete_has<D>(&self, thing_manager: &ThingManager<'_, '_, D>, attribute: &Attribute<'_>)
-                         -> Result<(), ConceptWriteError> {
+    pub fn delete_has<D>(
+        &self,
+        thing_manager: &ThingManager<'_, '_, D>,
+        attribute: &Attribute<'_>,
+    ) -> Result<(), ConceptWriteError> {
         // TODO: validate schema
         todo!()
     }
@@ -93,18 +104,25 @@ impl<'a> Relation<'a> {
     ///   When duplicates are not allowed, we use set semantics and put the edge idempotently, which cannot fail other txn's
     ///   When duplicates are allowed, we increment the count of the role player edge and fail other txn's doing the same
     ///
-    pub fn add_player<D>(&self, thing_manager: &ThingManager<'_, '_, D>, role_type: RoleType<'static>, player: &Object<'_>) {
+    pub fn add_player<D>(
+        &self,
+        thing_manager: &ThingManager<'_, '_, D>,
+        role_type: RoleType<'static>,
+        player: &Object<'_>,
+    ) -> Result<(), ConceptWriteError> {
         // TODO: validate schema
 
         let role_annotations = role_type.get_annotations(thing_manager.type_manager()).unwrap();
         let duplicates_allowed = role_annotations.contains(&RoleTypeAnnotation::Duplicate(AnnotationDuplicate::new()));
         let mut player_count = 0;
         if duplicates_allowed {
-            // TODO: handle error
-            player_count = thing_manager.storage_increment_role_player(self.vertex(), player.vertex(), role_type.clone().into_vertex()).unwrap();
+            player_count = thing_manager.storage_increment_role_player(
+                self.vertex(),
+                player.vertex(),
+                role_type.clone().into_vertex(),
+            )?;
         } else {
-            // TODO: handle error
-            thing_manager.storage_set_role_player(self.vertex(), player.vertex(), role_type.clone().into_vertex()).unwrap();
+            thing_manager.storage_set_role_player(self.vertex(), player.vertex(), role_type.clone().into_vertex())?;
             player_count = 1;
         }
 
@@ -125,10 +143,8 @@ impl<'a> Relation<'a> {
          */
 
         let optimised_relation_type = true; // TODO: check whether relation type is optimised
-        // TODO handle error
-        thing_manager.storage_relation_index_new_player(self.vertex(), player.vertex(), role_type.into_vertex()).unwrap();
+        thing_manager.storage_relation_index_new_player(self.vertex(), player.vertex(), role_type.into_vertex())
     }
-
 
     pub(crate) fn vertex<'this: 'a>(&'this self) -> ObjectVertex<'this> {
         self.vertex.as_reference()

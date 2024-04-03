@@ -14,24 +14,24 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 use std::cmp::Ordering;
 
 use bytes::Bytes;
-use encoding::{AsBytes, graph::thing::vertex_attribute::AttributeVertex, value::value_type::ValueType};
-use encoding::graph::type_::vertex::{build_vertex_attribute_type, TypeVertex};
-use encoding::graph::Typed;
-use storage::{
-    key_value::StorageKeyReference,
-    snapshot::{iterator::SnapshotRangeIterator, SnapshotError},
+use encoding::{
+    graph::{thing::vertex_attribute::AttributeVertex, type_::vertex::build_vertex_attribute_type, Typed},
+    value::value_type::ValueType,
+    AsBytes,
 };
+use storage::key_value::StorageKeyReference;
 
 use crate::{
-    ByteReference,
     concept_iterator,
-    ConceptAPI,
-    error::{ConceptError, ConceptErrorKind, ConceptReadError}, thing::{thing_manager::ThingManager, value::Value},
+    error::ConceptReadError,
+    thing::{thing_manager::ThingManager, value::Value},
+    type_::attribute_type::AttributeType,
+    ByteReference, ConceptAPI,
 };
-use crate::type_::attribute_type::AttributeType;
 
 #[derive(Clone, Debug)]
 pub struct Attribute<'a> {
@@ -60,7 +60,7 @@ impl<'a> Attribute<'a> {
         thing_manager.get_attribute_value(self)
     }
 
-    pub fn get_owners<'m, D>(&self, thing_manager: &'m ThingManager<'_, '_, D>)  {
+    pub fn get_owners<'m, D>(&self, thing_manager: &'m ThingManager<'_, '_, D>) {
         // -> ObjectIterator<'m, 1>
         todo!()
     }
@@ -99,4 +99,5 @@ impl<'a> Ord for Attribute<'a> {
 fn storage_key_to_attribute<'a>(storage_key_ref: StorageKeyReference<'a>) -> Attribute<'a> {
     Attribute::new(AttributeVertex::new(Bytes::Reference(storage_key_ref.byte_ref())))
 }
+
 concept_iterator!(AttributeIterator, Attribute, storage_key_to_attribute);

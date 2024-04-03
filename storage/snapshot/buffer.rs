@@ -19,9 +19,9 @@ use std::{
     borrow::Borrow,
     cmp::Ordering,
     collections::{BTreeMap, Bound},
-    fmt, mem,
-    mem::MaybeUninit,
-    sync::{atomic::AtomicBool, Arc, RwLock},
+    fmt,
+    mem::{transmute, MaybeUninit},
+    sync::{Arc, RwLock},
 };
 
 use bytes::{byte_array::ByteArray, util::increment, Bytes};
@@ -35,9 +35,10 @@ use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
 };
 
+use super::iterator::SnapshotIteratorError;
 use crate::{
     key_value::StorageKeyArray,
-    keyspace::keyspace::{KeyspaceId, KEYSPACE_MAXIMUM_COUNT},
+    keyspace::{KeyspaceId, KEYSPACE_MAXIMUM_COUNT},
     snapshot::{snapshot::SnapshotError, write::Write},
 };
 
@@ -64,6 +65,14 @@ impl KeyspaceBuffers {
     }
 }
 
+impl<'a> IntoIterator for &'a KeyspaceBuffers {
+    type Item = &'a KeyspaceBuffer;
+    type IntoIter = <&'a [KeyspaceBuffer] as IntoIterator>::IntoIter;
+    fn into_iter(self) -> Self::IntoIter {
+        self.buffers.iter()
+    }
+}
+
 // TODO: implement our own alternative to BTreeMap, which
 //       1) allows storing StorageKeyArray's directly, while doing lookup with any StorageKey. Then
 //          we would not need to allocate one buffer per keyspace ahead of time.
@@ -74,7 +83,7 @@ impl KeyspaceBuffers {
 //          might lead us to a RocksDB-like Buffer+Index structure
 #[derive(Debug)]
 pub(crate) struct KeyspaceBuffer {
-    keyspace_id: KeyspaceId,
+    pub(crate) keyspace_id: KeyspaceId,
     buffer: RwLock<BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>>,
 }
 
@@ -92,7 +101,7 @@ impl KeyspaceBuffer {
     }
 
     pub(crate) fn insert_preexisting(&self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        self.buffer.write().unwrap().insert(key, Write::InsertPreexisting(value, Arc::new(AtomicBool::new(false))));
+        self.buffer.write().unwrap().insert(key, Write::InsertPreexisting { value, reinsert: Arc::default() });
     }
 
     pub(crate) fn require_exists(&self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
@@ -116,9 +125,9 @@ impl KeyspaceBuffer {
     pub(crate) fn get<const INLINE_BYTES: usize>(&self, key: &[u8]) -> Option<ByteArray<INLINE_BYTES>> {
         let map = self.buffer.read().unwrap();
         match map.get(key) {
-            Some(Write::Insert { value }) => Some(ByteArray::copy(value.bytes())),
-            Some(Write::InsertPreexisting(value, _)) => Some(ByteArray::copy(value.bytes())),
-            Some(Write::RequireExists { value }) => Some(ByteArray::copy(value.bytes())),
+            Some(Write::Insert { value })
+            | Some(Write::InsertPreexisting { value, .. })
+            | Some(Write::RequireExists { value }) => Some(ByteArray::copy(value.bytes())),
             Some(Write::Delete) | None => None,
         }
     }
@@ -175,7 +184,9 @@ impl BufferedPrefixIterator {
         Self { state: State::Init, index: 0, range }
     }
 
-    pub(crate) fn peek(&mut self) -> Option<Result<(&StorageKeyArray<BUFFER_KEY_INLINE>, &Write), SnapshotError>> {
+    pub(crate) fn peek(
+        &mut self,
+    ) -> Option<Result<(&StorageKeyArray<BUFFER_KEY_INLINE>, &Write), SnapshotIteratorError>> {
         match &self.state {
             State::Done => None,
             State::Init => {
@@ -331,7 +342,7 @@ impl<'de> Deserialize<'de> for KeyspaceBuffers {
                     buffers_init[keyspace_buffer.keyspace_id.0 as usize].write(keyspace_buffer);
                 }
 
-                let buffers = unsafe { mem::transmute(buffers_init) };
+                let buffers = unsafe { transmute(buffers_init) };
                 Ok(KeyspaceBuffers { buffers })
             }
 

@@ -8,10 +8,7 @@ use primitive::prefix_range::PrefixRange;
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::{
-        iterator::KeyspaceRangeIterator,
-        keyspace::{Keyspace, KeyspaceError},
-    },
+    keyspace::{iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError},
 };
 
 pub(crate) struct MVCCRangeIterator<'storage, const PS: usize> {
@@ -120,18 +117,17 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
             self.advance();
         }
         while matches!(&self.state, State::Init | State::ItemUsed) {
-            let peek = self.iterator.peek();
-            match peek {
+            match self.iterator.peek() {
                 None => self.state = State::Done,
                 Some(Ok((key, _))) => {
                     let mvcc_key = MVCCKey::wrap_slice(key);
                     let is_visible = mvcc_key.is_visible_to(self.open_sequence_number)
-                        && !self.last_visible_key.as_ref().is_some_and(|key| key == mvcc_key.bytes());
+                        && !self.last_visible_key.as_ref().is_some_and(|key| key == mvcc_key.key());
                     if is_visible {
                         self.last_visible_key = Some(ByteArray::copy(mvcc_key.key()));
                         match mvcc_key.operation() {
                             StorageOperation::Insert => self.state = State::ItemReady,
-                            StorageOperation::Delete => {}
+                            StorageOperation::Delete => self.advance(),
                         }
                     } else {
                         self.advance()
@@ -145,7 +141,7 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
     fn advance(&mut self) {
         match self.iterator.next() {
             None => self.state = State::Done,
-            Some(Ok(_)) => {}
+            Some(Ok(_)) => (),
             Some(Err(error)) => self.state = State::Error(Arc::new(error)),
         }
     }

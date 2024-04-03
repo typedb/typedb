@@ -72,7 +72,7 @@ fn populate_storage(storage: &MVCCStorage<WAL>, keyspace: TestKeyspaceSet, key_c
             snapshot.commit().unwrap();
             snapshot = storage.open_snapshot_write();
         }
-        snapshot.put(random_key_24(keyspace)).unwrap();
+        snapshot.put(random_key_24(keyspace));
     }
     snapshot.commit().unwrap();
     println!("Keys written: {}", key_count);
@@ -112,7 +112,7 @@ fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(
 fn bench_snapshot_write_put(storage: &MVCCStorage<WAL>, keyspace: TestKeyspaceSet, batch_size: usize) {
     let snapshot = storage.open_snapshot_write();
     for _ in 0..batch_size {
-        snapshot.put(random_key_24(keyspace)).unwrap();
+        snapshot.put(random_key_24(keyspace));
     }
     snapshot.commit().unwrap()
 }

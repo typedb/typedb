@@ -23,7 +23,7 @@ use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
-    isolation_manager::{IsolationError, IsolationErrorKind},
+    isolation_manager::IsolationError,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::SnapshotError,
     KeyspaceSet, MVCCStorage,
@@ -62,8 +62,8 @@ fn setup_storage(storage_path: &Path) -> MVCCStorage<WAL> {
     let storage = MVCCStorage::recover::<TestKeyspaceSet>("storage", storage_path).unwrap();
 
     let snapshot = storage.open_snapshot_write();
-    snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1)).unwrap();
-    snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_2)).unwrap();
+    snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
+    snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_2));
     snapshot.commit().unwrap();
 
     storage
@@ -80,7 +80,7 @@ fn commits_isolated() {
 
     let key_3 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_3));
     let value_3 = ByteArray::copy(&VALUE_3);
-    snapshot_1.put_val(key_3.clone(), value_3.clone()).unwrap();
+    snapshot_1.put_val(key_3.clone(), value_3.clone());
     snapshot_1.commit().unwrap();
 
     let get: Option<ByteArray<BUFFER_KEY_INLINE>> = snapshot_2.get(StorageKeyReference::from(&key_3)).unwrap();
@@ -103,7 +103,6 @@ fn commits_isolated() {
 /// 2. S1 - get_required(K1)
 /// 3. S2 - delete(K1)
 ///
-///
 #[test]
 fn g0_update_conflicts_fail() {
     init_logging();
@@ -113,10 +112,7 @@ fn g0_update_conflicts_fail() {
     let snapshot_1 = storage.open_snapshot_write();
     let snapshot_2 = storage.open_snapshot_write();
 
-    let key_1: StorageKey<'_, BUFFER_KEY_INLINE> =
-        StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
-    let _key_2: StorageKey<'_, BUFFER_KEY_INLINE> =
-        StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_2)));
+    let key_1 = StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
 
     snapshot_1.get_required(key_1.clone()).unwrap();
 
@@ -132,10 +128,7 @@ fn g0_update_conflicts_fail() {
             Err(
                 SnapshotError::Commit {
                     source: MVCCStorageError {
-                        kind: MVCCStorageErrorKind::IsolationError {
-                            source: IsolationError { kind: IsolationErrorKind::RequiredDeleteViolation },
-                            ..
-                        },
+                        kind: MVCCStorageErrorKind::IsolationError { source: IsolationError::RequiredDelete, .. },
                         ..
                     },
                     ..
@@ -143,7 +136,7 @@ fn g0_update_conflicts_fail() {
                 ..
             )
         ),
-        "{}",
-        result_2.unwrap_err()
+        "{:?}",
+        result_2
     );
 }

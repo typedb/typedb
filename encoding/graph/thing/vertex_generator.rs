@@ -25,7 +25,6 @@ use primitive::prefix_range::PrefixRange;
 use storage::snapshot::WriteSnapshot;
 
 use crate::{
-    error::EncodingWriteError,
     graph::{
         thing::{
             vertex_attribute::{AttributeID, AttributeID17, AttributeID8, AttributeVertex},
@@ -107,12 +106,11 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         value: Long,
         snapshot: &WriteSnapshot<'_, D>,
-    ) -> Result<AttributeVertex<'static>, EncodingWriteError> {
+    ) -> AttributeVertex<'static> {
         let long_atribute_id = LongAttributeID::build(value);
         let vertex = AttributeVertex::build(ValueType::Long, type_id, long_atribute_id.as_attribute_id());
-        snapshot.put(vertex.as_storage_key().into_owned_array())
-            .map_err(|error| EncodingWriteError::SnapshotPut { source: error })?;
-        Ok(vertex)
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        vertex
     }
 
     ///
@@ -130,12 +128,11 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         value: StringBytes<'_, INLINE_LENGTH>,
         snapshot: &WriteSnapshot<'_, D>,
-    ) -> Result<AttributeVertex<'static>, EncodingWriteError> {
+    ) -> AttributeVertex<'static> {
         let string_attribute_id = self.create_string_attribute_id(type_id, value.clone_as_ref(), snapshot);
         let vertex = AttributeVertex::build(ValueType::String, type_id, string_attribute_id.as_attribute_id());
-        snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()))
-            .map_err(|error| EncodingWriteError::SnapshotPut { source: error })?;
-        Ok(vertex)
+        snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
+        vertex
     }
 
     fn create_string_attribute_id<const INLINE_LENGTH: usize, D>(

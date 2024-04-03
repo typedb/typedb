@@ -20,9 +20,8 @@ use durability::wal::WAL;
 use itertools::Itertools;
 use primitive::prefix_range::PrefixRange;
 use storage::{
-    error::{MVCCStorageError, MVCCStorageErrorKind},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    KeyspaceSet, MVCCStorage,
+    KeyspaceSet, KeyspaceValidationError, MVCCStorage, StorageRecoverError,
 };
 use test_utils::{create_tmp_dir, init_logging};
 
@@ -85,7 +84,10 @@ fn create_keyspaces_duplicate_name_error() {
     let storage_path = create_tmp_dir();
     let create_result = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path);
     assert!(
-        matches!(create_result, Err(MVCCStorageError { kind: MVCCStorageErrorKind::KeyspaceNameExists { .. }, .. })),
+        matches!(
+            create_result,
+            Err(StorageRecoverError::KeyspaceValidation { source: KeyspaceValidationError::NameExists { .. } })
+        ),
         "{}",
         create_result.unwrap_err()
     );
@@ -102,7 +104,10 @@ fn create_keyspaces_duplicate_id_error() {
     let storage_path = create_tmp_dir();
     let create_result = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path);
     assert!(
-        matches!(create_result, Err(MVCCStorageError { kind: MVCCStorageErrorKind::KeyspaceIdExists { .. }, .. })),
+        matches!(
+            create_result,
+            Err(StorageRecoverError::KeyspaceValidation { source: KeyspaceValidationError::IdExists { .. } })
+        ),
         "{}",
         create_result.unwrap_err()
     );

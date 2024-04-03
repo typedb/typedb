@@ -31,10 +31,7 @@ use logger::result::ResultExt;
 use primitive::u80::U80;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    keyspace::keyspace::KeyspaceId,
-    snapshot::{buffer::KeyspaceBuffers, write::Write},
-};
+use crate::snapshot::{buffer::KeyspaceBuffers, write::Write};
 
 #[derive(Debug)]
 pub(crate) struct IsolationManager {
@@ -58,11 +55,11 @@ impl IsolationManager {
         IsolationManager { timeline: Timeline::new(next_sequence_number) }
     }
 
-    pub(crate) fn opened(&self, open_sequence_number: &SequenceNumber) {
+    pub(crate) fn opened(&self, open_sequence_number: SequenceNumber) {
         self.timeline.record_reader(open_sequence_number);
     }
 
-    pub(crate) fn closed(&self, open_sequence_number: &SequenceNumber) {
+    pub(crate) fn closed(&self, open_sequence_number: SequenceNumber) {
         self.timeline.remove_reader(open_sequence_number);
     }
 
@@ -72,29 +69,22 @@ impl IsolationManager {
         commit_record: CommitRecord,
     ) -> Result<(), IsolationError> {
         let open_sequence_number = commit_record.open_sequence_number;
-        let commit_window = self.pending(&commit_sequence_number, commit_record);
+        let commit_window = self.pending(commit_sequence_number, commit_record);
         let validation_result =
-            self.validate_all_concurrent(&commit_sequence_number, commit_window.get_record(&commit_sequence_number));
+            self.validate_all_concurrent(commit_sequence_number, commit_window.get_record(commit_sequence_number));
 
         if validation_result.is_ok() {
-            self.committed(&commit_sequence_number);
-            Ok(())
+            self.committed(commit_sequence_number);
         } else {
-            self.commit_failed(&commit_sequence_number, &open_sequence_number);
-            validation_result
+            self.commit_failed(commit_sequence_number, open_sequence_number);
         }
-    }
 
-    fn commit_failed(&self, commit_sequence_number: &SequenceNumber, open_sequence_number: &SequenceNumber) {
-        let self1 = &self.timeline;
-        let window = self1.get_window(commit_sequence_number);
-        window.set_closed(commit_sequence_number);
-        self.timeline.remove_reader(open_sequence_number);
+        validation_result
     }
 
     fn validate_all_concurrent(
         &self,
-        commit_sequence_number: &SequenceNumber,
+        commit_sequence_number: SequenceNumber,
         commit_record: &CommitRecord,
     ) -> Result<(), IsolationError> {
         debug_assert!(commit_record.open_sequence_number() < commit_sequence_number);
@@ -102,14 +92,14 @@ impl IsolationManager {
         //       We could also validate against all predecessors even if they are validating and fail eagerly.
 
         let mut at = SequenceNumber::new(commit_record.open_sequence_number.number() + 1);
-        let Some(mut predecessor_window) = self.timeline.try_get_window(&at) else {
+        let Some(mut predecessor_window) = self.timeline.try_get_window(at) else {
             return Ok(()); // nothing to validate
         };
-        while at < *commit_sequence_number {
-            if !predecessor_window.contains(&at) {
-                predecessor_window = self.timeline.get_window(&at);
+        while at < commit_sequence_number {
+            if !predecessor_window.contains(at) {
+                predecessor_window = self.timeline.get_window(at);
             }
-            self.validate_concurrent(commit_record, &at, &predecessor_window)?;
+            self.validate_concurrent(commit_record, at, &predecessor_window)?;
             at = SequenceNumber::new(at.number() + 1);
         }
         Ok(())
@@ -118,14 +108,12 @@ impl IsolationManager {
     fn validate_concurrent(
         &self,
         commit_record: &CommitRecord,
-        predecessor_sequence_number: &SequenceNumber,
-        predecessor_window: &Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>,
+        predecessor_sequence_number: SequenceNumber,
+        predecessor_window: &TimelineWindow<TIMELINE_WINDOW_SIZE>,
     ) -> Result<(), IsolationError> {
         let predecessor_status = predecessor_window.get_status(predecessor_sequence_number);
         match predecessor_status {
-            CommitStatus::Empty => {
-                unreachable!("A concurrent status should never be empty at commit time")
-            }
+            CommitStatus::Empty => unreachable!("A concurrent status should never be empty at commit time"),
             CommitStatus::Pending(predecessor_record) => {
                 let result = self.validate_isolation(commit_record, predecessor_record);
                 if result.is_err() && self.await_pending_status_commits(predecessor_sequence_number, predecessor_window)
@@ -142,19 +130,18 @@ impl IsolationManager {
 
     fn await_pending_status_commits(
         &self,
-        predecessor_sequence_number: &SequenceNumber,
-        predecessor_window: &Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>,
+        predecessor_sequence_number: SequenceNumber,
+        predecessor_window: &TimelineWindow<TIMELINE_WINDOW_SIZE>,
     ) -> bool {
         debug_assert!(!matches!(predecessor_window.get_status(predecessor_sequence_number), CommitStatus::Empty));
         loop {
-            let status = predecessor_window.get_status(predecessor_sequence_number);
-            match status {
-                CommitStatus::Empty => unreachable!("Illegal state - commit status cannot move from pending"),
+            match predecessor_window.get_status(predecessor_sequence_number) {
+                CommitStatus::Empty => unreachable!("Illegal state - commit status cannot move from pending to empty"),
                 CommitStatus::Pending(_) => {
                     // TODO: we can improve the spin lock with async/await
                     // Note we only expect to have long waits in long chains of overlapping transactions that would conflict
                     // could also do a little sleep in the spin lock, for example if the validating is still far away
-                    continue;
+                    std::hint::spin_loop();
                 }
                 CommitStatus::Committed(_) => return true,
                 CommitStatus::Closed => return false,
@@ -163,43 +150,30 @@ impl IsolationManager {
     }
 
     fn validate_isolation(&self, record: &CommitRecord, predecessor: &CommitRecord) -> Result<(), IsolationError> {
-        // TODO: this can be optimised by some kind of bit-wise NAND of two bloom filter-like data structures first, since we assume few clashes this should mostly succeed
+        // TODO: this can be optimised by some kind of bit-wise NAND of two bloom filter-like data
+        // structures first, since we assume few clashes this should mostly succeed
         // TODO: can be optimised with an intersection of two sorted iterators instead of iterate + gets
-        for (index, buffer) in record.buffers().iter().enumerate() {
+
+        for (buffer, predecessor_buffer) in record.buffers().iter().zip(predecessor.buffers()) {
             let map = buffer.map().read().unwrap();
             if map.is_empty() {
                 continue;
             }
 
-            let predecessor_map = predecessor.buffers.get(KeyspaceId(index as _)).map().read().unwrap();
+            let predecessor_map = predecessor_buffer.map().read().unwrap();
             if predecessor_map.is_empty() {
                 continue;
             }
 
             for (key, write) in map.iter() {
-                let predecessor_write = predecessor_map.get(key.bytes());
-                if predecessor_write.is_some() {
-                    match write {
-                        Write::Insert { .. } => {}
-                        Write::InsertPreexisting(_, reinsert) => {
-                            // Re-insert the value if a predecessor has deleted it. This may create extra versions of a key
-                            //  in the case that the predecessor ends up failing. However, this will be rare.
-                            if matches!(predecessor_write.unwrap(), Write::Delete) {
-                                reinsert.store(true, Ordering::SeqCst);
-                            }
+                if let Some(predecessor_write) = predecessor_map.get(key.bytes()) {
+                    match (predecessor_write, write) {
+                        (Write::Delete, Write::InsertPreexisting { reinsert, .. }) => {
+                            reinsert.store(true, Ordering::Release)
                         }
-                        Write::RequireExists { .. } => {
-                            if matches!(predecessor_write.unwrap(), Write::Delete) {
-                                return Err(IsolationError { kind: IsolationErrorKind::DeleteRequiredViolation });
-                            }
-                        }
-                        Write::Delete => {
-                            // we escalate delete-required to failure, since requires imply dependencies that may be broken
-                            // TODO: maybe RequireExists should be RequireDependency to capture this?
-                            if matches!(predecessor_write.unwrap(), Write::RequireExists { .. }) {
-                                return Err(IsolationError { kind: IsolationErrorKind::RequiredDeleteViolation });
-                            }
-                        }
+                        (Write::Delete, Write::RequireExists { .. }) => return Err(IsolationError::DeleteRequired),
+                        (Write::RequireExists { .. }, Write::Delete)=> return Err(IsolationError::RequiredDelete),
+                        (_, _) => (),
                     }
                 }
             }
@@ -209,21 +183,26 @@ impl IsolationManager {
 
     fn pending(
         &self,
-        commit_sequence_number: &SequenceNumber,
+        commit_sequence_number: SequenceNumber,
         commit_record: CommitRecord,
     ) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
         self.timeline.record_pending(commit_sequence_number, commit_record)
     }
 
-    fn committed(&self, commit_sequence_number: &SequenceNumber) {
+    fn committed(&self, commit_sequence_number: SequenceNumber) {
         self.timeline.record_committed(commit_sequence_number)
+    }
+
+    fn commit_failed(&self, commit_sequence_number: SequenceNumber, open_sequence_number: SequenceNumber) {
+        self.timeline.get_window(commit_sequence_number).set_closed(commit_sequence_number);
+        self.timeline.remove_reader(open_sequence_number);
     }
 
     pub(crate) fn watermark(&self) -> SequenceNumber {
         self.timeline.watermark()
     }
 
-    pub(crate) fn apply_to_commit_record<F, T>(&self, sequence_number: &SequenceNumber, function: F) -> T
+    pub(crate) fn apply_to_commit_record<F, T>(&self, sequence_number: SequenceNumber, function: F) -> T
     where
         F: FnOnce(&CommitRecord) -> T,
     {
@@ -232,6 +211,23 @@ impl IsolationManager {
         function(record)
     }
 }
+
+#[derive(Debug)]
+pub enum IsolationError {
+    DeleteRequired,
+    RequiredDelete,
+}
+
+impl fmt::Display for IsolationError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::DeleteRequired => write!(f, "Isolation violation: Delete-Require conflict. A preceding concurrent commit has deleted a key required by this transaction. Please retry."),
+            Self::RequiredDelete => write!(f, "Isolation violation: Require-Delete conflict. This commit has deleted a key required by a preceding concurrent transaction. Please retry."),
+        }
+    }
+}
+
+impl Error for IsolationError {}
 
 //
 // We can adjust the Window size to amortise the cost of the read-write locks to maintain the timeline
@@ -267,7 +263,7 @@ impl Timeline {
         debug_assert!(starting_sequence_number.number() > 0);
         let last_sequence_number_value = starting_sequence_number.number() - U80::new(1);
         let initial_window = Arc::new(TimelineWindow::new(SequenceNumber::new(last_sequence_number_value)));
-        let next_window_start = *initial_window.end();
+        let next_window_start = initial_window.end();
         let mut windows = VecDeque::new();
         windows.push_back(initial_window);
 
@@ -275,8 +271,8 @@ impl Timeline {
 
         // initialise the one virtual 'predecessor' so snapshots have a sequence number to open against
         let sequence_number = SequenceNumber::new(last_sequence_number_value);
-        let window = timeline.get_window(&sequence_number);
-        window.set_closed(&sequence_number);
+        let window = timeline.get_window(sequence_number);
+        window.set_closed(sequence_number);
         timeline
     }
 
@@ -314,14 +310,14 @@ impl Timeline {
             .unwrap_or_else(|| SequenceNumber::new(next_sequence_number.number() - U80::new(1)))
     }
 
-    fn record_reader(&self, sequence_number: &SequenceNumber) {
+    fn record_reader(&self, sequence_number: SequenceNumber) {
         let window = self.get_or_create_window(sequence_number);
         window.increment_readers();
     }
 
     fn record_pending(
         &self,
-        sequence_number: &SequenceNumber,
+        sequence_number: SequenceNumber,
         commit_record: CommitRecord,
     ) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
         let window = self.get_or_create_window(sequence_number);
@@ -329,21 +325,21 @@ impl Timeline {
         window
     }
 
-    fn record_committed(&self, sequence_number: &SequenceNumber) {
+    fn record_committed(&self, sequence_number: SequenceNumber) {
         let window = self.get_or_create_window(sequence_number);
         window.set_committed(sequence_number);
         self.remove_window_reader(sequence_number, &window);
     }
 
-    fn remove_reader(&self, reader_sequence_number: &SequenceNumber) {
+    fn remove_reader(&self, reader_sequence_number: SequenceNumber) {
         let read_window = self.get_window(reader_sequence_number);
         self.remove_window_reader(reader_sequence_number, &read_window);
     }
 
     fn remove_window_reader(
         &self,
-        reader_sequence_number: &SequenceNumber,
-        reader_window: &Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>,
+        reader_sequence_number: SequenceNumber,
+        reader_window: &TimelineWindow<TIMELINE_WINDOW_SIZE>,
     ) {
         debug_assert!(reader_window.contains(reader_sequence_number));
         let _readers_remaining = reader_window.decrement_readers();
@@ -359,27 +355,27 @@ impl Timeline {
         windows[windows.len() - 1].clone()
     }
 
-    fn get_or_create_window(&self, sequence_number: &SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
+    fn get_or_create_window(&self, sequence_number: SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
         self.try_get_window(sequence_number).clone().unwrap_or_else(|| self.create_windows_to(sequence_number))
     }
 
-    fn get_window(&self, sequence_number: &SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
+    fn get_window(&self, sequence_number: SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
         self.try_get_window(sequence_number).unwrap()
     }
 
-    fn try_get_window(&self, sequence_number: &SequenceNumber) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
+    fn try_get_window(&self, sequence_number: SequenceNumber) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
         let (_, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
         Self::find_window(sequence_number, windows)
     }
 
     fn find_window(
-        sequence_number: &SequenceNumber,
+        sequence_number: SequenceNumber,
         windows: &VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
     ) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
         windows.iter().rev().find(|window| window.contains(sequence_number)).cloned()
     }
 
-    fn create_windows_to(&self, sequence_number: &SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
+    fn create_windows_to(&self, sequence_number: SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
         let (next_window, windows) = &mut *self.next_window_and_windows.write().unwrap_or_log();
 
         // re-check if another thread created required window before we acquired lock
@@ -405,8 +401,8 @@ impl Timeline {
     }
 
     fn next_window_sequence_number(&self) -> SequenceNumber {
-        let (next_window_sequence_number, _) = &*self.next_window_and_windows.read().unwrap_or_log();
-        *next_window_sequence_number
+        let (next_window_sequence_number, _) = *self.next_window_and_windows.read().unwrap_or_log();
+        next_window_sequence_number
     }
 }
 
@@ -438,17 +434,17 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
     }
 
     /// Sequence number start of window (inclusive)
-    fn start(&self) -> &SequenceNumber {
-        &self.starting_sequence_number
+    fn start(&self) -> SequenceNumber {
+        self.starting_sequence_number
     }
 
     /// Sequence number end of window (exclusive)
-    fn end(&self) -> &SequenceNumber {
-        &self.end_sequence_number
+    fn end(&self) -> SequenceNumber {
+        self.end_sequence_number
     }
 
-    fn contains(&self, sequence_number: &SequenceNumber) -> bool {
-        self.starting_sequence_number <= *sequence_number && *sequence_number < self.end_sequence_number
+    fn contains(&self, sequence_number: SequenceNumber) -> bool {
+        self.starting_sequence_number <= sequence_number && sequence_number < self.end_sequence_number
     }
 
     fn is_finished(&self) -> bool {
@@ -467,34 +463,34 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         })
     }
 
-    fn set_pending(&self, sequence_number: &SequenceNumber, commit_record: CommitRecord) {
+    fn set_pending(&self, sequence_number: SequenceNumber, commit_record: CommitRecord) {
         debug_assert!(self.contains(sequence_number));
         let index = self.index_of(sequence_number);
         self.commit_records[index].set(commit_record).unwrap_or_log();
         self.slots[index].store(SlotMarker::Pending.as_u8(), Ordering::SeqCst);
     }
 
-    fn set_committed(&self, sequence_number: &SequenceNumber) {
+    fn set_committed(&self, sequence_number: SequenceNumber) {
         debug_assert!(self.contains(sequence_number));
         let index = self.index_of(sequence_number);
         self.slots[index].store(SlotMarker::Committed.as_u8(), Ordering::SeqCst);
         self.available_slots.fetch_sub(1, Ordering::SeqCst);
     }
 
-    fn set_closed(&self, sequence_number: &SequenceNumber) {
+    fn set_closed(&self, sequence_number: SequenceNumber) {
         debug_assert!(self.contains(sequence_number));
         let index = self.index_of(sequence_number);
         self.slots[index].store(SlotMarker::Closed.as_u8(), Ordering::SeqCst);
         self.available_slots.fetch_sub(1, Ordering::SeqCst);
     }
 
-    fn get_record(&self, sequence_number: &SequenceNumber) -> &CommitRecord {
+    fn get_record(&self, sequence_number: SequenceNumber) -> &CommitRecord {
         debug_assert!(self.contains(sequence_number));
         let index = self.index_of(sequence_number);
         self.commit_records[index].get().unwrap()
     }
 
-    fn get_status<'this>(&'this self, sequence_number: &SequenceNumber) -> CommitStatus<'this> {
+    fn get_status(&self, sequence_number: SequenceNumber) -> CommitStatus<'_> {
         debug_assert!(self.contains(sequence_number));
         let index = self.index_of(sequence_number);
         let status = SlotMarker::from(self.slots[index].load(Ordering::SeqCst));
@@ -514,7 +510,7 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         self.readers.fetch_sub(1, Ordering::SeqCst)
     }
 
-    fn index_of(&self, sequence_number: &SequenceNumber) -> usize {
+    fn index_of(&self, sequence_number: SequenceNumber) -> usize {
         debug_assert!(sequence_number.number() - self.starting_sequence_number.number() < usize::MAX as u128);
         (sequence_number.number() - self.starting_sequence_number.number()).number() as usize
     }
@@ -573,8 +569,8 @@ impl CommitRecord {
         &self.buffers
     }
 
-    pub(crate) fn open_sequence_number(&self) -> &SequenceNumber {
-        &self.open_sequence_number
+    pub(crate) fn open_sequence_number(&self) -> SequenceNumber {
+        self.open_sequence_number
     }
 
     fn deserialise_from(record_type: DurabilityRecordType, reader: impl Read)
@@ -608,34 +604,5 @@ impl DurabilityRecord for CommitRecord {
         let mut buf = Vec::new();
         reader.read_to_end(&mut buf).unwrap();
         bincode::deserialize(&buf)
-    }
-}
-
-#[derive(Debug)]
-pub struct IsolationError {
-    pub kind: IsolationErrorKind,
-}
-
-#[derive(Debug)]
-pub enum IsolationErrorKind {
-    DeleteRequiredViolation,
-    RequiredDeleteViolation,
-}
-
-impl fmt::Display for IsolationError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self.kind {
-            IsolationErrorKind::DeleteRequiredViolation => write!(f, "Isolation violation: Delete-Require conflict. A preceding concurrent commit has deleted a key required by this transaction. Please retry."),
-            IsolationErrorKind::RequiredDeleteViolation => write!(f, "Isolation violation: Require-Delete conflict. This commit has deleted a key required by a preceding concurrent transaction. Please retry."),
-        }
-    }
-}
-
-impl Error for IsolationError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match &self.kind {
-            IsolationErrorKind::DeleteRequiredViolation => None,
-            IsolationErrorKind::RequiredDeleteViolation => None,
-        }
     }
 }

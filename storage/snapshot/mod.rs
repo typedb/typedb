@@ -20,4 +20,4 @@ pub mod iterator;
 mod snapshot;
 pub(crate) mod write;
 
-pub use snapshot::{ReadSnapshot, Snapshot, SnapshotError, SnapshotGetError, SnapshotPutError, WriteSnapshot};
+pub use snapshot::{ReadSnapshot, Snapshot, SnapshotError, SnapshotGetError, WriteSnapshot};

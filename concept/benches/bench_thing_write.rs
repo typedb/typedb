@@ -17,39 +17,36 @@
 
 #![deny(unused_must_use)]
 
-use std::ffi::c_int;
-use std::fs::File;
-use std::path::Path;
-use std::rc::Rc;
-use std::sync::{Arc, OnceLock};
-use std::time::Duration;
+use std::{
+    ffi::c_int,
+    fs::File,
+    path::Path,
+    rc::Rc,
+    sync::{Arc, OnceLock},
+};
 
-use criterion::{Criterion, criterion_group, criterion_main};
-use criterion::profiler::Profiler;
-use rand::distributions::{Alphanumeric, DistString};
-use concept::thing::thing_manager::ThingManager;
-use concept::thing::value::Value;
-use concept::type_::OwnerAPI;
-use concept::type_::type_cache::TypeCache;
-
-use concept::type_::type_manager::TypeManager;
+use concept::{
+    thing::{thing_manager::ThingManager, value::Value},
+    type_::{type_cache::TypeCache, type_manager::TypeManager, OwnerAPI},
+};
+use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
 use durability::wal::WAL;
-use encoding::EncodingKeyspace;
-use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
-use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
-use encoding::value::label::Label;
-use encoding::value::value_type::ValueType;
-use storage::MVCCStorage;
-use storage::snapshot::Snapshot;
-use test_utils::{create_tmp_dir, init_logging};
+use encoding::{
+    graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
+    value::{label::Label, value_type::ValueType},
+    EncodingKeyspace,
+};
 use pprof::ProfilerGuard;
+use rand::distributions::{Alphanumeric, DistString};
+use storage::{snapshot::Snapshot, MVCCStorage};
+use test_utils::{create_tmp_dir, init_logging};
 
 static AGE_LABEL: OnceLock<Label> = OnceLock::new();
 static NAME_LABEL: OnceLock<Label> = OnceLock::new();
 static PERSON_LABEL: OnceLock<Label> = OnceLock::new();
 
 fn write_entity_attributes(
-    mut storage: &MVCCStorage<WAL>,
+    storage: &MVCCStorage<WAL>,
     type_vertex_generator: &TypeVertexGenerator,
     thing_vertex_generator: &ThingVertexGenerator,
     schema_cache: Arc<TypeCache>,
@@ -60,8 +57,8 @@ fn write_entity_attributes(
         let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator, type_manager.clone());
 
         let person_type = type_manager.get_entity_type(PERSON_LABEL.get().unwrap()).unwrap().unwrap();
-        let age_type = type_manager.get_attribute_type(&AGE_LABEL.get().unwrap()).unwrap().unwrap();
-        let name_type = type_manager.get_attribute_type(&NAME_LABEL.get().unwrap()).unwrap().unwrap();
+        let age_type = type_manager.get_attribute_type(AGE_LABEL.get().unwrap()).unwrap().unwrap();
+        let name_type = type_manager.get_attribute_type(NAME_LABEL.get().unwrap()).unwrap().unwrap();
         let person = thing_manager.create_entity(person_type).unwrap();
 
         let random_long: i64 = rand::random();
@@ -78,10 +75,10 @@ fn write_entity_attributes(
     write_snapshot.commit().unwrap();
 }
 
-fn create_schema(mut storage: &MVCCStorage<WAL>, type_vertex_generator: &TypeVertexGenerator) {
+fn create_schema(storage: &MVCCStorage<WAL>, type_vertex_generator: &TypeVertexGenerator) {
     let snapshot: Rc<Snapshot<'_, WAL>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
     {
-        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &type_vertex_generator, None));
+        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), type_vertex_generator, None));
         let age_type = type_manager.create_attribute_type(AGE_LABEL.get().unwrap(), false).unwrap();
         age_type.set_value_type(&type_manager, ValueType::Long).unwrap();
         let name_type = type_manager.create_attribute_type(NAME_LABEL.get().unwrap(), false).unwrap();
@@ -94,7 +91,7 @@ fn create_schema(mut storage: &MVCCStorage<WAL>, type_vertex_generator: &TypeVer
     write_snapshot.commit().unwrap();
 }
 
-fn criterion_benchmark(mut c: &mut Criterion) {
+fn criterion_benchmark(c: &mut Criterion) {
     AGE_LABEL.set(Label::build("age")).unwrap();
     NAME_LABEL.set(Label::build("name")).unwrap();
     PERSON_LABEL.set(Label::build("person")).unwrap();
@@ -107,13 +104,14 @@ fn criterion_benchmark(mut c: &mut Criterion) {
     TypeManager::initialise_types(&mut storage, &type_vertex_generator).unwrap();
 
     create_schema(&storage, &type_vertex_generator);
-    let schema_cache = Arc::new(TypeCache::new(&storage, storage.read_watermark()));
+    let schema_cache = Arc::new(TypeCache::new(&storage, storage.read_watermark()).unwrap());
 
     let mut group = c.benchmark_group("test writes");
-    group
-        .bench_function("thing_write", |b| {
-            b.iter(|| write_entity_attributes(&storage, &type_vertex_generator, &thing_vertex_generator, schema_cache.clone()));
+    group.bench_function("thing_write", |b| {
+        b.iter(|| {
+            write_entity_attributes(&storage, &type_vertex_generator, &thing_vertex_generator, schema_cache.clone())
         });
+    });
 }
 
 pub struct FlamegraphProfiler<'a> {
@@ -124,10 +122,7 @@ pub struct FlamegraphProfiler<'a> {
 impl<'a> FlamegraphProfiler<'a> {
     #[allow(dead_code)]
     pub fn new(frequency: c_int) -> Self {
-        FlamegraphProfiler {
-            frequency,
-            active_profiler: None,
-        }
+        Self { frequency, active_profiler: None }
     }
 }
 
@@ -139,15 +134,9 @@ impl<'a> Profiler for FlamegraphProfiler<'a> {
     fn stop_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
         std::fs::create_dir_all(benchmark_dir).unwrap();
         let flamegraph_path = benchmark_dir.join("flamegraph.svg");
-        let flamegraph_file = File::create(&flamegraph_path)
-            .expect("File system error while creating flamegraph.svg");
+        let flamegraph_file = File::create(&flamegraph_path).expect("File system error while creating flamegraph.svg");
         if let Some(profiler) = self.active_profiler.take() {
-            profiler
-                .report()
-                .build()
-                .unwrap()
-                .flamegraph(flamegraph_file)
-                .expect("Error writing flamegraph");
+            profiler.report().build().unwrap().flamegraph(flamegraph_file).expect("Error writing flamegraph");
         }
     }
 }

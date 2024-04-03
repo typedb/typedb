@@ -16,26 +16,27 @@
  */
 
 use bytes::Bytes;
-use encoding::{AsBytes, Prefixed};
-use encoding::graph::thing::edge::ThingEdgeHas;
-use encoding::graph::thing::vertex_object::ObjectVertex;
-use encoding::graph::type_::vertex::build_vertex_entity_type;
-use encoding::graph::Typed;
-use encoding::layout::prefix::Prefix;
-use storage::{
-    key_value::StorageKeyReference,
-    snapshot::{iterator::SnapshotRangeIterator, SnapshotError},
+use encoding::{
+    graph::{
+        thing::{edge::ThingEdgeHas, vertex_object::ObjectVertex},
+        type_::vertex::build_vertex_entity_type,
+        Typed,
+    },
+    layout::prefix::Prefix,
+    AsBytes, Prefixed,
 };
+use storage::key_value::StorageKeyReference;
 
 use crate::{
-    ByteReference,
     concept_iterator,
-    ConceptAPI, error::{ConceptError, ConceptErrorKind},
+    error::ConceptWriteError,
+    thing::{
+        attribute::{Attribute, AttributeIterator},
+        thing_manager::ThingManager,
+    },
+    type_::entity_type::EntityType,
+    ByteReference, ConceptAPI,
 };
-use crate::error::ConceptWriteError;
-use crate::thing::attribute::{Attribute, AttributeIterator};
-use crate::thing::thing_manager::ThingManager;
-use crate::type_::entity_type::EntityType;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Entity<'a> {
@@ -56,19 +57,27 @@ impl<'a> Entity<'a> {
         self.vertex.bytes()
     }
 
-    pub fn get_has<'m, D>(&self, thing_manager: &'m ThingManager<'_, '_, D>)
-                          -> AttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+    pub fn get_has<'m, D>(
+        &self,
+        thing_manager: &'m ThingManager<'_, '_, D>,
+    ) -> AttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         thing_manager.storage_get_has(self.vertex())
     }
 
-    pub fn set_has<D>(&self, thing_manager: &ThingManager<'_, '_, D>, attribute: &Attribute<'_>)
-                      -> Result<(), ConceptWriteError> {
+    pub fn set_has<D>(
+        &self,
+        thing_manager: &ThingManager<'_, '_, D>,
+        attribute: &Attribute<'_>,
+    ) -> Result<(), ConceptWriteError> {
         // TODO: validate schema
         thing_manager.storage_set_has(self.vertex(), attribute.vertex())
     }
 
-    pub fn delete_has<D>(&self, thing_manager: &ThingManager<'_, '_, D>, attribute: &Attribute<'_>)
-                         -> Result<(), ConceptWriteError> {
+    pub fn delete_has<D>(
+        &self,
+        thing_manager: &ThingManager<'_, '_, D>,
+        attribute: &Attribute<'_>,
+    ) -> Result<(), ConceptWriteError> {
         // TODO: validate schema
         todo!()
     }

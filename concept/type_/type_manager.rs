@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{collections::HashSet, ops::Deref, rc::Rc, sync::Arc};
+use std::{collections::HashSet, rc::Rc, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::DurabilityService;
@@ -29,7 +29,8 @@ use encoding::{
         },
         index::LabelToTypeVertexIndex,
         property::{
-            build_property_type_annotation_abstract, build_property_type_label, build_property_type_value_type,
+            build_property_type_annotation_abstract, build_property_type_annotation_duplicate,
+            build_property_type_label, build_property_type_value_type,
         },
         vertex::{
             new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type,
@@ -45,7 +46,6 @@ use encoding::{
     },
     AsBytes, Keyable,
 };
-use encoding::graph::type_::property::build_property_type_annotation_duplicate;
 use primitive::{maybe_owns::MaybeOwns, prefix_range::PrefixRange};
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{snapshot::Snapshot, MVCCStorage};
@@ -53,7 +53,7 @@ use storage::{snapshot::Snapshot, MVCCStorage};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::AnnotationAbstract,
+        annotation::{AnnotationAbstract, AnnotationDuplicate},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::{EntityType, EntityTypeAnnotation},
         object_type::ObjectType,
@@ -66,7 +66,6 @@ use crate::{
         TypeAPI,
     },
 };
-use crate::type_::annotation::AnnotationDuplicate;
 
 pub struct TypeManager<'txn, 'storage: 'txn, D> {
     snapshot: Rc<Snapshot<'storage, D>>,
@@ -80,8 +79,8 @@ pub struct TypeManager<'txn, 'storage: 'txn, D> {
 
 macro_rules! get_type_methods {
     ($(
-        $method_name:ident, $cache_method:ident, $output_type:ident, $new_vertex_method:ident
-    );*) => {
+        fn $method_name:ident() -> $output_type:ident = $cache_method:ident | $new_vertex_method:ident;
+    )*) => {
         $(
             pub fn $method_name(&self, label: &Label<'_>) -> Result<Option<$output_type<'static>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
@@ -108,20 +107,20 @@ macro_rules! get_type_methods {
 
 macro_rules! get_supertype_methods {
     ($(
-        $method_name:ident, $cache_method:ident, $type_:ident
-    );*) => {
+        fn $method_name:ident() -> $type_:ident = $cache_method:ident;
+    )*) => {
         $(
             // WARN: supertypes currently do NOT include themselves
-            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Option<$type_<'static>> {
+            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<Option<$type_<'static>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
-                    cache.$cache_method(type_)
+                    Ok(cache.$cache_method(type_))
                 } else {
-                    // TODO: handle possible errors
-                    self.snapshot
+                    Ok(self
+                        .snapshot
                         .iterate_range(PrefixRange::new_within(build_edge_sub_prefix_from(type_.into_vertex().clone())))
                         .first_cloned()
-                        .unwrap()
-                        .map(|(key, _)| $type_::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
+                        .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
+                        .map(|(key, _)| $type_::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned())))
                 }
             }
         )*
@@ -130,13 +129,13 @@ macro_rules! get_supertype_methods {
 
 macro_rules! get_supertypes_methods {
     ($(
-        $method_name:ident, $cache_method:ident, $type_:ident
-    );*) => {
+        fn $method_name:ident() -> $type_:ident = $cache_method:ident;
+    )*) => {
         $(
             // WARN: supertypes currently do NOT include themselves
-            pub(crate) fn $method_name<'this>(&'this self, type_: $type_<'static>) -> MaybeOwns<'this, Vec<$type_<'static>>> {
+            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
-                    MaybeOwns::borrowed(cache.$cache_method(type_))
+                    Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
                     let mut supertypes = Vec::new();
                     let mut super_vertex = self.get_storage_supertype(type_.vertex().clone().into_owned());
@@ -145,7 +144,7 @@ macro_rules! get_supertypes_methods {
                         super_vertex = self.get_storage_supertype(super_type.vertex().clone());
                         supertypes.push(super_type);
                     }
-                    MaybeOwns::owned(supertypes)
+                    Ok(MaybeOwns::owned(supertypes))
                 }
             }
         )*
@@ -154,14 +153,14 @@ macro_rules! get_supertypes_methods {
 
 macro_rules! get_type_is_root_methods {
     ($(
-        $method_name:ident, $cache_method:ident, $type_:ident, $base_variant:expr
-    );*) => {
+        fn $method_name:ident() -> $type_:ident = $cache_method:ident | $base_variant:expr;
+    )*) => {
         $(
-            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> bool {
+            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<bool, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
-                    cache.$cache_method(type_)
+                    Ok(cache.$cache_method(type_))
                 } else {
-                    type_.get_label(self).deref() == &$base_variant.root_label()
+                    Ok(*type_.get_label(self)? == $base_variant.root_label())
                 }
             }
         )*
@@ -170,14 +169,14 @@ macro_rules! get_type_is_root_methods {
 
 macro_rules! get_type_label_methods {
     ($(
-        $method_name:ident, $cache_method:ident, $type_:ident
-    );*) => {
+        fn $method_name:ident() -> $type_:ident = $cache_method:ident;
+    )*) => {
         $(
-            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> MaybeOwns<'_, Label<'static>> {
+            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Label<'static>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
-                    MaybeOwns::borrowed(cache.$cache_method(type_))
+                    Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
-                    MaybeOwns::owned(self.get_storage_label(type_.into_vertex()).unwrap().unwrap())
+                    Ok(MaybeOwns::owned(self.get_storage_label(type_.into_vertex())?.unwrap()))
                 }
             }
         )*
@@ -186,8 +185,8 @@ macro_rules! get_type_label_methods {
 
 macro_rules! get_type_annotations {
     ($(
-        $method_name:ident, $cache_method:ident, $type_:ident, $annotation_type:ident
-    );*) => {
+        fn $method_name:ident() -> $type_:ident = $cache_method:ident | $annotation_type:ident;
+    )*) => {
         $(
             pub(crate) fn $method_name(
                 &self, type_: $type_<'static>
@@ -236,58 +235,52 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
                 .set_annotation(&type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
         }
         // TODO: handle error properly
-        if let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() {
-            write_snapshot.commit().unwrap();
-        } else {
-            panic!()
-        }
+        let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() else { panic!() };
+        write_snapshot.commit().unwrap();
         Ok(())
     }
 
-    get_type_methods!(
-        get_entity_type, get_entity_type, EntityType, new_vertex_entity_type;
-        get_relation_type, get_relation_type, RelationType, new_vertex_relation_type;
-        get_role_type, get_role_type, RoleType, new_vertex_role_type;
-        get_attribute_type, get_attribute_type, AttributeType, new_vertex_attribute_type
-    );
+    get_type_methods! {
+        fn get_entity_type() -> EntityType = get_entity_type | new_vertex_entity_type;
+        fn get_relation_type() -> RelationType = get_relation_type | new_vertex_relation_type;
+        fn get_role_type() -> RoleType = get_role_type | new_vertex_role_type;
+        fn get_attribute_type() -> AttributeType = get_attribute_type | new_vertex_attribute_type;
+    }
 
-    get_supertype_methods!(
-        get_entity_type_supertype, get_entity_type_supertype, EntityType;
-        get_relation_type_supertype, get_relation_type_supertype, RelationType;
-        get_role_type_supertype, get_role_type_supertype, RoleType;
-        get_attribute_type_supertype, get_attribute_type_supertype, AttributeType
-    );
+    get_supertype_methods! {
+        fn get_entity_type_supertype() -> EntityType = get_entity_type_supertype;
+        fn get_relation_type_supertype() -> RelationType = get_relation_type_supertype;
+        fn get_role_type_supertype() -> RoleType = get_role_type_supertype;
+        fn get_attribute_type_supertype() -> AttributeType = get_attribute_type_supertype;
+    }
 
-    get_supertypes_methods!(
-        get_entity_type_supertypes, get_entity_type_supertypes, EntityType;
-        get_relation_type_supertypes, get_relation_type_supertypes, RelationType;
-        get_role_type_supertypes, get_role_type_supertypes, RoleType;
-        get_attribute_type_supertypes, get_attribute_type_supertypes, AttributeType
-    );
+    get_supertypes_methods! {
+        fn get_entity_type_supertypes() -> EntityType = get_entity_type_supertypes;
+        fn get_relation_type_supertypes() -> RelationType = get_relation_type_supertypes;
+        fn get_role_type_supertypes() -> RoleType = get_role_type_supertypes;
+        fn get_attribute_type_supertypes() -> AttributeType = get_attribute_type_supertypes;
+    }
 
     pub fn create_entity_type(
         &self,
         label: &Label<'_>,
         is_root: bool,
     ) -> Result<EntityType<'static>, ConceptWriteError> {
-        // TODO: validate type doesn't exist already
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let type_vertex = self
-                .vertex_generator
-                .create_entity_type(write_snapshot)
-                .map_err(|error| ConceptWriteError::EncodingWrite { source: error })?;
-            self.set_storage_label(type_vertex.clone(), label)?;
-            if !is_root {
-                self.set_storage_supertype(
-                    type_vertex.clone(),
-                    self.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap().into_vertex(),
-                )?;
-            }
-            Ok(EntityType::new(type_vertex))
-        } else {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             // TODO: this should not crash the server, and be handled as an Error instead
             panic!("Illegal state: creating types requires write snapshot")
+        };
+
+        // TODO: validate type doesn't exist already
+        let type_vertex = self.vertex_generator.create_entity_type(write_snapshot);
+        self.set_storage_label(type_vertex.clone(), label)?;
+        if !is_root {
+            self.set_storage_supertype(
+                type_vertex.clone(),
+                self.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap().into_vertex(),
+            )?;
         }
+        Ok(EntityType::new(type_vertex))
     }
 
     pub fn create_relation_type(
@@ -295,23 +288,20 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         label: &Label<'_>,
         is_root: bool,
     ) -> Result<RelationType<'static>, ConceptWriteError> {
-        // TODO: validate type doesn't exist already
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let type_vertex = self
-                .vertex_generator
-                .create_relation_type(write_snapshot)
-                .map_err(|error| ConceptWriteError::EncodingWrite { source: error })?;
-            self.set_storage_label(type_vertex.clone(), label)?;
-            if !is_root {
-                self.set_storage_supertype(
-                    type_vertex.clone(),
-                    self.get_relation_type(&Kind::Relation.root_label()).unwrap().unwrap().into_vertex(),
-                )?;
-            }
-            Ok(RelationType::new(type_vertex))
-        } else {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: creating types requires write snapshot")
+        };
+
+        // TODO: validate type doesn't exist already
+        let type_vertex = self.vertex_generator.create_relation_type(write_snapshot);
+        self.set_storage_label(type_vertex.clone(), label)?;
+        if !is_root {
+            self.set_storage_supertype(
+                type_vertex.clone(),
+                self.get_relation_type(&Kind::Relation.root_label())?.unwrap().into_vertex(),
+            )?;
         }
+        Ok(RelationType::new(type_vertex))
     }
 
     pub(crate) fn create_role_type(
@@ -320,24 +310,21 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         relation_type: RelationType<'static>,
         is_root: bool,
     ) -> Result<RoleType<'static>, ConceptWriteError> {
-        // TODO: validate type doesn't exist already
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let type_vertex = self
-                .vertex_generator
-                .create_role_type(write_snapshot)
-                .map_err(|error| ConceptWriteError::EncodingWrite { source: error })?;
-            self.set_storage_label(type_vertex.clone(), label)?;
-            self.set_storage_relates(relation_type.into_vertex(), type_vertex.clone())?;
-            if !is_root {
-                self.set_storage_supertype(
-                    type_vertex.clone(),
-                    self.get_role_type(&Kind::Role.root_label()).unwrap().unwrap().into_vertex(),
-                )?;
-            }
-            Ok(RoleType::new(type_vertex))
-        } else {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: creating types requires write snapshot")
+        };
+
+        // TODO: validate type doesn't exist already
+        let type_vertex = self.vertex_generator.create_role_type(write_snapshot);
+        self.set_storage_label(type_vertex.clone(), label)?;
+        self.set_storage_relates(relation_type.into_vertex(), type_vertex.clone())?;
+        if !is_root {
+            self.set_storage_supertype(
+                type_vertex.clone(),
+                self.get_role_type(&Kind::Role.root_label()).unwrap().unwrap().into_vertex(),
+            )?;
         }
+        Ok(RoleType::new(type_vertex))
     }
 
     pub fn create_attribute_type(
@@ -345,95 +332,92 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         label: &Label<'_>,
         is_root: bool,
     ) -> Result<AttributeType<'static>, ConceptWriteError> {
-        // TODO: validate type doesn't exist already
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let type_vertex = self
-                .vertex_generator
-                .create_attribute_type(write_snapshot)
-                .map_err(|error| ConceptWriteError::EncodingWrite { source: error })?;
-            self.set_storage_label(type_vertex.clone(), label)?;
-            if !is_root {
-                self.set_storage_supertype(
-                    type_vertex.clone(),
-                    self.get_attribute_type(&Kind::Attribute.root_label()).unwrap().unwrap().into_vertex(),
-                )?;
-            }
-            Ok(AttributeType::new(type_vertex))
-        } else {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: creating types requires write snapshot")
+        };
+
+        // TODO: validate type doesn't exist already
+        let type_vertex = self.vertex_generator.create_attribute_type(write_snapshot);
+        self.set_storage_label(type_vertex.clone(), label)?;
+        if !is_root {
+            self.set_storage_supertype(
+                type_vertex.clone(),
+                self.get_attribute_type(&Kind::Attribute.root_label())?.unwrap().into_vertex(),
+            )?;
         }
+        Ok(AttributeType::new(type_vertex))
     }
 
-    get_type_is_root_methods!(
-        get_entity_type_is_root, get_entity_type_is_root, EntityType, Kind::Entity;
-        get_relation_type_is_root, get_relation_type_is_root, RelationType, Kind::Relation;
-        get_role_type_is_root, get_role_type_is_root, RoleType, Kind::Role;
-        get_attribute_type_is_root, get_attribute_type_is_root, AttributeType, Kind::Attribute
-    );
+    get_type_is_root_methods! {
+        fn get_entity_type_is_root() -> EntityType = get_entity_type_is_root | Kind::Entity;
+        fn get_relation_type_is_root() -> RelationType = get_relation_type_is_root | Kind::Relation;
+        fn get_role_type_is_root() -> RoleType = get_role_type_is_root | Kind::Role;
+        fn get_attribute_type_is_root() -> AttributeType = get_attribute_type_is_root | Kind::Attribute;
+    }
 
-    get_type_label_methods!(
-        get_entity_type_label, get_entity_type_label, EntityType;
-        get_relation_type_label, get_relation_type_label, RelationType;
-        get_role_type_label, get_role_type_label, RoleType;
-        get_attribute_type_label, get_attribute_type_label, AttributeType
-    );
+    get_type_label_methods! {
+        fn get_entity_type_label() -> EntityType = get_entity_type_label;
+        fn get_relation_type_label() -> RelationType = get_relation_type_label;
+        fn get_role_type_label() -> RoleType = get_role_type_label;
+        fn get_attribute_type_label() -> AttributeType = get_attribute_type_label;
+    }
 
-    pub(crate) fn get_entity_type_owns<'this>(
-        &'this self,
+    pub(crate) fn get_entity_type_owns(
+        &self,
         entity_type: EntityType<'static>,
-    ) -> MaybeOwns<'this, HashSet<Owns<'static>>> {
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_entity_type_owns(entity_type))
+            Ok(MaybeOwns::borrowed(cache.get_entity_type_owns(entity_type)))
         } else {
             let owns = self.get_storage_owns(entity_type.clone().into_vertex(), |attr_vertex| {
                 Owns::new(ObjectType::Entity(entity_type.clone()), AttributeType::new(attr_vertex.clone().into_owned()))
-            });
-            MaybeOwns::owned(owns)
+            })?;
+            Ok(MaybeOwns::owned(owns))
         }
     }
 
-    pub(crate) fn get_relation_type_owns<'this>(
-        &'this self,
+    pub(crate) fn get_relation_type_owns(
+        &self,
         relation_type: RelationType<'static>,
-    ) -> MaybeOwns<'this, HashSet<Owns<'static>>> {
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_relation_type_owns(relation_type))
+            Ok(MaybeOwns::borrowed(cache.get_relation_type_owns(relation_type)))
         } else {
             let owns = self.get_storage_owns(relation_type.clone().into_vertex(), |attr_vertex| {
                 Owns::new(
                     ObjectType::Relation(relation_type.clone()),
                     AttributeType::new(attr_vertex.clone().into_owned()),
                 )
-            });
-            MaybeOwns::owned(owns)
+            })?;
+            Ok(MaybeOwns::owned(owns))
         }
     }
 
-    pub(crate) fn get_relation_type_relates<'this>(
-        &'this self,
+    pub(crate) fn get_relation_type_relates(
+        &self,
         relation_type: RelationType<'static>,
-    ) -> MaybeOwns<'this, HashSet<Relates<'static>>> {
+    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_relation_type_relates(relation_type))
+            Ok(MaybeOwns::borrowed(cache.get_relation_type_relates(relation_type)))
         } else {
             let relates = self.get_storage_relates(relation_type.clone().into_vertex(), |role_vertex| {
                 Relates::new(relation_type.clone(), RoleType::new(role_vertex.clone().into_owned()))
-            });
-            MaybeOwns::owned(relates)
+            })?;
+            Ok(MaybeOwns::owned(relates))
         }
     }
 
     pub(crate) fn get_entity_type_plays<'this>(
         &'this self,
         entity_type: EntityType<'static>,
-    ) -> MaybeOwns<'this, HashSet<Plays<'static>>> {
+    ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            MaybeOwns::borrowed(cache.get_entity_type_plays(entity_type))
+            Ok(MaybeOwns::borrowed(cache.get_entity_type_plays(entity_type)))
         } else {
             let plays = self.get_storage_plays(entity_type.clone().into_vertex(), |role_vertex| {
                 Plays::new(ObjectType::Entity(entity_type.clone()), RoleType::new(role_vertex.clone().into_owned()))
-            });
-            MaybeOwns::owned(plays)
+            })?;
+            Ok(MaybeOwns::owned(plays))
         }
     }
 
@@ -448,12 +432,12 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         }
     }
 
-    get_type_annotations!(
-       get_entity_type_annotations, get_entity_type_annotations, EntityType, EntityTypeAnnotation;
-       get_relation_type_annotations, get_relation_type_annotations, RelationType, RelationTypeAnnotation;
-       get_role_type_annotations, get_role_type_annotations, RoleType, RoleTypeAnnotation;
-       get_attribute_type_annotations, get_attribute_type_annotations, AttributeType, AttributeTypeAnnotation
-    );
+    get_type_annotations! {
+        fn get_entity_type_annotations() -> EntityType = get_entity_type_annotations | EntityTypeAnnotation;
+        fn get_relation_type_annotations() -> RelationType = get_relation_type_annotations | RelationTypeAnnotation;
+        fn get_role_type_annotations() -> RoleType = get_role_type_annotations | RoleTypeAnnotation;
+        fn get_attribute_type_annotations() -> AttributeType = get_attribute_type_annotations | AttributeTypeAnnotation;
+    }
 
     // --- storage operations ---
     // TODO: these should take Concepts instead of Vertices
@@ -473,36 +457,34 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         owner: TypeVertex<'static>,
         label: &Label<'_>,
     ) -> Result<(), ConceptWriteError> {
-        self.may_delete_storage_label(owner.clone())?;
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let vertex_to_label_key = build_property_type_label(owner.clone());
-            let label_value = ByteArray::from(label.scoped_name().bytes());
-            write_snapshot
-                .put_val(vertex_to_label_key.into_storage_key().into_owned_array(), label_value)
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
-
-            let label_to_vertex_key = LabelToTypeVertexIndex::build(label);
-            let vertex_value = ByteArray::from(owner.bytes());
-            write_snapshot
-                .put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value)
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
-        } else {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: creating types requires write snapshot")
-        }
+        };
+
+        self.may_delete_storage_label(owner.clone())?;
+
+        let vertex_to_label_key = build_property_type_label(owner.clone());
+        let label_value = ByteArray::from(label.scoped_name().bytes());
+        write_snapshot.put_val(vertex_to_label_key.into_storage_key().into_owned_array(), label_value);
+
+        let label_to_vertex_key = LabelToTypeVertexIndex::build(label);
+        let vertex_value = ByteArray::from(owner.bytes());
+        write_snapshot.put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
+
         Ok(())
     }
 
     fn may_delete_storage_label(&self, owner: TypeVertex<'_>) -> Result<(), ConceptWriteError> {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
+            panic!("Illegal state: creating types requires write snapshot")
+        };
+
         let existing_label = self.get_storage_label(owner.clone())?;
         if let Some(label) = existing_label {
-            if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-                let vertex_to_label_key = build_property_type_label(owner.clone());
-                write_snapshot.delete(vertex_to_label_key.into_storage_key().into_owned_array());
-                let label_to_vertex_key = LabelToTypeVertexIndex::build(&label);
-                write_snapshot.delete(label_to_vertex_key.into_storage_key().into_owned_array());
-            } else {
-                panic!("Illegal state: creating types requires write snapshot")
-            }
+            let vertex_to_label_key = build_property_type_label(owner.clone());
+            write_snapshot.delete(vertex_to_label_key.into_storage_key().into_owned_array());
+            let label_to_vertex_key = LabelToTypeVertexIndex::build(&label);
+            write_snapshot.delete(label_to_vertex_key.into_storage_key().into_owned_array());
         }
         Ok(())
     }
@@ -521,37 +503,37 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         subtype: TypeVertex<'static>,
         supertype: TypeVertex<'static>,
     ) -> Result<(), ConceptWriteError> {
-        self.may_delete_storage_supertype(subtype.clone());
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let sub = build_edge_sub(subtype.clone(), supertype.clone());
-            write_snapshot
-                .put(sub.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
-            let sub_reverse = build_edge_sub_reverse(supertype, subtype);
-            write_snapshot
-                .put(sub_reverse.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
-        } else {
+        self.may_delete_storage_supertype(subtype.clone())?;
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: creating supertype edge requires write snapshot")
+        };
+        let sub = build_edge_sub(subtype.clone(), supertype.clone());
+        write_snapshot.put(sub.into_storage_key().into_owned_array());
+        let sub_reverse = build_edge_sub_reverse(supertype, subtype);
+        write_snapshot.put(sub_reverse.into_storage_key().into_owned_array());
+        Ok(())
+    }
+
+    fn may_delete_storage_supertype(&self, subtype: TypeVertex<'static>) -> Result<(), ConceptWriteError> {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
+            panic!("Illegal state: deleting supertype edge requires write snapshot")
+        };
+
+        let supertype = self.get_storage_supertype(subtype.clone());
+        if let Some(supertype) = supertype {
+            let sub = build_edge_sub(subtype.clone(), supertype.clone());
+            write_snapshot.delete(sub.into_storage_key().into_owned_array());
+            let sub_reverse = build_edge_sub_reverse(supertype, subtype);
+            write_snapshot.delete(sub_reverse.into_storage_key().into_owned_array());
         }
         Ok(())
     }
 
-    fn may_delete_storage_supertype(&self, subtype: TypeVertex<'static>) {
-        let supertype = self.get_storage_supertype(subtype.clone());
-        if let Some(supertype) = supertype {
-            if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-                let sub = build_edge_sub(subtype.clone(), supertype.clone());
-                write_snapshot.delete(sub.into_storage_key().into_owned_array());
-                let sub_reverse = build_edge_sub_reverse(supertype, subtype);
-                write_snapshot.delete(sub_reverse.into_storage_key().into_owned_array());
-            } else {
-                panic!("Illegal state: deleting supertype edge requires write snapshot")
-            }
-        }
-    }
-
-    fn get_storage_owns<F>(&self, owner: TypeVertex<'static>, mapper: F) -> HashSet<Owns<'static>>
+    fn get_storage_owns<F>(
+        &self,
+        owner: TypeVertex<'static>,
+        mapper: F,
+    ) -> Result<HashSet<Owns<'static>>, ConceptReadError>
     where
         F: for<'b> Fn(TypeVertex<'b>) -> Owns<'static>,
     {
@@ -563,7 +545,7 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
                 let owns_edge = new_edge_owns(Bytes::Reference(key.byte_ref()));
                 mapper(owns_edge.to())
             })
-            .unwrap()
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
     pub(crate) fn set_storage_owns(
@@ -571,45 +553,48 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         owner: TypeVertex<'static>,
         attribute: TypeVertex<'static>,
     ) -> Result<(), ConceptWriteError> {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let owns = build_edge_owns(owner.clone(), attribute.clone());
-            write_snapshot
-                .put(owns.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
-            let owns_reverse = build_edge_owns_reverse(attribute, owner);
-            write_snapshot
-                .put(owns_reverse.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
-        } else {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: creating owns edge requires write snapshot")
-        }
+        };
+        let owns = build_edge_owns(owner.clone(), attribute.clone());
+        write_snapshot.put(owns.into_storage_key().into_owned_array());
+        let owns_reverse = build_edge_owns_reverse(attribute, owner);
+        write_snapshot.put(owns_reverse.into_storage_key().into_owned_array());
         Ok(())
     }
 
-    pub(crate) fn delete_storage_owns(&self, owner: TypeVertex<'static>, attribute: TypeVertex<'static>) {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let owns = build_edge_owns(owner.clone(), attribute.clone());
-            write_snapshot.delete(owns.into_storage_key().into_owned_array());
-            let owns_reverse = build_edge_owns_reverse(attribute, owner);
-            write_snapshot.delete(owns_reverse.into_storage_key().into_owned_array());
-        } else {
+    pub(crate) fn delete_storage_owns(
+        &self,
+        owner: TypeVertex<'static>,
+        attribute: TypeVertex<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: deleting owns edge requires write snapshot")
-        }
+        };
+
+        let owns = build_edge_owns(owner.clone(), attribute.clone());
+        write_snapshot.delete(owns.into_storage_key().into_owned_array());
+        let owns_reverse = build_edge_owns_reverse(attribute, owner);
+        write_snapshot.delete(owns_reverse.into_storage_key().into_owned_array());
+        Ok(())
     }
 
-    fn get_storage_plays<F>(&self, player: TypeVertex<'static>, mapper: F) -> HashSet<Plays<'static>>
+    fn get_storage_plays<F>(
+        &self,
+        player: TypeVertex<'static>,
+        mapper: F,
+    ) -> Result<HashSet<Plays<'static>>, ConceptReadError>
     where
         F: for<'b> Fn(TypeVertex<'b>) -> Plays<'static>,
     {
         let plays_prefix = build_edge_plays_prefix_from(player);
-        // TODO: handle possible errors
         self.snapshot
             .iterate_range(PrefixRange::new_within(plays_prefix))
             .collect_cloned_key_hashset(|key| {
                 let plays_edge = new_edge_plays(Bytes::Reference(key.byte_ref()));
                 mapper(plays_edge.to())
             })
-            .unwrap()
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
     pub(crate) fn set_storage_plays(
@@ -617,45 +602,47 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         player: TypeVertex<'static>,
         role: TypeVertex<'static>,
     ) -> Result<(), ConceptWriteError> {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let plays = build_edge_plays(player.clone(), role.clone());
-            write_snapshot
-                .put(plays.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
-            let plays_reverse = build_edge_plays_reverse(role, player);
-            write_snapshot
-                .put(plays_reverse.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
-        } else {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: creating plays edge requires write snapshot")
-        }
+        };
+        let plays = build_edge_plays(player.clone(), role.clone());
+        write_snapshot.put(plays.into_storage_key().into_owned_array());
+        let plays_reverse = build_edge_plays_reverse(role, player);
+        write_snapshot.put(plays_reverse.into_storage_key().into_owned_array());
         Ok(())
     }
 
-    pub(crate) fn delete_storage_plays(&self, player: TypeVertex<'static>, role: TypeVertex<'static>) {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let plays = build_edge_plays(player.clone(), role.clone());
-            write_snapshot.delete(plays.into_storage_key().into_owned_array());
-            let plays_reverse = build_edge_plays_reverse(role, player);
-            write_snapshot.delete(plays_reverse.into_storage_key().into_owned_array());
-        } else {
+    pub(crate) fn delete_storage_plays(
+        &self,
+        player: TypeVertex<'static>,
+        role: TypeVertex<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: deleting plays edge requires write snapshot")
-        }
+        };
+        let plays = build_edge_plays(player.clone(), role.clone());
+        write_snapshot.delete(plays.into_storage_key().into_owned_array());
+        let plays_reverse = build_edge_plays_reverse(role, player);
+        write_snapshot.delete(plays_reverse.into_storage_key().into_owned_array());
+        Ok(())
     }
 
-    fn get_storage_relates<F>(&self, relation: TypeVertex<'static>, mapper: F) -> HashSet<Relates<'static>>
+    fn get_storage_relates<F>(
+        &self,
+        relation: TypeVertex<'static>,
+        mapper: F,
+    ) -> Result<HashSet<Relates<'static>>, ConceptReadError>
     where
         F: for<'b> Fn(TypeVertex<'b>) -> Relates<'static>,
     {
         let relates_prefix = build_edge_relates_prefix_from(relation);
-        // TODO: handle possible errors
         self.snapshot
             .iterate_range(PrefixRange::new_within(relates_prefix))
             .collect_cloned_key_hashset(|key| {
                 let relates_edge = new_edge_relates(Bytes::Reference(key.byte_ref()));
                 mapper(relates_edge.to())
             })
-            .unwrap()
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
     pub(crate) fn set_storage_relates(
@@ -663,30 +650,31 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         relation: TypeVertex<'static>,
         role: TypeVertex<'static>,
     ) -> Result<(), ConceptWriteError> {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let relates = build_edge_relates(relation.clone(), role.clone());
-            write_snapshot
-                .put(relates.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
-            let relates_reverse = build_edge_relates_reverse(role, relation);
-            write_snapshot
-                .put(relates_reverse.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
-        } else {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: creating relates edge requires write snapshot")
-        }
+        };
+
+        let relates = build_edge_relates(relation.clone(), role.clone());
+        write_snapshot.put(relates.into_storage_key().into_owned_array());
+        let relates_reverse = build_edge_relates_reverse(role, relation);
+        write_snapshot.put(relates_reverse.into_storage_key().into_owned_array());
         Ok(())
     }
 
-    pub(crate) fn delete_storage_relates(&self, relation: TypeVertex<'static>, role: TypeVertex<'static>) {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let relates = build_edge_relates(relation.clone(), role.clone());
-            write_snapshot.delete(relates.into_storage_key().into_owned_array());
-            let relates_reverse = build_edge_relates_reverse(role, relation);
-            write_snapshot.delete(relates_reverse.into_storage_key().into_owned_array());
-        } else {
+    pub(crate) fn delete_storage_relates(
+        &self,
+        relation: TypeVertex<'static>,
+        role: TypeVertex<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: deleting relates edge requires write snapshot")
-        }
+        };
+
+        let relates = build_edge_relates(relation.clone(), role.clone());
+        write_snapshot.delete(relates.into_storage_key().into_owned_array());
+        let relates_reverse = build_edge_relates_reverse(role, relation);
+        write_snapshot.delete(relates_reverse.into_storage_key().into_owned_array());
+        Ok(())
     }
 
     fn get_storage_value_type(&self, vertex: TypeVertex<'static>) -> Result<Option<ValueType>, ConceptReadError> {
@@ -702,15 +690,13 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
         vertex: TypeVertex<'static>,
         value_type: ValueType,
     ) -> Result<(), ConceptWriteError> {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let property_key = build_property_type_value_type(vertex).into_storage_key().into_owned_array();
-            let property_value = ByteArray::copy(&value_type.value_type_id().bytes());
-            write_snapshot
-                .put_val(property_key, property_value)
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
-        } else {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: setting value type requires write snapshot.")
-        }
+        };
+
+        let property_key = build_property_type_value_type(vertex).into_storage_key().into_owned_array();
+        let property_value = ByteArray::copy(&value_type.value_type_id().bytes());
+        write_snapshot.put_val(property_key, property_value);
         Ok(())
     }
 
@@ -726,24 +712,24 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
     }
 
     pub(crate) fn set_storage_annotation_abstract(&self, vertex: TypeVertex<'static>) -> Result<(), ConceptWriteError> {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let annotation_property = build_property_type_annotation_abstract(vertex);
-            write_snapshot
-                .put(annotation_property.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
-        } else {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: setting annotation requires write snapshot.")
-        }
+        };
+        let annotation_property = build_property_type_annotation_abstract(vertex);
+        write_snapshot.put(annotation_property.into_storage_key().into_owned_array());
         Ok(())
     }
 
-    pub(crate) fn delete_storage_annotation_abstract(&self, vertex: TypeVertex<'static>) {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let annotation_property = build_property_type_annotation_abstract(vertex);
-            write_snapshot.delete(annotation_property.into_storage_key().into_owned_array());
-        } else {
+    pub(crate) fn delete_storage_annotation_abstract(
+        &self,
+        vertex: TypeVertex<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: deleting annotation requires write snapshot.")
-        }
+        };
+        let annotation_property = build_property_type_annotation_abstract(vertex);
+        write_snapshot.delete(annotation_property.into_storage_key().into_owned_array());
+        Ok(())
     }
 
     fn get_storage_vertex_annotation_duplicate(
@@ -757,24 +743,27 @@ impl<'txn, 'storage: 'txn, D> TypeManager<'txn, 'storage, D> {
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
-    pub(crate) fn set_storage_annotation_duplicate(&self, vertex: TypeVertex<'static>) -> Result<(), ConceptWriteError> {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let annotation_property = build_property_type_annotation_duplicate(vertex);
-            write_snapshot
-                .put(annotation_property.into_storage_key().into_owned_array())
-                .map_err(|error| ConceptWriteError::SnapshotPut { source: error })?;
-        } else {
+    pub(crate) fn set_storage_annotation_duplicate(
+        &self,
+        vertex: TypeVertex<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: setting annotation requires write snapshot.")
-        }
+        };
+        let annotation_property = build_property_type_annotation_duplicate(vertex);
+        write_snapshot.put(annotation_property.into_storage_key().into_owned_array());
         Ok(())
     }
 
-    pub(crate) fn delete_storage_annotation_duplicate(&self, vertex: TypeVertex<'static>) {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let annotation_property = build_property_type_annotation_duplicate(vertex);
-            write_snapshot.delete(annotation_property.into_storage_key().into_owned_array());
-        } else {
+    pub(crate) fn delete_storage_annotation_duplicate(
+        &self,
+        vertex: TypeVertex<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
             panic!("Illegal state: deleting annotation requires write snapshot.")
-        }
+        };
+        let annotation_property = build_property_type_annotation_duplicate(vertex);
+        write_snapshot.delete(annotation_property.into_storage_key().into_owned_array());
+        Ok(())
     }
 }

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{error::Error, fmt, sync::Arc};
+use std::{error::Error, fmt};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use durability::{DurabilityService, SequenceNumber};
@@ -136,7 +136,7 @@ pub struct WriteSnapshot<'storage, D> {
 
 impl<'storage, D> WriteSnapshot<'storage, D> {
     pub(crate) fn new(storage: &'storage MVCCStorage<D>, open_sequence_number: SequenceNumber) -> Self {
-        storage.isolation_manager.opened(&open_sequence_number);
+        storage.isolation_manager.opened(open_sequence_number);
         WriteSnapshot { storage, buffers: KeyspaceBuffers::new(), open_sequence_number }
     }
 
@@ -153,16 +153,11 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
 
     /// Insert a key with a new version if it does not already exist.
     /// If the key exists, mark it as a preexisting insertion to escalate to Insert if there is a concurrent Delete.
-    pub fn put(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) -> Result<(), SnapshotPutError> {
+    pub fn put(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
         self.put_val(key, ByteArray::empty())
     }
 
-    // TODO bespoke error
-    pub fn put_val(
-        &self,
-        key: StorageKeyArray<BUFFER_KEY_INLINE>,
-        value: ByteArray<BUFFER_VALUE_INLINE>,
-    ) -> Result<(), SnapshotPutError> {
+    pub fn put_val(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
         let buffer = self.buffers.get(key.keyspace_id());
         if buffer.contains(key.byte_array()) {
             // TODO: replace existing buffered write. If it contains a preexisting, we can continue to use it
@@ -175,14 +170,13 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
                     // Only copy if the value is the same
                     (reference.bytes() == value.bytes()).then(|| ByteArray::from(reference))
                 })
-                .map_err(|error| SnapshotPutError::MVCCRead { source: error })?;
+                .unwrap();
             if let Some(Some(existing_stored)) = existing_stored {
                 buffer.insert_preexisting(key.into_byte_array(), existing_stored);
             } else {
                 buffer.insert(key.into_byte_array(), value);
             }
         }
-        Ok(())
     }
 
     /// Insert a delete marker for the key with a new version
@@ -272,8 +266,8 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
         CommitRecord::new(self.buffers, self.open_sequence_number)
     }
 
-    pub(crate) fn open_sequence_number(&self) -> &SequenceNumber {
-        &self.open_sequence_number
+    pub(crate) fn open_sequence_number(&self) -> SequenceNumber {
+        self.open_sequence_number
     }
 
     pub fn close_resources(&self) {
@@ -292,24 +286,12 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
 
 #[derive(Debug)]
 pub enum SnapshotError {
-    Iterate { source: Arc<SnapshotError> },
-    Get { source: MVCCStorageError },
-    Put { source: MVCCStorageError },
-    MVCC { source: MVCCReadError },
     Commit { source: MVCCStorageError },
 }
 
 impl fmt::Display for SnapshotError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
-            Self::Iterate { source, .. } => {
-                write!(f, "SnapshotError::Iterate caused by: {}", source)
-            }
-            Self::Get { source, .. } => write!(f, "SnapshotError::Get caused by: {}", source),
-            Self::Put { source, .. } => write!(f, "SnapshotError::Put caused by: {}", source),
-            Self::MVCC { source, .. } => {
-                write!(f, "SnapshotError::MVCC caused by: {}", source)
-            }
             Self::Commit { source, .. } => {
                 write!(f, "SnapshotError::Commit caused by: {}", source)
             }
@@ -320,30 +302,7 @@ impl fmt::Display for SnapshotError {
 impl Error for SnapshotError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::Iterate { source, .. } => Some(source),
-            Self::Get { source, .. } => Some(source),
-            Self::Put { source, .. } => Some(source),
-            Self::MVCC { source, .. } => Some(source),
             Self::Commit { source, .. } => Some(source),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum SnapshotPutError {
-    MVCCRead { source: MVCCReadError },
-}
-
-impl fmt::Display for SnapshotPutError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for SnapshotPutError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::MVCCRead { source, .. } => Some(source),
         }
     }
 }
