@@ -184,8 +184,8 @@ impl<D> MVCCStorage<D> {
             fs::create_dir_all(&storage_dir).map_err(|_error| todo!())?;
         }
 
-        let mut durability_service = D::recover(path.join(Self::WAL_DIR_NAME)).expect("Could not create WAL directory");
         // FIXME proper error
+        let mut durability_service = D::recover(path.join(Self::WAL_DIR_NAME)).expect("Could not create WAL directory");
         durability_service.register_record_type::<CommitRecord>();
 
         let name = name.as_ref();
