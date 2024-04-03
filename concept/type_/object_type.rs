@@ -20,7 +20,7 @@ use std::collections::HashSet;
 use primitive::maybe_owns::MaybeOwns;
 
 use crate::{
-    error::ConceptWriteError,
+    error::{ConceptReadError, ConceptWriteError},
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays, relation_type::RelationType,
         role_type::RoleType, type_manager::TypeManager, OwnerAPI, PlayerAPI,
@@ -46,14 +46,21 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         }
     }
 
-    fn delete_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) {
+    fn delete_owns<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<(), ConceptWriteError> {
         match self {
             ObjectType::Entity(entity) => entity.delete_owns(type_manager, attribute_type),
             ObjectType::Relation(relation) => relation.delete_owns(type_manager, attribute_type),
         }
     }
 
-    fn get_owns<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
+    fn get_owns<'m, D>(
+        &self,
+        type_manager: &'m TypeManager<'_, '_, D>,
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
         match self {
             ObjectType::Entity(entity) => entity.get_owns(type_manager),
             ObjectType::Relation(relation) => relation.get_owns(type_manager),
@@ -64,7 +71,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         &self,
         type_manager: &TypeManager<'_, '_, D>,
         attribute_type: AttributeType<'static>,
-    ) -> Option<Owns<'static>> {
+    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
         match self {
             ObjectType::Entity(entity) => entity.get_owns_attribute(type_manager, attribute_type),
             ObjectType::Relation(relation) => relation.get_owns_attribute(type_manager, attribute_type),
@@ -84,14 +91,21 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         }
     }
 
-    fn delete_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) {
+    fn delete_plays<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        role_type: RoleType<'static>,
+    ) -> Result<(), ConceptWriteError> {
         match self {
             ObjectType::Entity(entity) => entity.delete_plays(type_manager, role_type),
             ObjectType::Relation(relation) => relation.delete_plays(type_manager, role_type),
         }
     }
 
-    fn get_plays<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Plays<'static>>> {
+    fn get_plays<'m, D>(
+        &self,
+        type_manager: &'m TypeManager<'_, '_, D>,
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
         match self {
             ObjectType::Entity(entity) => entity.get_plays(type_manager),
             ObjectType::Relation(relation) => relation.get_plays(type_manager),
@@ -102,7 +116,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         &self,
         type_manager: &TypeManager<'_, '_, D>,
         role_type: RoleType<'static>,
-    ) -> Option<Plays<'static>> {
+    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
         match self {
             ObjectType::Entity(entity) => entity.get_plays_role(type_manager, role_type),
             ObjectType::Relation(relation) => relation.get_plays_role(type_manager, role_type),

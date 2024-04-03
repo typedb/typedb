@@ -244,7 +244,10 @@ impl<D> MVCCStorage<D> {
         WriteSnapshot::new(self, open_sequence_number)
     }
 
-    pub fn open_snapshot_write_at(&self, sequence_number: SequenceNumber) -> Result<WriteSnapshot<'_, D>, WriteSnapshotOpenError> {
+    pub fn open_snapshot_write_at(
+        &self,
+        sequence_number: SequenceNumber,
+    ) -> Result<WriteSnapshot<'_, D>, WriteSnapshotOpenError> {
         // TODO: Support waiting for watermark to catch up to sequence number when we support causal reading.
         assert!(sequence_number <= self.read_watermark());
         Ok(WriteSnapshot::new(self, sequence_number))
@@ -255,7 +258,10 @@ impl<D> MVCCStorage<D> {
         ReadSnapshot::new(self, open_sequence_number)
     }
 
-    pub fn open_snapshot_read_at(&self, sequence_number: SequenceNumber) -> Result<ReadSnapshot<'_, D>, ReadSnapshotOpenError> {
+    pub fn open_snapshot_read_at(
+        &self,
+        sequence_number: SequenceNumber,
+    ) -> Result<ReadSnapshot<'_, D>, ReadSnapshotOpenError> {
         // TODO: Support waiting for watermark to catch up to sequence number when we support causal reading.
         assert!(sequence_number <= self.read_watermark());
         Ok(ReadSnapshot::new(self, sequence_number))

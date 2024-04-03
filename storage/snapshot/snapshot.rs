@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{error::Error, fmt, sync::Arc};
+use std::{error::Error, fmt};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use durability::{DurabilityService, SequenceNumber};
@@ -270,24 +270,12 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
 
 #[derive(Debug)]
 pub enum SnapshotError {
-    Iterate { source: Arc<SnapshotError> },
-    Get { source: MVCCStorageError },
-    Put { source: MVCCStorageError },
-    MVCC { source: MVCCReadError },
     Commit { source: MVCCStorageError },
 }
 
 impl fmt::Display for SnapshotError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
-            Self::Iterate { source, .. } => {
-                write!(f, "SnapshotError::Iterate caused by: {}", source)
-            }
-            Self::Get { source, .. } => write!(f, "SnapshotError::Get caused by: {}", source),
-            Self::Put { source, .. } => write!(f, "SnapshotError::Put caused by: {}", source),
-            Self::MVCC { source, .. } => {
-                write!(f, "SnapshotError::MVCC caused by: {}", source)
-            }
             Self::Commit { source, .. } => {
                 write!(f, "SnapshotError::Commit caused by: {}", source)
             }
@@ -298,10 +286,6 @@ impl fmt::Display for SnapshotError {
 impl Error for SnapshotError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::Iterate { source, .. } => Some(source),
-            Self::Get { source, .. } => Some(source),
-            Self::Put { source, .. } => Some(source),
-            Self::MVCC { source, .. } => Some(source),
             Self::Commit { source, .. } => Some(source),
         }
     }

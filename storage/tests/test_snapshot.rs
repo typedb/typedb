@@ -95,7 +95,7 @@ fn snapshot_buffered_put_iterate() {
     snapshot.put(key_4.clone());
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1], Keyspace));
-    let items: Result<Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, SnapshotError> =
+    let items: Result<Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, _> =
         snapshot
             .iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix)))
             .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)));

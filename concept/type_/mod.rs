@@ -21,7 +21,7 @@ use encoding::graph::type_::vertex::TypeVertex;
 use primitive::maybe_owns::MaybeOwns;
 
 use crate::{
-    error::ConceptWriteError,
+    error::{ConceptReadError, ConceptWriteError},
     type_::{attribute_type::AttributeType, owns::Owns, plays::Plays, role_type::RoleType, type_manager::TypeManager},
     ConceptAPI,
 };
@@ -51,22 +51,29 @@ pub trait OwnerAPI<'a> {
         attribute_type: AttributeType<'static>,
     ) -> Result<Owns<'static>, ConceptWriteError>;
 
-    fn delete_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>);
+    fn delete_owns<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<(), ConceptWriteError>;
 
-    fn get_owns<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Owns<'static>>>;
+    fn get_owns<'m, D>(
+        &self,
+        type_manager: &'m TypeManager<'_, '_, D>,
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError>;
 
     fn get_owns_attribute<D>(
         &self,
         type_manager: &TypeManager<'_, '_, D>,
         attribute_type: AttributeType<'static>,
-    ) -> Option<Owns<'static>>;
+    ) -> Result<Option<Owns<'static>>, ConceptReadError>;
 
     fn has_owns_attribute<D>(
         &self,
         type_manager: &TypeManager<'_, '_, D>,
         attribute_type: AttributeType<'static>,
-    ) -> bool {
-        self.get_owns_attribute(type_manager, attribute_type).is_some()
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self.get_owns_attribute(type_manager, attribute_type)?.is_some())
     }
 }
 
@@ -77,17 +84,28 @@ pub trait PlayerAPI<'a> {
         role_type: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError>;
 
-    fn delete_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>);
+    fn delete_plays<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        role_type: RoleType<'static>,
+    ) -> Result<(), ConceptWriteError>;
 
-    fn get_plays<'m, D>(&self, type_manager: &'m TypeManager<'_, '_, D>) -> MaybeOwns<'m, HashSet<Plays<'static>>>;
+    fn get_plays<'m, D>(
+        &self,
+        type_manager: &'m TypeManager<'_, '_, D>,
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError>;
 
     fn get_plays_role<D>(
         &self,
         type_manager: &TypeManager<'_, '_, D>,
         role_type: RoleType<'static>,
-    ) -> Option<Plays<'static>>;
+    ) -> Result<Option<Plays<'static>>, ConceptReadError>;
 
-    fn has_plays_role<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) -> bool {
-        self.get_plays_role(type_manager, role_type).is_some()
+    fn has_plays_role<D>(
+        &self,
+        type_manager: &TypeManager<'_, '_, D>,
+        role_type: RoleType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self.get_plays_role(type_manager, role_type)?.is_some())
     }
 }

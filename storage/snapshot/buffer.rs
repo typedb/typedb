@@ -35,6 +35,7 @@ use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
 };
 
+use super::iterator::SnapshotIteratorError;
 use crate::{
     key_value::StorageKeyArray,
     keyspace::{KeyspaceId, KEYSPACE_MAXIMUM_COUNT},
@@ -183,7 +184,9 @@ impl BufferedPrefixIterator {
         Self { state: State::Init, index: 0, range }
     }
 
-    pub(crate) fn peek(&mut self) -> Option<Result<(&StorageKeyArray<BUFFER_KEY_INLINE>, &Write), SnapshotError>> {
+    pub(crate) fn peek(
+        &mut self,
+    ) -> Option<Result<(&StorageKeyArray<BUFFER_KEY_INLINE>, &Write), SnapshotIteratorError>> {
         match &self.state {
             State::Done => None,
             State::Init => {
