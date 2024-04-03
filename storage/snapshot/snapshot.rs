@@ -158,25 +158,9 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
     }
 
     pub fn put_val(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        let buffer = self.buffers.get(key.keyspace_id());
-        if buffer.contains(key.byte_array()) {
-            // TODO: replace existing buffered write. If it contains a preexisting, we can continue to use it
-            todo!()
-        } else {
-            let wrapped = StorageKeyReference::from(&key);
-            let existing_stored = self
-                .storage
-                .get(wrapped, self.open_sequence_number, |reference| {
-                    // Only copy if the value is the same
-                    (reference.bytes() == value.bytes()).then(|| ByteArray::from(reference))
-                })
-                .unwrap();
-            if let Some(Some(existing_stored)) = existing_stored {
-                buffer.insert_preexisting(key.into_byte_array(), existing_stored);
-            } else {
-                buffer.insert(key.into_byte_array(), value);
-            }
-        }
+        let keyspace_id = key.keyspace_id();
+        let byte_array = key.into_byte_array();
+        self.buffers.get(keyspace_id).put(byte_array, value);
     }
 
     /// Insert a delete marker for the key with a new version
