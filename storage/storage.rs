@@ -154,7 +154,7 @@ fn db_options() -> Options {
 fn recover_keyspaces<KS: KeyspaceSet>(
     storage_dir: impl AsRef<Path>,
 ) -> Result<(Vec<Keyspace>, [Option<KeyspaceId>; KEYSPACE_MAXIMUM_COUNT]), StorageRecoverError> {
-    use StorageRecoverError::*;
+    use StorageRecoverError::{KeyspaceOpen, KeyspaceValidation};
 
     let path = storage_dir.as_ref();
     let mut keyspaces = Vec::new();
