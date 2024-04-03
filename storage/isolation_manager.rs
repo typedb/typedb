@@ -79,9 +79,9 @@ impl IsolationManager {
                 Ok(())
             }
             Some(conflict) => {
-                    self.commit_failed(commit_sequence_number, open_sequence_number);
-                    Err(IsolationError::Conflict(conflict))
-                }
+                self.commit_failed(commit_sequence_number, open_sequence_number);
+                Err(IsolationError::Conflict(conflict))
+            }
         }
     }
 
@@ -215,8 +215,15 @@ pub enum IsolationError {
 }
 
 impl fmt::Display for IsolationError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Conflict(IsolationConflict::DeleteRequired) => {
+                write!(f, "Isolation violation: Delete-Require conflict. A preceding concurrent commit has deleted a key required by this transaction. Please retry.")
+            }
+            Self::Conflict(IsolationConflict::RequiredDelete) => {
+                write!(f, "Isolation violation: Require-Delete conflict. This commit has deleted a key required by a preceding concurrent transaction. Please retry.")
+            }
+        }
     }
 }
 
