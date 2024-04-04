@@ -79,6 +79,16 @@ impl DurabilityService for WAL {
         self.registered_types.insert(Record::RECORD_TYPE, Record::RECORD_NAME);
     }
 
+    fn unsequenced_write<Record>(&self, record: &Record) -> Result<()>
+    where
+        Record: DurabilityRecord,
+    {
+        debug_assert!(self.registered_types.get(&Record::RECORD_TYPE) == Some(&Record::RECORD_NAME));
+        let mut files = self.files.write().unwrap();
+        files.write_record(record, SequenceNumber::from(0))?;
+        Ok(())
+    }
+
     fn sequenced_write<Record>(&self, record: &Record) -> Result<SequenceNumber>
     where
         Record: DurabilityRecord,

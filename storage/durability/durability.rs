@@ -42,6 +42,10 @@ pub trait DurabilityService: Sequencer {
 
     fn register_record_type<Record: DurabilityRecord>(&mut self);
 
+    fn unsequenced_write<Record>(&self, record: &Record) -> Result<()>
+    where
+        Record: DurabilityRecord;
+
     fn sequenced_write<Record>(&self, record: &Record) -> Result<SequenceNumber>
     where
         Record: DurabilityRecord;
@@ -56,7 +60,13 @@ pub trait DurabilityService: Sequencer {
         &self,
         sequence_number: SequenceNumber,
     ) -> Result<impl Iterator<Item = Result<(SequenceNumber, Record)>>> {
-        Ok(self.iter_from(sequence_number)?.map(|res| {
+        Ok(self.iter_from(sequence_number)?
+            .filter(|res| {
+                match res {
+                    Ok(raw) => raw.record_type == Record::RECORD_TYPE,
+                    Err(_) => true, // Let the error filter through
+                }
+            }).map(|res| {
             let raw = res?;
             Ok((raw.sequence_number, Record::deserialise_from(&mut &*raw.bytes)?))
         }))

@@ -10,6 +10,7 @@
 #![allow(clippy::module_inception)]
 
 use std::{
+    borrow::Cow,
     error::Error,
     fmt,
     fs::{self, File},
@@ -30,7 +31,7 @@ use speedb::{Options, WriteBatch};
 
 use crate::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
-    isolation_manager::{CommitRecord, IsolationManager},
+    isolation_manager::{CommitRecord, CommitStatus, IsolationManager, StatusRecord},
     iterator::MVCCRangeIterator,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
@@ -177,10 +178,18 @@ impl<D> MVCCStorage<D> {
         // FIXME proper error
         let mut durability_service = D::recover(path.join(Self::WAL_DIR_NAME)).expect("Could not create WAL directory");
         durability_service.register_record_type::<CommitRecord>();
+        durability_service.register_record_type::<StatusRecord>();
 
         let name = name.as_ref();
         let (keyspaces, keyspaces_index) = recover_keyspaces::<KS>(&storage_dir)?;
-        let isolation_manager = IsolationManager::new(SequenceNumber::from(1));
+
+        let isolation_manager = if durability_service.previous() == SequenceNumber::MIN {
+            let im = IsolationManager::new(Self::tmp_relative_index_from_sequence_number(SequenceNumber::MIN));
+            im.load_aborted(0, SequenceNumber::MIN); // Initialise the watermark to zero
+            im
+        } else {
+            IsolationManager::new(Self::tmp_relative_index_from_sequence_number(durability_service.current()))
+        };
 
         let name = name.to_owned();
         let path = path.to_owned();
@@ -196,18 +205,45 @@ impl<D> MVCCStorage<D> {
         D: DurabilityService,
     {
         use StorageRecoverError::DurabilityServiceRead;
-        let records = self
-            .durability_service
-            .iter_type_from_start::<CommitRecord>()
+        let records =
+            IsolationManager::iterate_commit_status_from_disk(&self.durability_service, SequenceNumber::MIN)
             .map_err(|error| DurabilityServiceRead { source: error })?;
         for record in records {
             match record {
-                Ok((commit_sequence_number, commit_record)) => {
-                    self.try_write_commit_record(commit_sequence_number, commit_record).unwrap();
-                }
+                Ok(commit_status) => {
+                    match commit_status {
+                        // TODO: Relative indexes once sequence numbers become discontinuous
+                        CommitStatus::Applied(commit_sequence_number, commit_record) => {
+                            self.isolation_manager.load_applied(
+                                Self::tmp_relative_index_from_sequence_number(commit_sequence_number),
+                                commit_sequence_number,
+                                commit_record.into_owned(),
+                            );
+                        }
+                        CommitStatus::Closed(commit_sequence_number) => {
+                            self.isolation_manager.load_aborted(
+                                Self::tmp_relative_index_from_sequence_number(commit_sequence_number),
+                                commit_sequence_number,
+                            );
+                        }
+                        CommitStatus::Pending(commit_sequence_number, commit_record) => {
+                            self.isolation_manager.opened(commit_record.open_sequence_number()); // try_commit currently decrements reader count.
+                            self.try_write_commit_record(
+                                Self::tmp_relative_index_from_sequence_number(commit_sequence_number),
+                                commit_sequence_number,
+                                commit_record.into_owned(),
+                            ).unwrap(); // TODO: This was an unwrap in the trunk.
+                        }
+                        CommitStatus::Empty | CommitStatus::Validated(_, _) => unreachable!(),
+                    }
+                },
                 Err(error) => return Err(DurabilityServiceRead { source: error }),
             }
         }
+        debug_assert!({
+            self.isolation_manager.watermark();
+            true
+        }); // Panic if isolation_manager is not initialised with a record at watermark=relative_index=0.
         Ok(())
     }
 
@@ -290,22 +326,43 @@ impl<D> MVCCStorage<D> {
                 kind: MVCCStorageErrorKind::DurabilityError { source: err },
             })?;
 
-        self.try_write_commit_record(commit_sequence_number, commit_record)
+        self.try_write_commit_record(
+            Self::tmp_relative_index_from_sequence_number(commit_sequence_number),
+            commit_sequence_number,
+            commit_record,
+        )
+    }
+
+    fn tmp_relative_index_from_sequence_number(sequence_number: SequenceNumber) -> i64 {
+        sequence_number.number().number() as i64
     }
 
     fn try_write_commit_record(
         &self,
+        relative_index: i64,
         commit_sequence_number: SequenceNumber,
         commit_record: CommitRecord,
-    ) -> Result<(), MVCCStorageError> {
+    ) -> Result<(), MVCCStorageError>
+    where
+        D: DurabilityService,
+    {
         // 2. validate commit isolation
-        self.isolation_manager.try_commit(commit_sequence_number, commit_record).map_err(|err| MVCCStorageError {
-            storage_name: self.name.clone(),
-            kind: MVCCStorageErrorKind::IsolationError { source: err },
-        })?;
+        let validation_result = self.isolation_manager.try_commit(
+            relative_index,
+            commit_sequence_number,
+            commit_record,
+            &self.durability_service,
+        );
+        if let Err(err) = validation_result {
+            self.durability_service.unsequenced_write(&StatusRecord::new(commit_sequence_number, false)).unwrap();
+            return Err(MVCCStorageError {
+                storage_name: self.name.clone(),
+                kind: MVCCStorageErrorKind::IsolationError { source: err },
+            });
+        }
 
         //  3. write to kv-storage
-        let write_batches = self.isolation_manager.apply_to_commit_record(commit_sequence_number, |record| {
+        let write_batches = self.isolation_manager.apply_to_commit_record(relative_index, |record| {
             self.to_write_batches(commit_sequence_number, record.buffers())
         });
 
@@ -323,7 +380,14 @@ impl<D> MVCCStorage<D> {
                 })?;
             }
         }
-        Ok(())
+        // 4. Inform the isolation manager and increment the watermark.
+        self.isolation_manager.notify_applied(relative_index);
+
+        // 5. Persist the commit status
+        match self.durability_service.unsequenced_write(&StatusRecord::new(commit_sequence_number, true)) {
+            Ok(_) => Ok(()),
+            Err(_) => todo!(), // TODO: What happens if the persist fails? For now, we need to crash the server
+        }
     }
 
     fn to_write_batches(
