@@ -228,11 +228,16 @@ impl<D> MVCCStorage<D> {
                         }
                         CommitStatus::Pending(commit_sequence_number, commit_record) => {
                             self.isolation_manager.opened(commit_record.open_sequence_number()); // try_commit currently decrements reader count.
-                            self.try_write_commit_record(
+                            let try_commit_result = self.try_write_commit_record(
                                 Self::tmp_relative_index_from_sequence_number(commit_sequence_number),
                                 commit_sequence_number,
                                 commit_record.into_owned(),
-                            ).unwrap(); // TODO: This was an unwrap in the trunk.
+                            );
+                            match try_commit_result {
+                                Ok(_) => {},
+                                Err(MVCCStorageError { kind: MVCCStorageErrorKind::IsolationError { .. }, .. } ) => {}, // Isolation errors are fine.
+                                Err(_) =>  {try_commit_result.unwrap();}  // TODO: Other errors are not
+                            }
                         }
                         CommitStatus::Empty | CommitStatus::Validated(_, _) => unreachable!(),
                     }
