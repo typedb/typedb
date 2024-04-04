@@ -73,84 +73,37 @@ impl IsolationManager {
         let validation_result =
             self.validate_all_concurrent(commit_sequence_number, commit_window.get_record(commit_sequence_number));
 
-        match validation_result {
-            None => {
-                self.committed(commit_sequence_number);
-                Ok(())
-            }
-            Some(conflict) => {
-                self.commit_failed(commit_sequence_number, open_sequence_number);
-                Err(IsolationError::Conflict(conflict))
-            }
+        match &validation_result {
+            Ok(()) => self.committed(commit_sequence_number),
+            Err(_) => self.commit_failed(commit_sequence_number, open_sequence_number),
         }
+
+        validation_result
     }
 
     fn validate_all_concurrent(
         &self,
         commit_sequence_number: SequenceNumber,
         commit_record: &CommitRecord,
-    ) -> Option<IsolationConflict> {
+    ) -> Result<(), IsolationError> {
         debug_assert!(commit_record.open_sequence_number() < commit_sequence_number);
         // TODO: decide if we should block until all predecessors finish, allow out of order (non-Calvin model/traditional model)
         //       We could also validate against all predecessors even if they are validating and fail eagerly.
 
         let mut at = SequenceNumber::new(commit_record.open_sequence_number.number() + 1);
         let Some(mut predecessor_window) = self.timeline.try_get_window(at) else {
-            return None; // nothing to validate
+            return Ok(()); // nothing to validate
         };
+
         while at < commit_sequence_number {
             if !predecessor_window.contains(at) {
                 predecessor_window = self.timeline.get_window(at);
             }
-
-            let commit_dependency = match predecessor_window.get_status(at) {
-                CommitStatus::Empty => unreachable!("A concurrent status should never be empty at commit time"),
-                CommitStatus::Pending(predecessor_record) => {
-                    match commit_record.compute_dependency(predecessor_record) {
-                        CommitDependency::Independent => CommitDependency::Independent,
-                        result => {
-                            if self.await_pending_status_commits(at, &predecessor_window) {
-                                result
-                            } else {
-                                CommitDependency::Independent
-                            }
-                        }
-                    }
-                }
-                CommitStatus::Committed(predecessor_record) => commit_record.compute_dependency(predecessor_record),
-                CommitStatus::Closed => CommitDependency::Independent,
-            };
-
-            match commit_dependency {
-                CommitDependency::Independent => (),
-                CommitDependency::DependentPuts { puts } => puts.into_iter().for_each(DependentPut::apply),
-                CommitDependency::Conflict(conflict) => return Some(conflict),
-            }
-
+            resolve_concurrent(commit_record, at, &predecessor_window)?;
             at = SequenceNumber::new(at.number() + 1);
         }
-        None
-    }
 
-    fn await_pending_status_commits(
-        &self,
-        predecessor_sequence_number: SequenceNumber,
-        predecessor_window: &TimelineWindow<TIMELINE_WINDOW_SIZE>,
-    ) -> bool {
-        debug_assert!(!matches!(predecessor_window.get_status(predecessor_sequence_number), CommitStatus::Empty));
-        loop {
-            match predecessor_window.get_status(predecessor_sequence_number) {
-                CommitStatus::Empty => unreachable!("Illegal state - commit status cannot move from pending to empty"),
-                CommitStatus::Pending(_) => {
-                    // TODO: we can improve the spin lock with async/await
-                    // Note we only expect to have long waits in long chains of overlapping transactions that would conflict
-                    // could also do a little sleep in the spin lock, for example if the validating is still far away
-                    std::hint::spin_loop();
-                }
-                CommitStatus::Committed(_) => return true,
-                CommitStatus::Closed => return false,
-            }
-        }
+        Ok(())
     }
 
     fn pending(
@@ -182,6 +135,36 @@ impl IsolationManager {
         let record = shared_window.get_record(sequence_number);
         function(record)
     }
+}
+
+fn resolve_concurrent(
+    commit_record: &CommitRecord,
+    at: SequenceNumber,
+    predecessor_window: &TimelineWindow<TIMELINE_WINDOW_SIZE>,
+) -> Result<(), IsolationError> {
+    let commit_dependency = match predecessor_window.get_status(at) {
+        CommitStatus::Empty => unreachable!("A concurrent status should never be empty at commit time"),
+        CommitStatus::Pending(predecessor_record) => match commit_record.compute_dependency(predecessor_record) {
+            CommitDependency::Independent => CommitDependency::Independent,
+            result => {
+                if predecessor_window.await_pending_status_commits(at) {
+                    result
+                } else {
+                    CommitDependency::Independent
+                }
+            }
+        },
+        CommitStatus::Committed(predecessor_record) => commit_record.compute_dependency(predecessor_record),
+        CommitStatus::Closed => CommitDependency::Independent,
+    };
+
+    match commit_dependency {
+        CommitDependency::Independent => (),
+        CommitDependency::DependentPuts { puts } => puts.into_iter().for_each(DependentPut::apply),
+        CommitDependency::Conflict(conflict) => return Err(IsolationError::Conflict(conflict)),
+    }
+
+    Ok(())
 }
 
 #[derive(Debug)]
@@ -461,6 +444,23 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
                 SlotMarker::Committed | SlotMarker::Closed => None,
             }
         })
+    }
+
+    fn await_pending_status_commits(&self, at: SequenceNumber) -> bool {
+        debug_assert!(!matches!(self.get_status(at), CommitStatus::Empty));
+        loop {
+            match self.get_status(at) {
+                CommitStatus::Empty => unreachable!("Illegal state - commit status cannot move from pending to empty"),
+                CommitStatus::Pending(_) => {
+                    // TODO: we can improve the spin lock with async/await
+                    // Note we only expect to have long waits in long chains of overlapping transactions that would conflict
+                    // could also do a little sleep in the spin lock, for example if the validating is still far away
+                    std::hint::spin_loop();
+                }
+                CommitStatus::Committed(_) => return true,
+                CommitStatus::Closed => return false,
+            }
+        }
     }
 
     fn set_pending(&self, sequence_number: SequenceNumber, commit_record: CommitRecord) {
