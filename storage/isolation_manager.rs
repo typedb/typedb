@@ -139,15 +139,15 @@ impl IsolationManager {
 
 fn resolve_concurrent(
     commit_record: &CommitRecord,
-    at: SequenceNumber,
+    predecessor_sequence_number: SequenceNumber,
     predecessor_window: &TimelineWindow<TIMELINE_WINDOW_SIZE>,
 ) -> Result<(), IsolationError> {
-    let commit_dependency = match predecessor_window.get_status(at) {
+    let commit_dependency = match predecessor_window.get_status(predecessor_sequence_number) {
         CommitStatus::Empty => unreachable!("A concurrent status should never be empty at commit time"),
         CommitStatus::Pending(predecessor_record) => match commit_record.compute_dependency(predecessor_record) {
             CommitDependency::Independent => CommitDependency::Independent,
             result => {
-                if predecessor_window.await_pending_status_commits(at) {
+                if predecessor_window.await_pending_status_commits(predecessor_sequence_number) {
                     result
                 } else {
                     CommitDependency::Independent
