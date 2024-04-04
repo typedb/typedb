@@ -18,11 +18,16 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
+use std::collections::HashMap;
+
 use cucumber::{StatsWriter, World};
+use database::Database;
+use durability::wal::WAL;
 use server::typedb;
 use test_utils::TempDir;
 
 mod connection;
+mod util;
 
 #[derive(Debug, Default, World)]
 pub struct Context {
@@ -56,12 +61,25 @@ impl Context {
     async fn after_scenario(&mut self) -> Result<(), ()> {
         Ok(())
     }
+
+    pub fn server(&self) -> Option<&typedb::Server> {
+        self.server.as_ref()
+    }
+
+    pub fn server_mut(&mut self) -> Option<&mut typedb::Server> {
+        self.server.as_mut()
+    }
+
+    pub fn databases(&self) -> &HashMap<String, Database<WAL>> {
+        self.server().unwrap().databases()
+    }
 }
 
 fn is_ignore(tag: &str) -> bool {
     tag == "ignore" || tag == "ignore-typedb"
 }
 
+#[macro_export]
 macro_rules! generic_step {
     {$(#[step($pattern:expr)])+ $vis:vis $async:ident fn $fn_name:ident $args:tt $(-> $res:ty)? $body:block} => {
         $(
@@ -72,4 +90,3 @@ macro_rules! generic_step {
         $vis $async fn $fn_name $args $(-> $res)? $body
     };
 }
-pub(crate) use generic_step;

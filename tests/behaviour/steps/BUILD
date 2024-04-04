@@ -24,7 +24,9 @@ rust_library(
     srcs = glob(["**/*.rs"]),
     crate_root = "lib.rs",
     deps = [
+        "//database:database",
         "//server:server",
+        "//storage/durability:durability",
         "//util/test:test_utils",
 
         "@crates//:cucumber",

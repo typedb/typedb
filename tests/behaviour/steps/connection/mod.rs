@@ -21,6 +21,8 @@ use test_utils::create_tmp_dir;
 
 use crate::{generic_step, Context};
 
+mod database;
+
 #[apply(generic_step)]
 #[step("typedb starts")]
 pub async fn typedb_starts(context: &mut Context) {
