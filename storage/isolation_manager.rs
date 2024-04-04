@@ -174,27 +174,12 @@ impl IsolationManager {
         first_window_relative_index: i64,
     ) -> Result<(), IsolationError> {
         let mut window_index = 0;
-        let mut slot_index = 0;
-        while window_index < windows.len() {
-            match windows[window_index].get_status(slot_index) {
-                CommitStatus::Pending(seq, _)
-                | CommitStatus::Validated(seq, _)
-                | CommitStatus::Applied(seq, _)
-                | CommitStatus::Closed(seq) => {
-                    if seq.number() >= commit_record.open_sequence_number.number() {
-                        break;
-                    }
-                }
-                CommitStatus::Empty => {}
+        let mut slot_index = (0..TIMELINE_WINDOW_SIZE).find(|si| {
+            match windows[0].get_sequence_number(*si) {
+                Some(seq) => seq.number() >= commit_record.open_sequence_number.number(),
+                None => false
             }
-            slot_index += 1;
-            if slot_index >= TIMELINE_WINDOW_SIZE {
-                window_index += 1;
-                slot_index = 0;
-                debug_assert!(window_index < windows.len());
-            }
-        }
-        debug_assert!(window_index < windows.len() && slot_index < TIMELINE_WINDOW_SIZE);
+        }).unwrap();
         let start_record = first_window_relative_index + (window_index * TIMELINE_WINDOW_SIZE + slot_index) as i64;
         for _at in start_record..commit_relative_index {
             debug_assert!(window_index < windows.len());
@@ -602,6 +587,10 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
 
     fn set_applied(&self, index: usize) {
         self.slot_status[index].store(SlotMarker::Applied.as_u8(), Ordering::SeqCst);
+    }
+
+    fn get_sequence_number(&self, index: usize) -> Option<SequenceNumber> {
+        Some(self.commit_records[index].get()?.0)
     }
 
     fn get_status(&self, index: usize) -> CommitStatus<'_> {
