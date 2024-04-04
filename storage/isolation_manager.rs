@@ -50,6 +50,12 @@ impl IsolationManager {
         self.timeline.remove_reader(open_sequence_number);
     }
 
+    pub(crate) fn applied(&self, relative_index: i64) {
+        let (window, slot_index) = self.timeline.try_get_window(relative_index).unwrap();
+        window.set_applied(slot_index);
+        self.timeline.may_increment_watermark(relative_index);
+    }
+
     pub(crate) fn load_applied(
         &self,
         relative_index: i64,
@@ -66,12 +72,6 @@ impl IsolationManager {
         let (window, slot_index) = self.timeline.get_or_create_window(relative_index);
         window.insert_pending(slot_index, sequence_number, CommitRecord::new(KeyspaceBuffers::new(), sequence_number));
         window.set_closed(slot_index);
-        self.timeline.may_increment_watermark(relative_index);
-    }
-
-    pub(crate) fn notify_applied(&self, relative_index: i64) {
-        let (window, slot_index) = self.timeline.try_get_window(relative_index).unwrap();
-        window.set_applied(slot_index);
         self.timeline.may_increment_watermark(relative_index);
     }
 
@@ -197,34 +197,12 @@ impl IsolationManager {
         Ok(())
     }
 
-    pub(crate) fn watermark(&self) -> SequenceNumber {
-        let (window, slot_index) = self.timeline.try_get_window(self.timeline.watermark()).unwrap();
-        match window.get_status(slot_index) {
-            CommitStatus::Applied(seq, _) | CommitStatus::Closed(seq) => seq.clone(),
-            CommitStatus::Validated(_, _) | CommitStatus::Pending(_, _) | CommitStatus::Empty =>
-                unreachable!("The isolation manager must always have the watermark commit record in the window, and it must be either committed or aborted."),
-        }
-    }
-
-    pub(crate) fn apply_to_commit_record<F, T>(&self, relative_index: i64, function: F) -> T
-    where
-        F: FnOnce(&CommitRecord) -> T,
-    {
-        let (window, index) = self.timeline.try_get_window(relative_index).unwrap();
-        let record = match window.get_status(index) {
-            CommitStatus::Validated(_, commit_record) | CommitStatus::Applied(_, commit_record) => commit_record,
-            _ => panic!("apply_to_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
-        };
-        // debug_assert_eq!(read_sequence_number, sequence_number);
-        function(&record)
-    }
-
     pub(crate) fn iterate_commit_status_from_disk<'a, D>(
         durability_service: &'a D,
         start_sequence_number: SequenceNumber,
     ) -> durability::Result<impl Iterator<Item = durability::Result<CommitStatus<'a>>>>
-    where
-        D: DurabilityService,
+        where
+            D: DurabilityService,
     {
         let mut statuses: HashMap<u128, bool> = HashMap::new();
         for record in durability_service.iter_type_from::<StatusRecord>(start_sequence_number.clone()).unwrap() {
@@ -251,6 +229,29 @@ impl IsolationManager {
         };
         Ok(durability_service.iter_type_from::<CommitRecord>(start_sequence_number.clone())?.map(map_fn))
     }
+
+    pub(crate) fn watermark(&self) -> SequenceNumber {
+        let (window, slot_index) = self.timeline.try_get_window(self.timeline.watermark()).unwrap();
+        match window.get_status(slot_index) {
+            CommitStatus::Applied(seq, _) | CommitStatus::Closed(seq) => seq.clone(),
+            CommitStatus::Validated(_, _) | CommitStatus::Pending(_, _) | CommitStatus::Empty =>
+                unreachable!("The isolation manager must always have the watermark commit record in the window, and it must be either committed or aborted."),
+        }
+    }
+
+    pub(crate) fn apply_to_commit_record<F, T>(&self, relative_index: i64, function: F) -> T
+    where
+        F: FnOnce(&CommitRecord) -> T,
+    {
+        let (window, index) = self.timeline.try_get_window(relative_index).unwrap();
+        let record = match window.get_status(index) {
+            CommitStatus::Validated(_, commit_record) | CommitStatus::Applied(_, commit_record) => commit_record,
+            _ => panic!("apply_to_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
+        };
+        // debug_assert_eq!(read_sequence_number, sequence_number);
+        function(&record)
+    }
+
 }
 
 fn resolve_concurrent(
@@ -359,7 +360,7 @@ struct Timeline {
 
 impl Timeline {
     fn new(next_relative_index: i64) -> Timeline {
-        let mut windows = VecDeque::new();
+        let windows = VecDeque::new();
         Timeline {
             next_window_and_windows: RwLock::new((next_relative_index, windows)),
             watermark: AtomicI64::new(next_relative_index - 1),
@@ -873,7 +874,6 @@ mod tests {
     use crate::{
         isolation_manager::{CommitRecord, CommitStatus, Timeline, TIMELINE_WINDOW_SIZE},
         snapshot::buffer::KeyspaceBuffers,
-        MVCCStorage,
     };
 
     struct MockTransaction {

@@ -90,8 +90,7 @@ fn test_reading_snapshots() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let key_1: &StorageKey<'_, 48> =
-        &StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
+    let key_1: &StorageKey<'_, 48> = &StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
 
     let snapshot_write_0 = storage.open_snapshot_write();
     snapshot_write_0.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_0));

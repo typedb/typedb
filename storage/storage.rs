@@ -184,11 +184,11 @@ impl<D> MVCCStorage<D> {
         let (keyspaces, keyspaces_index) = recover_keyspaces::<KS>(&storage_dir)?;
 
         let isolation_manager = if durability_service.previous() == SequenceNumber::MIN {
-            let im = IsolationManager::new(Self::tmp_relative_index_from_sequence_number(SequenceNumber::MIN));
+            let im = IsolationManager::new(Self::todo_relative_index_from_sequence_number(SequenceNumber::MIN));
             im.load_aborted(0, SequenceNumber::MIN); // Initialise the watermark to zero
             im
         } else {
-            IsolationManager::new(Self::tmp_relative_index_from_sequence_number(durability_service.current()))
+            IsolationManager::new(Self::todo_relative_index_from_sequence_number(durability_service.current()))
         };
 
         let name = name.to_owned();
@@ -212,24 +212,23 @@ impl<D> MVCCStorage<D> {
             match record {
                 Ok(commit_status) => {
                     match commit_status {
-                        // TODO: Relative indexes once sequence numbers become discontinuous
                         CommitStatus::Applied(commit_sequence_number, commit_record) => {
                             self.isolation_manager.load_applied(
-                                Self::tmp_relative_index_from_sequence_number(commit_sequence_number),
+                                Self::todo_relative_index_from_sequence_number(commit_sequence_number),
                                 commit_sequence_number,
                                 commit_record.into_owned(),
                             );
                         }
                         CommitStatus::Closed(commit_sequence_number) => {
                             self.isolation_manager.load_aborted(
-                                Self::tmp_relative_index_from_sequence_number(commit_sequence_number),
+                                Self::todo_relative_index_from_sequence_number(commit_sequence_number),
                                 commit_sequence_number,
                             );
                         }
                         CommitStatus::Pending(commit_sequence_number, commit_record) => {
                             self.isolation_manager.opened(commit_record.open_sequence_number()); // try_commit currently decrements reader count.
                             let try_commit_result = self.try_write_commit_record(
-                                Self::tmp_relative_index_from_sequence_number(commit_sequence_number),
+                                Self::todo_relative_index_from_sequence_number(commit_sequence_number),
                                 commit_sequence_number,
                                 commit_record.into_owned(),
                             );
@@ -332,13 +331,13 @@ impl<D> MVCCStorage<D> {
             })?;
 
         self.try_write_commit_record(
-            Self::tmp_relative_index_from_sequence_number(commit_sequence_number),
+            Self::todo_relative_index_from_sequence_number(commit_sequence_number),
             commit_sequence_number,
             commit_record,
         )
     }
 
-    fn tmp_relative_index_from_sequence_number(sequence_number: SequenceNumber) -> i64 {
+    fn todo_relative_index_from_sequence_number(sequence_number: SequenceNumber) -> i64 {
         sequence_number.number().number() as i64
     }
 
@@ -386,7 +385,7 @@ impl<D> MVCCStorage<D> {
             }
         }
         // 4. Inform the isolation manager and increment the watermark.
-        self.isolation_manager.notify_applied(relative_index);
+        self.isolation_manager.applied(relative_index);
 
         // 5. Persist the commit status
         match self.durability_service.unsequenced_write(&StatusRecord::new(commit_sequence_number, true)) {
