@@ -168,14 +168,17 @@ fn resolve_concurrent(
 }
 
 #[derive(Debug)]
-struct DependentPut {
-    flag: Arc<AtomicBool>,
-    value: bool,
+enum DependentPut {
+    Deleted { reinsert: Arc<AtomicBool> },
+    Inserted { reinsert: Arc<AtomicBool> },
 }
 
 impl DependentPut {
     fn apply(self) {
-        self.flag.store(self.value, Ordering::Release);
+        match self {
+            DependentPut::Deleted { reinsert } => reinsert.store(true, Ordering::Release),
+            DependentPut::Inserted { reinsert } => reinsert.store(false, Ordering::Release),
+        }
     }
 }
 
@@ -612,10 +615,10 @@ impl CommitRecord {
                             return CommitDependency::Conflict(IsolationConflict::RequiredDelete);
                         }
                         (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
-                            puts_to_update.push(DependentPut { flag: reinsert.clone(), value: false });
+                            puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
                         }
                         (Write::Delete, Write::Put { reinsert, .. }) => {
-                            puts_to_update.push(DependentPut { flag: reinsert.clone(), value: true });
+                            puts_to_update.push(DependentPut::Deleted { reinsert: reinsert.clone() });
                         }
                         _ => (),
                     }
