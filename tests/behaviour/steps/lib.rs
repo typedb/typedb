@@ -46,7 +46,6 @@ impl Context {
         !Self::cucumber()
             .repeat_failed()
             .fail_on_skipped()
-            .max_concurrent_scenarios(Some(1))
             .with_default_cli()
             .after(|_, _, _, _, context| {
                 Box::pin(async {
