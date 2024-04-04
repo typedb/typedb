@@ -35,6 +35,7 @@ impl fmt::Display for SequenceNumber {
 }
 
 impl SequenceNumber {
+    pub const MIN: Self = Self { number: U80::MIN };
     pub const MAX: Self = Self { number: U80::MAX };
 
     pub fn new(number: U80) -> Self {
