@@ -21,7 +21,7 @@ use std::{
     fmt,
     io::Read,
     sync::{
-        atomic::{AtomicU64, AtomicU8, AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicU64, AtomicU8, AtomicUsize, Ordering},
         Arc, OnceLock, RwLock,
     },
 };
@@ -73,10 +73,9 @@ impl IsolationManager {
         let validation_result =
             self.validate_all_concurrent(commit_sequence_number, commit_window.get_record(commit_sequence_number));
 
-        if validation_result.is_ok() {
-            self.committed(commit_sequence_number);
-        } else {
-            self.commit_failed(commit_sequence_number, open_sequence_number);
+        match &validation_result {
+            Ok(()) => self.committed(commit_sequence_number),
+            Err(_) => self.commit_failed(commit_sequence_number, open_sequence_number),
         }
 
         validation_result
@@ -95,89 +94,15 @@ impl IsolationManager {
         let Some(mut predecessor_window) = self.timeline.try_get_window(at) else {
             return Ok(()); // nothing to validate
         };
+
         while at < commit_sequence_number {
             if !predecessor_window.contains(at) {
                 predecessor_window = self.timeline.get_window(at);
             }
-            self.validate_concurrent(commit_record, at, &predecessor_window)?;
+            resolve_concurrent(commit_record, at, &predecessor_window)?;
             at = SequenceNumber::new(at.number() + 1);
         }
-        Ok(())
-    }
 
-    fn validate_concurrent(
-        &self,
-        commit_record: &CommitRecord,
-        predecessor_sequence_number: SequenceNumber,
-        predecessor_window: &TimelineWindow<TIMELINE_WINDOW_SIZE>,
-    ) -> Result<(), IsolationError> {
-        let predecessor_status = predecessor_window.get_status(predecessor_sequence_number);
-        match predecessor_status {
-            CommitStatus::Empty => unreachable!("A concurrent status should never be empty at commit time"),
-            CommitStatus::Pending(predecessor_record) => {
-                let result = self.validate_isolation(commit_record, predecessor_record);
-                if result.is_err() && self.await_pending_status_commits(predecessor_sequence_number, predecessor_window)
-                {
-                    result
-                } else {
-                    Ok(())
-                }
-            }
-            CommitStatus::Committed(predecessor_record) => self.validate_isolation(commit_record, predecessor_record),
-            CommitStatus::Closed => Ok(()),
-        }
-    }
-
-    fn await_pending_status_commits(
-        &self,
-        predecessor_sequence_number: SequenceNumber,
-        predecessor_window: &TimelineWindow<TIMELINE_WINDOW_SIZE>,
-    ) -> bool {
-        debug_assert!(!matches!(predecessor_window.get_status(predecessor_sequence_number), CommitStatus::Empty));
-        loop {
-            match predecessor_window.get_status(predecessor_sequence_number) {
-                CommitStatus::Empty => unreachable!("Illegal state - commit status cannot move from pending to empty"),
-                CommitStatus::Pending(_) => {
-                    // TODO: we can improve the spin lock with async/await
-                    // Note we only expect to have long waits in long chains of overlapping transactions that would conflict
-                    // could also do a little sleep in the spin lock, for example if the validating is still far away
-                    std::hint::spin_loop();
-                }
-                CommitStatus::Committed(_) => return true,
-                CommitStatus::Closed => return false,
-            }
-        }
-    }
-
-    fn validate_isolation(&self, record: &CommitRecord, predecessor: &CommitRecord) -> Result<(), IsolationError> {
-        // TODO: this can be optimised by some kind of bit-wise NAND of two bloom filter-like data
-        // structures first, since we assume few clashes this should mostly succeed
-        // TODO: can be optimised with an intersection of two sorted iterators instead of iterate + gets
-
-        for (buffer, predecessor_buffer) in record.buffers().iter().zip(predecessor.buffers()) {
-            let map = buffer.map().read().unwrap();
-            if map.is_empty() {
-                continue;
-            }
-
-            let predecessor_map = predecessor_buffer.map().read().unwrap();
-            if predecessor_map.is_empty() {
-                continue;
-            }
-
-            for (key, write) in map.iter() {
-                if let Some(predecessor_write) = predecessor_map.get(key.bytes()) {
-                    match (predecessor_write, write) {
-                        (Write::Delete, Write::InsertPreexisting { reinsert, .. }) => {
-                            reinsert.store(true, Ordering::Release)
-                        }
-                        (Write::Delete, Write::RequireExists { .. }) => return Err(IsolationError::DeleteRequired),
-                        (Write::RequireExists { .. }, Write::Delete)=> return Err(IsolationError::RequiredDelete),
-                        (_, _) => (),
-                    }
-                }
-            }
-        }
         Ok(())
     }
 
@@ -212,17 +137,78 @@ impl IsolationManager {
     }
 }
 
+fn resolve_concurrent(
+    commit_record: &CommitRecord,
+    predecessor_sequence_number: SequenceNumber,
+    predecessor_window: &TimelineWindow<TIMELINE_WINDOW_SIZE>,
+) -> Result<(), IsolationError> {
+    let commit_dependency = match predecessor_window.get_status(predecessor_sequence_number) {
+        CommitStatus::Empty => unreachable!("A concurrent status should never be empty at commit time"),
+        CommitStatus::Pending(predecessor_record) => match commit_record.compute_dependency(predecessor_record) {
+            CommitDependency::Independent => CommitDependency::Independent,
+            result => {
+                if predecessor_window.await_pending_status_commits(predecessor_sequence_number) {
+                    result
+                } else {
+                    CommitDependency::Independent
+                }
+            }
+        },
+        CommitStatus::Committed(predecessor_record) => commit_record.compute_dependency(predecessor_record),
+        CommitStatus::Closed => CommitDependency::Independent,
+    };
+
+    match commit_dependency {
+        CommitDependency::Independent => (),
+        CommitDependency::DependentPuts { puts } => puts.into_iter().for_each(DependentPut::apply),
+        CommitDependency::Conflict(conflict) => return Err(IsolationError::Conflict(conflict)),
+    }
+
+    Ok(())
+}
+
 #[derive(Debug)]
-pub enum IsolationError {
+enum DependentPut {
+    Deleted { reinsert: Arc<AtomicBool> },
+    Inserted { reinsert: Arc<AtomicBool> },
+}
+
+impl DependentPut {
+    fn apply(self) {
+        match self {
+            DependentPut::Deleted { reinsert } => reinsert.store(true, Ordering::Release),
+            DependentPut::Inserted { reinsert } => reinsert.store(false, Ordering::Release),
+        }
+    }
+}
+
+#[derive(Debug)]
+enum CommitDependency {
+    Independent,
+    DependentPuts { puts: Vec<DependentPut> },
+    Conflict(IsolationConflict),
+}
+
+#[derive(Debug)]
+pub enum IsolationConflict {
     DeleteRequired,
     RequiredDelete,
+}
+
+#[derive(Debug)]
+pub enum IsolationError {
+    Conflict(IsolationConflict),
 }
 
 impl fmt::Display for IsolationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::DeleteRequired => write!(f, "Isolation violation: Delete-Require conflict. A preceding concurrent commit has deleted a key required by this transaction. Please retry."),
-            Self::RequiredDelete => write!(f, "Isolation violation: Require-Delete conflict. This commit has deleted a key required by a preceding concurrent transaction. Please retry."),
+            Self::Conflict(IsolationConflict::DeleteRequired) => {
+                write!(f, "Isolation violation: Delete-Require conflict. A preceding concurrent commit has deleted a key required by this transaction. Please retry.")
+            }
+            Self::Conflict(IsolationConflict::RequiredDelete) => {
+                write!(f, "Isolation violation: Require-Delete conflict. This commit has deleted a key required by a preceding concurrent transaction. Please retry.")
+            }
         }
     }
 }
@@ -350,7 +336,7 @@ impl Timeline {
 
     fn last_window(
         windows: &VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
-    ) -> Arc<crate::isolation_manager::TimelineWindow<TIMELINE_WINDOW_SIZE>> {
+    ) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
         debug_assert!(!windows.is_empty());
         windows[windows.len() - 1].clone()
     }
@@ -461,6 +447,23 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
                 SlotMarker::Committed | SlotMarker::Closed => None,
             }
         })
+    }
+
+    fn await_pending_status_commits(&self, at: SequenceNumber) -> bool {
+        debug_assert!(!matches!(self.get_status(at), CommitStatus::Empty));
+        loop {
+            match self.get_status(at) {
+                CommitStatus::Empty => unreachable!("Illegal state - commit status cannot move from pending to empty"),
+                CommitStatus::Pending(_) => {
+                    // TODO: we can improve the spin lock with async/await
+                    // Note we only expect to have long waits in long chains of overlapping transactions that would conflict
+                    // could also do a little sleep in the spin lock, for example if the validating is still far away
+                    std::hint::spin_loop();
+                }
+                CommitStatus::Committed(_) => return true,
+                CommitStatus::Closed => return false,
+            }
+        }
     }
 
     fn set_pending(&self, sequence_number: SequenceNumber, commit_record: CommitRecord) {
@@ -580,6 +583,54 @@ impl CommitRecord {
         assert_eq!(Self::RECORD_TYPE, record_type);
         // TODO: handle error with a better message
         bincode::deserialize_from(reader).unwrap_or_log()
+    }
+
+    fn compute_dependency(&self, predecessor: &CommitRecord) -> CommitDependency {
+        // TODO: this can be optimised by some kind of bit-wise NAND of two bloom filter-like data
+        // structures first, since we assume few clashes this should mostly succeed
+        // TODO: can be optimised with an intersection of two sorted iterators instead of iterate + gets
+
+        let mut puts_to_update = Vec::new();
+
+        for (buffer, predecessor_buffer) in self.buffers().iter().zip(predecessor.buffers()) {
+            let map = buffer.map().read().unwrap();
+            if map.is_empty() {
+                continue;
+            }
+
+            let predecessor_map = predecessor_buffer.map().read().unwrap();
+            if predecessor_map.is_empty() {
+                continue;
+            }
+
+            for (key, write) in map.iter() {
+                if let Some(predecessor_write) = predecessor_map.get(key.bytes()) {
+                    match (predecessor_write, write) {
+                        (Write::Delete, Write::RequireExists { .. }) => {
+                            return CommitDependency::Conflict(IsolationConflict::DeleteRequired);
+                        }
+                        (Write::RequireExists { .. }, Write::Delete) => {
+                            // we escalate required-delete to failure, since requires implies dependencies that may be broken
+                            // TODO: maybe RequireExists should be RequireDependency to capture this?
+                            return CommitDependency::Conflict(IsolationConflict::RequiredDelete);
+                        }
+                        (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
+                            puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
+                        }
+                        (Write::Delete, Write::Put { reinsert, .. }) => {
+                            puts_to_update.push(DependentPut::Deleted { reinsert: reinsert.clone() });
+                        }
+                        _ => (),
+                    }
+                }
+            }
+        }
+
+        if puts_to_update.is_empty() {
+            CommitDependency::Independent
+        } else {
+            CommitDependency::DependentPuts { puts: puts_to_update }
+        }
     }
 }
 

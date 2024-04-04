@@ -23,7 +23,7 @@ use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
-    isolation_manager::IsolationError,
+    isolation_manager::{IsolationError, IsolationConflict},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::SnapshotError,
     KeyspaceSet, MVCCStorage,
@@ -128,7 +128,10 @@ fn g0_update_conflicts_fail() {
             Err(
                 SnapshotError::Commit {
                     source: MVCCStorageError {
-                        kind: MVCCStorageErrorKind::IsolationError { source: IsolationError::RequiredDelete, .. },
+                        kind: MVCCStorageErrorKind::IsolationError {
+                            source: IsolationError::Conflict(IsolationConflict::RequiredDelete),
+                            ..
+                        },
                         ..
                     },
                     ..

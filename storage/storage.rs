@@ -273,6 +273,26 @@ impl<D> MVCCStorage<D> {
     {
         let commit_record = snapshot.into_commit_record();
 
+        // 0. Assign whether the put operations need to be performed given storage contents at open
+        //    sequence number
+        for buffer in commit_record.buffers() {
+            let writes = buffer.map().write().unwrap();
+            let puts = writes.iter().filter_map(|(key, write)| match write {
+                Write::Put { value, reinsert } => Some((key, value, reinsert)),
+                _ => None,
+            });
+            for (key, value, reinsert) in puts {
+                let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, ByteReference::new(key.bytes()));
+                let existing_stored: Option<Option<ByteArray<BUFFER_VALUE_INLINE>>> = self
+                    .get(wrapped, commit_record.open_sequence_number(), |reference| {
+                        // Only copy if the value is the same
+                        (reference.bytes() == value.bytes()).then(|| ByteArray::from(reference))
+                    })
+                    .unwrap(); // TODO
+                reinsert.store(existing_stored.flatten().is_none(), Ordering::Release);
+            }
+        }
+
         //  1. make durable and get sequence number
         let commit_sequence_number =
             self.durability_service.sequenced_write(&commit_record).map_err(|err| MVCCStorageError {
@@ -331,7 +351,7 @@ impl<D> MVCCStorage<D> {
                     match write {
                         Write::Insert { value } => write_batch
                             .put(MVCCKey::build(key.bytes(), seq, StorageOperation::Insert).bytes(), value.bytes()),
-                        Write::InsertPreexisting { value, reinsert } => {
+                        Write::Put { value, reinsert } => {
                             if reinsert.load(Ordering::SeqCst) {
                                 write_batch.put(
                                     MVCCKey::build(key.bytes(), seq, StorageOperation::Insert).bytes(),

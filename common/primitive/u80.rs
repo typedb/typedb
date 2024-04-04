@@ -38,7 +38,7 @@ impl U80 {
     pub const BYTES: usize = 10;
 
     pub fn new(number: u128) -> U80 {
-        assert!(number < U80::MAX.number);
+        assert!(number <= U80::MAX.number);
         U80 { number }
     }
 
@@ -66,14 +66,14 @@ impl U80 {
 impl Add for U80 {
     type Output = U80;
     fn add(self, rhs: Self) -> Self::Output {
-        U80 { number: self.number + rhs.number }
+        Self::new(self.number + rhs.number)
     }
 }
 
 impl Add<u128> for U80 {
     type Output = U80;
     fn add(self, rhs: u128) -> Self::Output {
-        U80 { number: self.number + rhs }
+        Self::new(self.number + rhs)
     }
 }
 
@@ -86,14 +86,14 @@ impl AddAssign<u128> for U80 {
 impl Sub for U80 {
     type Output = U80;
     fn sub(self, rhs: Self) -> Self::Output {
-        U80 { number: self.number - rhs.number }
+        Self::new(self.number - rhs.number)
     }
 }
 
 impl Sub<u128> for U80 {
     type Output = U80;
     fn sub(self, rhs: u128) -> Self::Output {
-        U80 { number: self.number - rhs }
+        Self::new(self.number - rhs)
     }
 }
 
