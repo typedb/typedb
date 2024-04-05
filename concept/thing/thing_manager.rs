@@ -39,7 +39,7 @@ use encoding::{
 };
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::snapshot::Snapshot;
+use storage::snapshot::{ReadableSnapshot, Snapshot, WritableSnapshot, WriteSnapshot};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
@@ -58,81 +58,24 @@ use crate::{
     },
 };
 
-pub struct ThingManager<'txn, 'storage: 'txn, D> {
-    snapshot: Rc<Snapshot<'storage, D>>,
+pub struct ThingManager<'txn, Snapshot> {
+    snapshot: Rc<Snapshot>,
     vertex_generator: &'txn ThingVertexGenerator,
-    type_manager: Rc<TypeManager<'txn, 'storage, D>>,
+    type_manager: Rc<TypeManager<'txn, Snapshot>>,
     relation_lock: Mutex<()>,
 }
 
-impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
+impl<'txn, Snapshot: ReadableSnapshot> ThingManager<'txn, Snapshot> {
     pub fn new(
-        snapshot: Rc<Snapshot<'storage, D>>,
+        snapshot: Rc<Snapshot>,
         vertex_generator: &'txn ThingVertexGenerator,
-        type_manager: Rc<TypeManager<'txn, 'storage, D>>,
+        type_manager: Rc<TypeManager<'txn, Snapshot>>,
     ) -> Self {
         ThingManager { snapshot, vertex_generator, type_manager, relation_lock: Mutex::new(()) }
     }
 
-    pub(crate) fn type_manager(&self) -> &TypeManager<'txn, 'storage, D> {
+    pub(crate) fn type_manager(&self) -> &TypeManager<'txn, Snapshot> {
         self.type_manager.as_ref()
-    }
-
-    pub fn create_entity(&self, entity_type: EntityType<'static>) -> Result<Entity<'_>, ConceptWriteError> {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            Ok(Entity::new(self.vertex_generator.create_entity(Typed::type_id(entity_type.vertex()), write_snapshot)))
-        } else {
-            panic!("Illegal state: create entity requires write snapshot")
-        }
-    }
-
-    pub fn create_relation(&self, relation_type: RelationType<'static>) -> Result<Relation<'_>, ConceptWriteError> {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            Ok(Relation::new(self.vertex_generator.create_relation(Typed::type_id(relation_type.vertex()), write_snapshot)))
-        } else {
-            panic!("Illegal state: create entity requires write snapshot")
-        }
-    }
-
-    pub fn create_attribute(
-        &self,
-        attribute_type: AttributeType<'static>,
-        value: Value,
-    ) -> Result<Attribute<'_>, ConceptWriteError> {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let value_type = attribute_type.get_value_type(self.type_manager.as_ref())?;
-            if Some(value.value_type()) == value_type {
-                let vertex = match value {
-                    Value::Boolean(_bool) => {
-                        todo!()
-                    }
-                    Value::Long(long) => {
-                        let encoded_long = Long::build(long);
-                        self.vertex_generator.create_attribute_long(
-                            Typed::type_id(attribute_type.vertex()),
-                            encoded_long,
-                            write_snapshot,
-                        )
-                    }
-                    Value::Double(_double) => {
-                        todo!()
-                    }
-                    Value::String(string) => {
-                        let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);
-                        self.vertex_generator.create_attribute_string(
-                            Typed::type_id(attribute_type.vertex()),
-                            encoded_string,
-                            write_snapshot,
-                        )
-                    }
-                };
-                Ok(Attribute::new(vertex))
-            } else {
-                Err(ConceptWriteError::ValueTypeMismatch { expected: value_type, provided: value.value_type() })
-            }
-        } else {
-            panic!("Illegal state: create entity requires write snapshot")
-        }
     }
 
     pub fn get_entities(&self) -> EntityIterator<'_, 1> {
@@ -206,6 +149,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         IndexedPlayersIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
     }
 
+    // --- storage operations ---
     // TODO: this should either accept Concept's and return Concepts, or consume Vertex and return Vertex
     pub(crate) fn storage_get_has<'this, 'a>(
         &'this self,
@@ -213,22 +157,6 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
     ) -> AttributeIterator<'this, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         let prefix = ThingEdgeHas::prefix_from_object(owner);
         AttributeIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
-    }
-
-    pub(crate) fn storage_set_has(
-        &self,
-        owner: ObjectVertex<'_>,
-        attribute: AttributeVertex<'_>,
-    ) -> Result<(), ConceptWriteError> {
-        if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
-            let has = ThingEdgeHas::build(owner.as_reference(), attribute.as_reference());
-            write_snapshot.put(has.into_storage_key().into_owned_array());
-            let has_reverse = ThingEdgeHasReverse::build(attribute.as_reference(), owner.as_reference());
-            write_snapshot.put(has_reverse.into_storage_key().into_owned_array());
-        } else {
-            panic!("Illegal state: creating plays edge requires write snapshot")
-        }
-        Ok(())
     }
 
     pub(crate) fn storage_get_relations<'this>(
@@ -241,31 +169,78 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
 
     pub(crate) fn storage_get_role_players<'this, 'a>(
         &'this self, relation: ObjectVertex<'a>,
-    ) -> RolePlayerIterator<'storage, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> where 'this: 'storage {
+    ) -> RolePlayerIterator<'txn, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> where 'this: 'txn {
         let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation);
         RolePlayerIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
     }
+}
 
-    pub fn storage_set_role_player(
+impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
+    pub fn create_entity(&self, entity_type: EntityType<'static>) -> Result<Entity<'_>, ConceptWriteError> {
+        Ok(Entity::new(self.vertex_generator.create_entity(Typed::type_id(entity_type.vertex()), self.snapshot.as_ref())))
+    }
+
+    pub fn create_relation(&self, relation_type: RelationType<'static>) -> Result<Relation<'_>, ConceptWriteError> {
+        Ok(Relation::new(self.vertex_generator.create_relation(Typed::type_id(relation_type.vertex()), self.snapshot.as_ref())))
+    }
+
+    pub fn create_attribute(
         &self,
-        relation: ObjectVertex<'_>,
-        player: ObjectVertex<'_>,
-        role_type: TypeVertex<'_>,
-    ) -> Result<(), ConceptWriteError> {
-        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
-            panic!("Illegal state: creating plays edge requires write snapshot")
-        };
+        attribute_type: AttributeType<'static>,
+        value: Value,
+    ) -> Result<Attribute<'_>, ConceptWriteError> {
+        let value_type = attribute_type.get_value_type(self.type_manager.as_ref())?;
+        if Some(value.value_type()) == value_type {
+            let vertex = match value {
+                Value::Boolean(_bool) => {
+                    todo!()
+                }
+                Value::Long(long) => {
+                    let encoded_long = Long::build(long);
+                    self.vertex_generator.create_attribute_long(
+                        Typed::type_id(attribute_type.vertex()),
+                        encoded_long,
+                        self.snapshot.as_ref(),
+                    )
+                }
+                Value::Double(_double) => {
+                    todo!()
+                }
+                Value::String(string) => {
+                    let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);
+                    self.vertex_generator.create_attribute_string(
+                        Typed::type_id(attribute_type.vertex()),
+                        encoded_string,
+                        self.snapshot.as_ref(),
+                    )
+                }
+            };
+            Ok(Attribute::new(vertex))
+        } else {
+            Err(ConceptWriteError::ValueTypeMismatch { expected: value_type, provided: value.value_type() })
+        }
+    }
+
+    // --- storage operations ---
+    // TODO: this should either accept Concept's and return Concepts, or consume Vertex and return Vertex
+    pub(crate) fn storage_set_has(&self, owner: ObjectVertex<'_>, attribute: AttributeVertex<'_>) {
+        let has = ThingEdgeHas::build(owner.as_reference(), attribute.as_reference());
+        self.snapshot.as_ref().put(has.into_storage_key().into_owned_array());
+        let has_reverse = ThingEdgeHasReverse::build(attribute.as_reference(), owner.as_reference());
+        self.snapshot.as_ref().put(has_reverse.into_storage_key().into_owned_array());
+    }
+
+    pub fn storage_set_role_player(&self, relation: ObjectVertex<'_>, player: ObjectVertex<'_>, role_type: TypeVertex<'_>) {
         let role_player = ThingEdgeRolePlayer::build_role_player(
             relation.as_reference(), player.as_reference(), role_type.clone(),
         );
         let count: u64 = 1;
-        write_snapshot.put_val(role_player.into_storage_key().into_owned_array(), encode_value_u64(count));
+        self.snapshot.as_ref().put_val(role_player.into_storage_key().into_owned_array(), encode_value_u64(count));
         let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
             player.as_reference(), relation.as_reference(), role_type.clone(),
         );
         // must be idempotent, so no lock required -- cannot fail
-        write_snapshot.put_val(role_player_reverse.into_storage_key().into_owned_array(), encode_value_u64(count));
-        Ok(())
+        self.snapshot.as_ref().put_val(role_player_reverse.into_storage_key().into_owned_array(), encode_value_u64(count));
     }
 
     pub fn storage_increment_role_player(
@@ -273,10 +248,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         relation: ObjectVertex<'_>,
         player: ObjectVertex<'_>,
         role_type: TypeVertex<'_>,
-    ) -> Result<u64, ConceptWriteError> {
-        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
-            panic!("Illegal state: creating plays edge requires write snapshot")
-        };
+    ) -> u64 {
         let role_player = ThingEdgeRolePlayer::build_role_player(
             relation.as_reference(), player.as_reference(), role_type.clone(),
         );
@@ -287,24 +259,26 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         let mut count = 0;
         {
             let lock = self.relation_lock.lock().unwrap();
-            let rp_count = write_snapshot.get_mapped(role_player.as_storage_key().as_reference(), |val| {
-                decode_value_u64(val)
-            }).unwrap();
-            let rp_reverse_count = write_snapshot.get_mapped(role_player_reverse.as_storage_key().as_reference(), |val| {
+            let rp_count = self.snapshot.as_ref()
+                .get_mapped(role_player.as_storage_key().as_reference(), |val| {
+                    decode_value_u64(val)
+                }).unwrap();
+            let rp_reverse_count = self.snapshot.as_ref()
+                .get_mapped(role_player_reverse.as_storage_key().as_reference(), |val| {
                 decode_value_u64(val)
             }).unwrap();
             debug_assert_eq!(&rp_count, &rp_reverse_count);
 
             count = rp_count.unwrap_or(0) + 1;
             let reverse_count = rp_reverse_count.unwrap_or(0) + 1;
-            write_snapshot.put_val(role_player.as_storage_key().into_owned_array(), encode_value_u64(count));
-            write_snapshot
+            self.snapshot.as_ref().put_val(role_player.as_storage_key().into_owned_array(), encode_value_u64(count));
+            self.snapshot.as_ref()
                 .put_val(role_player_reverse.as_storage_key().into_owned_array(), encode_value_u64(reverse_count));
         }
 
         // must lock to fail concurrent transactions updating the same counter
-        write_snapshot.record_lock(role_player.into_storage_key());
-        Ok(count)
+        self.snapshot.as_ref().record_lock(role_player.into_storage_key());
+        count
     }
 
     pub fn relation_index_new_player(
@@ -314,11 +288,8 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
         role_type: RoleType<'_>,
         duplicates_allowed: bool,
         player_count: u64,
-    ) -> Result<(), ConceptWriteError> {
-        let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() else {
-            panic!("Illegal state: creating plays edge requires write snapshot")
-        };
-        let lock = self.relation_lock.lock().unwrap();
+    ) {
+        let _lock = self.relation_lock.lock().unwrap();
         let mut players = relation.get_players(self);
         if !duplicates_allowed {
             let encoded_count = encode_value_u64(1);
@@ -333,7 +304,7 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
                         Typed::type_id(role_type.vertex()),
                         Typed::type_id(rp.role_type().vertex()),
                     );
-                    write_snapshot.put_val(index.as_storage_key().into_owned_array(), encoded_count.clone());
+                    self.snapshot.as_ref().put_val(index.as_storage_key().into_owned_array(), encoded_count.clone());
                     let index_reverse = ThingEdgeRelationIndex::build(
                         rp.player().vertex(),
                         player.vertex(),
@@ -341,7 +312,8 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
                         Typed::type_id(rp.role_type().vertex()),
                         Typed::type_id(role_type.vertex()),
                     );
-                    write_snapshot.put_val(index_reverse.as_storage_key().into_owned_array(), encoded_count.clone());
+                    self.snapshot.as_ref()
+                        .put_val(index_reverse.as_storage_key().into_owned_array(), encoded_count.clone());
                 }
                 role_player = players.next().transpose().unwrap();
             }
@@ -364,7 +336,8 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
                         Typed::type_id(role_type.vertex()),
                         Typed::type_id(role_type.vertex()),
                     );
-                    write_snapshot.put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
+                    self.snapshot.as_ref()
+                        .put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
                 } else {
                     let repetitions = player_count * count;
                     let index = ThingEdgeRelationIndex::build(
@@ -374,7 +347,8 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
                         Typed::type_id(role_type.vertex()),
                         Typed::type_id(rp.role_type().vertex()),
                     );
-                    write_snapshot.put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
+                    self.snapshot.as_ref()
+                        .put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
                     let index_reverse = ThingEdgeRelationIndex::build(
                         rp.player().vertex(),
                         player.vertex(),
@@ -382,12 +356,11 @@ impl<'txn, 'storage: 'txn, D> ThingManager<'txn, 'storage, D> {
                         Typed::type_id(rp.role_type().vertex()),
                         Typed::type_id(role_type.vertex()),
                     );
-                    write_snapshot
+                    self.snapshot.as_ref()
                         .put_val(index_reverse.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
                 }
                 role_player = players.next().transpose().unwrap();
             }
         }
-        Ok(())
     }
 }

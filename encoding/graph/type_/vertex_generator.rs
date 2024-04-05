@@ -18,6 +18,7 @@
 use std::sync::atomic::{AtomicU16, Ordering};
 
 use storage::{snapshot::WriteSnapshot, MVCCStorage};
+use storage::snapshot::WritableSnapshot;
 
 use crate::{
     graph::type_::vertex::{
@@ -91,28 +92,28 @@ impl TypeVertexGenerator {
         TypeVertexGenerator { next_entity, next_relation, next_role, next_attribute }
     }
 
-    pub fn create_entity_type<D>(&self, snapshot: &WriteSnapshot<'_, D>) -> TypeVertex<'static> {
+    pub fn create_entity_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_entity.fetch_add(1, Ordering::Relaxed));
         let vertex = build_vertex_entity_type(next);
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_relation_type<D>(&self, snapshot: &WriteSnapshot<'_, D>) -> TypeVertex<'static> {
+    pub fn create_relation_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_relation.fetch_add(1, Ordering::Relaxed));
         let vertex = build_vertex_relation_type(next);
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_role_type<D>(&self, snapshot: &WriteSnapshot<'_, D>) -> TypeVertex<'static> {
+    pub fn create_role_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_role.fetch_add(1, Ordering::Relaxed));
         let vertex = build_vertex_role_type(next);
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_attribute_type<D>(&self, snapshot: &WriteSnapshot<'_, D>) -> TypeVertex<'static> {
+    pub fn create_attribute_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> TypeVertex<'static> {
         let next = TypeID::build(self.next_attribute.fetch_add(1, Ordering::Relaxed));
         let vertex = build_vertex_attribute_type(next);
         snapshot.put(vertex.as_storage_key().into_owned_array());

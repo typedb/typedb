@@ -31,6 +31,7 @@ use encoding::{
     EncodingKeyspace,
 };
 use storage::{snapshot::Snapshot, MVCCStorage};
+use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
 /*
@@ -44,9 +45,9 @@ fn entity_usage() {
     let storage_path = create_tmp_dir();
     let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
-    TypeManager::initialise_types(&mut storage, &type_vertex_generator).unwrap();
+    TypeManager::<'_, WriteSnapshot<'_, WAL>>::initialise_types(&mut storage, &type_vertex_generator);
 
-    let snapshot: Rc<Snapshot<'_, _>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
+    let snapshot: Rc<WriteSnapshot<'_, _>> = Rc::new(storage.open_snapshot_write());
     {
         // Without cache, uncommitted
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
@@ -57,8 +58,8 @@ fn entity_usage() {
 
         // --- age sub attribute ---
         let age_label = Label::build("age");
-        let age_type = type_manager.create_attribute_type(&age_label, false).unwrap();
-        age_type.set_value_type(&type_manager, ValueType::Long).unwrap();
+        let age_type = type_manager.create_attribute_type(&age_label, false);
+        age_type.set_value_type(&type_manager, ValueType::Long);
 
         assert!(!age_type.is_root(&type_manager).unwrap());
         assert!(age_type.get_annotations(&type_manager).unwrap().is_empty());
@@ -67,8 +68,8 @@ fn entity_usage() {
 
         // --- person sub entity @abstract ---
         let person_label = Label::build("person");
-        let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
-        person_type.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new())).unwrap();
+        let person_type = type_manager.create_entity_type(&person_label, false);
+        person_type.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()));
 
         assert!(!person_type.is_root(&type_manager).unwrap());
         assert!(person_type
@@ -82,8 +83,8 @@ fn entity_usage() {
 
         // --- child sub person ---
         let child_label = Label::build("child");
-        let child_type = type_manager.create_entity_type(&child_label, false).unwrap();
-        child_type.set_supertype(&type_manager, person_type.clone()).unwrap();
+        let child_type = type_manager.create_entity_type(&child_label, false);
+        child_type.set_supertype(&type_manager, person_type.clone());
 
         assert!(!child_type.is_root(&type_manager).unwrap());
         assert_eq!(*child_type.get_label(&type_manager).unwrap(), child_label);
@@ -94,7 +95,8 @@ fn entity_usage() {
         assert_eq!(supertypes.len(), 2);
 
         // --- child owns age ---
-        let owns = child_type.set_owns(&type_manager, age_type.clone().into_owned()).unwrap();
+         child_type.set_owns(&type_manager, age_type.clone().into_owned());
+        let owns = child_type.get_owns_attribute(&type_manager, age_type.clone().into_owned()).unwrap().unwrap();
         // TODO: test 'owns' structure directly
 
         let all_owns = child_type.get_owns(&type_manager).unwrap();
@@ -103,15 +105,13 @@ fn entity_usage() {
         assert_eq!(child_type.get_owns_attribute(&type_manager, age_type.clone()).unwrap(), Some(owns));
         assert!(child_type.has_owns_attribute(&type_manager, age_type.clone()).unwrap());
     }
-    if let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() {
+    if let write_snapshot = Rc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();
-    } else {
-        unreachable!();
     }
 
     {
         // With cache, committed
-        let snapshot: Rc<Snapshot<'_, _>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
+        let snapshot: Rc<ReadSnapshot<'_, _>> = Rc::new(storage.open_snapshot_read());
         let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()).unwrap());
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
 
@@ -169,13 +169,13 @@ fn role_usage() {
     let storage_path = create_tmp_dir();
     let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
-    TypeManager::initialise_types(&mut storage, &type_vertex_generator).unwrap();
+    TypeManager::<'_, WriteSnapshot<'_, WAL>>::initialise_types(&mut storage, &type_vertex_generator);
 
     let friendship_label = Label::build("friendship");
     let friend_name = "friend";
     let person_label = Label::build("person");
 
-    let snapshot: Rc<Snapshot<'_, _>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
+    let snapshot: Rc<WriteSnapshot<'_, _>> = Rc::new(storage.open_snapshot_write());
     {
         // Without cache, uncommitted
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
@@ -200,27 +200,27 @@ fn role_usage() {
             .contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract::new())));
 
         // --- friendship sub relation, relates friend ---
-        let friendship_type = type_manager.create_relation_type(&friendship_label, false).unwrap();
-        let relates = friendship_type.create_relates(&type_manager, friend_name).unwrap();
+        let friendship_type = type_manager.create_relation_type(&friendship_label, false);
+        friendship_type.create_relates(&type_manager, friend_name);
+        let relates = friendship_type.get_relates_role(&type_manager, friend_name).unwrap().unwrap();
         let role_type = friendship_type.get_role(&type_manager, friend_name).unwrap().unwrap();
         debug_assert_eq!(relates.relation(), friendship_type);
         debug_assert_eq!(relates.role(), role_type);
 
         // --- person plays friendship:friend ---
-        let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
-        let plays = person_type.set_plays(&type_manager, role_type.clone().into_owned()).unwrap();
+        let person_type = type_manager.create_entity_type(&person_label, false);
+        person_type.set_plays(&type_manager, role_type.clone().into_owned());
+        let plays = person_type.get_plays_role(&type_manager, role_type.clone().into_owned()).unwrap().unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type.clone()));
         debug_assert_eq!(plays.role(), role_type);
     }
-    if let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() {
+    if let write_snapshot = Rc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();
-    } else {
-        unreachable!();
     }
 
     {
         // With cache, committed
-        let snapshot: Rc<Snapshot<'_, _>> = Rc::new(Snapshot::Read(storage.open_snapshot_read()));
+        let snapshot: Rc<ReadSnapshot<'_, _>> = Rc::new(storage.open_snapshot_read());
         let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()).unwrap());
         let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
 

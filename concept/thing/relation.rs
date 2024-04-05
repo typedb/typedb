@@ -33,15 +33,15 @@ use storage::{
     key_value::StorageKeyReference,
     snapshot::{
         iterator::SnapshotRangeIterator,
-        SnapshotError,
     },
 };
 use storage::snapshot::iterator::SnapshotIteratorError;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     ByteReference,
     concept_iterator,
-    error::{ConceptError, ConceptErrorKind, ConceptReadError, ConceptWriteError},
+    error::{ConceptReadError, ConceptWriteError},
     thing::{
         attribute::{Attribute, AttributeIterator},
         object::Object,
@@ -79,45 +79,37 @@ impl<'a> Relation<'a> {
         self.vertex.bytes()
     }
 
-    pub fn get_has<'m, D>(
+    pub fn get_has<'m>(
         &self,
-        thing_manager: &'m ThingManager<'_, '_, D>,
+        thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
     ) -> AttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         thing_manager.storage_get_has(self.vertex())
     }
 
-    pub fn set_has<D>(
-        &self,
-        thing_manager: &ThingManager<'_, '_, D>,
-        attribute: &Attribute<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    pub fn set_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: &Attribute<'_>) {
         // TODO: validate schema
         thing_manager.storage_set_has(self.vertex(), attribute.vertex())
     }
 
-    pub fn delete_has<D>(
-        &self,
-        thing_manager: &ThingManager<'_, '_, D>,
-        attribute: &Attribute<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    pub fn delete_has(&self, thing_manager: &ThingManager<'_, impl ReadableSnapshot>, attribute: &Attribute<'_>) {
         // TODO: validate schema
         todo!()
     }
 
-    pub fn get_relations<'m, D>(
-        &self, thing_manager: &'m ThingManager<'_, '_, D>,
+    pub fn get_relations<'m>(
+        &self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
     ) -> RelationRoleIterator<'m, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
         thing_manager.storage_get_relations(self.vertex())
     }
 
-    pub fn get_indexed_players<'m, D>(
-        &self, thing_manager: &'m ThingManager<'_, '_, D>,
+    pub fn get_indexed_players<'m>(
+        &self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
     ) -> IndexedPlayersIterator<'m, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
         thing_manager.get_indexed_players(Object::Relation(self.as_reference()))
     }
 
-    pub fn get_players<'m, D>(&self, thing_manager: &'m ThingManager<'_, '_, D>)
-                              -> RolePlayerIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+    pub fn get_players<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>)
+                           -> RolePlayerIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         thing_manager.storage_get_role_players(self.vertex())
     }
 
@@ -129,12 +121,12 @@ impl<'a> Relation<'a> {
     /// TODO: to optimise the common case of creating a full relation, we could introduce a RelationBuilder, which can accumulate role players,
     ///   Then write all players + indexes in one go
     ///
-    pub fn add_player<D>(
+    pub fn add_player(
         &self,
-        thing_manager: &ThingManager<'_, '_, D>,
+        thing_manager: &ThingManager<'_, impl WritableSnapshot>,
         role_type: RoleType<'static>,
         player: Object<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    ) {
         // TODO: validate schema
 
         let role_annotations = role_type.get_annotations(thing_manager.type_manager()).unwrap();
@@ -145,9 +137,9 @@ impl<'a> Relation<'a> {
                 self.vertex(),
                 player.vertex(),
                 role_type.clone().into_vertex(),
-            )?;
+            );
         } else {
-            thing_manager.storage_set_role_player(self.vertex(), player.vertex(), role_type.clone().into_vertex())?;
+            thing_manager.storage_set_role_player(self.vertex(), player.vertex(), role_type.clone().into_vertex());
             player_count = 1;
         }
 
@@ -156,9 +148,8 @@ impl<'a> Relation<'a> {
             // TODO: what about schema transactions?
             thing_manager.relation_index_new_player(
                 self.as_reference(), player, role_type, duplicates_allowed, player_count,
-            )?;
+            );
         }
-        Ok(())
     }
 
     pub(crate) fn vertex<'this: 'a>(&'this self) -> ObjectVertex<'this> {

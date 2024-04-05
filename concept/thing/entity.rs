@@ -27,6 +27,7 @@ use encoding::{
 };
 use encoding::graph::thing::edge::{ThingEdgeRelationIndex, ThingEdgeRolePlayer};
 use storage::key_value::StorageKeyReference;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     concept_iterator,
@@ -64,40 +65,32 @@ impl<'a> Entity<'a> {
         self.vertex.bytes()
     }
 
-    pub fn get_has<'m, D>(
+    pub fn get_has<'m>(
         &self,
-        thing_manager: &'m ThingManager<'_, '_, D>,
+        thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
     ) -> AttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         thing_manager.storage_get_has(self.vertex())
     }
 
-    pub fn set_has<D>(
-        &self,
-        thing_manager: &ThingManager<'_, '_, D>,
-        attribute: &Attribute<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    pub fn set_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: &Attribute<'_>) {
         // TODO: validate schema
         thing_manager.storage_set_has(self.vertex(), attribute.vertex())
     }
 
-    pub fn delete_has<D>(
-        &self,
-        thing_manager: &ThingManager<'_, '_, D>,
-        attribute: &Attribute<'_>,
-    ) -> Result<(), ConceptWriteError> {
+    pub fn delete_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: &Attribute<'_>) {
         // TODO: validate schema
 
         todo!()
     }
 
-    pub fn get_relations<'m, D>(
-        &self, thing_manager: &'m ThingManager<'_, '_, D>,
+    pub fn get_relations<'m>(
+        &self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
     ) -> RelationRoleIterator<'m, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
         thing_manager.storage_get_relations(self.vertex())
     }
 
-    pub fn get_indexed_players<'m, D>(
-        &self, thing_manager: &'m ThingManager<'_, '_, D>,
+    pub fn get_indexed_players<'m>(
+        &self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
     ) -> IndexedPlayersIterator<'m, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
         thing_manager.get_indexed_players(Object::Entity(self.as_reference()))
     }

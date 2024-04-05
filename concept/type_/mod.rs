@@ -19,6 +19,7 @@ use std::collections::HashSet;
 
 use encoding::graph::type_::vertex::TypeVertex;
 use primitive::maybe_owns::MaybeOwns;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
@@ -45,28 +46,28 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
 }
 
 pub trait OwnerAPI<'a> {
-    fn set_owns<D>(
+    fn set_owns(
         &self,
-        type_manager: &TypeManager<'_, '_, D>,
+        type_manager: &TypeManager<'_, impl WritableSnapshot>,
         attribute_type: AttributeType<'static>,
     );
 
-    fn delete_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>);
+    fn delete_owns(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, attribute_type: AttributeType<'static>);
 
-    fn get_owns<'m, D>(
+    fn get_owns<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, '_, D>,
+        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError>;
 
-    fn get_owns_attribute<D>(
+    fn get_owns_attribute(
         &self,
-        type_manager: &TypeManager<'_, '_, D>,
+        type_manager: &TypeManager<'_, impl ReadableSnapshot>,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError>;
 
-    fn has_owns_attribute<D>(
+    fn has_owns_attribute(
         &self,
-        type_manager: &TypeManager<'_, '_, D>,
+        type_manager: &TypeManager<'_, impl ReadableSnapshot>,
         attribute_type: AttributeType<'static>,
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_owns_attribute(type_manager, attribute_type)?.is_some())
@@ -74,24 +75,24 @@ pub trait OwnerAPI<'a> {
 }
 
 pub trait PlayerAPI<'a> {
-    fn set_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>);
+    fn set_plays(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, role_type: RoleType<'static>);
 
-    fn delete_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>);
+    fn delete_plays(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, role_type: RoleType<'static>);
 
-    fn get_plays<'m, D>(
+    fn get_plays<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, '_, D>,
+        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError>;
 
-    fn get_plays_role<D>(
+    fn get_plays_role(
         &self,
-        type_manager: &TypeManager<'_, '_, D>,
+        type_manager: &TypeManager<'_, impl ReadableSnapshot>,
         role_type: RoleType<'static>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError>;
 
-    fn has_plays_role<D>(
+    fn has_plays_role(
         &self,
-        type_manager: &TypeManager<'_, '_, D>,
+        type_manager: &TypeManager<'_, impl ReadableSnapshot>,
         role_type: RoleType<'static>,
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_plays_role(type_manager, role_type)?.is_some())

@@ -30,6 +30,7 @@ use encoding::{
     EncodingKeyspace,
 };
 use storage::{error::MVCCStorageError, snapshot::Snapshot, MVCCStorage, StorageRecoverError};
+use storage::snapshot::{ReadSnapshot, WriteSnapshot};
 
 use crate::transaction::{TransactionRead, TransactionWrite};
 
@@ -62,7 +63,7 @@ impl<D> Database<D> {
             MVCCStorage::recover::<EncodingKeyspace>(name, path).map_err(|error| StorageRecover { source: error })?;
         let type_vertex_generator = TypeVertexGenerator::new();
         let thing_vertex_generator = ThingVertexGenerator::new();
-        TypeManager::initialise_types(&mut storage, &type_vertex_generator).unwrap();
+        TypeManager::<'_, WriteSnapshot<'_, D>>::initialise_types(&mut storage, &type_vertex_generator);
 
         storage.checkpoint().unwrap();
 
@@ -76,14 +77,14 @@ impl<D> Database<D> {
     }
 
     pub fn transaction_read(&self) -> TransactionRead<'_, '_, D> {
-        let snapshot: Rc<Snapshot<'_, D>> = Rc::new(Snapshot::Read(self.storage.open_snapshot_read()));
+        let snapshot: Rc<ReadSnapshot<'_, D>> = Rc::new(self.storage.open_snapshot_read());
         let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &self.type_vertex_generator, None)); // TODO pass cache
         let thing_manager = ThingManager::new(snapshot.clone(), &self.thing_vertex_generator, type_manager.clone());
         TransactionRead { snapshot, type_manager, thing_manager }
     }
 
     fn transaction_write(&self) -> TransactionWrite<'_, '_, D> {
-        let snapshot: Rc<Snapshot<'_, D>> = Rc::new(Snapshot::Write(self.storage.open_snapshot_write()));
+        let snapshot: Rc<WriteSnapshot<'_, D>> = Rc::new(self.storage.open_snapshot_write());
         let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &self.type_vertex_generator, None)); // TODO pass cache for data write txn
         let thing_manager = ThingManager::new(snapshot.clone(), &self.thing_vertex_generator, type_manager.clone());
         TransactionWrite { snapshot, type_manager, thing_manager }

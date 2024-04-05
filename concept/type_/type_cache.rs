@@ -52,6 +52,7 @@ use encoding::{
 use primitive::prefix_range::PrefixRange;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_VALUE_INLINE};
 use storage::{snapshot::ReadSnapshot, MVCCStorage, ReadSnapshotOpenError};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::type_::{
     annotation::{Annotation, AnnotationAbstract, AnnotationDuplicate, AnnotationIndependent},
@@ -205,8 +206,8 @@ impl TypeCache {
         })
     }
 
-    fn create_entity_caches<D>(
-        snapshot: &ReadSnapshot<'_, D>,
+    fn create_entity_caches(
+        snapshot: &impl ReadableSnapshot,
         vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
     ) -> Box<[Option<EntityTypeCache>]> {
         let entities = snapshot
@@ -266,8 +267,8 @@ impl TypeCache {
         }
     }
 
-    fn create_relation_caches<D>(
-        snapshot: &ReadSnapshot<'_, D>,
+    fn create_relation_caches(
+        snapshot: &impl ReadableSnapshot,
         vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
     ) -> Box<[Option<RelationTypeCache>]> {
         let relations = snapshot
@@ -342,8 +343,8 @@ impl TypeCache {
         }
     }
 
-    fn create_role_caches<D>(
-        snapshot: &ReadSnapshot<'_, D>,
+    fn create_role_caches(
+        snapshot: &impl ReadableSnapshot,
         vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
     ) -> Box<[Option<RoleTypeCache>]> {
         let roles = snapshot
@@ -407,8 +408,8 @@ impl TypeCache {
         }
     }
 
-    fn create_attribute_caches<D>(
-        snapshot: &ReadSnapshot<'_, D>,
+    fn create_attribute_caches(
+        snapshot: &impl ReadableSnapshot,
         vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
     ) -> Box<[Option<AttributeTypeCache>]> {
         let attributes = snapshot
@@ -464,7 +465,7 @@ impl TypeCache {
         }
     }
 
-    fn fetch_owns<D, F>(snapshot: &ReadSnapshot<'_, D>, prefix: Prefix, from_reader: F) -> Vec<Owns<'static>>
+    fn fetch_owns<F>(snapshot: &impl ReadableSnapshot, prefix: Prefix, from_reader: F) -> Vec<Owns<'static>>
     where
         F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
     {
@@ -477,7 +478,7 @@ impl TypeCache {
             .unwrap()
     }
 
-    fn fetch_plays<D, F>(snapshot: &ReadSnapshot<'_, D>, prefix: Prefix, from_constructor: F) -> Vec<Plays<'static>>
+    fn fetch_plays<F>(snapshot: &impl ReadableSnapshot, prefix: Prefix, from_constructor: F) -> Vec<Plays<'static>>
     where
         F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
     {
@@ -490,8 +491,8 @@ impl TypeCache {
             .unwrap()
     }
 
-    fn fetch_supertypes<D, F, T: Ord>(
-        snapshot: &ReadSnapshot<'_, D>,
+    fn fetch_supertypes<F, T: Ord>(
+        snapshot: &impl ReadableSnapshot,
         prefix: Prefix,
         type_constructor: F,
     ) -> BTreeMap<T, T>

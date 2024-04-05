@@ -18,6 +18,7 @@
 use std::collections::HashSet;
 
 use primitive::maybe_owns::MaybeOwns;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
@@ -34,9 +35,9 @@ pub enum ObjectType<'a> {
 }
 
 impl<'a> OwnerAPI<'a> for ObjectType<'a> {
-    fn set_owns<D>(
+    fn set_owns(
         &self,
-        type_manager: &TypeManager<'_, '_, D>,
+        type_manager: &TypeManager<'_, impl WritableSnapshot>,
         attribute_type: AttributeType<'static>,
     ) {
         // TODO: decide behaviour (ok or error) if already owning
@@ -46,16 +47,16 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         }
     }
 
-    fn delete_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) {
+    fn delete_owns(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, attribute_type: AttributeType<'static>) {
         match self {
             ObjectType::Entity(entity) => entity.delete_owns(type_manager, attribute_type),
             ObjectType::Relation(relation) => relation.delete_owns(type_manager, attribute_type),
         }
     }
 
-    fn get_owns<'m, D>(
+    fn get_owns<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, '_, D>,
+        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
         match self {
             ObjectType::Entity(entity) => entity.get_owns(type_manager),
@@ -63,9 +64,9 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         }
     }
 
-    fn get_owns_attribute<D>(
+    fn get_owns_attribute(
         &self,
-        type_manager: &TypeManager<'_, '_, D>,
+        type_manager: &TypeManager<'_, impl ReadableSnapshot>,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
         match self {
@@ -76,9 +77,9 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
 }
 
 impl<'a> PlayerAPI<'a> for ObjectType<'a> {
-    fn set_plays<D>(
+    fn set_plays(
         &self,
-        type_manager: &TypeManager<'_, '_, D>,
+        type_manager: &TypeManager<'_, impl WritableSnapshot>,
         role_type: RoleType<'static>,
     ) {
         match self {
@@ -87,16 +88,16 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         }
     }
 
-    fn delete_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) {
+    fn delete_plays(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, role_type: RoleType<'static>) {
         match self {
             ObjectType::Entity(entity) => entity.delete_plays(type_manager, role_type),
             ObjectType::Relation(relation) => relation.delete_plays(type_manager, role_type),
         }
     }
 
-    fn get_plays<'m, D>(
+    fn get_plays<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, '_, D>,
+        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
         match self {
             ObjectType::Entity(entity) => entity.get_plays(type_manager),
@@ -104,9 +105,9 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         }
     }
 
-    fn get_plays_role<D>(
+    fn get_plays_role(
         &self,
-        type_manager: &TypeManager<'_, '_, D>,
+        type_manager: &TypeManager<'_, impl ReadableSnapshot>,
         role_type: RoleType<'static>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError> {
         match self {

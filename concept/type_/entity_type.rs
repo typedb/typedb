@@ -26,6 +26,7 @@ use encoding::{
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::key_value::StorageKeyReference;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     concept_iterator,
@@ -74,50 +75,50 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
 }
 
 impl<'a> EntityType<'a> {
-    pub fn is_root<D>(&self, type_manager: &TypeManager<'_, '_, D>) -> Result<bool, ConceptReadError> {
+    pub fn is_root(&self, type_manager: &TypeManager<'_, impl ReadableSnapshot>) -> Result<bool, ConceptReadError> {
         type_manager.get_entity_type_is_root(self.clone().into_owned())
     }
 
-    pub fn get_label<'m, D>(
+    pub fn get_label<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, '_, D>,
+        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
         type_manager.get_entity_type_label(self.clone().into_owned())
     }
 
-    fn set_label<D>(&self, type_manager: &TypeManager<'_, '_, D>, label: &Label<'_>) {
+    fn set_label(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, label: &Label<'_>) {
         // TODO: setLabel should fail is setting label on Root type
         type_manager.set_storage_label(self.vertex().clone().into_owned(), label)
     }
 
-    pub fn get_supertype<D>(
+    pub fn get_supertype(
         &self,
-        type_manager: &TypeManager<'_, '_, D>,
+        type_manager: &TypeManager<'_, impl ReadableSnapshot>,
     ) -> Result<Option<EntityType<'_>>, ConceptReadError> {
         type_manager.get_entity_type_supertype(self.clone().into_owned())
     }
 
-    pub fn set_supertype<D>(&self, type_manager: &TypeManager<'_, '_, D>, supertype: EntityType<'static>) {
+    pub fn set_supertype(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, supertype: EntityType<'static>) {
         type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
     }
 
-    pub fn get_supertypes<'m, D>(
+    pub fn get_supertypes<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, '_, D>,
+        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, Vec<EntityType<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_supertypes(self.clone().into_owned())
     }
 
     // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<EntityType<'static>>>;
 
-    pub fn get_annotations<'m, D>(
+    pub fn get_annotations<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, '_, D>,
+        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<EntityTypeAnnotation>>, ConceptReadError> {
         type_manager.get_entity_type_annotations(self.clone().into_owned())
     }
 
-    pub fn set_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: EntityTypeAnnotation) {
+    pub fn set_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: EntityTypeAnnotation) {
         match annotation {
             EntityTypeAnnotation::Abstract(_) => {
                 type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
@@ -125,7 +126,7 @@ impl<'a> EntityType<'a> {
         }
     }
 
-    fn delete_annotation<D>(&self, type_manager: &TypeManager<'_, '_, D>, annotation: EntityTypeAnnotation) {
+    fn delete_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: EntityTypeAnnotation) {
         match annotation {
             EntityTypeAnnotation::Abstract(_) => {
                 type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
@@ -139,29 +140,29 @@ impl<'a> EntityType<'a> {
 }
 
 impl<'a> OwnerAPI<'a> for EntityType<'a> {
-    fn set_owns<D>(
+    fn set_owns(
         &self,
-        type_manager: &TypeManager<'_, '_, D>,
+        type_manager: &TypeManager<'_, impl WritableSnapshot>,
         attribute_type: AttributeType<'static>,
     ) {
         type_manager.set_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex());
     }
 
-    fn delete_owns<D>(&self, type_manager: &TypeManager<'_, '_, D>, attribute_type: AttributeType<'static>) {
+    fn delete_owns(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, attribute_type: AttributeType<'static>) {
         // TODO: error if not owned?
         type_manager.delete_storage_owns(self.vertex().clone().into_owned(), attribute_type.into_vertex())
     }
 
-    fn get_owns<'m, D>(
+    fn get_owns<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, '_, D>,
+        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_owns(self.clone().into_owned())
     }
 
-    fn get_owns_attribute<D>(
+    fn get_owns_attribute(
         &self,
-        type_manager: &TypeManager<'_, '_, D>,
+        type_manager: &TypeManager<'_, impl ReadableSnapshot>,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
         let expected_owns = Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type);
@@ -170,30 +171,30 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
 }
 
 impl<'a> PlayerAPI<'a> for EntityType<'a> {
-    fn set_plays<D>(
+    fn set_plays(
         &self,
-        type_manager: &TypeManager<'_, '_, D>,
+        type_manager: &TypeManager<'_, impl WritableSnapshot>,
         role_type: RoleType<'static>,
     ) {
         // TODO: decide behaviour (ok or error) if already playing
         type_manager.set_storage_plays(self.vertex().clone().into_owned(), role_type.clone().into_vertex());
     }
 
-    fn delete_plays<D>(&self, type_manager: &TypeManager<'_, '_, D>, role_type: RoleType<'static>) {
+    fn delete_plays(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, role_type: RoleType<'static>) {
         // TODO: error if not playing
         type_manager.delete_storage_plays(self.vertex().clone().into_owned(), role_type.into_vertex())
     }
 
-    fn get_plays<'m, D>(
+    fn get_plays<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, '_, D>,
+        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_plays(self.clone().into_owned())
     }
 
-    fn get_plays_role<D>(
+    fn get_plays_role(
         &self,
-        type_manager: &TypeManager<'_, '_, D>,
+        type_manager: &TypeManager<'_, impl ReadableSnapshot>,
         role_type: RoleType<'static>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError> {
         let expected_plays = Plays::new(ObjectType::Entity(self.clone().into_owned()), role_type);

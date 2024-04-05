@@ -28,6 +28,7 @@ use storage::{
     snapshot::SnapshotError,
     KeyspaceSet, MVCCStorage,
 };
+use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
 macro_rules! test_keyspace_set {

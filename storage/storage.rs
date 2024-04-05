@@ -50,6 +50,7 @@ use crate::{
     },
     snapshot::{buffer::KeyspaceBuffers, write::Write, ReadSnapshot, WriteSnapshot},
 };
+use crate::snapshot::CommittableSnapshot;
 
 pub mod error;
 pub mod isolation_manager;

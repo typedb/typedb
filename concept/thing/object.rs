@@ -20,6 +20,7 @@ use encoding::graph::thing::vertex_object::ObjectVertex;
 use encoding::layout::prefix::Prefix;
 use encoding::Prefixed;
 use storage::key_value::StorageKeyReference;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::concept_iterator;
 use crate::error::ConceptWriteError;
 use crate::thing::attribute::Attribute;
@@ -34,7 +35,6 @@ pub enum Object<'a> {
 }
 
 impl<'a> Object<'a> {
-
     pub(crate) fn new(object_vertex: ObjectVertex<'a>) -> Self {
         match object_vertex.prefix() {
             Prefix::VertexEntity => Object::Entity(Entity::new(object_vertex)),
@@ -50,8 +50,7 @@ impl<'a> Object<'a> {
         }
     }
 
-    fn set_has<D>(&self, thing_manager: &ThingManager<'_, '_, D>, attribute: &Attribute<'_>)
-                  -> Result<(), ConceptWriteError> {
+    fn set_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: &Attribute<'_>) {
         match self {
             Object::Entity(entity) => entity.set_has(thing_manager, attribute),
             Object::Relation(relation) => relation.set_has(thing_manager, attribute),

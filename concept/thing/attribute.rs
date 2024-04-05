@@ -24,6 +24,7 @@ use encoding::{
     AsBytes,
 };
 use storage::key_value::StorageKeyReference;
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     concept_iterator,
@@ -56,11 +57,11 @@ impl<'a> Attribute<'a> {
         self.vertex.bytes()
     }
 
-    pub fn value<D>(&self, thing_manager: &ThingManager<'_, '_, D>) -> Result<Value, ConceptReadError> {
+    pub fn value(&self, thing_manager: &ThingManager<'_, impl ReadableSnapshot>) -> Result<Value, ConceptReadError> {
         thing_manager.get_attribute_value(self)
     }
 
-    pub fn get_owners<'m, D>(&self, thing_manager: &'m ThingManager<'_, '_, D>) {
+    pub fn get_owners<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) {
         // -> ObjectIterator<'m, 1>
         todo!()
     }

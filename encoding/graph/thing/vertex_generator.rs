@@ -22,7 +22,7 @@ use std::{
 
 use bytes::{byte_array::ByteArray, Bytes};
 use primitive::prefix_range::PrefixRange;
-use storage::snapshot::WriteSnapshot;
+use storage::snapshot::{ReadableSnapshot, Snapshot, WritableSnapshot, WriteSnapshot};
 
 use crate::{
     graph::{
@@ -87,26 +87,32 @@ impl ThingVertexGenerator {
         todo!()
     }
 
-    pub fn create_entity<D>(&self, type_id: TypeID, snapshot: &WriteSnapshot<'_, D>) -> ObjectVertex<'static> {
+    pub fn create_entity<Snapshot>(&self, type_id: TypeID, snapshot: &Snapshot) -> ObjectVertex<'static>
+        where Snapshot: WritableSnapshot
+    {
         let entity_id = self.entity_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_entity(type_id, ObjectID::build(entity_id));
         snapshot.insert(vertex.as_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_relation<D>(&self, type_id: TypeID, snapshot: &WriteSnapshot<'_, D>) -> ObjectVertex<'static> {
+    pub fn create_relation<Snapshot>(&self, type_id: TypeID, snapshot: &Snapshot) -> ObjectVertex<'static>
+        where Snapshot: WritableSnapshot
+    {
         let relation_id = self.relation_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_relation(type_id, ObjectID::build(relation_id));
         snapshot.insert(vertex.as_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_attribute_long<D>(
+    pub fn create_attribute_long<Snapshot>(
         &self,
         type_id: TypeID,
         value: Long,
-        snapshot: &WriteSnapshot<'_, D>,
-    ) -> AttributeVertex<'static> {
+        snapshot: &Snapshot,
+    ) -> AttributeVertex<'static>
+        where Snapshot: WritableSnapshot
+    {
         let long_atribute_id = LongAttributeID::build(value);
         let vertex = AttributeVertex::build(ValueType::Long, type_id, long_atribute_id.as_attribute_id());
         snapshot.put(vertex.as_storage_key().into_owned_array());
@@ -123,24 +129,28 @@ impl ThingVertexGenerator {
     /// We do not need to retain a reverse index from String -> ID, since 99.9% of the time the prefix + hash
     /// lets us retrieve the ID from the forward index by prefix (ID -> String).
     ///
-    pub fn create_attribute_string<const INLINE_LENGTH: usize, D>(
+    pub fn create_attribute_string<const INLINE_LENGTH: usize, Snapshot>(
         &self,
         type_id: TypeID,
         value: StringBytes<'_, INLINE_LENGTH>,
-        snapshot: &WriteSnapshot<'_, D>,
-    ) -> AttributeVertex<'static> {
+        snapshot: &Snapshot,
+    ) -> AttributeVertex<'static>
+        where Snapshot: WritableSnapshot
+    {
         let string_attribute_id = self.create_string_attribute_id(type_id, value.clone_as_ref(), snapshot);
         let vertex = AttributeVertex::build(ValueType::String, type_id, string_attribute_id.as_attribute_id());
         snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
         vertex
     }
 
-    fn create_string_attribute_id<const INLINE_LENGTH: usize, D>(
+    fn create_string_attribute_id<const INLINE_LENGTH: usize, Snapshot>(
         &self,
         type_id: TypeID,
         string: StringBytes<'_, INLINE_LENGTH>,
-        snapshot: &WriteSnapshot<'_, D>,
-    ) -> StringAttributeID {
+        snapshot: &Snapshot,
+    ) -> StringAttributeID
+        where Snapshot: WritableSnapshot
+    {
         if string.length() <= StringAttributeID::ENCODING_INLINE_CAPACITY {
             StringAttributeID::build_inline_id(string)
         } else {
@@ -230,12 +240,14 @@ impl StringAttributeID {
         bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = length;
     }
 
-    fn build_hashed_id<const INLINE_LENGTH: usize, D>(
+    fn build_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
         type_id: TypeID,
         string: StringBytes<'_, INLINE_LENGTH>,
-        snapshot: &WriteSnapshot<'_, D>,
+        snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
-    ) -> Self {
+    ) -> Self
+        where Snapshot: WritableSnapshot
+    {
         let mut bytes = [0u8; AttributeID17::LENGTH];
         let string_bytes = string.bytes().bytes();
         bytes[Self::ENCODING_STRING_PREFIX_RANGE].copy_from_slice(&string_bytes[Self::ENCODING_STRING_PREFIX_RANGE]);

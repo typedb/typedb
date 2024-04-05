@@ -39,6 +39,7 @@ use encoding::{
 use pprof::ProfilerGuard;
 use rand::distributions::{Alphanumeric, DistString};
 use storage::{snapshot::Snapshot, MVCCStorage};
+use storage::snapshot::{CommittableSnapshot, WriteSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
 static AGE_LABEL: OnceLock<Label> = OnceLock::new();
@@ -51,7 +52,7 @@ fn write_entity_attributes(
     thing_vertex_generator: &ThingVertexGenerator,
     schema_cache: Arc<TypeCache>,
 ) {
-    let snapshot = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
+    let snapshot = Rc::new(storage.open_snapshot_write());
     {
         let type_manager = Rc::new(TypeManager::new(snapshot.clone(), type_vertex_generator, Some(schema_cache)));
         let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator, type_manager.clone());
@@ -67,27 +68,27 @@ fn write_entity_attributes(
 
         let age = thing_manager.create_attribute(age_type, Value::Long(random_long)).unwrap();
         let name = thing_manager.create_attribute(name_type, Value::String(random_string.into_boxed_str())).unwrap();
-        person.set_has(&thing_manager, &age).unwrap();
-        person.set_has(&thing_manager, &name).unwrap();
+        person.set_has(&thing_manager, &age);
+        person.set_has(&thing_manager, &name);
     }
 
-    let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() else { unreachable!() };
+    let write_snapshot = Rc::try_unwrap(snapshot).ok().unwrap();
     write_snapshot.commit().unwrap();
 }
 
 fn create_schema(storage: &MVCCStorage<WAL>, type_vertex_generator: &TypeVertexGenerator) {
-    let snapshot: Rc<Snapshot<'_, WAL>> = Rc::new(Snapshot::Write(storage.open_snapshot_write()));
+    let snapshot: Rc<WriteSnapshot<'_, WAL>> = Rc::new(storage.open_snapshot_write());
     {
         let type_manager = Rc::new(TypeManager::new(snapshot.clone(), type_vertex_generator, None));
-        let age_type = type_manager.create_attribute_type(AGE_LABEL.get().unwrap(), false).unwrap();
-        age_type.set_value_type(&type_manager, ValueType::Long).unwrap();
-        let name_type = type_manager.create_attribute_type(NAME_LABEL.get().unwrap(), false).unwrap();
-        name_type.set_value_type(&type_manager, ValueType::String).unwrap();
-        let person_type = type_manager.create_entity_type(PERSON_LABEL.get().unwrap(), false).unwrap();
-        person_type.set_owns(&type_manager, age_type).unwrap();
-        person_type.set_owns(&type_manager, name_type).unwrap();
+        let age_type = type_manager.create_attribute_type(AGE_LABEL.get().unwrap(), false);
+        age_type.set_value_type(&type_manager, ValueType::Long);
+        let name_type = type_manager.create_attribute_type(NAME_LABEL.get().unwrap(), false);
+        name_type.set_value_type(&type_manager, ValueType::String);
+        let person_type = type_manager.create_entity_type(PERSON_LABEL.get().unwrap(), false);
+        person_type.set_owns(&type_manager, age_type);
+        person_type.set_owns(&type_manager, name_type);
     }
-    let Snapshot::Write(write_snapshot) = Rc::try_unwrap(snapshot).ok().unwrap() else { unreachable!() };
+    let write_snapshot = Rc::try_unwrap(snapshot).ok().unwrap();
     write_snapshot.commit().unwrap();
 }
 
@@ -101,7 +102,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
     let type_vertex_generator = TypeVertexGenerator::new();
     let thing_vertex_generator = ThingVertexGenerator::new();
-    TypeManager::initialise_types(&mut storage, &type_vertex_generator).unwrap();
+    TypeManager::<'_, WriteSnapshot<'_, WAL>>::initialise_types(&mut storage, &type_vertex_generator);
 
     create_schema(&storage, &type_vertex_generator);
     let schema_cache = Arc::new(TypeCache::new(&storage, storage.read_watermark()).unwrap());
