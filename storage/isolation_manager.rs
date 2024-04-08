@@ -120,7 +120,7 @@ impl IsolationManager {
         let (windows, first_window_relative_index): (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, i64) =
             self.timeline.collect_concurrent_windows(commit_record.open_sequence_number, commit_relative_index);
         let first_windowed_seq = *windows.get(0).unwrap().starting_sequence_number().unwrap();
-        if commit_record.open_sequence_number() < first_windowed_seq {
+        if commit_record.open_sequence_number().next() < first_windowed_seq {
             self.validate_concurrent_from_disk(commit_record, first_windowed_seq, durability_service)?;
         }
 
@@ -142,14 +142,16 @@ impl IsolationManager {
         D: DurabilityService,
     {
         for raw_record in
-            Self::iterate_commit_status_from_disk(durability_service, commit_record.open_sequence_number).unwrap()
+            Self::iterate_commit_status_from_disk(durability_service, commit_record.open_sequence_number.next()).unwrap()
         {
             if let Ok(commit_status) = raw_record {
                 match commit_status {
                     CommitStatus::Applied(predecessor_seq, _) | CommitStatus::Closed(predecessor_seq) => {
                         if predecessor_seq >= stop_sequence_number { break; }
                     },
-                    CommitStatus::Pending(_, _) => unreachable!("Evicted records cannot be pending"),
+                    CommitStatus::Pending(predecessor_seq, _) => {
+                        if predecessor_seq >= stop_sequence_number { break; } else {unreachable!("Evicted records cannot be pending") }
+                    },
                     CommitStatus::Empty | CommitStatus::Validated(_, _) => unreachable!(),
                 }
                 let commit_dependency = match commit_status {
@@ -206,7 +208,7 @@ impl IsolationManager {
             D: DurabilityService,
     {
         let mut statuses: HashMap<u128, bool> = HashMap::new();
-        for record in durability_service.iter_unsequenced_type_from::<StatusRecord>(start_sequence_number.clone()).unwrap() {
+        for record in durability_service.iter_unsequenced_type_from::<StatusRecord>(SequenceNumber::from(start_sequence_number.clone().number().number())).unwrap() {
             if let Ok(predecessor_record) = record {
                 // We can't stop early because status records may be out-of-order
                 statuses.insert(
@@ -449,34 +451,38 @@ impl Timeline {
     }
 
     fn record_reader(&self, sequence_number: SequenceNumber) {
-        if let Some(window) = self.find_window(sequence_number) {
+        let (_, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
+        if let Some((window,_)) = self.find_window(windows, sequence_number) {
             window.increment_readers();
         };
     }
 
     fn remove_reader(&self, reader_sequence_number: SequenceNumber) {
-        if let Some(window) = self.find_window(reader_sequence_number) {
-            debug_assert!(window.get_readers() >= 0);
-            let _readers_remaining = window.decrement_readers();
-            if _readers_remaining == 0 {
+        let found_window_opt = {
+            let (_, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
+            self.find_window(windows, reader_sequence_number)
+        };
+        if let Some((window, _)) = found_window_opt {
+            if window.decrement_readers() == 0 {
                 self.may_free_windows();
             }
-        };
+        }
     }
 
     fn find_window(
         &self,
+        windows: &VecDeque<Arc<TimelineWindow<100>>>,
         sequence_number: SequenceNumber,
-    ) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
-        let (_, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
-        windows
-            .iter()
+    ) -> Option<(Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>, usize)> {
+        windows.iter()
+            .enumerate()
             .rev()
-            .find(|window| {
+            .find_map(|(window_index, window)| {
                 let start_seq = window.starting_sequence_number();
-                start_seq.is_some() && start_seq.unwrap().number() <= sequence_number.number()
+                if start_seq.is_some() && start_seq.unwrap().number() <= sequence_number.number() {
+                    Some((window.clone(), window_index))
+                } else { None }
             })
-            .cloned()
     }
 
     fn collect_concurrent_windows(
