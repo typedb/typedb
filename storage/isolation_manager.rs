@@ -22,6 +22,7 @@ use itertools::Itertools;
 
 use durability::{DurabilityRecord, DurabilityRecordType, DurabilityService, SequencedDurabilityRecord, SequenceNumber, UnsequencedDurabilityRecord};
 use logger::result::ResultExt;
+use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 use serde::{Deserialize, Serialize};
 
 use crate::snapshot::{buffer::KeyspaceBuffers, write::Write};
@@ -72,7 +73,7 @@ impl IsolationManager {
     pub(crate) fn load_aborted(&self, relative_index: i64, sequence_number: SequenceNumber) {
         let (window, slot_index) = self.timeline.get_or_create_window(relative_index);
         window.insert_pending(slot_index, sequence_number, CommitRecord::new(KeyspaceBuffers::new(), sequence_number));
-        window.set_closed(slot_index);
+        window.set_aborted(slot_index);
         self.timeline.may_increment_watermark(relative_index);
     }
 
@@ -94,7 +95,7 @@ impl IsolationManager {
                 window.set_validated(slot_index);
                 // We can't increment watermark here till the status is "applied"
             } else {
-                window.set_closed(slot_index);
+                window.set_aborted(slot_index);
                 self.timeline.may_increment_watermark(relative_index);
             }
             self.timeline.remove_reader(commit_record.open_sequence_number);
@@ -141,16 +142,13 @@ impl IsolationManager {
     where
         D: DurabilityService,
     {
-        for raw_record in
+        for commit_status in
             Self::iterate_commit_status_from_disk(durability_service, commit_record.open_sequence_number.next()).unwrap()
         {
-            if let Ok(commit_status) = raw_record {
+            if let Ok(commit_status) = commit_status {
                 match commit_status {
-                    CommitStatus::Applied(predecessor_seq, _) | CommitStatus::Closed(predecessor_seq) => {
+                    CommitStatus::Applied(predecessor_seq, _) | CommitStatus::Aborted(predecessor_seq) | CommitStatus::Pending(predecessor_seq, _) => {
                         if predecessor_seq >= stop_sequence_number { break; }
-                    },
-                    CommitStatus::Pending(predecessor_seq, _) => {
-                        if predecessor_seq >= stop_sequence_number { break; } else {unreachable!("Evicted records cannot be pending") }
                     },
                     CommitStatus::Empty | CommitStatus::Validated(_, _) => unreachable!(),
                 }
@@ -158,8 +156,9 @@ impl IsolationManager {
                     CommitStatus::Applied(_, predecessor_record) => {
                         commit_record.compute_dependency(&predecessor_record)
                     }
-                    CommitStatus::Closed(_) => CommitDependency::Independent,
-                    CommitStatus::Pending(_, _) | CommitStatus::Empty | CommitStatus::Validated(_, _) => unreachable!(),
+                    CommitStatus::Aborted(_) => CommitDependency::Independent,
+                    CommitStatus::Pending(_, _) => {unreachable!("Evicted records cannot be pending")},
+                    CommitStatus::Empty | CommitStatus::Validated(_, _) => unreachable!(),
                 };
                 handle_dependency(commit_dependency)?;
             } else {
@@ -220,23 +219,22 @@ impl IsolationManager {
             }
         }
 
-        let map_fn = move |result: durability::Result<(SequenceNumber, CommitRecord)>| match result {
+        Ok(durability_service.iter_sequenced_type_from::<CommitRecord>(start_sequence_number.clone())?.map(move |result: durability::Result<(SequenceNumber, CommitRecord)>| match result {
             Ok((commit_sequence_number, commit_record)) => {
                 Ok(match statuses.get(&commit_sequence_number.number().number()) {
                     None => CommitStatus::Pending(commit_sequence_number, Cow::Owned(commit_record)),
                     Some(true) => CommitStatus::Applied(commit_sequence_number, Cow::Owned(commit_record)),
-                    Some(false) => CommitStatus::Closed(commit_sequence_number),
+                    Some(false) => CommitStatus::Aborted(commit_sequence_number),
                 })
             }
             Err(err) => Err(err),
-        };
-        Ok(durability_service.iter_sequenced_type_from::<CommitRecord>(start_sequence_number.clone())?.map(map_fn))
+        }))
     }
 
     pub(crate) fn watermark(&self) -> SequenceNumber {
         let (window, slot_index) = self.timeline.try_get_window(self.timeline.watermark()).unwrap();
         match window.get_status(slot_index) {
-            CommitStatus::Applied(seq, _) | CommitStatus::Closed(seq) => seq.clone(),
+            CommitStatus::Applied(seq, _) | CommitStatus::Aborted(seq) => seq.clone(),
             CommitStatus::Validated(_, _) | CommitStatus::Pending(_, _) | CommitStatus::Empty =>
                 unreachable!("The isolation manager must always have the watermark commit record in the window, and it must be either committed or aborted."),
         }
@@ -275,7 +273,7 @@ fn resolve_concurrent(
             }
         },
         CommitStatus::Validated(_, predecessor_record) | CommitStatus::Applied(_, predecessor_record) => commit_record.compute_dependency(&predecessor_record),
-        CommitStatus::Closed(_) => CommitDependency::Independent,
+        CommitStatus::Aborted(_) => CommitDependency::Independent,
     };
     handle_dependency(commit_dependency)
 }
@@ -347,16 +345,13 @@ impl Error for IsolationError {}
 ///
 ///   On commit, we
 ///     1) notify the commit is pending, writing the commit record into the Slot for its commit sequence number.
-///     2) when validation has finished, record into the Slot for its commit sequence number the final status.
-///   Commit without close just records into its Slot for its commit sequence number the Closed state.
+///     2) when validation has finished, record into the Slot for its commit sequence number whether
+///         it is sucessfully 'validated' or must be 'aborted'.
 ///
-///
-
-// We can adjust the Window size to amortise the cost of the read-write locks to maintain the timeline
-pub const TIMELINE_WINDOW_SIZE: usize = 100;
 
 #[derive(Debug)]
 struct Timeline {
+    // We can adjust the Window size to amortise the cost of the read-write locks to maintain the timeline
     next_window_and_windows: RwLock<(i64, VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>)>,
     watermark: AtomicI64,
 }
@@ -403,7 +398,7 @@ impl Timeline {
             let should_update: bool = match window.get_status(slot_index) {
                 CommitStatus::Empty | CommitStatus::Pending(_, _) | CommitStatus::Validated(_, _) => false,
                 CommitStatus::Applied(_, _) => true,
-                CommitStatus::Closed(_) => true,
+                CommitStatus::Aborted(_) => true,
             };
             if should_update
                 && self.watermark.compare_exchange(watermark, watermark + 1, Ordering::SeqCst, Ordering::SeqCst).is_ok()
@@ -578,8 +573,8 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         self.slot_status[index].store(SlotMarker::Validated.as_u8(), Ordering::SeqCst);
     }
 
-    fn set_closed(&self, index: usize) {
-        self.slot_status[index].store(SlotMarker::Closed.as_u8(), Ordering::SeqCst);
+    fn set_aborted(&self, index: usize) {
+        self.slot_status[index].store(SlotMarker::Aborted.as_u8(), Ordering::SeqCst);
     }
 
     fn set_applied(&self, index: usize) {
@@ -601,7 +596,7 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
                 SlotMarker::Pending => CommitStatus::Pending(seq.clone(), Cow::Borrowed(record)),
                 SlotMarker::Validated => CommitStatus::Validated(seq.clone(), Cow::Borrowed(record)),
                 SlotMarker::Applied => CommitStatus::Applied(seq.clone(), Cow::Borrowed(record)),
-                SlotMarker::Closed => CommitStatus::Closed(seq.clone()),
+                SlotMarker::Aborted => CommitStatus::Aborted(seq.clone()),
             }
         }
     }
@@ -622,7 +617,7 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
                 }
                 // By returning true on validation, we ignore the possibility that the predecessor commit may be aborted due to a conflict on another partition.
                 CommitStatus::Validated(_, _) | CommitStatus::Applied(_, _) => return true,
-                CommitStatus::Closed(_) => return false,
+                CommitStatus::Aborted(_) => return false,
             }
         }
     }
@@ -646,7 +641,7 @@ pub(crate) enum CommitStatus<'a> {
     Pending(SequenceNumber, Cow<'a, CommitRecord>),
     Validated(SequenceNumber, Cow<'a, CommitRecord>),
     Applied(SequenceNumber, Cow<'a, CommitRecord>),
-    Closed(SequenceNumber),
+    Aborted(SequenceNumber),
 }
 
 #[derive(Debug)]
@@ -655,7 +650,7 @@ enum SlotMarker {
     Pending,
     Validated,
     Applied,
-    Closed,
+    Aborted,
 }
 
 impl SlotMarker {
@@ -665,7 +660,7 @@ impl SlotMarker {
             SlotMarker::Pending => 1,
             SlotMarker::Validated => 2,
             SlotMarker::Applied => 3,
-            SlotMarker::Closed => 4,
+            SlotMarker::Aborted => 4,
         }
     }
 
@@ -675,7 +670,7 @@ impl SlotMarker {
             1 => SlotMarker::Pending,
             2 => SlotMarker::Validated,
             3 => SlotMarker::Applied,
-            4 => SlotMarker::Closed,
+            4 => SlotMarker::Aborted,
             _ => unreachable!(),
         }
     }
@@ -900,7 +895,7 @@ mod tests {
             SequenceNumber::MIN,
             CommitRecord::new(KeyspaceBuffers::new(), SequenceNumber::MIN),
         );
-        window.set_closed(slot_index);
+        window.set_aborted(slot_index);
         timeline.may_increment_watermark(0);
         timeline
     }
@@ -925,7 +920,7 @@ mod tests {
                 window.set_validated(slot_index);
                 window.set_applied(slot_index);
             } else {
-                window.set_closed(slot_index);
+                window.set_aborted(slot_index);
             }
             timeline.remove_reader(commit_record.open_sequence_number);
             timeline.may_increment_watermark(tx.relative_index);

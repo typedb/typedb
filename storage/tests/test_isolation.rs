@@ -152,7 +152,7 @@ fn isolation_manager_reads_evicted_from_disk() {
     snapshot1.delete(key_1.clone().into_owned_array());
     snapshot1.commit().unwrap();
 
-    for _i in 0..storage::isolation_manager::TIMELINE_WINDOW_SIZE {
+    for _i in 0..resource::constants::storage::TIMELINE_WINDOW_SIZE {
         let snapshot_i = storage.open_snapshot_write();
         snapshot_i.put_val(key_2.clone().into_owned_array(), value_1.clone());
         snapshot_i.commit().unwrap();

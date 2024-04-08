@@ -219,7 +219,7 @@ impl<D> MVCCStorage<D> {
                                 commit_record.into_owned(),
                             );
                         }
-                        CommitStatus::Closed(commit_sequence_number) => {
+                        CommitStatus::Aborted(commit_sequence_number) => {
                             self.isolation_manager.load_aborted(
                                 Self::todo_relative_index_from_sequence_number(commit_sequence_number),
                                 commit_sequence_number,
