@@ -19,7 +19,7 @@ use std::{
     },
 };
 
-use durability::{DurabilityRecord, DurabilityRecordType, DurabilityService, SequenceNumber};
+use durability::{DurabilityRecord, DurabilityRecordType, DurabilityService, SequencedDurabilityRecord, SequenceNumber, UnsequencedDurabilityRecord};
 use logger::result::ResultExt;
 use serde::{Deserialize, Serialize};
 
@@ -205,8 +205,8 @@ impl IsolationManager {
             D: DurabilityService,
     {
         let mut statuses: HashMap<u128, bool> = HashMap::new();
-        for record in durability_service.iter_type_from::<StatusRecord>(start_sequence_number.clone()).unwrap() {
-            if let Ok((_, predecessor_record)) = record {
+        for record in durability_service.iter_unsequenced_type_from::<StatusRecord>(start_sequence_number.clone()).unwrap() {
+            if let Ok(predecessor_record) = record {
                 // We can't stop early because status records may be out-of-order
                 statuses.insert(
                     predecessor_record.commit_record_sequence_number().number().number(),
@@ -227,7 +227,7 @@ impl IsolationManager {
             }
             Err(err) => Err(err),
         };
-        Ok(durability_service.iter_type_from::<CommitRecord>(start_sequence_number.clone())?.map(map_fn))
+        Ok(durability_service.iter_sequenced_type_from::<CommitRecord>(start_sequence_number.clone())?.map(map_fn))
     }
 
     pub(crate) fn watermark(&self) -> SequenceNumber {
@@ -799,6 +799,8 @@ impl DurabilityRecord for CommitRecord {
     }
 }
 
+impl SequencedDurabilityRecord for CommitRecord { }
+
 impl StatusRecord {
     pub(crate) fn new(sequence_number: SequenceNumber, committed: bool) -> StatusRecord {
         StatusRecord { commit_record_sequence_number: sequence_number, was_committed: committed }
@@ -845,6 +847,8 @@ impl DurabilityRecord for StatusRecord {
         bincode::deserialize(&buf)
     }
 }
+
+impl UnsequencedDurabilityRecord for StatusRecord { }
 
 #[cfg(test)]
 mod tests {
