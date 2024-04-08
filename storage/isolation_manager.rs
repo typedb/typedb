@@ -18,6 +18,7 @@ use std::{
         Arc, OnceLock, RwLock,
     },
 };
+use itertools::Itertools;
 
 use durability::{DurabilityRecord, DurabilityRecordType, DurabilityService, SequencedDurabilityRecord, SequenceNumber, UnsequencedDurabilityRecord};
 use logger::result::ResultExt;
@@ -176,7 +177,7 @@ impl IsolationManager {
         let mut window_index = 0;
         let mut slot_index = (0..TIMELINE_WINDOW_SIZE).find(|si| {
             match windows[0].get_sequence_number(*si) {
-                Some(seq) => seq.number() >= commit_record.open_sequence_number.number(),
+                Some(seq) => seq.number() > commit_record.open_sequence_number.number(),
                 None => false
             }
         }).unwrap();
@@ -448,13 +449,13 @@ impl Timeline {
     }
 
     fn record_reader(&self, sequence_number: SequenceNumber) {
-        if let Some(window) = self.find_window_for_reader(sequence_number) {
+        if let Some(window) = self.find_window(sequence_number) {
             window.increment_readers();
         };
     }
 
     fn remove_reader(&self, reader_sequence_number: SequenceNumber) {
-        if let Some(window) = self.find_window_for_reader(reader_sequence_number) {
+        if let Some(window) = self.find_window(reader_sequence_number) {
             debug_assert!(window.get_readers() >= 0);
             let _readers_remaining = window.decrement_readers();
             if _readers_remaining == 0 {
@@ -463,7 +464,7 @@ impl Timeline {
         };
     }
 
-    fn find_window_for_reader(
+    fn find_window(
         &self,
         sequence_number: SequenceNumber,
     ) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
@@ -480,34 +481,23 @@ impl Timeline {
 
     fn collect_concurrent_windows(
         &self,
-        start_sequence_number: SequenceNumber,
-        end_relative_index: i64,
+        open_sequence_number: SequenceNumber,
+        commit_relative_index: i64,
     ) -> (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, i64) {
-        let (next_window, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
-        let relative_index_of_window_0 = *next_window - (windows.len() * TIMELINE_WINDOW_SIZE) as i64;
-        assert!(end_relative_index >= relative_index_of_window_0);
-        let end_lies_in_window = (end_relative_index - relative_index_of_window_0) as usize / TIMELINE_WINDOW_SIZE;
-        let mut concurrent_windows: Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> = Vec::new();
 
-        let window_after = (0..windows.len()).find(|i| {
-            let window_start_seq = windows.get(*i).unwrap().starting_sequence_number().unwrap().number();
-            window_start_seq > start_sequence_number.number()
-        });
-        let first_concurrent_window = match window_after {
-            None => windows.len() - 1,
-            Some(i) => {
-                if i == 0 {
-                    i
-                } else {
-                    i - 1
-                }
-            }
-        };
-        for i in first_concurrent_window..(end_lies_in_window + 1) {
+        let (next_window, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
+        let (first_concurrent_window_index,_) = windows.iter().enumerate().rev().find_or_last(|(window_index, window)| {
+            window.starting_sequence_number().unwrap().number() <= open_sequence_number.number() + 1
+        }).unwrap();
+
+        let relative_index_of_window_0 = *next_window - (windows.len() * TIMELINE_WINDOW_SIZE) as i64;
+        let commit_lies_in_window = (commit_relative_index - relative_index_of_window_0) as usize / TIMELINE_WINDOW_SIZE;
+        let mut concurrent_windows: Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> = Vec::new();
+        for i in first_concurrent_window_index..(commit_lies_in_window + 1) {
             concurrent_windows.push(windows.get(i).unwrap().clone());
         }
         let start_index_of_first_concurrent =
-            relative_index_of_window_0 + (first_concurrent_window * TIMELINE_WINDOW_SIZE) as i64;
+            relative_index_of_window_0 + (first_concurrent_window_index * TIMELINE_WINDOW_SIZE) as i64;
         (concurrent_windows, start_index_of_first_concurrent)
     }
 
