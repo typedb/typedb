@@ -20,21 +20,21 @@ use std::collections::HashSet;
 use encoding::{
     graph::type_::vertex::TypeVertex,
     layout::prefix::Prefix,
-    value::{label::Label, value_type::ValueType},
     Prefixed,
+    value::{label::Label, value_type::ValueType},
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    error::{ConceptReadError, ConceptWriteError},
+    ConceptAPI,
+    error::ConceptReadError,
     type_::{
         annotation::{Annotation, AnnotationAbstract},
         owns::Owns,
         type_manager::TypeManager,
         TypeAPI,
     },
-    ConceptAPI,
 };
 use crate::type_::annotation::AnnotationIndependent;
 
@@ -59,8 +59,8 @@ impl<'a> AttributeType<'a> {
 impl<'a> ConceptAPI<'a> for AttributeType<'a> {}
 
 impl<'a> TypeAPI<'a> for AttributeType<'a> {
-    fn vertex<'this>(&'this self) -> &'this TypeVertex<'a> {
-        &self.vertex
+    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+        self.vertex.as_reference()
     }
 
     fn into_vertex(self) -> TypeVertex<'a> {
@@ -74,7 +74,7 @@ impl<'a> AttributeType<'a> {
     }
 
     pub fn set_value_type(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, value_type: ValueType) {
-        type_manager.set_storage_value_type(self.vertex().clone().into_owned(), value_type)
+        type_manager.set_storage_value_type(self.clone().into_owned(), value_type)
     }
 
     pub fn get_value_type(
@@ -93,7 +93,7 @@ impl<'a> AttributeType<'a> {
 
     fn set_label(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, label: &Label<'_>) {
         // TODO: setLabel should fail is setting label on Root type
-        type_manager.set_storage_label(self.vertex().clone().into_owned(), label)
+        type_manager.set_storage_label(self.clone().into_owned(), label)
     }
 
     fn get_supertype(
@@ -104,7 +104,7 @@ impl<'a> AttributeType<'a> {
     }
 
     fn set_supertype(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, supertype: AttributeType<'static>) {
-        type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
+        type_manager.set_storage_supertype(self.clone().into_owned(), supertype)
     }
 
     fn get_supertypes<'m>(
@@ -126,10 +126,10 @@ impl<'a> AttributeType<'a> {
     pub(crate) fn set_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: AttributeTypeAnnotation) {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
+                type_manager.set_storage_annotation_abstract(self.clone().into_owned())
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.set_storage_annotation_independent(self.vertex().clone().into_owned())
+                type_manager.set_storage_annotation_independent(self.clone().into_owned())
             }
         }
     }
@@ -137,10 +137,10 @@ impl<'a> AttributeType<'a> {
     fn delete_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: AttributeTypeAnnotation) {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
+                type_manager.delete_storage_annotation_abstract(self.clone().into_owned())
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.delete_storage_annotation_independent(self.vertex().clone().into_owned())
+                type_manager.delete_storage_annotation_independent(self.clone().into_owned())
             }
         }
     }

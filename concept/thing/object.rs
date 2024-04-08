@@ -15,16 +15,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use bytes::Bytes;
 use encoding::graph::thing::vertex_object::ObjectVertex;
 use encoding::layout::prefix::Prefix;
 use encoding::Prefixed;
-use storage::key_value::StorageKeyReference;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use crate::concept_iterator;
-use crate::error::ConceptWriteError;
+use storage::snapshot::WritableSnapshot;
+
 use crate::thing::attribute::Attribute;
 use crate::thing::entity::Entity;
+use crate::thing::ObjectAPI;
 use crate::thing::relation::Relation;
 use crate::thing::thing_manager::ThingManager;
 
@@ -43,14 +41,8 @@ impl<'a> Object<'a> {
         }
     }
 
-    pub(crate) fn as_reference<'this>(&'this self) -> Object<'this> {
-        match self {
-            Object::Entity(entity) => Object::Entity(entity.as_reference()),
-            Object::Relation(relation) => Object::Relation(relation.as_reference()),
-        }
-    }
 
-    fn set_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: &Attribute<'_>) {
+    fn set_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: Attribute<'_>) {
         match self {
             Object::Entity(entity) => entity.set_has(thing_manager, attribute),
             Object::Relation(relation) => relation.set_has(thing_manager, attribute),
@@ -71,3 +63,28 @@ impl<'a> Object<'a> {
         }
     }
 }
+
+impl<'a> ObjectAPI<'a> for Object<'a> {
+    fn as_reference<'this>(&'this self) -> Object<'this> {
+        match self {
+            Object::Entity(entity) => Object::Entity(entity.as_reference()),
+            Object::Relation(relation) => Object::Relation(relation.as_reference()),
+        }
+    }
+
+    fn vertex<'this>(&'this self) -> ObjectVertex<'this> {
+        match self {
+            Object::Entity(entity) => entity.vertex(),
+            Object::Relation(relation) => relation.vertex(),
+        }
+    }
+
+    fn into_vertex(self) -> ObjectVertex<'a> {
+        match self {
+            Object::Entity(entity) => entity.into_vertex(),
+            Object::Relation(relation) => relation.into_vertex(),
+        }
+    }
+}
+
+

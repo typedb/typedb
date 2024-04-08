@@ -216,14 +216,14 @@ impl TypeCache {
                 EntityType::new(new_vertex_entity_type(Bytes::Reference(key.byte_ref())).into_owned())
             })
             .unwrap();
-        let max_entity_id = entities.iter().map(|e| Typed::type_id(e.vertex()).as_u16()).max().unwrap();
+        let max_entity_id = entities.iter().map(|e| e.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_entity_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexEntityType, EntityType::new);
         let owns = Self::fetch_owns(snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)));
         let plays = Self::fetch_plays(snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)));
         for entity in entities.into_iter() {
             let object = ObjectType::Entity(entity.clone());
-            let label = Self::read_type_label(vertex_properties, entity.vertex().clone());
+            let label = Self::read_type_label(vertex_properties, entity.vertex().into_owned());
             let is_root = label == Kind::Entity.root_label();
             let cache = EntityTypeCache {
                 type_: entity.clone(),
@@ -235,7 +235,7 @@ impl TypeCache {
                 owns_direct: owns.iter().filter(|owns| owns.owner() == object).cloned().collect(),
                 plays_direct: plays.iter().filter(|plays| plays.player() == object).cloned().collect(),
             };
-            caches[Typed::type_id(entity.vertex()).as_u16() as usize] = Some(cache);
+            caches[entity.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
         Self::set_entity_supertypes_transitive(&mut caches);
         caches
@@ -277,7 +277,7 @@ impl TypeCache {
                 RelationType::new(new_vertex_relation_type(Bytes::Reference(key.byte_ref())).into_owned())
             })
             .unwrap();
-        let max_relation_id = relations.iter().map(|r| Typed::type_id(r.vertex()).as_u16()).max().unwrap();
+        let max_relation_id = relations.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_relation_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexRelationType, RelationType::new);
         let relates = snapshot
@@ -293,7 +293,7 @@ impl TypeCache {
             Self::fetch_plays(snapshot, Prefix::VertexRelationType, |v| ObjectType::Relation(RelationType::new(v)));
         for relation in relations.into_iter() {
             let object = ObjectType::Relation(relation.clone());
-            let label = Self::read_type_label(vertex_properties, relation.vertex().clone());
+            let label = Self::read_type_label(vertex_properties, relation.vertex().into_owned());
             let is_root = label == Kind::Relation.root_label();
             let relates_direct = relates
                 .iter()
@@ -311,7 +311,7 @@ impl TypeCache {
                 owns_direct: owns.iter().filter(|owns| owns.owner() == object).cloned().collect(),
                 plays_direct: plays.iter().filter(|plays| plays.player() == object).cloned().collect(),
             };
-            caches[Typed::type_id(relation.vertex()).as_u16() as usize] = Some(cache);
+            caches[relation.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
         Self::set_relation_supertypes_transitive(&mut caches);
         caches
@@ -353,7 +353,7 @@ impl TypeCache {
                 RoleType::new(new_vertex_role_type(Bytes::Reference(key.byte_ref())).into_owned())
             })
             .unwrap();
-        let max_role_id = roles.iter().map(|r| Typed::type_id(r.vertex()).as_u16()).max().unwrap();
+        let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_role_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexRoleType, RoleType::new);
         let relates = snapshot
@@ -364,7 +364,7 @@ impl TypeCache {
             })
             .unwrap();
         for role in roles.into_iter() {
-            let label = Self::read_type_label(vertex_properties, role.vertex().clone());
+            let label = Self::read_type_label(vertex_properties, role.vertex().into_owned());
             let is_root = label == Kind::Role.root_label();
             let annotations = Self::read_role_annotations(vertex_properties, role.clone());
             let cache = RoleTypeCache {
@@ -376,7 +376,7 @@ impl TypeCache {
                 supertype: supertypes.get(&role).cloned(),
                 supertypes: Vec::new(),
             };
-            caches[Typed::type_id(role.vertex()).as_u16() as usize] = Some(cache);
+            caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
         Self::set_role_supertypes_transitive(&mut caches);
         caches
@@ -418,22 +418,22 @@ impl TypeCache {
                 AttributeType::new(new_vertex_attribute_type(Bytes::Reference(key.byte_ref())).into_owned())
             })
             .unwrap();
-        let max_attribute_id = attributes.iter().map(|a| Typed::type_id(a.vertex()).as_u16()).max().unwrap();
+        let max_attribute_id = attributes.iter().map(|a| a.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexAttributeType, AttributeType::new);
         for attribute in attributes {
-            let label = Self::read_type_label(vertex_properties, attribute.vertex().clone());
+            let label = Self::read_type_label(vertex_properties, attribute.vertex().into_owned());
             let is_root = label == Kind::Attribute.root_label();
             let cache = AttributeTypeCache {
                 type_: attribute.clone(),
                 label,
                 is_root,
                 annotations: Self::read_attribute_annotations(vertex_properties, attribute.clone()),
-                value_type: Self::read_value_type(vertex_properties, attribute.vertex().clone()),
+                value_type: Self::read_value_type(vertex_properties, attribute.vertex().into_owned()),
                 supertype: supertypes.get(&attribute).cloned(),
                 supertypes: Vec::new(),
             };
-            caches[Typed::type_id(attribute.vertex()).as_u16() as usize] = Some(cache);
+            caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
         Self::set_attribute_supertypes_transitive(&mut caches);
         caches
@@ -466,8 +466,8 @@ impl TypeCache {
     }
 
     fn fetch_owns<F>(snapshot: &impl ReadableSnapshot, prefix: Prefix, from_reader: F) -> Vec<Owns<'static>>
-    where
-        F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
+        where
+            F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
     {
         snapshot
             .iterate_range(PrefixRange::new_within(build_edge_owns_prefix_prefix(prefix)))
@@ -479,8 +479,8 @@ impl TypeCache {
     }
 
     fn fetch_plays<F>(snapshot: &impl ReadableSnapshot, prefix: Prefix, from_constructor: F) -> Vec<Plays<'static>>
-    where
-        F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
+        where
+            F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
     {
         snapshot
             .iterate_range(PrefixRange::new_within(build_edge_plays_prefix_prefix(prefix)))
@@ -496,8 +496,8 @@ impl TypeCache {
         prefix: Prefix,
         type_constructor: F,
     ) -> BTreeMap<T, T>
-    where
-        F: Fn(TypeVertex<'static>) -> T,
+        where
+            F: Fn(TypeVertex<'static>) -> T,
     {
         snapshot
             .iterate_range(PrefixRange::new_within(build_edge_sub_prefix_prefix(prefix)))
@@ -699,7 +699,7 @@ impl TypeCache {
         type_vertex: TypeVertex<'_>,
     ) -> Option<&'c EntityTypeCache> {
         debug_assert_eq!(type_vertex.prefix(), Prefix::VertexEntityType);
-        let as_u16 = Typed::type_id(&type_vertex).as_u16();
+        let as_u16 = type_vertex.type_id_().as_u16();
         entity_type_caches[as_u16 as usize].as_ref()
     }
 
@@ -708,7 +708,7 @@ impl TypeCache {
         type_vertex: TypeVertex<'_>,
     ) -> Option<&'c RelationTypeCache> {
         debug_assert_eq!(type_vertex.prefix(), Prefix::VertexRelationType);
-        let as_u16 = Typed::type_id(&type_vertex).as_u16();
+        let as_u16 = type_vertex.type_id_().as_u16();
         relation_type_caches[as_u16 as usize].as_ref()
     }
 
@@ -717,7 +717,7 @@ impl TypeCache {
         type_vertex: TypeVertex<'_>,
     ) -> Option<&'c RoleTypeCache> {
         debug_assert_eq!(type_vertex.prefix(), Prefix::VertexRoleType);
-        let as_u16 = Typed::type_id(&type_vertex).as_u16();
+        let as_u16 = type_vertex.type_id_().as_u16();
         role_type_caches[as_u16 as usize].as_ref()
     }
 
@@ -726,7 +726,7 @@ impl TypeCache {
         type_vertex: TypeVertex<'_>,
     ) -> Option<&'c AttributeTypeCache> {
         debug_assert_eq!(type_vertex.prefix(), Prefix::VertexAttributeType);
-        let as_u16 = Typed::type_id(&type_vertex).as_u16();
+        let as_u16 = type_vertex.type_id_().as_u16();
         attribute_type_caches[as_u16 as usize].as_ref()
     }
 }

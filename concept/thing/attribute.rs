@@ -15,6 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::borrow::Cow;
 use std::cmp::Ordering;
 
 use bytes::Bytes;
@@ -34,10 +35,10 @@ use crate::{
     ByteReference, ConceptAPI,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Attribute<'a> {
     vertex: AttributeVertex<'a>,
-    value: Option<Value>, // TODO: if we end up doing traversals over Vertex instead of Concept, we could embed the Value cache into the AttributeVertex
+    value: Option<Value<'a>>, // TODO: if we end up doing traversals over Vertex instead of Concept, we could embed the Value cache into the AttributeVertex
 }
 
 impl<'a> Attribute<'a> {
@@ -50,15 +51,19 @@ impl<'a> Attribute<'a> {
     }
 
     pub fn type_(&self) -> AttributeType<'static> {
-        AttributeType::new(build_vertex_attribute_type(self.vertex.type_id()))
+        AttributeType::new(build_vertex_attribute_type(self.vertex.type_id_()))
     }
 
     pub fn iid(&self) -> ByteReference<'_> {
         self.vertex.bytes()
     }
 
-    pub fn value(&self, thing_manager: &ThingManager<'_, impl ReadableSnapshot>) -> Result<Value, ConceptReadError> {
-        thing_manager.get_attribute_value(self)
+    pub fn value(&mut self, thing_manager: &ThingManager<'_, impl ReadableSnapshot>) -> Result<Value<'_>, ConceptReadError> {
+        if self.value.is_none() {
+            let value = thing_manager.get_attribute_value(self)?;
+            self.value = Some(value);
+        }
+        Ok(self.value.as_ref().unwrap().as_reference())
     }
 
     pub fn get_owners<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) {
@@ -66,8 +71,19 @@ impl<'a> Attribute<'a> {
         todo!()
     }
 
+    pub fn as_reference(&self) -> Attribute<'_> {
+        Attribute {
+            vertex: self.vertex.as_reference(),
+            value: self.value.as_ref().map(|value| value.as_reference())
+        }
+    }
+
     pub(crate) fn vertex<'this: 'a>(&'this self) -> AttributeVertex<'this> {
         self.vertex.as_reference()
+    }
+
+    pub(crate) fn into_vertex(self) -> AttributeVertex<'a> {
+        self.vertex
     }
 
     fn into_owned(self) -> Attribute<'static> {

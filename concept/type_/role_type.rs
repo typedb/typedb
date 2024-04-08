@@ -21,8 +21,8 @@ use bytes::Bytes;
 use encoding::{
     graph::type_::vertex::{new_vertex_role_type, TypeVertex},
     layout::prefix::Prefix,
-    value::label::Label,
     Prefixed,
+    value::label::Label,
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::key_value::StorageKeyReference;
@@ -30,7 +30,8 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     concept_iterator,
-    error::{ConceptReadError, ConceptWriteError},
+    ConceptAPI,
+    error::ConceptReadError,
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationDuplicate},
         plays::Plays,
@@ -38,7 +39,6 @@ use crate::{
         type_manager::TypeManager,
         TypeAPI,
     },
-    ConceptAPI,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -56,8 +56,8 @@ impl<'a> RoleType<'a> {
 impl<'a> ConceptAPI<'a> for RoleType<'a> {}
 
 impl<'a> TypeAPI<'a> for RoleType<'a> {
-    fn vertex<'this>(&'this self) -> &'this TypeVertex<'a> {
-        &self.vertex
+    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+        self.vertex.as_reference()
     }
 
     fn into_vertex(self) -> TypeVertex<'a> {
@@ -79,7 +79,7 @@ impl<'a> RoleType<'a> {
 
     fn set_name(&self, _type_manager: &TypeManager<'_, impl WritableSnapshot>, _name: &str) {
         // // TODO: setLabel should fail is setting label on Root type
-        // type_manager.set_storage_label(self.vertex().clone().into_owned(), label);
+        // type_manager.set_storage_label(self.clone().into_owned(), label);
 
         todo!()
     }
@@ -92,7 +92,7 @@ impl<'a> RoleType<'a> {
     }
 
     fn set_supertype(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, supertype: RoleType<'static>) {
-        type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
+        type_manager.set_storage_supertype(self.clone().into_owned(), supertype)
     }
 
     pub fn get_supertypes<'m>(
@@ -114,10 +114,10 @@ impl<'a> RoleType<'a> {
     pub(crate) fn set_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: RoleTypeAnnotation) {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
-                type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
+                type_manager.set_storage_annotation_abstract(self.clone().into_owned())
             }
             RoleTypeAnnotation::Duplicate(_) => {
-                type_manager.set_storage_annotation_duplicate(self.vertex().clone().into_owned())
+                type_manager.set_storage_annotation_duplicate(self.clone().into_owned())
             }
         }
     }
@@ -125,10 +125,10 @@ impl<'a> RoleType<'a> {
     fn delete_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: RoleTypeAnnotation) {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
-                type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
+                type_manager.delete_storage_annotation_abstract(self.clone().into_owned())
             }
             RoleTypeAnnotation::Duplicate(_) => {
-                type_manager.delete_storage_annotation_duplicate(self.vertex().clone().into_owned())
+                type_manager.delete_storage_annotation_duplicate(self.clone().into_owned())
             }
         }
     }

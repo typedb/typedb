@@ -43,6 +43,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::ObjectTypeAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType<'a> {
@@ -65,14 +66,16 @@ impl<'a> EntityType<'a> {
 impl<'a> ConceptAPI<'a> for EntityType<'a> {}
 
 impl<'a> TypeAPI<'a> for EntityType<'a> {
-    fn vertex<'this>(&'this self) -> &'this TypeVertex<'a> {
-        &self.vertex
+    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+        self.vertex.as_reference()
     }
 
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
     }
 }
+
+impl<'a> ObjectTypeAPI<'a> for EntityType<'a> {}
 
 impl<'a> EntityType<'a> {
     pub fn is_root(&self, type_manager: &TypeManager<'_, impl ReadableSnapshot>) -> Result<bool, ConceptReadError> {
@@ -88,7 +91,7 @@ impl<'a> EntityType<'a> {
 
     fn set_label(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, label: &Label<'_>) {
         // TODO: setLabel should fail is setting label on Root type
-        type_manager.set_storage_label(self.vertex().clone().into_owned(), label)
+        type_manager.set_storage_label(self.clone().into_owned(), label)
     }
 
     pub fn get_supertype(
@@ -99,7 +102,7 @@ impl<'a> EntityType<'a> {
     }
 
     pub fn set_supertype(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, supertype: EntityType<'static>) {
-        type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
+        type_manager.set_storage_supertype(self.clone().into_owned(), supertype);
     }
 
     pub fn get_supertypes<'m>(
@@ -121,7 +124,7 @@ impl<'a> EntityType<'a> {
     pub fn set_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: EntityTypeAnnotation) {
         match annotation {
             EntityTypeAnnotation::Abstract(_) => {
-                type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
+                type_manager.set_storage_annotation_abstract(self.clone().into_owned())
             }
         }
     }
@@ -129,7 +132,7 @@ impl<'a> EntityType<'a> {
     fn delete_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: EntityTypeAnnotation) {
         match annotation {
             EntityTypeAnnotation::Abstract(_) => {
-                type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
+                type_manager.delete_storage_annotation_abstract(self.clone().into_owned())
             }
         }
     }
@@ -145,12 +148,12 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         type_manager: &TypeManager<'_, impl WritableSnapshot>,
         attribute_type: AttributeType<'static>,
     ) {
-        type_manager.set_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex());
+        type_manager.set_storage_owns(self.clone().into_owned(), attribute_type);
     }
 
     fn delete_owns(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, attribute_type: AttributeType<'static>) {
         // TODO: error if not owned?
-        type_manager.delete_storage_owns(self.vertex().clone().into_owned(), attribute_type.into_vertex())
+        type_manager.delete_storage_owns(self.clone().into_owned(), attribute_type)
     }
 
     fn get_owns<'m>(
@@ -177,12 +180,12 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         role_type: RoleType<'static>,
     ) {
         // TODO: decide behaviour (ok or error) if already playing
-        type_manager.set_storage_plays(self.vertex().clone().into_owned(), role_type.clone().into_vertex());
+        type_manager.set_storage_plays(self.clone().into_owned(), role_type);
     }
 
     fn delete_plays(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, role_type: RoleType<'static>) {
         // TODO: error if not playing
-        type_manager.delete_storage_plays(self.vertex().clone().into_owned(), role_type.into_vertex())
+        type_manager.delete_storage_plays(self.clone().into_owned(), role_type)
     }
 
     fn get_plays<'m>(

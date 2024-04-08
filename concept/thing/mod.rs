@@ -15,9 +15,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use bytes::byte_array::ByteArray;
-use bytes::byte_reference::ByteReference;
-use crate::ConceptAPI;
+use encoding::graph::thing::vertex_object::ObjectVertex;
+use crate::thing::object::Object;
 
 pub mod attribute;
 pub mod entity;
@@ -25,3 +24,11 @@ mod relation;
 pub mod thing_manager;
 pub mod value;
 pub mod object;
+
+pub trait ObjectAPI<'a> {
+    fn as_reference<'this>(&'this self) -> impl ObjectAPI<'this>;
+
+    fn vertex<'this>(&'this self) -> ObjectVertex<'this>;
+
+    fn into_vertex(self) -> ObjectVertex<'a>;
+}

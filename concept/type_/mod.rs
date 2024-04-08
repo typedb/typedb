@@ -40,10 +40,12 @@ pub mod type_cache;
 pub mod type_manager;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
-    fn vertex<'this>(&'this self) -> &'this TypeVertex<'a>;
+    fn vertex<'this>(&'this self) -> TypeVertex<'this>;
 
     fn into_vertex(self) -> TypeVertex<'a>;
 }
+
+pub trait ObjectTypeAPI<'a>: TypeAPI<'a> {}
 
 pub trait OwnerAPI<'a> {
     fn set_owns(

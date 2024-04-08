@@ -17,6 +17,7 @@
 
 #![deny(unused_must_use)]
 
+use std::borrow::Cow;
 use std::rc::Rc;
 
 use concept::{
@@ -24,6 +25,7 @@ use concept::{
     type_::type_manager::TypeManager,
 };
 use concept::thing::object::Object;
+use concept::thing::ObjectAPI;
 use concept::type_::PlayerAPI;
 use durability::wal::WAL;
 use encoding::{
@@ -95,13 +97,13 @@ fn attribute_create() {
         let name_type = type_manager.create_attribute_type(&name_label, false);
         name_type.set_value_type(&type_manager, ValueType::String);
 
-        let age_1 = thing_manager.create_attribute(age_type.clone(), Value::Long(age_value)).unwrap();
+        let mut age_1 = thing_manager.create_attribute(age_type.clone(), Value::Long(age_value)).unwrap();
         assert_eq!(age_1.value(&thing_manager).unwrap(), Value::Long(age_value));
 
-        let name_1 = thing_manager
-            .create_attribute(name_type.clone(), Value::String(String::from(name_value).into_boxed_str()))
+        let mut name_1 = thing_manager
+            .create_attribute(name_type.clone(), Value::String(Cow::Owned(String::from(name_value).into_boxed_str())))
             .unwrap();
-        assert_eq!(name_1.value(&thing_manager).unwrap(), Value::String(String::from(name_value).into_boxed_str()));
+        assert_eq!(name_1.value(&thing_manager).unwrap(), Value::String(Cow::Owned(String::from(name_value).into_boxed_str())));
     }
     let write_snapshot = Rc::try_unwrap(snapshot).ok().unwrap();
     write_snapshot.commit().unwrap();
@@ -115,9 +117,9 @@ fn attribute_create() {
         assert_eq!(attributes.len(), 2);
 
         let age_type = type_manager.get_attribute_type(&age_label).unwrap().unwrap();
-        let ages = thing_manager.get_attributes_in(age_type).unwrap().collect_cloned();
+        let mut ages = thing_manager.get_attributes_in(age_type).unwrap().collect_cloned();
         assert_eq!(ages.len(), 1);
-        assert_eq!(ages.first().unwrap().value(&thing_manager).unwrap(), Value::Long(age_value));
+        assert_eq!(ages.first_mut().unwrap().value(&thing_manager).unwrap(), Value::Long(age_value));
     }
 }
 
@@ -152,11 +154,11 @@ fn has() {
         let person_1 = thing_manager.create_entity(person_type.clone()).unwrap();
         let age_1 = thing_manager.create_attribute(age_type.clone(), Value::Long(age_value)).unwrap();
         let name_1 = thing_manager
-            .create_attribute(name_type.clone(), Value::String(String::from(name_value).into_boxed_str()))
+            .create_attribute(name_type.clone(), Value::String(Cow::Owned(String::from(name_value).into_boxed_str())))
             .unwrap();
 
-        person_1.set_has(&thing_manager, &age_1);
-        person_1.set_has(&thing_manager, &name_1);
+        person_1.set_has(&thing_manager, age_1);
+        person_1.set_has(&thing_manager, name_1);
 
         let retrieved_attributes = person_1.get_has(&thing_manager).collect_cloned();
         assert_eq!(retrieved_attributes.len(), 2);

@@ -105,6 +105,10 @@ impl<'a> TypeVertex<'a> {
         TypeVertex { bytes: Bytes::Array(array) }
     }
 
+    pub fn as_reference<'this: 'a>(&'this self) -> TypeVertex<'this> {
+        Self::new(Bytes::Reference(self.bytes.as_reference()))
+    }
+
     pub fn into_owned(self) -> TypeVertex<'static> {
         TypeVertex { bytes: self.bytes.into_owned() }
     }

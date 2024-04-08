@@ -28,7 +28,7 @@ use primitive::maybe_owns::MaybeOwns;
 use storage::key_value::StorageKeyReference;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{concept_iterator, ConceptAPI, error::{ConceptReadError, ConceptWriteError}, type_::{
+use crate::{concept_iterator, ConceptAPI, error::{ConceptReadError}, type_::{
     annotation::{Annotation, AnnotationAbstract},
     attribute_type::AttributeType,
     object_type::ObjectType,
@@ -39,6 +39,7 @@ use crate::{concept_iterator, ConceptAPI, error::{ConceptReadError, ConceptWrite
     relates::Relates,
     role_type::RoleType, type_manager::TypeManager, TypeAPI,
 }};
+use crate::type_::{ObjectTypeAPI};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {
@@ -61,14 +62,16 @@ impl<'a> RelationType<'a> {
 impl<'a> ConceptAPI<'a> for RelationType<'a> {}
 
 impl<'a> TypeAPI<'a> for RelationType<'a> {
-    fn vertex<'this>(&'this self) -> &'this TypeVertex<'a> {
-        &self.vertex
+    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+        self.vertex.as_reference()
     }
 
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
     }
 }
+
+impl<'a> ObjectTypeAPI<'a> for RelationType<'a> {}
 
 impl<'a> RelationType<'a> {
     pub fn is_root(&self, type_manager: &TypeManager<'_, impl ReadableSnapshot>) -> Result<bool, ConceptReadError> {
@@ -84,7 +87,7 @@ impl<'a> RelationType<'a> {
 
     fn set_label(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, label: &Label<'_>) {
         // TODO: setLabel should fail is setting label on Root type
-        type_manager.set_storage_label(self.vertex().clone().into_owned(), label)
+        type_manager.set_storage_label(self.clone().into_owned(), label)
     }
 
     pub fn get_supertype(
@@ -95,7 +98,7 @@ impl<'a> RelationType<'a> {
     }
 
     fn set_supertype(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, supertype: RelationType<'static>) {
-        type_manager.set_storage_supertype(self.vertex().clone().into_owned(), supertype.vertex().clone().into_owned())
+        type_manager.set_storage_supertype(self.clone().into_owned(), supertype)
     }
 
     pub fn get_supertypes<'m>(
@@ -117,7 +120,7 @@ impl<'a> RelationType<'a> {
     pub(crate) fn set_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: RelationTypeAnnotation) {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
-                type_manager.set_storage_annotation_abstract(self.vertex().clone().into_owned())
+                type_manager.set_storage_annotation_abstract(self.clone().into_owned())
             }
         }
     }
@@ -125,7 +128,7 @@ impl<'a> RelationType<'a> {
     fn delete_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: RelationTypeAnnotation) {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
-                type_manager.delete_storage_annotation_abstract(self.vertex().clone().into_owned())
+                type_manager.delete_storage_annotation_abstract(self.clone().into_owned())
             }
         }
     }
@@ -149,7 +152,7 @@ impl<'a> RelationType<'a> {
     }
 
     fn delete_relates(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, role_type: RoleType<'static>) {
-        type_manager.delete_storage_relates(self.vertex().clone().into_owned(), role_type.into_vertex())
+        type_manager.delete_storage_relates(self.clone().into_owned(), role_type)
     }
 
     fn get_relates<'m>(
@@ -182,12 +185,12 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager<'_, impl WritableSnapshot>,
         attribute_type: AttributeType<'static>,
     ) {
-        type_manager.set_storage_owns(self.vertex().clone().into_owned(), attribute_type.clone().into_vertex());
+        type_manager.set_storage_owns(self.clone().into_owned(), attribute_type.clone());
     }
 
     fn delete_owns(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, attribute_type: AttributeType<'static>) {
         // TODO: error if not owned?
-        type_manager.delete_storage_owns(self.vertex().clone().into_owned(), attribute_type.into_vertex())
+        type_manager.delete_storage_owns(self.clone().into_owned(), attribute_type)
     }
 
     fn get_owns<'m>(
@@ -210,12 +213,12 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
 impl<'a> PlayerAPI<'a> for RelationType<'a> {
     fn set_plays(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, role_type: RoleType<'static>) {
         // TODO: decide behaviour (ok or error) if already playing
-        type_manager.set_storage_plays(self.vertex().clone().into_owned(), role_type.clone().into_vertex());
+        type_manager.set_storage_plays(self.clone().into_owned(), role_type.clone());
     }
 
     fn delete_plays(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, role_type: RoleType<'static>) {
         // TODO: error if not playing?
-        type_manager.delete_storage_plays(self.vertex().clone().into_owned(), role_type.into_vertex())
+        type_manager.delete_storage_plays(self.clone().into_owned(), role_type)
     }
 
     fn get_plays<'m>(

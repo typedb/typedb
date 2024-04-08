@@ -15,7 +15,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::any::Any;
 use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
@@ -25,8 +24,8 @@ use storage::key_value::StorageKey;
 use crate::{AsBytes, EncodingKeyspace, graph::{
     thing::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex},
     type_::vertex::TypeVertex,
-}, Keyable, layout::infix::{InfixID}, Prefixed};
-use crate::graph::thing::vertex_attribute::{AsAttributeID, AttributeID, AttributeID8};
+}, Keyable, Prefixed};
+use crate::graph::thing::vertex_attribute::{AsAttributeID, AttributeID};
 use crate::graph::thing::vertex_generator::{LongAttributeID, StringAttributeID};
 use crate::graph::thing::VertexID;
 use crate::graph::type_::vertex::TypeID;
@@ -54,7 +53,7 @@ impl<'a> ThingEdgeHas<'a> {
         ThingEdgeHas { bytes }
     }
 
-    pub fn build(from: ObjectVertex<'_>, to: AttributeVertex<'_>) -> Self {
+    pub fn build<'b>(from: ObjectVertex<'b>, to: AttributeVertex<'b>) -> ThingEdgeHas<'static> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT + to.length());
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::EdgeHas.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
@@ -273,7 +272,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::EdgeRolePlayer.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
         bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(player.bytes().bytes());
-        bytes.bytes_mut()[Self::RANGE_ROLE_ID].copy_from_slice(&Typed::type_id(&role_type).bytes());
+        bytes.bytes_mut()[Self::RANGE_ROLE_ID].copy_from_slice(&role_type.type_id_().bytes());
         ThingEdgeRolePlayer { bytes: Bytes::Array(bytes) }
     }
 
@@ -282,7 +281,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::EdgeRolePlayerReverse.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
         bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(relation.bytes().bytes());
-        bytes.bytes_mut()[Self::RANGE_ROLE_ID].copy_from_slice(&Typed::type_id(&role_type).bytes());
+        bytes.bytes_mut()[Self::RANGE_ROLE_ID].copy_from_slice(&role_type.type_id_().bytes());
         ThingEdgeRolePlayer { bytes: Bytes::Array(bytes) }
     }
 

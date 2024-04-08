@@ -55,6 +55,8 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::thing::entity::Entity;
+use crate::thing::ObjectAPI;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Relation<'a> {
@@ -68,11 +70,7 @@ impl<'a> Relation<'a> {
     }
 
     pub fn type_(&self) -> RelationType<'static> {
-        RelationType::new(build_vertex_relation_type(self.vertex.type_id()))
-    }
-
-    pub fn as_reference(&self) -> Relation<'_> {
-        Relation { vertex: self.vertex.as_reference() }
+        RelationType::new(build_vertex_relation_type(self.vertex.type_id_()))
     }
 
     pub fn iid(&self) -> ByteReference<'_> {
@@ -83,15 +81,15 @@ impl<'a> Relation<'a> {
         &self,
         thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
     ) -> AttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
-        thing_manager.storage_get_has(self.vertex())
+        thing_manager.storage_get_has(self.as_reference())
     }
 
-    pub fn set_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: &Attribute<'_>) {
+    pub fn set_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: Attribute<'_>) {
         // TODO: validate schema
-        thing_manager.storage_set_has(self.vertex(), attribute.vertex())
+        thing_manager.storage_set_has(self.as_reference(), attribute.as_reference())
     }
 
-    pub fn delete_has(&self, thing_manager: &ThingManager<'_, impl ReadableSnapshot>, attribute: &Attribute<'_>) {
+    pub fn delete_has(&self, thing_manager: &ThingManager<'_, impl ReadableSnapshot>, attribute: Attribute<'_>) {
         // TODO: validate schema
         todo!()
     }
@@ -99,7 +97,7 @@ impl<'a> Relation<'a> {
     pub fn get_relations<'m>(
         &self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
     ) -> RelationRoleIterator<'m, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
-        thing_manager.storage_get_relations(self.vertex())
+        thing_manager.storage_get_relations(self.as_reference())
     }
 
     pub fn get_indexed_players<'m>(
@@ -110,7 +108,7 @@ impl<'a> Relation<'a> {
 
     pub fn get_players<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>)
                            -> RolePlayerIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
-        thing_manager.storage_get_role_players(self.vertex())
+        thing_manager.storage_get_role_players(self.as_reference())
     }
 
     ///
@@ -134,12 +132,12 @@ impl<'a> Relation<'a> {
         let mut player_count = 0;
         if duplicates_allowed {
             player_count = thing_manager.storage_increment_role_player(
-                self.vertex(),
-                player.vertex(),
-                role_type.clone().into_vertex(),
+                self.as_reference(),
+                player.as_reference(),
+                role_type.clone()
             );
         } else {
-            thing_manager.storage_set_role_player(self.vertex(), player.vertex(), role_type.clone().into_vertex());
+            thing_manager.storage_set_role_player(self.as_reference(), player.as_reference(), role_type.clone());
             player_count = 1;
         }
 
@@ -147,13 +145,9 @@ impl<'a> Relation<'a> {
         if thing_manager.type_manager().relation_index_available(self.type_()) {
             // TODO: what about schema transactions?
             thing_manager.relation_index_new_player(
-                self.as_reference(), player, role_type, duplicates_allowed, player_count,
+                self.as_reference(), player.as_reference(), role_type, duplicates_allowed, player_count,
             );
         }
-    }
-
-    pub(crate) fn vertex<'this: 'a>(&'this self) -> ObjectVertex<'this> {
-        self.vertex.as_reference()
     }
 
     pub(crate) fn into_owned(self) -> Relation<'static> {
@@ -162,6 +156,21 @@ impl<'a> Relation<'a> {
 }
 
 impl<'a> ConceptAPI<'a> for Relation<'a> {}
+
+impl<'a> ObjectAPI<'a> for Relation<'a> {
+
+    fn as_reference(&self) -> Relation<'_> {
+        Relation { vertex: self.vertex.as_reference() }
+    }
+
+    fn vertex<'this>(&'this self) -> ObjectVertex<'this> {
+        self.vertex.as_reference()
+    }
+
+    fn into_vertex(self) -> ObjectVertex<'a> {
+        self.vertex
+    }
+}
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_ref_to_entity(storage_key_ref: StorageKeyReference<'_>) -> Relation<'_> {

@@ -24,6 +24,7 @@ use std::{
     rc::Rc,
     sync::{Arc, OnceLock},
 };
+use std::borrow::Cow;
 
 use concept::{
     thing::{thing_manager::ThingManager, value::Value},
@@ -67,9 +68,9 @@ fn write_entity_attributes(
         let random_string: String = Alphanumeric.sample_string(&mut rand::thread_rng(), length as usize);
 
         let age = thing_manager.create_attribute(age_type, Value::Long(random_long)).unwrap();
-        let name = thing_manager.create_attribute(name_type, Value::String(random_string.into_boxed_str())).unwrap();
-        person.set_has(&thing_manager, &age);
-        person.set_has(&thing_manager, &name);
+        let name = thing_manager.create_attribute(name_type, Value::String(Cow::Owned(random_string.into_boxed_str()))).unwrap();
+        person.set_has(&thing_manager, age);
+        person.set_has(&thing_manager, name);
     }
 
     let write_snapshot = Rc::try_unwrap(snapshot).ok().unwrap();

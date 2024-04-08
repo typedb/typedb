@@ -25,7 +25,7 @@ pub mod type_;
 pub trait Typed<'a, const INLINE_SIZE: usize>: Prefixed<'a, INLINE_SIZE> {
     const RANGE_TYPE_ID: Range<usize> = Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeID::LENGTH;
 
-    fn type_id(&'a self) -> TypeID {
+    fn type_id_(&'a self) -> TypeID {
         TypeID::new(self.bytes().bytes()[Self::RANGE_TYPE_ID].try_into().unwrap())
     }
 }
