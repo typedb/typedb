@@ -43,12 +43,12 @@ impl IsolationManager {
         IsolationManager { timeline: Timeline::new(next_relative_index) }
     }
 
-    pub(crate) fn opened(&self, open_sequence_number: SequenceNumber) {
+    pub(crate) fn opened_for_read(&self, open_sequence_number: SequenceNumber) {
         debug_assert!(open_sequence_number <= self.watermark());
         self.timeline.record_reader(open_sequence_number);
     }
 
-    pub(crate) fn closed(&self, open_sequence_number: SequenceNumber) {
+    pub(crate) fn closed_for_read(&self, open_sequence_number: SequenceNumber) {
         self.timeline.remove_reader(open_sequence_number);
     }
 
@@ -487,16 +487,16 @@ impl Timeline {
     ) -> (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, i64) {
 
         let (next_window, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
-        let (first_concurrent_window_index,_) = windows.iter().enumerate().rev().find_or_last(|(window_index, window)| {
-            window.starting_sequence_number().unwrap().number() <= open_sequence_number.number() + 1
-        }).unwrap();
+        let first_concurrent_window_index = self.find_window(windows, open_sequence_number.next())
+            .map(|(window, window_index)| { window_index })
+            .unwrap_or(0);
 
         let relative_index_of_window_0 = *next_window - (windows.len() * TIMELINE_WINDOW_SIZE) as i64;
-        let commit_lies_in_window = (commit_relative_index - relative_index_of_window_0) as usize / TIMELINE_WINDOW_SIZE;
+        let last_concurrent_window_index = (commit_relative_index - relative_index_of_window_0) as usize / TIMELINE_WINDOW_SIZE;
         let mut concurrent_windows: Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> = Vec::new();
-        for i in first_concurrent_window_index..(commit_lies_in_window + 1) {
-            concurrent_windows.push(windows.get(i).unwrap().clone());
-        }
+        (first_concurrent_window_index..(last_concurrent_window_index + 1)).for_each(|window_index| {
+            concurrent_windows.push(windows.get(window_index).unwrap().clone());
+        });
         let start_index_of_first_concurrent =
             relative_index_of_window_0 + (first_concurrent_window_index * TIMELINE_WINDOW_SIZE) as i64;
         (concurrent_windows, start_index_of_first_concurrent)
@@ -517,11 +517,10 @@ impl Timeline {
     }
 
     fn get_or_create_window(&self, relative_index: i64) -> (Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>, usize) {
-        let create: bool = {
-            let (next_window, _) = &*self.next_window_and_windows.read().unwrap_or_log();
-            relative_index >= *next_window
+        let next_window: i64 = {
+            self.next_window_and_windows.read().unwrap_or_log().0
         };
-        if create {
+        if relative_index >= next_window {
             self.create_windows_to(relative_index);
         }
         self.try_get_window(relative_index).unwrap()

@@ -226,7 +226,7 @@ impl<D> MVCCStorage<D> {
                             );
                         }
                         CommitStatus::Pending(commit_sequence_number, commit_record) => {
-                            self.isolation_manager.opened(commit_record.open_sequence_number()); // try_commit currently decrements reader count.
+                            self.isolation_manager.opened_for_read(commit_record.open_sequence_number()); // try_commit currently decrements reader count.
                             let try_commit_result = self.try_write_commit_record(
                                 Self::todo_relative_index_from_sequence_number(commit_sequence_number),
                                 commit_sequence_number,
@@ -430,7 +430,7 @@ impl<D> MVCCStorage<D> {
     }
 
     pub fn closed_snapshot_write(&self, open_sequence_number: SequenceNumber) {
-        self.isolation_manager.closed(open_sequence_number)
+        self.isolation_manager.closed_for_read(open_sequence_number)
     }
 
     fn get_keyspace(&self, keyspace_id: KeyspaceId) -> &Keyspace {
