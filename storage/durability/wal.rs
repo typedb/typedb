@@ -46,8 +46,8 @@ impl WAL {
         let files = RwLock::new(files);
         let next = RecordIterator::new(files.read().unwrap(), SequenceNumber::MIN)?
             .last()
-            .map(|rr| rr.unwrap().sequence_number.number().number() as u64 + 1)
-            .unwrap_or(1);
+            .map(|rr| rr.unwrap().sequence_number.next().number().number() as u64)
+            .unwrap_or(SequenceNumber::MIN.next().number.number() as u64);
 
         Ok(Self { registered_types: HashMap::new(), next_sequence_number: AtomicU64::new(next), files })
     }
@@ -125,7 +125,7 @@ impl Files {
         files.sort_unstable_by(|lhs, rhs| lhs.path.cmp(&rhs.path));
 
         if files.is_empty() {
-            files.push(File::open_at(directory.clone(), SequenceNumber::from(1))?);
+            files.push(File::open_at(directory.clone(), SequenceNumber::from(SequenceNumber::MIN.next()))?);
         }
 
         let writer = files.last().unwrap().writer()?;

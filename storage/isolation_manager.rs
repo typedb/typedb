@@ -336,11 +336,9 @@ impl fmt::Display for IsolationError {
 impl Error for IsolationError {}
 
 /// Timeline concept:
-///   Timeline is made of Windows.
-///   Each Window stores a number of Slots.
-///
+///   Timeline is made of Windows. Each Window stores a number of Slots.
 ///   Conceptually the timeline is one sequence of Slots, but we cut it into Windows for more efficient allocation/clean up/search.
-///
+///   Having windows also allows us to hold write-locks less often. If we decide we want a fixed
 ///   The timeline should not clean up old windows while a 'reader' (ie open snapshot) is open on a window or an older window.
 ///
 ///   On commit, we
@@ -423,25 +421,6 @@ impl Timeline {
     }
 
     fn watermark(&self) -> i64 {
-        // TODO: Verify we address all concerns here & remove these comments
-        // // TODO: we would like to not be a non-locking and constant time operation (probably an Atomic) since every snapshot queries for the watermark.
-        // //       Issues:
-        // //         1) Rust does not support an AtomicU128 which could hold a SequenceNumber.
-        // //             --> Perhaps we want to combine a logically 'unsafe' structure that uses a raw pointer/atomic int & unsafe writes to a pair of slots that are pointed into?
-        // //             --> Alternative: keep an atomic u64 and keep a 'origin' which is increases over time so we never have to use the entire u128 range.
-        // //         2) If we just keep a reference to the window containing the current watermark, we still need a lock to update it...
-        // //             --> The IsolationManager should be able to guarantee that the watermark moves up atomically when the N+1's snapshot closes/commits
-        // //             --> However this would definitely require a lock over both
-        // //             --> It should be good enough to order it such that commit/close does: 1) update timeline, then 2) update watermark if possible 3) return control. This will guarantee new snapshots will see this commit in the watermark if it moves up.
-        // //             --> There is a complexity in updating the watermark - we need to scan commit statuses from the current watermark upwards, then update it. What if two commits do this concurrently and race? Is it possible to not make progress?
-        // //
-        // //     We should just re-think what the watermark guarantees actually are...?
-        // //     1) Because we commit optimistically/at the end of a snapshot only, commit slots are only filled once a transaction goes to commit. This means we can at worst be as behind as the current set of 'processing' commits, which is not many.
-        // //     2) We do allow pending commits to proceed out of order sometimes - if they have non-intersecting commit records. This means we can't guarantee the watermark is raised after a commit.
-        // //        --> first hint: maybe we can just bump the watermark when a commit happens that did not skip any commit records/intersected with all concurrent commits? Seems like most cases will not suit this...
-        // //     3) Side note: If we want to preserve causality between transactions by the same user, a new transaction by the same user must wait for the watermark to rise past the recently committed snapshot.
-        // //         --> simplest way to do this without retaining causality information on the client is: when a client asks for a snapshot, immediately get _latest_ (possibly pending) commit sequence number. Then wait until watermark rises to meet that and use it.
-        // //
         self.watermark.load(Ordering::SeqCst)
     }
 

@@ -183,7 +183,7 @@ impl<D> MVCCStorage<D> {
         let name = name.as_ref();
         let (keyspaces, keyspaces_index) = recover_keyspaces::<KS>(&storage_dir)?;
 
-        let isolation_manager = if durability_service.previous() == SequenceNumber::MIN {
+        let isolation_manager = if durability_service.is_empty() {
             let im = IsolationManager::new(Self::todo_relative_index_from_sequence_number(SequenceNumber::MIN));
             im.load_aborted(0, SequenceNumber::MIN); // Initialise the watermark to zero
             im
