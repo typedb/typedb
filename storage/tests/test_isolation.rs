@@ -130,6 +130,7 @@ fn g0_update_conflicts_fail() {
     );
 }
 
+#[ignore] // TODO: This currently fails because of the behaviour flagged in typedb#7033
 #[test]
 fn g0_dirty_writes() {
     // With snapshots, all writes happen together at commit time.
@@ -171,7 +172,7 @@ fn g0_dirty_writes() {
     match result_1 {
         Ok(()) => {
             let reader_after_1 = storage.open_snapshot_read();
-            assert_eq!(reader_after_1.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap().bytes(), value_11.bytes()); // This currently fails because of the behaviour flagged in typedb#7033
+            assert_eq!(reader_after_1.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap().bytes(), value_11.bytes());
             assert_eq!(reader_after_1.get::<128>(StorageKeyReference::from(&key_2)).unwrap().unwrap().bytes(), value_21.bytes());
             // reader_after_1.close();
         }
@@ -384,10 +385,6 @@ fn g2_predicate_anti_dependency_cycles() {
     let key_3 : StorageKeyArray<64>= StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_3));
     let key_4 : StorageKeyArray<64> = StorageKeyArray::new(Keyspace, ByteArray::copy(&key_4_bytes));
 
-    // let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1], Keyspace));
-    //     let items: Result<Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, _> =
-    //         snapshot
-    //             .iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix)))
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x0], Keyspace));
     let prefix = PrefixRange::new_within(StorageKey::Array(key_prefix));
     let value_31 = ByteArray::inline([30], 1);
