@@ -60,9 +60,8 @@ impl Server {
         &self.databases
     }
 
-    pub fn serve(mut self) {
-        self.create_database("test");
-        dbg!(self.databases);
+    pub fn serve(self) {
+        todo!()
     }
 }
 
