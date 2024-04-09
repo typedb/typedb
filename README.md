@@ -230,8 +230,8 @@ and [JanusGraph](http://janusgraph.org).
 ## Licensing
 
 This software is developed by [Vaticle](https://vaticle.com/).  
-It's released under the GNU Affero GENERAL PUBLIC LICENSE version 3 (AGPL v.3.0).
-For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE). 
+It's released under the Mozilla Public License 2.0 (MPL 2.0).
+For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE).
 
 Vaticle also provides a commercial license for TypeDB Enterprise - get in touch with our team at 
 [commercial@vaticle.com](emailto://sales@vaticle.com).
