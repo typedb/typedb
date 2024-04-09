@@ -13,6 +13,10 @@ pub mod snapshot {
     pub const BUFFER_VALUE_INLINE: usize = 64;
 }
 
+pub mod storage {
+    pub const TIMELINE_WINDOW_SIZE: usize = 100;
+}
+
 pub mod encoding {
     pub const LABEL_NAME_STRING_INLINE: usize = 64;
     pub const LABEL_SCOPE_STRING_INLINE: usize = 64;

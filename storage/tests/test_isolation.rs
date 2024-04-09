@@ -133,3 +133,63 @@ fn g0_update_conflicts_fail() {
         result_2
     );
 }
+
+#[test]
+fn isolation_manager_reads_evicted_from_disk() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let storage = setup_storage(&storage_path);
+    let key_1 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_1));
+    let key_2 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_2));
+    let value_1 = ByteArray::copy(&VALUE_1);
+
+    let snapshot0 = storage.open_snapshot_write();
+    snapshot0.put_val(key_1.clone().into_owned_array(), value_1.clone());
+    snapshot0.commit().unwrap();
+    let watermark_after_0 = storage.read_watermark();
+
+    let snapshot1 = storage.open_snapshot_write();
+    snapshot1.delete(key_1.clone().into_owned_array());
+    snapshot1.commit().unwrap();
+
+    for _i in 0..resource::constants::storage::TIMELINE_WINDOW_SIZE {
+        let snapshot_i = storage.open_snapshot_write();
+        snapshot_i.put_val(key_2.clone().into_owned_array(), value_1.clone());
+        snapshot_i.commit().unwrap();
+    }
+
+    {
+        let snapshot_passes = storage.open_snapshot_write_at(watermark_after_0).unwrap();
+        snapshot_passes.put_val(key_2.clone().into_owned_array(), value_1.clone());
+        let snapshot_passes_result = snapshot_passes.commit();
+
+        assert!(snapshot_passes_result.is_ok());
+    }
+    {
+        let snapshot_conflicts = storage.open_snapshot_write_at(watermark_after_0).unwrap();
+        snapshot_conflicts.get_required(key_1.clone()).unwrap();
+        snapshot_conflicts.put_val(key_2.clone().into_owned_array(), value_1.clone());
+        let snapshot_conflicts_result = snapshot_conflicts.commit();
+
+        assert!(
+            matches!(
+                snapshot_conflicts_result,
+                Err(
+                    SnapshotError::Commit {
+                    source: MVCCStorageError {
+                        kind: MVCCStorageErrorKind::IsolationError {
+                            source: IsolationError::Conflict(IsolationConflict::DeleteRequired),
+                            ..
+                        },
+                        ..
+                    },
+                    ..
+                },
+                    ..
+                )
+            ),
+            "{}",
+            snapshot_conflicts_result.unwrap_err()
+        );
+    }
+}

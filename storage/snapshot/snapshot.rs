@@ -181,7 +181,7 @@ pub struct WriteSnapshot<'storage, D> {
 
 impl<'storage, D> WriteSnapshot<'storage, D> {
     pub(crate) fn new(storage: &'storage MVCCStorage<D>, open_sequence_number: SequenceNumber) -> Self {
-        storage.isolation_manager.opened(open_sequence_number);
+        storage.isolation_manager.opened_for_read(open_sequence_number);
         WriteSnapshot { storage, buffers: KeyspaceBuffers::new(), open_sequence_number }
     }
 }
