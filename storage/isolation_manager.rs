@@ -831,6 +831,11 @@ impl UnsequencedDurabilityRecord for StatusRecord {}
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::sync::{Arc, RwLock};
+    use std::sync::mpsc::Receiver;
+    use std::thread;
+    use std::time::Duration;
     use crate::KeyspaceSet;
 
     macro_rules! test_keyspace_set {
@@ -1015,5 +1020,37 @@ mod tests {
                 assert!(false);
             }
         }
+    }
+
+    #[test]
+    fn test_highly_concurrent_correctness() {
+        let main_timeline_and_counter = Arc::new((create_timeline(), AtomicU64::new(1)));
+        let nthreads = 32;
+        let main_ntransactions_per_thread = 1000;
+        let mut receivers: Vec<Receiver<()>> = Vec::new();
+        for _ti in 0..nthreads {
+            let ntransactions_per_thread = main_ntransactions_per_thread;
+            let timeline_and_counter = main_timeline_and_counter.clone();
+            let (tx, rx) = std::sync::mpsc::channel();
+            receivers.push(rx);
+            thread::spawn(move || {
+                for i in 0..ntransactions_per_thread {
+                    let (timeline,commit_sequence_number_counter) = &*timeline_and_counter;
+                    let index = commit_sequence_number_counter.fetch_add(1, Ordering::SeqCst) as i64;
+                    let tx = &MockTransaction::new(_seq(timeline.watermark() as u128), index, _seq(index as u128));
+                    tx_open(timeline, tx.read_sequence_number);
+                    tx_start_commit(timeline, tx);
+                    tx_finalise_commit_status(timeline, tx, true);
+                }
+                tx.send(()).unwrap();
+            });
+        }
+
+        receivers.iter().for_each(|rx| { rx.recv().unwrap() });
+        let expected_commits = nthreads * main_ntransactions_per_thread;
+        let (timeline,commit_sequence_number_counter) = &*main_timeline_and_counter;
+        assert_eq!(expected_commits, timeline.watermark());
+        let some_index_in_penultimate_window = expected_commits - TIMELINE_WINDOW_SIZE as i64 - 1;
+        assert!(timeline.try_get_window(some_index_in_penultimate_window).is_none());
     }
 }
