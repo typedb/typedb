@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 ///  TODO: we will have to see if its more efficient to always represent as a number (if most operations will be numbers)
 ///        or most of the time we will be serialising into byte arrays, so we should keep as byte array
 ///
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct U80 {
     number: u128,
 }

@@ -121,7 +121,7 @@ impl IsolationManager {
         let (windows, first_window_relative_index): (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, i64) =
             self.timeline.collect_concurrent_windows(commit_record.open_sequence_number, commit_relative_index);
         let first_windowed_seq = *windows.get(0).unwrap().starting_sequence_number().unwrap();
-        if commit_record.open_sequence_number().next() < first_windowed_seq {
+        if commit_record.open_sequence_number().next() <= first_windowed_seq {
             self.validate_concurrent_from_disk(commit_record, first_windowed_seq, durability_service)?;
         }
 
@@ -143,15 +143,9 @@ impl IsolationManager {
         D: DurabilityService,
     {
         for commit_status in
-            Self::iterate_commit_status_from_disk(durability_service, commit_record.open_sequence_number.next()).unwrap()
+            Self::iterate_commit_status_from_disk(durability_service, commit_record.open_sequence_number.next(), stop_sequence_number).unwrap()
         {
             if let Ok(commit_status) = commit_status {
-                match commit_status {
-                    CommitStatus::Applied(predecessor_seq, _) | CommitStatus::Aborted(predecessor_seq) | CommitStatus::Pending(predecessor_seq, _) => {
-                        if predecessor_seq >= stop_sequence_number { break; }
-                    },
-                    CommitStatus::Empty | CommitStatus::Validated(_, _) => unreachable!(),
-                }
                 let commit_dependency = match commit_status {
                     CommitStatus::Applied(_, predecessor_record) => {
                         commit_record.compute_dependency(&predecessor_record)
@@ -178,7 +172,7 @@ impl IsolationManager {
         let mut window_index = 0;
         let mut slot_index = (0..TIMELINE_WINDOW_SIZE).find(|si| {
             match windows[0].get_sequence_number(*si) {
-                Some(seq) => seq.number() > commit_record.open_sequence_number.number(),
+                Some(seq) => seq > commit_record.open_sequence_number,
                 None => false
             }
         }).unwrap();
@@ -202,16 +196,17 @@ impl IsolationManager {
     pub(crate) fn iterate_commit_status_from_disk<'a, D>(
         durability_service: &'a D,
         start_sequence_number: SequenceNumber,
+        stop_sequence_number: SequenceNumber,
     ) -> durability::Result<impl Iterator<Item = durability::Result<CommitStatus<'a>>>>
         where
             D: DurabilityService,
     {
-        let mut statuses: HashMap<u128, bool> = HashMap::new();
-        for record in durability_service.iter_unsequenced_type_from::<StatusRecord>(SequenceNumber::from(start_sequence_number.clone().number().number())).unwrap() {
+        let mut statuses: HashMap<SequenceNumber, bool> = HashMap::new();
+        for record in durability_service.iter_unsequenced_type_from::<StatusRecord>(start_sequence_number.clone()).unwrap() {
             if let Ok(predecessor_record) = record {
                 // We can't stop early because status records may be out-of-order
                 statuses.insert(
-                    predecessor_record.commit_record_sequence_number().number().number(),
+                    predecessor_record.commit_record_sequence_number(),
                     predecessor_record.was_committed(),
                 );
             } else {
@@ -219,15 +214,21 @@ impl IsolationManager {
             }
         }
 
-        Ok(durability_service.iter_sequenced_type_from::<CommitRecord>(start_sequence_number.clone())?.map(move |result: durability::Result<(SequenceNumber, CommitRecord)>| match result {
-            Ok((commit_sequence_number, commit_record)) => {
-                Ok(match statuses.get(&commit_sequence_number.number().number()) {
-                    None => CommitStatus::Pending(commit_sequence_number, Cow::Owned(commit_record)),
-                    Some(true) => CommitStatus::Applied(commit_sequence_number, Cow::Owned(commit_record)),
-                    Some(false) => CommitStatus::Aborted(commit_sequence_number),
-                })
+        Ok(durability_service.iter_sequenced_type_from::<CommitRecord>(start_sequence_number.clone())?.map_while(move |result: durability::Result<(SequenceNumber, CommitRecord)>| {
+            match result {
+                Ok((commit_sequence_number, commit_record)) => {
+                    if commit_sequence_number >= stop_sequence_number {
+                        None
+                    } else {
+                        Some(Ok(match statuses.get(&commit_sequence_number) {
+                            None => CommitStatus::Pending(commit_sequence_number, Cow::Owned(commit_record)),
+                            Some(true) => CommitStatus::Applied(commit_sequence_number, Cow::Owned(commit_record)),
+                            Some(false) => CommitStatus::Aborted(commit_sequence_number),
+                        }))
+                    }
+                }
+                Err(err) => Some(Err(err)),
             }
-            Err(err) => Err(err),
         }))
     }
 
@@ -249,7 +250,6 @@ impl IsolationManager {
             CommitStatus::Validated(_, commit_record) | CommitStatus::Applied(_, commit_record) => commit_record,
             _ => panic!("apply_to_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
         };
-        // debug_assert_eq!(read_sequence_number, sequence_number);
         function(&record)
     }
 
@@ -352,7 +352,7 @@ impl Error for IsolationError {}
 #[derive(Debug)]
 struct Timeline {
     // We can adjust the Window size to amortise the cost of the read-write locks to maintain the timeline
-    next_window_and_windows: RwLock<(i64, VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>)>,
+    next_relative_index_and_windows: RwLock<(i64, VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>)>,
     watermark: AtomicI64,
 }
 
@@ -360,7 +360,7 @@ impl Timeline {
     fn new(next_relative_index: i64) -> Timeline {
         let windows = VecDeque::new();
         Timeline {
-            next_window_and_windows: RwLock::new((next_relative_index, windows)),
+            next_relative_index_and_windows: RwLock::new((next_relative_index, windows)),
             watermark: AtomicI64::new(next_relative_index - 1),
         }
     }
@@ -368,7 +368,7 @@ impl Timeline {
     fn may_free_windows(&self) {
         let watermark = self.watermark();
         let can_free_some: bool = {
-            let (next_relative_index, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
+            let (next_relative_index, windows) = &*self.next_relative_index_and_windows.read().unwrap_or_log();
             let start_of_second_window = *next_relative_index - ((windows.len() - 1) * TIMELINE_WINDOW_SIZE) as i64;
             match windows.front() {
                 None => false,
@@ -376,7 +376,7 @@ impl Timeline {
             }
         };
         if can_free_some {
-            let (next_relative_index, windows) = &mut *self.next_window_and_windows.write().unwrap_or_log();
+            let (next_relative_index, windows) = &mut *self.next_relative_index_and_windows.write().unwrap_or_log();
             let mut start_of_next_window = *next_relative_index - ((windows.len() - 1) * TIMELINE_WINDOW_SIZE) as i64;
             while watermark >= start_of_next_window && windows.front().is_some() && windows.front().unwrap().get_readers() == 0
             {
@@ -446,7 +446,7 @@ impl Timeline {
     }
 
     fn record_reader(&self, sequence_number: SequenceNumber) {
-        let (_, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
+        let (_, windows) = &*self.next_relative_index_and_windows.read().unwrap_or_log();
         if let Some((window,_)) = self.find_window(windows, sequence_number) {
             window.increment_readers();
         };
@@ -454,7 +454,7 @@ impl Timeline {
 
     fn remove_reader(&self, reader_sequence_number: SequenceNumber) {
         let found_window_opt = {
-            let (_, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
+            let (_, windows) = &*self.next_relative_index_and_windows.read().unwrap_or_log();
             self.find_window(windows, reader_sequence_number)
         };
         if let Some((window, _)) = found_window_opt {
@@ -466,7 +466,7 @@ impl Timeline {
 
     fn find_window(
         &self,
-        windows: &VecDeque<Arc<TimelineWindow<100>>>,
+        windows: &VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
         sequence_number: SequenceNumber,
     ) -> Option<(Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>, usize)> {
         windows.iter()
@@ -474,7 +474,7 @@ impl Timeline {
             .rev()
             .find_map(|(window_index, window)| {
                 let start_seq = window.starting_sequence_number();
-                if start_seq.is_some() && start_seq.unwrap().number() <= sequence_number.number() {
+                if start_seq.is_some() && *start_seq.unwrap() <= sequence_number {
                     Some((window.clone(), window_index))
                 } else { None }
             })
@@ -486,7 +486,7 @@ impl Timeline {
         commit_relative_index: i64,
     ) -> (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, i64) {
 
-        let (next_window, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
+        let (next_window, windows) = &*self.next_relative_index_and_windows.read().unwrap_or_log();
         let first_concurrent_window_index = self.find_window(windows, open_sequence_number.next())
             .map(|(window, window_index)| { window_index })
             .unwrap_or(0);
@@ -503,40 +503,40 @@ impl Timeline {
     }
 
     fn try_get_window(&self, relative_index: i64) -> Option<(Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>, usize)> {
-        let (next_window, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
-        let start_index: i64 = next_window - (windows.len() * TIMELINE_WINDOW_SIZE) as i64;
-        let must_be_in_window = (relative_index - start_index) as usize / TIMELINE_WINDOW_SIZE;
+        let (next_relative_index, windows) = &*self.next_relative_index_and_windows.read().unwrap_or_log();
+        let first_relative_index: i64 = next_relative_index - (windows.len() * TIMELINE_WINDOW_SIZE) as i64;
 
-        if must_be_in_window >= 0 && must_be_in_window < windows.len() {
-            let in_window = windows.get(must_be_in_window)?;
-            let slot_index: usize = (relative_index - start_index) as usize % TIMELINE_WINDOW_SIZE;
-            Some((in_window.clone(), slot_index))
+        if relative_index >= first_relative_index && relative_index < *next_relative_index {
+            let window_index = (relative_index - first_relative_index) as usize / TIMELINE_WINDOW_SIZE;
+            let window = windows.get(window_index)?;
+            let slot_index: usize = (relative_index - first_relative_index) as usize % TIMELINE_WINDOW_SIZE;
+            Some((window.clone(), slot_index))
         } else {
             None
         }
     }
 
     fn get_or_create_window(&self, relative_index: i64) -> (Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>, usize) {
-        let next_window: i64 = {
-            self.next_window_and_windows.read().unwrap_or_log().0
+        let next_relative_index: i64 = {
+            self.next_relative_index_and_windows.read().unwrap_or_log().0
         };
-        if relative_index >= next_window {
+        if relative_index >= next_relative_index {
             self.create_windows_to(relative_index);
         }
         self.try_get_window(relative_index).unwrap()
     }
 
     fn create_windows_to(&self, relative_index: i64) {
-        let (next_window, windows) = &mut *self.next_window_and_windows.write().unwrap_or_log();
-        while relative_index >= *next_window {
+        let (next_relative_index, windows) = &mut *self.next_relative_index_and_windows.write().unwrap_or_log();
+        while relative_index >= *next_relative_index {
             let shared_new_window = Arc::new(TimelineWindow::new());
-            *next_window += TIMELINE_WINDOW_SIZE as i64;
+            *next_relative_index += TIMELINE_WINDOW_SIZE as i64;
             windows.push_back(shared_new_window.clone());
         }
     }
 
     fn window_count(&self) -> usize {
-        let (_, windows) = &*self.next_window_and_windows.read().unwrap_or_log();
+        let (_, windows) = &*self.next_relative_index_and_windows.read().unwrap_or_log();
         windows.len()
     }
 }

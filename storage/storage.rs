@@ -206,7 +206,7 @@ impl<D> MVCCStorage<D> {
     {
         use StorageRecoverError::DurabilityServiceRead;
         let records =
-            IsolationManager::iterate_commit_status_from_disk(&self.durability_service, SequenceNumber::MIN)
+            IsolationManager::iterate_commit_status_from_disk(&self.durability_service, SequenceNumber::MIN, SequenceNumber::MAX)
             .map_err(|error| DurabilityServiceRead { source: error })?;
         for record in records {
             match record {

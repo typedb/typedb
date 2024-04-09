@@ -115,7 +115,7 @@ pub trait SequencedDurabilityRecord: DurabilityRecord {}
 
 pub trait UnsequencedDurabilityRecord: DurabilityRecord {}
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct SequenceNumber {
     number: U80,
 }
