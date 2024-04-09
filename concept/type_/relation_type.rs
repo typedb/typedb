@@ -239,6 +239,7 @@ impl From<Annotation> for RelationTypeAnnotation {
             Annotation::Abstract(annotation) => RelationTypeAnnotation::Abstract(annotation),
             Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Relation type."),
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Relation type."),
+            Annotation::Cardinality(_) => unreachable!("Cardinality annotation not available for Relation type."),
         }
     }
 }

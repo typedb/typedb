@@ -129,7 +129,7 @@ impl<'a> AttributeType<'a> {
                 type_manager.storage_delete_annotation_abstract(self.clone().into_owned())
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.delete_storage_annotation_independent(self.clone().into_owned())
+                type_manager.storage_storage_annotation_independent(self.clone().into_owned())
             }
         }
     }
@@ -163,6 +163,7 @@ impl From<Annotation> for AttributeTypeAnnotation {
             Annotation::Abstract(annotation) => AttributeTypeAnnotation::Abstract(annotation),
             Annotation::Independent(annotation) => AttributeTypeAnnotation::Independent(annotation),
             Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Attribute type."),
+            Annotation::Cardinality(_) => unreachable!("Cardinality annotation not available for Attribute type."),
         }
     }
 }

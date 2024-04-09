@@ -79,6 +79,13 @@ type_vertex_property_constructors!(
     InfixType::PropertyAnnotationIndependent
 );
 
+type_vertex_property_constructors!(
+    new_property_type_annotation_cardinality,
+    build_property_type_annotation_cardinality,
+    is_property_type_annotation_cardinality,
+    InfixType::PropertyAnnotationCardinality
+);
+
 impl<'a> TypeVertexProperty<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
 

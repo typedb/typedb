@@ -173,6 +173,10 @@ impl BufferedPrefixIterator {
         Self { state: State::Init, index: 0, range }
     }
 
+    pub fn into_range(self) -> Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)> {
+        self.range
+    }
+
     pub(crate) fn peek(
         &mut self,
     ) -> Option<Result<(&StorageKeyArray<BUFFER_KEY_INLINE>, &Write), SnapshotIteratorError>> {

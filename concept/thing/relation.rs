@@ -30,7 +30,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     ByteReference,
     concept_iterator,
-    error::{ConceptReadError, ConceptWriteError},
+    error::{ConceptReadError},
     thing::{
         attribute::{Attribute, AttributeIterator},
         object::Object,
@@ -44,7 +44,6 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::thing::entity::Entity;
 use crate::thing::ObjectAPI;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]

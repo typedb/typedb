@@ -29,6 +29,7 @@ use crate::{
         TypeAPI,
     },
 };
+use crate::type_::annotation::AnnotationCardinality;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -108,6 +109,9 @@ impl<'a> RoleType<'a> {
             RoleTypeAnnotation::Distinct(_) => {
                 type_manager.storage_set_annotation_distinct(self.clone().into_owned())
             }
+            RoleTypeAnnotation::Cardinality(cardinality) => {
+                type_manager.storage_set_annotation_cardinality(self.clone().into_owned(), cardinality)
+            }
         }
     }
 
@@ -118,6 +122,9 @@ impl<'a> RoleType<'a> {
             }
             RoleTypeAnnotation::Distinct(_) => {
                 type_manager.storage_delete_annotation_distinct(self.clone().into_owned())
+            }
+            RoleTypeAnnotation::Cardinality(_) => {
+                type_manager.storage_delete_annotation_cardinality(self.clone().into_owned())
             }
         }
     }
@@ -142,6 +149,7 @@ impl<'a> RoleType<'a> {
 pub enum RoleTypeAnnotation {
     Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),
+    Cardinality(AnnotationCardinality),
 }
 
 impl From<Annotation> for RoleTypeAnnotation {
@@ -149,6 +157,7 @@ impl From<Annotation> for RoleTypeAnnotation {
         match annotation {
             Annotation::Abstract(annotation) => RoleTypeAnnotation::Abstract(annotation),
             Annotation::Distinct(annotation) => RoleTypeAnnotation::Distinct(annotation),
+            Annotation::Cardinality(annotation) => RoleTypeAnnotation::Cardinality(annotation),
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Role type."),
         }
     }

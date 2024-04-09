@@ -19,7 +19,7 @@ use super::iterator;
 use crate::KeyspaceSet;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct KeyspaceId(pub(crate) u8);
+pub struct KeyspaceId(pub u8);
 
 impl fmt::Display for KeyspaceId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -65,7 +65,7 @@ impl Keyspace {
         let read_options = ReadOptions::default();
         let mut write_options = WriteOptions::default();
         write_options.disable_wal(true);
-        Self { path, name: keyspace.name(), id: KeyspaceId(keyspace.id()), kv_storage, read_options, write_options }
+        Self { path, name: keyspace.name(), id: keyspace.id(), kv_storage, read_options, write_options }
     }
 
     // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options

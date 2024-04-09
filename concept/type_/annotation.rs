@@ -4,11 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use serde::{Deserialize, Serialize};
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
     Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),
     Independent(AnnotationIndependent),
+    Cardinality(AnnotationCardinality),
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -53,5 +56,20 @@ impl Default for AnnotationIndependent {
 impl AnnotationIndependent {
     pub fn new() -> Self {
         AnnotationIndependent {}
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationCardinality {
+    // ##########################################################################
+    // ###### WARNING: any changes here may break backwards compatibility! ######
+    // ##########################################################################
+    start_inclusive: u64,
+    end_inclusive: Option<u64>,
+}
+
+impl AnnotationCardinality {
+    pub fn new(start_inclusive: u64, end_inclusive: Option<u64>) -> Self {
+        AnnotationCardinality { start_inclusive, end_inclusive }
     }
 }

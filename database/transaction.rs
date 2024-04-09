@@ -7,6 +7,10 @@
 use std::rc::Rc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeRelationIndex, ThingEdgeRolePlayer};
+use encoding::graph::thing::vertex_attribute::AttributeVertex;
+use encoding::graph::thing::vertex_object::ObjectVertex;
+use storage::key_value::StorageKeyReference;
 use storage::snapshot::{ReadSnapshot, WriteSnapshot};
 
 pub struct TransactionRead<'txn, 'storage: 'txn, D> {
@@ -35,5 +39,27 @@ impl<'txn, 'storage: 'txn, D> TransactionWrite<'txn, 'storage, D> {
     fn commit(self) {
         // 1. validate cardinality constraints on modified relations. For those that have cardinality requirements, we must also put a lock into the snapshot.
         // 2. check attributes in modified 'has' ownerships to see if they need to be cleaned up (independent & last ownership)
+
+        let writes = self.snapshot.iterate_writes();
+        // we can either write Things or Edges.
+
+        // TODO: move into ThingManager::commit()
+        for (key, write) in writes {
+            if ObjectVertex::is_object_vertex(StorageKeyReference::from(&key)) {
+
+            } else if AttributeVertex::is_attribute_vertex(StorageKeyReference::from(&key)) {
+
+            } else if ThingEdgeHas::is_has(StorageKeyReference::from(&key)) {
+
+            } else if ThingEdgeHasReverse::is_has_reverse(StorageKeyReference::from(&key)) {
+
+            } else if ThingEdgeRolePlayer::is_role_player(StorageKeyReference::from(&key)) {
+
+            } else if ThingEdgeRelationIndex::is_index(StorageKeyReference::from(&key)) {
+
+            } else {
+                unreachable!("Unrecognised modified key in a data transaction.")
+            }
+        }
     }
 }

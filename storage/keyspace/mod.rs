@@ -8,6 +8,8 @@ pub mod iterator;
 mod keyspace;
 
 pub(crate) use keyspace::{
-    Keyspace, KeyspaceCheckpointError, KeyspaceError, KeyspaceId, KeyspaceOpenError, KEYSPACE_ID_MAX,
+    Keyspace, KeyspaceCheckpointError, KeyspaceError, KeyspaceOpenError, KEYSPACE_ID_MAX,
     KEYSPACE_ID_RESERVED_UNSET, KEYSPACE_MAXIMUM_COUNT,
 };
+
+pub use keyspace::KeyspaceId;

@@ -8,7 +8,8 @@ use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKey;
+use storage::key_value::{StorageKey, StorageKeyReference};
+use storage::KeyspaceSet;
 
 use crate::{
     graph::{type_::vertex::TypeID, Typed},
@@ -65,6 +66,14 @@ impl<'a> AttributeVertex<'a> {
             .copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    pub fn is_attribute_vertex(storage_key: StorageKeyReference<'_>) -> bool {
+        storage_key.keyspace_id() == Self::KEYSPACE.id() && storage_key.bytes().len() > 0 &&
+            (
+                &storage_key.bytes()[Self::RANGE_PREFIX] >= &PrefixID::VERTEX_ATTRIBUTE_MIN.bytes()
+                    && &storage_key.bytes()[Self::RANGE_PREFIX] <= &PrefixID::VERTEX_ATTRIBUTE_MAX.bytes()
+            )
     }
 
     fn value_type_to_prefix_type(value_type: ValueType) -> Prefix {
@@ -215,7 +224,6 @@ pub struct AttributeID17 {
 /// such as UUID, IPv6, are created to fit in a 16 byte encoding scheme.
 ///
 impl AttributeID17 {
-
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
     }

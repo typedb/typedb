@@ -23,6 +23,8 @@ rust_library(
         "//storage",
         "//storage/durability",
         "//resource",
+
+        "@crates//:bincode",
     ],
 )
 

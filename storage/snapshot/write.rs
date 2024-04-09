@@ -14,7 +14,7 @@ use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub(crate) enum Write {
+pub enum Write {
     // Mark Key as required from storage. Caches existing storage Value. Conflicts with Delete.
     RequireExists { value: ByteArray<BUFFER_VALUE_INLINE> },
     // Insert KeyValue with a new version. Never conflicts.

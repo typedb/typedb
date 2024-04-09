@@ -4,11 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::io::Read;
 use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKey;
+use storage::key_value::{StorageKey, StorageKeyReference};
+use storage::KeyspaceSet;
 
 use crate::{AsBytes, EncodingKeyspace, graph::{
     thing::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex},
@@ -68,6 +70,11 @@ impl<'a> ThingEdgeHas<'a> {
         let to_type_range = Self::range_from().end..Self::range_from().end + TypeVertex::LENGTH;
         bytes.bytes_mut()[to_type_range].copy_from_slice(to_type.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    pub fn is_has(key: StorageKeyReference<'_>) -> bool {
+        key.keyspace_id() == Self::KEYSPACE.id() && key.bytes().len() > 0 &&
+            key.bytes()[Self::RANGE_PREFIX] == Prefix::EdgeHas.prefix_id().bytes()
     }
 
     fn from(&'a self) -> ObjectVertex<'a> {
@@ -163,6 +170,16 @@ impl<'a> ThingEdgeHasReverse<'a> {
         let to_type_range = range_from.end..range_from.end + TypeVertex::LENGTH;
         bytes.bytes_mut()[to_type_range].copy_from_slice(to_type.bytes().bytes());
         StorageKey::new_owned(Self::keyspace_for(from), bytes)
+    }
+
+    pub fn is_has_reverse(key: StorageKeyReference<'_>) -> bool {
+        if key.bytes().len() > 0 &&
+            key.bytes()[Self::RANGE_PREFIX] == Prefix::EdgeHasReverse.prefix_id().bytes() {
+            let edge = ThingEdgeHasReverse::new(Bytes::Reference(key.byte_ref()));
+            edge.keyspace().id() == key.keyspace_id()
+        } else {
+            false
+        }
     }
 
     fn from(&'a self) -> AttributeVertex<'a> {
@@ -288,6 +305,14 @@ impl<'a> ThingEdgeRolePlayer<'a> {
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
+    pub fn is_role_player(key: StorageKeyReference<'_>) -> bool {
+        key.keyspace_id() == Self::KEYSPACE.id() && key.bytes().len() == Self::LENGTH &&
+            (
+                key.bytes()[Self::RANGE_PREFIX] == Prefix::EdgeRolePlayer.prefix_id().bytes()
+                    || key.bytes()[Self::RANGE_PREFIX] == Prefix::EdgeRolePlayerReverse.prefix_id().bytes()
+            )
+    }
+
     fn from(&self) -> ObjectVertex<'_> {
         // TODO: copy?
         ObjectVertex::new(Bytes::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_FROM])))
@@ -372,6 +397,11 @@ impl<'a> ThingEdgeRelationIndex<'a> {
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::EdgeRolePlayerIndex.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(from.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    pub fn is_index(key: StorageKeyReference<'_>) -> bool {
+        key.keyspace_id() == Self::KEYSPACE.id() && key.bytes().len() == Self::LENGTH &&
+            key.bytes()[Self::RANGE_PREFIX] == Prefix::EdgeRolePlayerIndex.prefix_id().bytes()
     }
 
     pub(crate) fn from(&self) -> ObjectVertex<'_> {

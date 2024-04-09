@@ -28,6 +28,7 @@ pub enum Infix {
     PropertyAnnotationAbstract,
     PropertyAnnotationDistinct,
     PropertyAnnotationIndependent,
+    PropertyAnnotationCardinality,
 }
 
 macro_rules! infix_functions {
@@ -60,6 +61,7 @@ impl Infix {
         PropertyValueType => [1];
         PropertyAnnotationAbstract => [20];
         PropertyAnnotationDistinct => [21];
-        PropertyAnnotationIndependent => [22]
+        PropertyAnnotationIndependent => [22];
+        PropertyAnnotationCardinality => [23]
     );
 }

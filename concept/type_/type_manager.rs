@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashSet, rc::Rc, sync::Arc};
+use std::io::{Read};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::DurabilityService;
@@ -35,8 +36,10 @@ use encoding::{
         value_type::{ValueType, ValueTypeID},
     },
 };
+use encoding::graph::type_::property::build_property_type_annotation_cardinality;
 use primitive::{maybe_owns::MaybeOwns, prefix_range::PrefixRange};
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{MVCCStorage, snapshot::Snapshot};
 use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot};
 
@@ -56,7 +59,7 @@ use crate::{
         TypeAPI,
     },
 };
-use crate::type_::annotation::AnnotationIndependent;
+use crate::type_::annotation::{Annotation, AnnotationCardinality, AnnotationIndependent};
 use crate::type_::{ObjectTypeAPI};
 
 pub struct TypeManager<'txn, Snapshot> {
@@ -449,6 +452,7 @@ impl<'txn, Snapshot: ReadableSnapshot> TypeManager<'txn, Snapshot> {
             })
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
+
     fn get_storage_vertex_annotation_independent(
         &self,
         vertex: TypeVertex<'static>,
@@ -456,6 +460,17 @@ impl<'txn, Snapshot: ReadableSnapshot> TypeManager<'txn, Snapshot> {
         self.snapshot
             .get_mapped(build_property_type_annotation_independent(vertex).into_storage_key().as_reference(), |_bytes| {
                 AnnotationIndependent::new()
+            })
+            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
+    }
+
+    fn get_storage_vertex_annotation_cardinality(
+        &self,
+        vertex: TypeVertex<'static>,
+    ) -> Result<Option<AnnotationCardinality>, ConceptReadError> {
+        self.snapshot
+            .get_mapped(build_property_type_annotation_cardinality(vertex).into_storage_key().as_reference(), |bytes| {
+                bincode::deserialize(bytes.bytes()).unwrap()
             })
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
@@ -640,8 +655,22 @@ impl<'txn, 'storage, Snapshot: WritableSnapshot> TypeManager<'txn, Snapshot> {
         self.snapshot.as_ref().put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn delete_storage_annotation_independent(&self, type_: impl TypeAPI<'static>) {
+    pub(crate) fn storage_storage_annotation_independent(&self, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_independent(type_.into_vertex());
+        self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn storage_set_annotation_cardinality(&self, type_: impl TypeAPI<'static>, annotation: AnnotationCardinality) {
+        let annotation_property = build_property_type_annotation_cardinality(type_.into_vertex());
+        let serialized_annotation = ByteArray::boxed(bincode::serialize(&annotation).unwrap().into_boxed_slice());
+        self.snapshot.as_ref().put_val(
+            annotation_property.into_storage_key().into_owned_array(),
+            serialized_annotation
+        );
+    }
+
+    pub(crate) fn storage_delete_annotation_cardinality(&self, type_: impl TypeAPI<'static>) {
+        let annotation_property = build_property_type_annotation_cardinality(type_.into_vertex());
         self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
     }
 }

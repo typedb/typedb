@@ -205,6 +205,7 @@ impl From<Annotation> for EntityTypeAnnotation {
             Annotation::Abstract(annotation) => EntityTypeAnnotation::Abstract(annotation),
             Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Entity type."),
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Entity type."),
+            Annotation::Cardinality(_) => unreachable!("Cardinality annotation not available for Entity type."),
         }
     }
 }

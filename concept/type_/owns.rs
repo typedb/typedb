@@ -5,6 +5,7 @@
  */
 
 use crate::type_::{attribute_type::AttributeType, object_type::ObjectType};
+use crate::type_::annotation::{Annotation, AnnotationCardinality, AnnotationDistinct};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<'a> {
@@ -23,5 +24,22 @@ impl<'a> Owns<'a> {
 
     fn attribute(&self) -> AttributeType<'a> {
         self.attribute.clone()
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum OwnsAnnotation {
+    Distinct(AnnotationDistinct),
+    Cardinality(AnnotationCardinality),
+}
+
+impl From<Annotation> for OwnsAnnotation {
+    fn from(annotation: Annotation) -> Self {
+        match annotation {
+            Annotation::Distinct(annotation) => OwnsAnnotation::Distinct(annotation),
+            Annotation::Cardinality(annotation) => OwnsAnnotation::Cardinality(annotation),
+            Annotation::Abstract(_) => unreachable!("Independent annotation not available for Owns."),
+            Annotation::Independent(_) => unreachable!("Independent annotation not available for Owns."),
+        }
     }
 }

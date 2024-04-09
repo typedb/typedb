@@ -70,7 +70,7 @@ fn new_db_options() -> Options {
 
 pub trait KeyspaceSet: Copy {
     fn iter() -> impl Iterator<Item = Self>;
-    fn id(&self) -> u8;
+    fn id(&self) -> KeyspaceId;
     fn name(&self) -> &'static str;
 }
 
@@ -82,14 +82,13 @@ fn validate_new_keyspace(
     use KeyspaceValidationError::{IdExists, IdReserved, IdTooLarge, NameExists};
 
     let name = keyspace_id.name();
-    let id = KeyspaceId(keyspace_id.id());
 
-    if id == KEYSPACE_ID_RESERVED_UNSET {
-        return Err(IdReserved { name, id: id.0 });
+    if keyspace_id.id() == KEYSPACE_ID_RESERVED_UNSET {
+        return Err(IdReserved { name, id: keyspace_id.id().0 });
     }
 
-    if id > KEYSPACE_ID_MAX {
-        return Err(IdTooLarge { name, id: id.0, max_id: KEYSPACE_ID_MAX.0 });
+    if keyspace_id.id() > KEYSPACE_ID_MAX {
+        return Err(IdTooLarge { name, id: keyspace_id.id().0, max_id: KEYSPACE_ID_MAX.0 });
     }
 
     for (existing_id, existing_keyspace_index) in keyspaces_index.iter().enumerate() {
@@ -98,8 +97,8 @@ fn validate_new_keyspace(
             if keyspace.name() == name {
                 return Err(NameExists { name });
             }
-            if existing_id == id.0 as usize {
-                return Err(IdExists { new_name: name, id: id.0, existing_name: keyspace.name() });
+            if existing_id == keyspace_id.id().0 as usize {
+                return Err(IdExists { new_name: name, id: keyspace_id.id().0, existing_name: keyspace.name() });
             }
         }
     }
@@ -155,7 +154,7 @@ fn recover_keyspaces<KS: KeyspaceSet>(
         validate_new_keyspace(keyspace_id, &keyspaces, &keyspaces_index)
             .map_err(|error| KeyspaceValidation { source: error })?;
         keyspaces.push(Keyspace::open(path, keyspace_id, &options).map_err(|error| KeyspaceOpen { source: error })?);
-        keyspaces_index[keyspace_id.id() as usize] = Some(KeyspaceId(keyspaces.len() as u8 - 1));
+        keyspaces_index[keyspace_id.id().0 as usize] = Some(KeyspaceId(keyspaces.len() as u8 - 1));
     }
     Ok((keyspaces, keyspaces_index))
 }

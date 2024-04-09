@@ -48,7 +48,7 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
         }
     }
 
-    pub(crate) fn keyspace_id(&self) -> KeyspaceId {
+    pub fn keyspace_id(&self) -> KeyspaceId {
         match self {
             StorageKey::Array(bytes) => bytes.keyspace_id,
             StorageKey::Reference(bytes) => bytes.keyspace_id,
@@ -108,7 +108,7 @@ pub struct StorageKeyArray<const SZ: usize> {
 
 impl<const SZ: usize> StorageKeyArray<SZ> {
     pub fn new<KS: KeyspaceSet>(keyspace_id: KS, array: ByteArray<SZ>) -> Self {
-        Self::new_raw(KeyspaceId(keyspace_id.id()), array)
+        Self::new_raw(keyspace_id.id(), array)
     }
 
     pub(crate) fn new_raw(keyspace_id: KeyspaceId, array: ByteArray<SZ>) -> Self {
@@ -176,7 +176,7 @@ impl<const SZ: usize, KS: KeyspaceSet> From<(&[u8], KS)> for StorageKeyArray<SZ>
     // For tests
     fn from((bytes, keyspace): (&[u8], KS)) -> Self {
         let bytes = ByteArray::<SZ>::copy(bytes);
-        StorageKeyArray { keyspace_id: KeyspaceId(keyspace.id()), byte_array: bytes }
+        StorageKeyArray { keyspace_id: keyspace.id(), byte_array: bytes }
     }
 }
 
@@ -188,14 +188,14 @@ pub struct StorageKeyReference<'bytes> {
 
 impl<'bytes> StorageKeyReference<'bytes> {
     pub fn new<KS: KeyspaceSet>(keyspace: KS, reference: ByteReference<'bytes>) -> StorageKeyReference<'bytes> {
-        Self::new_raw(KeyspaceId(keyspace.id()), reference)
+        Self::new_raw(keyspace.id(), reference)
     }
 
     pub(crate) const fn new_raw(keyspace_id: KeyspaceId, reference: ByteReference<'bytes>) -> Self {
         Self { keyspace_id, reference }
     }
 
-    pub(crate) fn keyspace_id(&self) -> KeyspaceId {
+    pub fn keyspace_id(&self) -> KeyspaceId {
         self.keyspace_id
     }
 

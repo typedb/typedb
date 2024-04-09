@@ -10,6 +10,7 @@ use std::ops::Range;
 
 use bytes::{byte_reference::ByteReference, Bytes};
 use storage::{key_value::StorageKey, KeyspaceSet};
+use storage::keyspace::KeyspaceId;
 
 use crate::layout::prefix::{Prefix, PrefixID};
 
@@ -40,10 +41,10 @@ impl KeyspaceSet for EncodingKeyspace {
         [Self::Schema, Self::Data].into_iter()
     }
 
-    fn id(&self) -> u8 {
+    fn id(&self) -> KeyspaceId {
         match self {
-            Self::Schema => 0x0,
-            Self::Data => 0x1,
+            Self::Schema => KeyspaceId(0x0),
+            Self::Data => KeyspaceId(0x1),
         }
     }
 

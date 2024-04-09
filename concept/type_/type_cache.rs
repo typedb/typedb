@@ -55,6 +55,7 @@ use crate::type_::{
     role_type::{RoleType, RoleTypeAnnotation},
     TypeAPI,
 };
+use crate::type_::annotation::AnnotationCardinality;
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -526,7 +527,7 @@ impl TypeCache {
     ) -> Vec<Annotation> {
         vertex_properties
             .iter()
-            .filter_map(|(property, _value)| {
+            .filter_map(|(property, value)| {
                 if property.type_vertex() != type_vertex {
                     None
                 } else {
@@ -535,6 +536,10 @@ impl TypeCache {
                         Infix::PropertyAnnotationAbstract => Some(Annotation::Abstract(AnnotationAbstract::new())),
                         Infix::PropertyAnnotationDistinct => Some(Annotation::Distinct(AnnotationDistinct::new())),
                         Infix::PropertyAnnotationIndependent => Some(Annotation::Independent(AnnotationIndependent::new())),
+                        Infix::PropertyAnnotationCardinality => {
+                            let card = bincode::deserialize(value.bytes()).unwrap();
+                            Some(Annotation::Cardinality(card))
+                        },
                         | Infix::PropertyLabel | Infix::PropertyValueType => None,
                     }
                 }

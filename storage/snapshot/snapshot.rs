@@ -6,8 +6,10 @@
 
 use std::{error::Error, fmt};
 use std::io::Read;
+use std::iter::FlatMap;
+use std::slice::Iter;
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use durability::{DurabilityService, SequenceNumber};
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -19,6 +21,8 @@ use crate::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     MVCCStorage,
 };
+use crate::snapshot::buffer::KeyspaceBuffer;
+use crate::snapshot::write::Write;
 
 use super::{buffer::KeyspaceBuffers, iterator::SnapshotRangeIterator};
 
@@ -184,6 +188,14 @@ impl<'storage, D> WriteSnapshot<'storage, D> {
         storage.isolation_manager.opened_for_read(open_sequence_number);
         WriteSnapshot { storage, buffers: KeyspaceBuffers::new(), open_sequence_number }
     }
+
+    pub fn iterate_writes(&self) -> impl Iterator<Item=(StorageKeyArray<64>, Write)> + '_ {
+        self.buffers.iter().flat_map(|buffer| {
+            // note: this currently copies all the buffers
+            buffer.iterate_range(PrefixRange::new_unbounded(Bytes::Array(ByteArray::<BUFFER_KEY_INLINE>::empty())))
+                .into_range().into_iter()
+        })
+    }
 }
 
 impl<'storage, D> ReadableSnapshot for WriteSnapshot<'storage, D> {
@@ -233,7 +245,6 @@ impl<'storage, D> ReadableSnapshot for WriteSnapshot<'storage, D> {
     }
 }
 
-
 impl<'storage, D> WritableSnapshot for WriteSnapshot<'storage, D> {
     /// Insert a key with a new version
     fn insert(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
@@ -257,6 +268,7 @@ impl<'storage, D> WritableSnapshot for WriteSnapshot<'storage, D> {
         let byte_array = key.into_byte_array();
         self.buffers.get(keyspace_id).put(byte_array, value);
     }
+
     /// Insert a delete marker for the key with a new version
     fn delete(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
         let keyspace_id = key.keyspace_id();
