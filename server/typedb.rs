@@ -16,6 +16,7 @@ use database::{Database, DatabaseRecoverError};
 use durability::wal::WAL;
 use itertools::Itertools;
 
+#[derive(Debug)]
 pub struct Server {
     data_directory: PathBuf,
     databases: HashMap<String, Database<WAL>>,
@@ -48,11 +49,19 @@ impl Server {
         Ok(Self { data_directory, databases })
     }
 
-    pub fn serve(mut self) {
+    pub fn create_database(&mut self, name: impl AsRef<str>) {
+        let name = name.as_ref();
         self.databases
-            .entry("test".to_owned())
-            .or_insert_with(|| Database::recover(&self.data_directory.join("test"), "test").unwrap());
-        dbg!(self.databases);
+            .entry(name.to_owned())
+            .or_insert_with(|| Database::recover(&self.data_directory.join(name), name).unwrap());
+    }
+
+    pub fn databases(&self) -> &HashMap<String, Database<WAL>> {
+        &self.databases
+    }
+
+    pub fn serve(self) {
+        todo!()
     }
 }
 

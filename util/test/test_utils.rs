@@ -5,7 +5,11 @@
  */
 
 use std::{
-    cell::OnceCell, fs, ops::Deref, path::{Path, PathBuf}, sync::Mutex
+    cell::OnceCell,
+    fs,
+    ops::Deref,
+    path::{Path, PathBuf},
+    sync::Mutex,
 };
 
 use logger::initialise_logging;
@@ -17,11 +21,18 @@ pub fn init_logging() {
     LOGGING_GUARD.lock().unwrap().get_or_init(initialise_logging);
 }
 
+#[derive(Debug)]
 pub struct TempDir(PathBuf);
 
 impl Drop for TempDir {
     fn drop(&mut self) {
         std::fs::remove_dir_all(&self.0).ok();
+    }
+}
+
+impl AsRef<Path> for TempDir {
+    fn as_ref(&self) -> &Path {
+        self
     }
 }
 
