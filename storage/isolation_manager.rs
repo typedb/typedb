@@ -663,7 +663,7 @@ pub(crate) struct CommitRecord {
 
 impl Clone for CommitRecord {
     fn clone(&self) -> Self {
-        todo!()
+        unimplemented!("Do not call into_owned on a commit that's owned by the timeline.")
     }
 }
 
