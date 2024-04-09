@@ -77,10 +77,10 @@ type_vertex_property_constructors!(
 );
 
 type_vertex_property_constructors!(
-    new_property_type_annotation_duplicate,
-    build_property_type_annotation_duplicate,
-    is_property_type_annotation_duplicate,
-    InfixType::PropertyAnnotationDuplicate
+    new_property_type_annotation_distinct,
+    build_property_type_annotation_distinct,
+    is_property_type_annotation_distinct,
+    InfixType::PropertyAnnotationDistinct
 );
 
 type_vertex_property_constructors!(

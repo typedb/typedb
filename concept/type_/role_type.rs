@@ -33,7 +33,7 @@ use crate::{
     ConceptAPI,
     error::ConceptReadError,
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationDuplicate},
+        annotation::{Annotation, AnnotationAbstract, AnnotationDistinct},
         plays::Plays,
         relates::Relates,
         type_manager::TypeManager,
@@ -92,7 +92,7 @@ impl<'a> RoleType<'a> {
     }
 
     fn set_supertype(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, supertype: RoleType<'static>) {
-        type_manager.set_storage_supertype(self.clone().into_owned(), supertype)
+        type_manager.storage_set_supertype(self.clone().into_owned(), supertype)
     }
 
     pub fn get_supertypes<'m>(
@@ -114,10 +114,10 @@ impl<'a> RoleType<'a> {
     pub(crate) fn set_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: RoleTypeAnnotation) {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
-                type_manager.set_storage_annotation_abstract(self.clone().into_owned())
+                type_manager.storage_set_annotation_abstract(self.clone().into_owned())
             }
-            RoleTypeAnnotation::Duplicate(_) => {
-                type_manager.set_storage_annotation_duplicate(self.clone().into_owned())
+            RoleTypeAnnotation::Distinct(_) => {
+                type_manager.storage_set_annotation_distinct(self.clone().into_owned())
             }
         }
     }
@@ -125,10 +125,10 @@ impl<'a> RoleType<'a> {
     fn delete_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: RoleTypeAnnotation) {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
-                type_manager.delete_storage_annotation_abstract(self.clone().into_owned())
+                type_manager.storage_delete_annotation_abstract(self.clone().into_owned())
             }
-            RoleTypeAnnotation::Duplicate(_) => {
-                type_manager.delete_storage_annotation_duplicate(self.clone().into_owned())
+            RoleTypeAnnotation::Distinct(_) => {
+                type_manager.storage_delete_annotation_distinct(self.clone().into_owned())
             }
         }
     }
@@ -152,14 +152,14 @@ impl<'a> RoleType<'a> {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum RoleTypeAnnotation {
     Abstract(AnnotationAbstract),
-    Duplicate(AnnotationDuplicate),
+    Distinct(AnnotationDistinct),
 }
 
 impl From<Annotation> for RoleTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Abstract(annotation) => RoleTypeAnnotation::Abstract(annotation),
-            Annotation::Duplicate(annotation) => RoleTypeAnnotation::Duplicate(annotation),
+            Annotation::Distinct(annotation) => RoleTypeAnnotation::Distinct(annotation),
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Role type."),
         }
     }

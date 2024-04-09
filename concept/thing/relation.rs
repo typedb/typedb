@@ -48,7 +48,7 @@ use crate::{
         thing_manager::ThingManager,
     },
     type_::{
-        annotation::AnnotationDuplicate,
+        annotation::AnnotationDistinct,
         relation_type::RelationType,
         role_type::{RoleType, RoleTypeAnnotation},
         TypeAPI,
@@ -128,24 +128,24 @@ impl<'a> Relation<'a> {
         // TODO: validate schema
 
         let role_annotations = role_type.get_annotations(thing_manager.type_manager()).unwrap();
-        let duplicates_allowed = role_annotations.contains(&RoleTypeAnnotation::Duplicate(AnnotationDuplicate::new()));
+        let distinct = role_annotations.contains(&RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
         let mut player_count = 0;
-        if duplicates_allowed {
+        if distinct {
+            thing_manager.storage_set_role_player(self.as_reference(), player.as_reference(), role_type.clone());
+            player_count = 1;
+        } else {
             player_count = thing_manager.storage_increment_role_player(
                 self.as_reference(),
                 player.as_reference(),
                 role_type.clone()
             );
-        } else {
-            thing_manager.storage_set_role_player(self.as_reference(), player.as_reference(), role_type.clone());
-            player_count = 1;
         }
 
         // TODO handle error
         if thing_manager.type_manager().relation_index_available(self.type_()) {
             // TODO: what about schema transactions?
             thing_manager.relation_index_new_player(
-                self.as_reference(), player.as_reference(), role_type, duplicates_allowed, player_count,
+                self.as_reference(), player.as_reference(), role_type, distinct, player_count,
             );
         }
     }

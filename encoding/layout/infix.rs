@@ -37,7 +37,7 @@ pub enum Infix {
     PropertyLabel,
     PropertyValueType,
     PropertyAnnotationAbstract,
-    PropertyAnnotationDuplicate,
+    PropertyAnnotationDistinct,
     PropertyAnnotationIndependent,
 }
 
@@ -70,7 +70,7 @@ impl Infix {
         PropertyLabel => [0];
         PropertyValueType => [1];
         PropertyAnnotationAbstract => [20];
-        PropertyAnnotationDuplicate => [21];
+        PropertyAnnotationDistinct => [21];
         PropertyAnnotationIndependent => [22]
     );
 }

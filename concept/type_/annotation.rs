@@ -18,7 +18,7 @@
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
     Abstract(AnnotationAbstract),
-    Duplicate(AnnotationDuplicate),
+    Distinct(AnnotationDistinct),
     Independent(AnnotationIndependent),
 }
 
@@ -38,17 +38,17 @@ impl AnnotationAbstract {
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct AnnotationDuplicate {}
+pub struct AnnotationDistinct {}
 
-impl Default for AnnotationDuplicate {
+impl Default for AnnotationDistinct {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl AnnotationDuplicate {
+impl AnnotationDistinct {
     pub fn new() -> Self {
-        AnnotationDuplicate {}
+        AnnotationDistinct {}
     }
 }
 

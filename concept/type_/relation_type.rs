@@ -87,7 +87,7 @@ impl<'a> RelationType<'a> {
 
     fn set_label(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, label: &Label<'_>) {
         // TODO: setLabel should fail is setting label on Root type
-        type_manager.set_storage_label(self.clone().into_owned(), label)
+        type_manager.storage_set_label(self.clone().into_owned(), label)
     }
 
     pub fn get_supertype(
@@ -98,7 +98,7 @@ impl<'a> RelationType<'a> {
     }
 
     fn set_supertype(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, supertype: RelationType<'static>) {
-        type_manager.set_storage_supertype(self.clone().into_owned(), supertype)
+        type_manager.storage_set_supertype(self.clone().into_owned(), supertype)
     }
 
     pub fn get_supertypes<'m>(
@@ -120,7 +120,7 @@ impl<'a> RelationType<'a> {
     pub(crate) fn set_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: RelationTypeAnnotation) {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
-                type_manager.set_storage_annotation_abstract(self.clone().into_owned())
+                type_manager.storage_set_annotation_abstract(self.clone().into_owned())
             }
         }
     }
@@ -128,7 +128,7 @@ impl<'a> RelationType<'a> {
     fn delete_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: RelationTypeAnnotation) {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
-                type_manager.delete_storage_annotation_abstract(self.clone().into_owned())
+                type_manager.storage_delete_annotation_abstract(self.clone().into_owned())
             }
         }
     }
@@ -152,7 +152,7 @@ impl<'a> RelationType<'a> {
     }
 
     fn delete_relates(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, role_type: RoleType<'static>) {
-        type_manager.delete_storage_relates(self.clone().into_owned(), role_type)
+        type_manager.storage_delete_relates(self.clone().into_owned(), role_type)
     }
 
     fn get_relates<'m>(
@@ -185,12 +185,12 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager<'_, impl WritableSnapshot>,
         attribute_type: AttributeType<'static>,
     ) {
-        type_manager.set_storage_owns(self.clone().into_owned(), attribute_type.clone());
+        type_manager.storage_set_owns(self.clone().into_owned(), attribute_type.clone());
     }
 
     fn delete_owns(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, attribute_type: AttributeType<'static>) {
         // TODO: error if not owned?
-        type_manager.delete_storage_owns(self.clone().into_owned(), attribute_type)
+        type_manager.storage_delete_owns(self.clone().into_owned(), attribute_type)
     }
 
     fn get_owns<'m>(
@@ -213,12 +213,12 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
 impl<'a> PlayerAPI<'a> for RelationType<'a> {
     fn set_plays(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, role_type: RoleType<'static>) {
         // TODO: decide behaviour (ok or error) if already playing
-        type_manager.set_storage_plays(self.clone().into_owned(), role_type.clone());
+        type_manager.storage_set_plays(self.clone().into_owned(), role_type.clone());
     }
 
     fn delete_plays(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, role_type: RoleType<'static>) {
         // TODO: error if not playing?
-        type_manager.delete_storage_plays(self.clone().into_owned(), role_type)
+        type_manager.storage_delete_plays(self.clone().into_owned(), role_type)
     }
 
     fn get_plays<'m>(
@@ -248,7 +248,7 @@ impl From<Annotation> for RelationTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Abstract(annotation) => RelationTypeAnnotation::Abstract(annotation),
-            Annotation::Duplicate(_) => unreachable!("Duplicate annotation not available for Relation type."),
+            Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Relation type."),
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Relation type."),
         }
     }

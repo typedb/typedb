@@ -55,7 +55,7 @@ use storage::{snapshot::ReadSnapshot, MVCCStorage, ReadSnapshotOpenError};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::type_::{
-    annotation::{Annotation, AnnotationAbstract, AnnotationDuplicate, AnnotationIndependent},
+    annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent},
     attribute_type::{AttributeType, AttributeTypeAnnotation},
     entity_type::{EntityType, EntityTypeAnnotation},
     object_type::ObjectType,
@@ -544,7 +544,7 @@ impl TypeCache {
                     // WARNING: do _not_ remove the explicit enumeration, as this will help us catch when future annotations are added
                     match property.infix() {
                         Infix::PropertyAnnotationAbstract => Some(Annotation::Abstract(AnnotationAbstract::new())),
-                        Infix::PropertyAnnotationDuplicate => Some(Annotation::Duplicate(AnnotationDuplicate::new())),
+                        Infix::PropertyAnnotationDistinct => Some(Annotation::Distinct(AnnotationDistinct::new())),
                         Infix::PropertyAnnotationIndependent => Some(Annotation::Independent(AnnotationIndependent::new())),
                         | Infix::PropertyLabel | Infix::PropertyValueType => None,
                     }

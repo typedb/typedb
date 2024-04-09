@@ -31,7 +31,7 @@ use encoding::{
         index::LabelToTypeVertexIndex,
         Kind,
         property::{
-            build_property_type_annotation_abstract, build_property_type_annotation_duplicate,
+            build_property_type_annotation_abstract, build_property_type_annotation_distinct,
             build_property_type_annotation_independent, build_property_type_label, build_property_type_value_type,
         },
         vertex::{
@@ -54,7 +54,7 @@ use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot,
 use crate::{
     error::{ConceptReadError},
     type_::{
-        annotation::{AnnotationAbstract, AnnotationDuplicate},
+        annotation::{AnnotationAbstract, AnnotationDistinct},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::{EntityType, EntityTypeAnnotation},
         object_type::ObjectType,
@@ -450,13 +450,13 @@ impl<'txn, Snapshot: ReadableSnapshot> TypeManager<'txn, Snapshot> {
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
-    fn get_storage_vertex_annotation_duplicate(
+    fn get_storage_vertex_annotation_distinct(
         &self,
         vertex: TypeVertex<'static>,
-    ) -> Result<Option<AnnotationDuplicate>, ConceptReadError> {
+    ) -> Result<Option<AnnotationDistinct>, ConceptReadError> {
         self.snapshot
-            .get_mapped(build_property_type_annotation_duplicate(vertex).into_storage_key().as_reference(), |_bytes| {
-                AnnotationDuplicate::new()
+            .get_mapped(build_property_type_annotation_distinct(vertex).into_storage_key().as_reference(), |_bytes| {
+                AnnotationDistinct::new()
             })
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
@@ -477,9 +477,9 @@ impl<'txn, 'storage, Snapshot: WritableSnapshot> TypeManager<'txn, Snapshot> {
         // TODO: validate type doesn't exist already
         let type_vertex = self.vertex_generator.create_entity_type(self.snapshot.as_ref());
         let entity = EntityType::new(type_vertex);
-        self.set_storage_label(entity.clone(), label);
+        self.storage_set_label(entity.clone(), label);
         if !is_root {
-            self.set_storage_supertype(
+            self.storage_set_supertype(
                 entity.clone(),
                 self.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap(),
             );
@@ -491,9 +491,9 @@ impl<'txn, 'storage, Snapshot: WritableSnapshot> TypeManager<'txn, Snapshot> {
         // TODO: validate type doesn't exist already
         let type_vertex = self.vertex_generator.create_relation_type(self.snapshot.as_ref());
         let relation = RelationType::new(type_vertex);
-        self.set_storage_label(relation.clone(), label);
+        self.storage_set_label(relation.clone(), label);
         if !is_root {
-            self.set_storage_supertype(
+            self.storage_set_supertype(
                 relation.clone(),
                 self.get_relation_type(&Kind::Relation.root_label()).unwrap().unwrap(),
             );
@@ -510,10 +510,10 @@ impl<'txn, 'storage, Snapshot: WritableSnapshot> TypeManager<'txn, Snapshot> {
         // TODO: validate type doesn't exist already
         let type_vertex = self.vertex_generator.create_role_type(self.snapshot.as_ref());
         let role = RoleType::new(type_vertex);
-        self.set_storage_label(role.clone(), label);
-        self.set_storage_relates(relation_type, role.clone());
+        self.storage_set_label(role.clone(), label);
+        self.storage_set_relates(relation_type, role.clone());
         if !is_root {
-            self.set_storage_supertype(
+            self.storage_set_supertype(
                 role.clone(),
                 self.get_role_type(&Kind::Role.root_label()).unwrap().unwrap(),
             );
@@ -525,9 +525,9 @@ impl<'txn, 'storage, Snapshot: WritableSnapshot> TypeManager<'txn, Snapshot> {
         // TODO: validate type doesn't exist already
         let type_vertex = self.vertex_generator.create_attribute_type(self.snapshot.as_ref());
         let attribute_type = AttributeType::new(type_vertex);
-        self.set_storage_label(attribute_type.clone(), label);
+        self.storage_set_label(attribute_type.clone(), label);
         if !is_root {
-            self.set_storage_supertype(
+            self.storage_set_supertype(
                 attribute_type.clone(),
                 self.get_attribute_type(&Kind::Attribute.root_label()).unwrap().unwrap(),
             );
@@ -537,8 +537,8 @@ impl<'txn, 'storage, Snapshot: WritableSnapshot> TypeManager<'txn, Snapshot> {
 
     // --- storage operations ---
 
-    pub(crate) fn set_storage_label(&self, owner: impl TypeAPI<'static>, label: &Label<'_>) {
-        self.may_delete_storage_label(owner.clone());
+    pub(crate) fn storage_set_label(&self, owner: impl TypeAPI<'static>, label: &Label<'_>) {
+        self.storage_may_delete_label(owner.clone());
 
         let vertex_to_label_key = build_property_type_label(owner.clone().into_vertex());
         let label_value = ByteArray::from(label.scoped_name().bytes());
@@ -549,7 +549,7 @@ impl<'txn, 'storage, Snapshot: WritableSnapshot> TypeManager<'txn, Snapshot> {
         self.snapshot.as_ref().put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
     }
 
-    fn may_delete_storage_label(&self, owner: impl TypeAPI<'static>) {
+    fn storage_may_delete_label(&self, owner: impl TypeAPI<'static>) {
         let existing_label = self.get_storage_label(owner.clone()).unwrap();
         if let Some(label) = existing_label {
             let vertex_to_label_key = build_property_type_label(owner.into_vertex());
@@ -559,15 +559,15 @@ impl<'txn, 'storage, Snapshot: WritableSnapshot> TypeManager<'txn, Snapshot> {
         }
     }
 
-    pub(crate) fn set_storage_supertype<K: TypeAPI<'static>>(&self, subtype: K, supertype: K) {
-        self.may_delete_storage_supertype(subtype.clone());
+    pub(crate) fn storage_set_supertype<K: TypeAPI<'static>>(&self, subtype: K, supertype: K) {
+        self.storage_may_delete_supertype(subtype.clone());
         let sub = build_edge_sub(subtype.clone().into_vertex(), supertype.clone().into_vertex());
         self.snapshot.as_ref().put(sub.into_storage_key().into_owned_array());
         let sub_reverse = build_edge_sub_reverse(supertype.into_vertex(), subtype.into_vertex());
         self.snapshot.as_ref().put(sub_reverse.into_storage_key().into_owned_array());
     }
 
-    fn may_delete_storage_supertype(&self, subtype: impl TypeAPI<'static>) {
+    fn storage_may_delete_supertype(&self, subtype: impl TypeAPI<'static>) {
         let supertype_vertex = self.get_storage_supertype_vertex(subtype.clone());
         if let Some(supertype) = supertype_vertex {
             let sub = build_edge_sub(subtype.clone().into_vertex(), supertype.clone());
@@ -577,76 +577,76 @@ impl<'txn, 'storage, Snapshot: WritableSnapshot> TypeManager<'txn, Snapshot> {
         }
     }
 
-    pub(crate) fn set_storage_owns(&self, owner: impl ObjectTypeAPI<'static>, attribute: AttributeType<'static>) {
+    pub(crate) fn storage_set_owns(&self, owner: impl ObjectTypeAPI<'static>, attribute: AttributeType<'static>) {
         let owns = build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex());
         self.snapshot.as_ref().put(owns.into_storage_key().into_owned_array());
         let owns_reverse = build_edge_owns_reverse(attribute.into_vertex(), owner.into_vertex());
         self.snapshot.as_ref().put(owns_reverse.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn delete_storage_owns(&self, owner: impl ObjectTypeAPI<'static>, attribute: AttributeType<'static>) {
+    pub(crate) fn storage_delete_owns(&self, owner: impl ObjectTypeAPI<'static>, attribute: AttributeType<'static>) {
         let owns = build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex());
         self.snapshot.as_ref().delete(owns.into_storage_key().into_owned_array());
         let owns_reverse = build_edge_owns_reverse(attribute.into_vertex(), owner.into_vertex());
         self.snapshot.as_ref().delete(owns_reverse.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn set_storage_plays(&self, player: impl ObjectTypeAPI<'static>, role: RoleType<'static>) {
+    pub(crate) fn storage_set_plays(&self, player: impl ObjectTypeAPI<'static>, role: RoleType<'static>) {
         let plays = build_edge_plays(player.clone().into_vertex(), role.clone().into_vertex());
         self.snapshot.as_ref().put(plays.into_storage_key().into_owned_array());
         let plays_reverse = build_edge_plays_reverse(role.into_vertex(), player.into_vertex());
         self.snapshot.as_ref().put(plays_reverse.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn delete_storage_plays(&self, player: impl ObjectTypeAPI<'static>, role: RoleType<'static>) {
+    pub(crate) fn storage_delete_plays(&self, player: impl ObjectTypeAPI<'static>, role: RoleType<'static>) {
         let plays = build_edge_plays(player.clone().into_vertex(), role.clone().into_vertex());
         self.snapshot.as_ref().delete(plays.into_storage_key().into_owned_array());
         let plays_reverse = build_edge_plays_reverse(role.into_vertex(), player.into_vertex());
         self.snapshot.as_ref().delete(plays_reverse.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn set_storage_relates(&self, relation: RelationType<'static>, role: RoleType<'static>) {
+    pub(crate) fn storage_set_relates(&self, relation: RelationType<'static>, role: RoleType<'static>) {
         let relates = build_edge_relates(relation.clone().into_vertex(), role.clone().into_vertex());
         self.snapshot.as_ref().put(relates.into_storage_key().into_owned_array());
         let relates_reverse = build_edge_relates_reverse(role.into_vertex(), relation.into_vertex());
         self.snapshot.as_ref().put(relates_reverse.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn delete_storage_relates(&self, relation: RelationType<'static>, role: RoleType<'static>) {
+    pub(crate) fn storage_delete_relates(&self, relation: RelationType<'static>, role: RoleType<'static>) {
         let relates = build_edge_relates(relation.clone().into_vertex(), role.clone().into_vertex());
         self.snapshot.as_ref().delete(relates.into_storage_key().into_owned_array());
         let relates_reverse = build_edge_relates_reverse(role.into_vertex(), relation.into_vertex());
         self.snapshot.as_ref().delete(relates_reverse.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn set_storage_value_type(&self, attribute: AttributeType<'static>, value_type: ValueType) {
+    pub(crate) fn storage_set_value_type(&self, attribute: AttributeType<'static>, value_type: ValueType) {
         let property_key = build_property_type_value_type(attribute.into_vertex())
             .into_storage_key().into_owned_array();
         let property_value = ByteArray::copy(&value_type.value_type_id().bytes());
         self.snapshot.as_ref().put_val(property_key, property_value);
     }
 
-    pub(crate) fn set_storage_annotation_abstract(&self, type_: impl TypeAPI<'static>) {
+    pub(crate) fn storage_set_annotation_abstract(&self, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_abstract(type_.into_vertex());
         self.snapshot.as_ref().put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn delete_storage_annotation_abstract(&self, type_: impl TypeAPI<'static>) {
+    pub(crate) fn storage_delete_annotation_abstract(&self, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_abstract(type_.into_vertex());
         self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn set_storage_annotation_duplicate(&self, type_: impl TypeAPI<'static>) {
-        let annotation_property = build_property_type_annotation_duplicate(type_.into_vertex());
+    pub(crate) fn storage_set_annotation_distinct(&self, type_: impl TypeAPI<'static>) {
+        let annotation_property = build_property_type_annotation_distinct(type_.into_vertex());
         self.snapshot.as_ref().put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn delete_storage_annotation_duplicate(&self, type_: impl TypeAPI<'static>) {
-        let annotation_property = build_property_type_annotation_duplicate(type_.into_vertex());
+    pub(crate) fn storage_delete_annotation_distinct(&self, type_: impl TypeAPI<'static>) {
+        let annotation_property = build_property_type_annotation_distinct(type_.into_vertex());
         self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn set_storage_annotation_independent(&self, type_: impl TypeAPI<'static>) {
+    pub(crate) fn storage_set_annotation_independent(&self, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_independent(type_.into_vertex());
         self.snapshot.as_ref().put(annotation_property.into_storage_key().into_owned_array());
     }

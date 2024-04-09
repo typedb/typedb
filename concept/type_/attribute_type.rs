@@ -74,7 +74,7 @@ impl<'a> AttributeType<'a> {
     }
 
     pub fn set_value_type(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, value_type: ValueType) {
-        type_manager.set_storage_value_type(self.clone().into_owned(), value_type)
+        type_manager.storage_set_value_type(self.clone().into_owned(), value_type)
     }
 
     pub fn get_value_type(
@@ -93,7 +93,7 @@ impl<'a> AttributeType<'a> {
 
     fn set_label(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, label: &Label<'_>) {
         // TODO: setLabel should fail is setting label on Root type
-        type_manager.set_storage_label(self.clone().into_owned(), label)
+        type_manager.storage_set_label(self.clone().into_owned(), label)
     }
 
     fn get_supertype(
@@ -104,7 +104,7 @@ impl<'a> AttributeType<'a> {
     }
 
     fn set_supertype(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, supertype: AttributeType<'static>) {
-        type_manager.set_storage_supertype(self.clone().into_owned(), supertype)
+        type_manager.storage_set_supertype(self.clone().into_owned(), supertype)
     }
 
     fn get_supertypes<'m>(
@@ -126,10 +126,10 @@ impl<'a> AttributeType<'a> {
     pub(crate) fn set_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: AttributeTypeAnnotation) {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.set_storage_annotation_abstract(self.clone().into_owned())
+                type_manager.storage_set_annotation_abstract(self.clone().into_owned())
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.set_storage_annotation_independent(self.clone().into_owned())
+                type_manager.storage_set_annotation_independent(self.clone().into_owned())
             }
         }
     }
@@ -137,7 +137,7 @@ impl<'a> AttributeType<'a> {
     fn delete_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: AttributeTypeAnnotation) {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.delete_storage_annotation_abstract(self.clone().into_owned())
+                type_manager.storage_delete_annotation_abstract(self.clone().into_owned())
             }
             AttributeTypeAnnotation::Independent(_) => {
                 type_manager.delete_storage_annotation_independent(self.clone().into_owned())
@@ -173,7 +173,7 @@ impl From<Annotation> for AttributeTypeAnnotation {
         match annotation {
             Annotation::Abstract(annotation) => AttributeTypeAnnotation::Abstract(annotation),
             Annotation::Independent(annotation) => AttributeTypeAnnotation::Independent(annotation),
-            Annotation::Duplicate(_) => unreachable!("Duplicate annotation not available for Attribute type."),
+            Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Attribute type."),
         }
     }
 }

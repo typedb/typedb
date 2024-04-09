@@ -287,12 +287,12 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
         relation: Relation<'_>,
         player: Object<'_>,
         role_type: RoleType<'_>,
-        duplicates_allowed: bool,
+        distinct_players: bool,
         player_count: u64,
     ) {
         let _lock = self.relation_lock.lock().unwrap();
         let mut players = relation.get_players(self);
-        if !duplicates_allowed {
+        if distinct_players {
             let encoded_count = encode_value_u64(1);
             let mut role_player = players.next().transpose().unwrap();
             while let Some((rp, count)) = role_player.as_ref() {
