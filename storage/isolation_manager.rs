@@ -120,9 +120,9 @@ impl IsolationManager {
         // Pre-collect all the ARCs so we can validate against them.
         let (windows, first_window_relative_index): (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, i64) =
             self.timeline.collect_concurrent_windows(commit_record.open_sequence_number, commit_relative_index);
-        let first_windowed_seq = *windows.get(0).unwrap().starting_sequence_number().unwrap();
-        if commit_record.open_sequence_number().next() <= first_windowed_seq {
-            self.validate_concurrent_from_disk(commit_record, first_windowed_seq, durability_service)?;
+        let first_sequence_number_in_windows = *windows.get(0).unwrap().starting_sequence_number().unwrap();
+        if commit_record.open_sequence_number().next() <= first_sequence_number_in_windows {
+            self.validate_concurrent_from_disk(commit_record, first_sequence_number_in_windows, durability_service)?;
         }
 
         self.validate_concurrent_from_windows(
@@ -142,10 +142,10 @@ impl IsolationManager {
     where
         D: DurabilityService,
     {
-        for commit_status in
+        for commit_status_result in
             Self::iterate_commit_status_from_disk(durability_service, commit_record.open_sequence_number.next(), stop_sequence_number).unwrap()
         {
-            if let Ok(commit_status) = commit_status {
+            if let Ok(commit_status) = commit_status_result {
                 let commit_dependency = match commit_status {
                     CommitStatus::Applied(_, predecessor_record) => {
                         commit_record.compute_dependency(&predecessor_record)
@@ -176,8 +176,8 @@ impl IsolationManager {
                 None => false
             }
         }).unwrap();
-        let start_record = first_window_relative_index + (window_index * TIMELINE_WINDOW_SIZE + slot_index) as i64;
-        for _at in start_record..commit_relative_index {
+        let start_validation_index = first_window_relative_index + (window_index * TIMELINE_WINDOW_SIZE + slot_index) as i64;
+        for _at in start_validation_index..commit_relative_index {
             debug_assert!(window_index < windows.len());
             resolve_concurrent(commit_record, slot_index, &windows[window_index])?;
             slot_index += 1;
@@ -201,11 +201,11 @@ impl IsolationManager {
         where
             D: DurabilityService,
     {
-        let mut statuses: HashMap<SequenceNumber, bool> = HashMap::new();
+        let mut is_committed: HashMap<SequenceNumber, bool> = HashMap::new();
         for record in durability_service.iter_unsequenced_type_from::<StatusRecord>(start_sequence_number.clone()).unwrap() {
             if let Ok(predecessor_record) = record {
                 // We can't stop early because status records may be out-of-order
-                statuses.insert(
+                is_committed.insert(
                     predecessor_record.commit_record_sequence_number(),
                     predecessor_record.was_committed(),
                 );
@@ -220,7 +220,7 @@ impl IsolationManager {
                     if commit_sequence_number >= stop_sequence_number {
                         None
                     } else {
-                        Some(Ok(match statuses.get(&commit_sequence_number) {
+                        Some(Ok(match is_committed.get(&commit_sequence_number) {
                             None => CommitStatus::Pending(commit_sequence_number, Cow::Owned(commit_record)),
                             Some(true) => CommitStatus::Applied(commit_sequence_number, Cow::Owned(commit_record)),
                             Some(false) => CommitStatus::Aborted(commit_sequence_number),
@@ -245,8 +245,8 @@ impl IsolationManager {
     where
         F: FnOnce(&CommitRecord) -> T,
     {
-        let (window, index) = self.timeline.try_get_window(relative_index).unwrap();
-        let record = match window.get_status(index) {
+        let (window, slot_index) = self.timeline.try_get_window(relative_index).unwrap();
+        let record = match window.get_status(slot_index) {
             CommitStatus::Validated(_, commit_record) | CommitStatus::Applied(_, commit_record) => commit_record,
             _ => panic!("apply_to_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
         };
@@ -375,11 +375,11 @@ impl Timeline {
         };
         if can_free_some {
             let (next_relative_index, windows) = &mut *self.next_relative_index_and_windows.write().unwrap_or_log();
-            let mut start_of_next_window = *next_relative_index - ((windows.len() - 1) * TIMELINE_WINDOW_SIZE) as i64;
-            while watermark >= start_of_next_window && windows.front().is_some() && windows.front().unwrap().get_readers() == 0
+            let mut end_of_first_remaining_window = *next_relative_index - ((windows.len() - 1) * TIMELINE_WINDOW_SIZE) as i64;
+            while watermark >= end_of_first_remaining_window && windows.front().is_some() && windows.front().unwrap().get_readers() == 0
             {
                 windows.pop_front();
-                start_of_next_window += TIMELINE_WINDOW_SIZE as i64;
+                end_of_first_remaining_window += TIMELINE_WINDOW_SIZE as i64;
             }
         }
     }
@@ -391,7 +391,7 @@ impl Timeline {
         }
 
         let (mut window, mut slot_index) = self.try_get_window(relative_index).unwrap();
-        let first_window_end: i64 = relative_index + (TIMELINE_WINDOW_SIZE - slot_index) as i64;
+        let end_of_window: i64 = relative_index + (TIMELINE_WINDOW_SIZE - slot_index) as i64;
         loop {
             let should_update: bool = match window.get_status(slot_index) {
                 CommitStatus::Empty | CommitStatus::Pending(_, _) | CommitStatus::Validated(_, _) => false,
@@ -415,7 +415,7 @@ impl Timeline {
                 break;
             }
         }
-        if watermark >= first_window_end {
+        if watermark >= end_of_window {
             self.may_free_windows();
         }
     }
@@ -465,30 +465,30 @@ impl Timeline {
         commit_relative_index: i64,
     ) -> (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, i64) {
 
-        let (next_window, windows) = &*self.next_relative_index_and_windows.read().unwrap_or_log();
+        let (next_relative_index, windows) = &*self.next_relative_index_and_windows.read().unwrap_or_log();
         let first_concurrent_window_index = self.find_window(windows, open_sequence_number.next())
             .map(|(window, window_index)| { window_index })
             .unwrap_or(0);
 
-        let relative_index_of_window_0 = *next_window - (windows.len() * TIMELINE_WINDOW_SIZE) as i64;
+        let relative_index_of_window_0 = *next_relative_index - (windows.len() * TIMELINE_WINDOW_SIZE) as i64;
         let last_concurrent_window_index = (commit_relative_index - relative_index_of_window_0) as usize / TIMELINE_WINDOW_SIZE;
         let mut concurrent_windows: Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> = Vec::new();
         (first_concurrent_window_index..(last_concurrent_window_index + 1)).for_each(|window_index| {
             concurrent_windows.push(windows.get(window_index).unwrap().clone());
         });
-        let start_index_of_first_concurrent =
+        let start_index_of_first_concurrent_window =
             relative_index_of_window_0 + (first_concurrent_window_index * TIMELINE_WINDOW_SIZE) as i64;
-        (concurrent_windows, start_index_of_first_concurrent)
+        (concurrent_windows, start_index_of_first_concurrent_window)
     }
 
     fn try_get_window(&self, relative_index: i64) -> Option<(Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>, usize)> {
         let (next_relative_index, windows) = &*self.next_relative_index_and_windows.read().unwrap_or_log();
-        let first_relative_index: i64 = next_relative_index - (windows.len() * TIMELINE_WINDOW_SIZE) as i64;
+        let relative_index_of_window_0: i64 = next_relative_index - (windows.len() * TIMELINE_WINDOW_SIZE) as i64;
 
-        if relative_index >= first_relative_index && relative_index < *next_relative_index {
-            let window_index = (relative_index - first_relative_index) as usize / TIMELINE_WINDOW_SIZE;
+        if relative_index >= relative_index_of_window_0 && relative_index < *next_relative_index {
+            let window_index = (relative_index - relative_index_of_window_0) as usize / TIMELINE_WINDOW_SIZE;
             let window = windows.get(window_index)?;
-            let slot_index: usize = (relative_index - first_relative_index) as usize % TIMELINE_WINDOW_SIZE;
+            let slot_index: usize = (relative_index - relative_index_of_window_0) as usize % TIMELINE_WINDOW_SIZE;
             Some((window.clone(), slot_index))
         } else {
             None
@@ -593,7 +593,6 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
                     // could also do a little sleep in the spin lock, for example if the validating is still far away
                     std::hint::spin_loop();
                 }
-                // By returning true on validation, we ignore the possibility that the predecessor commit may be aborted due to a conflict on another partition.
                 CommitStatus::Validated(_, _) | CommitStatus::Applied(_, _) => return true,
                 CommitStatus::Aborted(_) => return false,
             }
