@@ -171,3 +171,33 @@ fn test_conflicting_update_fails() {
         assert!(result_write_at_0.is_err());
     }
 }
+
+#[test]
+fn test_open_snapshot_write_at() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let storage = setup_storage(&storage_path);
+
+    let key_1: &StorageKey<'_, 48> = &StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
+
+    let watermark_init = storage.read_watermark();
+
+    let snapshot_write_0 = storage.open_snapshot_write();
+    snapshot_write_0.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_0));
+    snapshot_write_0.commit().unwrap();
+
+    let watermark_0 = storage.read_watermark();
+
+    let snapshot_read_0 = storage.open_snapshot_read();
+    assert_eq!(snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
+    snapshot_read_0.close_resources();
+
+    let snapshot_write_1 = storage.open_snapshot_write_at(watermark_init).unwrap();
+    snapshot_write_1.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
+    let result_write_1 = snapshot_write_1.commit();
+    assert!(result_write_1.is_ok());
+
+    let snapshot_read_1 = storage.open_snapshot_read();
+    assert_eq!(snapshot_read_1.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_1);
+    snapshot_read_1.close_resources();
+}
