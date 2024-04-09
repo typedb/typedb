@@ -18,9 +18,12 @@ use std::{
         Arc, OnceLock, RwLock,
     },
 };
-use itertools::Itertools;
 
-use durability::{DurabilityRecord, DurabilityRecordType, DurabilityService, SequencedDurabilityRecord, SequenceNumber, UnsequencedDurabilityRecord};
+use durability::{
+    DurabilityRecord, DurabilityRecordType, DurabilityService, SequenceNumber, SequencedDurabilityRecord,
+    UnsequencedDurabilityRecord,
+};
+use itertools::Itertools;
 use logger::result::ResultExt;
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 use serde::{Deserialize, Serialize};
@@ -142,8 +145,12 @@ impl IsolationManager {
     where
         D: DurabilityService,
     {
-        for commit_status_result in
-            Self::iterate_commit_status_from_disk(durability_service, commit_record.open_sequence_number.next(), stop_sequence_number).unwrap()
+        for commit_status_result in Self::iterate_commit_status_from_disk(
+            durability_service,
+            commit_record.open_sequence_number.next(),
+            stop_sequence_number,
+        )
+        .unwrap()
         {
             if let Ok(commit_status) = commit_status_result {
                 let commit_dependency = match commit_status {
@@ -151,7 +158,9 @@ impl IsolationManager {
                         commit_record.compute_dependency(&predecessor_record)
                     }
                     CommitStatus::Aborted(_) => CommitDependency::Independent,
-                    CommitStatus::Pending(_, _) => {unreachable!("Evicted records cannot be pending")},
+                    CommitStatus::Pending(_, _) => {
+                        unreachable!("Evicted records cannot be pending")
+                    }
                     CommitStatus::Empty | CommitStatus::Validated(_, _) => unreachable!(),
                 };
                 handle_dependency(commit_dependency)?;
@@ -170,13 +179,14 @@ impl IsolationManager {
         first_window_relative_index: i64,
     ) -> Result<(), IsolationError> {
         let mut window_index = 0;
-        let mut slot_index = (0..TIMELINE_WINDOW_SIZE).find(|si| {
-            match windows[0].get_sequence_number(*si) {
+        let mut slot_index = (0..TIMELINE_WINDOW_SIZE)
+            .find(|si| match windows[0].get_sequence_number(*si) {
                 Some(seq) => seq > commit_record.open_sequence_number,
-                None => false
-            }
-        }).unwrap();
-        let start_validation_index = first_window_relative_index + (window_index * TIMELINE_WINDOW_SIZE + slot_index) as i64;
+                None => false,
+            })
+            .unwrap();
+        let start_validation_index =
+            first_window_relative_index + (window_index * TIMELINE_WINDOW_SIZE + slot_index) as i64;
         for _at in start_validation_index..commit_relative_index {
             debug_assert!(window_index < windows.len());
             resolve_concurrent(commit_record, slot_index, &windows[window_index])?;
@@ -198,24 +208,24 @@ impl IsolationManager {
         start_sequence_number: SequenceNumber,
         stop_sequence_number: SequenceNumber,
     ) -> durability::Result<impl Iterator<Item = durability::Result<CommitStatus<'a>>>>
-        where
-            D: DurabilityService,
+    where
+        D: DurabilityService,
     {
         let mut is_committed: HashMap<SequenceNumber, bool> = HashMap::new();
-        for record in durability_service.iter_unsequenced_type_from::<StatusRecord>(start_sequence_number.clone()).unwrap() {
+        for record in
+            durability_service.iter_unsequenced_type_from::<StatusRecord>(start_sequence_number.clone()).unwrap()
+        {
             if let Ok(predecessor_record) = record {
                 // We can't stop early because status records may be out-of-order
-                is_committed.insert(
-                    predecessor_record.commit_record_sequence_number(),
-                    predecessor_record.was_committed(),
-                );
+                is_committed
+                    .insert(predecessor_record.commit_record_sequence_number(), predecessor_record.was_committed());
             } else {
                 todo!()
             }
         }
 
-        Ok(durability_service.iter_sequenced_type_from::<CommitRecord>(start_sequence_number.clone())?.map_while(move |result: durability::Result<(SequenceNumber, CommitRecord)>| {
-            match result {
+        Ok(durability_service.iter_sequenced_type_from::<CommitRecord>(start_sequence_number.clone())?.map_while(
+            move |result: durability::Result<(SequenceNumber, CommitRecord)>| match result {
                 Ok((commit_sequence_number, commit_record)) => {
                     if commit_sequence_number >= stop_sequence_number {
                         None
@@ -228,8 +238,8 @@ impl IsolationManager {
                     }
                 }
                 Err(err) => Some(Err(err)),
-            }
-        }))
+            },
+        ))
     }
 
     pub(crate) fn watermark(&self) -> SequenceNumber {
@@ -252,7 +262,6 @@ impl IsolationManager {
         };
         function(&record)
     }
-
 }
 
 fn resolve_concurrent(
@@ -272,7 +281,9 @@ fn resolve_concurrent(
                 }
             }
         },
-        CommitStatus::Validated(_, predecessor_record) | CommitStatus::Applied(_, predecessor_record) => commit_record.compute_dependency(&predecessor_record),
+        CommitStatus::Validated(_, predecessor_record) | CommitStatus::Applied(_, predecessor_record) => {
+            commit_record.compute_dependency(&predecessor_record)
+        }
         CommitStatus::Aborted(_) => CommitDependency::Independent,
     };
     handle_dependency(commit_dependency)
@@ -346,7 +357,6 @@ impl Error for IsolationError {}
 ///     2) when validation has finished, record into the Slot for its commit sequence number whether
 ///         it is sucessfully 'validated' or must be 'aborted'.
 ///
-
 #[derive(Debug)]
 struct Timeline {
     // We can adjust the Window size to amortise the cost of the read-write locks to maintain the timeline
@@ -375,8 +385,11 @@ impl Timeline {
         };
         if can_free_some {
             let (next_relative_index, windows) = &mut *self.next_relative_index_and_windows.write().unwrap_or_log();
-            let mut end_of_first_remaining_window = *next_relative_index - ((windows.len() - 1) * TIMELINE_WINDOW_SIZE) as i64;
-            while watermark >= end_of_first_remaining_window && windows.front().is_some() && windows.front().unwrap().get_readers() == 0
+            let mut end_of_first_remaining_window =
+                *next_relative_index - ((windows.len() - 1) * TIMELINE_WINDOW_SIZE) as i64;
+            while watermark >= end_of_first_remaining_window
+                && windows.front().is_some()
+                && windows.front().unwrap().get_readers() == 0
             {
                 windows.pop_front();
                 end_of_first_remaining_window += TIMELINE_WINDOW_SIZE as i64;
@@ -386,27 +399,30 @@ impl Timeline {
 
     fn may_increment_watermark(&self, relative_index: i64) {
         let mut watermark = self.watermark.load(Ordering::SeqCst);
-        if relative_index != watermark + 1 {
+        if watermark != relative_index - 1 {
             return ();
         }
-
-        let (mut window, mut slot_index) = self.try_get_window(relative_index).unwrap();
-        let end_of_window: i64 = relative_index + (TIMELINE_WINDOW_SIZE - slot_index) as i64;
+        let (mut window, mut candidate_slot_index) = self.try_get_window(relative_index).unwrap();
+        let end_of_window: i64 = relative_index + (TIMELINE_WINDOW_SIZE - candidate_slot_index) as i64;
+        let mut candidate_watermark = relative_index;
         loop {
-            let should_update: bool = match window.get_status(slot_index) {
+            let should_update: bool = match window.get_status(candidate_slot_index) {
                 CommitStatus::Empty | CommitStatus::Pending(_, _) | CommitStatus::Validated(_, _) => false,
                 CommitStatus::Applied(_, _) => true,
                 CommitStatus::Aborted(_) => true,
             };
             if should_update
-                && self.watermark.compare_exchange(watermark, watermark + 1, Ordering::SeqCst, Ordering::SeqCst).is_ok()
+                && self
+                    .watermark
+                    .compare_exchange(candidate_watermark - 1, candidate_watermark, Ordering::SeqCst, Ordering::SeqCst)
+                    .is_ok()
             {
-                watermark += 1;
-                slot_index += 1;
-                if slot_index >= TIMELINE_WINDOW_SIZE {
-                    if let Some(res) = self.try_get_window(watermark + 1) {
-                        (window, slot_index) = res;
-                        assert_eq!(0, slot_index);
+                candidate_watermark += 1;
+                candidate_slot_index += 1;
+                if candidate_slot_index >= TIMELINE_WINDOW_SIZE {
+                    if let Some(res) = self.try_get_window(candidate_watermark) {
+                        (window, candidate_slot_index) = res;
+                        debug_assert_eq!(0, candidate_slot_index);
                     } else {
                         break;
                     }
@@ -426,7 +442,7 @@ impl Timeline {
 
     fn record_reader(&self, sequence_number: SequenceNumber) {
         let (_, windows) = &*self.next_relative_index_and_windows.read().unwrap_or_log();
-        if let Some((window,_)) = self.find_window(windows, sequence_number) {
+        if let Some((window, _)) = self.find_window(windows, sequence_number) {
             window.increment_readers();
         };
     }
@@ -448,15 +464,14 @@ impl Timeline {
         windows: &VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
         sequence_number: SequenceNumber,
     ) -> Option<(Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>, usize)> {
-        windows.iter()
-            .enumerate()
-            .rev()
-            .find_map(|(window_index, window)| {
-                let start_seq = window.starting_sequence_number();
-                if start_seq.is_some() && *start_seq.unwrap() <= sequence_number {
-                    Some((window.clone(), window_index))
-                } else { None }
-            })
+        windows.iter().enumerate().rev().find_map(|(window_index, window)| {
+            let start_seq = window.starting_sequence_number();
+            if start_seq.is_some() && *start_seq.unwrap() <= sequence_number {
+                Some((window.clone(), window_index))
+            } else {
+                None
+            }
+        })
     }
 
     fn collect_concurrent_windows(
@@ -464,14 +479,15 @@ impl Timeline {
         open_sequence_number: SequenceNumber,
         commit_relative_index: i64,
     ) -> (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, i64) {
-
         let (next_relative_index, windows) = &*self.next_relative_index_and_windows.read().unwrap_or_log();
-        let first_concurrent_window_index = self.find_window(windows, open_sequence_number.next())
-            .map(|(window, window_index)| { window_index })
+        let first_concurrent_window_index = self
+            .find_window(windows, open_sequence_number.next())
+            .map(|(window, window_index)| window_index)
             .unwrap_or(0);
 
         let relative_index_of_window_0 = *next_relative_index - (windows.len() * TIMELINE_WINDOW_SIZE) as i64;
-        let last_concurrent_window_index = (commit_relative_index - relative_index_of_window_0) as usize / TIMELINE_WINDOW_SIZE;
+        let last_concurrent_window_index =
+            (commit_relative_index - relative_index_of_window_0) as usize / TIMELINE_WINDOW_SIZE;
         let mut concurrent_windows: Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> = Vec::new();
         (first_concurrent_window_index..(last_concurrent_window_index + 1)).for_each(|window_index| {
             concurrent_windows.push(windows.get(window_index).unwrap().clone());
@@ -496,9 +512,7 @@ impl Timeline {
     }
 
     fn get_or_create_window(&self, relative_index: i64) -> (Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>, usize) {
-        let next_relative_index: i64 = {
-            self.next_relative_index_and_windows.read().unwrap_or_log().0
-        };
+        let next_relative_index: i64 = { self.next_relative_index_and_windows.read().unwrap_or_log().0 };
         if relative_index >= next_relative_index {
             self.create_windows_to(relative_index);
         }
@@ -579,10 +593,7 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         }
     }
 
-    fn await_pending_status_commits(
-        &self,
-        index: usize
-    ) -> bool {
+    fn await_pending_status_commits(&self, index: usize) -> bool {
         debug_assert!(!matches!(self.get_status(index), CommitStatus::Empty));
         loop {
             match self.get_status(index) {
@@ -767,7 +778,7 @@ impl DurabilityRecord for CommitRecord {
     }
 }
 
-impl SequencedDurabilityRecord for CommitRecord { }
+impl SequencedDurabilityRecord for CommitRecord {}
 
 impl StatusRecord {
     pub(crate) fn new(sequence_number: SequenceNumber, committed: bool) -> StatusRecord {
@@ -816,7 +827,7 @@ impl DurabilityRecord for StatusRecord {
     }
 }
 
-impl UnsequencedDurabilityRecord for StatusRecord { }
+impl UnsequencedDurabilityRecord for StatusRecord {}
 
 #[cfg(test)]
 mod tests {
