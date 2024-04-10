@@ -121,7 +121,7 @@ pub trait UnsequencedDurabilityRecord: DurabilityRecord {}
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct SequenceNumber {
-    number: U80,
+    number: u64,
 }
 
 impl fmt::Display for SequenceNumber {
@@ -131,47 +131,47 @@ impl fmt::Display for SequenceNumber {
 }
 
 impl SequenceNumber {
-    pub const MIN: Self = Self { number: U80::MIN };
-    pub const MAX: Self = Self { number: U80::MAX };
+    pub const MIN: Self = Self { number: u64::MIN };
+    pub const MAX: Self = Self { number: u64::MAX };
 
-    pub fn new(number: U80) -> Self {
+    pub fn new(number: u64) -> Self {
         Self { number }
     }
 
     pub fn next(&self) -> Self {
-        Self { number: self.number + U80::new(1) }
+        Self { number: self.number + u64::new(1) }
     }
 
     pub fn previous(&self) -> Self {
-        Self { number: self.number - U80::new(1) }
+        Self { number: self.number - u64::new(1) }
     }
 
-    pub fn number(&self) -> U80 {
+    pub fn number(&self) -> u64 {
         self.number
     }
 
     pub fn serialise_be_into(&self, bytes: &mut [u8]) {
-        assert_eq!(bytes.len(), U80::BYTES);
+        assert_eq!(bytes.len(), u64::BYTES);
         let number_bytes = self.number.to_be_bytes();
         bytes.copy_from_slice(&number_bytes)
     }
 
-    pub fn to_be_bytes(&self) -> [u8; U80::BYTES] {
+    pub fn to_be_bytes(&self) -> [u8; u64::BYTES] {
         self.number.to_be_bytes()
     }
 
     pub fn invert(&self) -> Self {
-        Self { number: U80::MAX - self.number }
+        Self { number: u64::MAX - self.number }
     }
 
     pub const fn serialised_len() -> usize {
-        U80::BYTES
+        u64::BYTES
     }
 }
 
-impl From<u128> for SequenceNumber {
-    fn from(value: u128) -> Self {
-        Self::new(U80::new(value))
+impl From<u64> for SequenceNumber {
+    fn from(value: u64) -> Self {
+        Self::new(u64::new(value))
     }
 }
 

@@ -207,11 +207,11 @@ impl<D> MVCCStorage<D> {
         let records =
             IsolationManager::iterate_commit_status_from_disk(&self.durability_service, SequenceNumber::MIN, SequenceNumber::MAX)
             .map_err(|error| DurabilityServiceRead { source: error })?;
-        for record in records {
+        for (commit_sequence_number, record) in records {
             match record {
                 Ok(commit_status) => {
                     match commit_status {
-                        CommitStatus::Applied(commit_sequence_number, commit_record) => {
+                        CommitStatus::Applied(commit_record) => {
                             self.isolation_manager.load_applied(
                                 Self::todo_relative_index_from_sequence_number(commit_sequence_number),
                                 commit_sequence_number,
