@@ -13,6 +13,8 @@ use std::{
     io::{self, Read, Write},
     path::Path,
 };
+use std::cmp::Ordering;
+use std::ops::{Add, AddAssign, Sub};
 
 use primitive::u80::U80;
 use serde::{Deserialize, Serialize};
@@ -126,7 +128,7 @@ pub struct SequenceNumber {
 
 impl fmt::Display for SequenceNumber {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "SeqNr[{}]", self.number.number())
+        write!(f, "SeqNr[{}]", self.number)
     }
 }
 
@@ -139,11 +141,11 @@ impl SequenceNumber {
     }
 
     pub fn next(&self) -> Self {
-        Self { number: self.number + u64::new(1) }
+        Self { number: self.number + 1 }
     }
 
     pub fn previous(&self) -> Self {
-        Self { number: self.number - u64::new(1) }
+        Self { number: self.number - 1 }
     }
 
     pub fn number(&self) -> u64 {
@@ -151,12 +153,19 @@ impl SequenceNumber {
     }
 
     pub fn serialise_be_into(&self, bytes: &mut [u8]) {
-        assert_eq!(bytes.len(), u64::BYTES);
+        assert_eq!(bytes.len(), std::mem::size_of::<u64>());
         let number_bytes = self.number.to_be_bytes();
         bytes.copy_from_slice(&number_bytes)
     }
 
-    pub fn to_be_bytes(&self) -> [u8; u64::BYTES] {
+
+    pub fn from_be_bytes(bytes: &[u8]) -> Self {
+        let mut u64_bytes = [0; 8];
+        u64_bytes.copy_from_slice(bytes);
+        Self::from(u64::from_be_bytes(u64_bytes))
+    }
+
+    pub fn to_be_bytes(&self) -> [u8; std::mem::size_of::<u64>()] {
         self.number.to_be_bytes()
     }
 
@@ -165,13 +174,43 @@ impl SequenceNumber {
     }
 
     pub const fn serialised_len() -> usize {
-        u64::BYTES
+        std::mem::size_of::<u64>()
     }
 }
 
 impl From<u64> for SequenceNumber {
     fn from(value: u64) -> Self {
-        Self::new(u64::new(value))
+        Self::new(value)
+    }
+}
+
+impl Add<usize> for SequenceNumber {
+    type Output = SequenceNumber;
+
+    fn add(self, rhs: usize) -> Self::Output {
+        SequenceNumber::from(self.number + rhs as u64)
+    }
+}
+
+impl Sub<usize> for SequenceNumber {
+    type Output = SequenceNumber;
+
+    fn sub(self, rhs: usize) -> Self::Output {
+        SequenceNumber::from(self.number - rhs as u64)
+    }
+}
+
+impl AddAssign<usize> for SequenceNumber {
+    fn add_assign(&mut self, rhs: usize) {
+        self.number = self.number + rhs as u64
+    }
+}
+
+impl Sub<SequenceNumber> for SequenceNumber {
+    type Output = u64;
+
+    fn sub(self, rhs: SequenceNumber) -> Self::Output {
+        self.number - rhs.number
     }
 }
 

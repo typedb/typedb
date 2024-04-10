@@ -183,11 +183,11 @@ impl<D> MVCCStorage<D> {
         let (keyspaces, keyspaces_index) = recover_keyspaces::<KS>(&storage_dir)?;
 
         let isolation_manager = if durability_service.is_empty() {
-            let im = IsolationManager::new(Self::todo_relative_index_from_sequence_number(SequenceNumber::MIN));
-            im.load_aborted(0, SequenceNumber::MIN); // Initialise the watermark to zero
+            let im = IsolationManager::new(SequenceNumber::MIN);
+            im.load_aborted(SequenceNumber::MIN); // Initialise the watermark to zero
             im
         } else {
-            IsolationManager::new(Self::todo_relative_index_from_sequence_number(durability_service.current()))
+            IsolationManager::new(durability_service.current())
         };
 
         let name = name.to_owned();
@@ -207,27 +207,22 @@ impl<D> MVCCStorage<D> {
         let records =
             IsolationManager::iterate_commit_status_from_disk(&self.durability_service, SequenceNumber::MIN, SequenceNumber::MAX)
             .map_err(|error| DurabilityServiceRead { source: error })?;
-        for (commit_sequence_number, record) in records {
+        for record in records {
             match record {
-                Ok(commit_status) => {
+                Ok((commit_sequence_number, commit_status)) => {
                     match commit_status {
                         CommitStatus::Applied(commit_record) => {
                             self.isolation_manager.load_applied(
-                                Self::todo_relative_index_from_sequence_number(commit_sequence_number),
                                 commit_sequence_number,
                                 commit_record.into_owned(),
                             );
                         }
-                        CommitStatus::Aborted(commit_sequence_number) => {
-                            self.isolation_manager.load_aborted(
-                                Self::todo_relative_index_from_sequence_number(commit_sequence_number),
-                                commit_sequence_number,
-                            );
+                        CommitStatus::Aborted => {
+                            self.isolation_manager.load_aborted(commit_sequence_number);
                         }
-                        CommitStatus::Pending(commit_sequence_number, commit_record) => {
+                        CommitStatus::Pending(commit_record) => {
                             self.isolation_manager.opened_for_read(commit_record.open_sequence_number()); // try_commit currently decrements reader count.
                             let try_commit_result = self.try_write_commit_record(
-                                Self::todo_relative_index_from_sequence_number(commit_sequence_number),
                                 commit_sequence_number,
                                 commit_record.into_owned(),
                             );
@@ -237,7 +232,7 @@ impl<D> MVCCStorage<D> {
                                 Err(_) =>  {try_commit_result.unwrap();}  // TODO: Other errors are not
                             }
                         }
-                        CommitStatus::Empty | CommitStatus::Validated(_, _) => unreachable!(),
+                        CommitStatus::Empty | CommitStatus::Validated(_) => unreachable!(),
                     }
                 },
                 Err(error) => return Err(DurabilityServiceRead { source: error }),
@@ -330,19 +325,13 @@ impl<D> MVCCStorage<D> {
             })?;
 
         self.try_write_commit_record(
-            Self::todo_relative_index_from_sequence_number(commit_sequence_number),
             commit_sequence_number,
             commit_record,
         )
     }
 
-    fn todo_relative_index_from_sequence_number(sequence_number: SequenceNumber) -> i64 {
-        sequence_number.number().number() as i64
-    }
-
     fn try_write_commit_record(
         &self,
-        relative_index: i64,
         commit_sequence_number: SequenceNumber,
         commit_record: CommitRecord,
     ) -> Result<(), MVCCStorageError>
@@ -351,7 +340,6 @@ impl<D> MVCCStorage<D> {
     {
         // 2. validate commit isolation
         let validation_result = self.isolation_manager.try_commit(
-            relative_index,
             commit_sequence_number,
             commit_record,
             &self.durability_service,
@@ -365,7 +353,7 @@ impl<D> MVCCStorage<D> {
         }
 
         //  3. write to kv-storage
-        let write_batches = self.isolation_manager.apply_to_commit_record(relative_index, |record| {
+        let write_batches = self.isolation_manager.apply_to_commit_record(commit_sequence_number, |record| {
             self.to_write_batches(commit_sequence_number, record.operations())
         });
 
@@ -384,7 +372,7 @@ impl<D> MVCCStorage<D> {
             }
         }
         // 4. Inform the isolation manager and increment the watermark.
-        self.isolation_manager.applied(relative_index);
+        self.isolation_manager.applied(commit_sequence_number);
 
         // 5. Persist the commit status
         match self.durability_service.unsequenced_write(&StatusRecord::new(commit_sequence_number, true)) {
@@ -741,7 +729,7 @@ impl<'bytes> MVCCKey<'bytes> {
         let sequence_number_end = sequence_number_start + SequenceNumber::serialised_len();
         let inverse_sequence_number_bytes = &self.bytes()[sequence_number_start..sequence_number_end];
         debug_assert_eq!(SequenceNumber::serialised_len(), inverse_sequence_number_bytes.len());
-        SequenceNumber::new(U80::from_be_bytes(inverse_sequence_number_bytes)).invert()
+        SequenceNumber::from_be_bytes(inverse_sequence_number_bytes).invert()
     }
 
     fn operation(&self) -> StorageOperation {
