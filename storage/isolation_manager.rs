@@ -77,7 +77,7 @@ impl IsolationManager {
 
     pub(crate) fn load_aborted(&self, sequence_number: SequenceNumber) {
         let (window, slot_index) = self.timeline.get_or_create_window(sequence_number);
-        window.insert_pending(slot_index, CommitRecord::new(KeyspaceBuffers::new(), sequence_number)); // TODO: Now I could actually get away with not setting this.
+        window.insert_pending(slot_index, CommitRecord::new(OperationsBuffer::new(), sequence_number)); // TODO: Now I could actually get away with not setting this.
         window.set_aborted(slot_index);
         self.timeline.may_increment_watermark(sequence_number);
     }
@@ -178,7 +178,7 @@ impl IsolationManager {
         windows: &Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
         first_window_sequence_number: SequenceNumber,
     ) -> Result<(), IsolationError> {
-        let start_validation_index = max(commit_record.open_sequence_number, first_window_sequence_number);
+        let start_validation_index = max(commit_record.open_sequence_number.next(), first_window_sequence_number);
         debug_assert!(start_validation_index <= first_window_sequence_number + TIMELINE_WINDOW_SIZE);
         let mut window_index = 0;
         let mut slot_index = (start_validation_index - first_window_sequence_number) as usize;
@@ -242,11 +242,11 @@ impl IsolationManager {
         self.timeline.watermark()
     }
 
-    pub(crate) fn apply_to_commit_record<F, T>(&self, relative_index: SequenceNumber, function: F) -> T
+    pub(crate) fn apply_to_commit_record<F, T>(&self, commit_sequence_number: SequenceNumber, function: F) -> T
     where
         F: FnOnce(&CommitRecord) -> T,
     {
-        let (window, slot_index) = self.timeline.try_get_window(relative_index).unwrap();
+        let (window, slot_index) = self.timeline.try_get_window(commit_sequence_number).unwrap();
         let record = match window.get_status(slot_index) {
             CommitStatus::Validated(commit_record) | CommitStatus::Applied(commit_record) => commit_record,
             _ => panic!("apply_to_commit_record called on uncommitted record"), // TODO: Do we want to be able to apply on pending?
@@ -380,9 +380,9 @@ impl Timeline {
             }
         };
         if can_free_some {
-            let (next_relative_index, windows) = &mut *self.next_sequence_and_windows.write().unwrap_or_log();
+            let (next_sequence_number, windows) = &mut *self.next_sequence_and_windows.write().unwrap_or_log();
             let mut end_of_first_remaining_window : SequenceNumber =
-                *next_relative_index - ((windows.len() - 1) * TIMELINE_WINDOW_SIZE);
+                *next_sequence_number - ((windows.len() - 1) * TIMELINE_WINDOW_SIZE);
             while watermark >= end_of_first_remaining_window
                 && windows.front().is_some()
                 && windows.front().unwrap().get_readers() == 0
@@ -393,14 +393,14 @@ impl Timeline {
         }
     }
 
-    fn may_increment_watermark(&self, relative_index: SequenceNumber) {
+    fn may_increment_watermark(&self, sequence_number: SequenceNumber) {
         let mut watermark = self.watermark();
-        if watermark != relative_index - 1 {
+        if watermark != sequence_number - 1 {
             return ();
         }
-        let (mut window, mut candidate_slot_index) = self.try_get_window(relative_index).unwrap();
-        let end_of_window: SequenceNumber = relative_index + (TIMELINE_WINDOW_SIZE - candidate_slot_index);
-        let mut candidate_watermark = relative_index;
+        let (mut window, mut candidate_slot_index) = self.try_get_window(sequence_number).unwrap();
+        let end_of_window: SequenceNumber = sequence_number + (TIMELINE_WINDOW_SIZE - candidate_slot_index);
+        let mut candidate_watermark = sequence_number;
         loop {
             let should_update: bool = match window.get_status(candidate_slot_index) {
                 CommitStatus::Empty | CommitStatus::Pending(_) | CommitStatus::Validated(_) => false,
@@ -453,14 +453,14 @@ impl Timeline {
     fn collect_concurrent_windows(
         &self,
         open_sequence_number: SequenceNumber,
-        commit_relative_index: SequenceNumber,
+        commit_sequence_number: SequenceNumber,
     ) -> (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, SequenceNumber) {
         let (next_sequence_number, windows) = &*self.next_sequence_and_windows.read().unwrap_or_log();
-        let first_sequence_number_of_window_0 = *next_sequence_number - (windows.len() - TIMELINE_WINDOW_SIZE);
+        let first_sequence_number_of_window_0 = *next_sequence_number - (windows.len() * TIMELINE_WINDOW_SIZE);
         let first_concurrent_window_index = if open_sequence_number < first_sequence_number_of_window_0 { 0 } else {
-            (first_sequence_number_of_window_0 - open_sequence_number) as usize / TIMELINE_WINDOW_SIZE
+            (open_sequence_number - first_sequence_number_of_window_0) as usize / TIMELINE_WINDOW_SIZE
         };
-        let last_concurrent_window_index = (commit_relative_index - first_sequence_number_of_window_0) as usize / TIMELINE_WINDOW_SIZE;
+        let last_concurrent_window_index = (commit_sequence_number - first_sequence_number_of_window_0) as usize / TIMELINE_WINDOW_SIZE;
 
         let mut concurrent_windows: Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> = Vec::new();
         (first_concurrent_window_index..(last_concurrent_window_index + 1)).for_each(|window_index| {
@@ -472,13 +472,13 @@ impl Timeline {
     }
 
     fn try_get_window(&self, sequence_number: SequenceNumber) -> Option<(Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>, usize)> {
-        let (next_relative_index, windows) = &*self.next_sequence_and_windows.read().unwrap_or_log();
-        let relative_index_of_window_0: SequenceNumber = *next_relative_index - (windows.len() * TIMELINE_WINDOW_SIZE);
+        let (next_sequence_number, windows) = &*self.next_sequence_and_windows.read().unwrap_or_log();
+        let first_sequence_number_of_window_0: SequenceNumber = *next_sequence_number - (windows.len() * TIMELINE_WINDOW_SIZE);
 
-        if sequence_number >= relative_index_of_window_0 && sequence_number < *next_relative_index {
-            let window_index = (sequence_number - relative_index_of_window_0) as usize/ TIMELINE_WINDOW_SIZE;
+        if sequence_number >= first_sequence_number_of_window_0 && sequence_number < *next_sequence_number {
+            let window_index = (sequence_number - first_sequence_number_of_window_0) as usize/ TIMELINE_WINDOW_SIZE;
             let window = windows.get(window_index)?;
-            let slot_index: usize = (sequence_number - relative_index_of_window_0) as usize % TIMELINE_WINDOW_SIZE;
+            let slot_index: usize = (sequence_number - first_sequence_number_of_window_0) as usize % TIMELINE_WINDOW_SIZE;
             Some((window.clone(), slot_index))
         } else {
             None
@@ -486,18 +486,18 @@ impl Timeline {
     }
 
     fn get_or_create_window(&self, sequence_number: SequenceNumber) -> (Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>, usize) {
-        let next_relative_index: SequenceNumber = { self.next_sequence_and_windows.read().unwrap_or_log().0 };
-        if sequence_number >= next_relative_index {
+        let next_sequence_number: SequenceNumber = { self.next_sequence_and_windows.read().unwrap_or_log().0 };
+        if sequence_number >= next_sequence_number {
             self.create_windows_to(sequence_number);
         }
         self.try_get_window(sequence_number).unwrap()
     }
 
     fn create_windows_to(&self, sequence_number: SequenceNumber) {
-        let (next_relative_index, windows) = &mut *self.next_sequence_and_windows.write().unwrap_or_log();
-        while sequence_number >= *next_relative_index {
+        let (next_sequence_number, windows) = &mut *self.next_sequence_and_windows.write().unwrap_or_log();
+        while sequence_number >= *next_sequence_number {
             let shared_new_window = Arc::new(TimelineWindow::new());
-            *next_relative_index += TIMELINE_WINDOW_SIZE;
+            *next_sequence_number += TIMELINE_WINDOW_SIZE;
             windows.push_back(shared_new_window.clone());
         }
     }
@@ -846,49 +846,48 @@ mod tests {
     };
 
     struct MockTransaction {
-        read_sequence_number: i64,
-        relative_index: i64,
+        read_sequence_number: SequenceNumber,
         commit_sequence_number: SequenceNumber,
     }
 
     impl MockTransaction {
         fn new(
             read_sequence_number: SequenceNumber,
-            relative_index: i64,
             commit_sequence_number: SequenceNumber,
         ) -> MockTransaction {
-            MockTransaction { read_sequence_number, relative_index, commit_sequence_number }
+            MockTransaction { read_sequence_number, commit_sequence_number }
         }
     }
 
     fn create_timeline() -> Timeline {
-        let timeline = Timeline::new(0);
-        let (window, slot_index) = timeline.get_or_create_window(0);
+        let seq = SequenceNumber::MIN.next();
+        let timeline = Timeline::new(seq);
+        let (window, slot_index) = timeline.get_or_create_window(seq);
         window.insert_pending(
             slot_index,
             CommitRecord::new(OperationsBuffer::new(), SequenceNumber::MIN),
         );
         window.set_aborted(slot_index);
-        timeline.may_increment_watermark(0);
+        timeline.may_increment_watermark(seq);
         timeline
     }
 
-    fn tx_open(timeline: &Timeline, read_relative_index: i64) {
-        timeline.record_reader(read_relative_index);
+    fn tx_open(timeline: &Timeline, read_sequence_number: SequenceNumber) {
+        timeline.record_reader(read_sequence_number);
     }
 
-    fn tx_close(timeline: &Timeline, read_relative_index: i64) {
-        timeline.remove_reader(read_relative_index);
+    fn tx_close(timeline: &Timeline, read_sequence_number: SequenceNumber) {
+        timeline.remove_reader(read_sequence_number);
     }
 
     fn tx_start_commit(timeline: &Timeline, tx: &MockTransaction) {
-        let (window, slot_index) = timeline.get_or_create_window(tx.relative_index);
+        let (window, slot_index) = timeline.get_or_create_window(tx.commit_sequence_number);
         window.insert_pending(slot_index, _record(tx.read_sequence_number));
     }
 
     fn tx_finalise_commit_status(timeline: &Timeline, tx: &MockTransaction, validation_result: bool) {
-        let (window, slot_index) = timeline.try_get_window(tx.relative_index).unwrap();
-        if let CommitStatus::Pending(_, commit_record) = window.get_status(slot_index) {
+        let (window, slot_index) = timeline.try_get_window(tx.commit_sequence_number).unwrap();
+        if let CommitStatus::Pending(commit_record) = window.get_status(slot_index) {
             if validation_result {
                 window.set_validated(slot_index);
                 window.set_applied(slot_index);
@@ -896,7 +895,7 @@ mod tests {
                 window.set_aborted(slot_index);
             }
             timeline.remove_reader(commit_record.open_sequence_number);
-            timeline.may_increment_watermark(tx.relative_index);
+            timeline.may_increment_watermark(tx.commit_sequence_number);
         } else {
             unreachable!()
         }
@@ -922,29 +921,29 @@ mod tests {
     #[test]
     fn watermark_is_updated() {
         let timeline = &create_timeline();
-        let tx1 = &MockTransaction::new(_seq(0), 1, _seq(1));
+        let tx1 = &MockTransaction::new(_seq(0),_seq(1));
         tx_open(timeline, tx1.read_sequence_number);
         tx_start_commit(timeline, tx1);
         tx_finalise_commit_status(timeline, tx1, true);
-        assert_eq!(tx1.relative_index, timeline.watermark());
+        assert_eq!(tx1.commit_sequence_number, timeline.watermark());
 
-        let tx2 = &MockTransaction::new(_seq(0), 2, _seq(2));
+        let tx2 = &MockTransaction::new(_seq(0), _seq(2));
 
         tx_open(timeline, tx2.read_sequence_number);
         tx_start_commit(timeline, tx2);
         tx_finalise_commit_status(timeline, tx2, false);
-        assert_eq!(tx2.relative_index, timeline.watermark());
+        assert_eq!(tx2.commit_sequence_number, timeline.watermark());
 
-        let tx3 = &MockTransaction::new(_seq(0), 3, _seq(3));
-        let tx4 = &MockTransaction::new(_seq(0), 4, _seq(4));
+        let tx3 = &MockTransaction::new(_seq(0), _seq(3));
+        let tx4 = &MockTransaction::new(_seq(0), _seq(4));
         tx_open(timeline, tx3.read_sequence_number);
         tx_open(timeline, tx4.read_sequence_number);
         tx_start_commit(timeline, tx3);
         tx_start_commit(timeline, tx4);
         tx_finalise_commit_status(timeline, tx4, true);
-        assert_eq!(tx2.relative_index, timeline.watermark()); // tx3 is not yet committed, watermark does not move.
+        assert_eq!(tx2.commit_sequence_number, timeline.watermark()); // tx3 is not yet committed, watermark does not move.
         tx_finalise_commit_status(timeline, tx3, true);
-        assert_eq!(tx4.relative_index, timeline.watermark()); // Watermark goes up all the way to 4.
+        assert_eq!(tx4.commit_sequence_number, timeline.watermark()); // Watermark goes up all the way to 4.
     }
 
     #[test]
@@ -954,38 +953,38 @@ mod tests {
         let tx_count = TIMELINE_WINDOW_SIZE + 2;
         for i in 1..tx_count {
             //
-            let tx = &MockTransaction::new(_seq(0), i as i64, _seq(i as u128));
+            let tx = &MockTransaction::new(_seq(0), _seq(i as u64));
             tx_open(timeline, tx.read_sequence_number);
             tx_start_commit(timeline, tx);
         }
 
         let stop_at = tx_count - 2;
         for i in 1..stop_at {
-            let tx = &MockTransaction::new(_seq(0), i as i64, _seq(i as u128));
+            let tx = &MockTransaction::new(_seq(0), _seq(i as u64));
             tx_finalise_commit_status(timeline, tx, true);
         }
-        assert!(timeline.try_get_window(1).is_some());
+        assert!(timeline.try_get_window(_seq(1)).is_some());
         for i in stop_at..tx_count {
-            let tx = &MockTransaction::new(_seq(0), i as i64, _seq(i as u128));
+            let tx = &MockTransaction::new(_seq(0), _seq(i as u64));
             tx_finalise_commit_status(timeline, tx, true);
         }
-        assert!(timeline.try_get_window(1).is_none());
+        assert!(timeline.try_get_window(_seq(1)).is_none());
     }
 
     #[test]
     fn watermark_keeps_window_pinned() {
         let timeline = &create_timeline();
-        let tx1 = &MockTransaction::new(_seq(0), 1, _seq(1));
+        let tx1 = &MockTransaction::new(_seq(0), _seq(1));
         tx_open(timeline, tx1.read_sequence_number);
         tx_start_commit(timeline, tx1);
         tx_finalise_commit_status(timeline, tx1, true);
 
-        let got_window = timeline.try_get_window(tx1.relative_index);
+        let got_window = timeline.try_get_window(tx1.commit_sequence_number);
         assert!(got_window.is_some());
 
-        let mut i = tx1.relative_index + 1;
+        let mut i = tx1.commit_sequence_number + 1;
         while timeline.try_get_window(i).is_some() {
-            let tx = &MockTransaction::new(_seq(0), i, _seq(i as u128));
+            let tx = &MockTransaction::new(_seq(0), i);
             tx_open(timeline, tx.read_sequence_number);
             tx_start_commit(timeline, tx);
             tx_finalise_commit_status(timeline, tx, true);
@@ -1006,8 +1005,8 @@ mod tests {
     #[test]
     fn test_highly_concurrent_correctness() {
         let main_timeline_and_counter = Arc::new((create_timeline(), AtomicU64::new(1)));
-        let nthreads = 32;
-        let main_ntransactions_per_thread = 1000;
+        let nthreads: usize = 32;
+        let main_ntransactions_per_thread: usize = 1000;
         let mut receivers: Vec<Receiver<()>> = Vec::new();
         for _ti in 0..nthreads {
             let ntransactions_per_thread = main_ntransactions_per_thread;
@@ -1017,8 +1016,8 @@ mod tests {
             thread::spawn(move || {
                 for i in 0..ntransactions_per_thread {
                     let (timeline,commit_sequence_number_counter) = &*timeline_and_counter;
-                    let index = commit_sequence_number_counter.fetch_add(1, Ordering::SeqCst) as i64;
-                    let tx = &MockTransaction::new(_seq(timeline.watermark() as u128), index, _seq(index as u128));
+                    let index = commit_sequence_number_counter.fetch_add(1, Ordering::SeqCst);
+                    let tx = &MockTransaction::new(timeline.watermark(),_seq(index));
                     tx_open(timeline, tx.read_sequence_number);
                     tx_start_commit(timeline, tx);
                     tx_finalise_commit_status(timeline, tx, true);
@@ -1031,7 +1030,7 @@ mod tests {
         let expected_commits = nthreads * main_ntransactions_per_thread;
         let (timeline,commit_sequence_number_counter) = &*main_timeline_and_counter;
         assert_eq!(expected_commits, timeline.watermark());
-        let some_index_in_penultimate_window = expected_commits - TIMELINE_WINDOW_SIZE as i64 - 1;
+        let some_index_in_penultimate_window = _seq((expected_commits - TIMELINE_WINDOW_SIZE - 1) as u64);
         assert!(timeline.try_get_window(some_index_in_penultimate_window).is_none());
     }
 }

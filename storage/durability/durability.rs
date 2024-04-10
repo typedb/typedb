@@ -52,10 +52,6 @@ pub trait DurabilityService: Sequencer {
         where
             Record: SequencedDurabilityRecord;
 
-    fn is_empty(&self) -> bool {
-        self.previous() == SequenceNumber::MIN
-    }
-
     fn iter_from(&self, sequence_number: SequenceNumber) -> Result<impl Iterator<Item = io::Result<RawRecord>>>;
 
     fn iter_from_start(&self) -> Result<impl Iterator<Item = io::Result<RawRecord>>> {

@@ -182,13 +182,7 @@ impl<D> MVCCStorage<D> {
         let name = name.as_ref();
         let (keyspaces, keyspaces_index) = recover_keyspaces::<KS>(&storage_dir)?;
 
-        let isolation_manager = if durability_service.is_empty() {
-            let im = IsolationManager::new(SequenceNumber::MIN);
-            im.load_aborted(SequenceNumber::MIN); // Initialise the watermark to zero
-            im
-        } else {
-            IsolationManager::new(durability_service.current())
-        };
+        let isolation_manager = IsolationManager::new(durability_service.current());
 
         let name = name.to_owned();
         let path = path.to_owned();
@@ -238,10 +232,6 @@ impl<D> MVCCStorage<D> {
                 Err(error) => return Err(DurabilityServiceRead { source: error }),
             }
         }
-        debug_assert!({
-            self.isolation_manager.watermark();
-            true
-        }); // Panic if isolation_manager is not initialised with a record at watermark=relative_index=0.
         Ok(())
     }
 
