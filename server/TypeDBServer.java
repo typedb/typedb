@@ -74,6 +74,7 @@ public class TypeDBServer implements AutoCloseable {
     protected AtomicBoolean isOpen;
     private final CoreConfig config;
     private final CoreLogback logback;
+    private String ID = "";
 
     static TypeDBServer create(CoreConfig config, boolean debug) {
         CoreLogback logback = new CoreLogback();
@@ -192,12 +193,14 @@ public class TypeDBServer implements AutoCloseable {
         try {
             Path serverIDFile = config().storage().dataDir().resolve(SERVER_ID_FILE_NAME);
             if (serverIDFile.toFile().exists()) {
-                return Files.readString(serverIDFile);
+                ID = Files.readString(serverIDFile);
+            }
+            else {
+                ID = generateServerID();
+                Files.writeString(serverIDFile, ID);
             }
 
-            String serverID = generateServerID();
-            Files.writeString(serverIDFile, serverID);
-            return serverID;
+            return ID;
         } catch (Exception e) {
             LOG.debug("Failed to create, persist, or read stored server ID: ", e);
         }
@@ -240,7 +243,10 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     protected String generateDeploymentID() {
-        return GENERATED_ID_PREFIX + config.server().address().hashCode();
+        if (ID.isEmpty()) {
+            ID = generateServerID();
+        }
+        return ID;
     }
 
     protected io.grpc.Server rpcServer() {
