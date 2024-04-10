@@ -203,10 +203,10 @@ impl AddAssign<usize> for SequenceNumber {
 }
 
 impl Sub<SequenceNumber> for SequenceNumber {
-    type Output = u64;
+    type Output = usize;
 
     fn sub(self, rhs: SequenceNumber) -> Self::Output {
-        self.number - rhs.number
+        (self.number - rhs.number) as usize
     }
 }
 
