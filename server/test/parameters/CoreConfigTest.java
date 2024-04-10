@@ -141,8 +141,22 @@ public class CoreConfigTest {
             CoreConfigFactory.config(configUnrecognisedOption, new HashSet<>(), new CoreConfigParser());
             fail();
         } catch (TypeDBException e) {
+            System.out.println(e.getMessage());
             assertEquals(CONFIGS_UNRECOGNISED.code(), e.errorMessage().code());
             assertEquals(CONFIGS_UNRECOGNISED.message(list("log.custom-logger-invalid")), e.getMessage());
+        }
+    }
+
+    @Test
+    public void config_file_missing_deployment_id_key() {
+        Path configFile = Paths.get("./server/test/parameters/config/config-missing-deployment-id-key.yml");
+
+        try {
+            CoreConfigFactory.config(configFile, new HashSet<>(), new CoreConfigParser());
+            fail();
+        } catch (TypeDBException e) {
+            assertEquals(CONFIG_KEY_MISSING.code(), e.errorMessage().code());
+            assertEquals(CONFIG_KEY_MISSING.message("diagnostics.deployment-id"), e.getMessage());
         }
     }
 
@@ -193,5 +207,13 @@ public class CoreConfigTest {
                 new CoreConfigParser()
         );
         assertEquals(set("stdout", "file"), set(configWithRepeatedArgs.log().logger().filteredLoggers().get("typedb").outputs()));
+    }
+
+    @Test
+    public void config_file_with_correct_optional_values() {
+        Path configFile = Paths.get("./server/test/parameters/config/config-correct-optional-values.yml");
+        CoreConfig config = CoreConfigFactory.config(configFile, new HashSet<>(), new CoreConfigParser());
+        assertTrue(config.diagnostics().deploymentID().isPresent());
+        assertEquals("SERVERIDNUMBER123987<AND>MORE!", config.diagnostics().deploymentID().get());
     }
 }

@@ -28,15 +28,7 @@ import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_EX
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_NAME;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.KeyValue.Dynamic;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.KeyValue.Predefined;
-import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.BOOLEAN;
-import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.BYTES_SIZE;
-import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.INET_SOCKET_ADDRESS;
-import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.INTEGER;
-import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.LIST_STRING;
-import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.PATH;
-import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.STRING;
-import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.TIME_PERIOD;
-import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.TIME_PERIOD_NAME;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.*;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.dynamic;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.predefined;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.restricted;
@@ -481,25 +473,30 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
         public static final String name = "diagnostics";
         public static final String description = "Configure server diagnostics.";
 
-        protected static final Predefined<CoreConfig.Diagnostics.Reporting> reporting =
-                predefined(Diagnostics.Reporting.name, Diagnostics.Reporting.description, new Diagnostics.Reporting());
-        protected static final Predefined<CoreConfig.Diagnostics.Monitoring> monitoring =
-                predefined(Diagnostics.Monitoring.name, Diagnostics.Monitoring.description, new Diagnostics.Monitoring());
-        private static final Set<Predefined<?>> parsers = set(reporting, monitoring);
+        protected static final Predefined<java.util.Optional<String>> deploymentID = predefined(
+                "deployment-id",
+                "ID of the deployment, logically unifying multiple servers within a cluster.",
+                new Optional<>(STRING));
+        protected static final Predefined<CoreConfig.Diagnostics.Reporting> reporting = predefined(
+                Diagnostics.Reporting.name, Diagnostics.Reporting.description, new Diagnostics.Reporting());
+        protected static final Predefined<CoreConfig.Diagnostics.Monitoring> monitoring = predefined(
+                Diagnostics.Monitoring.name, Diagnostics.Monitoring.description, new Diagnostics.Monitoring());
+        private static final Set<Predefined<?>> parsers = set(deploymentID, reporting, monitoring);
 
         @Override
         public CoreConfig.Diagnostics parse(YAML yaml, String path) {
             if (yaml.isMap()) {
                 validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
+                java.util.Optional<String> deploymentID = Diagnostics.deploymentID.parse(yaml.asMap(), path);
                 CoreConfig.Diagnostics.Reporting reporting = Diagnostics.reporting.parse(yaml.asMap(), path);
                 CoreConfig.Diagnostics.Monitoring monitoring = Diagnostics.monitoring.parse(yaml.asMap(), path);
-                return new CoreConfig.Diagnostics(reporting, monitoring);
+                return new CoreConfig.Diagnostics(deploymentID, reporting, monitoring);
             } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, path);
         }
 
         @Override
         public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-            return list(reporting.help(path), monitoring.help(path));
+            return list(deploymentID.help(path), reporting.help(path), monitoring.help(path));
         }
 
         protected static class Reporting extends Compound<CoreConfig.Diagnostics.Reporting> {

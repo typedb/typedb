@@ -58,12 +58,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOM
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PORT_IN_USE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
-import static com.vaticle.typedb.core.server.common.Constants.DIAGNOSTICS_REPORTING_URI;
-import static com.vaticle.typedb.core.server.common.Constants.USAGE_STATISTICS_REPORTING_URI;
-import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_ALPHABET;
-import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_FILE_NAME;
-import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_LENGTH;
-import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_DISTRIBUTION_NAME;
+import static com.vaticle.typedb.core.server.common.Constants.*;
 import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
 import static org.slf4j.Logger.ROOT_LOGGER_NAME;
@@ -183,7 +178,7 @@ public class TypeDBServer implements AutoCloseable {
     protected void configureDiagnostics() {
         try {
             Diagnostics.Core.initialise(
-                    serverID(), name(), Version.VERSION,
+                    deploymentID(), serverID(), name(), Version.VERSION,
                     config.diagnostics().reporting().errors(), DIAGNOSTICS_REPORTING_URI,
                     config.diagnostics().reporting().statistics(), USAGE_STATISTICS_REPORTING_URI,
                     config.diagnostics().monitoring().enable(), config.diagnostics().monitoring().port()
@@ -198,20 +193,54 @@ public class TypeDBServer implements AutoCloseable {
             Path serverIDFile = config().storage().dataDir().resolve(SERVER_ID_FILE_NAME);
             if (serverIDFile.toFile().exists()) {
                 return Files.readString(serverIDFile);
-            } else {
-                Random random = new Random();
-                String serverID = IntStream.range(0, SERVER_ID_LENGTH).boxed()
-                        .map(i -> SERVER_ID_ALPHABET.charAt(random.nextInt(SERVER_ID_ALPHABET.length())))
-                        .map(String::valueOf)
-                        .collect(Collectors.joining());
-                Files.writeString(serverIDFile, serverID);
-                return serverID;
             }
+
+            String serverID = generateServerID();
+            Files.writeString(serverIDFile, serverID);
+            return serverID;
         } catch (Exception e) {
             LOG.debug("Failed to create, persist, or read stored server ID: ", e);
         }
         // fallback
         return "_0";
+    }
+
+    protected String generateServerID() {
+        Random random = new Random();
+        return IntStream.range(0, SERVER_ID_LENGTH).boxed()
+                .map(i -> SERVER_ID_ALPHABET.charAt(random.nextInt(SERVER_ID_ALPHABET.length())))
+                .map(String::valueOf)
+                .collect(Collectors.joining());
+    }
+
+    protected String deploymentID() {
+        try {
+            Optional<String> configDeploymentID = config().diagnostics().deploymentID();
+            if (configDeploymentID.isPresent()) {
+                System.out.println("GOT DEPLOYMENT ID FROM CONFIG: " + configDeploymentID.get()); // TODO: Remove prints after tests.
+                return configDeploymentID.get();
+            }
+            
+            Path deploymentIDFile = config().storage().dataDir().resolve(DEPLOYMENT_ID_FILE_NAME);
+            if (deploymentIDFile.toFile().exists()) {
+                System.out.println("GOT DEPLOYMENT ID FROM FILE: " + Files.readString(deploymentIDFile));
+                return Files.readString(deploymentIDFile);
+            }
+
+            String deploymentID = generateDeploymentID();
+            Files.writeString(deploymentIDFile, deploymentID);
+
+            System.out.println("GENERATED NEW DEPL ID: " + deploymentID);
+            return deploymentID;
+        } catch (Exception e) {
+            LOG.debug("Failed to create, persist, or read stored deployment ID: ", e);
+        }
+        // fallback
+        return "_0";
+    }
+
+    protected String generateDeploymentID() {
+        return GENERATED_ID_PREFIX + config.server().address().hashCode();
     }
 
     protected io.grpc.Server rpcServer() {

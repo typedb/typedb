@@ -72,7 +72,7 @@ public abstract class Diagnostics {
         }
 
         public static synchronized void initialise(
-                String serverID, String distributionName, String version,
+                String deploymentID, String serverID, String distributionName, String version,
                 boolean errorReportingEnable, String errorReportingURI,
                 boolean statisticsReportingEnable, String statisticsReportingURI,
                 boolean monitoringEnable, int monitoringPort
@@ -81,6 +81,8 @@ public abstract class Diagnostics {
                 LOG.debug("Skipping re-initialising diagnostics");
                 return;
             }
+
+            System.out.println("GOT: " + deploymentID); // TODO: Use!
 
             initSentry(serverID, distributionName, version, errorReportingEnable, errorReportingURI);
 

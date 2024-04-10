@@ -24,4 +24,6 @@ public class Constants {
     public static final String SERVER_ID_FILE_NAME = "_server_id";
     public static final int SERVER_ID_LENGTH = 16;
     public static final String SERVER_ID_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    public static final String DEPLOYMENT_ID_FILE_NAME = "_deployment_id";
+    public static final String GENERATED_ID_PREFIX = "gen-";
 }

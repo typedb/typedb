@@ -267,7 +267,7 @@ public class YAMLParser {
             }
 
             public String description() {
-                return  valueParser.description() + "|null";
+                return valueParser.description() + "|null";
             }
 
             @Override
