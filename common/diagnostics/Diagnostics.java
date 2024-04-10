@@ -82,7 +82,7 @@ public abstract class Diagnostics {
                 return;
             }
 
-            System.out.println("GOT: " + deploymentID); // TODO: Use!
+            System.out.println("GOT: " + deploymentID + "    " + serverID); // TODO: Use!
 
             initSentry(serverID, distributionName, version, errorReportingEnable, errorReportingURI);
 

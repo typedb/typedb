@@ -74,7 +74,7 @@ public class TypeDBServer implements AutoCloseable {
     protected AtomicBoolean isOpen;
     private final CoreConfig config;
     private final CoreLogback logback;
-    private String ID = "";
+    private final String ID;
 
     static TypeDBServer create(CoreConfig config, boolean debug) {
         CoreLogback logback = new CoreLogback();
@@ -91,6 +91,7 @@ public class TypeDBServer implements AutoCloseable {
         this.config = config;
         this.logback = logback;
         this.debug = debug;
+        ID = serverID();
 
         verifyJavaVersion();
         verifyPort();
@@ -179,7 +180,7 @@ public class TypeDBServer implements AutoCloseable {
     protected void configureDiagnostics() {
         try {
             Diagnostics.Core.initialise(
-                    deploymentID(), serverID(), name(), Version.VERSION,
+                    deploymentID(), ID, name(), Version.VERSION,
                     config.diagnostics().reporting().errors(), DIAGNOSTICS_REPORTING_URI,
                     config.diagnostics().reporting().statistics(), USAGE_STATISTICS_REPORTING_URI,
                     config.diagnostics().monitoring().enable(), config.diagnostics().monitoring().port()
@@ -193,14 +194,12 @@ public class TypeDBServer implements AutoCloseable {
         try {
             Path serverIDFile = config().storage().dataDir().resolve(SERVER_ID_FILE_NAME);
             if (serverIDFile.toFile().exists()) {
-                ID = Files.readString(serverIDFile);
-            }
-            else {
-                ID = generateServerID();
-                Files.writeString(serverIDFile, ID);
+                return Files.readString(serverIDFile);
             }
 
-            return ID;
+            String serverID = generateServerID();
+            Files.writeString(serverIDFile, serverID);
+            return serverID;
         } catch (Exception e) {
             LOG.debug("Failed to create, persist, or read stored server ID: ", e);
         }
@@ -243,9 +242,6 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     protected String generateDeploymentID() {
-        if (ID.isEmpty()) {
-            ID = generateServerID();
-        }
         return ID;
     }
 
