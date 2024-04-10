@@ -7,7 +7,7 @@
 use std::path::Path;
 
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
-use durability::{wal::WAL, DurabilityRecord, DurabilityRecordType, DurabilityService};
+use durability::{wal::WAL, DurabilityRecord, DurabilityRecordType, DurabilityService, SequencedDurabilityRecord};
 use itertools::Itertools;
 use tempdir::TempDir;
 
@@ -31,6 +31,8 @@ impl DurabilityRecord for TestRecord {
         Ok(Self { bytes })
     }
 }
+
+impl SequencedDurabilityRecord for TestRecord { }
 
 pub fn open_wal(directory: impl AsRef<Path>) -> WAL {
     let mut wal = WAL::recover(directory).unwrap();

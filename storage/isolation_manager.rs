@@ -836,7 +836,7 @@ mod tests {
     use std::sync::mpsc::Receiver;
     use std::thread;
     use std::time::Duration;
-    use crate::KeyspaceSet;
+    use crate::{KeyspaceSet, KeyspaceId};
 
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
@@ -844,8 +844,8 @@ mod tests {
             enum TestKeyspaceSet { $($variant),* }
             impl KeyspaceSet for TestKeyspaceSet {
                 fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
-                fn id(&self) -> u8 {
-                    match *self { $(Self::$variant => $id),* }
+                fn id(&self) -> KeyspaceId {
+                    match *self { $(Self::$variant => KeyspaceId($id)),* }
                 }
                 fn name(&self) -> &'static str {
                     match *self { $(Self::$variant => $name),* }

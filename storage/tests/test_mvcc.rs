@@ -32,6 +32,7 @@ use bytes::{
 use durability::wal::WAL;
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
+    keyspace::KeyspaceId,
     MVCCStorage,
     KeyspaceSet,
 };
@@ -44,8 +45,8 @@ macro_rules! test_keyspace_set {
         enum TestKeyspaceSet { $($variant),* }
         impl KeyspaceSet for TestKeyspaceSet {
             fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
-            fn id(&self) -> u8 {
-                match *self { $(Self::$variant => $id),* }
+            fn id(&self) -> KeyspaceId {
+                match *self { $(Self::$variant => KeyspaceId($id)),* }
             }
             fn name(&self) -> &'static str {
                 match *self { $(Self::$variant => $name),* }

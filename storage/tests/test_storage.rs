@@ -10,7 +10,7 @@ use itertools::Itertools;
 use primitive::prefix_range::PrefixRange;
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    KeyspaceSet, KeyspaceValidationError, MVCCStorage, StorageRecoverError,
+    KeyspaceSet, keyspace::KeyspaceId, KeyspaceValidationError, MVCCStorage, StorageRecoverError,
 };
 use test_utils::{create_tmp_dir, init_logging};
 
@@ -20,9 +20,10 @@ macro_rules! test_keyspace_set {
         enum TestKeyspaceSet { $($variant),* }
         impl KeyspaceSet for TestKeyspaceSet {
             fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
-            fn id(&self) -> u8 {
-                match *self { $(Self::$variant => $id),* }
+            fn id(&self) -> KeyspaceId {
+                match *self { $(Self::$variant => KeyspaceId($id)),* }
             }
+
             fn name(&self) -> &'static str {
                 match *self { $(Self::$variant => $name),* }
             }
