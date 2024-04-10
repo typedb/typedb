@@ -30,6 +30,12 @@ impl<'a> Object<'a> {
         }
     }
 
+    pub(crate) fn as_reference<'this>(&'this self) -> Object<'this> {
+        match self {
+            Object::Entity(entity) => Object::Entity(entity.as_reference()),
+            Object::Relation(relation) => Object::Relation(relation.as_reference()),
+        }
+    }
 
     fn set_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: Attribute<'_>) {
         match self {
@@ -54,12 +60,6 @@ impl<'a> Object<'a> {
 }
 
 impl<'a> ObjectAPI<'a> for Object<'a> {
-    fn as_reference<'this>(&'this self) -> Object<'this> {
-        match self {
-            Object::Entity(entity) => Object::Entity(entity.as_reference()),
-            Object::Relation(relation) => Object::Relation(relation.as_reference()),
-        }
-    }
 
     fn vertex<'this>(&'this self) -> ObjectVertex<'this> {
         match self {

@@ -10,6 +10,7 @@ rust_test(
     name = "test_storage",
     srcs = glob([
         "test_storage.rs",
+        "test_common/*.rs",
     ]),
     deps = [
         "//common/bytes",
@@ -30,6 +31,7 @@ rust_test(
     name = "test_snapshot",
     srcs = glob([
         "test_snapshot.rs",
+        "test_common/*.rs",
     ]),
     deps = [
         "//common/bytes",
@@ -48,6 +50,7 @@ rust_test(
     name = "test_mvcc",
     srcs = glob([
         "test_mvcc.rs",
+        "test_common/*.rs",
     ]),
     deps = [
         "//common/bytes",
@@ -66,6 +69,7 @@ rust_test(
     name = "test_isolation",
     srcs = glob([
         "test_isolation.rs",
+        "test_common/*.rs",
     ]),
     deps = [
         "//common/bytes",

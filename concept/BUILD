@@ -25,6 +25,7 @@ rust_library(
         "//resource",
 
         "@crates//:bincode",
+        "@crates//:serde",
     ],
 )
 

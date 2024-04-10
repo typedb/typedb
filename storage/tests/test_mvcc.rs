@@ -22,6 +22,7 @@ This file should comprise a set of low-level tests relating to MVCC.
    After cleanup is run, if we iterate directly on the storage layer, we should be able to confirm the keys are actually not present anymore (Rocks may defer the disk delete till compaction, but to us they are "gone").
 
  */
+mod test_common;
 
 use std::path::Path;
 
@@ -35,24 +36,9 @@ use storage::{
     MVCCStorage,
     KeyspaceSet,
 };
+use storage::keyspace::KeyspaceId;
 use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
-
-macro_rules! test_keyspace_set {
-    {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
-        #[derive(Copy, Clone)]
-        enum TestKeyspaceSet { $($variant),* }
-        impl KeyspaceSet for TestKeyspaceSet {
-            fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
-            fn id(&self) -> u8 {
-                match *self { $(Self::$variant => $id),* }
-            }
-            fn name(&self) -> &'static str {
-                match *self { $(Self::$variant => $name),* }
-            }
-        }
-    };
-}
 
 test_keyspace_set! {
     Keyspace => 0: "keyspace",

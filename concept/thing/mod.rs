@@ -15,8 +15,6 @@ pub mod value;
 pub mod object;
 
 pub trait ObjectAPI<'a> {
-    fn as_reference<'this>(&'this self) -> impl ObjectAPI<'this>;
-
     fn vertex<'this>(&'this self) -> ObjectVertex<'this>;
 
     fn into_vertex(self) -> ObjectVertex<'a>;

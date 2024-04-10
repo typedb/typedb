@@ -46,6 +46,9 @@ impl<'a> Entity<'a> {
         EntityType::new(build_vertex_entity_type(self.vertex.type_id_()))
     }
 
+    pub fn as_reference<'this>(&'this self) -> Entity<'this> {
+        Entity { vertex: self.vertex.as_reference() }
+    }
 
     pub fn iid(&self) -> ByteReference<'_> {
         self.vertex.bytes()
@@ -89,10 +92,6 @@ impl<'a> Entity<'a> {
 impl<'a> ConceptAPI<'a> for Entity<'a> {}
 
 impl<'a> ObjectAPI<'a> for Entity<'a> {
-
-    fn as_reference<'this>(&'this self) -> Entity<'this> {
-        Entity { vertex: self.vertex.as_reference() }
-    }
 
     fn vertex<'this>(&'this self) -> ObjectVertex<'this> {
         self.vertex.as_reference()

@@ -6,7 +6,7 @@
 
 use std::path::Path;
 
-use durability::{wal::WAL, DurabilityRecord, DurabilityRecordType, DurabilityService};
+use durability::{wal::WAL, DurabilityRecord, DurabilityRecordType, DurabilityService, SequencedDurabilityRecord};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TestRecord {
@@ -28,6 +28,8 @@ impl DurabilityRecord for TestRecord {
         Ok(Self { bytes })
     }
 }
+
+impl SequencedDurabilityRecord for TestRecord {}
 
 pub fn open_wal(directory: impl AsRef<Path>) -> WAL {
     let mut wal = WAL::recover(directory).unwrap();

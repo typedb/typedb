@@ -6,6 +6,8 @@
 
 #![deny(unused_must_use)]
 
+mod test_common;
+
 use bytes::byte_array::ByteArray;
 use durability::wal::WAL;
 use logger::result::ResultExt;
@@ -13,27 +15,11 @@ use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyArray},
-    snapshot::SnapshotError,
     KeyspaceSet, MVCCStorage,
 };
+use storage::keyspace::KeyspaceId;
 use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
-
-macro_rules! test_keyspace_set {
-    {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
-        #[derive(Clone, Copy)]
-        enum TestKeyspaceSet { $($variant),* }
-        impl KeyspaceSet for TestKeyspaceSet {
-            fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
-            fn id(&self) -> u8 {
-                match *self { $(Self::$variant => $id),* }
-            }
-            fn name(&self) -> &'static str {
-                match *self { $(Self::$variant => $name),* }
-            }
-        }
-    };
-}
 
 test_keyspace_set! {
     Keyspace => 0: "keyspace",
@@ -89,7 +75,7 @@ fn snapshot_buffered_put_iterate() {
         snapshot
             .iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix)))
             .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)));
-    assert_eq!(items.unwrap(), vec![(key_2, ByteArray::empty()), (key_3, ByteArray::empty()),]);
+    assert_eq!(items.unwrap(), vec![(key_2, ByteArray::empty()), (key_3, ByteArray::empty())]);
     snapshot.close_resources();
 }
 
@@ -119,7 +105,7 @@ fn snapshot_buffered_delete() {
         .iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix)))
         .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)))
         .unwrap();
-    assert_eq!(items, vec![(key_2, ByteArray::empty()),]);
+    assert_eq!(items, vec![(key_2, ByteArray::empty())]);
     snapshot.close_resources();
 }
 
@@ -167,7 +153,7 @@ fn snapshot_read_through() {
         .iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix)))
         .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)))
         .unwrap();
-    assert_eq!(key_values, vec![(key_3, ByteArray::empty()), (key_5, ByteArray::empty()),]);
+    assert_eq!(key_values, vec![(key_3, ByteArray::empty()), (key_5, ByteArray::empty())]);
     snapshot.close_resources();
 }
 

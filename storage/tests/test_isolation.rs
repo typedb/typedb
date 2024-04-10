@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+mod test_common;
+
 use std::path::Path;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
@@ -17,24 +19,10 @@ use storage::{
     snapshot::SnapshotError,
     KeyspaceSet, MVCCStorage,
 };
+use storage::keyspace::KeyspaceId;
 use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
-macro_rules! test_keyspace_set {
-    {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
-        #[derive(Clone, Copy)]
-        enum TestKeyspaceSet { $($variant),* }
-        impl KeyspaceSet for TestKeyspaceSet {
-            fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
-            fn id(&self) -> u8 {
-                match *self { $(Self::$variant => $id),* }
-            }
-            fn name(&self) -> &'static str {
-                match *self { $(Self::$variant => $name),* }
-            }
-        }
-    };
-}
 
 test_keyspace_set! {
     Keyspace => 0: "keyspace",

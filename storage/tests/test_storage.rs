@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+mod test_common;
+
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;
 use itertools::Itertools;
@@ -12,23 +14,8 @@ use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     KeyspaceSet, KeyspaceValidationError, MVCCStorage, StorageRecoverError,
 };
+use storage::keyspace::KeyspaceId;
 use test_utils::{create_tmp_dir, init_logging};
-
-macro_rules! test_keyspace_set {
-    {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
-        #[derive(Clone, Copy)]
-        enum TestKeyspaceSet { $($variant),* }
-        impl KeyspaceSet for TestKeyspaceSet {
-            fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
-            fn id(&self) -> u8 {
-                match *self { $(Self::$variant => $id),* }
-            }
-            fn name(&self) -> &'static str {
-                match *self { $(Self::$variant => $name),* }
-            }
-        }
-    };
-}
 
 #[test]
 fn create_delete() {

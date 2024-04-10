@@ -57,6 +57,10 @@ impl<'a> Relation<'a> {
         Relation { vertex }
     }
 
+    pub(crate) fn as_reference(&self) -> Relation<'_> {
+        Relation { vertex: self.vertex.as_reference() }
+    }
+
     pub fn type_(&self) -> RelationType<'static> {
         RelationType::new(build_vertex_relation_type(self.vertex.type_id_()))
     }
@@ -146,11 +150,6 @@ impl<'a> Relation<'a> {
 impl<'a> ConceptAPI<'a> for Relation<'a> {}
 
 impl<'a> ObjectAPI<'a> for Relation<'a> {
-
-    fn as_reference(&self) -> Relation<'_> {
-        Relation { vertex: self.vertex.as_reference() }
-    }
-
     fn vertex<'this>(&'this self) -> ObjectVertex<'this> {
         self.vertex.as_reference()
     }
