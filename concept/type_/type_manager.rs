@@ -39,8 +39,7 @@ use encoding::{
 use encoding::graph::type_::property::build_property_type_annotation_cardinality;
 use primitive::{maybe_owns::MaybeOwns, prefix_range::PrefixRange};
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
-use resource::constants::snapshot::BUFFER_VALUE_INLINE;
-use storage::{MVCCStorage, snapshot::Snapshot};
+use storage::{MVCCStorage, };
 use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot};
 
 use crate::{

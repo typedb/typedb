@@ -39,7 +39,7 @@ impl<'a> ThingEdgeHas<'a> {
     const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize =
         PrefixID::LENGTH + ObjectVertex::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
 
-    fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.bytes()[Self::RANGE_PREFIX], Prefix::EdgeHas.prefix_id().bytes());
         ThingEdgeHas { bytes }
     }
@@ -136,7 +136,7 @@ pub struct ThingEdgeHasReverse<'a> {
 impl<'a> ThingEdgeHasReverse<'a> {
     const INDEX_FROM_PREFIX: usize = PrefixID::LENGTH;
 
-    fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ThingEdgeHas<'a> {
+    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ThingEdgeHas<'a> {
         debug_assert_eq!(bytes.bytes()[Self::RANGE_PREFIX], Prefix::EdgeHasReverse.prefix_id().bytes());
         ThingEdgeHas { bytes }
     }
@@ -369,7 +369,7 @@ impl<'a> ThingEdgeRelationIndex<'a> {
     const LENGTH: usize = PrefixID::LENGTH + 3 * ObjectVertex::LENGTH + 2 * TypeID::LENGTH;
     pub const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + 1 * ObjectVertex::LENGTH;
 
-    pub(crate) fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         let index = ThingEdgeRelationIndex { bytes: bytes };
         debug_assert_eq!(index.prefix(), Prefix::EdgeRolePlayerIndex);
         index

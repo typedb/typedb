@@ -11,7 +11,7 @@ use std::{
 
 use bytes::{byte_array::ByteArray, Bytes};
 use primitive::prefix_range::PrefixRange;
-use storage::snapshot::{ReadableSnapshot, Snapshot, WritableSnapshot, WriteSnapshot};
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     graph::{

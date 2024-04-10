@@ -296,7 +296,7 @@ impl<D> MVCCStorage<D> {
         Ok(ReadSnapshot::new(self, sequence_number))
     }
 
-    fn snapshot_commit(&self, snapshot: WriteSnapshot<'_, D>) -> Result<(), MVCCStorageError>
+    fn snapshot_commit(&self, snapshot: impl CommittableSnapshot<D>) -> Result<(), MVCCStorageError>
     where
         D: DurabilityService,
     {

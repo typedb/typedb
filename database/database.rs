@@ -18,7 +18,7 @@ use encoding::{
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
     EncodingKeyspace,
 };
-use storage::{error::MVCCStorageError, snapshot::Snapshot, MVCCStorage, StorageRecoverError};
+use storage::{MVCCStorage, StorageRecoverError};
 use storage::snapshot::{ReadSnapshot, WriteSnapshot};
 
 use crate::transaction::{TransactionRead, TransactionWrite};

@@ -7,6 +7,7 @@
 use std::borrow::Cow;
 use std::rc::Rc;
 use std::sync::Mutex;
+use bytes::byte_reference::ByteReference;
 
 use bytes::Bytes;
 use encoding::{
@@ -29,7 +30,8 @@ use encoding::{
 };
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::snapshot::{ReadableSnapshot,  WritableSnapshot};
+use storage::key_value::StorageKeyReference;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
@@ -190,7 +192,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
                 Value::Long(long) => {
                     let encoded_long = Long::build(long);
                     self.vertex_generator.create_attribute_long(
-                       attribute_type.vertex().type_id_(),
+                        attribute_type.vertex().type_id_(),
                         encoded_long,
                         self.snapshot.as_ref(),
                     )
@@ -201,7 +203,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
                 Value::String(string) => {
                     let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);
                     self.vertex_generator.create_attribute_string(
-                       attribute_type.vertex().type_id_(),
+                        attribute_type.vertex().type_id_(),
                         encoded_string,
                         self.snapshot.as_ref(),
                     )
@@ -211,6 +213,89 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
         } else {
             Err(ConceptWriteError::ValueTypeMismatch { expected: value_type, provided: value.value_type() })
         }
+    }
+
+    pub fn finalise(&self) -> Result<(), Vec<ConceptWriteError>> {
+        // 1. validate cardinality constraints on modified relations. For those that have cardinality requirements, we must also put a lock into the snapshot.
+        // 2. check attributes in modified 'has' ownerships to see if they need to be cleaned up (independent & last ownership)
+
+        // find delete attribute ownerships. If is last ownership in this snapshot, delete attribute (other txn will PUT attributes each time, which we can make safely recreate attribute in serialised validation).
+        // find inserted or deleted role players. Validate cardinality of relations.
+        // validate all new relations have at least 1 role player
+        // validate new things with @key ownerships have the required key (more generally, validate ownerships with cardinality have required cardinality)
+
+        // => refined
+
+        // Validate cardinality:
+        //    for new relations, validate each role type's cardinality is respected
+        //    for new role players (existing relations), validate we haven't violated existing relations' cardinality constraints
+        //    for new owners, validate the ownership cardinality
+        //    for new ownershpis, validate we haven't violated existing owners' cardinality constraints
+        // Attribute cleanup:
+        //    For deleted attribute ownerships - if this is the ownership in this snapshot, delete attribute (other txn will PUT attributes each time, which we can make safely recreate attribute in serialised validation)
+        // Relation players:
+        //    validate all new relations have at least 1 role player or ones with deleted players have at least 1 remaining.
+
+
+
+        let writes = self.snapshot.iterate_writes();
+        for (key, write) in writes {
+            let prefix_bytes = key.bytes()[0..PrefixID::LENGTH].try_into().unwrap();
+            match Prefix::from_prefix_id(PrefixID::new(prefix_bytes)) {
+                Prefix::VertexEntity => {
+                    debug_assert!(ObjectVertex::is_object_vertex(StorageKeyReference::from(&key)));
+                    let vertex = ObjectVertex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+                }
+                Prefix::VertexRelation => {
+                    debug_assert!(ObjectVertex::is_object_vertex(StorageKeyReference::from(&key)));
+                    let vertex = ObjectVertex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+                }
+                Prefix::VertexAttributeBoolean
+                | Prefix::VertexAttributeLong
+                | Prefix::VertexAttributeDouble
+                | Prefix::VertexAttributeString => {
+                    debug_assert!(AttributeVertex::is_attribute_vertex(StorageKeyReference::from(&key)));
+                    let vertex = AttributeVertex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+                }
+                Prefix::EdgeHas => {
+                    debug_assert!(ThingEdgeHas::is_has(StorageKeyReference::from(&key)));
+                    let edge = ThingEdgeHas::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+                }
+                Prefix::EdgeHasReverse => {
+                    debug_assert!(ThingEdgeHasReverse::is_has_reverse(StorageKeyReference::from(&key)));
+                    let edge = ThingEdgeHasReverse::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+                }
+                Prefix::EdgeRolePlayer => {
+                    debug_assert!(ThingEdgeRolePlayer::is_role_player(StorageKeyReference::from(&key)));
+                    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+                }
+                Prefix::EdgeRolePlayerReverse => {
+                    debug_assert!(ThingEdgeRolePlayer::is_role_player(StorageKeyReference::from(&key)));
+                    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+                }
+                Prefix::EdgeRolePlayerIndex => {
+                    debug_assert!(ThingEdgeRelationIndex::is_index(StorageKeyReference::from(&key)));
+                    let edge = ThingEdgeRelationIndex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+                },
+                Prefix::VertexEntityType
+                | Prefix::VertexRelationType
+                | Prefix::VertexAttributeType
+                | Prefix::VertexRoleType
+                | Prefix::EdgeSub
+                | Prefix::EdgeSubReverse
+                | Prefix::EdgeOwns
+                | Prefix::EdgeOwnsReverse
+                | Prefix::EdgePlays
+                | Prefix::EdgePlaysReverse
+                | Prefix::EdgeRelates
+                | Prefix::EdgeRelatesReverse
+                | Prefix::PropertyType
+                | Prefix::PropertyTypeEdge
+                | Prefix::IndexLabelToType => unreachable!("Unexpected key in buffered writes."),
+            }
+        }
+
+        todo!()
     }
 
     // --- storage operations ---
@@ -235,9 +320,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
     }
 
     pub fn storage_increment_role_player<'a>(&self,
-        relation: Relation<'_>,
-        player: impl ObjectAPI<'a>,
-        role_type: RoleType<'_>,
+                                             relation: Relation<'_>,
+                                             player: impl ObjectAPI<'a>,
+                                             role_type: RoleType<'_>,
     ) -> u64 {
         let role_player = ThingEdgeRolePlayer::build_role_player(
             relation.vertex(), player.vertex(), role_type.clone().into_vertex(),
@@ -255,8 +340,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
                 }).unwrap();
             let rp_reverse_count = self.snapshot.as_ref()
                 .get_mapped(role_player_reverse.as_storage_key().as_reference(), |val| {
-                decode_value_u64(val)
-            }).unwrap();
+                    decode_value_u64(val)
+                }).unwrap();
             debug_assert_eq!(&rp_count, &rp_reverse_count);
 
             count = rp_count.unwrap_or(0) + 1;
@@ -291,16 +376,16 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
                         player.vertex(),
                         rp.player().vertex(),
                         relation.vertex(),
-                       role_type.vertex().type_id_(),
-                       rp.role_type().vertex().type_id_(),
+                        role_type.vertex().type_id_(),
+                        rp.role_type().vertex().type_id_(),
                     );
                     self.snapshot.as_ref().put_val(index.as_storage_key().into_owned_array(), encoded_count.clone());
                     let index_reverse = ThingEdgeRelationIndex::build(
                         rp.player().vertex(),
                         player.vertex(),
                         relation.vertex(),
-                       rp.role_type().vertex().type_id_(),
-                       role_type.vertex().type_id_(),
+                        rp.role_type().vertex().type_id_(),
+                        role_type.vertex().type_id_(),
                     );
                     self.snapshot.as_ref()
                         .put_val(index_reverse.as_storage_key().into_owned_array(), encoded_count.clone());
@@ -323,8 +408,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
                         player.vertex(),
                         player.vertex(),
                         relation.vertex(),
-                       role_type.vertex().type_id_(),
-                       role_type.vertex().type_id_(),
+                        role_type.vertex().type_id_(),
+                        role_type.vertex().type_id_(),
                     );
                     self.snapshot.as_ref()
                         .put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
@@ -334,8 +419,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
                         player.vertex(),
                         rp.player().vertex(),
                         relation.vertex(),
-                       role_type.vertex().type_id_(),
-                       rp.role_type().vertex().type_id_(),
+                        role_type.vertex().type_id_(),
+                        rp.role_type().vertex().type_id_(),
                     );
                     self.snapshot.as_ref()
                         .put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
@@ -344,7 +429,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
                         player.vertex(),
                         relation.vertex(),
                         rp.role_type().vertex().type_id_(),
-                       role_type.vertex().type_id_(),
+                        role_type.vertex().type_id_(),
                     );
                     self.snapshot.as_ref()
                         .put_val(index_reverse.as_storage_key().into_owned_array(), encode_value_u64(repetitions));

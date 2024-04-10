@@ -10,6 +10,6 @@ mod snapshot;
 pub(crate) mod write;
 
 pub use snapshot::{
-    ReadableSnapshot, WritableSnapshot, ReadSnapshot, CommittableSnapshot, Snapshot,
+    ReadableSnapshot, WritableSnapshot, ReadSnapshot, SchemaSnapshot, CommittableSnapshot,
     SnapshotError, SnapshotGetError, WriteSnapshot
 };

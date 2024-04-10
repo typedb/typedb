@@ -17,9 +17,9 @@ impl PrefixID {
     pub const VERTEX_ATTRIBUTE_MIN: PrefixID = Self::new([50]);
     pub const VERTEX_ATTRIBUTE_MAX: PrefixID = Self::new([100]);
 
-    pub(crate) const LENGTH: usize = 1;
+    pub const LENGTH: usize = 1;
 
-    pub(crate) const fn new(bytes: [u8; PrefixID::LENGTH]) -> Self {
+    pub const fn new(bytes: [u8; PrefixID::LENGTH]) -> Self {
         PrefixID { bytes }
     }
 
