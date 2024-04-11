@@ -77,7 +77,6 @@ impl IsolationManager {
 
     pub(crate) fn load_aborted(&self, sequence_number: SequenceNumber) {
         let (window, slot_index) = self.timeline.get_or_create_window(sequence_number);
-        window.insert_pending(slot_index, CommitRecord::new(OperationsBuffer::new(), sequence_number)); // TODO: Now I could actually get away with not setting this.
         window.set_aborted(slot_index);
         self.timeline.may_increment_watermark(sequence_number);
     }
@@ -507,7 +506,6 @@ impl Timeline {
     fn start_of_nth_window(windows: &VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> , next_window_sequence_number: SequenceNumber, n: usize) -> SequenceNumber {
         next_window_sequence_number - (windows.len() - n) * TIMELINE_WINDOW_SIZE
     }
-
 }
 
 #[derive(Debug)]
@@ -527,8 +525,7 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         TimelineWindow { slot_status, commit_records, readers: AtomicU64::new(0) }
     }
     fn insert_pending(&self, index: usize, commit_record: CommitRecord) {
-        let res = self.commit_records[index].set(commit_record);
-        if res.is_err(){ panic!("Failed at index: {index}"); }
+        self.commit_records[index].set(commit_record).unwrap_or_log();
         self.slot_status[index].store(SlotMarker::Pending.as_u8(), Ordering::SeqCst);
     }
 
