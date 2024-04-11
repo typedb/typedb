@@ -28,7 +28,7 @@ use encoding::{
 };
 use pprof::ProfilerGuard;
 use rand::distributions::{Alphanumeric, DistString};
-use storage::{snapshot::Snapshot, MVCCStorage};
+use storage::{MVCCStorage};
 use storage::snapshot::{CommittableSnapshot, WriteSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 

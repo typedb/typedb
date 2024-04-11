@@ -15,8 +15,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Write {
-    // Mark Key as required from storage. Caches existing storage Value. Conflicts with Delete.
-    RequireExists { value: ByteArray<BUFFER_VALUE_INLINE> },
     // Insert KeyValue with a new version. Never conflicts.
     Insert { value: ByteArray<BUFFER_VALUE_INLINE> },
     // Insert KeyValue with new version if a concurrent Txn deletes Key. Boolean indicates requires re-insertion. Never conflicts.
@@ -28,7 +26,6 @@ pub enum Write {
 impl PartialEq for Write {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::RequireExists { value }, Self::RequireExists { value: other_value }) => value == other_value,
             (Self::Insert { value }, Self::Insert { value: other_value }) => value == other_value,
             (Self::Put { value, reinsert }, Self::Put { value: other_value, reinsert: other_reinsert }) => {
                 other_value == value && reinsert.load(Ordering::Acquire) == other_reinsert.load(Ordering::Acquire)
@@ -56,7 +53,7 @@ impl Write {
 
     pub(crate) fn get_value(&self) -> &ByteArray<BUFFER_VALUE_INLINE> {
         match self {
-            Write::Insert { value } | Write::Put { value, .. } | Write::RequireExists { value } => value,
+            Write::Insert { value } | Write::Put { value, .. } => value,
             Write::Delete => panic!("Buffered delete does not have a value."),
         }
     }

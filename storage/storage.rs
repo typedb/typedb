@@ -38,7 +38,7 @@ use crate::{
         iterator::KeyspaceRangeIterator, Keyspace, KeyspaceCheckpointError, KeyspaceId, KeyspaceOpenError,
         KEYSPACE_ID_MAX, KEYSPACE_ID_RESERVED_UNSET, KEYSPACE_MAXIMUM_COUNT,
     },
-    snapshot::{buffer::KeyspaceBuffers, write::Write, ReadSnapshot, WriteSnapshot},
+    snapshot::{buffer::OperationsBuffer, write::Write, ReadSnapshot, WriteSnapshot},
 };
 use crate::snapshot::CommittableSnapshot;
 
@@ -304,8 +304,8 @@ impl<D> MVCCStorage<D> {
 
         // 0. Assign whether the put operations need to be performed given storage contents at open
         //    sequence number
-        for buffer in commit_record.buffers() {
-            let writes = buffer.map().write().unwrap();
+        for buffer in commit_record.operations() {
+            let writes = buffer.writes().write().unwrap();
             let puts = writes.iter().filter_map(|(key, write)| match write {
                 Write::Put { value, reinsert } => Some((key, value, reinsert)),
                 _ => None,
@@ -366,7 +366,7 @@ impl<D> MVCCStorage<D> {
 
         //  3. write to kv-storage
         let write_batches = self.isolation_manager.apply_to_commit_record(relative_index, |record| {
-            self.to_write_batches(commit_sequence_number, record.buffers())
+            self.to_write_batches(commit_sequence_number, record.operations())
         });
 
         for (index, write_batch) in write_batches.into_iter().enumerate() {
@@ -396,12 +396,12 @@ impl<D> MVCCStorage<D> {
     fn to_write_batches(
         &self,
         seq: SequenceNumber,
-        buffers: &KeyspaceBuffers,
+        buffers: &OperationsBuffer,
     ) -> [Option<WriteBatch>; KEYSPACE_MAXIMUM_COUNT] {
         let mut write_batches: [Option<WriteBatch>; KEYSPACE_MAXIMUM_COUNT] = core::array::from_fn(|_| None);
 
-        for (index, buffer) in buffers.iter().enumerate() {
-            let map = buffer.map().read().unwrap();
+        for (index, buffer) in buffers.write_buffers().enumerate() {
+            let map = buffer.writes().read().unwrap();
             if !map.is_empty() {
                 let mut write_batch = WriteBatch::default();
                 for (key, write) in &*map {
@@ -416,7 +416,6 @@ impl<D> MVCCStorage<D> {
                                 )
                             }
                         }
-                        Write::RequireExists { .. } => (),
                         Write::Delete => {
                             write_batch.put(MVCCKey::build(key.bytes(), seq, StorageOperation::Delete).bytes(), [])
                         }

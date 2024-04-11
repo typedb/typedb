@@ -19,8 +19,8 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     EncodingKeyspace,
 };
-use storage::{snapshot::Snapshot, MVCCStorage};
-use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot};
+use storage::{MVCCStorage};
+use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, ReadSnapshot, WriteSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
 /*

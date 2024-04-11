@@ -165,7 +165,8 @@ fn storage_key_ref_to_entity(storage_key_ref: StorageKeyReference<'_>) -> Relati
 }
 concept_iterator!(RelationIterator, Relation, storage_key_ref_to_entity);
 
-pub(crate) struct RolePlayer<'a, const S: usize> {
+#[derive(Debug, Eq, PartialEq)]
+pub struct RolePlayer<'a, const S: usize> {
     player: Object<'a>,
     role_type: RoleType<'static>,
 }
@@ -419,6 +420,24 @@ impl<'a, const S: usize> IndexedPlayersIterator<'a, S> {
         } else {
             None
         }
+    }
+
+    pub fn collect_cloned_vec<F, M>(mut self, mapper: F) -> Result<Vec<M>, ConceptReadError>
+        where
+            F: for<'b> Fn(RolePlayer<'b, S>, RolePlayer<'b, S>, Relation<'b>) -> M,
+    {
+        let mut vec = Vec::new();
+        loop {
+            let item = self.next();
+            match item {
+                None => break,
+                Some(Err(error)) => return Err(error),
+                Some(Ok((rp_from, rp_to, relation))) => {
+                    vec.push(mapper(rp_from, rp_to, relation));
+                }
+            }
+        }
+        Ok(vec)
     }
 
     pub fn count(mut self) -> usize {

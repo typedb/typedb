@@ -7,6 +7,7 @@
 use std::borrow::Cow;
 use std::rc::Rc;
 use std::sync::Mutex;
+use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
 
 use bytes::Bytes;
@@ -230,70 +231,83 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
         //    for new relations, validate each role type's cardinality is respected
         //    for new role players (existing relations), validate we haven't violated existing relations' cardinality constraints
         //    for new owners, validate the ownership cardinality
-        //    for new ownershpis, validate we haven't violated existing owners' cardinality constraints
+        //    for new ownerships, validate we haven't violated existing owners' cardinality constraints
         // Attribute cleanup:
-        //    For deleted attribute ownerships - if this is the ownership in this snapshot, delete attribute (other txn will PUT attributes each time, which we can make safely recreate attribute in serialised validation)
+        //    For deleted attribute ownerships - if this is the last ownership in this snapshot, delete attribute (other txn will PUT attributes each time, which we can make safely recreate attribute in serialised validation)
         // Relation players:
         //    validate all new relations have at least 1 role player or ones with deleted players have at least 1 remaining.
 
+        // ---------
+        // There is an ordering required:
+        //  1. delete all relations in the initial set that have 0 role players.
+        //       --> This could cause other relations to have fewer players, so we need to iterate on this as a fixed point
+        //  2. Delete attributes that have no owners
+        //  3. Validate cardinality anything with cardinality constraints (relations players, attribute owners)
+        // ---------
 
-
-        let writes = self.snapshot.iterate_writes();
-        for (key, write) in writes {
-            let prefix_bytes = key.bytes()[0..PrefixID::LENGTH].try_into().unwrap();
-            match Prefix::from_prefix_id(PrefixID::new(prefix_bytes)) {
-                Prefix::VertexEntity => {
-                    debug_assert!(ObjectVertex::is_object_vertex(StorageKeyReference::from(&key)));
-                    let vertex = ObjectVertex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-                }
-                Prefix::VertexRelation => {
-                    debug_assert!(ObjectVertex::is_object_vertex(StorageKeyReference::from(&key)));
-                    let vertex = ObjectVertex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-                }
-                Prefix::VertexAttributeBoolean
-                | Prefix::VertexAttributeLong
-                | Prefix::VertexAttributeDouble
-                | Prefix::VertexAttributeString => {
-                    debug_assert!(AttributeVertex::is_attribute_vertex(StorageKeyReference::from(&key)));
-                    let vertex = AttributeVertex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-                }
-                Prefix::EdgeHas => {
-                    debug_assert!(ThingEdgeHas::is_has(StorageKeyReference::from(&key)));
-                    let edge = ThingEdgeHas::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-                }
-                Prefix::EdgeHasReverse => {
-                    debug_assert!(ThingEdgeHasReverse::is_has_reverse(StorageKeyReference::from(&key)));
-                    let edge = ThingEdgeHasReverse::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-                }
-                Prefix::EdgeRolePlayer => {
-                    debug_assert!(ThingEdgeRolePlayer::is_role_player(StorageKeyReference::from(&key)));
-                    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-                }
-                Prefix::EdgeRolePlayerReverse => {
-                    debug_assert!(ThingEdgeRolePlayer::is_role_player(StorageKeyReference::from(&key)));
-                    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-                }
-                Prefix::EdgeRolePlayerIndex => {
-                    debug_assert!(ThingEdgeRelationIndex::is_index(StorageKeyReference::from(&key)));
-                    let edge = ThingEdgeRelationIndex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-                },
-                Prefix::VertexEntityType
-                | Prefix::VertexRelationType
-                | Prefix::VertexAttributeType
-                | Prefix::VertexRoleType
-                | Prefix::EdgeSub
-                | Prefix::EdgeSubReverse
-                | Prefix::EdgeOwns
-                | Prefix::EdgeOwnsReverse
-                | Prefix::EdgePlays
-                | Prefix::EdgePlaysReverse
-                | Prefix::EdgeRelates
-                | Prefix::EdgeRelatesReverse
-                | Prefix::PropertyType
-                | Prefix::PropertyTypeEdge
-                | Prefix::IndexLabelToType => unreachable!("Unexpected key in buffered writes."),
-            }
-        }
+        //
+        // for (key, write) in self.snapshot.iterate_writes_range(
+        //     PrefixRange::new_within(Bytes::Array(ByteArray::copy(&Prefix::EdgeRolePlayer.prefix_id().bytes())))
+        // ).filter(|key, write| matches!(write, Write::)) {
+        //
+        // }
+        //
+        //
+        // for (key, write) in writes {
+        //     let prefix_bytes = key.bytes()[0..PrefixID::LENGTH].try_into().unwrap();
+        //     match Prefix::from_prefix_id(PrefixID::new(prefix_bytes)) {
+        //         Prefix::VertexEntity => {
+        //             debug_assert!(ObjectVertex::is_object_vertex(StorageKeyReference::from(&key)));
+        //             let vertex = ObjectVertex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+        //         }
+        //         Prefix::VertexRelation => {
+        //             debug_assert!(ObjectVertex::is_object_vertex(StorageKeyReference::from(&key)));
+        //             let vertex = ObjectVertex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+        //         }
+        //         Prefix::VertexAttributeBoolean
+        //         | Prefix::VertexAttributeLong
+        //         | Prefix::VertexAttributeDouble
+        //         | Prefix::VertexAttributeString => {
+        //             debug_assert!(AttributeVertex::is_attribute_vertex(StorageKeyReference::from(&key)));
+        //             let vertex = AttributeVertex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+        //         }
+        //         Prefix::EdgeHas => {
+        //             debug_assert!(ThingEdgeHas::is_has(StorageKeyReference::from(&key)));
+        //             let edge = ThingEdgeHas::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+        //         }
+        //         Prefix::EdgeHasReverse => {
+        //             debug_assert!(ThingEdgeHasReverse::is_has_reverse(StorageKeyReference::from(&key)));
+        //             let edge = ThingEdgeHasReverse::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+        //         }
+        //         Prefix::EdgeRolePlayer => {
+        //             debug_assert!(ThingEdgeRolePlayer::is_role_player(StorageKeyReference::from(&key)));
+        //             let edge = ThingEdgeRolePlayer::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+        //         }
+        //         Prefix::EdgeRolePlayerReverse => {
+        //             debug_assert!(ThingEdgeRolePlayer::is_role_player(StorageKeyReference::from(&key)));
+        //             let edge = ThingEdgeRolePlayer::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+        //         }
+        //         Prefix::EdgeRolePlayerIndex => {
+        //             debug_assert!(ThingEdgeRelationIndex::is_index(StorageKeyReference::from(&key)));
+        //             let edge = ThingEdgeRelationIndex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+        //         },
+        //         Prefix::VertexEntityType
+        //         | Prefix::VertexRelationType
+        //         | Prefix::VertexAttributeType
+        //         | Prefix::VertexRoleType
+        //         | Prefix::EdgeSub
+        //         | Prefix::EdgeSubReverse
+        //         | Prefix::EdgeOwns
+        //         | Prefix::EdgeOwnsReverse
+        //         | Prefix::EdgePlays
+        //         | Prefix::EdgePlaysReverse
+        //         | Prefix::EdgeRelates
+        //         | Prefix::EdgeRelatesReverse
+        //         | Prefix::PropertyType
+        //         | Prefix::PropertyTypeEdge
+        //         | Prefix::IndexLabelToType => unreachable!("Unexpected key in buffered writes."),
+        //     }
+        // }
 
         todo!()
     }
@@ -352,7 +366,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
         }
 
         // must lock to fail concurrent transactions updating the same counter
-        self.snapshot.as_ref().record_lock(role_player.into_storage_key());
+        self.snapshot.as_ref().record_lock_existing(role_player.into_storage_key());
         count
     }
 
@@ -400,8 +414,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
             /// both directions of the index should have N*M
             let mut role_player = players.next().transpose().unwrap();
             while let Some((rp, count)) = role_player.as_ref() {
-                debug_assert_eq!(*count, 1);
-                if rp.player() == player && rp.role_type() == role_type && *count < player_count {
+                let duplicate_player = rp.player() == player && rp.role_type() == role_type;
+                if duplicate_player && *count < player_count {
                     // only update index if another writer hasn't already incremented the player count and it will handle the index update
                     let repetitions = player_count - 1;
                     let index = ThingEdgeRelationIndex::build(
@@ -413,7 +427,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
                     );
                     self.snapshot.as_ref()
                         .put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
-                } else {
+                } else if !duplicate_player {
                     let repetitions = player_count * count;
                     let index = ThingEdgeRelationIndex::build(
                         player.vertex(),

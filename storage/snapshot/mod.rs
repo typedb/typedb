@@ -8,8 +8,9 @@ pub mod buffer;
 pub mod iterator;
 mod snapshot;
 pub(crate) mod write;
+pub mod lock;
 
 pub use snapshot::{
     ReadableSnapshot, WritableSnapshot, ReadSnapshot, SchemaSnapshot, CommittableSnapshot,
-    SnapshotError, SnapshotGetError, WriteSnapshot
+    SnapshotError, SnapshotGetError, WriteSnapshot,
 };

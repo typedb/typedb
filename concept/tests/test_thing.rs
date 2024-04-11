@@ -222,6 +222,8 @@ fn role_player_no_duplicates() {
         assert_eq!(company_1.get_relations(&thing_manager).count(), 1);
         assert_eq!(company_2.get_relations(&thing_manager).count(), 1);
         assert_eq!(company_3.get_relations(&thing_manager).count(), 1);
+
+        assert_eq!(person_1.get_indexed_players(&thing_manager).count(), 3);
     }
 
     let write_snapshot = Rc::try_unwrap(snapshot).ok().unwrap();

@@ -28,7 +28,8 @@ use logger::result::ResultExt;
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 use serde::{Deserialize, Serialize};
 
-use crate::snapshot::{buffer::KeyspaceBuffers, write::Write};
+use crate::snapshot::{buffer::OperationsBuffer, write::Write};
+use crate::snapshot::lock::LockType;
 
 #[derive(Debug)]
 pub(crate) struct IsolationManager {
@@ -75,7 +76,7 @@ impl IsolationManager {
 
     pub(crate) fn load_aborted(&self, relative_index: i64, sequence_number: SequenceNumber) {
         let (window, slot_index) = self.timeline.get_or_create_window(relative_index);
-        window.insert_pending(slot_index, sequence_number, CommitRecord::new(KeyspaceBuffers::new(), sequence_number));
+        window.insert_pending(slot_index, sequence_number, CommitRecord::new(OperationsBuffer::new(), sequence_number));
         window.set_aborted(slot_index);
         self.timeline.may_increment_watermark(relative_index);
     }
@@ -322,8 +323,9 @@ enum CommitDependency {
 
 #[derive(Debug)]
 pub enum IsolationConflict {
-    DeleteRequired,
-    RequiredDelete,
+    DeletingRequiredKey,
+    RequireDeletedKey,
+    ExclusiveLock,
 }
 
 #[derive(Debug)]
@@ -334,11 +336,14 @@ pub enum IsolationError {
 impl fmt::Display for IsolationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Conflict(IsolationConflict::DeleteRequired) => {
-                write!(f, "Isolation violation: Delete-Require conflict. A preceding concurrent commit has deleted a key required by this transaction. Please retry.")
+            Self::Conflict(IsolationConflict::DeletingRequiredKey) => {
+                write!(f, "Isolation violation: Delete-Required conflict. This commit has deleted a key required by a preceding concurrent transaction. Please retry.")
             }
-            Self::Conflict(IsolationConflict::RequiredDelete) => {
-                write!(f, "Isolation violation: Require-Delete conflict. This commit has deleted a key required by a preceding concurrent transaction. Please retry.")
+            Self::Conflict(IsolationConflict::RequireDeletedKey) => {
+                write!(f, "Isolation violation: Required-Delete conflict. A preceding concurrent commit has deleted a key required by this transaction. Please retry.")
+            }
+            IsolationError::Conflict(IsolationConflict::ExclusiveLock) => {
+                write!(f, "Isolation violation: A preceding concurrent transaction has obtained an exclusive lock on a key also exclusively locked by this transaction. Please retry.")
             }
         }
     }
@@ -667,7 +672,7 @@ impl SlotMarker {
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct CommitRecord {
     // TODO: this could read-through to the WAL if we have to save memory?
-    buffers: KeyspaceBuffers,
+    operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
 }
 
@@ -684,12 +689,12 @@ pub(crate) struct StatusRecord {
 }
 
 impl CommitRecord {
-    pub(crate) fn new(buffers: KeyspaceBuffers, open_sequence_number: SequenceNumber) -> CommitRecord {
-        CommitRecord { buffers, open_sequence_number }
+    pub(crate) fn new(operations: OperationsBuffer, open_sequence_number: SequenceNumber) -> CommitRecord {
+        CommitRecord { operations: operations, open_sequence_number }
     }
 
-    pub(crate) fn buffers(&self) -> &KeyspaceBuffers {
-        &self.buffers
+    pub(crate) fn operations(&self) -> &OperationsBuffer {
+        &self.operations
     }
 
     pub(crate) fn open_sequence_number(&self) -> SequenceNumber {
@@ -706,34 +711,32 @@ impl CommitRecord {
     }
 
     fn compute_dependency(&self, predecessor: &CommitRecord) -> CommitDependency {
-        // TODO: this can be optimised by some kind of bit-wise NAND of two bloom filter-like data
+        // TODO: this can be optimised by some kind of bit-wise AND of two bloom filter-like data
         // structures first, since we assume few clashes this should mostly succeed
         // TODO: can be optimised with an intersection of two sorted iterators instead of iterate + gets
 
         let mut puts_to_update = Vec::new();
 
-        for (buffer, predecessor_buffer) in self.buffers().iter().zip(predecessor.buffers()) {
-            let map = buffer.map().read().unwrap();
-            if map.is_empty() {
-                continue;
-            }
+        // we check self operations against predecessor operations.
+        //   if our buffer contains a delete, we check the predecessor doesn't have an Existing lock on it
+        // We check
 
-            let predecessor_map = predecessor_buffer.map().read().unwrap();
-            if predecessor_map.is_empty() {
-                continue;
-            }
+        let locks = self.operations().locks().read().unwrap();
+        let predecessor_locks = predecessor.operations().locks().read().unwrap();
+        for (write_buffer, pred_write_buffer) in self.operations().write_buffers().zip(predecessor.operations()) {
+            let writes = write_buffer.writes().read().unwrap();
+            // if writes.is_empty() && locks.is_empty() {
+            //     continue;
+            // }
 
-            for (key, write) in map.iter() {
-                if let Some(predecessor_write) = predecessor_map.get(key.bytes()) {
+            let predecessor_writes = pred_write_buffer.writes().read().unwrap();
+            // if predecessor_writes.is_empty() && predecessor_locks.is_empty() {
+            //     continue;
+            // }
+
+            for (key, write) in writes.iter() {
+                if let Some(predecessor_write) = predecessor_writes.get(key.bytes()) {
                     match (predecessor_write, write) {
-                        (Write::Delete, Write::RequireExists { .. }) => {
-                            return CommitDependency::Conflict(IsolationConflict::DeleteRequired);
-                        }
-                        (Write::RequireExists { .. }, Write::Delete) => {
-                            // we escalate required-delete to failure, since requires implies dependencies that may be broken
-                            // TODO: maybe RequireExists should be RequireDependency to capture this?
-                            return CommitDependency::Conflict(IsolationConflict::RequiredDelete);
-                        }
                         (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
                             puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
                         }
@@ -743,6 +746,25 @@ impl CommitRecord {
                         _ => (),
                     }
                 }
+                if matches!(write, Write::Delete) && matches!(predecessor_locks.get(key), Some(LockType::Required)) {
+                    return CommitDependency::Conflict(IsolationConflict::DeletingRequiredKey);
+                }
+            }
+
+            // TODO: this is ineffecient since we loop over all locks each time - should we locks into keyspaces?
+            //    Investigate
+            for (key, lock) in locks.iter() {
+                if matches!(lock, LockType::Required) {
+                    if let Some(Write::Delete) = predecessor_writes.get(key) {
+                        return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
+                    }
+                }
+            }
+        }
+
+        for (key, lock) in locks.iter() {
+            if matches!(lock, LockType::New) && matches!(predecessor_locks.get(key), Some(LockType::New)) {
+                return CommitDependency::Conflict(IsolationConflict::ExclusiveLock);
             }
         }
 
@@ -861,7 +883,7 @@ mod tests {
 
     use crate::{
         isolation_manager::{CommitRecord, CommitStatus, Timeline, TIMELINE_WINDOW_SIZE},
-        snapshot::buffer::KeyspaceBuffers,
+        snapshot::buffer::OperationsBuffer,
     };
 
     struct MockTransaction {
@@ -886,7 +908,7 @@ mod tests {
         window.insert_pending(
             slot_index,
             SequenceNumber::MIN,
-            CommitRecord::new(KeyspaceBuffers::new(), SequenceNumber::MIN),
+            CommitRecord::new(OperationsBuffer::new(), SequenceNumber::MIN),
         );
         window.set_aborted(slot_index);
         timeline.may_increment_watermark(0);
@@ -935,7 +957,7 @@ mod tests {
     }
 
     fn _record(read_sequence_number: SequenceNumber) -> CommitRecord {
-        CommitRecord::new(KeyspaceBuffers::new(), read_sequence_number)
+        CommitRecord::new(OperationsBuffer::new(), read_sequence_number)
     }
 
     #[test]

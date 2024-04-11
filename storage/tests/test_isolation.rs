@@ -107,7 +107,7 @@ fn g0_update_conflicts_fail() {
                 SnapshotError::Commit {
                     source: MVCCStorageError {
                         kind: MVCCStorageErrorKind::IsolationError {
-                            source: IsolationError::Conflict(IsolationConflict::RequiredDelete),
+                            source: IsolationError::Conflict(IsolationConflict::DeletingRequiredKey),
                             ..
                         },
                         ..
@@ -166,7 +166,7 @@ fn isolation_manager_reads_evicted_from_disk() {
                     SnapshotError::Commit {
                     source: MVCCStorageError {
                         kind: MVCCStorageErrorKind::IsolationError {
-                            source: IsolationError::Conflict(IsolationConflict::DeleteRequired),
+                            source: IsolationError::Conflict(IsolationConflict::RequireDeletedKey),
                             ..
                         },
                         ..

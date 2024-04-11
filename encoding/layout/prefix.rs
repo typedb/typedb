@@ -23,7 +23,7 @@ impl PrefixID {
         PrefixID { bytes }
     }
 
-    pub(crate) const fn bytes(&self) -> [u8; PrefixID::LENGTH] {
+    pub const fn bytes(&self) -> [u8; PrefixID::LENGTH] {
         self.bytes
     }
 
