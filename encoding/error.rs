@@ -14,6 +14,7 @@ pub struct EncodingError {
 #[derive(Debug)]
 pub enum EncodingErrorKind {
     FailedUFT8Decode { bytes: Box<[u8]>, source: Utf8Error },
+    FailedTypeIDAllocation
 }
 
 impl fmt::Display for EncodingError {

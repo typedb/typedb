@@ -17,6 +17,11 @@ fn entity_type_vertexes_are_reused() {
     let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
 
     // TODO: create a bunch of types, delete, and assert that the IDs are re-used
+
+    // Assert re-use on undefine
+
+    // Assert re-use on aborted commits
+
 }
 
 #[test]
@@ -38,4 +43,5 @@ fn loading_storage_assigns_next_vertex() {
 
     // TODO: test that when loading an existing database (create database, create types, close database, then re-open)
     //       that the next Type vertex ID is the expected one
+
 }
