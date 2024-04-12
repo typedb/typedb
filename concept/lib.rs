@@ -8,6 +8,7 @@
 #![deny(elided_lifetimes_in_paths)]
 
 use bytes::byte_reference::ByteReference;
+use storage::key_value::StorageKeyReference;
 
 pub mod error;
 pub mod iterator;
@@ -17,3 +18,14 @@ mod messages;
 
 pub trait ConceptAPI<'a>: Eq + PartialEq {}
 
+pub(crate) trait GetStatus {
+    fn get_status(&self, key: StorageKeyReference<'_>) -> ConceptStatus;
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum ConceptStatus {
+    Inserted,
+    Put,
+    Persisted,
+    Deleted, // should generally be unused in the Concept layer
+}

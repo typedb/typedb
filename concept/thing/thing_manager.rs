@@ -7,9 +7,9 @@
 use std::borrow::Cow;
 use std::rc::Rc;
 use std::sync::Mutex;
+
 use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
-
 use bytes::Bytes;
 use encoding::{
     graph::{
@@ -18,39 +18,38 @@ use encoding::{
             vertex_attribute::AttributeVertex,
             vertex_generator::{LongAttributeID, StringAttributeID, ThingVertexGenerator},
             vertex_object::ObjectVertex,
-        },
-        type_::vertex::TypeVertex,
+        }
+        ,
         Typed,
     },
+    Keyable,
     layout::prefix::{Prefix, PrefixID},
     value::{
         decode_value_u64, encode_value_u64,
         long::Long, string::StringBytes, value_type::ValueType,
     },
-    Keyable,
 };
+
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKeyReference;
+use storage::key_value::StorageKey;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::write::Write;
 
-use crate::{
-    error::{ConceptReadError, ConceptWriteError},
-    thing::{
-        attribute::{Attribute, AttributeIterator},
-        entity::{Entity, EntityIterator},
-        relation::{IndexedPlayersIterator, Relation, RelationIterator, RelationRoleIterator, RolePlayerIterator},
-        value::Value,
-        object::Object,
-    },
-    type_::{
-        attribute_type::AttributeType, entity_type::EntityType, type_manager::TypeManager,
-        relation_type::RelationType,
-        role_type::RoleType,
-        TypeAPI,
-    },
-};
-use crate::thing::ObjectAPI;
+use crate::{ConceptStatus, error::{ConceptReadError, ConceptWriteError}, thing::{
+    attribute::{Attribute, AttributeIterator},
+    entity::{Entity, EntityIterator},
+    object::Object,
+    relation::{IndexedPlayersIterator, Relation, RelationIterator, RelationRoleIterator, RolePlayerIterator},
+    value::Value,
+}, type_::{
+    attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType,
+    role_type::RoleType,
+    type_manager::TypeManager,
+    TypeAPI,
+}};
+use crate::thing::{ObjectAPI, ThingAPI};
+use crate::thing::object::HasAttributeIterator;
 
 pub struct ThingManager<'txn, Snapshot> {
     snapshot: Rc<Snapshot>,
@@ -138,23 +137,15 @@ impl<'txn, Snapshot: ReadableSnapshot> ThingManager<'txn, Snapshot> {
         }
     }
 
-    pub(crate) fn get_indexed_players(
-        &self, from: Object<'_>,
-    ) -> IndexedPlayersIterator<'_, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
-        let prefix = ThingEdgeRelationIndex::prefix_from(from.vertex());
-        IndexedPlayersIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
-    }
-
-    // --- storage operations ---
-    pub(crate) fn storage_get_has<'this, 'a>(
+    pub(crate) fn get_has_of<'this, 'a>(
         &'this self,
         owner: impl ObjectAPI<'a>,
-    ) -> AttributeIterator<'this, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+    ) -> HasAttributeIterator<'this, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         let prefix = ThingEdgeHas::prefix_from_object(owner.into_vertex());
-        AttributeIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
+        HasAttributeIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
     }
 
-    pub(crate) fn storage_get_relations<'this, 'a>(
+    pub(crate) fn get_relations_of<'this, 'a>(
         &'this self,
         player: impl ObjectAPI<'a>,
     ) -> RelationRoleIterator<'this, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
@@ -162,11 +153,36 @@ impl<'txn, Snapshot: ReadableSnapshot> ThingManager<'txn, Snapshot> {
         RelationRoleIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
     }
 
-    pub(crate) fn storage_get_role_players<'this, 'a>(
+    pub(crate) fn has_role_players<'this, 'a>(&'this self, relation: Relation<'a>, buffered_only: bool) -> bool {
+        let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation.into_vertex());
+        self.snapshot.any_in_range(PrefixRange::new_within(prefix), buffered_only)
+    }
+
+    pub(crate) fn get_role_players_of<'this, 'a>(
         &'this self, relation: impl ObjectAPI<'a>,
     ) -> RolePlayerIterator<'txn, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> where 'this: 'txn {
         let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation.into_vertex());
         RolePlayerIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
+    }
+
+    pub(crate) fn get_indexed_players_of(
+        &self, from: Object<'_>,
+    ) -> IndexedPlayersIterator<'_, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
+        let prefix = ThingEdgeRelationIndex::prefix_from(from.vertex());
+        IndexedPlayersIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
+    }
+
+    pub(crate) fn get_status(&self, key: StorageKey<'_, BUFFER_KEY_INLINE>) -> ConceptStatus {
+        self.snapshot.get_buffered_write_mapped(key.as_reference(), |write| {
+            match write {
+                Write::Insert { .. } => ConceptStatus::Inserted,
+                Write::Put { .. } => ConceptStatus::Put,
+                Write::Delete => ConceptStatus::Deleted,
+            }
+        }).unwrap_or_else(|| {
+            debug_assert!(self.snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()).unwrap().is_some());
+            ConceptStatus::Persisted
+        })
     }
 }
 
@@ -245,10 +261,21 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
         //  3. Validate cardinality anything with cardinality constraints (relations players, attribute owners)
         // ---------
 
-        //
-        // for (key, write) in self.snapshot.iterate_writes_range(
-        //     PrefixRange::new_within(Bytes::Array(ByteArray::copy(&Prefix::EdgeRolePlayer.prefix_id().bytes())))
-        // ).filter(|key, write| matches!(write, Write::)) {
+        let mut errors: Vec<ConceptWriteError> = Vec::new();
+        for (key, write) in self.snapshot.iterate_writes_range(
+            PrefixRange::new_within(Bytes::Array(ByteArray::<{ PrefixID::LENGTH }>::copy(&Prefix::EdgeRolePlayer.prefix_id().bytes())))
+        ).filter(|(_, write)| matches!(write, Write::Delete)) {
+            let edge = ThingEdgeRolePlayer::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+            let relation = Relation::new(edge.to());
+            if !relation.has_players(self) {
+                let result = relation.delete(self);
+                if result.is_err() {
+                    errors.push(result.unwrap_err())
+                }
+            }
+        };
+
+
         //
         // }
         //
@@ -312,15 +339,24 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
         todo!()
     }
 
-    // --- storage operations ---
-    pub(crate) fn storage_set_has<'a>(&self, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
+    pub(crate) fn set_has<'a>(&self, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
+        // TODO: if duplicatable, increment
         self.snapshot.as_ref().put(has.into_storage_key().into_owned_array());
         let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.into_vertex());
         self.snapshot.as_ref().put(has_reverse.into_storage_key().into_owned_array());
     }
 
-    pub fn storage_set_role_player<'a>(&self, relation: Relation<'_>, player: impl ObjectAPI<'a>, role_type: RoleType<'_>) {
+    pub(crate) fn delete_has<'a>(&self, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
+        // TODO: lock owner and attribute to prevent concurrent deletes
+        let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
+        // TODO: if duplicatable, increment
+        self.snapshot.as_ref().delete(has.into_storage_key().into_owned_array());
+        let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.into_vertex());
+        self.snapshot.as_ref().delete(has_reverse.into_storage_key().into_owned_array());
+    }
+
+    pub fn set_role_player<'a>(&self, relation: Relation<'_>, player: impl ObjectAPI<'a>, role_type: RoleType<'_>) {
         let role_player = ThingEdgeRolePlayer::build_role_player(
             relation.vertex(), player.vertex(), role_type.clone().into_vertex(),
         );
@@ -333,10 +369,21 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
         self.snapshot.as_ref().put_val(role_player_reverse.into_storage_key().into_owned_array(), encode_value_u64(count));
     }
 
-    pub fn storage_increment_role_player<'a>(&self,
-                                             relation: Relation<'_>,
-                                             player: impl ObjectAPI<'a>,
-                                             role_type: RoleType<'_>,
+    pub fn delete_role_player<'a>(&self, relation: Relation<'_>, player: impl ObjectAPI<'a>, role_type: RoleType<'_>) {
+        let role_player = ThingEdgeRolePlayer::build_role_player(
+            relation.vertex(), player.vertex(), role_type.clone().into_vertex(),
+        );
+        self.snapshot.as_ref().delete(role_player.into_storage_key().into_owned_array());
+        let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
+            player.into_vertex(), relation.into_vertex(), role_type.into_vertex(),
+        );
+        self.snapshot.as_ref().delete(role_player_reverse.into_storage_key().into_owned_array());
+    }
+
+    pub fn increment_role_player<'a>(&self,
+                                     relation: Relation<'_>,
+                                     player: impl ObjectAPI<'a>,
+                                     role_type: RoleType<'_>,
     ) -> u64 {
         let role_player = ThingEdgeRolePlayer::build_role_player(
             relation.vertex(), player.vertex(), role_type.clone().into_vertex(),
@@ -365,7 +412,51 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
                 .put_val(role_player_reverse.as_storage_key().into_owned_array(), encode_value_u64(reverse_count));
         }
 
-        // must lock to fail concurrent transactions updating the same counter
+        // must lock to fail concurrent transactions updating the same counters
+        self.snapshot.as_ref().record_lock_existing(role_player.into_storage_key());
+        count
+    }
+
+    pub fn decrement_role_player<'a>(&self,
+                                     relation: Relation<'_>,
+                                     player: impl ObjectAPI<'a>,
+                                     role_type: RoleType<'_>,
+    ) -> u64 {
+        let role_player = ThingEdgeRolePlayer::build_role_player(
+            relation.vertex(), player.vertex(), role_type.clone().into_vertex(),
+        );
+        let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
+            player.vertex(), relation.vertex(), role_type.into_vertex(),
+        );
+
+        let mut count = 0;
+        {
+            let lock = self.relation_lock.lock().unwrap();
+            let rp_count = self.snapshot.as_ref()
+                .get_mapped(role_player.as_storage_key().as_reference(), |val| {
+                    decode_value_u64(val)
+                }).unwrap();
+            let rp_reverse_count = self.snapshot.as_ref()
+                .get_mapped(role_player_reverse.as_storage_key().as_reference(), |val| {
+                    decode_value_u64(val)
+                }).unwrap();
+            debug_assert_eq!(&rp_count, &rp_reverse_count);
+
+            count = rp_count.unwrap() - 1;
+            debug_assert!(count >= 0);
+            let reverse_count = rp_reverse_count.unwrap() - 1;
+            debug_assert!(reverse_count >= 0);
+            if count == 0 {
+                self.snapshot.as_ref().delete(role_player.as_storage_key().into_owned_array());
+                self.snapshot.as_ref().delete(role_player_reverse.as_storage_key().into_owned_array());
+            } else {
+                self.snapshot.as_ref().put_val(role_player.as_storage_key().into_owned_array(), encode_value_u64(count));
+                self.snapshot.as_ref()
+                    .put_val(role_player_reverse.as_storage_key().into_owned_array(), encode_value_u64(reverse_count));
+            }
+        }
+
+        // must lock to fail concurrent transactions updating the same counters
         self.snapshot.as_ref().record_lock_existing(role_player.into_storage_key());
         count
     }

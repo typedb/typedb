@@ -40,6 +40,11 @@ pub trait ReadableSnapshot {
         &'this self,
         range: PrefixRange<StorageKey<'this, PS>>,
     ) -> SnapshotRangeIterator<'this, PS>;
+
+    fn any_in_range<'this, const PS: usize>(&'this self, range: PrefixRange<StorageKey<'this, PS>>, buffered_only: bool) -> bool;
+
+    // --- we are slightly breaking the abstraction and Rust model by mimicking polymorphism for the following methods ---
+    fn get_buffered_write_mapped<T>(&self, key: StorageKeyReference<'_>, mapper: impl FnMut(&Write) -> T) -> Option<T>;
 }
 
 pub trait WritableSnapshot: ReadableSnapshot {
@@ -176,6 +181,14 @@ impl<'storage, D> ReadableSnapshot for ReadSnapshot<'storage, D> {
         let mvcc_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(mvcc_iterator, None)
     }
+
+    fn any_in_range<'this, const PS: usize>(&'this self, range: PrefixRange<StorageKey<'this, PS>>, buffered_only: bool) -> bool {
+        !buffered_only && self.storage.iterate_range(range, self.open_sequence_number).next().is_some()
+    }
+
+    fn get_buffered_write_mapped<T>(&self, key: StorageKeyReference<'_>, mapper: impl FnMut(&Write) -> T) -> Option<T> {
+        None
+    }
 }
 
 #[derive(Debug)]
@@ -235,6 +248,17 @@ impl<'storage, D> ReadableSnapshot for WriteSnapshot<'storage, D> {
             .iterate_range(range.clone().map(|k| k.into_byte_array_or_ref()));
         let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
+    }
+
+    fn any_in_range<'this, const PS: usize>(&'this self, range: PrefixRange<StorageKey<'this, PS>>, buffered_only: bool) -> bool {
+        let buffered = self.operations
+            .writes_in(range.start().keyspace_id())
+            .any_in_range(range.clone().map(|k| k.into_byte_array_or_ref()));
+         buffered || (!buffered_only &&  self.storage.iterate_range(range, self.open_sequence_number).next().is_some())
+    }
+
+    fn get_buffered_write_mapped<T>(&self, key: StorageKeyReference<'_>, mapper: impl FnMut(&Write) -> T) -> Option<T> {
+        self.operations().writes_in(key.keyspace_id()).get_write_mapped(key.byte_ref(), mapper)
     }
 }
 
@@ -320,6 +344,17 @@ impl<'storage, D> ReadableSnapshot for SchemaSnapshot<'storage, D> {
             .iterate_range(range.clone().map(|k| k.into_byte_array_or_ref()));
         let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
+    }
+
+    fn any_in_range<'this, const PS: usize>(&'this self, range: PrefixRange<StorageKey<'this, PS>>, buffered_only: bool) -> bool {
+        let buffered = self.operations
+            .writes_in(range.start().keyspace_id())
+            .any_in_range(range.clone().map(|k| k.into_byte_array_or_ref()));
+        buffered || (!buffered_only &&  self.storage.iterate_range(range, self.open_sequence_number).next().is_some())
+    }
+
+    fn get_buffered_write_mapped<T>(&self, key: StorageKeyReference<'_>, mapper: impl FnMut(&Write) -> T) -> Option<T> {
+        self.operations().writes_in(key.keyspace_id()).get_write_mapped(key.byte_ref(), mapper)
     }
 }
 

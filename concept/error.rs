@@ -37,6 +37,7 @@ impl Error for ConceptError {
 pub enum ConceptWriteError {
     SnapshotGet { source: SnapshotGetError },
     SnapshotIterate { source: Arc<SnapshotIteratorError> },
+    ConceptRead { source: ConceptReadError },
 
     ValueTypeMismatch { expected: Option<ValueType>, provided: ValueType },
 }
@@ -52,6 +53,7 @@ impl Error for ConceptWriteError {
         match self {
             Self::SnapshotGet { source, .. } => Some(source),
             Self::SnapshotIterate { source, .. } => Some(source),
+            Self::ConceptRead { source } => Some(source),
             Self::ValueTypeMismatch { .. } => None,
         }
     }

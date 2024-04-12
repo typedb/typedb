@@ -7,7 +7,7 @@
 pub mod buffer;
 pub mod iterator;
 mod snapshot;
-pub(crate) mod write;
+pub mod write;
 pub mod lock;
 
 pub use snapshot::{

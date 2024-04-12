@@ -7,30 +7,33 @@
 use std::{
     borrow::Borrow,
     cmp::Ordering,
-    collections::{BTreeMap, Bound},
-    fmt,
-    mem::{transmute, MaybeUninit},
+    collections::{Bound, BTreeMap},
+    fmt
+    ,
     sync::{Arc, RwLock},
 };
 
-use bytes::{byte_array::ByteArray, util::increment, Bytes};
-use iterator::State;
-use primitive::prefix_range::{PrefixRange, RangeEnd};
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use serde::{
     de,
     de::{MapAccess, SeqAccess, Visitor},
-    ser::{SerializeStruct, SerializeTuple},
-    Deserialize, Deserializer, Serialize, Serializer,
+    Deserialize,
+    Deserializer, ser::{SerializeStruct, SerializeTuple}, Serialize, Serializer,
 };
 
-use super::iterator::SnapshotIteratorError;
+use bytes::{byte_array::ByteArray, Bytes, util::increment};
+use bytes::byte_reference::ByteReference;
+use iterator::State;
+use primitive::prefix_range::{PrefixRange, RangeEnd};
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
+
 use crate::{
     key_value::StorageKeyArray,
-    keyspace::{KeyspaceId, KEYSPACE_MAXIMUM_COUNT},
+    keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId},
     snapshot::{snapshot::SnapshotError, write::Write},
 };
-use crate::snapshot::lock::{LockType};
+use crate::snapshot::lock::LockType;
+
+use super::iterator::SnapshotIteratorError;
 
 #[derive(Debug)]
 pub(crate) struct OperationsBuffer {
@@ -42,7 +45,7 @@ impl OperationsBuffer {
     pub(crate) fn new() -> OperationsBuffer {
         OperationsBuffer {
             write_buffers: core::array::from_fn(|i| WriteBuffer::new(KeyspaceId(i as u8))),
-            locks: RwLock::new(BTreeMap::new())
+            locks: RwLock::new(BTreeMap::new()),
         }
     }
 
@@ -137,13 +140,40 @@ impl WriteBuffer {
         &self,
         range: PrefixRange<Bytes<'_, INLINE>>,
     ) -> BufferedPrefixIterator {
+        let (range_start, range_end) = range.into_raw();
+        let exclusive_end_bytes = Self::compute_exclusive_end(range_start.as_reference(), &range_end);
+        let end = if matches!(range_end, RangeEnd::Unbounded) {
+            Bound::Unbounded
+        } else {
+            Bound::Excluded(exclusive_end_bytes.bytes())
+        };
         let map = self.writes.read().unwrap();
-        let (start, end) = range.into_raw();
-        let range_start = Bound::Included(start.bytes());
+        BufferedPrefixIterator::new(map
+            .range::<[u8], _>((Bound::Included(range_start.bytes()), end))
+            .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
+            .collect::<Vec<_>>())
+    }
 
-        let exclusive_end_bytes = match &end {
+    pub(crate) fn any_in_range<const INLINE: usize>(&self, range: PrefixRange<Bytes<'_, INLINE>>) -> bool {
+        let (range_start, range_end) = range.into_raw();
+        let exclusive_end_bytes = Self::compute_exclusive_end(range_start.as_reference(), &range_end);
+        let end = if matches!(range_end, RangeEnd::Unbounded) {
+            Bound::Unbounded
+        } else {
+            Bound::Excluded(exclusive_end_bytes.bytes())
+        };
+        let map = self.writes.read().unwrap();
+        map
+            .range::<[u8], _>((Bound::Included(range_start.bytes()), end))
+            .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
+            .next()
+            .is_some()
+    }
+
+    fn compute_exclusive_end<const INLINE: usize>(start: ByteReference<'_>, end: &RangeEnd<Bytes<'_, INLINE>>) -> ByteArray<INLINE> {
+        match end {
             RangeEnd::SameAsStart => {
-                let mut start_plus_1 = start.clone().into_array();
+                let mut start_plus_1 = ByteArray::from(start);
                 increment(start_plus_1.bytes_mut()).unwrap();
                 start_plus_1
             }
@@ -154,22 +184,17 @@ impl WriteBuffer {
             }
             RangeEnd::Exclusive(value) => value.clone().into_array(),
             RangeEnd::Unbounded => ByteArray::empty(),
-        };
-        let range_end = if matches!(end, RangeEnd::Unbounded) {
-            Bound::Unbounded
-        } else {
-            Bound::Excluded(exclusive_end_bytes.bytes())
-        };
-
-        let values = map
-            .range::<[u8], _>((range_start, range_end))
-            .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
-            .collect::<Vec<_>>();
-        BufferedPrefixIterator::new(values)
+        }
     }
+
 
     pub(crate) fn writes(&self) -> &RwLock<BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>> {
         &self.writes
+    }
+
+    pub(crate) fn get_write_mapped<T>(&self, key: ByteReference<'_>, mapper: impl FnMut(&Write) -> T) -> Option<T> {
+        let writes = self.writes.read().unwrap();
+        writes.get(key.bytes()).map(mapper)
     }
 }
 
@@ -343,7 +368,7 @@ impl<'de> Deserialize<'de> for OperationsBuffer {
                 let write_buffers = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 let locks: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, LockType> =
                     seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                Ok(OperationsBuffer{ write_buffers , locks: RwLock::new(locks) })
+                Ok(OperationsBuffer { write_buffers, locks: RwLock::new(locks) })
             }
 
             // fn visit_map<V>(self, mut map: V) -> Result<KeyspaceBuffers, V::Error>

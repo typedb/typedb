@@ -5,31 +5,24 @@
  */
 
 use bytes::Bytes;
-use encoding::{
-    graph::{
-        thing::{edge::ThingEdgeHas, vertex_object::ObjectVertex},
-        type_::vertex::build_vertex_entity_type,
-        Typed,
-    },
-    layout::prefix::Prefix,
-    AsBytes, Prefixed,
-};
+use encoding::{AsBytes, graph::{
+    thing::{edge::ThingEdgeHas, vertex_object::ObjectVertex},
+    type_::vertex::build_vertex_entity_type,
+    Typed,
+}, Keyable, layout::prefix::Prefix, Prefixed};
 use encoding::graph::thing::edge::{ThingEdgeRelationIndex, ThingEdgeRolePlayer};
 use storage::key_value::StorageKeyReference;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{
-    concept_iterator,
-    thing::{
-        object::Object,
-        attribute::{Attribute, AttributeIterator},
-        thing_manager::ThingManager,
-        relation::{IndexedPlayersIterator, RelationRoleIterator},
-    },
-    type_::entity_type::EntityType,
-    ByteReference, ConceptAPI,
-};
-use crate::thing::ObjectAPI;
+use crate::{ByteReference, concept_iterator, ConceptAPI, ConceptStatus, GetStatus, thing::{
+    attribute::{Attribute, AttributeIterator},
+    object::Object,
+    relation::{IndexedPlayersIterator, RelationRoleIterator},
+    thing_manager::ThingManager,
+}, type_::entity_type::EntityType};
+use crate::error::ConceptWriteError;
+use crate::thing::{ObjectAPI, ThingAPI};
+use crate::thing::object::HasAttributeIterator;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Entity<'a> {
@@ -57,13 +50,13 @@ impl<'a> Entity<'a> {
     pub fn get_has<'m>(
         &self,
         thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
-    ) -> AttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
-        thing_manager.storage_get_has(self.as_reference())
+    ) -> HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+        thing_manager.get_has_of(self.as_reference())
     }
 
     pub fn set_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: Attribute<'_>) {
         // TODO: validate schema
-        thing_manager.storage_set_has(self.as_reference(), attribute.as_reference())
+        thing_manager.set_has(self.as_reference(), attribute.as_reference())
     }
 
     pub fn delete_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: &Attribute<'_>) {
@@ -75,13 +68,13 @@ impl<'a> Entity<'a> {
     pub fn get_relations<'m>(
         &self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
     ) -> RelationRoleIterator<'m, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
-        thing_manager.storage_get_relations(self.as_reference())
+        thing_manager.get_relations_of(self.as_reference())
     }
 
     pub fn get_indexed_players<'m>(
         &self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
     ) -> IndexedPlayersIterator<'m, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
-        thing_manager.get_indexed_players(Object::Entity(self.as_reference()))
+        thing_manager.get_indexed_players_of(Object::Entity(self.as_reference()))
     }
 
     pub(crate) fn into_owned(self) -> Entity<'static> {
@@ -91,8 +84,17 @@ impl<'a> Entity<'a> {
 
 impl<'a> ConceptAPI<'a> for Entity<'a> {}
 
-impl<'a> ObjectAPI<'a> for Entity<'a> {
+impl<'a> ThingAPI<'a> for Entity<'a> {
+    fn get_status<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) -> ConceptStatus {
+        thing_manager.get_status(self.vertex().as_storage_key())
+    }
 
+    fn delete<'m>(self, thing_manager: &'m ThingManager<'_, impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+        todo!()
+    }
+}
+
+impl<'a> ObjectAPI<'a> for Entity<'a> {
     fn vertex<'this>(&'this self) -> ObjectVertex<'this> {
         self.vertex.as_reference()
     }

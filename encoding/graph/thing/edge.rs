@@ -82,9 +82,14 @@ impl<'a> ThingEdgeHas<'a> {
         ObjectVertex::new(Bytes::Reference(reference))
     }
 
-    fn to(&'a self) -> AttributeVertex<'a> {
+    pub fn to(&'a self) -> AttributeVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[self.range_to()]);
         AttributeVertex::new(Bytes::Reference(reference))
+    }
+
+    pub fn into_to(self) -> AttributeVertex<'a> {
+        let range = self.range_to();
+        AttributeVertex::new(self.bytes.into_range(range))
     }
 
     const fn range_from() -> Range<usize> {
@@ -318,7 +323,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
         ObjectVertex::new(Bytes::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_FROM])))
     }
 
-    fn to(&self) -> ObjectVertex<'_> {
+    pub fn to(&self) -> ObjectVertex<'_> {
         // TODO: copy?
         ObjectVertex::new(Bytes::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_TO])))
     }

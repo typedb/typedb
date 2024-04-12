@@ -4,16 +4,28 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
+use bytes::byte_reference::ByteReference;
+use bytes::Bytes;
+use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeRolePlayer};
+use encoding::graph::thing::vertex_attribute::AttributeVertex;
 use encoding::graph::thing::vertex_object::ObjectVertex;
+use encoding::graph::type_::vertex::build_vertex_role_type;
 use encoding::layout::prefix::Prefix;
 use encoding::Prefixed;
+use encoding::value::decode_value_u64;
+use storage::key_value::StorageKeyReference;
+use storage::snapshot::iterator::{SnapshotIteratorError, SnapshotRangeIterator};
 use storage::snapshot::WritableSnapshot;
+use crate::error::ConceptReadError;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
 use crate::thing::attribute::Attribute;
 use crate::thing::entity::Entity;
 use crate::thing::ObjectAPI;
 use crate::thing::relation::Relation;
 use crate::thing::thing_manager::ThingManager;
+use crate::type_::role_type::RoleType;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum Object<'a> {
@@ -73,6 +85,74 @@ impl<'a> ObjectAPI<'a> for Object<'a> {
             Object::Entity(entity) => entity.into_vertex(),
             Object::Relation(relation) => relation.into_vertex(),
         }
+    }
+}
+
+pub struct HasAttributeIterator<'a, const S: usize> {
+    snapshot_iterator: Option<SnapshotRangeIterator<'a, S>>,
+}
+
+impl<'a, const S: usize> HasAttributeIterator<'a, S> {
+    pub(crate) fn new(snapshot_iterator: SnapshotRangeIterator<'a, S>) -> Self {
+        Self { snapshot_iterator: Some(snapshot_iterator) }
+    }
+
+    pub(crate) fn new_empty() -> Self {
+        Self { snapshot_iterator: None }
+    }
+
+    pub fn peek(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
+        self.iter_peek().map(|result|
+            result.map(|(storage_key, value)| {
+                let edge = ThingEdgeHas::new(Bytes::Reference(storage_key.byte_ref()));
+                Attribute::new(edge.into_to())
+            }).map_err(|snapshot_error|
+                ConceptReadError::SnapshotIterate { source: snapshot_error }
+            )
+        )
+    }
+
+    // a lending iterator trait is infeasible with the current borrow checker
+    #[allow(clippy::should_implement_trait)]
+    pub fn next(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
+        self.iter_next().map(|result| {
+            result.map(|(storage_key, value)| {
+                let edge = ThingEdgeHas::new(Bytes::Reference(storage_key.byte_ref()));
+                Attribute::new(edge.into_to())
+            }).map_err(|snapshot_error|
+                ConceptReadError::SnapshotIterate { source: snapshot_error }
+            )
+        })
+    }
+
+    pub fn seek(&mut self) {
+        todo!()
+    }
+
+    fn iter_peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
+        if let Some(iter) = self.snapshot_iterator.as_mut() {
+            iter.peek()
+        } else {
+            None
+        }
+    }
+
+    fn iter_next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
+        if let Some(iter) = self.snapshot_iterator.as_mut() {
+            iter.next()
+        } else {
+            None
+        }
+    }
+
+    pub fn count(mut self) -> usize {
+        let mut count = 0;
+        let mut next = self.next();
+        while next.is_some() {
+            next = self.next();
+            count += 1;
+        }
+        count
     }
 }
 

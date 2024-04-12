@@ -6,18 +6,13 @@
 
 use std::sync::Arc;
 use bytes::Bytes;
-use encoding::{
-    graph::{
-        thing::{
-            edge::{ThingEdgeHas, ThingEdgeRelationIndex, ThingEdgeRolePlayer},
-            vertex_object::ObjectVertex},
-        type_::vertex::{build_vertex_relation_type, build_vertex_role_type},
-        Typed,
-    },
-    layout::prefix::Prefix,
-    AsBytes, Prefixed,
-    value::{decode_value_u64},
-};
+use encoding::{graph::{
+    thing::{
+        edge::{ThingEdgeHas, ThingEdgeRelationIndex, ThingEdgeRolePlayer},
+        vertex_object::ObjectVertex},
+    type_::vertex::{build_vertex_relation_type, build_vertex_role_type},
+    Typed,
+}, layout::prefix::Prefix, AsBytes, Prefixed, value::{decode_value_u64}, Keyable};
 use storage::{
     key_value::StorageKeyReference,
     snapshot::{
@@ -27,24 +22,19 @@ use storage::{
 use storage::snapshot::iterator::SnapshotIteratorError;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{
-    ByteReference,
-    concept_iterator,
-    error::{ConceptReadError},
-    thing::{
-        attribute::{Attribute, AttributeIterator},
-        object::Object,
-        thing_manager::ThingManager,
-    },
-    type_::{
-        annotation::AnnotationDistinct,
-        relation_type::RelationType,
-        role_type::{RoleType, RoleTypeAnnotation},
-        TypeAPI,
-    },
-    ConceptAPI,
-};
-use crate::thing::ObjectAPI;
+use crate::{ByteReference, concept_iterator, error::{ConceptReadError}, thing::{
+    attribute::{Attribute},
+    object::Object,
+    thing_manager::ThingManager,
+}, type_::{
+    annotation::AnnotationDistinct,
+    relation_type::RelationType,
+    role_type::{RoleType, RoleTypeAnnotation},
+    TypeAPI,
+}, ConceptAPI, ConceptStatus, GetStatus};
+use crate::error::ConceptWriteError;
+use crate::thing::{ObjectAPI, ThingAPI};
+use crate::thing::object::HasAttributeIterator;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Relation<'a> {
@@ -72,35 +62,43 @@ impl<'a> Relation<'a> {
     pub fn get_has<'m>(
         &self,
         thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
-    ) -> AttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
-        thing_manager.storage_get_has(self.as_reference())
+    ) -> HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+        thing_manager.get_has_of(self.as_reference())
     }
 
     pub fn set_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: Attribute<'_>) {
         // TODO: validate schema
-        thing_manager.storage_set_has(self.as_reference(), attribute.as_reference())
+        thing_manager.set_has(self.as_reference(), attribute.as_reference())
     }
 
-    pub fn delete_has(&self, thing_manager: &ThingManager<'_, impl ReadableSnapshot>, attribute: Attribute<'_>) {
-        // TODO: validate schema
-        todo!()
+    pub fn delete_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: Attribute<'_>) {
+        // TODO: validate schema?
+        thing_manager.delete_has(self.as_reference(), attribute.as_reference())
     }
 
     pub fn get_relations<'m>(
         &self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
     ) -> RelationRoleIterator<'m, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
-        thing_manager.storage_get_relations(self.as_reference())
+        thing_manager.get_relations_of(self.as_reference())
     }
 
     pub fn get_indexed_players<'m>(
         &self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
     ) -> IndexedPlayersIterator<'m, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
-        thing_manager.get_indexed_players(Object::Relation(self.as_reference()))
+        thing_manager.get_indexed_players_of(Object::Relation(self.as_reference()))
+    }
+
+    pub fn has_players<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) -> bool {
+        match self.get_status(thing_manager) {
+            ConceptStatus::Inserted => thing_manager.has_role_players(self.as_reference(), true),
+            ConceptStatus::Put | ConceptStatus::Persisted => thing_manager.has_role_players(self.as_reference(), false),
+            ConceptStatus::Deleted => unreachable!("Cannot operate on a deleted concept.")
+        }
     }
 
     pub fn get_players<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>)
                            -> RolePlayerIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
-        thing_manager.storage_get_role_players(self.as_reference())
+        thing_manager.get_role_players_of(self.as_reference())
     }
 
     ///
@@ -123,23 +121,48 @@ impl<'a> Relation<'a> {
         let distinct = role_annotations.contains(&RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
         let mut player_count = 0;
         if distinct {
-            thing_manager.storage_set_role_player(self.as_reference(), player.as_reference(), role_type.clone());
+            thing_manager.set_role_player(self.as_reference(), player.as_reference(), role_type.clone());
             player_count = 1;
         } else {
-            player_count = thing_manager.storage_increment_role_player(
+            player_count = thing_manager.increment_role_player(
                 self.as_reference(),
                 player.as_reference(),
-                role_type.clone()
+                role_type.clone(),
             );
         }
 
-        // TODO handle error
         if thing_manager.type_manager().relation_index_available(self.type_()) {
-            // TODO: what about schema transactions?
             thing_manager.relation_index_new_player(
                 self.as_reference(), player.as_reference(), role_type, distinct, player_count,
             );
         }
+    }
+
+    pub fn delete_player(
+        &self,
+        thing_manager: &ThingManager<'_, impl WritableSnapshot>,
+        role_type: RoleType<'static>,
+        player: Object<'_>,
+    ) {
+        let role_annotations = role_type.get_annotations(thing_manager.type_manager()).unwrap();
+        let distinct = role_annotations.contains(&RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
+        let mut remaining_player_count = 0;
+        if distinct {
+            thing_manager.delete_role_player(self.as_reference(), player.as_reference(), role_type.clone());
+        } else {
+            remaining_player_count = thing_manager.decrement_role_player(
+                self.as_reference(),
+                player.as_reference(),
+                role_type.clone(),
+            );
+        }
+
+        // if thing_manager.type_manager().relation_index_available(self.type_()) {
+        //     todo!()
+            // thing_manager.relation_index_delete_player(
+            //     self.as_reference(), player.as_reference(), role_type, distinct, remaining_player_count,
+            // );
+        // }
     }
 
     pub(crate) fn into_owned(self) -> Relation<'static> {
@@ -148,6 +171,35 @@ impl<'a> Relation<'a> {
 }
 
 impl<'a> ConceptAPI<'a> for Relation<'a> {}
+
+impl<'a> ThingAPI<'a> for Relation<'a> {
+    fn get_status<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) -> ConceptStatus {
+        thing_manager.get_status(self.vertex().as_storage_key())
+    }
+
+    fn delete<'m>(self, thing_manager: &'m ThingManager<'_, impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+        let mut has_iter = self.get_has(thing_manager);
+        let mut attr = has_iter.next().transpose()
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        while attr.is_some() {
+            self.delete_has(thing_manager, attr.unwrap());
+            attr = has_iter.next().transpose()
+                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        }
+
+        let mut player_iter = self.get_players(thing_manager);
+        let mut rp_and_count = player_iter.next().transpose()
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        while rp_and_count.is_some() {
+            let (rp, count) = rp_and_count.unwrap();
+            self.delete_player(thing_manager, rp.role_type(), rp.player());
+            rp_and_count = player_iter.next().transpose()
+                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        }
+        Ok(())
+        // todo!("Delete self")
+    }
+}
 
 impl<'a> ObjectAPI<'a> for Relation<'a> {
     fn vertex<'this>(&'this self) -> ObjectVertex<'this> {

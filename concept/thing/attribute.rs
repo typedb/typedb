@@ -4,25 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::borrow::Cow;
 use std::cmp::Ordering;
 
 use bytes::Bytes;
-use encoding::{
-    graph::{thing::vertex_attribute::AttributeVertex, type_::vertex::build_vertex_attribute_type, Typed},
-    value::value_type::ValueType,
-    AsBytes,
-};
+use encoding::{graph::{thing::vertex_attribute::AttributeVertex, type_::vertex::build_vertex_attribute_type, Typed}, value::value_type::ValueType, AsBytes, Keyable};
 use storage::key_value::StorageKeyReference;
-use storage::snapshot::ReadableSnapshot;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{
-    concept_iterator,
-    error::ConceptReadError,
-    thing::{thing_manager::ThingManager, value::Value},
-    type_::attribute_type::AttributeType,
-    ByteReference, ConceptAPI,
-};
+use crate::{concept_iterator, error::ConceptReadError, thing::{thing_manager::ThingManager, value::Value}, type_::attribute_type::AttributeType, ByteReference, ConceptAPI, ConceptStatus, GetStatus};
+use crate::error::ConceptWriteError;
+use crate::thing::ThingAPI;
 
 #[derive(Debug)]
 pub struct Attribute<'a> {
@@ -63,7 +54,7 @@ impl<'a> Attribute<'a> {
     pub fn as_reference(&self) -> Attribute<'_> {
         Attribute {
             vertex: self.vertex.as_reference(),
-            value: self.value.as_ref().map(|value| value.as_reference())
+            value: self.value.as_ref().map(|value| value.as_reference()),
         }
     }
 
@@ -81,6 +72,16 @@ impl<'a> Attribute<'a> {
 }
 
 impl<'a> ConceptAPI<'a> for Attribute<'a> {}
+
+impl<'a> ThingAPI<'a> for Attribute<'a> {
+    fn get_status<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) -> ConceptStatus {
+        thing_manager.get_status(self.vertex().as_storage_key())
+    }
+
+    fn delete<'m>(self, thing_manager: &'m ThingManager<'_, impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+        todo!()
+    }
+}
 
 impl<'a> PartialEq<Self> for Attribute<'a> {
     fn eq(&self, other: &Self) -> bool {

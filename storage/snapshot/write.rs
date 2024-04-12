@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Write {
-    // Insert KeyValue with a new version. Never conflicts.
+    // Insert KeyValue with a new version. Never conflicts. May represent a brand new key or re-inserting an existing key blindly
     Insert { value: ByteArray<BUFFER_VALUE_INLINE> },
     // Insert KeyValue with new version if a concurrent Txn deletes Key. Boolean indicates requires re-insertion. Never conflicts.
     Put { value: ByteArray<BUFFER_VALUE_INLINE>, reinsert: Arc<AtomicBool> },
