@@ -74,7 +74,7 @@ public class TypeDBServer implements AutoCloseable {
     protected AtomicBoolean isOpen;
     private final CoreConfig config;
     private final CoreLogback logback;
-    private final String ID;
+    private String ID = "";
 
     static TypeDBServer create(CoreConfig config, boolean debug) {
         CoreLogback logback = new CoreLogback();
@@ -91,7 +91,6 @@ public class TypeDBServer implements AutoCloseable {
         this.config = config;
         this.logback = logback;
         this.debug = debug;
-        ID = serverID();
 
         verifyJavaVersion();
         verifyPort();
@@ -180,7 +179,7 @@ public class TypeDBServer implements AutoCloseable {
     protected void configureDiagnostics() {
         try {
             Diagnostics.Core.initialise(
-                    deploymentID(), ID, name(), Version.VERSION,
+                    deploymentID(), serverID(), name(), Version.VERSION,
                     config.diagnostics().reporting().errors(), DIAGNOSTICS_REPORTING_URI,
                     config.diagnostics().reporting().statistics(), USAGE_STATISTICS_REPORTING_URI,
                     config.diagnostics().monitoring().enable(), config.diagnostics().monitoring().port()
@@ -191,15 +190,25 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     protected String serverID() {
+        if (!ID.isEmpty()) {
+            return ID;
+        }
+
         try {
             Path serverIDFile = config().storage().dataDir().resolve(SERVER_ID_FILE_NAME);
             if (serverIDFile.toFile().exists()) {
-                return Files.readString(serverIDFile);
+                ID = Files.readString(serverIDFile);
+
+                if (ID.isEmpty()) {
+                    throw new Exception("The stored server ID value is empty");
+                }
+            }
+            else {
+                ID = generateServerID();
+                Files.writeString(serverIDFile, ID);
             }
 
-            String serverID = generateServerID();
-            Files.writeString(serverIDFile, serverID);
-            return serverID;
+            return ID;
         } catch (Exception e) {
             LOG.debug("Failed to create, persist, or read stored server ID: ", e);
         }
@@ -242,7 +251,7 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     protected String generateDeploymentID() {
-        return ID;
+        return serverID();
     }
 
     protected io.grpc.Server rpcServer() {
