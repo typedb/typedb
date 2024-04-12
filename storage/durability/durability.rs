@@ -13,10 +13,7 @@ use std::{
     io::{self, Read, Write},
     path::Path,
 };
-use std::cmp::Ordering;
 use std::ops::{Add, AddAssign, Sub};
-
-use primitive::u80::U80;
 use serde::{Deserialize, Serialize};
 
 pub mod wal;

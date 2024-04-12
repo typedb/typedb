@@ -25,7 +25,7 @@ use durability::{DurabilityError, DurabilityService, SequenceNumber};
 use iterator::MVCCReadError;
 use itertools::Itertools;
 use logger::{error, result::ResultExt};
-use primitive::{prefix_range::PrefixRange, u80::U80};
+use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use speedb::{Options, WriteBatch};
 

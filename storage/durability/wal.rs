@@ -10,7 +10,6 @@ use std::{collections::HashMap, ffi::OsStr, fs::{self, File as StdFile, OpenOpti
 }};
 
 use itertools::Itertools;
-use primitive::u80::U80;
 
 use crate::{
     DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, RecordHeader, Result, SequenceNumber,
