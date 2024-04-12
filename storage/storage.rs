@@ -28,6 +28,8 @@ use logger::{error, result::ResultExt};
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use speedb::{Options, WriteBatch};
+use durability::wal::WAL;
+use test_utils::{create_tmp_dir, init_logging};
 
 use crate::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
@@ -182,7 +184,8 @@ impl<D> MVCCStorage<D> {
         let name = name.as_ref();
         let (keyspaces, keyspaces_index) = recover_keyspaces::<KS>(&storage_dir)?;
 
-        let isolation_manager = IsolationManager::new(durability_service.current());
+        let recovery_starts_from = SequenceNumber::from(1); // TODO!
+        let isolation_manager = IsolationManager::new(recovery_starts_from);
 
         let name = name.to_owned();
         let path = path.to_owned();
@@ -198,6 +201,7 @@ impl<D> MVCCStorage<D> {
         D: DurabilityService,
     {
         use StorageRecoverError::DurabilityServiceRead;
+        let mut fresh_commits: Vec<SequenceNumber> = Vec::new();
         let records =
             IsolationManager::iterate_commit_status_from_disk(&self.durability_service, SequenceNumber::MIN, SequenceNumber::MAX)
             .map_err(|error| DurabilityServiceRead { source: error })?;
@@ -221,15 +225,22 @@ impl<D> MVCCStorage<D> {
                                 commit_record.into_owned(),
                             );
                             match try_commit_result {
-                                Ok(_) => {},
+                                Ok(_) => { fresh_commits.push(commit_sequence_number) },
                                 Err(MVCCStorageError { kind: MVCCStorageErrorKind::IsolationError { .. }, .. } ) => {}, // Isolation errors are fine.
                                 Err(_) =>  {try_commit_result.unwrap();}  // TODO: Other errors are not
                             }
+
                         }
                         CommitStatus::Empty | CommitStatus::Validated(_) => unreachable!(),
                     }
                 },
                 Err(error) => return Err(DurabilityServiceRead { source: error }),
+            }
+        }
+
+        for commit_sequence_number in fresh_commits {
+            if let(Err(_)) = self.durability_service.unsequenced_write(&StatusRecord::new(commit_sequence_number, true)) {
+                todo!(); // TODO: What happens if the persist fails? For now, we need to crash the server
             }
         }
         Ok(())
@@ -314,10 +325,17 @@ impl<D> MVCCStorage<D> {
                 kind: MVCCStorageErrorKind::DurabilityError { source: err },
             })?;
 
+        // 2,3,4:
         self.try_write_commit_record(
             commit_sequence_number,
             commit_record,
-        )
+        )?;
+
+        // 5. Persist the commit status
+        match self.durability_service.unsequenced_write(&StatusRecord::new(commit_sequence_number, true)) {
+            Ok(_) => Ok(()),
+            Err(_) => todo!(), // TODO: What happens if the persist fails? For now, we need to crash the server
+        }
     }
 
     fn try_write_commit_record(
@@ -363,12 +381,7 @@ impl<D> MVCCStorage<D> {
         }
         // 4. Inform the isolation manager and increment the watermark.
         self.isolation_manager.applied(commit_sequence_number);
-
-        // 5. Persist the commit status
-        match self.durability_service.unsequenced_write(&StatusRecord::new(commit_sequence_number, true)) {
-            Ok(_) => Ok(()),
-            Err(_) => todo!(), // TODO: What happens if the persist fails? For now, we need to crash the server
-        }
+        Ok(())
     }
 
     fn to_write_batches(
@@ -754,5 +767,66 @@ impl StorageOperation {
 
     const fn serialised_len() -> usize {
         StorageOperation::BYTES
+    }
+}
+
+
+
+
+
+#[cfg(test)]
+mod tests {
+    use durability::{DurabilityService, SequenceNumber};
+    use durability::wal::WAL;
+    use test_utils::{create_tmp_dir, init_logging};
+
+    use crate::{
+        isolation_manager::CommitRecord,
+        snapshot::buffer::OperationsBuffer,
+    };
+    use crate::{KeyspaceSet, KeyspaceId, MVCCStorage};
+
+    macro_rules! test_keyspace_set {
+        {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
+            #[derive(Clone, Copy)]
+            enum TestKeyspaceSet { $($variant),* }
+            impl KeyspaceSet for TestKeyspaceSet {
+                fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
+                fn id(&self) -> KeyspaceId {
+                    match *self { $(Self::$variant => KeyspaceId($id)),* }
+                }
+                fn name(&self) -> &'static str {
+                    match *self { $(Self::$variant => $name),* }
+                }
+            }
+        };
+    }
+
+    test_keyspace_set! {
+        Keyspace => 0: "keyspace",
+    }
+    #[test]
+    fn recovery_path() {
+        init_logging();
+        let storage_path = create_tmp_dir();
+        let watermark_after_one_commit = {
+            let storage: MVCCStorage<WAL> = MVCCStorage::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+            let commit_record = CommitRecord::new(OperationsBuffer::new(), SequenceNumber::MIN);
+            let commit_sequence_number = storage.durability_service.sequenced_write(&commit_record).unwrap();
+            storage.try_write_commit_record(SequenceNumber::from(1), commit_record).unwrap();
+            storage.read_watermark()
+        };
+
+        let pending_commit_sequence = {
+            let storage: MVCCStorage<WAL> = MVCCStorage::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+            assert_eq!(watermark_after_one_commit, storage.read_watermark());
+            storage.durability_service.sequenced_write::<CommitRecord>(&CommitRecord::new(OperationsBuffer::new(), storage.read_watermark())).unwrap()
+            // We don't commit it.
+        };
+        {
+            let storage: MVCCStorage<WAL> = MVCCStorage::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+            assert_eq!(pending_commit_sequence, storage.read_watermark()); // Recovery will commit the pending one.
+        };
+
     }
 }

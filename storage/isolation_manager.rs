@@ -15,7 +15,7 @@ use std::{
     fmt,
     io::Read,
     sync::{
-        atomic::{AtomicBool, AtomicI64, AtomicU64, AtomicU8, Ordering},
+        atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
         Arc, OnceLock, RwLock,
     },
 };
@@ -176,7 +176,7 @@ impl IsolationManager {
         let start_validation_index = max(commit_record.open_sequence_number.next(), first_window_sequence_number);
         debug_assert!(start_validation_index <= first_window_sequence_number + TIMELINE_WINDOW_SIZE);
         let mut window_index = 0;
-        let mut slot_index = (start_validation_index - first_window_sequence_number) as usize;
+        let mut slot_index = start_validation_index - first_window_sequence_number;
         for _validating_against in start_validation_index.number()..commit_sequence_number.number() {
             debug_assert!(window_index < windows.len());
             resolve_concurrent(commit_record, slot_index, &windows[window_index])?;
@@ -478,8 +478,8 @@ impl Timeline {
         &self,
         sequence_number: SequenceNumber,
     ) -> (Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>, usize) {
-        let next_sequence_number: SequenceNumber = { self.windows.read().unwrap_or_log().back().unwrap().end() };
-        if sequence_number >= next_sequence_number {
+        let end: SequenceNumber = { self.windows.read().unwrap_or_log().back().unwrap().end() };
+        if sequence_number >= end {
             self.create_windows_to(sequence_number);
         }
         self.try_get_window(sequence_number).unwrap()
@@ -487,11 +487,12 @@ impl Timeline {
 
     fn create_windows_to(&self, sequence_number: SequenceNumber) {
         let  windows = &mut *self.windows.write().unwrap_or_log();
-        let mut end = windows.back().unwrap().end();
-        while sequence_number >= end {
-            let shared_new_window = Arc::new(TimelineWindow::new(end));
-            end += TIMELINE_WINDOW_SIZE;
-            windows.push_back(shared_new_window.clone());
+        loop {
+            let end = windows.back().unwrap().end();
+            if sequence_number >= end {
+                let shared_new_window = Arc::new(TimelineWindow::new(end));
+                windows.push_back(shared_new_window.clone());
+            } else { break; }
         }
     }
 
@@ -506,7 +507,7 @@ impl Timeline {
         let start = windows.front().unwrap().start();
         let end = windows.back().unwrap().end();
         if to_resolve >= start && to_resolve < end {
-            let offset = (to_resolve - start);
+            let offset = to_resolve - start;
             Some((offset / TIMELINE_WINDOW_SIZE, offset % TIMELINE_WINDOW_SIZE))
         // (window_index, slot_index)
         } else {
@@ -666,7 +667,7 @@ pub(crate) struct StatusRecord {
 
 impl CommitRecord {
     pub(crate) fn new(operations: OperationsBuffer, open_sequence_number: SequenceNumber) -> CommitRecord {
-        CommitRecord { operations: operations, open_sequence_number }
+        CommitRecord { operations, open_sequence_number }
     }
 
     pub(crate) fn operations(&self) -> &OperationsBuffer {
@@ -833,11 +834,11 @@ mod tests {
         sync::{
             atomic::{AtomicU64, Ordering},
             mpsc::Receiver,
-            Arc, RwLock,
+            Arc,
         },
         thread,
-        time::Duration,
     };
+    use durability::SequenceNumber;
 
     use crate::{KeyspaceSet, KeyspaceId};
 
@@ -860,13 +861,11 @@ mod tests {
     test_keyspace_set! {
         Keyspace => 0: "keyspace",
     }
-    use durability::SequenceNumber;
 
     use crate::{
         isolation_manager::{CommitRecord, CommitStatus, Timeline, TIMELINE_WINDOW_SIZE},
         snapshot::buffer::OperationsBuffer,
     };
-
     struct MockTransaction {
         read_sequence_number: SequenceNumber,
         commit_sequence_number: SequenceNumber,
@@ -1043,4 +1042,5 @@ mod tests {
         let some_index_in_penultimate_window = expected_watermark - TIMELINE_WINDOW_SIZE - 1;
         assert!(timeline.try_get_window(some_index_in_penultimate_window).is_none());
     }
+
 }
