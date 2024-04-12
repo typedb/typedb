@@ -101,5 +101,20 @@ fn max_entity_type_vertexes() {
 fn loading_storage_assigns_next_vertex() {
     // TODO: test that when loading an existing database (create database, create types, close database, then re-open)
     //       that the next Type vertex ID is the expected one
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let create_till = 1;
+    for i in 0..=create_till {
+        let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
+        let snapshot = storage.open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+
+        let vertex = generator.create_entity_type(&snapshot).unwrap();
+        let b = vertex.bytes().into_bytes();
+        let type_id_as_u16 = u16::from_be_bytes([b[b.len() - 2], b[b.len() - 1]]);
+        assert_eq!(i, type_id_as_u16);
+
+        snapshot.commit().unwrap();
+    }
 
 }
