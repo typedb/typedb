@@ -5,22 +5,58 @@
  */
 
 use durability::wal::WAL;
-use encoding::EncodingKeyspace;
+use encoding::{AsBytes, EncodingKeyspace, Keyable};
+use encoding::error::{EncodingError, EncodingErrorKind};
+use encoding::graph::type_::vertex::{build_vertex_entity_type, TypeID};
+use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
+use storage::key_value::StorageKeyReference;
 use storage::MVCCStorage;
+use storage::snapshot::{CommittableSnapshot, WritableSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
 #[test]
 fn entity_type_vertexes_are_reused() {
     init_logging();
     let storage_path = create_tmp_dir();
-    #[allow(unused)] // TODO
     let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
 
-    // TODO: create a bunch of types, delete, and assert that the IDs are re-used
+    // create a bunch of types, delete, and assert that the IDs are re-used
+    let create_till = 255;
+    {
+        let snapshot = storage.open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+        for i in 0..=create_till {
+            let vertex = generator.create_entity_type(&snapshot).unwrap();
+            let b = vertex.bytes().into_bytes();
+            let type_id_as_u16 = u16::from_be_bytes([b[b.len() - 2], b[b.len() - 1]]);
+            assert_eq!(i, type_id_as_u16);
+        }
+        snapshot.commit().unwrap();
+    }
 
-    // Assert re-use on undefine
+    {
+        let snapshot = storage.open_snapshot_write();
+        for i in 0..=create_till {
+            if i % 2 == 0 {
+                let vertex = build_vertex_entity_type(TypeID::build(i));
+                snapshot.delete(StorageKeyReference::new(vertex.keyspace(), vertex.bytes()).into())
+            }
+        }
+        snapshot.commit().unwrap();
+    }
 
-    // Assert re-use on aborted commits
+    {
+        let generator = TypeVertexGenerator::new();
+        let snapshot = storage.open_snapshot_write();
+        for i in 0..=create_till {
+            if i % 2 == 0 {
+                let vertex = generator.create_entity_type(&snapshot).unwrap();
+                let b = vertex.bytes().into_bytes();
+                let type_id_as_u16 = u16::from_be_bytes([b[b.len() - 2], b[b.len() - 1]]);
+                assert_eq!(i, type_id_as_u16);
+            }
+        }
+    }
 
 }
 
@@ -33,14 +69,36 @@ fn entity_type_vertex_reuse_resets_thing_vertex() {
 
 #[test]
 fn max_entity_type_vertexes() {
-
-    // TODO: test that the maximum number of type vertices for one group (entity type) is actually U16.MAX_INT
+    // TODO: test that the maximum number of type vertices for one group (entity type) is actually u16::MAX
     //       and that we throw a good error message if exceeded.
+    use std::time::Instant;
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
+    let create_till = u16::MAX;
+    {
+        let snapshot = storage.open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+        for i in 0..=create_till {
+            let vertex = generator.create_entity_type(&snapshot).unwrap();
+            let b = vertex.bytes().into_bytes();
+            let type_id_as_u16 = u16::from_be_bytes([b[b.len() - 2], b[b.len() - 1]]);
+            assert_eq!(i, type_id_as_u16);
+        }
+        snapshot.commit().unwrap();
+    }
+
+    {
+        let snapshot = storage.open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+
+        let res = generator.create_entity_type(&snapshot); // Crashes
+        assert!(matches!(res, Err(EncodingError { kind: EncodingErrorKind::ExhaustedTypeIDs } )));
+    }
 }
 
 #[test]
 fn loading_storage_assigns_next_vertex() {
-
     // TODO: test that when loading an existing database (create database, create types, close database, then re-open)
     //       that the next Type vertex ID is the expected one
 

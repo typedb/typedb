@@ -4,13 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::iter::zip;
-use std::sync::atomic::{AtomicBool, AtomicU16, Ordering};
+use std::cell::Cell;
+use std::sync::Arc;
+use bytes::byte_reference::ByteReference;
 use primitive::prefix_range::PrefixRange;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
-use storage::{snapshot::WriteSnapshot, MVCCStorage};
 use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
-use storage::keyspace::iterator::KeyspaceRangeIterator;
+use storage::snapshot::iterator::SnapshotIteratorError;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
@@ -22,45 +23,73 @@ use crate::{
     Keyable,
 };
 use crate::error::EncodingError;
-use crate::error::EncodingErrorKind::FailedTypeIDAllocation;
+use crate::error::EncodingErrorKind::{ExhaustedTypeIDs, FailedTypeIDAllocation};
 use crate::graph::type_::vertex::TypeIDUInt;
+use crate::layout::prefix::Prefix;
 
 // TODO: if we always scan for the next available TypeID, we automatically recycle deleted TypeIDs?
 //          -> If we do reuse TypeIDs, this we also need to make sure to reset the Thing ID generators on delete! (test should exist to confirm this).
 
-pub struct TypeIDAllocator<const PREFIX_LENGTH: usize> {
-    prefix: PrefixRange<StorageKeyArray<PREFIX_LENGTH>>
+pub struct TypeIDAllocator {
+    last_allocated_type_id: Cell<TypeIDUInt>,
+    to_vertex:  fn (TypeID) -> TypeVertex<'static>
 }
 
-impl<const PREFIX_LENGTH: usize> TypeIDAllocator<PREFIX_LENGTH> {
+impl TypeIDAllocator {
 
-    fn new(prefix: PrefixRange<StorageKeyArray<PREFIX_LENGTH>>) -> TypeIDAllocator<PREFIX_LENGTH> {
-        Self { prefix }
+    fn new(to_vertex: fn (TypeID) -> TypeVertex<'static>) -> TypeIDAllocator {
+        Self { last_allocated_type_id : Cell::new(0), to_vertex }
     }
 
-    fn extract_type_id(key: StorageKeyReference) -> TypeIDUInt {
+    fn to_key(&self, type_id: TypeIDUInt) -> StorageKey<'static, BUFFER_KEY_INLINE> {
+        (self.to_vertex)(TypeID::build(type_id)).into_storage_key()
+    }
+
+    fn to_type_id<'a>(&self, key : StorageKeyReference) -> TypeIDUInt {
         let bytes = key.bytes();
-        TypeIDUInt::from_be_bytes([bytes[bytes.len()-2], bytes[bytes.len()-1]])
+        TypeID::new([bytes[bytes.len()-2], bytes[bytes.len()-1]]).as_u16()
     }
 
-    fn allocate(&self, snapshot: &dyn WritableSnapshot) ->  Result<TypeIDUInt, EncodingError> {
-        let mut type_id_iter = snapshot.iterate_range(self.prefix.into());
-        for expected_next in (0..=u16::MAX) {
-            if let Some(next_res) = type_id_iter.next() {
-                if Self::extract_type_id(next_res?.0) != expected_next { Ok(expected_next) }
-            } else {
-                Err(EncodingError{ kind: FailedTypeIDAllocation })
+    fn iterate_and_find<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<Option<TypeIDUInt>, EncodingError> {
+        // todo!()
+        let start = self.last_allocated_type_id.get();
+        let mut type_id_iter = snapshot.iterate_range(PrefixRange::new_inclusive(self.to_key(start), self.to_key(TypeIDUInt::MAX)));
+        for expected_next in (start..=TypeIDUInt::MAX) {
+            match type_id_iter.next() {
+                None => {return Ok(Some(expected_next))},
+                Some(Err(err)) => {return Err(EncodingError{ kind: FailedTypeIDAllocation { source: err.clone() } });},
+                Some(Ok((actual_next, _))) => {
+                    if self.to_type_id(actual_next) != expected_next { return Ok(Some(expected_next)); }
+                }
             }
         }
-        Err(EncodingError{ kind: FailedTypeIDAllocation })
+        Ok(None)
+    }
+
+    fn allocate<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) ->  Result<TypeIDUInt, EncodingError> {
+        let found = self.iterate_and_find(snapshot)?;
+        if let(Some(type_id)) = found {
+            self.last_allocated_type_id.set(type_id);
+            Ok(type_id)
+        } else {
+            self.last_allocated_type_id.set(0);
+            match self.iterate_and_find(snapshot)? {
+                None => Err(EncodingError{ kind: ExhaustedTypeIDs }),
+                Some(type_id) => {
+                    self.last_allocated_type_id.set(type_id);
+                    Ok(type_id)
+                }
+            }
+        }
+
     }
 }
 
 pub struct TypeVertexGenerator {
-    next_entity: TypeIDAllocator<1>,
-    next_relation: TypeIDAllocator<1>,
-    next_role: TypeIDAllocator<1>,
-    next_attribute: TypeIDAllocator<1>,
+    next_entity: TypeIDAllocator,
+    next_relation: TypeIDAllocator,
+    next_role: TypeIDAllocator,
+    next_attribute: TypeIDAllocator,
 }
 
 impl Default for TypeVertexGenerator {
@@ -69,43 +98,43 @@ impl Default for TypeVertexGenerator {
     }
 }
 
-impl<const PREFIX_LENGTH: usize> TypeVertexGenerator {
+impl TypeVertexGenerator {
     const U16_LENGTH: usize = std::mem::size_of::<u16>();
 
     pub fn new() -> TypeVertexGenerator {
         TypeVertexGenerator {
-            next_entity: TypeIDAllocator::new(PrefixRange::new_within(build_vertex_entity_type_prefix().into_owned_array())),
-            next_relation: TypeIDAllocator::new(PrefixRange::new_within(build_vertex_relation_type_prefix().into_owned_array())),
-            next_role: TypeIDAllocator::new(PrefixRange::new_within(build_vertex_role_type_prefix().into_owned_array())),
-            next_attribute: TypeIDAllocator::new(PrefixRange::new_within(build_vertex_attribute_type_prefix().into_owned_array())),
+            next_entity: TypeIDAllocator::new(build_vertex_entity_type),
+            next_relation: TypeIDAllocator::new(build_vertex_relation_type),
+            next_role: TypeIDAllocator::new(build_vertex_role_type),
+            next_attribute: TypeIDAllocator::new(build_vertex_attribute_type),
         }
     }
 
-    pub fn create_entity_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> TypeVertex<'static> {
-        let next = TypeID::build(self.next_entity.allocate(snapshot).unwrap()); // TODO: Error handling
+    pub fn create_entity_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
+        let next = TypeID::build(self.next_entity.allocate(snapshot)?);
         let vertex = build_vertex_entity_type(next);
         snapshot.put(vertex.as_storage_key().into_owned_array());
-        vertex
+        Ok(vertex)
     }
 
-    pub fn create_relation_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> TypeVertex<'static> {
-        let next = TypeID::build(self.next_relation.allocate(snapshot).unwrap()); // TODO: Error handling
+    pub fn create_relation_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
+        let next = TypeID::build(self.next_relation.allocate(snapshot)?);
         let vertex = build_vertex_relation_type(next);
         snapshot.put(vertex.as_storage_key().into_owned_array());
-        vertex
+        Ok(vertex)
     }
 
-    pub fn create_role_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> TypeVertex<'static> {
-        let next = TypeID::build(self.next_role.allocate(snapshot).unwrap()); // TODO: Error handling
+    pub fn create_role_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
+        let next = TypeID::build(self.next_role.allocate(snapshot)?);
         let vertex = build_vertex_role_type(next);
         snapshot.put(vertex.as_storage_key().into_owned_array());
-        vertex
+        Ok(vertex)
     }
 
-    pub fn create_attribute_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> TypeVertex<'static> {
-        let next = TypeID::build(self.next_attribute.allocate(snapshot).unwrap()); // TODO: Error handling
+    pub fn create_attribute_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
+        let next = TypeID::build(self.next_attribute.allocate(snapshot)?);
         let vertex = build_vertex_attribute_type(next);
         snapshot.put(vertex.as_storage_key().into_owned_array());
-        vertex
+        Ok(vertex)
     }
 }

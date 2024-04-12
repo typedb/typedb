@@ -5,6 +5,7 @@
  */
 
 use std::{error::Error, fmt, str::Utf8Error};
+use storage::snapshot::iterator::SnapshotIteratorError;
 
 #[derive(Debug)]
 pub struct EncodingError {
@@ -14,7 +15,8 @@ pub struct EncodingError {
 #[derive(Debug)]
 pub enum EncodingErrorKind {
     FailedUFT8Decode { bytes: Box<[u8]>, source: Utf8Error },
-    FailedTypeIDAllocation
+    FailedTypeIDAllocation {source:  std::sync::Arc<SnapshotIteratorError> },
+    ExhaustedTypeIDs
 }
 
 impl fmt::Display for EncodingError {
@@ -27,6 +29,8 @@ impl Error for EncodingError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
             EncodingErrorKind::FailedUFT8Decode { source, .. } => Some(source),
+            EncodingErrorKind::FailedTypeIDAllocation { source, .. } => Some(source),
+            EncodingErrorKind::ExhaustedTypeIDs => None,
         }
     }
 }
