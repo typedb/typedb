@@ -350,16 +350,17 @@ impl Error for IsolationError {}
 #[derive(Debug)]
 struct Timeline {
     // We can adjust the Window size to amortise the cost of the read-write locks to maintain the timeline
-    next_sequence_and_windows: RwLock<(SequenceNumber, VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>)>,
+    windows: RwLock<VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>>,
     watermark: AtomicU64,
 }
 
 impl Timeline {
     // The whole of the timeline uses the underlying u64
     fn new(next_sequence_number: SequenceNumber) -> Timeline {
-        let windows = VecDeque::new();
+        let mut windows = VecDeque::new();
+        windows.push_back(Arc::new(TimelineWindow::new(next_sequence_number)));
         Timeline {
-            next_sequence_and_windows: RwLock::new((next_sequence_number, windows)),
+            windows: RwLock::new(windows),
             watermark: AtomicU64::new(next_sequence_number.number() - 1),
         }
     }
@@ -367,23 +368,16 @@ impl Timeline {
     fn may_free_windows(&self) {
         let watermark = self.watermark();
         let can_free_some: bool = {
-            let (next_sequence_number, windows) = &*self.next_sequence_and_windows.read().unwrap_or_log();
-            let start_of_second_window: SequenceNumber = Self::start_of_nth_window(windows, *next_sequence_number, 1);
+            let  windows = &*self.windows.read().unwrap_or_log();
             match windows.front() {
                 None => false,
-                Some(front) => front.get_readers() == 0 && watermark >= start_of_second_window,
+                Some(front) => front.get_readers() == 0 && watermark >= windows.front().unwrap().end(),
             }
         };
         if can_free_some {
-            let (next_sequence_number, windows) = &mut *self.next_sequence_and_windows.write().unwrap_or_log();
-            let mut start_of_second_remaining_window: SequenceNumber =
-                Self::start_of_nth_window(windows, *next_sequence_number, 1);
-            while watermark >= start_of_second_remaining_window
-                && windows.front().is_some()
-                && windows.front().unwrap().get_readers() == 0
-            {
+            let windows = &mut *self.windows.write().unwrap_or_log();
+            while watermark >= windows.front().unwrap().end() && windows.front().unwrap().get_readers() == 0 {
                 windows.pop_front();
-                start_of_second_remaining_window += TIMELINE_WINDOW_SIZE;
             }
         }
     }
@@ -459,18 +453,17 @@ impl Timeline {
         open_sequence_number: SequenceNumber,
         commit_sequence_number: SequenceNumber,
     ) -> (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, SequenceNumber) {
-        let (next_sequence_number, windows) = &*self.next_sequence_and_windows.read().unwrap_or_log();
+        let windows = &*self.windows.read().unwrap_or_log();
         let (first_concurrent_window_index, _) =
-            Self::resolve_sequence_number(windows, *next_sequence_number, open_sequence_number).unwrap_or((0, 0));
+            Self::resolve_sequence_number(windows, open_sequence_number).unwrap_or((0, 0));
         let (last_concurrent_window_index, _) =
-            Self::resolve_sequence_number(windows, *next_sequence_number, commit_sequence_number).unwrap();
+            Self::resolve_sequence_number(windows, commit_sequence_number).unwrap();
 
         let mut concurrent_windows: Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> = Vec::new();
         (first_concurrent_window_index..(last_concurrent_window_index + 1)).for_each(|window_index| {
             concurrent_windows.push(windows.get(window_index).unwrap().clone());
         });
-        let start_index_of_first_concurrent_window =
-            Self::start_of_nth_window(windows, *next_sequence_number, first_concurrent_window_index);
+        let start_index_of_first_concurrent_window = windows.get(first_concurrent_window_index).unwrap().start();
         (concurrent_windows, start_index_of_first_concurrent_window)
     }
 
@@ -478,9 +471,9 @@ impl Timeline {
         &self,
         sequence_number: SequenceNumber,
     ) -> Option<(Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>, usize)> {
-        let (next_sequence_number, windows) = &*self.next_sequence_and_windows.read().unwrap_or_log();
+        let windows = &*self.windows.read().unwrap_or_log();
         let (window_index, slot_index) =
-            Self::resolve_sequence_number(windows, *next_sequence_number, sequence_number)?;
+            Self::resolve_sequence_number(windows, sequence_number)?;
         Some((windows.get(window_index).unwrap().clone(), slot_index))
     }
 
@@ -488,7 +481,7 @@ impl Timeline {
         &self,
         sequence_number: SequenceNumber,
     ) -> (Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>, usize) {
-        let next_sequence_number: SequenceNumber = { self.next_sequence_and_windows.read().unwrap_or_log().0 };
+        let next_sequence_number: SequenceNumber = { self.windows.read().unwrap_or_log().back().unwrap().end() };
         if sequence_number >= next_sequence_number {
             self.create_windows_to(sequence_number);
         }
@@ -496,59 +489,61 @@ impl Timeline {
     }
 
     fn create_windows_to(&self, sequence_number: SequenceNumber) {
-        let (next_sequence_number, windows) = &mut *self.next_sequence_and_windows.write().unwrap_or_log();
-        while sequence_number >= *next_sequence_number {
-            let shared_new_window = Arc::new(TimelineWindow::new());
-            *next_sequence_number += TIMELINE_WINDOW_SIZE;
+        let  windows = &mut *self.windows.write().unwrap_or_log();
+        let mut end = windows.back().unwrap().end();
+        while sequence_number >= end {
+            let shared_new_window = Arc::new(TimelineWindow::new(end));
+            end += TIMELINE_WINDOW_SIZE;
             windows.push_back(shared_new_window.clone());
         }
     }
 
     fn window_count(&self) -> usize {
-        let (_, windows) = &*self.next_sequence_and_windows.read().unwrap_or_log();
-        windows.len()
+        self.windows.read().unwrap_or_log().len()
     }
 
     fn resolve_sequence_number(
         windows: &VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
-        next_window_sequence_number: SequenceNumber,
         to_resolve: SequenceNumber,
     ) -> Option<(usize, usize)> {
-        let first_sequence_number = Self::start_of_nth_window(windows, next_window_sequence_number, 0);
-        if to_resolve >= first_sequence_number && to_resolve < next_window_sequence_number {
-            let offset = (to_resolve - first_sequence_number);
+        let start = windows.front().unwrap().start();
+        let end = windows.back().unwrap().end();
+        if to_resolve >= start && to_resolve < end {
+            let offset = (to_resolve - start);
             Some((offset / TIMELINE_WINDOW_SIZE, offset % TIMELINE_WINDOW_SIZE))
         // (window_index, slot_index)
         } else {
             None
         }
     }
-
-    fn start_of_nth_window(
-        windows: &VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
-        next_window_sequence_number: SequenceNumber,
-        n: usize,
-    ) -> SequenceNumber {
-        next_window_sequence_number - (windows.len() - n) * TIMELINE_WINDOW_SIZE
-    }
 }
 
 #[derive(Debug)]
 struct TimelineWindow<const SIZE: usize> {
+    start : SequenceNumber,
     slot_status: [AtomicU8; SIZE],
     commit_records: [OnceLock<CommitRecord>; SIZE],
     readers: AtomicU64,
 }
 
 impl<const SIZE: usize> TimelineWindow<SIZE> {
-    fn new() -> TimelineWindow<SIZE> {
+    fn new(start: SequenceNumber) -> TimelineWindow<SIZE> {
         const EMPTY: OnceLock<CommitRecord> = OnceLock::new();
         let commit_records = [EMPTY; SIZE];
         let slot_status: [AtomicU8; SIZE] = core::array::from_fn(|_| AtomicU8::new(0));
         debug_assert_eq!(slot_status[0].load(Ordering::SeqCst), SlotMarker::Empty.as_u8());
 
-        TimelineWindow { slot_status, commit_records, readers: AtomicU64::new(0) }
+        TimelineWindow { start, slot_status, commit_records, readers: AtomicU64::new(0) }
     }
+
+    fn start(&self) -> SequenceNumber {
+        self.start
+    }
+
+    fn end(&self) -> SequenceNumber {
+        self.start + TIMELINE_WINDOW_SIZE
+    }
+
     fn insert_pending(&self, index: usize, commit_record: CommitRecord) {
         self.commit_records[index].set(commit_record).unwrap_or_log();
         self.slot_status[index].store(SlotMarker::Pending.as_u8(), Ordering::SeqCst);
