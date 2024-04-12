@@ -191,8 +191,8 @@ public class TypeDBServer implements AutoCloseable {
     protected String serverID() {
         try {
             String serverID = "";
-
             Path serverIDFile = config().storage().dataDir().resolve(SERVER_ID_FILE_NAME);
+
             if (serverIDFile.toFile().exists()) {
                 serverID = Files.readString(serverIDFile);
                 if (serverID.isEmpty()) {
@@ -227,20 +227,17 @@ public class TypeDBServer implements AutoCloseable {
         try {
             Optional<String> configDeploymentID = config().diagnostics().deploymentID();
             if (configDeploymentID.isPresent()) {
-                System.out.println("GOT DEPLOYMENT ID FROM CONFIG: " + configDeploymentID.get()); // TODO: Remove prints after tests.
                 return configDeploymentID.get();
             }
             
             Path deploymentIDFile = config().storage().dataDir().resolve(DEPLOYMENT_ID_FILE_NAME);
             if (deploymentIDFile.toFile().exists()) {
-                System.out.println("GOT DEPLOYMENT ID FROM FILE: " + Files.readString(deploymentIDFile));
                 return Files.readString(deploymentIDFile);
             }
 
             String deploymentID = generateDeploymentID();
             Files.writeString(deploymentIDFile, deploymentID);
 
-            System.out.println("GENERATED NEW DEPL ID: " + deploymentID);
             return deploymentID;
         } catch (Exception e) {
             LOG.debug("Failed to create, persist, or read stored deployment ID: ", e);

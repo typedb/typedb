@@ -81,9 +81,7 @@ public abstract class Diagnostics {
                 LOG.debug("Skipping re-initialising diagnostics");
                 return;
             }
-
-            System.out.println("GOT: " + deploymentID + "    " + serverID); // TODO: Remove
-
+            
             initSentry(serverID, distributionName, version, errorReportingEnable, errorReportingURI);
 
             Metrics metrics = new Metrics(deploymentID, serverID, distributionName, version);

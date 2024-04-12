@@ -31,40 +31,40 @@ public class ParametersTest {
 
     private static final Path CONFIG_PATH_DEFAULT = Paths.get("server/parameters/config.yml");
 
-//    @Test
-//    public void test_log_archive_age_limits() throws IOException, InterruptedException, TypeDBCheckedException {
-//        Path logDir = null;
-//        Path dataDir = null;
-//        TypeDBServer typeDBServer = null;
-//        try {
-//            logDir = Files.createTempDirectory("log-file-tmp").toFile().toPath();
-//            dataDir = Files.createTempDirectory("data-tmp").toFile().toPath();
-//
-//            Set<Option> testOptions = getGeneralTestOptions(dataDir, logDir);
-//            testOptions.addAll(set(
-//                    new Option("log.output.file.archive-grouping", "minute"),
-//                    new Option("log.output.file.archive-age-limit", "2 minutes")
-//            ));
-//
-//            CoreConfig config = CoreConfigFactory.config(CONFIG_PATH_DEFAULT, testOptions, new CoreConfigParser());
-//
-//            typeDBServer = TypeDBServer.create(config, false);
-//            typeDBServer.databaseMgr.create("test1");
-//            Thread.sleep(1 * 60 * 1_000L);
-//            typeDBServer.databaseMgr.create("test2");
-//            Thread.sleep(1 * 60 * 1_000L);
-//            typeDBServer.databaseMgr.create("test3");
-//            Thread.sleep(1 * 60 * 1_000L);
-//            List<Path> logArchives = getLogArchives(logDir);
-//            System.out.println("Found log archives:");
-//            System.out.println(logArchives.toString());
-//            assertEquals(2, logArchives.size());
-//        } finally {
-//            if (typeDBServer != null) typeDBServer.close();
-//            if (dataDir != null) deleteDirectory(dataDir);
-//            if (logDir != null) deleteDirectory(logDir);
-//        }
-//    }
+    @Test
+    public void test_log_archive_age_limits() throws IOException, InterruptedException, TypeDBCheckedException {
+        Path logDir = null;
+        Path dataDir = null;
+        TypeDBServer typeDBServer = null;
+        try {
+            logDir = Files.createTempDirectory("log-file-tmp").toFile().toPath();
+            dataDir = Files.createTempDirectory("data-tmp").toFile().toPath();
+
+            Set<Option> testOptions = getGeneralTestOptions(dataDir, logDir);
+            testOptions.addAll(set(
+                    new Option("log.output.file.archive-grouping", "minute"),
+                    new Option("log.output.file.archive-age-limit", "2 minutes")
+            ));
+
+            CoreConfig config = CoreConfigFactory.config(CONFIG_PATH_DEFAULT, testOptions, new CoreConfigParser());
+
+            typeDBServer = TypeDBServer.create(config, false);
+            typeDBServer.databaseMgr.create("test1");
+            Thread.sleep(1 * 60 * 1_000L);
+            typeDBServer.databaseMgr.create("test2");
+            Thread.sleep(1 * 60 * 1_000L);
+            typeDBServer.databaseMgr.create("test3");
+            Thread.sleep(1 * 60 * 1_000L);
+            List<Path> logArchives = getLogArchives(logDir);
+            System.out.println("Found log archives:");
+            System.out.println(logArchives.toString());
+            assertEquals(2, logArchives.size());
+        } finally {
+            if (typeDBServer != null) typeDBServer.close();
+            if (dataDir != null) deleteDirectory(dataDir);
+            if (logDir != null) deleteDirectory(logDir);
+        }
+    }
 
     @Test
     public void test_deployment_server_id_getting() throws IOException, InterruptedException, TypeDBCheckedException {
@@ -129,15 +129,19 @@ public class ParametersTest {
     }
 
     private List<Path> getLogArchives(Path logDir) throws IOException {
-        return Files.list(logDir).filter(p -> p.toString().endsWith(TYPEDB_LOG_ARCHIVE_EXT)).collect(Collectors.toList());
+        return getFiles(logDir, TYPEDB_LOG_ARCHIVE_EXT);
     }
 
     private List<Path> getServerIdFiles(Path dataDir) throws IOException {
-        return Files.list(dataDir).filter(p -> p.toString().endsWith(SERVER_ID_FILE_NAME)).collect(Collectors.toList());
+        return getFiles(dataDir, SERVER_ID_FILE_NAME);
     }
 
     private List<Path> getDeploymentIdFiles(Path dataDir) throws IOException {
-        return Files.list(dataDir).filter(p -> p.toString().endsWith(DEPLOYMENT_ID_FILE_NAME)).collect(Collectors.toList());
+        return getFiles(dataDir, DEPLOYMENT_ID_FILE_NAME);
+    }
+
+    private List<Path> getFiles(Path dir, String fileEnding) throws IOException {
+        return Files.list(dir).filter(p -> p.toString().endsWith(fileEnding)).collect(Collectors.toList());
     }
 }
 
