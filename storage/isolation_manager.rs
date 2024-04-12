@@ -387,11 +387,6 @@ impl Timeline {
             return ();
         }
         let (mut window, mut candidate_slot_index) = self.try_get_window(sequence_number).unwrap();
-        let end_of_window: SequenceNumber = if candidate_slot_index == 0 {
-            sequence_number
-        } else {
-            sequence_number + (TIMELINE_WINDOW_SIZE - candidate_slot_index)
-        };
         let mut candidate_watermark = sequence_number;
         loop {
             let should_update: bool = match window.get_status(candidate_slot_index) {
@@ -425,8 +420,10 @@ impl Timeline {
             }
         }
         let watermark = candidate_watermark - 1; // Invaraint
-        if watermark >= end_of_window {
-            self.may_free_windows();
+        if let Some((watermark_window, _)) = self.try_get_window(sequence_number - 1) {
+            if watermark >= watermark_window.end() {
+                self.may_free_windows();
+            }
         }
     }
 
