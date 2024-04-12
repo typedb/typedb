@@ -191,8 +191,8 @@ public class TypeDBServer implements AutoCloseable {
     protected String serverID() {
         try {
             String serverID = "";
-            Path serverIDFile = config().storage().dataDir().resolve(SERVER_ID_FILE_NAME);
 
+            Path serverIDFile = config().storage().dataDir().resolve(SERVER_ID_FILE_NAME);
             if (serverIDFile.toFile().exists()) {
                 serverID = Files.readString(serverIDFile);
                 if (serverID.isEmpty()) {
@@ -229,14 +229,23 @@ public class TypeDBServer implements AutoCloseable {
             if (configDeploymentID.isPresent()) {
                 return configDeploymentID.get();
             }
-            
+
+            String deploymentID = "";
+
             Path deploymentIDFile = config().storage().dataDir().resolve(DEPLOYMENT_ID_FILE_NAME);
             if (deploymentIDFile.toFile().exists()) {
-                return Files.readString(deploymentIDFile);
-            }
+                deploymentID = Files.readString(deploymentIDFile);
+                if (deploymentID.isEmpty()) {
+                    throw new Exception("The stored deployment ID value is empty");
+                }
+            } else {
+                deploymentID = generateDeploymentID();
+                if (deploymentID.isEmpty()) {
+                    throw new Exception("The generated deployment ID value is empty");
+                }
 
-            String deploymentID = generateDeploymentID();
-            Files.writeString(deploymentIDFile, deploymentID);
+                Files.writeString(deploymentIDFile, deploymentID);
+            }
 
             return deploymentID;
         } catch (Exception e) {
