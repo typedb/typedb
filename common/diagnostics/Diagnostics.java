@@ -82,11 +82,11 @@ public abstract class Diagnostics {
                 return;
             }
 
-            System.out.println("GOT: " + deploymentID + "    " + serverID); // TODO: Use!
+            System.out.println("GOT: " + deploymentID + "    " + serverID); // TODO: Remove
 
             initSentry(serverID, distributionName, version, errorReportingEnable, errorReportingURI);
 
-            Metrics metrics = new Metrics(serverID, distributionName, version);
+            Metrics metrics = new Metrics(deploymentID, serverID, distributionName, version);
             StatisticReporter statisticReporter = initStatisticReporter(statisticsReportingEnable, statisticsReportingURI, metrics);
             MonitoringServer monitoringServer = initMonitoringServer(monitoringEnable, monitoringPort, metrics);
 

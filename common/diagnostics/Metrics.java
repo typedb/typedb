@@ -19,8 +19,8 @@ public class Metrics {
     private final CurrentCounts usage;
     private final UserErrorStatistics userErrors;
 
-    public Metrics(String serverID, String name, String version) {
-        this.system = new SystemProperties(serverID, name, version);
+    public Metrics(String deploymentID, String serverID, String name, String version) {
+        this.system = new SystemProperties(deploymentID, serverID, name, version);
         this.requests = new NetworkRequests();
         this.usage = new CurrentCounts();
         this.userErrors = new UserErrorStatistics();
@@ -60,11 +60,13 @@ public class Metrics {
     }
 
     static class SystemProperties {
+        private final String deploymentID;
         private final String serverID;
         private final String name;
         private final String version;
 
-        SystemProperties(String serverID, String name, String version) {
+        SystemProperties(String deploymentID, String serverID, String name, String version) {
+            this.deploymentID = deploymentID;
             this.serverID = serverID;
             this.name = name;
             this.version = version;
@@ -73,6 +75,7 @@ public class Metrics {
         JsonObject asJSON() {
             JsonObject system = new JsonObject();
             system.add("TypeDB version", name + " " + version);
+            system.add("Deployment ID", deploymentID);
             system.add("Server ID", serverID);
             system.add("Time zone", TimeZone.getDefault().getID());
             system.add("Java version", System.getProperty("java.vendor") + " " + System.getProperty("java.version"));
@@ -82,7 +85,7 @@ public class Metrics {
 
         String formatPrometheus() {
             return "# TypeDB version: " + name + " " + version + "\n" +
-                    // no serverID, that's for reporting only
+                    // no deploymentID and serverID, that's for reporting only
                     "# Time zone: " + TimeZone.getDefault() .getID() + "\n" +
                     "# Java version: " + System.getProperty("java.vendor") + " " + System.getProperty("java.version") + "\n" +
                     "# Platform: " + System.getProperty("os.name") + " " + System.getProperty("os.arch") + " " + System.getProperty("os.version") + "\n";
