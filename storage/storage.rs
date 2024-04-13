@@ -29,7 +29,6 @@ use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use speedb::{Options, WriteBatch};
 use durability::wal::WAL;
-use test_utils::{create_tmp_dir, init_logging};
 
 use crate::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
@@ -769,10 +768,6 @@ impl StorageOperation {
         StorageOperation::BYTES
     }
 }
-
-
-
-
 
 #[cfg(test)]
 mod tests {
