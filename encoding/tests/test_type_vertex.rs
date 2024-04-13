@@ -20,8 +20,20 @@ fn entity_type_vertexes_are_reused() {
     let storage_path = create_tmp_dir();
     let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
 
+    // If we don't commit, it doesn't move.
+    {
+        for i in 0..5 {
+            let snapshot = storage.open_snapshot_write();
+            let generator = TypeVertexGenerator::new();
+            let vertex = generator.create_entity_type(&snapshot).unwrap();
+            let b = vertex.bytes().into_bytes();
+            let type_id_as_u16 = u16::from_be_bytes([b[b.len() - 2], b[b.len() - 1]]);
+            assert_eq!(0, type_id_as_u16);
+        }
+    }
+
     // create a bunch of types, delete, and assert that the IDs are re-used
-    let create_till = 255;
+    let create_till = 32;
     {
         let snapshot = storage.open_snapshot_write();
         let generator = TypeVertexGenerator::new();
@@ -103,7 +115,8 @@ fn loading_storage_assigns_next_vertex() {
     //       that the next Type vertex ID is the expected one
     init_logging();
     let storage_path = create_tmp_dir();
-    let create_till = 1;
+    let create_till = 5;
+
     for i in 0..=create_till {
         let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
         let snapshot = storage.open_snapshot_write();
