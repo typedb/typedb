@@ -6,7 +6,7 @@
 
 #![deny(unused_must_use)]
 
-use std::{fs::File, os::raw::c_int, path::Path};
+use std::{fs::File, os::raw::c_int, path::Path, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
@@ -16,10 +16,10 @@ use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
+    keyspace::KeyspaceId,
+    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
     KeyspaceSet, MVCCStorage,
 };
-use storage::keyspace::KeyspaceId;
-use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
 macro_rules! test_keyspace_set {
@@ -55,13 +55,13 @@ fn random_key_4(keyspace: TestKeyspaceSet) -> StorageKeyArray<BUFFER_KEY_INLINE>
     StorageKeyArray::from((bytes.as_slice(), keyspace))
 }
 
-fn populate_storage(storage: &MVCCStorage<WAL>, keyspace: TestKeyspaceSet, key_count: usize) -> usize {
+fn populate_storage(storage: Arc<MVCCStorage<WAL>>, keyspace: TestKeyspaceSet, key_count: usize) -> usize {
     const BATCH_SIZE: usize = 1_000;
-    let mut snapshot = storage.open_snapshot_write();
+    let mut snapshot = storage.clone().open_snapshot_write();
     for i in 0..key_count {
         if i % BATCH_SIZE == 0 {
             snapshot.commit().unwrap();
-            snapshot = storage.open_snapshot_write();
+            snapshot = storage.clone().open_snapshot_write();
         }
         snapshot.put(random_key_24(keyspace));
     }
@@ -77,7 +77,7 @@ fn populate_storage(storage: &MVCCStorage<WAL>, keyspace: TestKeyspaceSet, key_c
 }
 
 fn bench_snapshot_read_get(
-    storage: &MVCCStorage<WAL>,
+    storage: Arc<MVCCStorage<WAL>>,
     keyspace: TestKeyspaceSet,
 ) -> Option<ByteArray<BUFFER_VALUE_INLINE>> {
     let snapshot = storage.open_snapshot_read();
@@ -89,7 +89,7 @@ fn bench_snapshot_read_get(
 }
 
 fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(
-    storage: &MVCCStorage<WAL>,
+    storage: Arc<MVCCStorage<WAL>>,
     keyspace: TestKeyspaceSet,
 ) -> Option<ByteArray<BUFFER_VALUE_INLINE>> {
     let snapshot = storage.open_snapshot_read();
@@ -100,7 +100,7 @@ fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(
     last
 }
 
-fn bench_snapshot_write_put(storage: &MVCCStorage<WAL>, keyspace: TestKeyspaceSet, batch_size: usize) {
+fn bench_snapshot_write_put(storage: Arc<MVCCStorage<WAL>>, keyspace: TestKeyspaceSet, batch_size: usize) {
     let snapshot = storage.open_snapshot_write();
     for _ in 0..batch_size {
         snapshot.put(random_key_24(keyspace));
@@ -108,9 +108,9 @@ fn bench_snapshot_write_put(storage: &MVCCStorage<WAL>, keyspace: TestKeyspaceSe
     snapshot.commit().unwrap()
 }
 
-fn setup_storage(storage_path: &Path, key_count: usize) -> MVCCStorage<WAL> {
-    let storage = MVCCStorage::recover::<TestKeyspaceSet>("storage_bench", storage_path).unwrap();
-    let keys = populate_storage(&storage, Keyspace, key_count);
+fn setup_storage(storage_path: &Path, key_count: usize) -> Arc<MVCCStorage<WAL>> {
+    let storage = Arc::new(MVCCStorage::recover::<TestKeyspaceSet>("storage_bench", storage_path).unwrap());
+    let keys = populate_storage(storage.clone(), Keyspace, key_count);
     println!("Initialised storage with '{}' keys", keys);
     storage
 }
@@ -122,7 +122,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     {
         let storage_path = create_tmp_dir();
         let storage = setup_storage(&storage_path, INITIAL_KEY_COUNT);
-        c.bench_function("snapshot_read_get", |b| b.iter(|| bench_snapshot_read_get(&storage, Keyspace)));
+        c.bench_function("snapshot_read_get", |b| b.iter(|| bench_snapshot_read_get(storage.clone(), Keyspace)));
     }
     // {
     //     let storage_path = create_tmp_dir();
