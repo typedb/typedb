@@ -9,26 +9,23 @@ use std::{
     error::Error,
     fs, io,
     path::{Path, PathBuf},
-    rc::Rc,
+    sync::Arc,
 };
 
-use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+use concept::type_::type_manager::TypeManager;
 use durability::DurabilityService;
 use encoding::{
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
     EncodingKeyspace,
 };
-use storage::{MVCCStorage, StorageRecoverError};
-use storage::snapshot::{ReadSnapshot, WriteSnapshot};
-
-use crate::transaction::{TransactionRead, TransactionWrite};
+use storage::{snapshot::WriteSnapshot, MVCCStorage, StorageRecoverError};
 
 pub struct Database<D> {
     name: String,
     path: PathBuf,
-    storage: MVCCStorage<D>,
-    type_vertex_generator: TypeVertexGenerator,
-    thing_vertex_generator: ThingVertexGenerator,
+    pub(super) storage: Arc<MVCCStorage<D>>,
+    pub(super) type_vertex_generator: Arc<TypeVertexGenerator>,
+    pub(super) thing_vertex_generator: Arc<ThingVertexGenerator>,
 }
 
 impl<D> fmt::Debug for Database<D> {
@@ -48,11 +45,12 @@ impl<D> Database<D> {
         if !path.exists() {
             fs::create_dir(path).map_err(|error| DirectoryCreate { path: path.to_owned(), source: error })?;
         }
-        let mut storage =
-            MVCCStorage::recover::<EncodingKeyspace>(name, path).map_err(|error| StorageRecover { source: error })?;
-        let type_vertex_generator = TypeVertexGenerator::new();
-        let thing_vertex_generator = ThingVertexGenerator::new();
-        TypeManager::<'_, WriteSnapshot<'_, D>>::initialise_types(&mut storage, &type_vertex_generator);
+        let storage = Arc::new(
+            MVCCStorage::recover::<EncodingKeyspace>(name, path).map_err(|error| StorageRecover { source: error })?,
+        );
+        let type_vertex_generator = Arc::<TypeVertexGenerator>::default();
+        let thing_vertex_generator = Default::default();
+        TypeManager::<WriteSnapshot<D>>::initialise_types(storage.clone(), type_vertex_generator.clone());
 
         storage.checkpoint().unwrap();
 
@@ -63,20 +61,6 @@ impl<D> Database<D> {
             type_vertex_generator,
             thing_vertex_generator,
         })
-    }
-
-    pub fn transaction_read(&self) -> TransactionRead<'_, '_, D> {
-        let snapshot: Rc<ReadSnapshot<'_, D>> = Rc::new(self.storage.open_snapshot_read());
-        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &self.type_vertex_generator, None)); // TODO pass cache
-        let thing_manager = ThingManager::new(snapshot.clone(), &self.thing_vertex_generator, type_manager.clone());
-        TransactionRead { snapshot, type_manager, thing_manager }
-    }
-
-    fn transaction_write(&self) -> TransactionWrite<'_, '_, D> {
-        let snapshot: Rc<WriteSnapshot<'_, D>> = Rc::new(self.storage.open_snapshot_write());
-        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &self.type_vertex_generator, None)); // TODO pass cache for data write txn
-        let thing_manager = ThingManager::new(snapshot.clone(), &self.thing_vertex_generator, type_manager.clone());
-        TransactionWrite { snapshot, type_manager, thing_manager }
     }
 }
 

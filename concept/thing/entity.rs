@@ -5,24 +5,36 @@
  */
 
 use bytes::Bytes;
-use encoding::{AsBytes, graph::{
-    thing::{edge::ThingEdgeHas, vertex_object::ObjectVertex},
-    type_::vertex::build_vertex_entity_type,
-    Typed,
-}, Keyable, layout::prefix::Prefix, Prefixed};
-use encoding::graph::thing::edge::{ThingEdgeRelationIndex, ThingEdgeRolePlayer};
-use storage::key_value::StorageKeyReference;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use encoding::{
+    graph::{
+        thing::{
+            edge::{ThingEdgeHas, ThingEdgeRelationIndex, ThingEdgeRolePlayer},
+            vertex_object::ObjectVertex,
+        },
+        type_::vertex::build_vertex_entity_type,
+        Typed,
+    },
+    layout::prefix::Prefix,
+    AsBytes, Keyable, Prefixed,
+};
+use storage::{
+    key_value::StorageKeyReference,
+    snapshot::{ReadableSnapshot, WritableSnapshot},
+};
 
-use crate::{ByteReference, concept_iterator, ConceptAPI, ConceptStatus, GetStatus, thing::{
-    attribute::{Attribute, AttributeIterator},
-    object::Object,
-    relation::{IndexedPlayersIterator, RelationRoleIterator},
-    thing_manager::ThingManager,
-}, type_::entity_type::EntityType};
-use crate::error::ConceptWriteError;
-use crate::thing::{ObjectAPI, ThingAPI};
-use crate::thing::object::HasAttributeIterator;
+use crate::{
+    concept_iterator,
+    error::ConceptWriteError,
+    thing::{
+        attribute::{Attribute, AttributeIterator},
+        object::{HasAttributeIterator, Object},
+        relation::{IndexedPlayersIterator, RelationRoleIterator},
+        thing_manager::ThingManager,
+        ObjectAPI, ThingAPI,
+    },
+    type_::entity_type::EntityType,
+    ByteReference, ConceptAPI, ConceptStatus, GetStatus,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Entity<'a> {
@@ -49,31 +61,33 @@ impl<'a> Entity<'a> {
 
     pub fn get_has<'m>(
         &self,
-        thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
+        thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         thing_manager.get_has_of(self.as_reference())
     }
 
-    pub fn set_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: Attribute<'_>) {
+    pub fn set_has(&self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>) {
         // TODO: validate schema
         // TODO: handle duplicates/counts
         thing_manager.set_has(self.as_reference(), attribute.as_reference())
     }
 
-    pub fn delete_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: Attribute<'_>) {
+    pub fn delete_has(&self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: &Attribute<'_>) {
         // TODO: validate schema
         // TODO: handle duplicates/counts
         thing_manager.delete_has(self.as_reference(), attribute.as_reference())
     }
 
     pub fn get_relations<'m>(
-        &self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
+        &self,
+        thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> RelationRoleIterator<'m, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
         thing_manager.get_relations_of(self.as_reference())
     }
 
     pub fn get_indexed_players<'m>(
-        &self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
+        &self,
+        thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> IndexedPlayersIterator<'m, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
         thing_manager.get_indexed_players_of(Object::Entity(self.as_reference()))
     }
@@ -92,11 +106,11 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         }
     }
 
-    fn get_status<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) -> ConceptStatus {
+    fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus {
         thing_manager.get_status(self.vertex().as_storage_key())
     }
 
-    fn delete<'m>(self, thing_manager: &'m ThingManager<'_, impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+    fn delete<'m>(self, thing_manager: &'m ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
         let mut has_iter = self.get_has(thing_manager);
         let mut attr = has_iter.next().transpose()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;

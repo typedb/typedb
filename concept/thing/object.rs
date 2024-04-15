@@ -5,27 +5,35 @@
  */
 
 use std::sync::Arc;
-use bytes::byte_reference::ByteReference;
-use bytes::Bytes;
-use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeRolePlayer};
-use encoding::graph::thing::vertex_attribute::AttributeVertex;
-use encoding::graph::thing::vertex_object::ObjectVertex;
-use encoding::graph::type_::vertex::build_vertex_role_type;
-use encoding::layout::prefix::Prefix;
-use encoding::Prefixed;
-use encoding::value::decode_value_u64;
-use storage::key_value::StorageKeyReference;
-use storage::snapshot::iterator::{SnapshotIteratorError, SnapshotRangeIterator};
-use storage::snapshot::WritableSnapshot;
-use crate::error::ConceptReadError;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
-use crate::thing::attribute::Attribute;
-use crate::thing::entity::Entity;
-use crate::thing::ObjectAPI;
-use crate::thing::relation::Relation;
-use crate::thing::thing_manager::ThingManager;
-use crate::type_::role_type::RoleType;
+use bytes::{byte_reference::ByteReference, Bytes};
+use encoding::{
+    graph::{
+        thing::{
+            edge::{ThingEdgeHas, ThingEdgeRolePlayer},
+            vertex_attribute::AttributeVertex,
+            vertex_object::ObjectVertex,
+        },
+        type_::vertex::build_vertex_role_type,
+    },
+    layout::prefix::Prefix,
+    value::decode_value_u64,
+    Prefixed,
+};
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use storage::{
+    key_value::StorageKeyReference,
+    snapshot::{
+        iterator::{SnapshotIteratorError, SnapshotRangeIterator},
+        WritableSnapshot,
+    },
+};
+
+use crate::{
+    error::ConceptReadError,
+    thing::{attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, ObjectAPI},
+    type_::role_type::RoleType,
+};
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum Object<'a> {
@@ -49,7 +57,7 @@ impl<'a> Object<'a> {
         }
     }
 
-    fn set_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: Attribute<'_>) {
+    fn set_has(&self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>) {
         match self {
             Object::Entity(entity) => entity.set_has(thing_manager, attribute),
             Object::Relation(relation) => relation.set_has(thing_manager, attribute),
@@ -101,26 +109,26 @@ impl<'a, const S: usize> HasAttributeIterator<'a, S> {
     }
 
     pub fn peek(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
-        self.iter_peek().map(|result|
-            result.map(|(storage_key, value)| {
-                let edge = ThingEdgeHas::new(Bytes::Reference(storage_key.byte_ref()));
-                Attribute::new(edge.into_to())
-            }).map_err(|snapshot_error|
-                ConceptReadError::SnapshotIterate { source: snapshot_error }
-            )
-        )
+        self.iter_peek().map(|result| {
+            result
+                .map(|(storage_key, value)| {
+                    let edge = ThingEdgeHas::new(Bytes::Reference(storage_key.byte_ref()));
+                    Attribute::new(edge.into_to())
+                })
+                .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error })
+        })
     }
 
     // a lending iterator trait is infeasible with the current borrow checker
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
         self.iter_next().map(|result| {
-            result.map(|(storage_key, value)| {
-                let edge = ThingEdgeHas::new(Bytes::Reference(storage_key.byte_ref()));
-                Attribute::new(edge.into_to())
-            }).map_err(|snapshot_error|
-                ConceptReadError::SnapshotIterate { source: snapshot_error }
-            )
+            result
+                .map(|(storage_key, value)| {
+                    let edge = ThingEdgeHas::new(Bytes::Reference(storage_key.byte_ref()));
+                    Attribute::new(edge.into_to())
+                })
+                .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error })
         })
     }
 
@@ -128,7 +136,9 @@ impl<'a, const S: usize> HasAttributeIterator<'a, S> {
         todo!()
     }
 
-    fn iter_peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
+    fn iter_peek(
+        &mut self,
+    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
         if let Some(iter) = self.snapshot_iterator.as_mut() {
             iter.peek()
         } else {
@@ -136,7 +146,9 @@ impl<'a, const S: usize> HasAttributeIterator<'a, S> {
         }
     }
 
-    fn iter_next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
+    fn iter_next(
+        &mut self,
+    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
         if let Some(iter) = self.snapshot_iterator.as_mut() {
             iter.next()
         } else {
@@ -167,5 +179,3 @@ impl<'a, const S: usize> HasAttributeIterator<'a, S> {
         count
     }
 }
-
-

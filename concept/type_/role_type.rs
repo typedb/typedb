@@ -10,26 +10,27 @@ use bytes::Bytes;
 use encoding::{
     graph::type_::vertex::{new_vertex_role_type, TypeVertex},
     layout::prefix::Prefix,
-    Prefixed,
     value::label::Label,
+    Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
-use storage::key_value::StorageKeyReference;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::{
+    key_value::StorageKeyReference,
+    snapshot::{ReadableSnapshot, WritableSnapshot},
+};
 
 use crate::{
     concept_iterator,
-    ConceptAPI,
     error::ConceptReadError,
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationDistinct},
+        annotation::{Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationDistinct},
         plays::Plays,
         relates::Relates,
         type_manager::TypeManager,
         TypeAPI,
     },
+    ConceptAPI,
 };
-use crate::type_::annotation::AnnotationCardinality;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -56,18 +57,18 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
 }
 
 impl<'a> RoleType<'a> {
-    pub fn is_root(&self, type_manager: &TypeManager<'_, impl ReadableSnapshot>) -> Result<bool, ConceptReadError> {
+    pub fn is_root(&self, type_manager: &TypeManager<impl ReadableSnapshot>) -> Result<bool, ConceptReadError> {
         type_manager.get_role_type_is_root(self.clone().into_owned())
     }
 
     pub fn get_label<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
+        type_manager: &'m TypeManager<impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
         type_manager.get_role_type_label(self.clone().into_owned())
     }
 
-    fn set_name(&self, _type_manager: &TypeManager<'_, impl WritableSnapshot>, _name: &str) {
+    fn set_name(&self, _type_manager: &TypeManager<impl WritableSnapshot>, _name: &str) {
         // // TODO: setLabel should fail is setting label on Root type
         // type_manager.set_storage_label(self.clone().into_owned(), label);
 
@@ -76,18 +77,18 @@ impl<'a> RoleType<'a> {
 
     pub fn get_supertype(
         &self,
-        type_manager: &TypeManager<'_, impl ReadableSnapshot>,
+        type_manager: &TypeManager<impl ReadableSnapshot>,
     ) -> Result<Option<RoleType<'_>>, ConceptReadError> {
         type_manager.get_role_type_supertype(self.clone().into_owned())
     }
 
-    fn set_supertype(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, supertype: RoleType<'static>) {
+    fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: RoleType<'static>) {
         type_manager.storage_set_supertype(self.clone().into_owned(), supertype)
     }
 
     pub fn get_supertypes<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
+        type_manager: &'m TypeManager<impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, ConceptReadError> {
         type_manager.get_role_type_supertypes(self.clone().into_owned())
     }
@@ -96,26 +97,26 @@ impl<'a> RoleType<'a> {
 
     pub fn get_annotations<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
+        type_manager: &'m TypeManager<impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<RoleTypeAnnotation>>, ConceptReadError> {
         type_manager.get_role_type_annotations(self.clone().into_owned())
     }
 
-    pub fn set_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: RoleTypeAnnotation) {
+    pub(crate) fn set_annotation(
+        &self,
+        type_manager: &TypeManager<impl WritableSnapshot>,
+        annotation: RoleTypeAnnotation,
+    ) {
         match annotation {
-            RoleTypeAnnotation::Abstract(_) => {
-                type_manager.storage_set_annotation_abstract(self.clone().into_owned())
-            }
-            RoleTypeAnnotation::Distinct(_) => {
-                type_manager.storage_set_annotation_distinct(self.clone().into_owned())
-            }
+            RoleTypeAnnotation::Abstract(_) => type_manager.storage_set_annotation_abstract(self.clone().into_owned()),
+            RoleTypeAnnotation::Distinct(_) => type_manager.storage_set_annotation_distinct(self.clone().into_owned()),
             RoleTypeAnnotation::Cardinality(cardinality) => {
                 type_manager.storage_set_annotation_cardinality(self.clone().into_owned(), cardinality)
             }
         }
     }
 
-    fn delete_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: RoleTypeAnnotation) {
+    fn delete_annotation(&self, type_manager: &TypeManager<impl WritableSnapshot>, annotation: RoleTypeAnnotation) {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
                 type_manager.storage_delete_annotation_abstract(self.clone().into_owned())
@@ -129,7 +130,7 @@ impl<'a> RoleType<'a> {
         }
     }
 
-    fn get_relates(&self, _type_manager: &TypeManager<'_, impl ReadableSnapshot>) -> Relates<'static> {
+    fn get_relates(&self, _type_manager: &TypeManager<impl ReadableSnapshot>) -> Relates<'static> {
         todo!()
     }
 
@@ -140,7 +141,10 @@ impl<'a> RoleType<'a> {
 
 // --- Played API ---
 impl<'a> RoleType<'a> {
-    fn get_plays<'m>(&self, _type_manager: &'m TypeManager<'_, impl ReadableSnapshot>) -> MaybeOwns<'m, HashSet<Plays<'static>>> {
+    fn get_plays<'m>(
+        &self,
+        _type_manager: &'m TypeManager<impl ReadableSnapshot>,
+    ) -> MaybeOwns<'m, HashSet<Plays<'static>>> {
         todo!()
     }
 }

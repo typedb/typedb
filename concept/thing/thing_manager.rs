@@ -6,11 +6,9 @@
 
 use std::borrow::Cow;
 use std::rc::Rc;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
 
-use bytes::byte_array::ByteArray;
-use bytes::byte_reference::ByteReference;
-use bytes::Bytes;
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
     graph::{
         thing::{
@@ -18,58 +16,56 @@ use encoding::{
             vertex_attribute::AttributeVertex,
             vertex_generator::{LongAttributeID, StringAttributeID, ThingVertexGenerator},
             vertex_object::ObjectVertex,
-        }
-        ,
+        },
         Typed,
     },
-    Keyable,
     layout::prefix::{Prefix, PrefixID},
-    value::{
-        decode_value_u64, encode_value_u64,
-        long::Long, string::StringBytes, value_type::ValueType,
-    },
+    value::{decode_value_u64, encode_value_u64, long::Long, string::StringBytes, value_type::ValueType},
+    Keyable,
 };
-
 use primitive::prefix_range::PrefixRange;
 use primitive::prefix_range::RangeEnd::Unbounded;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKey;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use storage::snapshot::write::Write;
+use storage::{
+    key_value::{StorageKey, StorageKeyReference},
+    snapshot::{write::Write, ReadableSnapshot, WritableSnapshot},
+};
 
-use crate::{ConceptStatus, error::{ConceptReadError, ConceptWriteError}, thing::{
-    attribute::{Attribute, AttributeIterator},
-    entity::{Entity, EntityIterator},
-    object::Object,
-    relation::{IndexedPlayersIterator, Relation, RelationIterator, RelationRoleIterator, RolePlayerIterator},
-    value::Value,
-}, type_::{
-    attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType,
-    role_type::RoleType,
-    type_manager::TypeManager,
-    TypeAPI,
-}};
-use crate::thing::{ObjectAPI, ThingAPI};
-use crate::thing::object::HasAttributeIterator;
+use crate::{
+    error::{ConceptReadError, ConceptWriteError},
+    thing::{
+        attribute::{Attribute, AttributeIterator},
+        entity::{Entity, EntityIterator},
+        object::{HasAttributeIterator, Object},
+        relation::{IndexedPlayersIterator, Relation, RelationIterator, RelationRoleIterator, RolePlayerIterator},
+        value::Value,
+        ObjectAPI, ThingAPI,
+    },
+    type_::{
+        attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType, role_type::RoleType,
+        type_manager::TypeManager, TypeAPI,
+    },
+    ConceptStatus,
+};
 
-pub struct ThingManager<'txn, Snapshot> {
-    snapshot: Rc<Snapshot>,
-    vertex_generator: &'txn ThingVertexGenerator,
-    type_manager: Rc<TypeManager<'txn, Snapshot>>,
+pub struct ThingManager<Snapshot> {
+    snapshot: Arc<Snapshot>,
+    vertex_generator: Arc<ThingVertexGenerator>,
+    type_manager: Arc<TypeManager<Snapshot>>,
     relation_lock: Mutex<()>,
 }
 
-impl<'txn, Snapshot: ReadableSnapshot> ThingManager<'txn, Snapshot> {
+impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     pub fn new(
-        snapshot: Rc<Snapshot>,
-        vertex_generator: &'txn ThingVertexGenerator,
-        type_manager: Rc<TypeManager<'txn, Snapshot>>,
+        snapshot: Arc<Snapshot>,
+        vertex_generator: Arc<ThingVertexGenerator>,
+        type_manager: Arc<TypeManager<Snapshot>>,
     ) -> Self {
         ThingManager { snapshot, vertex_generator, type_manager, relation_lock: Mutex::new(()) }
     }
 
-    pub(crate) fn type_manager(&self) -> &TypeManager<'txn, Snapshot> {
-        self.type_manager.as_ref()
+    pub(crate) fn type_manager(&self) -> &TypeManager<Snapshot> {
+        &self.type_manager
     }
 
     pub fn get_entities(&self) -> EntityIterator<'_, 1> {
@@ -121,7 +117,7 @@ impl<'txn, Snapshot: ReadableSnapshot> ThingManager<'txn, Snapshot> {
                 let attribute_id = StringAttributeID::new(attribute.vertex().attribute_id().unwrap_bytes_17());
                 if attribute_id.is_inline() {
                     Ok(Value::String(Cow::Owned(
-                        String::from(attribute_id.get_inline_string_bytes().as_str()).into_boxed_str()
+                        String::from(attribute_id.get_inline_string_bytes().as_str()).into_boxed_str(),
                     )))
                 } else {
                     Ok(self
@@ -154,40 +150,46 @@ impl<'txn, Snapshot: ReadableSnapshot> ThingManager<'txn, Snapshot> {
         RelationRoleIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
     }
 
-    pub(crate) fn has_role_players<'this, 'a>(&'this self, relation: Relation<'a>, buffered_only: bool) -> bool {
+    pub(crate) fn has_role_players<'a>(
+        &self,
+        relation: Relation<'a>,
+        buffered_only: bool, // FIXME use enums
+    ) -> bool {
         let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation.into_vertex());
         self.snapshot.any_in_range(PrefixRange::new_within(prefix), buffered_only)
     }
 
-    pub(crate) fn get_role_players_of<'this, 'a>(
-        &'this self, relation: impl ObjectAPI<'a>,
-    ) -> RolePlayerIterator<'txn, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> where 'this: 'txn {
+    pub(crate) fn get_role_players_of<'a>(
+        &self,
+        relation: impl ObjectAPI<'a>,
+    ) -> RolePlayerIterator<'_, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation.into_vertex());
         RolePlayerIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
     }
 
     pub(crate) fn get_indexed_players_of(
-        &self, from: Object<'_>,
+        &self,
+        from: Object<'_>,
     ) -> IndexedPlayersIterator<'_, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
         let prefix = ThingEdgeRelationIndex::prefix_from(from.vertex());
         IndexedPlayersIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
     }
 
     pub(crate) fn get_status(&self, key: StorageKey<'_, BUFFER_KEY_INLINE>) -> ConceptStatus {
-        self.snapshot.get_buffered_write_mapped(key.as_reference(), |write| {
-            match write {
+        self.snapshot
+            .get_buffered_write_mapped(key.as_reference(), |write| match write {
                 Write::Insert { .. } => ConceptStatus::Inserted,
                 Write::Put { .. } => ConceptStatus::Put,
                 Write::Delete => ConceptStatus::Deleted,
-            }
-        }).unwrap_or_else(|| {
-            debug_assert!(self.snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()).unwrap().is_some());
-            ConceptStatus::Persisted
-        })
+            })
+            .unwrap_or_else(|| {
+                debug_assert!(self.snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()).unwrap().is_some());
+                ConceptStatus::Persisted
+            })
     }
 }
 
-impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
+impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn relation_compound_update_mutex(&self) -> &Mutex<()> {
         &self.relation_lock
@@ -227,9 +229,13 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
         // ---------
 
         let mut errors: Vec<ConceptWriteError> = Vec::new();
-        for (key, write) in self.snapshot.iterate_writes_range(
-            PrefixRange::new_within(Bytes::Array(ByteArray::<{ PrefixID::LENGTH }>::copy(&Prefix::EdgeRolePlayer.prefix_id().bytes())))
-        ).filter(|(_, write)| matches!(write, Write::Delete)) {
+        for (key, write) in self
+            .snapshot
+            .iterate_writes_range(PrefixRange::new_within(Bytes::Array(ByteArray::<{ PrefixID::LENGTH }>::copy(
+                &Prefix::EdgeRolePlayer.prefix_id().bytes(),
+            ))))
+            .filter(|(_, write)| matches!(write, Write::Delete))
+        {
             let edge = ThingEdgeRolePlayer::new(Bytes::Reference(ByteReference::from(key.byte_array())));
             let relation = Relation::new(edge.to());
             if !relation.has_players(self) {
@@ -238,12 +244,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
                     errors.push(result.unwrap_err())
                 }
             }
-        };
+        }
 
-
-        //
-        // }
-        //
         //
         // for (key, write) in writes {
         //     let prefix_bytes = key.bytes()[0..PrefixID::LENGTH].try_into().unwrap();
@@ -379,13 +381,14 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
     }
 
     pub fn set_role_player<'a>(&self, relation: Relation<'_>, player: impl ObjectAPI<'a>, role_type: RoleType<'_>) {
-        let role_player = ThingEdgeRolePlayer::build_role_player(
-            relation.vertex(), player.vertex(), role_type.clone().into_vertex(),
-        );
+        let role_player =
+            ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
         let count: u64 = 1;
         self.snapshot.put_val(role_player.into_storage_key().into_owned_array(), encode_value_u64(count));
         let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
-            player.into_vertex(), relation.into_vertex(), role_type.into_vertex(),
+            player.into_vertex(),
+            relation.into_vertex(),
+            role_type.into_vertex(),
         );
         // must be idempotent, so no lock required -- cannot fail
         self.snapshot.put_val(role_player_reverse.into_storage_key().into_owned_array(), encode_value_u64(count));
@@ -397,7 +400,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
         );
         self.snapshot.delete(role_player.into_storage_key().into_owned_array());
         let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
-            player.into_vertex(), relation.into_vertex(), role_type.into_vertex(),
+            player.into_vertex(),
+            relation.into_vertex(),
+            role_type.into_vertex(),
         );
         self.snapshot.delete(role_player_reverse.into_storage_key().into_owned_array());
     }
@@ -412,12 +417,10 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<'txn, Snapshot> {
                                             role_type: RoleType<'_>,
                                             _update_guard: &MutexGuard<'_, ()>,
     ) -> u64 {
-        let role_player = ThingEdgeRolePlayer::build_role_player(
-            relation.vertex(), player.vertex(), role_type.clone().into_vertex(),
-        );
-        let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
-            player.vertex(), relation.vertex(), role_type.into_vertex(),
-        );
+        let role_player =
+            ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
+        let role_player_reverse =
+            ThingEdgeRolePlayer::build_role_player_reverse(player.vertex(), relation.vertex(), role_type.into_vertex());
 
         let mut count = 0;
         let rp_count = self.snapshot

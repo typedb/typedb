@@ -4,78 +4,68 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeRelationIndex, ThingEdgeRolePlayer};
-use encoding::graph::thing::vertex_attribute::AttributeVertex;
-use encoding::graph::thing::vertex_object::ObjectVertex;
-use storage::key_value::StorageKeyReference;
-use storage::snapshot::{ReadSnapshot, WriteSnapshot, SchemaSnapshot};
+use storage::snapshot::{ReadSnapshot, SchemaSnapshot, WriteSnapshot};
 
-pub struct TransactionRead<'txn, 'storage: 'txn, D> {
-    pub(crate) snapshot: Rc<ReadSnapshot<'storage, D>>,
-    pub(crate) type_manager: Rc<TypeManager<'txn, ReadSnapshot<'storage, D>>>,
-    pub(crate) thing_manager: ThingManager<'txn, ReadSnapshot<'storage, D>>,
+use super::Database;
+
+pub struct TransactionRead<D> {
+    database: Arc<Database<D>>,
+    pub(crate) snapshot: Arc<ReadSnapshot<D>>,
+    pub(crate) type_manager: Arc<TypeManager<ReadSnapshot<D>>>,
+    pub(crate) thing_manager: ThingManager<ReadSnapshot<D>>,
 }
 
-impl<'txn, 'storage: 'txn, D> TransactionRead<'txn, 'storage, D> {
-    pub fn type_manager(&self) -> &TypeManager<'txn, ReadSnapshot<'storage, D>> {
+impl<D> TransactionRead<D> {
+    pub fn open(database: Arc<Database<D>>) -> Self {
+        let snapshot: Arc<ReadSnapshot<D>> = Arc::new(database.storage.clone().open_snapshot_read());
+        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), database.type_vertex_generator.clone(), None)); // TODO pass cache
+        let thing_manager =
+            ThingManager::new(snapshot.clone(), database.thing_vertex_generator.clone(), type_manager.clone());
+        Self { database, snapshot, type_manager, thing_manager }
+    }
+
+    pub fn type_manager(&self) -> &TypeManager<ReadSnapshot<D>> {
         &self.type_manager
     }
 }
 
-pub struct TransactionWrite<'txn, 'storage: 'txn, D> {
-    pub(crate) snapshot: Rc<WriteSnapshot<'storage, D>>,
-    pub(crate) type_manager: Rc<TypeManager<'txn, WriteSnapshot<'storage, D>>>,
-    pub(crate) thing_manager: ThingManager<'txn, WriteSnapshot<'storage, D>>,
+pub struct TransactionWrite<D> {
+    database: Arc<Database<D>>,
+    pub(crate) snapshot: Arc<WriteSnapshot<D>>,
+    pub(crate) type_manager: Arc<TypeManager<WriteSnapshot<D>>>,
+    pub(crate) thing_manager: ThingManager<WriteSnapshot<D>>,
 }
 
-impl<'txn, 'storage: 'txn, D> TransactionWrite<'txn, 'storage, D> {
-    pub fn type_manager(&self) -> &TypeManager<'txn, WriteSnapshot<'storage, D>> {
+impl<D> TransactionWrite<D> {
+    pub fn open(database: Arc<Database<D>>) -> Self {
+        let snapshot: Arc<WriteSnapshot<D>> = Arc::new(database.storage.clone().open_snapshot_write());
+        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), database.type_vertex_generator.clone(), None)); // TODO pass cache
+        let thing_manager =
+            ThingManager::new(snapshot.clone(), database.thing_vertex_generator.clone(), type_manager.clone());
+        Self { database, snapshot, type_manager, thing_manager }
+    }
+
+    pub fn type_manager(&self) -> &TypeManager<WriteSnapshot<D>> {
         &self.type_manager
     }
 
-    fn commit(self) {
-
-    }
+    fn commit(self) {}
 }
 
-// pub struct TransactionSchema<'txn, 'storage: 'txn, D> {
-//     pub(crate) snapshot: Rc<SchemaSnapshot<'storage, D>>,
-//     pub(crate) type_manager: Rc<TypeManager<'txn, SchemaSnapshot<'storage, D>>>,
-//     pub(crate) thing_manager: ThingManager<'txn, SchemaSnapshot<'storage, D>>,
-// }
-//
-// impl<'txn, 'storage: 'txn, D> TransactionSchema<'txn, 'storage, D> {
-//     pub fn type_manager(&self) -> &TypeManager<'txn, SchemaSnapshot<'storage, D>> {
-//         &self.type_manager
-//     }
-//
-//     fn commit(self) {
-//         // 1. validate cardinality constraints on modified relations. For those that have cardinality requirements, we must also put a lock into the snapshot.
-//         // 2. check attributes in modified 'has' ownerships to see if they need to be cleaned up (independent & last ownership)
-//
-//         let writes = self.snapshot.iterate_writes();
-//         // we can either write Things or Edges.
-//
-//         // TODO: move into ThingManager::commit()
-//         for (key, write) in writes {
-//             if ObjectVertex::is_object_vertex(StorageKeyReference::from(&key)) {
-//
-//             } else if AttributeVertex::is_attribute_vertex(StorageKeyReference::from(&key)) {
-//
-//             } else if ThingEdgeHas::is_has(StorageKeyReference::from(&key)) {
-//
-//             } else if ThingEdgeHasReverse::is_has_reverse(StorageKeyReference::from(&key)) {
-//
-//             } else if ThingEdgeRolePlayer::is_role_player(StorageKeyReference::from(&key)) {
-//
-//             } else if ThingEdgeRelationIndex::is_index(StorageKeyReference::from(&key)) {
-//
-//             } else {
-//                 unreachable!("Unrecognised modified key in a data transaction.")
-//             }
-//         }
-//     }
-// }
+pub struct TransactionSchema<D> {
+    database: Arc<Database<D>>,
+    pub(crate) snapshot: Arc<SchemaSnapshot<D>>,
+    pub(crate) type_manager: Arc<TypeManager<SchemaSnapshot<D>>>,
+    pub(crate) thing_manager: ThingManager<SchemaSnapshot<D>>,
+}
+
+impl<D> TransactionSchema<D> {
+    pub fn type_manager(&self) -> &TypeManager<SchemaSnapshot<D>> {
+        &self.type_manager
+    }
+
+    fn commit(self) {}
+}

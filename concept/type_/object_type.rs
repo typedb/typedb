@@ -10,7 +10,7 @@ use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    error::{ConceptReadError, ConceptWriteError},
+    error::ConceptReadError,
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays, relation_type::RelationType,
         role_type::RoleType, type_manager::TypeManager, OwnerAPI, PlayerAPI,
@@ -24,11 +24,7 @@ pub enum ObjectType<'a> {
 }
 
 impl<'a> OwnerAPI<'a> for ObjectType<'a> {
-    fn set_owns(
-        &self,
-        type_manager: &TypeManager<'_, impl WritableSnapshot>,
-        attribute_type: AttributeType<'static>,
-    ) {
+    fn set_owns(&self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>) {
         // TODO: decide behaviour (ok or error) if already owning
         match self {
             ObjectType::Entity(entity) => entity.set_owns(type_manager, attribute_type),
@@ -36,7 +32,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         }
     }
 
-    fn delete_owns(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, attribute_type: AttributeType<'static>) {
+    fn delete_owns(&self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>) {
         match self {
             ObjectType::Entity(entity) => entity.delete_owns(type_manager, attribute_type),
             ObjectType::Relation(relation) => relation.delete_owns(type_manager, attribute_type),
@@ -45,7 +41,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
 
     fn get_owns<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
+        type_manager: &'m TypeManager<impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
         match self {
             ObjectType::Entity(entity) => entity.get_owns(type_manager),
@@ -55,7 +51,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
 
     fn get_owns_attribute(
         &self,
-        type_manager: &TypeManager<'_, impl ReadableSnapshot>,
+        type_manager: &TypeManager<impl ReadableSnapshot>,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
         match self {
@@ -66,18 +62,14 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
 }
 
 impl<'a> PlayerAPI<'a> for ObjectType<'a> {
-    fn set_plays(
-        &self,
-        type_manager: &TypeManager<'_, impl WritableSnapshot>,
-        role_type: RoleType<'static>,
-    ) {
+    fn set_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>) {
         match self {
             ObjectType::Entity(entity) => entity.set_plays(type_manager, role_type),
             ObjectType::Relation(relation) => relation.set_plays(type_manager, role_type),
         }
     }
 
-    fn delete_plays(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, role_type: RoleType<'static>) {
+    fn delete_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>) {
         match self {
             ObjectType::Entity(entity) => entity.delete_plays(type_manager, role_type),
             ObjectType::Relation(relation) => relation.delete_plays(type_manager, role_type),
@@ -86,7 +78,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
 
     fn get_plays<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
+        type_manager: &'m TypeManager<impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
         match self {
             ObjectType::Entity(entity) => entity.get_plays(type_manager),
@@ -96,7 +88,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
 
     fn get_plays_role(
         &self,
-        type_manager: &TypeManager<'_, impl ReadableSnapshot>,
+        type_manager: &TypeManager<impl ReadableSnapshot>,
         role_type: RoleType<'static>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError> {
         match self {
