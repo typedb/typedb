@@ -6,9 +6,7 @@
 
 use std::{error::Error, fmt, sync::Arc};
 
-use durability::DurabilityError;
-
-use crate::{isolation_manager::IsolationError, keyspace::KeyspaceError};
+use crate::keyspace::KeyspaceError;
 
 #[derive(Debug)]
 pub struct MVCCStorageError {
@@ -21,8 +19,6 @@ pub enum MVCCStorageErrorKind {
     FailedToDeleteStorage { source: std::io::Error },
     KeyspaceError { source: Arc<dyn Error + Sync + Send>, keyspace_name: &'static str },
     KeyspaceDeleteError { source: KeyspaceError },
-    IsolationError { source: IsolationError },
-    DurabilityError { source: DurabilityError },
 }
 
 impl fmt::Display for MVCCStorageError {
@@ -37,12 +33,6 @@ impl fmt::Display for MVCCStorageError {
             MVCCStorageErrorKind::KeyspaceDeleteError { source, .. } => {
                 write!(f, "MVCCStorageError.KeyspaceDeleteError caused by: '{}'", source)
             }
-            MVCCStorageErrorKind::IsolationError { source, .. } => {
-                write!(f, "MVCCStorageError.IsolationError caused by: '{}'", source)
-            }
-            MVCCStorageErrorKind::DurabilityError { source, .. } => {
-                write!(f, "MVCCStorageError.DurabilityError caused by: '{}'", source)
-            }
         }
     }
 }
@@ -52,8 +42,6 @@ impl Error for MVCCStorageError {
         match &self.kind {
             MVCCStorageErrorKind::FailedToDeleteStorage { source, .. } => Some(source),
             MVCCStorageErrorKind::KeyspaceError { source, .. } => Some(source),
-            MVCCStorageErrorKind::IsolationError { source, .. } => Some(source),
-            MVCCStorageErrorKind::DurabilityError { source, .. } => Some(source),
             MVCCStorageErrorKind::KeyspaceDeleteError { source } => Some(source),
         }
     }

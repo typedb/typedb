@@ -13,12 +13,11 @@ use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use super::{buffer::OperationsBuffer, iterator::SnapshotRangeIterator};
 use crate::{
-    error::MVCCStorageError,
     isolation_manager::CommitRecord,
     iterator::MVCCReadError,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    snapshot::{buffer::WriteBuffer, lock::LockType, write::Write},
-    MVCCStorage,
+    snapshot::{lock::LockType, write::Write},
+    MVCCStorage, StorageCommitError,
 };
 use crate::key_range::KeyRange;
 
@@ -303,7 +302,7 @@ impl<D: DurabilityService> CommittableSnapshot<D> for WriteSnapshot<D> {
         if self.operations.writes_empty() && self.operations.locks_empty() {
             Ok(())
         } else {
-            self.storage.clone().snapshot_commit(self).map_err(|err| SnapshotError::Commit { source: err })
+            self.storage.clone().snapshot_commit(self).map_err(|error| SnapshotError::Commit { source: error })
         }
     }
 
@@ -410,7 +409,7 @@ impl<D: DurabilityService> CommittableSnapshot<D> for SchemaSnapshot<D> {
         if self.operations.writes_empty() {
             Ok(())
         } else {
-            self.storage.clone().snapshot_commit(self).map_err(|err| SnapshotError::Commit { source: err })
+            self.storage.clone().snapshot_commit(self).map_err(|error| SnapshotError::Commit { source: error })
         }
     }
 
@@ -421,7 +420,7 @@ impl<D: DurabilityService> CommittableSnapshot<D> for SchemaSnapshot<D> {
 
 #[derive(Debug)]
 pub enum SnapshotError {
-    Commit { source: MVCCStorageError },
+    Commit { source: StorageCommitError },
 }
 
 impl fmt::Display for SnapshotError {
