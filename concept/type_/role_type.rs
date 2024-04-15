@@ -101,7 +101,7 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_type_annotations(self.clone().into_owned())
     }
 
-    pub(crate) fn set_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: RoleTypeAnnotation) {
+    pub fn set_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: RoleTypeAnnotation) {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
                 type_manager.storage_set_annotation_abstract(self.clone().into_owned())

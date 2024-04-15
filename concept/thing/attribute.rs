@@ -66,7 +66,7 @@ impl<'a> Attribute<'a> {
         self.vertex
     }
 
-    fn into_owned(self) -> Attribute<'static> {
+    pub(crate) fn into_owned(self) -> Attribute<'static> {
         Attribute::new(self.vertex.into_owned())
     }
 }
@@ -74,6 +74,10 @@ impl<'a> Attribute<'a> {
 impl<'a> ConceptAPI<'a> for Attribute<'a> {}
 
 impl<'a> ThingAPI<'a> for Attribute<'a> {
+    fn set_modified(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>) {
+        // Attributes are always PUT, so we don't have to record a lock on modification
+    }
+
     fn get_status<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) -> ConceptStatus {
         thing_manager.get_status(self.vertex().as_storage_key())
     }

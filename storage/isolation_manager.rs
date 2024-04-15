@@ -714,7 +714,7 @@ impl CommitRecord {
                         _ => (),
                     }
                 }
-                if matches!(write, Write::Delete) && matches!(predecessor_locks.get(key), Some(LockType::Required)) {
+                if matches!(write, Write::Delete) && matches!(predecessor_locks.get(key), Some(LockType::Unmodifiable)) {
                     return CommitDependency::Conflict(IsolationConflict::DeletingRequiredKey);
                 }
             }
@@ -722,7 +722,7 @@ impl CommitRecord {
             // TODO: this is ineffecient since we loop over all locks each time - should we locks into keyspaces?
             //    Investigate
             for (key, lock) in locks.iter() {
-                if matches!(lock, LockType::Required) {
+                if matches!(lock, LockType::Unmodifiable) {
                     if let Some(Write::Delete) = predecessor_writes.get(key) {
                         return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
                     }
@@ -731,7 +731,7 @@ impl CommitRecord {
         }
 
         for (key, lock) in locks.iter() {
-            if matches!(lock, LockType::New) && matches!(predecessor_locks.get(key), Some(LockType::New)) {
+            if matches!(lock, LockType::Exclusive) && matches!(predecessor_locks.get(key), Some(LockType::Exclusive)) {
                 return CommitDependency::Conflict(IsolationConflict::ExclusiveLock);
             }
         }

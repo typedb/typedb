@@ -61,9 +61,14 @@ impl OperationsBuffer {
         self.write_buffers.iter()
     }
 
-    pub(crate) fn lock(&self, key: ByteArray<BUFFER_KEY_INLINE>, lock_type: LockType) {
+    pub(crate) fn lock_add(&self, key: ByteArray<BUFFER_KEY_INLINE>, lock_type: LockType) {
         let mut locks = self.locks.write().unwrap();
         locks.insert(key, lock_type);
+    }
+
+    pub(crate) fn lock_remove(&self, key: &ByteArray<BUFFER_KEY_INLINE>) {
+        let mut locks = self.locks.write().unwrap();
+        locks.remove(key);
     }
 
     pub(crate) fn locks(&self) -> &RwLock<BTreeMap<ByteArray<BUFFER_KEY_INLINE>, LockType>> {

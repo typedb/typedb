@@ -94,7 +94,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
             let storage_value = self
                 .get_mapped(key.as_reference(), |reference| ByteArray::from(reference))?;
             if let Some(value) = storage_value {
-                self.operations().lock(ByteArray::copy(key.bytes()), LockType::Required);
+                self.operations().lock_add(ByteArray::copy(key.bytes()), LockType::Unmodifiable);
                 Ok(value)
             } else {
                 // TODO: what if the user concurrent requires a concept while deleting it in another query
@@ -104,8 +104,16 @@ pub trait WritableSnapshot: ReadableSnapshot {
     }
 
     // TODO: technically we should never need this in a schema txn
-    fn record_lock_existing(&self, key: StorageKey<'static, BUFFER_KEY_INLINE>) {
-        self.operations().lock(key.into_byte_array_or_ref().into_array(), LockType::Required)
+    fn unmodifiable_lock_add(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
+        self.operations().lock_add(key.into_byte_array(), LockType::Unmodifiable)
+    }
+
+    fn unmodifiable_lock_remove(&self, key: &StorageKeyArray<BUFFER_KEY_INLINE>) {
+        self.operations().lock_remove(key.byte_array())
+    }
+
+    fn exclusive_lock_add(&self, key: StorageKey<'static, BUFFER_KEY_INLINE>) {
+        self.operations().lock_add(key.into_byte_array_or_ref().into_array(), LockType::Exclusive)
     }
 
     fn iterate_writes(&self) -> impl Iterator<Item=(StorageKeyArray<64>, Write)> + '_ {

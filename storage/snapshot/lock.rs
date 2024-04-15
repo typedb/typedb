@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum LockType {
     // Lock an existing key that ensures it cannot be deleted concurrently
-    Required,
+    Unmodifiable,
     // Lock a new key to be written exclusively by one snapshot
-    New
+    Exclusive
 }

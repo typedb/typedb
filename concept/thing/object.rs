@@ -72,7 +72,6 @@ impl<'a> Object<'a> {
 }
 
 impl<'a> ObjectAPI<'a> for Object<'a> {
-
     fn vertex<'this>(&'this self) -> ObjectVertex<'this> {
         match self {
             Object::Entity(entity) => entity.vertex(),
@@ -143,6 +142,19 @@ impl<'a, const S: usize> HasAttributeIterator<'a, S> {
         } else {
             None
         }
+    }
+
+    pub fn collect_cloned(mut self) -> Vec<Attribute<'static>> {
+        let mut vec = Vec::new();
+        loop {
+            let item = self.next();
+            if item.is_none() {
+                break;
+            }
+            let key = item.unwrap().unwrap().into_owned();
+            vec.push(key);
+        }
+        vec
     }
 
     pub fn count(mut self) -> usize {

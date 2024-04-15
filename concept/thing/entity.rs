@@ -56,13 +56,14 @@ impl<'a> Entity<'a> {
 
     pub fn set_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: Attribute<'_>) {
         // TODO: validate schema
+        // TODO: handle duplicates/counts
         thing_manager.set_has(self.as_reference(), attribute.as_reference())
     }
 
-    pub fn delete_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: &Attribute<'_>) {
+    pub fn delete_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: Attribute<'_>) {
         // TODO: validate schema
-
-        todo!()
+        // TODO: handle duplicates/counts
+        thing_manager.delete_has(self.as_reference(), attribute.as_reference())
     }
 
     pub fn get_relations<'m>(
@@ -85,12 +86,37 @@ impl<'a> Entity<'a> {
 impl<'a> ConceptAPI<'a> for Entity<'a> {}
 
 impl<'a> ThingAPI<'a> for Entity<'a> {
+    fn set_modified(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>) {
+        if matches!(self.get_status(thing_manager), ConceptStatus::Persisted) {
+            thing_manager.lock_existing(self.as_reference());
+        }
+    }
+
     fn get_status<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) -> ConceptStatus {
         thing_manager.get_status(self.vertex().as_storage_key())
     }
 
     fn delete<'m>(self, thing_manager: &'m ThingManager<'_, impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
-        todo!()
+        let mut has_iter = self.get_has(thing_manager);
+        let mut attr = has_iter.next().transpose()
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        while attr.is_some() {
+            self.delete_has(thing_manager, attr.unwrap());
+            attr = has_iter.next().transpose()
+                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        }
+
+        let mut relation_iter = self.get_relations(thing_manager);
+        let mut playing = relation_iter.next().transpose()
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        while let Some((relation, role, count)) = playing {
+            relation.delete_player_many(thing_manager, role, Object::Entity(self.as_reference()), count);
+            playing = relation_iter.next().transpose()
+                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        }
+
+        thing_manager.delete_entity(self);
+        Ok(())
     }
 }
 
