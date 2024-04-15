@@ -147,8 +147,8 @@ vaticle_typedb_behaviour()
 load("@vaticle_dependencies//tool/common:deps.bzl", "vaticle_dependencies_ci_pip", vaticle_dependencies_tool_maven_artifacts = "maven_artifacts")
 vaticle_typedb_common()
 
-load("//dependencies/vaticle:artifacts.bzl", "vaticle_typedb_console_artifact")
-vaticle_typedb_console_artifact()
+#load("//dependencies/vaticle:artifacts.bzl", "vaticle_typedb_console_artifact")
+#vaticle_typedb_console_artifact()
 
 ############################
 # Load @maven dependencies #

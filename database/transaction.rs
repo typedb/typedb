@@ -52,7 +52,11 @@ impl<D> TransactionWrite<D> {
         &self.type_manager
     }
 
-    fn commit(self) {}
+    pub fn thing_manager(&self) -> &ThingManager<WriteSnapshot<D>> {
+        &self.thing_manager // TODO: Sort this out.
+    }
+
+    pub fn commit(self) {}
 }
 
 pub struct TransactionSchema<D> {
@@ -67,5 +71,5 @@ impl<D> TransactionSchema<D> {
         &self.type_manager
     }
 
-    fn commit(self) {}
+    pub fn commit(self) {}
 }

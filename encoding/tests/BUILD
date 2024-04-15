@@ -18,6 +18,8 @@ rust_test(
         "//storage",
         "//storage/durability",
         "//util/test:test_utils",
+        "//concept",
+        "//database",
 
         "@crates//:rand",
         "@crates//:tracing",
