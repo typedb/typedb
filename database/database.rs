@@ -48,8 +48,8 @@ impl<D> Database<D> {
         let storage = Arc::new(
             MVCCStorage::recover::<EncodingKeyspace>(name, path).map_err(|error| StorageRecover { source: error })?,
         );
-        let type_vertex_generator = Arc::<TypeVertexGenerator>::default();
-        let thing_vertex_generator = Default::default();
+        let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
+        let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
         TypeManager::<WriteSnapshot<D>>::initialise_types(storage.clone(), type_vertex_generator.clone());
 
         storage.checkpoint().unwrap();
