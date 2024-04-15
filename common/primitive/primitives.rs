@@ -6,4 +6,3 @@
 
 pub mod maybe_owns;
 pub mod prefix_range;
-pub mod u80;

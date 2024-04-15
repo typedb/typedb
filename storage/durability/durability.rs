@@ -13,8 +13,7 @@ use std::{
     io::{self, Read, Write},
     path::Path,
 };
-
-use primitive::u80::U80;
+use std::ops::{Add, AddAssign, Sub};
 use serde::{Deserialize, Serialize};
 
 pub mod wal;
@@ -49,10 +48,6 @@ pub trait DurabilityService: Sequencer {
     fn sequenced_write<Record>(&self, record: &Record) -> Result<SequenceNumber>
         where
             Record: SequencedDurabilityRecord;
-
-    fn is_empty(&self) -> bool {
-        self.previous() == SequenceNumber::MIN
-    }
 
     fn iter_from(&self, sequence_number: SequenceNumber) -> Result<impl Iterator<Item = io::Result<RawRecord>>>;
 
@@ -121,57 +116,94 @@ pub trait UnsequencedDurabilityRecord: DurabilityRecord {}
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct SequenceNumber {
-    number: U80,
+    number: u64,
 }
 
 impl fmt::Display for SequenceNumber {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "SeqNr[{}]", self.number.number())
+        write!(f, "SeqNr[{}]", self.number)
     }
 }
 
 impl SequenceNumber {
-    pub const MIN: Self = Self { number: U80::MIN };
-    pub const MAX: Self = Self { number: U80::MAX };
+    pub const MIN: Self = Self { number: u64::MIN };
+    pub const MAX: Self = Self { number: u64::MAX };
 
-    pub fn new(number: U80) -> Self {
+    pub fn new(number: u64) -> Self {
         Self { number }
     }
 
     pub fn next(&self) -> Self {
-        Self { number: self.number + U80::new(1) }
+        Self { number: self.number + 1 }
     }
 
     pub fn previous(&self) -> Self {
-        Self { number: self.number - U80::new(1) }
+        Self { number: self.number - 1 }
     }
 
-    pub fn number(&self) -> U80 {
+    pub fn number(&self) -> u64 {
         self.number
     }
 
     pub fn serialise_be_into(&self, bytes: &mut [u8]) {
-        assert_eq!(bytes.len(), U80::BYTES);
+        assert_eq!(bytes.len(), std::mem::size_of::<u64>());
         let number_bytes = self.number.to_be_bytes();
         bytes.copy_from_slice(&number_bytes)
     }
 
-    pub fn to_be_bytes(&self) -> [u8; U80::BYTES] {
+
+    pub fn from_be_bytes(bytes: &[u8]) -> Self {
+        let mut u64_bytes = [0; 8];
+        u64_bytes.copy_from_slice(bytes);
+        Self::from(u64::from_be_bytes(u64_bytes))
+    }
+
+    pub fn to_be_bytes(&self) -> [u8; std::mem::size_of::<u64>()] {
         self.number.to_be_bytes()
     }
 
     pub fn invert(&self) -> Self {
-        Self { number: U80::MAX - self.number }
+        Self { number: u64::MAX - self.number }
     }
 
     pub const fn serialised_len() -> usize {
-        U80::BYTES
+        std::mem::size_of::<u64>()
     }
 }
 
-impl From<u128> for SequenceNumber {
-    fn from(value: u128) -> Self {
-        Self::new(U80::new(value))
+impl From<u64> for SequenceNumber {
+    fn from(value: u64) -> Self {
+        Self::new(value)
+    }
+}
+
+impl Add<usize> for SequenceNumber {
+    type Output = SequenceNumber;
+
+    fn add(self, rhs: usize) -> Self::Output {
+        SequenceNumber::from(self.number + rhs as u64)
+    }
+}
+
+impl Sub<usize> for SequenceNumber {
+    type Output = SequenceNumber;
+
+    fn sub(self, rhs: usize) -> Self::Output {
+        SequenceNumber::from(self.number - rhs as u64)
+    }
+}
+
+impl AddAssign<usize> for SequenceNumber {
+    fn add_assign(&mut self, rhs: usize) {
+        self.number = self.number + rhs as u64
+    }
+}
+
+impl Sub<SequenceNumber> for SequenceNumber {
+    type Output = usize;
+
+    fn sub(self, rhs: SequenceNumber) -> Self::Output {
+        (self.number - rhs.number) as usize
     }
 }
 

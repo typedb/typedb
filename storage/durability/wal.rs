@@ -4,20 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    ffi::OsStr,
-    fs::{self, File as StdFile, OpenOptions},
-    io::{self, BufReader, BufWriter, Read, Seek, Write},
-    path::{Path, PathBuf},
-    sync::{
-        atomic::{AtomicU64, Ordering},
-        RwLock, RwLockReadGuard,
-    },
-};
+use std::{collections::HashMap, ffi::OsStr, fs::{self, File as StdFile, OpenOptions}, io::{self, BufReader, BufWriter, Read, Seek, Write}, mem, path::{Path, PathBuf}, sync::{
+    atomic::{AtomicU64, Ordering},
+    RwLock, RwLockReadGuard,
+}};
 
 use itertools::Itertools;
-use primitive::u80::U80;
 
 use crate::{
     DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, RecordHeader, Result, SequenceNumber,
@@ -46,24 +38,24 @@ impl WAL {
         let files = RwLock::new(files);
         let next = RecordIterator::new(files.read().unwrap(), SequenceNumber::MIN)?
             .last()
-            .map(|rr| rr.unwrap().sequence_number.next().number().number() as u64)
-            .unwrap_or(SequenceNumber::MIN.next().number.number() as u64);
+            .map(|rr| rr.unwrap().sequence_number.next())
+            .unwrap_or(SequenceNumber::MIN.next());
 
-        Ok(Self { registered_types: HashMap::new(), next_sequence_number: AtomicU64::new(next), files })
+        Ok(Self { registered_types: HashMap::new(), next_sequence_number: AtomicU64::new(next.number()), files })
     }
 }
 
 impl Sequencer for WAL {
     fn increment(&self) -> SequenceNumber {
-        SequenceNumber::from(self.next_sequence_number.fetch_add(1, Ordering::Relaxed) as u128)
+        SequenceNumber::from(self.next_sequence_number.fetch_add(1, Ordering::Relaxed))
     }
 
     fn current(&self) -> SequenceNumber {
-        SequenceNumber::from(self.next_sequence_number.load(Ordering::Relaxed) as u128)
+        SequenceNumber::from(self.next_sequence_number.load(Ordering::Relaxed))
     }
 
     fn previous(&self) -> SequenceNumber {
-        SequenceNumber::from(self.next_sequence_number.load(Ordering::Relaxed) as u128 - 1)
+        SequenceNumber::from(self.next_sequence_number.load(Ordering::Relaxed) - 1)
     }
 }
 
@@ -199,7 +191,7 @@ impl File {
     }
 
     fn open(path: PathBuf) -> io::Result<Self> {
-        let num: u128 =
+        let num: u64 =
             path.file_name().and_then(|s| s.to_str()).and_then(|s| s.split('-').nth(1)).unwrap().parse().unwrap();
         let len = fs::metadata(&path).map(|md| md.len()).unwrap_or(0);
         Ok(Self { start: SequenceNumber::from(num), len, path })
@@ -225,10 +217,10 @@ impl FileReader {
         if self.reader.stream_position()? == self.file.len {
             return Ok(None);
         }
-        let mut buf = [0; U80::BYTES];
+        let mut buf = [0; mem::size_of::<u64>()];
         self.reader.read_exact(&mut buf)?;
         self.reader.seek_relative(-1 * buf.len() as i64)?;
-        Ok(Some(SequenceNumber::new(U80::from_be_bytes(&buf))))
+        Ok(Some(SequenceNumber::from_be_bytes(&buf)))
     }
 
     fn read_one_record(&mut self) -> io::Result<Option<RawRecord>> {
@@ -247,9 +239,9 @@ impl FileReader {
     }
 
     fn read_header(&mut self) -> io::Result<RecordHeader> {
-        let mut buf = [0; U80::BYTES];
+        let mut buf : [u8; mem::size_of::<u64>()] = [0; mem::size_of::<u64>()];
         self.reader.read_exact(&mut buf)?;
-        let sequence_number = SequenceNumber::new(U80::from_be_bytes(&buf));
+        let sequence_number = SequenceNumber::from_be_bytes(&buf);
 
         let mut buf = [0; std::mem::size_of::<u64>()];
         self.reader.read_exact(&mut buf)?;

@@ -680,3 +680,27 @@ fn isolation_manager_reads_evicted_from_disk() {
         );
     }
 }
+
+#[test]
+fn isolation_manager_correctly_recovers_from_disk() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+
+    let key_1 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_1));
+    let value_1 = ByteArray::copy(&VALUE_1);
+
+    let watermark_after_one_commit = {
+        let storage: MVCCStorage<WAL> = MVCCStorage::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+
+        let snapshot = storage.open_snapshot_write();
+        snapshot.put_val(key_1.clone().into_owned_array(), value_1.clone());
+        snapshot.commit().unwrap();
+        storage.read_watermark()
+    };
+
+    {
+        // TODO: Find a way to make commits crash before they're committed
+        let storage: MVCCStorage<WAL> = MVCCStorage::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+        assert_eq!(watermark_after_one_commit, storage.read_watermark());
+    };
+}
