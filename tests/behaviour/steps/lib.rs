@@ -8,6 +8,7 @@
 #![deny(elided_lifetimes_in_paths)]
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use cucumber::{StatsWriter, World};
 use database::Database;
@@ -58,7 +59,7 @@ impl Context {
         self.server.as_mut()
     }
 
-    pub fn databases(&self) -> &HashMap<String, Database<WAL>> {
+    pub fn databases(&self) -> &HashMap<String, Arc<Database<WAL>>> {
         self.server().unwrap().databases()
     }
 }

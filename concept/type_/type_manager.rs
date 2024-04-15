@@ -71,9 +71,9 @@ impl<Snapshot> TypeManager<Snapshot> {
         storage: Arc<MVCCStorage<D>>,
         vertex_generator: Arc<TypeVertexGenerator>,
     ) {
-        let snapshot = Arc::new(storage.open_snapshot_write());
+        let snapshot = Arc::new(storage.clone().open_snapshot_write());
         {
-            let type_manager = TypeManager::new(snapshot.clone(), vertex_generator, None);
+            let type_manager = TypeManager::new(snapshot.clone(), vertex_generator.clone(), None);
             let root_entity = type_manager.create_entity_type(&Kind::Entity.root_label(), true);
             root_entity.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()));
             let root_relation = type_manager.create_relation_type(&Kind::Relation.root_label(), true);

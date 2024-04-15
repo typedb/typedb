@@ -688,12 +688,12 @@ fn isolation_manager_correctly_recovers_from_disk() {
     let value_1 = ByteArray::copy(&VALUE_1);
 
     let watermark_after_one_commit = {
-        let storage: MVCCStorage<WAL> = MVCCStorage::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+        let storage: Arc<MVCCStorage<WAL>> = Arc::new(MVCCStorage::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
-        let snapshot = storage.open_snapshot_write();
+        let snapshot = storage.clone().open_snapshot_write();
         snapshot.put_val(key_1.clone().into_owned_array(), value_1.clone());
         snapshot.commit().unwrap();
-        storage.read_watermark()
+        storage.clone().read_watermark()
     };
 
     {
