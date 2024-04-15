@@ -36,6 +36,7 @@ use encoding::{
     },
     AsBytes, Keyable,
 };
+use encoding::error::EncodingErrorKind;
 use primitive::{maybe_owns::MaybeOwns, prefix_range::PrefixRange};
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{
@@ -59,6 +60,8 @@ use crate::{
         ObjectTypeAPI, TypeAPI,
     },
 };
+use crate::error::ConceptWriteError;
+use crate::error::ConceptWriteError::Encoding;
 
 pub struct TypeManager<Snapshot> {
     snapshot: Arc<Snapshot>,
@@ -70,20 +73,21 @@ impl<Snapshot> TypeManager<Snapshot> {
     pub fn initialise_types<D: DurabilityService>(
         storage: Arc<MVCCStorage<D>>,
         vertex_generator: Arc<TypeVertexGenerator>,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         let snapshot = Arc::new(storage.clone().open_snapshot_write());
         {
             let type_manager = TypeManager::new(snapshot.clone(), vertex_generator.clone(), None);
-            let root_entity = type_manager.create_entity_type(&Kind::Entity.root_label(), true);
+            let root_entity = type_manager.create_entity_type(&Kind::Entity.root_label(), true)?;
             root_entity.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()));
-            let root_relation = type_manager.create_relation_type(&Kind::Relation.root_label(), true);
+            let root_relation = type_manager.create_relation_type(&Kind::Relation.root_label(), true)?;
             root_relation.set_annotation(&type_manager, RelationTypeAnnotation::Abstract(AnnotationAbstract::new()));
-            let root_role = type_manager.create_role_type(&Kind::Role.root_label(), root_relation.clone(), true);
+            let root_role = type_manager.create_role_type(&Kind::Role.root_label(), root_relation.clone(), true)?;
             root_role.set_annotation(&type_manager, RoleTypeAnnotation::Abstract(AnnotationAbstract::new()));
-            let root_attribute = type_manager.create_attribute_type(&Kind::Attribute.root_label(), true);
+            let root_attribute = type_manager.create_attribute_type(&Kind::Attribute.root_label(), true)?;
             root_attribute.set_annotation(&type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()));
         }
         Arc::try_unwrap(snapshot).ok().unwrap().commit().unwrap();
+        Ok(())
     }
 }
 
@@ -476,9 +480,10 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
 }
 
 impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
-    pub fn create_entity_type(&self, label: &Label<'_>, is_root: bool) -> EntityType<'static> {
+    pub fn create_entity_type(&self, label: &Label<'_>, is_root: bool) -> Result<EntityType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
-        let type_vertex = self.vertex_generator.create_entity_type(self.snapshot.as_ref());
+        let type_vertex = self.vertex_generator.create_entity_type(self.snapshot.as_ref())
+            .map_err(|err| ConceptWriteError::Encoding { source: err } )?;
         let entity = EntityType::new(type_vertex);
         self.storage_set_label(entity.clone(), label);
         if !is_root {
@@ -487,12 +492,12 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
                 self.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap(),
             );
         }
-        entity
+        Ok(entity)
     }
 
-    pub fn create_relation_type(&self, label: &Label<'_>, is_root: bool) -> RelationType<'static> {
+    pub fn create_relation_type(&self, label: &Label<'_>, is_root: bool) -> Result<RelationType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
-        let type_vertex = self.vertex_generator.create_relation_type(self.snapshot.as_ref());
+        let type_vertex = self.vertex_generator.create_relation_type(self.snapshot.as_ref()).map_err(|err| ConceptWriteError::Encoding { source: err } )?;;
         let relation = RelationType::new(type_vertex);
         self.storage_set_label(relation.clone(), label);
         if !is_root {
@@ -501,7 +506,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
                 self.get_relation_type(&Kind::Relation.root_label()).unwrap().unwrap(),
             );
         }
-        relation
+        Ok(relation)
     }
 
     pub(crate) fn create_role_type(
@@ -509,21 +514,21 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         label: &Label<'_>,
         relation_type: RelationType<'static>,
         is_root: bool,
-    ) -> RoleType<'static> {
+    ) -> Result<RoleType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
-        let type_vertex = self.vertex_generator.create_role_type(self.snapshot.as_ref());
+        let type_vertex = self.vertex_generator.create_role_type(self.snapshot.as_ref()).map_err(|err| ConceptWriteError::Encoding { source: err } )?;;
         let role = RoleType::new(type_vertex);
         self.storage_set_label(role.clone(), label);
         self.storage_set_relates(relation_type, role.clone());
         if !is_root {
             self.storage_set_supertype(role.clone(), self.get_role_type(&Kind::Role.root_label()).unwrap().unwrap());
         }
-        role
+        Ok(role)
     }
 
-    pub fn create_attribute_type(&self, label: &Label<'_>, is_root: bool) -> AttributeType<'static> {
+    pub fn create_attribute_type(&self, label: &Label<'_>, is_root: bool) -> Result<AttributeType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
-        let type_vertex = self.vertex_generator.create_attribute_type(self.snapshot.as_ref());
+        let type_vertex = self.vertex_generator.create_attribute_type(self.snapshot.as_ref()).map_err(|err| ConceptWriteError::Encoding { source: err } )?;;
         let attribute_type = AttributeType::new(type_vertex);
         self.storage_set_label(attribute_type.clone(), label);
         if !is_root {
@@ -532,7 +537,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
                 self.get_attribute_type(&Kind::Attribute.root_label()).unwrap().unwrap(),
             );
         }
-        attribute_type
+        Ok(attribute_type)
     }
 
     // --- storage operations ---

@@ -70,11 +70,11 @@ fn create_schema(storage: &Arc<MVCCStorage<WAL>>, type_vertex_generator: &Arc<Ty
     let snapshot: Arc<WriteSnapshot<WAL>> = Arc::new(storage.clone().open_snapshot_write());
     {
         let type_manager = Rc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None));
-        let age_type = type_manager.create_attribute_type(AGE_LABEL.get().unwrap(), false);
+        let age_type = type_manager.create_attribute_type(AGE_LABEL.get().unwrap(), false).unwrap();
         age_type.set_value_type(&type_manager, ValueType::Long);
-        let name_type = type_manager.create_attribute_type(NAME_LABEL.get().unwrap(), false);
+        let name_type = type_manager.create_attribute_type(NAME_LABEL.get().unwrap(), false).unwrap();
         name_type.set_value_type(&type_manager, ValueType::String);
-        let person_type = type_manager.create_entity_type(PERSON_LABEL.get().unwrap(), false);
+        let person_type = type_manager.create_entity_type(PERSON_LABEL.get().unwrap(), false).unwrap();
         person_type.set_owns(&type_manager, age_type);
         person_type.set_owns(&type_manager, name_type);
     }
@@ -92,7 +92,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone());
+    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
     create_schema(&storage, &type_vertex_generator);
     let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());

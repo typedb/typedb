@@ -11,6 +11,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
+use concept::error::ConceptWriteError;
 
 use concept::type_::type_manager::TypeManager;
 use durability::DurabilityService;
@@ -50,7 +51,8 @@ impl<D> Database<D> {
         );
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-        TypeManager::<WriteSnapshot<D>>::initialise_types(storage.clone(), type_vertex_generator.clone());
+        TypeManager::<WriteSnapshot<D>>::initialise_types(storage.clone(), type_vertex_generator.clone())
+            .map_err(|err| { DatabaseRecoverError::SchemaInitialisation { source: err } })?;
 
         storage.checkpoint().unwrap();
 
@@ -68,6 +70,7 @@ impl<D> Database<D> {
 pub enum DatabaseRecoverError {
     DirectoryCreate { path: PathBuf, source: io::Error },
     StorageRecover { source: StorageRecoverError },
+    SchemaInitialisation { source: ConceptWriteError }
 }
 
 impl fmt::Display for DatabaseRecoverError {
@@ -81,6 +84,7 @@ impl Error for DatabaseRecoverError {
         match self {
             Self::DirectoryCreate { source, .. } => Some(source),
             Self::StorageRecover { source } => Some(source),
+            Self::SchemaInitialisation { source } => Some(source),
         }
     }
 }

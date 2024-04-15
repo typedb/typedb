@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
 use durability::wal::WAL;
 use encoding::{AsBytes, EncodingKeyspace, Keyable};
 use encoding::error::{EncodingError, EncodingErrorKind};
@@ -18,12 +19,12 @@ use test_utils::{create_tmp_dir, init_logging};
 fn entity_type_vertexes_are_reused() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
+    let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
 
     // If we don't commit, it doesn't move.
     {
         for i in 0..5 {
-            let snapshot = storage.open_snapshot_write();
+            let snapshot = storage.clone().open_snapshot_write();
             let generator = TypeVertexGenerator::new();
             let vertex = generator.create_entity_type(&snapshot).unwrap();
             let b = vertex.bytes().into_bytes();
@@ -35,7 +36,7 @@ fn entity_type_vertexes_are_reused() {
     // create a bunch of types, delete, and assert that the IDs are re-used
     let create_till = 32;
     {
-        let snapshot = storage.open_snapshot_write();
+        let snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
         for i in 0..=create_till {
             let vertex = generator.create_entity_type(&snapshot).unwrap();
@@ -47,7 +48,7 @@ fn entity_type_vertexes_are_reused() {
     }
 
     {
-        let snapshot = storage.open_snapshot_write();
+        let snapshot = storage.clone().open_snapshot_write();
         for i in 0..=create_till {
             if i % 2 == 0 {
                 let vertex = build_vertex_entity_type(TypeID::build(i));
@@ -59,7 +60,7 @@ fn entity_type_vertexes_are_reused() {
 
     {
         let generator = TypeVertexGenerator::new();
-        let snapshot = storage.open_snapshot_write();
+        let snapshot = storage.clone().open_snapshot_write();
         for i in 0..=create_till {
             if i % 2 == 0 {
                 let vertex = generator.create_entity_type(&snapshot).unwrap();
@@ -86,10 +87,10 @@ fn max_entity_type_vertexes() {
     use std::time::Instant;
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
+    let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let create_till = u16::MAX;
     {
-        let snapshot = storage.open_snapshot_write();
+        let snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
         for i in 0..=create_till {
             let vertex = generator.create_entity_type(&snapshot).unwrap();
@@ -101,7 +102,7 @@ fn max_entity_type_vertexes() {
     }
 
     {
-        let snapshot = storage.open_snapshot_write();
+        let snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
         let res = generator.create_entity_type(&snapshot); // Crashes
@@ -118,8 +119,8 @@ fn loading_storage_assigns_next_vertex() {
     let create_till = 5;
 
     for i in 0..=create_till {
-        let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
-        let snapshot = storage.open_snapshot_write();
+        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
         let vertex = generator.create_entity_type(&snapshot).unwrap();
