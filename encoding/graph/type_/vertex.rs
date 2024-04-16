@@ -22,6 +22,7 @@ pub struct TypeVertex<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
+// TODO: Refactor into factories: https://github.com/vaticle/typedb/pull/7040#discussion_r1567373838
 macro_rules! type_vertex_constructors {
     ($new_name:ident, $build_name:ident, $build_name_prefix:ident, $is_name:ident, Prefix::$prefix:ident) => {
         pub fn $new_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> TypeVertex<'_> {
