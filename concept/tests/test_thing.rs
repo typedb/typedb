@@ -299,25 +299,25 @@ fn role_player_duplicates() {
         list_1.add_player(&thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()));
 
         let player_counts: u64 = list_1.get_players(&thing_manager)
-            .collect_cloned_vec(|_, count| count).unwrap().into_iter().sum();
+            .collect_cloned_vec(|(_, count)| count).unwrap().into_iter().sum();
         assert_eq!(player_counts, 3);
 
         let group_relations_count: u64 = group_1.get_relations(&thing_manager)
-            .collect_cloned_vec(|_, _, count| count).unwrap().into_iter().sum();
+            .collect_cloned_vec(|(_, _, count)| count).unwrap().into_iter().sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1.get_relations(&thing_manager)
-            .collect_cloned_vec(|_, _, count| count).unwrap().into_iter().sum();
+            .collect_cloned_vec(|(_, _, count)| count).unwrap().into_iter().sum();
         assert_eq!(resource_relations_count, 2);
 
         let group_1_indexed_count: u64 = group_1.get_indexed_players(&thing_manager)
-            .collect_cloned_vec(|_, _, _, count| count).unwrap().into_iter().sum();
+            .collect_cloned_vec(|(_, _, _, count)| count).unwrap().into_iter().sum();
         assert_eq!(group_1_indexed_count, 2);
         let resource_1_indexed_count: u64 = resource_1.get_indexed_players(&thing_manager)
-            .collect_cloned_vec(|_, _, _, count| count).unwrap().into_iter().sum();
+            .collect_cloned_vec(|(_, _, _, count)| count).unwrap().into_iter().sum();
         assert_eq!(resource_1_indexed_count, 2);
 
         let group_relations_count: u64 = group_1.get_relations(&thing_manager)
-            .collect_cloned_vec(|rel, rol, count| count)
+            .collect_cloned_vec(|(rel, rol, count)| count)
             .unwrap().into_iter().sum();
         assert_eq!(group_relations_count, 1);
     }
@@ -335,7 +335,8 @@ fn role_player_duplicates() {
         assert_eq!(relations.len(), 1);
 
         let list_1 = relations.get(0).unwrap();
-        let player_counts: u64 = list_1.get_players(&thing_manager).collect_cloned_vec(|_, count| count).unwrap().into_iter().sum();
+        let player_counts: u64 = list_1.get_players(&thing_manager)
+            .collect_cloned_vec(|(_, count)| count).unwrap().into_iter().sum();
         assert_eq!(player_counts, 3);
 
         let group_1 = entities.iter()
@@ -347,18 +348,18 @@ fn role_player_duplicates() {
             .unwrap();
 
         let group_relations_count: u64 = group_1.get_relations(&thing_manager)
-            .collect_cloned_vec(|rel, rol, count| count)
+            .collect_cloned_vec(|(rel, rol, count)| count)
             .unwrap().into_iter().sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1.get_relations(&thing_manager)
-            .collect_cloned_vec(|_, _, count| count).unwrap().into_iter().sum();
+            .collect_cloned_vec(|(_, _, count)| count).unwrap().into_iter().sum();
         assert_eq!(resource_relations_count, 2);
 
         let group_1_indexed_count: u64 = group_1.get_indexed_players(&thing_manager)
-            .collect_cloned_vec(|_, _, _, count| count).unwrap().into_iter().sum();
+            .collect_cloned_vec(|(_, _, _, count)| count).unwrap().into_iter().sum();
         assert_eq!(group_1_indexed_count, 2);
         let resource_1_indexed_count: u64 = resource_1.get_indexed_players(&thing_manager)
-            .collect_cloned_vec(|_, _, _, count| count).unwrap().into_iter().sum();
+            .collect_cloned_vec(|(_, _, _, count)| count).unwrap().into_iter().sum();
         assert_eq!(resource_1_indexed_count, 2);
     }
 }

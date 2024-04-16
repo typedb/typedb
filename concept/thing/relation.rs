@@ -21,7 +21,7 @@ use storage::{
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use storage::snapshot::iterator::SnapshotIteratorError;
 
-use crate::{ByteReference, concept_iterator, ConceptAPI, ConceptStatus, error::ConceptReadError, GetStatus, thing::{
+use crate::{ByteReference, concept_iterator, ConceptAPI, ConceptStatus, edge_iterator, error::ConceptReadError, GetStatus, thing::{
     attribute::Attribute,
     object::Object,
     thing_manager::ThingManager,
@@ -254,11 +254,11 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
 
     fn delete<'m>(self, thing_manager: &'m ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
         let mut has_iter = self.get_has(thing_manager);
-        let mut attr = has_iter.next().transpose()
+        let mut has = has_iter.next().transpose()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        while let Some(attribute) = attr {
-            self.delete_has(thing_manager, attribute);
-            attr = has_iter.next().transpose()
+        while let Some((attr, count)) = has {
+            self.delete_has(thing_manager, attr);
+            has = has_iter.next().transpose()
                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         }
 
@@ -273,7 +273,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
 
         let mut player_iter = self.get_players(thing_manager);
         let mut role_player = player_iter.next().transpose()
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+            .map_err(|err| ConceptWriteError::ConceptRead { source: ConceptReadError::from(err) })?;
         while let Some((rp, count)) = role_player {
             self.delete_player_many(thing_manager, rp.role_type(), rp.player(), count);
             role_player = player_iter.next().transpose()
@@ -302,12 +302,12 @@ fn storage_key_ref_to_entity(storage_key_ref: StorageKeyReference<'_>) -> Relati
 concept_iterator!(RelationIterator, Relation, storage_key_ref_to_entity);
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct RolePlayer<'a, const S: usize> {
+pub struct RolePlayer<'a> {
     player: Object<'a>,
     role_type: RoleType<'static>,
 }
 
-impl<'a, const S: usize> RolePlayer<'a, S> {
+impl<'a> RolePlayer<'a> {
     pub(crate) fn player(&self) -> Object<'_> {
         self.player.as_reference()
     }
@@ -317,310 +317,61 @@ impl<'a, const S: usize> RolePlayer<'a, S> {
     }
 }
 
-pub struct RolePlayerIterator<'a, const S: usize> {
-    snapshot_iterator: Option<SnapshotRangeIterator<'a, S>>,
+fn storage_key_to_role_player<'a>(
+    storage_key_ref: StorageKeyReference<'a>,
+    value: ByteReference<'a>,
+) -> (RolePlayer<'a>, u64) {
+    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key_ref.byte_ref()));
+    let role_type = build_vertex_role_type(edge.role_id());
+    (
+        RolePlayer { player: Object::new(edge.into_to()), role_type: RoleType::new(role_type) },
+        decode_value_u64(value),
+    )
 }
 
-impl<'a, const S: usize> RolePlayerIterator<'a, S> {
-    pub(crate) fn new(snapshot_iterator: SnapshotRangeIterator<'a, S>) -> Self {
-        Self { snapshot_iterator: Some(snapshot_iterator) }
-    }
+edge_iterator!(
+    RolePlayerIterator;
+    (RolePlayer<'_>, u64);
+    storage_key_to_role_player
+);
 
-    pub(crate) fn new_empty() -> Self {
-        Self { snapshot_iterator: None }
-    }
-
-    pub fn peek(&mut self) -> Option<Result<(RolePlayer<'_, S>, u64), ConceptReadError>> {
-        self.iter_peek().map(|result| {
-            result
-                .map(|(storage_key, value)| {
-                    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key.byte_ref()));
-                    let role_type = build_vertex_role_type(edge.role_id());
-                    (
-                        RolePlayer { player: Object::new(edge.into_to()), role_type: RoleType::new(role_type) },
-                        decode_value_u64(value),
-                    )
-                })
-                .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error.clone() })
-        })
-    }
-
-    // a lending iterator trait is infeasible with the current borrow checker
-    #[allow(clippy::should_implement_trait)]
-    pub fn next(&mut self) -> Option<Result<(RolePlayer<'_, S>, u64), ConceptReadError>> {
-        self.iter_next().map(|result| {
-            result
-                .map(|(storage_key, value)| {
-                    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key.byte_ref()));
-                    let role_type = build_vertex_role_type(edge.role_id());
-                    (
-                        RolePlayer { player: Object::new(edge.into_to()), role_type: RoleType::new(role_type) },
-                        decode_value_u64(value),
-                    )
-                })
-                .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error.clone() })
-        })
-    }
-
-    pub fn seek(&mut self) {
-        todo!()
-    }
-
-    fn iter_peek(
-        &mut self,
-    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
-        if let Some(iter) = self.snapshot_iterator.as_mut() {
-            iter.peek()
-        } else {
-            None
-        }
-    }
-
-    fn iter_next(
-        &mut self,
-    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
-        if let Some(iter) = self.snapshot_iterator.as_mut() {
-            iter.next()
-        } else {
-            None
-        }
-    }
-
-    pub fn collect_cloned_vec<F, M>(mut self, mapper: F) -> Result<Vec<M>, ConceptReadError>
-        where
-            F: for<'b> Fn(RolePlayer<'b, S>, u64) -> M,
-    {
-        let mut vec = Vec::new();
-        loop {
-            let item = self.next();
-            match item {
-                None => break,
-                Some(Err(error)) => return Err(error),
-                Some(Ok((rp, count))) => {
-                    vec.push(mapper(rp, count))
-                }
-            }
-        }
-        Ok(vec)
-    }
-
-    pub fn count(mut self) -> usize {
-        let mut count = 0;
-        let mut next = self.next();
-        while next.is_some() {
-            next = self.next();
-            count += 1;
-        }
-        count
-    }
+fn storage_key_to_relation_role<'a>(
+    storage_key_ref: StorageKeyReference<'a>,
+    value: ByteReference<'a>,
+) -> (Relation<'a>, RoleType<'static>, u64) {
+    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key_ref.byte_ref()));
+    let role_type = build_vertex_role_type(edge.role_id());
+    (Relation::new(edge.into_to()), RoleType::new(role_type), decode_value_u64(value))
 }
 
-pub struct RelationRoleIterator<'a, const S: usize> {
-    snapshot_iterator: Option<SnapshotRangeIterator<'a, S>>,
+edge_iterator!(
+    RelationRoleIterator;
+    (Relation<'_>, RoleType<'static>, u64);
+    storage_key_to_relation_role
+);
+
+fn storage_key_to_indexed_players<'a>(
+    storage_key_ref: StorageKeyReference<'a>,
+    value: ByteReference<'a>,
+) -> (RolePlayer<'a>, RolePlayer<'a>, Relation<'a>, u64) {
+    let from_role_player = RolePlayer {
+        player: Object::new(ThingEdgeRelationIndex::read_from(storage_key_ref.byte_ref())),
+        role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_from_role_id(storage_key_ref.byte_ref()))),
+    };
+    let to_role_player = RolePlayer {
+        player: Object::new(ThingEdgeRelationIndex::read_to(storage_key_ref.byte_ref())),
+        role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_to_role_id(storage_key_ref.byte_ref()))),
+    };
+    (
+        from_role_player,
+        to_role_player,
+        Relation::new(ThingEdgeRelationIndex::read_relation(storage_key_ref.byte_ref())),
+        decode_value_u64(value)
+    )
 }
 
-impl<'a, const S: usize> RelationRoleIterator<'a, S> {
-    pub(crate) fn new(snapshot_iterator: SnapshotRangeIterator<'a, S>) -> Self {
-        Self { snapshot_iterator: Some(snapshot_iterator) }
-    }
-
-    pub(crate) fn new_empty() -> Self {
-        Self { snapshot_iterator: None }
-    }
-
-    pub fn peek(&mut self) -> Option<Result<(Relation<'_>, RoleType<'static>, u64), ConceptReadError>> {
-        self.iter_peek().map(|result| {
-            result
-                .map(|(storage_key, value)| {
-                    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key.byte_ref()));
-                    let role_type = build_vertex_role_type(edge.role_id());
-                    (Relation::new(edge.into_to()), RoleType::new(role_type), decode_value_u64(value))
-                })
-                .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error })
-        })
-    }
-
-    // a lending iterator trait is infeasible with the current borrow checker
-    #[allow(clippy::should_implement_trait)]
-    pub fn next(&mut self) -> Option<Result<(Relation<'_>, RoleType<'static>, u64), ConceptReadError>> {
-        self.iter_next().map(|result| {
-            result
-                .map(|(storage_key, value)| {
-                    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key.byte_ref()));
-                    let role_type = build_vertex_role_type(edge.role_id());
-                    (Relation::new(edge.into_to()), RoleType::new(role_type), decode_value_u64(value))
-                })
-                .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error })
-        })
-    }
-
-    pub fn seek(&mut self) {
-        todo!()
-    }
-
-    fn iter_peek(
-        &mut self,
-    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
-        if let Some(iter) = self.snapshot_iterator.as_mut() {
-            iter.peek()
-        } else {
-            None
-        }
-    }
-
-    fn iter_next(
-        &mut self,
-    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
-        if let Some(iter) = self.snapshot_iterator.as_mut() {
-            iter.next()
-        } else {
-            None
-        }
-    }
-
-    pub fn collect_cloned_vec<F, M>(mut self, mapper: F) -> Result<Vec<M>, ConceptReadError>
-        where
-            F: for<'b> Fn(Relation<'b>, RoleType<'b>, u64) -> M,
-    {
-        let mut vec = Vec::new();
-        loop {
-            let item = self.next();
-            match item {
-                None => break,
-                Some(Err(error)) => return Err(error),
-                Some(Ok((relation, role, count))) => {
-                    vec.push(mapper(relation, role, count))
-                }
-            }
-        }
-        Ok(vec)
-    }
-
-    pub fn count(mut self) -> usize {
-        let mut count = 0;
-        let mut next = self.next();
-        while next.is_some() {
-            next = self.next();
-            count += 1;
-        }
-        count
-    }
-}
-
-pub struct IndexedPlayersIterator<'a, const S: usize> {
-    snapshot_iterator: Option<SnapshotRangeIterator<'a, S>>,
-}
-
-impl<'a, const S: usize> IndexedPlayersIterator<'a, S> {
-    pub(crate) fn new(snapshot_iterator: SnapshotRangeIterator<'a, S>) -> Self {
-        Self { snapshot_iterator: Some(snapshot_iterator) }
-    }
-
-    pub(crate) fn new_empty() -> Self {
-        Self { snapshot_iterator: None }
-    }
-
-    pub fn peek(&mut self) -> Option<Result<(RolePlayer<'_, S>, RolePlayer<'_, S>, Relation<'_>, u64), ConceptReadError>> {
-        self.iter_peek().map(|result|
-            result.map(|(storage_key, value)| {
-                let from_role_player = RolePlayer {
-                    player: Object::new(ThingEdgeRelationIndex::read_from(storage_key.byte_ref())),
-                    role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_from_role_id(storage_key.byte_ref()))),
-                };
-                let to_role_player = RolePlayer {
-                    player: Object::new(ThingEdgeRelationIndex::read_to(storage_key.byte_ref())),
-                    role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_to_role_id(storage_key.byte_ref()))),
-                };
-                (
-                    from_role_player,
-                    to_role_player,
-                    Relation::new(ThingEdgeRelationIndex::read_relation(storage_key.byte_ref())),
-                    decode_value_u64(value)
-                )
-            }).map_err(|snapshot_error|
-                ConceptReadError::SnapshotIterate { source: snapshot_error }
-            )
-        )
-    }
-
-    // a lending iterator trait is infeasible with the current borrow checker
-    #[allow(clippy::should_implement_trait)]
-    pub fn next(&mut self) -> Option<Result<(RolePlayer<'_, S>, RolePlayer<'_, S>, Relation<'_>, u64), ConceptReadError>> {
-        self.iter_next().map(|result| {
-            result
-                .map(|(storage_key, value)| {
-                    let from_role_player = RolePlayer {
-                        player: Object::new(ThingEdgeRelationIndex::read_from(storage_key.byte_ref())),
-                        role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_from_role_id(
-                            storage_key.byte_ref(),
-                        ))),
-                    };
-                    let to_role_player = RolePlayer {
-                        player: Object::new(ThingEdgeRelationIndex::read_to(storage_key.byte_ref())),
-                        role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_to_role_id(
-                            storage_key.byte_ref(),
-                        ))),
-                    };
-                    (
-                        from_role_player,
-                        to_role_player,
-                        Relation::new(ThingEdgeRelationIndex::read_relation(storage_key.byte_ref())),
-                        decode_value_u64(value)
-                    )
-                })
-                .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error })
-        })
-    }
-
-    pub fn seek(&mut self) {
-        todo!()
-    }
-
-    fn iter_peek(
-        &mut self,
-    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
-        if let Some(iter) = self.snapshot_iterator.as_mut() {
-            iter.peek()
-        } else {
-            None
-        }
-    }
-
-    fn iter_next(
-        &mut self,
-    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
-        if let Some(iter) = self.snapshot_iterator.as_mut() {
-            iter.next()
-        } else {
-            None
-        }
-    }
-
-    pub fn collect_cloned_vec<F, M>(mut self, mapper: F) -> Result<Vec<M>, ConceptReadError>
-    where
-        F: for<'b> Fn(RolePlayer<'b, S>, RolePlayer<'b, S>, Relation<'b>, u64) -> M,
-    {
-        let mut vec = Vec::new();
-        loop {
-            let item = self.next();
-            match item {
-                None => break,
-                Some(Err(error)) => return Err(error),
-                Some(Ok((rp_from, rp_to, relation, count))) => {
-                    vec.push(mapper(rp_from, rp_to, relation, count));
-                }
-            }
-        }
-        Ok(vec)
-    }
-
-    pub fn count(mut self) -> usize {
-        let mut count = 0;
-        let mut next = self.next();
-        while next.is_some() {
-            next = self.next();
-            count += 1;
-        }
-        count
-    }
-}
+edge_iterator!(
+    IndexedPlayersIterator;
+    (RolePlayer<'_>, RolePlayer<'_>, Relation<'_>, u64);
+    storage_key_to_indexed_players
+);

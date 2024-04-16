@@ -72,7 +72,7 @@ impl<'a> Entity<'a> {
         thing_manager.set_has(self.as_reference(), attribute.as_reference())
     }
 
-    pub fn delete_has(&self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: &Attribute<'_>) {
+    pub fn delete_has(&self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>, repetition: u64) {
         // TODO: validate schema
         // TODO: handle duplicates/counts
         thing_manager.delete_has(self.as_reference(), attribute.as_reference())
@@ -112,11 +112,11 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
 
     fn delete<'m>(self, thing_manager: &'m ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
         let mut has_iter = self.get_has(thing_manager);
-        let mut attr = has_iter.next().transpose()
+        let mut has = has_iter.next().transpose()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        while attr.is_some() {
-            self.delete_has(thing_manager, &attr.unwrap());
-            attr = has_iter.next().transpose()
+        while let Some((attr, count)) = has {
+            self.delete_has(thing_manager, attr, count);
+            has = has_iter.next().transpose()
                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         }
 

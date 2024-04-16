@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::cmp::max;
 use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
@@ -177,6 +178,11 @@ impl AttributeID {
             AttributeID::Bytes8(_) => AttributeID8::LENGTH,
             AttributeID::Bytes17(_) => AttributeID17::LENGTH,
         }
+    }
+
+    pub(crate) const fn max_length() -> usize {
+        // TODO: this is brittle - ideally we'd compute this over the max of the enum variants
+        AttributeID17::LENGTH
     }
 
     pub fn unwrap_bytes_17(self) -> AttributeID17 {

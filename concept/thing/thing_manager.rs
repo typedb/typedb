@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::arch::aarch64::vcvt_high_f32_f64;
 use std::borrow::Cow;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -141,6 +142,15 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         HasAttributeIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
     }
 
+    pub(crate) fn get_owners_of<'this, 'a>(
+        &'this self,
+        attribute: Attribute<'a>,
+    ) {// -> AttributeOwnerIterator<'this, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
+        // let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.into_vertex());
+        // AttributeOwnerIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
+        todo!()
+    }
+
     pub(crate) fn get_relations_of<'this, 'a>(
         &'this self,
         player: impl ObjectAPI<'a>,
@@ -189,7 +199,6 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 }
 
 impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
-
     pub(crate) fn relation_compound_update_mutex(&self) -> &Mutex<()> {
         &self.relation_lock
     }
@@ -227,23 +236,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         //  3. Validate cardinality anything with cardinality constraints (relations players, attribute owners)
         // ---------
 
-        let mut errors: Vec<ConceptWriteError> = Vec::new();
-        for (key, write) in self
-            .snapshot
-            .iterate_writes_range(PrefixRange::new_within(Bytes::Array(ByteArray::<{ PrefixID::LENGTH }>::copy(
-                &Prefix::EdgeRolePlayer.prefix_id().bytes(),
-            ))))
-            .filter(|(_, write)| matches!(write, Write::Delete))
-        {
-            let edge = ThingEdgeRolePlayer::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-            let relation = Relation::new(edge.to());
-            if !relation.has_players(self) {
-                let result = relation.delete(self);
-                if result.is_err() {
-                    errors.push(result.unwrap_err())
-                }
-            }
-        }
+        self.cleanup_relations().map_err(|err| Vec::from([err]))?;
+        self.cleanup_attributes().map_err(|err| Vec::from([err]))?;
+
 
         //
         // for (key, write) in writes {
@@ -303,6 +298,45 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         // }
 
         todo!()
+    }
+
+    fn cleanup_relations(&self) -> Result<(), ConceptWriteError> {
+        let mut any_deleted = true;
+        while any_deleted {
+            any_deleted = false;
+            for (key, _) in self
+                .snapshot
+                .iterate_writes_range(PrefixRange::new_within(Bytes::Array(ByteArray::<{ PrefixID::LENGTH }>::copy(
+                    &Prefix::EdgeRolePlayer.prefix_id().bytes(),
+                ))))
+                .filter(|(_, write)| matches!(write, Write::Delete))
+            {
+                let edge = ThingEdgeRolePlayer::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+                let relation = Relation::new(edge.to());
+                if !relation.has_players(self) {
+                    relation.delete(self)?;
+                    any_deleted = true;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn cleanup_attributes(&self) -> Result<(), ConceptWriteError> {
+        for (key, _) in self
+            .snapshot
+            .iterate_writes_range(PrefixRange::new_within(Bytes::Array(ByteArray::<{ PrefixID::LENGTH }>::copy(
+                &Prefix::EdgeHas.prefix_id().bytes(),
+            ))))
+            .filter(|(_, write)| matches!(write, Write::Delete))
+        {
+            let edge = ThingEdgeHas::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+            let attribute = Attribute::new(edge.to());
+            // if !attribute.has_owners(self) {
+            //     attribute.delete(self)?;
+            // }
+        }
+        Ok(())
     }
 
     pub fn create_entity(&self, entity_type: EntityType<'static>) -> Result<Entity<'_>, ConceptWriteError> {

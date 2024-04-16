@@ -5,6 +5,7 @@
  */
 
 use std::cmp::Ordering;
+use std::sync::Arc;
 
 use bytes::Bytes;
 use encoding::{
@@ -12,18 +13,15 @@ use encoding::{
     value::value_type::ValueType,
     AsBytes, Keyable,
 };
+use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse};
+use encoding::value::decode_value_u64;
 use storage::{
     key_value::StorageKeyReference,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
-use crate::{
-    concept_iterator,
-    error::{ConceptReadError, ConceptWriteError},
-    thing::{thing_manager::ThingManager, value::Value, ThingAPI},
-    type_::attribute_type::AttributeType,
-    ByteReference, ConceptAPI, ConceptStatus, GetStatus,
-};
+use crate::{concept_iterator, error::{ConceptReadError, ConceptWriteError}, thing::{thing_manager::ThingManager, value::Value, ThingAPI}, type_::attribute_type::AttributeType, ByteReference, ConceptAPI, ConceptStatus, GetStatus, edge_iterator};
+use crate::thing::object::Object;
 
 #[derive(Debug)]
 pub struct Attribute<'a> {
@@ -59,10 +57,15 @@ impl<'a> Attribute<'a> {
         Ok(self.value.as_ref().unwrap().as_reference())
     }
 
-    pub fn get_owners<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) {
-        // -> ObjectIterator<'m, 1>
-        todo!()
-    }
+    // pub fn has_owners<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> bool {
+    //
+    // }
+    //
+    // pub fn get_owners<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>)
+    //     -> HasAttributeIterator<'this, {}>
+    // {
+    //     thing_manager.get_has_of(self.as_reference())
+    // }
 
     pub fn as_reference(&self) -> Attribute<'_> {
         Attribute { vertex: self.vertex.as_reference(), value: self.value.as_ref().map(|value| value.as_reference()) }
@@ -89,7 +92,8 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
     }
 
     fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus {
-        thing_manager.get_status(self.vertex().as_storage_key())
+        debug_assert_eq!(thing_manager.get_status(self.vertex().as_storage_key()), ConceptStatus::Put);
+        ConceptStatus::Put
     }
 
     fn delete<'m>(self, thing_manager: &'m ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
@@ -122,3 +126,17 @@ fn storage_key_to_attribute<'a>(storage_key_ref: StorageKeyReference<'a>) -> Att
 }
 
 concept_iterator!(AttributeIterator, Attribute, storage_key_to_attribute);
+
+fn storage_key_to_owner<'a>(
+    storage_key_reference: StorageKeyReference<'a>,
+    value: ByteReference<'a>,
+) -> (Object<'a>, u64) {
+    let edge = ThingEdgeHasReverse::new(Bytes::Reference(storage_key_reference.byte_ref()));
+    (Object::new(edge.into_to()), decode_value_u64(value))
+}
+
+edge_iterator!(
+    AttributeOwnersIterator;
+    (Object<'_>, u64);
+    storage_key_to_owner
+);

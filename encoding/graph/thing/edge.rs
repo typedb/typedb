@@ -140,10 +140,12 @@ pub struct ThingEdgeHasReverse<'a> {
 
 impl<'a> ThingEdgeHasReverse<'a> {
     const INDEX_FROM_PREFIX: usize = PrefixID::LENGTH;
+    pub const LENGTH_BOUND_PREFIX_FROM: usize = PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE + AttributeID::max_length();
+    const LENGTH_BOUND_PREFIX_FROM_TO_TYPE: usize = PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE + AttributeID::max_length();
 
-    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ThingEdgeHas<'a> {
+    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ThingEdgeHasReverse<'a> {
         debug_assert_eq!(bytes.bytes()[Self::RANGE_PREFIX], Prefix::EdgeHasReverse.prefix_id().bytes());
-        ThingEdgeHas { bytes }
+        ThingEdgeHasReverse { bytes }
     }
 
     pub fn build(from: AttributeVertex<'_>, to: ObjectVertex<'_>) -> Self {
@@ -156,19 +158,19 @@ impl<'a> ThingEdgeHasReverse<'a> {
         ThingEdgeHasReverse { bytes: Bytes::Array(bytes) }
     }
 
-    pub fn prefix_from_object(
+    pub fn prefix_from_attribute(
         from: AttributeVertex<'_>,
-    ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
-        let mut bytes = ByteArray::zeros(PrefixID::LENGTH + from.length());
+    ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_BOUND_PREFIX_FROM);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::EdgeHasReverse.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from_for_vertex(from.as_reference())].copy_from_slice(from.bytes().bytes());
         StorageKey::new_owned(Self::keyspace_for(from), bytes)
     }
 
-    pub fn prefix_from_object_to_type(
+    pub fn prefix_from_attribute_to_type(
         from: AttributeVertex<'_>, to_type: TypeVertex,
-    ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
-        let mut bytes = ByteArray::zeros(PrefixID::LENGTH + from.length() + TypeVertex::LENGTH);
+    ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_BOUND_PREFIX_FROM_TO_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::EdgeHasReverse.prefix_id().bytes());
         let range_from = Self::range_from_for_vertex(from.as_reference());
         bytes.bytes_mut()[range_from.clone()].copy_from_slice(from.bytes().bytes());
@@ -195,6 +197,11 @@ impl<'a> ThingEdgeHasReverse<'a> {
     fn to(&'a self) -> ObjectVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[self.range_to()]);
         ObjectVertex::new(Bytes::Reference(reference))
+    }
+
+    pub fn into_to(self) -> ObjectVertex<'a> {
+        let range = self.range_to();
+        ObjectVertex::new(self.bytes.into_range(range))
     }
 
     fn range_from(&self) -> Range<usize> {
