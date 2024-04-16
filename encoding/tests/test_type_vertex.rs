@@ -5,12 +5,9 @@
  */
 
 use std::sync::Arc;
-use concept::thing::ObjectAPI;
-use concept::type_::TypeAPI;
 use durability::wal::WAL;
 use encoding::{AsBytes, EncodingKeyspace, Keyable};
 use encoding::error::{EncodingError, EncodingErrorKind};
-use encoding::graph::thing::vertex_object::ObjectID;
 use encoding::graph::type_::vertex::{build_vertex_entity_type, TypeID};
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
 use storage::key_value::StorageKeyReference;
@@ -18,10 +15,7 @@ use storage::MVCCStorage;
 use storage::snapshot::{CommittableSnapshot, WritableSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
-use database::Database;
-use database::transaction::TransactionWrite;
 use encoding::graph::Typed;
-use encoding::value::label::Label;
 
 // TODO: Update all tests with higher level APIs
 #[test]
@@ -31,7 +25,7 @@ fn entity_type_vertexes_are_reused() {
     let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
     // If we don't commit, it doesn't move.
     {
-        for i in 0..5 {
+        for _ in 0..5 {
             let snapshot = storage.clone().open_snapshot_write();
             let generator = TypeVertexGenerator::new();
             let vertex = generator.create_entity_type(&snapshot).unwrap();

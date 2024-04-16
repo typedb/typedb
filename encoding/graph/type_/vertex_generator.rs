@@ -28,33 +28,31 @@ use crate::graph::type_::vertex::TypeIDUInt;
 use crate::graph::Typed;
 
 pub struct TypeIDAllocator {
-    root_type : Kind,
+    kind: Kind,
     last_allocated_type_id: AtomicU16,
-    to_vertex:  fn (TypeID) -> TypeVertex<'static>
+    vertex_constructor:  fn (TypeID) -> TypeVertex<'static>
 }
 
 impl TypeIDAllocator {
 
     fn new(root_type: Kind, to_vertex: fn (TypeID) -> TypeVertex<'static>) -> TypeIDAllocator {
-        Self { root_type, last_allocated_type_id : AtomicU16::new(0), to_vertex }
+        Self { kind: root_type, last_allocated_type_id : AtomicU16::new(0), vertex_constructor: to_vertex }
     }
 
-    fn to_key(&self, type_id: TypeIDUInt) -> StorageKey<'static, BUFFER_KEY_INLINE> {
-        (self.to_vertex)(TypeID::build(type_id)).into_storage_key()
-    }
-
-    fn to_type_id<'a>(&self, key : StorageKeyReference) -> TypeIDUInt {
-        TypeVertex::new(Bytes::Reference(key.byte_ref())).type_id_().as_u16()
-    }
-
-    fn iterate_and_find<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot, start: TypeIDUInt) -> Result<Option<TypeIDUInt>, EncodingError> {
-        let mut type_id_iter = snapshot.iterate_range(PrefixRange::new_inclusive(self.to_key(start), self.to_key(TypeIDUInt::MAX)));
+    fn find_unallocated<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot, start: TypeIDUInt) -> Result<Option<TypeIDUInt>, EncodingError> {
+        let mut type_vertex_iter = snapshot.iterate_range(
+            PrefixRange::new_inclusive(
+                (self.vertex_constructor)(TypeID::build(start)).into_storage_key(),
+                (self.vertex_constructor)(TypeID::build(TypeIDUInt::MAX)).into_storage_key()
+            )
+        );
         for expected_next in (start..=TypeIDUInt::MAX) {
-            match type_id_iter.next() {
+            match type_vertex_iter.next() {
                 None => {return Ok(Some(expected_next))},
                 Some(Err(err)) => {return Err(EncodingError{ kind: FailedTypeIDAllocation { source: err.clone() } });},
-                Some(Ok((actual_next, _))) => {
-                    if self.to_type_id(actual_next) != expected_next { return Ok(Some(expected_next)); }
+                Some(Ok((actual_next_key, _))) => {
+                    let actual_type_id = TypeVertex::new(Bytes::Reference(actual_next_key.byte_ref())).type_id_().as_u16();
+                    if actual_type_id != expected_next { return Ok(Some(expected_next)); }
                 }
             }
         }
@@ -62,13 +60,13 @@ impl TypeIDAllocator {
     }
 
     fn allocate<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) ->  Result<TypeIDUInt, EncodingError> {
-        let found = self.iterate_and_find(snapshot, self.last_allocated_type_id.load(Relaxed))?;
+        let found = self.find_unallocated(snapshot, self.last_allocated_type_id.load(Relaxed))?;
         if let(Some(type_id)) = found {
             self.last_allocated_type_id.store(type_id, Relaxed);
             Ok(type_id)
         } else {
-            match self.iterate_and_find(snapshot, 0)? {
-                None => Err(EncodingError{ kind: ExhaustedTypeIDs{ root_type : self.root_type } }),
+            match self.find_unallocated(snapshot, 0)? {
+                None => Err(EncodingError{ kind: ExhaustedTypeIDs{ root_type : self.kind } }),
                 Some(type_id) => {
                     self.last_allocated_type_id.store(type_id, Relaxed);
                     Ok(type_id)

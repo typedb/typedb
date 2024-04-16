@@ -69,7 +69,7 @@ impl ThingVertexGenerator {
         Self::load_with_hasher(storage, seahash::hash)
     }
 
-    fn extract_object_id(k: &MVCCKey<'_>, v: &[u8]) -> ObjectVertex<'static> {
+    fn extract_object_id(k: &MVCCKey<'_>, _: &[u8]) -> ObjectVertex<'static> {
         ObjectVertex::new(Bytes::Array(ByteArray::copy(k.key())))
     }
 

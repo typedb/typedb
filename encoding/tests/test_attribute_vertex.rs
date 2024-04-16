@@ -18,7 +18,6 @@ use encoding::{
     value::string::StringBytes,
     AsBytes, EncodingKeyspace,
 };
-use encoding::graph::type_::vertex::TypeIDUInt;
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
 use encoding::graph::Typed;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;

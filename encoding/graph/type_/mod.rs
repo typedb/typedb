@@ -34,6 +34,6 @@ impl Kind {
 
 impl std::fmt::Debug for Kind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "graph::type::Kind[{}]", self.root_label().name)
+        write!(f, "Kind[{}]", self.root_label().name)
     }
 }
