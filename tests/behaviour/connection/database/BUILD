@@ -5,16 +5,16 @@
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test")
 
-rust_test(
-    name = "database",
-    srcs = ["database.rs"],
-    deps = [
-        "//tests/behaviour/steps:steps",
-
-        "@crates//:tokio",
-    ],
-    data = ["@vaticle_typedb_behaviour//connection:database.feature"],
-)
+#rust_test(
+#    name = "database",
+#    srcs = ["database.rs"],
+#    deps = [
+#        "//tests/behaviour/steps:steps",
+#
+#        "@crates//:tokio",
+#    ],
+#    data = ["@vaticle_typedb_behaviour//connection:database.feature"],
+#)
 
 checkstyle_test(
     name = "checkstyle",

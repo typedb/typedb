@@ -8,12 +8,12 @@ use std::{
     ops::Range,
     sync::atomic::{AtomicU64, Ordering},
 };
-use std::any::{Any, TypeId};
 use std::io::Read;
+use std::sync::Arc;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use primitive::prefix_range::PrefixRange;
-use storage::key_value::{StorageKey, StorageKeyArray};
+use storage::key_value::StorageKey;
 use storage::{MVCCKey, MVCCStorage};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -30,8 +30,8 @@ use crate::{
 };
 use crate::graph::thing::vertex_attribute::AsAttributeID;
 use crate::graph::thing::VertexID;
+use crate::graph::type_::vertex::{build_vertex_entity_type_prefix, build_vertex_relation_type_prefix, TypeVertex};
 use crate::graph::Typed;
-use crate::layout::prefix::Prefix;
 
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,
@@ -68,7 +68,7 @@ impl ThingVertexGenerator {
         }
     }
 
-    pub fn load<D>(storage: &MVCCStorage<D>) -> Self {
+    pub fn load<D>(storage: Arc<MVCCStorage<D>>) -> Self {
         Self::load_with_hasher(storage, seahash::hash)
     }
 
@@ -76,17 +76,29 @@ impl ThingVertexGenerator {
         ObjectVertex::new(Bytes::Array(ByteArray::copy(k.key())))
     }
 
-    pub fn load_with_hasher<D>(storage: &MVCCStorage<D>, large_value_hasher: fn(&[u8]) -> u64) -> Self {
+    pub fn load_with_hasher<D>(storage: Arc<MVCCStorage<D>>, large_value_hasher: fn(&[u8]) -> u64) -> Self {
         let successor_key : fn(ObjectVertex) -> StorageKey<{ObjectVertex::LENGTH}>  = |max_object_vertex: ObjectVertex| {
             let mut max_object_id: [u8; ObjectVertex::LENGTH] = [0; ObjectVertex::LENGTH];
             max_object_id.copy_from_slice(max_object_vertex.bytes().bytes());
-            StorageKey::new_owned(ObjectVertex::KEYSPACE, ByteArray::inline(bytes::util::increment_fixed(max_object_id), ObjectVertex::LENGTH))
+            bytes::util::increment(&mut max_object_id).unwrap();
+            StorageKey::new_owned(ObjectVertex::KEYSPACE, ByteArray::inline(max_object_id, ObjectVertex::LENGTH))
         };
+
+        // TODO: What if no entities or relations exist?
+        let read_snapshot = storage.clone().open_snapshot_read();
+        let entity_types = read_snapshot.iterate_range(PrefixRange::new_within(build_vertex_entity_type_prefix())).collect_cloned_vec(|k, _v| {
+            TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16()
+        }).unwrap(); // TODO: Return error?
+        let relation_types = read_snapshot.iterate_range(PrefixRange::new_within(build_vertex_relation_type_prefix())).collect_cloned_vec(|k, _v| {
+            TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16()
+        }).unwrap(); // TODO: Return error?
+        read_snapshot.close_resources();
 
         let generator = ThingVertexGenerator::new_with_hasher(large_value_hasher);
 
-        // TODO: What if no entities or relations exist?
-        for type_id in 0..=TypeIDUInt::MAX {
+        println!("LOAD ENTITY_TYPE");
+        for type_id in  entity_types {
+            println!("ENTITY_TYPE: {type_id}");
             let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = successor_key(ObjectVertex::build_entity(TypeID::build(type_id), ObjectID::build(u64::MAX)));
             if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
                 if prev_vertex.type_id_() == TypeID::build(type_id) {
@@ -94,8 +106,11 @@ impl ThingVertexGenerator {
                 }
             }
         }
+        println!("DONE LOAD ENTITY_TYPE");
 
-        for type_id in 0..=TypeIDUInt::MAX {
+        println!("LOAD RELATION_TYPE");
+        for type_id in relation_types {
+            println!("RELATION_TYPE: {type_id}");
             let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = successor_key(ObjectVertex::build_relation(TypeID::build(type_id), ObjectID::build(u64::MAX)));
             if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
                 if prev_vertex.type_id_() == TypeID::build(type_id) {
@@ -103,6 +118,7 @@ impl ThingVertexGenerator {
                 }
             }
         }
+        println!("DONE LOAD RELATION_TYPE");
         generator
     }
 

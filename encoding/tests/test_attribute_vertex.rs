@@ -18,8 +18,12 @@ use encoding::{
     value::string::StringBytes,
     AsBytes, EncodingKeyspace,
 };
+use encoding::graph::type_::vertex::TypeIDUInt;
+use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
+use encoding::graph::Typed;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::MVCCStorage;
+use storage::snapshot::CommittableSnapshot;
 use test_utils::{create_tmp_dir, init_logging};
 
 #[test]
@@ -101,5 +105,31 @@ fn generate_string_attribute_vertex() {
             CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASH_LENGTH]
         );
         assert_eq!(collide_id.get_hash_disambiguator(), 1u8);
+    }
+}
+
+#[test]
+fn next_entity_and_relation_ids_are_determined_from_storage() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let type_id= TypeID::build(0);
+    {
+        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let snapshot = storage.clone().open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+
+        let vertex = generator.create_entity_type(&snapshot).unwrap();
+        debug_assert_eq!(type_id, vertex.type_id_());
+        snapshot.commit().unwrap();
+    }
+
+    for i in 0..5 {
+        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let snapshot = storage.clone().open_snapshot_write();
+        let generator = ThingVertexGenerator::load(storage.clone());
+        let vertex = generator.create_entity(type_id, &snapshot);
+        assert_eq!(type_id, vertex.type_id_());
+        assert_eq!(i as u64, vertex.object_id().as_u64());
+        snapshot.commit().unwrap();
     }
 }
