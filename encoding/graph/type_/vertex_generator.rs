@@ -5,7 +5,10 @@
  */
 
 use std::cell::Cell;
+use std::cmp::Ordering;
 use std::sync::Arc;
+use std::sync::atomic::AtomicU16;
+use std::sync::atomic::Ordering::Relaxed;
 use bytes::byte_reference::ByteReference;
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -31,14 +34,14 @@ use crate::layout::prefix::Prefix;
 //          -> If we do reuse TypeIDs, this we also need to make sure to reset the Thing ID generators on delete! (test should exist to confirm this).
 
 pub struct TypeIDAllocator {
-    last_allocated_type_id: Cell<TypeIDUInt>,
+    last_allocated_type_id: AtomicU16,
     to_vertex:  fn (TypeID) -> TypeVertex<'static>
 }
 
 impl TypeIDAllocator {
 
     fn new(to_vertex: fn (TypeID) -> TypeVertex<'static>) -> TypeIDAllocator {
-        Self { last_allocated_type_id : Cell::new(0), to_vertex }
+        Self { last_allocated_type_id : AtomicU16::new(0), to_vertex }
     }
 
     fn to_key(&self, type_id: TypeIDUInt) -> StorageKey<'static, BUFFER_KEY_INLINE> {
@@ -50,9 +53,7 @@ impl TypeIDAllocator {
         TypeID::new([bytes[bytes.len()-2], bytes[bytes.len()-1]]).as_u16()
     }
 
-    fn iterate_and_find<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<Option<TypeIDUInt>, EncodingError> {
-        // todo!()
-        let start = self.last_allocated_type_id.get();
+    fn iterate_and_find<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot, start: TypeIDUInt) -> Result<Option<TypeIDUInt>, EncodingError> {
         let mut type_id_iter = snapshot.iterate_range(PrefixRange::new_inclusive(self.to_key(start), self.to_key(TypeIDUInt::MAX)));
         for expected_next in (start..=TypeIDUInt::MAX) {
             match type_id_iter.next() {
@@ -67,21 +68,19 @@ impl TypeIDAllocator {
     }
 
     fn allocate<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) ->  Result<TypeIDUInt, EncodingError> {
-        let found = self.iterate_and_find(snapshot)?;
+        let found = self.iterate_and_find(snapshot, self.last_allocated_type_id.load(Relaxed))?;
         if let(Some(type_id)) = found {
-            self.last_allocated_type_id.set(type_id);
+            self.last_allocated_type_id.store(type_id, Relaxed);
             Ok(type_id)
         } else {
-            self.last_allocated_type_id.set(0);
-            match self.iterate_and_find(snapshot)? {
+            match self.iterate_and_find(snapshot, 0)? {
                 None => Err(EncodingError{ kind: ExhaustedTypeIDs }),
                 Some(type_id) => {
-                    self.last_allocated_type_id.set(type_id);
+                    self.last_allocated_type_id.store(type_id, Relaxed);
                     Ok(type_id)
                 }
             }
         }
-
     }
 }
 
