@@ -17,21 +17,18 @@ use storage::key_value::StorageKey;
 use storage::{MVCCKey, MVCCStorage};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{
-    graph::{
-        thing::{
-            vertex_attribute::{AttributeID, AttributeID17, AttributeID8, AttributeVertex},
-            vertex_object::{ObjectID, ObjectVertex},
-        },
-        type_::vertex::{TypeID, TypeIDUInt},
+use crate::{graph::{
+    thing::{
+        vertex_attribute::{AttributeID, AttributeID17, AttributeID8, AttributeVertex},
+        vertex_object::{ObjectID, ObjectVertex},
     },
-    value::{long::Long, string::StringBytes, value_type::ValueType},
-    AsBytes, Keyable,
-};
+    type_::vertex::{TypeID, TypeIDUInt},
+}, value::{long::Long, string::StringBytes, value_type::ValueType}, AsBytes, Keyable, Prefixed};
 use crate::graph::thing::vertex_attribute::AsAttributeID;
 use crate::graph::thing::VertexID;
 use crate::graph::type_::vertex::{build_vertex_entity_type_prefix, build_vertex_relation_type_prefix, TypeVertex};
 use crate::graph::Typed;
+use crate::layout::prefix::Prefix;
 
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,
@@ -95,30 +92,23 @@ impl ThingVertexGenerator {
         read_snapshot.close_resources();
 
         let generator = ThingVertexGenerator::new_with_hasher(large_value_hasher);
-
-        println!("LOAD ENTITY_TYPE");
         for type_id in  entity_types {
-            println!("ENTITY_TYPE: {type_id}");
             let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = successor_key(ObjectVertex::build_entity(TypeID::build(type_id), ObjectID::build(u64::MAX)));
             if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
-                if prev_vertex.type_id_() == TypeID::build(type_id) {
+                if prev_vertex.prefix() == Prefix::VertexEntity && prev_vertex.type_id_() == TypeID::build(type_id) {
                     generator.entity_ids[type_id as usize].store(prev_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
                 }
             }
         }
-        println!("DONE LOAD ENTITY_TYPE");
 
-        println!("LOAD RELATION_TYPE");
         for type_id in relation_types {
-            println!("RELATION_TYPE: {type_id}");
             let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = successor_key(ObjectVertex::build_relation(TypeID::build(type_id), ObjectID::build(u64::MAX)));
             if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
-                if prev_vertex.type_id_() == TypeID::build(type_id) {
+                if prev_vertex.prefix() == Prefix::VertexRelation && prev_vertex.type_id_() == TypeID::build(type_id) {
                     generator.relation_ids[type_id as usize].store(prev_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
                 }
             }
         }
-        println!("DONE LOAD RELATION_TYPE");
         generator
     }
 
