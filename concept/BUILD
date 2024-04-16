@@ -7,7 +7,6 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = [
     ":__subpackages__",
     "//database:__pkg__",
-    "//encoding/tests:__subpackages__"
 ])
 
 rust_library(
