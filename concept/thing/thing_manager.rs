@@ -24,7 +24,6 @@ use encoding::{
     Keyable,
 };
 use primitive::prefix_range::PrefixRange;
-use primitive::prefix_range::RangeEnd::Unbounded;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
@@ -526,11 +525,10 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         }
     }
 
-    /// for duplicate players, if we have the same (role: player) entry N times,
-    /// we should end up with a repetition of N-1
     ///
-    /// for different players, if we have N (role: player) and M (role2: player2)
-    /// both directions of the index should have N*M
+    /// For N duplicate role players, the self-edges are available N-1 times.
+    /// For N duplicate player 1, and M duplicate player 2 - from N to M has M index repetitions, while M to N has N index repetitions
+    ///
     pub(crate) fn relation_index_player_regenerate(
         &self,
         relation: Relation<'_>,
@@ -553,10 +551,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                     role_type.vertex().type_id_(),
                     role_type.vertex().type_id_(),
                 );
-                self.snapshot
-                    .put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
+                self.snapshot.put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
             } else if !is_same_rp {
-                let repetitions = total_player_count * count;
+                let rp_repetitions = *count;
                 let index = ThingEdgeRelationIndex::build(
                     player.vertex(),
                     rp.player().vertex(),
@@ -564,8 +561,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                     role_type.vertex().type_id_(),
                     rp.role_type().vertex().type_id_(),
                 );
-                self.snapshot
-                    .put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
+                self.snapshot.put_val(index.as_storage_key().into_owned_array(), encode_value_u64(rp_repetitions));
+                let player_repetitions = total_player_count;
                 let index_reverse = ThingEdgeRelationIndex::build(
                     rp.player().vertex(),
                     player.vertex(),
@@ -573,11 +570,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                     rp.role_type().vertex().type_id_(),
                     role_type.vertex().type_id_(),
                 );
-                self.snapshot
-                    .put_val(index_reverse.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
+                self.snapshot.put_val(index_reverse.as_storage_key().into_owned_array(), encode_value_u64(player_repetitions));
             }
             role_player = players.next().transpose().unwrap();
         }
     }
-
 }

@@ -386,6 +386,24 @@ impl<'a, const S: usize> RolePlayerIterator<'a, S> {
         }
     }
 
+    pub fn collect_cloned_vec<F, M>(mut self, mapper: F) -> Result<Vec<M>, ConceptReadError>
+        where
+            F: for<'b> Fn(RolePlayer<'b, S>, u64) -> M,
+    {
+        let mut vec = Vec::new();
+        loop {
+            let item = self.next();
+            match item {
+                None => break,
+                Some(Err(error)) => return Err(error),
+                Some(Ok((rp, count))) => {
+                    vec.push(mapper(rp, count))
+                }
+            }
+        }
+        Ok(vec)
+    }
+
     pub fn count(mut self) -> usize {
         let mut count = 0;
         let mut next = self.next();
@@ -460,6 +478,24 @@ impl<'a, const S: usize> RelationRoleIterator<'a, S> {
         }
     }
 
+    pub fn collect_cloned_vec<F, M>(mut self, mapper: F) -> Result<Vec<M>, ConceptReadError>
+        where
+            F: for<'b> Fn(Relation<'b>, RoleType<'b>, u64) -> M,
+    {
+        let mut vec = Vec::new();
+        loop {
+            let item = self.next();
+            match item {
+                None => break,
+                Some(Err(error)) => return Err(error),
+                Some(Ok((relation, role, count))) => {
+                    vec.push(mapper(relation, role, count))
+                }
+            }
+        }
+        Ok(vec)
+    }
+
     pub fn count(mut self) -> usize {
         let mut count = 0;
         let mut next = self.next();
@@ -484,35 +520,32 @@ impl<'a, const S: usize> IndexedPlayersIterator<'a, S> {
         Self { snapshot_iterator: None }
     }
 
-    pub fn peek(&mut self) -> Option<Result<(RolePlayer<'_, S>, RolePlayer<'_, S>, Relation<'_>), ConceptReadError>> {
-        self.iter_peek().map(|result| {
-            result
-                .map(|(storage_key, value)| {
-                    let from_role_player = RolePlayer {
-                        player: Object::new(ThingEdgeRelationIndex::read_from(storage_key.byte_ref())),
-                        role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_from_role_id(
-                            storage_key.byte_ref(),
-                        ))),
-                    };
-                    let to_role_player = RolePlayer {
-                        player: Object::new(ThingEdgeRelationIndex::read_to(storage_key.byte_ref())),
-                        role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_to_role_id(
-                            storage_key.byte_ref(),
-                        ))),
-                    };
-                    (
-                        from_role_player,
-                        to_role_player,
-                        Relation::new(ThingEdgeRelationIndex::read_relation(storage_key.byte_ref())),
-                    )
-                })
-                .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error })
-        })
+    pub fn peek(&mut self) -> Option<Result<(RolePlayer<'_, S>, RolePlayer<'_, S>, Relation<'_>, u64), ConceptReadError>> {
+        self.iter_peek().map(|result|
+            result.map(|(storage_key, value)| {
+                let from_role_player = RolePlayer {
+                    player: Object::new(ThingEdgeRelationIndex::read_from(storage_key.byte_ref())),
+                    role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_from_role_id(storage_key.byte_ref()))),
+                };
+                let to_role_player = RolePlayer {
+                    player: Object::new(ThingEdgeRelationIndex::read_to(storage_key.byte_ref())),
+                    role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_to_role_id(storage_key.byte_ref()))),
+                };
+                (
+                    from_role_player,
+                    to_role_player,
+                    Relation::new(ThingEdgeRelationIndex::read_relation(storage_key.byte_ref())),
+                    decode_value_u64(value)
+                )
+            }).map_err(|snapshot_error|
+                ConceptReadError::SnapshotIterate { source: snapshot_error }
+            )
+        )
     }
 
     // a lending iterator trait is infeasible with the current borrow checker
     #[allow(clippy::should_implement_trait)]
-    pub fn next(&mut self) -> Option<Result<(RolePlayer<'_, S>, RolePlayer<'_, S>, Relation<'_>), ConceptReadError>> {
+    pub fn next(&mut self) -> Option<Result<(RolePlayer<'_, S>, RolePlayer<'_, S>, Relation<'_>, u64), ConceptReadError>> {
         self.iter_next().map(|result| {
             result
                 .map(|(storage_key, value)| {
@@ -532,6 +565,7 @@ impl<'a, const S: usize> IndexedPlayersIterator<'a, S> {
                         from_role_player,
                         to_role_player,
                         Relation::new(ThingEdgeRelationIndex::read_relation(storage_key.byte_ref())),
+                        decode_value_u64(value)
                     )
                 })
                 .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error })
@@ -564,7 +598,7 @@ impl<'a, const S: usize> IndexedPlayersIterator<'a, S> {
 
     pub fn collect_cloned_vec<F, M>(mut self, mapper: F) -> Result<Vec<M>, ConceptReadError>
     where
-        F: for<'b> Fn(RolePlayer<'b, S>, RolePlayer<'b, S>, Relation<'b>) -> M,
+        F: for<'b> Fn(RolePlayer<'b, S>, RolePlayer<'b, S>, Relation<'b>, u64) -> M,
     {
         let mut vec = Vec::new();
         loop {
@@ -572,8 +606,8 @@ impl<'a, const S: usize> IndexedPlayersIterator<'a, S> {
             match item {
                 None => break,
                 Some(Err(error)) => return Err(error),
-                Some(Ok((rp_from, rp_to, relation))) => {
-                    vec.push(mapper(rp_from, rp_to, relation));
+                Some(Ok((rp_from, rp_to, relation, count))) => {
+                    vec.push(mapper(rp_from, rp_to, relation, count));
                 }
             }
         }

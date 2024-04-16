@@ -290,51 +290,75 @@ fn role_player_duplicates() {
         resource_type.set_plays(&type_manager, entry_type.clone());
         group_type.set_plays(&type_manager, owner_type.clone());
 
-        let group_1 = thing_manager.create_entity(resource_type.clone()).unwrap();
-        let resource_1 = thing_manager.create_entity(group_type.clone()).unwrap();
-        let resource_2 = thing_manager.create_entity(group_type.clone()).unwrap();
+        let group_1 = thing_manager.create_entity(group_type.clone()).unwrap();
+        let resource_1 = thing_manager.create_entity(resource_type.clone()).unwrap();
 
         let list_1 = thing_manager.create_relation(list_type.clone()).unwrap();
         list_1.add_player(&thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference()));
         list_1.add_player(&thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()));
         list_1.add_player(&thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()));
 
-        todo!()
-    //     assert_eq!(list_1.get_players(&thing_manager).collect_cloned().count(), 3);
-    //     assert_eq!(employment_2.get_players(&thing_manager).count(), 3);
-    //
-    //     assert_eq!(group_1.get_relations(&thing_manager).count(), 2);
-    //     assert_eq!(company_1.get_relations(&thing_manager).count(), 1);
-    //     assert_eq!(company_2.get_relations(&thing_manager).count(), 1);
-    //     assert_eq!(company_3.get_relations(&thing_manager).count(), 1);
-    //
-    //     assert_eq!(group_1.get_indexed_players(&thing_manager).count(), 3);
-    // }
-    //
-    // let write_snapshot = Rc::try_unwrap(snapshot).ok().unwrap();
-    // write_snapshot.commit().unwrap();
-    // {
-    //     let snapshot: Rc<ReadSnapshot<'_, WAL>> = Rc::new(storage.open_snapshot_read());
-    //     let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &type_vertex_generator, None));
-    //     let thing_vertex_generator = ThingVertexGenerator::new();
-    //     let thing_manager = ThingManager::new(snapshot.clone(), &thing_vertex_generator, type_manager.clone());
-    //     let entities = thing_manager.get_entities().collect_cloned();
-    //     assert_eq!(entities.len(), 4);
-    //     let relations = thing_manager.get_relations().collect_cloned();
-    //     assert_eq!(relations.len(), 2);
-    //
-    //     let players_0 = relations[0].get_players(&thing_manager).count();
-    //     if players_0 == 2 {
-    //         assert_eq!(relations[1].get_players(&thing_manager).count(), 3);
-    //     } else {
-    //         assert_eq!(relations[1].get_players(&thing_manager).count(), 2);
-    //     }
-    //
-    //     let person_1 = entities.iter()
-    //         .find(|entity| entity.type_() == type_manager.get_entity_type(&person_label).unwrap().unwrap())
-    //         .unwrap();
-    //
-    //     assert_eq!(person_1.get_relations(&thing_manager).count(), 2);
-    //     assert_eq!(person_1.get_indexed_players(&thing_manager).count(), 3);
+        let player_counts: u64 = list_1.get_players(&thing_manager)
+            .collect_cloned_vec(|_, count| count).unwrap().into_iter().sum();
+        assert_eq!(player_counts, 3);
+
+        let group_relations_count: u64 = group_1.get_relations(&thing_manager)
+            .collect_cloned_vec(|_, _, count| count).unwrap().into_iter().sum();
+        assert_eq!(group_relations_count, 1);
+        let resource_relations_count: u64 = resource_1.get_relations(&thing_manager)
+            .collect_cloned_vec(|_, _, count| count).unwrap().into_iter().sum();
+        assert_eq!(resource_relations_count, 2);
+
+        let group_1_indexed_count: u64 = group_1.get_indexed_players(&thing_manager)
+            .collect_cloned_vec(|_, _, _, count| count).unwrap().into_iter().sum();
+        assert_eq!(group_1_indexed_count, 2);
+        let resource_1_indexed_count: u64 = resource_1.get_indexed_players(&thing_manager)
+            .collect_cloned_vec(|_, _, _, count| count).unwrap().into_iter().sum();
+        assert_eq!(resource_1_indexed_count, 2);
+
+        let group_relations_count: u64 = group_1.get_relations(&thing_manager)
+            .collect_cloned_vec(|rel, rol, count| count)
+            .unwrap().into_iter().sum();
+        assert_eq!(group_relations_count, 1);
+    }
+
+    let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();
+    write_snapshot.commit().unwrap();
+    {
+        let snapshot: Arc<ReadSnapshot<WAL>> = Arc::new(storage.open_snapshot_read());
+        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None));
+        let thing_vertex_generator = ThingVertexGenerator::new();
+        let thing_manager = ThingManager::new(snapshot.clone(), Arc::new(thing_vertex_generator), type_manager.clone());
+        let entities = thing_manager.get_entities().collect_cloned();
+        assert_eq!(entities.len(), 2);
+        let relations = thing_manager.get_relations().collect_cloned();
+        assert_eq!(relations.len(), 1);
+
+        let list_1 = relations.get(0).unwrap();
+        let player_counts: u64 = list_1.get_players(&thing_manager).collect_cloned_vec(|_, count| count).unwrap().into_iter().sum();
+        assert_eq!(player_counts, 3);
+
+        let group_1 = entities.iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&group_label).unwrap().unwrap())
+            .unwrap();
+
+        let resource_1 = entities.iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&resource_label).unwrap().unwrap())
+            .unwrap();
+
+        let group_relations_count: u64 = group_1.get_relations(&thing_manager)
+            .collect_cloned_vec(|rel, rol, count| count)
+            .unwrap().into_iter().sum();
+        assert_eq!(group_relations_count, 1);
+        let resource_relations_count: u64 = resource_1.get_relations(&thing_manager)
+            .collect_cloned_vec(|_, _, count| count).unwrap().into_iter().sum();
+        assert_eq!(resource_relations_count, 2);
+
+        let group_1_indexed_count: u64 = group_1.get_indexed_players(&thing_manager)
+            .collect_cloned_vec(|_, _, _, count| count).unwrap().into_iter().sum();
+        assert_eq!(group_1_indexed_count, 2);
+        let resource_1_indexed_count: u64 = resource_1.get_indexed_players(&thing_manager)
+            .collect_cloned_vec(|_, _, _, count| count).unwrap().into_iter().sum();
+        assert_eq!(resource_1_indexed_count, 2);
     }
 }
