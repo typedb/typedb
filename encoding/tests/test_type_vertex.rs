@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use std::sync::Arc;
 use concept::thing::ObjectAPI;
 use concept::type_::TypeAPI;
@@ -78,8 +77,6 @@ fn entity_type_vertexes_are_reused() {
 
 #[test]
 fn entity_type_vertex_reuse_resets_thing_vertex() {
-    // TODO: when deleting an existing type vertex that had instances (which are deleted as well),
-    //       and this type vertex ID is re-used, confirm that new Thing ID's start from 0 again for this type.
     init_logging();
     let storage_path = create_tmp_dir();
     let db_name = "encoding_tests__entity_type_vertex_reuse_resets_thing_vertex";
@@ -125,9 +122,6 @@ fn entity_type_vertex_reuse_resets_thing_vertex() {
 
 #[test]
 fn max_entity_type_vertexes() {
-    // TODO: test that the maximum number of type vertices for one group (entity type) is actually u16::MAX
-    //       and that we throw a good error message if exceeded.
-    use std::time::Instant;
     init_logging();
     let storage_path = create_tmp_dir();
     let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
@@ -153,8 +147,6 @@ fn max_entity_type_vertexes() {
 
 #[test]
 fn loading_storage_assigns_next_vertex() {
-    // TODO: test that when loading an existing database (create database, create types, close database, then re-open)
-    //       that the next Type vertex ID is the expected one
     init_logging();
     let storage_path = create_tmp_dir();
     let create_till = 5;

@@ -4,34 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::cell::Cell;
-use std::cmp::Ordering;
-use std::sync::Arc;
 use std::sync::atomic::AtomicU16;
 use std::sync::atomic::Ordering::Relaxed;
-use bytes::byte_reference::ByteReference;
+use bytes::Bytes;
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
-use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
-use storage::snapshot::iterator::SnapshotIteratorError;
+use storage::key_value::{StorageKey, StorageKeyReference};
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
     graph::type_::vertex::{
-        build_vertex_attribute_type, build_vertex_attribute_type_prefix, build_vertex_entity_type,
-        build_vertex_entity_type_prefix, build_vertex_relation_type, build_vertex_relation_type_prefix,
-        build_vertex_role_type, build_vertex_role_type_prefix, TypeID, TypeVertex,
+        build_vertex_attribute_type, build_vertex_entity_type, build_vertex_relation_type,
+        build_vertex_role_type, TypeID, TypeVertex,
     },
     Keyable,
 };
 use crate::error::EncodingError;
 use crate::error::EncodingErrorKind::{ExhaustedTypeIDs, FailedTypeIDAllocation};
 use crate::graph::type_::vertex::TypeIDUInt;
-use crate::layout::prefix::Prefix;
-
-// TODO: if we always scan for the next available TypeID, we automatically recycle deleted TypeIDs?
-//          -> If we do reuse TypeIDs, this we also need to make sure to reset the Thing ID generators on delete! (test should exist to confirm this).
+use crate::graph::Typed;
 
 pub struct TypeIDAllocator {
     last_allocated_type_id: AtomicU16,
@@ -49,8 +41,7 @@ impl TypeIDAllocator {
     }
 
     fn to_type_id<'a>(&self, key : StorageKeyReference) -> TypeIDUInt {
-        let bytes = key.bytes();
-        TypeID::new([bytes[bytes.len()-2], bytes[bytes.len()-1]]).as_u16()
+        TypeVertex::new(Bytes::Reference(key.byte_ref())).type_id_().as_u16()
     }
 
     fn iterate_and_find<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot, start: TypeIDUInt) -> Result<Option<TypeIDUInt>, EncodingError> {

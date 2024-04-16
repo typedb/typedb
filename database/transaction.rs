@@ -53,7 +53,7 @@ impl<D> TransactionWrite<D> {
     }
 
     pub fn thing_manager(&self) -> &ThingManager<WriteSnapshot<D>> {
-        &self.thing_manager // TODO: Sort this out.
+        &self.thing_manager
     }
 
     pub fn commit(self) {}
