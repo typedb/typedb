@@ -141,7 +141,9 @@ fn max_entity_type_vertexes() {
         let generator = TypeVertexGenerator::new();
 
         let res = generator.create_entity_type(&snapshot); // Crashes
-        assert!(matches!(res, Err(EncodingError { kind: EncodingErrorKind::ExhaustedTypeIDs } ))); // TODO: We don't specify what type (entity) ran out of IDs
+        assert!(matches!(res, Err(EncodingError {
+            kind: EncodingErrorKind::ExhaustedTypeIDs { root_type : encoding::graph::type_::Kind::Entity }
+        } )));
     }
 }
 

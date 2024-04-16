@@ -16,7 +16,7 @@ pub struct EncodingError {
 pub enum EncodingErrorKind {
     FailedUFT8Decode { bytes: Box<[u8]>, source: Utf8Error },
     FailedTypeIDAllocation {source:  std::sync::Arc<SnapshotIteratorError> },
-    ExhaustedTypeIDs
+    ExhaustedTypeIDs{ root_type: crate::graph::type_::Kind }
 }
 
 impl fmt::Display for EncodingError {
@@ -30,7 +30,7 @@ impl Error for EncodingError {
         match &self.kind {
             EncodingErrorKind::FailedUFT8Decode { source, .. } => Some(source),
             EncodingErrorKind::FailedTypeIDAllocation { source, .. } => Some(source),
-            EncodingErrorKind::ExhaustedTypeIDs => None,
+            EncodingErrorKind::ExhaustedTypeIDs {..} => None,
         }
     }
 }

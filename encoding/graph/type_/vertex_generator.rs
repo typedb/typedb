@@ -22,18 +22,21 @@ use crate::{
 };
 use crate::error::EncodingError;
 use crate::error::EncodingErrorKind::{ExhaustedTypeIDs, FailedTypeIDAllocation};
+use crate::graph::type_::Kind;
+use crate::graph::type_::Kind::{Attribute, Entity, Relation, Role};
 use crate::graph::type_::vertex::TypeIDUInt;
 use crate::graph::Typed;
 
 pub struct TypeIDAllocator {
+    root_type : Kind,
     last_allocated_type_id: AtomicU16,
     to_vertex:  fn (TypeID) -> TypeVertex<'static>
 }
 
 impl TypeIDAllocator {
 
-    fn new(to_vertex: fn (TypeID) -> TypeVertex<'static>) -> TypeIDAllocator {
-        Self { last_allocated_type_id : AtomicU16::new(0), to_vertex }
+    fn new(root_type: Kind, to_vertex: fn (TypeID) -> TypeVertex<'static>) -> TypeIDAllocator {
+        Self { root_type, last_allocated_type_id : AtomicU16::new(0), to_vertex }
     }
 
     fn to_key(&self, type_id: TypeIDUInt) -> StorageKey<'static, BUFFER_KEY_INLINE> {
@@ -65,7 +68,7 @@ impl TypeIDAllocator {
             Ok(type_id)
         } else {
             match self.iterate_and_find(snapshot, 0)? {
-                None => Err(EncodingError{ kind: ExhaustedTypeIDs }),
+                None => Err(EncodingError{ kind: ExhaustedTypeIDs{ root_type : self.root_type } }),
                 Some(type_id) => {
                     self.last_allocated_type_id.store(type_id, Relaxed);
                     Ok(type_id)
@@ -93,10 +96,10 @@ impl TypeVertexGenerator {
 
     pub fn new() -> TypeVertexGenerator {
         TypeVertexGenerator {
-            next_entity: TypeIDAllocator::new(build_vertex_entity_type),
-            next_relation: TypeIDAllocator::new(build_vertex_relation_type),
-            next_role: TypeIDAllocator::new(build_vertex_role_type),
-            next_attribute: TypeIDAllocator::new(build_vertex_attribute_type),
+            next_entity: TypeIDAllocator::new(Entity, build_vertex_entity_type),
+            next_relation: TypeIDAllocator::new(Relation, build_vertex_relation_type),
+            next_role: TypeIDAllocator::new(Role, build_vertex_role_type),
+            next_attribute: TypeIDAllocator::new(Attribute, build_vertex_attribute_type),
         }
     }
 
