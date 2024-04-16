@@ -117,4 +117,34 @@ fn loading_storage_assigns_next_vertex() {
         assert_eq!(i, vertex.type_id_().as_u16());
         snapshot.commit().unwrap();
     }
+
+    for i in 0..create_till {
+        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let snapshot = storage.clone().open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+
+        let vertex = generator.create_attribute_type(&snapshot).unwrap();
+        assert_eq!(i, vertex.type_id_().as_u16());
+        snapshot.commit().unwrap();
+    }
+
+    for i in 0..create_till {
+        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let snapshot = storage.clone().open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+
+        let vertex = generator.create_relation_type(&snapshot).unwrap();
+        assert_eq!(i, vertex.type_id_().as_u16());
+        snapshot.commit().unwrap();
+    }
+
+    for i in 0..create_till {
+        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let snapshot = storage.clone().open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+
+        let vertex = generator.create_role_type(&snapshot).unwrap();
+        assert_eq!(i, vertex.type_id_().as_u16());
+        snapshot.commit().unwrap();
+    }
 }
