@@ -8,9 +8,13 @@ use std::{
     ops::Range,
     sync::atomic::{AtomicU64, Ordering},
 };
+use std::any::{Any, TypeId};
+use std::io::Read;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use primitive::prefix_range::PrefixRange;
+use storage::key_value::{StorageKey, StorageKeyArray};
+use storage::{MVCCKey, MVCCStorage};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -26,6 +30,8 @@ use crate::{
 };
 use crate::graph::thing::vertex_attribute::AsAttributeID;
 use crate::graph::thing::VertexID;
+use crate::graph::Typed;
+use crate::layout::prefix::Prefix;
 
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,
@@ -43,28 +49,18 @@ impl ThingVertexGenerator {
     pub fn new() -> Self {
         // TODO: we should create a resizable Vector linked to the id of types/highest id of each type
         //       this will speed up booting time on load (loading this will require MAX types * 3 iterator searches) and reduce memory footprint
-        ThingVertexGenerator {
-            entity_ids: (0..TypeIDUInt::MAX as usize)
-                .map(|_| AtomicU64::new(0))
-                .collect::<Vec<AtomicU64>>()
-                .into_boxed_slice(),
-            relation_ids: (0..TypeIDUInt::MAX as usize)
-                .map(|_| AtomicU64::new(0))
-                .collect::<Vec<AtomicU64>>()
-                .into_boxed_slice(),
-            large_value_hasher: seahash::hash,
-        }
+        Self::new_with_hasher(seahash::hash)
     }
 
     pub fn new_with_hasher(large_value_hasher: fn(&[u8]) -> u64) -> Self {
         // TODO: we should create a resizable Vector linked to the id of types/highest id of each type
         //       this will speed up booting time on load (loading this will require MAX types * 3 iterator searches) and reduce memory footprint
         ThingVertexGenerator {
-            entity_ids: (0..TypeIDUInt::MAX as usize)
+            entity_ids: (0..=TypeIDUInt::MAX)
                 .map(|_| AtomicU64::new(0))
                 .collect::<Vec<AtomicU64>>()
                 .into_boxed_slice(),
-            relation_ids: (0..TypeIDUInt::MAX as usize)
+            relation_ids: (0..=TypeIDUInt::MAX)
                 .map(|_| AtomicU64::new(0))
                 .collect::<Vec<AtomicU64>>()
                 .into_boxed_slice(),
@@ -72,8 +68,42 @@ impl ThingVertexGenerator {
         }
     }
 
-    pub fn load() -> Self {
-        todo!()
+    pub fn load<D>(storage: &MVCCStorage<D>) -> Self {
+        Self::load_with_hasher(storage, seahash::hash)
+    }
+
+    fn extract_object_id(k: &MVCCKey<'_>, v: &[u8]) -> ObjectVertex<'static> {
+        ObjectVertex::new(Bytes::Array(ByteArray::copy(k.key())))
+    }
+
+    pub fn load_with_hasher<D>(storage: &MVCCStorage<D>, large_value_hasher: fn(&[u8]) -> u64) -> Self {
+        let successor_key : fn(ObjectVertex) -> StorageKey<{ObjectVertex::LENGTH}>  = |max_object_vertex: ObjectVertex| {
+            let mut max_object_id: [u8; ObjectVertex::LENGTH] = [0; ObjectVertex::LENGTH];
+            max_object_id.copy_from_slice(max_object_vertex.bytes().bytes());
+            StorageKey::new_owned(ObjectVertex::KEYSPACE, ByteArray::inline(bytes::util::increment_fixed(max_object_id), ObjectVertex::LENGTH))
+        };
+
+        let generator = ThingVertexGenerator::new_with_hasher(large_value_hasher);
+
+        // TODO: What if no entities or relations exist?
+        for type_id in 0..=TypeIDUInt::MAX {
+            let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = successor_key(ObjectVertex::build_entity(TypeID::build(type_id), ObjectID::build(u64::MAX)));
+            if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
+                if prev_vertex.type_id_() == TypeID::build(type_id) {
+                    generator.entity_ids[type_id as usize].store(prev_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
+                }
+            }
+        }
+
+        for type_id in 0..=TypeIDUInt::MAX {
+            let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = successor_key(ObjectVertex::build_relation(TypeID::build(type_id), ObjectID::build(u64::MAX)));
+            if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
+                if prev_vertex.type_id_() == TypeID::build(type_id) {
+                    generator.relation_ids[type_id as usize].store(prev_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
+                }
+            }
+        }
+        generator
     }
 
     pub fn create_entity<Snapshot>(&self, type_id: TypeID, snapshot: &Snapshot) -> ObjectVertex<'static>
