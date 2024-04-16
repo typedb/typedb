@@ -32,14 +32,14 @@ We don't aim for complete coverage of all APIs, and will rely on the BDD scenari
 fn entity_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
-    let type_vertex_generator = TypeVertexGenerator::new();
-    TypeManager::<'_, WriteSnapshot<'_, WAL>>::initialise_types(&mut storage, &type_vertex_generator);
+    let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap());
+    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
+    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone());
 
-    let snapshot: Rc<WriteSnapshot<'_, _>> = Rc::new(storage.open_snapshot_write());
+    let snapshot: Arc<WriteSnapshot<_>> = Arc::new(storage.clone().open_snapshot_write());
     {
         // Without cache, uncommitted
-        let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
+        let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None);
 
         let root_entity = type_manager.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap();
         assert_eq!(*root_entity.get_label(&type_manager).unwrap(), Kind::Entity.root_label());
@@ -94,15 +94,15 @@ fn entity_usage() {
         assert_eq!(child_type.get_owns_attribute(&type_manager, age_type.clone()).unwrap(), Some(owns));
         assert!(child_type.has_owns_attribute(&type_manager, age_type.clone()).unwrap());
     }
-    if let write_snapshot = Rc::try_unwrap(snapshot).ok().unwrap() {
+    if let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();
     }
 
     {
         // With cache, committed
-        let snapshot: Rc<ReadSnapshot<'_, _>> = Rc::new(storage.open_snapshot_read());
-        let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()).unwrap());
-        let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
+        let snapshot: Arc<ReadSnapshot<_>> = Arc::new(storage.clone().open_snapshot_read());
+        let type_cache = Arc::new(TypeCache::new(storage.clone(), snapshot.open_sequence_number()).unwrap());
+        let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), Some(type_cache));
 
         let root_entity = type_manager.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap();
         assert_eq!(*root_entity.get_label(&type_manager).unwrap(), Kind::Entity.root_label());
@@ -156,18 +156,18 @@ fn entity_usage() {
 fn role_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
-    let type_vertex_generator = TypeVertexGenerator::new();
-    TypeManager::<'_, WriteSnapshot<'_, WAL>>::initialise_types(&mut storage, &type_vertex_generator);
+    let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap());
+    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
+    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone());
 
     let friendship_label = Label::build("friendship");
     let friend_name = "friend";
     let person_label = Label::build("person");
 
-    let snapshot: Rc<WriteSnapshot<'_, _>> = Rc::new(storage.open_snapshot_write());
+    let snapshot: Arc<WriteSnapshot<_>> = Arc::new(storage.clone().open_snapshot_write());
     {
         // Without cache, uncommitted
-        let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, None);
+        let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None);
         let root_relation = type_manager.get_relation_type(&Kind::Relation.root_label()).unwrap().unwrap();
         assert_eq!(*root_relation.get_label(&type_manager).unwrap(), Kind::Relation.root_label());
         assert!(root_relation.is_root(&type_manager).unwrap());
@@ -203,15 +203,15 @@ fn role_usage() {
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type.clone()));
         debug_assert_eq!(plays.role(), role_type);
     }
-    if let write_snapshot = Rc::try_unwrap(snapshot).ok().unwrap() {
+    if let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();
     }
 
     {
         // With cache, committed
-        let snapshot: Rc<ReadSnapshot<'_, _>> = Rc::new(storage.open_snapshot_read());
-        let type_cache = Arc::new(TypeCache::new(&storage, snapshot.open_sequence_number()).unwrap());
-        let type_manager = TypeManager::new(snapshot.clone(), &type_vertex_generator, Some(type_cache));
+        let snapshot: Arc<ReadSnapshot<_>> = Arc::new(storage.clone().open_snapshot_read());
+        let type_cache = Arc::new(TypeCache::new(storage.clone(), snapshot.open_sequence_number()).unwrap());
+        let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), Some(type_cache));
 
         // --- friendship sub relation, relates friend ---
         let friendship_type = type_manager.get_relation_type(&friendship_label).unwrap().unwrap();

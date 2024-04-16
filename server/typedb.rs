@@ -10,6 +10,7 @@ use std::{
     ffi::OsString,
     fmt, fs, io,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use database::{Database, DatabaseRecoverError};
@@ -19,12 +20,14 @@ use itertools::Itertools;
 #[derive(Debug)]
 pub struct Server {
     data_directory: PathBuf,
-    databases: HashMap<String, Database<WAL>>,
+    databases: HashMap<String, Arc<Database<WAL>>>,
 }
 
 impl Server {
     pub fn recover(data_directory: impl AsRef<Path>) -> Result<Self, ServerRecoverError> {
-        use ServerRecoverError::*;
+        use ServerRecoverError::{
+            CouldNotCreateDataDirectory, CouldNotReadDataDirectory, DatabaseRecover, InvalidUnicodeName, NotADirectory,
+        };
         let data_directory = data_directory.as_ref();
 
         if !data_directory.exists() {
@@ -42,7 +45,7 @@ impl Server {
                 let database_name = entry.file_name().into_string().map_err(|name| InvalidUnicodeName { name })?;
                 let database = Database::recover(&entry.path(), &database_name)
                     .map_err(|error| DatabaseRecover { source: error })?;
-                Ok((database_name, database))
+                Ok((database_name, Arc::new(database)))
             })
             .try_collect()?;
         let data_directory = data_directory.to_owned();
@@ -53,10 +56,14 @@ impl Server {
         let name = name.as_ref();
         self.databases
             .entry(name.to_owned())
-            .or_insert_with(|| Database::recover(&self.data_directory.join(name), name).unwrap());
+            .or_insert_with(|| Arc::new(Database::recover(&self.data_directory.join(name), name).unwrap()));
     }
 
-    pub fn databases(&self) -> &HashMap<String, Database<WAL>> {
+    pub fn database(&self, name: &str) -> Option<&Database<WAL>> {
+        self.databases.get(name).map(|arc| &**arc)
+    }
+
+    pub fn databases(&self) -> &HashMap<String, Arc<Database<WAL>>> {
         &self.databases
     }
 

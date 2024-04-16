@@ -6,16 +6,15 @@
 
 use encoding::graph::thing::vertex_object::ObjectVertex;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use crate::{ConceptStatus, GetStatus};
-use crate::error::ConceptWriteError;
-use crate::thing::thing_manager::ThingManager;
+
+use crate::{error::ConceptWriteError, thing::thing_manager::ThingManager, ConceptStatus};
 
 pub mod attribute;
 pub mod entity;
+pub mod object;
 mod relation;
 pub mod thing_manager;
 pub mod value;
-pub mod object;
 
 ///
 /// TODO: one thing to consider is that we have a general issue with update-delete race conditions
@@ -24,16 +23,16 @@ pub mod object;
 ///
 
 pub trait ThingAPI<'a> {
-    fn set_modified(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>);
+    fn set_modified(&self, thing_manager: &ThingManager<impl WritableSnapshot>);
 
     // TODO: implementers could cache the status in a OnceCell if we do many operations on the same Thing at once
-    fn get_status<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) -> ConceptStatus;
+    fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus;
 
-    fn delete<'m>(self, thing_manager: &'m ThingManager<'_, impl WritableSnapshot>) -> Result<(), ConceptWriteError>;
+    fn delete(self, thing_manager: &ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError>;
 }
 
 pub trait ObjectAPI<'a> {
-    fn vertex<'this>(&'this self) -> ObjectVertex<'this>;
+    fn vertex(&self) -> ObjectVertex<'_>;
 
     fn into_vertex(self) -> ObjectVertex<'a>;
 }

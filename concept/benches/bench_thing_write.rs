@@ -37,15 +37,15 @@ static NAME_LABEL: OnceLock<Label> = OnceLock::new();
 static PERSON_LABEL: OnceLock<Label> = OnceLock::new();
 
 fn write_entity_attributes(
-    storage: &MVCCStorage<WAL>,
-    type_vertex_generator: &TypeVertexGenerator,
-    thing_vertex_generator: &ThingVertexGenerator,
+    storage: Arc<MVCCStorage<WAL>>,
+    type_vertex_generator: Arc<TypeVertexGenerator>,
+    thing_vertex_generator: Arc<ThingVertexGenerator>,
     schema_cache: Arc<TypeCache>,
 ) {
-    let snapshot = Rc::new(storage.open_snapshot_write());
+    let snapshot = Arc::new(storage.clone().open_snapshot_write());
     {
-        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), type_vertex_generator, Some(schema_cache)));
-        let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator, type_manager.clone());
+        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), Some(schema_cache)));
+        let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator.clone(), type_manager.clone());
 
         let person_type = type_manager.get_entity_type(PERSON_LABEL.get().unwrap()).unwrap().unwrap();
         let age_type = type_manager.get_attribute_type(AGE_LABEL.get().unwrap()).unwrap().unwrap();
@@ -62,14 +62,14 @@ fn write_entity_attributes(
         person.set_has(&thing_manager, name);
     }
 
-    let write_snapshot = Rc::try_unwrap(snapshot).ok().unwrap();
+    let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();
     write_snapshot.commit().unwrap();
 }
 
-fn create_schema(storage: &MVCCStorage<WAL>, type_vertex_generator: &TypeVertexGenerator) {
-    let snapshot: Rc<WriteSnapshot<'_, WAL>> = Rc::new(storage.open_snapshot_write());
+fn create_schema(storage: &Arc<MVCCStorage<WAL>>, type_vertex_generator: &Arc<TypeVertexGenerator>) {
+    let snapshot: Arc<WriteSnapshot<WAL>> = Arc::new(storage.clone().open_snapshot_write());
     {
-        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), type_vertex_generator, None));
+        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None));
         let age_type = type_manager.create_attribute_type(AGE_LABEL.get().unwrap(), false);
         age_type.set_value_type(&type_manager, ValueType::Long);
         let name_type = type_manager.create_attribute_type(NAME_LABEL.get().unwrap(), false);
@@ -78,7 +78,7 @@ fn create_schema(storage: &MVCCStorage<WAL>, type_vertex_generator: &TypeVertexG
         person_type.set_owns(&type_manager, age_type);
         person_type.set_owns(&type_manager, name_type);
     }
-    let write_snapshot = Rc::try_unwrap(snapshot).ok().unwrap();
+    let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();
     write_snapshot.commit().unwrap();
 }
 
@@ -89,18 +89,18 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
-    let type_vertex_generator = TypeVertexGenerator::new();
-    let thing_vertex_generator = ThingVertexGenerator::new();
-    TypeManager::<'_, WriteSnapshot<'_, WAL>>::initialise_types(&mut storage, &type_vertex_generator);
+    let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
+    let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
+    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone());
 
     create_schema(&storage, &type_vertex_generator);
-    let schema_cache = Arc::new(TypeCache::new(&storage, storage.read_watermark()).unwrap());
+    let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
 
     let mut group = c.benchmark_group("test writes");
     group.bench_function("thing_write", |b| {
         b.iter(|| {
-            write_entity_attributes(&storage, &type_vertex_generator, &thing_vertex_generator, schema_cache.clone())
+            write_entity_attributes(storage.clone(), type_vertex_generator.clone(), thing_vertex_generator.clone(), schema_cache.clone())
         });
     });
 }

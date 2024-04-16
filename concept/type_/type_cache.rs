@@ -8,6 +8,7 @@ use std::{
     collections::{BTreeMap, HashMap, HashSet},
     error::Error,
     fmt,
+    sync::Arc,
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
@@ -40,8 +41,7 @@ use encoding::{
 };
 use primitive::prefix_range::PrefixRange;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_VALUE_INLINE};
-use storage::{snapshot::ReadSnapshot, MVCCStorage, ReadSnapshotOpenError};
-use storage::snapshot::ReadableSnapshot;
+use storage::{snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
 
 use crate::type_::{
     annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent},
@@ -55,7 +55,6 @@ use crate::type_::{
     role_type::{RoleType, RoleTypeAnnotation},
     TypeAPI,
 };
-use crate::type_::annotation::AnnotationCardinality;
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -121,8 +120,8 @@ struct RoleTypeCache {
     supertype: Option<RoleType<'static>>,
     supertypes: Vec<RoleType<'static>>, // TODO: benchmark smallvec
 
-    // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
-    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+                                        // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+                                        // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 }
 
 #[derive(Debug)]
@@ -136,21 +135,21 @@ struct AttributeTypeCache {
     supertype: Option<AttributeType<'static>>,
     supertypes: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 
-    // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
-    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+                                             // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+                                             // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 }
 
 impl TypeCache {
     pub fn new<D>(
-        storage: &MVCCStorage<D>,
+        storage: Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
     ) -> Result<Self, TypeCacheCreateError> {
         use TypeCacheCreateError::SnapshotOpen;
         // note: since we will parse out many heterogenous properties/edges from the schema, we will scan once into a vector,
         //       then go through it again to pull out the type information.
 
-        let snapshot = storage.open_snapshot_read_at(open_sequence_number)
-            .map_err(|error| SnapshotOpen { source: error })?;
+        let snapshot =
+            storage.open_snapshot_read_at(open_sequence_number).map_err(|error| SnapshotOpen { source: error })?;
         let vertex_properties = snapshot
             .iterate_range(PrefixRange::new_within(TypeVertexProperty::build_prefix()))
             .collect_cloned_bmap(|key, value| {
@@ -456,8 +455,8 @@ impl TypeCache {
     }
 
     fn fetch_owns<F>(snapshot: &impl ReadableSnapshot, prefix: Prefix, from_reader: F) -> Vec<Owns<'static>>
-        where
-            F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
+    where
+        F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
     {
         snapshot
             .iterate_range(PrefixRange::new_within(build_edge_owns_prefix_prefix(prefix)))
@@ -469,8 +468,8 @@ impl TypeCache {
     }
 
     fn fetch_plays<F>(snapshot: &impl ReadableSnapshot, prefix: Prefix, from_constructor: F) -> Vec<Plays<'static>>
-        where
-            F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
+    where
+        F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
     {
         snapshot
             .iterate_range(PrefixRange::new_within(build_edge_plays_prefix_prefix(prefix)))
@@ -486,8 +485,8 @@ impl TypeCache {
         prefix: Prefix,
         type_constructor: F,
     ) -> BTreeMap<T, T>
-        where
-            F: Fn(TypeVertex<'static>) -> T,
+    where
+        F: Fn(TypeVertex<'static>) -> T,
     {
         snapshot
             .iterate_range(PrefixRange::new_within(build_edge_sub_prefix_prefix(prefix)))
@@ -535,11 +534,13 @@ impl TypeCache {
                     match property.infix() {
                         Infix::PropertyAnnotationAbstract => Some(Annotation::Abstract(AnnotationAbstract::new())),
                         Infix::PropertyAnnotationDistinct => Some(Annotation::Distinct(AnnotationDistinct::new())),
-                        Infix::PropertyAnnotationIndependent => Some(Annotation::Independent(AnnotationIndependent::new())),
+                        Infix::PropertyAnnotationIndependent => {
+                            Some(Annotation::Independent(AnnotationIndependent::new()))
+                        }
                         Infix::PropertyAnnotationCardinality => {
                             let card = bincode::deserialize(value.bytes()).unwrap();
                             Some(Annotation::Cardinality(card))
-                        },
+                        }
                         | Infix::PropertyLabel | Infix::PropertyValueType => None,
                     }
                 }

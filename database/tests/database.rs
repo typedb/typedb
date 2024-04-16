@@ -5,8 +5,10 @@
  */
 
 use std::rc::Rc;
+use std::sync::Arc;
 
 use database::Database;
+use database::transaction::TransactionRead;
 use durability::wal::WAL;
 use encoding::graph::type_::Kind;
 use test_utils::{create_tmp_dir, init_logging};
@@ -18,9 +20,9 @@ fn create_delete_database() {
     dbg!(database_path.exists());
     let db_result = Database::<WAL>::recover(&database_path, Rc::from("create_delete"));
     assert!(db_result.is_ok(), "{:?}", db_result.unwrap_err());
-    let db = db_result.unwrap();
+    let db = Arc::new(db_result.unwrap());
 
-    let txn = db.transaction_read();
+    let txn = TransactionRead::open(db.clone());
     let types = txn.type_manager();
     let root_entity_type = types.get_entity_type(&Kind::Entity.root_label());
     eprintln!("Root entity type: {:?}", root_entity_type);

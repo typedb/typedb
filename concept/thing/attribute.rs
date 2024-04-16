@@ -7,13 +7,23 @@
 use std::cmp::Ordering;
 
 use bytes::Bytes;
-use encoding::{graph::{thing::vertex_attribute::AttributeVertex, type_::vertex::build_vertex_attribute_type, Typed}, value::value_type::ValueType, AsBytes, Keyable};
-use storage::key_value::StorageKeyReference;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use encoding::{
+    graph::{thing::vertex_attribute::AttributeVertex, type_::vertex::build_vertex_attribute_type, Typed},
+    value::value_type::ValueType,
+    AsBytes, Keyable,
+};
+use storage::{
+    key_value::StorageKeyReference,
+    snapshot::{ReadableSnapshot, WritableSnapshot},
+};
 
-use crate::{concept_iterator, error::ConceptReadError, thing::{thing_manager::ThingManager, value::Value}, type_::attribute_type::AttributeType, ByteReference, ConceptAPI, ConceptStatus, GetStatus};
-use crate::error::ConceptWriteError;
-use crate::thing::ThingAPI;
+use crate::{
+    concept_iterator,
+    error::{ConceptReadError, ConceptWriteError},
+    thing::{thing_manager::ThingManager, value::Value, ThingAPI},
+    type_::attribute_type::AttributeType,
+    ByteReference, ConceptAPI, ConceptStatus, GetStatus,
+};
 
 #[derive(Debug)]
 pub struct Attribute<'a> {
@@ -38,7 +48,10 @@ impl<'a> Attribute<'a> {
         self.vertex.bytes()
     }
 
-    pub fn value(&mut self, thing_manager: &ThingManager<'_, impl ReadableSnapshot>) -> Result<Value<'_>, ConceptReadError> {
+    pub fn value(
+        &mut self,
+        thing_manager: &ThingManager<impl ReadableSnapshot>,
+    ) -> Result<Value<'_>, ConceptReadError> {
         if self.value.is_none() {
             let value = thing_manager.get_attribute_value(self)?;
             self.value = Some(value);
@@ -46,16 +59,13 @@ impl<'a> Attribute<'a> {
         Ok(self.value.as_ref().unwrap().as_reference())
     }
 
-    pub fn get_owners<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) {
+    pub fn get_owners<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) {
         // -> ObjectIterator<'m, 1>
         todo!()
     }
 
     pub fn as_reference(&self) -> Attribute<'_> {
-        Attribute {
-            vertex: self.vertex.as_reference(),
-            value: self.value.as_ref().map(|value| value.as_reference()),
-        }
+        Attribute { vertex: self.vertex.as_reference(), value: self.value.as_ref().map(|value| value.as_reference()) }
     }
 
     pub(crate) fn vertex<'this: 'a>(&'this self) -> AttributeVertex<'this> {
@@ -74,15 +84,15 @@ impl<'a> Attribute<'a> {
 impl<'a> ConceptAPI<'a> for Attribute<'a> {}
 
 impl<'a> ThingAPI<'a> for Attribute<'a> {
-    fn set_modified(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>) {
+    fn set_modified(&self, thing_manager: &ThingManager<impl WritableSnapshot>) {
         // Attributes are always PUT, so we don't have to record a lock on modification
     }
 
-    fn get_status<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) -> ConceptStatus {
+    fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus {
         thing_manager.get_status(self.vertex().as_storage_key())
     }
 
-    fn delete<'m>(self, thing_manager: &'m ThingManager<'_, impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+    fn delete<'m>(self, thing_manager: &'m ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
         todo!()
     }
 }

@@ -24,13 +24,11 @@ use durability::{
     DurabilityRecord, DurabilityRecordType, DurabilityService, SequenceNumber, SequencedDurabilityRecord,
     UnsequencedDurabilityRecord,
 };
-use itertools::Itertools;
 use logger::result::ResultExt;
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 use serde::{Deserialize, Serialize};
 
-use crate::snapshot::{buffer::OperationsBuffer, write::Write};
-use crate::snapshot::lock::LockType;
+use crate::snapshot::{buffer::OperationsBuffer, lock::LockType, write::Write};
 
 #[derive(Debug)]
 pub(crate) struct IsolationManager {
@@ -69,7 +67,6 @@ impl IsolationManager {
         window.set_applied(sequence_number);
         self.timeline.may_increment_watermark(sequence_number);
     }
-
 
     pub(crate) fn load_aborted(&self, sequence_number: SequenceNumber) {
         let window = self.timeline.get_or_create_window(sequence_number);
@@ -354,16 +351,13 @@ impl Timeline {
     fn new(next_sequence_number: SequenceNumber) -> Timeline {
         let mut windows = VecDeque::new();
         windows.push_back(Arc::new(TimelineWindow::new(next_sequence_number)));
-        Timeline {
-            windows: RwLock::new(windows),
-            watermark: AtomicU64::new(next_sequence_number.number() - 1),
-        }
+        Timeline { windows: RwLock::new(windows), watermark: AtomicU64::new(next_sequence_number.number() - 1) }
     }
 
     fn may_free_windows(&self) {
         let watermark = self.watermark();
         let can_free_some: bool = {
-            let  windows = &*self.windows.read().unwrap_or_log();
+            let windows = &*self.windows.read().unwrap_or_log();
             match windows.front() {
                 None => false,
                 Some(front) => front.get_readers() == 0 && watermark >= windows.front().unwrap().end(),
@@ -381,7 +375,7 @@ impl Timeline {
         if self.watermark() != sequence_number - 1 {
             return ();
         }
-        let mut window= self.try_get_window(sequence_number).unwrap();
+        let mut window = self.try_get_window(sequence_number).unwrap();
         let mut candidate_watermark = sequence_number;
         loop {
             let should_update: bool = match window.get_status(candidate_watermark) {
@@ -432,7 +426,9 @@ impl Timeline {
 
     fn remove_reader(&self, sequence_number: SequenceNumber) {
         if let Some(window) = self.try_get_window(sequence_number) {
-            if window.decrement_readers() == 0 { self.may_free_windows(); }
+            if window.decrement_readers() == 0 {
+                self.may_free_windows();
+            }
         };
     }
 
@@ -452,19 +448,13 @@ impl Timeline {
         (concurrent_windows, start_index_of_first_concurrent_window)
     }
 
-    fn try_get_window(
-        &self,
-        sequence_number: SequenceNumber,
-    ) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
+    fn try_get_window(&self, sequence_number: SequenceNumber) -> Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> {
         let windows = &*self.windows.read().unwrap_or_log();
         let window_index = Self::resolve_window(windows, sequence_number)?;
         Some(windows.get(window_index).unwrap().clone())
     }
 
-    fn get_or_create_window(
-        &self,
-        sequence_number: SequenceNumber,
-    ) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
+    fn get_or_create_window(&self, sequence_number: SequenceNumber) -> Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>> {
         let end: SequenceNumber = { self.windows.read().unwrap_or_log().back().unwrap().end() };
         if sequence_number >= end {
             self.create_windows_to(sequence_number);
@@ -473,13 +463,15 @@ impl Timeline {
     }
 
     fn create_windows_to(&self, sequence_number: SequenceNumber) {
-        let  windows = &mut *self.windows.write().unwrap_or_log();
+        let windows = &mut *self.windows.write().unwrap_or_log();
         loop {
             let end = windows.back().unwrap().end();
             if sequence_number >= end {
                 let shared_new_window = Arc::new(TimelineWindow::new(end));
                 windows.push_back(shared_new_window.clone());
-            } else { break; }
+            } else {
+                break;
+            }
         }
     }
 
@@ -504,7 +496,7 @@ impl Timeline {
 
 #[derive(Debug)]
 struct TimelineWindow<const SIZE: usize> {
-    start : SequenceNumber,
+    start: SequenceNumber,
     slot_status: [AtomicU8; SIZE],
     commit_records: [OnceLock<CommitRecord>; SIZE],
     readers: AtomicU64,
@@ -829,9 +821,10 @@ mod tests {
         },
         thread,
     };
+
     use durability::SequenceNumber;
 
-    use crate::{KeyspaceSet, KeyspaceId};
+    use crate::{KeyspaceId, KeyspaceSet};
 
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
@@ -912,7 +905,6 @@ mod tests {
     fn _seq(from: u64) -> SequenceNumber {
         SequenceNumber::from(from)
     }
-
 
     fn _record(read_sequence_number: SequenceNumber) -> CommitRecord {
         CommitRecord::new(OperationsBuffer::new(), read_sequence_number)
@@ -1032,5 +1024,4 @@ mod tests {
         let some_index_in_penultimate_window = expected_watermark - TIMELINE_WINDOW_SIZE - 1;
         assert!(timeline.try_get_window(some_index_in_penultimate_window).is_none());
     }
-
 }

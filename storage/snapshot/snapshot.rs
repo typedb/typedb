@@ -4,36 +4,32 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt};
-use std::io::Read;
-use std::iter::FlatMap;
-use std::slice::Iter;
+use std::{error::Error, fmt, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use durability::{DurabilityService, SequenceNumber};
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
+use super::{buffer::OperationsBuffer, iterator::SnapshotRangeIterator};
 use crate::{
     error::MVCCStorageError,
     isolation_manager::CommitRecord,
     iterator::MVCCReadError,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
+    snapshot::{buffer::WriteBuffer, lock::LockType, write::Write},
     MVCCStorage,
 };
-use crate::snapshot::buffer::WriteBuffer;
-use crate::snapshot::lock::LockType;
-use crate::snapshot::write::Write;
-
-use super::{buffer::OperationsBuffer, iterator::SnapshotRangeIterator};
 
 pub trait ReadableSnapshot {
     fn open_sequence_number(&self) -> SequenceNumber;
 
     fn get<const KS: usize>(&self, key: StorageKeyReference<'_>) -> Result<Option<ByteArray<KS>>, SnapshotGetError>;
 
-    fn get_mapped<T>(&self, key: StorageKeyReference<'_>,
-                     mapper: impl FnMut(ByteReference<'_>) -> T,
+    fn get_mapped<T>(
+        &self,
+        key: StorageKeyReference<'_>,
+        mapper: impl FnMut(ByteReference<'_>) -> T,
     ) -> Result<Option<T>, SnapshotGetError>;
 
     fn iterate_range<'this, const PS: usize>(
@@ -41,7 +37,11 @@ pub trait ReadableSnapshot {
         range: PrefixRange<StorageKey<'this, PS>>,
     ) -> SnapshotRangeIterator<'this, PS>;
 
-    fn any_in_range<'this, const PS: usize>(&'this self, range: PrefixRange<StorageKey<'this, PS>>, buffered_only: bool) -> bool;
+    fn any_in_range<'this, const PS: usize>(
+        &'this self,
+        range: PrefixRange<StorageKey<'this, PS>>,
+        buffered_only: bool,
+    ) -> bool;
 
     // --- we are slightly breaking the abstraction and Rust model by mimicking polymorphism for the following methods ---
     fn get_buffered_write_mapped<T>(&self, key: StorageKeyReference<'_>, mapper: impl FnMut(&Write) -> T) -> Option<T>;
@@ -91,8 +91,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
         if let Some(existing) = existing {
             Ok(existing)
         } else {
-            let storage_value = self
-                .get_mapped(key.as_reference(), |reference| ByteArray::from(reference))?;
+            let storage_value = self.get_mapped(key.as_reference(), |reference| ByteArray::from(reference))?;
             if let Some(value) = storage_value {
                 self.operations().lock_add(ByteArray::copy(key.bytes()), LockType::Unmodifiable);
                 Ok(value)
@@ -116,40 +115,45 @@ pub trait WritableSnapshot: ReadableSnapshot {
         self.operations().lock_add(key.into_byte_array_or_ref().into_array(), LockType::Exclusive)
     }
 
-    fn iterate_writes(&self) -> impl Iterator<Item=(StorageKeyArray<64>, Write)> + '_ {
+    fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<64>, Write)> + '_ {
         self.operations().write_buffers().flat_map(|buffer| {
             // note: this currently copies all the buffers
-            buffer.iterate_range(PrefixRange::new_unbounded(Bytes::Array(ByteArray::<BUFFER_KEY_INLINE>::empty())))
-                .into_range().into_iter()
+            buffer
+                .iterate_range(PrefixRange::new_unbounded(Bytes::Array(ByteArray::<BUFFER_KEY_INLINE>::empty())))
+                .into_range()
+                .into_iter()
         })
     }
 
     fn iterate_writes_range<'this, const PS: usize>(
         &'this self,
         range: PrefixRange<Bytes<'this, PS>>,
-    ) -> impl Iterator<Item=(StorageKeyArray<64>, Write)> + '_ {
-        self.operations().write_buffers().flat_map(move |buffer| {
-            buffer.iterate_range(range.clone()).into_range().into_iter()
-        })
+    ) -> impl Iterator<Item = (StorageKeyArray<64>, Write)> + '_ {
+        self.operations()
+            .write_buffers()
+            .flat_map(move |buffer| buffer.iterate_range(range.clone()).into_range().into_iter())
     }
 
     fn close_resources(&self);
 }
 
-pub trait CommittableSnapshot<D> where D: DurabilityService {
+pub trait CommittableSnapshot<D>
+where
+    D: DurabilityService,
+{
     fn commit(self) -> Result<(), SnapshotError>;
 
     fn into_commit_record(self) -> CommitRecord;
 }
 
 #[derive(Debug)]
-pub struct ReadSnapshot<'storage, D> {
-    storage: &'storage MVCCStorage<D>,
+pub struct ReadSnapshot<D> {
+    storage: Arc<MVCCStorage<D>>,
     open_sequence_number: SequenceNumber,
 }
 
-impl<'storage, D> ReadSnapshot<'storage, D> {
-    pub(crate) fn new(storage: &'storage MVCCStorage<D>, open_sequence_number: SequenceNumber) -> Self {
+impl<D> ReadSnapshot<D> {
+    pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
         // Note: for serialisability, we would need to register the open transaction to the IsolationManager
         ReadSnapshot { storage, open_sequence_number }
     }
@@ -157,15 +161,12 @@ impl<'storage, D> ReadSnapshot<'storage, D> {
     pub fn close_resources(self) {}
 }
 
-impl<'storage, D> ReadableSnapshot for ReadSnapshot<'storage, D> {
+impl<D> ReadableSnapshot for ReadSnapshot<D> {
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
     }
 
-    fn get<const KS: usize>(
-        &self,
-        key: StorageKeyReference<'_>,
-    ) -> Result<Option<ByteArray<KS>>, SnapshotGetError> {
+    fn get<const KS: usize>(&self, key: StorageKeyReference<'_>) -> Result<Option<ByteArray<KS>>, SnapshotGetError> {
         // TODO: this clone may not be necessary - we could pass a reference up?
         self.storage
             .get(key, self.open_sequence_number, |reference| ByteArray::from(reference))
@@ -190,7 +191,11 @@ impl<'storage, D> ReadableSnapshot for ReadSnapshot<'storage, D> {
         SnapshotRangeIterator::new(mvcc_iterator, None)
     }
 
-    fn any_in_range<'this, const PS: usize>(&'this self, range: PrefixRange<StorageKey<'this, PS>>, buffered_only: bool) -> bool {
+    fn any_in_range<'this, const PS: usize>(
+        &'this self,
+        range: PrefixRange<StorageKey<'this, PS>>,
+        buffered_only: bool,
+    ) -> bool {
         !buffered_only && self.storage.iterate_range(range, self.open_sequence_number).next().is_some()
     }
 
@@ -200,20 +205,20 @@ impl<'storage, D> ReadableSnapshot for ReadSnapshot<'storage, D> {
 }
 
 #[derive(Debug)]
-pub struct WriteSnapshot<'storage, D> {
-    storage: &'storage MVCCStorage<D>,
+pub struct WriteSnapshot<D> {
+    storage: Arc<MVCCStorage<D>>,
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
 }
 
-impl<'storage, D> WriteSnapshot<'storage, D> {
-    pub(crate) fn new(storage: &'storage MVCCStorage<D>, open_sequence_number: SequenceNumber) -> Self {
+impl<D> WriteSnapshot<D> {
+    pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
         storage.isolation_manager.opened_for_read(open_sequence_number);
         WriteSnapshot { storage, operations: OperationsBuffer::new(), open_sequence_number }
     }
 }
 
-impl<'storage, D> ReadableSnapshot for WriteSnapshot<'storage, D> {
+impl<D> ReadableSnapshot for WriteSnapshot<D> {
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
     }
@@ -258,11 +263,16 @@ impl<'storage, D> ReadableSnapshot for WriteSnapshot<'storage, D> {
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
 
-    fn any_in_range<'this, const PS: usize>(&'this self, range: PrefixRange<StorageKey<'this, PS>>, buffered_only: bool) -> bool {
-        let buffered = self.operations
+    fn any_in_range<'this, const PS: usize>(
+        &'this self,
+        range: PrefixRange<StorageKey<'this, PS>>,
+        buffered_only: bool,
+    ) -> bool {
+        let buffered = self
+            .operations
             .writes_in(range.start().keyspace_id())
             .any_in_range(range.clone().map(|k| k.into_byte_array_or_ref()));
-         buffered || (!buffered_only &&  self.storage.iterate_range(range, self.open_sequence_number).next().is_some())
+        buffered || (!buffered_only && self.storage.iterate_range(range, self.open_sequence_number).next().is_some())
     }
 
     fn get_buffered_write_mapped<T>(&self, key: StorageKeyReference<'_>, mapper: impl FnMut(&Write) -> T) -> Option<T> {
@@ -270,7 +280,7 @@ impl<'storage, D> ReadableSnapshot for WriteSnapshot<'storage, D> {
     }
 }
 
-impl<'storage, D> WritableSnapshot for WriteSnapshot<'storage, D> {
+impl<D> WritableSnapshot for WriteSnapshot<D> {
     fn operations(&self) -> &OperationsBuffer {
         &self.operations
     }
@@ -280,13 +290,13 @@ impl<'storage, D> WritableSnapshot for WriteSnapshot<'storage, D> {
     }
 }
 
-impl<'txn, D: DurabilityService> CommittableSnapshot<D> for WriteSnapshot<'txn, D> {
+impl<D: DurabilityService> CommittableSnapshot<D> for WriteSnapshot<D> {
     // TODO: extract these two methods into separate trait
     fn commit(self) -> Result<(), SnapshotError> {
         if self.operations.writes_empty() && self.operations.locks_empty() {
             Ok(())
         } else {
-            self.storage.snapshot_commit(self).map_err(|err| SnapshotError::Commit { source: err })
+            self.storage.clone().snapshot_commit(self).map_err(|err| SnapshotError::Commit { source: err })
         }
     }
 
@@ -296,20 +306,20 @@ impl<'txn, D: DurabilityService> CommittableSnapshot<D> for WriteSnapshot<'txn, 
 }
 
 #[derive(Debug)]
-pub struct SchemaSnapshot<'storage, D> {
-    storage: &'storage MVCCStorage<D>,
+pub struct SchemaSnapshot<D> {
+    storage: Arc<MVCCStorage<D>>,
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
 }
 
-impl<'storage, D> SchemaSnapshot<'storage, D> {
-    pub(crate) fn new(storage: &'storage MVCCStorage<D>, open_sequence_number: SequenceNumber) -> Self {
+impl<D> SchemaSnapshot<D> {
+    pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
         storage.isolation_manager.opened_for_read(open_sequence_number);
         SchemaSnapshot { storage, operations: OperationsBuffer::new(), open_sequence_number }
     }
 }
 
-impl<'storage, D> ReadableSnapshot for SchemaSnapshot<'storage, D> {
+impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
     }
@@ -354,11 +364,16 @@ impl<'storage, D> ReadableSnapshot for SchemaSnapshot<'storage, D> {
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
 
-    fn any_in_range<'this, const PS: usize>(&'this self, range: PrefixRange<StorageKey<'this, PS>>, buffered_only: bool) -> bool {
-        let buffered = self.operations
+    fn any_in_range<'this, const PS: usize>(
+        &'this self,
+        range: PrefixRange<StorageKey<'this, PS>>,
+        buffered_only: bool,
+    ) -> bool {
+        let buffered = self
+            .operations
             .writes_in(range.start().keyspace_id())
             .any_in_range(range.clone().map(|k| k.into_byte_array_or_ref()));
-        buffered || (!buffered_only &&  self.storage.iterate_range(range, self.open_sequence_number).next().is_some())
+        buffered || (!buffered_only && self.storage.iterate_range(range, self.open_sequence_number).next().is_some())
     }
 
     fn get_buffered_write_mapped<T>(&self, key: StorageKeyReference<'_>, mapper: impl FnMut(&Write) -> T) -> Option<T> {
@@ -366,7 +381,7 @@ impl<'storage, D> ReadableSnapshot for SchemaSnapshot<'storage, D> {
     }
 }
 
-impl<'storage, D> WritableSnapshot for SchemaSnapshot<'storage, D> {
+impl<D> WritableSnapshot for SchemaSnapshot<D> {
     fn operations(&self) -> &OperationsBuffer {
         &self.operations
     }
@@ -376,13 +391,13 @@ impl<'storage, D> WritableSnapshot for SchemaSnapshot<'storage, D> {
     }
 }
 
-impl<'txn, D: DurabilityService> CommittableSnapshot<D> for SchemaSnapshot<'txn, D> {
+impl<D: DurabilityService> CommittableSnapshot<D> for SchemaSnapshot<D> {
     // TODO: extract these two methods into separate trait
     fn commit(self) -> Result<(), SnapshotError> {
         if self.operations.writes_empty() {
             Ok(())
         } else {
-            self.storage.snapshot_commit(self).map_err(|err| SnapshotError::Commit { source: err })
+            self.storage.clone().snapshot_commit(self).map_err(|err| SnapshotError::Commit { source: err })
         }
     }
 
@@ -390,16 +405,6 @@ impl<'txn, D: DurabilityService> CommittableSnapshot<D> for SchemaSnapshot<'txn,
         CommitRecord::new(self.operations, self.open_sequence_number)
     }
 }
-
-
-//  TODO: in the current version, we should need to close resouces on drop because we need to notify Isolation the txn is closed.
-//        However in the next iteration of IsolationManager, we don't need to record readers at all.
-//
-// impl Drop for WriteSnapshot<'_> {
-//     fn drop(&mut self) {
-//         self.close_resources();
-//     }
-// }
 
 #[derive(Debug)]
 pub enum SnapshotError {

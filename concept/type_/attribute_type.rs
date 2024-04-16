@@ -9,23 +9,22 @@ use std::collections::HashSet;
 use encoding::{
     graph::type_::vertex::TypeVertex,
     layout::prefix::Prefix,
-    Prefixed,
     value::{label::Label, value_type::ValueType},
+    Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    ConceptAPI,
     error::ConceptReadError,
     type_::{
-        annotation::{Annotation, AnnotationAbstract},
+        annotation::{Annotation, AnnotationAbstract, AnnotationIndependent},
         owns::Owns,
         type_manager::TypeManager,
         TypeAPI,
     },
+    ConceptAPI,
 };
-use crate::type_::annotation::AnnotationIndependent;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
@@ -58,47 +57,47 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
 }
 
 impl<'a> AttributeType<'a> {
-    pub fn is_root(&self, type_manager: &TypeManager<'_, impl ReadableSnapshot>) -> Result<bool, ConceptReadError> {
+    pub fn is_root(&self, type_manager: &TypeManager<impl ReadableSnapshot>) -> Result<bool, ConceptReadError> {
         type_manager.get_attribute_type_is_root(self.clone().into_owned())
     }
 
-    pub fn set_value_type(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, value_type: ValueType) {
+    pub fn set_value_type(&self, type_manager: &TypeManager<impl WritableSnapshot>, value_type: ValueType) {
         type_manager.storage_set_value_type(self.clone().into_owned(), value_type)
     }
 
     pub fn get_value_type(
         &self,
-        type_manager: &TypeManager<'_, impl ReadableSnapshot>,
+        type_manager: &TypeManager<impl ReadableSnapshot>,
     ) -> Result<Option<ValueType>, ConceptReadError> {
         type_manager.get_attribute_type_value_type(self.clone().into_owned())
     }
 
     pub fn get_label<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
+        type_manager: &'m TypeManager<impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
         type_manager.get_attribute_type_label(self.clone().into_owned())
     }
 
-    fn set_label(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, label: &Label<'_>) {
+    fn set_label(&self, type_manager: &TypeManager<impl WritableSnapshot>, label: &Label<'_>) {
         // TODO: setLabel should fail is setting label on Root type
         type_manager.storage_set_label(self.clone().into_owned(), label)
     }
 
     fn get_supertype(
         &self,
-        type_manager: &TypeManager<'_, impl ReadableSnapshot>,
+        type_manager: &TypeManager<impl ReadableSnapshot>,
     ) -> Result<Option<AttributeType<'static>>, ConceptReadError> {
         type_manager.get_attribute_type_supertype(self.clone().into_owned())
     }
 
-    fn set_supertype(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, supertype: AttributeType<'static>) {
+    fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: AttributeType<'static>) {
         type_manager.storage_set_supertype(self.clone().into_owned(), supertype)
     }
 
     fn get_supertypes<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
+        type_manager: &'m TypeManager<impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, ConceptReadError> {
         type_manager.get_attribute_type_supertypes(self.clone().into_owned())
     }
@@ -107,12 +106,16 @@ impl<'a> AttributeType<'a> {
 
     pub fn get_annotations<'m>(
         &self,
-        type_manager: &'m TypeManager<'_, impl ReadableSnapshot>,
+        type_manager: &'m TypeManager<impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<AttributeTypeAnnotation>>, ConceptReadError> {
         type_manager.get_attribute_type_annotations(self.clone().into_owned())
     }
 
-    pub(crate) fn set_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: AttributeTypeAnnotation) {
+    pub(crate) fn set_annotation(
+        &self,
+        type_manager: &TypeManager<impl WritableSnapshot>,
+        annotation: AttributeTypeAnnotation,
+    ) {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
                 type_manager.storage_set_annotation_abstract(self.clone().into_owned())
@@ -123,7 +126,11 @@ impl<'a> AttributeType<'a> {
         }
     }
 
-    fn delete_annotation(&self, type_manager: &TypeManager<'_, impl WritableSnapshot>, annotation: AttributeTypeAnnotation) {
+    fn delete_annotation(
+        &self,
+        type_manager: &TypeManager<impl WritableSnapshot>,
+        annotation: AttributeTypeAnnotation,
+    ) {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
                 type_manager.storage_delete_annotation_abstract(self.clone().into_owned())
@@ -141,7 +148,10 @@ impl<'a> AttributeType<'a> {
 
 // --- Owned API ---
 impl<'a> AttributeType<'a> {
-    fn get_owns<'m>(&self, _type_manager: &'m TypeManager<'_, impl ReadableSnapshot>) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
+    fn get_owns<'m>(
+        &self,
+        _type_manager: &'m TypeManager<impl ReadableSnapshot>,
+    ) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
         todo!()
     }
 

@@ -7,6 +7,7 @@
 #![deny(unused_must_use)]
 
 use std::rc::Rc;
+use std::sync::Arc;
 
 use durability::wal::WAL;
 use encoding::{
@@ -25,9 +26,9 @@ use test_utils::{create_tmp_dir, init_logging};
 fn generate_string_attribute_vertex() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap();
+    let storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap());
 
-    let snapshot = storage.open_snapshot_write();
+    let snapshot = storage.clone().open_snapshot_write();
     let type_id = TypeID::build(0);
 
     let thing_vertex_generator = ThingVertexGenerator::new();

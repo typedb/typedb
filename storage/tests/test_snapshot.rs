@@ -8,6 +8,8 @@
 
 mod test_common;
 
+use std::sync::Arc;
+
 use bytes::byte_array::ByteArray;
 use durability::wal::WAL;
 use logger::result::ResultExt;
@@ -15,10 +17,10 @@ use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyArray},
+    keyspace::KeyspaceId,
+    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
     KeyspaceSet, MVCCStorage,
 };
-use storage::keyspace::KeyspaceId;
-use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
 test_keyspace_set! {
@@ -31,7 +33,7 @@ fn snapshot_buffered_put_get() {
     init_logging();
 
     let storage_path = create_tmp_dir();
-    let storage = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+    let storage = Arc::new(MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
     let snapshot = storage.open_snapshot_write();
 
@@ -57,7 +59,7 @@ fn snapshot_buffered_put_get() {
 fn snapshot_buffered_put_iterate() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+    let storage = Arc::new(MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
     let snapshot = storage.open_snapshot_write();
 
@@ -71,10 +73,9 @@ fn snapshot_buffered_put_iterate() {
     snapshot.put(key_4.clone());
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1], Keyspace));
-    let items: Result<Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, _> =
-        snapshot
-            .iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix)))
-            .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)));
+    let items: Result<Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, _> = snapshot
+        .iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix)))
+        .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)));
     assert_eq!(items.unwrap(), vec![(key_2, ByteArray::empty()), (key_3, ByteArray::empty())]);
     snapshot.close_resources();
 }
@@ -83,7 +84,7 @@ fn snapshot_buffered_put_iterate() {
 fn snapshot_buffered_delete() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+    let storage = Arc::new(MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
     let snapshot = storage.open_snapshot_write();
 
@@ -113,14 +114,14 @@ fn snapshot_buffered_delete() {
 fn snapshot_read_through() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+    let storage = Arc::new(MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x0, 0x0, 0x1], Keyspace));
     let key_2 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1, 0x0, 0x10], Keyspace));
     let key_3 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1, 0x0, 0xff], Keyspace));
     let key_4 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x2, 0x0, 0xff], Keyspace));
 
-    let snapshot = storage.open_snapshot_write();
+    let snapshot = storage.clone().open_snapshot_write();
     snapshot.put(key_1.clone());
     snapshot.put(key_2.clone());
     snapshot.put(key_3.clone());
@@ -161,17 +162,17 @@ fn snapshot_read_through() {
 fn snapshot_delete_reinserted() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+    let storage = Arc::new(MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x0, 0x0, 0x1], Keyspace));
     let value_0 = ByteArray::copy(&[0, 0, 0, 0]);
     let value_1 = ByteArray::copy(&[0, 0, 0, 1]);
 
-    let snapshot_0 = storage.open_snapshot_write();
+    let snapshot_0 = storage.clone().open_snapshot_write();
     snapshot_0.put_val(key_1.clone(), value_0);
     snapshot_0.commit().unwrap();
 
-    let snapshot_1 = storage.open_snapshot_write();
+    let snapshot_1 = storage.clone().open_snapshot_write();
     snapshot_1.put_val(key_1.clone(), value_1);
     snapshot_1.delete(key_1.clone());
     snapshot_1.commit().unwrap();

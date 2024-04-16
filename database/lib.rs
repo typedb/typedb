@@ -8,6 +8,6 @@
 #![deny(elided_lifetimes_in_paths)]
 
 mod database;
-mod transaction;
+pub mod transaction;
 
 pub use self::database::{Database, DatabaseRecoverError};

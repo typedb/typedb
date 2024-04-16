@@ -10,7 +10,6 @@
 #![allow(clippy::module_inception)]
 
 use std::{
-    borrow::Cow,
     error::Error,
     fmt,
     fs::{self, File},
@@ -39,9 +38,8 @@ use crate::{
         iterator::KeyspaceRangeIterator, Keyspace, KeyspaceCheckpointError, KeyspaceId, KeyspaceOpenError,
         KEYSPACE_ID_MAX, KEYSPACE_ID_RESERVED_UNSET, KEYSPACE_MAXIMUM_COUNT,
     },
-    snapshot::{buffer::OperationsBuffer, write::Write, ReadSnapshot, WriteSnapshot},
+    snapshot::{buffer::OperationsBuffer, write::Write, CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
-use crate::snapshot::CommittableSnapshot;
 
 pub mod error;
 pub mod isolation_manager;
@@ -201,9 +199,12 @@ impl<D> MVCCStorage<D> {
     {
         use StorageRecoverError::DurabilityServiceRead;
         let mut fresh_commits: Vec<SequenceNumber> = Vec::new();
-        let records =
-            IsolationManager::iterate_commit_status_from_disk(&self.durability_service, SequenceNumber::MIN, SequenceNumber::MAX)
-            .map_err(|error| DurabilityServiceRead { source: error })?;
+        let records = IsolationManager::iterate_commit_status_from_disk(
+            &self.durability_service,
+            SequenceNumber::MIN,
+            SequenceNumber::MAX,
+        )
+        .map_err(|error| DurabilityServiceRead { source: error })?;
         for record in records {
             match record {
                 Ok((commit_sequence_number, commit_status)) => {
@@ -226,13 +227,15 @@ impl<D> MVCCStorage<D> {
                             match try_commit_result {
                                 Ok(_) => { fresh_commits.push(commit_sequence_number) },
                                 Err(MVCCStorageError { kind: MVCCStorageErrorKind::IsolationError { .. }, .. } ) => {}, // Isolation errors are fine.
-                                Err(_) =>  {try_commit_result.unwrap();}  // TODO: Other errors are not
+                                Err(_) => {
+                                    try_commit_result.unwrap();  // TODO: Other errors are not
+                                }
                             }
 
                         }
                         CommitStatus::Empty | CommitStatus::Validated(_) => unreachable!(),
                     }
-                },
+                }
                 Err(error) => return Err(DurabilityServiceRead { source: error }),
             }
         }
@@ -249,7 +252,7 @@ impl<D> MVCCStorage<D> {
         &self.name
     }
 
-    pub fn open_snapshot_write(&self) -> WriteSnapshot<'_, D> {
+    pub fn open_snapshot_write(self: Arc<Self>) -> WriteSnapshot<D> {
         /*
 
         How to pick a sequence number:
@@ -269,23 +272,23 @@ impl<D> MVCCStorage<D> {
     }
 
     pub fn open_snapshot_write_at(
-        &self,
+        self: Arc<Self>,
         sequence_number: SequenceNumber,
-    ) -> Result<WriteSnapshot<'_, D>, WriteSnapshotOpenError> {
+    ) -> Result<WriteSnapshot<D>, WriteSnapshotOpenError> {
         // TODO: Support waiting for watermark to catch up to sequence number when we support causal reading.
         assert!(sequence_number <= self.read_watermark());
         Ok(WriteSnapshot::new(self, sequence_number))
     }
 
-    pub fn open_snapshot_read(&self) -> ReadSnapshot<'_, D> {
+    pub fn open_snapshot_read(self: Arc<Self>) -> ReadSnapshot<D> {
         let open_sequence_number = self.isolation_manager.watermark();
         ReadSnapshot::new(self, open_sequence_number)
     }
 
     pub fn open_snapshot_read_at(
-        &self,
+        self: Arc<Self>,
         sequence_number: SequenceNumber,
-    ) -> Result<ReadSnapshot<'_, D>, ReadSnapshotOpenError> {
+    ) -> Result<ReadSnapshot<D>, ReadSnapshotOpenError> {
         // TODO: Support waiting for watermark to catch up to sequence number when we support causal reading.
         assert!(sequence_number <= self.read_watermark());
         Ok(ReadSnapshot::new(self, sequence_number))

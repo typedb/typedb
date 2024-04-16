@@ -60,43 +60,47 @@ impl<'a> Relation<'a> {
 
     pub fn get_has<'m>(
         &self,
-        thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
+        thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         thing_manager.get_has_of(self.as_reference())
     }
 
-    pub fn set_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: Attribute<'_>) {
+    pub fn set_has(&self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>) {
         // TODO: validate schema
         thing_manager.set_has(self.as_reference(), attribute.as_reference())
     }
 
-    pub fn delete_has(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>, attribute: Attribute<'_>) {
+    pub fn delete_has(&self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>) {
         // TODO: validate schema?
         thing_manager.delete_has(self.as_reference(), attribute.as_reference())
     }
 
     pub fn get_relations<'m>(
-        &self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
+        &self,
+        thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> RelationRoleIterator<'m, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
         thing_manager.get_relations_of(self.as_reference())
     }
 
     pub fn get_indexed_players<'m>(
-        &self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>,
+        &self,
+        thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> IndexedPlayersIterator<'m, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
         thing_manager.get_indexed_players_of(Object::Relation(self.as_reference()))
     }
 
-    pub fn has_players<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) -> bool {
+    pub fn has_players<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> bool {
         match self.get_status(thing_manager) {
             ConceptStatus::Inserted => thing_manager.has_role_players(self.as_reference(), true),
             ConceptStatus::Put | ConceptStatus::Persisted => thing_manager.has_role_players(self.as_reference(), false),
-            ConceptStatus::Deleted => unreachable!("Cannot operate on a deleted concept.")
+            ConceptStatus::Deleted => unreachable!("Cannot operate on a deleted concept."),
         }
     }
 
-    pub fn get_players<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>)
-                           -> RolePlayerIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+    pub fn get_players<'m>(
+        &self,
+        thing_manager: &'m ThingManager<impl ReadableSnapshot>,
+    ) -> RolePlayerIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         thing_manager.get_role_players_of(self.as_reference())
     }
 
@@ -110,7 +114,7 @@ impl<'a> Relation<'a> {
     ///
     pub fn add_player(
         &self,
-        thing_manager: &ThingManager<'_, impl WritableSnapshot>,
+        thing_manager: &ThingManager<impl WritableSnapshot>,
         role_type: RoleType<'static>,
         player: Object<'_>,
     ) {
@@ -126,7 +130,7 @@ impl<'a> Relation<'a> {
 
     fn add_player_distinct(
         &self,
-        thing_manager: &ThingManager<'_, impl WritableSnapshot>,
+        thing_manager: &ThingManager<impl WritableSnapshot>,
         role_type: RoleType<'static>,
         player: Object<'_>,
     ) {
@@ -144,7 +148,7 @@ impl<'a> Relation<'a> {
 
     fn add_player_increment(
         &self,
-        thing_manager: &ThingManager<'_, impl WritableSnapshot>,
+        thing_manager: &ThingManager<impl WritableSnapshot>,
         role_type: RoleType<'static>,
         player: Object<'_>,
     ) {
@@ -165,7 +169,7 @@ impl<'a> Relation<'a> {
 
     pub fn delete_player_single(
         &self,
-        thing_manager: &ThingManager<'_, impl WritableSnapshot>,
+        thing_manager: &ThingManager<impl WritableSnapshot>,
         role_type: RoleType<'static>,
         player: Object<'_>,
     ) {
@@ -174,7 +178,7 @@ impl<'a> Relation<'a> {
 
     pub fn delete_player_many(
         &self,
-        thing_manager: &ThingManager<'_, impl WritableSnapshot>,
+        thing_manager: &ThingManager<impl WritableSnapshot>,
         role_type: RoleType<'static>,
         player: Object<'_>,
         delete_count: u64,
@@ -191,7 +195,7 @@ impl<'a> Relation<'a> {
 
     fn delete_player_distinct(
         &self,
-        thing_manager: &ThingManager<'_, impl WritableSnapshot>,
+        thing_manager: &ThingManager<impl WritableSnapshot>,
         role_type: RoleType<'static>,
         player: Object<'_>,
     ) {
@@ -208,7 +212,7 @@ impl<'a> Relation<'a> {
     }
 
     fn delete_player_decrement(&self,
-                               thing_manager: &ThingManager<'_, impl WritableSnapshot>,
+                               thing_manager: &ThingManager<impl WritableSnapshot>,
                                role_type: RoleType<'static>,
                                player: Object<'_>,
                                decrement_count: u64,
@@ -238,17 +242,17 @@ impl<'a> Relation<'a> {
 impl<'a> ConceptAPI<'a> for Relation<'a> {}
 
 impl<'a> ThingAPI<'a> for Relation<'a> {
-    fn set_modified(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>) {
+    fn set_modified(&self, thing_manager: &ThingManager<impl WritableSnapshot>) {
         if matches!(self.get_status(thing_manager), ConceptStatus::Persisted) {
             thing_manager.lock_existing(self.as_reference());
         }
     }
 
-    fn get_status<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) -> ConceptStatus {
+    fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus {
         thing_manager.get_status(self.vertex().as_storage_key())
     }
 
-    fn delete<'m>(self, thing_manager: &'m ThingManager<'_, impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+    fn delete<'m>(self, thing_manager: &'m ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
         let mut has_iter = self.get_has(thing_manager);
         let mut attr = has_iter.next().transpose()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
@@ -282,7 +286,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
 }
 
 impl<'a> ObjectAPI<'a> for Relation<'a> {
-    fn vertex<'this>(&'this self) -> ObjectVertex<'this> {
+    fn vertex(&self) -> ObjectVertex<'_> {
         self.vertex.as_reference()
     }
 
@@ -304,7 +308,7 @@ pub struct RolePlayer<'a, const S: usize> {
 }
 
 impl<'a, const S: usize> RolePlayer<'a, S> {
-    pub(crate) fn player<'this>(&'this self) -> Object<'this> {
+    pub(crate) fn player(&self) -> Object<'_> {
         self.player.as_reference()
     }
 
@@ -327,40 +331,34 @@ impl<'a, const S: usize> RolePlayerIterator<'a, S> {
     }
 
     pub fn peek(&mut self) -> Option<Result<(RolePlayer<'_, S>, u64), ConceptReadError>> {
-        self.iter_peek().map(|result|
-            result.map(|(storage_key, value)| {
-                let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key.byte_ref()));
-                let role_type = build_vertex_role_type(edge.role_id());
-                (
-                    RolePlayer {
-                        player: Object::new(edge.into_to()),
-                        role_type: RoleType::new(role_type),
-                    },
-                    decode_value_u64(value)
-                )
-            }).map_err(|snapshot_error|
-                ConceptReadError::SnapshotIterate { source: snapshot_error.clone() }
-            )
-        )
+        self.iter_peek().map(|result| {
+            result
+                .map(|(storage_key, value)| {
+                    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key.byte_ref()));
+                    let role_type = build_vertex_role_type(edge.role_id());
+                    (
+                        RolePlayer { player: Object::new(edge.into_to()), role_type: RoleType::new(role_type) },
+                        decode_value_u64(value),
+                    )
+                })
+                .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error.clone() })
+        })
     }
 
     // a lending iterator trait is infeasible with the current borrow checker
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<Result<(RolePlayer<'_, S>, u64), ConceptReadError>> {
         self.iter_next().map(|result| {
-            result.map(|(storage_key, value)| {
-                let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key.byte_ref()));
-                let role_type = build_vertex_role_type(edge.role_id());
-                (
-                    RolePlayer {
-                        player: Object::new(edge.into_to()),
-                        role_type: RoleType::new(role_type),
-                    },
-                    decode_value_u64(value)
-                )
-            }).map_err(|snapshot_error|
-                ConceptReadError::SnapshotIterate { source: snapshot_error.clone() }
-            )
+            result
+                .map(|(storage_key, value)| {
+                    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key.byte_ref()));
+                    let role_type = build_vertex_role_type(edge.role_id());
+                    (
+                        RolePlayer { player: Object::new(edge.into_to()), role_type: RoleType::new(role_type) },
+                        decode_value_u64(value),
+                    )
+                })
+                .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error.clone() })
         })
     }
 
@@ -368,7 +366,9 @@ impl<'a, const S: usize> RolePlayerIterator<'a, S> {
         todo!()
     }
 
-    fn iter_peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
+    fn iter_peek(
+        &mut self,
+    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
         if let Some(iter) = self.snapshot_iterator.as_mut() {
             iter.peek()
         } else {
@@ -376,7 +376,9 @@ impl<'a, const S: usize> RolePlayerIterator<'a, S> {
         }
     }
 
-    fn iter_next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
+    fn iter_next(
+        &mut self,
+    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
         if let Some(iter) = self.snapshot_iterator.as_mut() {
             iter.next()
         } else {
@@ -394,7 +396,6 @@ impl<'a, const S: usize> RolePlayerIterator<'a, S> {
         count
     }
 }
-
 
 pub struct RelationRoleIterator<'a, const S: usize> {
     snapshot_iterator: Option<SnapshotRangeIterator<'a, S>>,
@@ -410,36 +411,28 @@ impl<'a, const S: usize> RelationRoleIterator<'a, S> {
     }
 
     pub fn peek(&mut self) -> Option<Result<(Relation<'_>, RoleType<'static>, u64), ConceptReadError>> {
-        self.iter_peek().map(|result|
-            result.map(|(storage_key, value)| {
-                let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key.byte_ref()));
-                let role_type = build_vertex_role_type(edge.role_id());
-                (
-                    Relation::new(edge.into_to()),
-                    RoleType::new(role_type),
-                    decode_value_u64(value)
-                )
-            }).map_err(|snapshot_error|
-                ConceptReadError::SnapshotIterate { source: snapshot_error }
-            )
-        )
+        self.iter_peek().map(|result| {
+            result
+                .map(|(storage_key, value)| {
+                    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key.byte_ref()));
+                    let role_type = build_vertex_role_type(edge.role_id());
+                    (Relation::new(edge.into_to()), RoleType::new(role_type), decode_value_u64(value))
+                })
+                .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error })
+        })
     }
 
     // a lending iterator trait is infeasible with the current borrow checker
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<Result<(Relation<'_>, RoleType<'static>, u64), ConceptReadError>> {
         self.iter_next().map(|result| {
-            result.map(|(storage_key, value)| {
-                let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key.byte_ref()));
-                let role_type = build_vertex_role_type(edge.role_id());
-                (
-                    Relation::new(edge.into_to()),
-                    RoleType::new(role_type),
-                    decode_value_u64(value)
-                )
-            }).map_err(|snapshot_error|
-                ConceptReadError::SnapshotIterate { source: snapshot_error }
-            )
+            result
+                .map(|(storage_key, value)| {
+                    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key.byte_ref()));
+                    let role_type = build_vertex_role_type(edge.role_id());
+                    (Relation::new(edge.into_to()), RoleType::new(role_type), decode_value_u64(value))
+                })
+                .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error })
         })
     }
 
@@ -447,7 +440,9 @@ impl<'a, const S: usize> RelationRoleIterator<'a, S> {
         todo!()
     }
 
-    fn iter_peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
+    fn iter_peek(
+        &mut self,
+    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
         if let Some(iter) = self.snapshot_iterator.as_mut() {
             iter.peek()
         } else {
@@ -455,7 +450,9 @@ impl<'a, const S: usize> RelationRoleIterator<'a, S> {
         }
     }
 
-    fn iter_next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
+    fn iter_next(
+        &mut self,
+    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
         if let Some(iter) = self.snapshot_iterator.as_mut() {
             iter.next()
         } else {
@@ -474,7 +471,6 @@ impl<'a, const S: usize> RelationRoleIterator<'a, S> {
     }
 }
 
-
 pub struct IndexedPlayersIterator<'a, const S: usize> {
     snapshot_iterator: Option<SnapshotRangeIterator<'a, S>>,
 }
@@ -489,48 +485,56 @@ impl<'a, const S: usize> IndexedPlayersIterator<'a, S> {
     }
 
     pub fn peek(&mut self) -> Option<Result<(RolePlayer<'_, S>, RolePlayer<'_, S>, Relation<'_>), ConceptReadError>> {
-        self.iter_peek().map(|result|
-            result.map(|(storage_key, value)| {
-                let from_role_player = RolePlayer {
-                    player: Object::new(ThingEdgeRelationIndex::read_from(storage_key.byte_ref())),
-                    role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_from_role_id(storage_key.byte_ref()))),
-                };
-                let to_role_player = RolePlayer {
-                    player: Object::new(ThingEdgeRelationIndex::read_to(storage_key.byte_ref())),
-                    role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_to_role_id(storage_key.byte_ref()))),
-                };
-                (
-                    from_role_player,
-                    to_role_player,
-                    Relation::new(ThingEdgeRelationIndex::read_relation(storage_key.byte_ref())),
-                )
-            }).map_err(|snapshot_error|
-                ConceptReadError::SnapshotIterate { source: snapshot_error }
-            )
-        )
+        self.iter_peek().map(|result| {
+            result
+                .map(|(storage_key, value)| {
+                    let from_role_player = RolePlayer {
+                        player: Object::new(ThingEdgeRelationIndex::read_from(storage_key.byte_ref())),
+                        role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_from_role_id(
+                            storage_key.byte_ref(),
+                        ))),
+                    };
+                    let to_role_player = RolePlayer {
+                        player: Object::new(ThingEdgeRelationIndex::read_to(storage_key.byte_ref())),
+                        role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_to_role_id(
+                            storage_key.byte_ref(),
+                        ))),
+                    };
+                    (
+                        from_role_player,
+                        to_role_player,
+                        Relation::new(ThingEdgeRelationIndex::read_relation(storage_key.byte_ref())),
+                    )
+                })
+                .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error })
+        })
     }
 
     // a lending iterator trait is infeasible with the current borrow checker
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<Result<(RolePlayer<'_, S>, RolePlayer<'_, S>, Relation<'_>), ConceptReadError>> {
         self.iter_next().map(|result| {
-            result.map(|(storage_key, value)| {
-                let from_role_player = RolePlayer {
-                    player: Object::new(ThingEdgeRelationIndex::read_from(storage_key.byte_ref())),
-                    role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_from_role_id(storage_key.byte_ref()))),
-                };
-                let to_role_player = RolePlayer {
-                    player: Object::new(ThingEdgeRelationIndex::read_to(storage_key.byte_ref())),
-                    role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_to_role_id(storage_key.byte_ref()))),
-                };
-                (
-                    from_role_player,
-                    to_role_player,
-                    Relation::new(ThingEdgeRelationIndex::read_relation(storage_key.byte_ref())),
-                )
-            }).map_err(|snapshot_error|
-                ConceptReadError::SnapshotIterate { source: snapshot_error }
-            )
+            result
+                .map(|(storage_key, value)| {
+                    let from_role_player = RolePlayer {
+                        player: Object::new(ThingEdgeRelationIndex::read_from(storage_key.byte_ref())),
+                        role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_from_role_id(
+                            storage_key.byte_ref(),
+                        ))),
+                    };
+                    let to_role_player = RolePlayer {
+                        player: Object::new(ThingEdgeRelationIndex::read_to(storage_key.byte_ref())),
+                        role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_to_role_id(
+                            storage_key.byte_ref(),
+                        ))),
+                    };
+                    (
+                        from_role_player,
+                        to_role_player,
+                        Relation::new(ThingEdgeRelationIndex::read_relation(storage_key.byte_ref())),
+                    )
+                })
+                .map_err(|snapshot_error| ConceptReadError::SnapshotIterate { source: snapshot_error })
         })
     }
 
@@ -538,7 +542,9 @@ impl<'a, const S: usize> IndexedPlayersIterator<'a, S> {
         todo!()
     }
 
-    fn iter_peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
+    fn iter_peek(
+        &mut self,
+    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
         if let Some(iter) = self.snapshot_iterator.as_mut() {
             iter.peek()
         } else {
@@ -546,7 +552,9 @@ impl<'a, const S: usize> IndexedPlayersIterator<'a, S> {
         }
     }
 
-    fn iter_next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
+    fn iter_next(
+        &mut self,
+    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
         if let Some(iter) = self.snapshot_iterator.as_mut() {
             iter.next()
         } else {
@@ -555,8 +563,8 @@ impl<'a, const S: usize> IndexedPlayersIterator<'a, S> {
     }
 
     pub fn collect_cloned_vec<F, M>(mut self, mapper: F) -> Result<Vec<M>, ConceptReadError>
-        where
-            F: for<'b> Fn(RolePlayer<'b, S>, RolePlayer<'b, S>, Relation<'b>) -> M,
+    where
+        F: for<'b> Fn(RolePlayer<'b, S>, RolePlayer<'b, S>, Relation<'b>) -> M,
     {
         let mut vec = Vec::new();
         loop {

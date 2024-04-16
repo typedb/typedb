@@ -4,13 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, rc::Rc, sync::Arc};
-use std::io::{Read};
+use std::{collections::HashSet, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::DurabilityService;
 use encoding::{
-    AsBytes,
     graph::type_::{
         edge::{
             build_edge_owns, build_edge_owns_prefix_from, build_edge_owns_reverse, build_edge_plays,
@@ -19,33 +17,36 @@ use encoding::{
             new_edge_owns, new_edge_plays, new_edge_relates, new_edge_sub,
         },
         index::LabelToTypeVertexIndex,
-        Kind,
         property::{
-            build_property_type_annotation_abstract, build_property_type_annotation_distinct,
-            build_property_type_annotation_independent, build_property_type_label, build_property_type_value_type,
+            build_property_type_annotation_abstract, build_property_type_annotation_cardinality,
+            build_property_type_annotation_distinct, build_property_type_annotation_independent,
+            build_property_type_label, build_property_type_value_type,
         },
         vertex::{
             new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type,
             TypeVertex,
         },
         vertex_generator::TypeVertexGenerator,
+        Kind,
     },
-    Keyable, value::{
+    value::{
         label::Label,
         string::StringBytes,
         value_type::{ValueType, ValueTypeID},
     },
+    AsBytes, Keyable,
 };
-use encoding::graph::type_::property::build_property_type_annotation_cardinality;
 use primitive::{maybe_owns::MaybeOwns, prefix_range::PrefixRange};
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
-use storage::{MVCCStorage, };
-use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot};
+use storage::{
+    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
+    MVCCStorage,
+};
 
 use crate::{
-    error::{ConceptReadError},
+    error::ConceptReadError,
     type_::{
-        annotation::{AnnotationAbstract, AnnotationDistinct},
+        annotation::{AnnotationAbstract, AnnotationCardinality, AnnotationDistinct, AnnotationIndependent},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::{EntityType, EntityTypeAnnotation},
         object_type::ObjectType,
@@ -55,26 +56,24 @@ use crate::{
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
         type_cache::TypeCache,
-        TypeAPI,
+        ObjectTypeAPI, TypeAPI,
     },
 };
-use crate::type_::annotation::{Annotation, AnnotationCardinality, AnnotationIndependent};
-use crate::type_::{ObjectTypeAPI};
 
-pub struct TypeManager<'txn, Snapshot> {
-    snapshot: Rc<Snapshot>,
-    vertex_generator: &'txn TypeVertexGenerator,
+pub struct TypeManager<Snapshot> {
+    snapshot: Arc<Snapshot>,
+    vertex_generator: Arc<TypeVertexGenerator>,
     type_cache: Option<Arc<TypeCache>>,
 }
 
-impl<'txn, Snapshot> TypeManager<'txn, Snapshot> {
+impl<Snapshot> TypeManager<Snapshot> {
     pub fn initialise_types<D: DurabilityService>(
-        storage: &mut MVCCStorage<D>,
-        vertex_generator: &TypeVertexGenerator,
+        storage: Arc<MVCCStorage<D>>,
+        vertex_generator: Arc<TypeVertexGenerator>,
     ) {
-        let snapshot = Rc::new(storage.open_snapshot_write());
+        let snapshot = Arc::new(storage.clone().open_snapshot_write());
         {
-            let type_manager = TypeManager::new(snapshot.clone(), vertex_generator, None);
+            let type_manager = TypeManager::new(snapshot.clone(), vertex_generator.clone(), None);
             let root_entity = type_manager.create_entity_type(&Kind::Entity.root_label(), true);
             root_entity.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()));
             let root_relation = type_manager.create_relation_type(&Kind::Relation.root_label(), true);
@@ -84,7 +83,7 @@ impl<'txn, Snapshot> TypeManager<'txn, Snapshot> {
             let root_attribute = type_manager.create_attribute_type(&Kind::Attribute.root_label(), true);
             root_attribute.set_annotation(&type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()));
         }
-        Rc::try_unwrap(snapshot).ok().unwrap().commit().unwrap();
+        Arc::try_unwrap(snapshot).ok().unwrap().commit().unwrap();
     }
 }
 
@@ -220,10 +219,10 @@ macro_rules! get_type_annotations {
     }
 }
 
-impl<'txn, Snapshot: ReadableSnapshot> TypeManager<'txn, Snapshot> {
+impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
     pub fn new(
-        snapshot: Rc<Snapshot>,
-        vertex_generator: &'txn TypeVertexGenerator,
+        snapshot: Arc<Snapshot>,
+        vertex_generator: Arc<TypeVertexGenerator>,
         schema_cache: Option<Arc<TypeCache>>,
     ) -> Self {
         TypeManager { snapshot, vertex_generator, type_cache: schema_cache }
@@ -372,8 +371,8 @@ impl<'txn, Snapshot: ReadableSnapshot> TypeManager<'txn, Snapshot> {
         owner: TypeVertex<'static>,
         mapper: F,
     ) -> Result<HashSet<Owns<'static>>, ConceptReadError>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Owns<'static>,
+    where
+        F: for<'b> Fn(TypeVertex<'b>) -> Owns<'static>,
     {
         let owns_prefix = build_edge_owns_prefix_from(owner);
         // TODO: handle possible errors
@@ -391,8 +390,8 @@ impl<'txn, Snapshot: ReadableSnapshot> TypeManager<'txn, Snapshot> {
         player: TypeVertex<'static>,
         mapper: F,
     ) -> Result<HashSet<Plays<'static>>, ConceptReadError>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Plays<'static>,
+    where
+        F: for<'b> Fn(TypeVertex<'b>) -> Plays<'static>,
     {
         let plays_prefix = build_edge_plays_prefix_from(player);
         self.snapshot
@@ -409,8 +408,8 @@ impl<'txn, Snapshot: ReadableSnapshot> TypeManager<'txn, Snapshot> {
         relation: TypeVertex<'static>,
         mapper: F,
     ) -> Result<HashSet<Relates<'static>>, ConceptReadError>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Relates<'static>,
+    where
+        F: for<'b> Fn(TypeVertex<'b>) -> Relates<'static>,
     {
         let relates_prefix = build_edge_relates_prefix_from(relation);
         self.snapshot
@@ -457,9 +456,10 @@ impl<'txn, Snapshot: ReadableSnapshot> TypeManager<'txn, Snapshot> {
         vertex: TypeVertex<'static>,
     ) -> Result<Option<AnnotationIndependent>, ConceptReadError> {
         self.snapshot
-            .get_mapped(build_property_type_annotation_independent(vertex).into_storage_key().as_reference(), |_bytes| {
-                AnnotationIndependent::new()
-            })
+            .get_mapped(
+                build_property_type_annotation_independent(vertex).into_storage_key().as_reference(),
+                |_bytes| AnnotationIndependent::new(),
+            )
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
@@ -475,7 +475,7 @@ impl<'txn, Snapshot: ReadableSnapshot> TypeManager<'txn, Snapshot> {
     }
 }
 
-impl<'txn, 'storage, Snapshot: WritableSnapshot> TypeManager<'txn, Snapshot> {
+impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub fn create_entity_type(&self, label: &Label<'_>, is_root: bool) -> EntityType<'static> {
         // TODO: validate type doesn't exist already
         let type_vertex = self.vertex_generator.create_entity_type(self.snapshot.as_ref());
@@ -516,10 +516,7 @@ impl<'txn, 'storage, Snapshot: WritableSnapshot> TypeManager<'txn, Snapshot> {
         self.storage_set_label(role.clone(), label);
         self.storage_set_relates(relation_type, role.clone());
         if !is_root {
-            self.storage_set_supertype(
-                role.clone(),
-                self.get_role_type(&Kind::Role.root_label()).unwrap().unwrap(),
-            );
+            self.storage_set_supertype(role.clone(), self.get_role_type(&Kind::Role.root_label()).unwrap().unwrap());
         }
         role
     }
@@ -623,8 +620,8 @@ impl<'txn, 'storage, Snapshot: WritableSnapshot> TypeManager<'txn, Snapshot> {
     }
 
     pub(crate) fn storage_set_value_type(&self, attribute: AttributeType<'static>, value_type: ValueType) {
-        let property_key = build_property_type_value_type(attribute.into_vertex())
-            .into_storage_key().into_owned_array();
+        let property_key =
+            build_property_type_value_type(attribute.into_vertex()).into_storage_key().into_owned_array();
         let property_value = ByteArray::copy(&value_type.value_type_id().bytes());
         self.snapshot.as_ref().put_val(property_key, property_value);
     }
@@ -659,13 +656,16 @@ impl<'txn, 'storage, Snapshot: WritableSnapshot> TypeManager<'txn, Snapshot> {
         self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_set_annotation_cardinality(&self, type_: impl TypeAPI<'static>, annotation: AnnotationCardinality) {
+    pub(crate) fn storage_set_annotation_cardinality(
+        &self,
+        type_: impl TypeAPI<'static>,
+        annotation: AnnotationCardinality,
+    ) {
         let annotation_property = build_property_type_annotation_cardinality(type_.into_vertex());
         let serialized_annotation = ByteArray::boxed(bincode::serialize(&annotation).unwrap().into_boxed_slice());
-        self.snapshot.as_ref().put_val(
-            annotation_property.into_storage_key().into_owned_array(),
-            serialized_annotation
-        );
+        self.snapshot
+            .as_ref()
+            .put_val(annotation_property.into_storage_key().into_owned_array(), serialized_annotation);
     }
 
     pub(crate) fn storage_delete_annotation_cardinality(&self, type_: impl TypeAPI<'static>) {
