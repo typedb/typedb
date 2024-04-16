@@ -8,9 +8,7 @@ use std::sync::atomic::AtomicU16;
 use std::sync::atomic::Ordering::Relaxed;
 use bytes::Bytes;
 use primitive::prefix_range::PrefixRange;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
-use storage::key_value::{StorageKey, StorageKeyReference};
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
@@ -46,7 +44,7 @@ impl TypeIDAllocator {
                 (self.vertex_constructor)(TypeID::build(TypeIDUInt::MAX)).into_storage_key()
             )
         );
-        for expected_next in (start..=TypeIDUInt::MAX) {
+        for expected_next in start..=TypeIDUInt::MAX {
             match type_vertex_iter.next() {
                 None => {return Ok(Some(expected_next))},
                 Some(Err(err)) => {return Err(EncodingError{ kind: FailedTypeIDAllocation { source: err.clone() } });},
@@ -59,17 +57,17 @@ impl TypeIDAllocator {
         Ok(None)
     }
 
-    fn allocate<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) ->  Result<TypeIDUInt, EncodingError> {
+    fn allocate<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) ->  Result<TypeVertex<'static>, EncodingError> {
         let found = self.find_unallocated(snapshot, self.last_allocated_type_id.load(Relaxed))?;
         if let(Some(type_id)) = found {
             self.last_allocated_type_id.store(type_id, Relaxed);
-            Ok(type_id)
+            Ok((self.vertex_constructor)(TypeID::build(type_id)))
         } else {
             match self.find_unallocated(snapshot, 0)? {
                 None => Err(EncodingError{ kind: ExhaustedTypeIDs{ root_type : self.kind } }),
                 Some(type_id) => {
                     self.last_allocated_type_id.store(type_id, Relaxed);
-                    Ok(type_id)
+                    Ok((self.vertex_constructor)(TypeID::build(type_id)))
                 }
             }
         }
@@ -102,29 +100,25 @@ impl TypeVertexGenerator {
     }
 
     pub fn create_entity_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
-        let next = TypeID::build(self.next_entity.allocate(snapshot)?);
-        let vertex = build_vertex_entity_type(next);
+        let vertex = self.next_entity.allocate(snapshot)?;
         snapshot.put(vertex.as_storage_key().into_owned_array());
         Ok(vertex)
     }
 
     pub fn create_relation_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
-        let next = TypeID::build(self.next_relation.allocate(snapshot)?);
-        let vertex = build_vertex_relation_type(next);
+        let vertex = self.next_relation.allocate(snapshot)?;
         snapshot.put(vertex.as_storage_key().into_owned_array());
         Ok(vertex)
     }
 
     pub fn create_role_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
-        let next = TypeID::build(self.next_role.allocate(snapshot)?);
-        let vertex = build_vertex_role_type(next);
+        let vertex = self.next_role.allocate(snapshot)?;
         snapshot.put(vertex.as_storage_key().into_owned_array());
         Ok(vertex)
     }
 
     pub fn create_attribute_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
-        let next = TypeID::build(self.next_attribute.allocate(snapshot)?);
-        let vertex = build_vertex_attribute_type(next);
+        let vertex = self.next_attribute.allocate(snapshot)?;
         snapshot.put(vertex.as_storage_key().into_owned_array());
         Ok(vertex)
     }
