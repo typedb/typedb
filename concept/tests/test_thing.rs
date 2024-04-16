@@ -265,7 +265,7 @@ fn role_player_duplicates() {
     let storage_path = create_tmp_dir();
     let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone());
+    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
     let list_label = Label::build("list");
     let entry_role_label = "entry";
@@ -279,14 +279,14 @@ fn role_player_duplicates() {
         let type_manager = Arc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None));
         let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator.clone(), type_manager.clone());
 
-        let list_type = type_manager.create_relation_type(&list_label, false);
-        list_type.create_relates(&type_manager, entry_role_label);
+        let list_type = type_manager.create_relation_type(&list_label, false).unwrap();
+        list_type.create_relates(&type_manager, entry_role_label).unwrap();
         let entry_type = list_type.get_relates_role(&type_manager, entry_role_label).unwrap().unwrap().role();
-        list_type.create_relates(&type_manager, owner_role_label);
+        list_type.create_relates(&type_manager, owner_role_label).unwrap();
         let owner_type = list_type.get_relates_role(&type_manager, owner_role_label).unwrap().unwrap().role();
 
-        let resource_type = type_manager.create_entity_type(&resource_label, false);
-        let group_type = type_manager.create_entity_type(&group_label, false);
+        let resource_type = type_manager.create_entity_type(&resource_label, false).unwrap();
+        let group_type = type_manager.create_entity_type(&group_label, false).unwrap();
         resource_type.set_plays(&type_manager, entry_type.clone());
         group_type.set_plays(&type_manager, owner_type.clone());
 
