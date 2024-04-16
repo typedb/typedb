@@ -100,7 +100,7 @@ impl<'a> Entity<'a> {
 impl<'a> ConceptAPI<'a> for Entity<'a> {}
 
 impl<'a> ThingAPI<'a> for Entity<'a> {
-    fn set_modified(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>) {
+    fn set_modified(&self, thing_manager: &ThingManager<impl WritableSnapshot>) {
         if matches!(self.get_status(thing_manager), ConceptStatus::Persisted) {
             thing_manager.lock_existing(self.as_reference());
         }
@@ -115,7 +115,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         let mut attr = has_iter.next().transpose()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         while attr.is_some() {
-            self.delete_has(thing_manager, attr.unwrap());
+            self.delete_has(thing_manager, &attr.unwrap());
             attr = has_iter.next().transpose()
                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         }

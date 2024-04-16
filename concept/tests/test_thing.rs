@@ -15,7 +15,6 @@ use concept::{
     type_::type_manager::TypeManager,
 };
 use concept::thing::object::Object;
-use concept::thing::ObjectAPI;
 use concept::type_::annotation::AnnotationDistinct;
 use concept::type_::PlayerAPI;
 use concept::type_::role_type::RoleTypeAnnotation;
@@ -264,9 +263,9 @@ fn role_player_distinct() {
 fn role_player_duplicates() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
-    let type_vertex_generator = TypeVertexGenerator::new();
-    TypeManager::<'_, WriteSnapshot<'_, WAL>>::initialise_types(&mut storage, &type_vertex_generator);
+    let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
+    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone());
 
     let list_label = Label::build("list");
     let entry_role_label = "entry";
@@ -274,11 +273,11 @@ fn role_player_duplicates() {
     let resource_label = Label::build("resource");
     let group_label = Label::build("group");
 
-    let snapshot: Rc<WriteSnapshot<'_, WAL>> = Rc::new(storage.open_snapshot_write());
+    let snapshot: Arc<WriteSnapshot<WAL>> = Arc::new(storage.clone().open_snapshot_write());
     {
-        let thing_vertex_generator = ThingVertexGenerator::new();
-        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), &type_vertex_generator, None));
-        let thing_manager = ThingManager::new(snapshot.clone(), &thing_vertex_generator, type_manager.clone());
+        let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
+        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None));
+        let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator.clone(), type_manager.clone());
 
         let list_type = type_manager.create_relation_type(&list_label, false);
         list_type.create_relates(&type_manager, entry_role_label);

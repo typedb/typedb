@@ -84,7 +84,7 @@ impl<'a> Attribute<'a> {
 impl<'a> ConceptAPI<'a> for Attribute<'a> {}
 
 impl<'a> ThingAPI<'a> for Attribute<'a> {
-    fn set_modified(&self, thing_manager: &ThingManager<'_, impl WritableSnapshot>) {
+    fn set_modified(&self, thing_manager: &ThingManager<impl WritableSnapshot>) {
         // Attributes are always PUT, so we don't have to record a lock on modification
     }
 

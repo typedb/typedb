@@ -178,7 +178,7 @@ impl<'a> Relation<'a> {
 
     pub fn delete_player_many(
         &self,
-        thing_manager: &ThingManager<'_, impl WritableSnapshot>,
+        thing_manager: &ThingManager<impl WritableSnapshot>,
         role_type: RoleType<'static>,
         player: Object<'_>,
         delete_count: u64,
@@ -195,7 +195,7 @@ impl<'a> Relation<'a> {
 
     fn delete_player_distinct(
         &self,
-        thing_manager: &ThingManager<'_, impl WritableSnapshot>,
+        thing_manager: &ThingManager<impl WritableSnapshot>,
         role_type: RoleType<'static>,
         player: Object<'_>,
     ) {
@@ -212,7 +212,7 @@ impl<'a> Relation<'a> {
     }
 
     fn delete_player_decrement(&self,
-                               thing_manager: &ThingManager<'_, impl WritableSnapshot>,
+                               thing_manager: &ThingManager<impl WritableSnapshot>,
                                role_type: RoleType<'static>,
                                player: Object<'_>,
                                decrement_count: u64,
@@ -248,7 +248,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         }
     }
 
-    fn get_status<'m>(&self, thing_manager: &'m ThingManager<'_, impl ReadableSnapshot>) -> ConceptStatus {
+    fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus {
         thing_manager.get_status(self.vertex().as_storage_key())
     }
 

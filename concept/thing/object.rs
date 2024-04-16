@@ -178,17 +178,4 @@ impl<'a, const S: usize> HasAttributeIterator<'a, S> {
         }
         count
     }
-
-    pub fn collect_cloned(mut self) -> Vec<Attribute<'static>> {
-        let mut vec = Vec::new();
-        loop {
-            let item = self.next();
-            if item.is_none() {
-                break;
-            }
-            let key = item.unwrap().unwrap().into_owned();
-            vec.push(key);
-        }
-        vec
-    }
 }
