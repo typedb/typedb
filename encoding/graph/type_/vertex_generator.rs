@@ -25,19 +25,19 @@ use crate::graph::type_::Kind::{Attribute, Entity, Relation, Role};
 use crate::graph::type_::vertex::TypeIDUInt;
 use crate::graph::Typed;
 
-pub struct TypeIDAllocator {
+pub struct TypeVertexAllocator {
     kind: Kind,
     last_allocated_type_id: AtomicU16,
     vertex_constructor:  fn (TypeID) -> TypeVertex<'static>
 }
 
-impl TypeIDAllocator {
+impl TypeVertexAllocator {
 
-    fn new(root_type: Kind, to_vertex: fn (TypeID) -> TypeVertex<'static>) -> TypeIDAllocator {
-        Self { kind: root_type, last_allocated_type_id : AtomicU16::new(0), vertex_constructor: to_vertex }
+    fn new(kind: Kind, to_vertex: fn (TypeID) -> TypeVertex<'static>) -> TypeVertexAllocator {
+        Self { kind, last_allocated_type_id : AtomicU16::new(0), vertex_constructor: to_vertex }
     }
 
-    fn find_unallocated<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot, start: TypeIDUInt) -> Result<Option<TypeIDUInt>, EncodingError> {
+    fn find_unallocated_id<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot, start: TypeIDUInt) -> Result<Option<TypeIDUInt>, EncodingError> {
         let mut type_vertex_iter = snapshot.iterate_range(
             PrefixRange::new_inclusive(
                 (self.vertex_constructor)(TypeID::build(start)).into_storage_key(),
@@ -58,13 +58,13 @@ impl TypeIDAllocator {
     }
 
     fn allocate<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) ->  Result<TypeVertex<'static>, EncodingError> {
-        let found = self.find_unallocated(snapshot, self.last_allocated_type_id.load(Relaxed))?;
+        let found = self.find_unallocated_id(snapshot, self.last_allocated_type_id.load(Relaxed))?;
         if let(Some(type_id)) = found {
             self.last_allocated_type_id.store(type_id, Relaxed);
             Ok((self.vertex_constructor)(TypeID::build(type_id)))
         } else {
-            match self.find_unallocated(snapshot, 0)? {
-                None => Err(EncodingError{ kind: ExhaustedTypeIDs{ root_type : self.kind } }),
+            match self.find_unallocated_id(snapshot, 0)? {
+                None => Err(EncodingError{ kind: ExhaustedTypeIDs{ kind: self.kind } }),
                 Some(type_id) => {
                     self.last_allocated_type_id.store(type_id, Relaxed);
                     Ok((self.vertex_constructor)(TypeID::build(type_id)))
@@ -75,10 +75,10 @@ impl TypeIDAllocator {
 }
 
 pub struct TypeVertexGenerator {
-    next_entity: TypeIDAllocator,
-    next_relation: TypeIDAllocator,
-    next_role: TypeIDAllocator,
-    next_attribute: TypeIDAllocator,
+    next_entity: TypeVertexAllocator,
+    next_relation: TypeVertexAllocator,
+    next_role: TypeVertexAllocator,
+    next_attribute: TypeVertexAllocator,
 }
 
 impl Default for TypeVertexGenerator {
@@ -92,10 +92,10 @@ impl TypeVertexGenerator {
 
     pub fn new() -> TypeVertexGenerator {
         TypeVertexGenerator {
-            next_entity: TypeIDAllocator::new(Entity, build_vertex_entity_type),
-            next_relation: TypeIDAllocator::new(Relation, build_vertex_relation_type),
-            next_role: TypeIDAllocator::new(Role, build_vertex_role_type),
-            next_attribute: TypeIDAllocator::new(Attribute, build_vertex_attribute_type),
+            next_entity: TypeVertexAllocator::new(Entity, build_vertex_entity_type),
+            next_relation: TypeVertexAllocator::new(Relation, build_vertex_relation_type),
+            next_role: TypeVertexAllocator::new(Role, build_vertex_role_type),
+            next_attribute: TypeVertexAllocator::new(Attribute, build_vertex_attribute_type),
         }
     }
 

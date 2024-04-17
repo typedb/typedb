@@ -91,7 +91,7 @@ fn max_entity_type_vertexes() {
 
         let res = generator.create_entity_type(&snapshot); // Crashes
         assert!(matches!(res, Err(EncodingError {
-            kind: EncodingErrorKind::ExhaustedTypeIDs { root_type : encoding::graph::type_::Kind::Entity }
+            kind: EncodingErrorKind::ExhaustedTypeIDs { kind : encoding::graph::type_::Kind::Entity }
         } )));
     }
 }
