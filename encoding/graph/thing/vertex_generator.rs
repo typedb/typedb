@@ -12,6 +12,7 @@ use std::io::Read;
 use std::sync::Arc;
 
 use bytes::{byte_array::ByteArray, Bytes};
+use bytes::byte_reference::ByteReference;
 use primitive::prefix_range::PrefixRange;
 use storage::key_value::StorageKey;
 use storage::{MVCCKey, MVCCStorage};
@@ -74,14 +75,6 @@ impl ThingVertexGenerator {
     }
 
     pub fn load_with_hasher<D>(storage: Arc<MVCCStorage<D>>, large_value_hasher: fn(&[u8]) -> u64) -> Self {
-        let successor_key : fn(ObjectVertex) -> StorageKey<{ObjectVertex::LENGTH}>  = |max_object_vertex: ObjectVertex| {
-            let mut max_object_id: [u8; ObjectVertex::LENGTH] = [0; ObjectVertex::LENGTH];
-            max_object_id.copy_from_slice(max_object_vertex.bytes().bytes());
-            bytes::util::increment(&mut max_object_id).unwrap();
-            StorageKey::new_owned(ObjectVertex::KEYSPACE, ByteArray::inline(max_object_id, ObjectVertex::LENGTH))
-        };
-
-        // TODO: What if no entities or relations exist?
         let read_snapshot = storage.clone().open_snapshot_read();
         let entity_types = read_snapshot.iterate_range(PrefixRange::new_within(build_vertex_entity_type_prefix())).collect_cloned_vec(|k, _v| {
             TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16()
@@ -94,7 +87,9 @@ impl ThingVertexGenerator {
         let entity_ids = (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice();
         let relation_ids = (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice();
         for type_id in  entity_types {
-            let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = successor_key(ObjectVertex::build_entity(TypeID::build(type_id), ObjectID::build(u64::MAX)));
+            let mut max_object_id = ObjectVertex::build_entity(TypeID::build(type_id), ObjectID::build(u64::MAX)).into_bytes().into_array();
+            bytes::util::increment(max_object_id.bytes_mut()).unwrap();
+            let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = StorageKey::new_ref(ObjectVertex::KEYSPACE, ByteReference::new(max_object_id.bytes()));
             if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
                 if prev_vertex.prefix() == Prefix::VertexEntity && prev_vertex.type_id_() == TypeID::build(type_id) {
                     entity_ids[type_id as usize].store(prev_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
@@ -102,7 +97,9 @@ impl ThingVertexGenerator {
             }
         }
         for type_id in relation_types {
-            let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = successor_key(ObjectVertex::build_relation(TypeID::build(type_id), ObjectID::build(u64::MAX)));
+            let mut max_object_id = ObjectVertex::build_relation(TypeID::build(type_id), ObjectID::build(u64::MAX)).into_bytes().into_array();
+            bytes::util::increment(max_object_id.bytes_mut()).unwrap();
+            let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = StorageKey::new_ref(ObjectVertex::KEYSPACE, ByteReference::new(max_object_id.bytes()));
             if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
                 if prev_vertex.prefix() == Prefix::VertexRelation && prev_vertex.type_id_() == TypeID::build(type_id) {
                     relation_ids[type_id as usize].store(prev_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
