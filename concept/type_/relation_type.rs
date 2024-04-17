@@ -35,6 +35,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::error::ConceptWriteError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {
@@ -141,9 +142,9 @@ impl<'a> RelationType<'a> {
         type_manager.get_role_type(&label)
     }
 
-    pub fn create_relates(&self, type_manager: &TypeManager<impl WritableSnapshot>, name: &str) {
+    pub fn create_relates(&self, type_manager: &TypeManager<impl WritableSnapshot>, name: &str) -> Result<RoleType<'static>, ConceptWriteError> {
         let label = Label::build_scoped(name, self.get_label(type_manager).unwrap().name().as_str());
-        type_manager.create_role_type(&label, self.clone().into_owned(), false);
+        type_manager.create_role_type(&label, self.clone().into_owned(), false)
     }
 
     fn delete_relates(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>) {

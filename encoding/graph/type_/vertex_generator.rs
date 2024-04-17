@@ -4,27 +4,80 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::atomic::{AtomicU16, Ordering};
+use std::sync::atomic::AtomicU16;
+use std::sync::atomic::Ordering::Relaxed;
+use bytes::Bytes;
+use primitive::prefix_range::PrefixRange;
 
-use storage::{snapshot::WriteSnapshot, MVCCStorage};
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
     graph::type_::vertex::{
-        build_vertex_attribute_type, build_vertex_attribute_type_prefix, build_vertex_entity_type,
-        build_vertex_entity_type_prefix, build_vertex_relation_type, build_vertex_relation_type_prefix,
-        build_vertex_role_type, build_vertex_role_type_prefix, TypeID, TypeVertex,
+        build_vertex_attribute_type, build_vertex_entity_type, build_vertex_relation_type,
+        build_vertex_role_type, TypeID, TypeVertex,
     },
     Keyable,
 };
+use crate::error::EncodingError;
+use crate::graph::type_::Kind;
+use crate::graph::type_::Kind::{Attribute, Entity, Relation, Role};
+use crate::graph::type_::vertex::TypeIDUInt;
+use crate::graph::Typed;
 
-// TODO: if we always scan for the next available TypeID, we automatically recycle deleted TypeIDs?
-//          -> If we do reuse TypeIDs, this we also need to make sure to reset the Thing ID generators on delete! (test should exist to confirm this).
+pub struct TypeVertexAllocator {
+    kind: Kind,
+    last_allocated_type_id: AtomicU16,
+    vertex_constructor:  fn (TypeID) -> TypeVertex<'static>
+}
+
+impl TypeVertexAllocator {
+
+    fn new(kind: Kind, to_vertex: fn (TypeID) -> TypeVertex<'static>) -> TypeVertexAllocator {
+        Self { kind, last_allocated_type_id : AtomicU16::new(0), vertex_constructor: to_vertex }
+    }
+
+    fn find_unallocated_id<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot, start: TypeIDUInt) -> Result<Option<TypeIDUInt>, EncodingError> {
+        let mut type_vertex_iter = snapshot.iterate_range(
+            PrefixRange::new_inclusive(
+                (self.vertex_constructor)(TypeID::build(start)).into_storage_key(),
+                (self.vertex_constructor)(TypeID::build(TypeIDUInt::MAX)).into_storage_key()
+            )
+        );
+        for expected_next in start..=TypeIDUInt::MAX {
+            match type_vertex_iter.next() {
+                None => {return Ok(Some(expected_next))},
+                Some(Err(err)) => {return Err(EncodingError::TypeIDAllocate { source: err.clone() });},
+                Some(Ok((actual_next_key, _))) => {
+                    let actual_type_id = TypeVertex::new(Bytes::Reference(actual_next_key.byte_ref())).type_id_().as_u16();
+                    if actual_type_id != expected_next { return Ok(Some(expected_next)); }
+                }
+            }
+        }
+        Ok(None)
+    }
+
+    fn allocate<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) ->  Result<TypeVertex<'static>, EncodingError> {
+        let found = self.find_unallocated_id(snapshot, self.last_allocated_type_id.load(Relaxed))?;
+        if let(Some(type_id)) = found {
+            self.last_allocated_type_id.store(type_id, Relaxed);
+            Ok((self.vertex_constructor)(TypeID::build(type_id)))
+        } else {
+            match self.find_unallocated_id(snapshot, 0)? {
+                None => Err(EncodingError::TypeIDsExhausted { kind: self.kind }),
+                Some(type_id) => {
+                    self.last_allocated_type_id.store(type_id, Relaxed);
+                    Ok((self.vertex_constructor)(TypeID::build(type_id)))
+                }
+            }
+        }
+    }
+}
+
 pub struct TypeVertexGenerator {
-    next_entity: AtomicU16,
-    next_relation: AtomicU16,
-    next_role: AtomicU16,
-    next_attribute: AtomicU16,
+    next_entity: TypeVertexAllocator,
+    next_relation: TypeVertexAllocator,
+    next_role: TypeVertexAllocator,
+    next_attribute: TypeVertexAllocator,
 }
 
 impl Default for TypeVertexGenerator {
@@ -38,74 +91,34 @@ impl TypeVertexGenerator {
 
     pub fn new() -> TypeVertexGenerator {
         TypeVertexGenerator {
-            next_entity: AtomicU16::new(0),
-            next_relation: AtomicU16::new(0),
-            next_role: AtomicU16::new(0),
-            next_attribute: AtomicU16::new(0),
+            next_entity: TypeVertexAllocator::new(Entity, build_vertex_entity_type),
+            next_relation: TypeVertexAllocator::new(Relation, build_vertex_relation_type),
+            next_role: TypeVertexAllocator::new(Role, build_vertex_role_type),
+            next_attribute: TypeVertexAllocator::new(Attribute, build_vertex_attribute_type),
         }
     }
 
-    pub fn load<D>(storage: &MVCCStorage<D>) -> TypeVertexGenerator {
-        let next_entity: AtomicU16 = storage
-            .get_prev_raw(build_vertex_entity_type_prefix().as_reference(), |_, value| {
-                debug_assert_eq!(value.len(), Self::U16_LENGTH);
-                let array: [u8; Self::U16_LENGTH] = value[0..Self::U16_LENGTH].try_into().unwrap();
-                let val = u16::from_be_bytes(array);
-                AtomicU16::new(val)
-            })
-            .unwrap_or_else(|| AtomicU16::new(0));
-        let next_relation: AtomicU16 = storage
-            .get_prev_raw(build_vertex_relation_type_prefix().as_reference(), |_, value| {
-                debug_assert_eq!(value.len(), Self::U16_LENGTH);
-                let array: [u8; Self::U16_LENGTH] = value[0..Self::U16_LENGTH].try_into().unwrap();
-                let val = u16::from_be_bytes(array);
-                AtomicU16::new(val)
-            })
-            .unwrap_or_else(|| AtomicU16::new(0));
-        let next_role: AtomicU16 = storage
-            .get_prev_raw(build_vertex_role_type_prefix().as_reference(), |_, value| {
-                debug_assert_eq!(value.len(), Self::U16_LENGTH);
-                let array: [u8; Self::U16_LENGTH] = value[0..Self::U16_LENGTH].try_into().unwrap();
-                let val = u16::from_be_bytes(array);
-                AtomicU16::new(val)
-            })
-            .unwrap_or_else(|| AtomicU16::new(0));
-        let next_attribute: AtomicU16 = storage
-            .get_prev_raw(build_vertex_attribute_type_prefix().as_reference(), |_, value| {
-                debug_assert_eq!(value.len(), Self::U16_LENGTH);
-                let array: [u8; Self::U16_LENGTH] = value[0..Self::U16_LENGTH].try_into().unwrap();
-                let val = u16::from_be_bytes(array);
-                AtomicU16::new(val)
-            })
-            .unwrap_or_else(|| AtomicU16::new(0));
-        TypeVertexGenerator { next_entity, next_relation, next_role, next_attribute }
+    pub fn create_entity_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
+        let vertex = self.next_entity.allocate(snapshot)?;
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        Ok(vertex)
     }
 
-    pub fn create_entity_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> TypeVertex<'static> {
-        let next = TypeID::build(self.next_entity.fetch_add(1, Ordering::Relaxed));
-        let vertex = build_vertex_entity_type(next);
+    pub fn create_relation_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
+        let vertex = self.next_relation.allocate(snapshot)?;
         snapshot.put(vertex.as_storage_key().into_owned_array());
-        vertex
+        Ok(vertex)
     }
 
-    pub fn create_relation_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> TypeVertex<'static> {
-        let next = TypeID::build(self.next_relation.fetch_add(1, Ordering::Relaxed));
-        let vertex = build_vertex_relation_type(next);
+    pub fn create_role_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
+        let vertex = self.next_role.allocate(snapshot)?;
         snapshot.put(vertex.as_storage_key().into_owned_array());
-        vertex
+        Ok(vertex)
     }
 
-    pub fn create_role_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> TypeVertex<'static> {
-        let next = TypeID::build(self.next_role.fetch_add(1, Ordering::Relaxed));
-        let vertex = build_vertex_role_type(next);
+    pub fn create_attribute_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
+        let vertex = self.next_attribute.allocate(snapshot)?;
         snapshot.put(vertex.as_storage_key().into_owned_array());
-        vertex
-    }
-
-    pub fn create_attribute_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> TypeVertex<'static> {
-        let next = TypeID::build(self.next_attribute.fetch_add(1, Ordering::Relaxed));
-        let vertex = build_vertex_attribute_type(next);
-        snapshot.put(vertex.as_storage_key().into_owned_array());
-        vertex
+        Ok(vertex)
     }
 }

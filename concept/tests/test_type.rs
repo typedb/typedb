@@ -34,7 +34,7 @@ fn entity_usage() {
     let storage_path = create_tmp_dir();
     let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone());
+    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
     let snapshot: Arc<WriteSnapshot<_>> = Arc::new(storage.clone().open_snapshot_write());
     {
@@ -47,7 +47,7 @@ fn entity_usage() {
 
         // --- age sub attribute ---
         let age_label = Label::build("age");
-        let age_type = type_manager.create_attribute_type(&age_label, false);
+        let age_type = type_manager.create_attribute_type(&age_label, false).unwrap();
         age_type.set_value_type(&type_manager, ValueType::Long);
 
         assert!(!age_type.is_root(&type_manager).unwrap());
@@ -57,7 +57,7 @@ fn entity_usage() {
 
         // --- person sub entity @abstract ---
         let person_label = Label::build("person");
-        let person_type = type_manager.create_entity_type(&person_label, false);
+        let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
         person_type.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()));
 
         assert!(!person_type.is_root(&type_manager).unwrap());
@@ -72,7 +72,7 @@ fn entity_usage() {
 
         // --- child sub person ---
         let child_label = Label::build("child");
-        let child_type = type_manager.create_entity_type(&child_label, false);
+        let child_type = type_manager.create_entity_type(&child_label, false).unwrap();
         child_type.set_supertype(&type_manager, person_type.clone());
 
         assert!(!child_type.is_root(&type_manager).unwrap());
@@ -158,7 +158,7 @@ fn role_usage() {
     let storage_path = create_tmp_dir();
     let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone());
+    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
     let friendship_label = Label::build("friendship");
     let friend_name = "friend";
@@ -189,15 +189,15 @@ fn role_usage() {
             .contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract::new())));
 
         // --- friendship sub relation, relates friend ---
-        let friendship_type = type_manager.create_relation_type(&friendship_label, false);
-        friendship_type.create_relates(&type_manager, friend_name);
+        let friendship_type = type_manager.create_relation_type(&friendship_label, false).unwrap();
+        friendship_type.create_relates(&type_manager, friend_name).unwrap();
         let relates = friendship_type.get_relates_role(&type_manager, friend_name).unwrap().unwrap();
         let role_type = friendship_type.get_role(&type_manager, friend_name).unwrap().unwrap();
         debug_assert_eq!(relates.relation(), friendship_type);
         debug_assert_eq!(relates.role(), role_type);
 
         // --- person plays friendship:friend ---
-        let person_type = type_manager.create_entity_type(&person_label, false);
+        let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
         person_type.set_plays(&type_manager, role_type.clone().into_owned());
         let plays = person_type.get_plays_role(&type_manager, role_type.clone().into_owned()).unwrap().unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type.clone()));

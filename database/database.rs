@@ -11,6 +11,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
+use concept::error::ConceptWriteError;
 
 use concept::type_::type_manager::TypeManager;
 use durability::DurabilityService;
@@ -18,7 +19,9 @@ use encoding::{
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
     EncodingKeyspace,
 };
+use encoding::error::EncodingError;
 use storage::{snapshot::WriteSnapshot, MVCCStorage, StorageRecoverError};
+use storage::snapshot::iterator::SnapshotIteratorError;
 
 pub struct Database<D> {
     name: String,
@@ -49,8 +52,10 @@ impl<D> Database<D> {
             MVCCStorage::recover::<EncodingKeyspace>(name, path).map_err(|error| StorageRecover { source: error })?,
         );
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-        let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-        TypeManager::<WriteSnapshot<D>>::initialise_types(storage.clone(), type_vertex_generator.clone());
+        let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage.clone())
+            .map_err(|err| { DatabaseRecoverError::EncodingRecover { source: err } })?);
+        TypeManager::<WriteSnapshot<D>>::initialise_types(storage.clone(), type_vertex_generator.clone())
+            .map_err(|err| { DatabaseRecoverError::SchemaInitialise { source: err } })?;
 
         storage.checkpoint().unwrap();
 
@@ -68,6 +73,8 @@ impl<D> Database<D> {
 pub enum DatabaseRecoverError {
     DirectoryCreate { path: PathBuf, source: io::Error },
     StorageRecover { source: StorageRecoverError },
+    EncodingRecover { source: EncodingError},
+    SchemaInitialise { source: ConceptWriteError }
 }
 
 impl fmt::Display for DatabaseRecoverError {
@@ -81,6 +88,8 @@ impl Error for DatabaseRecoverError {
         match self {
             Self::DirectoryCreate { source, .. } => Some(source),
             Self::StorageRecover { source } => Some(source),
+            Self::SchemaInitialise { source } => Some(source),
+            Self::EncodingRecover { source } => Some(source),
         }
     }
 }

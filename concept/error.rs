@@ -5,6 +5,7 @@
  */
 
 use std::{error::Error, fmt, sync::Arc};
+use encoding::error::EncodingError;
 
 use encoding::value::value_type::ValueType;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
@@ -38,6 +39,7 @@ pub enum ConceptWriteError {
     SnapshotGet { source: SnapshotGetError },
     SnapshotIterate { source: Arc<SnapshotIteratorError> },
     ConceptRead { source: ConceptReadError },
+    Encoding { source: EncodingError },
 
     ValueTypeMismatch { expected: Option<ValueType>, provided: ValueType },
 }
@@ -54,6 +56,7 @@ impl Error for ConceptWriteError {
             Self::SnapshotGet { source, .. } => Some(source),
             Self::SnapshotIterate { source, .. } => Some(source),
             Self::ConceptRead { source } => Some(source),
+            Self::Encoding { source, .. } => Some(source),
             Self::ValueTypeMismatch { .. } => None,
         }
     }

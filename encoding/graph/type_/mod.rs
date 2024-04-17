@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fmt::Formatter;
 use crate::value::label::Label;
 
 pub mod edge;
@@ -12,6 +13,7 @@ pub mod property;
 pub mod vertex;
 pub mod vertex_generator;
 
+#[derive(Copy, Clone)]
 pub enum Kind {
     Entity,
     Attribute,
@@ -27,5 +29,11 @@ impl Kind {
             Kind::Relation => Label::new_static("relation"),
             Kind::Role => Label::new_static_scoped("role", "y", "y:role"),
         }
+    }
+}
+
+impl std::fmt::Debug for Kind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Kind[{}]", self.root_label().name)
     }
 }

@@ -23,7 +23,7 @@ pub struct ObjectVertex<'a> {
 }
 
 impl<'a> ObjectVertex<'a> {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
+    pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
 
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectID::LENGTH;
     const LENGTH_PREFIX_PREFIX: usize = PrefixID::LENGTH;
@@ -65,7 +65,7 @@ impl<'a> ObjectVertex<'a> {
         )
     }
 
-    fn build_prefix_type(
+    pub fn build_prefix_type(
         prefix: PrefixID,
         type_id: TypeID,
     ) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_TYPE }> {
@@ -135,5 +135,9 @@ impl ObjectID {
 
     fn bytes(&self) -> [u8; ObjectID::LENGTH] {
         self.bytes
+    }
+
+    pub fn as_u64(&self) -> u64 {
+        u64::from_be_bytes(self.bytes)
     }
 }

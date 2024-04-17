@@ -34,7 +34,7 @@ fn thing_create_iterate() {
     let storage_path = create_tmp_dir();
     let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone());
+    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
     let snapshot: Arc<WriteSnapshot<WAL>> = Arc::new(storage.clone().open_snapshot_write());
     {
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
@@ -42,12 +42,12 @@ fn thing_create_iterate() {
 
         let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator.clone(), type_manager.clone());
         let person_label = Label::build("person");
-        let person_type = type_manager.create_entity_type(&person_label, false);
+        let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
 
-        let _person_1 = thing_manager.create_entity(person_type.clone());
-        let _person_2 = thing_manager.create_entity(person_type.clone());
-        let _person_3 = thing_manager.create_entity(person_type.clone());
-        let _person_4 = thing_manager.create_entity(person_type.clone());
+        let _person_1 = thing_manager.create_entity(person_type.clone()).unwrap();
+        let _person_2 = thing_manager.create_entity(person_type.clone()).unwrap();
+        let _person_3 = thing_manager.create_entity(person_type.clone()).unwrap();
+        let _person_4 = thing_manager.create_entity(person_type.clone()).unwrap();
     }
     if let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();
@@ -69,7 +69,7 @@ fn attribute_create() {
     let storage_path = create_tmp_dir();
     let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone());
+    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
     let age_label = Label::build("age");
     let name_label = Label::build("name");
@@ -83,9 +83,9 @@ fn attribute_create() {
         let type_manager = Arc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None));
         let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator.clone(), type_manager.clone());
 
-        let age_type = type_manager.create_attribute_type(&age_label, false);
+        let age_type = type_manager.create_attribute_type(&age_label, false).unwrap();
         age_type.set_value_type(&type_manager, ValueType::Long);
-        let name_type = type_manager.create_attribute_type(&name_label, false);
+        let name_type = type_manager.create_attribute_type(&name_label, false).unwrap();
         name_type.set_value_type(&type_manager, ValueType::String);
 
         let mut age_1 = thing_manager.create_attribute(age_type.clone(), Value::Long(age_value)).unwrap();
@@ -120,7 +120,7 @@ fn has() {
     let storage_path = create_tmp_dir();
     let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone());
+    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
     let age_label = Label::build("age");
     let name_label = Label::build("name");
@@ -135,12 +135,12 @@ fn has() {
         let type_manager = Arc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None));
         let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator.clone(), type_manager.clone());
 
-        let age_type = type_manager.create_attribute_type(&age_label, false);
+        let age_type = type_manager.create_attribute_type(&age_label, false).unwrap();
         age_type.set_value_type(&type_manager, ValueType::Long);
-        let name_type = type_manager.create_attribute_type(&name_label, false);
+        let name_type = type_manager.create_attribute_type(&name_label, false).unwrap();
         name_type.set_value_type(&type_manager, ValueType::String);
 
-        let person_type = type_manager.create_entity_type(&person_label, false);
+        let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
 
         let person_1 = thing_manager.create_entity(person_type.clone()).unwrap();
         let age_1 = thing_manager.create_attribute(age_type.clone(), Value::Long(age_value)).unwrap();
@@ -179,7 +179,7 @@ fn role_player_distinct() {
     let storage_path = create_tmp_dir();
     let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone());
+    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
     let employment_label = Label::build("employment");
     let employee_role = "employee";
@@ -193,16 +193,16 @@ fn role_player_distinct() {
         let type_manager = Arc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None));
         let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator.clone(), type_manager.clone());
 
-        let employment_type = type_manager.create_relation_type(&employment_label, false);
-        employment_type.create_relates(&type_manager, employee_role);
+        let employment_type = type_manager.create_relation_type(&employment_label, false).unwrap();
+        employment_type.create_relates(&type_manager, employee_role).unwrap();
         let employee_type = employment_type.get_relates_role(&type_manager, employee_role).unwrap().unwrap().role();
         employee_type.set_annotation(&type_manager, RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
-        employment_type.create_relates(&type_manager, employer_role);
+        employment_type.create_relates(&type_manager, employer_role).unwrap();
         let employer_type = employment_type.get_relates_role(&type_manager, employer_role).unwrap().unwrap().role();
         employer_type.set_annotation(&type_manager, RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
 
-        let person_type = type_manager.create_entity_type(&person_label, false);
-        let company_type = type_manager.create_entity_type(&company_label, false);
+        let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
+        let company_type = type_manager.create_entity_type(&company_label, false).unwrap();
         person_type.set_plays(&type_manager, employee_type.clone());
         company_type.set_plays(&type_manager, employee_type.clone());
 
@@ -265,7 +265,7 @@ fn role_player_duplicates() {
     let storage_path = create_tmp_dir();
     let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone());
+    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
     let list_label = Label::build("list");
     let entry_role_label = "entry";
@@ -279,14 +279,14 @@ fn role_player_duplicates() {
         let type_manager = Arc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None));
         let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator.clone(), type_manager.clone());
 
-        let list_type = type_manager.create_relation_type(&list_label, false);
-        list_type.create_relates(&type_manager, entry_role_label);
+        let list_type = type_manager.create_relation_type(&list_label, false).unwrap();
+        list_type.create_relates(&type_manager, entry_role_label).unwrap();
         let entry_type = list_type.get_relates_role(&type_manager, entry_role_label).unwrap().unwrap().role();
-        list_type.create_relates(&type_manager, owner_role_label);
+        list_type.create_relates(&type_manager, owner_role_label).unwrap();
         let owner_type = list_type.get_relates_role(&type_manager, owner_role_label).unwrap().unwrap().role();
 
-        let resource_type = type_manager.create_entity_type(&resource_label, false);
-        let group_type = type_manager.create_entity_type(&group_label, false);
+        let resource_type = type_manager.create_entity_type(&resource_label, false).unwrap();
+        let group_type = type_manager.create_entity_type(&group_label, false).unwrap();
         resource_type.set_plays(&type_manager, entry_type.clone());
         group_type.set_plays(&type_manager, owner_type.clone());
 

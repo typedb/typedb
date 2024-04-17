@@ -10,7 +10,7 @@ use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use logger::result::ResultExt;
 
 use crate::{
-    error::{EncodingError, EncodingErrorKind},
+    error::EncodingError,
     AsBytes,
 };
 
@@ -41,11 +41,9 @@ impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
 
     pub fn as_str(&self) -> &str {
         std::str::from_utf8(self.bytes.bytes())
-            .map_err(|err| EncodingError {
-                kind: EncodingErrorKind::FailedUFT8Decode {
-                    bytes: self.bytes.bytes().to_vec().into_boxed_slice(),
-                    source: err,
-                },
+            .map_err(|err| EncodingError::UFT8Decode {
+                bytes: self.bytes.bytes().to_vec().into_boxed_slice(),
+                source: err,
             })
             .unwrap_or_log()
     }

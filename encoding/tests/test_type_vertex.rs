@@ -4,38 +4,139 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
 use durability::wal::WAL;
-use encoding::EncodingKeyspace;
+use encoding::{AsBytes, EncodingKeyspace, Keyable};
+use encoding::error::EncodingError;
+use encoding::graph::type_::vertex::{build_vertex_entity_type, TypeID};
+use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
+use storage::key_value::StorageKeyReference;
 use storage::MVCCStorage;
+use storage::snapshot::{CommittableSnapshot, WritableSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
+use encoding::graph::Typed;
+
+// TODO: Update all tests with higher level APIs
 #[test]
 fn entity_type_vertexes_are_reused() {
     init_logging();
     let storage_path = create_tmp_dir();
-    #[allow(unused)] // TODO
-    let mut storage = MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap();
+    let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    // If we don't commit, it doesn't move.
+    {
+        for _ in 0..5 {
+            let snapshot = storage.clone().open_snapshot_write();
+            let generator = TypeVertexGenerator::new();
+            let vertex = generator.create_entity_type(&snapshot).unwrap();
+            assert_eq!(0, vertex.type_id_().as_u16());
+        }
+    }
 
-    // TODO: create a bunch of types, delete, and assert that the IDs are re-used
-}
+    // create a bunch of types, delete, and assert that the IDs are re-used
+    let create_till = 32;
+    {
+        let snapshot = storage.clone().open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+        for i in 0..=create_till {
+            let vertex = generator.create_entity_type(&snapshot).unwrap();
+            assert_eq!(i, vertex.type_id_().as_u16());
+        }
+        snapshot.commit().unwrap();
+    }
 
-#[test]
-fn entity_type_vertex_reuse_resets_thing_vertex() {
+    {
+        let snapshot = storage.clone().open_snapshot_write();
+        for i in 0..=create_till {
+            if i % 2 == 0 {
+                let vertex = build_vertex_entity_type(TypeID::build(i));
+                snapshot.delete(StorageKeyReference::new(vertex.keyspace(), vertex.bytes()).into()); // TODO: replace with type api call.
+            }
+        }
+        snapshot.commit().unwrap();
+    }
 
-    // TODO: when deleting an existing type vertex that had instances (which are deleted as well),
-    //       and this type vertex ID is re-used, confirm that new Thing ID's start from 0 again for this type.
+    {
+        let generator = TypeVertexGenerator::new();
+        let snapshot = storage.clone().open_snapshot_write();
+        for i in 0..=create_till {
+            if i % 2 == 0 {
+                let vertex = generator.create_entity_type(&snapshot).unwrap();
+                assert_eq!(i, vertex.type_id_().as_u16());
+            }
+        }
+    }
+
 }
 
 #[test]
 fn max_entity_type_vertexes() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let create_till = u16::MAX;
+    {
+        let snapshot = storage.clone().open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+        for i in 0..=create_till {
+            let vertex = generator.create_entity_type(&snapshot).unwrap();
+            assert_eq!(i, vertex.type_id_().as_u16());
+        }
+        snapshot.commit().unwrap();
+    }
 
-    // TODO: test that the maximum number of type vertices for one group (entity type) is actually U16.MAX_INT
-    //       and that we throw a good error message if exceeded.
+    {
+        let snapshot = storage.clone().open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+
+        let res = generator.create_entity_type(&snapshot); // Crashes
+        assert!(matches!(res, Err(EncodingError::TypeIDsExhausted { kind : encoding::graph::type_::Kind::Entity })));
+    }
 }
 
 #[test]
 fn loading_storage_assigns_next_vertex() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let create_till = 5;
 
-    // TODO: test that when loading an existing database (create database, create types, close database, then re-open)
-    //       that the next Type vertex ID is the expected one
+    for i in 0..create_till {
+        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let snapshot = storage.clone().open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+
+        let vertex = generator.create_entity_type(&snapshot).unwrap();
+        assert_eq!(i, vertex.type_id_().as_u16());
+        snapshot.commit().unwrap();
+    }
+
+    for i in 0..create_till {
+        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let snapshot = storage.clone().open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+
+        let vertex = generator.create_attribute_type(&snapshot).unwrap();
+        assert_eq!(i, vertex.type_id_().as_u16());
+        snapshot.commit().unwrap();
+    }
+
+    for i in 0..create_till {
+        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let snapshot = storage.clone().open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+
+        let vertex = generator.create_relation_type(&snapshot).unwrap();
+        assert_eq!(i, vertex.type_id_().as_u16());
+        snapshot.commit().unwrap();
+    }
+
+    for i in 0..create_till {
+        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let snapshot = storage.clone().open_snapshot_write();
+        let generator = TypeVertexGenerator::new();
+
+        let vertex = generator.create_role_type(&snapshot).unwrap();
+        assert_eq!(i, vertex.type_id_().as_u16());
+        snapshot.commit().unwrap();
+    }
 }

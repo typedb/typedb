@@ -8,24 +8,29 @@ use std::{
     ops::Range,
     sync::atomic::{AtomicU64, Ordering},
 };
+use std::io::Read;
+use std::sync::Arc;
 
 use bytes::{byte_array::ByteArray, Bytes};
+use bytes::byte_reference::ByteReference;
 use primitive::prefix_range::PrefixRange;
+use storage::key_value::StorageKey;
+use storage::{MVCCKey, MVCCStorage};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{
-    graph::{
-        thing::{
-            vertex_attribute::{AttributeID, AttributeID17, AttributeID8, AttributeVertex},
-            vertex_object::{ObjectID, ObjectVertex},
-        },
-        type_::vertex::{TypeID, TypeIDUInt},
+use crate::{graph::{
+    thing::{
+        vertex_attribute::{AttributeID, AttributeID17, AttributeID8, AttributeVertex},
+        vertex_object::{ObjectID, ObjectVertex},
     },
-    value::{long::Long, string::StringBytes, value_type::ValueType},
-    AsBytes, Keyable,
-};
+    type_::vertex::{TypeID, TypeIDUInt},
+}, value::{long::Long, string::StringBytes, value_type::ValueType}, AsBytes, Keyable, Prefixed};
+use crate::error::EncodingError;
 use crate::graph::thing::vertex_attribute::AsAttributeID;
 use crate::graph::thing::VertexID;
+use crate::graph::type_::vertex::{build_vertex_entity_type_prefix, build_vertex_relation_type_prefix, TypeVertex};
+use crate::graph::Typed;
+use crate::layout::prefix::Prefix;
 
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,
@@ -43,28 +48,18 @@ impl ThingVertexGenerator {
     pub fn new() -> Self {
         // TODO: we should create a resizable Vector linked to the id of types/highest id of each type
         //       this will speed up booting time on load (loading this will require MAX types * 3 iterator searches) and reduce memory footprint
-        ThingVertexGenerator {
-            entity_ids: (0..TypeIDUInt::MAX as usize)
-                .map(|_| AtomicU64::new(0))
-                .collect::<Vec<AtomicU64>>()
-                .into_boxed_slice(),
-            relation_ids: (0..TypeIDUInt::MAX as usize)
-                .map(|_| AtomicU64::new(0))
-                .collect::<Vec<AtomicU64>>()
-                .into_boxed_slice(),
-            large_value_hasher: seahash::hash,
-        }
+        Self::new_with_hasher(seahash::hash)
     }
 
     pub fn new_with_hasher(large_value_hasher: fn(&[u8]) -> u64) -> Self {
         // TODO: we should create a resizable Vector linked to the id of types/highest id of each type
         //       this will speed up booting time on load (loading this will require MAX types * 3 iterator searches) and reduce memory footprint
         ThingVertexGenerator {
-            entity_ids: (0..TypeIDUInt::MAX as usize)
+            entity_ids: (0..=TypeIDUInt::MAX)
                 .map(|_| AtomicU64::new(0))
                 .collect::<Vec<AtomicU64>>()
                 .into_boxed_slice(),
-            relation_ids: (0..TypeIDUInt::MAX as usize)
+            relation_ids: (0..=TypeIDUInt::MAX)
                 .map(|_| AtomicU64::new(0))
                 .collect::<Vec<AtomicU64>>()
                 .into_boxed_slice(),
@@ -72,8 +67,48 @@ impl ThingVertexGenerator {
         }
     }
 
-    pub fn load() -> Self {
-        todo!()
+    pub fn load<D>(storage: Arc<MVCCStorage<D>>) -> Result<Self, EncodingError> {
+        Self::load_with_hasher(storage, seahash::hash)
+    }
+
+    pub fn load_with_hasher<D>(storage: Arc<MVCCStorage<D>>, large_value_hasher: fn(&[u8]) -> u64) -> Result<Self, EncodingError> {
+        let read_snapshot = storage.clone().open_snapshot_read();
+        let entity_types = read_snapshot.iterate_range(PrefixRange::new_within(build_vertex_entity_type_prefix())).collect_cloned_vec(|k, _v| {
+            TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16()
+        }).map_err(|err| { EncodingError::ExistingTypesRead { source: err } })?;
+        let relation_types = read_snapshot.iterate_range(PrefixRange::new_within(build_vertex_relation_type_prefix())).collect_cloned_vec(|k, _v| {
+            TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16()
+        }).map_err(|err| { EncodingError::ExistingTypesRead { source: err } })?;
+        read_snapshot.close_resources();
+
+        let entity_ids = (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice();
+        let relation_ids = (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice();
+        for type_id in entity_types {
+            let mut max_object_id = ObjectVertex::build_entity(TypeID::build(type_id), ObjectID::build(u64::MAX)).into_bytes().into_array();
+            bytes::util::increment(max_object_id.bytes_mut()).unwrap();
+            let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = StorageKey::new_ref(ObjectVertex::KEYSPACE, ByteReference::new(max_object_id.bytes()));
+            if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
+                if prev_vertex.prefix() == Prefix::VertexEntity && prev_vertex.type_id_() == TypeID::build(type_id) {
+                    entity_ids[type_id as usize].store(prev_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
+                }
+            }
+        }
+        for type_id in relation_types {
+            let mut max_object_id = ObjectVertex::build_relation(TypeID::build(type_id), ObjectID::build(u64::MAX)).into_bytes().into_array();
+            bytes::util::increment(max_object_id.bytes_mut()).unwrap();
+            let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = StorageKey::new_ref(ObjectVertex::KEYSPACE, ByteReference::new(max_object_id.bytes()));
+            if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
+                if prev_vertex.prefix() == Prefix::VertexRelation && prev_vertex.type_id_() == TypeID::build(type_id) {
+                    relation_ids[type_id as usize].store(prev_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
+                }
+            }
+        }
+
+        Ok(ThingVertexGenerator { entity_ids, relation_ids, large_value_hasher })
+    }
+
+    fn extract_object_id(k: &MVCCKey<'_>, _: &[u8]) -> ObjectVertex<'static> {
+        ObjectVertex::new(Bytes::Array(ByteArray::copy(k.key())))
     }
 
     pub fn create_entity<Snapshot>(&self, type_id: TypeID, snapshot: &Snapshot) -> ObjectVertex<'static>

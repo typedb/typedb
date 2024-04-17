@@ -573,9 +573,11 @@ impl<D> MVCCStorage<D> {
 
     pub fn get_prev_raw<M, T>(&self, key: StorageKeyReference<'_>, mut key_value_mapper: M) -> Option<T>
     where
-        M: FnMut(&[u8], &[u8]) -> T,
+        M: FnMut(&MVCCKey<'_>, &[u8]) -> T,
     {
-        self.get_keyspace(key.keyspace_id()).get_prev(key.bytes(), |k, v| key_value_mapper(k, v))
+        self.get_keyspace(key.keyspace_id()).get_prev(key.bytes(), |raw_key, v| {
+            key_value_mapper(&MVCCKey::wrap_slice(raw_key), v)
+        })
     }
 
     pub fn iterate_keyspace_range<'this, const PREFIX_INLINE: usize>(
@@ -675,7 +677,7 @@ impl Error for StorageCheckpointError {
 ///
 /// MVCC keys are made of three parts: the [KEY][SEQ][OP]
 ///
-struct MVCCKey<'bytes> {
+pub struct MVCCKey<'bytes> {
     bytes: Bytes<'bytes, MVCC_KEY_INLINE_SIZE>,
 }
 
@@ -719,7 +721,7 @@ impl<'bytes> MVCCKey<'bytes> {
         self.bytes.length()
     }
 
-    fn key(&self) -> &[u8] {
+    pub fn key(&self) -> &[u8] {
         &self.bytes()[0..(self.length() - Self::SEQUENCE_NUMBER_START_NEGATIVE_OFFSET)]
     }
 
