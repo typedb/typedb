@@ -1,4 +1,5 @@
-## Release notes: usage and product changes
+## Release notes: product changes
 
+## Motivation
 
 ## Implementation
