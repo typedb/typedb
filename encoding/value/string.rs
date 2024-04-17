@@ -42,7 +42,7 @@ impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
     pub fn as_str(&self) -> &str {
         std::str::from_utf8(self.bytes.bytes())
             .map_err(|err| EncodingError {
-                kind: EncodingErrorKind::FailedUFT8Decode {
+                kind: EncodingErrorKind::UFT8Decode {
                     bytes: self.bytes.bytes().to_vec().into_boxed_slice(),
                     source: err,
                 },

@@ -25,6 +25,7 @@ use crate::{graph::{
     },
     type_::vertex::{TypeID, TypeIDUInt},
 }, value::{long::Long, string::StringBytes, value_type::ValueType}, AsBytes, Keyable, Prefixed};
+use crate::error::{EncodingError, EncodingErrorKind};
 use crate::graph::thing::vertex_attribute::AsAttributeID;
 use crate::graph::thing::VertexID;
 use crate::graph::type_::vertex::{build_vertex_entity_type_prefix, build_vertex_relation_type_prefix, TypeVertex};
@@ -66,27 +67,23 @@ impl ThingVertexGenerator {
         }
     }
 
-    pub fn load<D>(storage: Arc<MVCCStorage<D>>) -> Self {
+    pub fn load<D>(storage: Arc<MVCCStorage<D>>) -> Result<Self, EncodingError> {
         Self::load_with_hasher(storage, seahash::hash)
     }
 
-    fn extract_object_id(k: &MVCCKey<'_>, _: &[u8]) -> ObjectVertex<'static> {
-        ObjectVertex::new(Bytes::Array(ByteArray::copy(k.key())))
-    }
-
-    pub fn load_with_hasher<D>(storage: Arc<MVCCStorage<D>>, large_value_hasher: fn(&[u8]) -> u64) -> Self {
+    pub fn load_with_hasher<D>(storage: Arc<MVCCStorage<D>>, large_value_hasher: fn(&[u8]) -> u64) -> Result<Self, EncodingError> {
         let read_snapshot = storage.clone().open_snapshot_read();
         let entity_types = read_snapshot.iterate_range(PrefixRange::new_within(build_vertex_entity_type_prefix())).collect_cloned_vec(|k, _v| {
             TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16()
-        }).unwrap(); // TODO: Return error?
+        }).map_err(|err| { EncodingError { kind: EncodingErrorKind::ExistingTypesRead { source: err } } })?;
         let relation_types = read_snapshot.iterate_range(PrefixRange::new_within(build_vertex_relation_type_prefix())).collect_cloned_vec(|k, _v| {
             TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16()
-        }).unwrap(); // TODO: Return error?
+        }).map_err(|err| { EncodingError { kind: EncodingErrorKind::ExistingTypesRead { source: err } } })?;
         read_snapshot.close_resources();
 
         let entity_ids = (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice();
         let relation_ids = (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice();
-        for type_id in  entity_types {
+        for type_id in entity_types {
             let mut max_object_id = ObjectVertex::build_entity(TypeID::build(type_id), ObjectID::build(u64::MAX)).into_bytes().into_array();
             bytes::util::increment(max_object_id.bytes_mut()).unwrap();
             let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = StorageKey::new_ref(ObjectVertex::KEYSPACE, ByteReference::new(max_object_id.bytes()));
@@ -107,7 +104,11 @@ impl ThingVertexGenerator {
             }
         }
 
-        ThingVertexGenerator { entity_ids, relation_ids, large_value_hasher }
+        Ok(ThingVertexGenerator { entity_ids, relation_ids, large_value_hasher })
+    }
+
+    fn extract_object_id(k: &MVCCKey<'_>, _: &[u8]) -> ObjectVertex<'static> {
+        ObjectVertex::new(Bytes::Array(ByteArray::copy(k.key())))
     }
 
     pub fn create_entity<Snapshot>(&self, type_id: TypeID, snapshot: &Snapshot) -> ObjectVertex<'static>
