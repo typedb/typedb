@@ -36,7 +36,6 @@ use encoding::{
     },
     AsBytes, Keyable,
 };
-use encoding::error::EncodingErrorKind;
 use primitive::{maybe_owns::MaybeOwns, prefix_range::PrefixRange};
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{

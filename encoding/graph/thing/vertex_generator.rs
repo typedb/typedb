@@ -25,7 +25,7 @@ use crate::{graph::{
     },
     type_::vertex::{TypeID, TypeIDUInt},
 }, value::{long::Long, string::StringBytes, value_type::ValueType}, AsBytes, Keyable, Prefixed};
-use crate::error::{EncodingError, EncodingErrorKind};
+use crate::error::EncodingError;
 use crate::graph::thing::vertex_attribute::AsAttributeID;
 use crate::graph::thing::VertexID;
 use crate::graph::type_::vertex::{build_vertex_entity_type_prefix, build_vertex_relation_type_prefix, TypeVertex};
@@ -75,10 +75,10 @@ impl ThingVertexGenerator {
         let read_snapshot = storage.clone().open_snapshot_read();
         let entity_types = read_snapshot.iterate_range(PrefixRange::new_within(build_vertex_entity_type_prefix())).collect_cloned_vec(|k, _v| {
             TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16()
-        }).map_err(|err| { EncodingError { kind: EncodingErrorKind::ExistingTypesRead { source: err } } })?;
+        }).map_err(|err| { EncodingError::ExistingTypesRead { source: err } })?;
         let relation_types = read_snapshot.iterate_range(PrefixRange::new_within(build_vertex_relation_type_prefix())).collect_cloned_vec(|k, _v| {
             TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16()
-        }).map_err(|err| { EncodingError { kind: EncodingErrorKind::ExistingTypesRead { source: err } } })?;
+        }).map_err(|err| { EncodingError::ExistingTypesRead { source: err } })?;
         read_snapshot.close_resources();
 
         let entity_ids = (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice();

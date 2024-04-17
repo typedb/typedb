@@ -7,7 +7,7 @@
 use std::sync::Arc;
 use durability::wal::WAL;
 use encoding::{AsBytes, EncodingKeyspace, Keyable};
-use encoding::error::{EncodingError, EncodingErrorKind};
+use encoding::error::EncodingError;
 use encoding::graph::type_::vertex::{build_vertex_entity_type, TypeID};
 use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
 use storage::key_value::StorageKeyReference;
@@ -90,9 +90,7 @@ fn max_entity_type_vertexes() {
         let generator = TypeVertexGenerator::new();
 
         let res = generator.create_entity_type(&snapshot); // Crashes
-        assert!(matches!(res, Err(EncodingError {
-            kind: EncodingErrorKind::TypeIDsExhausted { kind : encoding::graph::type_::Kind::Entity }
-        } )));
+        assert!(matches!(res, Err(EncodingError::TypeIDsExhausted { kind : encoding::graph::type_::Kind::Entity })));
     }
 }
 

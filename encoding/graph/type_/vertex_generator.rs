@@ -19,7 +19,6 @@ use crate::{
     Keyable,
 };
 use crate::error::EncodingError;
-use crate::error::EncodingErrorKind::{TypeIDsExhausted, TypeIDAllocate};
 use crate::graph::type_::Kind;
 use crate::graph::type_::Kind::{Attribute, Entity, Relation, Role};
 use crate::graph::type_::vertex::TypeIDUInt;
@@ -47,7 +46,7 @@ impl TypeVertexAllocator {
         for expected_next in start..=TypeIDUInt::MAX {
             match type_vertex_iter.next() {
                 None => {return Ok(Some(expected_next))},
-                Some(Err(err)) => {return Err(EncodingError{ kind: TypeIDAllocate { source: err.clone() } });},
+                Some(Err(err)) => {return Err(EncodingError::TypeIDAllocate { source: err.clone() });},
                 Some(Ok((actual_next_key, _))) => {
                     let actual_type_id = TypeVertex::new(Bytes::Reference(actual_next_key.byte_ref())).type_id_().as_u16();
                     if actual_type_id != expected_next { return Ok(Some(expected_next)); }
@@ -64,7 +63,7 @@ impl TypeVertexAllocator {
             Ok((self.vertex_constructor)(TypeID::build(type_id)))
         } else {
             match self.find_unallocated_id(snapshot, 0)? {
-                None => Err(EncodingError{ kind: TypeIDsExhausted { kind: self.kind } }),
+                None => Err(EncodingError::TypeIDsExhausted { kind: self.kind }),
                 Some(type_id) => {
                     self.last_allocated_type_id.store(type_id, Relaxed);
                     Ok((self.vertex_constructor)(TypeID::build(type_id)))
