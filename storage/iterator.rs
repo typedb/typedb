@@ -12,10 +12,10 @@ use iterator::State;
 
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
+    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError},
 };
-use crate::key_range::KeyRange;
 
 pub(crate) struct MVCCRangeIterator<'storage, const PS: usize> {
     storage_name: &'storage str,
@@ -39,10 +39,7 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
     ) -> Self {
         debug_assert!(!range.start().bytes().is_empty());
         let keyspace = storage.get_keyspace(range.start().keyspace_id());
-        let iterator = keyspace.iterate_range(range.map(
-            |k| k.into_byte_array_or_ref(),
-            |fixed_width| fixed_width
-        ));
+        let iterator = keyspace.iterate_range(range.map(|key| key.into_byte_array_or_ref(), |fixed_width| fixed_width));
         MVCCRangeIterator {
             storage_name: storage.name(),
             keyspace,
@@ -96,7 +93,8 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
             State::Init => {
                 self.find_next_state();
                 self.next()
-            } State::ItemUsed => {
+            }
+            State::ItemUsed => {
                 let _ = self.iterator.next();
                 self.find_next_state();
                 self.next()

@@ -10,11 +10,11 @@ use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;
 use itertools::Itertools;
 use storage::{
+    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    KeyspaceSet, KeyspaceValidationError, MVCCStorage, StorageRecoverError,
+    keyspace::{KeyspaceId, KeyspaceSet, KeyspaceValidationError},
+    MVCCStorage, StorageRecoverError,
 };
-use storage::key_range::KeyRange;
-use storage::keyspace::KeyspaceId;
 use test_utils::{create_tmp_dir, init_logging};
 
 #[test]
@@ -165,9 +165,10 @@ fn get_put_iterate() {
 
     let prefix = StorageKeyArray::<64>::from((vec![0x1], Keyspace1));
     let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage
-        .iterate_keyspace_range(KeyRange::new_within(StorageKey::<64>::Reference(StorageKeyReference::from(
-            &prefix,
-        )), false))
+        .iterate_keyspace_range(KeyRange::new_within(
+            StorageKey::<64>::Reference(StorageKeyReference::from(&prefix)),
+            false,
+        ))
         .collect_cloned::<64, 128>();
     assert_eq!(
         items,

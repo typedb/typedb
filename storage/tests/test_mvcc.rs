@@ -30,9 +30,9 @@ use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use durability::wal::WAL;
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::KeyspaceId,
+    keyspace::{KeyspaceId, KeyspaceSet},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
-    KeyspaceSet, MVCCStorage,
+    MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
 

@@ -6,14 +6,16 @@
 
 use std::{mem, ops::Range};
 
-use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::{StorageKey, StorageKeyReference};
-use storage::KeyspaceSet;
+use storage::{
+    key_value::{StorageKey, StorageKeyReference},
+    keyspace::KeyspaceSet,
+};
 
 use crate::{
     graph::{type_::vertex::TypeID, Typed},
-    layout::prefix::{PrefixID, Prefix},
+    layout::prefix::{Prefix, PrefixID},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
@@ -59,10 +61,8 @@ impl<'a> ObjectVertex<'a> {
     pub fn is_object_vertex(storage_key: StorageKeyReference<'_>) -> bool {
         storage_key.keyspace_id() == Self::KEYSPACE.id()
             && storage_key.bytes().len() == Self::LENGTH
-            && (
-            storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexEntity.prefix_id().bytes
-                || storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexRelation.prefix_id().bytes
-        )
+            && (storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexEntity.prefix_id().bytes
+                || storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexRelation.prefix_id().bytes)
     }
 
     pub fn build_prefix_type(

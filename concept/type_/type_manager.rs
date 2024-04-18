@@ -95,7 +95,7 @@ impl<Snapshot> TypeManager<Snapshot> {
             let root_attribute = type_manager.create_attribute_type(&Kind::Attribute.root_label(), true)?;
             root_attribute.set_annotation(&type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
         }
-        Arc::try_unwrap(snapshot).ok().unwrap().commit().unwrap();
+        Arc::into_inner(snapshot).unwrap().commit().unwrap();
         Ok(())
     }
 

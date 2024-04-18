@@ -15,9 +15,9 @@ use pprof::ProfilerGuard;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::KeyspaceId,
+    keyspace::{KeyspaceId, KeyspaceSet},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
-    KeyspaceSet, MVCCStorage,
+    MVCCStorage,
 };
 use storage::key_range::KeyRange;
 use test_utils::{create_tmp_dir, init_logging};

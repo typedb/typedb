@@ -9,33 +9,28 @@ mod test_common;
 use std::{path::Path, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
-use durability::DurabilityService;
-use durability::wal::WAL;
+use durability::{wal::WAL, DurabilityService};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
-    error::{MVCCStorageError, MVCCStorageErrorKind},
-    isolation_manager::{IsolationError, IsolationConflict},
-    keyspace::KeyspaceId,
+    isolation_manager::{IsolationConflict, IsolationError},
+    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    snapshot::SnapshotError,
-    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
-    KeyspaceSet, MVCCStorage,
+    keyspace::{KeyspaceId, KeyspaceSet},
+    snapshot::{CommittableSnapshot, ReadableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
+    MVCCStorage, StorageCommitError,
 };
-use storage::key_range::KeyRange;
-
 use test_utils::{create_tmp_dir, init_logging};
-
 
 test_keyspace_set! {
     Keyspace => 0: "keyspace",
 }
 use self::TestKeyspaceSet::Keyspace;
 
-macro_rules! fails_without_serializability  {
-     ($x:expr) => {
-         assert!(!($x));
-     };
- }
+macro_rules! fails_without_serializability {
+    ($x:expr) => {
+        assert!(!($x));
+    };
+}
 
 const KEY_1: [u8; 4] = [0x0, 0x0, 0x0, 0x1];
 const KEY_2: [u8; 4] = [0x0, 0x0, 0x0, 0x2];

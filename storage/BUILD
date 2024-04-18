@@ -27,6 +27,7 @@ rust_library(
         "//common/bytes",
         "//common/iterator",
         "//resource",
+        "//util/project",
 
         "@crates//:bincode",
         "@crates//:chrono",

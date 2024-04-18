@@ -9,8 +9,10 @@
 use std::ops::Range;
 
 use bytes::{byte_reference::ByteReference, Bytes};
-use storage::{key_value::StorageKey, KeyspaceSet};
-use storage::keyspace::KeyspaceId;
+use storage::{
+    key_value::StorageKey,
+    keyspace::{KeyspaceId, KeyspaceSet},
+};
 
 use crate::layout::prefix::{Prefix, PrefixID};
 
