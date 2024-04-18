@@ -31,6 +31,8 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::entity_type::EntityTypeAnnotation;
+use crate::type_::owns::OwnsAnnotation::Cardinality;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -53,6 +55,13 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
 
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
+    }
+
+    fn is_abstract(
+        &self, type_manager: &TypeManager<impl ReadableSnapshot>
+    ) -> Result<bool, ConceptReadError> {
+        let annotations = self.get_annotations(type_manager)?;
+        Ok(annotations.contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract::new())))
     }
 }
 
@@ -94,6 +103,19 @@ impl<'a> RoleType<'a> {
     }
 
     // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<RoleType<'static>>>;
+
+    pub fn get_cardinality(
+        &self, type_manager: &TypeManager<impl ReadableSnapshot>,
+    ) -> Result<AnnotationCardinality, ConceptReadError> {
+        let annotations = self.get_annotations(type_manager)?;
+        let card: AnnotationCardinality = annotations.iter().filter_map(|annotation|
+            match annotation {
+                RoleTypeAnnotation::Cardinality(card) => Some(card.clone()),
+                _ => None
+            }
+        ).next().unwrap_or_else(|| type_manager.role_default_cardinality());
+        Ok(card)
+    }
 
     pub fn get_annotations<'m>(
         &self,

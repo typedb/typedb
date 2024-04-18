@@ -15,7 +15,7 @@ use concept::{
     type_::type_manager::TypeManager,
 };
 use concept::thing::object::Object;
-use concept::type_::annotation::AnnotationDistinct;
+use concept::type_::annotation::{AnnotationCardinality, AnnotationDistinct};
 use concept::type_::PlayerAPI;
 use concept::type_::role_type::RoleTypeAnnotation;
 use durability::wal::WAL;
@@ -48,6 +48,9 @@ fn thing_create_iterate() {
         let _person_2 = thing_manager.create_entity(person_type.clone()).unwrap();
         let _person_3 = thing_manager.create_entity(person_type.clone()).unwrap();
         let _person_4 = thing_manager.create_entity(person_type.clone()).unwrap();
+
+        let finalise_result = thing_manager.finalise();
+        assert!(finalise_result.is_ok());
     }
     if let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();
@@ -95,6 +98,9 @@ fn attribute_create() {
             .create_attribute(name_type.clone(), Value::String(Cow::Owned(String::from(name_value).into_boxed_str())))
             .unwrap();
         assert_eq!(name_1.value(&thing_manager).unwrap(), Value::String(Cow::Owned(String::from(name_value).into_boxed_str())));
+
+        let finalise_result = thing_manager.finalise();
+        assert!(finalise_result.is_ok());
     }
     let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();
     write_snapshot.commit().unwrap();
@@ -153,6 +159,9 @@ fn has() {
 
         let retrieved_attributes_count = person_1.get_has(&thing_manager).count();
         assert_eq!(retrieved_attributes_count, 2);
+
+        let finalise_result = thing_manager.finalise();
+        assert!(finalise_result.is_ok());
     }
 
     let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();
@@ -200,6 +209,9 @@ fn role_player_distinct() {
         employment_type.create_relates(&type_manager, employer_role).unwrap();
         let employer_type = employment_type.get_relates_role(&type_manager, employer_role).unwrap().unwrap().role();
         employer_type.set_annotation(&type_manager, RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
+        employer_type.set_annotation(
+            &type_manager, RoleTypeAnnotation::Cardinality(AnnotationCardinality::new(1, Some(2)))
+        );
 
         let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
         let company_type = type_manager.create_entity_type(&company_label, false).unwrap();
@@ -229,6 +241,9 @@ fn role_player_distinct() {
         assert_eq!(company_3.get_relations(&thing_manager).count(), 1);
 
         assert_eq!(person_1.get_indexed_players(&thing_manager).count(), 3);
+
+        let finalise_result = thing_manager.finalise();
+        assert!(finalise_result.is_ok());
     }
 
     let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();
@@ -282,6 +297,10 @@ fn role_player_duplicates() {
         let list_type = type_manager.create_relation_type(&list_label, false).unwrap();
         list_type.create_relates(&type_manager, entry_role_label).unwrap();
         let entry_type = list_type.get_relates_role(&type_manager, entry_role_label).unwrap().unwrap().role();
+        entry_type.set_annotation(
+            &type_manager,
+            RoleTypeAnnotation::Cardinality(AnnotationCardinality::new(0, None))
+        );
         list_type.create_relates(&type_manager, owner_role_label).unwrap();
         let owner_type = list_type.get_relates_role(&type_manager, owner_role_label).unwrap().unwrap().role();
 
@@ -320,6 +339,9 @@ fn role_player_duplicates() {
             .collect_cloned_vec(|(rel, rol, count)| count)
             .unwrap().into_iter().sum();
         assert_eq!(group_relations_count, 1);
+
+        let finalise_result = thing_manager.finalise();
+        assert!(finalise_result.is_ok());
     }
 
     let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();

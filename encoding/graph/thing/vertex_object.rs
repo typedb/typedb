@@ -17,7 +17,7 @@ use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct ObjectVertex<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }

@@ -325,7 +325,7 @@ impl<'a> ThingEdgeRolePlayer<'a> {
             )
     }
 
-    fn from(&self) -> ObjectVertex<'_> {
+    pub fn from(&self) -> ObjectVertex<'_> {
         // TODO: copy?
         ObjectVertex::new(Bytes::Reference(ByteReference::new(&self.bytes.bytes()[Self::RANGE_FROM])))
     }

@@ -100,6 +100,10 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         ConceptStatus::Put
     }
 
+    fn errors(&self, thing_manager: &ThingManager<impl WritableSnapshot>) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
+        Ok(Vec::new())
+    }
+
     fn delete<'m>(self, thing_manager: &'m ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
         let mut owner_iter = self.get_owners(thing_manager);
         let mut owner = owner_iter.next().transpose()

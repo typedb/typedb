@@ -69,7 +69,13 @@ pub struct AnnotationCardinality {
 }
 
 impl AnnotationCardinality {
-    pub fn new(start_inclusive: u64, end_inclusive: Option<u64>) -> Self {
+    pub const fn new(start_inclusive: u64, end_inclusive: Option<u64>) -> Self {
         AnnotationCardinality { start_inclusive, end_inclusive }
+    }
+
+    pub fn is_valid(&self, count: u64) -> bool {
+        self.start_inclusive <= count && (
+            self.end_inclusive.is_none() || count <= self.end_inclusive.clone().unwrap()
+        )
     }
 }

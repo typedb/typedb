@@ -36,6 +36,7 @@ use crate::{
     ConceptAPI,
 };
 use crate::error::ConceptWriteError;
+use crate::type_::entity_type::EntityTypeAnnotation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {
@@ -64,6 +65,13 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
 
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
+    }
+
+    fn is_abstract(
+        &self, type_manager: &TypeManager<impl ReadableSnapshot>
+    ) -> Result<bool, ConceptReadError> {
+        let annotations = self.get_annotations(type_manager)?;
+        Ok(annotations.contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract::new())))
     }
 }
 
@@ -151,7 +159,7 @@ impl<'a> RelationType<'a> {
         type_manager.storage_delete_relates(self.clone().into_owned(), role_type)
     }
 
-    fn get_relates<'m>(
+    pub(crate) fn get_relates<'m>(
         &self,
         type_manager: &'m TypeManager<impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Relates<'static>>>, ConceptReadError> {

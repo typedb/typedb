@@ -54,6 +54,13 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
     }
+
+    fn is_abstract(
+        &self, type_manager: &TypeManager<impl ReadableSnapshot>
+    ) -> Result<bool, ConceptReadError> {
+        let annotations = self.get_annotations(type_manager)?;
+        Ok(annotations.contains(&AttributeTypeAnnotation::Abstract(AnnotationAbstract::new())))
+    }
 }
 
 impl<'a> AttributeType<'a> {

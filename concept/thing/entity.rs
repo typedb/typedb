@@ -35,6 +35,7 @@ use crate::{
     type_::entity_type::EntityType,
     ByteReference, ConceptAPI, ConceptStatus, GetStatus,
 };
+use crate::error::ConceptReadError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Entity<'a> {
@@ -108,6 +109,10 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
 
     fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus {
         thing_manager.get_status(self.vertex().as_storage_key())
+    }
+
+    fn errors(&self, thing_manager: &ThingManager<impl WritableSnapshot>) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
+        todo!()
     }
 
     fn delete<'m>(self, thing_manager: &'m ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {

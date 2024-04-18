@@ -71,7 +71,7 @@ struct EntityTypeCache {
     type_: EntityType<'static>,
     label: Label<'static>,
     is_root: bool,
-    annotations: HashSet<EntityTypeAnnotation>,
+    annotations_declared: HashSet<EntityTypeAnnotation>,
 
     // TODO: Should these all be sets instead of vec?
     supertype: Option<EntityType<'static>>,
@@ -79,9 +79,9 @@ struct EntityTypeCache {
 
     // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec.
     // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
-    owns_direct: HashSet<Owns<'static>>,
+    owns_declared: HashSet<Owns<'static>>,
 
-    plays_direct: HashSet<Plays<'static>>,
+    plays_declared: HashSet<Plays<'static>>,
     // ...
 }
 
@@ -90,17 +90,17 @@ struct RelationTypeCache {
     type_: RelationType<'static>,
     label: Label<'static>,
     is_root: bool,
-    annotations: HashSet<RelationTypeAnnotation>,
+    annotations_declared: HashSet<RelationTypeAnnotation>,
 
     supertype: Option<RelationType<'static>>,
     supertypes: Vec<RelationType<'static>>, // TODO: benchmark smallvec
 
-    // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
-    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
-    relates_direct: HashSet<Relates<'static>>,
-    owns_direct: HashSet<Owns<'static>>,
+    // subtypes_declared: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    relates_declared: HashSet<Relates<'static>>,
+    owns_declared: HashSet<Owns<'static>>,
 
-    plays_direct: HashSet<Plays<'static>>,
+    plays_declared: HashSet<Plays<'static>>,
 }
 
 #[derive(Debug)]
@@ -108,14 +108,14 @@ struct RoleTypeCache {
     type_: RoleType<'static>,
     label: Label<'static>,
     is_root: bool,
-    annotations: HashSet<RoleTypeAnnotation>,
-    relates: Relates<'static>,
+    annotations_declared: HashSet<RoleTypeAnnotation>,
+    relates_declared: Relates<'static>,
 
     supertype: Option<RoleType<'static>>,
     supertypes: Vec<RoleType<'static>>, // TODO: benchmark smallvec
 
-    // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
-    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes_declared: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 }
 
 #[derive(Debug)]
@@ -123,21 +123,21 @@ struct AttributeTypeCache {
     type_: AttributeType<'static>,
     label: Label<'static>,
     is_root: bool,
-    annotations: HashSet<AttributeTypeAnnotation>,
+    annotations_declared: HashSet<AttributeTypeAnnotation>,
     value_type: Option<ValueType>,
 
     supertype: Option<AttributeType<'static>>,
     supertypes: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 
-    // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
-    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes_declared: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 
     // owners: HashSet<Owns<'static>>
 }
 
 #[derive(Debug)]
 struct OwnsCache {
-    annotations: HashSet<OwnsAnnotation>,
+    annotations_declared: HashSet<OwnsAnnotation>,
 }
 
 impl TypeCache {
@@ -227,11 +227,11 @@ impl TypeCache {
                 type_: entity.clone(),
                 label,
                 is_root,
-                annotations: Self::read_entity_annotations(vertex_properties, entity.clone()),
+                annotations_declared: Self::read_entity_annotations(vertex_properties, entity.clone()),
                 supertype: supertypes.get(&entity).cloned(),
                 supertypes: Vec::new(),
-                owns_direct: owns.iter().filter(|owns| owns.owner() == object).cloned().collect(),
-                plays_direct: plays.iter().filter(|plays| plays.player() == object).cloned().collect(),
+                owns_declared: owns.iter().filter(|owns| owns.owner() == object).cloned().collect(),
+                plays_declared: plays.iter().filter(|plays| plays.player() == object).cloned().collect(),
             };
             caches[entity.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -302,12 +302,12 @@ impl TypeCache {
                 type_: relation.clone(),
                 label,
                 is_root,
-                annotations: Self::read_relation_annotations(vertex_properties, relation.clone()),
+                annotations_declared: Self::read_relation_annotations(vertex_properties, relation.clone()),
                 supertype: supertypes.get(&relation).cloned(),
                 supertypes: Vec::new(),
-                relates_direct,
-                owns_direct: owns.iter().filter(|owns| owns.owner() == object).cloned().collect(),
-                plays_direct: plays.iter().filter(|plays| plays.player() == object).cloned().collect(),
+                relates_declared: relates_direct,
+                owns_declared: owns.iter().filter(|owns| owns.owner() == object).cloned().collect(),
+                plays_declared: plays.iter().filter(|plays| plays.player() == object).cloned().collect(),
             };
             caches[relation.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -369,8 +369,8 @@ impl TypeCache {
                 type_: role.clone(),
                 label,
                 is_root,
-                annotations,
-                relates: relates.iter().find(|relates| relates.role() == role).unwrap().clone(),
+                annotations_declared: annotations,
+                relates_declared: relates.iter().find(|relates| relates.role() == role).unwrap().clone(),
                 supertype: supertypes.get(&role).cloned(),
                 supertypes: Vec::new(),
             };
@@ -426,7 +426,7 @@ impl TypeCache {
                 type_: attribute.clone(),
                 label,
                 is_root,
-                annotations: Self::read_attribute_annotations(vertex_properties, attribute.clone()),
+                annotations_declared: Self::read_attribute_annotations(vertex_properties, attribute.clone()),
                 value_type: Self::read_value_type(vertex_properties, attribute.vertex().into_owned()),
                 supertype: supertypes.get(&attribute).cloned(),
                 supertypes: Vec::new(),
@@ -477,7 +477,7 @@ impl TypeCache {
                 (
                     owns.clone(),
                     OwnsCache {
-                        annotations: Self::read_edge_annotations(edge_properties, owns.into_type_edge())
+                        annotations_declared: Self::read_edge_annotations(edge_properties, owns.into_type_edge())
                             .into_iter()
                             .map(|annotation| OwnsAnnotation::from(annotation))
                             .collect()
@@ -706,23 +706,23 @@ impl TypeCache {
     }
 
     pub(crate) fn get_entity_type_owns(&self, entity_type: EntityType<'static>) -> &HashSet<Owns<'static>> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().owns_direct
+        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().owns_declared
     }
 
     pub(crate) fn get_relation_type_owns(&self, relation_type: RelationType<'static>) -> &HashSet<Owns<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().owns_direct
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().owns_declared
     }
 
     pub(crate) fn get_relation_type_relates(&self, relation_type: RelationType<'static>) -> &HashSet<Relates<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().relates_direct
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().relates_declared
     }
 
     pub(crate) fn get_entity_type_plays(&self, entity_type: EntityType<'static>) -> &HashSet<Plays<'static>> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().plays_direct
+        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().plays_declared
     }
 
     pub(crate) fn get_relation_type_plays(&self, relation_type: RelationType<'static>) -> &HashSet<Plays<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().plays_direct
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().plays_declared
     }
 
     pub(crate) fn get_attribute_type_value_type(&self, attribute_type: AttributeType<'static>) -> Option<ValueType> {
@@ -733,29 +733,29 @@ impl TypeCache {
         &self,
         entity_type: EntityType<'static>,
     ) -> &HashSet<EntityTypeAnnotation> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().annotations
+        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().annotations_declared
     }
 
     pub(crate) fn get_relation_type_annotations(
         &self,
         relation_type: RelationType<'static>,
     ) -> &HashSet<RelationTypeAnnotation> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().annotations
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().annotations_declared
     }
 
     pub(crate) fn get_role_type_annotations(&self, role_type: RoleType<'static>) -> &HashSet<RoleTypeAnnotation> {
-        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().annotations
+        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().annotations_declared
     }
 
     pub(crate) fn get_attribute_type_annotations(
         &self,
         attribute_type: AttributeType<'static>,
     ) -> &HashSet<AttributeTypeAnnotation> {
-        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().annotations
+        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().annotations_declared
     }
 
-    pub(crate) fn get_owns_annotations<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<OwnsAnnotation> {
-        &self.owns.get(&owns).unwrap().annotations
+    pub(crate) fn get_owns_annotations< 'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<OwnsAnnotation> {
+        &self.owns.get(&owns).unwrap().annotations_declared
     }
 
     fn get_entity_type_cache<'c>(

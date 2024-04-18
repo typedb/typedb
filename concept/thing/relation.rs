@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::any::Any;
-use std::sync::Arc;
+use std::collections::HashMap;
 
 use bytes::Bytes;
 use encoding::{AsBytes, graph::{
@@ -15,12 +14,8 @@ use encoding::{AsBytes, graph::{
     type_::vertex::{build_vertex_relation_type, build_vertex_role_type},
     Typed,
 }, Keyable, layout::prefix::Prefix, Prefixed, value::decode_value_u64};
-use storage::{
-    key_value::StorageKeyReference,
-    snapshot::iterator::SnapshotRangeIterator,
-};
+use storage::key_value::StorageKeyReference;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use storage::snapshot::iterator::SnapshotIteratorError;
 
 use crate::{ByteReference, concept_iterator, ConceptAPI, ConceptStatus, edge_iterator, error::ConceptReadError, GetStatus, thing::{
     attribute::Attribute,
@@ -36,9 +31,9 @@ use crate::error::ConceptWriteError;
 use crate::thing::{ObjectAPI, ThingAPI};
 use crate::thing::object::HasAttributeIterator;
 use crate::type_::OwnerAPI;
-use crate::type_::owns::{Owns, OwnsAnnotation};
+use crate::type_::owns::OwnsAnnotation;
 
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct Relation<'a> {
     vertex: ObjectVertex<'a>,
 }
@@ -132,6 +127,21 @@ impl<'a> Relation<'a> {
         thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> RolePlayerIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         thing_manager.get_role_players_of(self.as_reference())
+    }
+
+    fn get_player_counts(
+        &self,
+        thing_manager: &ThingManager<impl ReadableSnapshot>,
+    ) -> Result<HashMap<RoleType<'static>, u64>, ConceptReadError> {
+        let mut map = HashMap::new();
+        let mut rp_iter = self.get_players(thing_manager);
+        let mut rp = rp_iter.next().transpose()?;
+        while let Some((role_player, count)) = rp {
+            let mut value = map.entry(role_player.role_type.clone()).or_insert(0);
+            *value += count;
+            rp = rp_iter.next().transpose()?;
+        }
+        Ok(map)
     }
 
     ///
@@ -280,6 +290,29 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
 
     fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus {
         thing_manager.get_status(self.vertex().as_storage_key())
+    }
+
+    fn errors(&self, thing_manager: &ThingManager<impl WritableSnapshot>) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
+        let mut errors = Vec::new();
+
+        // validate cardinality
+        let type_ = self.type_();
+        let relation_relates = type_.get_relates(thing_manager.type_manager())?;
+        let role_player_count = self.get_player_counts(thing_manager)?;
+        for relates in relation_relates.iter() {
+            let role_type = relates.role();
+            let cardinality = role_type.get_cardinality(thing_manager.type_manager())?;
+            let player_count = role_player_count.get(&role_type).map_or(0, |c| *c);
+            if !cardinality.is_valid(player_count) {
+                errors.push(ConceptWriteError::RelationRoleCardinality {
+                    relation: self.clone().into_owned(),
+                    role_type: role_type.clone(),
+                    cardinality: cardinality.clone(),
+                    actual_cardinality: player_count,
+                });
+            }
+        }
+        Ok(errors)
     }
 
     fn delete<'m>(self, thing_manager: &'m ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {

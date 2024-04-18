@@ -32,11 +32,10 @@ impl<'a> Owns<'a> {
         self.attribute.clone()
     }
 
-    pub(crate) fn get_annotations<'m, 'this>(
-        &'this self, type_manager: &'m TypeManager<impl ReadableSnapshot>
-    ) -> Result<MaybeOwns<'m, HashSet<OwnsAnnotation>>, ConceptReadError> {
-        // type_manager.get_owns_annotations(self.clone())
-        todo!()
+    pub(crate) fn get_annotations<'this>(
+        &'this self, type_manager: &'this TypeManager<impl ReadableSnapshot>,
+    ) -> Result<MaybeOwns<'this, HashSet<OwnsAnnotation>>, ConceptReadError> {
+        type_manager.get_owns_annotations(self.clone())
     }
 }
 

@@ -9,6 +9,9 @@ use encoding::error::EncodingError;
 
 use encoding::value::value_type::ValueType;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
+use crate::thing::relation::Relation;
+use crate::type_::annotation::AnnotationCardinality;
+use crate::type_::role_type::RoleType;
 
 #[derive(Debug)]
 pub struct ConceptError {
@@ -42,6 +45,12 @@ pub enum ConceptWriteError {
     Encoding { source: EncodingError },
 
     ValueTypeMismatch { expected: Option<ValueType>, provided: ValueType },
+    RelationRoleCardinality {
+        relation: Relation<'static>,
+        role_type: RoleType<'static>,
+        cardinality: AnnotationCardinality,
+        actual_cardinality: u64
+    }
 }
 
 impl fmt::Display for ConceptWriteError {
@@ -58,6 +67,7 @@ impl Error for ConceptWriteError {
             Self::ConceptRead { source } => Some(source),
             Self::Encoding { source, .. } => Some(source),
             Self::ValueTypeMismatch { .. } => None,
+            Self::RelationRoleCardinality { .. } => None,
         }
     }
 }

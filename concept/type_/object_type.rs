@@ -16,6 +16,8 @@ use crate::{ConceptAPI, error::ConceptReadError, type_::{
     attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays, relation_type::RelationType,
     role_type::RoleType, type_manager::TypeManager, OwnerAPI, PlayerAPI,
 }};
+use crate::type_::annotation::AnnotationAbstract;
+use crate::type_::entity_type::EntityTypeAnnotation;
 use crate::type_::TypeAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -86,6 +88,15 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         match self {
             ObjectType::Entity(entity) => entity.into_vertex(),
             ObjectType::Relation(relation) => relation.into_vertex(),
+        }
+    }
+
+    fn is_abstract(
+        &self, type_manager: &TypeManager<impl ReadableSnapshot>
+    ) -> Result<bool, ConceptReadError> {
+        match self {
+            ObjectType::Entity(entity) => entity.is_abstract(type_manager),
+            ObjectType::Relation(relation) => relation.is_abstract(type_manager)
         }
     }
 }

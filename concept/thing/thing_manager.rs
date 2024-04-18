@@ -5,6 +5,7 @@
  */
 
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
@@ -210,97 +211,14 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         self.snapshot.unmodifiable_lock_add(object.into_vertex().as_storage_key().into_owned_array())
     }
 
-    pub fn finalise(&self) -> Result<(), Vec<ConceptWriteError>> {
-        // 1. validate cardinality constraints on modified relations. For those that have cardinality requirements, we must also put a lock into the snapshot.
-        // 2. check attributes in modified 'has' ownerships to see if they need to be cleaned up (independent & last ownership)
-
-        // find delete attribute ownerships. If is last ownership in this snapshot, delete attribute (other txn will PUT attributes each time, which we can make safely recreate attribute in serialised validation).
-        // find inserted or deleted role players. Validate cardinality of relations.
-        // validate all new relations have at least 1 role player
-        // validate new things with @key ownerships have the required key (more generally, validate ownerships with cardinality have required cardinality)
-
-        // => refined
-
-        // Validate cardinality:
-        //    for new relations, validate each role type's cardinality is respected
-        //    for new role players (existing relations), validate we haven't violated existing relations' cardinality constraints
-        //    for new owners, validate the ownership cardinality
-        //    for new ownerships, validate we haven't violated existing owners' cardinality constraints
-        // Attribute cleanup:
-        //    For deleted attribute ownerships - if this is the last ownership in this snapshot, delete attribute (other txn will PUT attributes each time, which we can make safely recreate attribute in serialised validation)
-        // Relation players:
-        //    validate all new relations have at least 1 role player or ones with deleted players have at least 1 remaining.
-
-        // ---------
-        // There is an ordering required:
-        //  1. delete all relations in the initial set that have 0 role players.
-        //       --> This could cause other relations to have fewer players, so we need to iterate on this as a fixed point
-        //  2. Delete attributes that have no owners
-        //  3. Validate cardinality anything with cardinality constraints (relations players, attribute owners)
-        // ---------
-
+    pub fn finalise(self) -> Result<(), Vec<ConceptWriteError>> {
         self.cleanup_relations().map_err(|err| Vec::from([err]))?;
         self.cleanup_attributes().map_err(|err| Vec::from([err]))?;
-
-
-        //
-        // for (key, write) in writes {
-        //     let prefix_bytes = key.bytes()[0..PrefixID::LENGTH].try_into().unwrap();
-        //     match Prefix::from_prefix_id(PrefixID::new(prefix_bytes)) {
-        //         Prefix::VertexEntity => {
-        //             debug_assert!(ObjectVertex::is_object_vertex(StorageKeyReference::from(&key)));
-        //             let vertex = ObjectVertex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-        //         }
-        //         Prefix::VertexRelation => {
-        //             debug_assert!(ObjectVertex::is_object_vertex(StorageKeyReference::from(&key)));
-        //             let vertex = ObjectVertex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-        //         }
-        //         Prefix::VertexAttributeBoolean
-        //         | Prefix::VertexAttributeLong
-        //         | Prefix::VertexAttributeDouble
-        //         | Prefix::VertexAttributeString => {
-        //             debug_assert!(AttributeVertex::is_attribute_vertex(StorageKeyReference::from(&key)));
-        //             let vertex = AttributeVertex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-        //         }
-        //         Prefix::EdgeHas => {
-        //             debug_assert!(ThingEdgeHas::is_has(StorageKeyReference::from(&key)));
-        //             let edge = ThingEdgeHas::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-        //         }
-        //         Prefix::EdgeHasReverse => {
-        //             debug_assert!(ThingEdgeHasReverse::is_has_reverse(StorageKeyReference::from(&key)));
-        //             let edge = ThingEdgeHasReverse::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-        //         }
-        //         Prefix::EdgeRolePlayer => {
-        //             debug_assert!(ThingEdgeRolePlayer::is_role_player(StorageKeyReference::from(&key)));
-        //             let edge = ThingEdgeRolePlayer::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-        //         }
-        //         Prefix::EdgeRolePlayerReverse => {
-        //             debug_assert!(ThingEdgeRolePlayer::is_role_player(StorageKeyReference::from(&key)));
-        //             let edge = ThingEdgeRolePlayer::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-        //         }
-        //         Prefix::EdgeRolePlayerIndex => {
-        //             debug_assert!(ThingEdgeRelationIndex::is_index(StorageKeyReference::from(&key)));
-        //             let edge = ThingEdgeRelationIndex::new(Bytes::Reference(ByteReference::from(key.byte_array())));
-        //         },
-        //         Prefix::VertexEntityType
-        //         | Prefix::VertexRelationType
-        //         | Prefix::VertexAttributeType
-        //         | Prefix::VertexRoleType
-        //         | Prefix::EdgeSub
-        //         | Prefix::EdgeSubReverse
-        //         | Prefix::EdgeOwns
-        //         | Prefix::EdgeOwnsReverse
-        //         | Prefix::EdgePlays
-        //         | Prefix::EdgePlaysReverse
-        //         | Prefix::EdgeRelates
-        //         | Prefix::EdgeRelatesReverse
-        //         | Prefix::PropertyType
-        //         | Prefix::PropertyTypeEdge
-        //         | Prefix::IndexLabelToType => unreachable!("Unexpected key in buffered writes."),
-        //     }
-        // }
-
-        todo!()
+        let thing_errors = self.thing_errors();
+        match thing_errors {
+            Ok(errors) => if errors.is_empty() { Ok(()) } else { Err(errors) }
+            Err(error) => Err(Vec::from([ConceptWriteError::ConceptRead { source: error }]))
+        }
     }
 
     fn cleanup_relations(&self) -> Result<(), ConceptWriteError> {
@@ -326,6 +244,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     }
 
     fn cleanup_attributes(&self) -> Result<(), ConceptWriteError> {
+        // TODO: how do we handle concurrent deletion of the last N owners by N different transactions?
         for (key, _) in self
             .snapshot
             .iterate_writes_range(PrefixRange::new_within(Bytes::Array(ByteArray::<{ PrefixID::LENGTH }>::copy(
@@ -340,6 +259,25 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             }
         }
         Ok(())
+    }
+
+    fn thing_errors(&self) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
+        let mut errors = Vec::new();
+        let mut relations_validated = HashSet::new();
+        for (key, _) in self
+            .snapshot
+            .iterate_writes_range(PrefixRange::new_within(Bytes::Array(ByteArray::<{ PrefixID::LENGTH }>::copy(
+                &Prefix::EdgeRolePlayer.prefix_id().bytes(),
+            ))))
+        {
+            let edge = ThingEdgeRolePlayer::new(Bytes::Reference(ByteReference::from(key.byte_array())));
+            let relation = Relation::new(edge.from());
+            if !relations_validated.contains(&relation) {
+                errors.extend(relation.errors(self)?);
+                relations_validated.insert(relation.into_owned());
+            }
+        }
+        Ok(errors)
     }
 
     pub fn create_entity(&self, entity_type: EntityType<'static>) -> Result<Entity<'_>, ConceptWriteError> {
@@ -405,10 +343,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     }
 
     pub(crate) fn set_has<'a>(&self, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
+        // TODO: handle duplicates
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
-        self.snapshot.put(has.into_storage_key().into_owned_array());
+        self.snapshot.put_val(has.into_storage_key().into_owned_array(), encode_value_u64(1));
         let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.into_vertex());
-        self.snapshot.put(has_reverse.into_storage_key().into_owned_array());
+        self.snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), encode_value_u64(1));
     }
 
     pub(crate) fn delete_has<'a>(&self, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {

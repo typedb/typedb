@@ -508,6 +508,10 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
 
+    pub(crate) const fn role_default_cardinality(&self) -> AnnotationCardinality {
+        // TODO: read from database properties the default role cardinality the db was created with
+        AnnotationCardinality::new(1, Some(1))
+    }
 }
 
 impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {

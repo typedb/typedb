@@ -34,6 +34,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::attribute_type::AttributeTypeAnnotation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType<'a> {
@@ -62,6 +63,13 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
 
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
+    }
+
+    fn is_abstract(
+        &self, type_manager: &TypeManager<impl ReadableSnapshot>
+    ) -> Result<bool, ConceptReadError> {
+        let annotations = self.get_annotations(type_manager)?;
+        Ok(annotations.contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract::new())))
     }
 }
 

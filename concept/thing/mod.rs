@@ -8,11 +8,12 @@ use encoding::graph::thing::vertex_object::ObjectVertex;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{ConceptStatus, error::ConceptWriteError, thing::thing_manager::ThingManager};
+use crate::error::ConceptReadError;
 
 pub mod attribute;
 pub mod entity;
 pub mod object;
-mod relation;
+pub mod relation;
 pub mod thing_manager;
 pub mod value;
 
@@ -27,6 +28,8 @@ pub trait ThingAPI<'a> {
 
     // TODO: implementers could cache the status in a OnceCell if we do many operations on the same Thing at once
     fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus;
+
+    fn errors(&self, thing_manager: &ThingManager<impl WritableSnapshot>)  -> Result<Vec<ConceptWriteError>, ConceptReadError>;
 
     fn delete(self, thing_manager: &ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError>;
 }

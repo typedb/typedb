@@ -35,6 +35,8 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
     fn vertex<'this>(&'this self) -> TypeVertex<'this>;
 
     fn into_vertex(self) -> TypeVertex<'a>;
+
+    fn is_abstract(&self, type_manager: &TypeManager<impl ReadableSnapshot>) -> Result<bool, ConceptReadError>;
 }
 
 pub trait ObjectTypeAPI<'a>: TypeAPI<'a> {}

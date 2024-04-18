@@ -7,6 +7,7 @@
 use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+use concept::error::ConceptWriteError;
 use storage::snapshot::{ReadSnapshot, SchemaSnapshot, WriteSnapshot};
 
 use super::Database;
@@ -56,7 +57,10 @@ impl<D> TransactionWrite<D> {
         &self.thing_manager
     }
 
-    pub fn commit(self) {}
+    pub fn commit(self) -> Result<(), Vec<ConceptWriteError>> {
+        self.thing_manager.finalise()?;
+        Ok(())
+    }
 }
 
 pub struct TransactionSchema<D> {
@@ -71,5 +75,8 @@ impl<D> TransactionSchema<D> {
         &self.type_manager
     }
 
-    pub fn commit(self) {}
+    pub fn commit(self) -> Result<(), Vec<ConceptWriteError>> {
+        self.thing_manager.finalise()?;
+        Ok(())
+    }
 }
