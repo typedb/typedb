@@ -48,6 +48,8 @@ public class StatisticReporter {
             conn.connect();
 
             conn.getInputStream().readAllBytes();
+
+            metrics.resetCounts();
         } catch (Exception e) {
             if (LOG.isTraceEnabled()) LOG.trace("Failed to push metrics to {}:", reportingURI, e);
             // do nothing

@@ -125,7 +125,6 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private void execute(TransactionProto.Transaction.Req request) {
         Lock accessLock = null;
         try {
-            Diagnostics.get().requestAttempt(TRANSACTION);
             accessLock = acquireRequestLock(request);
             switch (request.getReqCase()) {
                 case REQ_NOT_SET:
@@ -138,6 +137,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             }
             Diagnostics.get().requestSuccess(TRANSACTION);
         } catch (Throwable error) {
+            Diagnostics.get().requestFail(TRANSACTION);
             close(error);
         } finally {
             if (accessLock != null) accessLock.unlock();

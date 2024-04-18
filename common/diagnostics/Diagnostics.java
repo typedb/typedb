@@ -57,7 +57,7 @@ public abstract class Diagnostics {
         @Override
         public void submitError(Throwable error) {}
         @Override
-        public void requestAttempt(Metrics.NetworkRequests.Kind kind) {}
+        public void requestFail(Metrics.NetworkRequests.Kind kind) {}
         @Override
         public void requestSuccess(Metrics.NetworkRequests.Kind kind) {}
         @Override
@@ -81,7 +81,7 @@ public abstract class Diagnostics {
                 LOG.debug("Skipping re-initialising diagnostics");
                 return;
             }
-            
+
             initSentry(serverID, distributionName, version, errorReportingEnable, errorReportingURI);
 
             Metrics metrics = new Metrics(deploymentID, serverID, distributionName, version);
@@ -149,13 +149,13 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void requestAttempt(Metrics.NetworkRequests.Kind kind) {
-            metrics.requestAttempt(kind);
+        public void requestSuccess(Metrics.NetworkRequests.Kind kind) {
+            metrics.requestSuccess(kind);
         }
 
         @Override
-        public void requestSuccess(Metrics.NetworkRequests.Kind kind) {
-            metrics.requestSuccess(kind);
+        public void requestFail(Metrics.NetworkRequests.Kind kind) {
+            metrics.requestFail(kind);
         }
 
         @Override
@@ -177,7 +177,7 @@ public abstract class Diagnostics {
 
     public abstract void submitError(Throwable error);
 
-    public abstract void requestAttempt(Metrics.NetworkRequests.Kind kind);
+    public abstract void requestFail(Metrics.NetworkRequests.Kind kind);
 
     public abstract void requestSuccess(Metrics.NetworkRequests.Kind kind);
 

@@ -26,12 +26,18 @@ public class Metrics {
         this.userErrors = new UserErrorStatistics();
     }
 
-    public void requestAttempt(Metrics.NetworkRequests.Kind kind) {
-        requests.attempt(kind);
+    public void resetCounts() {
+        this.requests.reset();
+        this.usage.reset();
+        this.userErrors.reset();
     }
 
     public void requestSuccess(Metrics.NetworkRequests.Kind kind) {
         requests.success(kind);
+    }
+
+    public void requestFail(Metrics.NetworkRequests.Kind kind) {
+        requests.fail(kind);
     }
 
     public void setCurrentCount(CurrentCounts.Kind kind, long value) {
@@ -104,39 +110,44 @@ public class Metrics {
             TRANSACTION,
         }
 
-        private final ConcurrentMap<Kind, AtomicLong> attempted = new ConcurrentHashMap<>();
         private final ConcurrentMap<Kind, AtomicLong> successful = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Kind, AtomicLong> failed = new ConcurrentHashMap<>();
 
         NetworkRequests() {
             for (var kind : Kind.values()) {
-                attempted.put(kind, new AtomicLong(0));
                 successful.put(kind, new AtomicLong(0));
+                failed.put(kind, new AtomicLong(0));
             }
         }
 
-        public void attempt(Kind kind) {
-            attempted.get(kind).incrementAndGet();
+        public void reset() {
+            successful.replaceAll((kind, value) -> new AtomicLong(0));
+            failed.replaceAll((kind, value) -> new AtomicLong(0));
         }
 
         public void success(Kind kind) {
             successful.get(kind).incrementAndGet();
         }
 
+        public void fail(Kind kind) {
+            failed.get(kind).incrementAndGet();
+        }
+
         JsonObject asJSON() {
             JsonObject requests = new JsonObject();
             for (var kind : Kind.values()) {
                 JsonObject requestStats = new JsonObject();
-                requestStats.add("attempted", attempted.get(kind).get());
                 requestStats.add("successful", successful.get(kind).get());
+                requestStats.add("failed", failed.get(kind).get());
                 requests.add(kind.name(), requestStats);
             }
             return requests;
         }
 
         String formatPrometheus() {
-            StringBuilder buf = new StringBuilder("# TYPE typedb_attempted_requests_total counter\n");
+            StringBuilder buf = new StringBuilder("# TYPE typedb_failed_requests_total counter\n");
             for (var kind : Kind.values()) {
-                buf.append("typedb_attempted_requests_total{kind=\"").append(kind).append("\"} ").append(attempted.get(kind)).append("\n");
+                buf.append("typedb_failed_requests_total{kind=\"").append(kind).append("\"} ").append(failed.get(kind)).append("\n");
             }
             buf.append("\n# TYPE typedb_successful_requests_total counter\n");
             for (var kind : Kind.values()) {
@@ -152,29 +163,39 @@ public class Metrics {
         }
 
         private final ConcurrentMap<Kind, AtomicLong> counts = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Kind, AtomicLong> maxCounts = new ConcurrentHashMap<>();
 
         CurrentCounts() {
             for (Kind kind : Kind.values()) {
-                counts.put(kind, new AtomicLong(0));
+                counts.put(kind, new AtomicLong(0)); // TODO: calculate diff instead of dropping?
+                maxCounts.put(kind, new AtomicLong(0));
             }
+        }
+
+        public void reset() {
+            maxCounts.replaceAll((kind, value) -> new AtomicLong(counts.get(kind).get()));
         }
 
         public void set(Kind kind, long value) {
             counts.get(kind).set(value);
+
+            if (maxCounts.get(kind).get() < value) { // TODO: Lock?
+                maxCounts.get(kind).set(value);
+            }
         }
 
         JsonObject asJSON() {
             JsonObject current = new JsonObject();
             for (Kind kind : Kind.values()) {
-                current.add(kind.name(), counts.get(kind).get());
+                current.add(kind.name(), maxCounts.get(kind).get());
             }
             return current;
         }
 
         String formatPrometheus() {
-            StringBuilder buf  = new StringBuilder("# TYPE typedb_current_count gauge\n");
+            StringBuilder buf  = new StringBuilder("# TYPE typedb_peak_count gauge\n");
             for (Kind kind : Kind.values()) {
-                buf.append("typedb_current_count{kind=\"").append(kind).append("\"} ").append(counts.get(kind)).append("\n");
+                buf.append("typedb_peak_count{kind=\"").append(kind).append("\"} ").append(maxCounts.get(kind)).append("\n");
             }
             return buf.toString();
         }
@@ -182,6 +203,10 @@ public class Metrics {
 
     private static class UserErrorStatistics {
         private final ConcurrentMap<String, AtomicLong> errorCounts = new ConcurrentHashMap<>();
+
+        public void reset() {
+            errorCounts.clear();
+        }
 
         public void register(String errorCode) {
             errorCounts.computeIfAbsent(errorCode, c -> new AtomicLong(0)).incrementAndGet();
