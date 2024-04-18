@@ -4,32 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
-
 use bytes::{byte_reference::ByteReference, Bytes};
 use encoding::{
-    graph::{
-        thing::{
-            edge::{ThingEdgeHas, ThingEdgeRolePlayer},
-            vertex_attribute::AttributeVertex,
-            vertex_object::ObjectVertex,
-        },
-        type_::vertex::build_vertex_role_type,
+    graph::thing::{
+        edge::ThingEdgeHas
+        ,
+        vertex_object::ObjectVertex,
     },
     layout::prefix::Prefix,
-    value::decode_value_u64,
     Prefixed,
+    value::decode_value_u64,
 };
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::StorageKeyReference,
-    snapshot::{
-        iterator::{SnapshotIteratorError, SnapshotRangeIterator},
-        WritableSnapshot,
-    },
+    snapshot::WritableSnapshot,
 };
 
-use crate::{edge_iterator, error::ConceptReadError, thing::{attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, ObjectAPI}, type_::role_type::RoleType};
+use crate::{edge_iterator, thing::{attribute::Attribute, entity::Entity, ObjectAPI, relation::Relation, thing_manager::ThingManager}};
+use crate::error::ConceptWriteError;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum Object<'a> {
@@ -57,6 +49,18 @@ impl<'a> Object<'a> {
         match self {
             Object::Entity(entity) => entity.set_has(thing_manager, attribute),
             Object::Relation(relation) => relation.set_has(thing_manager, attribute),
+        }
+    }
+
+    pub(crate) fn delete_has_many(
+        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>, count: u64
+    ) -> Result<(), ConceptWriteError> {
+        match self {
+            Object::Entity(entity) => {
+                todo!()
+                // entity.delete_has_many(thing_manager, attribute, count)
+            },
+            Object::Relation(relation) => relation.delete_has_many(thing_manager, attribute, count)
         }
     }
 

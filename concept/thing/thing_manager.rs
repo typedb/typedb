@@ -4,9 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::arch::aarch64::vcvt_high_f32_f64;
 use std::borrow::Cow;
-use std::rc::Rc;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
@@ -20,33 +18,34 @@ use encoding::{
         },
         Typed,
     },
+    Keyable,
     layout::prefix::{Prefix, PrefixID},
     value::{decode_value_u64, encode_value_u64, long::Long, string::StringBytes, value_type::ValueType},
-    Keyable,
 };
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
-    key_value::{StorageKey, StorageKeyReference},
-    snapshot::{write::Write, ReadableSnapshot, WritableSnapshot},
+    key_value::StorageKey,
+    snapshot::{ReadableSnapshot, WritableSnapshot, write::Write},
 };
 
 use crate::{
+    ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         attribute::{Attribute, AttributeIterator},
         entity::{Entity, EntityIterator},
         object::{HasAttributeIterator, Object},
+        ObjectAPI,
         relation::{IndexedPlayersIterator, Relation, RelationIterator, RelationRoleIterator, RolePlayerIterator},
-        value::Value,
-        ObjectAPI, ThingAPI,
+        ThingAPI, value::Value,
     },
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType, role_type::RoleType,
         type_manager::TypeManager, TypeAPI,
     },
-    ConceptStatus,
 };
+use crate::thing::attribute::AttributeOwnerIterator;
 
 pub struct ThingManager<Snapshot> {
     snapshot: Arc<Snapshot>,
@@ -81,8 +80,8 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     }
 
     pub fn get_attributes(&self) -> AttributeIterator<'_, 1> {
-        let start = AttributeVertex::build_prefix_prefix(PrefixID::VERTEX_ATTRIBUTE_MIN);
-        let end = AttributeVertex::build_prefix_prefix(PrefixID::VERTEX_ATTRIBUTE_MAX);
+        let start = AttributeVertex::build_prefix_prefix(Prefix::ATTRIBUTE_MIN);
+        let end = AttributeVertex::build_prefix_prefix(Prefix::ATTRIBUTE_MAX);
         let snapshot_iterator = self.snapshot.iterate_range(PrefixRange::new_inclusive(start, end));
         AttributeIterator::new(snapshot_iterator)
     }
@@ -145,10 +144,14 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     pub(crate) fn get_owners_of<'this, 'a>(
         &'this self,
         attribute: Attribute<'a>,
-    ) {// -> AttributeOwnerIterator<'this, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
-        // let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.into_vertex());
-        // AttributeOwnerIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
-        todo!()
+    ) -> AttributeOwnerIterator<'this, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
+        let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.into_vertex());
+        AttributeOwnerIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
+    }
+
+    pub(crate) fn has_owners<'a>(&self, attribute: Attribute<'a>, buffered_only: bool) -> bool {
+        let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.into_vertex());
+        self.snapshot.any_in_range(PrefixRange::new_within(prefix), buffered_only)
     }
 
     pub(crate) fn get_relations_of<'this, 'a>(
@@ -332,9 +335,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         {
             let edge = ThingEdgeHas::new(Bytes::Reference(ByteReference::from(key.byte_array())));
             let attribute = Attribute::new(edge.to());
-            // if !attribute.has_owners(self) {
-            //     attribute.delete(self)?;
-            // }
+            if !attribute.has_owners(self) {
+                attribute.delete(self)?;
+            }
         }
         Ok(())
     }
@@ -396,9 +399,13 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         self.snapshot.delete(key)
     }
 
+    pub(crate) fn delete_attribute(&self, attribute: Attribute<'_>) {
+        let key = attribute.into_vertex().into_storage_key().into_owned_array();
+        self.snapshot.delete(key);
+    }
+
     pub(crate) fn set_has<'a>(&self, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
-        // TODO: if duplicatable, increment
         self.snapshot.put(has.into_storage_key().into_owned_array());
         let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.into_vertex());
         self.snapshot.put(has_reverse.into_storage_key().into_owned_array());
@@ -407,10 +414,17 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     pub(crate) fn delete_has<'a>(&self, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
         // TODO: lock owner and attribute to prevent concurrent deletes
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
-        // TODO: if duplicatable, increment
         self.snapshot.delete(has.into_storage_key().into_owned_array());
         let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.into_vertex());
         self.snapshot.delete(has_reverse.into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn increment_has<'a>(&self, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
+        todo!()
+    }
+
+    pub(crate) fn decrement_has<'a>(&self, owner: impl ObjectAPI<'a>, attribute: Attribute<'a>, decrement_count: u64) {
+        todo!()
     }
 
     pub fn set_role_player<'a>(&self, relation: Relation<'_>, player: impl ObjectAPI<'a>, role_type: RoleType<'_>) {

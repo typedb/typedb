@@ -151,8 +151,8 @@ fn has() {
         person_1.set_has(&thing_manager, age_1);
         person_1.set_has(&thing_manager, name_1);
 
-        let retrieved_attributes = person_1.get_has(&thing_manager).collect_cloned();
-        assert_eq!(retrieved_attributes.len(), 2);
+        let retrieved_attributes_count = person_1.get_has(&thing_manager).count();
+        assert_eq!(retrieved_attributes_count, 2);
     }
 
     let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();
@@ -168,8 +168,8 @@ fn has() {
 
         let people = thing_manager.get_entities().collect_cloned();
         let person_1 = people.first().unwrap();
-        let retrieved_attributes = person_1.get_has(&thing_manager).collect_cloned();
-        assert_eq!(retrieved_attributes.len(), 2);
+        let retrieved_attributes_count = person_1.get_has(&thing_manager).count();
+        assert_eq!(retrieved_attributes_count, 2);
     }
 }
 

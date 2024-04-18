@@ -72,8 +72,8 @@ impl<'a> AttributeVertex<'a> {
     pub fn is_attribute_vertex(storage_key: StorageKeyReference<'_>) -> bool {
         storage_key.keyspace_id() == Self::KEYSPACE.id() && storage_key.bytes().len() > 0 &&
             (
-                &storage_key.bytes()[Self::RANGE_PREFIX] >= &PrefixID::VERTEX_ATTRIBUTE_MIN.bytes()
-                    && &storage_key.bytes()[Self::RANGE_PREFIX] <= &PrefixID::VERTEX_ATTRIBUTE_MAX.bytes()
+                &storage_key.bytes()[Self::RANGE_PREFIX] >= &Prefix::ATTRIBUTE_MIN.prefix_id().bytes()
+                    && &storage_key.bytes()[Self::RANGE_PREFIX] <= &Prefix::ATTRIBUTE_MAX.prefix_id().bytes()
             )
     }
 
@@ -86,9 +86,9 @@ impl<'a> AttributeVertex<'a> {
         }
     }
 
-    pub fn build_prefix_prefix(prefix: PrefixID) -> StorageKey<'static, { AttributeVertex::LENGTH_PREFIX_PREFIX }> {
+    pub fn build_prefix_prefix(prefix: Prefix) -> StorageKey<'static, { AttributeVertex::LENGTH_PREFIX_PREFIX }> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_PREFIX);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
 

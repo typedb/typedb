@@ -12,6 +12,7 @@ use std::{
     hash::Hash,
     sync::Arc,
 };
+use std::collections::HashMap;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use iterator::State;
@@ -257,9 +258,29 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
         Ok(btree_map)
     }
 
-    pub fn collect_cloned_key_hashset<F, M>(mut self, mapper: F) -> Result<HashSet<M>, Arc<SnapshotIteratorError>>
+    pub fn collect_cloned_hashmap<F, M, N>(mut self, mapper: F) -> Result<HashMap<M, N>, Arc<SnapshotIteratorError>>
+        where
+            F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> (M, N),
+            M: Hash + Eq + PartialEq,
+    {
+        let mut map = HashMap::new();
+        loop {
+            let item = self.next();
+            match item {
+                None => break,
+                Some(Err(error)) => return Err(error),
+                Some(Ok((key, value))) => {
+                    let (m, n) = mapper(key, value);
+                    map.insert(m, n);
+                }
+            }
+        }
+        Ok(map)
+    }
+
+    pub fn collect_cloned_hashset<F, M>(mut self, mapper: F) -> Result<HashSet<M>, Arc<SnapshotIteratorError>>
     where
-        F: for<'b> Fn(StorageKeyReference<'b>) -> M,
+        F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> M,
         M: Hash + Eq + PartialEq,
     {
         let mut set = HashSet::new();
@@ -268,8 +289,8 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
             match item {
                 None => break,
                 Some(Err(error)) => return Err(error),
-                Some(Ok((key, _))) => {
-                    set.insert(mapper(key));
+                Some(Ok((key, value))) => {
+                    set.insert(mapper(key, value));
                 }
             }
         }

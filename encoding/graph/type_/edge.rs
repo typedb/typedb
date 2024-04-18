@@ -4,18 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::f32::consts::E;
 use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
-use crate::{AsBytes, EncodingKeyspace, graph::type_::vertex::TypeVertex, Keyable, layout::{
-    prefix::Prefix,
-}, Prefixed};
+use crate::{AsBytes, EncodingKeyspace, graph::type_::vertex::TypeVertex, Keyable, layout::prefix::Prefix, Prefixed};
 use crate::layout::prefix::PrefixID;
 
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TypeEdge<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
@@ -113,11 +111,12 @@ type_edge_constructors!(
 
 impl<'a> TypeEdge<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
-    const LENGTH: usize = PrefixID::LENGTH + 2 * TypeVertex::LENGTH;
+    pub(crate) const LENGTH: usize = PrefixID::LENGTH + 2 * TypeVertex::LENGTH;
+    const LENGTH_PREFIX: usize = PrefixID::LENGTH;
     const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + TypeVertex::LENGTH;
     const LENGTH_PREFIX_FROM_PREFIX: usize = PrefixID::LENGTH + TypeVertex::LENGTH_PREFIX;
 
-    fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         TypeEdge { bytes }
     }
@@ -130,10 +129,9 @@ impl<'a> TypeEdge<'a> {
         Self { bytes: Bytes::Array(bytes) }
     }
 
-    fn build_prefix_from(prefix: Prefix, from: TypeVertex<'_>) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM }> {
-        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
+    pub fn build_prefix(prefix: Prefix) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_PREFIX);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -142,6 +140,13 @@ impl<'a> TypeEdge<'a> {
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeVertex::LENGTH_PREFIX]
             .copy_from_slice(&from_prefix.prefix_id().bytes());
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    fn build_prefix_from(prefix: Prefix, from: TypeVertex<'_>) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 

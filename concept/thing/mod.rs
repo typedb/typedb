@@ -4,14 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use bytes::byte_reference::ByteReference;
 use encoding::graph::thing::vertex_object::ObjectVertex;
-use encoding::value::decode_value_u64;
-use storage::key_value::StorageKeyReference;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{ConceptStatus, edge_iterator, error::ConceptWriteError, thing::thing_manager::ThingManager};
-use crate::thing::object::Object;
+use crate::{ConceptStatus, error::ConceptWriteError, thing::thing_manager::ThingManager};
 
 pub mod attribute;
 pub mod entity;

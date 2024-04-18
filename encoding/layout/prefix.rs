@@ -14,9 +14,6 @@ pub struct PrefixID {
 }
 
 impl PrefixID {
-    pub const VERTEX_ATTRIBUTE_MIN: PrefixID = Self::new([50]);
-    pub const VERTEX_ATTRIBUTE_MAX: PrefixID = Self::new([100]);
-
     pub const LENGTH: usize = 1;
 
     pub const fn new(bytes: [u8; PrefixID::LENGTH]) -> Self {
@@ -55,6 +52,7 @@ impl PrefixID {
             Prefix::EdgeRolePlayer => todo!(),
             Prefix::EdgeRolePlayerReverse => todo!(),
             Prefix::EdgeRolePlayerIndex => todo!(),
+            Prefix::_VertexAttributeLast => unreachable!("Marker enum variant should not be used."),
         }
     }
 }
@@ -73,6 +71,7 @@ pub enum Prefix {
     VertexAttributeLong,
     VertexAttributeDouble,
     VertexAttributeString,
+    _VertexAttributeLast,   // marker to indicate reserved range for attribute types
 
     EdgeSub,
     EdgeSubReverse,
@@ -132,6 +131,9 @@ macro_rules! prefix_functions {
 }
 
 impl Prefix {
+    pub const ATTRIBUTE_MIN: Self = Prefix::VertexAttributeBoolean;
+    pub const ATTRIBUTE_MAX: Self = Prefix::_VertexAttributeLast;
+
     prefix_functions!(
            // Reserved: 0-9
 
@@ -148,6 +150,7 @@ impl Prefix {
            VertexAttributeLong => [51];
            VertexAttributeDouble => [52];
            VertexAttributeString => [53];
+           _VertexAttributeLast => [99];
 
            EdgeSub => [100];
            EdgeSubReverse => [101];

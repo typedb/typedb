@@ -21,40 +21,32 @@ use encoding::{
                 build_edge_relates_reverse_prefix_prefix, build_edge_sub_prefix_prefix, new_edge_owns, new_edge_plays,
                 new_edge_relates, new_edge_relates_reverse, new_edge_sub,
             },
+            Kind,
             property::{build_property_type_label, build_property_type_value_type, TypeVertexProperty},
             vertex::{
                 build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
                 build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type,
                 new_vertex_relation_type, new_vertex_role_type, TypeVertex,
             },
-            Kind,
         },
         Typed,
     },
     layout::{infix::Infix, prefix::Prefix},
+    Prefixed,
     value::{
         label::Label,
         string::StringBytes,
         value_type::{ValueType, ValueTypeID},
     },
-    Prefixed,
 };
+use encoding::graph::type_::edge::TypeEdge;
+use encoding::graph::type_::property::TypeEdgeProperty;
 use primitive::prefix_range::PrefixRange;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_VALUE_INLINE};
-use storage::{snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
+use storage::{MVCCStorage, ReadSnapshotOpenError, snapshot::ReadableSnapshot};
 
-use crate::type_::{
-    annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent},
-    attribute_type::{AttributeType, AttributeTypeAnnotation},
-    entity_type::{EntityType, EntityTypeAnnotation},
-    object_type::ObjectType,
-    owns::Owns,
-    plays::Plays,
-    relates::Relates,
-    relation_type::{RelationType, RelationTypeAnnotation},
-    role_type::{RoleType, RoleTypeAnnotation},
-    TypeAPI,
-};
+use crate::type_::{annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent}, attribute_type::{AttributeType, AttributeTypeAnnotation}, deserialise_annotation_cardinality, entity_type::{EntityType, EntityTypeAnnotation}, IntoCanonicalTypeEdge, object_type::ObjectType, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
+use crate::type_::owns::OwnsAnnotation;
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -65,6 +57,8 @@ pub struct TypeCache {
     relation_types: Box<[Option<RelationTypeCache>]>,
     role_types: Box<[Option<RoleTypeCache>]>,
     attribute_types: Box<[Option<AttributeTypeCache>]>,
+
+    owns: HashMap<Owns<'static>, OwnsCache>,
 
     entity_types_index_label: HashMap<Label<'static>, EntityType<'static>>,
     relation_types_index_label: HashMap<Label<'static>, RelationType<'static>>,
@@ -120,8 +114,8 @@ struct RoleTypeCache {
     supertype: Option<RoleType<'static>>,
     supertypes: Vec<RoleType<'static>>, // TODO: benchmark smallvec
 
-                                        // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
-                                        // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 }
 
 #[derive(Debug)]
@@ -135,8 +129,15 @@ struct AttributeTypeCache {
     supertype: Option<AttributeType<'static>>,
     supertypes: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 
-                                             // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
-                                             // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+
+    // owners: HashSet<Owns<'static>>
+}
+
+#[derive(Debug)]
+struct OwnsCache {
+    annotations: HashSet<OwnsAnnotation>,
 }
 
 impl TypeCache {
@@ -181,12 +182,20 @@ impl TypeCache {
             .filter_map(|entry| entry.as_ref().map(|cache| (cache.label.clone(), cache.type_.clone())))
             .collect();
 
+        let edge_properties = snapshot
+            .iterate_range(PrefixRange::new_within(TypeEdgeProperty::build_prefix()))
+            .collect_cloned_bmap(|key, value| {
+                (TypeEdgeProperty::new(Bytes::Array(ByteArray::from(key.byte_ref()))), ByteArray::from(value))
+            })
+            .unwrap();
+
         Ok(TypeCache {
             open_sequence_number,
             entity_types: entity_type_caches,
             relation_types: relation_type_caches,
             role_types: role_type_caches,
             attribute_types: attribute_type_caches,
+            owns: Self::create_owns_caches(&snapshot, &edge_properties),
 
             entity_types_index_label: entity_type_index_labels,
             relation_types_index_label: relation_type_index_labels,
@@ -201,7 +210,7 @@ impl TypeCache {
     ) -> Box<[Option<EntityTypeCache>]> {
         let entities = snapshot
             .iterate_range(PrefixRange::new_within(build_vertex_entity_type_prefix()))
-            .collect_cloned_key_hashset(|key| {
+            .collect_cloned_hashset(|key, _| {
                 EntityType::new(new_vertex_entity_type(Bytes::Reference(key.byte_ref())).into_owned())
             })
             .unwrap();
@@ -235,7 +244,7 @@ impl TypeCache {
         entity_type: EntityType<'static>,
     ) -> HashSet<EntityTypeAnnotation> {
         let mut annotations = HashSet::new();
-        for annotation in Self::read_annotations(vertex_properties, entity_type.into_vertex()).into_iter() {
+        for annotation in Self::read_vertex_annotations(vertex_properties, entity_type.into_vertex()).into_iter() {
             annotations.insert(EntityTypeAnnotation::from(annotation));
         }
         annotations
@@ -262,7 +271,7 @@ impl TypeCache {
     ) -> Box<[Option<RelationTypeCache>]> {
         let relations = snapshot
             .iterate_range(PrefixRange::new_within(build_vertex_relation_type_prefix()))
-            .collect_cloned_key_hashset(|key| {
+            .collect_cloned_hashset(|key, _| {
                 RelationType::new(new_vertex_relation_type(Bytes::Reference(key.byte_ref())).into_owned())
             })
             .unwrap();
@@ -311,7 +320,7 @@ impl TypeCache {
         relation_type: RelationType<'static>,
     ) -> HashSet<RelationTypeAnnotation> {
         let mut annotations = HashSet::new();
-        for annotation in Self::read_annotations(vertex_properties, relation_type.into_vertex()).into_iter() {
+        for annotation in Self::read_vertex_annotations(vertex_properties, relation_type.into_vertex()).into_iter() {
             annotations.insert(RelationTypeAnnotation::from(annotation));
         }
         annotations
@@ -338,7 +347,7 @@ impl TypeCache {
     ) -> Box<[Option<RoleTypeCache>]> {
         let roles = snapshot
             .iterate_range(PrefixRange::new_within(build_vertex_role_type_prefix()))
-            .collect_cloned_key_hashset(|key| {
+            .collect_cloned_hashset(|key, _| {
                 RoleType::new(new_vertex_role_type(Bytes::Reference(key.byte_ref())).into_owned())
             })
             .unwrap();
@@ -376,7 +385,7 @@ impl TypeCache {
         role_type: RoleType<'static>,
     ) -> HashSet<RoleTypeAnnotation> {
         let mut annotations = HashSet::new();
-        for annotation in Self::read_annotations(vertex_properties, role_type.into_vertex()).into_iter() {
+        for annotation in Self::read_vertex_annotations(vertex_properties, role_type.into_vertex()).into_iter() {
             annotations.insert(RoleTypeAnnotation::from(annotation));
         }
         annotations
@@ -403,7 +412,7 @@ impl TypeCache {
     ) -> Box<[Option<AttributeTypeCache>]> {
         let attributes = snapshot
             .iterate_range(PrefixRange::new_within(build_vertex_attribute_type_prefix()))
-            .collect_cloned_key_hashset(|key| {
+            .collect_cloned_hashset(|key, _| {
                 AttributeType::new(new_vertex_attribute_type(Bytes::Reference(key.byte_ref())).into_owned())
             })
             .unwrap();
@@ -433,7 +442,7 @@ impl TypeCache {
         attribute_type: AttributeType<'static>,
     ) -> HashSet<AttributeTypeAnnotation> {
         let mut annotations = HashSet::new();
-        for annotation in Self::read_annotations(vertex_properties, attribute_type.into_vertex()).into_iter() {
+        for annotation in Self::read_vertex_annotations(vertex_properties, attribute_type.into_vertex()).into_iter() {
             annotations.insert(AttributeTypeAnnotation::from(annotation));
         }
         annotations
@@ -454,9 +463,33 @@ impl TypeCache {
         }
     }
 
+    fn create_owns_caches(
+        snapshot: &impl ReadableSnapshot,
+        edge_properties: &BTreeMap<TypeEdgeProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+    ) -> HashMap<Owns<'static>, OwnsCache> {
+        snapshot
+            .iterate_range(PrefixRange::new_within(TypeEdge::build_prefix(Prefix::EdgeOwnsReverse)))
+            .collect_cloned_hashmap(|key, _| {
+                let edge = TypeEdge::new(Bytes::Reference(key.byte_ref()));
+                let attribute = AttributeType::new(edge.from().into_owned());
+                let owner = ObjectType::new(edge.to().into_owned());
+                let owns = Owns::new(owner, attribute);
+                (
+                    owns.clone(),
+                    OwnsCache {
+                        annotations: Self::read_edge_annotations(edge_properties, owns.into_type_edge())
+                            .into_iter()
+                            .map(|annotation| OwnsAnnotation::from(annotation))
+                            .collect()
+                    }
+                )
+            })
+            .unwrap()
+    }
+
     fn fetch_owns<F>(snapshot: &impl ReadableSnapshot, prefix: Prefix, from_reader: F) -> Vec<Owns<'static>>
-    where
-        F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
+        where
+            F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
     {
         snapshot
             .iterate_range(PrefixRange::new_within(build_edge_owns_prefix_prefix(prefix)))
@@ -468,8 +501,8 @@ impl TypeCache {
     }
 
     fn fetch_plays<F>(snapshot: &impl ReadableSnapshot, prefix: Prefix, from_constructor: F) -> Vec<Plays<'static>>
-    where
-        F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
+        where
+            F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
     {
         snapshot
             .iterate_range(PrefixRange::new_within(build_edge_plays_prefix_prefix(prefix)))
@@ -485,8 +518,8 @@ impl TypeCache {
         prefix: Prefix,
         type_constructor: F,
     ) -> BTreeMap<T, T>
-    where
-        F: Fn(TypeVertex<'static>) -> T,
+        where
+            F: Fn(TypeVertex<'static>) -> T,
     {
         snapshot
             .iterate_range(PrefixRange::new_within(build_edge_sub_prefix_prefix(prefix)))
@@ -520,7 +553,7 @@ impl TypeCache {
             .map(|bytes| ValueType::from_value_type_id(ValueTypeID::new(bytes.bytes().try_into().unwrap())))
     }
 
-    fn read_annotations(
+    fn read_vertex_annotations(
         vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
         type_vertex: TypeVertex<'static>,
     ) -> Vec<Annotation> {
@@ -538,10 +571,42 @@ impl TypeCache {
                             Some(Annotation::Independent(AnnotationIndependent::new()))
                         }
                         Infix::PropertyAnnotationCardinality => {
-                            let card = bincode::deserialize(value.bytes()).unwrap();
-                            Some(Annotation::Cardinality(card))
+                            Some(Annotation::Cardinality(deserialise_annotation_cardinality(ByteReference::from(value))))
                         }
-                        | Infix::PropertyLabel | Infix::PropertyValueType => None,
+                        Infix::PropertyLabel | Infix::PropertyValueType => None,
+                        Infix::_PropertyAnnotationLast => {
+                            unreachable!("Received unexpected marker annotation")
+                        }
+                    }
+                }
+            })
+            .collect()
+    }
+
+    fn read_edge_annotations(
+        edge_properties: &BTreeMap<TypeEdgeProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        type_edge: TypeEdge<'static>,
+    ) -> HashSet<Annotation> {
+        edge_properties
+            .iter()
+            .filter_map(|(property, value)| {
+                if property.type_edge() != type_edge {
+                    None
+                } else {
+                    // WARNING: do _not_ remove the explicit enumeration, as this will help us catch when future annotations are added
+                    match property.infix() {
+                        Infix::PropertyAnnotationAbstract => Some(Annotation::Abstract(AnnotationAbstract::new())),
+                        Infix::PropertyAnnotationDistinct => Some(Annotation::Distinct(AnnotationDistinct::new())),
+                        Infix::PropertyAnnotationIndependent => {
+                            Some(Annotation::Independent(AnnotationIndependent::new()))
+                        }
+                        Infix::PropertyAnnotationCardinality => {
+                            Some(Annotation::Cardinality(deserialise_annotation_cardinality(ByteReference::from(value))))
+                        }
+                        Infix::PropertyLabel | Infix::PropertyValueType => None,
+                        Infix::_PropertyAnnotationLast => {
+                            unreachable!("Received unexpected marker annotation")
+                        }
                     }
                 }
             })
@@ -687,6 +752,10 @@ impl TypeCache {
         attribute_type: AttributeType<'static>,
     ) -> &HashSet<AttributeTypeAnnotation> {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().annotations
+    }
+
+    pub(crate) fn get_owns_annotations<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<OwnsAnnotation> {
+        &self.owns.get(&owns).unwrap().annotations
     }
 
     fn get_entity_type_cache<'c>(

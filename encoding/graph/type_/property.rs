@@ -18,6 +18,7 @@ use crate::{
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::graph::type_::edge::TypeEdge;
 use crate::layout::prefix::Prefix;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
@@ -100,7 +101,7 @@ impl<'a> TypeVertexProperty<'a> {
         property
     }
 
-    fn build(vertex: TypeVertex<'_>, infix: Infix) -> Self {
+    pub fn build(vertex: TypeVertex<'_>, infix: Infix) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::PropertyType.prefix_id().bytes());
         array.bytes_mut()[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
@@ -180,3 +181,150 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {
 }
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
+pub struct TypeEdgeProperty<'a> {
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
+}
+
+macro_rules! type_edge_property_constructors {
+    ($new_name:ident, $build_name:ident, $is_name:ident, InfixType::$infix:ident) => {
+        pub fn $new_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> TypeEdgeProperty<'_> {
+            let edge = TypeEdgeProperty::new(bytes);
+            debug_assert_eq!(edge.infix(), Infix::$infix);
+            edge
+        }
+
+        pub fn $build_name(type_edge: TypeEdge<'_>) -> TypeEdgeProperty<'static> {
+            TypeEdgeProperty::build(type_edge, Infix::$infix)
+        }
+
+        pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+            bytes.length() == TypeEdgeProperty::LENGTH_NO_SUFFIX
+                && TypeEdgeProperty::new(bytes).infix() == Infix::$infix
+        }
+    };
+}
+
+type_edge_property_constructors!(
+    new_property_type_edge_annotation_abstract,
+    build_property_type_edge_annotation_abstract,
+    is_property_type_edge_annotation_abstract,
+    InfixType::PropertyAnnotationAbstract
+);
+
+type_edge_property_constructors!(
+    new_property_type_edge_annotation_distinct,
+    build_property_type_edge_annotation_distinct,
+    is_property_type_edge_annotation_distinct,
+    InfixType::PropertyAnnotationDistinct
+);
+
+type_edge_property_constructors!(
+    new_property_type_edge_annotation_independent,
+    build_property_type_edge_annotation_independent,
+    is_property_type_edge_annotation_independent,
+    InfixType::PropertyAnnotationIndependent
+);
+
+type_edge_property_constructors!(
+    new_property_type_edge_annotation_cardinality,
+    build_property_type_edge_annotation_cardinality,
+    is_property_type_edge_annotation_cardinality,
+    InfixType::PropertyAnnotationCardinality
+);
+
+impl<'a> TypeEdgeProperty<'a> {
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+
+    const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + TypeEdge::LENGTH + InfixID::LENGTH;
+    const LENGTH_PREFIX: usize = PrefixID::LENGTH;
+    const LENGTH_PREFIX_EDGE: usize = PrefixID::LENGTH + TypeEdge::LENGTH;
+
+    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+        debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
+        let property = TypeEdgeProperty { bytes };
+        debug_assert_eq!(property.prefix(), Prefix::PropertyTypeEdge);
+        property
+    }
+
+    pub fn build(edge: TypeEdge<'_>, infix: Infix) -> Self {
+        let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX);
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::PropertyTypeEdge.prefix_id().bytes());
+        array.bytes_mut()[Self::range_type_edge()].copy_from_slice(edge.bytes().bytes());
+        array.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
+        TypeEdgeProperty { bytes: Bytes::Array(array) }
+    }
+
+    fn build_suffixed<const INLINE_BYTES: usize>(
+        edge: TypeEdge<'_>,
+        infix: Infix,
+        suffix: Bytes<'_, INLINE_BYTES>,
+    ) -> Self {
+        let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX + suffix.length());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::PropertyTypeEdge.prefix_id().bytes());
+        array.bytes_mut()[Self::range_type_edge()].copy_from_slice(edge.bytes().bytes());
+        array.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
+        array.bytes_mut()[Self::range_suffix(suffix.length())].copy_from_slice(suffix.bytes());
+        TypeEdgeProperty { bytes: Bytes::Array(array) }
+    }
+
+    pub fn build_prefix() -> StorageKey<'static, { TypeEdgeProperty::LENGTH_PREFIX }> {
+        // TODO: is it better to have a const fn that is a reference to owned memory, or
+        //       to always induce a tiny copy have a non-const function?
+        const PREFIX_BYTES: [u8; PrefixID::LENGTH] = Prefix::PropertyTypeEdge.prefix_id().bytes();
+        StorageKey::new_ref(Self::KEYSPACE, ByteReference::new(&PREFIX_BYTES))
+    }
+
+    pub fn type_edge(&'a self) -> TypeEdge<'a> {
+        TypeEdge::new(Bytes::Reference(ByteReference::new(&self.bytes().bytes()[Self::range_type_edge()])))
+    }
+
+    pub fn infix(&self) -> Infix {
+        let infix_bytes = &self.bytes.bytes()[Self::range_infix()];
+        Infix::from_infix_id(InfixID::new(infix_bytes.try_into().unwrap()))
+    }
+
+    fn suffix_length(&self) -> usize {
+        self.bytes().length() - Self::LENGTH_NO_SUFFIX
+    }
+
+    pub fn suffix(&self) -> Option<ByteReference> {
+        let suffix_length = self.suffix_length();
+        if suffix_length > 0 {
+            Some(ByteReference::new(&self.bytes.bytes()[Self::range_suffix(self.suffix_length())]))
+        } else {
+            None
+        }
+    }
+
+    const fn range_type_edge() -> Range<usize> {
+        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeEdge::LENGTH
+    }
+
+    const fn range_infix() -> Range<usize> {
+        Self::range_type_edge().end..Self::range_type_edge().end + InfixID::LENGTH
+    }
+
+    fn range_suffix(suffix_length: usize) -> Range<usize> {
+        Self::range_infix().end..Self::range_infix().end + suffix_length
+    }
+}
+
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {
+    fn bytes(&'a self) -> ByteReference<'a> {
+        self.bytes.as_reference()
+    }
+
+    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
+        self.bytes
+    }
+}
+
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {
+    fn keyspace(&self) -> EncodingKeyspace {
+        Self::KEYSPACE
+    }
+}
+
+impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {}

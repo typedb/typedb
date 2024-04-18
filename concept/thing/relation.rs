@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::any::Any;
 use std::sync::Arc;
 
 use bytes::Bytes;
@@ -34,6 +35,8 @@ use crate::{ByteReference, concept_iterator, ConceptAPI, ConceptStatus, edge_ite
 use crate::error::ConceptWriteError;
 use crate::thing::{ObjectAPI, ThingAPI};
 use crate::thing::object::HasAttributeIterator;
+use crate::type_::OwnerAPI;
+use crate::type_::owns::{Owns, OwnsAnnotation};
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Relation<'a> {
@@ -70,9 +73,36 @@ impl<'a> Relation<'a> {
         thing_manager.set_has(self.as_reference(), attribute.as_reference())
     }
 
-    pub fn delete_has(&self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>) {
-        // TODO: validate schema?
-        thing_manager.delete_has(self.as_reference(), attribute.as_reference())
+    pub fn delete_has_single(
+        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>,
+    ) -> Result<(), ConceptWriteError> {
+        self.delete_has_many(thing_manager, attribute, 1)
+    }
+
+    pub fn delete_has_many(
+        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>, count: u64,
+    ) -> Result<(), ConceptWriteError> {
+        let owns = self.type_().get_owns_attribute(
+            thing_manager.type_manager(),
+            attribute.type_(),
+        ).map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        match owns {
+            None => {
+                todo!("throw useful schema violation error")
+            }
+            Some(owns) => {
+                let annotations = owns
+                    .get_annotations(thing_manager.type_manager())
+                    .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+                if annotations.contains(&OwnsAnnotation::Distinct(AnnotationDistinct::new())) {
+                    debug_assert_eq!(count, 1);
+                    thing_manager.delete_has(self.as_reference(), attribute);
+                } else {
+                    thing_manager.decrement_has(self.as_reference(), attribute, count);
+                }
+            }
+        }
+        Ok(())
     }
 
     pub fn get_relations<'m>(
@@ -257,7 +287,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         let mut has = has_iter.next().transpose()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         while let Some((attr, count)) = has {
-            self.delete_has(thing_manager, attr);
+            self.delete_has_many(thing_manager, attr, count)?;
             has = has_iter.next().transpose()
                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         }

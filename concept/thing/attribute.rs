@@ -5,22 +5,21 @@
  */
 
 use std::cmp::Ordering;
-use std::sync::Arc;
 
 use bytes::Bytes;
 use encoding::{
+    AsBytes,
     graph::{thing::vertex_attribute::AttributeVertex, type_::vertex::build_vertex_attribute_type, Typed},
-    value::value_type::ValueType,
-    AsBytes, Keyable,
+    Keyable, value::value_type::ValueType,
 };
-use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse};
+use encoding::graph::thing::edge::ThingEdgeHasReverse;
 use encoding::value::decode_value_u64;
 use storage::{
     key_value::StorageKeyReference,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
-use crate::{concept_iterator, error::{ConceptReadError, ConceptWriteError}, thing::{thing_manager::ThingManager, value::Value, ThingAPI}, type_::attribute_type::AttributeType, ByteReference, ConceptAPI, ConceptStatus, GetStatus, edge_iterator};
+use crate::{ByteReference, concept_iterator, ConceptAPI, ConceptStatus, edge_iterator, error::{ConceptReadError, ConceptWriteError}, GetStatus, thing::{thing_manager::ThingManager, ThingAPI, value::Value}, type_::attribute_type::AttributeType};
 use crate::thing::object::Object;
 
 #[derive(Debug)]
@@ -57,15 +56,20 @@ impl<'a> Attribute<'a> {
         Ok(self.value.as_ref().unwrap().as_reference())
     }
 
-    // pub fn has_owners<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> bool {
-    //
-    // }
-    //
-    // pub fn get_owners<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>)
-    //     -> HasAttributeIterator<'this, {}>
-    // {
-    //     thing_manager.get_has_of(self.as_reference())
-    // }
+    pub fn has_owners<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> bool {
+        match self.get_status(thing_manager) {
+            ConceptStatus::Put => thing_manager.has_owners(self.as_reference(), false),
+            ConceptStatus::Inserted | ConceptStatus::Persisted | ConceptStatus::Deleted => {
+                unreachable!("Attributes are expected to always have a PUT status.")
+            }
+        }
+    }
+
+    pub fn get_owners<'m>(
+        &self, thing_manager: &'m ThingManager<impl ReadableSnapshot>,
+    ) -> AttributeOwnerIterator<'m, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
+        thing_manager.get_owners_of(self.as_reference())
+    }
 
     pub fn as_reference(&self) -> Attribute<'_> {
         Attribute { vertex: self.vertex.as_reference(), value: self.value.as_ref().map(|value| value.as_reference()) }
@@ -97,7 +101,17 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
     }
 
     fn delete<'m>(self, thing_manager: &'m ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
-        todo!()
+        let mut owner_iter = self.get_owners(thing_manager);
+        let mut owner = owner_iter.next().transpose()
+            .map_err(|err| ConceptWriteError::ConceptRead { source : err })?;
+        while let Some((object, count)) = owner {
+            object.delete_has_many(thing_manager, self.as_reference(), count)?;
+            owner = owner_iter.next().transpose()
+                .map_err(|err|  ConceptWriteError::ConceptRead { source : err })?;
+        }
+
+        thing_manager.delete_attribute(self);
+        Ok(())
     }
 }
 
@@ -136,7 +150,7 @@ fn storage_key_to_owner<'a>(
 }
 
 edge_iterator!(
-    AttributeOwnersIterator;
+    AttributeOwnerIterator;
     (Object<'_>, u64);
     storage_key_to_owner
 );

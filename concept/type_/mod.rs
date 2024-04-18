@@ -5,6 +5,8 @@
  */
 
 use std::collections::HashSet;
+use bytes::byte_reference::ByteReference;
+use encoding::graph::type_::edge::TypeEdge;
 
 use encoding::graph::type_::vertex::TypeVertex;
 use primitive::maybe_owns::MaybeOwns;
@@ -15,6 +17,7 @@ use crate::{
     type_::{attribute_type::AttributeType, owns::Owns, plays::Plays, role_type::RoleType, type_manager::TypeManager},
     ConceptAPI,
 };
+use crate::type_::annotation::AnnotationCardinality;
 
 pub mod annotation;
 pub mod attribute_type;
@@ -36,7 +39,7 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
 
 pub trait ObjectTypeAPI<'a>: TypeAPI<'a> {}
 
-pub trait OwnerAPI<'a> {
+pub trait OwnerAPI<'a>: TypeAPI<'a> {
     fn set_owns(&self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>);
 
     fn delete_owns(&self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>);
@@ -61,7 +64,7 @@ pub trait OwnerAPI<'a> {
     }
 }
 
-pub trait PlayerAPI<'a> {
+pub trait PlayerAPI<'a>: TypeAPI<'a> {
     fn set_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>);
 
     fn delete_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>);
@@ -84,4 +87,16 @@ pub trait PlayerAPI<'a> {
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_plays_role(type_manager, role_type)?.is_some())
     }
+}
+
+pub(crate) trait IntoCanonicalTypeEdge<'a> {
+    fn as_type_edge(&self) -> TypeEdge<'static>;
+
+    fn into_type_edge(self) -> TypeEdge<'static>;
+}
+
+
+// TODO: where does this belong?
+fn deserialise_annotation_cardinality(value: ByteReference<'_>) -> AnnotationCardinality {
+    bincode::deserialize(value.bytes()).unwrap()
 }

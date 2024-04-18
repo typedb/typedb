@@ -5,22 +5,33 @@
  */
 
 use std::collections::HashSet;
+use encoding::graph::type_::vertex::TypeVertex;
+use encoding::layout::prefix::Prefix;
+use encoding::Prefixed;
 
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{
-    error::ConceptReadError,
-    type_::{
-        attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays, relation_type::RelationType,
-        role_type::RoleType, type_manager::TypeManager, OwnerAPI, PlayerAPI,
-    },
-};
+use crate::{ConceptAPI, error::ConceptReadError, type_::{
+    attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays, relation_type::RelationType,
+    role_type::RoleType, type_manager::TypeManager, OwnerAPI, PlayerAPI,
+}};
+use crate::type_::TypeAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ObjectType<'a> {
     Entity(EntityType<'a>),
     Relation(RelationType<'a>),
+}
+
+impl<'a> ObjectType<'a> {
+    pub(crate) fn new(vertex: TypeVertex<'a> ) -> Self {
+        match vertex.prefix() {
+            Prefix::VertexEntityType => ObjectType::Entity(EntityType::new(vertex)),
+            Prefix::VertexRelationType => ObjectType::Relation(RelationType::new(vertex)),
+            _ => unreachable!("Object type creation requires either entity type or relation type vertex."),
+        }
+    }
 }
 
 impl<'a> OwnerAPI<'a> for ObjectType<'a> {
@@ -57,6 +68,24 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         match self {
             ObjectType::Entity(entity) => entity.get_owns_attribute(type_manager, attribute_type),
             ObjectType::Relation(relation) => relation.get_owns_attribute(type_manager, attribute_type),
+        }
+    }
+}
+
+impl<'a> ConceptAPI<'a> for ObjectType<'a> {}
+
+impl<'a> TypeAPI<'a> for ObjectType<'a> {
+    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+        match self {
+            ObjectType::Entity(entity) => entity.vertex(),
+            ObjectType::Relation(relation) => relation.vertex(),
+        }
+    }
+
+    fn into_vertex(self) -> TypeVertex<'a> {
+        match self {
+            ObjectType::Entity(entity) => entity.into_vertex(),
+            ObjectType::Relation(relation) => relation.into_vertex(),
         }
     }
 }

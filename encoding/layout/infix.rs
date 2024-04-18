@@ -10,6 +10,7 @@ pub(crate) struct InfixID {
 }
 
 impl InfixID {
+
     pub(crate) const LENGTH: usize = 1;
 
     pub(crate) const fn new(bytes: [u8; InfixID::LENGTH]) -> Self {
@@ -29,6 +30,7 @@ pub enum Infix {
     PropertyAnnotationDistinct,
     PropertyAnnotationIndependent,
     PropertyAnnotationCardinality,
+    _PropertyAnnotationLast, // marker to indicate end of reserved range for annotations
 }
 
 macro_rules! infix_functions {
@@ -56,12 +58,18 @@ macro_rules! infix_functions {
 }
 
 impl Infix {
+    pub const ANNOTATION_MIN: Self = Self::PropertyAnnotationAbstract;
+    pub const ANNOTATION_MAX: Self = Self::_PropertyAnnotationLast;
+
     infix_functions!(
         PropertyLabel => [0];
         PropertyValueType => [1];
-        PropertyAnnotationAbstract => [20];
-        PropertyAnnotationDistinct => [21];
-        PropertyAnnotationIndependent => [22];
-        PropertyAnnotationCardinality => [23]
+
+       // Reserve: range 50 - 99 to store annotations with a value type - see InfixID::<CONSTANTS>
+        PropertyAnnotationAbstract => [50];
+        PropertyAnnotationDistinct => [51];
+        PropertyAnnotationIndependent => [52];
+        PropertyAnnotationCardinality => [53];
+        _PropertyAnnotationLast => [99]
     );
 }
