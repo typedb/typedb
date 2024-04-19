@@ -13,6 +13,7 @@ rust_test(
     deps = [
         "//storage/durability:durability",
         "//storage/durability/tests/common:durability_test_common",
+
         "@crates//:bincode",
         "@crates//:tempdir",
     ],

@@ -7,7 +7,6 @@
 use std::{collections::HashSet, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
-use bytes::byte_reference::ByteReference;
 use durability::DurabilityService;
 use encoding::{
     AsBytes,
@@ -66,6 +65,9 @@ use crate::error::ConceptWriteError;
 use crate::type_::{deserialise_annotation_cardinality, IntoCanonicalTypeEdge, OwnerAPI, PlayerAPI};
 use crate::type_::annotation::Annotation;
 use crate::type_::owns::OwnsAnnotation;
+
+// TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
+pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
 
 pub struct TypeManager<Snapshot> {
     snapshot: Arc<Snapshot>,
@@ -317,10 +319,18 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         }
     }
 
-    pub(crate) fn relation_index_available(&self, relation_type: RelationType<'_>) -> bool {
-        // TODO true if:
-        // 1. the total cardinality of all role types < CONFIGURED_INDEXABLE_RELATION_SIZE
-        true
+    pub(crate) fn relation_index_available(&self, relation_type: RelationType<'_>) -> Result<bool, ConceptReadError> {
+        // TODO: it would be good if this doesn't require recomputation
+        let mut max_card = 0;
+        let relates = relation_type.get_relates(self)?;
+        for relates in relates.iter() {
+            let card = relates.role().get_cardinality(self)?;
+            match card.end() {
+                None => return Ok(false),
+                Some(end) => max_card += end,
+            }
+        };
+        Ok(max_card <= RELATION_INDEX_THRESHOLD)
     }
 
     pub(crate) fn get_entity_type_plays<'this>(
@@ -518,7 +528,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub fn create_entity_type(&self, label: &Label<'_>, is_root: bool) -> Result<EntityType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
         let type_vertex = self.vertex_generator.create_entity_type(self.snapshot.as_ref())
-            .map_err(|err| ConceptWriteError::Encoding { source: err } )?;
+            .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let entity = EntityType::new(type_vertex);
         self.storage_set_label(entity.clone(), label);
         if !is_root {
@@ -532,7 +542,8 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
 
     pub fn create_relation_type(&self, label: &Label<'_>, is_root: bool) -> Result<RelationType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
-        let type_vertex = self.vertex_generator.create_relation_type(self.snapshot.as_ref()).map_err(|err| ConceptWriteError::Encoding { source: err } )?;;
+        let type_vertex = self.vertex_generator.create_relation_type(self.snapshot.as_ref()).map_err(|err| ConceptWriteError::Encoding { source: err })?;
+        ;
         let relation = RelationType::new(type_vertex);
         self.storage_set_label(relation.clone(), label);
         if !is_root {
@@ -551,7 +562,8 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         is_root: bool,
     ) -> Result<RoleType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
-        let type_vertex = self.vertex_generator.create_role_type(self.snapshot.as_ref()).map_err(|err| ConceptWriteError::Encoding { source: err } )?;;
+        let type_vertex = self.vertex_generator.create_role_type(self.snapshot.as_ref()).map_err(|err| ConceptWriteError::Encoding { source: err })?;
+        ;
         let role = RoleType::new(type_vertex);
         self.storage_set_label(role.clone(), label);
         self.storage_set_relates(relation_type, role.clone());
@@ -563,7 +575,8 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
 
     pub fn create_attribute_type(&self, label: &Label<'_>, is_root: bool) -> Result<AttributeType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
-        let type_vertex = self.vertex_generator.create_attribute_type(self.snapshot.as_ref()).map_err(|err| ConceptWriteError::Encoding { source: err } )?;;
+        let type_vertex = self.vertex_generator.create_attribute_type(self.snapshot.as_ref()).map_err(|err| ConceptWriteError::Encoding { source: err })?;
+        ;
         let attribute_type = AttributeType::new(type_vertex);
         self.storage_set_label(attribute_type.clone(), label);
         if !is_root {

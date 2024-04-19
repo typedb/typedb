@@ -78,4 +78,12 @@ impl AnnotationCardinality {
             self.end_inclusive.is_none() || count <= self.end_inclusive.clone().unwrap()
         )
     }
+
+    pub fn start(&self) -> u64 {
+        self.start_inclusive
+    }
+
+    pub fn end(&self) -> Option<u64> {
+        self.end_inclusive.clone()
+    }
 }

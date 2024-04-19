@@ -26,7 +26,7 @@ use crate::{
     concept_iterator,
     error::ConceptWriteError,
     thing::{
-        attribute::{Attribute, AttributeIterator},
+        attribute::{Attribute},
         object::{HasAttributeIterator, Object},
         relation::{IndexedPlayersIterator, RelationRoleIterator},
         thing_manager::ThingManager,
@@ -129,7 +129,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         let mut playing = relation_iter.next().transpose()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         while let Some((relation, role, count)) = playing {
-            relation.delete_player_many(thing_manager, role, Object::Entity(self.as_reference()), count);
+            relation.delete_player_many(thing_manager, role, Object::Entity(self.as_reference()), count)?;
             playing = relation_iter.next().transpose()
                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         }

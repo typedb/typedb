@@ -77,7 +77,7 @@ struct EntityTypeCache {
     supertype: Option<EntityType<'static>>,
     supertypes: Vec<EntityType<'static>>, // TODO: use smallvec if we want to have some inline - benchmark.
 
-    // subtypes_direct: Vec<AttributeType<'static>>, // TODO: benchmark smallvec.
+    // subtypes_declared: Vec<AttributeType<'static>>, // TODO: benchmark smallvec.
     // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
     owns_declared: HashSet<Owns<'static>>,
 
@@ -293,11 +293,12 @@ impl TypeCache {
             let object = ObjectType::Relation(relation.clone());
             let label = Self::read_type_label(vertex_properties, relation.vertex().into_owned());
             let is_root = label == Kind::Relation.root_label();
-            let relates_direct = relates
+            let relates_declared: HashSet<Relates<'static>> = relates
                 .iter()
                 .filter(|(rel, _)| rel == &relation)
                 .map(|(relation, role)| Relates::new(relation.clone(), role.clone()))
                 .collect();
+
             let cache = RelationTypeCache {
                 type_: relation.clone(),
                 label,
@@ -305,7 +306,7 @@ impl TypeCache {
                 annotations_declared: Self::read_relation_annotations(vertex_properties, relation.clone()),
                 supertype: supertypes.get(&relation).cloned(),
                 supertypes: Vec::new(),
-                relates_declared: relates_direct,
+                relates_declared: relates_declared,
                 owns_declared: owns.iter().filter(|owns| owns.owner() == object).cloned().collect(),
                 plays_declared: plays.iter().filter(|plays| plays.player() == object).cloned().collect(),
             };

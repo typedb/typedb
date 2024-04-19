@@ -18,6 +18,7 @@ rust_library(
     ]),
     deps = [
         "//common/bytes",
+        "//common/iterator",
         "//common/primitive",
         "//encoding",
         "//storage",

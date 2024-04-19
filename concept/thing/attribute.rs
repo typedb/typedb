@@ -5,6 +5,8 @@
  */
 
 use std::cmp::Ordering;
+use std::sync::Arc;
+use iterator::State;
 
 use bytes::Bytes;
 use encoding::{
@@ -18,9 +20,11 @@ use storage::{
     key_value::StorageKeyReference,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
+use storage::snapshot::iterator::{SnapshotIteratorError, SnapshotRangeIterator};
 
-use crate::{ByteReference, concept_iterator, ConceptAPI, ConceptStatus, edge_iterator, error::{ConceptReadError, ConceptWriteError}, GetStatus, thing::{thing_manager::ThingManager, ThingAPI, value::Value}, type_::attribute_type::AttributeType};
+use crate::{ByteReference, ConceptAPI, ConceptStatus, edge_iterator, error::{ConceptReadError, ConceptWriteError}, GetStatus, thing::{thing_manager::ThingManager, ThingAPI, value::Value}, type_::attribute_type::AttributeType};
 use crate::thing::object::Object;
+use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug)]
 pub struct Attribute<'a> {
@@ -107,11 +111,11 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
     fn delete<'m>(self, thing_manager: &'m ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
         let mut owner_iter = self.get_owners(thing_manager);
         let mut owner = owner_iter.next().transpose()
-            .map_err(|err| ConceptWriteError::ConceptRead { source : err })?;
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         while let Some((object, count)) = owner {
             object.delete_has_many(thing_manager, self.as_reference(), count)?;
             owner = owner_iter.next().transpose()
-                .map_err(|err|  ConceptWriteError::ConceptRead { source : err })?;
+                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         }
 
         thing_manager.delete_attribute(self);
@@ -139,11 +143,94 @@ impl<'a> Ord for Attribute<'a> {
     }
 }
 
-fn storage_key_to_attribute<'a>(storage_key_ref: StorageKeyReference<'a>) -> Attribute<'a> {
-    Attribute::new(AttributeVertex::new(Bytes::Reference(storage_key_ref.byte_ref())))
+///
+/// Attribute iterators handle hiding dependent attributes that were not deleted yet
+///
+pub struct AttributeIterator<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> {
+    type_manager: Option<&'a TypeManager<Snapshot>>,
+    attributes_iterator: Option<SnapshotRangeIterator<'a, A_PS>>,
+    has_reverse_iterator: Option<SnapshotRangeIterator<'a, H_PS>>,
+    state: State<ConceptReadError>,
 }
 
-concept_iterator!(AttributeIterator, Attribute, storage_key_to_attribute);
+impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> AttributeIterator<'a, Snapshot, A_PS, H_PS> {
+    pub(crate) fn new(
+        attributes_iterator: SnapshotRangeIterator<'a, A_PS>, has_reverse_iterator: SnapshotRangeIterator<'a, H_PS>,
+        type_manager: &'a TypeManager<Snapshot>,
+    ) -> Self {
+        Self {
+            type_manager: Some(type_manager),
+            attributes_iterator: Some(attributes_iterator),
+            has_reverse_iterator: Some(has_reverse_iterator),
+            state: State::Init
+        }
+    }
+
+    pub(crate) fn new_empty() -> Self {
+        Self { type_manager: None, attributes_iterator: None, has_reverse_iterator: None, state: State::Done }
+    }
+
+    fn storage_key_to_attribute<'b>(storage_key_ref: StorageKeyReference<'b>) -> Attribute<'b> {
+        Attribute::new(AttributeVertex::new(Bytes::Reference(storage_key_ref.byte_ref())))
+    }
+
+    pub fn peek(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
+        self.iter_peek().map(|result| {
+            result
+                .map(|(storage_key, _value_bytes)| Self::storage_key_to_attribute(storage_key))
+                .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
+        })
+    }
+
+    #[allow(clippy::should_implement_trait)]
+    pub fn next(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
+        self.iter_next().map(|result| {
+            result
+                .map(|(storage_key, _value_bytes)| Self::storage_key_to_attribute(storage_key))
+                .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
+        })
+    }
+
+    pub fn seek(&mut self) {
+        todo!()
+    }
+
+    fn iter_peek(
+        &mut self,
+    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>>
+    {
+        if let Some(iter) = self.attributes_iterator.as_mut() {
+            iter.peek()
+        } else {
+            None
+        }
+    }
+
+    fn iter_next(
+        &mut self,
+    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>>
+    {
+        if let Some(iter) = self.attributes_iterator.as_mut() {
+            iter.next()
+        } else {
+            None
+        }
+    }
+
+    pub fn collect_cloned(mut self) -> Vec<Attribute<'static>> {
+        let mut vec = Vec::new();
+        loop {
+            let item = self.next();
+            if item.is_none() {
+                break;
+            }
+            let key = item.unwrap().unwrap().into_owned();
+            vec.push(key);
+        }
+        vec
+    }
+}
+
 
 fn storage_key_to_owner<'a>(
     storage_key_reference: StorageKeyReference<'a>,

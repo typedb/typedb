@@ -224,13 +224,13 @@ fn role_player_distinct() {
         let company_3 = thing_manager.create_entity(company_type.clone()).unwrap();
 
         let employment_1 = thing_manager.create_relation(employment_type.clone()).unwrap();
-        employment_1.add_player(&thing_manager, employee_type.clone(), Object::Entity(person_1.as_reference()));
-        employment_1.add_player(&thing_manager, employer_type.clone(), Object::Entity(company_1.as_reference()));
+        employment_1.add_player(&thing_manager, employee_type.clone(), Object::Entity(person_1.as_reference())).unwrap();
+        employment_1.add_player(&thing_manager, employer_type.clone(), Object::Entity(company_1.as_reference())).unwrap();
 
         let employment_2 = thing_manager.create_relation(employment_type.clone()).unwrap();
-        employment_2.add_player(&thing_manager, employee_type.clone(), Object::Entity(person_1.as_reference()));
-        employment_2.add_player(&thing_manager, employer_type.clone(), Object::Entity(company_2.as_reference()));
-        employment_2.add_player(&thing_manager, employer_type.clone(), Object::Entity(company_3.as_reference()));
+        employment_2.add_player(&thing_manager, employee_type.clone(), Object::Entity(person_1.as_reference())).unwrap();
+        employment_2.add_player(&thing_manager, employer_type.clone(), Object::Entity(company_2.as_reference())).unwrap();
+        employment_2.add_player(&thing_manager, employer_type.clone(), Object::Entity(company_3.as_reference())).unwrap();
 
         assert_eq!(employment_1.get_players(&thing_manager).count(), 2);
         assert_eq!(employment_2.get_players(&thing_manager).count(), 3);
@@ -313,9 +313,9 @@ fn role_player_duplicates() {
         let resource_1 = thing_manager.create_entity(resource_type.clone()).unwrap();
 
         let list_1 = thing_manager.create_relation(list_type.clone()).unwrap();
-        list_1.add_player(&thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference()));
-        list_1.add_player(&thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()));
-        list_1.add_player(&thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()));
+        list_1.add_player(&thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference())).unwrap();
+        list_1.add_player(&thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference())).unwrap();
+        list_1.add_player(&thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference())).unwrap();
 
         let player_counts: u64 = list_1.get_players(&thing_manager)
             .collect_cloned_vec(|(_, count)| count).unwrap().into_iter().sum();

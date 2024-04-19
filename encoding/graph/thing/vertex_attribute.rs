@@ -59,12 +59,11 @@ impl<'a> AttributeVertex<'a> {
     }
 
     pub fn build_prefix_type(
-        value_type: ValueType,
+        prefix: Prefix,
         type_id: TypeID,
     ) -> StorageKey<'static, { AttributeVertex::LENGTH_PREFIX_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE);
-        bytes.bytes_mut()[Self::RANGE_PREFIX]
-            .copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
@@ -77,7 +76,7 @@ impl<'a> AttributeVertex<'a> {
             )
     }
 
-    fn value_type_to_prefix_type(value_type: ValueType) -> Prefix {
+    pub fn value_type_to_prefix_type(value_type: ValueType) -> Prefix {
         match value_type {
             ValueType::Boolean => Prefix::VertexAttributeBoolean,
             ValueType::Long => Prefix::VertexAttributeLong,

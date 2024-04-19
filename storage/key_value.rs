@@ -55,6 +55,13 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
         }
     }
 
+    pub fn length(&self) -> usize {
+        match self {
+            StorageKey::Array(key) => key.length(),
+            StorageKey::Reference(key) => key.length()
+        }
+    }
+
     pub fn as_reference(&'bytes self) -> StorageKeyReference<'bytes> {
         match self {
             StorageKey::Array(array) => StorageKeyReference::from(array),
@@ -117,6 +124,10 @@ impl<const SZ: usize> StorageKeyArray<SZ> {
 
     pub(crate) fn keyspace_id(&self) -> KeyspaceId {
         self.keyspace_id
+    }
+
+    pub fn length(&self) -> usize {
+        self.byte_array.length()
     }
 
     pub fn bytes(&self) -> &[u8] {
@@ -197,6 +208,10 @@ impl<'bytes> StorageKeyReference<'bytes> {
 
     pub fn keyspace_id(&self) -> KeyspaceId {
         self.keyspace_id
+    }
+
+    pub fn length(&self) -> usize {
+        self.reference.length()
     }
 
     pub fn bytes(&self) -> &[u8] {
