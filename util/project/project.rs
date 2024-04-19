@@ -120,5 +120,16 @@ mod test {
         let foo = project(rwlock.read().unwrap());
         assert_eq!(*foo, 0xAB);
         assert!(rwlock.try_write().is_err());
+
+        drop(foo);
+        assert!(rwlock.try_write().is_ok());
+
+        let rwlock = RwLock::new(Test::Bar(0x07, 0xF00D));
+        let bar = project(rwlock.read().unwrap());
+        assert_eq!(*bar, 0x07);
+        assert!(rwlock.try_write().is_err());
+
+        drop(bar);
+        assert!(rwlock.try_write().is_ok());
     }
 }
