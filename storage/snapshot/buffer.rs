@@ -7,34 +7,27 @@
 use std::{
     borrow::Borrow,
     cmp::Ordering,
-    collections::{Bound, BTreeMap},
-    fmt
-    ,
-    sync::{Arc, RwLock},
-};
-use std::sync::atomic::AtomicBool;
-
-use serde::{
-    de,
-    de::{MapAccess, SeqAccess, Visitor},
-    Deserialize,
-    Deserializer, ser::{SerializeStruct, SerializeTuple}, Serialize, Serializer,
+    collections::{BTreeMap, Bound},
+    fmt,
+    sync::{atomic::AtomicBool, Arc, RwLock},
 };
 
-use bytes::{byte_array::ByteArray, Bytes, util::increment};
-use bytes::byte_reference::ByteReference;
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::increment, Bytes};
 use iterator::State;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
-
-use crate::{
-    key_value::StorageKeyArray,
-    keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId},
-    snapshot::{snapshot::SnapshotError, write::Write},
+use serde::{
+    de::{self, MapAccess, SeqAccess, Visitor},
+    ser::SerializeStruct,
+    Deserialize, Deserializer, Serialize, Serializer,
 };
-use crate::key_range::{KeyRange, RangeEnd};
-use crate::snapshot::lock::LockType;
 
 use super::iterator::SnapshotIteratorError;
+use crate::{
+    key_range::{KeyRange, RangeEnd},
+    key_value::StorageKeyArray,
+    keyspace::{KeyspaceId, KEYSPACE_MAXIMUM_COUNT},
+    snapshot::{lock::LockType, snapshot::SnapshotError, write::Write},
+};
 
 #[derive(Debug)]
 pub(crate) struct OperationsBuffer {
@@ -58,7 +51,7 @@ impl OperationsBuffer {
         &self.write_buffers[keyspace_id.0 as usize]
     }
 
-    pub(crate) fn write_buffers(&self) -> impl Iterator<Item=&WriteBuffer> {
+    pub(crate) fn write_buffers(&self) -> impl Iterator<Item = &WriteBuffer> {
         self.write_buffers.iter()
     }
 
@@ -135,9 +128,7 @@ impl WriteBuffer {
     pub(crate) fn get<const INLINE_BYTES: usize>(&self, key: &[u8]) -> Option<ByteArray<INLINE_BYTES>> {
         let map = self.writes.read().unwrap();
         match map.get(key) {
-            Some(Write::Insert { value }) | Some(Write::Put { value, .. }) => {
-                Some(ByteArray::copy(value.bytes()))
-            }
+            Some(Write::Insert { value }) | Some(Write::Put { value, .. }) => Some(ByteArray::copy(value.bytes())),
             Some(Write::Delete) | None => None,
         }
     }
@@ -154,10 +145,11 @@ impl WriteBuffer {
             Bound::Excluded(exclusive_end_bytes.bytes())
         };
         let map = self.writes.read().unwrap();
-        BufferedPrefixIterator::new(map
-            .range::<[u8], _>((Bound::Included(range_start.bytes()), end))
-            .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
-            .collect::<Vec<_>>())
+        BufferedPrefixIterator::new(
+            map.range::<[u8], _>((Bound::Included(range_start.bytes()), end))
+                .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
+                .collect::<Vec<_>>(),
+        )
     }
 
     pub(crate) fn any_in_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> bool {
@@ -169,14 +161,16 @@ impl WriteBuffer {
             Bound::Excluded(exclusive_end_bytes.bytes())
         };
         let map = self.writes.read().unwrap();
-        map
-            .range::<[u8], _>((Bound::Included(range_start.bytes()), end))
+        map.range::<[u8], _>((Bound::Included(range_start.bytes()), end))
             .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
             .next()
             .is_some()
     }
 
-    fn compute_exclusive_end<const INLINE: usize>(start: ByteReference<'_>, end: &RangeEnd<Bytes<'_, INLINE>>) -> ByteArray<INLINE> {
+    fn compute_exclusive_end<const INLINE: usize>(
+        start: ByteReference<'_>,
+        end: &RangeEnd<Bytes<'_, INLINE>>,
+    ) -> ByteArray<INLINE> {
         match end {
             RangeEnd::SameAsStart => {
                 let mut start_plus_1 = ByteArray::from(start);
@@ -192,7 +186,6 @@ impl WriteBuffer {
             RangeEnd::Unbounded => ByteArray::empty(),
         }
     }
-
 
     pub(crate) fn writes(&self) -> &RwLock<BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>> {
         &self.writes
@@ -314,8 +307,8 @@ impl BufferedPrefixIterator {
 
 impl Serialize for OperationsBuffer {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         let mut state = serializer.serialize_struct("OperationsBuffer", 2)?;
         state.serialize_field("WriteBuffers", &self.write_buffers)?;
@@ -326,8 +319,8 @@ impl Serialize for OperationsBuffer {
 
 impl<'de> Deserialize<'de> for OperationsBuffer {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         enum Field {
             WriteBuffers,
@@ -336,8 +329,8 @@ impl<'de> Deserialize<'de> for OperationsBuffer {
 
         impl<'de> Deserialize<'de> for Field {
             fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
-                where
-                    D: Deserializer<'de>,
+            where
+                D: Deserializer<'de>,
             {
                 struct FieldVisitor;
 
@@ -349,8 +342,8 @@ impl<'de> Deserialize<'de> for OperationsBuffer {
                     }
 
                     fn visit_str<E>(self, value: &str) -> Result<Field, E>
-                        where
-                            E: de::Error,
+                    where
+                        E: de::Error,
                     {
                         match value {
                             "WriteBuffers" => Ok(Field::WriteBuffers),
@@ -374,8 +367,8 @@ impl<'de> Deserialize<'de> for OperationsBuffer {
             }
 
             fn visit_seq<V>(self, mut seq: V) -> Result<OperationsBuffer, V::Error>
-                where
-                    V: SeqAccess<'de>,
+            where
+                V: SeqAccess<'de>,
             {
                 let write_buffers = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 let locks: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, LockType> =
@@ -411,8 +404,8 @@ impl<'de> Deserialize<'de> for OperationsBuffer {
 
 impl Serialize for WriteBuffer {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         let mut state = serializer.serialize_struct("KeyspaceBuffer", 2)?;
         state.serialize_field("KeyspaceId", &self.keyspace_id)?;
@@ -423,8 +416,8 @@ impl Serialize for WriteBuffer {
 
 impl<'de> Deserialize<'de> for WriteBuffer {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         enum Field {
             KeyspaceId,
@@ -433,8 +426,8 @@ impl<'de> Deserialize<'de> for WriteBuffer {
 
         impl<'de> Deserialize<'de> for Field {
             fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
-                where
-                    D: Deserializer<'de>,
+            where
+                D: Deserializer<'de>,
             {
                 struct FieldVisitor;
 
@@ -446,8 +439,8 @@ impl<'de> Deserialize<'de> for WriteBuffer {
                     }
 
                     fn visit_str<E>(self, value: &str) -> Result<Field, E>
-                        where
-                            E: de::Error,
+                    where
+                        E: de::Error,
                     {
                         match value {
                             "KeyspaceId" => Ok(Field::KeyspaceId),
@@ -471,8 +464,8 @@ impl<'de> Deserialize<'de> for WriteBuffer {
             }
 
             fn visit_seq<V>(self, mut seq: V) -> Result<WriteBuffer, V::Error>
-                where
-                    V: SeqAccess<'de>,
+            where
+                V: SeqAccess<'de>,
             {
                 let keyspace_id = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 let buffer: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> =
@@ -481,8 +474,8 @@ impl<'de> Deserialize<'de> for WriteBuffer {
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<WriteBuffer, V::Error>
-                where
-                    V: MapAccess<'de>,
+            where
+                V: MapAccess<'de>,
             {
                 let mut keyspace_id: Option<KeyspaceId> = None;
                 let mut buffer: Option<BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>> = None;

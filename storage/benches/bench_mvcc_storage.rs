@@ -109,7 +109,7 @@ fn bench_snapshot_write_put(storage: Arc<MVCCStorage<WAL>>, keyspace: TestKeyspa
 }
 
 fn setup_storage(storage_path: &Path, key_count: usize) -> Arc<MVCCStorage<WAL>> {
-    let storage = Arc::new(MVCCStorage::recover::<TestKeyspaceSet>("storage_bench", storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::open::<TestKeyspaceSet>("storage_bench", storage_path).unwrap());
     let keys = populate_storage(storage.clone(), Keyspace, key_count);
     println!("Initialised storage with '{}' keys", keys);
     storage

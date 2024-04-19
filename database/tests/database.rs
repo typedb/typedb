@@ -18,7 +18,7 @@ fn create_delete_database() {
     init_logging();
     let database_path = create_tmp_dir();
     dbg!(database_path.exists());
-    let db_result = Database::<WAL>::recover(&database_path, Rc::from("create_delete"));
+    let db_result = Database::<WAL>::open(&database_path, Rc::from("create_delete"));
     assert!(db_result.is_ok(), "{:?}", db_result.unwrap_err());
     let db = Arc::new(db_result.unwrap());
 

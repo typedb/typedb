@@ -40,7 +40,7 @@ const VALUE_2: [u8; 1] = [0x1];
 const VALUE_3: [u8; 1] = [0x88];
 
 fn setup_storage(storage_path: &Path) -> Arc<MVCCStorage<WAL>> {
-    let storage = Arc::new(MVCCStorage::recover::<TestKeyspaceSet>("storage", storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::open::<TestKeyspaceSet>("storage", storage_path).unwrap());
 
     let snapshot = storage.clone().open_snapshot_write();
     snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
@@ -104,22 +104,7 @@ fn g0_update_conflicts_fail() {
 
     let result_2 = snapshot_2.commit();
     assert!(
-        matches!(
-            result_2,
-            Err(
-                SnapshotError::Commit {
-                    source: MVCCStorageError {
-                        kind: MVCCStorageErrorKind::IsolationError {
-                            source: IsolationError::Conflict(IsolationConflict::DeletingRequiredKey),
-                            ..
-                        },
-                        ..
-                    },
-                    ..
-                },
-                ..
-            )
-        ),
+        matches!(result_2, Err(SnapshotError::Commit { source: StorageCommitError::Isolation { .. }, .. }, ..)),
         "{:?}",
         result_2
     );
@@ -154,11 +139,17 @@ fn g0_dirty_writes() {
     match result_2 {
         Ok(_) => {
             let reader_after_2 = storage.clone().open_snapshot_read();
-            assert_eq!(reader_after_2.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap().bytes(), value_12.bytes());
-            assert_eq!(reader_after_2.get::<128>(StorageKeyReference::from(&key_2)).unwrap().unwrap().bytes(), value_22.bytes());
+            assert_eq!(
+                reader_after_2.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap().bytes(),
+                value_12.bytes()
+            );
+            assert_eq!(
+                reader_after_2.get::<128>(StorageKeyReference::from(&key_2)).unwrap().unwrap().bytes(),
+                value_22.bytes()
+            );
             reader_after_2.close_resources();
         }
-        Err(_) => panic!()
+        Err(_) => panic!(),
     }
 
     // Continue
@@ -167,8 +158,14 @@ fn g0_dirty_writes() {
 
     if let Ok(()) = result_1 {
         let reader_after_1 = storage.clone().open_snapshot_read();
-        assert_eq!(reader_after_1.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap().bytes(), value_11.bytes());
-        assert_eq!(reader_after_1.get::<128>(StorageKeyReference::from(&key_2)).unwrap().unwrap().bytes(), value_21.bytes());
+        assert_eq!(
+            reader_after_1.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap().bytes(),
+            value_11.bytes()
+        );
+        assert_eq!(
+            reader_after_1.get::<128>(StorageKeyReference::from(&key_2)).unwrap().unwrap().bytes(),
+            value_21.bytes()
+        );
         // reader_after_1.close();
     }
 }
@@ -255,7 +252,6 @@ fn g1c_circular_info_flow() {
     assert_eq!(value_2_0.bytes(), read_2_1.unwrap().unwrap().bytes());
 }
 
-
 #[test]
 fn p4_g_cursor_lost_update() {
     // This requires a rw-ww cycle, which can and does happen here.
@@ -274,8 +270,8 @@ fn p4_g_cursor_lost_update() {
 
     let snapshot_1 = storage.clone().open_snapshot_write();
     let snapshot_2 = storage.clone().open_snapshot_write();
-    let read_1: ByteArray<128> = snapshot_1.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap();
-    let read_2: ByteArray<128> = snapshot_2.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap();
+    let read_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap();
+    let read_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap();
     let to_write_1 = ByteArray::inline([read_1.bytes()[0] + 1], 1);
     let to_write_2 = ByteArray::inline([read_2.bytes()[0] + 1], 1);
 
@@ -286,7 +282,8 @@ fn p4_g_cursor_lost_update() {
 
     if result_1.is_ok() && result_2.is_ok() {
         let snapshot_verify = storage.open_snapshot_read();
-        let read_verify: ByteArray<128> = snapshot_verify.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap();
+        let read_verify: ByteArray<128> =
+            snapshot_verify.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap();
         fails_without_serializability!(2 == read_verify.bytes()[0]); // This does fail
     }
 }
@@ -296,7 +293,7 @@ fn g_single_read_skew() {
     // This requires an rw-wr cycle. But wr edges are impossible
     // Intuitively, read_21 reads the initial one for both keys, hence there is no skewed read.
     init_logging();
-    let key_1= StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
+    let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let key_2 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
     let value_1_0 = ByteArray::inline([10], 1);
     let value_1_2 = ByteArray::inline([12], 1);
@@ -333,7 +330,7 @@ fn g2_item_write_skew_disjoint_read() {
     // The example shows a violation of an invariant x+y <= 1.
     //   t1 checks x==0, sets y=1; t2 checks y==0, sets x=1
     init_logging();
-    let key_1= StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
+    let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let key_2 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
     let value_0 = ByteArray::inline([10], 1);
     let value_1 = ByteArray::inline([11], 1);
@@ -363,7 +360,8 @@ fn g2_item_write_skew_disjoint_read() {
 
     assert!(result_1.is_ok() && result_2.is_ok());
     let reader_after = storage.open_snapshot_read();
-    let sum: u8 = reader_after.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap().bytes()[0] + reader_after.get::<128>(StorageKeyReference::from(&key_2)).unwrap().unwrap().bytes()[0];
+    let sum = reader_after.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap().bytes()[0]
+        + reader_after.get::<128>(StorageKeyReference::from(&key_2)).unwrap().unwrap().bytes()[0];
     fails_without_serializability!(sum <= 1);
 }
 
@@ -375,8 +373,8 @@ fn g2_predicate_anti_dependency_cycles() {
     // One of their reads would not be repeatable under any serialisation.
     init_logging();
     let key_4_bytes = [0x0, 0x0, 0x0, 0x4];
-    let key_3 : StorageKeyArray<64>= StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_3));
-    let key_4 : StorageKeyArray<64> = StorageKeyArray::new(Keyspace, ByteArray::copy(&key_4_bytes));
+    let key_3 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_3));
+    let key_4 = StorageKeyArray::new(Keyspace, ByteArray::copy(&key_4_bytes));
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x0], Keyspace));
     let prefix = KeyRange::new_within(StorageKey::Array(key_prefix), false);
@@ -388,17 +386,28 @@ fn g2_predicate_anti_dependency_cycles() {
     let snapshot_1 = storage.clone().open_snapshot_write();
     let snapshot_2 = storage.open_snapshot_write();
 
-
     let it_1 = snapshot_1.iterate_range(prefix.clone());
-    let mut sum_1 : i64  = 0;
-    for z in it_1.collect_cloned_vec(|k, v| (StorageKeyArray::<BUFFER_KEY_INLINE>::from(k), ByteArray::<BUFFER_VALUE_INLINE>::from(v))).unwrap().iter() {
+    let mut sum_1 = 0;
+    for z in it_1
+        .collect_cloned_vec(|k, v| {
+            (StorageKeyArray::<BUFFER_KEY_INLINE>::from(k), ByteArray::<BUFFER_VALUE_INLINE>::from(v))
+        })
+        .unwrap()
+        .iter()
+    {
         sum_1 += z.1.bytes()[0] as i64;
     }
     assert!(sum_1 == 1);
 
     let it_2 = snapshot_2.iterate_range(prefix.clone());
-    let mut sum_2 : i64  = 0;
-    for z in it_2.collect_cloned_vec(|k, v| (StorageKeyArray::<BUFFER_KEY_INLINE>::from(k), ByteArray::<BUFFER_VALUE_INLINE>::from(v))).unwrap().iter() {
+    let mut sum_2 = 0;
+    for z in it_2
+        .collect_cloned_vec(|k, v| {
+            (StorageKeyArray::<BUFFER_KEY_INLINE>::from(k), ByteArray::<BUFFER_VALUE_INLINE>::from(v))
+        })
+        .unwrap()
+        .iter()
+    {
         sum_2 += z.1.bytes()[0] as i64;
     }
     assert!(sum_2 == 1);
@@ -508,15 +517,12 @@ fn otv() {
     assert_eq!(value_2_0.bytes(), read_2_3.unwrap().unwrap().bytes());
 }
 
-
-
 fn imp_setup() -> Arc<MVCCStorage<WAL>> {
     init_logging();
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
-    let key_2  = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
+    let key_2 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
     let value_1_0 = ByteArray::inline([10], 1);
     let value_2_0 = ByteArray::inline([20], 1);
-    let value_3_0 = ByteArray::inline([30], 1);
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
@@ -529,9 +535,11 @@ fn imp_setup() -> Arc<MVCCStorage<WAL>> {
 }
 
 fn imp_ops<D>(snapshot_update: &WriteSnapshot<D>, snapshot_delete: &WriteSnapshot<D>)
-    where D: DurabilityService {
+where
+    D: DurabilityService,
+{
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
-    let key_2  = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
+    let key_2 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
 
     let read_1_1 = snapshot_update.get::<128>(StorageKeyReference::from(&key_1));
     let to_write_11 = ByteArray::inline([read_1_1.unwrap().unwrap().bytes()[0] + 10], 1);
@@ -552,9 +560,11 @@ fn imp_ops<D>(snapshot_update: &WriteSnapshot<D>, snapshot_delete: &WriteSnapsho
 }
 
 fn imp_validate_serializable<D>(storage: Arc<MVCCStorage<D>>) -> bool
-    where D: DurabilityService {
+where
+    D: DurabilityService,
+{
     let key_1: StorageKeyArray<BUFFER_KEY_INLINE> = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
-    let key_2: StorageKeyArray<BUFFER_KEY_INLINE>  = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
+    let key_2: StorageKeyArray<BUFFER_KEY_INLINE> = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
     let value_20 = ByteArray::inline([20], 1);
     let value_30 = ByteArray::inline([30], 1);
 
@@ -562,19 +572,19 @@ fn imp_validate_serializable<D>(storage: Arc<MVCCStorage<D>>) -> bool
     let read_1_after = reader_after.get::<128>(StorageKeyReference::from(&key_1)).unwrap();
     let read_2_after = reader_after.get::<128>(StorageKeyReference::from(&key_2)).unwrap();
 
-    let delete_went_first_1: bool = match read_1_after {
+    let delete_went_first_1 = match read_1_after {
         Some(x) => {
             assert_eq!(value_20.bytes()[0], x.bytes()[0]);
             true
         }
-        None => false
+        None => false,
     };
-    let delete_went_first_2: bool = match read_2_after {
+    let delete_went_first_2 = match read_2_after {
         Some(x) => {
             assert_eq!(value_30.bytes()[0], x.bytes()[0]);
             false
         }
-        None => true
+        None => true,
     };
     delete_went_first_1 == delete_went_first_2
 }
@@ -654,19 +664,10 @@ fn isolation_manager_reads_evicted_from_disk() {
         assert!(
             matches!(
                 snapshot_conflicts_result,
-                Err(
-                    SnapshotError::Commit {
-                    source: MVCCStorageError {
-                        kind: MVCCStorageErrorKind::IsolationError {
-                            source: IsolationError::Conflict(IsolationConflict::RequireDeletedKey),
-                            ..
-                        },
-                        ..
-                    },
+                Err(SnapshotError::Commit {
+                    source: StorageCommitError::Isolation { conflict: IsolationConflict::RequireDeletedKey, .. },
                     ..
-                },
-                    ..
-                )
+                })
             ),
             "{}",
             snapshot_conflicts_result.unwrap_err()
@@ -683,7 +684,7 @@ fn isolation_manager_correctly_recovers_from_disk() {
     let value_1 = ByteArray::copy(&VALUE_1);
 
     let watermark_after_one_commit = {
-        let storage: Arc<MVCCStorage<WAL>> = Arc::new(MVCCStorage::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+        let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
         let snapshot = storage.clone().open_snapshot_write();
         snapshot.put_val(key_1.clone().into_owned_array(), value_1.clone());
@@ -693,7 +694,7 @@ fn isolation_manager_correctly_recovers_from_disk() {
 
     {
         // TODO: Find a way to make commits crash before they're committed
-        let storage: MVCCStorage<WAL> = MVCCStorage::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+        let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
         assert_eq!(watermark_after_one_commit, storage.read_watermark());
     };
 }

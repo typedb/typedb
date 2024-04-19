@@ -49,7 +49,7 @@ const VALUE_1: [u8; 1] = [0x1];
 const VALUE_2: [u8; 1] = [0x2];
 
 fn setup_storage(storage_path: &Path) -> Arc<MVCCStorage<WAL>> {
-    Arc::new(MVCCStorage::recover::<TestKeyspaceSet>("storage", storage_path).unwrap())
+    Arc::new(MVCCStorage::open::<TestKeyspaceSet>("storage", storage_path).unwrap())
 }
 
 #[test]

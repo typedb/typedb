@@ -162,15 +162,15 @@ fn recover_keyspaces<KS: KeyspaceSet>(
     Ok((keyspaces, keyspaces_index))
 }
 
-impl<D> MVCCStorage<D> {
+impl<Durability> MVCCStorage<Durability> {
     const WAL_DIR_NAME: &'static str = "wal";
     const STORAGE_DIR_NAME: &'static str = "storage";
     const CHECKPOINT_DIR_NAME: &'static str = "checkpoint";
     const CHECKPOINT_METADATA_FILE_NAME: &'static str = "METADATA";
 
-    pub fn recover<KS: KeyspaceSet>(name: impl AsRef<str>, path: &Path) -> Result<Self, StorageRecoverError>
+    pub fn open<KS: KeyspaceSet>(name: impl AsRef<str>, path: &Path) -> Result<Self, StorageOpenError>
     where
-        D: DurabilityService,
+        Durability: DurabilityService,
     {
         let storage_dir = path.join(Self::STORAGE_DIR_NAME);
         if !storage_dir.exists() {
@@ -178,7 +178,8 @@ impl<D> MVCCStorage<D> {
         }
 
         // FIXME proper error
-        let mut durability_service = D::recover(path.join(Self::WAL_DIR_NAME)).expect("Could not create WAL directory");
+        let mut durability_service =
+            Durability::open(path.join(Self::WAL_DIR_NAME)).expect("Could not create WAL directory");
         durability_service.register_record_type::<CommitRecord>();
         durability_service.register_record_type::<StatusRecord>();
 
@@ -827,7 +828,7 @@ mod tests {
         init_logging();
         let storage_path = create_tmp_dir();
         let watermark_after_one_commit = {
-            let storage: MVCCStorage<WAL> = MVCCStorage::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+            let storage: MVCCStorage<WAL> = MVCCStorage::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
             let commit_record = CommitRecord::new(OperationsBuffer::new(), SequenceNumber::MIN);
             let commit_sequence_number = storage.durability_service.sequenced_write(&commit_record).unwrap();
             storage.try_write_commit_record(SequenceNumber::from(1), commit_record).unwrap();
@@ -835,7 +836,7 @@ mod tests {
         };
 
         let pending_commit_sequence = {
-            let storage: MVCCStorage<WAL> = MVCCStorage::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+            let storage: MVCCStorage<WAL> = MVCCStorage::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
             assert_eq!(watermark_after_one_commit, storage.read_watermark());
             storage
                 .durability_service
@@ -844,7 +845,7 @@ mod tests {
             // We don't commit it.
         };
         {
-            let storage: MVCCStorage<WAL> = MVCCStorage::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+            let storage: MVCCStorage<WAL> = MVCCStorage::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
             assert_eq!(pending_commit_sequence, storage.read_watermark()); // Recovery will commit the pending one.
         };
     }

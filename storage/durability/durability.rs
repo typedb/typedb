@@ -11,14 +11,14 @@ use std::{
     error::Error,
     fmt,
     io::{self, Read, Write},
+    ops::{Add, AddAssign, Sub},
     path::Path,
 };
-use std::ops::{Add, AddAssign, Sub};
+
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 pub mod wal;
-
-pub type Result<T> = std::result::Result<T, DurabilityError>;
 
 #[derive(Debug)]
 struct RecordHeader {
@@ -35,68 +35,70 @@ pub struct RawRecord {
 }
 
 pub trait DurabilityService: Sequencer {
-    fn recover(directory: impl AsRef<Path>) -> io::Result<Self>
+    fn open(directory: impl AsRef<Path>) -> io::Result<Self>
     where
         Self: Sized;
 
     fn register_record_type<Record: DurabilityRecord>(&mut self);
 
-    fn unsequenced_write<Record>(&self, record: &Record) -> Result<()>
+    fn unsequenced_write<Record>(&self, record: &Record) -> Result<(), DurabilityError>
     where
         Record: UnsequencedDurabilityRecord;
 
-    fn sequenced_write<Record>(&self, record: &Record) -> Result<SequenceNumber>
-        where
-            Record: SequencedDurabilityRecord;
+    fn sequenced_write<Record>(&self, record: &Record) -> Result<SequenceNumber, DurabilityError>
+    where
+        Record: SequencedDurabilityRecord;
 
-    fn iter_from(&self, sequence_number: SequenceNumber) -> Result<impl Iterator<Item = io::Result<RawRecord>>>;
+    fn iter_from(
+        &self,
+        sequence_number: SequenceNumber,
+    ) -> Result<impl Iterator<Item = io::Result<RawRecord>>, DurabilityError>;
 
-    fn iter_from_start(&self) -> Result<impl Iterator<Item = io::Result<RawRecord>>> {
+    fn iter_from_start(&self) -> Result<impl Iterator<Item = io::Result<RawRecord>>, DurabilityError> {
         self.iter_from(SequenceNumber::MIN)
     }
 
     fn iter_type_from<Record: DurabilityRecord>(
         &self,
         sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item=Result<(SequenceNumber, Record)>>> {
-        Ok(self.iter_from(sequence_number)?
+    ) -> Result<impl Iterator<Item = Result<(SequenceNumber, Record), DurabilityError>>, DurabilityError> {
+        Ok(self
+            .iter_from(sequence_number)?
             .filter(|res| {
                 match res {
                     Ok(raw) => raw.record_type == Record::RECORD_TYPE,
                     Err(_) => true, // Let the error filter through
                 }
-            }).map(|res| {
-            let raw = res?;
-            Ok((raw.sequence_number, Record::deserialise_from(&mut &*raw.bytes)?))
-        }))
+            })
+            .map(|res| {
+                let raw = res?;
+                Ok((raw.sequence_number, Record::deserialise_from(&mut &*raw.bytes)?))
+            }))
     }
 
     fn iter_sequenced_type_from<Record: SequencedDurabilityRecord>(
         &self,
         sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item = Result<(SequenceNumber, Record)>>> {
+    ) -> Result<impl Iterator<Item = Result<(SequenceNumber, Record), DurabilityError>>, DurabilityError> {
         self.iter_type_from::<Record>(sequence_number)
     }
 
     fn iter_sequenced_type_from_start<Record: SequencedDurabilityRecord>(
         &self,
-    ) -> Result<impl Iterator<Item = Result<(SequenceNumber, Record)>>> {
+    ) -> Result<impl Iterator<Item = Result<(SequenceNumber, Record), DurabilityError>>, DurabilityError> {
         self.iter_sequenced_type_from::<Record>(SequenceNumber::MIN)
     }
 
     fn iter_unsequenced_type_from<Record: UnsequencedDurabilityRecord>(
         &self,
         sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item = Result<Record>>> {
-        Ok(self.iter_type_from::<Record>(sequence_number)?.map(|res| {
-            let (_, record) = res?;
-            Ok(record)
-        }))
+    ) -> Result<impl Iterator<Item = Result<Record, DurabilityError>>, DurabilityError> {
+        Ok(self.iter_type_from::<Record>(sequence_number)?.map_ok(|(_, record)| record))
     }
 
     fn iter_unsequenced_type_from_start<Record: UnsequencedDurabilityRecord>(
         &self,
-    ) -> Result<impl Iterator<Item = Result<Record>>> {
+    ) -> Result<impl Iterator<Item = Result<Record, DurabilityError>>, DurabilityError> {
         self.iter_unsequenced_type_from(SequenceNumber::MIN)
     }
 }
@@ -150,7 +152,6 @@ impl SequenceNumber {
         let number_bytes = self.number.to_be_bytes();
         bytes.copy_from_slice(&number_bytes)
     }
-
 
     pub fn from_be_bytes(bytes: &[u8]) -> Self {
         let mut u64_bytes = [0; 8];

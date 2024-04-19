@@ -33,7 +33,7 @@ fn snapshot_buffered_put_get() {
     init_logging();
 
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
     let snapshot = storage.open_snapshot_write();
 
@@ -59,7 +59,7 @@ fn snapshot_buffered_put_get() {
 fn snapshot_buffered_put_iterate() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
     let snapshot = storage.open_snapshot_write();
 
@@ -84,7 +84,7 @@ fn snapshot_buffered_put_iterate() {
 fn snapshot_buffered_delete() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
     let snapshot = storage.open_snapshot_write();
 
@@ -114,7 +114,7 @@ fn snapshot_buffered_delete() {
 fn snapshot_read_through() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x0, 0x0, 0x1], Keyspace));
     let key_2 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1, 0x0, 0x10], Keyspace));
@@ -162,7 +162,7 @@ fn snapshot_read_through() {
 fn snapshot_delete_reinserted() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x0, 0x0, 0x1], Keyspace));
     let value_0 = ByteArray::copy(&[0, 0, 0, 0]);

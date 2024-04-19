@@ -21,10 +21,11 @@ use std::{
 };
 
 use durability::{
-    DurabilityRecord, DurabilityRecordType, DurabilityService, SequenceNumber, SequencedDurabilityRecord,
-    UnsequencedDurabilityRecord,
+    DurabilityError, DurabilityRecord, DurabilityRecordType, DurabilityService, SequenceNumber,
+    SequencedDurabilityRecord, UnsequencedDurabilityRecord,
 };
 use logger::result::ResultExt;
+use project::{read_guard_project, ReadGuard, RwLockReadGuardProject};
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 use serde::{Deserialize, Serialize};
 

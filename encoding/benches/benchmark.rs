@@ -40,7 +40,7 @@ fn vertex_generation_to_key<D>(
 fn criterion_benchmark(c: &mut Criterion) {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
 
     let type_id = TypeID::build(0);
     let vertex_generator = Arc::new(ThingVertexGenerator::new());

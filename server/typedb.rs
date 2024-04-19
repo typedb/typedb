@@ -13,7 +13,7 @@ use std::{
     sync::Arc,
 };
 
-use database::{Database, DatabaseRecoverError};
+use database::{Database, DatabaseOpenError};
 use durability::wal::WAL;
 use itertools::Itertools;
 
@@ -24,9 +24,9 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn recover(data_directory: impl AsRef<Path>) -> Result<Self, ServerRecoverError> {
-        use ServerRecoverError::{
-            CouldNotCreateDataDirectory, CouldNotReadDataDirectory, DatabaseRecover, InvalidUnicodeName, NotADirectory,
+    pub fn open(data_directory: impl AsRef<Path>) -> Result<Self, ServerOpenError> {
+        use ServerOpenError::{
+            CouldNotCreateDataDirectory, CouldNotReadDataDirectory, DatabaseOpen, InvalidUnicodeName, NotADirectory,
         };
         let data_directory = data_directory.as_ref();
 
@@ -43,8 +43,8 @@ impl Server {
                 let entry = entry
                     .map_err(|error| CouldNotReadDataDirectory { path: data_directory.to_owned(), source: error })?;
                 let database_name = entry.file_name().into_string().map_err(|name| InvalidUnicodeName { name })?;
-                let database = Database::recover(&entry.path(), &database_name)
-                    .map_err(|error| DatabaseRecover { source: error })?;
+                let database = Database::open(&entry.path(), &database_name)
+                    .map_err(|error| DatabaseOpen { source: error })?;
                 Ok((database_name, Arc::new(database)))
             })
             .try_collect()?;
@@ -56,7 +56,7 @@ impl Server {
         let name = name.as_ref();
         self.databases
             .entry(name.to_owned())
-            .or_insert_with(|| Arc::new(Database::recover(&self.data_directory.join(name), name).unwrap()));
+            .or_insert_with(|| Arc::new(Database::open(&self.data_directory.join(name), name).unwrap()));
     }
 
     pub fn database(&self, name: &str) -> Option<&Database<WAL>> {
@@ -73,17 +73,17 @@ impl Server {
 }
 
 #[derive(Debug)]
-pub enum ServerRecoverError {
+pub enum ServerOpenError {
     NotADirectory { path: PathBuf },
     CouldNotCreateDataDirectory { path: PathBuf, source: io::Error },
     CouldNotReadDataDirectory { path: PathBuf, source: io::Error },
     InvalidUnicodeName { name: OsString },
-    DatabaseRecover { source: DatabaseRecoverError },
+    DatabaseOpen { source: DatabaseOpenError },
 }
 
-impl Error for ServerRecoverError {}
+impl Error for ServerOpenError {}
 
-impl fmt::Display for ServerRecoverError {
+impl fmt::Display for ServerOpenError {
     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }

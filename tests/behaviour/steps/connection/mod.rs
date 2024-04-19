@@ -17,7 +17,7 @@ mod transaction;
 #[step("typedb starts")]
 pub async fn typedb_starts(context: &mut Context) {
     let server_dir = create_tmp_dir();
-    context.server = Some(typedb::Server::recover(&server_dir).unwrap());
+    context.server = Some(typedb::Server::open(&server_dir).unwrap());
     context.server_dir = Some(server_dir);
 }
 

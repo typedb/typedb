@@ -6,31 +6,30 @@
 
 #![deny(unused_must_use)]
 
-use std::rc::Rc;
-use std::sync::Arc;
+use std::{rc::Rc, sync::Arc};
 
 use durability::wal::WAL;
 use encoding::{
     graph::{
-        thing::vertex_generator::{ThingVertexGenerator},
-        type_::vertex::TypeID,
+        thing::{
+            vertex_attribute::StringAttributeID,
+            vertex_generator::{StringAttributeID, ThingVertexGenerator},
+        },
+        type_::{vertex::TypeID, vertex_generator::TypeVertexGenerator},
+        Typed,
     },
     value::string_bytes::StringBytes,
     AsBytes, EncodingKeyspace,
 };
-use encoding::graph::thing::vertex_attribute::StringAttributeID;
-use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
-use encoding::graph::Typed;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::MVCCStorage;
-use storage::snapshot::CommittableSnapshot;
+use storage::{snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, init_logging};
 
 #[test]
 fn generate_string_attribute_vertex() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap());
 
     let snapshot = storage.clone().open_snapshot_write();
     let type_id = TypeID::build(0);
@@ -41,8 +40,9 @@ fn generate_string_attribute_vertex() {
     {
         let short_string = "Hello";
         let short_string_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(short_string);
-        let vertex =
-            thing_vertex_generator.create_attribute_string(type_id, short_string_bytes.as_reference(), &snapshot).unwrap();
+        let vertex = thing_vertex_generator
+            .create_attribute_string(type_id, short_string_bytes.as_reference(), &snapshot)
+            .unwrap();
         let vertex_id = vertex.attribute_id().unwrap_string();
         assert!(vertex_id.is_inline());
         assert_eq!(vertex_id.get_inline_length() as usize, short_string_bytes.length());
@@ -53,7 +53,8 @@ fn generate_string_attribute_vertex() {
     {
         let string = "Hello world, this is a long attribute string to be encoded.";
         let string_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
-        let vertex = thing_vertex_generator.create_attribute_string(type_id, string_bytes.as_reference(), &snapshot).unwrap();
+        let vertex =
+            thing_vertex_generator.create_attribute_string(type_id, string_bytes.as_reference(), &snapshot).unwrap();
         let vertex_id = vertex.attribute_id().unwrap_string();
         assert!(!vertex_id.is_inline());
         assert_eq!(
@@ -75,7 +76,8 @@ fn generate_string_attribute_vertex() {
     {
         let string = "Hello world, this is a long attribute string to be encoded with a constant hash.";
         let string_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
-        let vertex = thing_vertex_generator.create_attribute_string(type_id, string_bytes.as_reference(), &snapshot).unwrap();
+        let vertex =
+            thing_vertex_generator.create_attribute_string(type_id, string_bytes.as_reference(), &snapshot).unwrap();
 
         let vertex_id = vertex.attribute_id().unwrap_string();
         assert!(!vertex_id.is_inline());
@@ -91,8 +93,9 @@ fn generate_string_attribute_vertex() {
 
         let string_collide = "Hello world, this is using the same prefix and will collide.";
         let string_collide_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
-        let collide_vertex =
-            thing_vertex_generator.create_attribute_string(type_id, string_collide_bytes.as_reference(), &snapshot).unwrap();
+        let collide_vertex = thing_vertex_generator
+            .create_attribute_string(type_id, string_collide_bytes.as_reference(), &snapshot)
+            .unwrap();
 
         let collide_id = collide_vertex.attribute_id().unwrap_string();
         assert!(!collide_id.is_inline());
@@ -114,7 +117,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     let storage_path = create_tmp_dir();
     let type_id = TypeID::build(0);
     {
-        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
         let snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
@@ -128,7 +131,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     }
 
     for i in 0..5 {
-        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
         let snapshot = storage.clone().open_snapshot_write();
         let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
         let vertex = generator.create_entity(type_id, &snapshot);
@@ -137,9 +140,8 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
         snapshot.commit().unwrap();
     }
 
-
     for i in 0..5 {
-        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
         let snapshot = storage.clone().open_snapshot_write();
         let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
         let vertex = generator.create_relation(type_id, &snapshot);

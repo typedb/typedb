@@ -16,7 +16,7 @@ fn main() {
 
     let _guard = initialise_logging();
 
-    typedb::Server::recover("runtimedata/server/data").unwrap().serve();
+    typedb::Server::open("runtimedata/server/data").unwrap().serve();
 }
 
 fn print_ascii_logo() {

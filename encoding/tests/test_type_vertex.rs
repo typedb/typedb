@@ -5,24 +5,32 @@
  */
 
 use std::sync::Arc;
-use durability::wal::WAL;
-use encoding::{AsBytes, EncodingKeyspace, Keyable};
-use encoding::error::EncodingError;
-use encoding::graph::type_::vertex::{build_vertex_entity_type, TypeID};
-use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
-use storage::key_value::StorageKeyReference;
-use storage::MVCCStorage;
-use storage::snapshot::{CommittableSnapshot, WritableSnapshot};
-use test_utils::{create_tmp_dir, init_logging};
 
-use encoding::graph::Typed;
+use durability::wal::WAL;
+use encoding::{
+    error::EncodingError,
+    graph::{
+        type_::{
+            vertex::{build_vertex_entity_type, TypeID},
+            vertex_generator::TypeVertexGenerator,
+        },
+        Typed,
+    },
+    AsBytes, EncodingKeyspace, Keyable,
+};
+use storage::{
+    key_value::StorageKeyReference,
+    snapshot::{CommittableSnapshot, WritableSnapshot},
+    MVCCStorage,
+};
+use test_utils::{create_tmp_dir, init_logging};
 
 // TODO: Update all tests with higher level APIs
 #[test]
 fn entity_type_vertexes_are_reused() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
     // If we don't commit, it doesn't move.
     {
         for _ in 0..5 {
@@ -66,14 +74,13 @@ fn entity_type_vertexes_are_reused() {
             }
         }
     }
-
 }
 
 #[test]
 fn max_entity_type_vertexes() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let create_till = u16::MAX;
     {
         let snapshot = storage.clone().open_snapshot_write();
@@ -90,7 +97,7 @@ fn max_entity_type_vertexes() {
         let generator = TypeVertexGenerator::new();
 
         let res = generator.create_entity_type(&snapshot); // Crashes
-        assert!(matches!(res, Err(EncodingError::TypeIDsExhausted { kind : encoding::graph::type_::Kind::Entity })));
+        assert!(matches!(res, Err(EncodingError::TypeIDsExhausted { kind: encoding::graph::type_::Kind::Entity })));
     }
 }
 
@@ -101,7 +108,7 @@ fn loading_storage_assigns_next_vertex() {
     let create_till = 5;
 
     for i in 0..create_till {
-        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
         let snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
@@ -111,7 +118,7 @@ fn loading_storage_assigns_next_vertex() {
     }
 
     for i in 0..create_till {
-        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
         let snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
@@ -121,7 +128,7 @@ fn loading_storage_assigns_next_vertex() {
     }
 
     for i in 0..create_till {
-        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
         let snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
@@ -131,7 +138,7 @@ fn loading_storage_assigns_next_vertex() {
     }
 
     for i in 0..create_till {
-        let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
         let snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
