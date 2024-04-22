@@ -35,7 +35,7 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
     }
 
     pub fn zeros(length: usize) -> ByteArray<INLINE_BYTES> {
-        if length < INLINE_BYTES {
+        if length <= INLINE_BYTES {
             ByteArray::Inline(ByteArrayInline::zeros(length))
         } else {
             ByteArray::Boxed(ByteArrayBoxed::zeros(length))
@@ -135,13 +135,13 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
     }
 
     const fn zeros(length: usize) -> ByteArrayInline<BYTES> {
-        assert!(length < BYTES);
+        assert!(length <= BYTES);
         ByteArrayInline { data: [0; BYTES], start: 0, length: length }
     }
 
     fn from(bytes: &[u8]) -> ByteArrayInline<BYTES> {
         let length = bytes.len();
-        assert!(length < BYTES);
+        assert!(length <= BYTES);
         let mut data = [0; BYTES];
         data[0..length].copy_from_slice(bytes);
         ByteArrayInline { data, start: 0, length: length }
@@ -149,7 +149,7 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
 
     fn concat<const N: usize>(slices: [&[u8]; N]) -> ByteArrayInline<BYTES> {
         let length: usize = slices.iter().map(|slice| slice.len()).sum();
-        assert!(length < BYTES);
+        assert!(length <= BYTES);
         let mut data = [0; BYTES];
         let mut end = 0;
         for slice in slices {

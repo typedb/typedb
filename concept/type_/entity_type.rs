@@ -66,7 +66,7 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
     }
 
     fn is_abstract(
-        &self, type_manager: &TypeManager<impl ReadableSnapshot>
+        &self, type_manager: &TypeManager<impl ReadableSnapshot>,
     ) -> Result<bool, ConceptReadError> {
         let annotations = self.get_annotations(type_manager)?;
         Ok(annotations.contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract::new())))
@@ -141,8 +141,11 @@ impl<'a> EntityType<'a> {
 }
 
 impl<'a> OwnerAPI<'a> for EntityType<'a> {
-    fn set_owns(&self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>) {
-        type_manager.storage_set_owns(self.clone().into_owned(), attribute_type);
+    fn set_owns(
+        &self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>,
+    ) -> Owns<'static> {
+        type_manager.storage_set_owns(self.clone().into_owned(), attribute_type.clone());
+        Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type)
     }
 
     fn delete_owns(&self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>) {

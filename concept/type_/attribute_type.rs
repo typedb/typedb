@@ -109,7 +109,17 @@ impl<'a> AttributeType<'a> {
         type_manager.get_attribute_type_supertypes(self.clone().into_owned())
     }
 
+
     // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<AttributeType<'static>>>;
+    pub(crate) fn is_independent(
+        &self, type_manager: &TypeManager<impl ReadableSnapshot>
+    ) -> Result<bool, ConceptReadError> {
+        Ok(
+            self
+                .get_annotations(type_manager)?
+                .contains(&AttributeTypeAnnotation::Independent(AnnotationIndependent::new()))
+        )
+    }
 
     pub fn get_annotations<'m>(
         &self,
@@ -118,7 +128,7 @@ impl<'a> AttributeType<'a> {
         type_manager.get_attribute_type_annotations(self.clone().into_owned())
     }
 
-    pub(crate) fn set_annotation(
+    pub fn set_annotation(
         &self,
         type_manager: &TypeManager<impl WritableSnapshot>,
         annotation: AttributeTypeAnnotation,

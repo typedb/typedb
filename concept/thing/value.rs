@@ -9,12 +9,12 @@ use encoding::value::value_type::ValueType;
 
 // TODO: how do we handle user-created compound structs?
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value<'a> {
     Boolean(bool),
     Long(i64),
     Double(f64),
-    String(Cow<'a, Box<str>>),
+    String(Cow<'a, str>),
 }
 
 impl<'a> Value<'a> {
@@ -33,6 +33,20 @@ impl<'a> Value<'a> {
             Value::Long(long) => Value::Long(*long),
             Value::Double(double) => Value::Double(*double),
             Value::String(string) => Value::String(Cow::Borrowed(string.as_ref())),
+        }
+    }
+
+    pub fn unwrap_string(self) -> Cow<'a, str> {
+        match self {
+            Value::String(string) => string,
+            _ => panic!("Cannot unwrap String if not a string value.")
+        }
+    }
+
+    pub fn unwrap_long(self) -> i64 {
+        match self {
+            Value::Long(long) => long,
+            _ => panic!("Cannot unwrap Long if not a long value.")
         }
     }
 }

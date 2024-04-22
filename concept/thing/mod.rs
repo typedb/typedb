@@ -34,7 +34,7 @@ pub trait ThingAPI<'a> {
     fn delete(self, thing_manager: &ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError>;
 }
 
-pub trait ObjectAPI<'a> {
+pub trait ObjectAPI<'a>: ThingAPI<'a> {
     fn vertex(&self) -> ObjectVertex<'_>;
 
     fn into_vertex(self) -> ObjectVertex<'a>;

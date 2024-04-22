@@ -68,7 +68,7 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
     // a lending iterator trait is infeasible with the current borrow checker
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
-        match self.iterator_state.state().clone() {
+        match self.iterator_state.state() {
             State::Init => {
                 self.find_next_state();
                 self.next()
@@ -82,7 +82,7 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
                         Some(Ok(Self::get_buffered_peek(self.buffered_iterator.as_mut().unwrap())))
                     }
                 };
-                self.iterator_state.set_item_used();
+                self.iterator_state.state = State::ItemUsed;
                 item
             }
             State::ItemUsed => {
@@ -94,22 +94,34 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
         }
     }
 
-    pub fn seek(&mut self) {
-        // if state == DONE | ERROR -> do nothing
-        // if state == INIT -> seek(), state = UPDATING, update_state()
-        // if state == EMPTY -> seek(), state = UPDATING, update_state() TODO: compare to previous to prevent backward seek?
-        // if state == READY -> seek(), state = UPDATING, update_state() TODO: compare to peek() to prevent backwrard seek?
-
-        todo!()
+    pub fn seek(&mut self, key: StorageKeyReference<'_>) {
+        match self.iterator_state.state() {
+            State::Init | State::ItemUsed => {
+                self.storage_iterator.seek(key.bytes());
+                self.find_next_state()
+            }
+            State::ItemReady => {
+                let (peek, _) = self.peek().unwrap().unwrap();
+                if peek < key {
+                    self.iterator_state.state = State::ItemUsed;
+                    if let Some(buf) = self.buffered_iterator.as_mut() {
+                        buf.seek(key.bytes())
+                    }
+                    self.storage_iterator.seek(key.bytes());
+                    self.find_next_state()
+                }
+            }
+            State::Error(_) | State::Done => {}
+        }
     }
 
     fn find_next_state(&mut self) {
         assert!(
-            matches!(self.iterator_state.state(), &State::Init)
-                || matches!(self.iterator_state.state(), &State::ItemUsed)
+            matches!(self.iterator_state.state(), State::Init)
+                || matches!(self.iterator_state.state(), State::ItemUsed)
         );
-        while matches!(self.iterator_state.state(), &State::Init)
-            || matches!(self.iterator_state.state(), &State::ItemUsed)
+        while matches!(self.iterator_state.state(), State::Init)
+            || matches!(self.iterator_state.state(), State::ItemUsed)
         {
             let mut advance_storage = false;
             let mut advance_buffered = false;
@@ -117,9 +129,13 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
             let buffered_peek = Self::buffered_peek(&mut self.buffered_iterator);
 
             match (buffered_peek, storage_peek) {
-                (None, Ok(None)) => self.iterator_state.set_done(),
+                (None, Ok(None)) => {
+                    self.iterator_state.state = State::Done;
+                }
                 (None, Ok(Some(_))) => self.iterator_state.set_item_ready(ReadyItemSource::Storage),
-                (Some(Err(error)), _) | (_, Err(error)) => self.iterator_state.set_error(Arc::new(error)),
+                (Some(Err(error)), _) | (_, Err(error)) => {
+                    self.iterator_state.state = State::Error(Arc::new(error))
+                }
                 (Some(Ok((buffered_key, buffered_write))), Ok(storage_peek)) => {
                     (advance_storage, advance_buffered) =
                         Self::merge_buffered(&mut self.iterator_state, (buffered_key, buffered_write), storage_peek);
@@ -331,33 +347,17 @@ impl IteratorState {
         IteratorState { state: State::Init, ready_item_source: ReadyItemSource::Storage }
     }
 
-    fn state(&self) -> &State<Arc<SnapshotIteratorError>> {
-        &self.state
+    fn state(&self) -> State<Arc<SnapshotIteratorError>> {
+        self.state.clone()
     }
 
     fn source(&self) -> &ReadyItemSource {
         &self.ready_item_source
     }
 
-    fn set_init(&mut self) {
-        self.state = State::Init;
-    }
-
     fn set_item_ready(&mut self, source: ReadyItemSource) {
         self.state = State::ItemReady;
         self.ready_item_source = source;
-    }
-
-    fn set_item_used(&mut self) {
-        self.state = State::ItemUsed;
-    }
-
-    fn set_done(&mut self) {
-        self.state = State::Done;
-    }
-
-    fn set_error(&mut self, error: Arc<SnapshotIteratorError>) {
-        self.state = State::Error(error)
     }
 }
 

@@ -6,6 +6,7 @@
 
 use bytes::Bytes;
 use encoding::{
+    AsBytes,
     graph::{
         thing::{
             edge::{ThingEdgeHas, ThingEdgeRelationIndex, ThingEdgeRolePlayer},
@@ -14,8 +15,7 @@ use encoding::{
         type_::vertex::build_vertex_entity_type,
         Typed,
     },
-    layout::prefix::Prefix,
-    AsBytes, Keyable, Prefixed,
+    Keyable, layout::prefix::Prefix, Prefixed,
 };
 use storage::{
     key_value::StorageKeyReference,
@@ -23,19 +23,22 @@ use storage::{
 };
 
 use crate::{
+    ByteReference,
     concept_iterator,
-    error::ConceptWriteError,
-    thing::{
-        attribute::{Attribute},
+    ConceptAPI,
+    ConceptStatus,
+    error::ConceptWriteError, GetStatus, thing::{
+        attribute::Attribute,
         object::{HasAttributeIterator, Object},
+        ObjectAPI,
         relation::{IndexedPlayersIterator, RelationRoleIterator},
-        thing_manager::ThingManager,
-        ObjectAPI, ThingAPI,
-    },
-    type_::entity_type::EntityType,
-    ByteReference, ConceptAPI, ConceptStatus, GetStatus,
+        thing_manager::ThingManager, ThingAPI,
+    }, type_::entity_type::EntityType,
 };
 use crate::error::ConceptReadError;
+use crate::thing::value::Value;
+use crate::type_::attribute_type::AttributeType;
+use crate::type_::OwnerAPI;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Entity<'a> {
@@ -60,11 +63,28 @@ impl<'a> Entity<'a> {
         self.vertex.bytes()
     }
 
+    pub fn has_attribute(
+        &self,
+        thing_manager: &ThingManager<impl ReadableSnapshot>,
+        attribute_type: AttributeType<'static>,
+        value: Value<'_>,
+    ) -> Result<bool, ConceptReadError> {
+        thing_manager.has_attribute(self.as_reference(), attribute_type, value)
+    }
+
     pub fn get_has<'m>(
         &self,
         thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
-        thing_manager.get_has_of(self.as_reference())
+        thing_manager.get_has(self.as_reference())
+    }
+
+    pub fn get_has_type<'m>(
+        &self,
+        thing_manager: &'m ThingManager<impl ReadableSnapshot>,
+        attribute_type: AttributeType<'static>,
+    ) -> HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
+        thing_manager.get_has_type(self.as_reference(), attribute_type)
     }
 
     pub fn set_has(&self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>) {
@@ -73,24 +93,48 @@ impl<'a> Entity<'a> {
         thing_manager.set_has(self.as_reference(), attribute.as_reference())
     }
 
-    pub fn delete_has(&self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>, repetition: u64) {
-        // TODO: validate schema
-        // TODO: handle duplicates/counts
-        thing_manager.delete_has(self.as_reference(), attribute.as_reference())
+    pub fn delete_has_single(
+        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>,
+    ) -> Result<(), ConceptWriteError> {
+        self.delete_has_many(thing_manager, attribute, 1)
+    }
+
+    pub fn delete_has_many(
+        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>, count: u64,
+    ) -> Result<(), ConceptWriteError> {
+        let owns = self.type_().get_owns_attribute(
+            thing_manager.type_manager(),
+            attribute.type_(),
+        ).map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        match owns {
+            None => {
+                todo!("throw useful schema violation error")
+            }
+            Some(owns) => {
+                if owns.is_distinct(thing_manager.type_manager())
+                    .map_err(|err| ConceptWriteError::ConceptRead { source: err })? {
+                    debug_assert_eq!(count, 1);
+                    thing_manager.delete_has(self.as_reference(), attribute);
+                } else {
+                    thing_manager.decrement_has(self.as_reference(), attribute, count);
+                }
+            }
+        }
+        Ok(())
     }
 
     pub fn get_relations<'m>(
         &self,
         thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> RelationRoleIterator<'m, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
-        thing_manager.get_relations_of(self.as_reference())
+        thing_manager.get_relations_roles(self.as_reference())
     }
 
     pub fn get_indexed_players<'m>(
         &self,
         thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> IndexedPlayersIterator<'m, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
-        thing_manager.get_indexed_players_of(Object::Entity(self.as_reference()))
+        thing_manager.get_indexed_players(Object::Entity(self.as_reference()))
     }
 
     pub(crate) fn into_owned(self) -> Entity<'static> {
@@ -120,7 +164,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         let mut has = has_iter.next().transpose()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         while let Some((attr, count)) = has {
-            self.delete_has(thing_manager, attr, count);
+            self.delete_has_many(thing_manager, attr, count)?;
             has = has_iter.next().transpose()
                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         }

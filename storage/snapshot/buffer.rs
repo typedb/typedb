@@ -12,6 +12,7 @@ use std::{
     ,
     sync::{Arc, RwLock},
 };
+use std::sync::atomic::AtomicBool;
 
 use serde::{
     de,
@@ -116,7 +117,7 @@ impl WriteBuffer {
     }
 
     pub(crate) fn put(&self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        self.writes.write().unwrap().insert(key, Write::Put { value, reinsert: Arc::default() });
+        self.writes.write().unwrap().insert(key, Write::Put { value, reinsert: Arc::new(AtomicBool::new(false)) });
     }
 
     pub(crate) fn delete(&self, key: ByteArray<BUFFER_KEY_INLINE>) {
@@ -276,7 +277,13 @@ impl BufferedPrefixIterator {
         }
     }
 
-    fn seek(&mut self, target: impl Borrow<[u8]>) {
+    ///
+    /// TODO: This is a 'dumb' seek, in that it simply consumes values until the criteria is no longer matched
+    ///       When buffers are not too large, this is likely to be fast.
+    ///       This can be improved by opening a new range over the buffer directly.
+    ///         --> perhaps when the buffer is "large" and the distance to the next key is "large"?
+    ///
+    pub(crate) fn seek(&mut self, target: impl Borrow<[u8]>) {
         match &self.state {
             State::Done => {}
             State::Init => {

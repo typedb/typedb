@@ -36,7 +36,7 @@ impl<'a> AttributeVertex<'a> {
         AttributeVertex { bytes }
     }
 
-    pub(crate) fn build(value_type: ValueType, type_id: TypeID, attribute_id: AttributeID) -> Self {
+    pub fn build(value_type: ValueType, type_id: TypeID, attribute_id: AttributeID) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE + attribute_id.length());
         bytes.bytes_mut()[Self::RANGE_PREFIX]
             .copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
@@ -144,7 +144,7 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
     }
 }
 
-pub(crate) trait AsAttributeID {
+pub trait AsAttributeID {
     type AttributeIDType: VertexID;
 
     fn as_attribute_id(&self) -> AttributeID;

@@ -188,8 +188,11 @@ impl<'a> RelationType<'a> {
 }
 
 impl<'a> OwnerAPI<'a> for RelationType<'a> {
-    fn set_owns(&self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>) {
+    fn set_owns(
+        &self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>
+    ) -> Owns<'static> {
         type_manager.storage_set_owns(self.clone().into_owned(), attribute_type.clone());
+        Owns::new(ObjectType::Relation(self.clone().into_owned()), attribute_type)
     }
 
     fn delete_owns(&self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>) {

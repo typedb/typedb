@@ -19,9 +19,11 @@ use storage::{
     key_value::StorageKeyReference,
     snapshot::WritableSnapshot,
 };
+use storage::snapshot::ReadableSnapshot;
 
-use crate::{edge_iterator, thing::{attribute::Attribute, entity::Entity, ObjectAPI, relation::Relation, thing_manager::ThingManager}};
-use crate::error::ConceptWriteError;
+use crate::{ConceptStatus, edge_iterator, thing::{attribute::Attribute, entity::Entity, ObjectAPI, relation::Relation, thing_manager::ThingManager}};
+use crate::error::{ConceptReadError, ConceptWriteError};
+use crate::thing::ThingAPI;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum Object<'a> {
@@ -75,6 +77,36 @@ impl<'a> Object<'a> {
         match self {
             Object::Entity(entity) => Object::Entity(entity.into_owned()),
             Object::Relation(relation) => Object::Relation(relation.into_owned()),
+        }
+    }
+}
+
+impl<'a> ThingAPI<'a> for Object<'a> {
+    fn set_modified(&self, thing_manager: &ThingManager<impl WritableSnapshot>) {
+        match self {
+            Object::Entity(entity) => entity.set_modified(thing_manager),
+            Object::Relation(relation) => relation.set_modified(thing_manager),
+        }
+    }
+
+    fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus {
+        match self {
+            Object::Entity(entity) => entity.get_status(thing_manager),
+            Object::Relation(relation) => relation.get_status(thing_manager),
+        }
+    }
+
+    fn errors(&self, thing_manager: &ThingManager<impl WritableSnapshot>) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
+        match self {
+            Object::Entity(entity) => entity.errors(thing_manager),
+            Object::Relation(relation) => relation.errors(thing_manager),
+        }
+    }
+
+    fn delete(self, thing_manager: &ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+        match self {
+            Object::Entity(entity) => entity.delete(thing_manager),
+            Object::Relation(relation) => relation.delete(thing_manager),
         }
     }
 }

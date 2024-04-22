@@ -37,7 +37,9 @@ impl<'a> ObjectType<'a> {
 }
 
 impl<'a> OwnerAPI<'a> for ObjectType<'a> {
-    fn set_owns(&self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>) {
+    fn set_owns(
+        &self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>
+    ) -> Owns<'static> {
         // TODO: decide behaviour (ok or error) if already owning
         match self {
             ObjectType::Entity(entity) => entity.set_owns(type_manager, attribute_type),

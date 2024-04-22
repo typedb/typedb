@@ -429,7 +429,7 @@ impl Error for SnapshotError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SnapshotGetError {
     MVCCRead { source: MVCCReadError },
 }

@@ -5,8 +5,6 @@
  */
 
 use std::cmp::Ordering;
-use std::sync::Arc;
-use iterator::State;
 
 use bytes::Bytes;
 use encoding::{
@@ -16,17 +14,18 @@ use encoding::{
 };
 use encoding::graph::thing::edge::ThingEdgeHasReverse;
 use encoding::value::decode_value_u64;
+use iterator::State;
 use storage::{
     key_value::StorageKeyReference,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
-use storage::snapshot::iterator::{SnapshotIteratorError, SnapshotRangeIterator};
+use storage::snapshot::iterator::SnapshotRangeIterator;
 
 use crate::{ByteReference, ConceptAPI, ConceptStatus, edge_iterator, error::{ConceptReadError, ConceptWriteError}, GetStatus, thing::{thing_manager::ThingManager, ThingAPI, value::Value}, type_::attribute_type::AttributeType};
 use crate::thing::object::Object;
 use crate::type_::type_manager::TypeManager;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Attribute<'a> {
     vertex: AttributeVertex<'a>,
     value: Option<Value<'a>>, // TODO: if we end up doing traversals over Vertex instead of Concept, we could embed the Value cache into the AttributeVertex
@@ -49,7 +48,7 @@ impl<'a> Attribute<'a> {
         self.vertex.bytes()
     }
 
-    pub fn value(
+    pub fn get_value(
         &mut self,
         thing_manager: &ThingManager<impl ReadableSnapshot>,
     ) -> Result<Value<'_>, ConceptReadError> {
@@ -62,8 +61,8 @@ impl<'a> Attribute<'a> {
 
     pub fn has_owners<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> bool {
         match self.get_status(thing_manager) {
-            ConceptStatus::Put => thing_manager.has_owners(self.as_reference(), false),
-            ConceptStatus::Inserted | ConceptStatus::Persisted | ConceptStatus::Deleted => {
+            ConceptStatus::Put | ConceptStatus::Persisted => thing_manager.has_owners(self.as_reference(), false),
+            ConceptStatus::Inserted | ConceptStatus::Deleted => {
                 unreachable!("Attributes are expected to always have a PUT status.")
             }
         }
@@ -72,7 +71,7 @@ impl<'a> Attribute<'a> {
     pub fn get_owners<'m>(
         &self, thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> AttributeOwnerIterator<'m, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
-        thing_manager.get_owners_of(self.as_reference())
+        thing_manager.get_owners(self.as_reference())
     }
 
     pub fn as_reference(&self) -> Attribute<'_> {
@@ -87,7 +86,7 @@ impl<'a> Attribute<'a> {
         self.vertex
     }
 
-    pub(crate) fn into_owned(self) -> Attribute<'static> {
+    pub fn into_owned(self) -> Attribute<'static> {
         Attribute::new(self.vertex.into_owned())
     }
 }
@@ -96,12 +95,12 @@ impl<'a> ConceptAPI<'a> for Attribute<'a> {}
 
 impl<'a> ThingAPI<'a> for Attribute<'a> {
     fn set_modified(&self, thing_manager: &ThingManager<impl WritableSnapshot>) {
+        debug_assert_eq!(thing_manager.get_status(self.vertex().as_storage_key()), ConceptStatus::Put);
         // Attributes are always PUT, so we don't have to record a lock on modification
     }
 
     fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus {
-        debug_assert_eq!(thing_manager.get_status(self.vertex().as_storage_key()), ConceptStatus::Put);
-        ConceptStatus::Put
+        thing_manager.get_status(self.vertex().as_storage_key())
     }
 
     fn errors(&self, thing_manager: &ThingManager<impl WritableSnapshot>) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
@@ -162,7 +161,7 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
             type_manager: Some(type_manager),
             attributes_iterator: Some(attributes_iterator),
             has_reverse_iterator: Some(has_reverse_iterator),
-            state: State::Init
+            state: State::Init,
         }
     }
 
@@ -170,25 +169,27 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
         Self { type_manager: None, attributes_iterator: None, has_reverse_iterator: None, state: State::Done }
     }
 
-    fn storage_key_to_attribute<'b>(storage_key_ref: StorageKeyReference<'b>) -> Attribute<'b> {
-        Attribute::new(AttributeVertex::new(Bytes::Reference(storage_key_ref.byte_ref())))
+    fn storage_key_to_attribute_vertex<'b>(storage_key_ref: StorageKeyReference<'b>) -> AttributeVertex<'b> {
+        AttributeVertex::new(Bytes::Reference(storage_key_ref.byte_ref()))
     }
 
     pub fn peek(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
-        self.iter_peek().map(|result| {
+        self.iter_peek().map(|result|
             result
-                .map(|(storage_key, _value_bytes)| Self::storage_key_to_attribute(storage_key))
-                .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
-        })
+                .map(|(storage_key, _value_bytes)| {
+                    Attribute::new(Self::storage_key_to_attribute_vertex(storage_key))
+                })
+        )
     }
 
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
-        self.iter_next().map(|result| {
+        self.iter_next().map(|result|
             result
-                .map(|(storage_key, _value_bytes)| Self::storage_key_to_attribute(storage_key))
-                .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
-        })
+                .map(|(storage_key, _value_bytes)| {
+                    Attribute::new(Self::storage_key_to_attribute_vertex(storage_key))
+                })
+        )
     }
 
     pub fn seek(&mut self) {
@@ -197,23 +198,112 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
 
     fn iter_peek(
         &mut self,
-    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>>
+    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), ConceptReadError>>
     {
-        if let Some(iter) = self.attributes_iterator.as_mut() {
-            iter.peek()
-        } else {
-            None
+        match &self.state {
+            State::Init | State::ItemUsed => {
+                self.find_next_state();
+                self.iter_peek()
+            }
+            State::ItemReady => self.attributes_iterator.as_mut().unwrap().peek().transpose()
+                .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
+                .transpose(),
+            State::Error(error) => Some(Err(error.clone())),
+            State::Done => None,
         }
     }
 
     fn iter_next(
         &mut self,
-    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>>
+    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), ConceptReadError>>
     {
-        if let Some(iter) = self.attributes_iterator.as_mut() {
-            iter.next()
-        } else {
-            None
+        match &self.state {
+            State::Init | State::ItemUsed => {
+                self.find_next_state();
+                self.iter_next()
+            }
+            State::ItemReady => {
+                let next = self.attributes_iterator.as_mut().unwrap().next().transpose()
+                    .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
+                    .transpose();
+                let _ = self.has_reverse_iterator.as_mut().unwrap().next();
+                self.state = State::ItemUsed;
+                next
+            }
+            State::Error(error) => Some(Err(error.clone())),
+            State::Done => None,
+        }
+    }
+
+    fn find_next_state(&mut self) {
+        assert!(matches!(&self.state, State::Init | State::ItemUsed));
+        while matches!(&self.state, State::Init | State::ItemUsed) {
+            let mut advance_attribute = false;
+            match self.attributes_iterator.as_mut().unwrap().peek() {
+                None => self.state = State::Done,
+                Some(Ok((key, _))) => {
+                    let attribute_vertex = Self::storage_key_to_attribute_vertex(key);
+                    let independent = Attribute::new(attribute_vertex.as_reference())
+                        .type_()
+                        .is_independent(self.type_manager.as_ref().unwrap());
+                    match independent {
+                        Ok(true) => {
+                            self.state = State::ItemReady
+                        }
+                        Ok(false) => {
+                            match Self::has_owner(self.has_reverse_iterator.as_mut().unwrap(), attribute_vertex) {
+                                Ok(has_owner) => {
+                                    if has_owner {
+                                        self.state = State::ItemReady
+                                    } else {
+                                        advance_attribute = true
+                                    }
+                                }
+                                Err(err) => self.state = State::Error(err)
+                            }
+                        }
+                        Err(err) => {
+                            self.state = State::Error(err.clone())
+                        }
+                    }
+                }
+                Some(Err(err)) => {
+                    self.state = State::Error(ConceptReadError::SnapshotIterate { source: err.clone() })
+                },
+            }
+            if advance_attribute {
+                let _ = self.attributes_iterator.as_mut().unwrap();
+            }
+        }
+    }
+
+    fn has_owner(
+        has_reverse_iterator: &mut SnapshotRangeIterator<'a, H_PS> , attribute_vertex: AttributeVertex<'_>
+    ) -> Result<bool, ConceptReadError> {
+        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex.as_reference());
+        has_reverse_iterator.seek(has_reverse_prefix.as_reference());
+        match has_reverse_iterator.peek() {
+            None => {
+                Ok(false)
+            }
+            Some(Err(err)) => {
+                Err(ConceptReadError::SnapshotIterate { source: err.clone() })
+            }
+            Some(Ok((bytes, _))) => {
+                let edge = ThingEdgeHasReverse::new(Bytes::Reference(bytes.byte_ref()));
+                let edge_from = edge.from();
+                match edge_from.cmp(&attribute_vertex) {
+                    Ordering::Less => {
+                        panic!("Unexpected attribute edge encountered for a previous attribute, which should not be possible.");
+                    }
+                    Ordering::Equal => {
+                        Ok(true)
+                    }
+                    Ordering::Greater => {
+                        Ok(false)
+                    }
+                }
+            }
         }
     }
 
@@ -230,7 +320,6 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
         vec
     }
 }
-
 
 fn storage_key_to_owner<'a>(
     storage_key_reference: StorageKeyReference<'a>,

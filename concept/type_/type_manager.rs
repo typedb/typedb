@@ -36,7 +36,7 @@ use encoding::{
         value_type::{ValueType, ValueTypeID},
     },
 };
-use encoding::graph::type_::property::{TypeEdgeProperty, TypeVertexProperty};
+use encoding::graph::type_::property::{build_property_type_edge_annotation_cardinality, build_property_type_edge_annotation_distinct, TypeEdgeProperty, TypeVertexProperty};
 use encoding::layout::infix::Infix;
 use primitive::{maybe_owns::MaybeOwns, prefix_range::PrefixRange};
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
@@ -697,6 +697,16 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
     }
 
+    pub(crate) fn storage_set_edge_annotation_distinct<'b>(&self, edge: impl IntoCanonicalTypeEdge<'b>) {
+        let annotation_property = build_property_type_edge_annotation_distinct(edge.into_type_edge());
+        self.snapshot.as_ref().put(annotation_property.into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn storage_delete_edge_annotation_distinct<'b>(&self, edge: impl IntoCanonicalTypeEdge<'b>) {
+        let annotation_property = build_property_type_edge_annotation_distinct(edge.into_type_edge());
+        self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
+    }
+
     pub(crate) fn storage_set_annotation_independent(&self, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_independent(type_.into_vertex());
         self.snapshot.as_ref().put(annotation_property.into_storage_key().into_owned_array());
@@ -721,6 +731,23 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
 
     pub(crate) fn storage_delete_annotation_cardinality(&self, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_cardinality(type_.into_vertex());
+        self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn storage_set_edge_annotation_cardinality<'b>(
+        &self,
+        edge: impl IntoCanonicalTypeEdge<'b>,
+        annotation: AnnotationCardinality,
+    ) {
+        let annotation_property = build_property_type_edge_annotation_cardinality(edge.into_type_edge());
+        let serialized_annotation = ByteArray::boxed(bincode::serialize(&annotation).unwrap().into_boxed_slice());
+        self.snapshot
+            .as_ref()
+            .put_val(annotation_property.into_storage_key().into_owned_array(), serialized_annotation);
+    }
+
+    pub(crate) fn storage_delete_edge_annotation_cardinality<'b>(&self, edge: impl IntoCanonicalTypeEdge<'b>) {
+        let annotation_property = build_property_type_edge_annotation_cardinality(edge.into_type_edge());
         self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
     }
 }

@@ -19,7 +19,7 @@ use crate::{AsBytes, EncodingKeyspace, graph::{
 use crate::graph::thing::vertex_attribute::{AsAttributeID, AttributeID};
 use crate::graph::thing::vertex_generator::{LongAttributeID, StringAttributeID};
 use crate::graph::thing::VertexID;
-use crate::graph::type_::vertex::TypeID;
+use crate::graph::type_::vertex::{TypeID};
 use crate::graph::Typed;
 use crate::layout::prefix::{Prefix, PrefixID};
 use crate::value::value_type::ValueType;
@@ -37,7 +37,7 @@ impl<'a> ThingEdgeHas<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
 
     pub const LENGTH_PREFIX_FROM_OBJECT: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
-    const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize =
+    pub const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize =
         PrefixID::LENGTH + ObjectVertex::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
@@ -63,13 +63,16 @@ impl<'a> ThingEdgeHas<'a> {
     }
 
     pub fn prefix_from_object_to_type(
-        from: ObjectVertex, to_type: TypeVertex,
+        from: ObjectVertex, to_value_type: ValueType, to_type: TypeVertex,
     ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
-        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT);
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::EdgeHas.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
-        let to_type_range = Self::range_from().end..Self::range_from().end + TypeVertex::LENGTH;
-        bytes.bytes_mut()[to_type_range].copy_from_slice(to_type.bytes().bytes());
+        let to_prefix = AttributeVertex::build_prefix_type(
+            AttributeVertex::value_type_to_prefix_type(to_value_type), to_type.type_id_()
+        );
+        let to_type_range = Self::range_from().end..Self::range_from().end + to_prefix.length();
+        bytes.bytes_mut()[to_type_range].copy_from_slice(to_prefix.bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -214,7 +217,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
         }
     }
 
-    fn from(&'a self) -> AttributeVertex<'a> {
+    pub fn from(&'a self) -> AttributeVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[self.range_from()]);
         AttributeVertex::new(Bytes::Reference(reference))
     }
@@ -256,6 +259,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
             | Prefix::VertexAttributeLong
             | Prefix::VertexAttributeDouble => EncodingKeyspace::Data,
             Prefix::VertexAttributeString => EncodingKeyspace::Data,
+            Prefix::_VertexAttributeLast => EncodingKeyspace::Data,
             _ => unreachable!("Unrecognised attribute prefix type.")
         }
     }

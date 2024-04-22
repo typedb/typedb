@@ -30,6 +30,8 @@ use crate::{ByteReference, concept_iterator, ConceptAPI, ConceptStatus, edge_ite
 use crate::error::ConceptWriteError;
 use crate::thing::{ObjectAPI, ThingAPI};
 use crate::thing::object::HasAttributeIterator;
+use crate::thing::value::Value;
+use crate::type_::attribute_type::AttributeType;
 use crate::type_::OwnerAPI;
 use crate::type_::owns::OwnsAnnotation;
 
@@ -56,11 +58,28 @@ impl<'a> Relation<'a> {
         self.vertex.bytes()
     }
 
+    pub fn has_attribute(
+        &self,
+        thing_manager: &ThingManager<impl ReadableSnapshot>,
+        attribute_type: AttributeType<'static>,
+        value: Value<'_>,
+    ) -> Result<bool, ConceptReadError> {
+        thing_manager.has_attribute(self.as_reference(), attribute_type, value)
+    }
+
     pub fn get_has<'m>(
         &self,
         thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
-        thing_manager.get_has_of(self.as_reference())
+        thing_manager.get_has(self.as_reference())
+    }
+
+    pub fn get_has_type<'m>(
+        &self,
+        thing_manager: &'m ThingManager<impl ReadableSnapshot>,
+        attribute_type: AttributeType<'static>
+    ) -> HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
+        thing_manager.get_has_type(self.as_reference(), attribute_type)
     }
 
     pub fn set_has(&self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>) {
@@ -86,10 +105,8 @@ impl<'a> Relation<'a> {
                 todo!("throw useful schema violation error")
             }
             Some(owns) => {
-                let annotations = owns
-                    .get_annotations(thing_manager.type_manager())
-                    .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-                if annotations.contains(&OwnsAnnotation::Distinct(AnnotationDistinct::new())) {
+                if owns.is_distinct(thing_manager.type_manager())
+                    .map_err(|err| ConceptWriteError::ConceptRead { source: err })? {
                     debug_assert_eq!(count, 1);
                     thing_manager.delete_has(self.as_reference(), attribute);
                 } else {
@@ -104,14 +121,14 @@ impl<'a> Relation<'a> {
         &self,
         thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> RelationRoleIterator<'m, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
-        thing_manager.get_relations_of(self.as_reference())
+        thing_manager.get_relations_roles(self.as_reference())
     }
 
     pub fn get_indexed_players<'m>(
         &self,
         thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> IndexedPlayersIterator<'m, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
-        thing_manager.get_indexed_players_of(Object::Relation(self.as_reference()))
+        thing_manager.get_indexed_players(Object::Relation(self.as_reference()))
     }
 
     pub fn has_players<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> bool {
@@ -126,7 +143,7 @@ impl<'a> Relation<'a> {
         &self,
         thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> RolePlayerIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
-        thing_manager.get_role_players_of(self.as_reference())
+        thing_manager.get_role_players(self.as_reference())
     }
 
     fn get_player_counts(

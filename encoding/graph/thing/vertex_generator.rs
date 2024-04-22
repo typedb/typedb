@@ -14,17 +14,17 @@ use std::sync::Arc;
 use bytes::{byte_array::ByteArray, Bytes};
 use bytes::byte_reference::ByteReference;
 use primitive::prefix_range::PrefixRange;
-use storage::key_value::StorageKey;
 use storage::{MVCCKey, MVCCStorage};
+use storage::key_value::StorageKey;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{graph::{
+use crate::{AsBytes, graph::{
     thing::{
         vertex_attribute::{AttributeID, AttributeID17, AttributeID8, AttributeVertex},
         vertex_object::{ObjectID, ObjectVertex},
     },
     type_::vertex::{TypeID, TypeIDUInt},
-}, value::{long::Long, string::StringBytes, value_type::ValueType}, AsBytes, Keyable, Prefixed};
+}, Keyable, Prefixed, value::{long::Long, string::StringBytes, value_type::ValueType}};
 use crate::error::EncodingError;
 use crate::graph::thing::vertex_attribute::AsAttributeID;
 use crate::graph::thing::VertexID;
@@ -137,10 +137,14 @@ impl ThingVertexGenerator {
     ) -> AttributeVertex<'static>
         where Snapshot: WritableSnapshot
     {
-        let long_atribute_id = LongAttributeID::build(value);
-        let vertex = AttributeVertex::build(ValueType::Long, type_id, long_atribute_id.as_attribute_id());
+        let long_attribute_id = self.compute_attribute_id_long(value);
+        let vertex = AttributeVertex::build(ValueType::Long, type_id, long_attribute_id.as_attribute_id());
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
+    }
+
+    pub fn compute_attribute_id_long(&self, value: Long) -> LongAttributeID {
+        LongAttributeID::build(value)
     }
 
     ///
@@ -161,19 +165,19 @@ impl ThingVertexGenerator {
     ) -> AttributeVertex<'static>
         where Snapshot: WritableSnapshot
     {
-        let string_attribute_id = self.create_string_attribute_id(type_id, value.clone_as_ref(), snapshot);
+        let string_attribute_id = self.compute_attribute_id_string(type_id, value.clone_as_ref(), snapshot);
         let vertex = AttributeVertex::build(ValueType::String, type_id, string_attribute_id.as_attribute_id());
         snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
         vertex
     }
 
-    fn create_string_attribute_id<const INLINE_LENGTH: usize, Snapshot>(
+    pub fn compute_attribute_id_string<const INLINE_LENGTH: usize, Snapshot>(
         &self,
         type_id: TypeID,
         string: StringBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
     ) -> StringAttributeID
-        where Snapshot: WritableSnapshot
+        where Snapshot: ReadableSnapshot
     {
         if string.length() <= StringAttributeID::ENCODING_INLINE_CAPACITY {
             StringAttributeID::build_inline_id(string)
@@ -270,7 +274,7 @@ impl StringAttributeID {
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Self
-        where Snapshot: WritableSnapshot
+        where Snapshot: ReadableSnapshot
     {
         let mut bytes = [0u8; AttributeID17::LENGTH];
         let string_bytes = string.bytes().bytes();

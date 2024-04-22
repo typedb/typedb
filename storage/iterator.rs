@@ -53,7 +53,12 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
 
     pub(crate) fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCReadError>> {
         match &self.state {
-            State::Init | State::ItemUsed => {
+            State::Init => {
+                self.find_next_state();
+                self.peek()
+            }
+            State::ItemUsed => {
+                let _ = self.iterator.next();
                 self.find_next_state();
                 self.peek()
             }
@@ -85,7 +90,11 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
 
     pub(crate) fn next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCReadError>> {
         match &self.state {
-            State::Init | State::ItemUsed => {
+            State::Init => {
+                self.find_next_state();
+                self.next()
+            } State::ItemUsed => {
+                let _ = self.iterator.next();
                 self.find_next_state();
                 self.next()
             }
@@ -119,9 +128,6 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
 
     fn find_next_state(&mut self) {
         assert!(matches!(&self.state, State::Init | State::ItemUsed));
-        if matches!(self.state, State::ItemUsed) {
-            self.advance();
-        }
         while matches!(&self.state, State::Init | State::ItemUsed) {
             match self.iterator.peek() {
                 None => self.state = State::Done,
@@ -141,6 +147,24 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
                 }
                 Some(Err(error)) => self.state = State::Error(Arc::new(error)),
             }
+        }
+    }
+
+    pub(crate) fn seek(&mut self, target: impl AsRef<[u8]>) {
+        match self.state {
+            State::Init | State::ItemUsed => {
+                self.iterator.seek(target.as_ref());
+                self.find_next_state()
+            }
+            State::ItemReady => {
+                let (peek, _) = self.peek().unwrap().unwrap();
+                if peek.bytes() < target.as_ref() {
+                    self.state = State::ItemUsed;
+                    self.iterator.seek(target.as_ref());
+                    self.find_next_state()
+                }
+            }
+            State::Error(_) | State::Done => {}
         }
     }
 
@@ -166,7 +190,7 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MVCCReadError {
     Keyspace { storage_name: String, keyspace_name: String, source: Arc<KeyspaceError> },
 }

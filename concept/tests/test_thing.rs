@@ -7,7 +7,6 @@
 #![deny(unused_must_use)]
 
 use std::borrow::Cow;
-use std::rc::Rc;
 use std::sync::Arc;
 
 use concept::{
@@ -15,8 +14,10 @@ use concept::{
     type_::type_manager::TypeManager,
 };
 use concept::thing::object::Object;
-use concept::type_::annotation::{AnnotationCardinality, AnnotationDistinct};
-use concept::type_::PlayerAPI;
+use concept::type_::{OwnerAPI, PlayerAPI};
+use concept::type_::annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent};
+use concept::type_::attribute_type::AttributeTypeAnnotation;
+use concept::type_::owns::OwnsAnnotation;
 use concept::type_::role_type::RoleTypeAnnotation;
 use durability::wal::WAL;
 use encoding::{
@@ -88,16 +89,18 @@ fn attribute_create() {
 
         let age_type = type_manager.create_attribute_type(&age_label, false).unwrap();
         age_type.set_value_type(&type_manager, ValueType::Long);
+        age_type.set_annotation(&type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent::new()));
         let name_type = type_manager.create_attribute_type(&name_label, false).unwrap();
         name_type.set_value_type(&type_manager, ValueType::String);
+        name_type.set_annotation(&type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent::new()));
 
         let mut age_1 = thing_manager.create_attribute(age_type.clone(), Value::Long(age_value)).unwrap();
-        assert_eq!(age_1.value(&thing_manager).unwrap(), Value::Long(age_value));
+        assert_eq!(age_1.get_value(&thing_manager).unwrap(), Value::Long(age_value));
 
         let mut name_1 = thing_manager
-            .create_attribute(name_type.clone(), Value::String(Cow::Owned(String::from(name_value).into_boxed_str())))
+            .create_attribute(name_type.clone(), Value::String(Cow::Borrowed(name_value)))
             .unwrap();
-        assert_eq!(name_1.value(&thing_manager).unwrap(), Value::String(Cow::Owned(String::from(name_value).into_boxed_str())));
+        assert_eq!(name_1.get_value(&thing_manager).unwrap(), Value::String(Cow::Borrowed(name_value)));
 
         let finalise_result = thing_manager.finalise();
         assert!(finalise_result.is_ok());
@@ -116,7 +119,7 @@ fn attribute_create() {
         let age_type = type_manager.get_attribute_type(&age_label).unwrap().unwrap();
         let mut ages = thing_manager.get_attributes_in(age_type).unwrap().collect_cloned();
         assert_eq!(ages.len(), 1);
-        assert_eq!(ages.first_mut().unwrap().value(&thing_manager).unwrap(), Value::Long(age_value));
+        assert_eq!(ages.first_mut().unwrap().get_value(&thing_manager).unwrap(), Value::Long(age_value));
     }
 }
 
@@ -151,7 +154,7 @@ fn has() {
         let person_1 = thing_manager.create_entity(person_type.clone()).unwrap();
         let age_1 = thing_manager.create_attribute(age_type.clone(), Value::Long(age_value)).unwrap();
         let name_1 = thing_manager
-            .create_attribute(name_type.clone(), Value::String(Cow::Owned(String::from(name_value).into_boxed_str())))
+            .create_attribute(name_type.clone(), Value::String(Cow::Owned(String::from(name_value))))
             .unwrap();
 
         person_1.set_has(&thing_manager, age_1);
@@ -183,6 +186,136 @@ fn has() {
 }
 
 #[test]
+fn attribute_cleanup_on_concurrent_detach() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
+    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
+
+    let age_label = Label::build("age");
+    let name_label = Label::build("name");
+    let person_label = Label::build("person");
+
+    let age_value: i64 = 10;
+    let name_alice_value: &str = "Alice";
+    let name_bob_value: &str = "Bob";
+
+    let snapshot: Arc<WriteSnapshot<WAL>> = Arc::new(storage.clone().open_snapshot_write());
+    {
+        let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
+        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None));
+        let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator.clone(), type_manager.clone());
+
+        let age_type = type_manager.create_attribute_type(&age_label, false).unwrap();
+        age_type.set_value_type(&type_manager, ValueType::Long);
+        let name_type = type_manager.create_attribute_type(&name_label, false).unwrap();
+        name_type.set_value_type(&type_manager, ValueType::String);
+
+        let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
+        let owns_age = person_type.set_owns(&type_manager, age_type.clone());
+        owns_age.set_annotation(&type_manager, OwnsAnnotation::Distinct(AnnotationDistinct::new()));
+        let _ = person_type.set_owns(&type_manager, name_type.clone());
+
+        let person_1 = thing_manager.create_entity(person_type.clone()).unwrap();
+        let person_2 = thing_manager.create_entity(person_type.clone()).unwrap();
+        let age_1 = thing_manager.create_attribute(age_type.clone(), Value::Long(age_value)).unwrap();
+        let name_alice = thing_manager.create_attribute(
+            name_type.clone(),
+            Value::String(Cow::Borrowed(name_alice_value)),
+        ).unwrap();
+        let name_bob = thing_manager.create_attribute(
+            name_type.clone(),
+            Value::String(Cow::Owned(String::from(name_bob_value))),
+        ).unwrap();
+
+        person_1.set_has(&thing_manager, age_1.as_reference());
+        person_1.set_has(&thing_manager, name_alice.as_reference());
+        person_2.set_has(&thing_manager, age_1);
+        person_2.set_has(&thing_manager, name_bob.as_reference());
+        let finalise_result = thing_manager.finalise();
+        assert!(finalise_result.is_ok());
+    }
+
+    let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();
+    write_snapshot.commit().unwrap();
+
+    // two concurrent snapshots delete the independent ownerships
+    let snapshot_1: Arc<WriteSnapshot<WAL>> = Arc::new(storage.clone().open_snapshot_write());
+    let snapshot_2: Arc<WriteSnapshot<WAL>> = Arc::new(storage.clone().open_snapshot_write());
+
+    {
+        let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
+        let type_manager = Arc::new(TypeManager::new(snapshot_1.clone(), type_vertex_generator.clone(), None));
+        let thing_manager = ThingManager::new(snapshot_1.clone(), thing_vertex_generator.clone(), type_manager.clone());
+        let name_type = type_manager.get_attribute_type(&name_label).unwrap().unwrap();
+        let age_type = type_manager.get_attribute_type(&age_label).unwrap().unwrap();
+
+        let entities = thing_manager.get_entities().collect_cloned();
+        let bob = entities.iter().filter(|entity| {
+            entity.has_attribute(&thing_manager, name_type.clone(), Value::String(Cow::Borrowed(name_bob_value)))
+                .unwrap()
+        }).next().unwrap();
+
+        let mut ages = thing_manager.get_attributes_in(age_type.clone()).unwrap().collect_cloned();
+        let age = ages.iter_mut().filter_map(|mut attr| {
+            if attr.get_value(&thing_manager).unwrap().unwrap_long() == age_value {
+                Some(attr.as_reference())
+            } else {
+                None
+            }
+        }).next().unwrap();
+        bob.delete_has_single(&thing_manager, age).unwrap();
+
+        let finalise_result = thing_manager.finalise();
+        assert!(finalise_result.is_ok());
+    }
+
+    {
+        let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
+        let type_manager = Arc::new(TypeManager::new(snapshot_2.clone(), type_vertex_generator.clone(), None));
+        let thing_manager = ThingManager::new(snapshot_2.clone(), thing_vertex_generator.clone(), type_manager.clone());
+        let name_type = type_manager.get_attribute_type(&name_label).unwrap().unwrap();
+        let age_type = type_manager.get_attribute_type(&age_label).unwrap().unwrap();
+
+        let entities = thing_manager.get_entities().collect_cloned();
+        let alice = entities.iter().filter(|entity|
+            entity.has_attribute(&thing_manager, name_type.clone(), Value::String(Cow::Borrowed(name_bob_value)))
+                .unwrap()
+        ).next().unwrap();
+
+        let mut ages = thing_manager.get_attributes_in(age_type.clone()).unwrap().collect_cloned();
+        let age = ages.iter_mut().filter_map(|mut attr| {
+            if attr.get_value(&thing_manager).unwrap().unwrap_long() == age_value {
+                Some(attr.as_reference())
+            } else {
+                None
+            }
+        }).next().unwrap();
+        alice.delete_has_single(&thing_manager, age).unwrap();
+
+        let finalise_result = thing_manager.finalise();
+        assert!(finalise_result.is_ok());
+    }
+
+    let write_snapshot_1 = Arc::try_unwrap(snapshot_1).ok().unwrap();
+    write_snapshot_1.commit().unwrap();
+    let write_snapshot_2 = Arc::try_unwrap(snapshot_2).ok().unwrap();
+    write_snapshot_2.commit().unwrap();
+    {
+        let snapshot: Arc<ReadSnapshot<WAL>> = Arc::new(storage.clone().open_snapshot_read());
+        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None));
+        let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
+        let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator.clone(), type_manager.clone());
+        let age_type = type_manager.get_attribute_type(&age_label).unwrap().unwrap();
+
+        let attributes = thing_manager.get_attributes_in(age_type).unwrap().collect_cloned();
+        assert_eq!(attributes.len(), 0);
+    }
+}
+
+
+#[test]
 fn role_player_distinct() {
     init_logging();
     let storage_path = create_tmp_dir();
@@ -210,7 +343,7 @@ fn role_player_distinct() {
         let employer_type = employment_type.get_relates_role(&type_manager, employer_role).unwrap().unwrap().role();
         employer_type.set_annotation(&type_manager, RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
         employer_type.set_annotation(
-            &type_manager, RoleTypeAnnotation::Cardinality(AnnotationCardinality::new(1, Some(2)))
+            &type_manager, RoleTypeAnnotation::Cardinality(AnnotationCardinality::new(1, Some(2))),
         );
 
         let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
@@ -299,7 +432,7 @@ fn role_player_duplicates() {
         let entry_type = list_type.get_relates_role(&type_manager, entry_role_label).unwrap().unwrap().role();
         entry_type.set_annotation(
             &type_manager,
-            RoleTypeAnnotation::Cardinality(AnnotationCardinality::new(0, None))
+            RoleTypeAnnotation::Cardinality(AnnotationCardinality::new(0, Some(4))), // must be small to allow index to kick in
         );
         list_type.create_relates(&type_manager, owner_role_label).unwrap();
         let owner_type = list_type.get_relates_role(&type_manager, owner_role_label).unwrap().unwrap().role();

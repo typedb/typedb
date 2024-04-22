@@ -81,7 +81,7 @@ impl From<ConceptReadError> for ConceptWriteError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ConceptReadError {
     SnapshotGet { source: SnapshotGetError },
     SnapshotIterate { source: Arc<SnapshotIteratorError> },

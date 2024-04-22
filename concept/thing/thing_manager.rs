@@ -23,6 +23,7 @@ use encoding::{
     layout::prefix::{Prefix, PrefixID},
     value::{decode_value_u64, encode_value_u64, long::Long, string::StringBytes, value_type::ValueType},
 };
+use encoding::graph::thing::vertex_attribute::AsAttributeID;
 use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -131,14 +132,14 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                 let attribute_id = StringAttributeID::new(attribute.vertex().attribute_id().unwrap_bytes_17());
                 if attribute_id.is_inline() {
                     Ok(Value::String(Cow::Owned(
-                        String::from(attribute_id.get_inline_string_bytes().as_str()).into_boxed_str(),
+                        String::from(attribute_id.get_inline_string_bytes().as_str()),
                     )))
                 } else {
                     Ok(self
                         .snapshot
                         .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
                             Value::String(Cow::Owned(
-                                String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str()).into_boxed_str(),
+                                String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str()),
                             ))
                         })
                         .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
@@ -148,7 +149,45 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         }
     }
 
-    pub(crate) fn get_has_of<'this, 'a>(
+    pub(crate) fn has_attribute<'a>(
+        &self,
+        owner: impl ObjectAPI<'a>,
+        attribute_type: AttributeType<'static>,
+        value: Value<'_>
+    ) -> Result<bool, ConceptReadError> {
+        let attribute = self.encode_attribute(attribute_type, value);
+        let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
+        let has_exists = self.snapshot.get_mapped(has.into_storage_key().as_reference(), |value| true)
+            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?
+            .unwrap_or(false);
+        Ok(has_exists)
+    }
+
+    fn encode_attribute(&self, attribute_type: AttributeType<'static>, value: Value<'_>) -> Attribute<'_> {
+        let value_type = attribute_type.get_value_type(self.type_manager()).unwrap().unwrap();
+        debug_assert_eq!(value.value_type(), value_type);
+        let attribute_id = match value {
+            Value::Boolean(bool) => {
+                todo!()
+            }
+            Value::Long(long) => {
+                self.vertex_generator.compute_attribute_id_long(Long::build(long)).as_attribute_id()
+            }
+            Value::Double(double) => {
+                todo!()
+            }
+            Value::String(string) => {
+                let string_bytes = StringBytes::<256>::build_ref(string.as_ref().as_ref());
+                self.vertex_generator
+                    .compute_attribute_id_string(attribute_type.vertex().type_id_(), string_bytes, self.snapshot.as_ref())
+                    .as_attribute_id()
+            }
+        };
+        let vertex = AttributeVertex::build(value_type, attribute_type.vertex().type_id_(), attribute_id);
+        Attribute::new(vertex)
+    }
+
+    pub(crate) fn get_has<'this, 'a>(
         &'this self,
         owner: impl ObjectAPI<'a>,
     ) -> HasAttributeIterator<'this, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
@@ -156,7 +195,19 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         HasAttributeIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
     }
 
-    pub(crate) fn get_owners_of<'this, 'a>(
+    pub(crate) fn get_has_type<'this, 'a>(
+       &'this self,
+        owner: impl ObjectAPI<'a>,
+        attribute_type: AttributeType<'static>
+    ) -> HasAttributeIterator<'this, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE}> {
+        let prefix = ThingEdgeHas::prefix_from_object_to_type(
+            owner.into_vertex(), attribute_type.get_value_type(self.type_manager()).unwrap().unwrap(),
+            attribute_type.into_vertex()
+        );
+        HasAttributeIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
+    }
+
+    pub(crate) fn get_owners<'this, 'a>(
         &'this self,
         attribute: Attribute<'a>,
     ) -> AttributeOwnerIterator<'this, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
@@ -169,7 +220,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         self.snapshot.any_in_range(PrefixRange::new_within(prefix), buffered_only)
     }
 
-    pub(crate) fn get_relations_of<'this, 'a>(
+    pub(crate) fn get_relations_roles<'this, 'a>(
         &'this self,
         player: impl ObjectAPI<'a>,
     ) -> RelationRoleIterator<'this, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
@@ -186,7 +237,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         self.snapshot.any_in_range(PrefixRange::new_within(prefix), buffered_only)
     }
 
-    pub(crate) fn get_role_players_of<'a>(
+    pub(crate) fn get_role_players<'a>(
         &self,
         relation: impl ObjectAPI<'a>,
     ) -> RolePlayerIterator<'_, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
@@ -194,7 +245,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         RolePlayerIterator::new(self.snapshot.iterate_range(PrefixRange::new_within(prefix)))
     }
 
-    pub(crate) fn get_indexed_players_of(
+    pub(crate) fn get_indexed_players(
         &self,
         from: Object<'_>,
     ) -> IndexedPlayersIterator<'_, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
@@ -258,7 +309,6 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     }
 
     fn cleanup_attributes(&self) -> Result<(), ConceptWriteError> {
-        // TODO: how do we handle concurrent deletion of the last N owners by N different transactions?
         for (key, _) in self
             .snapshot
             .iterate_writes_range(PrefixRange::new_within(Bytes::Array(ByteArray::<{ PrefixID::LENGTH }>::copy(
@@ -268,7 +318,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         {
             let edge = ThingEdgeHas::new(Bytes::Reference(ByteReference::from(key.byte_array())));
             let attribute = Attribute::new(edge.to());
-            if !attribute.has_owners(self) {
+            let is_independent = attribute.type_().is_independent(self.type_manager())
+                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+            if !is_independent && !attribute.has_owners(self) {
                 attribute.delete(self)?;
             }
         }
@@ -358,6 +410,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn set_has<'a>(&self, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
         // TODO: handle duplicates
+        // note: we always re-put the attribute. TODO: optimise knowing when the attribute pre-exists.
+        self.snapshot.put(attribute.vertex().as_storage_key().into_owned_array());
+        owner.set_modified(self);
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
         self.snapshot.put_val(has.into_storage_key().into_owned_array(), encode_value_u64(1));
         let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.into_vertex());
@@ -365,7 +420,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     }
 
     pub(crate) fn delete_has<'a>(&self, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
-        // TODO: lock owner and attribute to prevent concurrent deletes
+        owner.set_modified(self);
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
         self.snapshot.delete(has.into_storage_key().into_owned_array());
         let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.into_vertex());

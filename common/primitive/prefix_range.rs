@@ -64,12 +64,16 @@ impl<T: Prefix> PrefixRange<T> {
         if value < *self.start().borrow() {
             false
         } else {
-            match &self.end {
-                RangeEnd::SameAsStart => value.starts_with(self.start()),
-                RangeEnd::Inclusive(e) => value.cmp(e) == Ordering::Less || value.starts_with(e),
-                RangeEnd::Exclusive(e) => value.cmp(e) == Ordering::Less,
-                RangeEnd::Unbounded => true,
-            }
+            self.within_end(value)
+        }
+    }
+
+    pub fn within_end(&self, value: T) -> bool {
+        match &self.end {
+            RangeEnd::SameAsStart => value.starts_with(self.start()),
+            RangeEnd::Inclusive(e) => value.cmp(e) == Ordering::Less || value.starts_with(e),
+            RangeEnd::Exclusive(e) => value.cmp(e) == Ordering::Less,
+            RangeEnd::Unbounded => true,
         }
     }
 
