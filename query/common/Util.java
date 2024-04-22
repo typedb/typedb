@@ -32,7 +32,7 @@ public class Util {
                 throw TypeDBException.of(TYPE_NOT_FOUND, Label.of(var.label().get().label(), relationType.getLabel().name()));
             }
         } else if ((inferred = player.getType().getPlays()
-                .filter(rt -> rt.getRelationType().equals(relation.getType()))
+                .filter(rt -> relation.getType().getSupertypes().anyMatch(supertype -> supertype.equals(rt.getRelationType())))
                 .toSet()).size() == 1) {
             roleType = inferred.iterator().next();
         } else if (inferred.size() > 1) {
