@@ -31,8 +31,8 @@ public class Util {
             if ((roleType = relationType.getRelates(var.label().get().label())) == null) {
                 throw TypeDBException.of(TYPE_NOT_FOUND, Label.of(var.label().get().label(), relationType.getLabel().name()));
             }
-        } else if ((inferred = player.getType().getPlays()
-                .filter(rt -> relation.getType().getSupertypes().anyMatch(supertype -> supertype.equals(rt.getRelationType())))
+        } else if ((inferred = relation.getType().getRelates()
+                .filter(relatesRole -> player.getType().plays(relatesRole))
                 .toSet()).size() == 1) {
             roleType = inferred.iterator().next();
         } else if (inferred.size() > 1) {
