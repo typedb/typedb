@@ -41,16 +41,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.CONNECTION_OPEN;
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.DATABASE;
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.DATABASE_MANAGEMENT;
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.SERVERS_ALL;
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.SESSION;
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.USER;
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.USER_MANAGEMENT;
 import static com.vaticle.typedb.core.common.diagnostics.Metrics.CurrentCounts.Kind.DATABASES;
 import static com.vaticle.typedb.core.common.diagnostics.Metrics.CurrentCounts.Kind.SESSIONS;
 import static com.vaticle.typedb.core.common.diagnostics.Metrics.CurrentCounts.Kind.TRANSACTIONS;
+import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.*;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
@@ -87,8 +81,6 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         this.address = address.getHostString() + ":" + address.getPort();
         this.databaseMgr = databaseMgr;
         this.sessionServices = new ConcurrentHashMap<>();
-
-        Diagnostics.get().setCurrentCount(DATABASES, databaseMgr.all().size());
 
         if (LOG.isDebugEnabled()) {
             Executors.scheduled().scheduleAtFixedRate(this::logConnectionStates, 0, 1, TimeUnit.MINUTES);
@@ -159,7 +151,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Diagnostics.get().requestSuccess(null, SERVERS_ALL);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, CONNECTION_OPEN);
+            Diagnostics.get().requestFail(null, SERVERS_ALL);
             Diagnostics.get().submitError(null, e);
             responder.onError(exception(e));
         }
@@ -170,7 +162,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.get().requestFail(null, USER_MANAGEMENT);
+        Diagnostics.get().requestFail(null, USERS_CONTAINS);
         Diagnostics.get().submitError(null, exception);
         responder.onError(exception);
     }
@@ -180,7 +172,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.get().requestFail(null, USER_MANAGEMENT);
+        Diagnostics.get().requestFail(null, USERS_CREATE);
         Diagnostics.get().submitError(null, exception);
         responder.onError(exception);
     }
@@ -190,7 +182,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.get().requestFail(null, USER_MANAGEMENT);
+        Diagnostics.get().requestFail(null, USERS_DELETE);
         Diagnostics.get().submitError(null, exception);
         responder.onError(exception);
     }
@@ -200,7 +192,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.get().requestFail(null, USER_MANAGEMENT);
+        Diagnostics.get().requestFail(null, USERS_ALL);
         Diagnostics.get().submitError(null, exception);
         responder.onError(exception);
     }
@@ -210,7 +202,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.get().requestFail(null, USER_MANAGEMENT);
+        Diagnostics.get().requestFail(null, USERS_PASSWORD_SET);
         Diagnostics.get().submitError(null, exception);
         responder.onError(exception);
     }
@@ -220,7 +212,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.get().requestFail(null, USER_MANAGEMENT);
+        Diagnostics.get().requestFail(null, USERS_GET);
         Diagnostics.get().submitError(null, exception);
         responder.onError(exception);
     }
@@ -230,7 +222,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.get().requestFail(null, USER);
+        Diagnostics.get().requestFail(null, USER_PASSWORD_UPDATE);
         Diagnostics.get().submitError(null, exception);
         responder.onError(exception);
     }
@@ -240,6 +232,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
+        Diagnostics.get().requestFail(null, USER_TOKEN);
         Diagnostics.get().submitError(null, exception);
         responder.onError(exception);
     }
@@ -250,10 +243,10 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             boolean contains = databaseMgr.contains(request.getName());
             responder.onNext(containsRes(contains));
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASE_MANAGEMENT);
+            Diagnostics.get().requestSuccess(null, DATABASES_CONTAINS);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASE_MANAGEMENT);
+            Diagnostics.get().requestFail(null, DATABASES_CONTAINS);
             Diagnostics.get().submitError(null, e);
             responder.onError(exception(e));
         }
@@ -265,14 +258,12 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             doCreateDatabase(request.getName());
             responder.onNext(createRes());
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASE_MANAGEMENT);
+            Diagnostics.get().requestSuccess(null, DATABASES_CREATE);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASE_MANAGEMENT);
+            Diagnostics.get().requestFail(null, DATABASES_CREATE);
             Diagnostics.get().submitError(null, e);
             responder.onError(exception(e));
-        } finally {
-            Diagnostics.get().setCurrentCount(DATABASES, databaseMgr.all().size());
         }
     }
 
@@ -281,10 +272,10 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         try {
             responder.onNext(getRes(address, request.getName()));
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASE_MANAGEMENT);
+            Diagnostics.get().requestSuccess(null, DATABASES_GET);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASE_MANAGEMENT);
+            Diagnostics.get().requestFail(null, DATABASES_GET);
             Diagnostics.get().submitError(null, e);
             responder.onError(exception(e));
         }
@@ -296,10 +287,10 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             List<String> databaseNames = databaseMgr.all().stream().map(TypeDB.Database::name).collect(toList());
             responder.onNext(allRes(address, databaseNames));
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASE_MANAGEMENT);
+            Diagnostics.get().requestSuccess(null, DATABASES_ALL);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASE_MANAGEMENT);
+            Diagnostics.get().requestFail(null, DATABASES_ALL);
             Diagnostics.get().submitError(null, e);
             responder.onError(exception(e));
         }
@@ -311,10 +302,10 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             String schema = databaseMgr.get(request.getName()).schema();
             responder.onNext(schemaRes(schema));
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASE);
+            Diagnostics.get().requestSuccess(null, DATABASE_SCHEMA);
         } catch (TypeDBException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASE);
+            Diagnostics.get().requestFail(null, DATABASE_SCHEMA);
             Diagnostics.get().submitError(null, e);
             responder.onError(exception(e));
         }
@@ -326,10 +317,10 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             String schema = databaseMgr.get(request.getName()).typeSchema();
             responder.onNext(typeSchemaRes(schema));
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASE);
+            Diagnostics.get().requestSuccess(null, DATABASE_TYPE_SCHEMA);
         } catch (TypeDBException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASE);
+            Diagnostics.get().requestFail(null, DATABASE_TYPE_SCHEMA);
             Diagnostics.get().submitError(null, e);
             responder.onError(exception(e));
         }
@@ -341,10 +332,10 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             String schema = databaseMgr.get(request.getName()).ruleSchema();
             responder.onNext(ruleSchemaRes(schema));
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASE);
+            Diagnostics.get().requestSuccess(null, DATABASE_RULE_SCHEMA);
         } catch (TypeDBException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASE);
+            Diagnostics.get().requestFail(null, DATABASE_RULE_SCHEMA);
             Diagnostics.get().submitError(null, e);
             responder.onError(exception(e));
         }
@@ -356,14 +347,12 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             doDeleteDatabase(request.getName());
             responder.onNext(deleteRes());
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASE);
+            Diagnostics.get().requestSuccess(null, DATABASE_DELETE);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASE);
+            Diagnostics.get().requestFail(null, DATABASE_DELETE);
             Diagnostics.get().submitError(null, e);
             responder.onError(exception(e));
-        } finally {
-            Diagnostics.get().setCurrentCount(DATABASES, databaseMgr.all().size());
         }
     }
 
@@ -380,10 +369,10 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             int duration = (int) Duration.between(start, Instant.now()).toMillis();
             responder.onNext(openRes(sessionSvc.UUID(), duration));
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, SESSION);
+            Diagnostics.get().requestSuccess(null, SESSION_OPEN);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, SESSION);
+            Diagnostics.get().requestFail(null, SESSION_OPEN);
             Diagnostics.get().submitError(null, e);
             responder.onError(exception(e));
         } finally {
@@ -401,10 +390,10 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             sessionSvc.close();
             responder.onNext(closeRes());
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, SESSION);
+            Diagnostics.get().requestSuccess(null, SESSION_CLOSE);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, SESSION);
+            Diagnostics.get().requestFail(null, SESSION_CLOSE);
             Diagnostics.get().submitError(null, e);
             responder.onError(exception(e));
         } finally {

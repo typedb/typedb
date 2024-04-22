@@ -7,13 +7,13 @@
 package com.vaticle.typedb.core.common.diagnostics;
 
 import com.eclipsesource.json.JsonObject;
+import com.vaticle.typedb.core.common.parameters.Arguments;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -26,10 +26,10 @@ public class Metrics {
     private ConcurrentMap<String, CurrentCounts> usage = new ConcurrentHashMap<>();
     private ConcurrentMap<String, UserErrorStatistics> userErrors = new ConcurrentHashMap<>();
 
-    public Metrics(String deploymentID, String serverID, String name, String version, boolean reportingEnabled, Path dbDirectory) {
+    public Metrics(String deploymentID, String serverID, String name, String version, boolean reportingEnabled, Path dataDirectory) {
         this.base = new BaseProperties(deploymentID, serverID, name, reportingEnabled);
         this.serverStatic = new ServerStaticProperties();
-        this.serverDynamic = new ServerDynamicProperties(version, dbDirectory);
+        this.serverDynamic = new ServerDynamicProperties(version, dataDirectory);
     }
 
     public void takeCountsSnapshot() {
@@ -64,9 +64,14 @@ public class Metrics {
         requests.get(databaseName).fail(kind);
     }
 
-    public void setCurrentCount(String databaseName, CurrentCounts.Kind kind, long value) {
+    public void incrementCurrentCount(String databaseName, CurrentCounts.Kind kind) {
         addDatabaseIfAbsent(databaseName);
-        usage.get(databaseName).set(kind, value);
+        usage.get(databaseName).increment(kind);
+    }
+
+    public void decrementCurrentCount(String databaseName, CurrentCounts.Kind kind) {
+        addDatabaseIfAbsent(databaseName);
+        usage.get(databaseName).decrement(kind);
     }
 
     public void registerError(String databaseName, String errorCode) {
@@ -169,10 +174,10 @@ public class Metrics {
         private final String version;
         private final File dbRoot;
 
-        ServerDynamicProperties(String version, Path dbDirectory) {
+        ServerDynamicProperties(String version, Path dataDirectory) {
             this.version = version;
-            this.dbRoot = dbDirectory.toFile();
-            System.out.println("HERE IS MY DB ROOT: " + this.dbRoot + " or DIR: " + dbDirectory); // TODO: Remove after testing!
+            this.dbRoot = dataDirectory.toFile();
+            System.out.println("HERE IS MY DB ROOT: " + this.dbRoot + " or DIR: " + dataDirectory); // TODO: Remove after testing!
         }
 
         JsonObject asJSON() {
@@ -207,12 +212,25 @@ public class Metrics {
         public enum Kind {
             CONNECTION_OPEN,
             SERVERS_ALL,
-            USER_MANAGEMENT,
-            USER,
-            DATABASE_MANAGEMENT,
-            DATABASE,
-            SESSION,
-            TRANSACTION,
+            USERS_CONTAINS,
+            USERS_CREATE,
+            USERS_DELETE,
+            USERS_ALL,
+            USERS_GET,
+            USERS_PASSWORD_SET,
+            USER_PASSWORD_UPDATE,
+            USER_TOKEN,
+            DATABASES_CONTAINS,
+            DATABASES_CREATE,
+            DATABASES_GET,
+            DATABASES_ALL,
+            DATABASE_SCHEMA,
+            DATABASE_TYPE_SCHEMA,
+            DATABASE_RULE_SCHEMA,
+            DATABASE_DELETE,
+            SESSION_OPEN,
+            SESSION_CLOSE,
+            TRANSACTION_EXECUTE,
         }
 
         private final ConcurrentMap<Kind, AtomicLong> successful = new ConcurrentHashMap<>();
@@ -265,45 +283,67 @@ public class Metrics {
 
     public static class CurrentCounts {
         public enum Kind {
-            DATABASES, SESSIONS, TRANSACTIONS, USERS,
+            CONNECTIONS("connectionPeakCount"), // TODO: How to calculate closing?
+            SCHEMA_TRANSACTIONS("schemaTransactionPeakCount"),
+            READ_TRANSACTIONS("readTransactionPeakCount"),
+            WRITE_TRANSACTIONS("writeTransactionPeakCount");
+
+            private String jsonName;
+
+            Kind(String jsonName) {
+                this.jsonName = jsonName;
+            }
+
+            public String getJsonName() {
+                return jsonName;
+            }
+
+            public static Kind getKind(Arguments.Session.Type sessionType, Arguments.Transaction.Type transactionType) {
+                if (sessionType == Arguments.Session.Type.SCHEMA) {
+                    return SCHEMA_TRANSACTIONS;
+                }
+
+                switch (transactionType) {
+                    case READ:
+                        return READ_TRANSACTIONS;
+                    case WRITE:
+                        return WRITE_TRANSACTIONS;
+                }
+            }
         }
 
         private final ConcurrentMap<Kind, AtomicLong> counts = new ConcurrentHashMap<>();
-        private final ConcurrentMap<Kind, AtomicLong> maxCounts = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Kind, AtomicLong> peakCounts = new ConcurrentHashMap<>();
 
         CurrentCounts() {
             for (Kind kind : Kind.values()) {
-                counts.put(kind, new AtomicLong(0)); // TODO: calculate diff instead of dropping?
-                maxCounts.put(kind, new AtomicLong(0));
+                counts.put(kind, new AtomicLong(0));
+                peakCounts.put(kind, new AtomicLong(0));
             }
         }
 
         public void takeCountsSnapshot() {
-            maxCounts.replaceAll((kind, value) -> new AtomicLong(counts.get(kind).get()));
+            peakCounts.replaceAll((kind, value) -> new AtomicLong(counts.get(kind).get()));
         }
 
-        public void set(Kind kind, long value) {
-            counts.get(kind).set(value);
+        public void increment(Kind kind) {
+            long newCount = counts.get(kind).incrementAndGet();
 
-            if (maxCounts.get(kind).get() < value) {
-                maxCounts.get(kind).set(value);
+            if (peakCounts.get(kind).get() < newCount) {
+                peakCounts.get(kind).set(newCount);
             }
+        }
+
+        public void decrement(Kind kind) {
+            counts.get(kind).decrementAndGet();
         }
 
         JsonObject asJSON() {
             JsonObject current = new JsonObject();
             for (Kind kind : Kind.values()) {
-                current.add(kind.name(), maxCounts.get(kind).get());
+                current.add(kind.getJsonName(), peakCounts.get(kind).get());
             }
             return current;
-        }
-
-        String formatPrometheus(String databaseName) {
-            StringBuilder buf = new StringBuilder("# TYPE typedb_peak_count gauge\n");
-            for (Kind kind : Kind.values()) {
-                buf.append("typedb_peak_count{databaseName=\"").append(databaseName).append("\", kind=\"").append(kind).append("\"} ").append(maxCounts.get(kind)).append("\n");
-            }
-            return buf.toString();
         }
     }
 

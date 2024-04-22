@@ -8,6 +8,7 @@ package com.vaticle.typedb.core.server;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
+import com.vaticle.typedb.core.common.diagnostics.Metrics;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -44,7 +45,7 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.TRANSACTION;
+import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.TRANSACTION_EXECUTE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.EMPTY_TRANSACTION_REQUEST;
@@ -135,9 +136,9 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 default:
                     executeRequest(request);
             }
-            Diagnostics.get().requestSuccess(null, TRANSACTION);
+            Diagnostics.get().requestSuccess(null, TRANSACTION_EXECUTE);
         } catch (Throwable error) {
-            Diagnostics.get().requestFail(null, TRANSACTION);
+            Diagnostics.get().requestFail(null, TRANSACTION_EXECUTE);
             close(error);
         } finally {
             if (accessLock != null) accessLock.unlock();
@@ -195,6 +196,10 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         respond(ResponseBuilder.Transaction.open(byteStringAsUUID(request.getReqId())));
         isTransactionOpen.set(true);
         scheduledTimeout = scheduled().schedule(this::timeout, options.transactionTimeoutMillis(), MILLISECONDS);
+
+        Diagnostics.get().incrementCurrentCount(
+                null,
+                Metrics.CurrentCounts.Kind.getKind(sessionSvc.session().type(), transaction.type()));
     }
 
     protected SessionService sessionService(TransactionProto.Transaction.Open.Req req) {
@@ -466,6 +471,9 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             if (isTransactionOpen.compareAndSet(true, false)) {
                 transaction.close();
                 sessionSvc.closed(this);
+                Diagnostics.get().decrementCurrentCount(
+                        null,
+                        Metrics.CurrentCounts.Kind.getKind(sessionSvc.session().type(), transaction.type()));
             }
             if (scheduledTimeout != null) scheduledTimeout.cancel(false);
             responder.onCompleted();
@@ -477,6 +485,9 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             if (isTransactionOpen.compareAndSet(true, false)) {
                 transaction.close();
                 sessionSvc.closed(this);
+                Diagnostics.get().decrementCurrentCount(
+                        null,
+                        Metrics.CurrentCounts.Kind.getKind(sessionSvc.session().type(), transaction.type()));
             }
             if (scheduledTimeout != null) scheduledTimeout.cancel(false);
             responder.onError(ResponseBuilder.exception(error));
