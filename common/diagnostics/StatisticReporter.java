@@ -10,31 +10,47 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.HttpsURLConnection;
+import java.io.IOException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
+import static com.vaticle.typedb.core.server.common.Constants.DISABLED_REPORTING_FILE_NAME;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class StatisticReporter {
     protected static final Logger LOG = LoggerFactory.getLogger(StatisticReporter.class);
-
-    private final String reportingURI;
+    private final String deploymentID;
     private final Metrics metrics;
+    private final String reportingURI;
+    private final Path dataDirectory;
 
     private ScheduledFuture<?> pushScheduledTask;
     private final ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(1);
 
-    public StatisticReporter(Metrics metrics, String reportingURI) {
+    public StatisticReporter(String deploymentID, Metrics metrics, boolean statisticsReportingEnable, String reportingURI, Path dataDirectory) {
+        this.deploymentID = deploymentID;
         this.metrics = metrics;
         this.reportingURI = reportingURI;
-        push();
+        this.dataDirectory = dataDirectory;
+
+        if (statisticsReportingEnable) {
+            scheduleReporting();
+        }
+        else {
+            reportOnceIfNeeded();
+        }
     }
 
-    private void push() {
+    private void report() {
         try {
-            HttpsURLConnection conn = (HttpsURLConnection)(new URL(reportingURI)).openConnection();
+            HttpsURLConnection conn = (HttpsURLConnection) (new URL(reportingURI)).openConnection();
 
             conn.setRequestMethod("POST");
 
@@ -43,18 +59,43 @@ public class StatisticReporter {
             conn.setRequestProperty("Content-Type", "application/json");
 
             conn.setDoOutput(true);
-            conn.getOutputStream().write(metrics.formatJSON().getBytes(StandardCharsets.UTF_8));
+            conn.getOutputStream().write(metrics.formatJSON(true).getBytes(StandardCharsets.UTF_8));
 
             conn.connect();
 
             conn.getInputStream().readAllBytes();
 
-            metrics.resetCounts();
+            metrics.takeCountsSnapshot();
         } catch (Exception e) {
-            if (LOG.isTraceEnabled()) LOG.trace("Failed to push metrics to {}:", reportingURI, e);
+            if (LOG.isTraceEnabled()) LOG.trace("Failed to push metrics to {}: ", reportingURI, e);
             // do nothing
-        } finally {
-            pushScheduledTask = scheduled.schedule(this::push, 1, HOURS);
+        }
+    }
+
+    private void scheduleReporting() {
+        pushScheduledTask = scheduled.scheduleAtFixedRate(this::report, calculateInitialDelay(), 60, MINUTES);
+    }
+
+    private void reportOnceIfNeeded() {
+        try {
+            Path disabledReportingFile = dataDirectory.resolve(DISABLED_REPORTING_FILE_NAME);
+            if (!disabledReportingFile.toFile().exists()) {
+                report();
+                Files.writeString(disabledReportingFile, LocalDateTime.now().toString());
+            }
+        } catch (Exception e) {
+            LOG.debug("Failed to create or read disabled reporting file: ", e);
+        }
+    }
+
+    private long calculateInitialDelay() {
+        int currentMinute = LocalDateTime.now().getMinute();
+        int scheduledMinute = deploymentID.hashCode() % 60;
+
+        if (currentMinute > scheduledMinute) {
+            return 60 - currentMinute + scheduledMinute;
+        } else {
+            return scheduledMinute - currentMinute;
         }
     }
 }

@@ -181,7 +181,8 @@ public class TypeDBServer implements AutoCloseable {
                     deploymentID(), serverID(), name(), Version.VERSION,
                     config.diagnostics().reporting().errors(), DIAGNOSTICS_REPORTING_URI,
                     config.diagnostics().reporting().statistics(), USAGE_STATISTICS_REPORTING_URI,
-                    config.diagnostics().monitoring().enable(), config.diagnostics().monitoring().port()
+                    config.diagnostics().monitoring().enable(), config.diagnostics().monitoring().port(),
+                    config.storage().dataDir() // TODO: Or getTypedbDir()? Can they be on different disks?
             );
         } catch (Throwable e) {
             LOG.debug("Failed to initialise diagnostics: ", e);

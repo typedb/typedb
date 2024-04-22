@@ -135,9 +135,9 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 default:
                     executeRequest(request);
             }
-            Diagnostics.get().requestSuccess(TRANSACTION);
+            Diagnostics.get().requestSuccess(null, TRANSACTION);
         } catch (Throwable error) {
-            Diagnostics.get().requestFail(TRANSACTION);
+            Diagnostics.get().requestFail(null, TRANSACTION);
             close(error);
         } finally {
             if (accessLock != null) accessLock.unlock();
@@ -485,7 +485,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             if (isClientCancelled(error)) LOG.debug(error.getMessage(), error);
             else {
                 LOG.error(error.getMessage().trim());
-                Diagnostics.get().submitError(error);
+                Diagnostics.get().submitError(null, error);
             }
         }
     }

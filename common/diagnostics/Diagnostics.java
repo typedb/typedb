@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.nio.file.Path;
 
 public abstract class Diagnostics {
 
@@ -55,13 +56,13 @@ public abstract class Diagnostics {
         @Override
         public void mayStartServing(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {}
         @Override
-        public void submitError(Throwable error) {}
+        public void submitError(@Nullable String databaseName, Throwable error) {}
         @Override
-        public void requestFail(Metrics.NetworkRequests.Kind kind) {}
+        public void requestFail(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind) {}
         @Override
-        public void requestSuccess(Metrics.NetworkRequests.Kind kind) {}
+        public void requestSuccess(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind) {}
         @Override
-        public void setCurrentCount(Metrics.CurrentCounts.Kind kind, long value) {}
+        public void setCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind, long value) {}
     }
 
     public static class Core extends Diagnostics {
@@ -75,7 +76,8 @@ public abstract class Diagnostics {
                 String deploymentID, String serverID, String distributionName, String version,
                 boolean errorReportingEnable, String errorReportingURI,
                 boolean statisticsReportingEnable, String statisticsReportingURI,
-                boolean monitoringEnable, int monitoringPort
+                boolean monitoringEnable, int monitoringPort,
+                Path dataDirectory
         ) {
             if (diagnostics != null) {
                 LOG.debug("Skipping re-initialising diagnostics");
@@ -84,8 +86,8 @@ public abstract class Diagnostics {
 
             initSentry(serverID, distributionName, version, errorReportingEnable, errorReportingURI);
 
-            Metrics metrics = new Metrics(deploymentID, serverID, distributionName, version);
-            StatisticReporter statisticReporter = initStatisticReporter(statisticsReportingEnable, statisticsReportingURI, metrics);
+            Metrics metrics = new Metrics(deploymentID, serverID, distributionName, version, statisticsReportingEnable, dataDirectory);
+            StatisticReporter statisticReporter = initStatisticReporter(deploymentID, statisticsReportingEnable, statisticsReportingURI, metrics, dataDirectory);
             MonitoringServer monitoringServer = initMonitoringServer(monitoringEnable, monitoringPort, metrics);
 
             diagnostics = new Core(metrics, statisticReporter, monitoringServer);
@@ -97,10 +99,10 @@ public abstract class Diagnostics {
             else return null;
         }
 
-        @Nullable
-        protected static StatisticReporter initStatisticReporter(boolean statisticsReportingEnable, String statisticsReportingURI, Metrics metrics) {
-            if (statisticsReportingEnable) return new StatisticReporter(metrics, statisticsReportingURI);
-            else return null;
+        protected static StatisticReporter initStatisticReporter(
+                String deploymentID, boolean statisticsReportingEnable, String statisticsReportingURI, Metrics metrics, Path dataDirectory
+        ) {
+            return new StatisticReporter(deploymentID, metrics, statisticsReportingEnable, statisticsReportingURI, dataDirectory);
         }
 
         protected static void initSentry(String serverID, String distributionName, String version, boolean errorReportingEnable, String errorReportingURI) {
@@ -133,11 +135,11 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void submitError(Throwable error) {
+        public void submitError(@Nullable String databaseName, Throwable error) {
             if (error instanceof TypeDBException) {
                 TypeDBException typeDBException = (TypeDBException) error;
                 if (isUserError(typeDBException)) {
-                    metrics.registerError(typeDBException.errorMessage().code());
+                    metrics.registerError(databaseName, typeDBException.errorMessage().code());
                     return;
                 }
             }
@@ -149,18 +151,18 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void requestSuccess(Metrics.NetworkRequests.Kind kind) {
-            metrics.requestSuccess(kind);
+        public void requestSuccess(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind) {
+            metrics.requestSuccess(null, databaseName, kind);
         }
 
         @Override
-        public void requestFail(Metrics.NetworkRequests.Kind kind) {
-            metrics.requestFail(kind);
+        public void requestFail(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind) {
+            metrics.requestFail(null, databaseName, kind);
         }
 
         @Override
-        public void setCurrentCount(Metrics.CurrentCounts.Kind kind, long value) {
-            metrics.setCurrentCount(kind, value);
+        public void setCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind, long value) {
+            metrics.setCurrentCount(databaseName, kind, value);
         }
     }
 
@@ -175,11 +177,11 @@ public abstract class Diagnostics {
 
     public abstract void mayStartServing(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware);
 
-    public abstract void submitError(Throwable error);
+    public abstract void submitError(@Nullable String databaseName, Throwable error);
 
-    public abstract void requestFail(Metrics.NetworkRequests.Kind kind);
+    public abstract void requestFail(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind);
 
-    public abstract void requestSuccess(Metrics.NetworkRequests.Kind kind);
+    public abstract void requestSuccess(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind);
 
-    public abstract void setCurrentCount(Metrics.CurrentCounts.Kind kind, long value);
+    public abstract void setCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind, long value);
 }
