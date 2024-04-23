@@ -12,7 +12,6 @@ rust_library(
     srcs = glob(["**/*.rs"]),
     crate_root = "lib.rs",
     deps = [
-        "//encoding:encoding",
         "//database:database",
         "//server:server",
         "//storage/durability:durability",

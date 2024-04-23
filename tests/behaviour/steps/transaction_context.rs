@@ -16,36 +16,3 @@ impl std::fmt::Debug for ActiveTransaction {
         })
     }
 }
-
-#[macro_export]
-macro_rules! tx_as_read {
-    ($tx:ident, $block:block) => {
-        match $tx {
-            ActiveTransaction::Read($tx) => { $block },
-            ActiveTransaction::Write($tx) => { $block },
-            ActiveTransaction::Schema($tx) => { $block },
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! tx_as_write {
-    ($tx:ident, $block:block) => {
-        match $tx {
-            ActiveTransaction::Read(_) => panic!("Using Read transaction as Write"),
-            ActiveTransaction::Write($tx) => { $block },
-            ActiveTransaction::Schema($tx) => { $block },
-        }
-    }
-}
-
-#[macro_export]
-macro_rules! tx_as_schema {
-    ($tx:ident, $block:block) => {
-        match $tx {
-            ActiveTransaction::Read(_) => panic!("Using Read transaction as Schema"),
-            ActiveTransaction::Write(_) => panic!("Using Write transaction as Schema"),
-            ActiveTransaction::Schema($tx) => { $block },
-        }
-    };
-}

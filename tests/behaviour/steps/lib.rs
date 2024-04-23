@@ -80,7 +80,6 @@ impl Context {
     pub fn take_transaction(&mut self) -> Option<ActiveTransaction> {
         self.active_transaction.take()
     }
-
 }
 
 fn is_ignore(tag: &str) -> bool {
