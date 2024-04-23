@@ -15,19 +15,20 @@ use crate::key_range::KeyRange;
 use super::keyspace::{Keyspace, KeyspaceError};
 
 pub struct KeyspaceRangeIterator<'a, const INLINE_BYTES: usize> {
+    keyspace_name: &'static str,
     range: KeyRange<Bytes<'a, { INLINE_BYTES }>>,
     iterator: DBRawIterator<'a>,
     state: State<speedb::Error>,
 }
 
 impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
-    pub(crate) fn new(keyspace: &'a Keyspace, range: KeyRange<Bytes<'a, { INLINE_BYTES }>>) -> Self {
+    pub(crate) fn new(keyspace: &'a Keyspace, range: KeyRange<Bytes<'a, INLINE_BYTES>>) -> Self {
         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
         // read_opts.set_prefix_same_as_start(true);
         let read_opts = keyspace.new_read_options();
         let raw_iterator: DBRawIteratorWithThreadMode<'a, DB> = keyspace.kv_storage.raw_iterator_opt(read_opts);
 
-        KeyspaceRangeIterator { range, iterator: raw_iterator, state: State::Init }
+        KeyspaceRangeIterator { keyspace_name: keyspace.name(), range, iterator: raw_iterator, state: State::Init }
     }
 
     pub(crate) fn peek(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
@@ -47,7 +48,9 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
                 let value = self.iterator.value().unwrap();
                 Some(Ok((key, value)))
             }
-            State::Error(error) => Some(Err(KeyspaceError::Iterate { source: error.clone() })),
+            State::Error(error) => {
+                Some(Err(KeyspaceError::Iterate { name: self.keyspace_name, source: error.clone() }))
+            }
             State::Done => None,
         }
     }
@@ -70,7 +73,9 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
                 let value = self.iterator.value().unwrap();
                 Some(Ok((key, value)))
             }
-            State::Error(error) => Some(Err(KeyspaceError::Iterate { source: error.clone() })),
+            State::Error(error) => {
+                Some(Err(KeyspaceError::Iterate { name: self.keyspace_name, source: error.clone() }))
+            }
             State::Done => None,
         }
     }
@@ -135,7 +140,6 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
         }
     }
 
-    ///
     /// Optimise range-check. We only need to do a single comparison, to the end
     /// of the range, since we can guarantee that we always start within the range and move forward.
     fn is_in_range(&self, key: &[u8]) -> bool {

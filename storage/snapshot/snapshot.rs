@@ -5,7 +5,6 @@
  */
 
 use std::{error::Error, fmt, sync::Arc};
-use std::fmt::Debug;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use durability::{DurabilityService, SequenceNumber};
@@ -15,16 +14,19 @@ use super::{buffer::OperationsBuffer, iterator::SnapshotRangeIterator};
 use crate::{
     isolation_manager::CommitRecord,
     iterator::MVCCReadError,
+    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{lock::LockType, write::Write},
     MVCCStorage, StorageCommitError,
 };
-use crate::key_range::KeyRange;
 
 pub trait ReadableSnapshot {
     fn open_sequence_number(&self) -> SequenceNumber;
 
-    fn get<const KS: usize>(&self, key: StorageKeyReference<'_>) -> Result<Option<ByteArray<KS>>, SnapshotGetError>;
+    fn get<const INLINE_BYTES: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError>;
 
     fn get_mapped<T>(
         &self,
@@ -115,7 +117,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
         self.operations().lock_add(key, LockType::Exclusive)
     }
 
-    fn iterate_writes(&self) -> impl Iterator<Item=(StorageKeyArray<64>, Write)> + '_ {
+    fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<64>, Write)> + '_ {
         self.operations().write_buffers().flat_map(|buffer| {
             // note: this currently copies all the buffers
             buffer
@@ -128,7 +130,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
     fn iterate_writes_range<'this, const PS: usize>(
         &'this self,
         range: KeyRange<Bytes<'this, PS>>,
-    ) -> impl Iterator<Item=(StorageKeyArray<64>, Write)> + '_ {
+    ) -> impl Iterator<Item = (StorageKeyArray<64>, Write)> + '_ {
         self.operations()
             .write_buffers()
             .flat_map(move |buffer| buffer.iterate_range(range.clone()).into_range().into_iter())
@@ -137,9 +139,9 @@ pub trait WritableSnapshot: ReadableSnapshot {
     fn close_resources(&self);
 }
 
-pub trait CommittableSnapshot<D>
-    where
-        D: DurabilityService,
+pub trait CommittableSnapshot<D>: WritableSnapshot
+where
+    D: DurabilityService,
 {
     fn commit(self) -> Result<(), SnapshotError>;
 
@@ -166,21 +168,27 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         self.open_sequence_number
     }
 
-    fn get<const KS: usize>(&self, key: StorageKeyReference<'_>) -> Result<Option<ByteArray<KS>>, SnapshotGetError> {
-        // TODO: this clone may not be necessary - we could pass a reference up?
-        self.storage
-            .get(key, self.open_sequence_number, |reference| ByteArray::from(reference))
-            .map_err(|error| SnapshotGetError::MVCCRead { source: error })
+    fn get<const INLINE_BYTES: usize>(
+        &self,
+        key: StorageKeyReference<'_>,
+    ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
+        match self.storage.get(key, self.open_sequence_number) {
+            Ok(Some(bytes)) => Ok(Some(bytes)),
+            Ok(None) => Ok(None),
+            Err(error) => Err(SnapshotGetError::MVCCRead { source: error }),
+        }
     }
 
     fn get_mapped<T>(
         &self,
         key: StorageKeyReference<'_>,
-        mapper: impl FnMut(ByteReference<'_>) -> T,
+        mut mapper: impl FnMut(ByteReference<'_>) -> T,
     ) -> Result<Option<T>, SnapshotGetError> {
-        self.storage
-            .get(key, self.open_sequence_number, mapper)
-            .map_err(|error| SnapshotGetError::MVCCRead { source: error })
+        match self.storage.get::<BUFFER_VALUE_INLINE>(key, self.open_sequence_number) {
+            Ok(Some(value)) => Ok(Some(mapper(ByteReference::from(&value)))),
+            Ok(None) => Ok(None),
+            Err(error) => Err(SnapshotGetError::MVCCRead { source: error }),
+        }
     }
 
     fn iterate_range<'this, const PS: usize>(
@@ -229,11 +237,12 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         key: StorageKeyReference<'_>,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match self.operations.writes_in(key.keyspace_id()).get(key.bytes()) {
-            None => self
-                .storage
-                .get(key, self.open_sequence_number, |reference| ByteArray::from(reference))
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
-            some => Ok(some),
+            Some(bytes) => Ok(Some(bytes)),
+            None => match self.storage.get(key, self.open_sequence_number) {
+                Ok(Some(bytes)) => Ok(Some(bytes)),
+                Ok(None) => Ok(None),
+                Err(error) => Err(SnapshotGetError::MVCCRead { source: error }),
+            },
         }
     }
 
@@ -243,11 +252,12 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         mut mapper: impl FnMut(ByteReference<'_>) -> T,
     ) -> Result<Option<T>, SnapshotGetError> {
         match self.operations.writes_in(key.keyspace_id()).get::<BUFFER_VALUE_INLINE>(key.bytes()) {
-            None => self
-                .storage
-                .get(key, self.open_sequence_number, mapper)
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
             Some(value) => Ok(Some(mapper(ByteReference::from(&value)))),
+            None => match self.storage.get::<BUFFER_VALUE_INLINE>(key, self.open_sequence_number) {
+                Ok(Some(value)) => Ok(Some(mapper(ByteReference::from(&value)))),
+                Ok(None) => Ok(None),
+                Err(error) => Err(SnapshotGetError::MVCCRead { source: error }),
+            },
         }
     }
 
@@ -258,10 +268,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().keyspace_id())
-            .iterate_range(range.clone().map(
-                |k| k.into_byte_array_or_ref(),
-                |fixed| fixed
-            ));
+            .iterate_range(range.clone().map(|k| k.into_byte_array_or_ref(), |fixed| fixed));
         let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
@@ -274,10 +281,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         let buffered = self
             .operations
             .writes_in(range.start().keyspace_id())
-            .any_in_range(range.clone().map(
-                |k| k.into_byte_array_or_ref(),
-                |fixed| fixed
-            ));
+            .any_in_range(range.clone().map(|k| k.into_byte_array_or_ref(), |fixed| fixed));
         buffered || (!buffered_only && self.storage.iterate_range(range, self.open_sequence_number).next().is_some())
     }
 
@@ -336,11 +340,12 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         key: StorageKeyReference<'_>,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match self.operations.writes_in(key.keyspace_id()).get(key.bytes()) {
-            None => self
-                .storage
-                .get(key, self.open_sequence_number, |reference| ByteArray::from(reference))
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
-            some => Ok(some),
+            Some(array) => Ok(Some(array)),
+            None => match self.storage.get(key, self.open_sequence_number) {
+                Ok(Some(value)) => Ok(Some(value)),
+                Ok(None) => Ok(None),
+                Err(error) => Err(SnapshotGetError::MVCCRead { source: error }),
+            },
         }
     }
 
@@ -350,11 +355,12 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         mut mapper: impl FnMut(ByteReference<'_>) -> T,
     ) -> Result<Option<T>, SnapshotGetError> {
         match self.operations.writes_in(key.keyspace_id()).get::<BUFFER_VALUE_INLINE>(key.bytes()) {
-            None => self
-                .storage
-                .get(key, self.open_sequence_number, mapper)
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
             Some(value) => Ok(Some(mapper(ByteReference::from(&value)))),
+            None => match self.storage.get::<BUFFER_VALUE_INLINE>(key, self.open_sequence_number) {
+                Ok(Some(value)) => Ok(Some(mapper(ByteReference::from(&value)))),
+                Ok(None) => Ok(None),
+                Err(error) => Err(SnapshotGetError::MVCCRead { source: error }),
+            },
         }
     }
 
@@ -365,10 +371,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().keyspace_id())
-            .iterate_range(range.clone().map(
-                |k| k.into_byte_array_or_ref(),
-                |fixed| fixed
-            ));
+            .iterate_range(range.clone().map(|k| k.into_byte_array_or_ref(), |fixed| fixed));
         let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
@@ -381,10 +384,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         let buffered = self
             .operations
             .writes_in(range.start().keyspace_id())
-            .any_in_range(range.clone().map(
-                |k| k.into_byte_array_or_ref(),
-                |fixed| fixed
-            ));
+            .any_in_range(range.clone().map(|k| k.into_byte_array_or_ref(), |fixed| fixed));
         buffered || (!buffered_only && self.storage.iterate_range(range, self.open_sequence_number).next().is_some())
     }
 

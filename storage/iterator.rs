@@ -68,7 +68,6 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
                     Err(error) => {
                         return Some(Err(MVCCReadError::Keyspace {
                             storage_name: self.storage_name.to_owned(),
-                            keyspace_name: self.keyspace.name().to_owned(),
                             source: Arc::new(error),
                         }))
                     }
@@ -79,11 +78,9 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
                     ByteReference::new(value),
                 )))
             }
-            State::Error(error) => Some(Err(MVCCReadError::Keyspace {
-                storage_name: self.storage_name.to_owned(),
-                keyspace_name: self.keyspace.name().to_owned(),
-                source: error.clone(),
-            })),
+            State::Error(error) => {
+                Some(Err(MVCCReadError::Keyspace { storage_name: self.storage_name.to_owned(), source: error.clone() }))
+            }
             State::Done => None,
         }
     }
@@ -105,7 +102,6 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
                     Err(error) => {
                         return Some(Err(MVCCReadError::Keyspace {
                             storage_name: self.storage_name.to_owned(),
-                            keyspace_name: self.keyspace.name().to_owned(),
                             source: Arc::new(error),
                         }))
                     }
@@ -118,11 +114,9 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
                 self.state = State::ItemUsed;
                 item
             }
-            State::Error(error) => Some(Err(MVCCReadError::Keyspace {
-                storage_name: self.storage_name.to_owned(),
-                keyspace_name: self.keyspace.name().to_owned(),
-                source: error.clone(),
-            })),
+            State::Error(error) => {
+                Some(Err(MVCCReadError::Keyspace { storage_name: self.storage_name.to_owned(), source: error.clone() }))
+            }
             State::Done => None,
         }
     }
@@ -193,7 +187,7 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
 
 #[derive(Debug, Clone)]
 pub enum MVCCReadError {
-    Keyspace { storage_name: String, keyspace_name: String, source: Arc<KeyspaceError> },
+    Keyspace { storage_name: String, source: Arc<KeyspaceError> },
 }
 
 impl fmt::Display for MVCCReadError {

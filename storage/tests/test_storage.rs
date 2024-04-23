@@ -156,11 +156,11 @@ fn get_put_iterate() {
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_4), &empty_value());
 
     let first_value: Option<ByteArray<48>> =
-        storage.get_raw(StorageKeyReference::from(&keyspace_1_key_1), ByteArray::copy);
+        storage.get_raw_mapped(StorageKeyReference::from(&keyspace_1_key_1), ByteArray::copy);
     assert_eq!(first_value, Some(ByteArray::empty()));
 
     let second_value: Option<ByteArray<48>> =
-        storage.get_raw(StorageKeyReference::from(&keyspace_2_key_1), ByteArray::copy);
+        storage.get_raw_mapped(StorageKeyReference::from(&keyspace_2_key_1), ByteArray::copy);
     assert_eq!(second_value, Some(ByteArray::empty()));
 
     let prefix = StorageKeyArray::<64>::from((vec![0x1], Keyspace1));

@@ -110,7 +110,17 @@ impl WriteBuffer {
     }
 
     pub(crate) fn put(&self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        self.writes.write().unwrap().insert(key, Write::Put { value, reinsert: Arc::new(AtomicBool::new(false)) });
+        self.writes
+            .write()
+            .unwrap()
+            .insert(key, Write::Put { value, reinsert: Arc::new(AtomicBool::new(false)), known_to_exist: false });
+    }
+
+    pub(crate) fn put_existing(&self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
+        self.writes
+            .write()
+            .unwrap()
+            .insert(key, Write::Put { value, reinsert: Arc::new(AtomicBool::new(false)), known_to_exist: true });
     }
 
     pub(crate) fn delete(&self, key: ByteArray<BUFFER_KEY_INLINE>) {
@@ -375,27 +385,6 @@ impl<'de> Deserialize<'de> for OperationsBuffer {
                     seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 Ok(OperationsBuffer { write_buffers, locks: RwLock::new(locks) })
             }
-
-            // fn visit_map<V>(self, mut map: V) -> Result<KeyspaceBuffers, V::Error>
-            //     where
-            //         V: MapAccess<'de>,
-            // {
-            //     let mut buffers: Option<[KeyspaceBuffer; KEYSPACE_ID_MAX]> = None;
-            //     while let Some(key) = map.next_key()? {
-            //         match key {
-            //             Field::Buffers => {
-            //                 if buffers.is_some() {
-            //                     return Err(de::Error::duplicate_field("Buffers"));
-            //                 }
-            //                 buffers = Some(map.next_value()?);
-            //             }
-            //         }
-            //     }
-            //     let buffers: [KeyspaceBuffer; KEYSPACE_ID_MAX] = buffers.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-            //     Ok(KeyspaceBuffers {
-            //         buffers: buffers
-            //     })
-            // }
         }
 
         deserializer.deserialize_tuple(KEYSPACE_MAXIMUM_COUNT, OperationsBufferVisitor)
