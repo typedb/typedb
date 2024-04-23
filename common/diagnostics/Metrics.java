@@ -74,6 +74,11 @@ public class Metrics {
         usage.get(databaseName).decrement(kind);
     }
 
+    public void setCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind, long value) {
+        addDatabaseIfAbsent(databaseName);
+        usage.get(databaseName).set(kind, value);
+    }
+
     public void registerError(String databaseName, String errorCode) {
         addDatabaseIfAbsent(databaseName);
         userErrors.get(databaseName).register(errorCode);
@@ -270,7 +275,7 @@ public class Metrics {
         String formatPrometheus(String databaseName) {
             StringBuilder buf = new StringBuilder("# TYPE typedb_attempted_requests_total counter\n");
             for (var kind : Kind.values()) {
-                var attempted = successful.get(kind).getAndAdd(failed.get(kind).get());
+                var attempted = successful.get(kind).get() + failed.get(kind).get();
                 buf.append("typedb_attempted_requests_total{databaseName=\"").append(databaseName).append("\", kind=\"").append(kind).append("\"} ").append(attempted).append("\n");
             }
             buf.append("\n# TYPE typedb_successful_requests_total counter\n");
@@ -283,12 +288,13 @@ public class Metrics {
 
     public static class CurrentCounts {
         public enum Kind {
-            CONNECTIONS("connectionPeakCount"), // TODO: How to calculate closing?
+            CONNECTIONS("connectionPeakCount"),
             SCHEMA_TRANSACTIONS("schemaTransactionPeakCount"),
             READ_TRANSACTIONS("readTransactionPeakCount"),
-            WRITE_TRANSACTIONS("writeTransactionPeakCount");
+            WRITE_TRANSACTIONS("writeTransactionPeakCount"),
+            UNKNOWN("unknown");
 
-            private String jsonName;
+            private final String jsonName;
 
             Kind(String jsonName) {
                 this.jsonName = jsonName;
@@ -309,6 +315,8 @@ public class Metrics {
                     case WRITE:
                         return WRITE_TRANSACTIONS;
                 }
+
+                return UNKNOWN; // We don't want to throw from the Diagnostics service.
             }
         }
 
@@ -327,15 +335,23 @@ public class Metrics {
         }
 
         public void increment(Kind kind) {
-            long newCount = counts.get(kind).incrementAndGet();
-
-            if (peakCounts.get(kind).get() < newCount) {
-                peakCounts.get(kind).set(newCount);
-            }
+            long value = counts.get(kind).incrementAndGet();
+            updatePeakValue(kind, value);
         }
 
         public void decrement(Kind kind) {
             counts.get(kind).decrementAndGet();
+        }
+
+        public void set(Kind kind, long value) {
+            counts.get(kind).set(value);
+            updatePeakValue(kind, value);
+        }
+
+        private void updatePeakValue(Kind kind, long value) {
+            if (peakCounts.get(kind).get() < value) {
+                peakCounts.get(kind).set(value);
+            }
         }
 
         JsonObject asJSON() {

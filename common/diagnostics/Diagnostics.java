@@ -65,6 +65,9 @@ public abstract class Diagnostics {
         public void incrementCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind) {}
         @Override
         public void decrementCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind) {}
+
+        @Override
+        public void setCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind, long value) {}
     }
 
     public static class Core extends Diagnostics {
@@ -154,12 +157,12 @@ public abstract class Diagnostics {
 
         @Override
         public void requestSuccess(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind) {
-            metrics.requestSuccess(null, databaseName, kind);
+            metrics.requestSuccess(databaseName, kind);
         }
 
         @Override
         public void requestFail(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind) {
-            metrics.requestFail(null, databaseName, kind);
+            metrics.requestFail(databaseName, kind);
         }
 
         @Override
@@ -169,6 +172,11 @@ public abstract class Diagnostics {
         @Override
         public void decrementCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind) {
             metrics.decrementCurrentCount(databaseName, kind);
+        }
+
+        @Override
+        public void setCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind, long value) {
+            metrics.setCurrentCount(databaseName, kind, value);
         }
     }
 
@@ -192,4 +200,6 @@ public abstract class Diagnostics {
     public abstract void incrementCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind);
 
     public abstract void decrementCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind);
+
+    public abstract void setCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind, long value);
 }

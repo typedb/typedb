@@ -198,7 +198,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         scheduledTimeout = scheduled().schedule(this::timeout, options.transactionTimeoutMillis(), MILLISECONDS);
 
         Diagnostics.get().incrementCurrentCount(
-                null,
+                sessionSvc.session().database().name(),
                 Metrics.CurrentCounts.Kind.getKind(sessionSvc.session().type(), transaction.type()));
     }
 
@@ -472,7 +472,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 transaction.close();
                 sessionSvc.closed(this);
                 Diagnostics.get().decrementCurrentCount(
-                        null,
+                        sessionSvc.session().database().name(),
                         Metrics.CurrentCounts.Kind.getKind(sessionSvc.session().type(), transaction.type()));
             }
             if (scheduledTimeout != null) scheduledTimeout.cancel(false);
@@ -486,7 +486,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 transaction.close();
                 sessionSvc.closed(this);
                 Diagnostics.get().decrementCurrentCount(
-                        null,
+                        sessionSvc.session().database().name(),
                         Metrics.CurrentCounts.Kind.getKind(sessionSvc.session().type(), transaction.type()));
             }
             if (scheduledTimeout != null) scheduledTimeout.cancel(false);

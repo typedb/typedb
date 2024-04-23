@@ -8,6 +8,7 @@ package com.vaticle.typedb.core.server;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
+import com.vaticle.typedb.core.common.diagnostics.Metrics;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -41,9 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.CurrentCounts.Kind.DATABASES;
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.CurrentCounts.Kind.SESSIONS;
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.CurrentCounts.Kind.TRANSACTIONS;
+import static com.vaticle.typedb.core.common.diagnostics.Metrics.CurrentCounts.Kind.*;
 import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.*;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
@@ -92,19 +91,23 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         try {
             Map<String, List<String>> databaseConnections = new HashMap<>();
             Instant now = Instant.now();
-            sessionServices.forEach((uuid, sessionService) ->
-                    databaseConnections.compute(sessionService.session().database().name(), (key, val) -> {
-                        List<String> sessionInfos;
-                        if (val == null) sessionInfos = new ArrayList<>();
-                        else sessionInfos = val;
-                        sessionInfos.add(String.format(
-                                "Session '%s' (open %d seconds) has %d open transaction(s)",
-                                uuid.toString(), Duration.between(sessionService.openTime(), now).getSeconds(),
-                                sessionService.transactionCount()
-                        ));
-                        return sessionInfos;
-                    })
-            );
+            sessionServices.forEach((uuid, sessionService) -> {
+                String databaseName = sessionService.session().database().name();
+                databaseConnections.compute(databaseName, (key, val) -> {
+                    List<String> sessionInfos;
+                    if (val == null) sessionInfos = new ArrayList<>();
+                    else sessionInfos = val;
+                    sessionInfos.add(String.format(
+                            "Session '%s' (open %d seconds) has %d open transaction(s)",
+                            uuid.toString(), Duration.between(sessionService.openTime(), now).getSeconds(),
+                            sessionService.transactionCount()
+                    ));
+                    return sessionInfos;
+                });
+
+                Diagnostics.get().setCurrentCount(databaseName, CONNECTIONS, databaseConnections.get(databaseName).size());
+            });
+
             StringBuilder connectionStates = new StringBuilder("Server connections: ").append("\n");
             databaseConnections.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
                 connectionStates.append("Database '").append(entry.getKey()).append("' has ").append(entry.getValue().size()).append(" sessions:\n");
@@ -375,8 +378,6 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Diagnostics.get().requestFail(null, SESSION_OPEN);
             Diagnostics.get().submitError(null, e);
             responder.onError(exception(e));
-        } finally {
-            Diagnostics.get().setCurrentCount(SESSIONS, sessionServices.size());
         }
     }
 
@@ -396,9 +397,6 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Diagnostics.get().requestFail(null, SESSION_CLOSE);
             Diagnostics.get().submitError(null, e);
             responder.onError(exception(e));
-        } finally {
-            Diagnostics.get().setCurrentCount(SESSIONS, sessionServices.size());
-            updateTransactionCount();
         }
     }
 
@@ -423,10 +421,6 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public StreamObserver<TransactionProto.Transaction.Client> transaction(
             StreamObserver<TransactionProto.Transaction.Server> responder) {
         return new TransactionService(this, responder);
-    }
-
-    void updateTransactionCount() {
-        Diagnostics.get().setCurrentCount(TRANSACTIONS, sessionServices.values().stream().mapToLong(SessionService::transactionCount).sum());
     }
 
     protected void doCreateDatabase(String databaseName) {
