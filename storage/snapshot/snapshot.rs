@@ -205,6 +205,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
     }
 }
 
+#[derive(Debug)]
 pub struct WriteSnapshot<D> {
     storage: Arc<MVCCStorage<D>>,
     operations: OperationsBuffer,

@@ -11,7 +11,6 @@ use concept::error::ConceptWriteError;
 use durability::DurabilityService;
 use storage::snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot};
 
-
 use super::Database;
 
 pub struct TransactionRead<D> {
