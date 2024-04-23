@@ -5,6 +5,7 @@
  */
 
 use std::{error::Error, fmt, sync::Arc};
+use std::fmt::Debug;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use durability::{DurabilityService, SequenceNumber};

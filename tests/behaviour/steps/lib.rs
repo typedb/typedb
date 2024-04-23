@@ -17,12 +17,17 @@ use server::typedb;
 use test_utils::TempDir;
 
 mod connection;
+mod params;
+mod transaction_context;
 mod util;
+
+use transaction_context::ActiveTransaction;
 
 #[derive(Debug, Default, World)]
 pub struct Context {
     server_dir: Option<TempDir>,
     server: Option<typedb::Server>,
+    active_transaction: Option<ActiveTransaction>,
 }
 
 impl Context {
@@ -62,6 +67,19 @@ impl Context {
     pub fn databases(&self) -> &HashMap<String, Arc<Database<WAL>>> {
         self.server().unwrap().databases()
     }
+
+    pub fn set_transaction(&mut self, txn: ActiveTransaction) {
+        debug_assert!(self.active_transaction.is_none());
+        self.active_transaction = Some(txn);
+    }
+
+    pub fn transaction(&mut self) -> Option<&ActiveTransaction> {
+        self.active_transaction.as_ref()
+    }
+
+    pub fn take_transaction(&mut self) -> Option<ActiveTransaction> {
+        self.active_transaction.take()
+    }
 }
 
 fn is_ignore(tag: &str) -> bool {
@@ -79,3 +97,4 @@ macro_rules! generic_step {
         $vis $async fn $fn_name $args $(-> $res)? $body
     };
 }
+

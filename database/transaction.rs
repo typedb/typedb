@@ -8,7 +8,8 @@ use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use concept::error::ConceptWriteError;
-use storage::snapshot::{ReadSnapshot, SchemaSnapshot, WriteSnapshot};
+use durability::DurabilityService;
+use storage::snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot};
 
 use super::Database;
 
@@ -19,7 +20,7 @@ pub struct TransactionRead<D> {
     pub(crate) thing_manager: ThingManager<ReadSnapshot<D>>,
 }
 
-impl<D> TransactionRead<D> {
+impl<D: DurabilityService> TransactionRead<D> {
     pub fn open(database: Arc<Database<D>>) -> Self {
         let snapshot: Arc<ReadSnapshot<D>> = Arc::new(database.storage.clone().open_snapshot_read());
         let type_manager = Arc::new(TypeManager::new(snapshot.clone(), database.type_vertex_generator.clone(), None)); // TODO pass cache
@@ -31,6 +32,13 @@ impl<D> TransactionRead<D> {
     pub fn type_manager(&self) -> &TypeManager<ReadSnapshot<D>> {
         &self.type_manager
     }
+
+    pub fn close(self) {
+        drop(self.thing_manager);
+        drop(self.type_manager);
+        let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
+        snapshot_owned.close_resources()
+    }
 }
 
 pub struct TransactionWrite<D> {
@@ -40,7 +48,7 @@ pub struct TransactionWrite<D> {
     pub(crate) thing_manager: ThingManager<WriteSnapshot<D>>,
 }
 
-impl<D> TransactionWrite<D> {
+impl<D: DurabilityService> TransactionWrite<D> {
     pub fn open(database: Arc<Database<D>>) -> Self {
         let snapshot: Arc<WriteSnapshot<D>> = Arc::new(database.storage.clone().open_snapshot_write());
         let type_manager = Arc::new(TypeManager::new(snapshot.clone(), database.type_vertex_generator.clone(), None)); // TODO pass cache
@@ -59,7 +67,17 @@ impl<D> TransactionWrite<D> {
 
     pub fn commit(self) -> Result<(), Vec<ConceptWriteError>> {
         self.thing_manager.finalise()?;
+        drop(self.type_manager);
+        let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
+        snapshot_owned.commit().unwrap_or_else(|_| { panic!("Failed to commit snapshot"); });
         Ok(())
+    }
+
+    pub fn close(self) {
+        drop(self.thing_manager);
+        drop(self.type_manager);
+        let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
+        snapshot_owned.close_resources();
     }
 }
 
@@ -70,13 +88,31 @@ pub struct TransactionSchema<D> {
     pub(crate) thing_manager: ThingManager<SchemaSnapshot<D>>,
 }
 
-impl<D> TransactionSchema<D> {
+impl<D: DurabilityService> TransactionSchema<D> {
+    pub fn open(database: Arc<Database<D>>) -> Self {
+        let snapshot: Arc<SchemaSnapshot<D>> = Arc::new(database.storage.clone().open_snapshot_schema());
+        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), database.type_vertex_generator.clone(), None));
+        let thing_manager =
+            ThingManager::new(snapshot.clone(), database.thing_vertex_generator.clone(), type_manager.clone());
+        Self { database, snapshot, type_manager, thing_manager }
+    }
+
     pub fn type_manager(&self) -> &TypeManager<SchemaSnapshot<D>> {
         &self.type_manager
     }
 
     pub fn commit(self) -> Result<(), Vec<ConceptWriteError>> {
         self.thing_manager.finalise()?;
+        todo!("Finalise type manager");
+        let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
+        snapshot_owned.commit().unwrap_or_else(|_| { panic!("Failed to commit snapshot"); });
         Ok(())
+    }
+
+    pub fn close(self) {
+        drop(self.thing_manager);
+        drop(self.type_manager);
+        let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
+        snapshot_owned.close_resources();
     }
 }

@@ -11,6 +11,7 @@ use test_utils::create_tmp_dir;
 use crate::{generic_step, Context};
 
 mod database;
+mod transaction;
 
 #[apply(generic_step)]
 #[step("typedb starts")]
