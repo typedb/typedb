@@ -6,7 +6,6 @@
 
 package com.vaticle.typedb.core.common.diagnostics;
 
-import com.vaticle.typedb.core.TypeDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,13 +20,12 @@ import java.time.LocalDateTime;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
-import static com.vaticle.typedb.core.server.common.Constants.DISABLED_REPORTING_FILE_NAME;
-import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class StatisticReporter {
     // Modify calculateInitialDelay() if you change this value!
     protected static final int REPORT_INTERVAL_MINUTES = 60;
+    public static final String DISABLED_REPORTING_FILE_NAME = "_reporting_disabled";
 
     protected static final Logger LOG = LoggerFactory.getLogger(StatisticReporter.class);
     private final String deploymentID;
@@ -51,8 +49,7 @@ public class StatisticReporter {
         if (statisticsReportingEnabled) {
             deleteDisabledReportingFileIfExists();
             scheduleReporting();
-        }
-        else {
+        } else {
             reportOnceIfNeeded();
         }
     }

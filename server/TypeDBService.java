@@ -90,9 +90,8 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         try {
             Map<String, List<String>> databaseConnections = new HashMap<>();
             Instant now = Instant.now();
-            sessionServices.forEach((uuid, sessionService) -> {
-                String databaseName = sessionService.session().database().name();
-                databaseConnections.compute(databaseName, (key, val) -> {
+            sessionServices.forEach((uuid, sessionService) ->
+                databaseConnections.compute(sessionService.session().database().name(), (key, val) -> {
                     List<String> sessionInfos;
                     if (val == null) sessionInfos = new ArrayList<>();
                     else sessionInfos = val;
@@ -102,10 +101,8 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
                             sessionService.transactionCount()
                     ));
                     return sessionInfos;
-                });
-
-                Diagnostics.get().setCurrentCount(databaseName, CONNECTIONS, databaseConnections.get(databaseName).size());
-            });
+                })
+            );
 
             StringBuilder connectionStates = new StringBuilder("Server connections: ").append("\n");
             databaseConnections.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {

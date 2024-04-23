@@ -8,7 +8,6 @@ package com.vaticle.typedb.core.common.diagnostics;
 
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.ssl.SslContext;
 import io.sentry.Sentry;
@@ -56,20 +55,30 @@ public abstract class Diagnostics {
 
         @Override
         public void mayStartMonitoring(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {}
+
         @Override
-        public void mayStartReporting(CoreDatabaseManager databaseManager) {}
+        public void mayStartReporting() {}
+
         @Override
         public void submitError(@Nullable String databaseName, Throwable error) {}
+
         @Override
         public void requestFail(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind) {}
+
         @Override
         public void requestSuccess(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind) {}
+
         @Override
         public void incrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {}
+
         @Override
         public void decrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {}
+
         @Override
         public void setCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind, long value) {}
+
+        @Override
+        public void submitDatabaseDiagnostics(String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad) {}
     }
 
     public static class Core extends Diagnostics {
@@ -142,19 +151,11 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void mayStartReporting(CoreDatabaseManager databaseManager) {
-            if (diagnostics == null) {
-                LOG.error("Cannot start reporting because diagnostics are not initialised yet.");
-                return;
-            }
-
-            diagnostics.metrics.setDatabaseManager(databaseManager);
-
+        public void mayStartReporting() {
             if (statisticReporter == null) {
                 LOG.error("Cannot start reporting because statistic reporter is not initialised yet.");
                 return;
             }
-
             statisticReporter.startReporting();
         }
 
@@ -188,6 +189,7 @@ public abstract class Diagnostics {
         public void incrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {
             metrics.incrementCurrentCount(databaseName, kind);
         }
+
         @Override
         public void decrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {
             metrics.decrementCurrentCount(databaseName, kind);
@@ -196,6 +198,11 @@ public abstract class Diagnostics {
         @Override
         public void setCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind, long value) {
             metrics.setCurrentCount(databaseName, kind, value);
+        }
+
+        @Override
+        public void submitDatabaseDiagnostics(String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad) {
+            metrics.submitDatabaseDiagnostics(databaseName, schemaLoad, dataLoad);
         }
     }
 
@@ -210,7 +217,7 @@ public abstract class Diagnostics {
 
     public abstract void mayStartMonitoring(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware);
 
-    public abstract void mayStartReporting(CoreDatabaseManager databaseManager);
+    public abstract void mayStartReporting();
 
     public abstract void submitError(@Nullable String databaseName, Throwable error);
 
@@ -223,4 +230,6 @@ public abstract class Diagnostics {
     public abstract void decrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind);
 
     public abstract void setCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind, long value);
+
+    public abstract void submitDatabaseDiagnostics(String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad);
 }

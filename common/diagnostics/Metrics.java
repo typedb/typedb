@@ -8,8 +8,6 @@ package com.vaticle.typedb.core.common.diagnostics;
 
 import com.eclipsesource.json.JsonObject;
 import com.vaticle.typedb.core.common.parameters.Arguments;
-import com.vaticle.typedb.core.database.CoreDatabase;
-import com.vaticle.typedb.core.database.CoreDatabaseManager;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
@@ -21,10 +19,11 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Metrics {
-    private CoreDatabaseManager databaseManager;
     private final BaseProperties base;
     private final ServerStaticProperties serverStatic;
     private final ServerDynamicProperties serverDynamic;
+    private ConcurrentMap<String, DatabaseSchemaLoad> databaseSchemaLoad = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, DatabaseDataLoad> databaseDataLoad = new ConcurrentHashMap<>();
     private ConcurrentMap<String, ConnectionPeakCounts> connectionPeakCounts = new ConcurrentHashMap<>();
     private ConcurrentMap<String, NetworkRequests> requests = new ConcurrentHashMap<>();
     private ConcurrentMap<String, UserErrorStatistics> userErrors = new ConcurrentHashMap<>();
@@ -33,10 +32,6 @@ public class Metrics {
         this.base = new BaseProperties(deploymentID, serverID, name, reportingEnabled);
         this.serverStatic = new ServerStaticProperties();
         this.serverDynamic = new ServerDynamicProperties(version, dataDirectory);
-    }
-
-    public void setDatabaseManager(CoreDatabaseManager databaseManager) {
-        this.databaseManager = databaseManager;
     }
 
     public void takeCountsSnapshot() {
@@ -91,6 +86,12 @@ public class Metrics {
         userErrors.get(databaseName).register(errorCode);
     }
 
+    public void submitDatabaseDiagnostics(String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad) {
+        addDatabaseIfAbsent(databaseName);
+        databaseSchemaLoad.put(databaseName, schemaLoad);
+        databaseDataLoad.put(databaseName, dataLoad);
+    }
+
     protected String formatPrometheus() {
         String data = base.formatPrometheus();
         data += serverStatic.formatPrometheus();
@@ -120,17 +121,15 @@ public class Metrics {
 
         metrics.add("usage", "..."); // TODO: Create json object wrapping this data
 
-        if (databaseManager != null) {
-            for (CoreDatabase database : databaseManager.all()) {
-                JsonObject load = new JsonObject();
-                load.add("schema", DatabaseSchemaLoad.asJSON(database));
-                load.add("data", DatabaseDataLoad.asJSON(database));
-                load.add("connection", connectionPeakCounts.get(database.name()).asJSON());
-                metrics.add("load", load);
+        for (String databaseName : databaseSchemaLoad.keySet()) {
+            JsonObject load = new JsonObject();
+            load.add("schema", databaseSchemaLoad.get(databaseName).asJSON());
+            load.add("data", databaseDataLoad.get(databaseName).asJSON());
+            load.add("connection", connectionPeakCounts.get(databaseName).asJSON());
+            metrics.add("load", load);
 
-                metrics.add("requests", requests.get(database.name()).asJSON());
-                metrics.add("user errors", userErrors.get(database.name()).asJSON());
-            }
+            metrics.add("requests", requests.get(databaseName).asJSON());
+            metrics.add("user errors", userErrors.get(databaseName).asJSON());
         }
 
         return metrics;
@@ -196,7 +195,6 @@ public class Metrics {
         ServerDynamicProperties(String version, Path dataDirectory) {
             this.version = version;
             this.dbRoot = dataDirectory.toFile();
-            System.out.println("HERE IS MY DB ROOT: " + this.dbRoot + " or DIR: " + dataDirectory); // TODO: Remove after testing!
         }
 
         JsonObject asJSON() {
@@ -300,45 +298,77 @@ public class Metrics {
         }
     }
 
-    static class DatabaseSchemaLoad {
-        static JsonObject asJSON(CoreDatabase database) {
+    public static class DatabaseSchemaLoad {
+        public long typeCount;
+
+        public DatabaseSchemaLoad(long typeCount) {
+            this.typeCount = typeCount;
+        }
+
+        JsonObject asJSON() {
             JsonObject schema = new JsonObject();
-            schema.add("typeCount", database.typeCount());
+            schema.add("typeCount", typeCount);
             return schema;
         }
 
-        static String formatPrometheus(CoreDatabase database) {
-            return "# typeCount: " + database.typeCount() + "\n";
+        String formatPrometheus() {
+            return "# typeCount: " + typeCount + "\n";
         }
     }
 
-    static class DatabaseDataLoad {
-        static JsonObject asJSON(CoreDatabase database) {
+    public static class DatabaseDataLoad {
+        public long entityCount;
+        public long relationCount;
+        public long attributeCount;
+        public long hasCount;
+        public long roleCount;
+        public long storageInBytes;
+        public long storageKeyCount;
+
+        public DatabaseDataLoad(
+                long entityCount,
+                long relationCount,
+                long attributeCount,
+                long hasCount,
+                long roleCount,
+                long storageInBytes,
+                long storageKeyCount
+        ) {
+            this.entityCount = entityCount;
+            this.relationCount = relationCount;
+            this.attributeCount = attributeCount;
+            this.hasCount = hasCount;
+            this.roleCount = roleCount;
+            this.storageInBytes = storageInBytes;
+            this.storageKeyCount = storageKeyCount;
+        }
+
+        JsonObject asJSON() {
             JsonObject data = new JsonObject();
-            data.add("entityCount", database.entityCount());
-            data.add("relationCount", database.relationCount());
-            data.add("attributeCount", database.attributeCount());
-            data.add("hasCount", database.hasCount());
-            data.add("roleCount", database.roleCount());
-            data.add("storageInBytes", database.storageDataBytesEstimate());
-            data.add("storageKeyCount", database.storageDataKeysEstimate());
+            data.add("entityCount", entityCount);
+            data.add("relationCount", relationCount);
+            data.add("attributeCount", attributeCount);
+            data.add("hasCount", hasCount);
+            data.add("roleCount", roleCount);
+            data.add("storageInBytes", storageInBytes);
+            data.add("storageKeyCount", storageKeyCount);
             return data;
         }
 
-        static String formatPrometheus(CoreDatabase database) {
-            return "# entityCount: " + database.entityCount() + "\n" +
-                    "# relationCount: " + database.relationCount() + "\n" +
-                    "# attributeCount: " + database.attributeCount() + "\n" +
-                    "# hasCount: " + database.hasCount() + "\n" +
-                    "# roleCount: " + database.roleCount() + "\n" +
-                    "# storageInBytes: " + database.storageDataBytesEstimate() + "\n" +
-                    "# storageKeyCount: " + database.storageDataKeysEstimate() + "\n";
+        String formatPrometheus() {
+            return "# entityCount: " + entityCount + "\n" +
+                    "# relationCount: " + relationCount + "\n" +
+                    "# attributeCount: " + attributeCount + "\n" +
+                    "# hasCount: " + hasCount + "\n" +
+                    "# roleCount: " + roleCount + "\n" +
+                    "# storageInBytes: " + storageInBytes + "\n" +
+                    "# storageKeyCount: " + storageKeyCount + "\n";
         }
     }
 
     public static class ConnectionPeakCounts {
         public enum Kind {
-            CONNECTIONS("connectionPeakCount"),
+            CONNECTIONS("connectionPeakCount"), // TODO: Remove as it can't be collected
             SCHEMA_TRANSACTIONS("schemaTransactionPeakCount"),
             READ_TRANSACTIONS("readTransactionPeakCount"),
             WRITE_TRANSACTIONS("writeTransactionPeakCount"),

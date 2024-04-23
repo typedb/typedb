@@ -8,6 +8,8 @@ package com.vaticle.typedb.core.database;
 
 import com.google.ortools.Loader;
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
+import com.vaticle.typedb.core.common.diagnostics.Metrics;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -24,10 +26,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -49,6 +48,8 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
     }
 
     protected static final String RESERVED_NAME_PREFIX = "_";
+
+    protected static final int DIAGNOSTICS_SEND_PERIOD_MINUTES = 1;
 
     private final Options.Database databaseOptions;
     protected final ConcurrentMap<String, CoreDatabase> databases;
@@ -74,6 +75,14 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
         databases = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean(true);
         loadAll();
+
+        // Send first portion in the same thread to have a guarantee of it being sent before the end of the initialization.
+        submitDatabaseDiagnostics();
+        Executors.scheduled().scheduleAtFixedRate(
+                this::submitDatabaseDiagnostics,
+                DIAGNOSTICS_SEND_PERIOD_MINUTES,
+                DIAGNOSTICS_SEND_PERIOD_MINUTES,
+                TimeUnit.MINUTES);
     }
 
     @Override
@@ -168,5 +177,21 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
 
     protected static boolean isReservedName(String name) {
         return name.startsWith(RESERVED_NAME_PREFIX);
+    }
+
+    private void submitDatabaseDiagnostics() {
+        for (CoreDatabase database : all()) {
+            Metrics.DatabaseSchemaLoad schemaLoad = new Metrics.DatabaseSchemaLoad(database.typeCount());
+            Metrics.DatabaseDataLoad dataLoad = new Metrics.DatabaseDataLoad(
+                    database.entityCount(),
+                    database.relationCount(),
+                    database.attributeCount(),
+                    database.hasCount(),
+                    database.roleCount(),
+                    database.storageDataBytesEstimate(),
+                    database.storageDataKeysEstimate());
+
+            Diagnostics.get().submitDatabaseDiagnostics(database.name(), schemaLoad, dataLoad);
+        }
     }
 }

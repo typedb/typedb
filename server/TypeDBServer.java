@@ -110,6 +110,8 @@ public class TypeDBServer implements AutoCloseable {
         databaseMgr = factory.databaseManager(options);
         server = rpcServer();
 
+        Diagnostics.get().mayStartReporting();
+
         Thread.setDefaultUncaughtExceptionHandler(
                 (t, e) -> {
                     try {
@@ -390,7 +392,6 @@ public class TypeDBServer implements AutoCloseable {
         try {
             server.start();
             Diagnostics.get().mayStartMonitoring(null);
-            Diagnostics.get().mayStartReporting(server.databaseMgr);
         } catch (TypeDBCheckedException e) {
             server.logger().error(e.getMessage());
             System.exit(1);

@@ -26,5 +26,4 @@ public class Constants {
     public static final String SERVER_ID_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     public static final String DEPLOYMENT_ID_FILE_NAME = "_deployment_id";
     public static final String GENERATED_ID_PREFIX = "GEN"; // TODO: Used only in cloud, maybe we could remove it.
-    public static final String DISABLED_REPORTING_FILE_NAME = "_reporting_disabled";
 }
