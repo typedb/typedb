@@ -21,16 +21,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.vaticle.typedb.core.common.diagnostics.StatisticReporter.REPORT_INTERVAL_MINUTES;
+
 public class Metrics {
     private static final String JSON_API_VERSION = "1.0";
     private final BaseProperties base;
     private final ServerStaticProperties serverStatic;
     private final ServerDynamicProperties serverDynamic;
-    private ConcurrentMap<String, DatabaseSchemaLoad> databaseSchemaLoad = new ConcurrentHashMap<>();
-    private ConcurrentMap<String, DatabaseDataLoad> databaseDataLoad = new ConcurrentHashMap<>();
-    private ConcurrentMap<String, ConnectionPeakCounts> connectionPeakCounts = new ConcurrentHashMap<>();
-    private ConcurrentMap<String, NetworkRequests> requests = new ConcurrentHashMap<>();
-    private ConcurrentMap<String, UserErrorStatistics> userErrors = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, DatabaseLoadDiagnostics> databaseLoadDiagnostics = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, NetworkRequests> requests = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, UserErrorStatistics> userErrors = new ConcurrentHashMap<>();
 
     public Metrics(String deploymentID, String serverID, String name, String version, boolean reportingEnabled, Path dataDirectory) {
         this.base = new BaseProperties(JSON_API_VERSION, deploymentID, serverID, name, reportingEnabled);
@@ -39,30 +39,22 @@ public class Metrics {
     }
 
     public void takeCountsSnapshot() {
-        for (String databaseHash : this.databaseSchemaLoad.keySet()) {
+        for (String databaseHash : this.databaseLoadDiagnostics.keySet()) {
+            this.databaseLoadDiagnostics.get(databaseHash).takeCountsSnapshot();
             this.requests.get(databaseHash).takeCountsSnapshot();
-            this.connectionPeakCounts.get(databaseHash).takeCountsSnapshot();
             this.userErrors.get(databaseHash).takeCountsSnapshot();
         }
     }
 
-    public String hashAndAddDatabaseIfAbsent(String databaseName) {
+    public String hashAndAddDatabaseIfAbsent(@Nullable String databaseName) {
         String databaseHash = databaseName != null ? String.valueOf(databaseName.hashCode()) : "";
+
+        if (!databaseHash.isEmpty() && !this.databaseLoadDiagnostics.containsKey(databaseHash)) {
+            this.databaseLoadDiagnostics.put(databaseHash, new DatabaseLoadDiagnostics());
+        }
 
         if (!this.requests.containsKey(databaseHash)) {
             this.requests.put(databaseHash, new NetworkRequests());
-        }
-
-        if (!this.databaseSchemaLoad.containsKey(databaseHash)) {
-            this.databaseSchemaLoad.put(databaseHash, new DatabaseSchemaLoad());
-        }
-
-        if (!this.databaseDataLoad.containsKey(databaseHash)) {
-            this.databaseDataLoad.put(databaseHash, new DatabaseDataLoad());
-        }
-
-        if (!this.connectionPeakCounts.containsKey(databaseHash)) {
-            this.connectionPeakCounts.put(databaseHash, new ConnectionPeakCounts());
         }
 
         if (!this.userErrors.containsKey(databaseHash)) {
@@ -72,54 +64,41 @@ public class Metrics {
         return databaseHash;
     }
 
-    public void requestSuccess(String databaseName, Metrics.NetworkRequests.Kind kind) {
+    public void requestSuccess(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind) {
         String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
         requests.get(databaseHash).success(kind);
     }
 
-    public void requestFail(String databaseName, Metrics.NetworkRequests.Kind kind) {
+    public void requestFail(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind) {
         String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
         requests.get(databaseHash).fail(kind);
     }
 
-    public void incrementCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind) {
+    public void incrementCurrentCount(@Nullable String databaseName, ConnectionPeakCounts.Kind kind) {
         String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
-        connectionPeakCounts.get(databaseHash).incrementCurrent(kind);
+        databaseLoadDiagnostics.get(databaseHash).incrementCurrent(kind);
     }
 
-    public void decrementCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind) {
+    public void decrementCurrentCount(@Nullable String databaseName, ConnectionPeakCounts.Kind kind) {
         String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
-        connectionPeakCounts.get(databaseHash).decrementCurrent(kind);
+        databaseLoadDiagnostics.get(databaseHash).decrementCurrent(kind);
     }
 
-    public void setCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind, long value) {
+    public void setCurrentCount(@Nullable String databaseName, ConnectionPeakCounts.Kind kind, long value) {
         String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
-        connectionPeakCounts.get(databaseHash).setCurrent(kind, value);
+        databaseLoadDiagnostics.get(databaseHash).setCurrent(kind, value);
     }
 
-    public void registerError(String databaseName, String errorCode) {
+    public void registerError(@Nullable String databaseName, String errorCode) {
         String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
         userErrors.get(databaseHash).register(errorCode);
     }
 
-    public void submitDatabaseDiagnostics(String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad) {
+    public void submitDatabaseDiagnostics(
+            String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad) {
         String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
-        databaseSchemaLoad.put(databaseHash, schemaLoad);
-        databaseDataLoad.put(databaseHash, dataLoad);
-    }
-
-    protected String formatPrometheus() {
-        String data = base.formatPrometheus();
-        data += serverStatic.formatPrometheus();
-        data += serverDynamic.formatPrometheus();
-        for (var databaseName : requests.keySet()) {
-            data = String.join(
-                    "\n",
-                    data,
-                    requests.get(databaseName).formatPrometheus(databaseName),
-                    userErrors.get(databaseName).formatPrometheus(databaseName));
-        }
-        return data;
+        databaseLoadDiagnostics.get(databaseHash).setSchemaLoad(schemaLoad);
+        databaseLoadDiagnostics.get(databaseHash).setDataLoad(dataLoad);
     }
 
     protected JsonObject asJSON(boolean reporting) {
@@ -136,18 +115,13 @@ public class Metrics {
         metrics.add("server", serverDynamic.asJSON());
 
         JsonArray load = new JsonArray();
-        for (String databaseHash : databaseSchemaLoad.keySet()) {
-            JsonObject loadObject = new JsonObject();
-            loadObject.add("database", databaseHash);
-            loadObject.add("schema", databaseSchemaLoad.get(databaseHash).asJSON());
-            loadObject.add("data", databaseDataLoad.get(databaseHash).asJSON());
-            loadObject.add("connection", connectionPeakCounts.get(databaseHash).asJSON());
-            load.add(loadObject);
-        }
+        databaseLoadDiagnostics.keySet().forEach(databaseHash ->
+            load.add(databaseLoadDiagnostics.get(databaseHash).asJSON(databaseHash))
+        );
         metrics.add("load", load);
 
         JsonArray actions = new JsonArray();
-        requests.keySet().forEach(databaseHash -> { // TODO: Looks like there is a bug for absent databaseHash!
+        requests.keySet().forEach(databaseHash -> {
             String jsonDatabase = !databaseHash.isEmpty() ? databaseHash : null;
             requests.get(databaseHash).asJSON(jsonDatabase).forEach(actions::add);
         });
@@ -161,6 +135,20 @@ public class Metrics {
         metrics.add("errors", errors);
 
         return metrics;
+    }
+
+    protected String formatPrometheus() {
+        String data = base.formatPrometheus();
+        data += serverStatic.formatPrometheus();
+        data += serverDynamic.formatPrometheus();
+        for (var databaseName : requests.keySet()) {
+            data = String.join(
+                    "\n",
+                    data,
+                    requests.get(databaseName).formatPrometheus(databaseName),
+                    userErrors.get(databaseName).formatPrometheus(databaseName));
+        }
+        return data;
     }
 
     protected String formatJSON(boolean reporting) {
@@ -189,7 +177,7 @@ public class Metrics {
             system.add("serverID", serverID);
             system.add("distribution", distribution);
             system.add("timestamp", LocalDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toString());
-            system.add("periodInSeconds", 1 * 3600); // TODO: DELAY_IN_HOURS = ...
+            system.add("periodInSeconds", REPORT_INTERVAL_MINUTES * 60);
             system.add("enabled", reportingEnabled);
             return system;
         }
@@ -409,6 +397,54 @@ public class Metrics {
         }
     }
 
+    static class DatabaseLoadDiagnostics {
+        private DatabaseSchemaLoad schemaLoad;
+        private DatabaseDataLoad dataLoad;
+        private ConnectionPeakCounts connectionPeakCounts;
+
+        DatabaseLoadDiagnostics() {
+            this.schemaLoad = new DatabaseSchemaLoad();
+            this.dataLoad = new DatabaseDataLoad();
+            this.connectionPeakCounts = new ConnectionPeakCounts();
+        }
+
+        public void setSchemaLoad(Metrics.DatabaseSchemaLoad schemaLoad) {
+            this.schemaLoad = schemaLoad;
+        }
+
+        public void setDataLoad(Metrics.DatabaseDataLoad dataLoad) {
+            this.dataLoad = dataLoad;
+        }
+
+        public void incrementCurrent(ConnectionPeakCounts.Kind kind) {
+            connectionPeakCounts.incrementCurrent(kind);
+        }
+
+        public void decrementCurrent(ConnectionPeakCounts.Kind kind) {
+            connectionPeakCounts.decrementCurrent(kind);
+        }
+
+        public void setCurrent(ConnectionPeakCounts.Kind kind, long value) {
+            connectionPeakCounts.setCurrent(kind, value);
+        }
+
+        public void takeCountsSnapshot() {
+            connectionPeakCounts.takeCountsSnapshot();
+        }
+
+        JsonObject asJSON(String database) {
+            JsonObject load = new JsonObject();
+            load.add("database", database);
+            load.add("schema", schemaLoad.asJSON());
+            load.add("data", dataLoad.asJSON());
+            load.add("connection", connectionPeakCounts.asJSON());
+            return load;
+        }
+
+        String formatPrometheus() {
+            return schemaLoad.formatPrometheus() + "\n" + dataLoad.formatPrometheus();
+        }
+    }
 
     public static class NetworkRequests {
         public enum Kind {
@@ -462,13 +498,19 @@ public class Metrics {
             JsonArray requests = new JsonArray();
 
             for (var kind : Kind.values()) {
+                long successfulValue = successful.get(kind).get();
+                long failedValue = failed.get(kind).get();
+                if (successfulValue == 0 && failedValue == 0) {
+                    continue;
+                }
+
                 JsonObject requestObject = new JsonObject();
                 requestObject.add("name", kind.name());
                 if (database != null) {
                     requestObject.add("database", database);
                 }
-                requestObject.add("successful", successful.get(kind).get());
-                requestObject.add("failed", failed.get(kind).get());
+                requestObject.add("successful", successfulValue);
+                requestObject.add("failed", failedValue);
                 requests.add(requestObject);
             }
 
