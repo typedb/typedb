@@ -8,6 +8,7 @@ package com.vaticle.typedb.core.common.diagnostics;
 
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.ssl.SslContext;
 import io.sentry.Sentry;
@@ -31,7 +32,7 @@ public abstract class Diagnostics {
     protected final Metrics metrics;
 
     /* separate services, kept here so that they don't get GC'd */
-    private final StatisticReporter statisticReporter;
+    protected final StatisticReporter statisticReporter;
     protected final MonitoringServer monitoringServer;
 
     /*
@@ -54,7 +55,9 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void mayStartServing(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {}
+        public void mayStartMonitoring(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {}
+        @Override
+        public void mayStartReporting(CoreDatabaseManager databaseManager) {}
         @Override
         public void submitError(@Nullable String databaseName, Throwable error) {}
         @Override
@@ -62,12 +65,11 @@ public abstract class Diagnostics {
         @Override
         public void requestSuccess(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind) {}
         @Override
-        public void incrementCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind) {}
+        public void incrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {}
         @Override
-        public void decrementCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind) {}
-
+        public void decrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {}
         @Override
-        public void setCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind, long value) {}
+        public void setCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind, long value) {}
     }
 
     public static class Core extends Diagnostics {
@@ -135,8 +137,25 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void mayStartServing(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
+        public void mayStartMonitoring(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
             if (monitoringServer != null) monitoringServer.startServing(sslContext, middleware);
+        }
+
+        @Override
+        public void mayStartReporting(CoreDatabaseManager databaseManager) {
+            if (diagnostics == null) {
+                LOG.error("Cannot start reporting because diagnostics are not initialised yet.");
+                return;
+            }
+
+            diagnostics.metrics.setDatabaseManager(databaseManager);
+
+            if (statisticReporter == null) {
+                LOG.error("Cannot start reporting because statistic reporter is not initialised yet.");
+                return;
+            }
+
+            statisticReporter.startReporting();
         }
 
         @Override
@@ -166,16 +185,16 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void incrementCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind) {
+        public void incrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {
             metrics.incrementCurrentCount(databaseName, kind);
         }
         @Override
-        public void decrementCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind) {
+        public void decrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {
             metrics.decrementCurrentCount(databaseName, kind);
         }
 
         @Override
-        public void setCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind, long value) {
+        public void setCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind, long value) {
             metrics.setCurrentCount(databaseName, kind, value);
         }
     }
@@ -189,7 +208,9 @@ public abstract class Diagnostics {
         return diagnostics;
     }
 
-    public abstract void mayStartServing(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware);
+    public abstract void mayStartMonitoring(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware);
+
+    public abstract void mayStartReporting(CoreDatabaseManager databaseManager);
 
     public abstract void submitError(@Nullable String databaseName, Throwable error);
 
@@ -197,9 +218,9 @@ public abstract class Diagnostics {
 
     public abstract void requestSuccess(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind);
 
-    public abstract void incrementCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind);
+    public abstract void incrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind);
 
-    public abstract void decrementCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind);
+    public abstract void decrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind);
 
-    public abstract void setCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind, long value);
+    public abstract void setCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind, long value);
 }

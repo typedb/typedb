@@ -8,7 +8,6 @@ package com.vaticle.typedb.core.server;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
-import com.vaticle.typedb.core.common.diagnostics.Metrics;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -42,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.CurrentCounts.Kind.*;
+import static com.vaticle.typedb.core.common.diagnostics.Metrics.ConnectionPeakCounts.Kind.*;
 import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.*;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;

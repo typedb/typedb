@@ -6,6 +6,7 @@
 
 package com.vaticle.typedb.core.common.diagnostics;
 
+import com.vaticle.typedb.core.TypeDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,19 +32,23 @@ public class StatisticReporter {
     protected static final Logger LOG = LoggerFactory.getLogger(StatisticReporter.class);
     private final String deploymentID;
     private final Metrics metrics;
+    private final boolean statisticsReportingEnabled;
     private final String reportingURI;
     private final Path dataDirectory;
 
-    private ScheduledFuture<?> pushScheduledTask;
+    private ScheduledFuture<?> reportScheduledTask;
     private final ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(1);
 
-    public StatisticReporter(String deploymentID, Metrics metrics, boolean statisticsReportingEnable, String reportingURI, Path dataDirectory) {
+    public StatisticReporter(String deploymentID, Metrics metrics, boolean statisticsReportingEnabled, String reportingURI, Path dataDirectory) {
         this.deploymentID = deploymentID;
         this.metrics = metrics;
+        this.statisticsReportingEnabled = statisticsReportingEnabled;
         this.reportingURI = reportingURI;
         this.dataDirectory = dataDirectory;
+    }
 
-        if (statisticsReportingEnable) {
+    public void startReporting() {
+        if (statisticsReportingEnabled) {
             deleteDisabledReportingFileIfExists();
             scheduleReporting();
         }
@@ -77,7 +82,7 @@ public class StatisticReporter {
     }
 
     private void scheduleReporting() {
-        pushScheduledTask = scheduled.scheduleAtFixedRate(this::report, calculateInitialDelay(), REPORT_INTERVAL_MINUTES, MINUTES);
+        reportScheduledTask = scheduled.scheduleAtFixedRate(this::report, calculateInitialDelay(), REPORT_INTERVAL_MINUTES, MINUTES);
     }
 
     private void reportOnceIfNeeded() {

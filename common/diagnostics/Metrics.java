@@ -8,6 +8,8 @@ package com.vaticle.typedb.core.common.diagnostics;
 
 import com.eclipsesource.json.JsonObject;
 import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.database.CoreDatabase;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
@@ -19,11 +21,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Metrics {
+    private CoreDatabaseManager databaseManager;
     private final BaseProperties base;
     private final ServerStaticProperties serverStatic;
     private final ServerDynamicProperties serverDynamic;
+    private ConcurrentMap<String, ConnectionPeakCounts> connectionPeakCounts = new ConcurrentHashMap<>();
     private ConcurrentMap<String, NetworkRequests> requests = new ConcurrentHashMap<>();
-    private ConcurrentMap<String, CurrentCounts> usage = new ConcurrentHashMap<>();
     private ConcurrentMap<String, UserErrorStatistics> userErrors = new ConcurrentHashMap<>();
 
     public Metrics(String deploymentID, String serverID, String name, String version, boolean reportingEnabled, Path dataDirectory) {
@@ -32,10 +35,14 @@ public class Metrics {
         this.serverDynamic = new ServerDynamicProperties(version, dataDirectory);
     }
 
+    public void setDatabaseManager(CoreDatabaseManager databaseManager) {
+        this.databaseManager = databaseManager;
+    }
+
     public void takeCountsSnapshot() {
         for (var databaseName : this.requests.keySet()) {
             this.requests.get(databaseName).takeCountsSnapshot();
-            this.usage.get(databaseName).takeCountsSnapshot();
+            this.connectionPeakCounts.get(databaseName).takeCountsSnapshot();
             this.userErrors.get(databaseName).takeCountsSnapshot();
         }
     }
@@ -45,8 +52,8 @@ public class Metrics {
             this.requests.put(databaseName, new NetworkRequests());
         }
 
-        if (!this.usage.containsKey(databaseName)) {
-            this.usage.put(databaseName, new CurrentCounts());
+        if (!this.connectionPeakCounts.containsKey(databaseName)) {
+            this.connectionPeakCounts.put(databaseName, new ConnectionPeakCounts());
         }
 
         if (!this.userErrors.containsKey(databaseName)) {
@@ -64,19 +71,19 @@ public class Metrics {
         requests.get(databaseName).fail(kind);
     }
 
-    public void incrementCurrentCount(String databaseName, CurrentCounts.Kind kind) {
+    public void incrementCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind) {
         addDatabaseIfAbsent(databaseName);
-        usage.get(databaseName).increment(kind);
+        connectionPeakCounts.get(databaseName).incrementCurrent(kind);
     }
 
-    public void decrementCurrentCount(String databaseName, CurrentCounts.Kind kind) {
+    public void decrementCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind) {
         addDatabaseIfAbsent(databaseName);
-        usage.get(databaseName).decrement(kind);
+        connectionPeakCounts.get(databaseName).decrementCurrent(kind);
     }
 
-    public void setCurrentCount(String databaseName, Metrics.CurrentCounts.Kind kind, long value) {
+    public void setCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind, long value) {
         addDatabaseIfAbsent(databaseName);
-        usage.get(databaseName).set(kind, value);
+        connectionPeakCounts.get(databaseName).setCurrent(kind, value);
     }
 
     public void registerError(String databaseName, String errorCode) {
@@ -93,10 +100,9 @@ public class Metrics {
                     "\n",
                     data,
                     requests.get(databaseName).formatPrometheus(databaseName),
-                    usage.get(databaseName).formatPrometheus(databaseName),
                     userErrors.get(databaseName).formatPrometheus(databaseName));
         }
-        return
+        return data;
     }
 
     protected JsonObject asJSON(boolean reporting) {
@@ -113,10 +119,18 @@ public class Metrics {
         metrics.add("server", serverDynamic.asJSON());
 
         metrics.add("usage", "..."); // TODO: Create json object wrapping this data
-        for (var databaseName : this.requests.keySet()) {
-            metrics.add("requests", requests.get(databaseName).asJSON());
-            metrics.add("DB usage", usage.get(databaseName).asJSON());
-            metrics.add("user errors", userErrors.get(databaseName).asJSON());
+
+        if (databaseManager != null) {
+            for (CoreDatabase database : databaseManager.all()) {
+                JsonObject load = new JsonObject();
+                load.add("schema", DatabaseSchemaLoad.asJSON(database));
+                load.add("data", DatabaseDataLoad.asJSON(database));
+                load.add("connection", connectionPeakCounts.get(database.name()).asJSON());
+                metrics.add("load", load);
+
+                metrics.add("requests", requests.get(database.name()).asJSON());
+                metrics.add("user errors", userErrors.get(database.name()).asJSON());
+            }
         }
 
         return metrics;
@@ -286,7 +300,43 @@ public class Metrics {
         }
     }
 
-    public static class CurrentCounts {
+    static class DatabaseSchemaLoad {
+        static JsonObject asJSON(CoreDatabase database) {
+            JsonObject schema = new JsonObject();
+            schema.add("typeCount", database.typeCount());
+            return schema;
+        }
+
+        static String formatPrometheus(CoreDatabase database) {
+            return "# typeCount: " + database.typeCount() + "\n";
+        }
+    }
+
+    static class DatabaseDataLoad {
+        static JsonObject asJSON(CoreDatabase database) {
+            JsonObject data = new JsonObject();
+            data.add("entityCount", database.entityCount());
+            data.add("relationCount", database.relationCount());
+            data.add("attributeCount", database.attributeCount());
+            data.add("hasCount", database.hasCount());
+            data.add("roleCount", database.roleCount());
+            data.add("storageInBytes", database.storageDataBytesEstimate());
+            data.add("storageKeyCount", database.storageDataKeysEstimate());
+            return data;
+        }
+
+        static String formatPrometheus(CoreDatabase database) {
+            return "# entityCount: " + database.entityCount() + "\n" +
+                    "# relationCount: " + database.relationCount() + "\n" +
+                    "# attributeCount: " + database.attributeCount() + "\n" +
+                    "# hasCount: " + database.hasCount() + "\n" +
+                    "# roleCount: " + database.roleCount() + "\n" +
+                    "# storageInBytes: " + database.storageDataBytesEstimate() + "\n" +
+                    "# storageKeyCount: " + database.storageDataKeysEstimate() + "\n";
+        }
+    }
+
+    public static class ConnectionPeakCounts {
         public enum Kind {
             CONNECTIONS("connectionPeakCount"),
             SCHEMA_TRANSACTIONS("schemaTransactionPeakCount"),
@@ -323,7 +373,7 @@ public class Metrics {
         private final ConcurrentMap<Kind, AtomicLong> counts = new ConcurrentHashMap<>();
         private final ConcurrentMap<Kind, AtomicLong> peakCounts = new ConcurrentHashMap<>();
 
-        CurrentCounts() {
+        ConnectionPeakCounts() {
             for (Kind kind : Kind.values()) {
                 counts.put(kind, new AtomicLong(0));
                 peakCounts.put(kind, new AtomicLong(0));
@@ -334,16 +384,16 @@ public class Metrics {
             peakCounts.replaceAll((kind, value) -> new AtomicLong(counts.get(kind).get()));
         }
 
-        public void increment(Kind kind) {
+        public void incrementCurrent(Kind kind) {
             long value = counts.get(kind).incrementAndGet();
             updatePeakValue(kind, value);
         }
 
-        public void decrement(Kind kind) {
+        public void decrementCurrent(Kind kind) {
             counts.get(kind).decrementAndGet();
         }
 
-        public void set(Kind kind, long value) {
+        public void setCurrent(Kind kind, long value) {
             counts.get(kind).set(value);
             updatePeakValue(kind, value);
         }
@@ -355,11 +405,11 @@ public class Metrics {
         }
 
         JsonObject asJSON() {
-            JsonObject current = new JsonObject();
+            JsonObject peak = new JsonObject();
             for (Kind kind : Kind.values()) {
-                current.add(kind.getJsonName(), peakCounts.get(kind).get());
+                peak.add(kind.getJsonName(), peakCounts.get(kind).get());
             }
-            return current;
+            return peak;
         }
     }
 

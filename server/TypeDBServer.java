@@ -389,7 +389,8 @@ public class TypeDBServer implements AutoCloseable {
         TypeDBServer server = TypeDBServer.create(subcmdServer.config(), subcmdServer.isDebug());
         try {
             server.start();
-            Diagnostics.get().mayStartServing(null);
+            Diagnostics.get().mayStartMonitoring(null);
+            Diagnostics.get().mayStartReporting(server.databaseMgr);
         } catch (TypeDBCheckedException e) {
             server.logger().error(e.getMessage());
             System.exit(1);
