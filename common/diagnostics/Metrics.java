@@ -42,7 +42,11 @@ public class Metrics {
         }
     }
 
-    public void addDatabaseIfAbsent(String databaseName) {
+    public String validateAndAddDatabaseIfAbsent(String databaseName) {
+        if (databaseName == null) {
+            databaseName = "";
+        }
+
         if (!this.requests.containsKey(databaseName)) {
             this.requests.put(databaseName, new NetworkRequests());
         }
@@ -54,42 +58,52 @@ public class Metrics {
         if (!this.userErrors.containsKey(databaseName)) {
             this.userErrors.put(databaseName, new UserErrorStatistics());
         }
+
+        if (!this.databaseSchemaLoad.containsKey(databaseName)) {
+            this.databaseSchemaLoad.put(databaseName, new DatabaseSchemaLoad());
+        }
+
+        if (!this.databaseDataLoad.containsKey(databaseName)) {
+            this.databaseDataLoad.put(databaseName, new DatabaseDataLoad());
+        }
+        
+        return databaseName;
     }
 
     public void requestSuccess(String databaseName, Metrics.NetworkRequests.Kind kind) {
-        addDatabaseIfAbsent(databaseName);
-        requests.get(databaseName).success(kind);
+        String validatedName = validateAndAddDatabaseIfAbsent(databaseName);
+        requests.get(validatedName).success(kind);
     }
 
     public void requestFail(String databaseName, Metrics.NetworkRequests.Kind kind) {
-        addDatabaseIfAbsent(databaseName);
-        requests.get(databaseName).fail(kind);
+        String validatedName = validateAndAddDatabaseIfAbsent(databaseName);
+        requests.get(validatedName).fail(kind);
     }
 
     public void incrementCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind) {
-        addDatabaseIfAbsent(databaseName);
-        connectionPeakCounts.get(databaseName).incrementCurrent(kind);
+        String validatedName = validateAndAddDatabaseIfAbsent(databaseName);
+        connectionPeakCounts.get(validatedName).incrementCurrent(kind);
     }
 
     public void decrementCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind) {
-        addDatabaseIfAbsent(databaseName);
-        connectionPeakCounts.get(databaseName).decrementCurrent(kind);
+        String validatedName = validateAndAddDatabaseIfAbsent(databaseName);
+        connectionPeakCounts.get(validatedName).decrementCurrent(kind);
     }
 
     public void setCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind, long value) {
-        addDatabaseIfAbsent(databaseName);
-        connectionPeakCounts.get(databaseName).setCurrent(kind, value);
+        String validatedName = validateAndAddDatabaseIfAbsent(databaseName);
+        connectionPeakCounts.get(validatedName).setCurrent(kind, value);
     }
 
     public void registerError(String databaseName, String errorCode) {
-        addDatabaseIfAbsent(databaseName);
-        userErrors.get(databaseName).register(errorCode);
+        String validatedName = validateAndAddDatabaseIfAbsent(databaseName);
+        userErrors.get(validatedName).register(errorCode);
     }
 
     public void submitDatabaseDiagnostics(String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad) {
-        addDatabaseIfAbsent(databaseName);
-        databaseSchemaLoad.put(databaseName, schemaLoad);
-        databaseDataLoad.put(databaseName, dataLoad);
+        String validatedName = validateAndAddDatabaseIfAbsent(databaseName);
+        databaseSchemaLoad.put(validatedName, schemaLoad);
+        databaseDataLoad.put(validatedName, dataLoad);
     }
 
     protected String formatPrometheus() {
@@ -119,9 +133,8 @@ public class Metrics {
 
         metrics.add("server", serverDynamic.asJSON());
 
-        metrics.add("usage", "..."); // TODO: Create json object wrapping this data
 
-        for (String databaseName : databaseSchemaLoad.keySet()) {
+        for (String databaseName : databaseSchemaLoad.keySet()) { // TODO: Hash database name
             JsonObject load = new JsonObject();
             load.add("schema", databaseSchemaLoad.get(databaseName).asJSON());
             load.add("data", databaseDataLoad.get(databaseName).asJSON());
@@ -299,7 +312,10 @@ public class Metrics {
     }
 
     public static class DatabaseSchemaLoad {
-        public long typeCount;
+        public long typeCount = 0;
+
+        public DatabaseSchemaLoad() {
+        }
 
         public DatabaseSchemaLoad(long typeCount) {
             this.typeCount = typeCount;
@@ -317,13 +333,16 @@ public class Metrics {
     }
 
     public static class DatabaseDataLoad {
-        public long entityCount;
-        public long relationCount;
-        public long attributeCount;
-        public long hasCount;
-        public long roleCount;
-        public long storageInBytes;
-        public long storageKeyCount;
+        public long entityCount = 0;
+        public long relationCount = 0;
+        public long attributeCount = 0;
+        public long hasCount = 0;
+        public long roleCount = 0;
+        public long storageInBytes = 0;
+        public long storageKeyCount = 0;
+
+        public DatabaseDataLoad() {
+        }
 
         public DatabaseDataLoad(
                 long entityCount,
