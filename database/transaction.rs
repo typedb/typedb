@@ -78,7 +78,7 @@ pub struct TransactionSchema<D> {
 impl<D: DurabilityService> TransactionSchema<D> {
     pub fn open(database: Arc<Database<D>>) -> Self {
         let snapshot: Arc<SchemaSnapshot<D>> = Arc::new(database.storage.clone().open_snapshot_schema());
-        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), database.type_vertex_generator.clone(), None)); // TODO pass cache
+        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), database.type_vertex_generator.clone(), None));
         let thing_manager =
             ThingManager::new(snapshot.clone(), database.thing_vertex_generator.clone(), type_manager.clone());
         Self { database, snapshot, type_manager, thing_manager }
@@ -90,7 +90,7 @@ impl<D: DurabilityService> TransactionSchema<D> {
 
     pub fn commit(self) -> Result<(), Vec<ConceptWriteError>> {
         self.thing_manager.finalise()?;
-        drop(self.type_manager); // TODO: finalise instead
+        todo!("Finalise type manager");
         let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
         snapshot_owned.commit().unwrap_or_else(|_| { panic!("Failed to commit snapshot"); });
         Ok(())
