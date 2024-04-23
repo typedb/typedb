@@ -40,6 +40,7 @@ use crate::{
     },
     snapshot::{buffer::OperationsBuffer, write::Write, CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
+use crate::snapshot::SchemaSnapshot;
 
 pub mod error;
 pub mod isolation_manager;
@@ -292,6 +293,12 @@ impl<D> MVCCStorage<D> {
         // TODO: Support waiting for watermark to catch up to sequence number when we support causal reading.
         assert!(sequence_number <= self.read_watermark());
         Ok(ReadSnapshot::new(self, sequence_number))
+    }
+
+    pub fn open_snapshot_schema(self: Arc<Self>) -> SchemaSnapshot<D> {
+        println!("\n\n\n+ + + + + + + + + + + + + \nTODO : LOCK SCHEMA SNAPSHOTS\n+ + + + + + + + + + + + + \n\n"); // TODO: Locking
+        let watermark = self.isolation_manager.watermark();
+        SchemaSnapshot::new(self, watermark)
     }
 
     fn snapshot_commit(&self, snapshot: impl CommittableSnapshot<D>) -> Result<(), MVCCStorageError>

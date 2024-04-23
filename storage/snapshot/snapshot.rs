@@ -5,6 +5,7 @@
  */
 
 use std::{error::Error, fmt, sync::Arc};
+use std::fmt::{Debug, Formatter};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use durability::{DurabilityService, SequenceNumber};
@@ -204,7 +205,6 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
     }
 }
 
-#[derive(Debug)]
 pub struct WriteSnapshot<D> {
     storage: Arc<MVCCStorage<D>>,
     operations: OperationsBuffer,
