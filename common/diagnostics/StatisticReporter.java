@@ -41,6 +41,7 @@ public class StatisticReporter {
         this.dataDirectory = dataDirectory;
 
         if (statisticsReportingEnable) {
+            deleteDisabledReportingFileIfExists();
             scheduleReporting();
         }
         else {
@@ -83,8 +84,16 @@ public class StatisticReporter {
                 report();
                 Files.writeString(disabledReportingFile, LocalDateTime.now().toString());
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             LOG.debug("Failed to create or read disabled reporting file: ", e);
+        }
+    }
+
+    private void deleteDisabledReportingFileIfExists() {
+        try {
+            Files.deleteIfExists(dataDirectory.resolve(DISABLED_REPORTING_FILE_NAME));
+        } catch (IOException e) {
+            LOG.debug("Failed to delete disabled reporting file: ", e);
         }
     }
 
