@@ -6,19 +6,23 @@
 
 package com.vaticle.typedb.core.common.diagnostics;
 
+import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Metrics {
+    private static final String JSON_API_VERSION = "1.0";
     private final BaseProperties base;
     private final ServerStaticProperties serverStatic;
     private final ServerDynamicProperties serverDynamic;
@@ -29,81 +33,79 @@ public class Metrics {
     private ConcurrentMap<String, UserErrorStatistics> userErrors = new ConcurrentHashMap<>();
 
     public Metrics(String deploymentID, String serverID, String name, String version, boolean reportingEnabled, Path dataDirectory) {
-        this.base = new BaseProperties(deploymentID, serverID, name, reportingEnabled);
+        this.base = new BaseProperties(JSON_API_VERSION, deploymentID, serverID, name, reportingEnabled);
         this.serverStatic = new ServerStaticProperties();
         this.serverDynamic = new ServerDynamicProperties(version, dataDirectory);
     }
 
     public void takeCountsSnapshot() {
-        for (var databaseName : this.requests.keySet()) {
-            this.requests.get(databaseName).takeCountsSnapshot();
-            this.connectionPeakCounts.get(databaseName).takeCountsSnapshot();
-            this.userErrors.get(databaseName).takeCountsSnapshot();
+        for (String databaseHash : this.databaseSchemaLoad.keySet()) {
+            this.requests.get(databaseHash).takeCountsSnapshot();
+            this.connectionPeakCounts.get(databaseHash).takeCountsSnapshot();
+            this.userErrors.get(databaseHash).takeCountsSnapshot();
         }
     }
 
-    public String validateAndAddDatabaseIfAbsent(String databaseName) {
-        if (databaseName == null) {
-            databaseName = "";
+    public String hashAndAddDatabaseIfAbsent(String databaseName) {
+        String databaseHash = databaseName != null ? String.valueOf(databaseName.hashCode()) : "";
+
+        if (!this.requests.containsKey(databaseHash)) {
+            this.requests.put(databaseHash, new NetworkRequests());
         }
 
-        if (!this.requests.containsKey(databaseName)) {
-            this.requests.put(databaseName, new NetworkRequests());
+        if (!this.databaseSchemaLoad.containsKey(databaseHash)) {
+            this.databaseSchemaLoad.put(databaseHash, new DatabaseSchemaLoad());
         }
 
-        if (!this.connectionPeakCounts.containsKey(databaseName)) {
-            this.connectionPeakCounts.put(databaseName, new ConnectionPeakCounts());
+        if (!this.databaseDataLoad.containsKey(databaseHash)) {
+            this.databaseDataLoad.put(databaseHash, new DatabaseDataLoad());
         }
 
-        if (!this.userErrors.containsKey(databaseName)) {
-            this.userErrors.put(databaseName, new UserErrorStatistics());
+        if (!this.connectionPeakCounts.containsKey(databaseHash)) {
+            this.connectionPeakCounts.put(databaseHash, new ConnectionPeakCounts());
         }
 
-        if (!this.databaseSchemaLoad.containsKey(databaseName)) {
-            this.databaseSchemaLoad.put(databaseName, new DatabaseSchemaLoad());
+        if (!this.userErrors.containsKey(databaseHash)) {
+            this.userErrors.put(databaseHash, new UserErrorStatistics());
         }
 
-        if (!this.databaseDataLoad.containsKey(databaseName)) {
-            this.databaseDataLoad.put(databaseName, new DatabaseDataLoad());
-        }
-        
-        return databaseName;
+        return databaseHash;
     }
 
     public void requestSuccess(String databaseName, Metrics.NetworkRequests.Kind kind) {
-        String validatedName = validateAndAddDatabaseIfAbsent(databaseName);
-        requests.get(validatedName).success(kind);
+        String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
+        requests.get(databaseHash).success(kind);
     }
 
     public void requestFail(String databaseName, Metrics.NetworkRequests.Kind kind) {
-        String validatedName = validateAndAddDatabaseIfAbsent(databaseName);
-        requests.get(validatedName).fail(kind);
+        String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
+        requests.get(databaseHash).fail(kind);
     }
 
     public void incrementCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind) {
-        String validatedName = validateAndAddDatabaseIfAbsent(databaseName);
-        connectionPeakCounts.get(validatedName).incrementCurrent(kind);
+        String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
+        connectionPeakCounts.get(databaseHash).incrementCurrent(kind);
     }
 
     public void decrementCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind) {
-        String validatedName = validateAndAddDatabaseIfAbsent(databaseName);
-        connectionPeakCounts.get(validatedName).decrementCurrent(kind);
+        String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
+        connectionPeakCounts.get(databaseHash).decrementCurrent(kind);
     }
 
     public void setCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind, long value) {
-        String validatedName = validateAndAddDatabaseIfAbsent(databaseName);
-        connectionPeakCounts.get(validatedName).setCurrent(kind, value);
+        String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
+        connectionPeakCounts.get(databaseHash).setCurrent(kind, value);
     }
 
     public void registerError(String databaseName, String errorCode) {
-        String validatedName = validateAndAddDatabaseIfAbsent(databaseName);
-        userErrors.get(validatedName).register(errorCode);
+        String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
+        userErrors.get(databaseHash).register(errorCode);
     }
 
     public void submitDatabaseDiagnostics(String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad) {
-        String validatedName = validateAndAddDatabaseIfAbsent(databaseName);
-        databaseSchemaLoad.put(validatedName, schemaLoad);
-        databaseDataLoad.put(validatedName, dataLoad);
+        String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
+        databaseSchemaLoad.put(databaseHash, schemaLoad);
+        databaseDataLoad.put(databaseHash, dataLoad);
     }
 
     protected String formatPrometheus() {
@@ -133,17 +135,30 @@ public class Metrics {
 
         metrics.add("server", serverDynamic.asJSON());
 
-
-        for (String databaseName : databaseSchemaLoad.keySet()) { // TODO: Hash database name
-            JsonObject load = new JsonObject();
-            load.add("schema", databaseSchemaLoad.get(databaseName).asJSON());
-            load.add("data", databaseDataLoad.get(databaseName).asJSON());
-            load.add("connection", connectionPeakCounts.get(databaseName).asJSON());
-            metrics.add("load", load);
-
-            metrics.add("requests", requests.get(databaseName).asJSON());
-            metrics.add("user errors", userErrors.get(databaseName).asJSON());
+        JsonArray load = new JsonArray();
+        for (String databaseHash : databaseSchemaLoad.keySet()) {
+            JsonObject loadObject = new JsonObject();
+            loadObject.add("database", databaseHash);
+            loadObject.add("schema", databaseSchemaLoad.get(databaseHash).asJSON());
+            loadObject.add("data", databaseDataLoad.get(databaseHash).asJSON());
+            loadObject.add("connection", connectionPeakCounts.get(databaseHash).asJSON());
+            load.add(loadObject);
         }
+        metrics.add("load", load);
+
+        JsonArray actions = new JsonArray();
+        requests.keySet().forEach(databaseHash -> { // TODO: Looks like there is a bug for absent databaseHash!
+            String jsonDatabase = !databaseHash.isEmpty() ? databaseHash : null;
+            requests.get(databaseHash).asJSON(jsonDatabase).forEach(actions::add);
+        });
+        metrics.add("actions", actions);
+
+        JsonArray errors = new JsonArray();
+        userErrors.keySet().forEach(databaseHash -> {
+            String jsonDatabase = !databaseHash.isEmpty() ? databaseHash : null;
+            userErrors.get(databaseHash).asJSON(jsonDatabase).forEach(errors::add);
+        });
+        metrics.add("errors", errors);
 
         return metrics;
     }
@@ -153,12 +168,14 @@ public class Metrics {
     }
 
     static class BaseProperties {
+        private final String jsonApiVersion;
         private final String deploymentID;
         private final String serverID;
         private final String distribution;
         private final boolean reportingEnabled;
 
-        BaseProperties(String deploymentID, String serverID, String distribution, boolean reportingEnabled) {
+        BaseProperties(String jsonApiVersion, String deploymentID, String serverID, String distribution, boolean reportingEnabled) {
+            this.jsonApiVersion = jsonApiVersion;
             this.deploymentID = deploymentID;
             this.serverID = serverID;
             this.distribution = distribution;
@@ -167,10 +184,11 @@ public class Metrics {
 
         JsonObject asJSON() {
             JsonObject system = new JsonObject();
+            system.add("version", jsonApiVersion);
             system.add("deploymentID", deploymentID);
             system.add("serverID", serverID);
             system.add("distribution", distribution);
-            system.add("timestamp", LocalDateTime.now(ZoneOffset.UTC).toString());
+            system.add("timestamp", LocalDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toString());
             system.add("periodInSeconds", 1 * 3600); // TODO: DELAY_IN_HOURS = ...
             system.add("enabled", reportingEnabled);
             return system;
@@ -235,79 +253,6 @@ public class Metrics {
                     "# memoryAvailableInBytes: " + freePhysicalMemorySize + "\n" +
                     "# diskUsedInBytes: " + (dbRoot.getTotalSpace() - freeDiskSpace) + "\n" +
                     "# diskAvailableInBytes: " + freeDiskSpace + "\n";
-        }
-    }
-
-    public static class NetworkRequests {
-        public enum Kind {
-            CONNECTION_OPEN,
-            SERVERS_ALL,
-            USERS_CONTAINS,
-            USERS_CREATE,
-            USERS_DELETE,
-            USERS_ALL,
-            USERS_GET,
-            USERS_PASSWORD_SET,
-            USER_PASSWORD_UPDATE,
-            USER_TOKEN,
-            DATABASES_CONTAINS,
-            DATABASES_CREATE,
-            DATABASES_GET,
-            DATABASES_ALL,
-            DATABASE_SCHEMA,
-            DATABASE_TYPE_SCHEMA,
-            DATABASE_RULE_SCHEMA,
-            DATABASE_DELETE,
-            SESSION_OPEN,
-            SESSION_CLOSE,
-            TRANSACTION_EXECUTE,
-        }
-
-        private final ConcurrentMap<Kind, AtomicLong> successful = new ConcurrentHashMap<>();
-        private final ConcurrentMap<Kind, AtomicLong> failed = new ConcurrentHashMap<>();
-
-        NetworkRequests() {
-            for (var kind : Kind.values()) {
-                successful.put(kind, new AtomicLong(0));
-                failed.put(kind, new AtomicLong(0));
-            }
-        }
-
-        public void takeCountsSnapshot() {
-            successful.replaceAll((kind, value) -> new AtomicLong(0));
-            failed.replaceAll((kind, value) -> new AtomicLong(0));
-        }
-
-        public void success(Kind kind) {
-            successful.get(kind).incrementAndGet();
-        }
-
-        public void fail(Kind kind) {
-            failed.get(kind).incrementAndGet();
-        }
-
-        JsonObject asJSON() {
-            JsonObject requests = new JsonObject();
-            for (var kind : Kind.values()) {
-                JsonObject requestStats = new JsonObject();
-                requestStats.add("successful", successful.get(kind).get());
-                requestStats.add("failed", failed.get(kind).get());
-                requests.add(kind.name(), requestStats);
-            }
-            return requests;
-        }
-
-        String formatPrometheus(String databaseName) {
-            StringBuilder buf = new StringBuilder("# TYPE typedb_attempted_requests_total counter\n");
-            for (var kind : Kind.values()) {
-                var attempted = successful.get(kind).get() + failed.get(kind).get();
-                buf.append("typedb_attempted_requests_total{databaseName=\"").append(databaseName).append("\", kind=\"").append(kind).append("\"} ").append(attempted).append("\n");
-            }
-            buf.append("\n# TYPE typedb_successful_requests_total counter\n");
-            for (var kind : Kind.values()) {
-                buf.append("typedb_successful_requests_total{databaseName=\"").append(databaseName).append("\", kind=\"").append(kind).append("\"} ").append(successful.get(kind)).append("\n");
-            }
-            return buf.toString();
         }
     }
 
@@ -387,7 +332,6 @@ public class Metrics {
 
     public static class ConnectionPeakCounts {
         public enum Kind {
-            CONNECTIONS("connectionPeakCount"), // TODO: Remove as it can't be collected
             SCHEMA_TRANSACTIONS("schemaTransactionPeakCount"),
             READ_TRANSACTIONS("readTransactionPeakCount"),
             WRITE_TRANSACTIONS("writeTransactionPeakCount"),
@@ -456,9 +400,92 @@ public class Metrics {
         JsonObject asJSON() {
             JsonObject peak = new JsonObject();
             for (Kind kind : Kind.values()) {
+                if (kind == Kind.UNKNOWN) {
+                    continue;
+                }
                 peak.add(kind.getJsonName(), peakCounts.get(kind).get());
             }
             return peak;
+        }
+    }
+
+
+    public static class NetworkRequests {
+        public enum Kind {
+            CONNECTION_OPEN,
+            SERVERS_ALL,
+            USERS_CONTAINS,
+            USERS_CREATE,
+            USERS_DELETE,
+            USERS_ALL,
+            USERS_GET,
+            USERS_PASSWORD_SET,
+            USER_PASSWORD_UPDATE,
+            USER_TOKEN,
+            DATABASES_CONTAINS,
+            DATABASES_CREATE,
+            DATABASES_GET,
+            DATABASES_ALL,
+            DATABASE_SCHEMA,
+            DATABASE_TYPE_SCHEMA,
+            DATABASE_RULE_SCHEMA,
+            DATABASE_DELETE,
+            SESSION_OPEN,
+            SESSION_CLOSE,
+            TRANSACTION_EXECUTE,
+        }
+
+        private final ConcurrentMap<Kind, AtomicLong> successful = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Kind, AtomicLong> failed = new ConcurrentHashMap<>();
+
+        NetworkRequests() {
+            for (var kind : Kind.values()) {
+                successful.put(kind, new AtomicLong(0));
+                failed.put(kind, new AtomicLong(0));
+            }
+        }
+
+        public void takeCountsSnapshot() {
+            successful.replaceAll((kind, value) -> new AtomicLong(0));
+            failed.replaceAll((kind, value) -> new AtomicLong(0));
+        }
+
+        public void success(Kind kind) {
+            successful.get(kind).incrementAndGet();
+        }
+
+        public void fail(Kind kind) {
+            failed.get(kind).incrementAndGet();
+        }
+
+        JsonArray asJSON(@Nullable String database) {
+            JsonArray requests = new JsonArray();
+
+            for (var kind : Kind.values()) {
+                JsonObject requestObject = new JsonObject();
+                requestObject.add("name", kind.name());
+                if (database != null) {
+                    requestObject.add("database", database);
+                }
+                requestObject.add("successful", successful.get(kind).get());
+                requestObject.add("failed", failed.get(kind).get());
+                requests.add(requestObject);
+            }
+
+            return requests;
+        }
+
+        String formatPrometheus(String databaseName) {
+            StringBuilder buf = new StringBuilder("# TYPE typedb_attempted_requests_total counter\n");
+            for (var kind : Kind.values()) {
+                var attempted = successful.get(kind).get() + failed.get(kind).get();
+                buf.append("typedb_attempted_requests_total{databaseName=\"").append(databaseName).append("\", kind=\"").append(kind).append("\"} ").append(attempted).append("\n");
+            }
+            buf.append("\n# TYPE typedb_successful_requests_total counter\n");
+            for (var kind : Kind.values()) {
+                buf.append("typedb_successful_requests_total{databaseName=\"").append(databaseName).append("\", kind=\"").append(kind).append("\"} ").append(successful.get(kind)).append("\n");
+            }
+            return buf.toString();
         }
     }
 
@@ -474,14 +501,19 @@ public class Metrics {
             errorCounts.computeIfAbsent(errorCode, c -> new AtomicLong(0)).incrementAndGet();
         }
 
-        JsonObject asJSON() {
-            if (errorCounts.isEmpty()) return new JsonObject();
+        JsonArray asJSON(@Nullable String database) {
+            JsonArray errors = new JsonArray();
 
-            JsonObject errors = new JsonObject();
             for (String code : errorCounts.keySet()) {
-                long count = errorCounts.get(code).get();
-                errors.add(code, count);
+                JsonObject errorObject = new JsonObject();
+                errorObject.add("code", code);
+                if (database != null) {
+                    errorObject.add("database", database);
+                }
+                errorObject.add("count", errorCounts.get(code).get());
+                errors.add(errorObject);
             }
+
             return errors;
         }
 
