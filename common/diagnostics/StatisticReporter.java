@@ -25,6 +25,9 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class StatisticReporter {
+    // Modify calculateInitialDelay() if you change this value!
+    protected static final int REPORT_INTERVAL_MINUTES = 60;
+
     protected static final Logger LOG = LoggerFactory.getLogger(StatisticReporter.class);
     private final String deploymentID;
     private final Metrics metrics;
@@ -74,7 +77,7 @@ public class StatisticReporter {
     }
 
     private void scheduleReporting() {
-        pushScheduledTask = scheduled.scheduleAtFixedRate(this::report, calculateInitialDelay(), 60, MINUTES);
+        pushScheduledTask = scheduled.scheduleAtFixedRate(this::report, calculateInitialDelay(), REPORT_INTERVAL_MINUTES, MINUTES);
     }
 
     private void reportOnceIfNeeded() {
@@ -99,7 +102,7 @@ public class StatisticReporter {
 
     private long calculateInitialDelay() {
         int currentMinute = LocalDateTime.now().getMinute();
-        int scheduledMinute = deploymentID.hashCode() % 60;
+        int scheduledMinute = deploymentID.hashCode() % REPORT_INTERVAL_MINUTES;
 
         if (currentMinute > scheduledMinute) {
             return 60 - currentMinute + scheduledMinute;
