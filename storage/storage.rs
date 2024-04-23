@@ -179,28 +179,7 @@ impl<Durability> MVCCStorage<Durability> {
     {
         use StorageCommitError::Durability;
 
-        // 0. Assign whether the put operations need to be performed given storage contents at open
-        //    sequence number
-        for buffer in snapshot.operations() {
-            let writes = buffer.writes().write().unwrap();
-            let puts = writes.iter().filter_map(|(key, write)| match write {
-                Write::Put { value, reinsert, known_to_exist } => Some((key, value, reinsert, *known_to_exist)),
-                _ => None,
-            });
-            for (key, value, reinsert, known_to_exist) in puts {
-                let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, ByteReference::new(key.bytes()));
-                if known_to_exist {
-                    reinsert.store(false, Ordering::Release);
-                } else {
-                    let existing_stored = self
-                        .get::<BUFFER_VALUE_INLINE>(wrapped, snapshot.open_sequence_number())
-                        .unwrap() // TODO
-                        .is_some_and(|reference| reference.bytes() == value.bytes());
-                    reinsert.store(!existing_stored, Ordering::Release);
-                }
-            }
-        }
-
+        self.set_initial_put_status(&snapshot);
         let commit_record = snapshot.into_commit_record();
 
         let commit_sequence_number = self
@@ -223,6 +202,31 @@ impl<Durability> MVCCStorage<Durability> {
         match conflict {
             Some(conflict) => Err(StorageCommitError::Isolation { name: self.name.clone(), conflict }),
             None => Ok(()),
+        }
+    }
+
+    fn set_initial_put_status(&self, snapshot: &impl CommittableSnapshot<Durability>)
+    where
+        Durability: DurabilityService,
+    {
+        for buffer in snapshot.operations() {
+            let writes = buffer.writes().write().unwrap();
+            let puts = writes.iter().filter_map(|(key, write)| match write {
+                Write::Put { value, reinsert, known_to_exist } => Some((key, value, reinsert, *known_to_exist)),
+                _ => None,
+            });
+            for (key, value, reinsert, known_to_exist) in puts {
+                let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, ByteReference::new(key.bytes()));
+                if known_to_exist {
+                    reinsert.store(false, Ordering::Release);
+                } else {
+                    let existing_stored = self
+                        .get::<BUFFER_VALUE_INLINE>(wrapped, snapshot.open_sequence_number())
+                        .unwrap() // TODO
+                        .is_some_and(|reference| reference.bytes() == value.bytes());
+                    reinsert.store(!existing_stored, Ordering::Release);
+                }
+            }
         }
     }
 
