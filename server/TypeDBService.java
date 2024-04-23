@@ -301,11 +301,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             String schema = databaseMgr.get(request.getName()).schema();
             responder.onNext(schemaRes(schema));
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASE_SCHEMA);
+            Diagnostics.get().requestSuccess(request.getName(), DATABASE_SCHEMA);
         } catch (TypeDBException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASE_SCHEMA);
-            Diagnostics.get().submitError(null, e);
+            Diagnostics.get().requestFail(request.getName(), DATABASE_SCHEMA);
+            Diagnostics.get().submitError(request.getName(), e);
             responder.onError(exception(e));
         }
     }
@@ -316,11 +316,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             String schema = databaseMgr.get(request.getName()).typeSchema();
             responder.onNext(typeSchemaRes(schema));
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASE_TYPE_SCHEMA);
+            Diagnostics.get().requestSuccess(request.getName(), DATABASE_TYPE_SCHEMA);
         } catch (TypeDBException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASE_TYPE_SCHEMA);
-            Diagnostics.get().submitError(null, e);
+            Diagnostics.get().requestFail(request.getName(), DATABASE_TYPE_SCHEMA);
+            Diagnostics.get().submitError(request.getName(), e);
             responder.onError(exception(e));
         }
     }
@@ -331,11 +331,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             String schema = databaseMgr.get(request.getName()).ruleSchema();
             responder.onNext(ruleSchemaRes(schema));
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASE_RULE_SCHEMA);
+            Diagnostics.get().requestSuccess(request.getName(), DATABASE_RULE_SCHEMA);
         } catch (TypeDBException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASE_RULE_SCHEMA);
-            Diagnostics.get().submitError(null, e);
+            Diagnostics.get().requestFail(request.getName(), DATABASE_RULE_SCHEMA);
+            Diagnostics.get().submitError(request.getName(), e);
             responder.onError(exception(e));
         }
     }
@@ -346,11 +346,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             doDeleteDatabase(request.getName());
             responder.onNext(deleteRes());
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASE_DELETE);
+            Diagnostics.get().requestSuccess(request.getName(), DATABASE_DELETE);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASE_DELETE);
-            Diagnostics.get().submitError(null, e);
+            Diagnostics.get().requestFail(request.getName(), DATABASE_DELETE);
+            Diagnostics.get().submitError(request.getName(), e);
             responder.onError(exception(e));
         }
     }
@@ -368,11 +368,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             int duration = (int) Duration.between(start, Instant.now()).toMillis();
             responder.onNext(openRes(sessionSvc.UUID(), duration));
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, SESSION_OPEN);
+            Diagnostics.get().requestSuccess(request.getDatabase(), SESSION_OPEN);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, SESSION_OPEN);
-            Diagnostics.get().submitError(null, e);
+            Diagnostics.get().requestFail(request.getDatabase(), SESSION_OPEN);
+            Diagnostics.get().submitError(request.getDatabase(), e);
             responder.onError(exception(e));
         }
     }

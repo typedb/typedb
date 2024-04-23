@@ -101,7 +101,7 @@ public class Metrics {
         databaseLoadDiagnostics.get(databaseHash).setDataLoad(dataLoad);
     }
 
-    protected JsonObject asJSON(boolean reporting) {
+    protected JsonObject asJSON(boolean reporting) { // TODO: Only leader sends some stats about specific databases?
         JsonObject metrics = base.asJSON();
 
         if (reporting && !base.getReportingEnabled()) {
