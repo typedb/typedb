@@ -17,6 +17,7 @@ use server::typedb;
 use test_utils::TempDir;
 
 mod connection;
+mod params;
 mod transaction_context;
 mod util;
 
@@ -72,8 +73,8 @@ impl Context {
         self.active_transaction = Some(txn);
     }
 
-    pub fn transaction(&mut self) -> &ActiveTransaction {
-        &self.active_transaction.as_ref().unwrap()
+    pub fn transaction(&mut self) -> Option<&ActiveTransaction> {
+        self.active_transaction.as_ref()
     }
 
     pub fn take_transaction(&mut self) -> Option<ActiveTransaction> {

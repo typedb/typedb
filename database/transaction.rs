@@ -9,7 +9,7 @@ use std::sync::Arc;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use concept::error::ConceptWriteError;
 use durability::DurabilityService;
-use storage::snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot};
+use storage::snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot};
 
 
 use super::Database;
@@ -32,6 +32,13 @@ impl<D: DurabilityService> TransactionRead<D> {
 
     pub fn type_manager(&self) -> &TypeManager<ReadSnapshot<D>> {
         &self.type_manager
+    }
+
+    pub fn close(self) {
+        drop(self.thing_manager);
+        drop(self.type_manager);
+        let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
+        snapshot_owned.close_resources()
     }
 }
 
@@ -66,6 +73,13 @@ impl<D: DurabilityService> TransactionWrite<D> {
         snapshot_owned.commit().unwrap_or_else(|_| { panic!("Failed to commit snapshot"); });
         Ok(())
     }
+
+    pub fn close(self) {
+        drop(self.thing_manager);
+        drop(self.type_manager);
+        let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
+        snapshot_owned.close_resources();
+    }
 }
 
 pub struct TransactionSchema<D> {
@@ -94,5 +108,12 @@ impl<D: DurabilityService> TransactionSchema<D> {
         let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
         snapshot_owned.commit().unwrap_or_else(|_| { panic!("Failed to commit snapshot"); });
         Ok(())
+    }
+
+    pub fn close(self) {
+        drop(self.thing_manager);
+        drop(self.type_manager);
+        let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
+        snapshot_owned.close_resources();
     }
 }

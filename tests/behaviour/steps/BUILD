@@ -13,7 +13,6 @@ rust_library(
     crate_root = "lib.rs",
     deps = [
         "//encoding:encoding",
-        "//concept:concept",
         "//database:database",
         "//server:server",
         "//storage/durability:durability",
