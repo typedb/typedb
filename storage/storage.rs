@@ -829,15 +829,15 @@ mod tests {
             let full_operations = OperationsBuffer::new();
             full_operations
                 .writes_in(TestKeyspaceSet::PersistedKeyspace.id())
-                .insert(ByteArray::zeros(4), ByteArray::empty());
+                .insert(ByteArray::copy(b"hello"), ByteArray::empty());
             full_operations
                 .writes_in(TestKeyspaceSet::FailedKeyspace.id())
-                .insert(ByteArray::zeros(4), ByteArray::empty());
+                .insert(ByteArray::copy(b"world"), ByteArray::empty());
 
             let partial_operations = OperationsBuffer::new();
             partial_operations
                 .writes_in(TestKeyspaceSet::PersistedKeyspace.id())
-                .insert(ByteArray::zeros(4), ByteArray::empty());
+                .insert(ByteArray::copy(b"hello"), ByteArray::empty());
 
             let mut durability_service = WAL::open(storage_path.join(<MVCCStorage<WAL>>::WAL_DIR_NAME)).unwrap();
             durability_service.register_record_type::<CommitRecord>();
@@ -854,11 +854,15 @@ mod tests {
         };
 
         let storage: MVCCStorage<WAL> = MVCCStorage::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
-        assert!(storage
-            .get::<0>(
-                StorageKeyReference::new(TestKeyspaceSet::FailedKeyspace, (&ByteArray::<4>::zeros(4)).into()),
-                seq
-            )
-            .is_ok_and(|res| res.is_some()));
+        assert_eq!(
+            storage
+                .get::<0>(
+                    StorageKeyReference::new(TestKeyspaceSet::FailedKeyspace, (&ByteArray::<5>::copy(b"world")).into()),
+                    seq
+                )
+                .unwrap()
+                .unwrap(),
+            ByteArray::empty()
+        )
     }
 }
