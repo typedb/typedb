@@ -11,11 +11,15 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.ssl.SslContext;
 import io.sentry.Sentry;
+import io.sentry.SpanStatus;
+import io.sentry.TransactionContext;
 import io.sentry.protocol.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public abstract class Diagnostics {
 
@@ -61,6 +65,8 @@ public abstract class Diagnostics {
     }
 
     public static class Core extends Diagnostics {
+        static private final ScheduledThreadPoolExecutor scheduled = new ScheduledThreadPoolExecutor(1);
+
         protected Core(Metrics metrics, StatisticReporter statisticReporter, MonitoringServer monitoringServer) {
             super(metrics, statisticReporter, monitoringServer);
         }
@@ -109,6 +115,16 @@ public abstract class Diagnostics {
             User user = new User();
             user.setUsername(serverID);
             Sentry.setUser(user);
+
+            // FIXME temporary heartbeat every 24 hours
+            if (errorReportingEnable) {
+                scheduled.schedule(() -> {
+                    Sentry.startTransaction(new TransactionContext("server", "bootup")).finish(SpanStatus.OK);
+                }, 1, TimeUnit.HOURS);
+                scheduled.scheduleAtFixedRate(() -> {
+                    Sentry.startTransaction(new TransactionContext("server", "heartbeat")).finish(SpanStatus.OK);
+                }, 25, 24, TimeUnit.HOURS);
+            }
         }
 
         @Override

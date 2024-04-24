@@ -104,31 +104,6 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
         }
     }
 
-    private void submitDiagnostics(TransactionContext context) {
-        for (CoreDatabase database : all()) {
-            ITransaction transaction = Sentry.startTransaction(context);
-            try {
-                transaction.setData("db_name_hash", database.name().hashCode());
-                transaction.setMeasurement("concept_type_count", database.typeCount());
-                transaction.setMeasurement("concept_thing_count", database.thingCount());
-                transaction.setMeasurement("concept_thing_connection_count", database.roleCount() + database.hasCount());
-                transaction.setMeasurement("concept_thing_entity_count", database.entityCount());
-                transaction.setMeasurement("concept_thing_relation_count", database.relationCount());
-                transaction.setMeasurement("concept_thing_attribute_count", database.attributeCount());
-                transaction.setMeasurement("concept_thing_role_count", database.roleCount());
-                transaction.setMeasurement("concept_thing_has_count", database.hasCount());
-                transaction.setMeasurement("storage_data_keys_count", database.storageDataKeysEstimate());
-                transaction.setMeasurement("storage_data_bytes", database.storageDataBytesEstimate());
-                transaction.setStatus(SpanStatus.OK);
-            } catch (Exception e) {
-                transaction.setThrowable(e);
-                transaction.setStatus(SpanStatus.UNKNOWN);
-            } finally {
-                transaction.finish();
-            }
-        }
-    }
-
     @Override
     public boolean contains(String name) {
         if (!isOpen.get()) throw TypeDBException.of(DATABASE_MANAGER_CLOSED);
