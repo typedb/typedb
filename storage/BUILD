@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 package(default_visibility = [
     "//concept:__subpackages__",
     "//database:__subpackages__",
@@ -36,6 +36,12 @@ rust_library(
         "@crates//:tracing",
         "@crates//:serde",
     ]
+)
+
+rust_test(
+    name = "storage_unit_tests",
+    crate = ":storage",
+    deps = ["//util/test:test_utils"],
 )
 
 checkstyle_test(
