@@ -10,7 +10,6 @@ import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.ssl.SslContext;
-import io.sentry.ITransaction;
 import io.sentry.Sentry;
 import io.sentry.SpanStatus;
 import io.sentry.TransactionContext;
@@ -119,9 +118,7 @@ public abstract class Diagnostics {
 
             // FIXME temporary heartbeat every 24 hours
             if (errorReportingEnable) scheduled.scheduleAtFixedRate(() -> {
-                ITransaction transaction = Sentry.startTransaction(new TransactionContext("server", "heartbeat"));
-                transaction.setStatus(SpanStatus.OK);
-                transaction.finish();
+                Sentry.startTransaction(new TransactionContext("server", "heartbeat")).finish(SpanStatus.OK);
             }, 0, 1, TimeUnit.DAYS);
         }
 
