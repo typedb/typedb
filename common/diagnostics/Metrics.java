@@ -144,27 +144,35 @@ public class Metrics {
     }
 
     protected String formatPrometheus() {
-        StringBuilder databaseLoadData = new StringBuilder(DatabaseLoadDiagnostics.headerPrometheus());
+        StringBuilder databaseLoadData = new StringBuilder(DatabaseLoadDiagnostics.headerPrometheus() + "\n");
+        long databaseLoadDataHeaderLength = databaseLoadData.length();
         databaseLoad.keySet().forEach(databaseHash ->
                 databaseLoadData.append(databaseLoad.get(databaseHash).formatPrometheus(
                         databaseHash, primaryDatabaseHashes.contains(databaseHash))));
 
-        StringBuilder requestsData = new StringBuilder(NetworkRequests.headerPrometheus());
+        StringBuilder requestsDataAttempted = new StringBuilder(NetworkRequests.headerPrometheusAttempted() + "\n");
+        long requestsDataAttemptedHeaderLength = requestsDataAttempted.length();
         requests.keySet().forEach(databaseHash ->
-                requestsData.append(requests.get(databaseHash).formatPrometheus(databaseHash)));
+                requestsDataAttempted.append(requests.get(databaseHash).formatPrometheusAttempted(databaseHash)));
 
-        StringBuilder userErrorsData = new StringBuilder(UserErrorStatistics.headerPrometheus());
+        StringBuilder requestsDataSuccessful = new StringBuilder(NetworkRequests.headerPrometheusSuccessful() + "\n");
+        long requestsDataSuccessfulHeaderLength = requestsDataSuccessful.length();
+        requests.keySet().forEach(databaseHash ->
+                requestsDataSuccessful.append(requests.get(databaseHash).formatPrometheusSuccessful(databaseHash)));
+
+        StringBuilder userErrorsData = new StringBuilder(UserErrorStatistics.headerPrometheus() + "\n");
+        long userErrorsDataHeaderLength = userErrorsData.length();
         userErrors.keySet().forEach(databaseHash ->
                 userErrorsData.append(userErrors.get(databaseHash).formatPrometheus(databaseHash)));
 
         return String.join(
                 "\n",
-                base.formatPrometheus(),
-                serverStatic.formatPrometheus(),
-                serverDynamic.formatPrometheus(),
-                databaseLoadData.toString(),
-                requestsData.toString(),
-                userErrorsData.toString());
+                base.formatPrometheus() + serverStatic.formatPrometheus(),
+                ServerDynamicProperties.headerPrometheus(), serverDynamic.formatPrometheus(),
+                databaseLoadData.length() > databaseLoadDataHeaderLength ? databaseLoadData.toString() : "",
+                requestsDataAttempted.length() > requestsDataAttemptedHeaderLength ? requestsDataAttempted.toString() : "",
+                requestsDataSuccessful.length() > requestsDataSuccessfulHeaderLength ? requestsDataSuccessful.toString() : "",
+                userErrorsData.length() > userErrorsDataHeaderLength ? userErrorsData.toString() : "");
     }
 
     protected String formatJSON(boolean reporting) {
@@ -204,7 +212,8 @@ public class Metrics {
 
         String formatPrometheus() {
             // No deployment / server identifiers and time-based characteristics, that's for reporting only.
-            return "# distribution: " + distribution + "\n"; // TODO: complete, add version
+            return "# distribution: " + distribution + "\n" +
+                    "# version: " + distributionVersion + "\n";
         }
 
         boolean getReportingEnabled() {
@@ -251,15 +260,24 @@ public class Metrics {
             return system;
         }
 
+        static String headerPrometheus() {
+            return "# TYPE server_resources_count gauge";
+        }
+
         String formatPrometheus() {
             var mxbean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
             long freePhysicalMemorySize = mxbean.getFreePhysicalMemorySize();
             long freeDiskSpace = dbRoot.getFreeSpace();
 
-            return "# memoryUsedInBytes: " + (mxbean.getTotalPhysicalMemorySize() - freePhysicalMemorySize) + "\n" +
-                    "# memoryAvailableInBytes: " + freePhysicalMemorySize + "\n" +
-                    "# diskUsedInBytes: " + (dbRoot.getTotalSpace() - freeDiskSpace) + "\n" +
-                    "# diskAvailableInBytes: " + freeDiskSpace + "\n";
+            String header = "server_resources_count{kind=";
+
+            StringBuilder buf = new StringBuilder();
+            buf.append(header).append("\"memoryUsedInBytes\"} ").append(mxbean.getTotalPhysicalMemorySize() - freePhysicalMemorySize).append("\n")
+                    .append(header).append("\"memoryAvailableInBytes\"} ").append(freePhysicalMemorySize).append("\n")
+                    .append(header).append("\"diskUsedInBytes\"} ").append(dbRoot.getTotalSpace() - freeDiskSpace).append("\n")
+                    .append(header).append("\"diskAvailableInBytes\"} ").append(freeDiskSpace).append("\n");
+
+            return buf.toString();
         }
     }
 
@@ -280,9 +298,7 @@ public class Metrics {
         }
 
         String formatPrometheus(String database) {
-            StringBuilder buf = new StringBuilder("# TYPE typedb_schema_count gauge\n");
-            buf.append("typedb_schema_count{database=\"").append(database).append("\"} ").append(typeCount).append("\n");
-            return buf.toString();
+            return "typedb_schema_data_count{database=\"" + database + "\", kind=\"typeCount\"} " + typeCount;
         }
     }
 
@@ -329,18 +345,17 @@ public class Metrics {
         }
 
         String formatPrometheus(String database) {
-            return "# entityCount: " + entityCount + "\n" +
-                    "# relationCount: " + relationCount + "\n" +
-                    "# attributeCount: " + attributeCount + "\n" +
-                    "# hasCount: " + hasCount + "\n" +
-                    "# roleCount: " + roleCount + "\n" +
-                    "# storageInBytes: " + storageInBytes + "\n" +
-                    "# storageKeyCount: " + storageKeyCount + "\n";
+            String header = "typedb_schema_data_count{database=\"" + database + "\", kind=";
 
-            String databaseTag = "{database=\"" + database + "\", ";
+            StringBuilder buf = new StringBuilder();
+            buf.append(header).append("\"entityCount\"} ").append(entityCount).append("\n")
+                    .append(header).append("\"relationCount\"} ").append(relationCount).append("\n")
+                    .append(header).append("\"attributeCount\"} ").append(attributeCount).append("\n")
+                    .append(header).append("\"hasCount\"} ").append(hasCount).append("\n")
+                    .append(header).append("\"roleCount\"} ").append(roleCount).append("\n")
+                    .append(header).append("\"storageInBytes\"} ").append(storageInBytes).append("\n")
+                    .append(header).append("\"storageKeyCount\"} ").append(storageKeyCount).append("\n");
 
-            StringBuilder buf = new StringBuilder("# TYPE typedb_data_count gauge\n");
-            buf.append("typedb_data_count{").append(databaseTag).append("\"} ").append(typeCount).append("\n");
             return buf.toString();
         }
     }
@@ -473,7 +488,7 @@ public class Metrics {
         }
         
         static String headerPrometheus() {
-            return "TYPE typedb_schema_data_count gauge\n";
+            return "# TYPE typedb_schema_data_count gauge";
         }
 
         String formatPrometheus(String database, boolean isPrimaryServer) {
@@ -560,11 +575,15 @@ public class Metrics {
             return requests;
         }
 
-        static String headerPrometheus() {
-            return "# TYPE typedb_attempted_requests_total counter\n";
+        static String headerPrometheusAttempted() {
+            return "# TYPE typedb_attempted_requests_total counter";
         }
 
-        String formatPrometheus(String database) {
+        static String headerPrometheusSuccessful() {
+            return "# TYPE typedb_successful_requests_total counter";
+        }
+
+        String formatPrometheusAttempted(String database) {
             StringBuilder buf = new StringBuilder();
 
             for (var kind : Kind.values()) {
@@ -575,7 +594,12 @@ public class Metrics {
                 }
                 buf.append("kind=\"").append(kind).append("\"} ").append(attempted).append("\n");
             }
-            buf.append("\n# TYPE typedb_successful_requests_total counter\n");
+
+            return buf.toString();
+        }
+
+        String formatPrometheusSuccessful(String database) {
+            StringBuilder buf = new StringBuilder();
 
             for (var kind : Kind.values()) {
                 buf.append("typedb_successful_requests_total{");
@@ -619,7 +643,7 @@ public class Metrics {
         }
 
         static String headerPrometheus() {
-            return "# TYPE typedb_error_total counter\n";
+            return "# TYPE typedb_error_total counter";
         }
 
         String formatPrometheus(String database) {
