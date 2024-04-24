@@ -24,7 +24,6 @@ use serde::{
 use bytes::{byte_array::ByteArray, Bytes, util::increment};
 use bytes::byte_reference::ByteReference;
 use iterator::State;
-use primitive::prefix_range::{PrefixRange, RangeEnd};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use crate::{
@@ -32,6 +31,7 @@ use crate::{
     keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId},
     snapshot::{snapshot::SnapshotError, write::Write},
 };
+use crate::key_range::{KeyRange, RangeEnd};
 use crate::snapshot::lock::LockType;
 
 use super::iterator::SnapshotIteratorError;
@@ -144,9 +144,9 @@ impl WriteBuffer {
 
     pub(crate) fn iterate_range<const INLINE: usize>(
         &self,
-        range: PrefixRange<Bytes<'_, INLINE>>,
+        range: KeyRange<Bytes<'_, INLINE>>,
     ) -> BufferedPrefixIterator {
-        let (range_start, range_end) = range.into_raw();
+        let (range_start, range_end, _) = range.into_raw();
         let exclusive_end_bytes = Self::compute_exclusive_end(range_start.as_reference(), &range_end);
         let end = if matches!(range_end, RangeEnd::Unbounded) {
             Bound::Unbounded
@@ -160,8 +160,8 @@ impl WriteBuffer {
             .collect::<Vec<_>>())
     }
 
-    pub(crate) fn any_in_range<const INLINE: usize>(&self, range: PrefixRange<Bytes<'_, INLINE>>) -> bool {
-        let (range_start, range_end) = range.into_raw();
+    pub(crate) fn any_in_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> bool {
+        let (range_start, range_end, _) = range.into_raw();
         let exclusive_end_bytes = Self::compute_exclusive_end(range_start.as_reference(), &range_end);
         let end = if matches!(range_end, RangeEnd::Unbounded) {
             Bound::Unbounded

@@ -111,6 +111,8 @@ type_edge_constructors!(
 
 impl<'a> TypeEdge<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+    pub const FIXED_WIDTH_ENCODING: bool = true;
+
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + 2 * TypeVertex::LENGTH;
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
     const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + TypeVertex::LENGTH;

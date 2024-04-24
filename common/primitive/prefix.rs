@@ -4,5 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod maybe_owns;
-pub mod prefix;
+use std::fmt::Debug;
+
+pub trait Prefix: Ord + Clone + Debug {
+    fn starts_with(&self, other: &Self) -> bool;
+}

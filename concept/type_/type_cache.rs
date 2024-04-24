@@ -41,9 +41,9 @@ use encoding::{
 };
 use encoding::graph::type_::edge::TypeEdge;
 use encoding::graph::type_::property::TypeEdgeProperty;
-use primitive::prefix_range::PrefixRange;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_VALUE_INLINE};
 use storage::{MVCCStorage, ReadSnapshotOpenError, snapshot::ReadableSnapshot};
+use storage::key_range::KeyRange;
 
 use crate::type_::{annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent}, attribute_type::{AttributeType, AttributeTypeAnnotation}, deserialise_annotation_cardinality, entity_type::{EntityType, EntityTypeAnnotation}, IntoCanonicalTypeEdge, object_type::ObjectType, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
 use crate::type_::owns::OwnsAnnotation;
@@ -152,7 +152,7 @@ impl TypeCache {
         let snapshot =
             storage.open_snapshot_read_at(open_sequence_number).map_err(|error| SnapshotOpen { source: error })?;
         let vertex_properties = snapshot
-            .iterate_range(PrefixRange::new_within(TypeVertexProperty::build_prefix()))
+            .iterate_range(KeyRange::new_within(TypeVertexProperty::build_prefix(), TypeVertexProperty::FIXED_WIDTH_ENCODING))
             .collect_cloned_bmap(|key, value| {
                 (TypeVertexProperty::new(Bytes::Array(ByteArray::from(key.byte_ref()))), ByteArray::from(value))
             })
@@ -183,7 +183,7 @@ impl TypeCache {
             .collect();
 
         let edge_properties = snapshot
-            .iterate_range(PrefixRange::new_within(TypeEdgeProperty::build_prefix()))
+            .iterate_range(KeyRange::new_within(TypeEdgeProperty::build_prefix(), TypeEdgeProperty::FIXED_WIDTH_ENCODING))
             .collect_cloned_bmap(|key, value| {
                 (TypeEdgeProperty::new(Bytes::Array(ByteArray::from(key.byte_ref()))), ByteArray::from(value))
             })
@@ -209,7 +209,7 @@ impl TypeCache {
         vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
     ) -> Box<[Option<EntityTypeCache>]> {
         let entities = snapshot
-            .iterate_range(PrefixRange::new_within(build_vertex_entity_type_prefix()))
+            .iterate_range(KeyRange::new_within(build_vertex_entity_type_prefix(), Prefix::VertexEntityType.fixed_width_keys()))
             .collect_cloned_hashset(|key, _| {
                 EntityType::new(new_vertex_entity_type(Bytes::Reference(key.byte_ref())).into_owned())
             })
@@ -270,7 +270,7 @@ impl TypeCache {
         vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
     ) -> Box<[Option<RelationTypeCache>]> {
         let relations = snapshot
-            .iterate_range(PrefixRange::new_within(build_vertex_relation_type_prefix()))
+            .iterate_range(KeyRange::new_within(build_vertex_relation_type_prefix(), Prefix::VertexRelationType.fixed_width_keys()))
             .collect_cloned_hashset(|key, _| {
                 RelationType::new(new_vertex_relation_type(Bytes::Reference(key.byte_ref())).into_owned())
             })
@@ -279,7 +279,7 @@ impl TypeCache {
         let mut caches = (0..=max_relation_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexRelationType, RelationType::new);
         let relates = snapshot
-            .iterate_range(PrefixRange::new_within(build_edge_relates_prefix_prefix(Prefix::VertexRelationType)))
+            .iterate_range(KeyRange::new_within(build_edge_relates_prefix_prefix(Prefix::VertexRelationType), TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_vec(|k, _| {
                 let edge = new_edge_relates(Bytes::Reference(k.byte_ref()));
                 (RelationType::new(edge.from().into_owned()), RoleType::new(edge.to().into_owned()))
@@ -347,7 +347,7 @@ impl TypeCache {
         vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
     ) -> Box<[Option<RoleTypeCache>]> {
         let roles = snapshot
-            .iterate_range(PrefixRange::new_within(build_vertex_role_type_prefix()))
+            .iterate_range(KeyRange::new_within(build_vertex_role_type_prefix(), TypeVertex::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
                 RoleType::new(new_vertex_role_type(Bytes::Reference(key.byte_ref())).into_owned())
             })
@@ -356,7 +356,7 @@ impl TypeCache {
         let mut caches = (0..=max_role_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexRoleType, RoleType::new);
         let relates = snapshot
-            .iterate_range(PrefixRange::new_within(build_edge_relates_reverse_prefix_prefix(Prefix::VertexRoleType)))
+            .iterate_range(KeyRange::new_within(build_edge_relates_reverse_prefix_prefix(Prefix::VertexRoleType), TypeVertex::FIXED_WIDTH_ENCODING))
             .collect_cloned_vec(|k, _| {
                 let edge = new_edge_relates_reverse(Bytes::Reference(k.byte_ref()));
                 Relates::new(RelationType::new(edge.to().into_owned()), RoleType::new(edge.from().into_owned()))
@@ -412,7 +412,7 @@ impl TypeCache {
         vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
     ) -> Box<[Option<AttributeTypeCache>]> {
         let attributes = snapshot
-            .iterate_range(PrefixRange::new_within(build_vertex_attribute_type_prefix()))
+            .iterate_range(KeyRange::new_within(build_vertex_attribute_type_prefix(), TypeVertex::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
                 AttributeType::new(new_vertex_attribute_type(Bytes::Reference(key.byte_ref())).into_owned())
             })
@@ -469,7 +469,7 @@ impl TypeCache {
         edge_properties: &BTreeMap<TypeEdgeProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
     ) -> HashMap<Owns<'static>, OwnsCache> {
         snapshot
-            .iterate_range(PrefixRange::new_within(TypeEdge::build_prefix(Prefix::EdgeOwnsReverse)))
+            .iterate_range(KeyRange::new_within(TypeEdge::build_prefix(Prefix::EdgeOwnsReverse), TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashmap(|key, _| {
                 let edge = TypeEdge::new(Bytes::Reference(key.byte_ref()));
                 let attribute = AttributeType::new(edge.from().into_owned());
@@ -493,7 +493,7 @@ impl TypeCache {
             F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
     {
         snapshot
-            .iterate_range(PrefixRange::new_within(build_edge_owns_prefix_prefix(prefix)))
+            .iterate_range(KeyRange::new_within(build_edge_owns_prefix_prefix(prefix), TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_vec(|key, _| {
                 let edge = new_edge_owns(Bytes::Reference(key.byte_ref()));
                 Owns::new(from_reader(edge.from().into_owned()), AttributeType::new(edge.to().into_owned()))
@@ -506,7 +506,7 @@ impl TypeCache {
             F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
     {
         snapshot
-            .iterate_range(PrefixRange::new_within(build_edge_plays_prefix_prefix(prefix)))
+            .iterate_range(KeyRange::new_within(build_edge_plays_prefix_prefix(prefix), TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_vec(|key, _| {
                 let edge = new_edge_plays(Bytes::Reference(key.byte_ref()));
                 Plays::new(from_constructor(edge.from().into_owned()), RoleType::new(edge.to().into_owned()))
@@ -523,7 +523,7 @@ impl TypeCache {
             F: Fn(TypeVertex<'static>) -> T,
     {
         snapshot
-            .iterate_range(PrefixRange::new_within(build_edge_sub_prefix_prefix(prefix)))
+            .iterate_range(KeyRange::new_within(build_edge_sub_prefix_prefix(prefix), TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_bmap(|key, _| {
                 let edge = new_edge_sub(Bytes::Reference(key.byte_ref()));
                 (type_constructor(edge.from().into_owned()), type_constructor(edge.to().into_owned()))

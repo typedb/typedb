@@ -11,9 +11,9 @@ use std::{
 };
 
 use bytes::Bytes;
-use primitive::prefix_range::PrefixRange;
 use serde::{Deserialize, Serialize};
 use speedb::{checkpoint::Checkpoint, Options, ReadOptions, WriteBatch, WriteOptions, DB};
+use crate::key_range::KeyRange;
 
 use super::iterator;
 use crate::KeyspaceSet;
@@ -124,7 +124,7 @@ impl Keyspace {
     // TODO: we should benchmark using iterator pools, which would require changing prefix/range on read options
     pub(crate) fn iterate_range<'s, const PREFIX_INLINE_SIZE: usize>(
         &'s self,
-        range: PrefixRange<Bytes<'s, { PREFIX_INLINE_SIZE }>>,
+        range: KeyRange<Bytes<'s, { PREFIX_INLINE_SIZE }>>,
     ) -> iterator::KeyspaceRangeIterator<'s, PREFIX_INLINE_SIZE> {
         iterator::KeyspaceRangeIterator::new(self, range)
     }

@@ -9,11 +9,11 @@ mod test_common;
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;
 use itertools::Itertools;
-use primitive::prefix_range::PrefixRange;
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     KeyspaceSet, KeyspaceValidationError, MVCCStorage, StorageRecoverError,
 };
+use storage::key_range::KeyRange;
 use storage::keyspace::KeyspaceId;
 use test_utils::{create_tmp_dir, init_logging};
 
@@ -116,7 +116,7 @@ fn create_reopen() {
     {
         let storage = MVCCStorage::<WAL>::recover::<TestKeyspaceSet>("storage", &storage_path).unwrap();
         let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage
-            .iterate_keyspace_range(PrefixRange::new_unbounded(StorageKey::<64>::Reference(StorageKeyReference::from(
+            .iterate_keyspace_range(KeyRange::new_unbounded(StorageKey::<64>::Reference(StorageKeyReference::from(
                 &StorageKeyArray::<64>::from((vec![0x0], Keyspace)),
             ))))
             .collect_cloned::<64, 128>();
@@ -165,9 +165,9 @@ fn get_put_iterate() {
 
     let prefix = StorageKeyArray::<64>::from((vec![0x1], Keyspace1));
     let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage
-        .iterate_keyspace_range(PrefixRange::new_within(StorageKey::<64>::Reference(StorageKeyReference::from(
+        .iterate_keyspace_range(KeyRange::new_within(StorageKey::<64>::Reference(StorageKeyReference::from(
             &prefix,
-        ))))
+        )), false))
         .collect_cloned::<64, 128>();
     assert_eq!(
         items,

@@ -9,7 +9,6 @@ use std::fmt::Debug;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use durability::{DurabilityService, SequenceNumber};
-use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use super::{buffer::OperationsBuffer, iterator::SnapshotRangeIterator};
@@ -21,6 +20,7 @@ use crate::{
     snapshot::{buffer::WriteBuffer, lock::LockType, write::Write},
     MVCCStorage,
 };
+use crate::key_range::KeyRange;
 
 pub trait ReadableSnapshot {
     fn open_sequence_number(&self) -> SequenceNumber;
@@ -35,12 +35,12 @@ pub trait ReadableSnapshot {
 
     fn iterate_range<'this, const PS: usize>(
         &'this self,
-        range: PrefixRange<StorageKey<'this, PS>>,
+        range: KeyRange<StorageKey<'this, PS>>,
     ) -> SnapshotRangeIterator<'this, PS>;
 
     fn any_in_range<'this, const PS: usize>(
         &'this self,
-        range: PrefixRange<StorageKey<'this, PS>>,
+        range: KeyRange<StorageKey<'this, PS>>,
         buffered_only: bool,
     ) -> bool;
 
@@ -116,11 +116,11 @@ pub trait WritableSnapshot: ReadableSnapshot {
         self.operations().lock_add(key.into_byte_array_or_ref().into_array(), LockType::Exclusive)
     }
 
-    fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<64>, Write)> + '_ {
+    fn iterate_writes(&self) -> impl Iterator<Item=(StorageKeyArray<64>, Write)> + '_ {
         self.operations().write_buffers().flat_map(|buffer| {
             // note: this currently copies all the buffers
             buffer
-                .iterate_range(PrefixRange::new_unbounded(Bytes::Array(ByteArray::<BUFFER_KEY_INLINE>::empty())))
+                .iterate_range(KeyRange::new_unbounded(Bytes::Array(ByteArray::<BUFFER_KEY_INLINE>::empty())))
                 .into_range()
                 .into_iter()
         })
@@ -128,8 +128,8 @@ pub trait WritableSnapshot: ReadableSnapshot {
 
     fn iterate_writes_range<'this, const PS: usize>(
         &'this self,
-        range: PrefixRange<Bytes<'this, PS>>,
-    ) -> impl Iterator<Item = (StorageKeyArray<64>, Write)> + '_ {
+        range: KeyRange<Bytes<'this, PS>>,
+    ) -> impl Iterator<Item=(StorageKeyArray<64>, Write)> + '_ {
         self.operations()
             .write_buffers()
             .flat_map(move |buffer| buffer.iterate_range(range.clone()).into_range().into_iter())
@@ -139,8 +139,8 @@ pub trait WritableSnapshot: ReadableSnapshot {
 }
 
 pub trait CommittableSnapshot<D>
-where
-    D: DurabilityService,
+    where
+        D: DurabilityService,
 {
     fn commit(self) -> Result<(), SnapshotError>;
 
@@ -186,7 +186,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
 
     fn iterate_range<'this, const PS: usize>(
         &'this self,
-        range: PrefixRange<StorageKey<'this, PS>>,
+        range: KeyRange<StorageKey<'this, PS>>,
     ) -> SnapshotRangeIterator<'this, PS> {
         let mvcc_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(mvcc_iterator, None)
@@ -194,7 +194,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
 
     fn any_in_range<'this, const PS: usize>(
         &'this self,
-        range: PrefixRange<StorageKey<'this, PS>>,
+        range: KeyRange<StorageKey<'this, PS>>,
         buffered_only: bool,
     ) -> bool {
         !buffered_only && self.storage.iterate_range(range, self.open_sequence_number).next().is_some()
@@ -254,25 +254,31 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
 
     fn iterate_range<'this, const PS: usize>(
         &'this self,
-        range: PrefixRange<StorageKey<'this, PS>>,
+        range: KeyRange<StorageKey<'this, PS>>,
     ) -> SnapshotRangeIterator<'this, PS> {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().keyspace_id())
-            .iterate_range(range.clone().map(|k| k.into_byte_array_or_ref()));
+            .iterate_range(range.clone().map(
+                |k| k.into_byte_array_or_ref(),
+                |fixed| fixed
+            ));
         let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
 
     fn any_in_range<'this, const PS: usize>(
         &'this self,
-        range: PrefixRange<StorageKey<'this, PS>>,
+        range: KeyRange<StorageKey<'this, PS>>,
         buffered_only: bool,
     ) -> bool {
         let buffered = self
             .operations
             .writes_in(range.start().keyspace_id())
-            .any_in_range(range.clone().map(|k| k.into_byte_array_or_ref()));
+            .any_in_range(range.clone().map(
+                |k| k.into_byte_array_or_ref(),
+                |fixed| fixed
+            ));
         buffered || (!buffered_only && self.storage.iterate_range(range, self.open_sequence_number).next().is_some())
     }
 
@@ -355,25 +361,31 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
 
     fn iterate_range<'this, const PS: usize>(
         &'this self,
-        range: PrefixRange<StorageKey<'this, PS>>,
+        range: KeyRange<StorageKey<'this, PS>>,
     ) -> SnapshotRangeIterator<'this, PS> {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().keyspace_id())
-            .iterate_range(range.clone().map(|k| k.into_byte_array_or_ref()));
+            .iterate_range(range.clone().map(
+                |k| k.into_byte_array_or_ref(),
+                |fixed| fixed
+            ));
         let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
 
     fn any_in_range<'this, const PS: usize>(
         &'this self,
-        range: PrefixRange<StorageKey<'this, PS>>,
+        range: KeyRange<StorageKey<'this, PS>>,
         buffered_only: bool,
     ) -> bool {
         let buffered = self
             .operations
             .writes_in(range.start().keyspace_id())
-            .any_in_range(range.clone().map(|k| k.into_byte_array_or_ref()));
+            .any_in_range(range.clone().map(
+                |k| k.into_byte_array_or_ref(),
+                |fixed| fixed
+            ));
         buffered || (!buffered_only && self.storage.iterate_range(range, self.open_sequence_number).next().is_some())
     }
 

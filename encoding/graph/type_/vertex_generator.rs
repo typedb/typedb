@@ -7,7 +7,7 @@
 use std::sync::atomic::AtomicU16;
 use std::sync::atomic::Ordering::Relaxed;
 use bytes::Bytes;
-use primitive::prefix_range::PrefixRange;
+use storage::key_range::KeyRange;
 
 use storage::snapshot::WritableSnapshot;
 
@@ -38,7 +38,7 @@ impl TypeVertexAllocator {
 
     fn find_unallocated_id<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot, start: TypeIDUInt) -> Result<Option<TypeIDUInt>, EncodingError> {
         let mut type_vertex_iter = snapshot.iterate_range(
-            PrefixRange::new_inclusive(
+            KeyRange::new_inclusive(
                 (self.vertex_constructor)(TypeID::build(start)).into_storage_key(),
                 (self.vertex_constructor)(TypeID::build(TypeIDUInt::MAX)).into_storage_key()
             )

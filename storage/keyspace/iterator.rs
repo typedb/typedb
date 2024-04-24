@@ -9,19 +9,19 @@ use std::cmp::Ordering;
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use iterator::State;
 use logger::result::ResultExt;
-use primitive::prefix_range::PrefixRange;
 use speedb::{self, DBRawIterator, DBRawIteratorWithThreadMode, DB};
+use crate::key_range::KeyRange;
 
 use super::keyspace::{Keyspace, KeyspaceError};
 
 pub struct KeyspaceRangeIterator<'a, const INLINE_BYTES: usize> {
-    range: PrefixRange<Bytes<'a, { INLINE_BYTES }>>,
+    range: KeyRange<Bytes<'a, { INLINE_BYTES }>>,
     iterator: DBRawIterator<'a>,
     state: State<speedb::Error>,
 }
 
 impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
-    pub(crate) fn new(keyspace: &'a Keyspace, range: PrefixRange<Bytes<'a, { INLINE_BYTES }>>) -> Self {
+    pub(crate) fn new(keyspace: &'a Keyspace, range: KeyRange<Bytes<'a, { INLINE_BYTES }>>) -> Self {
         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
         // read_opts.set_prefix_same_as_start(true);
         let read_opts = keyspace.new_read_options();
@@ -139,7 +139,6 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
     /// Optimise range-check. We only need to do a single comparison, to the end
     /// of the range, since we can guarantee that we always start within the range and move forward.
     fn is_in_range(&self, key: &[u8]) -> bool {
-        debug_assert!(self.range.contains(Bytes::Reference(ByteReference::new(key))));
         self.range.within_end(Bytes::Reference(ByteReference::new(key)))
     }
 

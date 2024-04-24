@@ -5,40 +5,40 @@
  */
 
 use std::{borrow::Borrow, cmp::Ordering, fmt::Debug};
+use primitive::prefix::Prefix;
 
-pub trait Prefix: Ord + Clone + Debug {
-    fn starts_with(&self, other: &Self) -> bool;
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PrefixRange<T>
-where
-    T: Prefix,
-{
+pub struct KeyRange<T: Prefix> {
     // inclusive
     start: T,
     end: RangeEnd<T>,
+    fixed_width_keys: bool,
 }
 
-impl<T: Prefix> PrefixRange<T> {
-    pub fn new_unbounded(start: T) -> Self {
-        Self { start, end: RangeEnd::Unbounded }
-    }
-
+impl<T: Prefix> KeyRange<T> {
     pub fn new(start: T, end: RangeEnd<T>) -> Self {
-        Self { start, end }
+        Self { start, end, fixed_width_keys: false }
     }
 
-    pub fn new_within(prefix: T) -> Self {
-        Self { start: prefix, end: RangeEnd::SameAsStart }
+    pub fn new_fixed_width(start: T, end: RangeEnd<T>) -> Self {
+        Self { start, end, fixed_width_keys: true }
+    }
+
+    pub fn new_unbounded(start: T) -> Self {
+        Self { start, end: RangeEnd::Unbounded, fixed_width_keys: false }
+    }
+
+    pub fn new_within(prefix: T, fixed_width_keys: bool) -> Self {
+        Self { start: prefix, end: RangeEnd::SameAsStart, fixed_width_keys: false }
     }
 
     pub fn new_inclusive(start: T, end_inclusive: T) -> Self {
-        Self { start, end: RangeEnd::new_inclusive(end_inclusive) }
+        Self { start, end: RangeEnd::new_inclusive(end_inclusive), fixed_width_keys: false }
     }
 
     pub fn new_exclusive(start: T, end_exclusive: T) -> Self {
-        Self { start, end: RangeEnd::new_exclusive(end_exclusive) }
+        Self { start, end: RangeEnd::new_exclusive(end_exclusive), fixed_width_keys: false }
     }
 
     pub fn start(&self) -> &T {
@@ -49,15 +49,23 @@ impl<T: Prefix> PrefixRange<T> {
         &self.end
     }
 
-    pub fn into_raw(self) -> (T, RangeEnd<T>) {
-        (self.start, self.end)
+    pub fn fixed_width(&self) -> bool {
+        self.fixed_width_keys
     }
 
-    pub fn map<V: Prefix>(self, mapper: impl Fn(T) -> V) -> PrefixRange<V> {
-        let (start, end) = self.into_raw();
-        let start = mapper(start);
-        let end = end.map(mapper);
-        PrefixRange::new(start, end)
+    pub fn into_raw(self) -> (T, RangeEnd<T>, bool) {
+        (self.start, self.end, self.fixed_width_keys)
+    }
+
+    pub fn map<V: Prefix>(self, prefix_mapper: impl Fn(T) -> V, fixed_width_mapper: impl Fn(bool) -> bool) -> KeyRange<V> {
+        let (start, end, fixed_width) = self.into_raw();
+        let start = prefix_mapper(start);
+        let end = end.map(prefix_mapper);
+        let fixed_width = fixed_width_mapper(fixed_width);
+        match fixed_width {
+            true => KeyRange::new_fixed_width(start, end),
+            false => KeyRange::new(start, end)
+        }
     }
 
     pub fn contains(&self, value: T) -> bool {
@@ -89,8 +97,8 @@ impl<T: Prefix> PrefixRange<T> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RangeEnd<T>
-where
-    T: Ord + Debug,
+    where
+        T: Ord + Debug,
 {
     SameAsStart,
     Inclusive(T),
@@ -99,8 +107,8 @@ where
 }
 
 impl<T> RangeEnd<T>
-where
-    T: Ord + Debug,
+    where
+        T: Ord + Debug,
 {
     pub fn new_same_as_start() -> Self {
         RangeEnd::SameAsStart

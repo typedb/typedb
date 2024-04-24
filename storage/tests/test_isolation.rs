@@ -11,7 +11,6 @@ use std::{path::Path, sync::Arc};
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use durability::DurabilityService;
 use durability::wal::WAL;
-use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
@@ -22,6 +21,7 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
     KeyspaceSet, MVCCStorage,
 };
+use storage::key_range::KeyRange;
 
 use test_utils::{create_tmp_dir, init_logging};
 
@@ -73,7 +73,7 @@ fn commits_isolated() {
     assert!(get.is_none());
     let prefix: StorageKey<'_, BUFFER_KEY_INLINE> =
         StorageKey::Array(StorageKeyArray::new(Keyspace, ByteArray::copy(&[0x0_u8])));
-    let range = PrefixRange::new_within(prefix);
+    let range = KeyRange::new_within(prefix, false);
     let retrieved_count = snapshot_2.iterate_range(range.clone()).count();
     assert_eq!(retrieved_count, 2);
 
@@ -384,7 +384,7 @@ fn g2_predicate_anti_dependency_cycles() {
     let key_4 : StorageKeyArray<64> = StorageKeyArray::new(Keyspace, ByteArray::copy(&key_4_bytes));
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x0], Keyspace));
-    let prefix = PrefixRange::new_within(StorageKey::Array(key_prefix));
+    let prefix = KeyRange::new_within(StorageKey::Array(key_prefix), false);
     let value_31 = ByteArray::inline([30], 1);
     let value_42 = ByteArray::inline([42], 1);
     let storage_path = create_tmp_dir();

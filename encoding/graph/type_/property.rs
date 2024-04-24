@@ -89,6 +89,8 @@ type_vertex_property_constructors!(
 
 impl<'a> TypeVertexProperty<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+    const PREFIX: Prefix = Prefix::PropertyType;
+    pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
     const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + TypeVertex::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
@@ -97,13 +99,13 @@ impl<'a> TypeVertexProperty<'a> {
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
         let property = TypeVertexProperty { bytes };
-        debug_assert_eq!(property.prefix(), Prefix::PropertyType);
+        debug_assert_eq!(property.prefix(), Self::PREFIX);
         property
     }
 
     pub fn build(vertex: TypeVertex<'_>, infix: Infix) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::PropertyType.prefix_id().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         array.bytes_mut()[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
         array.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
         TypeVertexProperty { bytes: Bytes::Array(array) }
@@ -115,7 +117,7 @@ impl<'a> TypeVertexProperty<'a> {
         suffix: Bytes<'_, INLINE_BYTES>,
     ) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX + suffix.length());
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::PropertyType.prefix_id().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         array.bytes_mut()[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
         array.bytes_mut()[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
         array.bytes_mut()[Self::range_suffix(suffix.length())].copy_from_slice(suffix.bytes());
@@ -125,7 +127,7 @@ impl<'a> TypeVertexProperty<'a> {
     pub fn build_prefix() -> StorageKey<'static, { TypeVertexProperty::LENGTH_PREFIX }> {
         // TODO: is it better to have a const fn that is a reference to owned memory, or
         //       to always induce a tiny copy have a non-const function?
-        const PREFIX_BYTES: [u8; PrefixID::LENGTH] = Prefix::PropertyType.prefix_id().bytes();
+        const PREFIX_BYTES: [u8; PrefixID::LENGTH] = TypeVertexProperty::PREFIX.prefix_id().bytes();
         StorageKey::new_ref(Self::KEYSPACE, ByteReference::new(&PREFIX_BYTES))
     }
 
@@ -236,6 +238,8 @@ type_edge_property_constructors!(
 
 impl<'a> TypeEdgeProperty<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+    const PREFIX: Prefix = Prefix::PropertyTypeEdge;
+    pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
     const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + TypeEdge::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
@@ -244,7 +248,7 @@ impl<'a> TypeEdgeProperty<'a> {
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
         let property = TypeEdgeProperty { bytes };
-        debug_assert_eq!(property.prefix(), Prefix::PropertyTypeEdge);
+        debug_assert_eq!(property.prefix(),Self::PREFIX);
         property
     }
 
@@ -272,7 +276,7 @@ impl<'a> TypeEdgeProperty<'a> {
     pub fn build_prefix() -> StorageKey<'static, { TypeEdgeProperty::LENGTH_PREFIX }> {
         // TODO: is it better to have a const fn that is a reference to owned memory, or
         //       to always induce a tiny copy have a non-const function?
-        const PREFIX_BYTES: [u8; PrefixID::LENGTH] = Prefix::PropertyTypeEdge.prefix_id().bytes();
+        const PREFIX_BYTES: [u8; PrefixID::LENGTH] = TypeEdgeProperty::PREFIX.prefix_id().bytes();
         StorageKey::new_ref(Self::KEYSPACE, ByteReference::new(&PREFIX_BYTES))
     }
 

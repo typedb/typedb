@@ -11,7 +11,7 @@ use std::{
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::ops::Range;
-use primitive::prefix_range::Prefix;
+use primitive::prefix::Prefix;
 
 use crate::{byte_array::ByteArray, byte_reference::ByteReference};
 

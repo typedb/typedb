@@ -36,14 +36,16 @@ use encoding::{
         value_type::{ValueType, ValueTypeID},
     },
 };
+use encoding::graph::type_::edge::TypeEdge;
 use encoding::graph::type_::property::{build_property_type_edge_annotation_cardinality, build_property_type_edge_annotation_distinct, TypeEdgeProperty, TypeVertexProperty};
 use encoding::layout::infix::Infix;
-use primitive::{maybe_owns::MaybeOwns, prefix_range::PrefixRange};
+use primitive::{maybe_owns::MaybeOwns};
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{
     MVCCStorage,
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
+use storage::key_range::KeyRange;
 
 use crate::{
     error::ConceptReadError,
@@ -141,7 +143,7 @@ macro_rules! get_supertype_methods {
                 } else {
                     Ok(self
                         .snapshot
-                        .iterate_range(PrefixRange::new_within(build_edge_sub_prefix_from(type_.into_vertex().clone())))
+                        .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(type_.into_vertex().clone()), TypeEdge::FIXED_WIDTH_ENCODING))
                         .first_cloned()
                         .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
                         .map(|(key, _)| $type_::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned())))
@@ -392,7 +394,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
     fn storage_get_supertype_vertex(&self, subtype: impl TypeAPI<'static>) -> Option<TypeVertex<'static>> {
         // TODO: handle possible errors
         self.snapshot
-            .iterate_range(PrefixRange::new_within(build_edge_sub_prefix_from(subtype.into_vertex())))
+            .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(subtype.into_vertex()), TypeEdge::FIXED_WIDTH_ENCODING))
             .first_cloned()
             .unwrap()
             .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned())
@@ -409,7 +411,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         let owns_prefix = build_edge_owns_prefix_from(owner.into_vertex());
         // TODO: handle possible errors
         self.snapshot
-            .iterate_range(PrefixRange::new_within(owns_prefix))
+            .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
                 let owns_edge = new_edge_owns(Bytes::Reference(key.byte_ref()));
                 mapper(owns_edge.to())
@@ -427,7 +429,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
     {
         let plays_prefix = build_edge_plays_prefix_from(player.into_vertex());
         self.snapshot
-            .iterate_range(PrefixRange::new_within(plays_prefix))
+            .iterate_range(KeyRange::new_within(plays_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
                 let plays_edge = new_edge_plays(Bytes::Reference(key.byte_ref()));
                 mapper(plays_edge.to())
@@ -445,7 +447,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
     {
         let relates_prefix = build_edge_relates_prefix_from(relation.into_vertex());
         self.snapshot
-            .iterate_range(PrefixRange::new_within(relates_prefix))
+            .iterate_range(KeyRange::new_within(relates_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
                 let relates_edge = new_edge_relates(Bytes::Reference(key.byte_ref()));
                 mapper(relates_edge.to())
@@ -469,7 +471,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         type_: impl TypeAPI<'static>,
     ) -> Result<HashSet<Annotation>, ConceptReadError> {
         self.snapshot
-            .iterate_range(PrefixRange::new_inclusive(
+            .iterate_range(KeyRange::new_inclusive(
                 TypeVertexProperty::build(type_.vertex(), Infix::ANNOTATION_MIN).into_storage_key(),
                 TypeVertexProperty::build(type_.vertex(), Infix::ANNOTATION_MAX).into_storage_key(),
             ))
@@ -497,7 +499,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
     ) -> Result<HashSet<Annotation>, ConceptReadError> {
         let type_edge = into_type_edge.into_type_edge();
         self.snapshot
-            .iterate_range(PrefixRange::new_inclusive(
+            .iterate_range(KeyRange::new_inclusive(
                 TypeEdgeProperty::build(type_edge.clone(), Infix::ANNOTATION_MIN).into_storage_key(),
                 TypeEdgeProperty::build(type_edge, Infix::ANNOTATION_MAX).into_storage_key(),
             ))

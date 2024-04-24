@@ -13,7 +13,6 @@ use std::sync::Arc;
 use bytes::byte_array::ByteArray;
 use durability::wal::WAL;
 use logger::result::ResultExt;
-use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyArray},
@@ -21,6 +20,7 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
     KeyspaceSet, MVCCStorage,
 };
+use storage::key_range::KeyRange;
 use test_utils::{create_tmp_dir, init_logging};
 
 test_keyspace_set! {
@@ -74,7 +74,7 @@ fn snapshot_buffered_put_iterate() {
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1], Keyspace));
     let items: Result<Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, _> = snapshot
-        .iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix)))
+        .iterate_range(KeyRange::new_within(StorageKey::Array(key_prefix), false))
         .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)));
     assert_eq!(items.unwrap(), vec![(key_2, ByteArray::empty()), (key_3, ByteArray::empty())]);
     snapshot.close_resources();
@@ -103,7 +103,7 @@ fn snapshot_buffered_delete() {
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1], Keyspace));
     let items: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)> = snapshot
-        .iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix)))
+        .iterate_range(KeyRange::new_within(StorageKey::Array(key_prefix), false))
         .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)))
         .unwrap();
     assert_eq!(items, vec![(key_2, ByteArray::empty())]);
@@ -136,7 +136,7 @@ fn snapshot_read_through() {
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x1], Keyspace));
     let key_values: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)> = snapshot
-        .iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix.clone())))
+        .iterate_range(KeyRange::new_within(StorageKey::Array(key_prefix.clone()), false))
         .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)))
         .unwrap();
     assert_eq!(
@@ -151,7 +151,7 @@ fn snapshot_read_through() {
     // test delete-iterate read-through
     snapshot.delete(key_2.clone());
     let key_values: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)> = snapshot
-        .iterate_range(PrefixRange::new_within(StorageKey::Array(key_prefix)))
+        .iterate_range(KeyRange::new_within(StorageKey::Array(key_prefix), false))
         .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)))
         .unwrap();
     assert_eq!(key_values, vec![(key_3, ByteArray::empty()), (key_5, ByteArray::empty())]);

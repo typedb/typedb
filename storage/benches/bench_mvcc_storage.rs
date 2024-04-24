@@ -12,7 +12,6 @@ use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
 use durability::wal::WAL;
 use pprof::ProfilerGuard;
-use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
@@ -20,6 +19,7 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
     KeyspaceSet, MVCCStorage,
 };
+use storage::key_range::KeyRange;
 use test_utils::{create_tmp_dir, init_logging};
 
 macro_rules! test_keyspace_set {
@@ -70,7 +70,7 @@ fn populate_storage(storage: Arc<MVCCStorage<WAL>>, keyspace: TestKeyspaceSet, k
     let snapshot = storage.open_snapshot_read();
     let prefix: StorageKey<'_, 48> =
         StorageKey::Reference(StorageKeyReference::new(keyspace, ByteReference::new(&[0_u8])));
-    let iterator = snapshot.iterate_range(PrefixRange::new_within(prefix));
+    let iterator = snapshot.iterate_range(KeyRange::new_within(prefix, false));
     let count = iterator.collect_cloned_vec(|_, _| ((), ())).unwrap().len();
     println!("Keys confirmed to be written: {}", count);
     count

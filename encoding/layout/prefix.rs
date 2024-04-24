@@ -96,7 +96,7 @@ pub enum Prefix {
 
 macro_rules! prefix_functions {
     ($(
-        $name:ident => $bytes:tt
+        $name:ident => $bytes:tt, $fixed_width_keys:literal
     );*) => {
         pub const fn prefix_id(&self) -> PrefixID {
             let bytes = match self {
@@ -127,6 +127,18 @@ macro_rules! prefix_functions {
                 _ => unreachable!(),
             }
        }
+
+        ///
+        /// Return true if we expect all keys within this exact prefix to have the same width.
+        /// Note: two different prefixes with fixed width are not necessarily the same fixed widths!
+        ///
+       pub const fn fixed_width_keys(&self) -> bool {
+            match self {
+                $(
+                    Self::$name => {$fixed_width_keys}
+                )*
+            }
+        }
    };
 }
 
@@ -137,40 +149,40 @@ impl Prefix {
     prefix_functions!(
            // Reserved: 0-9
 
-           VertexEntityType => [10];
-           VertexRelationType => [11];
-           VertexAttributeType => [12];
-           VertexRoleType => [15];
+           VertexEntityType => [10], true;
+           VertexRelationType => [11], true;
+           VertexAttributeType => [12], true;
+           VertexRoleType => [15], true;
 
-           VertexEntity => [30];
-           VertexRelation => [31];
+           VertexEntity => [30], true;
+           VertexRelation => [31], true;
 
            // Reserve: range 50 - 99 to store attribute instances with a value type - see PrefixID::<CONSTANTS>
-           VertexAttributeBoolean => [50];
-           VertexAttributeLong => [51];
-           VertexAttributeDouble => [52];
-           VertexAttributeString => [53];
-           _VertexAttributeLast => [99];
+           VertexAttributeBoolean => [50], true;
+           VertexAttributeLong => [51], true;
+           VertexAttributeDouble => [52], true;
+           VertexAttributeString => [53], true;
+           _VertexAttributeLast => [99], true;
 
-           EdgeSub => [100];
-           EdgeSubReverse => [101];
-           EdgeOwns => [102];
-           EdgeOwnsReverse => [103];
-           EdgePlays => [104];
-           EdgePlaysReverse => [105];
-           EdgeRelates => [106];
-           EdgeRelatesReverse => [107];
+           EdgeSub => [100], true;
+           EdgeSubReverse => [101], true;
+           EdgeOwns => [102], true;
+           EdgeOwnsReverse => [103], true;
+           EdgePlays => [104], true;
+           EdgePlaysReverse => [105], true;
+           EdgeRelates => [106], true;
+           EdgeRelatesReverse => [107], true;
 
-           EdgeHas => [130];
-           EdgeHasReverse => [131];
-           EdgeRolePlayer => [132];
-           EdgeRolePlayerReverse => [133];
-           EdgeRolePlayerIndex => [140];
+           EdgeHas => [130], false;
+           EdgeHasReverse => [131], false;
+           EdgeRolePlayer => [132], true;
+           EdgeRolePlayerReverse => [133], true;
+           EdgeRolePlayerIndex => [140], true;
 
-           PropertyType => [160];
-           PropertyTypeEdge => [161];
+           PropertyType => [160], false;
+           PropertyTypeEdge => [161], false;
 
-           IndexLabelToType => [182]
+           IndexLabelToType => [182], false
 
            // Reserved: 200-255
     );

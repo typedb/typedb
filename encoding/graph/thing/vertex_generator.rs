@@ -13,8 +13,8 @@ use std::sync::Arc;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use bytes::byte_reference::ByteReference;
-use primitive::prefix_range::PrefixRange;
 use storage::{MVCCKey, MVCCStorage};
+use storage::key_range::KeyRange;
 use storage::key_value::StorageKey;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -73,10 +73,14 @@ impl ThingVertexGenerator {
 
     pub fn load_with_hasher<D>(storage: Arc<MVCCStorage<D>>, large_value_hasher: fn(&[u8]) -> u64) -> Result<Self, EncodingError> {
         let read_snapshot = storage.clone().open_snapshot_read();
-        let entity_types = read_snapshot.iterate_range(PrefixRange::new_within(build_vertex_entity_type_prefix())).collect_cloned_vec(|k, _v| {
+        let entity_types = read_snapshot.iterate_range(
+            KeyRange::new_within(build_vertex_entity_type_prefix(), Prefix::VertexEntityType.fixed_width_keys())
+        ).collect_cloned_vec(|k, _v| {
             TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16()
         }).map_err(|err| { EncodingError::ExistingTypesRead { source: err } })?;
-        let relation_types = read_snapshot.iterate_range(PrefixRange::new_within(build_vertex_relation_type_prefix())).collect_cloned_vec(|k, _v| {
+        let relation_types = read_snapshot.iterate_range(
+            KeyRange::new_within(build_vertex_relation_type_prefix(), Prefix::VertexRelationType.fixed_width_keys())
+        ).collect_cloned_vec(|k, _v| {
             TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16()
         }).map_err(|err| { EncodingError::ExistingTypesRead { source: err } })?;
         read_snapshot.close_resources();
@@ -285,11 +289,11 @@ impl StringAttributeID {
 
         // find first unused tail value
         bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = Self::ENCODING_STRING_TAIL_MASK;
-        let prefix_search = PrefixRange::new_within(AttributeVertex::build_prefix_type_attribute_id(
+        let prefix_search = KeyRange::new_within(AttributeVertex::build_prefix_type_attribute_id(
             ValueType::String,
             type_id,
             &bytes,
-        ));
+        ), AttributeVertex::value_type_to_prefix_type(ValueType::String).fixed_width_keys());
 
         let mut iter = snapshot.iterate_range(prefix_search);
         let mut next = iter.next().transpose().unwrap(); // TODO: handle error

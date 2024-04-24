@@ -9,13 +9,13 @@ use std::{error::Error, fmt, marker::PhantomData, sync::Arc};
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use durability::SequenceNumber;
 use iterator::State;
-use primitive::prefix_range::PrefixRange;
 
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError},
 };
+use crate::key_range::KeyRange;
 
 pub(crate) struct MVCCRangeIterator<'storage, const PS: usize> {
     storage_name: &'storage str,
@@ -34,12 +34,15 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
     //
     pub(crate) fn new<D>(
         storage: &'storage MVCCStorage<D>,
-        range: PrefixRange<StorageKey<'storage, P>>,
+        range: KeyRange<StorageKey<'storage, P>>,
         open_sequence_number: SequenceNumber,
     ) -> Self {
         debug_assert!(!range.start().bytes().is_empty());
         let keyspace = storage.get_keyspace(range.start().keyspace_id());
-        let iterator = keyspace.iterate_range(range.map(|k| k.into_byte_array_or_ref()));
+        let iterator = keyspace.iterate_range(range.map(
+            |k| k.into_byte_array_or_ref(),
+            |fixed_width| fixed_width
+        ));
         MVCCRangeIterator {
             storage_name: storage.name(),
             keyspace,

@@ -7,8 +7,8 @@
 use std::{borrow::Borrow, cmp::Ordering};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
-use primitive::prefix_range::Prefix;
 use serde::{Deserialize, Serialize};
+use primitive::prefix::Prefix;
 
 use crate::{keyspace::KeyspaceId, KeyspaceSet};
 

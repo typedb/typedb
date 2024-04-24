@@ -24,7 +24,6 @@ use durability::{DurabilityError, DurabilityService, SequenceNumber};
 use iterator::MVCCReadError;
 use itertools::Itertools;
 use logger::{error, result::ResultExt};
-use primitive::prefix_range::PrefixRange;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use speedb::{Options, WriteBatch};
 use durability::wal::WAL;
@@ -40,6 +39,7 @@ use crate::{
     },
     snapshot::{buffer::OperationsBuffer, write::Write, CommittableSnapshot, ReadSnapshot, WriteSnapshot},
 };
+use crate::key_range::KeyRange;
 use crate::snapshot::SchemaSnapshot;
 
 pub mod error;
@@ -48,6 +48,7 @@ pub mod iterator;
 pub mod key_value;
 pub mod keyspace;
 pub mod snapshot;
+pub mod key_range;
 
 #[derive(Debug)]
 pub struct MVCCStorage<D> {
@@ -522,7 +523,7 @@ impl<D> MVCCStorage<D> {
         mut mapper: impl FnMut(ByteReference<'_>) -> V,
     ) -> Result<Option<V>, MVCCReadError> {
         let mut iterator =
-            self.iterate_range(PrefixRange::new_within(StorageKey::<0>::Reference(key)), open_sequence_number);
+            self.iterate_range(KeyRange::new_within(StorageKey::<0>::Reference(key), false), open_sequence_number);
         // TODO: we don't want to panic on unwrap here
         loop {
             match iterator.next().transpose()? {
@@ -535,7 +536,7 @@ impl<D> MVCCStorage<D> {
 
     pub(crate) fn iterate_range<'this, const PS: usize>(
         &'this self,
-        range: PrefixRange<StorageKey<'this, PS>>,
+        range: KeyRange<StorageKey<'this, PS>>,
         open_sequence_number: SequenceNumber,
     ) -> MVCCRangeIterator<'this, PS> {
         MVCCRangeIterator::new(self, range, open_sequence_number)
@@ -589,10 +590,13 @@ impl<D> MVCCStorage<D> {
 
     pub fn iterate_keyspace_range<'this, const PREFIX_INLINE: usize>(
         &'this self,
-        range: PrefixRange<StorageKey<'this, PREFIX_INLINE>>,
+        range: KeyRange<StorageKey<'this, PREFIX_INLINE>>,
     ) -> KeyspaceRangeIterator<'this, PREFIX_INLINE> {
         debug_assert!(!range.start().bytes().is_empty());
-        self.get_keyspace(range.start().keyspace_id()).iterate_range(range.map(|k| k.into_byte_array_or_ref()))
+        self.get_keyspace(range.start().keyspace_id()).iterate_range(range.map(
+            |k| k.into_byte_array_or_ref(),
+            |fixed| fixed
+        ))
     }
 }
 
