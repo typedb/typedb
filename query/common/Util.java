@@ -1,19 +1,7 @@
 /*
- * Copyright (C) 2022 Vaticle
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
 package com.vaticle.typedb.core.query.common;
@@ -43,8 +31,8 @@ public class Util {
             if ((roleType = relationType.getRelates(var.label().get().label())) == null) {
                 throw TypeDBException.of(TYPE_NOT_FOUND, Label.of(var.label().get().label(), relationType.getLabel().name()));
             }
-        } else if ((inferred = player.getType().getPlays()
-                .filter(rt -> rt.getRelationType().equals(relation.getType()))
+        } else if ((inferred = relation.getType().getRelates()
+                .filter(relatesRole -> player.getType().plays(relatesRole))
                 .toSet()).size() == 1) {
             roleType = inferred.iterator().next();
         } else if (inferred.size() > 1) {

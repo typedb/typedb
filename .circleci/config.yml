@@ -1,24 +1,12 @@
-#
-# Copyright (C) 2022 Vaticle
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 version: 2.1
 
 orbs:
   win: circleci/windows@2.0.0
+  macos: circleci/macos@2.4.0
 
 
 executors:
@@ -39,11 +27,6 @@ executors:
     resource_class: macos.m1.medium.gen1
     working_directory: ~/typedb
 
-  mac-x86_64:
-    macos:
-      xcode: "13.4.1"
-    working_directory: ~/typedb
-
 
 commands:
 
@@ -62,25 +45,32 @@ commands:
           chmod a+x /usr/local/bin/bazel
 
   install-bazel-mac:
+    parameters:
+      bazel-arch:
+        type: string
     steps:
-      - run: brew install bazelisk
+      - run: |
+          brew install python@3.8
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-darwin-<<parameters.bazel-arch>>"
+          sudo mv "bazelisk-darwin-<<parameters.bazel-arch>>" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
 
 jobs:
   test-assembly-mac-x86_64-zip:
-    executor: mac-x86_64
-    working_directory: ~/typedb
+    executor: mac-arm64
     steps:
+      - macos/install-rosetta
       - checkout
-      - install-bazel-mac
+      - install-bazel-mac:
+          bazel-arch: amd64
       - run: bazel test //test/assembly:assembly --test_output=errors
 
   test-assembly-mac-arm64-zip:
     executor: mac-arm64
-    resource_class: macos.m1.medium.gen1
-    working_directory: ~/typedb
     steps:
       - checkout
-      - install-bazel-mac
+      - install-bazel-mac:
+          bazel-arch: arm64
       - run: bazel test //test/assembly:assembly --test_output=errors
 
   test-assembly-linux-arm64-zip:

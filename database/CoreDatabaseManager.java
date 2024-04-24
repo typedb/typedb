@@ -1,19 +1,7 @@
 /*
- * Copyright (C) 2022 Vaticle
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
 package com.vaticle.typedb.core.database;
@@ -112,31 +100,6 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
                 close();
                 if (e.getCause() instanceof TypeDBException) throw (TypeDBException) e.getCause();
                 else throw TypeDBException.of(UNKNOWN_ERROR, e);
-            }
-        }
-    }
-
-    private void submitDiagnostics(TransactionContext context) {
-        for (CoreDatabase database : all()) {
-            ITransaction transaction = Sentry.startTransaction(context);
-            try {
-                transaction.setData("db_name_hash", database.name().hashCode());
-                transaction.setMeasurement("concept_type_count", database.typeCount());
-                transaction.setMeasurement("concept_thing_count", database.thingCount());
-                transaction.setMeasurement("concept_thing_connection_count", database.roleCount() + database.hasCount());
-                transaction.setMeasurement("concept_thing_entity_count", database.entityCount());
-                transaction.setMeasurement("concept_thing_relation_count", database.relationCount());
-                transaction.setMeasurement("concept_thing_attribute_count", database.attributeCount());
-                transaction.setMeasurement("concept_thing_role_count", database.roleCount());
-                transaction.setMeasurement("concept_thing_has_count", database.hasCount());
-                transaction.setMeasurement("storage_data_keys_count", database.storageDataKeysEstimate());
-                transaction.setMeasurement("storage_data_bytes", database.storageDataBytesEstimate());
-                transaction.setStatus(SpanStatus.OK);
-            } catch (Exception e) {
-                transaction.setThrowable(e);
-                transaction.setStatus(SpanStatus.UNKNOWN);
-            } finally {
-                transaction.finish();
             }
         }
     }
