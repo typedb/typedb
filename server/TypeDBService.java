@@ -126,9 +126,9 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
                         PROTOCOL_VERSION_MISMATCH, VersionProto.Version.VERSION.getNumber(), driverProtocolVersion
                 );
                 responder.onError(exception(error));
-                Diagnostics.get().submitError(null, error);
                 LOG.error(error.getMessage(), error);
                 Diagnostics.get().requestFail(null, CONNECTION_OPEN);
+                Diagnostics.get().submitError(null, error);
             } else {
                 responder.onNext(ResponseBuilder.Connection.openRes());
                 responder.onCompleted();

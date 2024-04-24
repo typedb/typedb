@@ -179,6 +179,12 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
         return name.startsWith(RESERVED_NAME_PREFIX);
     }
 
+    protected void submitDatabaseDiagnostics(
+            TypeDB.Database database, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad
+    ) {
+        Diagnostics.get().submitDatabaseDiagnostics(database.name(), schemaLoad, dataLoad, true);
+    }
+
     private void submitDatabaseDiagnostics() {
         for (CoreDatabase database : all()) {
             Metrics.DatabaseSchemaLoad schemaLoad = new Metrics.DatabaseSchemaLoad(database.typeCount());
@@ -191,7 +197,8 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
                     database.storageDataBytesEstimate(),
                     database.storageDataKeysEstimate());
 
-            Diagnostics.get().submitDatabaseDiagnostics(database.name(), schemaLoad, dataLoad);
+            submitDatabaseDiagnostics(database, schemaLoad, dataLoad);
         }
     }
+
 }

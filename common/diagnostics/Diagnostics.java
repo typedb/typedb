@@ -78,7 +78,8 @@ public abstract class Diagnostics {
         public void setCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind, long value) {}
 
         @Override
-        public void submitDatabaseDiagnostics(String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad) {}
+        public void submitDatabaseDiagnostics(
+                String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad, boolean isPrimaryServer) {}
     }
 
     public static class Core extends Diagnostics {
@@ -201,8 +202,10 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void submitDatabaseDiagnostics(String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad) {
-            metrics.submitDatabaseDiagnostics(databaseName, schemaLoad, dataLoad);
+        public void submitDatabaseDiagnostics(
+                String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad, boolean isPrimaryServer
+        ) {
+            metrics.submitDatabaseDiagnostics(databaseName, schemaLoad, dataLoad, isPrimaryServer);
         }
     }
 
@@ -229,7 +232,7 @@ public abstract class Diagnostics {
 
     public abstract void decrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind);
 
-    public abstract void setCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind, long value);
+    public abstract void setCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind, long value); // TODO: Not needed?
 
-    public abstract void submitDatabaseDiagnostics(String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad);
+    public abstract void submitDatabaseDiagnostics(String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad, boolean isPrimaryServer);
 }
