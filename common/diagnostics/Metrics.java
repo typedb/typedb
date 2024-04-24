@@ -94,11 +94,6 @@ public class Metrics {
         databaseLoad.get(databaseHash).decrementCurrent(kind);
     }
 
-    public void setCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind, long value) {
-        String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
-        databaseLoad.get(databaseHash).setCurrent(kind, value);
-    }
-
     public void registerError(String databaseName, String errorCode) {
         String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
         userErrors.get(databaseHash).register(errorCode);
@@ -456,11 +451,6 @@ public class Metrics {
             counts.get(kind).decrementAndGet();
         }
 
-        public void setCurrent(Kind kind, long value) {
-            counts.get(kind).set(value);
-            updatePeakValue(kind, value);
-        }
-
         private void updatePeakValue(Kind kind, long value) {
             if (peakCounts.get(kind).get() < value) {
                 peakCounts.get(kind).set(value);
@@ -513,10 +503,6 @@ public class Metrics {
 
         public void decrementCurrent(ConnectionPeakCounts.Kind kind) {
             connectionPeakCounts.decrementCurrent(kind);
-        }
-
-        public void setCurrent(ConnectionPeakCounts.Kind kind, long value) {
-            connectionPeakCounts.setCurrent(kind, value);
         }
 
         public void takeCountsSnapshot() {

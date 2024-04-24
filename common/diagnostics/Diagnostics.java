@@ -76,9 +76,6 @@ public abstract class Diagnostics {
         public void decrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {}
 
         @Override
-        public void setCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind, long value) {}
-
-        @Override
         public void submitDatabaseDiagnostics(Set<Metrics.DatabaseDiagnostics> databaseDiagnostics) {}
     }
 
@@ -197,11 +194,6 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void setCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind, long value) {
-            metrics.setCurrentCount(databaseName, kind, value);
-        }
-
-        @Override
         public void submitDatabaseDiagnostics(Set<Metrics.DatabaseDiagnostics> databaseDiagnostics
         ) {
             metrics.submitDatabaseDiagnostics(databaseDiagnostics);
@@ -230,8 +222,6 @@ public abstract class Diagnostics {
     public abstract void incrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind);
 
     public abstract void decrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind);
-
-    public abstract void setCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind, long value); // TODO: Not needed?
 
     public abstract void submitDatabaseDiagnostics(Set<Metrics.DatabaseDiagnostics> databaseDiagnostics);
 }
