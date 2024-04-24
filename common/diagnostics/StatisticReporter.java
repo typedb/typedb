@@ -66,6 +66,8 @@ public class StatisticReporter {
 
             conn.setDoOutput(true);
             conn.getOutputStream().write(metrics.formatJSON(true).getBytes(StandardCharsets.UTF_8));
+            System.out.println("REPORTING:"); // TODO: Only for tests
+            System.out.println(metrics.formatJSON(true));
 
             conn.connect();
 
@@ -105,7 +107,7 @@ public class StatisticReporter {
     private long calculateInitialDelay() {
         int currentMinute = LocalDateTime.now().getMinute();
         int scheduledMinute = deploymentID.hashCode() % REPORT_INTERVAL_MINUTES;
-
+        System.out.println("SCHEDULED MINUTE: " + scheduledMinute); // TODO: Only for tests
         if (currentMinute > scheduledMinute) {
             return 60 - currentMinute + scheduledMinute;
         } else {

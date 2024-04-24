@@ -17,6 +17,8 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,16 +30,14 @@ public class Metrics {
 
     private final ConcurrentSet<String> primaryDatabaseHashes = new ConcurrentSet<>();
     private final BaseProperties base;
-    private final ServerStaticProperties serverStatic;
-    private final ServerDynamicProperties serverDynamic;
+    private final ServerProperties serverProperties;
     private final ConcurrentMap<String, DatabaseLoadDiagnostics> databaseLoad = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, NetworkRequests> requests = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, UserErrorStatistics> userErrors = new ConcurrentHashMap<>();
 
     public Metrics(String deploymentID, String serverID, String name, String version, boolean reportingEnabled, Path dataDirectory) {
-        this.base = new BaseProperties(JSON_API_VERSION, deploymentID, serverID, name, version, reportingEnabled);
-        this.serverStatic = new ServerStaticProperties();
-        this.serverDynamic = new ServerDynamicProperties(version, dataDirectory);
+        this.base = new BaseProperties(JSON_API_VERSION, deploymentID, serverID, name, reportingEnabled);
+        this.serverProperties = new ServerProperties(version, dataDirectory);
     }
 
     public void takeCountsSnapshot() {
@@ -104,13 +104,23 @@ public class Metrics {
         userErrors.get(databaseHash).register(errorCode);
     }
 
-    public void submitDatabaseDiagnostics(
-            String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad, boolean isPrimaryServer
-    ) {
-        String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
-        updatePrimaryDatabases(databaseHash, isPrimaryServer);
-        databaseLoad.get(databaseHash).setSchemaLoad(schemaLoad);
-        databaseLoad.get(databaseHash).setDataLoad(dataLoad);
+    public void submitDatabaseDiagnostics(Set<DatabaseDiagnostics> databaseDiagnostics) {
+        Set<String> updatedDatabases = new HashSet<>();
+
+        for (DatabaseDiagnostics diagnostics : databaseDiagnostics) {
+            String databaseHash = hashAndAddDatabaseIfAbsent(diagnostics.databaseName());
+            databaseLoad.get(databaseHash).setSchemaLoad(diagnostics.schemaLoad());
+            databaseLoad.get(databaseHash).setDataLoad(diagnostics.dataLoad());
+            updatePrimaryDatabases(databaseHash, diagnostics.isPrimaryServer());
+            updatedDatabases.add(databaseHash);
+        }
+
+        for (String databaseHash : databaseLoad.keySet()) {
+            if (!updatedDatabases.contains(databaseHash)) {
+                databaseLoad.get(databaseHash).resetSchemaLoad();
+                databaseLoad.get(databaseHash).resetDataLoad();
+            }
+        }
     }
 
     protected JsonObject asJSON(boolean reporting) {
@@ -120,8 +130,7 @@ public class Metrics {
             return metrics;
         }
 
-        serverStatic.asJSON().forEach(record -> metrics.add(record.getName(), record.getValue()));
-        metrics.add("server", serverDynamic.asJSON());
+        metrics.add("server", serverProperties.asJSON());
 
         JsonArray load = new JsonArray();
         databaseLoad.keySet().forEach(databaseHash ->
@@ -144,31 +153,31 @@ public class Metrics {
     }
 
     protected String formatPrometheus() {
-        StringBuilder databaseLoadData = new StringBuilder(DatabaseLoadDiagnostics.headerPrometheus() + "\n");
+        StringBuilder databaseLoadData = new StringBuilder(DatabaseLoadDiagnostics.prometheusHeader() + "\n");
         long databaseLoadDataHeaderLength = databaseLoadData.length();
         databaseLoad.keySet().forEach(databaseHash ->
-                databaseLoadData.append(databaseLoad.get(databaseHash).formatPrometheus(
+                databaseLoadData.append(databaseLoad.get(databaseHash).prometheusDiagnostics(
                         databaseHash, primaryDatabaseHashes.contains(databaseHash))));
 
-        StringBuilder requestsDataAttempted = new StringBuilder(NetworkRequests.headerPrometheusAttempted() + "\n");
+        StringBuilder requestsDataAttempted = new StringBuilder(NetworkRequests.prometheusHeaderAttempted() + "\n");
         long requestsDataAttemptedHeaderLength = requestsDataAttempted.length();
         requests.keySet().forEach(databaseHash ->
-                requestsDataAttempted.append(requests.get(databaseHash).formatPrometheusAttempted(databaseHash)));
+                requestsDataAttempted.append(requests.get(databaseHash).prometheusDiagnosticsAttempted(databaseHash)));
 
-        StringBuilder requestsDataSuccessful = new StringBuilder(NetworkRequests.headerPrometheusSuccessful() + "\n");
+        StringBuilder requestsDataSuccessful = new StringBuilder(NetworkRequests.prometheusHeaderSuccessful() + "\n");
         long requestsDataSuccessfulHeaderLength = requestsDataSuccessful.length();
         requests.keySet().forEach(databaseHash ->
-                requestsDataSuccessful.append(requests.get(databaseHash).formatPrometheusSuccessful(databaseHash)));
+                requestsDataSuccessful.append(requests.get(databaseHash).prometheusDiagnosticsSuccessful(databaseHash)));
 
-        StringBuilder userErrorsData = new StringBuilder(UserErrorStatistics.headerPrometheus() + "\n");
+        StringBuilder userErrorsData = new StringBuilder(UserErrorStatistics.prometheusHeader() + "\n");
         long userErrorsDataHeaderLength = userErrorsData.length();
         userErrors.keySet().forEach(databaseHash ->
-                userErrorsData.append(userErrors.get(databaseHash).formatPrometheus(databaseHash)));
+                userErrorsData.append(userErrors.get(databaseHash).prometheusDiagnostics(databaseHash)));
 
         return String.join(
                 "\n",
-                base.formatPrometheus() + serverStatic.formatPrometheus(),
-                ServerDynamicProperties.headerPrometheus(), serverDynamic.formatPrometheus(),
+                base.prometheusCommentData() + serverProperties.prometheusCommentData(),
+                ServerProperties.prometheusHeader(), serverProperties.prometheusDiagnostics(),
                 databaseLoadData.length() > databaseLoadDataHeaderLength ? databaseLoadData.toString() : "",
                 requestsDataAttempted.length() > requestsDataAttemptedHeaderLength ? requestsDataAttempted.toString() : "",
                 requestsDataSuccessful.length() > requestsDataSuccessfulHeaderLength ? requestsDataSuccessful.toString() : "",
@@ -179,22 +188,52 @@ public class Metrics {
         return asJSON(reporting).toString();
     }
 
+    public static class DatabaseDiagnostics {
+        private String databaseName;
+        private DatabaseSchemaLoad schemaLoad;
+        private DatabaseDataLoad dataLoad;
+        private boolean isPrimaryServer;
+
+        public DatabaseDiagnostics(
+                String databaseName, DatabaseSchemaLoad schemaLoad, DatabaseDataLoad dataLoad, boolean isPrimaryServer
+        ) {
+            this.databaseName = databaseName;
+            this.schemaLoad = schemaLoad;
+            this.dataLoad = dataLoad;
+            this.isPrimaryServer = isPrimaryServer;
+        }
+
+        public String databaseName() {
+            return databaseName;
+        }
+
+        public DatabaseSchemaLoad schemaLoad() {
+            return schemaLoad;
+        }
+
+        public DatabaseDataLoad dataLoad() {
+            return dataLoad;
+        }
+
+        public boolean isPrimaryServer() {
+            return isPrimaryServer;
+        }
+    }
+
     static class BaseProperties {
         private final String jsonApiVersion;
         private final String deploymentID;
         private final String serverID;
         private final String distribution;
-        private final String distributionVersion;
         private final boolean reportingEnabled;
 
         BaseProperties(
-                String jsonApiVersion, String deploymentID, String serverID, String distribution, String distributionVersion, boolean reportingEnabled
+                String jsonApiVersion, String deploymentID, String serverID, String distribution, boolean reportingEnabled
         ) {
             this.jsonApiVersion = jsonApiVersion;
             this.deploymentID = deploymentID;
             this.serverID = serverID;
             this.distribution = distribution;
-            this.distributionVersion = distributionVersion;
             this.reportingEnabled = reportingEnabled;
         }
 
@@ -210,10 +249,9 @@ public class Metrics {
             return system;
         }
 
-        String formatPrometheus() {
+        String prometheusCommentData() {
             // No deployment / server identifiers and time-based characteristics, that's for reporting only.
-            return "# distribution: " + distribution + "\n" +
-                    "# version: " + distributionVersion + "\n";
+            return "# distribution: " + distribution + "\n";
         }
 
         boolean getReportingEnabled() {
@@ -221,26 +259,17 @@ public class Metrics {
         }
     }
 
-    static class ServerStaticProperties {
-        private final String os =
-                System.getProperty("os.name") + " " + System.getProperty("os.arch") + " " + System.getProperty("os.version");
-
-        JsonObject asJSON() {
-            JsonObject system = new JsonObject();
-            system.add("os", os);
-            return system;
-        }
-
-        String formatPrometheus() {
-            return "# os: " + os + "\n";
-        }
-    }
-
-    static class ServerDynamicProperties {
+    static class ServerProperties {
+        private final String osName;
+        private final String osArch;
+        private final String osVersion;
         private final String version;
         private final File dbRoot;
 
-        ServerDynamicProperties(String version, Path dataDirectory) {
+        ServerProperties(String version, Path dataDirectory) {
+            this.osName = System.getProperty("os.name");
+            this.osArch = System.getProperty("os.arch");
+            this.osVersion = System.getProperty("os.version");
             this.version = version;
             this.dbRoot = dataDirectory.toFile();
         }
@@ -250,21 +279,32 @@ public class Metrics {
             long freePhysicalMemorySize = mxbean.getFreePhysicalMemorySize();
             long freeDiskSpace = dbRoot.getFreeSpace();
 
-            JsonObject system = new JsonObject();
-            system.add("version", version);
-            system.add("memoryUsedInBytes", mxbean.getTotalPhysicalMemorySize() - freePhysicalMemorySize);
-            system.add("memoryAvailableInBytes", freePhysicalMemorySize);
-            system.add("diskUsedInBytes", dbRoot.getTotalSpace() - freeDiskSpace);
-            system.add("diskAvailableInBytes", freeDiskSpace);
+            JsonObject os = new JsonObject();
+            os.add("name", osName);
+            os.add("arch", osArch);
+            os.add("version", osVersion);
 
-            return system;
+            JsonObject server = new JsonObject();
+            server.add("os", os);
+            server.add("version", version);
+            server.add("memoryUsedInBytes", mxbean.getTotalPhysicalMemorySize() - freePhysicalMemorySize);
+            server.add("memoryAvailableInBytes", freePhysicalMemorySize);
+            server.add("diskUsedInBytes", dbRoot.getTotalSpace() - freeDiskSpace);
+            server.add("diskAvailableInBytes", freeDiskSpace);
+
+            return server;
         }
 
-        static String headerPrometheus() {
+        static String prometheusHeader() {
             return "# TYPE server_resources_count gauge";
         }
 
-        String formatPrometheus() {
+        String prometheusCommentData() {
+            return "# version: " + version + "\n" +
+                    "# os: " + osName + " " + osArch + " " + osVersion + "\n";
+        }
+
+        String prometheusDiagnostics() {
             var mxbean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
             long freePhysicalMemorySize = mxbean.getFreePhysicalMemorySize();
             long freeDiskSpace = dbRoot.getFreeSpace();
@@ -297,8 +337,8 @@ public class Metrics {
             return schema;
         }
 
-        String formatPrometheus(String database) {
-            return "typedb_schema_data_count{database=\"" + database + "\", kind=\"typeCount\"} " + typeCount;
+        String prometheusDiagnostics(String database) {
+            return "typedb_schema_data_count{database=\"" + database + "\", kind=\"typeCount\"} " + typeCount + "\n";
         }
     }
 
@@ -344,7 +384,7 @@ public class Metrics {
             return data;
         }
 
-        String formatPrometheus(String database) {
+        String prometheusDiagnostics(String database) {
             String header = "typedb_schema_data_count{database=\"" + database + "\", kind=";
 
             StringBuilder buf = new StringBuilder();
@@ -431,6 +471,7 @@ public class Metrics {
             JsonObject peak = new JsonObject();
             for (Kind kind : Kind.values()) {
                 if (kind == Kind.UNKNOWN) {
+                    assert (peakCounts.get(kind).get() == 0);
                     continue;
                 }
                 peak.add(kind.getJsonName(), peakCounts.get(kind).get());
@@ -442,7 +483,7 @@ public class Metrics {
     static class DatabaseLoadDiagnostics {
         private DatabaseSchemaLoad schemaLoad;
         private DatabaseDataLoad dataLoad;
-        private ConnectionPeakCounts connectionPeakCounts;
+        private final ConnectionPeakCounts connectionPeakCounts;
 
         DatabaseLoadDiagnostics() {
             this.schemaLoad = new DatabaseSchemaLoad();
@@ -450,12 +491,20 @@ public class Metrics {
             this.connectionPeakCounts = new ConnectionPeakCounts();
         }
 
-        public void setSchemaLoad(Metrics.DatabaseSchemaLoad schemaLoad) {
+        public void setSchemaLoad(DatabaseSchemaLoad schemaLoad) {
             this.schemaLoad = schemaLoad;
         }
 
-        public void setDataLoad(Metrics.DatabaseDataLoad dataLoad) {
+        public void setDataLoad(DatabaseDataLoad dataLoad) {
             this.dataLoad = dataLoad;
+        }
+
+        public void resetSchemaLoad() {
+            setSchemaLoad(new DatabaseSchemaLoad());
+        }
+
+        public void resetDataLoad() {
+            setDataLoad(new DatabaseDataLoad());
         }
 
         public void incrementCurrent(ConnectionPeakCounts.Kind kind) {
@@ -486,16 +535,16 @@ public class Metrics {
             load.add("connection", connectionPeakCounts.asJSON());
             return load;
         }
-        
-        static String headerPrometheus() {
+
+        static String prometheusHeader() {
             return "# TYPE typedb_schema_data_count gauge";
         }
 
-        String formatPrometheus(String database, boolean isPrimaryServer) {
+        String prometheusDiagnostics(String database, boolean isPrimaryServer) {
             if (!isPrimaryServer) {
                 return "";
             }
-            return schemaLoad.formatPrometheus(database) + "\n" + dataLoad.formatPrometheus(database);
+            return schemaLoad.prometheusDiagnostics(database) + dataLoad.prometheusDiagnostics(database);
         }
     }
 
@@ -524,40 +573,60 @@ public class Metrics {
             TRANSACTION_EXECUTE,
         }
 
-        private final ConcurrentMap<Kind, AtomicLong> successful = new ConcurrentHashMap<>();
-        private final ConcurrentMap<Kind, AtomicLong> failed = new ConcurrentHashMap<>();
+        class RequestInfo {
+            private final AtomicLong successful;
+            private final AtomicLong failed;
 
-        private ConcurrentMap<Kind, AtomicLong> successfulSnapshot = new ConcurrentHashMap<>();
-        private ConcurrentMap<Kind, AtomicLong> failedSnapshot = new ConcurrentHashMap<>();
-
-        NetworkRequests() {
-            for (var kind : Kind.values()) {
-                successful.put(kind, new AtomicLong(0));
-                failed.put(kind, new AtomicLong(0));
+            RequestInfo() {
+                successful = new AtomicLong(0);
+                failed = new AtomicLong(0);
             }
 
-            takeCountsSnapshot();
+            public void success() {
+                successful.incrementAndGet();
+            }
+
+            public void fail() {
+                failed.incrementAndGet();
+            }
+
+            public long getSuccessful() {
+                return successful.get();
+            }
+
+            public long getFailed() {
+                return failed.get();
+            }
+
+            public long getAttempted() {
+                return successful.get() + failed.get();
+            }
         }
 
+        private final ConcurrentMap<Kind, RequestInfo> requestInfos = new ConcurrentHashMap<>();
+        private ConcurrentMap<Kind, RequestInfo> requestInfosSnapshot = new ConcurrentHashMap<>();
+
         public void takeCountsSnapshot() {
-            successfulSnapshot = successful;
-            failedSnapshot = failed;
+            requestInfosSnapshot = requestInfos;
         }
 
         public void success(Kind kind) {
-            successful.get(kind).incrementAndGet();
+            requestInfos.computeIfAbsent(kind, val -> new RequestInfo()).success();
         }
 
         public void fail(Kind kind) {
-            failed.get(kind).incrementAndGet();
+            requestInfos.computeIfAbsent(kind, val -> new RequestInfo()).fail();
         }
 
         JsonArray asJSON(String database) {
             JsonArray requests = new JsonArray();
 
-            for (var kind : Kind.values()) {
-                long successfulValue = successful.get(kind).get() - successfulSnapshot.get(kind).get();
-                long failedValue = failed.get(kind).get() - failedSnapshot.get(kind).get();
+            for (var kind : requestInfos.keySet()) {
+                long successfulValue =
+                        requestInfos.get(kind).getSuccessful() - requestInfosSnapshot.getOrDefault(kind, new RequestInfo()).getSuccessful();
+                long failedValue =
+                        requestInfos.get(kind).getFailed() - requestInfosSnapshot.getOrDefault(kind, new RequestInfo()).getFailed();
+
                 if (successfulValue == 0 && failedValue == 0) {
                     continue;
                 }
@@ -575,38 +644,37 @@ public class Metrics {
             return requests;
         }
 
-        static String headerPrometheusAttempted() {
+        static String prometheusHeaderAttempted() {
             return "# TYPE typedb_attempted_requests_total counter";
         }
 
-        static String headerPrometheusSuccessful() {
+        static String prometheusHeaderSuccessful() {
             return "# TYPE typedb_successful_requests_total counter";
         }
 
-        String formatPrometheusAttempted(String database) {
+        String prometheusDiagnosticsAttempted(String database) {
             StringBuilder buf = new StringBuilder();
 
-            for (var kind : Kind.values()) {
-                var attempted = successful.get(kind).get() + failed.get(kind).get();
+            for (var kind : requestInfos.keySet()) {
                 buf.append("typedb_attempted_requests_total{");
                 if (!database.isEmpty()) {
                     buf.append("database=\"").append(database).append("\", ");
                 }
-                buf.append("kind=\"").append(kind).append("\"} ").append(attempted).append("\n");
+                buf.append("kind=\"").append(kind).append("\"} ").append(requestInfos.get(kind).getAttempted()).append("\n");
             }
 
             return buf.toString();
         }
 
-        String formatPrometheusSuccessful(String database) {
+        String prometheusDiagnosticsSuccessful(String database) {
             StringBuilder buf = new StringBuilder();
 
-            for (var kind : Kind.values()) {
+            for (var kind : requestInfos.keySet()) {
                 buf.append("typedb_successful_requests_total{");
                 if (!database.isEmpty()) {
                     buf.append("database=\"").append(database).append("\", ");
                 }
-                buf.append("kind=\"").append(kind).append("\"} ").append(successful.get(kind)).append("\n");
+                buf.append("kind=\"").append(kind).append("\"} ").append(requestInfos.get(kind).getSuccessful()).append("\n");
             }
 
             return buf.toString();
@@ -642,16 +710,13 @@ public class Metrics {
             return errors;
         }
 
-        static String headerPrometheus() {
+        static String prometheusHeader() {
             return "# TYPE typedb_error_total counter";
         }
 
-        String formatPrometheus(String database) {
-            if (errorCounts.isEmpty()) {
-                return "";
-            }
-
+        String prometheusDiagnostics(String database) {
             StringBuilder buf = new StringBuilder();
+
             for (String code : errorCounts.keySet()) {
                 long count = errorCounts.get(code).get();
                 buf.append("typedb_error_total{");

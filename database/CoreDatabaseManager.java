@@ -24,6 +24,7 @@ import org.rocksdb.RocksDB;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -179,13 +180,15 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
         return name.startsWith(RESERVED_NAME_PREFIX);
     }
 
-    protected void submitDatabaseDiagnostics(
+    protected Metrics.DatabaseDiagnostics databaseDiagnostics(
             TypeDB.Database database, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad
     ) {
-        Diagnostics.get().submitDatabaseDiagnostics(database.name(), schemaLoad, dataLoad, true);
+        return new Metrics.DatabaseDiagnostics(database.name(), schemaLoad, dataLoad, true);
     }
 
     private void submitDatabaseDiagnostics() {
+        Set<Metrics.DatabaseDiagnostics> diagnostics = new HashSet<>();
+
         for (CoreDatabase database : all()) {
             Metrics.DatabaseSchemaLoad schemaLoad = new Metrics.DatabaseSchemaLoad(database.typeCount());
             Metrics.DatabaseDataLoad dataLoad = new Metrics.DatabaseDataLoad(
@@ -197,8 +200,9 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
                     database.storageDataBytesEstimate(),
                     database.storageDataKeysEstimate());
 
-            submitDatabaseDiagnostics(database, schemaLoad, dataLoad);
+            diagnostics.add(databaseDiagnostics(database, schemaLoad, dataLoad));
         }
-    }
 
+        Diagnostics.get().submitDatabaseDiagnostics(diagnostics);
+    }
 }

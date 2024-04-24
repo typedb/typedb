@@ -21,6 +21,7 @@ import javax.annotation.Nullable;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.nio.file.Path;
+import java.util.Set;
 
 public abstract class Diagnostics {
 
@@ -78,8 +79,7 @@ public abstract class Diagnostics {
         public void setCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind, long value) {}
 
         @Override
-        public void submitDatabaseDiagnostics(
-                String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad, boolean isPrimaryServer) {}
+        public void submitDatabaseDiagnostics(Set<Metrics.DatabaseDiagnostics> databaseDiagnostics) {}
     }
 
     public static class Core extends Diagnostics {
@@ -202,10 +202,9 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void submitDatabaseDiagnostics(
-                String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad, boolean isPrimaryServer
+        public void submitDatabaseDiagnostics(Set<Metrics.DatabaseDiagnostics> databaseDiagnostics
         ) {
-            metrics.submitDatabaseDiagnostics(databaseName, schemaLoad, dataLoad, isPrimaryServer);
+            metrics.submitDatabaseDiagnostics(databaseDiagnostics);
         }
     }
 
@@ -234,5 +233,5 @@ public abstract class Diagnostics {
 
     public abstract void setCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind, long value); // TODO: Not needed?
 
-    public abstract void submitDatabaseDiagnostics(String databaseName, Metrics.DatabaseSchemaLoad schemaLoad, Metrics.DatabaseDataLoad dataLoad, boolean isPrimaryServer);
+    public abstract void submitDatabaseDiagnostics(Set<Metrics.DatabaseDiagnostics> databaseDiagnostics);
 }
