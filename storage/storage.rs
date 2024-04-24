@@ -881,6 +881,8 @@ mod tests {
                 Keyspaces::open::<TestKeyspaceSet>(storage_path.join(<MVCCStorage<WAL>>::STORAGE_DIR_NAME)).unwrap();
             keyspaces.write(partial_commit).unwrap();
 
+            /* CRASH */
+
             seq
         };
 
