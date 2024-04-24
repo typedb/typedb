@@ -6,6 +6,7 @@ version: 2.1
 
 orbs:
   win: circleci/windows@2.0.0
+  macos: circleci/macos@2.4.0
 
 
 executors:
@@ -26,11 +27,6 @@ executors:
     resource_class: macos.m1.medium.gen1
     working_directory: ~/typedb
 
-  mac-x86_64:
-    macos:
-      xcode: "13.4.1"
-    working_directory: ~/typedb
-
 
 commands:
 
@@ -49,25 +45,32 @@ commands:
           chmod a+x /usr/local/bin/bazel
 
   install-bazel-mac:
+    parameters:
+      bazel-arch:
+        type: string
     steps:
-      - run: brew install bazelisk
+      - run: |
+          brew install python@3.8
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-darwin-<<parameters.bazel-arch>>"
+          sudo mv "bazelisk-darwin-<<parameters.bazel-arch>>" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
 
 jobs:
   test-assembly-mac-x86_64-zip:
-    executor: mac-x86_64
-    working_directory: ~/typedb
+    executor: mac-arm64
     steps:
+      - macos/install-rosetta
       - checkout
-      - install-bazel-mac
+      - install-bazel-mac:
+          bazel-arch: amd64
       - run: bazel test //test/assembly:assembly --test_output=errors
 
   test-assembly-mac-arm64-zip:
     executor: mac-arm64
-    resource_class: macos.m1.medium.gen1
-    working_directory: ~/typedb
     steps:
       - checkout
-      - install-bazel-mac
+      - install-bazel-mac:
+          bazel-arch: arm64
       - run: bazel test //test/assembly:assembly --test_output=errors
 
   test-assembly-linux-arm64-zip:
