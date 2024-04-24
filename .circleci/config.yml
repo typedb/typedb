@@ -6,6 +6,7 @@ version: 2.1
 
 orbs:
   win: circleci/windows@2.0.0
+  macos: circleci/macos@2.4.0
 
 
 executors:
