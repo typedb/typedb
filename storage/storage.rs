@@ -816,6 +816,37 @@ mod tests {
     }
 
     #[test]
+    fn test_recovery_from_failed_write() {
+        test_keyspace_set! {
+            Keyspace => 0: "keyspace",
+        }
+
+        init_logging();
+        let storage_path = create_tmp_dir();
+
+        let seq = {
+            let operations = OperationsBuffer::new();
+            operations.writes_in(TestKeyspaceSet::Keyspace.id()).insert(ByteArray::copy(b"hello"), ByteArray::empty());
+            let mut durability_service = WAL::open(storage_path.join(<MVCCStorage<WAL>>::WAL_DIR_NAME)).unwrap();
+            durability_service.register_record_type::<CommitRecord>();
+            durability_service.sequenced_write(&CommitRecord::new(operations, durability_service.previous())).unwrap()
+            /* CRASH */
+        };
+
+        let storage: MVCCStorage<WAL> = MVCCStorage::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+        assert_eq!(
+            storage
+                .get::<0>(
+                    StorageKeyReference::new(TestKeyspaceSet::Keyspace, (&ByteArray::<5>::copy(b"hello")).into()),
+                    seq
+                )
+                .unwrap()
+                .unwrap(),
+            ByteArray::empty()
+        )
+    }
+
+    #[test]
     fn test_recovery_from_partial_write() {
         test_keyspace_set! {
             PersistedKeyspace => 0: "write",
