@@ -119,7 +119,7 @@ public abstract class Diagnostics {
             // FIXME temporary heartbeat every 24 hours
             if (errorReportingEnable) scheduled.scheduleAtFixedRate(() -> {
                 Sentry.startTransaction(new TransactionContext("server", "heartbeat")).finish(SpanStatus.OK);
-            }, 0, 1, TimeUnit.DAYS);
+            }, 1, 24, TimeUnit.HOURS);
         }
 
         @Override
