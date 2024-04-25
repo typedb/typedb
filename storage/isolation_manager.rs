@@ -447,7 +447,7 @@ impl Timeline {
         &self,
         sequence_number: SequenceNumber,
     ) -> impl ReadGuard<'_, TimelineWindow<TIMELINE_WINDOW_SIZE>> {
-        let end = { self.windows.read().unwrap_or_log().back().unwrap().end() };
+        let end = self.windows.read().unwrap_or_log().back().unwrap().end();
         if sequence_number >= end {
             self.create_windows_to(sequence_number);
         }
