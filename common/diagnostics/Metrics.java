@@ -41,12 +41,11 @@ public class Metrics {
         this.serverProperties = new ServerProperties(version, dataDirectory);
     }
 
-    public void takeCountsSnapshot() {
-        for (String databaseHash : this.databaseLoad.keySet()) {
-            this.databaseLoad.get(databaseHash).takeCountsSnapshot();
-            this.requests.get(databaseHash).takeCountsSnapshot();
-            this.userErrors.get(databaseHash).takeCountsSnapshot();
-        }
+    public void takeSnapshot() {
+        this.base.updateSinceTimestamp();
+        this.databaseLoad.keySet().forEach(databaseHash -> this.databaseLoad.get(databaseHash).takeSnapshot());
+        this.requests.keySet().forEach(databaseHash -> this.requests.get(databaseHash).takeSnapshot());
+        this.userErrors.keySet().forEach(databaseHash -> this.userErrors.get(databaseHash).takeSnapshot());
     }
 
     private String hashAndAddDatabaseIfAbsent(String databaseName) {
@@ -117,6 +116,10 @@ public class Metrics {
                 databaseLoad.get(databaseHash).resetDataLoad();
             }
         }
+    }
+    
+    private static String formatDateTime(LocalDateTime dateTime) {
+        return dateTime.truncatedTo(ChronoUnit.SECONDS).toString();
     }
 
     protected JsonObject asJSON(boolean reporting) {
@@ -221,6 +224,7 @@ public class Metrics {
         private final String deploymentID;
         private final String serverID;
         private final String distribution;
+        private LocalDateTime sinceTimestamp;
         private final boolean reportingEnabled;
 
         BaseProperties(
@@ -231,6 +235,11 @@ public class Metrics {
             this.serverID = serverID;
             this.distribution = distribution;
             this.reportingEnabled = reportingEnabled;
+            updateSinceTimestamp();
+        }
+
+        void updateSinceTimestamp() {
+            this.sinceTimestamp = LocalDateTime.now(ZoneOffset.UTC);
         }
 
         JsonObject asJSON() {
@@ -239,7 +248,8 @@ public class Metrics {
             system.add("deploymentID", deploymentID);
             system.add("serverID", serverID);
             system.add("distribution", distribution);
-            system.add("timestamp", LocalDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toString());
+            system.add("timestamp", formatDateTime(LocalDateTime.now(ZoneOffset.UTC)));
+            system.add("sinceTimestamp", formatDateTime(sinceTimestamp));
             system.add("periodInSeconds", REPORT_INTERVAL_MINUTES * 60);
             system.add("enabled", reportingEnabled);
             return system;
@@ -439,7 +449,7 @@ public class Metrics {
             }
         }
 
-        public void takeCountsSnapshot() {
+        public void takeSnapshot() {
             peakCounts.replaceAll((kind, value) -> new AtomicLong(counts.get(kind).get()));
         }
 
@@ -506,8 +516,8 @@ public class Metrics {
             connectionPeakCounts.decrementCurrent(kind);
         }
 
-        public void takeCountsSnapshot() {
-            connectionPeakCounts.takeCountsSnapshot();
+        public void takeSnapshot() {
+            connectionPeakCounts.takeSnapshot();
         }
 
         JsonObject asJSON(String database, boolean isPrimaryServer) {
@@ -558,7 +568,7 @@ public class Metrics {
             TRANSACTION_EXECUTE,
         }
 
-        class RequestInfo {
+        class RequestInfo implements Cloneable {
             private final AtomicLong successful;
             private final AtomicLong failed;
 
@@ -586,13 +596,22 @@ public class Metrics {
             public long getAttempted() {
                 return successful.get() + failed.get();
             }
+
+            @Override
+            public RequestInfo clone() {
+                RequestInfo clone = new RequestInfo();
+                clone.successful.getAndAdd(successful.get());
+                clone.failed.getAndAdd(failed.get());
+                return clone;
+            }
         }
 
         private final ConcurrentMap<Kind, RequestInfo> requestInfos = new ConcurrentHashMap<>();
-        private ConcurrentMap<Kind, RequestInfo> requestInfosSnapshot = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Kind, RequestInfo> requestInfosSnapshot = new ConcurrentHashMap<>();
 
-        public void takeCountsSnapshot() {
-            requestInfosSnapshot = requestInfos;
+        public synchronized void takeSnapshot() {
+            requestInfosSnapshot.clear();
+            requestInfos.forEach((kind, requestInfo) -> requestInfosSnapshot.put(kind, requestInfo.clone()));
         }
 
         public void success(Kind kind) {
@@ -603,15 +622,22 @@ public class Metrics {
             requestInfos.computeIfAbsent(kind, val -> new RequestInfo()).fail();
         }
 
+        private synchronized long getSuccessfulDelta(Kind kind) {
+            return requestInfos.getOrDefault(kind, new RequestInfo()).getSuccessful() -
+                    requestInfosSnapshot.getOrDefault(kind, new RequestInfo()).getSuccessful();
+        }
+
+        private synchronized long getFailedDelta(Kind kind) {
+            return requestInfos.getOrDefault(kind, new RequestInfo()).getFailed() -
+                    requestInfosSnapshot.getOrDefault(kind, new RequestInfo()).getFailed();
+        }
+
         JsonArray asJSON(String database) {
             JsonArray requests = new JsonArray();
 
             for (var kind : requestInfos.keySet()) {
-                long successfulValue =
-                        requestInfos.get(kind).getSuccessful() - requestInfosSnapshot.getOrDefault(kind, new RequestInfo()).getSuccessful();
-                long failedValue =
-                        requestInfos.get(kind).getFailed() - requestInfosSnapshot.getOrDefault(kind, new RequestInfo()).getFailed();
-
+                long successfulValue = getSuccessfulDelta(kind);
+                long failedValue = getFailedDelta(kind);
                 if (successfulValue == 0 && failedValue == 0) {
                     continue;
                 }
@@ -668,10 +694,16 @@ public class Metrics {
 
     private static class UserErrorStatistics {
         private final ConcurrentMap<String, AtomicLong> errorCounts = new ConcurrentHashMap<>();
-        private ConcurrentMap<String, AtomicLong> errorCountsSnapshot = new ConcurrentHashMap<>();
+        private final ConcurrentMap<String, AtomicLong> errorCountsSnapshot = new ConcurrentHashMap<>();
 
-        public void takeCountsSnapshot() {
-            errorCountsSnapshot = errorCounts;
+        public synchronized void takeSnapshot() {
+            errorCountsSnapshot.clear();
+            errorCounts.forEach((code, count) -> errorCountsSnapshot.put(code, new AtomicLong(count.get())));
+        }
+
+        public synchronized long getCountDelta(String code ) {
+            return errorCounts.getOrDefault(code, new AtomicLong(0)).get() -
+                    errorCountsSnapshot.getOrDefault(code, new AtomicLong(0)).get();
         }
 
         public void register(String errorCode) {
@@ -682,13 +714,17 @@ public class Metrics {
             JsonArray errors = new JsonArray();
 
             for (String code : errorCounts.keySet()) {
+                long countDelta = getCountDelta(code);
+                if (countDelta == 0) {
+                    continue;
+                }
+
                 JsonObject errorObject = new JsonObject();
                 errorObject.add("code", code);
                 if (!database.isEmpty()) {
                     errorObject.add("database", database);
                 }
-                long countDiff = errorCounts.get(code).get() - errorCountsSnapshot.getOrDefault(code, new AtomicLong(0)).get();
-                errorObject.add("count", countDiff);
+                errorObject.add("count", countDelta);
                 errors.add(errorObject);
             }
 
