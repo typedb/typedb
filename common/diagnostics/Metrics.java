@@ -11,6 +11,7 @@ import com.eclipsesource.json.JsonObject;
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
@@ -74,27 +75,27 @@ public class Metrics {
         }
     }
 
-    public void requestSuccess(String databaseName, Metrics.NetworkRequests.Kind kind) {
+    public void requestSuccess(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind) {
         String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
         requests.get(databaseHash).success(kind);
     }
 
-    public void requestFail(String databaseName, Metrics.NetworkRequests.Kind kind) {
+    public void requestFail(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind) {
         String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
         requests.get(databaseHash).fail(kind);
     }
 
-    public void incrementCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind) {
+    public void incrementCurrentCount(@Nullable String databaseName, ConnectionPeakCounts.Kind kind) {
         String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
         databaseLoad.get(databaseHash).incrementCurrent(kind);
     }
 
-    public void decrementCurrentCount(String databaseName, ConnectionPeakCounts.Kind kind) {
+    public void decrementCurrentCount(@Nullable String databaseName, ConnectionPeakCounts.Kind kind) {
         String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
         databaseLoad.get(databaseHash).decrementCurrent(kind);
     }
 
-    public void registerError(String databaseName, String errorCode) {
+    public void registerError(@Nullable String databaseName, String errorCode) {
         String databaseHash = hashAndAddDatabaseIfAbsent(databaseName);
         userErrors.get(databaseHash).register(errorCode);
     }

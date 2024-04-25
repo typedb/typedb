@@ -70,10 +70,10 @@ public abstract class Diagnostics {
         public void requestSuccess(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind) {}
 
         @Override
-        public void incrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {}
+        public void incrementCurrentCount(@Nullable String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {}
 
         @Override
-        public void decrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {}
+        public void decrementCurrentCount(@Nullable String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {}
 
         @Override
         public void submitDatabaseDiagnostics(Set<Metrics.DatabaseDiagnostics> databaseDiagnostics) {}
@@ -184,12 +184,12 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void incrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {
+        public void incrementCurrentCount(@Nullable String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {
             metrics.incrementCurrentCount(databaseName, kind);
         }
 
         @Override
-        public void decrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {
+        public void decrementCurrentCount(@Nullable String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {
             metrics.decrementCurrentCount(databaseName, kind);
         }
 
@@ -219,9 +219,9 @@ public abstract class Diagnostics {
 
     public abstract void requestSuccess(@Nullable String databaseName, Metrics.NetworkRequests.Kind kind);
 
-    public abstract void incrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind);
+    public abstract void incrementCurrentCount(@Nullable String databaseName, Metrics.ConnectionPeakCounts.Kind kind);
 
-    public abstract void decrementCurrentCount(String databaseName, Metrics.ConnectionPeakCounts.Kind kind);
+    public abstract void decrementCurrentCount(@Nullable String databaseName, Metrics.ConnectionPeakCounts.Kind kind);
 
     public abstract void submitDatabaseDiagnostics(Set<Metrics.DatabaseDiagnostics> databaseDiagnostics);
 }
