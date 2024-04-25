@@ -830,6 +830,28 @@ mod tests {
     }
 
     #[test]
+    fn reload_without_checkpoint_or_wal_is_empty() {
+        test_keyspace_set! {
+            Keyspace => 0: "keyspace",
+        }
+
+        init_logging();
+        let storage_path = create_tmp_dir();
+        let key = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"hello"));
+
+        let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+        let snapshot = storage.clone().open_snapshot_write();
+        snapshot.put(key.clone());
+        snapshot.commit().unwrap();
+        drop(storage);
+
+        fs::remove_dir_all(storage_path.join(MVCCStorage::<WAL>::WAL_DIR_NAME)).unwrap();
+
+        let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+        assert_eq!(storage.get::<0>(StorageKeyReference::from(&key), SequenceNumber::MAX).unwrap(), None);
+    }
+
+    #[test]
     fn test_recovery_from_failed_write() {
         test_keyspace_set! {
             Keyspace => 0: "keyspace",
