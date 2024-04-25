@@ -13,10 +13,10 @@ use encoding::{
     AsBytes,
     graph::type_::{
         edge::{
-            build_edge_owns, build_edge_owns_prefix_from, build_edge_owns_reverse, build_edge_plays,
-            build_edge_plays_prefix_from, build_edge_plays_reverse, build_edge_relates, build_edge_relates_prefix_from,
-            build_edge_relates_reverse, build_edge_sub, build_edge_sub_prefix_from, build_edge_sub_reverse,
-            new_edge_owns, new_edge_plays, new_edge_relates, new_edge_sub,
+            build_edge_owns, build_edge_owns_reverse, build_edge_plays
+            , build_edge_plays_reverse, build_edge_relates,
+            build_edge_relates_reverse, build_edge_sub, build_edge_sub_prefix_from, build_edge_sub_reverse
+            , new_edge_sub,
         },
         index::LabelToTypeVertexIndex,
         Kind,
@@ -26,23 +26,22 @@ use encoding::{
             build_property_type_label, build_property_type_value_type,
         },
         vertex::{
-            new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type,
-            TypeVertex,
+            new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type
+            ,
         },
         vertex_generator::TypeVertexGenerator,
     },
     Keyable, value::{
-        label::Label,
-        string::StringBytes,
-        value_type::{ValueType, ValueTypeID},
+        label::Label
+        ,
+        value_type::ValueType,
     },
 };
 use encoding::graph::type_::edge::TypeEdge;
-use encoding::graph::type_::property::{build_property_type_edge_annotation_cardinality, build_property_type_edge_annotation_distinct, build_property_type_edge_ordering, build_property_type_ordering, TypeEdgeProperty, TypeVertexProperty};
-use encoding::layout::infix::Infix;
+use encoding::graph::type_::property::{build_property_type_edge_annotation_cardinality, build_property_type_edge_annotation_distinct, build_property_type_edge_ordering, build_property_type_ordering};
 use encoding::layout::prefix::Prefix;
 use primitive::maybe_owns::MaybeOwns;
-use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     MVCCStorage,
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
@@ -52,7 +51,7 @@ use storage::key_range::KeyRange;
 use crate::{
     error::ConceptReadError,
     type_::{
-        annotation::{AnnotationAbstract, AnnotationCardinality, AnnotationDistinct, AnnotationIndependent},
+        annotation::{AnnotationAbstract, AnnotationCardinality},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::{EntityType, EntityTypeAnnotation},
         object_type::ObjectType,
@@ -67,9 +66,9 @@ use crate::{
 };
 use crate::error::ConceptWriteError;
 use crate::thing::ObjectAPI;
-use crate::type_::{deserialise_annotation_cardinality, deserialise_ordering, IntoCanonicalTypeEdge, Ordering, OwnerAPI, PlayerAPI, serialise_annotation_cardinality, serialise_ordering};
-use crate::type_::annotation::Annotation;
+use crate::type_::{deserialise_ordering, IntoCanonicalTypeEdge, Ordering, serialise_annotation_cardinality, serialise_ordering};
 use crate::type_::owns::OwnsAnnotation;
+use crate::type_::storage_source::StorageTypeManagerSource;
 
 // TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
 pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
@@ -116,22 +115,10 @@ macro_rules! get_type_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(label))
                 } else {
-                    self.get_labelled_type(label, |bytes| $output_type::new($new_vertex_method(bytes)))
+                    StorageTypeManagerSource::storage_get_labelled_type::<$output_type<'static>>(self.snapshot.as_ref(), label)
                 }
             }
         )*
-
-        fn get_labelled_type<M, U>(&self, label: &Label<'_>, mapper: M) -> Result<Option<U>, ConceptReadError>
-            where
-                M: FnOnce(Bytes<'static, BUFFER_KEY_INLINE>) -> U,
-        {
-            let key = LabelToTypeVertexIndex::build(label).into_storage_key();
-            match self.snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {
-                Ok(None) => Ok(None),
-                Ok(Some(value)) => Ok(Some(mapper(Bytes::Array(value)))),
-                Err(error) => Err(ConceptReadError::SnapshotGet { source: error })
-            }
-        }
     }
 }
 
@@ -266,18 +253,6 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
 
     pub(crate) fn check_type_is_root(type_label: &Label<'_>, kind :Kind) -> bool {
         type_label == &kind.root_label()
-    }
-    pub fn get_label<T: TypeAPI<'_s>>(&self, type_: T) -> Result<MaybeOwns<'_, Label<'static>>, ConceptReadError> {
-        if let Some(cache) = &self.type_cache {
-            todo!("Ok(cache.$cache_method(label))")
-        } else {
-            Ok(MaybeOwns::owned(StorageTypeManagerSource::storage_get_label(self.snapshot.as_ref(), type_)?.unwrap()))
-        }
-    }
-
-    pub fn get_type_is_root<'b, T: TypeAPI<'_s> + ReadableType<'_s, 'b>>(&self, type_: T) -> Result<bool, ConceptReadError>{
-        let label = self.get_label(type_)?;
-        Ok(Self::check_type_is_root(label.deref(), T::ROOT_KIND))
     }
 
     get_type_methods! {
@@ -678,174 +653,6 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         let annotation_property = build_property_type_edge_annotation_cardinality(edge.into_type_edge());
         self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
     }
-}
-
-pub struct StorageTypeManagerSource { }
-
-// TODO: The '_s is only here for the enforcement of pass-by-value of types. If we drop that, we can move it to the function signatures
-impl<'_s> StorageTypeManagerSource
-    where '_s : 'static {
-
-    pub(crate) fn storage_get_labelled_type<'a, 'b, U>(snapshot: &impl ReadableSnapshot, label: &Label<'_>) -> Result<Option<U::SelfWithLifetime>, ConceptReadError>
-        where U: ReadableType<'a, 'b>
-    {
-        let key = LabelToTypeVertexIndex::build(label).into_storage_key();
-        match snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {
-            Ok(None) => Ok(None),
-            Ok(Some(value)) => Ok(Some(U::read_from(Bytes::Array(value)))),
-            Err(error) => Err(ConceptReadError::SnapshotGet { source: error })
-        }
-    }
-
-    pub(crate) fn storage_get_supertype_vertex(snapshot: &impl ReadableSnapshot, subtype: impl TypeAPI<'_s>) -> Option<TypeVertex<'static>>
-    {
-        // TODO: handle possible errors
-        snapshot
-            .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(subtype.clone().into_vertex()), TypeEdge::FIXED_WIDTH_ENCODING))
-            .first_cloned()
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error }) // ?
-            .unwrap() // TODO: Remove unwrap
-            .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned())
-    }
-
-    pub(crate) fn storage_get_label(snapshot: &impl ReadableSnapshot, type_: impl TypeAPI<'static>) -> Result<Option<Label<'static>>, ConceptReadError> {
-        let key = build_property_type_label(type_.into_vertex());
-        snapshot
-            .get_mapped(key.into_storage_key().as_reference(), |reference| {
-                let value = StringBytes::new(Bytes::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(reference));
-                Label::parse_from(value)
-            })
-            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
-    }
-
-
-    pub(crate) fn storage_get_owns(
-        snapshot: &impl ReadableSnapshot,
-        owner: impl OwnerAPI<'static>
-    ) -> Result<HashSet<Owns<'static>>, ConceptReadError>
-    {
-        let owns_prefix = build_edge_owns_prefix_from(owner.into_vertex());
-        // TODO: handle possible errors
-        snapshot
-            .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| {
-                let owns_edge = new_edge_owns(Bytes::Reference(key.byte_ref()));
-                Owns::new(ObjectType::new(owns_edge.from().into_owned()), AttributeType::new(owns_edge.to().into_owned())) // TODO: Should we make this more type safe.
-            })
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
-    }
-
-    pub(crate) fn storage_get_plays<F>(
-        snapshot: &impl ReadableSnapshot,
-        player: impl PlayerAPI<'static>,
-        mapper: F,
-    ) -> Result<HashSet<Plays<'static>>, ConceptReadError>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Plays<'static>,
-    {
-        let plays_prefix = build_edge_plays_prefix_from(player.into_vertex());
-        snapshot
-            .iterate_range(KeyRange::new_within(plays_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| {
-                let plays_edge = new_edge_plays(Bytes::Reference(key.byte_ref()));
-                mapper(plays_edge.to())
-            })
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
-    }
-
-    pub(crate) fn storage_get_relates<F>(
-        snapshot: &impl ReadableSnapshot,
-        relation: RelationType<'static>,
-        mapper: F,
-    ) -> Result<HashSet<Relates<'static>>, ConceptReadError>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Relates<'static>,
-    {
-        let relates_prefix = build_edge_relates_prefix_from(relation.into_vertex());
-        snapshot
-            .iterate_range(KeyRange::new_within(relates_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| {
-                let relates_edge = new_edge_relates(Bytes::Reference(key.byte_ref()));
-                mapper(relates_edge.to())
-            })
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
-    }
-
-    pub(crate) fn storage_get_value_type(snapshot: &impl ReadableSnapshot, type_: AttributeType<'static>) -> Result<Option<ValueType>, ConceptReadError> {
-        snapshot
-            .get_mapped(
-                build_property_type_value_type(type_.into_vertex()).into_storage_key().as_reference(),
-                |bytes| {
-                    ValueType::from_value_type_id(ValueTypeID::new(bytes.bytes().try_into().unwrap()))
-                },
-            )
-            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
-    }
-
-    pub(crate) fn storage_get_type_annotations(
-        snapshot: &impl ReadableSnapshot,
-        type_: impl TypeAPI<'static>,
-    ) -> Result<HashSet<Annotation>, ConceptReadError> {
-        snapshot
-            .iterate_range(KeyRange::new_inclusive(
-                TypeVertexProperty::build(type_.vertex(), Infix::ANNOTATION_MIN).into_storage_key(),
-                TypeVertexProperty::build(type_.vertex(), Infix::ANNOTATION_MAX).into_storage_key(),
-            ))
-            .collect_cloned_hashset(|key, value| {
-                let annotation_key = TypeVertexProperty::new(Bytes::Reference(key.byte_ref()));
-                match annotation_key.infix() {
-                    Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract::new()),
-                    Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct::new()),
-                    Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent::new()),
-                    Infix::PropertyAnnotationCardinality => {
-                        Annotation::Cardinality(deserialise_annotation_cardinality(value))
-                    }
-                    Infix::_PropertyAnnotationLast
-                    | Infix::PropertyLabel
-                    | Infix::PropertyValueType
-                    | Infix::PropertyOrdering
-                    | Infix::PropertyHasOrder
-                    | Infix::PropertyRolePlayerOrder => {
-                        unreachable!("Retrieved unexpected infixes while reading annotations.")
-                    }
-                }
-            })
-            .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
-    }
-
-    // TODO: this is currently breaking our architectural pattern that none of the Manager methods should operate graphs
-    pub(crate) fn storage_get_type_edge_annotations<'a>(
-        snapshot: &impl ReadableSnapshot,
-        into_type_edge: impl IntoCanonicalTypeEdge<'a>,
-    ) -> Result<HashSet<Annotation>, ConceptReadError> {
-        let type_edge = into_type_edge.into_type_edge();
-        snapshot
-            .iterate_range(KeyRange::new_inclusive(
-                TypeEdgeProperty::build(type_edge.clone(), Infix::ANNOTATION_MIN).into_storage_key(),
-                TypeEdgeProperty::build(type_edge, Infix::ANNOTATION_MAX).into_storage_key(),
-            ))
-            .collect_cloned_hashset(|key, value| {
-                let annotation_key = TypeEdgeProperty::new(Bytes::Reference(key.byte_ref()));
-                match annotation_key.infix() {
-                    Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract::new()),
-                    Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct::new()),
-                    Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent::new()),
-                    Infix::PropertyAnnotationCardinality => {
-                        Annotation::Cardinality(deserialise_annotation_cardinality(value))
-                    }
-                    Infix::_PropertyAnnotationLast
-                    | Infix::PropertyLabel
-                    | Infix::PropertyValueType
-                    | Infix::PropertyOrdering
-                    | Infix::PropertyHasOrder
-                    | Infix::PropertyRolePlayerOrder => {
-                        unreachable!("Retrieved unexpected infixes while reading annotations.")
-                    }
-                }
-            })
-            .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
-    }
-
 }
 
 pub trait ReadableType<'a, 'b> {
