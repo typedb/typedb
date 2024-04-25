@@ -107,7 +107,6 @@ struct RelationTypeCache {
     type_api_cache_ : TypeAPICache<RelationType<'static>>,
     relates_declared: HashSet<Relates<'static>>,
     owns_declared: HashSet<Owns<'static>>,
-
     plays_declared: HashSet<Plays<'static>>,
 }
 
@@ -207,14 +206,11 @@ impl TypeCache {
         let max_entity_id = entities.iter().map(|e| e.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_entity_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
 
-        let owns = Self::fetch_owns(snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)));
-        let plays = Self::fetch_plays(snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)));
         for entity in entities.into_iter() {
-            let object = ObjectType::Entity(entity.clone());
             let cache = EntityTypeCache {
                 type_api_cache_:  TypeAPICache::build_for(snapshot, entity.clone()),
-                owns_declared: owns.iter().filter(|owns| owns.owner() == object).cloned().collect(),
-                plays_declared: plays.iter().filter(|plays| plays.player() == object).cloned().collect(),
+                owns_declared: StorageTypeManagerSource::storage_get_owns(snapshot, entity.clone()).unwrap(),
+                plays_declared: StorageTypeManagerSource::storage_get_plays(snapshot, entity.clone()).unwrap(),
             };
             caches[entity.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -255,23 +251,12 @@ impl TypeCache {
                 (RelationType::new(edge.from().into_owned()), RoleType::new(edge.to().into_owned()))
             })
             .unwrap();
-        let owns =
-            Self::fetch_owns(snapshot, Prefix::VertexRelationType, |v| ObjectType::Relation(RelationType::new(v)));
-        let plays =
-            Self::fetch_plays(snapshot, Prefix::VertexRelationType, |v| ObjectType::Relation(RelationType::new(v)));
         for relation in relations.into_iter() {
-            let object = ObjectType::Relation(relation.clone());
-            let relates_declared: HashSet<Relates<'static>> = relates
-                .iter()
-                .filter(|(rel, _)| rel == &relation)
-                .map(|(relation, role)| Relates::new(relation.clone(), role.clone()))
-                .collect();
-
             let cache = RelationTypeCache {
                 type_api_cache_:  TypeAPICache::build_for(snapshot, relation.clone()),
-                relates_declared: relates_declared,
-                owns_declared: owns.iter().filter(|owns| owns.owner() == object).cloned().collect(),
-                plays_declared: plays.iter().filter(|plays| plays.player() == object).cloned().collect(),
+                relates_declared: StorageTypeManagerSource::storage_get_relates(snapshot, relation.clone()).unwrap(),
+                owns_declared : StorageTypeManagerSource::storage_get_owns(snapshot, relation.clone()).unwrap(),
+                plays_declared : StorageTypeManagerSource::storage_get_plays(snapshot, relation.clone()).unwrap()
             };
             caches[relation.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -306,19 +291,12 @@ impl TypeCache {
             .unwrap();
         let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_role_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
-        let relates = snapshot
-            .iterate_range(KeyRange::new_within(build_edge_relates_reverse_prefix_prefix(Prefix::VertexRoleType), TypeVertex::FIXED_WIDTH_ENCODING))
-            .collect_cloned_vec(|k, _| {
-                let edge = new_edge_relates_reverse(Bytes::Reference(k.byte_ref()));
-                Relates::new(RelationType::new(edge.to().into_owned()), RoleType::new(edge.from().into_owned()))
-            })
-            .unwrap();
         for role in roles.into_iter() {
             let ordering = Self::read_role_ordering(vertex_properties, role.clone());
             let cache = RoleTypeCache {
                 type_api_cache_:  TypeAPICache::build_for(snapshot, role.clone()),
                 ordering,
-                relates_declared: relates.iter().find(|relates| relates.role() == role).unwrap().clone(),
+                relates_declared: StorageTypeManagerSource::storage_get_relations(snapshot, role.clone()).unwrap()
             };
             caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
         }

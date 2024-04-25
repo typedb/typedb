@@ -323,9 +323,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_relation_type_relates(relation_type)))
         } else {
-            let relates = StorageTypeManagerSource::storage_get_relates(self.snapshot.as_ref(), relation_type.clone(), |role_vertex| {
-                Relates::new(relation_type.clone(), RoleType::new(role_vertex.clone().into_owned()))
-            })?;
+            let relates = StorageTypeManagerSource::storage_get_relates(self.snapshot.as_ref(), relation_type.clone())?;
             Ok(MaybeOwns::owned(relates))
         }
     }
@@ -351,9 +349,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_entity_type_plays(entity_type)))
         } else {
-            let plays = StorageTypeManagerSource::storage_get_plays(self.snapshot.as_ref(), entity_type.clone(), |role_vertex| {
-                Plays::new(ObjectType::Entity(entity_type.clone()), RoleType::new(role_vertex.clone().into_owned()))
-            })?;
+            let plays = StorageTypeManagerSource::storage_get_plays(self.snapshot.as_ref(), entity_type.clone())?;
             Ok(MaybeOwns::owned(plays))
         }
     }

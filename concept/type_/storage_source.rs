@@ -5,7 +5,7 @@
  */
 
 use bytes::Bytes;
-use encoding::graph::type_::edge::{build_edge_owns_prefix_from, build_edge_plays_prefix_from, build_edge_relates_prefix_from, build_edge_sub_prefix_from, new_edge_owns, new_edge_plays, new_edge_relates, new_edge_sub, TypeEdge};
+use encoding::graph::type_::edge::{build_edge_owns_prefix_from, build_edge_plays_prefix_from, build_edge_relates_prefix_from, build_edge_relates_reverse_prefix_from, build_edge_sub_prefix_from, new_edge_owns, new_edge_plays, new_edge_relates, new_edge_relates_reverse, new_edge_sub, TypeEdge};
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
 use encoding::graph::type_::property::{build_property_type_label, build_property_type_value_type, TypeEdgeProperty, TypeVertexProperty};
 use encoding::graph::type_::vertex::TypeVertex;
@@ -29,6 +29,7 @@ use crate::type_::owns::Owns;
 use crate::type_::plays::Plays;
 use crate::type_::relates::Relates;
 use crate::type_::relation_type::RelationType;
+use crate::type_::role_type::RoleType;
 
 pub struct StorageTypeManagerSource { }
 
@@ -85,41 +86,51 @@ impl<'_s> StorageTypeManagerSource
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn storage_get_plays<F>(
+    pub(crate) fn storage_get_plays(
         snapshot: &impl ReadableSnapshot,
-        player: impl PlayerAPI<'static>,
-        mapper: F,
+        player: impl PlayerAPI<'static>
     ) -> Result<HashSet<Plays<'static>>, ConceptReadError>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Plays<'static>,
     {
         let plays_prefix = build_edge_plays_prefix_from(player.into_vertex());
         snapshot
             .iterate_range(KeyRange::new_within(plays_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
                 let plays_edge = new_edge_plays(Bytes::Reference(key.byte_ref()));
-                mapper(plays_edge.to())
+                Plays::new(ObjectType::new(plays_edge.from().into_owned()), RoleType::new(plays_edge.to().into_owned()))
             })
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn storage_get_relates<F>(
+    pub(crate) fn storage_get_relates(
         snapshot: &impl ReadableSnapshot,
         relation: RelationType<'static>,
-        mapper: F,
     ) -> Result<HashSet<Relates<'static>>, ConceptReadError>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Relates<'static>,
     {
         let relates_prefix = build_edge_relates_prefix_from(relation.into_vertex());
         snapshot
             .iterate_range(KeyRange::new_within(relates_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
                 let relates_edge = new_edge_relates(Bytes::Reference(key.byte_ref()));
-                mapper(relates_edge.to())
+                Relates::new(RelationType::new(relates_edge.from().into_owned()), RoleType::new(relates_edge.to().into_owned()))
             })
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
+
+    pub(crate) fn storage_get_relations(
+        snapshot: &impl ReadableSnapshot,
+        role: RoleType<'static>,
+    ) -> Result<Relates<'static>, ConceptReadError>
+    {
+        let relates_prefix = build_edge_relates_reverse_prefix_from(role.into_vertex());
+        snapshot
+            .iterate_range(KeyRange::new_within(relates_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
+            .collect_cloned_vec(|key, _| {
+                let relates_edge = new_edge_relates_reverse(Bytes::Reference(key.byte_ref()));
+                Relates::new(RelationType::new(relates_edge.to().into_owned()), RoleType::new(relates_edge.from().into_owned()))
+            }).map_err(|error| ConceptReadError::SnapshotIterate { source: error })
+            .map(|v| { v.first().unwrap().clone() })
+    }
+
 
     pub(crate) fn storage_get_value_type(snapshot: &impl ReadableSnapshot, type_: AttributeType<'static>) -> Result<Option<ValueType>, ConceptReadError> {
         snapshot
