@@ -67,6 +67,7 @@ use crate::{
 use crate::error::ConceptWriteError;
 use crate::thing::ObjectAPI;
 use crate::type_::{deserialise_ordering, IntoCanonicalTypeEdge, Ordering, serialise_annotation_cardinality, serialise_ordering};
+use crate::type_::annotation::Annotation;
 use crate::type_::owns::OwnsAnnotation;
 use crate::type_::storage_source::StorageTypeManagerSource;
 
@@ -655,14 +656,16 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 }
 
-pub trait ReadableType<'a, 'b> {
+pub trait ReadableType<'a, 'b> : TypeAPI<'a> {
     type SelfWithLifetime: TypeAPI<'b>;
+    type AnnotationType : std::hash::Hash + Eq + From<Annotation>;
     const ROOT_KIND: Kind;
     fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfWithLifetime;
 }
 
 impl<'a, 'b> ReadableType<'a, 'b> for AttributeType<'a> {
     type SelfWithLifetime = AttributeType<'b>;
+    type AnnotationType = AttributeTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Attribute;
 
 
@@ -673,6 +676,7 @@ impl<'a, 'b> ReadableType<'a, 'b> for AttributeType<'a> {
 
 impl<'a, 'b> ReadableType<'a, 'b> for EntityType<'a> {
     type SelfWithLifetime = EntityType<'b>;
+    type AnnotationType = EntityTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Entity;
     fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfWithLifetime {
         EntityType::new(new_vertex_entity_type(b))
@@ -681,6 +685,7 @@ impl<'a, 'b> ReadableType<'a, 'b> for EntityType<'a> {
 
 impl<'a, 'b> ReadableType<'a, 'b> for RelationType<'a> {
     type SelfWithLifetime = RelationType<'b>;
+    type AnnotationType = RelationTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Relation;
     fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> RelationType<'b> {
         RelationType::new(new_vertex_relation_type(b))
@@ -689,6 +694,7 @@ impl<'a, 'b> ReadableType<'a, 'b> for RelationType<'a> {
 
 impl<'a, 'b> ReadableType<'a, 'b> for RoleType<'a> {
     type SelfWithLifetime = RoleType<'b>;
+    type AnnotationType = RoleTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Role;
     fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> RoleType<'b> {
         RoleType::new(new_vertex_role_type(b))
