@@ -75,9 +75,10 @@ impl<Durability> MVCCStorage<Durability> {
         use StorageOpenError::{Commit, DurabilityServiceWrite, MetadataRead};
 
         let storage_dir = path.join(Self::STORAGE_DIR_NAME);
-        if !storage_dir.exists() {
-            fs::create_dir_all(&storage_dir).map_err(|_error| todo!())?;
+        if storage_dir.exists() {
+            fs::remove_dir_all(&storage_dir).map_err(|_error| todo!())?;
         }
+        fs::create_dir_all(&storage_dir).map_err(|_error| todo!())?;
 
         // FIXME proper error
         let mut durability_service =
@@ -85,21 +86,30 @@ impl<Durability> MVCCStorage<Durability> {
         durability_service.register_record_type::<CommitRecord>();
         durability_service.register_record_type::<StatusRecord>();
 
-        let name = name.as_ref();
-        let keyspaces = Keyspaces::open::<KS>(&storage_dir)?;
-
         let checkpoint_dir = path.join(Self::CHECKPOINT_DIR_NAME);
 
         let checkpoint_sequence_number = {
             if let Some(latest_checkpoint_dir) = find_latest_checkpoint(&checkpoint_dir)? {
+                for keyspace in KS::iter() {
+                    let keyspace_dir = storage_dir.join(keyspace.name());
+                    fs::create_dir(&keyspace_dir).map_err(|_error| todo!())?;
+                    for entry in fs::read_dir(latest_checkpoint_dir.join(keyspace.name())).map_err(|_error| todo!())? {
+                        let checkpointed_file = entry.map_err(|_error| todo!())?.path();
+                        fs::copy(&checkpointed_file, keyspace_dir.join(checkpointed_file.file_name().unwrap()))
+                            .unwrap(); // FIXME
+                    }
+                }
                 let metadata_file_path = latest_checkpoint_dir.join(Self::CHECKPOINT_METADATA_FILE_NAME);
                 let metadata = fs::read_to_string(metadata_file_path)
                     .map_err(|error| MetadataRead { dir: checkpoint_dir.clone(), source: error })?;
                 SequenceNumber::new(metadata.parse().unwrap()) // FIXME corrupt METADATA handling
             } else {
-                SequenceNumber::new(1)
+                SequenceNumber::MIN
             }
         };
+
+        let name = name.as_ref();
+        let keyspaces = Keyspaces::open::<KS>(&storage_dir)?;
 
         let (isolation_manager, pending_commits) =
             recover_isolation(name, checkpoint_sequence_number, &durability_service)
@@ -296,7 +306,7 @@ impl<Durability> MVCCStorage<Durability> {
             WriteMetadata,
         };
 
-        let watermark = self.isolation_manager.watermark();
+        let watermark = self.read_watermark();
 
         let checkpoint_dir = self.path.join(Self::CHECKPOINT_DIR_NAME);
         if !checkpoint_dir.exists() {
@@ -439,7 +449,7 @@ fn recover_isolation(
     checkpoint_sequence_number: SequenceNumber,
     durability_service: &impl DurabilityService,
 ) -> Result<(IsolationManager, Vec<(SequenceNumber, CommitRecord)>), StorageCommitError> {
-    let isolation_manager = IsolationManager::new(checkpoint_sequence_number);
+    let isolation_manager = IsolationManager::new(checkpoint_sequence_number + 1);
 
     enum CheckpointCommitStatus {
         Pending(CommitRecord),

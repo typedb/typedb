@@ -111,11 +111,12 @@ fn create_reopen() {
         for key in &keys {
             storage.put_raw(StorageKeyReference::from(key), &empty_value());
         }
+        storage.checkpoint().unwrap();
     }
 
     {
         let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
-        let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage
+        let items = storage
             .iterate_keyspace_range(KeyRange::new_unbounded(StorageKey::<64>::Reference(StorageKeyReference::from(
                 &StorageKeyArray::<64>::from((vec![0x0], Keyspace)),
             ))))
