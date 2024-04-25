@@ -65,7 +65,7 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
 
 impl<'a> AttributeType<'a> {
     pub fn is_root(&self, type_manager: &TypeManager<impl ReadableSnapshot>) -> Result<bool, ConceptReadError> {
-        type_manager.get_type_is_root(self.clone().into_owned())
+        type_manager.get_attribute_type_is_root(self.clone().into_owned())
     }
 
     pub fn set_value_type(&self, type_manager: &TypeManager<impl WritableSnapshot>, value_type: ValueType) {
@@ -95,7 +95,7 @@ impl<'a> AttributeType<'a> {
         &self,
         type_manager: &TypeManager<impl ReadableSnapshot>,
     ) -> Result<Option<AttributeType<'static>>, ConceptReadError> {
-        type_manager.get_supertype(self.clone().into_owned())
+        type_manager.get_attribute_type_supertype(self.clone().into_owned())
     }
 
     fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: AttributeType<'static>) {

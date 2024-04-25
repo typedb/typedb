@@ -105,6 +105,58 @@ impl<Snapshot> TypeManager<Snapshot> {
 // TODO:
 //   if we drop/close without committing, then we need to release all the IDs taken back to the IDGenerator
 //   this is only applicable for type manager where we can only have 1 concurrent txn and IDs are precious
+
+
+macro_rules! get_type_methods {
+    ($(
+        fn $method_name:ident() -> $output_type:ident = $cache_method:ident | $new_vertex_method:ident;
+    )*) => {
+        $(
+            pub fn $method_name(&self, label: &Label<'_>) -> Result<Option<$output_type<'static>>, ConceptReadError> {
+                if let Some(cache) = &self.type_cache {
+                    Ok(cache.$cache_method(label))
+                } else {
+                    self.get_labelled_type(label, |bytes| $output_type::new($new_vertex_method(bytes)))
+                }
+            }
+        )*
+
+        fn get_labelled_type<M, U>(&self, label: &Label<'_>, mapper: M) -> Result<Option<U>, ConceptReadError>
+            where
+                M: FnOnce(Bytes<'static, BUFFER_KEY_INLINE>) -> U,
+        {
+            let key = LabelToTypeVertexIndex::build(label).into_storage_key();
+            match self.snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {
+                Ok(None) => Ok(None),
+                Ok(Some(value)) => Ok(Some(mapper(Bytes::Array(value)))),
+                Err(error) => Err(ConceptReadError::SnapshotGet { source: error })
+            }
+        }
+    }
+}
+
+macro_rules! get_supertype_methods {
+    ($(
+        fn $method_name:ident() -> $type_:ident = $cache_method:ident;
+    )*) => {
+        $(
+            // WARN: supertypes currently do NOT include themselves
+            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<Option<$type_<'static>>, ConceptReadError> {
+                if let Some(cache) = &self.type_cache {
+                    Ok(cache.$cache_method(type_))
+                } else {
+                    Ok(self
+                        .snapshot
+                        .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(type_.into_vertex().clone()), TypeEdge::FIXED_WIDTH_ENCODING))
+                        .first_cloned()
+                        .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
+                        .map(|(key, _)| $type_::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned())))
+                }
+            }
+        )*
+    }
+}
+
 macro_rules! get_supertypes_methods {
     ($(
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
@@ -228,6 +280,19 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         Ok(Self::check_type_is_root(label.deref(), T::ROOT_KIND))
     }
 
+    get_type_methods! {
+        fn get_entity_type() -> EntityType = get_entity_type | new_vertex_entity_type;
+        fn get_relation_type() -> RelationType = get_relation_type | new_vertex_relation_type;
+        fn get_role_type() -> RoleType = get_role_type | new_vertex_role_type;
+        fn get_attribute_type() -> AttributeType = get_attribute_type | new_vertex_attribute_type;
+    }
+
+    get_supertype_methods! {
+        fn get_entity_type_supertype() -> EntityType = get_entity_type_supertype;
+        fn get_relation_type_supertype() -> RelationType = get_relation_type_supertype;
+        fn get_role_type_supertype() -> RoleType = get_role_type_supertype;
+        fn get_attribute_type_supertype() -> AttributeType = get_attribute_type_supertype;
+    }
 
     get_supertypes_methods! {
         fn get_entity_type_supertypes() -> EntityType = get_entity_type_supertypes;
