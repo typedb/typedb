@@ -15,12 +15,7 @@ use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use durability::SequenceNumber;
 use encoding::{AsBytes, graph::{
     type_::{
-        edge::{
-            build_edge_owns_prefix_prefix, build_edge_plays_prefix_prefix, build_edge_relates_prefix_prefix,
-            build_edge_relates_reverse_prefix_prefix, build_edge_sub_prefix_prefix, new_edge_owns, new_edge_plays,
-            new_edge_relates, new_edge_relates_reverse, new_edge_sub,
-        },
-        property::{build_property_type_label, build_property_type_value_type, TypeVertexProperty},
+        property::TypeVertexProperty,
         vertex::{
             build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
             build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type,
@@ -28,18 +23,17 @@ use encoding::{AsBytes, graph::{
         },
     },
     Typed,
-}, layout::{infix::Infix, prefix::Prefix}, Prefixed, value::{
+}, layout::prefix::Prefix, Prefixed, value::{
     label::Label,
-    string::StringBytes,
-    value_type::{ValueType, ValueTypeID},
+    value_type::ValueType,
 }};
 use encoding::graph::type_::edge::TypeEdge;
 use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_ordering, TypeEdgeProperty};
-use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_VALUE_INLINE};
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{MVCCStorage, ReadSnapshotOpenError, snapshot::ReadableSnapshot};
 use storage::key_range::KeyRange;
 
-use crate::type_::{annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent}, attribute_type::{AttributeType, AttributeTypeAnnotation}, deserialise_annotation_cardinality, deserialise_ordering, entity_type::{EntityType, EntityTypeAnnotation}, IntoCanonicalTypeEdge, object_type::ObjectType, Ordering, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
+use crate::type_::{attribute_type::{AttributeType, AttributeTypeAnnotation}, deserialise_ordering, entity_type::{EntityType, EntityTypeAnnotation}, IntoCanonicalTypeEdge, object_type::ObjectType, Ordering, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
 use crate::type_::owns::OwnsAnnotation;
 use crate::type_::storage_source::StorageTypeManagerSource;
 use crate::type_::type_manager::{ReadableType, TypeManager};
@@ -166,7 +160,7 @@ impl TypeCache {
             .filter_map(|entry| entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone())))
             .collect();
 
-        let attribute_type_caches = Self::create_attribute_caches(&snapshot, &vertex_properties);
+        let attribute_type_caches = Self::create_attribute_caches(&snapshot);
         let attribute_type_index_labels = attribute_type_caches
             .iter()
             .filter_map(|entry| entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone())))
@@ -244,13 +238,6 @@ impl TypeCache {
             .unwrap();
         let max_relation_id = relations.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_relation_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
-        let relates = snapshot
-            .iterate_range(KeyRange::new_within(build_edge_relates_prefix_prefix(Prefix::VertexRelationType), TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_vec(|k, _| {
-                let edge = new_edge_relates(Bytes::Reference(k.byte_ref()));
-                (RelationType::new(edge.from().into_owned()), RoleType::new(edge.to().into_owned()))
-            })
-            .unwrap();
         for relation in relations.into_iter() {
             let cache = RelationTypeCache {
                 type_api_cache_:  TypeAPICache::build_for(snapshot, relation.clone()),
@@ -333,7 +320,6 @@ impl TypeCache {
 
     fn create_attribute_caches(
         snapshot: &impl ReadableSnapshot,
-        vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
     ) -> Box<[Option<AttributeTypeCache>]> {
         let attributes = snapshot
             .iterate_range(KeyRange::new_within(build_vertex_attribute_type_prefix(), TypeVertex::FIXED_WIDTH_ENCODING))
@@ -346,7 +332,7 @@ impl TypeCache {
         for attribute in attributes {
             let cache = AttributeTypeCache {
                 type_api_cache_:  TypeAPICache::build_for(snapshot, attribute.clone()),
-                value_type: Self::read_value_type(vertex_properties, attribute.vertex().into_owned()),
+                value_type: StorageTypeManagerSource::storage_get_value_type(snapshot, attribute.clone()).unwrap(),
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -384,7 +370,7 @@ impl TypeCache {
                     owns.clone(),
                     OwnsCache {
                         ordering: Self::read_edge_ordering(edge_properties, owns.clone().into_type_edge()),
-                        annotations_declared: Self::read_edge_annotations(edge_properties, owns.into_type_edge())
+                        annotations_declared: StorageTypeManagerSource::storage_get_type_edge_annotations(snapshot, owns.clone()).unwrap()
                             .into_iter()
                             .map(|annotation| OwnsAnnotation::from(annotation))
                             .collect(),
@@ -394,112 +380,12 @@ impl TypeCache {
             .unwrap()
     }
 
-    fn fetch_owns<F>(snapshot: &impl ReadableSnapshot, prefix: Prefix, from_reader: F) -> Vec<Owns<'static>>
-        where
-            F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
-    {
-        snapshot
-            .iterate_range(KeyRange::new_within(build_edge_owns_prefix_prefix(prefix), TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_vec(|key, _| {
-                let edge = new_edge_owns(Bytes::Reference(key.byte_ref()));
-                Owns::new(from_reader(edge.from().into_owned()), AttributeType::new(edge.to().into_owned()))
-            })
-            .unwrap()
-    }
-
-    fn fetch_plays<F>(snapshot: &impl ReadableSnapshot, prefix: Prefix, from_constructor: F) -> Vec<Plays<'static>>
-        where
-            F: Fn(TypeVertex<'static>) -> ObjectType<'static>,
-    {
-        snapshot
-            .iterate_range(KeyRange::new_within(build_edge_plays_prefix_prefix(prefix), TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_vec(|key, _| {
-                let edge = new_edge_plays(Bytes::Reference(key.byte_ref()));
-                Plays::new(from_constructor(edge.from().into_owned()), RoleType::new(edge.to().into_owned()))
-            })
-            .unwrap()
-    }
-
-    fn fetch_supertypes<F, T: Ord>(
-        snapshot: &impl ReadableSnapshot,
-        prefix: Prefix,
-        type_constructor: F,
-    ) -> BTreeMap<T, T>
-        where
-            F: Fn(TypeVertex<'static>) -> T,
-    {
-        snapshot
-            .iterate_range(KeyRange::new_within(build_edge_sub_prefix_prefix(prefix), TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_bmap(|key, _| {
-                let edge = new_edge_sub(Bytes::Reference(key.byte_ref()));
-                (type_constructor(edge.from().into_owned()), type_constructor(edge.to().into_owned()))
-            })
-            .unwrap()
-    }
-
-    fn read_type_label(
-        vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
-        type_vertex: TypeVertex<'static>,
-    ) -> Label<'static> {
-        vertex_properties
-            .get(&build_property_type_label(type_vertex))
-            .map(|bytes| {
-                Label::parse_from(StringBytes::new(Bytes::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(
-                    ByteReference::from(bytes),
-                )))
-            })
-            .unwrap()
-    }
-
-    fn read_value_type(
-        vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
-        type_vertex: TypeVertex<'static>,
-    ) -> Option<ValueType> {
-        vertex_properties
-            .get(&build_property_type_value_type(type_vertex))
-            .map(|bytes| ValueType::from_value_type_id(ValueTypeID::new(bytes.bytes().try_into().unwrap())))
-    }
-
     fn read_edge_ordering(
         edge_properties: &BTreeMap<TypeEdgeProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
         type_edge: TypeEdge<'static>,
     ) -> Ordering {
         let ordering = edge_properties.get(&build_property_type_edge_ordering(type_edge)).unwrap();
         deserialise_ordering(ByteReference::from(ordering))
-    }
-
-    fn read_edge_annotations(
-        edge_properties: &BTreeMap<TypeEdgeProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
-        type_edge: TypeEdge<'static>,
-    ) -> HashSet<Annotation> {
-        edge_properties
-            .iter()
-            .filter_map(|(property, value)| {
-                if property.type_edge() != type_edge {
-                    None
-                } else {
-                    // WARNING: do _not_ remove the explicit enumeration, as this will help us catch when future annotations are added
-                    match property.infix() {
-                        Infix::PropertyAnnotationAbstract => Some(Annotation::Abstract(AnnotationAbstract::new())),
-                        Infix::PropertyAnnotationDistinct => Some(Annotation::Distinct(AnnotationDistinct::new())),
-                        Infix::PropertyAnnotationIndependent => {
-                            Some(Annotation::Independent(AnnotationIndependent::new()))
-                        }
-                        Infix::PropertyAnnotationCardinality => {
-                            Some(Annotation::Cardinality(deserialise_annotation_cardinality(ByteReference::from(value))))
-                        }
-                        Infix::PropertyLabel
-                        | Infix::PropertyOrdering
-                        | Infix::PropertyValueType
-                        | Infix::PropertyHasOrder
-                        | Infix::PropertyRolePlayerOrder => None,
-                        Infix::_PropertyAnnotationLast => {
-                            unreachable!("Received unexpected marker annotation")
-                        }
-                    }
-                }
-            })
-            .collect()
     }
 
     pub(crate) fn get_entity_type(&self, label: &Label<'_>) -> Option<EntityType<'static>> {
