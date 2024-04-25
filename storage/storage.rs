@@ -819,6 +819,47 @@ mod tests {
     }
 
     #[test]
+    fn writes_after_checkpoint_are_reloaded_from_wal() {
+        test_keyspace_set! {
+            Keyspace => 0: "keyspace",
+        }
+
+        init_logging();
+        let storage_path = create_tmp_dir();
+        let key_hello = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"hello"));
+        let key_world = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"world"));
+
+        let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+        let snapshot = storage.clone().open_snapshot_write();
+        snapshot.put(key_hello.clone());
+        snapshot.commit().unwrap();
+        storage.checkpoint().unwrap();
+        drop(storage);
+
+        let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+        let snapshot = storage.clone().open_snapshot_write();
+        snapshot.put(key_world.clone());
+        snapshot.commit().unwrap();
+        drop(storage);
+
+        // hide wal from storage
+        fs::rename(storage_path.join(MVCCStorage::<WAL>::WAL_DIR_NAME), storage_path.join("_wal")).unwrap();
+
+        let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+        assert_eq!(storage.get::<0>(&key_hello, SequenceNumber::MAX).unwrap().unwrap(), ByteArray::empty());
+        assert_eq!(storage.get::<0>(&key_world, SequenceNumber::MAX).unwrap(), None);
+        drop(storage);
+
+        // restore wal
+        fs::remove_dir_all(storage_path.join(MVCCStorage::<WAL>::WAL_DIR_NAME)).unwrap();
+        fs::rename(storage_path.join("_wal"), storage_path.join(MVCCStorage::<WAL>::WAL_DIR_NAME)).unwrap();
+
+        let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+        assert_eq!(storage.get::<0>(&key_hello, SequenceNumber::MAX).unwrap().unwrap(), ByteArray::empty());
+        assert_eq!(storage.get::<0>(&key_world, SequenceNumber::MAX).unwrap().unwrap(), ByteArray::empty());
+    }
+
+    #[test]
     fn test_recovery_from_failed_write() {
         test_keyspace_set! {
             Keyspace => 0: "keyspace",
@@ -850,22 +891,16 @@ mod tests {
 
         init_logging();
         let storage_path = create_tmp_dir();
-        let key_hello = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, b"hello"));
-        let key_world = StorageKeyArray::from((TestKeyspaceSet::FailedKeyspace, b"world"));
+        let key_1 = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, b"hello"));
+        let key_2 = StorageKeyArray::from((TestKeyspaceSet::FailedKeyspace, b"world"));
 
         let seq = {
             let full_operations = OperationsBuffer::new();
-            full_operations
-                .writes_in(key_hello.keyspace_id())
-                .insert(key_hello.byte_array().clone(), ByteArray::empty());
-            full_operations
-                .writes_in(key_world.keyspace_id())
-                .insert(key_world.byte_array().clone(), ByteArray::empty());
+            full_operations.writes_in(key_1.keyspace_id()).insert(key_1.byte_array().clone(), ByteArray::empty());
+            full_operations.writes_in(key_2.keyspace_id()).insert(key_2.byte_array().clone(), ByteArray::empty());
 
             let partial_operations = OperationsBuffer::new();
-            partial_operations
-                .writes_in(key_hello.keyspace_id())
-                .insert(key_hello.byte_array().clone(), ByteArray::empty());
+            partial_operations.writes_in(key_1.keyspace_id()).insert(key_1.byte_array().clone(), ByteArray::empty());
 
             let mut durability_service = WAL::open(storage_path.join(MVCCStorage::<WAL>::WAL_DIR_NAME)).unwrap();
             durability_service.register_record_type::<CommitRecord>();
@@ -884,6 +919,6 @@ mod tests {
         };
 
         let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
-        assert_eq!(storage.get::<0>(&key_world, seq).unwrap().unwrap(), ByteArray::empty());
+        assert_eq!(storage.get::<0>(&key_2, seq).unwrap().unwrap(), ByteArray::empty());
     }
 }
