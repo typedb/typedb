@@ -7,25 +7,12 @@
 use std::ops::Deref;
 
 #[derive(Debug)]
-pub enum MaybeOwns<'a, T>
-where
-    T: Eq,
-{
+pub enum MaybeOwns<'a, T> {
     Owned(T),
     Borrowed(&'a T),
 }
 
-impl<'a, T: Eq> MaybeOwns<'a, T> {
-    pub fn owned(t: T) -> Self {
-        Self::Owned(t)
-    }
-
-    pub fn borrowed(t: &'a T) -> Self {
-        Self::Borrowed(t)
-    }
-}
-
-impl<T: Eq> Deref for MaybeOwns<'_, T> {
+impl<T> Deref for MaybeOwns<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &T {
