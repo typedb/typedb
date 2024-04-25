@@ -516,8 +516,6 @@ public class Metrics {
             if (isPrimaryServer) {
                 load.add("schema", schemaLoad.asJSON());
                 load.add("data", dataLoad.asJSON());
-            } else { // TODO: Remove after tests
-                System.out.println("Could send some data, but I am not a Primary server! " + schemaLoad.asJSON() + dataLoad.asJSON());
             }
             load.add("connection", connectionPeakCounts.asJSON());
             return load;
