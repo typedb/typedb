@@ -7,6 +7,7 @@
 use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 use bytes::byte_reference::ByteReference;
+use bytes::Bytes;
 use encoding::graph::type_::edge::TypeEdge;
 
 use encoding::graph::type_::vertex::TypeVertex;

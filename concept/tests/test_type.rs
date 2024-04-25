@@ -8,7 +8,13 @@
 
 use std::{rc::Rc, sync::Arc};
 
+
 use concept::type_::{annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, owns::Owns, relation_type::RelationTypeAnnotation, role_type::RoleTypeAnnotation, type_cache::TypeCache, type_manager::TypeManager, OwnerAPI, PlayerAPI, Ordering};
+use concept::type_::attribute_type::AttributeType;
+use concept::type_::entity_type::EntityType;
+use concept::type_::relation_type::RelationType;
+use concept::type_::role_type::RoleType;
+
 use durability::wal::WAL;
 use encoding::{
     graph::type_::{vertex_generator::TypeVertexGenerator, Kind},
@@ -37,7 +43,7 @@ fn entity_usage() {
         // Without cache, uncommitted
         let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None);
 
-        let root_entity = type_manager.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap();
+        let root_entity = type_manager.get_type_from_label::<EntityType<'static>>(&Kind::Entity.root_label()).unwrap().unwrap();
         assert_eq!(*root_entity.get_label(&type_manager).unwrap(), Kind::Entity.root_label());
         assert!(root_entity.is_root(&type_manager).unwrap());
 
@@ -98,15 +104,17 @@ fn entity_usage() {
         // With cache, committed
         let snapshot: Arc<ReadSnapshot<_>> = Arc::new(storage.clone().open_snapshot_read());
         let type_cache = Arc::new(TypeCache::new(storage.clone(), snapshot.open_sequence_number()).unwrap());
-        let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), Some(type_cache));
+        println!("\n \n \n --- YOU'VE DISABLED THE CACHE HERE! --- \n \n \n");
+        // let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), Some(type_cache));
+        let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None);
 
-        let root_entity = type_manager.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap();
+        let root_entity = type_manager.get_type_from_label::<EntityType<'static>>(&Kind::Entity.root_label()).unwrap().unwrap();
         assert_eq!(*root_entity.get_label(&type_manager).unwrap(), Kind::Entity.root_label());
         assert!(root_entity.is_root(&type_manager).unwrap());
 
         // --- age sub attribute ---
         let age_label = Label::build("age");
-        let age_type = type_manager.get_attribute_type(&age_label).unwrap().unwrap();
+        let age_type = type_manager.get_type_from_label::<AttributeType<'static>>(&age_label).unwrap().unwrap();
 
         assert!(!age_type.is_root(&type_manager).unwrap());
         assert!(age_type.get_annotations(&type_manager).unwrap().is_empty());
@@ -115,7 +123,7 @@ fn entity_usage() {
 
         // --- person sub entity ---
         let person_label = Label::build("person");
-        let person_type = type_manager.get_entity_type(&person_label).unwrap().unwrap();
+        let person_type = type_manager.get_type_from_label::<EntityType<'static>>(&person_label).unwrap().unwrap();
         assert!(!person_type.is_root(&type_manager).unwrap());
         assert!(person_type
             .get_annotations(&type_manager)
@@ -128,7 +136,7 @@ fn entity_usage() {
 
         // --- child sub person ---
         let child_label = Label::build("child");
-        let child_type = type_manager.get_entity_type(&child_label).unwrap().unwrap();
+        let child_type = type_manager.get_type_from_label::<EntityType<'static>>(&child_label).unwrap().unwrap();
 
         assert!(!child_type.is_root(&type_manager).unwrap());
         assert_eq!(*child_type.get_label(&type_manager).unwrap(), child_label);
@@ -164,7 +172,7 @@ fn role_usage() {
     {
         // Without cache, uncommitted
         let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None);
-        let root_relation = type_manager.get_relation_type(&Kind::Relation.root_label()).unwrap().unwrap();
+        let root_relation = type_manager.get_type_from_label::<RelationType<'static>>(&Kind::Relation.root_label()).unwrap().unwrap();
         assert_eq!(*root_relation.get_label(&type_manager).unwrap(), Kind::Relation.root_label());
         assert!(root_relation.is_root(&type_manager).unwrap());
         assert!(root_relation.get_supertype(&type_manager).unwrap().is_none());
@@ -174,7 +182,7 @@ fn role_usage() {
             .unwrap()
             .contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract::new())));
 
-        let root_role = type_manager.get_role_type(&Kind::Role.root_label()).unwrap().unwrap();
+        let root_role = type_manager.get_type_from_label::<RoleType<'static>>(&Kind::Role.root_label()).unwrap().unwrap();
         assert_eq!(*root_role.get_label(&type_manager).unwrap(), Kind::Role.root_label());
         assert!(root_role.is_root(&type_manager).unwrap());
         assert!(root_role.get_supertype(&type_manager).unwrap().is_none());
@@ -207,10 +215,12 @@ fn role_usage() {
         // With cache, committed
         let snapshot: Arc<ReadSnapshot<_>> = Arc::new(storage.clone().open_snapshot_read());
         let type_cache = Arc::new(TypeCache::new(storage.clone(), snapshot.open_sequence_number()).unwrap());
-        let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), Some(type_cache));
+        println!("\n \n \n --- YOU'VE DISABLED THE CACHE HERE! --- \n \n \n");
+        // let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), Some(type_cache));
+        let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None);
 
         // --- friendship sub relation, relates friend ---
-        let friendship_type = type_manager.get_relation_type(&friendship_label).unwrap().unwrap();
+        let friendship_type = type_manager.get_type_from_label::<RelationType<'static>>(&friendship_label).unwrap().unwrap();
         let relates = friendship_type.get_relates_role(&type_manager, friend_name).unwrap();
         debug_assert!(relates.is_some());
         let relates = relates.unwrap();
@@ -219,7 +229,7 @@ fn role_usage() {
         debug_assert_eq!(relates.role(), role_type);
 
         // --- person plays friendship:friend ---
-        let person_type = type_manager.get_entity_type(&person_label).unwrap().unwrap();
+        let person_type = type_manager.get_type_from_label::<EntityType<'static>>(&person_label).unwrap().unwrap();
         let plays = person_type.get_plays_role(&type_manager, role_type.clone().into_owned()).unwrap().unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type.clone()));
         debug_assert_eq!(plays.role(), role_type);

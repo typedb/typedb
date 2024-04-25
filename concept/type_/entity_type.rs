@@ -96,7 +96,7 @@ impl<'a> EntityType<'a> {
         &self,
         type_manager: &TypeManager<impl ReadableSnapshot>,
     ) -> Result<Option<EntityType<'_>>, ConceptReadError> {
-        type_manager.get_entity_type_supertype(self.clone().into_owned())
+        type_manager.get_supertype(self.clone().into_owned())
     }
 
     pub fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: EntityType<'static>) {
@@ -230,3 +230,4 @@ fn storage_key_ref_to_entity_type(storage_key_ref: StorageKeyReference<'_>) -> E
 }
 
 concept_iterator!(EntityTypeIterator, EntityType, storage_key_ref_to_entity_type);
+use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};

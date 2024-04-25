@@ -98,7 +98,7 @@ impl<'a> RelationType<'a> {
         &self,
         type_manager: &TypeManager<impl ReadableSnapshot>,
     ) -> Result<Option<RelationType<'static>>, ConceptReadError> {
-        type_manager.get_relation_type_supertype(self.clone().into_owned())
+        type_manager.get_supertype(self.clone().into_owned())
     }
 
     fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: RelationType<'static>) {
@@ -147,7 +147,7 @@ impl<'a> RelationType<'a> {
         name: &str,
     ) -> Result<Option<RoleType<'static>>, ConceptReadError> {
         let label = Label::build_scoped(name, self.get_label(type_manager)?.name().as_str());
-        type_manager.get_role_type(&label)
+        type_manager.get_type_from_label::<RoleType<'static>>(&label)
     }
 
     pub fn create_relates(

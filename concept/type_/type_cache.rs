@@ -66,6 +66,15 @@ pub struct TypeCache {
     attribute_types_index_label: HashMap<Label<'static>, AttributeType<'static>>,
 }
 
+// struct BasicTypeCache<T>
+// where T: TypeAPI<'static> {
+//     type_: T,
+//     label: Label<'static>,
+//     is_root: bool,
+//     supertype: Option<T>,
+//     supertypes: Vec<T>,  // TODO: use smallvec if we want to have some inline - benchmark.
+// }
+
 #[derive(Debug)]
 struct EntityTypeCache {
     type_: EntityType<'static>,

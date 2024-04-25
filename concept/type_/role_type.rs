@@ -88,7 +88,7 @@ impl<'a> RoleType<'a> {
         &self,
         type_manager: &TypeManager<impl ReadableSnapshot>,
     ) -> Result<Option<RoleType<'_>>, ConceptReadError> {
-        type_manager.get_role_type_supertype(self.clone().into_owned())
+        type_manager.get_supertype(self.clone().into_owned())
     }
 
     fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: RoleType<'static>) {

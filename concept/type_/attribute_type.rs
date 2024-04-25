@@ -95,7 +95,7 @@ impl<'a> AttributeType<'a> {
         &self,
         type_manager: &TypeManager<impl ReadableSnapshot>,
     ) -> Result<Option<AttributeType<'static>>, ConceptReadError> {
-        type_manager.get_attribute_type_supertype(self.clone().into_owned())
+        type_manager.get_supertype(self.clone().into_owned())
     }
 
     fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: AttributeType<'static>) {
