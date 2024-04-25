@@ -122,19 +122,16 @@ public class Metrics {
         metrics.add("server", serverProperties.asJSON());
 
         JsonArray load = new JsonArray();
-        databaseLoad.keySet().forEach(databaseHash ->
-                databaseLoad.get(databaseHash).asJSON(
-                        databaseHash, primaryDatabaseHashes.contains(databaseHash)).forEach(load::add));
+        databaseLoad.forEach((databaseHash, diagnostics) ->
+                diagnostics.asJSON(databaseHash, primaryDatabaseHashes.contains(databaseHash)).forEach(load::add));
         metrics.add("load", load);
 
         JsonArray actions = new JsonArray();
-        requests.keySet().forEach(databaseHash ->
-                requests.get(databaseHash).asJSON(databaseHash).forEach(actions::add));
+        requests.forEach((databaseHash, diagnostics) -> diagnostics.asJSON(databaseHash).forEach(actions::add));
         metrics.add("actions", actions);
 
         JsonArray errors = new JsonArray();
-        userErrors.keySet().forEach(databaseHash ->
-                userErrors.get(databaseHash).asJSON(databaseHash).forEach(errors::add));
+        userErrors.forEach((databaseHash, diagnostics) -> diagnostics.asJSON(databaseHash).forEach(errors::add));
         metrics.add("errors", errors);
 
         return metrics;
