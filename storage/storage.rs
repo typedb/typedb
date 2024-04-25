@@ -111,9 +111,9 @@ impl<Durability> MVCCStorage<Durability> {
         let name = name.as_ref();
         let keyspaces = Keyspaces::open::<KS>(&storage_dir)?;
 
-        let (isolation_manager, pending_commits) =
-            recover_isolation(name, checkpoint_sequence_number, &durability_service)
-                .map_err(|error| Commit { source: error })?;
+        let next_sequence_number = checkpoint_sequence_number + 1;
+        let (isolation_manager, pending_commits) = recover_isolation(name, next_sequence_number, &durability_service)
+            .map_err(|error| Commit { source: error })?;
 
         for (commit_sequence_number, commit_record) in pending_commits {
             let conflict = Self::try_apply_commit(
@@ -447,10 +447,10 @@ impl<Durability> MVCCStorage<Durability> {
 
 fn recover_isolation(
     storage_name: &str,
-    checkpoint_sequence_number: SequenceNumber,
+    next_sequence_number: SequenceNumber,
     durability_service: &impl DurabilityService,
 ) -> Result<(IsolationManager, Vec<(SequenceNumber, CommitRecord)>), StorageCommitError> {
-    let isolation_manager = IsolationManager::new(checkpoint_sequence_number + 1);
+    let isolation_manager = IsolationManager::new(next_sequence_number);
 
     enum CheckpointCommitStatus {
         Pending(CommitRecord),
@@ -460,7 +460,7 @@ fn recover_isolation(
 
     let mut commits = BTreeMap::new();
     for record in durability_service
-        .iter_from(checkpoint_sequence_number)
+        .iter_from(next_sequence_number)
         .map_err(|error| StorageCommitError::Durability { name: storage_name.to_owned(), source: error })?
     {
         let RawRecord { sequence_number, record_type, bytes } = record.unwrap(); // FIXME
