@@ -37,9 +37,10 @@ use encoding::{
     },
 };
 use encoding::graph::type_::edge::TypeEdge;
-use encoding::graph::type_::property::{build_property_type_edge_annotation_cardinality, build_property_type_edge_annotation_distinct, TypeEdgeProperty, TypeVertexProperty};
+use encoding::graph::type_::property::{build_property_type_edge_annotation_cardinality, build_property_type_edge_annotation_distinct, build_property_type_edge_ordering, build_property_type_ordering, TypeEdgeProperty, TypeVertexProperty};
 use encoding::layout::infix::Infix;
-use primitive::{maybe_owns::MaybeOwns};
+use encoding::layout::prefix::Prefix;
+use primitive::maybe_owns::MaybeOwns;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{
     MVCCStorage,
@@ -64,7 +65,8 @@ use crate::{
     },
 };
 use crate::error::ConceptWriteError;
-use crate::type_::{deserialise_annotation_cardinality, IntoCanonicalTypeEdge, OwnerAPI, PlayerAPI};
+use crate::thing::ObjectAPI;
+use crate::type_::{deserialise_annotation_cardinality, deserialise_ordering, IntoCanonicalTypeEdge, Ordering, OwnerAPI, PlayerAPI, serialise_annotation_cardinality, serialise_ordering};
 use crate::type_::annotation::Annotation;
 use crate::type_::owns::OwnsAnnotation;
 
@@ -89,7 +91,7 @@ impl<Snapshot> TypeManager<Snapshot> {
             root_entity.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()));
             let root_relation = type_manager.create_relation_type(&Kind::Relation.root_label(), true)?;
             root_relation.set_annotation(&type_manager, RelationTypeAnnotation::Abstract(AnnotationAbstract::new()));
-            let root_role = type_manager.create_role_type(&Kind::Role.root_label(), root_relation.clone(), true)?;
+            let root_role = type_manager.create_role_type(&Kind::Role.root_label(), root_relation.clone(), true, Ordering::Unordered)?;
             root_role.set_annotation(&type_manager, RoleTypeAnnotation::Abstract(AnnotationAbstract::new()));
             let root_attribute = type_manager.create_attribute_type(&Kind::Attribute.root_label(), true)?;
             root_attribute.set_annotation(&type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()));
@@ -381,6 +383,20 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         }
     }
 
+    pub(crate) fn get_owns_ordering(&self, owns: Owns<'_>) -> Result<Ordering, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(cache.get_owns_ordering(owns))
+        } else {
+            let ordering = self.snapshot
+                .get_mapped(
+                    build_property_type_edge_ordering(owns.into_type_edge()).into_storage_key().as_reference(),
+                    |bytes| deserialise_ordering(bytes),
+                )
+                .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
+            Ok(ordering.unwrap())
+        }
+    }
+
     fn storage_get_label(&self, type_: impl TypeAPI<'static>) -> Result<Option<Label<'static>>, ConceptReadError> {
         let key = build_property_type_label(type_.into_vertex());
         self.snapshot
@@ -484,7 +500,12 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
                     Infix::PropertyAnnotationCardinality => {
                         Annotation::Cardinality(deserialise_annotation_cardinality(value))
                     }
-                    Infix::_PropertyAnnotationLast | Infix::PropertyLabel | Infix::PropertyValueType => {
+                    Infix::_PropertyAnnotationLast
+                    | Infix::PropertyLabel
+                    | Infix::PropertyValueType
+                    | Infix::PropertyOrdering
+                    | Infix::PropertyHasOrder
+                    | Infix::PropertyRolePlayerOrder => {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")
                     }
                 }
@@ -512,7 +533,12 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
                     Infix::PropertyAnnotationCardinality => {
                         Annotation::Cardinality(deserialise_annotation_cardinality(value))
                     }
-                    Infix::_PropertyAnnotationLast | Infix::PropertyLabel | Infix::PropertyValueType => {
+                    Infix::_PropertyAnnotationLast
+                    | Infix::PropertyLabel
+                    | Infix::PropertyValueType
+                    | Infix::PropertyOrdering
+                    | Infix::PropertyHasOrder
+                    | Infix::PropertyRolePlayerOrder => {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")
                     }
                 }
@@ -545,7 +571,6 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub fn create_relation_type(&self, label: &Label<'_>, is_root: bool) -> Result<RelationType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
         let type_vertex = self.vertex_generator.create_relation_type(self.snapshot.as_ref()).map_err(|err| ConceptWriteError::Encoding { source: err })?;
-        ;
         let relation = RelationType::new(type_vertex);
         self.storage_set_label(relation.clone(), label);
         if !is_root {
@@ -562,13 +587,14 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         label: &Label<'_>,
         relation_type: RelationType<'static>,
         is_root: bool,
+        ordering: Ordering,
     ) -> Result<RoleType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
         let type_vertex = self.vertex_generator.create_role_type(self.snapshot.as_ref()).map_err(|err| ConceptWriteError::Encoding { source: err })?;
-        ;
         let role = RoleType::new(type_vertex);
         self.storage_set_label(role.clone(), label);
         self.storage_set_relates(relation_type, role.clone());
+        self.storage_set_role_ordering(role.clone(), ordering);
         if !is_root {
             self.storage_set_supertype(role.clone(), self.get_role_type(&Kind::Role.root_label()).unwrap().unwrap());
         }
@@ -578,7 +604,6 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub fn create_attribute_type(&self, label: &Label<'_>, is_root: bool) -> Result<AttributeType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
         let type_vertex = self.vertex_generator.create_attribute_type(self.snapshot.as_ref()).map_err(|err| ConceptWriteError::Encoding { source: err })?;
-        ;
         let attribute_type = AttributeType::new(type_vertex);
         self.storage_set_label(attribute_type.clone(), label);
         if !is_root {
@@ -612,6 +637,13 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         }
     }
 
+    fn storage_set_role_ordering(&self, role: RoleType<'_>, ordering: Ordering) {
+        self.snapshot.as_ref().put_val(
+            build_property_type_ordering(role.into_vertex()).into_storage_key().into_owned_array(),
+            ByteArray::boxed(serialise_ordering(ordering))
+        )
+    }
+
     pub(crate) fn storage_set_supertype<K: TypeAPI<'static>>(&self, subtype: K, supertype: K) {
         self.storage_may_delete_supertype(subtype.clone());
         let sub = build_edge_sub(subtype.clone().into_vertex(), supertype.clone().into_vertex());
@@ -630,11 +662,20 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         }
     }
 
-    pub(crate) fn storage_set_owns(&self, owner: impl ObjectTypeAPI<'static>, attribute: AttributeType<'static>) {
+    pub(crate) fn storage_set_owns(&self, owner: impl ObjectTypeAPI<'static>, attribute: AttributeType<'static>, ordering: Ordering) {
         let owns = build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex());
-        self.snapshot.as_ref().put(owns.into_storage_key().into_owned_array());
+        self.snapshot.as_ref().put(owns.clone().into_storage_key().into_owned_array());
         let owns_reverse = build_edge_owns_reverse(attribute.into_vertex(), owner.into_vertex());
         self.snapshot.as_ref().put(owns_reverse.into_storage_key().into_owned_array());
+        self.storage_set_owns_ordering(owns, ordering);
+    }
+
+    pub(crate) fn storage_set_owns_ordering(&self, owns_edge: TypeEdge<'_>, ordering: Ordering){
+        debug_assert_eq!(owns_edge.prefix(), Prefix::EdgeOwns);
+        self.snapshot.as_ref().put_val(
+            build_property_type_edge_ordering(owns_edge).into_storage_key().into_owned_array(),
+            ByteArray::boxed(serialise_ordering(ordering))
+        )
     }
 
     pub(crate) fn storage_delete_owns(&self, owner: impl ObjectTypeAPI<'static>, attribute: AttributeType<'static>) {
@@ -724,11 +765,12 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         type_: impl TypeAPI<'static>,
         annotation: AnnotationCardinality,
     ) {
-        let annotation_property = build_property_type_annotation_cardinality(type_.into_vertex());
-        let serialized_annotation = ByteArray::boxed(bincode::serialize(&annotation).unwrap().into_boxed_slice());
         self.snapshot
             .as_ref()
-            .put_val(annotation_property.into_storage_key().into_owned_array(), serialized_annotation);
+            .put_val(
+                build_property_type_annotation_cardinality(type_.into_vertex()).into_storage_key().into_owned_array(),
+                ByteArray::boxed(serialise_annotation_cardinality(annotation)),
+            );
     }
 
     pub(crate) fn storage_delete_annotation_cardinality(&self, type_: impl TypeAPI<'static>) {
@@ -741,11 +783,12 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         edge: impl IntoCanonicalTypeEdge<'b>,
         annotation: AnnotationCardinality,
     ) {
-        let annotation_property = build_property_type_edge_annotation_cardinality(edge.into_type_edge());
-        let serialized_annotation = ByteArray::boxed(bincode::serialize(&annotation).unwrap().into_boxed_slice());
         self.snapshot
             .as_ref()
-            .put_val(annotation_property.into_storage_key().into_owned_array(), serialized_annotation);
+            .put_val(
+                build_property_type_edge_annotation_cardinality(edge.into_type_edge()).into_storage_key().into_owned_array(),
+                ByteArray::boxed(serialise_annotation_cardinality(annotation)),
+            );
     }
 
     pub(crate) fn storage_delete_edge_annotation_cardinality<'b>(&self, edge: impl IntoCanonicalTypeEdge<'b>) {

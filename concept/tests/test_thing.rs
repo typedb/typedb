@@ -14,7 +14,7 @@ use concept::{
     type_::type_manager::TypeManager,
 };
 use concept::thing::object::Object;
-use concept::type_::{OwnerAPI, PlayerAPI};
+use concept::type_::{Ordering, OwnerAPI, PlayerAPI};
 use concept::type_::annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent};
 use concept::type_::attribute_type::AttributeTypeAnnotation;
 use concept::type_::owns::OwnsAnnotation;
@@ -213,9 +213,9 @@ fn attribute_cleanup_on_concurrent_detach() {
         name_type.set_value_type(&type_manager, ValueType::String);
 
         let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
-        let owns_age = person_type.set_owns(&type_manager, age_type.clone());
+        let owns_age = person_type.set_owns(&type_manager, age_type.clone(), Ordering::Unordered);
         owns_age.set_annotation(&type_manager, OwnsAnnotation::Distinct(AnnotationDistinct::new()));
-        let _ = person_type.set_owns(&type_manager, name_type.clone());
+        let _ = person_type.set_owns(&type_manager, name_type.clone(), Ordering::Unordered);
 
         let person_1 = thing_manager.create_entity(person_type.clone()).unwrap();
         let person_2 = thing_manager.create_entity(person_type.clone()).unwrap();
@@ -336,10 +336,10 @@ fn role_player_distinct() {
         let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator.clone(), type_manager.clone());
 
         let employment_type = type_manager.create_relation_type(&employment_label, false).unwrap();
-        employment_type.create_relates(&type_manager, employee_role).unwrap();
+        employment_type.create_relates(&type_manager, employee_role, Ordering::Unordered).unwrap();
         let employee_type = employment_type.get_relates_role(&type_manager, employee_role).unwrap().unwrap().role();
         employee_type.set_annotation(&type_manager, RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
-        employment_type.create_relates(&type_manager, employer_role).unwrap();
+        employment_type.create_relates(&type_manager, employer_role, Ordering::Unordered).unwrap();
         let employer_type = employment_type.get_relates_role(&type_manager, employer_role).unwrap().unwrap().role();
         employer_type.set_annotation(&type_manager, RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
         employer_type.set_annotation(
@@ -428,13 +428,13 @@ fn role_player_duplicates() {
         let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator.clone(), type_manager.clone());
 
         let list_type = type_manager.create_relation_type(&list_label, false).unwrap();
-        list_type.create_relates(&type_manager, entry_role_label).unwrap();
+        list_type.create_relates(&type_manager, entry_role_label, Ordering::Unordered).unwrap();
         let entry_type = list_type.get_relates_role(&type_manager, entry_role_label).unwrap().unwrap().role();
         entry_type.set_annotation(
             &type_manager,
             RoleTypeAnnotation::Cardinality(AnnotationCardinality::new(0, Some(4))), // must be small to allow index to kick in
         );
-        list_type.create_relates(&type_manager, owner_role_label).unwrap();
+        list_type.create_relates(&type_manager, owner_role_label, Ordering::Unordered).unwrap();
         let owner_type = list_type.get_relates_role(&type_manager, owner_role_label).unwrap().unwrap().role();
 
         let resource_type = type_manager.create_entity_type(&resource_label, false).unwrap();

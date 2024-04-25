@@ -5,20 +5,18 @@
  */
 
 use std::collections::HashSet;
+
 use encoding::graph::type_::vertex::TypeVertex;
 use encoding::layout::prefix::Prefix;
 use encoding::Prefixed;
-
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{ConceptAPI, error::ConceptReadError, type_::{
-    attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays, relation_type::RelationType,
-    role_type::RoleType, type_manager::TypeManager, OwnerAPI, PlayerAPI,
+    attribute_type::AttributeType, entity_type::EntityType, OwnerAPI, owns::Owns, PlayerAPI,
+    plays::Plays, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager,
 }};
-use crate::type_::annotation::AnnotationAbstract;
-use crate::type_::entity_type::EntityTypeAnnotation;
-use crate::type_::TypeAPI;
+use crate::type_::{Ordering, TypeAPI};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ObjectType<'a> {
@@ -27,7 +25,7 @@ pub enum ObjectType<'a> {
 }
 
 impl<'a> ObjectType<'a> {
-    pub(crate) fn new(vertex: TypeVertex<'a> ) -> Self {
+    pub(crate) fn new(vertex: TypeVertex<'a>) -> Self {
         match vertex.prefix() {
             Prefix::VertexEntityType => ObjectType::Entity(EntityType::new(vertex)),
             Prefix::VertexRelationType => ObjectType::Relation(RelationType::new(vertex)),
@@ -38,12 +36,15 @@ impl<'a> ObjectType<'a> {
 
 impl<'a> OwnerAPI<'a> for ObjectType<'a> {
     fn set_owns(
-        &self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>
+        &self,
+        type_manager: &TypeManager<impl WritableSnapshot>,
+        attribute_type: AttributeType<'static>,
+        ordering: Ordering,
     ) -> Owns<'static> {
         // TODO: decide behaviour (ok or error) if already owning
         match self {
-            ObjectType::Entity(entity) => entity.set_owns(type_manager, attribute_type),
-            ObjectType::Relation(relation) => relation.set_owns(type_manager, attribute_type),
+            ObjectType::Entity(entity) => entity.set_owns(type_manager, attribute_type, ordering),
+            ObjectType::Relation(relation) => relation.set_owns(type_manager, attribute_type, ordering),
         }
     }
 
@@ -94,7 +95,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
     }
 
     fn is_abstract(
-        &self, type_manager: &TypeManager<impl ReadableSnapshot>
+        &self, type_manager: &TypeManager<impl ReadableSnapshot>,
     ) -> Result<bool, ConceptReadError> {
         match self {
             ObjectType::Entity(entity) => entity.is_abstract(type_manager),
@@ -104,7 +105,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
 }
 
 impl<'a> PlayerAPI<'a> for ObjectType<'a> {
-    fn set_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>) {
+    fn set_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>) -> Plays<'static> {
         match self {
             ObjectType::Entity(entity) => entity.set_plays(type_manager, role_type),
             ObjectType::Relation(relation) => relation.set_plays(type_manager, role_type),

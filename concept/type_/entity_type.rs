@@ -34,7 +34,7 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::type_::attribute_type::AttributeTypeAnnotation;
+use crate::type_::Ordering;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType<'a> {
@@ -143,8 +143,9 @@ impl<'a> EntityType<'a> {
 impl<'a> OwnerAPI<'a> for EntityType<'a> {
     fn set_owns(
         &self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>,
+        ordering: Ordering,
     ) -> Owns<'static> {
-        type_manager.storage_set_owns(self.clone().into_owned(), attribute_type.clone());
+        type_manager.storage_set_owns(self.clone().into_owned(), attribute_type.clone(), ordering);
         Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type)
     }
 
@@ -171,9 +172,12 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
 }
 
 impl<'a> PlayerAPI<'a> for EntityType<'a> {
-    fn set_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>) {
+    fn set_plays(
+        &self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>
+    ) -> Plays<'static> {
         // TODO: decide behaviour (ok or error) if already playing
-        type_manager.storage_set_plays(self.clone().into_owned(), role_type);
+        type_manager.storage_set_plays(self.clone().into_owned(), role_type.clone());
+        Plays::new(ObjectType::Entity(self.clone().into_owned()), role_type)
     }
 
     fn delete_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>) {

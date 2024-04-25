@@ -5,13 +5,14 @@
  */
 
 use std::collections::HashSet;
+
 use encoding::graph::type_::edge::{build_edge_owns, TypeEdge};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+
 use crate::error::ConceptReadError;
-use crate::type_::{attribute_type::AttributeType, IntoCanonicalTypeEdge, object_type::ObjectType, TypeAPI};
+use crate::type_::{attribute_type::AttributeType, IntoCanonicalTypeEdge, object_type::ObjectType, Ordering, TypeAPI};
 use crate::type_::annotation::{Annotation, AnnotationCardinality, AnnotationDistinct};
-use crate::type_::role_type::RoleTypeAnnotation;
 use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -29,7 +30,7 @@ impl<'a> Owns<'a> {
         self.owner.clone()
     }
 
-    fn attribute(&self) -> AttributeType<'a> {
+    pub(crate) fn attribute(&self) -> AttributeType<'a> {
         self.attribute.clone()
     }
 
@@ -65,6 +66,16 @@ impl<'a> Owns<'a> {
                 type_manager.storage_delete_edge_annotation_cardinality(self.clone())
             }
         }
+    }
+
+    pub fn set_ordering(&self, type_manager: &TypeManager<impl WritableSnapshot>, ordering: Ordering) {
+        type_manager.storage_set_owns_ordering(self.clone().into_type_edge(), ordering)
+    }
+
+    pub fn get_ordering(
+        &self, type_manager: &TypeManager<impl ReadableSnapshot>
+    ) -> Result<Ordering, ConceptReadError> {
+        type_manager.get_owns_ordering(self.clone())
     }
 }
 

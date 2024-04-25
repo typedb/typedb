@@ -40,12 +40,12 @@ use encoding::{
     },
 };
 use encoding::graph::type_::edge::TypeEdge;
-use encoding::graph::type_::property::TypeEdgeProperty;
+use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_ordering, TypeEdgeProperty};
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_VALUE_INLINE};
 use storage::{MVCCStorage, ReadSnapshotOpenError, snapshot::ReadableSnapshot};
 use storage::key_range::KeyRange;
 
-use crate::type_::{annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent}, attribute_type::{AttributeType, AttributeTypeAnnotation}, deserialise_annotation_cardinality, entity_type::{EntityType, EntityTypeAnnotation}, IntoCanonicalTypeEdge, object_type::ObjectType, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
+use crate::type_::{annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent}, attribute_type::{AttributeType, AttributeTypeAnnotation}, deserialise_annotation_cardinality, deserialise_ordering, entity_type::{EntityType, EntityTypeAnnotation}, IntoCanonicalTypeEdge, object_type::ObjectType, Ordering, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
 use crate::type_::owns::OwnsAnnotation;
 
 // TODO: could/should we slab allocate the schema cache?
@@ -108,6 +108,7 @@ struct RoleTypeCache {
     type_: RoleType<'static>,
     label: Label<'static>,
     is_root: bool,
+    ordering: Ordering,
     annotations_declared: HashSet<RoleTypeAnnotation>,
     relates_declared: Relates<'static>,
 
@@ -137,6 +138,7 @@ struct AttributeTypeCache {
 
 #[derive(Debug)]
 struct OwnsCache {
+    ordering: Ordering,
     annotations_declared: HashSet<OwnsAnnotation>,
 }
 
@@ -365,11 +367,13 @@ impl TypeCache {
         for role in roles.into_iter() {
             let label = Self::read_type_label(vertex_properties, role.vertex().into_owned());
             let is_root = label == Kind::Role.root_label();
+            let ordering = Self::read_role_ordering(vertex_properties, role.clone());
             let annotations = Self::read_role_annotations(vertex_properties, role.clone());
             let cache = RoleTypeCache {
                 type_: role.clone(),
                 label,
                 is_root,
+                ordering,
                 annotations_declared: annotations,
                 relates_declared: relates.iter().find(|relates| relates.role() == role).unwrap().clone(),
                 supertype: supertypes.get(&role).cloned(),
@@ -379,6 +383,18 @@ impl TypeCache {
         }
         Self::set_role_supertypes_transitive(&mut caches);
         caches
+    }
+
+    fn read_role_ordering(
+        vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        role_type: RoleType<'_>,
+    ) -> Ordering {
+        vertex_properties
+            .get(&build_property_type_ordering(role_type.into_vertex()))
+            .map(|bytes| {
+                deserialise_ordering(ByteReference::from(bytes))
+            })
+            .unwrap()
     }
 
     fn read_role_annotations(
@@ -478,10 +494,11 @@ impl TypeCache {
                 (
                     owns.clone(),
                     OwnsCache {
+                        ordering: Self::read_edge_ordering(edge_properties, owns.clone().into_type_edge()),
                         annotations_declared: Self::read_edge_annotations(edge_properties, owns.into_type_edge())
                             .into_iter()
                             .map(|annotation| OwnsAnnotation::from(annotation))
-                            .collect()
+                            .collect(),
                     }
                 )
             })
@@ -574,7 +591,11 @@ impl TypeCache {
                         Infix::PropertyAnnotationCardinality => {
                             Some(Annotation::Cardinality(deserialise_annotation_cardinality(ByteReference::from(value))))
                         }
-                        Infix::PropertyLabel | Infix::PropertyValueType => None,
+                        Infix::PropertyLabel
+                        | Infix::PropertyOrdering
+                        | Infix::PropertyValueType
+                        | Infix::PropertyHasOrder
+                        | Infix::PropertyRolePlayerOrder => None,
                         Infix::_PropertyAnnotationLast => {
                             unreachable!("Received unexpected marker annotation")
                         }
@@ -582,6 +603,14 @@ impl TypeCache {
                 }
             })
             .collect()
+    }
+
+    fn read_edge_ordering(
+        edge_properties: &BTreeMap<TypeEdgeProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        type_edge: TypeEdge<'static>,
+    ) -> Ordering {
+        let ordering = edge_properties.get(&build_property_type_edge_ordering(type_edge)).unwrap();
+        deserialise_ordering(ByteReference::from(ordering))
     }
 
     fn read_edge_annotations(
@@ -604,7 +633,11 @@ impl TypeCache {
                         Infix::PropertyAnnotationCardinality => {
                             Some(Annotation::Cardinality(deserialise_annotation_cardinality(ByteReference::from(value))))
                         }
-                        Infix::PropertyLabel | Infix::PropertyValueType => None,
+                        Infix::PropertyLabel
+                        | Infix::PropertyOrdering
+                        | Infix::PropertyValueType
+                        | Infix::PropertyHasOrder
+                        | Infix::PropertyRolePlayerOrder => None,
                         Infix::_PropertyAnnotationLast => {
                             unreachable!("Received unexpected marker annotation")
                         }
@@ -706,6 +739,10 @@ impl TypeCache {
         Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().is_root
     }
 
+    pub(crate) fn get_role_type_ordering(&self, role_type: RoleType<'static>) -> Ordering {
+        Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().ordering
+    }
+
     pub(crate) fn get_entity_type_owns(&self, entity_type: EntityType<'static>) -> &HashSet<Owns<'static>> {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().owns_declared
     }
@@ -755,8 +792,12 @@ impl TypeCache {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().annotations_declared
     }
 
-    pub(crate) fn get_owns_annotations< 'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<OwnsAnnotation> {
+    pub(crate) fn get_owns_annotations<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<OwnsAnnotation> {
         &self.owns.get(&owns).unwrap().annotations_declared
+    }
+
+    pub(crate) fn get_owns_ordering<'c>(&'c self, owns: Owns<'c>) -> Ordering {
+        self.owns.get(&owns).unwrap().ordering
     }
 
     fn get_entity_type_cache<'c>(

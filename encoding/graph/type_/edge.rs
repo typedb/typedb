@@ -162,7 +162,7 @@ impl<'a> TypeEdge<'a> {
         TypeVertex::new(Bytes::Reference(reference))
     }
 
-    fn prefix(&self) -> Prefix {
+    pub fn prefix(&self) -> Prefix {
         Prefix::from_prefix_id(PrefixID::new(self.bytes.bytes()[Self::RANGE_PREFIX].try_into().unwrap()))
     }
 

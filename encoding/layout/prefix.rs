@@ -38,7 +38,7 @@ impl PrefixID {
             | Prefix::EdgePlaysReverse
             | Prefix::EdgeRelates
             | Prefix::EdgeRelatesReverse
-            | Prefix::PropertyType
+            | Prefix::PropertyTypeVertex
             | Prefix::IndexLabelToType
             | Prefix::PropertyTypeEdge => EncodingKeyspace::Schema,
             Prefix::VertexEntity => todo!(),
@@ -52,6 +52,7 @@ impl PrefixID {
             Prefix::EdgeRolePlayer => todo!(),
             Prefix::EdgeRolePlayerReverse => todo!(),
             Prefix::EdgeRolePlayerIndex => todo!(),
+            Prefix::PropertyObjectVertex => todo!(),
             Prefix::_VertexAttributeLast => unreachable!("Marker enum variant should not be used."),
         }
     }
@@ -88,8 +89,10 @@ pub enum Prefix {
     EdgeRolePlayerReverse,
     EdgeRolePlayerIndex,
 
-    PropertyType,
+    PropertyTypeVertex,
     PropertyTypeEdge,
+
+    PropertyObjectVertex,
 
     IndexLabelToType,
 }
@@ -179,8 +182,9 @@ impl Prefix {
            EdgeRolePlayerReverse => [133], true;
            EdgeRolePlayerIndex => [140], true;
 
-           PropertyType => [160], false;
-           PropertyTypeEdge => [161], false;
+           PropertyTypeVertex => [160], false;
+           PropertyTypeEdge => [162], false;
+           PropertyObjectVertex => [163], false;
 
            IndexLabelToType => [182], false
 

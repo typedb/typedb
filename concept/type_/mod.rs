@@ -5,6 +5,7 @@
  */
 
 use std::collections::HashSet;
+use serde::{Deserialize, Serialize};
 use bytes::byte_reference::ByteReference;
 use encoding::graph::type_::edge::TypeEdge;
 
@@ -42,7 +43,12 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
 pub trait ObjectTypeAPI<'a>: TypeAPI<'a> {}
 
 pub trait OwnerAPI<'a>: TypeAPI<'a> {
-    fn set_owns(&self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>) -> Owns<'static>;
+    fn set_owns(
+        &self,
+        type_manager: &TypeManager<impl WritableSnapshot>,
+        attribute_type: AttributeType<'static>,
+        ordering: Ordering,
+    ) -> Owns<'static>;
 
     fn delete_owns(&self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>);
 
@@ -67,7 +73,9 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
 }
 
 pub trait PlayerAPI<'a>: TypeAPI<'a> {
-    fn set_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>);
+    fn set_plays(
+        &self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>
+    ) -> Plays<'static>;
 
     fn delete_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>);
 
@@ -91,6 +99,15 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum Ordering {
+    // ##########################################################################
+    // ###### WARNING: any changes here may break backwards compatibility! ######
+    // ##########################################################################
+    Unordered,
+    Ordered,
+}
+
 pub(crate) trait IntoCanonicalTypeEdge<'a> {
     fn as_type_edge(&self) -> TypeEdge<'static>;
 
@@ -98,7 +115,19 @@ pub(crate) trait IntoCanonicalTypeEdge<'a> {
 }
 
 
-// TODO: where does this belong?
+// TODO: where do these belong?
+fn serialise_annotation_cardinality(annotation: AnnotationCardinality) -> Box<[u8]> {
+    bincode::serialize(&annotation).unwrap().into_boxed_slice()
+}
+
 fn deserialise_annotation_cardinality(value: ByteReference<'_>) -> AnnotationCardinality {
+    bincode::deserialize(value.bytes()).unwrap()
+}
+
+fn serialise_ordering(ordering: Ordering) -> Box<[u8]> {
+    bincode::serialize(&ordering).unwrap().into_boxed_slice()
+}
+
+fn deserialise_ordering(value: ByteReference<'_>) -> Ordering {
     bincode::deserialize(value.bytes()).unwrap()
 }

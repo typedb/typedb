@@ -36,7 +36,7 @@ use crate::{
     ConceptAPI,
 };
 use crate::error::ConceptWriteError;
-use crate::type_::entity_type::EntityTypeAnnotation;
+use crate::type_::Ordering;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {
@@ -68,7 +68,7 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
     }
 
     fn is_abstract(
-        &self, type_manager: &TypeManager<impl ReadableSnapshot>
+        &self, type_manager: &TypeManager<impl ReadableSnapshot>,
     ) -> Result<bool, ConceptReadError> {
         let annotations = self.get_annotations(type_manager)?;
         Ok(annotations.contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract::new())))
@@ -150,9 +150,11 @@ impl<'a> RelationType<'a> {
         type_manager.get_role_type(&label)
     }
 
-    pub fn create_relates(&self, type_manager: &TypeManager<impl WritableSnapshot>, name: &str) -> Result<RoleType<'static>, ConceptWriteError> {
+    pub fn create_relates(
+        &self, type_manager: &TypeManager<impl WritableSnapshot>, name: &str, ordering: Ordering
+    ) -> Result<RoleType<'static>, ConceptWriteError> {
         let label = Label::build_scoped(name, self.get_label(type_manager).unwrap().name().as_str());
-        type_manager.create_role_type(&label, self.clone().into_owned(), false)
+        type_manager.create_role_type(&label, self.clone().into_owned(), false, ordering)
     }
 
     fn delete_relates(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>) {
@@ -189,9 +191,12 @@ impl<'a> RelationType<'a> {
 
 impl<'a> OwnerAPI<'a> for RelationType<'a> {
     fn set_owns(
-        &self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>
+        &self,
+        type_manager: &TypeManager<impl WritableSnapshot>,
+        attribute_type: AttributeType<'static>,
+        ordering: Ordering,
     ) -> Owns<'static> {
-        type_manager.storage_set_owns(self.clone().into_owned(), attribute_type.clone());
+        type_manager.storage_set_owns(self.clone().into_owned(), attribute_type.clone(), ordering);
         Owns::new(ObjectType::Relation(self.clone().into_owned()), attribute_type)
     }
 
@@ -218,9 +223,12 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
 }
 
 impl<'a> PlayerAPI<'a> for RelationType<'a> {
-    fn set_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>) {
+    fn set_plays(
+        &self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>,
+    ) -> Plays<'static> {
         // TODO: decide behaviour (ok or error) if already playing
         type_manager.storage_set_plays(self.clone().into_owned(), role_type.clone());
+        Plays::new(ObjectType::Relation(self.clone().into_owned()), role_type)
     }
 
     fn delete_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>) {

@@ -8,11 +8,7 @@
 
 use std::{rc::Rc, sync::Arc};
 
-use concept::type_::{
-    annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, owns::Owns,
-    relation_type::RelationTypeAnnotation, role_type::RoleTypeAnnotation, type_cache::TypeCache,
-    type_manager::TypeManager, OwnerAPI, PlayerAPI,
-};
+use concept::type_::{annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, owns::Owns, relation_type::RelationTypeAnnotation, role_type::RoleTypeAnnotation, type_cache::TypeCache, type_manager::TypeManager, OwnerAPI, PlayerAPI, Ordering};
 use durability::wal::WAL;
 use encoding::{
     graph::type_::{vertex_generator::TypeVertexGenerator, Kind},
@@ -84,7 +80,7 @@ fn entity_usage() {
         assert_eq!(supertypes.len(), 2);
 
         // --- child owns age ---
-         child_type.set_owns(&type_manager, age_type.clone().into_owned());
+         child_type.set_owns(&type_manager, age_type.clone().into_owned(), Ordering::Unordered);
         let owns = child_type.get_owns_attribute(&type_manager, age_type.clone().into_owned()).unwrap().unwrap();
         // TODO: test 'owns' structure directly
 
@@ -190,7 +186,7 @@ fn role_usage() {
 
         // --- friendship sub relation, relates friend ---
         let friendship_type = type_manager.create_relation_type(&friendship_label, false).unwrap();
-        friendship_type.create_relates(&type_manager, friend_name).unwrap();
+        friendship_type.create_relates(&type_manager, friend_name, Ordering::Unordered).unwrap();
         let relates = friendship_type.get_relates_role(&type_manager, friend_name).unwrap().unwrap();
         let role_type = friendship_type.get_role(&type_manager, friend_name).unwrap().unwrap();
         debug_assert_eq!(relates.relation(), friendship_type);

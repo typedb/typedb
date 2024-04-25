@@ -28,6 +28,7 @@ use encoding::{
 };
 use pprof::ProfilerGuard;
 use rand::distributions::{Alphanumeric, DistString};
+use concept::type_::Ordering;
 use storage::{MVCCStorage};
 use storage::snapshot::{CommittableSnapshot, WriteSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
@@ -75,8 +76,8 @@ fn create_schema(storage: &Arc<MVCCStorage<WAL>>, type_vertex_generator: &Arc<Ty
         let name_type = type_manager.create_attribute_type(NAME_LABEL.get().unwrap(), false).unwrap();
         name_type.set_value_type(&type_manager, ValueType::String);
         let person_type = type_manager.create_entity_type(PERSON_LABEL.get().unwrap(), false).unwrap();
-        person_type.set_owns(&type_manager, age_type);
-        person_type.set_owns(&type_manager, name_type);
+        person_type.set_owns(&type_manager, age_type, Ordering::Unordered);
+        person_type.set_owns(&type_manager, name_type, Ordering::Unordered);
     }
     let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();
     write_snapshot.commit().unwrap();

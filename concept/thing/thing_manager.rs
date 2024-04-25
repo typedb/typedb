@@ -163,15 +163,15 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<bool, ConceptReadError> {
-        let attribute = self.encode_attribute(attribute_type, value);
-        let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
+        let attribute_vertex = self.encode_expected_attribute(attribute_type, value);
+        let has = ThingEdgeHas::build(owner.vertex(), attribute_vertex);
         let has_exists = self.snapshot.get_mapped(has.into_storage_key().as_reference(), |value| true)
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?
             .unwrap_or(false);
         Ok(has_exists)
     }
 
-    fn encode_attribute(&self, attribute_type: AttributeType<'static>, value: Value<'_>) -> Attribute<'_> {
+    fn encode_expected_attribute(&self, attribute_type: AttributeType<'static>, value: Value<'_>) -> AttributeVertex<'_> {
         let value_type = attribute_type.get_value_type(self.type_manager()).unwrap().unwrap();
         debug_assert_eq!(value.value_type(), value_type);
         let attribute_id = match value {
@@ -191,8 +191,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                     .as_attribute_id()
             }
         };
-        let vertex = AttributeVertex::build(value_type, attribute_type.vertex().type_id_(), attribute_id);
-        Attribute::new(vertex)
+        AttributeVertex::build(value_type, attribute_type.vertex().type_id_(), attribute_id)
     }
 
     pub(crate) fn get_has<'this, 'a>(

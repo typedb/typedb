@@ -22,15 +22,22 @@ impl InfixID {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Infix {
+    // Schema properties
     PropertyLabel,
     PropertyValueType,
+    PropertyOrdering,
+
     PropertyAnnotationAbstract,
     PropertyAnnotationDistinct,
     PropertyAnnotationIndependent,
     PropertyAnnotationCardinality,
     _PropertyAnnotationLast, // marker to indicate end of reserved range for annotations
+
+    // Data properties
+    PropertyHasOrder,
+    PropertyRolePlayerOrder,
 }
 
 macro_rules! infix_functions {
@@ -64,12 +71,16 @@ impl Infix {
     infix_functions!(
         PropertyLabel => [0];
         PropertyValueType => [1];
+        PropertyOrdering => [2];
 
        // Reserve: range 50 - 99 to store annotations with a value type - see InfixID::<CONSTANTS>
         PropertyAnnotationAbstract => [50];
         PropertyAnnotationDistinct => [51];
         PropertyAnnotationIndependent => [52];
         PropertyAnnotationCardinality => [53];
-        _PropertyAnnotationLast => [99]
+        _PropertyAnnotationLast => [99];
+
+        PropertyHasOrder => [100];
+        PropertyRolePlayerOrder => [101]
     );
 }

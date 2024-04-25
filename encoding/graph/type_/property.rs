@@ -39,8 +39,8 @@ macro_rules! type_vertex_property_constructors {
         }
 
         pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-            bytes.length() == TypeVertexProperty::LENGTH_NO_SUFFIX
-                && TypeVertexProperty::new(bytes).infix() == Infix::$infix
+            Prefix::from_prefix_id(PrefixID::new([bytes.bytes()[0]])) == TypeVertexProperty::PREFIX
+            && $new_name(bytes).infix() == Infix::$infix
         }
     };
 }
@@ -87,9 +87,16 @@ type_vertex_property_constructors!(
     InfixType::PropertyAnnotationCardinality
 );
 
+type_vertex_property_constructors!(
+    new_property_type_ordering,
+    build_property_type_ordering,
+    is_property_type_ordering,
+    InfixType::PropertyOrdering
+);
+
 impl<'a> TypeVertexProperty<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
-    const PREFIX: Prefix = Prefix::PropertyType;
+    const PREFIX: Prefix = Prefix::PropertyTypeVertex;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
     const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + TypeVertex::LENGTH + InfixID::LENGTH;
@@ -234,6 +241,13 @@ type_edge_property_constructors!(
     build_property_type_edge_annotation_cardinality,
     is_property_type_edge_annotation_cardinality,
     InfixType::PropertyAnnotationCardinality
+);
+
+type_edge_property_constructors!(
+    new_property_type_edge_ordering,
+    build_property_type_edge_ordering,
+    is_property_type_edge_ordering,
+    InfixType::PropertyOrdering
 );
 
 impl<'a> TypeEdgeProperty<'a> {
