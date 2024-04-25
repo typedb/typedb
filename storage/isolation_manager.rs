@@ -8,7 +8,6 @@
 // TODO: Benchmark with many small commits to see if the read-write locks affect latency.
 
 use std::{
-    borrow::Cow,
     cmp::max,
     collections::{HashMap, VecDeque},
     error::Error,
@@ -25,6 +24,7 @@ use durability::{
     SequencedDurabilityRecord, UnsequencedDurabilityRecord,
 };
 use logger::result::ResultExt;
+use primitive::maybe_owns::MaybeOwns;
 use project::{read_guard_project, ReadGuard, RwLockReadGuardProject};
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 use serde::{Deserialize, Serialize};
@@ -207,8 +207,8 @@ impl IsolationManager {
                         None
                     } else {
                         let status = match is_committed.get(&commit_sequence_number) {
-                            None => CommitStatus::Pending(Cow::Owned(commit_record)),
-                            Some(true) => CommitStatus::Applied(Cow::Owned(commit_record)),
+                            None => CommitStatus::Pending(MaybeOwns::Owned(commit_record)),
+                            Some(true) => CommitStatus::Applied(MaybeOwns::Owned(commit_record)),
                             Some(false) => CommitStatus::Aborted,
                         };
                         Some(Ok((commit_sequence_number, status)))
@@ -542,9 +542,9 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
             let record = self.commit_records[index].get().unwrap();
             match status {
                 SlotMarker::Empty => unreachable!(),
-                SlotMarker::Pending => CommitStatus::Pending(Cow::Borrowed(record)),
-                SlotMarker::Validated => CommitStatus::Validated(Cow::Borrowed(record)),
-                SlotMarker::Applied => CommitStatus::Applied(Cow::Borrowed(record)),
+                SlotMarker::Pending => CommitStatus::Pending(MaybeOwns::Borrowed(record)),
+                SlotMarker::Validated => CommitStatus::Validated(MaybeOwns::Borrowed(record)),
+                SlotMarker::Applied => CommitStatus::Applied(MaybeOwns::Borrowed(record)),
                 SlotMarker::Aborted => CommitStatus::Aborted,
             }
         }
@@ -583,9 +583,9 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
 #[derive(Debug)]
 pub(crate) enum CommitStatus<'a> {
     Empty,
-    Pending(Cow<'a, CommitRecord>),
-    Validated(Cow<'a, CommitRecord>),
-    Applied(Cow<'a, CommitRecord>),
+    Pending(MaybeOwns<'a, CommitRecord>),
+    Validated(MaybeOwns<'a, CommitRecord>),
+    Applied(MaybeOwns<'a, CommitRecord>),
     Aborted,
 }
 
@@ -626,12 +626,6 @@ pub(crate) struct CommitRecord {
     // TODO: this could read-through to the WAL if we have to save memory?
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
-}
-
-impl Clone for CommitRecord {
-    fn clone(&self) -> Self {
-        unimplemented!("Do not call into_owned on a commit that's owned by the timeline.")
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
