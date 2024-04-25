@@ -361,11 +361,12 @@ impl<Durability> MVCCStorage<Durability> {
         Ok(())
     }
 
-    fn get<const INLINE_BYTES: usize>(
+    fn get<'a, const INLINE_BYTES: usize>(
         &self,
-        key: StorageKeyReference<'_>,
+        key: impl Into<StorageKeyReference<'a>>,
         open_sequence_number: SequenceNumber,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, MVCCReadError> {
+        let key = key.into();
         let mut iterator =
             self.iterate_range(KeyRange::new_within(StorageKey::<0>::Reference(key), false), open_sequence_number);
         loop {
@@ -753,17 +754,20 @@ impl StorageOperation {
 
 #[cfg(test)]
 mod tests {
+    use std::{fs, sync::Arc};
+
     use bytes::byte_array::ByteArray;
     use durability::{wal::WAL, DurabilityService, SequenceNumber, Sequencer};
+    use resource::constants::snapshot::BUFFER_KEY_INLINE;
     use test_utils::{create_tmp_dir, init_logging};
 
-    use super::{
+    use super::MVCCStorage;
+    use crate::{
         isolation_manager::CommitRecord,
-        key_value::StorageKeyReference,
+        key_value::{StorageKeyArray, StorageKeyReference},
         keyspace::{KeyspaceId, KeyspaceSet, Keyspaces},
-        snapshot::buffer::OperationsBuffer,
+        snapshot::{buffer::OperationsBuffer, CommittableSnapshot, WritableSnapshot},
         write_batches::WriteBatches,
-        MVCCStorage,
     };
 
     macro_rules! test_keyspace_set {
@@ -791,7 +795,7 @@ mod tests {
         init_logging();
         let storage_path = create_tmp_dir();
         let watermark_after_one_commit = {
-            let storage: MVCCStorage<WAL> = MVCCStorage::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+            let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
             let commit_record = CommitRecord::new(OperationsBuffer::new(), SequenceNumber::MIN);
             let commit_sequence_number = storage.durability_service.sequenced_write(&commit_record).unwrap();
 
@@ -811,7 +815,7 @@ mod tests {
         };
 
         let pending_commit_sequence = {
-            let storage: MVCCStorage<WAL> = MVCCStorage::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+            let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
             assert_eq!(watermark_after_one_commit, storage.read_watermark());
             storage
                 .durability_service
@@ -820,7 +824,7 @@ mod tests {
             // We don't commit it.
         };
         {
-            let storage: MVCCStorage<WAL> = MVCCStorage::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+            let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
             assert_eq!(pending_commit_sequence, storage.read_watermark()); // Recovery will commit the pending one.
         };
     }
@@ -833,27 +837,19 @@ mod tests {
 
         init_logging();
         let storage_path = create_tmp_dir();
+        let key = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"hello"));
 
         let seq = {
             let operations = OperationsBuffer::new();
-            operations.writes_in(TestKeyspaceSet::Keyspace.id()).insert(ByteArray::copy(b"hello"), ByteArray::empty());
-            let mut durability_service = WAL::open(storage_path.join(<MVCCStorage<WAL>>::WAL_DIR_NAME)).unwrap();
+            operations.writes_in(key.keyspace_id()).insert(key.byte_array().clone(), ByteArray::empty());
+            let mut durability_service = WAL::open(storage_path.join(MVCCStorage::<WAL>::WAL_DIR_NAME)).unwrap();
             durability_service.register_record_type::<CommitRecord>();
             durability_service.sequenced_write(&CommitRecord::new(operations, durability_service.previous())).unwrap()
             /* CRASH */
         };
 
-        let storage: MVCCStorage<WAL> = MVCCStorage::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
-        assert_eq!(
-            storage
-                .get::<0>(
-                    StorageKeyReference::new(TestKeyspaceSet::Keyspace, (&ByteArray::<5>::copy(b"hello")).into()),
-                    seq
-                )
-                .unwrap()
-                .unwrap(),
-            ByteArray::empty()
-        )
+        let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+        assert_eq!(storage.get::<0>(&key, seq).unwrap().unwrap(), ByteArray::empty());
     }
 
     #[test]
@@ -865,22 +861,24 @@ mod tests {
 
         init_logging();
         let storage_path = create_tmp_dir();
+        let key_hello = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, b"hello"));
+        let key_world = StorageKeyArray::from((TestKeyspaceSet::FailedKeyspace, b"world"));
 
         let seq = {
             let full_operations = OperationsBuffer::new();
             full_operations
-                .writes_in(TestKeyspaceSet::PersistedKeyspace.id())
-                .insert(ByteArray::copy(b"hello"), ByteArray::empty());
+                .writes_in(key_hello.keyspace_id())
+                .insert(key_hello.byte_array().clone(), ByteArray::empty());
             full_operations
-                .writes_in(TestKeyspaceSet::FailedKeyspace.id())
-                .insert(ByteArray::copy(b"world"), ByteArray::empty());
+                .writes_in(key_world.keyspace_id())
+                .insert(key_world.byte_array().clone(), ByteArray::empty());
 
             let partial_operations = OperationsBuffer::new();
             partial_operations
-                .writes_in(TestKeyspaceSet::PersistedKeyspace.id())
-                .insert(ByteArray::copy(b"hello"), ByteArray::empty());
+                .writes_in(key_hello.keyspace_id())
+                .insert(key_hello.byte_array().clone(), ByteArray::empty());
 
-            let mut durability_service = WAL::open(storage_path.join(<MVCCStorage<WAL>>::WAL_DIR_NAME)).unwrap();
+            let mut durability_service = WAL::open(storage_path.join(MVCCStorage::<WAL>::WAL_DIR_NAME)).unwrap();
             durability_service.register_record_type::<CommitRecord>();
             let seq = durability_service
                 .sequenced_write(&CommitRecord::new(full_operations, durability_service.previous()))
@@ -888,7 +886,7 @@ mod tests {
 
             let partial_commit = WriteBatches::from_operations(seq, &partial_operations);
             let keyspaces =
-                Keyspaces::open::<TestKeyspaceSet>(storage_path.join(<MVCCStorage<WAL>>::STORAGE_DIR_NAME)).unwrap();
+                Keyspaces::open::<TestKeyspaceSet>(storage_path.join(MVCCStorage::<WAL>::STORAGE_DIR_NAME)).unwrap();
             keyspaces.write(partial_commit).unwrap();
 
             /* CRASH */
@@ -896,16 +894,7 @@ mod tests {
             seq
         };
 
-        let storage: MVCCStorage<WAL> = MVCCStorage::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
-        assert_eq!(
-            storage
-                .get::<0>(
-                    StorageKeyReference::new(TestKeyspaceSet::FailedKeyspace, (&ByteArray::<5>::copy(b"world")).into()),
-                    seq
-                )
-                .unwrap()
-                .unwrap(),
-            ByteArray::empty()
-        )
+        let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+        assert_eq!(storage.get::<0>(&key_world, seq).unwrap().unwrap(), ByteArray::empty());
     }
 }
