@@ -159,10 +159,10 @@ macro_rules! get_subtypes_methods {
         $(
             pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
-                    Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
+                    Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
                     let subtypes = TypeReader::get_subtypes(self.snapshot.as_ref(), type_)?;
-                    Ok(MaybeOwns::owned(subtypes))
+                    Ok(MaybeOwns::Owned(subtypes))
                 }
             }
         )*
@@ -177,10 +177,10 @@ macro_rules! get_subtypes_transitive_methods {
             // WARN: supertypes currently do NOT include themselves
             pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
-                    Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
+                    Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
                     let subtypes = TypeReader::get_subtypes_transitive(self.snapshot.as_ref(), type_)?;
-                    Ok(MaybeOwns::owned(subtypes))
+                    Ok(MaybeOwns::Owned(subtypes))
                 }
             }
         )*

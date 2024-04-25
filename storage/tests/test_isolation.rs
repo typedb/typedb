@@ -12,7 +12,7 @@ use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use durability::{wal::WAL, DurabilityService};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
-    isolation_manager::{IsolationConflict, IsolationError},
+    isolation_manager::IsolationConflict,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{KeyspaceId, KeyspaceSet},

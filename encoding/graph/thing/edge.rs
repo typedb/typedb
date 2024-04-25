@@ -16,10 +16,8 @@ use storage::{
 use crate::{
     graph::{
         thing::{
-            vertex_attribute::{AsAttributeID, AttributeID, AttributeVertex},
-            vertex_generator::{LongAttributeID, StringAttributeID},
+            vertex_attribute::{AttributeID, AttributeVertex},
             vertex_object::ObjectVertex,
-            VertexID,
         },
         type_::vertex::{TypeID, TypeVertex},
         Typed,

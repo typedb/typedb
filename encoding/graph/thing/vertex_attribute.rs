@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::max, io::Read, ops::Range, sync::Arc};
+use std::{ops::Range, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use primitive::either::Either;
@@ -14,11 +14,10 @@ use storage::{
     key_value::{StorageKey, StorageKeyReference},
     keyspace::KeyspaceSet,
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot},
-    KeyspaceSet,
 };
 
 use crate::{
-    graph::{thing::VertexID, type_::vertex::TypeID, Typed},
+    graph::{type_::vertex::TypeID, Typed},
     layout::prefix::{Prefix, PrefixID},
     value::{long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType, ValueEncodable},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,

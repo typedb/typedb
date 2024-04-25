@@ -31,7 +31,6 @@ pub struct TypeVertexAllocator {
 }
 
 impl TypeVertexAllocator {
-
     fn new(kind: Kind, to_vertex: fn (TypeID) -> TypeVertex<'static>) -> TypeVertexAllocator {
         Self { kind, last_allocated_type_id : AtomicU16::new(0), vertex_constructor: to_vertex }
     }
@@ -58,7 +57,7 @@ impl TypeVertexAllocator {
 
     fn allocate<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) ->  Result<TypeVertex<'static>, EncodingError> {
         let found = self.find_unallocated_id(snapshot, self.last_allocated_type_id.load(Relaxed))?;
-        if let(Some(type_id)) = found {
+        if let Some(type_id) = found {
             self.last_allocated_type_id.store(type_id, Relaxed);
             Ok((self.vertex_constructor)(TypeID::build(type_id)))
         } else {

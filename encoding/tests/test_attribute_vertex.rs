@@ -11,10 +11,7 @@ use std::{rc::Rc, sync::Arc};
 use durability::wal::WAL;
 use encoding::{
     graph::{
-        thing::{
-            vertex_attribute::StringAttributeID,
-            vertex_generator::{StringAttributeID, ThingVertexGenerator},
-        },
+        thing::{vertex_attribute::StringAttributeID, vertex_generator::ThingVertexGenerator},
         type_::{vertex::TypeID, vertex_generator::TypeVertexGenerator},
         Typed,
     },
