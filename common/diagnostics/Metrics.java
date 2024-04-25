@@ -18,8 +18,8 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -43,25 +43,20 @@ public class Metrics {
 
     public void takeSnapshot() {
         this.base.updateSinceTimestamp();
-        this.databaseLoad.keySet().forEach(databaseHash -> this.databaseLoad.get(databaseHash).takeSnapshot());
-        this.requests.keySet().forEach(databaseHash -> this.requests.get(databaseHash).takeSnapshot());
-        this.userErrors.keySet().forEach(databaseHash -> this.userErrors.get(databaseHash).takeSnapshot());
+        this.databaseLoad.values().forEach(DatabaseLoadDiagnostics::takeSnapshot);
+        this.requests.values().forEach(NetworkRequests::takeSnapshot);
+        this.userErrors.values().forEach(UserErrorStatistics::takeSnapshot);
     }
 
-    private String hashAndAddDatabaseIfAbsent(String databaseName) {
+    private String hashAndAddDatabaseIfAbsent(@Nullable String databaseName) {
         String databaseHash = databaseName != null ? String.valueOf(databaseName.hashCode()) : "";
 
-        if (!databaseHash.isEmpty() && !this.databaseLoad.containsKey(databaseHash)) {
-            this.databaseLoad.put(databaseHash, new DatabaseLoadDiagnostics());
+        if (!databaseHash.isEmpty()) {
+            this.databaseLoad.computeIfAbsent(databaseHash, val -> new DatabaseLoadDiagnostics());
         }
 
-        if (!this.requests.containsKey(databaseHash)) {
-            this.requests.put(databaseHash, new NetworkRequests());
-        }
-
-        if (!this.userErrors.containsKey(databaseHash)) {
-            this.userErrors.put(databaseHash, new UserErrorStatistics());
-        }
+        this.requests.computeIfAbsent(databaseHash, val -> new NetworkRequests());
+        this.userErrors.computeIfAbsent(databaseHash, val -> new UserErrorStatistics());
 
         return databaseHash;
     }
@@ -100,22 +95,17 @@ public class Metrics {
     }
 
     public void submitDatabaseDiagnostics(Set<DatabaseDiagnostics> databaseDiagnostics) {
-        Set<String> updatedDatabases = new HashSet<>();
+        Set<String> deletedDatabases = new HashSet<>(databaseLoad.keySet());
 
         for (DatabaseDiagnostics diagnostics : databaseDiagnostics) {
             String databaseHash = hashAndAddDatabaseIfAbsent(diagnostics.databaseName());
             databaseLoad.get(databaseHash).setSchemaLoad(diagnostics.schemaLoad());
             databaseLoad.get(databaseHash).setDataLoad(diagnostics.dataLoad());
             updatePrimaryDatabases(databaseHash, diagnostics.isPrimaryServer());
-            updatedDatabases.add(databaseHash);
+            deletedDatabases.remove(databaseHash);
         }
 
-        for (String databaseHash : databaseLoad.keySet()) {
-            if (!updatedDatabases.contains(databaseHash)) {
-                databaseLoad.get(databaseHash).resetSchemaLoad();
-                databaseLoad.get(databaseHash).resetDataLoad();
-            }
-        }
+        deletedDatabases.forEach(databaseHash -> databaseLoad.get(databaseHash).setDatabaseDeleted());
     }
     
     private static String formatDateTime(LocalDateTime dateTime) {
@@ -133,9 +123,8 @@ public class Metrics {
 
         JsonArray load = new JsonArray();
         databaseLoad.keySet().forEach(databaseHash ->
-                load.add(databaseLoad.get(databaseHash).asJSON(
-                        databaseHash, primaryDatabaseHashes.contains(databaseHash)))
-        );
+                databaseLoad.get(databaseHash).asJSON(
+                        databaseHash, primaryDatabaseHashes.contains(databaseHash)).forEach(load::add));
         metrics.add("load", load);
 
         JsonArray actions = new JsonArray();
@@ -449,7 +438,7 @@ public class Metrics {
             }
         }
 
-        public void takeSnapshot() {
+        public synchronized void takeSnapshot() {
             peakCounts.replaceAll((kind, value) -> new AtomicLong(counts.get(kind).get()));
         }
 
@@ -462,10 +451,14 @@ public class Metrics {
             counts.get(kind).decrementAndGet();
         }
 
-        private void updatePeakValue(Kind kind, long value) {
+        private synchronized void updatePeakValue(Kind kind, long value) {
             if (peakCounts.get(kind).get() < value) {
                 peakCounts.get(kind).set(value);
             }
+        }
+
+        boolean isEmpty() {
+            return peakCounts.values().stream().mapToLong(AtomicLong::get).sum() == 0;
         }
 
         JsonObject asJSON() {
@@ -485,27 +478,29 @@ public class Metrics {
         private DatabaseSchemaLoad schemaLoad;
         private DatabaseDataLoad dataLoad;
         private final ConnectionPeakCounts connectionPeakCounts;
+        private boolean isDeleted;
 
         DatabaseLoadDiagnostics() {
             this.schemaLoad = new DatabaseSchemaLoad();
             this.dataLoad = new DatabaseDataLoad();
             this.connectionPeakCounts = new ConnectionPeakCounts();
+            this.isDeleted = false;
         }
 
         public void setSchemaLoad(DatabaseSchemaLoad schemaLoad) {
+            isDeleted = false;
             this.schemaLoad = schemaLoad;
         }
 
         public void setDataLoad(DatabaseDataLoad dataLoad) {
+            isDeleted = false;
             this.dataLoad = dataLoad;
         }
 
-        public void resetSchemaLoad() {
-            setSchemaLoad(new DatabaseSchemaLoad());
-        }
-
-        public void resetDataLoad() {
-            setDataLoad(new DatabaseDataLoad());
+        public void setDatabaseDeleted() {
+            isDeleted = true;
+            this.schemaLoad = new DatabaseSchemaLoad();
+            this.dataLoad = new DatabaseDataLoad();
         }
 
         public void incrementCurrent(ConnectionPeakCounts.Kind kind) {
@@ -520,14 +515,24 @@ public class Metrics {
             connectionPeakCounts.takeSnapshot();
         }
 
-        JsonObject asJSON(String database, boolean isPrimaryServer) {
-            JsonObject load = new JsonObject();
-            load.add("database", database);
-            if (isPrimaryServer) {
-                load.add("schema", schemaLoad.asJSON());
-                load.add("data", dataLoad.asJSON());
+        JsonArray asJSON(String database, boolean isPrimaryServer) {
+            JsonArray load = new JsonArray();
+
+            System.out.println("DELETED DB?" + database + " ?? " + isDeleted);
+
+            if (!isDeleted || !connectionPeakCounts.isEmpty()) {
+                JsonObject loadObject = new JsonObject();
+
+                loadObject.add("database", database);
+                if (isPrimaryServer) {
+                    loadObject.add("schema", schemaLoad.asJSON());
+                    loadObject.add("data", dataLoad.asJSON());
+                }
+                loadObject.add("connection", connectionPeakCounts.asJSON());
+
+                load.add(loadObject);
             }
-            load.add("connection", connectionPeakCounts.asJSON());
+
             return load;
         }
 
@@ -536,7 +541,7 @@ public class Metrics {
         }
 
         String prometheusDiagnostics(String database, boolean isPrimaryServer) {
-            if (!isPrimaryServer) {
+            if (!isPrimaryServer || isDeleted) {
                 return "";
             }
             return schemaLoad.prometheusDiagnostics(database) + dataLoad.prometheusDiagnostics(database);
@@ -707,7 +712,7 @@ public class Metrics {
         }
 
         public void register(String errorCode) {
-            errorCounts.computeIfAbsent(errorCode, c -> new AtomicLong(0)).incrementAndGet();
+            errorCounts.computeIfAbsent(errorCode, count -> new AtomicLong(0)).incrementAndGet();
         }
 
         JsonArray asJSON(String database) {
