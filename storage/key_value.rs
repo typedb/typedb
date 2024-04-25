@@ -58,7 +58,7 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
     pub fn length(&self) -> usize {
         match self {
             StorageKey::Array(key) => key.length(),
-            StorageKey::Reference(key) => key.length()
+            StorageKey::Reference(key) => key.length(),
         }
     }
 
@@ -114,8 +114,8 @@ pub struct StorageKeyArray<const SZ: usize> {
 }
 
 impl<const SZ: usize> StorageKeyArray<SZ> {
-    pub fn new<KS: KeyspaceSet>(keyspace_id: KS, array: ByteArray<SZ>) -> Self {
-        Self::new_raw(keyspace_id.id(), array)
+    pub fn new<KS: KeyspaceSet>(keyspace: KS, array: ByteArray<SZ>) -> Self {
+        Self::new_raw(keyspace.id(), array)
     }
 
     pub(crate) fn new_raw(keyspace_id: KeyspaceId, array: ByteArray<SZ>) -> Self {
@@ -145,7 +145,7 @@ impl<const SZ: usize> StorageKeyArray<SZ> {
 
 impl<const SZ: usize> PartialEq<Self> for StorageKeyArray<SZ> {
     fn eq(&self, other: &Self) -> bool {
-        self.keyspace_id() == other.keyspace_id() && self.bytes() == other.bytes()
+        (self.keyspace_id(), self.bytes()) == (other.keyspace_id(), other.bytes())
     }
 }
 
@@ -153,14 +153,13 @@ impl<const SZ: usize> Eq for StorageKeyArray<SZ> {}
 
 impl<const SZ: usize> PartialOrd<Self> for StorageKeyArray<SZ> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        // TODO: should this take into account Keyspace ID?
         Some(self.cmp(other))
     }
 }
 
 impl<const SZ: usize> Ord for StorageKeyArray<SZ> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.bytes().cmp(other.bytes())
+        (self.keyspace_id(), self.bytes()).cmp(&(other.keyspace_id(), other.bytes()))
     }
 }
 
@@ -172,22 +171,31 @@ impl<const SZ: usize> Borrow<[u8]> for StorageKeyArray<SZ> {
 
 impl<const SZ: usize> From<StorageKeyReference<'_>> for StorageKeyArray<SZ> {
     fn from(key: StorageKeyReference<'_>) -> Self {
-        StorageKeyArray { keyspace_id: key.keyspace_id(), byte_array: ByteArray::copy(key.bytes()) }
+        Self { keyspace_id: key.keyspace_id(), byte_array: ByteArray::copy(key.bytes()) }
     }
 }
 
-impl<const SZ: usize, KS: KeyspaceSet> From<(Vec<u8>, KS)> for StorageKeyArray<SZ> {
-    // For tests
-    fn from((bytes, keyspace): (Vec<u8>, KS)) -> Self {
-        From::from((bytes.as_slice(), keyspace))
+impl<const SZ: usize, KS: KeyspaceSet> From<(KS, Vec<u8>)> for StorageKeyArray<SZ> {
+    fn from((keyspace, bytes): (KS, Vec<u8>)) -> Self {
+        Self::new(keyspace, ByteArray::boxed(bytes.into_boxed_slice()))
     }
 }
 
-impl<const SZ: usize, KS: KeyspaceSet> From<(&[u8], KS)> for StorageKeyArray<SZ> {
-    // For tests
-    fn from((bytes, keyspace): (&[u8], KS)) -> Self {
-        let bytes = ByteArray::<SZ>::copy(bytes);
-        StorageKeyArray { keyspace_id: keyspace.id(), byte_array: bytes }
+impl<const SZ: usize, KS: KeyspaceSet, const A: usize> From<(KS, [u8; A])> for StorageKeyArray<SZ> {
+    fn from((keyspace, bytes): (KS, [u8; A])) -> Self {
+        Self::new(keyspace, ByteArray::boxed(Box::new(bytes)))
+    }
+}
+
+impl<const SZ: usize, KS: KeyspaceSet, const A: usize> From<(KS, &[u8; A])> for StorageKeyArray<SZ> {
+    fn from((keyspace, bytes): (KS, &[u8; A])) -> Self {
+        Self::new(keyspace, ByteArray::copy(bytes))
+    }
+}
+
+impl<const SZ: usize, KS: KeyspaceSet> From<(KS, &[u8])> for StorageKeyArray<SZ> {
+    fn from((keyspace, bytes): (KS, &[u8])) -> Self {
+        Self::new(keyspace, ByteArray::copy(bytes))
     }
 }
 
@@ -235,7 +243,7 @@ impl<'bytes, const SZ: usize> From<&'bytes StorageKeyArray<SZ>> for StorageKeyRe
 
 impl<'bytes> PartialEq<Self> for StorageKeyReference<'bytes> {
     fn eq(&self, other: &Self) -> bool {
-        self.keyspace_id() == other.keyspace_id() && self.bytes() == other.bytes()
+        (self.keyspace_id(), self.bytes()) == (other.keyspace_id(), other.bytes())
     }
 }
 
@@ -250,6 +258,6 @@ impl<'bytes> PartialOrd<Self> for StorageKeyReference<'bytes> {
 
 impl<'bytes> Ord for StorageKeyReference<'bytes> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.bytes().cmp(other.bytes())
+        (self.keyspace_id(), self.bytes()).cmp(&(other.keyspace_id(), other.bytes()))
     }
 }

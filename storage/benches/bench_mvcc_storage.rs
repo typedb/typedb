@@ -46,13 +46,13 @@ use self::TestKeyspaceSet::Keyspace;
 fn random_key_24(keyspace: TestKeyspaceSet) -> StorageKeyArray<BUFFER_KEY_INLINE> {
     let mut bytes: [u8; 24] = rand::random();
     bytes[0] = 0b0;
-    StorageKeyArray::from((bytes.as_slice(), keyspace))
+    StorageKeyArray::from((keyspace, bytes))
 }
 
 fn random_key_4(keyspace: TestKeyspaceSet) -> StorageKeyArray<BUFFER_KEY_INLINE> {
     let mut bytes: [u8; 4] = rand::random();
     bytes[0] = 0b0;
-    StorageKeyArray::from((bytes.as_slice(), keyspace))
+    StorageKeyArray::from((keyspace, bytes))
 }
 
 fn populate_storage(storage: Arc<MVCCStorage<WAL>>, keyspace: TestKeyspaceSet, key_count: usize) -> usize {

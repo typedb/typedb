@@ -376,7 +376,7 @@ fn g2_predicate_anti_dependency_cycles() {
     let key_3 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_3));
     let key_4 = StorageKeyArray::new(Keyspace, ByteArray::copy(&key_4_bytes));
 
-    let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((vec![0x0], Keyspace));
+    let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0]));
     let prefix = KeyRange::new_within(StorageKey::Array(key_prefix), false);
     let value_31 = ByteArray::inline([30], 1);
     let value_42 = ByteArray::inline([42], 1);

@@ -100,7 +100,7 @@ fn create_reopen() {
 
     let keys = [[0x0, 0x0, 0x1], [0x1, 0x0, 0x10], [0x1, 0x0, 0xff], [0x2, 0x0, 0xff]]
         .into_iter()
-        .map(|v| StorageKeyArray::<64>::from((v.as_slice(), Keyspace)))
+        .map(|bytes| StorageKeyArray::<64>::from((Keyspace, bytes)))
         .collect_vec();
 
     init_logging();
@@ -118,7 +118,7 @@ fn create_reopen() {
         let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
         let items = storage
             .iterate_keyspace_range(KeyRange::new_unbounded(StorageKey::<64>::Reference(StorageKeyReference::from(
-                &StorageKeyArray::<64>::from((vec![0x0], Keyspace)),
+                &StorageKeyArray::<64>::from((Keyspace, [0x0])),
             ))))
             .collect_cloned::<64, 128>();
         let items = items.into_iter().map(|(key, _)| key).collect_vec();
@@ -138,19 +138,19 @@ fn get_put_iterate() {
     let storage_path = create_tmp_dir();
     let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
 
-    let keyspace_1_key_1 = StorageKeyArray::<64>::from((vec![0x0, 0x0, 0x1], Keyspace1));
-    let keyspace_1_key_2 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0x10], Keyspace1));
-    let keyspace_1_key_3 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0xff], Keyspace1));
-    let keyspace_1_key_4 = StorageKeyArray::<64>::from((vec![0x2, 0x0, 0xff], Keyspace1));
+    let keyspace_1_key_1 = StorageKeyArray::<64>::from((Keyspace1, [0x0, 0x0, 0x1]));
+    let keyspace_1_key_2 = StorageKeyArray::<64>::from((Keyspace1, [0x1, 0x0, 0x10]));
+    let keyspace_1_key_3 = StorageKeyArray::<64>::from((Keyspace1, [0x1, 0x0, 0xff]));
+    let keyspace_1_key_4 = StorageKeyArray::<64>::from((Keyspace1, [0x2, 0x0, 0xff]));
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_1), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_2), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_3), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_4), &empty_value());
 
-    let keyspace_2_key_1 = StorageKeyArray::<64>::from((vec![0x1, 0x0, 0x1], Keyspace2));
-    let keyspace_2_key_2 = StorageKeyArray::<64>::from((vec![0xb, 0x0, 0x10], Keyspace2));
-    let keyspace_2_key_3 = StorageKeyArray::<64>::from((vec![0x5, 0x0, 0xff], Keyspace2));
-    let keyspace_2_key_4 = StorageKeyArray::<64>::from((vec![0x2, 0x0, 0xff], Keyspace2));
+    let keyspace_2_key_1 = StorageKeyArray::<64>::from((Keyspace2, [0x1, 0x0, 0x1]));
+    let keyspace_2_key_2 = StorageKeyArray::<64>::from((Keyspace2, [0xb, 0x0, 0x10]));
+    let keyspace_2_key_3 = StorageKeyArray::<64>::from((Keyspace2, [0x5, 0x0, 0xff]));
+    let keyspace_2_key_4 = StorageKeyArray::<64>::from((Keyspace2, [0x2, 0x0, 0xff]));
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_1), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_2), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_3), &empty_value());
@@ -164,7 +164,7 @@ fn get_put_iterate() {
         storage.get_raw_mapped(StorageKeyReference::from(&keyspace_2_key_1), ByteArray::copy);
     assert_eq!(second_value, Some(ByteArray::empty()));
 
-    let prefix = StorageKeyArray::<64>::from((vec![0x1], Keyspace1));
+    let prefix = StorageKeyArray::<64>::from((Keyspace1, [0x1]));
     let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage
         .iterate_keyspace_range(KeyRange::new_within(
             StorageKey::<64>::Reference(StorageKeyReference::from(&prefix)),
