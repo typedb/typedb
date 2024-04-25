@@ -39,7 +39,7 @@ use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::B
 use storage::{MVCCStorage, ReadSnapshotOpenError, snapshot::ReadableSnapshot};
 use storage::key_range::KeyRange;
 
-use crate::type_::{annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent}, attribute_type::{AttributeType, AttributeTypeAnnotation}, deserialise_annotation_cardinality, deserialise_ordering, entity_type::{EntityType, EntityTypeAnnotation}, IntoCanonicalTypeEdge, object_type::ObjectType, Ordering, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
+use crate::type_::{annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent}, annotation, attribute_type::{AttributeType, AttributeTypeAnnotation}, deserialise_annotation_cardinality, deserialise_ordering, entity_type::{EntityType, EntityTypeAnnotation}, IntoCanonicalTypeEdge, object_type::ObjectType, Ordering, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
 use crate::type_::owns::OwnsAnnotation;
 use crate::type_::storage_source::StorageTypeManagerSource;
 use crate::type_::type_manager::{ReadableType, TypeManager};
@@ -67,6 +67,7 @@ struct BasicTypeCache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
     type_: T,
     label: Label<'static>,
     is_root: bool,
+    annotations_declared: HashSet<T::AnnotationType>,
     // TODO: Should these all be sets instead of vec?
     supertype: Option<T::SelfWithLifetime>,
     supertypes: Vec<T>,  // TODO: use smallvec if we want to have some inline - benchmark.
@@ -75,14 +76,18 @@ struct BasicTypeCache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
 }
 
 impl<T> BasicTypeCache<T> where T: TypeAPI<'static> + ReadableType<'static, 'static> {
-    fn build_for<Snapshot: ReadableSnapshot>(type_ : T, snapshot: &Snapshot) -> BasicTypeCache<T> {
+    fn build_for<Snapshot: ReadableSnapshot>(snapshot: &Snapshot, type_ : T) -> BasicTypeCache<T> {
         let label = StorageTypeManagerSource::storage_get_label(snapshot, type_.clone()).unwrap().unwrap();
         let supertype = StorageTypeManagerSource::storage_get_supertype_vertex(snapshot, type_.clone()).map(|vertex| T::read_from(vertex.into_bytes()));
         let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
+        let annotations_declared = StorageTypeManagerSource::storage_get_type_annotations(snapshot, type_.clone()).unwrap().into_iter()
+            .map(|annotation| T::AnnotationType::from(annotation))
+            .collect::<HashSet<T::AnnotationType>>();
         Self {
             type_,
             label,
             is_root,
+            annotations_declared,
             supertype,
             supertypes: Vec::new() // todo!()
         }
@@ -92,9 +97,7 @@ impl<T> BasicTypeCache<T> where T: TypeAPI<'static> + ReadableType<'static, 'sta
 #[derive(Debug)]
 struct EntityTypeCache {
     type_api_cache_ : BasicTypeCache<EntityType<'static>>,
-    annotations_declared: HashSet<EntityTypeAnnotation>,
     owns_declared: HashSet<Owns<'static>>,
-
     plays_declared: HashSet<Plays<'static>>,
     // ...
 }
@@ -102,7 +105,6 @@ struct EntityTypeCache {
 #[derive(Debug)]
 struct RelationTypeCache {
     type_api_cache_ : BasicTypeCache<RelationType<'static>>,
-    annotations_declared: HashSet<RelationTypeAnnotation>,
     relates_declared: HashSet<Relates<'static>>,
     owns_declared: HashSet<Owns<'static>>,
 
@@ -113,14 +115,12 @@ struct RelationTypeCache {
 struct RoleTypeCache {
     type_api_cache_ : BasicTypeCache<RoleType<'static>>,
     ordering: Ordering,
-    annotations_declared: HashSet<RoleTypeAnnotation>,
     relates_declared: Relates<'static>,
 }
 
 #[derive(Debug)]
 struct AttributeTypeCache {
     type_api_cache_ :  BasicTypeCache<AttributeType<'static>>,
-    annotations_declared: HashSet<AttributeTypeAnnotation>,
     value_type: Option<ValueType>,
     // owners: HashSet<Owns<'static>>
 }
@@ -213,8 +213,7 @@ impl TypeCache {
         for entity in entities.into_iter() {
             let object = ObjectType::Entity(entity.clone());
             let cache = EntityTypeCache {
-                type_api_cache_:  BasicTypeCache::build_for(entity.clone(), snapshot),
-                annotations_declared: Self::read_vertex_annotations::<EntityTypeAnnotation>(vertex_properties, entity.clone().into_vertex()),
+                type_api_cache_:  BasicTypeCache::build_for(snapshot, entity.clone()),
                 owns_declared: owns.iter().filter(|owns| owns.owner() == object).cloned().collect(),
                 plays_declared: plays.iter().filter(|plays| plays.player() == object).cloned().collect(),
             };
@@ -271,8 +270,7 @@ impl TypeCache {
                 .collect();
 
             let cache = RelationTypeCache {
-                type_api_cache_:  BasicTypeCache::build_for(relation.clone(), snapshot),
-                annotations_declared: Self::read_vertex_annotations::<RelationTypeAnnotation>(vertex_properties, relation.clone().into_vertex()),
+                type_api_cache_:  BasicTypeCache::build_for(snapshot, relation.clone()),
                 relates_declared: relates_declared,
                 owns_declared: owns.iter().filter(|owns| owns.owner() == object).cloned().collect(),
                 plays_declared: plays.iter().filter(|plays| plays.player() == object).cloned().collect(),
@@ -319,11 +317,9 @@ impl TypeCache {
             .unwrap();
         for role in roles.into_iter() {
             let ordering = Self::read_role_ordering(vertex_properties, role.clone());
-            let annotations = Self::read_vertex_annotations::<RoleTypeAnnotation>(vertex_properties, role.clone().into_vertex());
             let cache = RoleTypeCache {
-                type_api_cache_:  BasicTypeCache::build_for(role.clone(), snapshot),
+                type_api_cache_:  BasicTypeCache::build_for(snapshot, role.clone()),
                 ordering,
-                annotations_declared: annotations,
                 relates_declared: relates.iter().find(|relates| relates.role() == role).unwrap().clone(),
             };
             caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
@@ -373,8 +369,7 @@ impl TypeCache {
         let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         for attribute in attributes {
             let cache = AttributeTypeCache {
-                type_api_cache_:  BasicTypeCache::build_for(attribute.clone(), snapshot),
-                annotations_declared: Self::read_vertex_annotations::<AttributeTypeAnnotation>(vertex_properties, attribute.clone().into_vertex()),
+                type_api_cache_:  BasicTypeCache::build_for(snapshot, attribute.clone()),
                 value_type: Self::read_value_type(vertex_properties, attribute.vertex().into_owned()),
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
@@ -487,39 +482,6 @@ impl TypeCache {
         vertex_properties
             .get(&build_property_type_value_type(type_vertex))
             .map(|bytes| ValueType::from_value_type_id(ValueTypeID::new(bytes.bytes().try_into().unwrap())))
-    }
-
-    fn read_vertex_annotations<A: From<Annotation> + std::hash::Hash + Eq>(
-        vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
-        type_vertex: TypeVertex<'static>,
-    ) -> HashSet<A> {
-        vertex_properties
-            .iter()
-            .filter_map(|(property, value)| {
-                if property.type_vertex() != type_vertex {
-                    None
-                } else {
-                    // WARNING: do _not_ remove the explicit enumeration, as this will help us catch when future annotations are added
-                    match property.infix() {
-                        Infix::PropertyAnnotationAbstract => Some(Annotation::Abstract(AnnotationAbstract::new())),
-                        Infix::PropertyAnnotationDistinct => Some(Annotation::Distinct(AnnotationDistinct::new())),
-                        Infix::PropertyAnnotationIndependent => {
-                            Some(Annotation::Independent(AnnotationIndependent::new()))
-                        }
-                        Infix::PropertyAnnotationCardinality => {
-                            Some(Annotation::Cardinality(deserialise_annotation_cardinality(ByteReference::from(value))))
-                        }
-                        Infix::PropertyLabel
-                        | Infix::PropertyOrdering
-                        | Infix::PropertyValueType
-                        | Infix::PropertyHasOrder
-                        | Infix::PropertyRolePlayerOrder => None,
-                        Infix::_PropertyAnnotationLast => {
-                            unreachable!("Received unexpected marker annotation")
-                        }
-                    }
-                }
-            }).map(|annotation| { A::from(annotation) }).collect::<HashSet<A>>()
     }
 
     fn read_edge_ordering(
@@ -688,25 +650,25 @@ impl TypeCache {
         &self,
         entity_type: EntityType<'static>,
     ) -> &HashSet<EntityTypeAnnotation> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().annotations_declared
+        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().type_api_cache_.annotations_declared
     }
 
     pub(crate) fn get_relation_type_annotations(
         &self,
         relation_type: RelationType<'static>,
     ) -> &HashSet<RelationTypeAnnotation> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().annotations_declared
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().type_api_cache_.annotations_declared
     }
 
     pub(crate) fn get_role_type_annotations(&self, role_type: RoleType<'static>) -> &HashSet<RoleTypeAnnotation> {
-        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().annotations_declared
+        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().type_api_cache_.annotations_declared
     }
 
     pub(crate) fn get_attribute_type_annotations(
         &self,
         attribute_type: AttributeType<'static>,
     ) -> &HashSet<AttributeTypeAnnotation> {
-        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().annotations_declared
+        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().type_api_cache_.annotations_declared
     }
 
     pub(crate) fn get_owns_annotations<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<OwnsAnnotation> {
