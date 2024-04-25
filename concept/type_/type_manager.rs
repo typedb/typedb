@@ -142,10 +142,10 @@ macro_rules! get_supertypes_methods {
             // WARN: supertypes currently do NOT include themselves
             pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
-                    Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
+                    Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
                     let supertypes = TypeReader::get_supertypes_transitive(self.snapshot.as_ref(), type_)?;
-                    Ok(MaybeOwns::owned(supertypes))
+                    Ok(MaybeOwns::Owned(supertypes))
                 }
             }
         )*
@@ -211,9 +211,9 @@ macro_rules! get_type_label_methods {
         $(
             pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Label<'static>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
-                    Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
+                    Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
-                    Ok(MaybeOwns::owned(TypeReader::get_label(self.snapshot.as_ref(), type_)?.unwrap()))
+                    Ok(MaybeOwns::Owned(TypeReader::get_label(self.snapshot.as_ref(), type_)?.unwrap()))
                 }
             }
         )*
@@ -229,14 +229,14 @@ macro_rules! get_type_annotations {
                 &self, type_: $type_<'static>
             ) -> Result<MaybeOwns<'_, HashSet<$annotation_type>>, ConceptReadError> {
                  if let Some(cache) = &self.type_cache {
-                    Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
+                    Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
                     let mut annotations: HashSet<$annotation_type> = HashSet::new();
                     let annotations = TypeReader::get_type_annotations(self.snapshot.as_ref(), type_)?
                         .into_iter()
                         .map(|annotation| $annotation_type::from(annotation))
                         .collect();
-                    Ok(MaybeOwns::owned(annotations))
+                    Ok(MaybeOwns::Owned(annotations))
                 }
             }
         )*
