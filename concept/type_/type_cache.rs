@@ -39,7 +39,7 @@ use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::B
 use storage::{MVCCStorage, ReadSnapshotOpenError, snapshot::ReadableSnapshot};
 use storage::key_range::KeyRange;
 
-use crate::type_::{annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent}, annotation, attribute_type::{AttributeType, AttributeTypeAnnotation}, deserialise_annotation_cardinality, deserialise_ordering, entity_type::{EntityType, EntityTypeAnnotation}, IntoCanonicalTypeEdge, object_type::ObjectType, Ordering, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
+use crate::type_::{annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent}, attribute_type::{AttributeType, AttributeTypeAnnotation}, deserialise_annotation_cardinality, deserialise_ordering, entity_type::{EntityType, EntityTypeAnnotation}, IntoCanonicalTypeEdge, object_type::ObjectType, Ordering, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
 use crate::type_::owns::OwnsAnnotation;
 use crate::type_::storage_source::StorageTypeManagerSource;
 use crate::type_::type_manager::{ReadableType, TypeManager};
@@ -63,7 +63,7 @@ pub struct TypeCache {
 }
 
 #[derive(Debug)]
-struct BasicTypeCache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
+struct TypeAPICache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
     type_: T,
     label: Label<'static>,
     is_root: bool,
@@ -75,8 +75,8 @@ struct BasicTypeCache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
     // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 }
 
-impl<T> BasicTypeCache<T> where T: TypeAPI<'static> + ReadableType<'static, 'static> {
-    fn build_for<Snapshot: ReadableSnapshot>(snapshot: &Snapshot, type_ : T) -> BasicTypeCache<T> {
+impl<T> TypeAPICache<T> where T: TypeAPI<'static> + ReadableType<'static, 'static> {
+    fn build_for<Snapshot: ReadableSnapshot>(snapshot: &Snapshot, type_ : T) -> TypeAPICache<T> {
         let label = StorageTypeManagerSource::storage_get_label(snapshot, type_.clone()).unwrap().unwrap();
         let supertype = StorageTypeManagerSource::storage_get_supertype_vertex(snapshot, type_.clone()).map(|vertex| T::read_from(vertex.into_bytes()));
         let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
@@ -96,7 +96,7 @@ impl<T> BasicTypeCache<T> where T: TypeAPI<'static> + ReadableType<'static, 'sta
 
 #[derive(Debug)]
 struct EntityTypeCache {
-    type_api_cache_ : BasicTypeCache<EntityType<'static>>,
+    type_api_cache_ : TypeAPICache<EntityType<'static>>,
     owns_declared: HashSet<Owns<'static>>,
     plays_declared: HashSet<Plays<'static>>,
     // ...
@@ -104,7 +104,7 @@ struct EntityTypeCache {
 
 #[derive(Debug)]
 struct RelationTypeCache {
-    type_api_cache_ : BasicTypeCache<RelationType<'static>>,
+    type_api_cache_ : TypeAPICache<RelationType<'static>>,
     relates_declared: HashSet<Relates<'static>>,
     owns_declared: HashSet<Owns<'static>>,
 
@@ -113,14 +113,14 @@ struct RelationTypeCache {
 
 #[derive(Debug)]
 struct RoleTypeCache {
-    type_api_cache_ : BasicTypeCache<RoleType<'static>>,
+    type_api_cache_ : TypeAPICache<RoleType<'static>>,
     ordering: Ordering,
     relates_declared: Relates<'static>,
 }
 
 #[derive(Debug)]
 struct AttributeTypeCache {
-    type_api_cache_ :  BasicTypeCache<AttributeType<'static>>,
+    type_api_cache_ :  TypeAPICache<AttributeType<'static>>,
     value_type: Option<ValueType>,
     // owners: HashSet<Owns<'static>>
 }
@@ -149,13 +149,13 @@ impl TypeCache {
             })
             .unwrap();
 
-        let entity_type_caches = Self::create_entity_caches(&snapshot, &vertex_properties);
+        let entity_type_caches = Self::create_entity_caches(&snapshot);
         let entity_type_index_labels = entity_type_caches
             .iter()
             .filter_map(|entry| entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone())))
             .collect();
 
-        let relation_type_caches = Self::create_relation_caches(&snapshot, &vertex_properties);
+        let relation_type_caches = Self::create_relation_caches(&snapshot);
         let relation_type_index_labels = relation_type_caches
             .iter()
             .filter_map(|entry| entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone())))
@@ -196,8 +196,7 @@ impl TypeCache {
     }
 
     fn create_entity_caches(
-        snapshot: &impl ReadableSnapshot,
-        vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        snapshot: &impl ReadableSnapshot
     ) -> Box<[Option<EntityTypeCache>]> {
         let entities = snapshot
             .iterate_range(KeyRange::new_within(build_vertex_entity_type_prefix(), Prefix::VertexEntityType.fixed_width_keys()))
@@ -213,7 +212,7 @@ impl TypeCache {
         for entity in entities.into_iter() {
             let object = ObjectType::Entity(entity.clone());
             let cache = EntityTypeCache {
-                type_api_cache_:  BasicTypeCache::build_for(snapshot, entity.clone()),
+                type_api_cache_:  TypeAPICache::build_for(snapshot, entity.clone()),
                 owns_declared: owns.iter().filter(|owns| owns.owner() == object).cloned().collect(),
                 plays_declared: plays.iter().filter(|plays| plays.player() == object).cloned().collect(),
             };
@@ -239,8 +238,7 @@ impl TypeCache {
     }
 
     fn create_relation_caches(
-        snapshot: &impl ReadableSnapshot,
-        vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
+        snapshot: &impl ReadableSnapshot
     ) -> Box<[Option<RelationTypeCache>]> {
         let relations = snapshot
             .iterate_range(KeyRange::new_within(build_vertex_relation_type_prefix(), Prefix::VertexRelationType.fixed_width_keys()))
@@ -270,7 +268,7 @@ impl TypeCache {
                 .collect();
 
             let cache = RelationTypeCache {
-                type_api_cache_:  BasicTypeCache::build_for(snapshot, relation.clone()),
+                type_api_cache_:  TypeAPICache::build_for(snapshot, relation.clone()),
                 relates_declared: relates_declared,
                 owns_declared: owns.iter().filter(|owns| owns.owner() == object).cloned().collect(),
                 plays_declared: plays.iter().filter(|plays| plays.player() == object).cloned().collect(),
@@ -318,7 +316,7 @@ impl TypeCache {
         for role in roles.into_iter() {
             let ordering = Self::read_role_ordering(vertex_properties, role.clone());
             let cache = RoleTypeCache {
-                type_api_cache_:  BasicTypeCache::build_for(snapshot, role.clone()),
+                type_api_cache_:  TypeAPICache::build_for(snapshot, role.clone()),
                 ordering,
                 relates_declared: relates.iter().find(|relates| relates.role() == role).unwrap().clone(),
             };
@@ -369,7 +367,7 @@ impl TypeCache {
         let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         for attribute in attributes {
             let cache = AttributeTypeCache {
-                type_api_cache_:  BasicTypeCache::build_for(snapshot, attribute.clone()),
+                type_api_cache_:  TypeAPICache::build_for(snapshot, attribute.clone()),
                 value_type: Self::read_value_type(vertex_properties, attribute.vertex().into_owned()),
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
