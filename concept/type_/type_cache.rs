@@ -13,32 +13,27 @@ use std::{
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use durability::SequenceNumber;
-use encoding::{
-    graph::{
-        type_::{
-            edge::{
-                build_edge_owns_prefix_prefix, build_edge_plays_prefix_prefix, build_edge_relates_prefix_prefix,
-                build_edge_relates_reverse_prefix_prefix, build_edge_sub_prefix_prefix, new_edge_owns, new_edge_plays,
-                new_edge_relates, new_edge_relates_reverse, new_edge_sub,
-            },
-            Kind,
-            property::{build_property_type_label, build_property_type_value_type, TypeVertexProperty},
-            vertex::{
-                build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
-                build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type,
-                new_vertex_relation_type, new_vertex_role_type, TypeVertex,
-            },
+use encoding::{AsBytes, graph::{
+    type_::{
+        edge::{
+            build_edge_owns_prefix_prefix, build_edge_plays_prefix_prefix, build_edge_relates_prefix_prefix,
+            build_edge_relates_reverse_prefix_prefix, build_edge_sub_prefix_prefix, new_edge_owns, new_edge_plays,
+            new_edge_relates, new_edge_relates_reverse, new_edge_sub,
         },
-        Typed,
+        Kind,
+        property::{build_property_type_label, build_property_type_value_type, TypeVertexProperty},
+        vertex::{
+            build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
+            build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type,
+            new_vertex_relation_type, new_vertex_role_type, TypeVertex,
+        },
     },
-    layout::{infix::Infix, prefix::Prefix},
-    Prefixed,
-    value::{
-        label::Label,
-        string::StringBytes,
-        value_type::{ValueType, ValueTypeID},
-    },
-};
+    Typed,
+}, layout::{infix::Infix, prefix::Prefix}, Prefixed, value::{
+    label::Label,
+    string::StringBytes,
+    value_type::{ValueType, ValueTypeID},
+}};
 use encoding::graph::type_::edge::TypeEdge;
 use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_ordering, TypeEdgeProperty};
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_VALUE_INLINE};
@@ -47,6 +42,7 @@ use storage::key_range::KeyRange;
 
 use crate::type_::{annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent}, attribute_type::{AttributeType, AttributeTypeAnnotation}, deserialise_annotation_cardinality, deserialise_ordering, entity_type::{EntityType, EntityTypeAnnotation}, IntoCanonicalTypeEdge, object_type::ObjectType, Ordering, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
 use crate::type_::owns::OwnsAnnotation;
+use crate::type_::type_manager::{ReadableType, StorageTypeManagerSource, TypeManager};
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -66,25 +62,35 @@ pub struct TypeCache {
     attribute_types_index_label: HashMap<Label<'static>, AttributeType<'static>>,
 }
 
-// struct BasicTypeCache<T>
-// where T: TypeAPI<'static> {
-//     type_: T,
-//     label: Label<'static>,
-//     is_root: bool,
-//     supertype: Option<T>,
-//     supertypes: Vec<T>,  // TODO: use smallvec if we want to have some inline - benchmark.
-// }
+#[derive(Debug)]
+struct BasicTypeCache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
+    type_: T,
+    label: Label<'static>,
+    is_root: bool,
+    // TODO: Should these all be sets instead of vec?
+    supertype: Option<T::SelfWithLifetime>,
+    supertypes: Vec<T>,  // TODO: use smallvec if we want to have some inline - benchmark.
+}
+
+impl<T> BasicTypeCache<T> where T: TypeAPI<'static> + ReadableType<'static, 'static> {
+    fn build_for<Snapshot: ReadableSnapshot>(type_ : T, snapshot: &Snapshot) -> BasicTypeCache<T> {
+        let label = StorageTypeManagerSource::storage_get_label(snapshot, type_.clone()).unwrap().unwrap();
+        let supertype = StorageTypeManagerSource::storage_get_supertype_vertex(snapshot, type_.clone()).map(|vertex| T::read_from(vertex.into_bytes()));
+        let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
+        Self {
+            type_,
+            label,
+            is_root,
+            supertype: supertype,
+            supertypes: Vec::new() // todo!()
+        }
+    }
+}
 
 #[derive(Debug)]
 struct EntityTypeCache {
-    type_: EntityType<'static>,
-    label: Label<'static>,
-    is_root: bool,
+    type_api_cache: BasicTypeCache<EntityType<'static>>,
     annotations_declared: HashSet<EntityTypeAnnotation>,
-
-    // TODO: Should these all be sets instead of vec?
-    supertype: Option<EntityType<'static>>,
-    supertypes: Vec<EntityType<'static>>, // TODO: use smallvec if we want to have some inline - benchmark.
 
     // subtypes_declared: Vec<AttributeType<'static>>, // TODO: benchmark smallvec.
     // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
@@ -172,7 +178,7 @@ impl TypeCache {
         let entity_type_caches = Self::create_entity_caches(&snapshot, &vertex_properties);
         let entity_type_index_labels = entity_type_caches
             .iter()
-            .filter_map(|entry| entry.as_ref().map(|cache| (cache.label.clone(), cache.type_.clone())))
+            .filter_map(|entry| entry.as_ref().map(|cache| (cache.type_api_cache.label.clone(), cache.type_api_cache.type_.clone())))
             .collect();
 
         let relation_type_caches = Self::create_relation_caches(&snapshot, &vertex_properties);
@@ -227,20 +233,14 @@ impl TypeCache {
             .unwrap();
         let max_entity_id = entities.iter().map(|e| e.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_entity_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
-        let supertypes = Self::fetch_supertypes(snapshot, Prefix::VertexEntityType, EntityType::new);
+
         let owns = Self::fetch_owns(snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)));
         let plays = Self::fetch_plays(snapshot, Prefix::VertexEntityType, |v| ObjectType::Entity(EntityType::new(v)));
         for entity in entities.into_iter() {
             let object = ObjectType::Entity(entity.clone());
-            let label = Self::read_type_label(vertex_properties, entity.vertex().into_owned());
-            let is_root = label == Kind::Entity.root_label();
             let cache = EntityTypeCache {
-                type_: entity.clone(),
-                label,
-                is_root,
+                type_api_cache:  BasicTypeCache::build_for(entity.clone(), snapshot),
                 annotations_declared: Self::read_entity_annotations(vertex_properties, entity.clone()),
-                supertype: supertypes.get(&entity).cloned(),
-                supertypes: Vec::new(),
                 owns_declared: owns.iter().filter(|owns| owns.owner() == object).cloned().collect(),
                 plays_declared: plays.iter().filter(|plays| plays.player() == object).cloned().collect(),
             };
@@ -266,12 +266,12 @@ impl TypeCache {
             if entity_type_caches[index].is_none() {
                 continue;
             }
-            let mut supertype = entity_type_caches[index].as_ref().unwrap().supertype.clone();
+            let mut supertype = entity_type_caches[index].as_ref().unwrap().type_api_cache.supertype.clone();
             while let Some(current_supertype) = supertype {
                 let next_super_cache =
                     Self::get_entity_type_cache(entity_type_caches, current_supertype.vertex().clone()).unwrap();
-                supertype = next_super_cache.supertype.as_ref().cloned();
-                entity_type_caches[index].as_mut().unwrap().supertypes.push(current_supertype);
+                supertype = next_super_cache.type_api_cache.supertype.as_ref().cloned();
+                entity_type_caches[index].as_mut().unwrap().type_api_cache.supertypes.push(current_supertype);
             }
         }
     }
@@ -673,7 +673,7 @@ impl TypeCache {
     }
 
     pub(crate) fn get_entity_type_supertype(&self, entity_type: EntityType<'static>) -> Option<EntityType<'static>> {
-        Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().supertype.clone()
+        Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().type_api_cache.supertype.clone()
     }
 
     pub(crate) fn get_relation_type_supertype(
@@ -695,7 +695,7 @@ impl TypeCache {
     }
 
     pub(crate) fn get_entity_type_supertypes(&self, entity_type: EntityType<'_>) -> &Vec<EntityType<'static>> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().supertypes
+        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().type_api_cache.supertypes
     }
 
     pub(crate) fn get_relation_type_supertypes(
@@ -717,7 +717,7 @@ impl TypeCache {
     }
 
     pub(crate) fn get_entity_type_label(&self, entity_type: EntityType<'static>) -> &Label<'static> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().label
+        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().type_api_cache.label
     }
 
     pub(crate) fn get_relation_type_label(&self, relation_type: RelationType<'static>) -> &Label<'static> {
@@ -733,7 +733,7 @@ impl TypeCache {
     }
 
     pub(crate) fn get_entity_type_is_root(&self, entity_type: EntityType<'static>) -> bool {
-        Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().is_root
+        Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().type_api_cache.is_root
     }
 
     pub(crate) fn get_relation_type_is_root(&self, relation_type: RelationType<'static>) -> bool {
