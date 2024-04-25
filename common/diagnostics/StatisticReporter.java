@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
+import static java.lang.Math.abs;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class StatisticReporter {
@@ -66,8 +67,6 @@ public class StatisticReporter {
 
             conn.setDoOutput(true);
             conn.getOutputStream().write(metrics.formatJSON(true).getBytes(StandardCharsets.UTF_8));
-            System.out.println("REPORTING:"); // TODO: Only for tests
-            System.out.println(metrics.formatJSON(true));
 
             conn.connect();
 
@@ -75,8 +74,8 @@ public class StatisticReporter {
 
             metrics.takeCountsSnapshot();
         } catch (Exception e) {
-            if (LOG.isTraceEnabled()) LOG.trace("Failed to push metrics to {}: ", reportingURI, e);
-            // do nothing
+            LOG.warn("Failed to push metrics to {}: {}", reportingURI, e.getMessage());
+            // do nothing and try again after the standard delay
         }
     }
 
@@ -106,8 +105,8 @@ public class StatisticReporter {
 
     private long calculateInitialDelay() {
         int currentMinute = LocalDateTime.now().getMinute();
-        int scheduledMinute = deploymentID.hashCode() % REPORT_INTERVAL_MINUTES;
-        System.out.println("SCHEDULED MINUTE: " + scheduledMinute); // TODO: Only for tests
+        int scheduledMinute = abs(deploymentID.hashCode()) % REPORT_INTERVAL_MINUTES;
+
         if (currentMinute > scheduledMinute) {
             return 60 - currentMinute + scheduledMinute;
         } else {
