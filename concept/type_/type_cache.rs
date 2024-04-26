@@ -13,7 +13,7 @@ use std::{
 
 use bytes::Bytes;
 use durability::SequenceNumber;
-use encoding::{AsBytes, graph::{
+use encoding::{graph::{
     type_::{
         vertex::{
             build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
@@ -32,7 +32,7 @@ use storage::key_range::KeyRange;
 
 use crate::type_::{attribute_type::{AttributeType, AttributeTypeAnnotation}, entity_type::{EntityType, EntityTypeAnnotation}, object_type::ObjectType, Ordering, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
 use crate::type_::owns::OwnsAnnotation;
-use crate::type_::storage_source::StorageTypeManagerSource;
+use crate::type_::storage_source::TypeManagerStorageSource;
 use crate::type_::type_manager::{ReadableType, TypeManager};
 
 // TODO: could/should we slab allocate the schema cache?
@@ -68,15 +68,15 @@ struct TypeAPICache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
 
 impl<T> TypeAPICache<T> where T: TypeAPI<'static> + ReadableType<'static, 'static> {
     fn build_for<Snapshot: ReadableSnapshot>(snapshot: &Snapshot, type_ : T) -> TypeAPICache<T> {
-        let label = StorageTypeManagerSource::storage_get_label(snapshot, type_.clone()).unwrap().unwrap();
+        let label = TypeManagerStorageSource::storage_get_label(snapshot, type_.clone()).unwrap().unwrap();
         let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
-        let annotations_declared = StorageTypeManagerSource::storage_get_type_annotations(snapshot, type_.clone()).unwrap().into_iter()
+        let annotations_declared = TypeManagerStorageSource::storage_get_type_annotations(snapshot, type_.clone()).unwrap().into_iter()
             .map(|annotation| T::AnnotationType::from(annotation))
             .collect::<HashSet<T::AnnotationType>>();
-        let supertype = StorageTypeManagerSource::storage_get_supertype(snapshot, type_.clone()).unwrap();
-        let supertypes = StorageTypeManagerSource::storage_get_supertypes_transitive(snapshot, type_.clone()).unwrap();
-        let subtypes_declared = StorageTypeManagerSource::storage_get_subtypes(snapshot, type_.clone()).unwrap();
-        let subtypes_transitive = StorageTypeManagerSource::storage_get_subtypes_transitive(snapshot, type_.clone()).unwrap();
+        let supertype = TypeManagerStorageSource::storage_get_supertype(snapshot, type_.clone()).unwrap();
+        let supertypes = TypeManagerStorageSource::storage_get_supertypes_transitive(snapshot, type_.clone()).unwrap();
+        let subtypes_declared = TypeManagerStorageSource::storage_get_subtypes(snapshot, type_.clone()).unwrap();
+        let subtypes_transitive = TypeManagerStorageSource::storage_get_subtypes_transitive(snapshot, type_.clone()).unwrap();
         Self {
             type_,
             label,
@@ -195,8 +195,8 @@ impl TypeCache {
         for entity in entities.into_iter() {
             let cache = EntityTypeCache {
                 type_api_cache_:  TypeAPICache::build_for(snapshot, entity.clone()),
-                owns_declared: StorageTypeManagerSource::storage_get_owns(snapshot, entity.clone()).unwrap(),
-                plays_declared: StorageTypeManagerSource::storage_get_plays(snapshot, entity.clone()).unwrap(),
+                owns_declared: TypeManagerStorageSource::storage_get_owns(snapshot, entity.clone()).unwrap(),
+                plays_declared: TypeManagerStorageSource::storage_get_plays(snapshot, entity.clone()).unwrap(),
             };
             caches[entity.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -217,9 +217,9 @@ impl TypeCache {
         for relation in relations.into_iter() {
             let cache = RelationTypeCache {
                 type_api_cache_:  TypeAPICache::build_for(snapshot, relation.clone()),
-                relates_declared: StorageTypeManagerSource::storage_get_relates(snapshot, relation.clone()).unwrap(),
-                owns_declared : StorageTypeManagerSource::storage_get_owns(snapshot, relation.clone()).unwrap(),
-                plays_declared : StorageTypeManagerSource::storage_get_plays(snapshot, relation.clone()).unwrap()
+                relates_declared: TypeManagerStorageSource::storage_get_relates(snapshot, relation.clone()).unwrap(),
+                owns_declared : TypeManagerStorageSource::storage_get_owns(snapshot, relation.clone()).unwrap(),
+                plays_declared : TypeManagerStorageSource::storage_get_plays(snapshot, relation.clone()).unwrap()
             };
             caches[relation.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -238,11 +238,11 @@ impl TypeCache {
         let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_role_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         for role in roles.into_iter() {
-            let ordering = StorageTypeManagerSource::storage_get_type_ordering(snapshot, role.clone()).unwrap();
+            let ordering = TypeManagerStorageSource::storage_get_type_ordering(snapshot, role.clone()).unwrap();
             let cache = RoleTypeCache {
                 type_api_cache_:  TypeAPICache::build_for(snapshot, role.clone()),
                 ordering,
-                relates_declared: StorageTypeManagerSource::storage_get_relations(snapshot, role.clone()).unwrap()
+                relates_declared: TypeManagerStorageSource::storage_get_relations(snapshot, role.clone()).unwrap()
             };
             caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -263,7 +263,7 @@ impl TypeCache {
         for attribute in attributes {
             let cache = AttributeTypeCache {
                 type_api_cache_:  TypeAPICache::build_for(snapshot, attribute.clone()),
-                value_type: StorageTypeManagerSource::storage_get_value_type(snapshot, attribute.clone()).unwrap(),
+                value_type: TypeManagerStorageSource::storage_get_value_type(snapshot, attribute.clone()).unwrap(),
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -283,8 +283,8 @@ impl TypeCache {
                 (
                     owns.clone(),
                     OwnsCache {
-                        ordering: StorageTypeManagerSource::storage_get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
-                        annotations_declared: StorageTypeManagerSource::storage_get_type_edge_annotations(snapshot, owns.clone()).unwrap()
+                        ordering: TypeManagerStorageSource::storage_get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
+                        annotations_declared: TypeManagerStorageSource::storage_get_type_edge_annotations(snapshot, owns.clone()).unwrap()
                             .into_iter()
                             .map(|annotation| OwnsAnnotation::from(annotation))
                             .collect(),

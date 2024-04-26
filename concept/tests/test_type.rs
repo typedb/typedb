@@ -97,7 +97,6 @@ fn entity_usage() {
         assert_eq!(root_entity.get_subtypes_transitive(&type_manager).unwrap().len(), 3);
         assert_eq!(person_type.get_subtypes(&type_manager).unwrap().len(), 2);
         assert_eq!(person_type.get_subtypes_transitive(&type_manager).unwrap().len(), 2);
-
     }
     if let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();

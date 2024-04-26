@@ -66,7 +66,7 @@ use crate::thing::ObjectAPI;
 use crate::type_::{IntoCanonicalTypeEdge, Ordering, serialise_annotation_cardinality, serialise_ordering};
 use crate::type_::annotation::Annotation;
 use crate::type_::owns::OwnsAnnotation;
-use crate::type_::storage_source::StorageTypeManagerSource;
+use crate::type_::storage_source::TypeManagerStorageSource;
 
 // TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
 pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
@@ -113,7 +113,7 @@ macro_rules! get_type_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(label))
                 } else {
-                    StorageTypeManagerSource::storage_get_labelled_type::<$output_type<'static>>(self.snapshot.as_ref(), label)
+                    TypeManagerStorageSource::storage_get_labelled_type::<$output_type<'static>>(self.snapshot.as_ref(), label)
                 }
             }
         )*
@@ -129,7 +129,7 @@ macro_rules! get_supertype_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(type_))
                 } else {
-                    StorageTypeManagerSource::storage_get_supertype(self.snapshot.as_ref(), type_)
+                    TypeManagerStorageSource::storage_get_supertype(self.snapshot.as_ref(), type_)
                 }
             }
         )*
@@ -146,7 +146,7 @@ macro_rules! get_supertypes_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
-                    let supertypes = StorageTypeManagerSource::storage_get_supertypes_transitive(self.snapshot.as_ref(), type_)?;
+                    let supertypes = TypeManagerStorageSource::storage_get_supertypes_transitive(self.snapshot.as_ref(), type_)?;
                     Ok(MaybeOwns::owned(supertypes))
                 }
             }
@@ -163,7 +163,7 @@ macro_rules! get_subtypes_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
-                    let subtypes = StorageTypeManagerSource::storage_get_subtypes(self.snapshot.as_ref(), type_)?;
+                    let subtypes = TypeManagerStorageSource::storage_get_subtypes(self.snapshot.as_ref(), type_)?;
                     Ok(MaybeOwns::owned(subtypes))
                 }
             }
@@ -181,7 +181,7 @@ macro_rules! get_subtypes_transitive_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
-                    let subtypes = StorageTypeManagerSource::storage_get_subtypes_transitive(self.snapshot.as_ref(), type_)?;
+                    let subtypes = TypeManagerStorageSource::storage_get_subtypes_transitive(self.snapshot.as_ref(), type_)?;
                     Ok(MaybeOwns::owned(subtypes))
                 }
             }
@@ -214,7 +214,7 @@ macro_rules! get_type_label_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
-                    Ok(MaybeOwns::owned(StorageTypeManagerSource::storage_get_label(self.snapshot.as_ref(), type_)?.unwrap()))
+                    Ok(MaybeOwns::owned(TypeManagerStorageSource::storage_get_label(self.snapshot.as_ref(), type_)?.unwrap()))
                 }
             }
         )*
@@ -233,7 +233,7 @@ macro_rules! get_type_annotations {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
                     let mut annotations: HashSet<$annotation_type> = HashSet::new();
-                    let annotations = StorageTypeManagerSource::storage_get_type_annotations(self.snapshot.as_ref(), type_)?
+                    let annotations = TypeManagerStorageSource::storage_get_type_annotations(self.snapshot.as_ref(), type_)?
                         .into_iter()
                         .map(|annotation| $annotation_type::from(annotation))
                         .collect();
@@ -332,7 +332,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_entity_type_owns(entity_type)))
         } else {
-            let owns = StorageTypeManagerSource::storage_get_owns(self.snapshot.as_ref(), entity_type.clone())?;
+            let owns = TypeManagerStorageSource::storage_get_owns(self.snapshot.as_ref(), entity_type.clone())?;
             Ok(MaybeOwns::owned(owns))
         }
     }
@@ -344,7 +344,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_relation_type_owns(relation_type)))
         } else {
-            let owns = StorageTypeManagerSource::storage_get_owns(self.snapshot.as_ref(), relation_type.clone())?;
+            let owns = TypeManagerStorageSource::storage_get_owns(self.snapshot.as_ref(), relation_type.clone())?;
             Ok(MaybeOwns::owned(owns))
         }
     }
@@ -356,7 +356,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_relation_type_relates(relation_type)))
         } else {
-            let relates = StorageTypeManagerSource::storage_get_relates(self.snapshot.as_ref(), relation_type.clone())?;
+            let relates = TypeManagerStorageSource::storage_get_relates(self.snapshot.as_ref(), relation_type.clone())?;
             Ok(MaybeOwns::owned(relates))
         }
     }
@@ -382,7 +382,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_entity_type_plays(entity_type)))
         } else {
-            let plays = StorageTypeManagerSource::storage_get_plays(self.snapshot.as_ref(), entity_type.clone())?;
+            let plays = TypeManagerStorageSource::storage_get_plays(self.snapshot.as_ref(), entity_type.clone())?;
             Ok(MaybeOwns::owned(plays))
         }
     }
@@ -394,7 +394,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_attribute_type_value_type(attribute_type))
         } else {
-            StorageTypeManagerSource::storage_get_value_type(self.snapshot.as_ref(), attribute_type)
+            TypeManagerStorageSource::storage_get_value_type(self.snapshot.as_ref(), attribute_type)
         }
     }
 
@@ -411,7 +411,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_owns_annotations(owns)))
         } else {
-            let annotations: HashSet<OwnsAnnotation> = StorageTypeManagerSource::storage_get_type_edge_annotations(self.snapshot.as_ref(), owns)?
+            let annotations: HashSet<OwnsAnnotation> = TypeManagerStorageSource::storage_get_type_edge_annotations(self.snapshot.as_ref(), owns)?
                 .into_iter()
                 .map(|annotation| OwnsAnnotation::from(annotation))
                 .collect();
@@ -423,7 +423,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_owns_ordering(owns))
         } else {
-            StorageTypeManagerSource::storage_get_type_edge_ordering(self.snapshot.as_ref(), owns)
+            TypeManagerStorageSource::storage_get_type_edge_ordering(self.snapshot.as_ref(), owns)
         }
     }
 
@@ -510,7 +510,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     fn storage_may_delete_label(&self, owner: impl TypeAPI<'static>) {
-        let existing_label = StorageTypeManagerSource::storage_get_label(self.snapshot.as_ref(), owner.clone()).unwrap();
+        let existing_label = TypeManagerStorageSource::storage_get_label(self.snapshot.as_ref(), owner.clone()).unwrap();
         if let Some(label) = existing_label {
             let vertex_to_label_key = build_property_type_label(owner.into_vertex());
             self.snapshot.as_ref().delete(vertex_to_label_key.into_storage_key().into_owned_array());
@@ -535,7 +535,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     fn storage_may_delete_supertype(&self, subtype: impl TypeAPI<'static>) {
-        let supertype_vertex = StorageTypeManagerSource::storage_get_supertype_vertex(self.snapshot.as_ref(), subtype.clone().into_vertex()).unwrap();
+        let supertype_vertex = TypeManagerStorageSource::storage_get_supertype_vertex(self.snapshot.as_ref(), subtype.clone().into_vertex()).unwrap();
         if let Some(supertype) = supertype_vertex {
             let sub = build_edge_sub(subtype.clone().into_vertex(), supertype.clone());
             self.snapshot.as_ref().delete(sub.into_storage_key().into_owned_array());
@@ -723,41 +723,3 @@ impl<'a, 'b> ReadableType<'a, 'b> for RoleType<'a> {
         RoleType::new(new_vertex_role_type(b))
     }
 }
-
-
-//
-// pub trait TypeManagerReadSource {
-//
-//     fn get_entity_type_from_label(&self, label: &Label<'_>) -> Result<Option<EntityType<'static>>, ConceptReadError>;
-//     fn get_attribute_type_from_label(&self, label: &Label<'_>) -> Result<Option<AttributeType<'static>>, ConceptReadError>;
-//     fn get_relation_type_from_label(&self, label: &Label<'_>) -> Result<Option<RelationType<'static>>, ConceptReadError>;
-//     fn get_role_type_from_label(&self, label: &Label<'_>) -> Result<Option<RoleType<'static>>, ConceptReadError>;
-//
-//     fn get_attribute_type_value_type(&self, attribute_type: AttributeType<'static>) -> Result<Option<ValueType>, ConceptReadError>;
-//
-//     // TODO: Unify
-//     fn get_entity_type_owns(
-//         &self,
-//         entity_type: EntityType<'static>,
-//     ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError>;
-//
-//     fn get_relation_type_owns(
-//         &self,
-//         relation_type: RelationType<'static>,
-//     ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError>;
-//
-//
-//     fn get_relation_type_relates(
-//         &self,
-//         relation_type: RelationType<'static>,
-//     ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, ConceptReadError>;
-//
-//     fn get_entity_type_plays<'this>(
-//         &'this self,
-//         entity_type: EntityType<'static>,
-//     ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError>;
-//
-//     fn get_owns_annotations<'this>(
-//         &'this self, owns: Owns<'this>,
-//     ) -> Result<MaybeOwns<'this, HashSet<OwnsAnnotation>>, ConceptReadError>;
-// }

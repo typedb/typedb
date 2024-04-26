@@ -14,7 +14,6 @@ use encoding::value::string::StringBytes;
 use resource::constants::encoding::LABEL_SCOPED_NAME_STRING_INLINE;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use std::collections::HashSet;
-use bytes::byte_reference::ByteReference;
 use encoding::{AsBytes, Keyable};
 use encoding::layout::infix::Infix;
 use encoding::value::value_type::{ValueType, ValueTypeID};
@@ -32,10 +31,10 @@ use crate::type_::relates::Relates;
 use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
 
-pub struct StorageTypeManagerSource { }
+pub struct TypeManagerStorageSource { }
 
 // TODO: The '_s is only here for the enforcement of pass-by-value of types. If we drop that, we can move it to the function signatures
-impl<'_s> StorageTypeManagerSource
+impl<'_s> TypeManagerStorageSource
     where '_s : 'static {
 
     // TODO: Return vertex for consistency with other methods
@@ -68,15 +67,14 @@ impl<'_s> StorageTypeManagerSource
         // WARN: supertypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut supertype = Some(type_)`
         let mut supertypes = Vec::new();
-        let mut supervertex_opt = StorageTypeManagerSource::storage_get_supertype_vertex(snapshot, subtype.clone().into_vertex())?;
+        let mut supervertex_opt = TypeManagerStorageSource::storage_get_supertype_vertex(snapshot, subtype.clone().into_vertex())?;
         while let Some(supervertex) = supervertex_opt {
             supertypes.push(U::read_from(supervertex.clone().into_bytes()));
-            supervertex_opt = StorageTypeManagerSource::storage_get_supertype_vertex(snapshot, supervertex.clone())?;
+            supervertex_opt = TypeManagerStorageSource::storage_get_supertype_vertex(snapshot, supervertex.clone())?;
         }
         Ok(supertypes)
     }
 
-    // TODO: Add tests for subtypes
     pub(crate) fn storage_get_subtypes_vertex(snapshot: &impl ReadableSnapshot, supertype: TypeVertex<'_s>) -> Result<Vec<TypeVertex<'static>>, ConceptReadError>
     {
         snapshot
@@ -95,11 +93,11 @@ impl<'_s> StorageTypeManagerSource
         // WARN: subtypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut stack = vec!(subtype.clone());`
         let mut subtypes = Vec::new();
-        let mut stack = StorageTypeManagerSource::storage_get_subtypes_vertex(snapshot, subtype.clone().into_vertex())?;
+        let mut stack = TypeManagerStorageSource::storage_get_subtypes_vertex(snapshot, subtype.clone().into_vertex())?;
         while !stack.is_empty() {
             let subvertex = stack.pop().unwrap();
             subtypes.push(U::read_from(subvertex.clone().into_bytes()));
-            stack.append(&mut StorageTypeManagerSource::storage_get_subtypes_vertex(snapshot, subvertex.clone())?); // TODO: Should we pass an accumulator instead?
+            stack.append(&mut TypeManagerStorageSource::storage_get_subtypes_vertex(snapshot, subvertex.clone())?); // TODO: Should we pass an accumulator instead?
         }
         Ok(subtypes)
     }
