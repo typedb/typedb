@@ -52,7 +52,7 @@ impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
         self.bytes.length()
     }
 
-    pub fn clone_as_ref(&'a self) -> StringBytes<'a, INLINE_LENGTH> {
+    pub fn as_reference(&'a self) -> StringBytes<'a, INLINE_LENGTH> {
         StringBytes { bytes: Bytes::Reference(self.bytes.as_reference()) }
     }
 

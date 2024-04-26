@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashSet;
 use bytes::Bytes;
 use encoding::{
     AsBytes,
@@ -17,6 +18,7 @@ use encoding::{
     },
     Keyable, layout::prefix::Prefix, Prefixed,
 };
+use iterator::Collector;
 use storage::{
     key_value::StorageKeyReference,
     snapshot::{ReadableSnapshot, WritableSnapshot},
@@ -38,7 +40,9 @@ use crate::{
 use crate::error::ConceptReadError;
 use crate::thing::value::Value;
 use crate::type_::attribute_type::AttributeType;
-use crate::type_::OwnerAPI;
+use crate::type_::{Ordering, OwnerAPI};
+use crate::type_::owns::Owns;
+use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Entity<'a> {
@@ -76,51 +80,106 @@ impl<'a> Entity<'a> {
         &self,
         thing_manager: &'m ThingManager<impl ReadableSnapshot>,
     ) -> HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
-        thing_manager.get_has(self.as_reference())
+        thing_manager.get_has_unordered(self.as_reference())
     }
 
     pub fn get_has_type<'m>(
         &self,
         thing_manager: &'m ThingManager<impl ReadableSnapshot>,
         attribute_type: AttributeType<'static>,
-    ) -> HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
-        thing_manager.get_has_type(self.as_reference(), attribute_type)
+    ) -> Result<HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }>, ConceptReadError> {
+        thing_manager.get_has_type_unordered(self.as_reference(), attribute_type)
     }
 
-    pub fn set_has(&self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>) {
-        // TODO: validate schema
-        // TODO: handle duplicates/counts
-        thing_manager.set_has(self.as_reference(), attribute.as_reference())
-    }
-
-    pub fn delete_has_single(
+    pub fn set_has_unordered(
         &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
-        self.delete_has_many(thing_manager, attribute, 1)
-    }
-
-    pub fn delete_has_many(
-        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>, count: u64,
-    ) -> Result<(), ConceptWriteError> {
-        let owns = self.type_().get_owns_attribute(
-            thing_manager.type_manager(),
-            attribute.type_(),
-        ).map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        match owns {
-            None => {
-                todo!("throw useful schema violation error")
+        // TODO: validate schema
+        let owns = self.get_type_owns(thing_manager.type_manager(), attribute.type_())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        let ordering = owns.get_ordering(thing_manager.type_manager())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        match ordering {
+            Ordering::Unordered => {
+                thing_manager.set_has(self.as_reference(), attribute.as_reference());
+                Ok(())
             }
-            Some(owns) => {
-                if owns.is_distinct(thing_manager.type_manager())
-                    .map_err(|err| ConceptWriteError::ConceptRead { source: err })? {
-                    debug_assert_eq!(count, 1);
-                    thing_manager.delete_has(self.as_reference(), attribute);
-                } else {
-                    thing_manager.decrement_has(self.as_reference(), attribute, count);
-                }
+            Ordering::Ordered => {
+                todo!("throw a good error")
             }
         }
-        Ok(())
+    }
+
+    pub fn delete_has_unordered(
+        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>,
+    ) -> Result<(), ConceptWriteError> {
+        let owns = self.get_type_owns(thing_manager.type_manager(), attribute.type_())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        let ordering = owns.get_ordering(thing_manager.type_manager())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        match ordering {
+            Ordering::Unordered => {
+                thing_manager.delete_has(self.as_reference(), attribute);
+                Ok(())
+            }
+            Ordering::Ordered => {
+                todo!("throw good error")
+            }
+        }
+    }
+
+    pub fn set_has_ordered(
+        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>,
+        attributes: Vec<Attribute<'_>>,
+    ) -> Result<(), ConceptWriteError> {
+        let owns = self.get_type_owns(thing_manager.type_manager(), attribute_type)
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        let ordering = owns.get_ordering(thing_manager.type_manager())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        match ordering {
+            Ordering::Unordered => {
+                todo!("throw good error")
+            }
+            Ordering::Ordered => {
+                // let attributes = thing_manager.get_has_type_ordered(self.as_reference(), attribute_type.clone())
+                //     .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+                //
+                // TODO: 1. get owned list 2. get set of keys to delete or decrement/overwrite 3. rewrite owned list
+                todo!()
+            }
+        }
+    }
+
+    pub fn delete_has_ordered(
+        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        let owns = self.get_type_owns(thing_manager.type_manager(), attribute_type)
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        let ordering = owns.get_ordering(thing_manager.type_manager())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        match ordering {
+            Ordering::Unordered => {
+                todo!("throw good error")
+            }
+            Ordering::Ordered => {
+                // TODO: 1. get owned list 2. Delete each ownership has 3. delete owned list
+                todo!()
+            }
+        }
+    }
+
+    fn get_type_owns<'m>(
+        &self, type_manager: &'m TypeManager<impl ReadableSnapshot>, attribute_type: AttributeType<'static>,
+    ) -> Result<Owns<'m>, ConceptReadError> {
+        let owns = self.type_().get_owns_attribute(type_manager, attribute_type)?;
+        match owns {
+            None => {
+                todo!("throw useful schema error")
+            }
+            Some(owns) => {
+                Ok(owns)
+            }
+        }
     }
 
     pub fn get_relations<'m>(
@@ -163,10 +222,22 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         let mut has_iter = self.get_has(thing_manager);
         let mut has = has_iter.next().transpose()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        let mut has_attr_type_deleted = HashSet::new();
         while let Some((attr, count)) = has {
-            self.delete_has_many(thing_manager, attr, count)?;
+            has_attr_type_deleted.add(attr.type_());
+            thing_manager.delete_has(self.as_reference(), attr);
             has = has_iter.next().transpose()
                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        }
+
+        for owns in self.type_().get_owns(thing_manager.type_manager())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
+            .iter() {
+            let ordering = owns.get_ordering(thing_manager.type_manager())
+                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+            if matches!(ordering, Ordering::Ordered) {
+                thing_manager.delete_has_ordered(self.as_reference(), owns.attribute());
+            }
         }
 
         let mut relation_iter = self.get_relations(thing_manager);

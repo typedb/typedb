@@ -13,27 +13,31 @@ use std::{
 
 use bytes::Bytes;
 use durability::SequenceNumber;
-use encoding::{graph::{
-    type_::{
-        vertex::{
+use encoding::{
+    graph::{
+        type_::vertex::{
             build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
             build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type,
             new_vertex_relation_type, new_vertex_role_type, TypeVertex,
         },
+        Typed,
     },
-    Typed,
-}, layout::prefix::Prefix, Prefixed, value::{
-    label::Label,
-    value_type::ValueType,
-}};
+    layout::prefix::Prefix,
+    Prefixed,
+    value::{
+        label::Label
+        ,
+        value_type::ValueType,
+    },
+};
 use encoding::graph::type_::edge::TypeEdge;
 use storage::{MVCCStorage, ReadSnapshotOpenError, snapshot::ReadableSnapshot};
 use storage::key_range::KeyRange;
 
 use crate::type_::{attribute_type::{AttributeType, AttributeTypeAnnotation}, entity_type::{EntityType, EntityTypeAnnotation}, object_type::ObjectType, Ordering, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
 use crate::type_::owns::OwnsAnnotation;
-use crate::type_::type_reader::TypeReader;
 use crate::type_::type_manager::{ReadableType, TypeManager};
+use crate::type_::type_reader::TypeReader;
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {

@@ -5,14 +5,14 @@
  */
 
 #[derive(Debug, Copy, Clone)]
-pub struct Long {
-    bytes: [u8; Long::LENGTH],
+pub struct LongBytes {
+    bytes: [u8; LongBytes::LENGTH],
 }
 
-impl Long {
+impl LongBytes {
     const LENGTH: usize = 8;
 
-    pub fn new(bytes: [u8; Long::LENGTH]) -> Self {
+    pub fn new(bytes: [u8; LongBytes::LENGTH]) -> Self {
         Self { bytes }
     }
 

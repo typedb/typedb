@@ -11,7 +11,7 @@ use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
 use crate::{
     layout::prefix::{PrefixID, Prefix},
-    value::{label::Label, string::StringBytes},
+    value::{label::Label, string_bytes::StringBytes},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 

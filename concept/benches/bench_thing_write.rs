@@ -59,8 +59,8 @@ fn write_entity_attributes(
 
         let age = thing_manager.create_attribute(age_type, Value::Long(random_long)).unwrap();
         let name = thing_manager.create_attribute(name_type, Value::String(Cow::Borrowed(&random_string))).unwrap();
-        person.set_has(&thing_manager, age);
-        person.set_has(&thing_manager, name);
+        person.set_has_unordered(&thing_manager, age).unwrap();
+        person.set_has_unordered(&thing_manager, name).unwrap();
     }
 
     let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();
@@ -95,7 +95,10 @@ fn criterion_benchmark(c: &mut Criterion) {
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
     TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
+    let w1 = storage.read_watermark();
     create_schema(&storage, &type_vertex_generator);
+    let w2 = storage.read_watermark();
+    dbg!("before schema commit watermark: {}, after: {}", w1, w2);
     let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
 
     let mut group = c.benchmark_group("test writes");

@@ -132,7 +132,7 @@ impl<'a> TypeEdge<'a> {
     }
 
     pub fn build_prefix(prefix: Prefix) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX }> {
-        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_PREFIX);
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }

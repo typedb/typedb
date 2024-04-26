@@ -150,6 +150,8 @@ fn has() {
         name_type.set_value_type(&type_manager, ValueType::String);
 
         let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
+        person_type.set_owns(&type_manager, age_type.clone(), Ordering::Unordered);
+        person_type.set_owns(&type_manager, name_type.clone(), Ordering::Unordered);
 
         let person_1 = thing_manager.create_entity(person_type.clone()).unwrap();
         let age_1 = thing_manager.create_attribute(age_type.clone(), Value::Long(age_value)).unwrap();
@@ -157,8 +159,8 @@ fn has() {
             .create_attribute(name_type.clone(), Value::String(Cow::Owned(String::from(name_value))))
             .unwrap();
 
-        person_1.set_has(&thing_manager, age_1);
-        person_1.set_has(&thing_manager, name_1);
+        person_1.set_has_unordered(&thing_manager, age_1).unwrap();
+        person_1.set_has_unordered(&thing_manager, name_1).unwrap();
 
         let retrieved_attributes_count = person_1.get_has(&thing_manager).count();
         assert_eq!(retrieved_attributes_count, 2);
@@ -229,10 +231,10 @@ fn attribute_cleanup_on_concurrent_detach() {
             Value::String(Cow::Owned(String::from(name_bob_value))),
         ).unwrap();
 
-        person_1.set_has(&thing_manager, age_1.as_reference());
-        person_1.set_has(&thing_manager, name_alice.as_reference());
-        person_2.set_has(&thing_manager, age_1);
-        person_2.set_has(&thing_manager, name_bob.as_reference());
+        person_1.set_has_unordered(&thing_manager, age_1.as_reference()).unwrap();
+        person_1.set_has_unordered(&thing_manager, name_alice.as_reference()).unwrap();
+        person_2.set_has_unordered(&thing_manager, age_1).unwrap();
+        person_2.set_has_unordered(&thing_manager, name_bob.as_reference()).unwrap();
         let finalise_result = thing_manager.finalise();
         assert!(finalise_result.is_ok());
     }
@@ -265,7 +267,7 @@ fn attribute_cleanup_on_concurrent_detach() {
                 None
             }
         }).next().unwrap();
-        bob.delete_has_single(&thing_manager, age).unwrap();
+        bob.delete_has_unordered(&thing_manager, age).unwrap();
 
         let finalise_result = thing_manager.finalise();
         assert!(finalise_result.is_ok());
@@ -292,7 +294,7 @@ fn attribute_cleanup_on_concurrent_detach() {
                 None
             }
         }).next().unwrap();
-        alice.delete_has_single(&thing_manager, age).unwrap();
+        alice.delete_has_unordered(&thing_manager, age).unwrap();
 
         let finalise_result = thing_manager.finalise();
         assert!(finalise_result.is_ok());

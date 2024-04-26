@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod edge;
-pub mod vertex_attribute;
-pub mod vertex_generator;
-pub mod vertex_object;
-pub mod property;
+pub enum Either<F, S> {
+    First(F),
+    Second(S)
+}

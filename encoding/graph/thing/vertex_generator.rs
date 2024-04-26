@@ -4,12 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    ops::Range,
-    sync::atomic::{AtomicU64, Ordering},
-};
 use std::io::Read;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use bytes::byte_reference::ByteReference;
@@ -17,17 +14,17 @@ use storage::{MVCCKey, MVCCStorage};
 use storage::key_range::KeyRange;
 use storage::key_value::StorageKey;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::iterator::SnapshotIteratorError;
 
 use crate::{AsBytes, graph::{
     thing::{
-        vertex_attribute::{AttributeID, AttributeID17, AttributeID8, AttributeVertex},
+        vertex_attribute::{AttributeID, AttributeVertex},
         vertex_object::{ObjectID, ObjectVertex},
     },
     type_::vertex::{TypeID, TypeIDUInt},
-}, Keyable, Prefixed, value::{long::Long, string::StringBytes, value_type::ValueType}};
+}, Keyable, Prefixed, value::{long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType}};
 use crate::error::EncodingError;
-use crate::graph::thing::vertex_attribute::AsAttributeID;
-use crate::graph::thing::VertexID;
+use crate::graph::thing::vertex_attribute::{LongAttributeID, StringAttributeID};
 use crate::graph::type_::vertex::{build_vertex_entity_type_prefix, build_vertex_relation_type_prefix, TypeVertex};
 use crate::graph::Typed;
 use crate::layout::prefix::Prefix;
@@ -90,7 +87,7 @@ impl ThingVertexGenerator {
         for type_id in entity_types {
             let mut max_object_id = ObjectVertex::build_entity(TypeID::build(type_id), ObjectID::build(u64::MAX)).into_bytes().into_array();
             bytes::util::increment(max_object_id.bytes_mut()).unwrap();
-            let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = StorageKey::new_ref(ObjectVertex::KEYSPACE, ByteReference::new(max_object_id.bytes()));
+            let next_storage_key: StorageKey<{ ObjectVertex::LENGTH }> = StorageKey::new_ref(ObjectVertex::KEYSPACE, ByteReference::new(max_object_id.bytes()));
             if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
                 if prev_vertex.prefix() == Prefix::VertexEntity && prev_vertex.type_id_() == TypeID::build(type_id) {
                     entity_ids[type_id as usize].store(prev_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
@@ -100,7 +97,7 @@ impl ThingVertexGenerator {
         for type_id in relation_types {
             let mut max_object_id = ObjectVertex::build_relation(TypeID::build(type_id), ObjectID::build(u64::MAX)).into_bytes().into_array();
             bytes::util::increment(max_object_id.bytes_mut()).unwrap();
-            let next_storage_key: StorageKey<{ObjectVertex::LENGTH}> = StorageKey::new_ref(ObjectVertex::KEYSPACE, ByteReference::new(max_object_id.bytes()));
+            let next_storage_key: StorageKey<{ ObjectVertex::LENGTH }> = StorageKey::new_ref(ObjectVertex::KEYSPACE, ByteReference::new(max_object_id.bytes()));
             if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
                 if prev_vertex.prefix() == Prefix::VertexRelation && prev_vertex.type_id_() == TypeID::build(type_id) {
                     relation_ids[type_id as usize].store(prev_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
@@ -133,21 +130,26 @@ impl ThingVertexGenerator {
         vertex
     }
 
+    pub fn deserialise_attribute_id(value_type: ValueType, bytes: &[u8]) -> AttributeID {
+        debug_assert_eq!(bytes.len(), AttributeID::value_type_encoding_length(value_type));
+        AttributeID::new(value_type, bytes)
+    }
+
     pub fn create_attribute_long<Snapshot>(
         &self,
         type_id: TypeID,
-        value: Long,
+        value: LongBytes,
         snapshot: &Snapshot,
     ) -> AttributeVertex<'static>
         where Snapshot: WritableSnapshot
     {
-        let long_attribute_id = self.compute_attribute_id_long(value);
-        let vertex = AttributeVertex::build(ValueType::Long, type_id, long_attribute_id.as_attribute_id());
+        let long_attribute_id = self.create_attribute_id_long(value);
+        let vertex = AttributeVertex::build(ValueType::Long, type_id, AttributeID::Long(long_attribute_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn compute_attribute_id_long(&self, value: Long) -> LongAttributeID {
+    pub fn create_attribute_id_long(&self, value: LongBytes) -> LongAttributeID {
         LongAttributeID::build(value)
     }
 
@@ -166,209 +168,44 @@ impl ThingVertexGenerator {
         type_id: TypeID,
         value: StringBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
-    ) -> AttributeVertex<'static>
+    ) -> Result<AttributeVertex<'static>, Arc<SnapshotIteratorError>>
         where Snapshot: WritableSnapshot
     {
-        let string_attribute_id = self.compute_attribute_id_string(type_id, value.clone_as_ref(), snapshot);
-        let vertex = AttributeVertex::build(ValueType::String, type_id, string_attribute_id.as_attribute_id());
+        let string_attribute_id = self.create_attribute_id_string(type_id, value.as_reference(), snapshot)?;
+        let vertex = AttributeVertex::build(
+            ValueType::String, type_id, AttributeID::String(string_attribute_id),
+        );
         snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
-        vertex
+        Ok(vertex)
     }
 
-    pub fn compute_attribute_id_string<const INLINE_LENGTH: usize, Snapshot>(
+    pub fn create_attribute_id_string<const INLINE_LENGTH: usize, Snapshot>(
         &self,
         type_id: TypeID,
         string: StringBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
-    ) -> StringAttributeID
-        where Snapshot: ReadableSnapshot
+    ) -> Result<StringAttributeID, Arc<SnapshotIteratorError>>
+        where Snapshot: WritableSnapshot
     {
         if string.length() <= StringAttributeID::ENCODING_INLINE_CAPACITY {
-            StringAttributeID::build_inline_id(string)
+            Ok(StringAttributeID::build_inline_id(string))
         } else {
-            StringAttributeID::build_hashed_id(type_id, string, snapshot, &self.large_value_hasher)
-            // TODO: mark snapshot BYTES without the tail set as an exclusive key so concurrent txn will fail to commit
+            let id = StringAttributeID::build_hashed_id(type_id, string, snapshot, &self.large_value_hasher)?;
+            let hash = id.get_hash_prefix_hash();
+            let lock = ByteArray::copy_concat([&type_id.bytes(), &hash]);
+            snapshot.exclusive_lock_add(lock);
+            Ok(id)
         }
     }
-}
 
-pub struct LongAttributeID {
-    attribute_id: AttributeID8,
-}
-
-impl LongAttributeID {
-    pub fn new(attribute_id: AttributeID8) -> Self {
-        Self { attribute_id: attribute_id }
-    }
-
-    fn build(value: Long) -> Self {
-        Self { attribute_id: AttributeID8::new(value.bytes()) }
-    }
-
-    pub fn bytes(&self) -> [u8; AttributeID8::LENGTH] {
-        self.attribute_id.bytes()
-    }
-}
-
-impl AsAttributeID for LongAttributeID {
-    type AttributeIDType = AttributeID8;
-
-    fn as_attribute_id(&self) -> AttributeID {
-        AttributeID::Bytes8(self.attribute_id)
-    }
-}
-
-///
-/// String encoding scheme uses 17 bytes:
-///
-///   Case 1: string fits in 16 bytes
-///     [16: string][1: 0b0[length]]
-///
-///   Case 2: string does not fit in 16 bytes:
-///     [8: prefix][8: hash][1: 0b1[disambiguator]]
-///
-///  4 byte hash: collision probability of 50% at 77k elements
-///  5 byte hash: collision probability of 50% at 1.25m elements
-///  6 byte hash: collision probability of 50% at 20m elements
-///  7 byte hash: collision probability of 50% at 320m elements
-///  8 byte hash: collision probability of 50% at 5b elements
-///
-///  With an 8 byte prefix and 7 byte hash we can insert up to 100 million elements behind the same prefix
-///  before we have a 5% chance of collision. With 100 million entries with 100 bytes each, we can store 20GB of data in the same prefix.
-///  We also allow disambiguation in the tail byte of the ID, so we can tolerate up to 127 collsions, or approximately 2TB of data with above assumptions.
-///
-pub struct StringAttributeID {
-    attribute_id: AttributeID17,
-}
-
-impl StringAttributeID {
-    pub(crate) const ENCODING_INLINE_CAPACITY: usize = AttributeID17::LENGTH - 1;
-    const ENCODING_STRING_PREFIX_LENGTH: usize = 8;
-    pub const ENCODING_STRING_PREFIX_RANGE: Range<usize> = 0..Self::ENCODING_STRING_PREFIX_LENGTH;
-    pub const ENCODING_STRING_HASH_LENGTH: usize = 8;
-    const ENCODING_STRING_HASH_RANGE: Range<usize> = Self::ENCODING_STRING_PREFIX_RANGE.end
-        ..Self::ENCODING_STRING_PREFIX_RANGE.end + Self::ENCODING_STRING_HASH_LENGTH;
-    const ENCODING_STRING_TAIL_BYTE_INDEX: usize = Self::ENCODING_STRING_HASH_RANGE.end;
-    const ENCODING_STRING_TAIL_MASK: u8 = 0b10000000;
-
-    pub fn new(attribute_id: AttributeID17) -> Self {
-        Self { attribute_id }
-    }
-
-    fn build_inline_id<const INLINE_LENGTH: usize>(string: StringBytes<'_, INLINE_LENGTH>) -> Self {
-        debug_assert!(string.length() < Self::ENCODING_INLINE_CAPACITY);
-        let mut bytes = [0u8; AttributeID17::LENGTH];
-        bytes[0..string.length()].copy_from_slice(string.bytes().bytes());
-        Self::set_tail_inline_length(&mut bytes, string.length() as u8);
-        Self::new(AttributeID17::new(bytes))
-    }
-
-    ///
-    /// Encode the last byte by setting 0b0[7 bits representing length of the prefix characters]
-    ///
-    fn set_tail_inline_length(bytes: &mut [u8; AttributeID17::LENGTH], length: u8) {
-        assert!(length & Self::ENCODING_STRING_TAIL_MASK == 0); // ie < 128, high bit not set
-        // because the high bit is not set, we already conform to the required mask of high bit = 0
-        bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = length;
-    }
-
-    fn build_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
+    pub fn find_attribute_id_string_noinline<const INLINE_LENGTH: usize, Snapshot>(
+        &self,
         type_id: TypeID,
         string: StringBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
-        hasher: &impl Fn(&[u8]) -> u64,
-    ) -> Self
-        where Snapshot: ReadableSnapshot
-    {
-        let mut bytes = [0u8; AttributeID17::LENGTH];
-        let string_bytes = string.bytes().bytes();
-        bytes[Self::ENCODING_STRING_PREFIX_RANGE].copy_from_slice(&string_bytes[Self::ENCODING_STRING_PREFIX_RANGE]);
-        let hash_bytes: [u8; Self::ENCODING_STRING_HASH_LENGTH] =
-            (hasher(string_bytes).to_be_bytes()[0..Self::ENCODING_STRING_HASH_LENGTH]).try_into().unwrap();
-        bytes[Self::ENCODING_STRING_HASH_RANGE].copy_from_slice(&hash_bytes);
-
-        // find first unused tail value
-        bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = Self::ENCODING_STRING_TAIL_MASK;
-        let prefix_search = KeyRange::new_within(AttributeVertex::build_prefix_type_attribute_id(
-            ValueType::String,
-            type_id,
-            &bytes,
-        ), AttributeVertex::value_type_to_prefix_type(ValueType::String).fixed_width_keys());
-
-        let mut iter = snapshot.iterate_range(prefix_search);
-        let mut next = iter.next().transpose().unwrap(); // TODO: handle error
-        let mut tail: u8 = 0;
-        while let Some((key, value)) = next {
-            let mapped_string = StringBytes::new(Bytes::Reference(value));
-            let existing_attribute_id =
-                AttributeVertex::new(Bytes::Reference(key.byte_ref())).attribute_id().unwrap_bytes_17();
-            if mapped_string == string {
-                return Self::new(existing_attribute_id);
-            } else if tail != StringAttributeID::new(existing_attribute_id).get_hash_disambiguator() {
-                // found unused tail ID
-                break;
-            }
-            tail += 1;
-            next = iter.next().transpose().unwrap();
-        }
-        if tail & Self::ENCODING_STRING_TAIL_MASK != 0 {
-            // over 127
-            // TODO: should we panic?
-            panic!("String encoding space has no space remaining within the prefix and hash prefix.")
-        }
-        Self::set_tail_hash_disambiguator(&mut bytes, tail);
-        Self::new(AttributeID17::new(bytes))
-    }
-
-    ///
-    /// Encode the last byte by setting 0b1[7 bits representing disambiguator]
-    ///
-    fn set_tail_hash_disambiguator(bytes: &mut [u8; AttributeID17::LENGTH], disambiguator: u8) {
-        debug_assert!(disambiguator & Self::ENCODING_STRING_TAIL_MASK == 0); // ie. disambiguator < 128, not using high bit
-        // sets 0x1[disambiguator]
-        bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = disambiguator | Self::ENCODING_STRING_TAIL_MASK;
-    }
-
-    pub fn is_inline(&self) -> bool {
-        self.attribute_id.bytes()[Self::ENCODING_STRING_TAIL_BYTE_INDEX] & Self::ENCODING_STRING_TAIL_MASK == 0
-    }
-
-    pub fn get_inline_string_bytes(&self) -> StringBytes<'static, 16> {
-        debug_assert!(self.is_inline());
-        let mut bytes = ByteArray::zeros(AttributeID17::LENGTH);
-        let inline_string_length = self.get_inline_length();
-        bytes.bytes_mut()[0..inline_string_length as usize]
-            .copy_from_slice(&self.attribute_id.bytes()[0..inline_string_length as usize]);
-        bytes.truncate(inline_string_length as usize);
-        StringBytes::new(Bytes::Array(bytes))
-    }
-
-    pub fn get_inline_length(&self) -> u8 {
-        debug_assert!(self.is_inline());
-        self.attribute_id.bytes()[Self::ENCODING_STRING_TAIL_BYTE_INDEX]
-    }
-
-    pub fn get_hash_prefix(&self) -> [u8; Self::ENCODING_STRING_PREFIX_LENGTH] {
-        debug_assert!(!self.is_inline());
-        (&self.attribute_id.bytes()[Self::ENCODING_STRING_PREFIX_RANGE]).try_into().unwrap()
-    }
-
-    pub fn get_hash_hash(&self) -> [u8; Self::ENCODING_STRING_HASH_LENGTH] {
-        debug_assert!(!self.is_inline());
-        (&self.attribute_id.bytes()[Self::ENCODING_STRING_HASH_RANGE]).try_into().unwrap()
-    }
-
-    pub fn get_hash_disambiguator(&self) -> u8 {
-        debug_assert!(!self.is_inline());
-        let byte = self.attribute_id.bytes()[Self::ENCODING_STRING_TAIL_BYTE_INDEX];
-        byte & !Self::ENCODING_STRING_TAIL_MASK // unsets 0x1___ high bit
-    }
-}
-
-impl AsAttributeID for StringAttributeID {
-    type AttributeIDType = AttributeID17;
-
-    fn as_attribute_id(&self) -> AttributeID {
-        AttributeID::Bytes17(self.attribute_id)
+    ) -> Result<Option<StringAttributeID>, Arc<SnapshotIteratorError>>
+        where Snapshot: ReadableSnapshot {
+        assert!(!StringAttributeID::is_inlineable(string.as_reference()));
+        StringAttributeID::find_hashed_id(type_id, string, snapshot, &self.large_value_hasher)
     }
 }

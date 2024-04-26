@@ -16,10 +16,8 @@ use crate::{AsBytes, EncodingKeyspace, graph::{
     thing::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex},
     type_::vertex::TypeVertex,
 }, Keyable, Prefixed};
-use crate::graph::thing::vertex_attribute::{AsAttributeID, AttributeID};
-use crate::graph::thing::vertex_generator::{LongAttributeID, StringAttributeID};
-use crate::graph::thing::VertexID;
-use crate::graph::type_::vertex::{TypeID};
+use crate::graph::thing::vertex_attribute::AttributeID;
+use crate::graph::type_::vertex::TypeID;
 use crate::graph::Typed;
 use crate::layout::prefix::{Prefix, PrefixID};
 use crate::value::value_type::ValueType;
@@ -138,11 +136,11 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeHas<'a> {
 }
 
 ///
-/// [has_reverse][Attribute8][object]
+/// [has_reverse][8 byte ID][object]
 /// OR
-/// [has_reverse][Attribute17][object]
+/// [has_reverse][17 byte ID][object]
 ///
-/// Note that these are represented here together, but belong in different keyspaces due to different prefix lengths
+/// Note that these are represented here together, but should go to different keyspaces due to different prefix lengths
 ///
 pub struct ThingEdgeHasReverse<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
@@ -248,14 +246,9 @@ impl<'a> ThingEdgeHasReverse<'a> {
     fn from_length(&self) -> usize {
         let byte = &self.bytes.bytes()[Self::INDEX_FROM_PREFIX];
         let prefix = PrefixID::new([byte.clone()]);
-        let attribute_id_length = match Prefix::from_prefix_id(prefix) {
-            Prefix::VertexAttributeBoolean => todo!(),
-            Prefix::VertexAttributeLong => <LongAttributeID as AsAttributeID>::AttributeIDType::LENGTH,
-            Prefix::VertexAttributeDouble => todo!(),
-            Prefix::VertexAttributeString => <StringAttributeID as AsAttributeID>::AttributeIDType::LENGTH,
-            _ => unreachable!("Unrecognised attribute prefix."),
-        };
-        AttributeVertex::LENGTH_PREFIX_TYPE + attribute_id_length
+        let value_type = AttributeVertex::prefix_type_to_value_type(Prefix::from_prefix_id(prefix));
+        let id_encoding_length = AttributeID::value_type_encoding_length(value_type);
+        AttributeVertex::LENGTH_PREFIX_TYPE + id_encoding_length
     }
 
     fn keyspace_for_from(attribute: AttributeVertex<'_>) -> EncodingKeyspace {

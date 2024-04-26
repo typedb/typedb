@@ -39,3 +39,4 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> {
 
     fn into_vertex(self) -> ObjectVertex<'a>;
 }
+

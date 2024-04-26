@@ -47,10 +47,12 @@ impl<'a> Object<'a> {
         }
     }
 
-    fn set_has(&self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>) {
+    fn set_has(
+        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>
+    ) -> Result<(), ConceptWriteError> {
         match self {
-            Object::Entity(entity) => entity.set_has(thing_manager, attribute),
-            Object::Relation(relation) => relation.set_has(thing_manager, attribute),
+            Object::Entity(entity) => entity.set_has_unordered(thing_manager, attribute),
+            Object::Relation(relation) => relation.set_has_unordered(thing_manager, attribute),
         }
     }
 
@@ -62,7 +64,10 @@ impl<'a> Object<'a> {
                 todo!()
                 // entity.delete_has_many(thing_manager, attribute, count)
             },
-            Object::Relation(relation) => relation.delete_has_many(thing_manager, attribute, count)
+            Object::Relation(relation) => {
+                todo!()
+                // relation.delete_has_many(thing_manager, attribute, count)
+            }
         }
     }
 

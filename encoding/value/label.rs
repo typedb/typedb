@@ -10,7 +10,7 @@ use resource::constants::encoding::{
     LABEL_NAME_STRING_INLINE, LABEL_SCOPED_NAME_STRING_INLINE, LABEL_SCOPE_STRING_INLINE,
 };
 
-use crate::value::string::StringBytes;
+use crate::value::string_bytes::StringBytes;
 
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub struct Label<'a> {
@@ -64,15 +64,15 @@ impl<'a> Label<'a> {
     }
 
     pub fn name(&'a self) -> StringBytes<'a, LABEL_NAME_STRING_INLINE> {
-        self.name.clone_as_ref()
+        self.name.as_reference()
     }
 
     pub fn scope(&'a self) -> Option<StringBytes<'a, LABEL_SCOPE_STRING_INLINE>> {
-        self.scope.as_ref().map(|string_bytes| string_bytes.clone_as_ref())
+        self.scope.as_ref().map(|string_bytes| string_bytes.as_reference())
     }
 
     pub fn scoped_name(&'a self) -> StringBytes<'a, LABEL_SCOPED_NAME_STRING_INLINE> {
-        self.scoped_name.clone_as_ref()
+        self.scoped_name.as_reference()
     }
 
     pub fn into_owned(self) -> Label<'static> {

@@ -46,6 +46,7 @@ use storage::{
     MVCCStorage,
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
+
 use crate::{
     error::ConceptReadError,
     type_::{
@@ -504,7 +505,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     fn storage_set_role_ordering(&self, role: RoleType<'_>, ordering: Ordering) {
         self.snapshot.as_ref().put_val(
             build_property_type_ordering(role.into_vertex()).into_storage_key().into_owned_array(),
-            ByteArray::boxed(serialise_ordering(ordering))
+            ByteArray::boxed(serialise_ordering(ordering)),
         )
     }
 
@@ -534,21 +535,28 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         self.storage_set_owns_ordering(owns, ordering);
     }
 
-    pub(crate) fn storage_set_owns_ordering(&self, owns_edge: TypeEdge<'_>, ordering: Ordering){
+    pub(crate) fn storage_set_owns_ordering(&self, owns_edge: TypeEdge<'_>, ordering: Ordering) {
         debug_assert_eq!(owns_edge.prefix(), Prefix::EdgeOwns);
         self.snapshot.as_ref().put_val(
             build_property_type_edge_ordering(owns_edge).into_storage_key().into_owned_array(),
-            ByteArray::boxed(serialise_ordering(ordering))
+            ByteArray::boxed(serialise_ordering(ordering)),
         )
     }
 
     pub(crate) fn storage_delete_owns(&self, owner: impl ObjectTypeAPI<'static>, attribute: AttributeType<'static>) {
-        let owns = build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex());
-        self.snapshot.as_ref().delete(owns.into_storage_key().into_owned_array());
+        let owns_edge = build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex());
+        self.snapshot.as_ref().delete(owns_edge.as_storage_key().into_owned_array());
         let owns_reverse = build_edge_owns_reverse(attribute.into_vertex(), owner.into_vertex());
         self.snapshot.as_ref().delete(owns_reverse.into_storage_key().into_owned_array());
+        self.storage_delete_owns_ordering(owns_edge);
     }
 
+    pub(crate) fn storage_delete_owns_ordering(&self, owns_edge: TypeEdge<'_>) {
+        debug_assert_eq!(owns_edge.prefix(), Prefix::EdgeOwns);
+        self.snapshot.as_ref().delete(
+            build_property_type_edge_ordering(owns_edge).into_storage_key().into_owned_array(),
+        )
+    }
     pub(crate) fn storage_set_plays(&self, player: impl ObjectTypeAPI<'static>, role: RoleType<'static>) {
         let plays = build_edge_plays(player.clone().into_vertex(), role.clone().into_vertex());
         self.snapshot.as_ref().put(plays.into_storage_key().into_owned_array());

@@ -112,8 +112,8 @@ pub trait WritableSnapshot: ReadableSnapshot {
         self.operations().lock_remove(key.byte_array())
     }
 
-    fn exclusive_lock_add(&self, key: StorageKey<'static, BUFFER_KEY_INLINE>) {
-        self.operations().lock_add(key.into_byte_array_or_ref().into_array(), LockType::Exclusive)
+    fn exclusive_lock_add(&self, key: ByteArray<BUFFER_KEY_INLINE>) {
+        self.operations().lock_add(key, LockType::Exclusive)
     }
 
     fn iterate_writes(&self) -> impl Iterator<Item=(StorageKeyArray<64>, Write)> + '_ {

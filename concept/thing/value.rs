@@ -5,7 +5,10 @@
  */
 
 use std::borrow::Cow;
+use encoding::value::long_bytes::LongBytes;
+use encoding::value::string_bytes::StringBytes;
 use encoding::value::value_type::ValueType;
+use encoding::value::ValueEncodable;
 
 // TODO: how do we handle user-created compound structs?
 
@@ -18,15 +21,6 @@ pub enum Value<'a> {
 }
 
 impl<'a> Value<'a> {
-    pub fn value_type(&self) -> ValueType {
-        match self {
-            Value::Boolean(_) => ValueType::Boolean,
-            Value::Long(_) => ValueType::Long,
-            Value::Double(_) => ValueType::Double,
-            Value::String(_) => ValueType::String,
-        }
-    }
-
     pub fn as_reference(&self) -> Value<'_> {
         match self {
             Value::Boolean(boolean) => Value::Boolean(*boolean),
@@ -47,6 +41,33 @@ impl<'a> Value<'a> {
         match self {
             Value::Long(long) => long,
             _ => panic!("Cannot unwrap Long if not a long value.")
+        }
+    }
+}
+
+impl<'a> ValueEncodable for Value<'a> {
+    fn value_type(&self) -> ValueType {
+        match self {
+            Value::Boolean(_) => ValueType::Boolean,
+            Value::Long(_) => ValueType::Long,
+            Value::Double(_) => ValueType::Double,
+            Value::String(_) => ValueType::String,
+        }
+    }
+
+    fn encode_long(&self) -> LongBytes {
+        match self {
+            Self::Long(long) => LongBytes::build(*long),
+            _ => panic!("Cannot encoded non-long as LongBytes"),
+        }
+    }
+
+    fn encode_string<const INLINE_LENGTH: usize>(&self) -> StringBytes<'_, INLINE_LENGTH> {
+        match self {
+            Value::String(str) => {
+                StringBytes::build_ref(str)
+            },
+            _ => panic!("Cannot encoded non-String as StringBytes"),
         }
     }
 }
