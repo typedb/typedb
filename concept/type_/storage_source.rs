@@ -39,8 +39,8 @@ impl<'_s> StorageTypeManagerSource
     where '_s : 'static {
 
     // TODO: Return vertex for consistency with other methods
-    pub(crate) fn storage_get_labelled_type<'a, 'b, U>(snapshot: &impl ReadableSnapshot, label: &Label<'_>) -> Result<Option<U::SelfWithLifetime>, ConceptReadError>
-        where U: ReadableType<'a, 'b>
+    pub(crate) fn storage_get_labelled_type<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, label: &Label<'_>) -> Result<Option<U::SelfWithLifetime>, ConceptReadError>
+        where U:
     {
         let key = LabelToTypeVertexIndex::build(label).into_storage_key();
         match snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {

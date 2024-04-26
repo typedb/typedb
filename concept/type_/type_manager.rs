@@ -234,14 +234,14 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
     ) -> Self {
         TypeManager { snapshot, vertex_generator, type_cache: schema_cache }
     }
-
-    pub fn get_type_from_label<'a, 'b, T: ReadableType<'a, 'b>>(&self, label: &Label<'_>) -> Result<Option<T::SelfWithLifetime>, ConceptReadError> {
-        if let Some(cache) = &self.type_cache {
-            todo!("Ok(cache.$cache_method(label))")
-        } else {
-            StorageTypeManagerSource::storage_get_labelled_type::<T>(self.snapshot.as_ref(), label)
-        }
-    }
+    //
+    // pub fn get_type_from_label<'a, 'b, T: ReadableType<'a, 'b>>(&self, label: &Label<'_>) -> Result<Option<T::SelfWithLifetime>, ConceptReadError> {
+    //     if let Some(cache) = &self.type_cache {
+    //         todo!("Ok(cache.$cache_method(label))")
+    //     } else {
+    //         StorageTypeManagerSource::storage_get_labelled_type::<T>(self.snapshot.as_ref(), label)
+    //     }
+    // }
 
     pub fn get_supertype<'b, T: TypeAPI<'_s> + ReadableType<'_s, 'b>>(&self, type_: T) -> Result<Option<T::SelfWithLifetime>, ConceptReadError>
     {
@@ -413,7 +413,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         if !is_root {
             self.storage_set_supertype(
                 entity.clone(),
-                self.get_type_from_label::<EntityType<'static>>(&Kind::Entity.root_label()).unwrap().unwrap(),
+                self.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap(),
             );
         }
         Ok(entity)
@@ -427,7 +427,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         if !is_root {
             self.storage_set_supertype(
                 relation.clone(),
-                self.get_type_from_label::<RelationType<'static>>(&Kind::Relation.root_label()).unwrap().unwrap(),
+                self.get_relation_type(&Kind::Relation.root_label()).unwrap().unwrap(),
             );
         }
         Ok(relation)
@@ -447,7 +447,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         self.storage_set_relates(relation_type, role.clone());
         self.storage_set_role_ordering(role.clone(), ordering);
         if !is_root {
-            self.storage_set_supertype(role.clone(), self.get_type_from_label::<RoleType<'static>>(&Kind::Role.root_label()).unwrap().unwrap());
+            self.storage_set_supertype(role.clone(), self.get_role_type(&Kind::Role.root_label()).unwrap().unwrap());
         }
         Ok(role)
     }
@@ -460,7 +460,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         if !is_root {
             self.storage_set_supertype(
                 attribute_type.clone(),
-                self.get_type_from_label::<AttributeType<'static>>(&Kind::Attribute.root_label()).unwrap().unwrap(),
+                self.get_attribute_type(&Kind::Attribute.root_label()).unwrap().unwrap(),
             );
         }
         Ok(attribute_type)
