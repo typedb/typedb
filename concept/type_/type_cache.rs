@@ -60,7 +60,7 @@ struct TypeAPICache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
     is_root: bool,
     annotations_declared: HashSet<T::AnnotationType>,
     // TODO: Should these all be sets instead of vec?
-    supertype: Option<T::SelfWithLifetime>,
+    supertype: Option<T::SelfWithLifetime>, // TODO: use smallvec if we want to have some inline - benchmark.
     supertypes: Vec<T::SelfWithLifetime>,  // TODO: use smallvec if we want to have some inline - benchmark.
     // subtypes_declared: Vec<AttributeType<'static>>, // TODO: benchmark smallvec.
     // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec

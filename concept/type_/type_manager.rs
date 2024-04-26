@@ -142,7 +142,6 @@ macro_rules! get_supertypes_methods {
     )*) => {
         $(
             // WARN: supertypes currently do NOT include themselves
-            // ^ To fix, Just start with `let mut supertype = Some(type_)`
             pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))

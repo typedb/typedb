@@ -5,7 +5,7 @@
  */
 
 use bytes::Bytes;
-use encoding::graph::type_::edge::{build_edge_owns_prefix_from, build_edge_plays_prefix_from, build_edge_relates_prefix_from, build_edge_relates_reverse_prefix_from, build_edge_sub_prefix_from, new_edge_owns, new_edge_plays, new_edge_relates, new_edge_relates_reverse, new_edge_sub, TypeEdge};
+use encoding::graph::type_::edge::{build_edge_owns_prefix_from, build_edge_plays_prefix_from, build_edge_relates_prefix_from, build_edge_relates_reverse_prefix_from, build_edge_sub_prefix_from, build_edge_sub_reverse_prefix_from, new_edge_owns, new_edge_plays, new_edge_relates, new_edge_relates_reverse, new_edge_sub, new_edge_sub_reverse, TypeEdge};
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
 use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_label, build_property_type_ordering, build_property_type_value_type, TypeEdgeProperty, TypeVertexProperty};
 use encoding::graph::type_::vertex::TypeVertex;
@@ -65,6 +65,8 @@ impl<'_s> StorageTypeManagerSource
     }
 
     pub fn storage_get_supertypes_transitive<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Vec<U::SelfWithLifetime>, ConceptReadError> {
+        // WARN: supertypes currently do NOT include themselves
+        // ^ To fix, Just start with `let mut supertype = Some(type_)`
         let mut supertypes = Vec::new();
         let mut supervertex_opt = StorageTypeManagerSource::storage_get_supertype_vertex(snapshot, subtype.clone().into_vertex())?;
         while let Some(supervertex) = supervertex_opt {
@@ -72,6 +74,34 @@ impl<'_s> StorageTypeManagerSource
             supervertex_opt = StorageTypeManagerSource::storage_get_supertype_vertex(snapshot, supervertex.clone())?;
         }
         Ok(supertypes)
+    }
+
+    // TODO: Add tests for subtypes
+    pub(crate) fn storage_get_subtypes_vertex(snapshot: &impl ReadableSnapshot, supertype: TypeVertex<'_s>) -> Result<Vec<TypeVertex<'static>>, ConceptReadError>
+    {
+        snapshot
+            .iterate_range(KeyRange::new_within(build_edge_sub_reverse_prefix_from(supertype), TypeEdge::FIXED_WIDTH_ENCODING))
+            .collect_cloned_vec(|key,_| new_edge_sub_reverse(Bytes::Reference(key.byte_ref())).to().into_owned())
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
+    }
+
+    pub(crate) fn storage_get_subtypes<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, supertype: U) -> Result<Vec<U::SelfWithLifetime>, ConceptReadError> {
+        Ok(Self::storage_get_subtypes_vertex(snapshot, supertype.into_vertex())?.into_iter()
+            .map(|subtype_vertex| U::read_from(subtype_vertex.into_bytes()))
+            .collect::<Vec<U::SelfWithLifetime>>())
+    }
+
+    pub fn storage_get_subtypes_transitive<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Vec<U::SelfWithLifetime>, ConceptReadError> {
+        // WARN: subtypes currently do NOT include themselves
+        // ^ To fix, Just start with `let mut stack = vec!(subtype.clone());`
+        let mut subtypes = Vec::new();
+        let mut stack = StorageTypeManagerSource::storage_get_subtypes_vertex(snapshot, subtype.clone().into_vertex())?;
+        while !stack.is_empty() {
+            let subvertex = stack.pop().unwrap();
+            subtypes.push(U::read_from(subvertex.clone().into_bytes()));
+            stack.append(&mut StorageTypeManagerSource::storage_get_subtypes_vertex(snapshot, subvertex.clone())?); // TODO: Should we pass an accumulator instead?
+        }
+        Ok(subtypes)
     }
 
     pub(crate) fn storage_get_label(snapshot: &impl ReadableSnapshot, type_: impl TypeAPI<'_s>) -> Result<Option<Label<'static>>, ConceptReadError> {
@@ -139,8 +169,8 @@ impl<'_s> StorageTypeManagerSource
         snapshot
             .iterate_range(KeyRange::new_within(relates_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_vec(|key, _| {
-                let relates_edge = new_edge_relates_reverse(Bytes::Reference(key.byte_ref()));
-                Relates::new(RelationType::new(relates_edge.to().into_owned()), RoleType::new(relates_edge.from().into_owned()))
+                let relates_edge_reverse = new_edge_relates_reverse(Bytes::Reference(key.byte_ref()));
+                Relates::new(RelationType::new(relates_edge_reverse.to().into_owned()), RoleType::new(relates_edge_reverse.from().into_owned()))
             }).map_err(|error| ConceptReadError::SnapshotIterate { source: error })
             .map(|v| { v.first().unwrap().clone() })
     }
