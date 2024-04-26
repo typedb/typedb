@@ -147,13 +147,7 @@ macro_rules! get_supertypes_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
-                    let mut supertypes = Vec::new();
-                    let mut supertype_opt = StorageTypeManagerSource::storage_get_supertype(self.snapshot.as_ref(), type_)?;
-                    while supertype_opt.is_some() {
-                        let supertype = supertype_opt.unwrap();
-                        supertypes.push(supertype.clone());
-                        supertype_opt = StorageTypeManagerSource::storage_get_supertype(self.snapshot.as_ref(), supertype.clone())?;
-                    }
+                    let supertypes = StorageTypeManagerSource::storage_get_supertypes_transitive(self.snapshot.as_ref(), type_)?;
                     Ok(MaybeOwns::owned(supertypes))
                 }
             }
@@ -639,7 +633,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
 }
 
 pub trait ReadableType<'a, 'b> : TypeAPI<'a> {
-    type SelfWithLifetime: TypeAPI<'b>;
+    type SelfWithLifetime: ReadableType<'b, 'b>;
     type AnnotationType : std::hash::Hash + Eq + From<Annotation>;
     const ROOT_KIND: Kind;
     fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfWithLifetime;

@@ -50,10 +50,6 @@ impl<'_s> StorageTypeManagerSource
         }
     }
 
-    pub(crate) fn storage_get_supertype<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Option<U::SelfWithLifetime>, ConceptReadError> {
-        Ok(Self::storage_get_supertype_vertex(snapshot, subtype.into_vertex())?.map(|supertype_vertex| U::read_from(supertype_vertex.into_bytes())))
-    }
-
     pub(crate) fn storage_get_supertype_vertex(snapshot: &impl ReadableSnapshot, subtype: TypeVertex<'_s>) -> Result<Option<TypeVertex<'static>>, ConceptReadError>
     {
         // TODO: handle possible errors
@@ -63,6 +59,22 @@ impl<'_s> StorageTypeManagerSource
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
             .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
     }
+
+    pub(crate) fn storage_get_supertype<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Option<U::SelfWithLifetime>, ConceptReadError> {
+        Ok(Self::storage_get_supertype_vertex(snapshot, subtype.into_vertex())?.map(|supertype_vertex| U::read_from(supertype_vertex.into_bytes())))
+    }
+
+
+    pub fn storage_get_supertypes_transitive<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Vec<U::SelfWithLifetime>, ConceptReadError> {
+        let mut supertypes = Vec::new();
+        let mut supervertex_opt = StorageTypeManagerSource::storage_get_supertype_vertex(snapshot, subtype.clone().into_vertex())?;
+        while let Some(supervertex) = supervertex_opt {
+            supertypes.push(U::read_from(supervertex.clone().into_bytes()));
+            supervertex_opt = StorageTypeManagerSource::storage_get_supertype_vertex(snapshot, supervertex.clone())?;
+        }
+        Ok(supertypes)
+    }
+
 
     pub(crate) fn storage_get_label(snapshot: &impl ReadableSnapshot, type_: impl TypeAPI<'_s>) -> Result<Option<Label<'static>>, ConceptReadError> {
         let key = build_property_type_label(type_.into_vertex());
