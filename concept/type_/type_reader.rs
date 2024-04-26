@@ -117,7 +117,6 @@ impl<'_s> TypeReader
     ) -> Result<HashSet<Owns<'static>>, ConceptReadError>
     {
         let owns_prefix = build_edge_owns_prefix_from(owner.into_vertex());
-        // TODO: handle possible errors
         snapshot
             .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
