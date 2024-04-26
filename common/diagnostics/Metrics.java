@@ -25,10 +25,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.vaticle.typedb.core.common.diagnostics.StatisticReporter.REPORT_INTERVAL_MINUTES;
+import static com.vaticle.typedb.core.common.diagnostics.Version.JSON_API_VERSION;
 
 public class Metrics {
-    private static final String JSON_API_VERSION = "1.0";
-
     private final ConcurrentSet<String> primaryDatabaseHashes = new ConcurrentSet<>();
     private final BaseProperties base;
     private final ServerProperties serverProperties;
@@ -113,13 +112,14 @@ public class Metrics {
     }
 
     protected JsonObject asJSON(boolean reporting) {
-        JsonObject metrics = base.asJSON();
+        boolean isNoUsageDiagnostics = reporting && !base.getReportingEnabled();
 
-        if (reporting && !base.getReportingEnabled()) {
+        JsonObject metrics = base.asJSON();
+        metrics.add("server", serverProperties.asJSON(isNoUsageDiagnostics));
+
+        if (isNoUsageDiagnostics) {
             return metrics;
         }
-
-        metrics.add("server", serverProperties.asJSON());
 
         JsonArray load = new JsonArray();
         databaseLoad.forEach((databaseHash, diagnostics) ->
@@ -206,7 +206,7 @@ public class Metrics {
     }
 
     static class BaseProperties {
-        private final String jsonApiVersion;
+        private final int jsonApiVersion;
         private final String deploymentID;
         private final String serverID;
         private final String distribution;
@@ -214,7 +214,7 @@ public class Metrics {
         private final boolean reportingEnabled;
 
         BaseProperties(
-                String jsonApiVersion, String deploymentID, String serverID, String distribution, boolean reportingEnabled
+                int jsonApiVersion, String deploymentID, String serverID, String distribution, boolean reportingEnabled
         ) {
             this.jsonApiVersion = jsonApiVersion;
             this.deploymentID = deploymentID;
@@ -266,19 +266,24 @@ public class Metrics {
             this.dbRoot = dataDirectory.toFile();
         }
 
-        JsonObject asJSON() {
+        JsonObject asJSON(boolean isNoUsageDiagnostics) {
             var mxbean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
             long freePhysicalMemorySize = mxbean.getFreePhysicalMemorySize();
             long freeDiskSpace = dbRoot.getFreeSpace();
+
+            JsonObject server = new JsonObject();
+            server.add("version", version);
+
+            if (isNoUsageDiagnostics) {
+                return server;
+            }
 
             JsonObject os = new JsonObject();
             os.add("name", osName);
             os.add("arch", osArch);
             os.add("version", osVersion);
-
-            JsonObject server = new JsonObject();
             server.add("os", os);
-            server.add("version", version);
+
             server.add("memoryUsedInBytes", mxbean.getTotalPhysicalMemorySize() - freePhysicalMemorySize);
             server.add("memoryAvailableInBytes", freePhysicalMemorySize);
             server.add("diskUsedInBytes", dbRoot.getTotalSpace() - freeDiskSpace);
@@ -514,8 +519,6 @@ public class Metrics {
 
         JsonArray asJSON(String database, boolean isPrimaryServer) {
             JsonArray load = new JsonArray();
-
-            System.out.println("DELETED DB?" + database + " ?? " + isDeleted);
 
             if (!isDeleted || !connectionPeakCounts.isEmpty()) {
                 JsonObject loadObject = new JsonObject();
