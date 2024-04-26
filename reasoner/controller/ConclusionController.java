@@ -217,7 +217,7 @@ public abstract class ConclusionController<
         public void setUp() {
             setHubReactive(fanOut(this));
             InputPort<Either<ConceptMap, Materialisation>> conditionInput = createInputPort();
-            ConceptMap filteredBounds = bounds().filter(rule.when().sharedVariables());
+            ConceptMap filteredBounds = bounds().filter(rule.when().returnedVariables());
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), driver(), rule.condition(), filteredBounds));
             Stream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> conclusionReactive = createStream();
             conditionInput.map(Processor::convertConclusionInput).registerSubscriber(conclusionReactive);
@@ -296,7 +296,7 @@ public abstract class ConclusionController<
                 if (packet.isFirst()) {
                     assert packet.first().concepts().keySet().containsAll(Collections.intersection(
                             conclusionProcessor().rule().conclusion().pattern().retrieves(),
-                            iterate(conclusionProcessor().rule().condition().disjunction().pattern().sharedVariables())
+                            iterate(conclusionProcessor().rule().condition().disjunction().pattern().returnedVariables())
                                     .map(Variable.Retrievable::asRetrievable).toSet()
                     ));
                     InputPort<Either<ConceptMap, Materialisation>> materialisationInput = conclusionProcessor().createInputPort();

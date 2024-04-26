@@ -95,7 +95,7 @@ public class Reasoner {
             boundDisjunction = new Disjunction(iterate(disjunction.conjunctions()).map(c -> bound(c, bindings)).toList());
         } else boundDisjunction = disjunction;
         inferAndValidateTypes(boundDisjunction);
-        Filter filter = filterVars.isEmpty() ? Filter.create(boundDisjunction.sharedVariables()) : Filter.create(filterVars);
+        Filter filter = filterVars.isEmpty() ? Filter.create(boundDisjunction.returnedVariables()) : Filter.create(filterVars);
         Optional<Sorting> sorting = modifiers.sort().map(Sorting::create);
         sorting.ifPresent(value -> validateSorting(boundDisjunction, value));
         Disjunction answerableDisjunction = filterUnanswerable(boundDisjunction);
