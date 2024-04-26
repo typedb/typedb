@@ -79,7 +79,6 @@ impl<'a> Owns<'a> {
         type_manager.get_owns_ordering(self.clone().into_owned())
     }
 
-
     fn into_owned(self) -> Owns<'static> {
         Owns { owner: ObjectType::new(self.owner.vertex().into_owned()), attribute: self.attribute.into_owned() }
     }

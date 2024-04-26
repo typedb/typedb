@@ -427,7 +427,6 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         }
     }
 
-    // TODO: this is currently breaking our architectural pattern that none of the Manager methods should operate graphs
     pub(crate) const fn role_default_cardinality(&self) -> AnnotationCardinality {
         // TODO: read from database properties the default role cardinality the db was created with
         AnnotationCardinality::new(1, Some(1))
