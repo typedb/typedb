@@ -48,9 +48,9 @@ impl<'_s> TypeReader
         }
     }
 
+    // Used in type_manager to set supertype
     pub(crate) fn get_supertype_vertex(snapshot: &impl ReadableSnapshot, subtype: TypeVertex<'_s>) -> Result<Option<TypeVertex<'static>>, ConceptReadError>
     {
-        // TODO: handle possible errors
         Ok(snapshot
             .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(subtype), TypeEdge::FIXED_WIDTH_ENCODING))
             .first_cloned()
@@ -74,7 +74,7 @@ impl<'_s> TypeReader
         Ok(supertypes)
     }
 
-    pub(crate) fn get_subtypes_vertex(snapshot: &impl ReadableSnapshot, supertype: TypeVertex<'_s>) -> Result<Vec<TypeVertex<'static>>, ConceptReadError>
+    fn get_subtypes_vertex(snapshot: &impl ReadableSnapshot, supertype: TypeVertex<'_s>) -> Result<Vec<TypeVertex<'static>>, ConceptReadError>
     {
         snapshot
             .iterate_range(KeyRange::new_within(build_edge_sub_reverse_prefix_from(supertype), TypeEdge::FIXED_WIDTH_ENCODING))

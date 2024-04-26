@@ -6,7 +6,6 @@
 
 use std::{collections::HashSet, sync::Arc};
 use std::hash::Hash;
-use std::ops::Deref;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::DurabilityService;
