@@ -31,7 +31,7 @@ pub mod relation_type;
 pub mod role_type;
 pub mod type_cache;
 pub mod type_manager;
-mod storage_source;
+mod type_reader;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
     fn vertex<'this>(&'this self) -> TypeVertex<'this>;

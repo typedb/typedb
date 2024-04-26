@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashSet, sync::Arc};
+use std::hash::Hash;
 use std::ops::Deref;
 
 use bytes::{byte_array::ByteArray, Bytes};
@@ -66,7 +67,7 @@ use crate::thing::ObjectAPI;
 use crate::type_::{IntoCanonicalTypeEdge, Ordering, serialise_annotation_cardinality, serialise_ordering};
 use crate::type_::annotation::Annotation;
 use crate::type_::owns::OwnsAnnotation;
-use crate::type_::storage_source::TypeManagerStorageSource;
+use crate::type_::type_reader::TypeReader;
 
 // TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
 pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
@@ -113,7 +114,7 @@ macro_rules! get_type_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(label))
                 } else {
-                    TypeManagerStorageSource::storage_get_labelled_type::<$output_type<'static>>(self.snapshot.as_ref(), label)
+                    TypeReader::get_labelled_type::<$output_type<'static>>(self.snapshot.as_ref(), label)
                 }
             }
         )*
@@ -129,7 +130,7 @@ macro_rules! get_supertype_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(type_))
                 } else {
-                    TypeManagerStorageSource::storage_get_supertype(self.snapshot.as_ref(), type_)
+                    TypeReader::get_supertype(self.snapshot.as_ref(), type_)
                 }
             }
         )*
@@ -146,7 +147,7 @@ macro_rules! get_supertypes_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
-                    let supertypes = TypeManagerStorageSource::storage_get_supertypes_transitive(self.snapshot.as_ref(), type_)?;
+                    let supertypes = TypeReader::get_supertypes_transitive(self.snapshot.as_ref(), type_)?;
                     Ok(MaybeOwns::owned(supertypes))
                 }
             }
@@ -163,7 +164,7 @@ macro_rules! get_subtypes_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
-                    let subtypes = TypeManagerStorageSource::storage_get_subtypes(self.snapshot.as_ref(), type_)?;
+                    let subtypes = TypeReader::get_subtypes(self.snapshot.as_ref(), type_)?;
                     Ok(MaybeOwns::owned(subtypes))
                 }
             }
@@ -181,7 +182,7 @@ macro_rules! get_subtypes_transitive_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
-                    let subtypes = TypeManagerStorageSource::storage_get_subtypes_transitive(self.snapshot.as_ref(), type_)?;
+                    let subtypes = TypeReader::get_subtypes_transitive(self.snapshot.as_ref(), type_)?;
                     Ok(MaybeOwns::owned(subtypes))
                 }
             }
@@ -214,7 +215,7 @@ macro_rules! get_type_label_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
-                    Ok(MaybeOwns::owned(TypeManagerStorageSource::storage_get_label(self.snapshot.as_ref(), type_)?.unwrap()))
+                    Ok(MaybeOwns::owned(TypeReader::get_label(self.snapshot.as_ref(), type_)?.unwrap()))
                 }
             }
         )*
@@ -233,7 +234,7 @@ macro_rules! get_type_annotations {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
                     let mut annotations: HashSet<$annotation_type> = HashSet::new();
-                    let annotations = TypeManagerStorageSource::storage_get_type_annotations(self.snapshot.as_ref(), type_)?
+                    let annotations = TypeReader::get_type_annotations(self.snapshot.as_ref(), type_)?
                         .into_iter()
                         .map(|annotation| $annotation_type::from(annotation))
                         .collect();
@@ -332,7 +333,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_entity_type_owns(entity_type)))
         } else {
-            let owns = TypeManagerStorageSource::storage_get_owns(self.snapshot.as_ref(), entity_type.clone())?;
+            let owns = TypeReader::get_owns(self.snapshot.as_ref(), entity_type.clone())?;
             Ok(MaybeOwns::owned(owns))
         }
     }
@@ -344,7 +345,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_relation_type_owns(relation_type)))
         } else {
-            let owns = TypeManagerStorageSource::storage_get_owns(self.snapshot.as_ref(), relation_type.clone())?;
+            let owns = TypeReader::get_owns(self.snapshot.as_ref(), relation_type.clone())?;
             Ok(MaybeOwns::owned(owns))
         }
     }
@@ -356,7 +357,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_relation_type_relates(relation_type)))
         } else {
-            let relates = TypeManagerStorageSource::storage_get_relates(self.snapshot.as_ref(), relation_type.clone())?;
+            let relates = TypeReader::get_relates(self.snapshot.as_ref(), relation_type.clone())?;
             Ok(MaybeOwns::owned(relates))
         }
     }
@@ -382,7 +383,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_entity_type_plays(entity_type)))
         } else {
-            let plays = TypeManagerStorageSource::storage_get_plays(self.snapshot.as_ref(), entity_type.clone())?;
+            let plays = TypeReader::get_plays(self.snapshot.as_ref(), entity_type.clone())?;
             Ok(MaybeOwns::owned(plays))
         }
     }
@@ -394,7 +395,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_attribute_type_value_type(attribute_type))
         } else {
-            TypeManagerStorageSource::storage_get_value_type(self.snapshot.as_ref(), attribute_type)
+            TypeReader::get_value_type(self.snapshot.as_ref(), attribute_type)
         }
     }
 
@@ -411,7 +412,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_owns_annotations(owns)))
         } else {
-            let annotations: HashSet<OwnsAnnotation> = TypeManagerStorageSource::storage_get_type_edge_annotations(self.snapshot.as_ref(), owns)?
+            let annotations: HashSet<OwnsAnnotation> = TypeReader::get_type_edge_annotations(self.snapshot.as_ref(), owns)?
                 .into_iter()
                 .map(|annotation| OwnsAnnotation::from(annotation))
                 .collect();
@@ -423,7 +424,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_owns_ordering(owns))
         } else {
-            TypeManagerStorageSource::storage_get_type_edge_ordering(self.snapshot.as_ref(), owns)
+            TypeReader::get_type_edge_ordering(self.snapshot.as_ref(), owns)
         }
     }
 
@@ -509,7 +510,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     fn storage_may_delete_label(&self, owner: impl TypeAPI<'static>) {
-        let existing_label = TypeManagerStorageSource::storage_get_label(self.snapshot.as_ref(), owner.clone()).unwrap();
+        let existing_label = TypeReader::get_label(self.snapshot.as_ref(), owner.clone()).unwrap();
         if let Some(label) = existing_label {
             let vertex_to_label_key = build_property_type_label(owner.into_vertex());
             self.snapshot.as_ref().delete(vertex_to_label_key.into_storage_key().into_owned_array());
@@ -534,7 +535,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     fn storage_may_delete_supertype(&self, subtype: impl TypeAPI<'static>) {
-        let supertype_vertex = TypeManagerStorageSource::storage_get_supertype_vertex(self.snapshot.as_ref(), subtype.clone().into_vertex()).unwrap();
+        let supertype_vertex = TypeReader::get_supertype_vertex(self.snapshot.as_ref(), subtype.clone().into_vertex()).unwrap();
         if let Some(supertype) = supertype_vertex {
             let sub = build_edge_sub(subtype.clone().into_vertex(), supertype.clone());
             self.snapshot.as_ref().delete(sub.into_storage_key().into_owned_array());
@@ -679,34 +680,34 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
 }
 
 pub trait ReadableType<'a, 'b> : TypeAPI<'a> {
-    type SelfWithLifetime: ReadableType<'b, 'b>;
-    type AnnotationType : std::hash::Hash + Eq + From<Annotation>;
+    type SelfRead: ReadableType<'b, 'b>;
+    type AnnotationType : Hash + Eq + From<Annotation>;
     const ROOT_KIND: Kind;
-    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfWithLifetime;
+    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead;
 }
 
 impl<'a, 'b> ReadableType<'a, 'b> for AttributeType<'a> {
-    type SelfWithLifetime = AttributeType<'b>;
+    type SelfRead = AttributeType<'b>;
     type AnnotationType = AttributeTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Attribute;
 
 
-    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfWithLifetime {
+    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead {
         AttributeType::new(new_vertex_attribute_type(b))
     }
 }
 
 impl<'a, 'b> ReadableType<'a, 'b> for EntityType<'a> {
-    type SelfWithLifetime = EntityType<'b>;
+    type SelfRead = EntityType<'b>;
     type AnnotationType = EntityTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Entity;
-    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfWithLifetime {
+    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead {
         EntityType::new(new_vertex_entity_type(b))
     }
 }
 
 impl<'a, 'b> ReadableType<'a, 'b> for RelationType<'a> {
-    type SelfWithLifetime = RelationType<'b>;
+    type SelfRead = RelationType<'b>;
     type AnnotationType = RelationTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Relation;
     fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> RelationType<'b> {
@@ -715,7 +716,7 @@ impl<'a, 'b> ReadableType<'a, 'b> for RelationType<'a> {
 }
 
 impl<'a, 'b> ReadableType<'a, 'b> for RoleType<'a> {
-    type SelfWithLifetime = RoleType<'b>;
+    type SelfRead = RoleType<'b>;
     type AnnotationType = RoleTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Role;
     fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> RoleType<'b> {

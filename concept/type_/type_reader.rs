@@ -31,14 +31,13 @@ use crate::type_::relates::Relates;
 use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
 
-pub struct TypeManagerStorageSource { }
+pub struct TypeReader { }
 
 // TODO: The '_s is only here for the enforcement of pass-by-value of types. If we drop that, we can move it to the function signatures
-impl<'_s> TypeManagerStorageSource
+impl<'_s> TypeReader
     where '_s : 'static {
 
-    // TODO: Return vertex for consistency with other methods
-    pub(crate) fn storage_get_labelled_type<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, label: &Label<'_>) -> Result<Option<U::SelfWithLifetime>, ConceptReadError>
+    pub(crate) fn get_labelled_type<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, label: &Label<'_>) -> Result<Option<U::SelfRead>, ConceptReadError>
         where U:
     {
         let key = LabelToTypeVertexIndex::build(label).into_storage_key();
@@ -49,7 +48,7 @@ impl<'_s> TypeManagerStorageSource
         }
     }
 
-    pub(crate) fn storage_get_supertype_vertex(snapshot: &impl ReadableSnapshot, subtype: TypeVertex<'_s>) -> Result<Option<TypeVertex<'static>>, ConceptReadError>
+    pub(crate) fn get_supertype_vertex(snapshot: &impl ReadableSnapshot, subtype: TypeVertex<'_s>) -> Result<Option<TypeVertex<'static>>, ConceptReadError>
     {
         // TODO: handle possible errors
         Ok(snapshot
@@ -59,23 +58,23 @@ impl<'_s> TypeManagerStorageSource
             .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
     }
 
-    pub(crate) fn storage_get_supertype<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Option<U::SelfWithLifetime>, ConceptReadError> {
-        Ok(Self::storage_get_supertype_vertex(snapshot, subtype.into_vertex())?.map(|supertype_vertex| U::read_from(supertype_vertex.into_bytes())))
+    pub(crate) fn get_supertype<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Option<U::SelfRead>, ConceptReadError> {
+        Ok(Self::get_supertype_vertex(snapshot, subtype.into_vertex())?.map(|supertype_vertex| U::read_from(supertype_vertex.into_bytes())))
     }
 
-    pub fn storage_get_supertypes_transitive<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Vec<U::SelfWithLifetime>, ConceptReadError> {
+    pub fn get_supertypes_transitive<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Vec<U::SelfRead>, ConceptReadError> {
         // WARN: supertypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut supertype = Some(type_)`
         let mut supertypes = Vec::new();
-        let mut supervertex_opt = TypeManagerStorageSource::storage_get_supertype_vertex(snapshot, subtype.clone().into_vertex())?;
+        let mut supervertex_opt = TypeReader::get_supertype_vertex(snapshot, subtype.clone().into_vertex())?;
         while let Some(supervertex) = supervertex_opt {
             supertypes.push(U::read_from(supervertex.clone().into_bytes()));
-            supervertex_opt = TypeManagerStorageSource::storage_get_supertype_vertex(snapshot, supervertex.clone())?;
+            supervertex_opt = TypeReader::get_supertype_vertex(snapshot, supervertex.clone())?;
         }
         Ok(supertypes)
     }
 
-    pub(crate) fn storage_get_subtypes_vertex(snapshot: &impl ReadableSnapshot, supertype: TypeVertex<'_s>) -> Result<Vec<TypeVertex<'static>>, ConceptReadError>
+    pub(crate) fn get_subtypes_vertex(snapshot: &impl ReadableSnapshot, supertype: TypeVertex<'_s>) -> Result<Vec<TypeVertex<'static>>, ConceptReadError>
     {
         snapshot
             .iterate_range(KeyRange::new_within(build_edge_sub_reverse_prefix_from(supertype), TypeEdge::FIXED_WIDTH_ENCODING))
@@ -83,26 +82,26 @@ impl<'_s> TypeManagerStorageSource
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn storage_get_subtypes<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, supertype: U) -> Result<Vec<U::SelfWithLifetime>, ConceptReadError> {
-        Ok(Self::storage_get_subtypes_vertex(snapshot, supertype.into_vertex())?.into_iter()
+    pub(crate) fn get_subtypes<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, supertype: U) -> Result<Vec<U::SelfRead>, ConceptReadError> {
+        Ok(Self::get_subtypes_vertex(snapshot, supertype.into_vertex())?.into_iter()
             .map(|subtype_vertex| U::read_from(subtype_vertex.into_bytes()))
-            .collect::<Vec<U::SelfWithLifetime>>())
+            .collect::<Vec<U::SelfRead>>())
     }
 
-    pub fn storage_get_subtypes_transitive<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Vec<U::SelfWithLifetime>, ConceptReadError> {
+    pub fn get_subtypes_transitive<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Vec<U::SelfRead>, ConceptReadError> {
         // WARN: subtypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut stack = vec!(subtype.clone());`
         let mut subtypes = Vec::new();
-        let mut stack = TypeManagerStorageSource::storage_get_subtypes_vertex(snapshot, subtype.clone().into_vertex())?;
+        let mut stack = TypeReader::get_subtypes_vertex(snapshot, subtype.clone().into_vertex())?;
         while !stack.is_empty() {
             let subvertex = stack.pop().unwrap();
             subtypes.push(U::read_from(subvertex.clone().into_bytes()));
-            stack.append(&mut TypeManagerStorageSource::storage_get_subtypes_vertex(snapshot, subvertex.clone())?); // TODO: Should we pass an accumulator instead?
+            stack.append(&mut TypeReader::get_subtypes_vertex(snapshot, subvertex.clone())?); // TODO: Should we pass an accumulator instead?
         }
         Ok(subtypes)
     }
 
-    pub(crate) fn storage_get_label(snapshot: &impl ReadableSnapshot, type_: impl TypeAPI<'_s>) -> Result<Option<Label<'static>>, ConceptReadError> {
+    pub(crate) fn get_label(snapshot: &impl ReadableSnapshot, type_: impl TypeAPI<'_s>) -> Result<Option<Label<'static>>, ConceptReadError> {
         let key = build_property_type_label(type_.into_vertex());
         snapshot
             .get_mapped(key.into_storage_key().as_reference(), |reference| {
@@ -112,7 +111,7 @@ impl<'_s> TypeManagerStorageSource
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
-    pub(crate) fn storage_get_owns(
+    pub(crate) fn get_owns(
         snapshot: &impl ReadableSnapshot,
         owner: impl OwnerAPI<'_s>
     ) -> Result<HashSet<Owns<'static>>, ConceptReadError>
@@ -128,7 +127,7 @@ impl<'_s> TypeManagerStorageSource
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn storage_get_plays(
+    pub(crate) fn get_plays(
         snapshot: &impl ReadableSnapshot,
         player: impl PlayerAPI<'_s>
     ) -> Result<HashSet<Plays<'static>>, ConceptReadError>
@@ -143,7 +142,7 @@ impl<'_s> TypeManagerStorageSource
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn storage_get_relates(
+    pub(crate) fn get_relates(
         snapshot: &impl ReadableSnapshot,
         relation: RelationType<'_s>,
     ) -> Result<HashSet<Relates<'static>>, ConceptReadError>
@@ -158,7 +157,7 @@ impl<'_s> TypeManagerStorageSource
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn storage_get_relations(
+    pub(crate) fn get_relations(
         snapshot: &impl ReadableSnapshot,
         role: RoleType<'_s>,
     ) -> Result<Relates<'static>, ConceptReadError>
@@ -173,7 +172,7 @@ impl<'_s> TypeManagerStorageSource
             .map(|v| { v.first().unwrap().clone() })
     }
 
-    pub(crate) fn storage_get_value_type(snapshot: &impl ReadableSnapshot, type_: AttributeType<'_s>) -> Result<Option<ValueType>, ConceptReadError> {
+    pub(crate) fn get_value_type(snapshot: &impl ReadableSnapshot, type_: AttributeType<'_s>) -> Result<Option<ValueType>, ConceptReadError> {
         snapshot
             .get_mapped(
                 build_property_type_value_type(type_.into_vertex()).into_storage_key().as_reference(),
@@ -184,7 +183,7 @@ impl<'_s> TypeManagerStorageSource
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
-    pub(crate) fn storage_get_type_annotations(
+    pub(crate) fn get_type_annotations(
         snapshot: &impl ReadableSnapshot,
         type_: impl TypeAPI<'_s>,
     ) -> Result<HashSet<Annotation>, ConceptReadError> {
@@ -216,7 +215,7 @@ impl<'_s> TypeManagerStorageSource
     }
 
     // TODO: this is currently breaking our architectural pattern that none of the Manager methods should operate graphs
-    pub(crate) fn storage_get_type_edge_annotations<'a>(
+    pub(crate) fn get_type_edge_annotations<'a>(
         snapshot: &impl ReadableSnapshot,
         into_type_edge: impl IntoCanonicalTypeEdge<'a>,
     ) -> Result<HashSet<Annotation>, ConceptReadError> {
@@ -248,7 +247,7 @@ impl<'_s> TypeManagerStorageSource
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
 
-    pub(crate) fn storage_get_type_ordering<'a>(snapshot: &impl ReadableSnapshot, role_type: RoleType<'_s>) -> Result<Ordering, ConceptReadError> {
+    pub(crate) fn get_type_ordering<'a>(snapshot: &impl ReadableSnapshot, role_type: RoleType<'_s>) -> Result<Ordering, ConceptReadError> {
         let ordering = snapshot
             .get_mapped(
                 build_property_type_ordering(role_type.vertex()).into_storage_key().as_reference(),
@@ -257,7 +256,7 @@ impl<'_s> TypeManagerStorageSource
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
         Ok(ordering.unwrap())
     }
-    pub(crate) fn storage_get_type_edge_ordering<'a>(snapshot: &impl ReadableSnapshot, owns: Owns<'_s>)  -> Result<Ordering, ConceptReadError> {
+    pub(crate) fn get_type_edge_ordering<'a>(snapshot: &impl ReadableSnapshot, owns: Owns<'_s>)  -> Result<Ordering, ConceptReadError> {
         let ordering = snapshot
             .get_mapped(
                 build_property_type_edge_ordering(owns.into_type_edge()).into_storage_key().as_reference(),

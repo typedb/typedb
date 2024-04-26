@@ -32,7 +32,7 @@ use storage::key_range::KeyRange;
 
 use crate::type_::{attribute_type::{AttributeType, AttributeTypeAnnotation}, entity_type::{EntityType, EntityTypeAnnotation}, object_type::ObjectType, Ordering, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
 use crate::type_::owns::OwnsAnnotation;
-use crate::type_::storage_source::TypeManagerStorageSource;
+use crate::type_::type_reader::TypeReader;
 use crate::type_::type_manager::{ReadableType, TypeManager};
 
 // TODO: could/should we slab allocate the schema cache?
@@ -54,29 +54,29 @@ pub struct TypeCache {
 }
 
 #[derive(Debug)]
-struct TypeAPICache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
+struct CommonTypeCache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
     type_: T,
     label: Label<'static>,
     is_root: bool,
     annotations_declared: HashSet<T::AnnotationType>,
     // TODO: Should these all be sets instead of vec?
-    supertype: Option<T::SelfWithLifetime>, // TODO: use smallvec if we want to have some inline - benchmark.
-    supertypes: Vec<T::SelfWithLifetime>,  // TODO: use smallvec if we want to have some inline - benchmark.
-    subtypes_declared: Vec<T::SelfWithLifetime>, // TODO: benchmark smallvec.
-    subtypes_transitive: Vec<T::SelfWithLifetime>, // TODO: benchmark smallvec
+    supertype: Option<T::SelfRead>, // TODO: use smallvec if we want to have some inline - benchmark.
+    supertypes: Vec<T::SelfRead>,  // TODO: use smallvec if we want to have some inline - benchmark.
+    subtypes_declared: Vec<T::SelfRead>, // TODO: benchmark smallvec.
+    subtypes_transitive: Vec<T::SelfRead>, // TODO: benchmark smallvec
 }
 
-impl<T> TypeAPICache<T> where T: TypeAPI<'static> + ReadableType<'static, 'static> {
-    fn build_for<Snapshot: ReadableSnapshot>(snapshot: &Snapshot, type_ : T) -> TypeAPICache<T> {
-        let label = TypeManagerStorageSource::storage_get_label(snapshot, type_.clone()).unwrap().unwrap();
+impl<T> CommonTypeCache<T> where T: TypeAPI<'static> + ReadableType<'static, 'static> {
+    fn build_for<Snapshot: ReadableSnapshot>(snapshot: &Snapshot, type_ : T) -> CommonTypeCache<T> {
+        let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
         let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
-        let annotations_declared = TypeManagerStorageSource::storage_get_type_annotations(snapshot, type_.clone()).unwrap().into_iter()
+        let annotations_declared = TypeReader::get_type_annotations(snapshot, type_.clone()).unwrap().into_iter()
             .map(|annotation| T::AnnotationType::from(annotation))
             .collect::<HashSet<T::AnnotationType>>();
-        let supertype = TypeManagerStorageSource::storage_get_supertype(snapshot, type_.clone()).unwrap();
-        let supertypes = TypeManagerStorageSource::storage_get_supertypes_transitive(snapshot, type_.clone()).unwrap();
-        let subtypes_declared = TypeManagerStorageSource::storage_get_subtypes(snapshot, type_.clone()).unwrap();
-        let subtypes_transitive = TypeManagerStorageSource::storage_get_subtypes_transitive(snapshot, type_.clone()).unwrap();
+        let supertype = TypeReader::get_supertype(snapshot, type_.clone()).unwrap();
+        let supertypes = TypeReader::get_supertypes_transitive(snapshot, type_.clone()).unwrap();
+        let subtypes_declared = TypeReader::get_subtypes(snapshot, type_.clone()).unwrap();
+        let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_.clone()).unwrap();
         Self {
             type_,
             label,
@@ -92,7 +92,7 @@ impl<T> TypeAPICache<T> where T: TypeAPI<'static> + ReadableType<'static, 'stati
 
 #[derive(Debug)]
 struct EntityTypeCache {
-    type_api_cache_ : TypeAPICache<EntityType<'static>>,
+    type_api_cache_ : CommonTypeCache<EntityType<'static>>,
     owns_declared: HashSet<Owns<'static>>,
     plays_declared: HashSet<Plays<'static>>,
     // ...
@@ -100,7 +100,7 @@ struct EntityTypeCache {
 
 #[derive(Debug)]
 struct RelationTypeCache {
-    type_api_cache_ : TypeAPICache<RelationType<'static>>,
+    common_type_cache: CommonTypeCache<RelationType<'static>>,
     relates_declared: HashSet<Relates<'static>>,
     owns_declared: HashSet<Owns<'static>>,
     plays_declared: HashSet<Plays<'static>>,
@@ -108,14 +108,14 @@ struct RelationTypeCache {
 
 #[derive(Debug)]
 struct RoleTypeCache {
-    type_api_cache_ : TypeAPICache<RoleType<'static>>,
+    type_api_cache_ : CommonTypeCache<RoleType<'static>>,
     ordering: Ordering,
     relates_declared: Relates<'static>,
 }
 
 #[derive(Debug)]
 struct AttributeTypeCache {
-    type_api_cache_ :  TypeAPICache<AttributeType<'static>>,
+    type_api_cache_ :  CommonTypeCache<AttributeType<'static>>,
     value_type: Option<ValueType>,
     // owners: HashSet<Owns<'static>>
 }
@@ -150,7 +150,7 @@ impl TypeCache {
         let relation_type_caches = Self::create_relation_caches(&snapshot);
         let relation_type_index_labels = relation_type_caches
             .iter()
-            .filter_map(|entry| entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone())))
+            .filter_map(|entry| entry.as_ref().map(|cache| (cache.common_type_cache.label.clone(), cache.common_type_cache.type_.clone())))
             .collect();
 
         let role_type_caches = Self::create_role_caches(&snapshot);
@@ -194,9 +194,9 @@ impl TypeCache {
 
         for entity in entities.into_iter() {
             let cache = EntityTypeCache {
-                type_api_cache_:  TypeAPICache::build_for(snapshot, entity.clone()),
-                owns_declared: TypeManagerStorageSource::storage_get_owns(snapshot, entity.clone()).unwrap(),
-                plays_declared: TypeManagerStorageSource::storage_get_plays(snapshot, entity.clone()).unwrap(),
+                type_api_cache_:  CommonTypeCache::build_for(snapshot, entity.clone()),
+                owns_declared: TypeReader::get_owns(snapshot, entity.clone()).unwrap(),
+                plays_declared: TypeReader::get_plays(snapshot, entity.clone()).unwrap(),
             };
             caches[entity.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -216,10 +216,10 @@ impl TypeCache {
         let mut caches = (0..=max_relation_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         for relation in relations.into_iter() {
             let cache = RelationTypeCache {
-                type_api_cache_:  TypeAPICache::build_for(snapshot, relation.clone()),
-                relates_declared: TypeManagerStorageSource::storage_get_relates(snapshot, relation.clone()).unwrap(),
-                owns_declared : TypeManagerStorageSource::storage_get_owns(snapshot, relation.clone()).unwrap(),
-                plays_declared : TypeManagerStorageSource::storage_get_plays(snapshot, relation.clone()).unwrap()
+                common_type_cache:  CommonTypeCache::build_for(snapshot, relation.clone()),
+                relates_declared: TypeReader::get_relates(snapshot, relation.clone()).unwrap(),
+                owns_declared : TypeReader::get_owns(snapshot, relation.clone()).unwrap(),
+                plays_declared : TypeReader::get_plays(snapshot, relation.clone()).unwrap()
             };
             caches[relation.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -238,11 +238,11 @@ impl TypeCache {
         let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_role_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         for role in roles.into_iter() {
-            let ordering = TypeManagerStorageSource::storage_get_type_ordering(snapshot, role.clone()).unwrap();
+            let ordering = TypeReader::get_type_ordering(snapshot, role.clone()).unwrap();
             let cache = RoleTypeCache {
-                type_api_cache_:  TypeAPICache::build_for(snapshot, role.clone()),
+                type_api_cache_:  CommonTypeCache::build_for(snapshot, role.clone()),
                 ordering,
-                relates_declared: TypeManagerStorageSource::storage_get_relations(snapshot, role.clone()).unwrap()
+                relates_declared: TypeReader::get_relations(snapshot, role.clone()).unwrap()
             };
             caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -262,8 +262,8 @@ impl TypeCache {
         let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         for attribute in attributes {
             let cache = AttributeTypeCache {
-                type_api_cache_:  TypeAPICache::build_for(snapshot, attribute.clone()),
-                value_type: TypeManagerStorageSource::storage_get_value_type(snapshot, attribute.clone()).unwrap(),
+                type_api_cache_:  CommonTypeCache::build_for(snapshot, attribute.clone()),
+                value_type: TypeReader::get_value_type(snapshot, attribute.clone()).unwrap(),
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -283,8 +283,8 @@ impl TypeCache {
                 (
                     owns.clone(),
                     OwnsCache {
-                        ordering: TypeManagerStorageSource::storage_get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
-                        annotations_declared: TypeManagerStorageSource::storage_get_type_edge_annotations(snapshot, owns.clone()).unwrap()
+                        ordering: TypeReader::get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
+                        annotations_declared: TypeReader::get_type_edge_annotations(snapshot, owns.clone()).unwrap()
                             .into_iter()
                             .map(|annotation| OwnsAnnotation::from(annotation))
                             .collect(),
@@ -318,7 +318,7 @@ impl TypeCache {
         &self,
         relation_type: RelationType<'static>,
     ) -> Option<RelationType<'static>> {
-        Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().type_api_cache_.supertype.clone()
+        Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().common_type_cache.supertype.clone()
     }
 
     pub(crate) fn get_role_type_supertype(&self, role_type: RoleType<'static>) -> Option<RoleType<'static>> {
@@ -340,7 +340,7 @@ impl TypeCache {
         &self,
         relation_type: RelationType<'static>,
     ) -> &Vec<RelationType<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().type_api_cache_.supertypes
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().common_type_cache.supertypes
     }
 
     pub(crate) fn get_role_type_supertypes(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
@@ -363,7 +363,7 @@ impl TypeCache {
         &self,
         relation_type: RelationType<'static>,
     ) -> &Vec<RelationType<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().type_api_cache_.subtypes_declared
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().common_type_cache.subtypes_declared
     }
 
     pub(crate) fn get_role_type_subtypes(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
@@ -386,7 +386,7 @@ impl TypeCache {
         &self,
         relation_type: RelationType<'static>,
     ) -> &Vec<RelationType<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().type_api_cache_.subtypes_transitive
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().common_type_cache.subtypes_transitive
     }
 
     pub(crate) fn get_role_type_subtypes_transitive(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
@@ -405,7 +405,7 @@ impl TypeCache {
     }
 
     pub(crate) fn get_relation_type_label(&self, relation_type: RelationType<'static>) -> &Label<'static> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().type_api_cache_.label
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().common_type_cache.label
     }
 
     pub(crate) fn get_role_type_label(&self, role_type: RoleType<'static>) -> &Label<'static> {
@@ -421,7 +421,7 @@ impl TypeCache {
     }
 
     pub(crate) fn get_relation_type_is_root(&self, relation_type: RelationType<'static>) -> bool {
-        Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().type_api_cache_.is_root
+        Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().common_type_cache.is_root
     }
 
     pub(crate) fn get_role_type_is_root(&self, role_type: RoleType<'static>) -> bool {
@@ -471,7 +471,7 @@ impl TypeCache {
         &self,
         relation_type: RelationType<'static>,
     ) -> &HashSet<RelationTypeAnnotation> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().type_api_cache_.annotations_declared
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().common_type_cache.annotations_declared
     }
 
     pub(crate) fn get_role_type_annotations(&self, role_type: RoleType<'static>) -> &HashSet<RoleTypeAnnotation> {
