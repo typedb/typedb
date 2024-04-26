@@ -132,7 +132,7 @@ impl<'a> Entity<'a> {
         &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>,
         attributes: Vec<Attribute<'_>>,
     ) -> Result<(), ConceptWriteError> {
-        let owns = self.get_type_owns(thing_manager.type_manager(), attribute_type)
+        let owns = self.get_type_owns(thing_manager.type_manager(), attribute_type.clone())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         let ordering = owns.get_ordering(thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
@@ -141,11 +141,16 @@ impl<'a> Entity<'a> {
                 todo!("throw good error")
             }
             Ordering::Ordered => {
-                // let attributes = thing_manager.get_has_type_ordered(self.as_reference(), attribute_type.clone())
-                //     .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-                //
-                // TODO: 1. get owned list 2. get set of keys to delete or decrement/overwrite 3. rewrite owned list
+                // 1. get owned list
+                let attributes = thing_manager.get_has_type_ordered(self.as_reference(), attribute_type.clone())
+                    .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+
+                // 2. Delete existing but no-longer necessary has, and add new ones, with the correct counts (!)
                 todo!()
+                //
+                // // 3. Overwrite owned list
+                // thing_manager.set_has_ordered(self.as_reference(), attribute_type, attributes);
+                // Ok(())
             }
         }
     }

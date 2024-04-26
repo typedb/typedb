@@ -24,7 +24,7 @@ use encoding::{
     value::{decode_value_u64, encode_value_u64, long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType},
 };
 use encoding::graph::thing::property::HAS_ORDER_PROPERTY_FACTORY;
-use encoding::graph::thing::vertex_attribute::{AttributeID, LongAttributeID, StringAttributeID};
+use encoding::graph::thing::vertex_attribute::AttributeID;
 use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
 use encoding::value::ValueEncodable;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -51,6 +51,7 @@ use crate::{
     },
 };
 use crate::thing::attribute::AttributeOwnerIterator;
+use crate::thing::{decode_attribute_ids, encode_attribute_ids};
 
 pub struct ThingManager<Snapshot> {
     snapshot: Arc<Snapshot>,
@@ -266,18 +267,13 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
             }
             Some(value_type) => { value_type }
         };
-        let encoding_length = AttributeID::value_type_encoding_length(value_type);
-        let mut attributes = Vec::new();
-        self.snapshot.get_mapped(key.as_storage_key().as_reference(), |bytes| {
-            let chunks = bytes.bytes().chunks_exact(encoding_length);
-            for chunk in chunks {
-                let attribute_id = ThingVertexGenerator::deserialise_attribute_id(value_type, chunk);
-                attributes.push(Attribute::new(AttributeVertex::build(
-                    value_type, attribute_type.vertex().type_id_(), attribute_id,
-                )));
-            }
+        let attributes = self.snapshot.get_mapped(key.as_storage_key().as_reference(), |bytes| {
+            decode_attribute_ids(value_type, bytes.bytes())
+                .map(|id| Attribute::new(AttributeVertex::new(Bytes::Array(ByteArray::copy(id.bytes())))))
+                .collect()
         })
-            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
+            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?
+            .unwrap_or_else(|| Vec::new());
         Ok(attributes)
     }
 
@@ -516,6 +512,15 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         self.snapshot.delete(has_reverse.into_storage_key().into_owned_array());
     }
 
+    pub(crate) fn set_has_ordered<'a>(
+        &self, owner: impl ObjectAPI<'a>, attribute_type: AttributeType<'static>, attributes: Vec<Attribute<'_>>
+    ) {
+        owner.set_modified(self);
+        let key = HAS_ORDER_PROPERTY_FACTORY.build(owner.into_vertex(), attribute_type.into_vertex());
+        let value = encode_attribute_ids(attributes.into_iter().map(|attr| attr.into_vertex().attribute_id()));
+        self.snapshot.put_val(key.into_storage_key().into_owned_array(), value)
+    }
+
     pub(crate) fn increment_has<'a>(&self, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
         todo!()
     }
@@ -527,7 +532,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     pub(crate) fn delete_has_ordered<'a>(&self, owner: impl ObjectAPI<'a>, attribute_type: AttributeType<'static>) {
         owner.set_modified(self);
         let order_property = HAS_ORDER_PROPERTY_FACTORY.build(
-            owner.into_vertex(), attribute_type.into_vertex()
+            owner.into_vertex(), attribute_type.into_vertex(),
         );
         self.snapshot.delete(order_property.into_storage_key().into_owned_array())
     }

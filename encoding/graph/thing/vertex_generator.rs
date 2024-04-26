@@ -130,11 +130,6 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn deserialise_attribute_id(value_type: ValueType, bytes: &[u8]) -> AttributeID {
-        debug_assert_eq!(bytes.len(), AttributeID::value_type_encoding_length(value_type));
-        AttributeID::new(value_type, bytes)
-    }
-
     pub fn create_attribute_long<Snapshot>(
         &self,
         type_id: TypeID,

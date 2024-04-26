@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use bytes::byte_array::ByteArray;
+use encoding::graph::thing::vertex_attribute::AttributeID;
 use encoding::graph::thing::vertex_object::ObjectVertex;
+use encoding::value::value_type::ValueType;
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{ConceptStatus, error::ConceptWriteError, thing::thing_manager::ThingManager};
@@ -16,12 +20,6 @@ pub mod object;
 pub mod relation;
 pub mod thing_manager;
 pub mod value;
-
-///
-/// TODO: one thing to consider is that we have a general issue with update-delete race conditions
-///       For example, if within a single transaction, a thread adds an ownership to a concept, and another deletes it
-/// Note: Some operations (such as relation player add + index update) are already locked to be atomic
-///
 
 pub trait ThingAPI<'a> {
     fn set_modified(&self, thing_manager: &ThingManager<impl WritableSnapshot>);
@@ -40,3 +38,14 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> {
     fn into_vertex(self) -> ObjectVertex<'a>;
 }
 
+// TODO: where do these belong? They're encodings of values we store for keys
+pub(crate) fn decode_attribute_ids(value_type: ValueType, bytes: &[u8]) -> impl Iterator<Item=AttributeID> + '_ {
+    let chunk_size = AttributeID::value_type_encoding_length(value_type);
+    let chunks_iter = bytes.chunks_exact(chunk_size);
+    debug_assert!(chunks_iter.remainder().is_empty());
+    chunks_iter.map(move |chunk| AttributeID::new(value_type, chunk))
+}
+
+pub(crate) fn encode_attribute_ids(attribute_ids: impl Iterator<Item=AttributeID>) -> ByteArray<{ BUFFER_VALUE_INLINE }> {
+    todo!()
+}

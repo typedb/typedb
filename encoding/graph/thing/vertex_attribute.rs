@@ -190,7 +190,7 @@ pub enum AttributeID {
 }
 
 impl AttributeID {
-    pub(crate) fn new(value_type: ValueType, bytes: &[u8]) -> Self {
+    pub fn new(value_type: ValueType, bytes: &[u8]) -> Self {
         match value_type {
             ValueType::Boolean => todo!(),
             ValueType::Long => Self::Long(LongAttributeID::new(bytes.try_into().unwrap())),
@@ -231,7 +231,7 @@ impl AttributeID {
         }
     }
 
-    pub(crate) fn bytes(&self) -> &[u8] {
+    pub fn bytes(&self) -> &[u8] {
         match self {
             AttributeID::Long(long_id) => long_id.bytes_ref(),
             AttributeID::String(string_id) => string_id.bytes_ref(),
@@ -263,7 +263,6 @@ impl AttributeID {
         }
     }
 }
-
 
 // TODO: this is just a really thin wrapper around value::Long -- perhaps we can merge them?
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
