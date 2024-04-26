@@ -62,8 +62,8 @@ struct TypeAPICache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
     // TODO: Should these all be sets instead of vec?
     supertype: Option<T::SelfWithLifetime>, // TODO: use smallvec if we want to have some inline - benchmark.
     supertypes: Vec<T::SelfWithLifetime>,  // TODO: use smallvec if we want to have some inline - benchmark.
-    // subtypes_declared: Vec<AttributeType<'static>>, // TODO: benchmark smallvec.
-    // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
+    subtypes_declared: Vec<T::SelfWithLifetime>, // TODO: benchmark smallvec.
+    subtypes_transitive: Vec<T::SelfWithLifetime>, // TODO: benchmark smallvec
 }
 
 impl<T> TypeAPICache<T> where T: TypeAPI<'static> + ReadableType<'static, 'static> {
@@ -75,13 +75,17 @@ impl<T> TypeAPICache<T> where T: TypeAPI<'static> + ReadableType<'static, 'stati
             .collect::<HashSet<T::AnnotationType>>();
         let supertype = StorageTypeManagerSource::storage_get_supertype(snapshot, type_.clone()).unwrap();
         let supertypes = StorageTypeManagerSource::storage_get_supertypes_transitive(snapshot, type_.clone()).unwrap();
+        let subtypes_declared = StorageTypeManagerSource::storage_get_subtypes(snapshot, type_.clone()).unwrap();
+        let subtypes_transitive = StorageTypeManagerSource::storage_get_subtypes_transitive(snapshot, type_.clone()).unwrap();
         Self {
             type_,
             label,
             is_root,
             annotations_declared,
             supertype,
-            supertypes
+            supertypes,
+            subtypes_declared,
+            subtypes_transitive
         }
     }
 }
@@ -348,6 +352,52 @@ impl TypeCache {
         attribute_type: AttributeType<'static>,
     ) -> &Vec<AttributeType<'static>> {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().type_api_cache_.supertypes
+    }
+
+
+    pub(crate) fn get_entity_type_subtypes(&self, entity_type: EntityType<'_>) -> &Vec<EntityType<'static>> {
+        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().type_api_cache_.subtypes_declared
+    }
+
+    pub(crate) fn get_relation_type_subtypes(
+        &self,
+        relation_type: RelationType<'static>,
+    ) -> &Vec<RelationType<'static>> {
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().type_api_cache_.subtypes_declared
+    }
+
+    pub(crate) fn get_role_type_subtypes(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
+        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().type_api_cache_.subtypes_declared
+    }
+
+    pub(crate) fn get_attribute_type_subtypes(
+        &self,
+        attribute_type: AttributeType<'static>,
+    ) -> &Vec<AttributeType<'static>> {
+        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().type_api_cache_.subtypes_declared
+    }
+
+
+    pub(crate) fn get_entity_type_subtypes_transitive(&self, entity_type: EntityType<'_>) -> &Vec<EntityType<'static>> {
+        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().type_api_cache_.subtypes_transitive
+    }
+
+    pub(crate) fn get_relation_type_subtypes_transitive(
+        &self,
+        relation_type: RelationType<'static>,
+    ) -> &Vec<RelationType<'static>> {
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().type_api_cache_.subtypes_transitive
+    }
+
+    pub(crate) fn get_role_type_subtypes_transitive(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
+        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().type_api_cache_.subtypes_transitive
+    }
+
+    pub(crate) fn get_attribute_type_subtypes_transitive(
+        &self,
+        attribute_type: AttributeType<'static>,
+    ) -> &Vec<AttributeType<'static>> {
+        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().type_api_cache_.subtypes_transitive
     }
 
     pub(crate) fn get_entity_type_label(&self, entity_type: EntityType<'static>) -> &Label<'static> {

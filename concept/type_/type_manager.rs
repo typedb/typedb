@@ -154,6 +154,41 @@ macro_rules! get_supertypes_methods {
     }
 }
 
+macro_rules! get_subtypes_methods {
+    ($(
+        fn $method_name:ident() -> $type_:ident = $cache_method:ident;
+    )*) => {
+        $(
+            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
+                if let Some(cache) = &self.type_cache {
+                    Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
+                } else {
+                    let subtypes = StorageTypeManagerSource::storage_get_subtypes(self.snapshot.as_ref(), type_)?;
+                    Ok(MaybeOwns::owned(subtypes))
+                }
+            }
+        )*
+    }
+}
+
+macro_rules! get_subtypes_transitive_methods {
+    ($(
+        fn $method_name:ident() -> $type_:ident = $cache_method:ident;
+    )*) => {
+        $(
+            // WARN: supertypes currently do NOT include themselves
+            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
+                if let Some(cache) = &self.type_cache {
+                    Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
+                } else {
+                    let subtypes = StorageTypeManagerSource::storage_get_subtypes_transitive(self.snapshot.as_ref(), type_)?;
+                    Ok(MaybeOwns::owned(subtypes))
+                }
+            }
+        )*
+    }
+}
+
 macro_rules! get_type_is_root_methods {
     ($(
         fn $method_name:ident() -> $type_:ident = $cache_method:ident | $base_variant:expr;
@@ -262,6 +297,20 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         fn get_attribute_type_supertypes() -> AttributeType = get_attribute_type_supertypes;
     }
 
+    get_subtypes_methods! {
+        fn get_entity_type_subtypes() -> EntityType = get_entity_type_subtypes;
+        fn get_relation_type_subtypes() -> RelationType = get_relation_type_subtypes;
+        fn get_role_type_subtypes() -> RoleType = get_role_type_subtypes;
+        fn get_attribute_type_subtypes() -> AttributeType = get_attribute_type_subtypes;
+    }
+
+    get_subtypes_transitive_methods! {
+        fn get_entity_type_subtypes_transitive() -> EntityType = get_entity_type_subtypes_transitive;
+        fn get_relation_type_subtypes_transitive() -> RelationType = get_relation_type_subtypes_transitive;
+        fn get_role_type_subtypes_transitive() -> RoleType = get_role_type_subtypes_transitive;
+        fn get_attribute_type_subtypes_transitive() -> AttributeType = get_attribute_type_subtypes_transitive;
+    }
+
     get_type_is_root_methods! {
         fn get_entity_type_is_root() -> EntityType = get_entity_type_is_root | Kind::Entity;
         fn get_relation_type_is_root() -> RelationType = get_relation_type_is_root | Kind::Relation;
@@ -275,7 +324,6 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         fn get_role_type_label() -> RoleType = get_role_type_label;
         fn get_attribute_type_label() -> AttributeType = get_attribute_type_label;
     }
-
 
     pub(crate) fn get_entity_type_owns(
         &self,

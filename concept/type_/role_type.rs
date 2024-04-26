@@ -31,7 +31,6 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::type_::entity_type::EntityTypeAnnotation;
 use crate::type_::owns::OwnsAnnotation::Cardinality;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -102,7 +101,19 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_type_supertypes(self.clone().into_owned())
     }
 
-    // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<RoleType<'static>>>;
+    pub fn get_subtypes<'m>(
+        &self,
+        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, ConceptReadError> {
+        type_manager.get_role_type_subtypes(self.clone().into_owned())
+    }
+
+    pub fn get_subtypes_transitive<'m>(
+        &self,
+        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+    ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, ConceptReadError> {
+        type_manager.get_role_type_subtypes_transitive(self.clone().into_owned())
+    }
 
     pub fn get_cardinality(
         &self, type_manager: &TypeManager<impl ReadableSnapshot>,

@@ -109,8 +109,20 @@ impl<'a> AttributeType<'a> {
         type_manager.get_attribute_type_supertypes(self.clone().into_owned())
     }
 
+    pub fn get_subtypes<'m>(
+        &self,
+        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+    ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, ConceptReadError> {
+        type_manager.get_attribute_type_subtypes(self.clone().into_owned())
+    }
 
-    // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<AttributeType<'static>>>;
+    pub fn get_subtypes_transitive<'m>(
+        &self,
+        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+    ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, ConceptReadError> {
+        type_manager.get_attribute_type_subtypes_transitive(self.clone().into_owned())
+    }
+
     pub(crate) fn is_independent(
         &self, type_manager: &TypeManager<impl ReadableSnapshot>
     ) -> Result<bool, ConceptReadError> {

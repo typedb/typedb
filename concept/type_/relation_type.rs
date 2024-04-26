@@ -112,7 +112,19 @@ impl<'a> RelationType<'a> {
         type_manager.get_relation_type_supertypes(self.clone().into_owned())
     }
 
-    // fn get_subtypes(&self) -> MaybeOwns<'m, Vec<RelationType<'static>>>;
+    pub fn get_subtypes<'m>(
+        &self,
+        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+    ) -> Result<MaybeOwns<'m, Vec<RelationType<'static>>>, ConceptReadError> {
+        type_manager.get_relation_type_subtypes(self.clone().into_owned())
+    }
+
+    pub fn get_subtypes_transitive<'m>(
+        &self,
+        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+    ) -> Result<MaybeOwns<'m, Vec<RelationType<'static>>>, ConceptReadError> {
+        type_manager.get_relation_type_subtypes_transitive(self.clone().into_owned())
+    }
 
     pub fn get_annotations<'m>(
         &self,
