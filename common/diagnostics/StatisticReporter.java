@@ -72,7 +72,7 @@ public class StatisticReporter {
 
             conn.getInputStream().readAllBytes();
 
-            metrics.takeCountsSnapshot();
+            metrics.takeSnapshot();
         } catch (Exception e) {
             LOG.warn("Failed to push metrics to {}: {}", reportingURI, e.getMessage());
             // do nothing and try again after the standard delay
