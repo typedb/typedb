@@ -662,6 +662,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
 }
 
 pub trait ReadableType<'a, 'b> : TypeAPI<'a> {
+    // Consider replacing 'b with 'static
     type SelfRead: ReadableType<'b, 'b>;
     type AnnotationType : Hash + Eq + From<Annotation>;
     const ROOT_KIND: Kind;
