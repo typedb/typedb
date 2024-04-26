@@ -199,7 +199,8 @@ macro_rules! get_type_is_root_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(type_))
                 } else {
-                    Ok(Self::check_type_is_root(&type_.get_label(self)?.deref(), $base_variant))
+                    let type_label = TypeReader::get_label(self.snapshot.as_ref(), type_)?.unwrap();
+                    Ok(Self::check_type_is_root(&type_label, $base_variant))
                 }
             }
         )*
@@ -255,25 +256,7 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
     ) -> Self {
         TypeManager { snapshot, vertex_generator, type_cache: schema_cache }
     }
-    //
-    // pub fn get_type_from_label<'a, 'b, T: ReadableType<'a, 'b>>(&self, label: &Label<'_>) -> Result<Option<T::SelfWithLifetime>, ConceptReadError> {
-    //     if let Some(cache) = &self.type_cache {
-    //         todo!("Ok(cache.$cache_method(label))")
-    //     } else {
-    //         StorageTypeManagerSource::storage_get_labelled_type::<T>(self.snapshot.as_ref(), label)
-    //     }
-    // }
-    //
-    // pub fn get_supertype<'b, T: TypeAPI<'_s> + ReadableType<'_s, 'b>>(&self, type_: T) -> Result<Option<T::SelfWithLifetime>, ConceptReadError>
-    // {
-    //     if let Some(cache) = &self.type_cache {
-    //         todo!("Ok(cache.$cache_method(label))")
-    //     } else {
-    //         StorageTypeManagerSource::storage_get_supertype(self.snapshot.as_ref(), type_)
-    //     }
-    // }
-
-    pub(crate) fn check_type_is_root(type_label: &Label<'_>, kind :Kind) -> bool {
+    pub(crate) fn check_type_is_root(type_label: &Label<'_>, kind: Kind) -> bool {
         type_label == &kind.root_label()
     }
 
