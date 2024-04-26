@@ -7,13 +7,14 @@
 use bytes::Bytes;
 use encoding::graph::type_::edge::{build_edge_owns_prefix_from, build_edge_plays_prefix_from, build_edge_relates_prefix_from, build_edge_relates_reverse_prefix_from, build_edge_sub_prefix_from, new_edge_owns, new_edge_plays, new_edge_relates, new_edge_relates_reverse, new_edge_sub, TypeEdge};
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
-use encoding::graph::type_::property::{build_property_type_label, build_property_type_value_type, TypeEdgeProperty, TypeVertexProperty};
+use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_label, build_property_type_ordering, build_property_type_value_type, TypeEdgeProperty, TypeVertexProperty};
 use encoding::graph::type_::vertex::TypeVertex;
 use encoding::value::label::Label;
 use encoding::value::string::StringBytes;
 use resource::constants::encoding::LABEL_SCOPED_NAME_STRING_INLINE;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use std::collections::HashSet;
+use bytes::byte_reference::ByteReference;
 use encoding::Keyable;
 use encoding::layout::infix::Infix;
 use encoding::value::value_type::{ValueType, ValueTypeID};
@@ -21,7 +22,7 @@ use storage::key_range::KeyRange;
 use storage::snapshot::ReadableSnapshot;
 use crate::error::ConceptReadError;
 use crate::type_::type_manager::ReadableType;
-use crate::type_::{deserialise_annotation_cardinality, IntoCanonicalTypeEdge, OwnerAPI, PlayerAPI, TypeAPI};
+use crate::type_::{deserialise_annotation_cardinality, deserialise_ordering, IntoCanonicalTypeEdge, Ordering, OwnerAPI, PlayerAPI, TypeAPI};
 use crate::type_::annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent};
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::object_type::ObjectType;
@@ -37,6 +38,7 @@ pub struct StorageTypeManagerSource { }
 impl<'_s> StorageTypeManagerSource
     where '_s : 'static {
 
+    // TODO: Return vertex for consistency with other methods
     pub(crate) fn storage_get_labelled_type<'a, 'b, U>(snapshot: &impl ReadableSnapshot, label: &Label<'_>) -> Result<Option<U::SelfWithLifetime>, ConceptReadError>
         where U: ReadableType<'a, 'b>
     {
@@ -204,4 +206,24 @@ impl<'_s> StorageTypeManagerSource
             })
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
+
+    pub(crate) fn storage_get_type_ordering<'a>(snapshot: &impl ReadableSnapshot, role_type: RoleType<'_s>) -> Result<Ordering, ConceptReadError> {
+        let ordering = snapshot
+            .get_mapped(
+                build_property_type_ordering(role_type.vertex()).into_storage_key().as_reference(),
+                |bytes| deserialise_ordering(bytes),
+            )
+            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
+        Ok(ordering.unwrap())
+    }
+    pub(crate) fn storage_get_type_edge_ordering<'a>(snapshot: &impl ReadableSnapshot, owns: Owns<'_s>)  -> Result<Ordering, ConceptReadError> {
+        let ordering = snapshot
+            .get_mapped(
+                build_property_type_edge_ordering(owns.into_type_edge()).into_storage_key().as_reference(),
+                |bytes| deserialise_ordering(bytes),
+            )
+            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
+        Ok(ordering.unwrap())
+    }
+
 }

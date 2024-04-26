@@ -386,17 +386,11 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         }
     }
 
-    pub(crate) fn get_owns_ordering(&self, owns: Owns<'_>) -> Result<Ordering, ConceptReadError> {
+    pub(crate) fn get_owns_ordering(&self, owns: Owns<'_s>) -> Result<Ordering, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_owns_ordering(owns))
         } else {
-            let ordering = self.snapshot
-                .get_mapped(
-                    build_property_type_edge_ordering(owns.into_type_edge()).into_storage_key().as_reference(),
-                    |bytes| deserialise_ordering(bytes),
-                )
-                .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
-            Ok(ordering.unwrap())
+            StorageTypeManagerSource::storage_get_type_edge_ordering(self.snapshot.as_ref(), owns)
         }
     }
 

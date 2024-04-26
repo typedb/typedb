@@ -5,17 +5,16 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     error::Error,
     fmt,
     sync::Arc,
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::Bytes;
 use durability::SequenceNumber;
 use encoding::{AsBytes, graph::{
     type_::{
-        property::TypeVertexProperty,
         vertex::{
             build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
             build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type,
@@ -28,12 +27,10 @@ use encoding::{AsBytes, graph::{
     value_type::ValueType,
 }};
 use encoding::graph::type_::edge::TypeEdge;
-use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_ordering, TypeEdgeProperty};
-use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{MVCCStorage, ReadSnapshotOpenError, snapshot::ReadableSnapshot};
 use storage::key_range::KeyRange;
 
-use crate::type_::{attribute_type::{AttributeType, AttributeTypeAnnotation}, deserialise_ordering, entity_type::{EntityType, EntityTypeAnnotation}, IntoCanonicalTypeEdge, object_type::ObjectType, Ordering, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
+use crate::type_::{attribute_type::{AttributeType, AttributeTypeAnnotation}, entity_type::{EntityType, EntityTypeAnnotation}, object_type::ObjectType, Ordering, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
 use crate::type_::owns::OwnsAnnotation;
 use crate::type_::storage_source::StorageTypeManagerSource;
 use crate::type_::type_manager::{ReadableType, TypeManager};
@@ -125,6 +122,9 @@ struct OwnsCache {
 }
 
 impl TypeCache {
+
+    // If creation becomes slow, We should restore pre-fetching of the schema
+    //  with a single pass on disk (as it was in 1f339733feaf4542e47ff604462f107d2ade1f1a)
     pub fn new<D>(
         storage: Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
@@ -135,12 +135,6 @@ impl TypeCache {
 
         let snapshot =
             storage.open_snapshot_read_at(open_sequence_number).map_err(|error| SnapshotOpen { source: error })?;
-        let vertex_properties = snapshot
-            .iterate_range(KeyRange::new_within(TypeVertexProperty::build_prefix(), TypeVertexProperty::FIXED_WIDTH_ENCODING))
-            .collect_cloned_bmap(|key, value| {
-                (TypeVertexProperty::new(Bytes::Array(ByteArray::from(key.byte_ref()))), ByteArray::from(value))
-            })
-            .unwrap();
 
         let entity_type_caches = Self::create_entity_caches(&snapshot);
         let entity_type_index_labels = entity_type_caches
@@ -154,7 +148,7 @@ impl TypeCache {
             .filter_map(|entry| entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone())))
             .collect();
 
-        let role_type_caches = Self::create_role_caches(&snapshot, &vertex_properties);
+        let role_type_caches = Self::create_role_caches(&snapshot);
         let role_type_index_labels = role_type_caches
             .iter()
             .filter_map(|entry| entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone())))
@@ -166,20 +160,13 @@ impl TypeCache {
             .filter_map(|entry| entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone())))
             .collect();
 
-        let edge_properties = snapshot
-            .iterate_range(KeyRange::new_within(TypeEdgeProperty::build_prefix(), TypeEdgeProperty::FIXED_WIDTH_ENCODING))
-            .collect_cloned_bmap(|key, value| {
-                (TypeEdgeProperty::new(Bytes::Array(ByteArray::from(key.byte_ref()))), ByteArray::from(value))
-            })
-            .unwrap();
-
         Ok(TypeCache {
             open_sequence_number,
             entity_types: entity_type_caches,
             relation_types: relation_type_caches,
             role_types: role_type_caches,
             attribute_types: attribute_type_caches,
-            owns: Self::create_owns_caches(&snapshot, &edge_properties),
+            owns: Self::create_owns_caches(&snapshot),
 
             entity_types_index_label: entity_type_index_labels,
             relation_types_index_label: relation_type_index_labels,
@@ -268,7 +255,6 @@ impl TypeCache {
 
     fn create_role_caches(
         snapshot: &impl ReadableSnapshot,
-        vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
     ) -> Box<[Option<RoleTypeCache>]> {
         let roles = snapshot
             .iterate_range(KeyRange::new_within(build_vertex_role_type_prefix(), TypeVertex::FIXED_WIDTH_ENCODING))
@@ -279,7 +265,7 @@ impl TypeCache {
         let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_role_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
         for role in roles.into_iter() {
-            let ordering = Self::read_role_ordering(vertex_properties, role.clone());
+            let ordering = StorageTypeManagerSource::storage_get_type_ordering(snapshot, role.clone()).unwrap();
             let cache = RoleTypeCache {
                 type_api_cache_:  TypeAPICache::build_for(snapshot, role.clone()),
                 ordering,
@@ -289,18 +275,6 @@ impl TypeCache {
         }
         Self::set_role_supertypes_transitive(&mut caches);
         caches
-    }
-
-    fn read_role_ordering(
-        vertex_properties: &BTreeMap<TypeVertexProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
-        role_type: RoleType<'_>,
-    ) -> Ordering {
-        vertex_properties
-            .get(&build_property_type_ordering(role_type.into_vertex()))
-            .map(|bytes| {
-                deserialise_ordering(ByteReference::from(bytes))
-            })
-            .unwrap()
     }
 
     fn set_role_supertypes_transitive(role_type_caches: &mut Box<[Option<RoleTypeCache>]>) {
@@ -357,7 +331,6 @@ impl TypeCache {
 
     fn create_owns_caches(
         snapshot: &impl ReadableSnapshot,
-        edge_properties: &BTreeMap<TypeEdgeProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
     ) -> HashMap<Owns<'static>, OwnsCache> {
         snapshot
             .iterate_range(KeyRange::new_within(TypeEdge::build_prefix(Prefix::EdgeOwnsReverse), TypeEdge::FIXED_WIDTH_ENCODING))
@@ -369,7 +342,7 @@ impl TypeCache {
                 (
                     owns.clone(),
                     OwnsCache {
-                        ordering: Self::read_edge_ordering(edge_properties, owns.clone().into_type_edge()),
+                        ordering: StorageTypeManagerSource::storage_get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
                         annotations_declared: StorageTypeManagerSource::storage_get_type_edge_annotations(snapshot, owns.clone()).unwrap()
                             .into_iter()
                             .map(|annotation| OwnsAnnotation::from(annotation))
@@ -378,14 +351,6 @@ impl TypeCache {
                 )
             })
             .unwrap()
-    }
-
-    fn read_edge_ordering(
-        edge_properties: &BTreeMap<TypeEdgeProperty<'_>, ByteArray<{ BUFFER_VALUE_INLINE }>>,
-        type_edge: TypeEdge<'static>,
-    ) -> Ordering {
-        let ordering = edge_properties.get(&build_property_type_edge_ordering(type_edge)).unwrap();
-        deserialise_ordering(ByteReference::from(ordering))
     }
 
     pub(crate) fn get_entity_type(&self, label: &Label<'_>) -> Option<EntityType<'static>> {
