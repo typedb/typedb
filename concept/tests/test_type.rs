@@ -89,6 +89,14 @@ fn entity_usage() {
         assert!(all_owns.contains(&owns));
         assert_eq!(child_type.get_owns_attribute(&type_manager, age_type.clone()).unwrap(), Some(owns));
         assert!(child_type.has_owns_attribute(&type_manager, age_type.clone()).unwrap());
+
+        // --- adult sub person ---
+        let adult = type_manager.create_entity_type(&Label::build("adult"), false).unwrap();
+        adult.set_supertype(&type_manager, person_type.clone());
+        assert_eq!(root_entity.get_subtypes(&type_manager).unwrap().len(), 1);
+        assert_eq!(root_entity.get_subtypes_transitive(&type_manager).unwrap().len(), 3);
+        assert_eq!(person_type.get_subtypes(&type_manager).unwrap().len(), 2);
+        assert_eq!(person_type.get_subtypes_transitive(&type_manager).unwrap().len(), 2);
     }
     if let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap() {
         write_snapshot.commit().unwrap();
@@ -145,6 +153,12 @@ fn entity_usage() {
         assert!(all_owns.contains(&expected_owns));
         assert_eq!(child_type.get_owns_attribute(&type_manager, age_type.clone()).unwrap(), Some(expected_owns));
         assert!(child_type.has_owns_attribute(&type_manager, age_type.clone()).unwrap());
+
+        // --- adult sub person ---
+        assert_eq!(root_entity.get_subtypes(&type_manager).unwrap().len(), 1);
+        assert_eq!(root_entity.get_subtypes_transitive(&type_manager).unwrap().len(), 3);
+        assert_eq!(person_type.get_subtypes(&type_manager).unwrap().len(), 2);
+        assert_eq!(person_type.get_subtypes_transitive(&type_manager).unwrap().len(), 2);
     }
 }
 

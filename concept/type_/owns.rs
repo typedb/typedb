@@ -13,6 +13,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::error::ConceptReadError;
 use crate::type_::{attribute_type::AttributeType, IntoCanonicalTypeEdge, object_type::ObjectType, Ordering, TypeAPI};
 use crate::type_::annotation::{Annotation, AnnotationCardinality, AnnotationDistinct};
+use crate::type_::entity_type::EntityType;
 use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -75,7 +76,11 @@ impl<'a> Owns<'a> {
     pub fn get_ordering(
         &self, type_manager: &TypeManager<impl ReadableSnapshot>
     ) -> Result<Ordering, ConceptReadError> {
-        type_manager.get_owns_ordering(self.clone())
+        type_manager.get_owns_ordering(self.clone().into_owned())
+    }
+
+    fn into_owned(self) -> Owns<'static> {
+        Owns { owner: ObjectType::new(self.owner.vertex().into_owned()), attribute: self.attribute.into_owned() }
     }
 }
 

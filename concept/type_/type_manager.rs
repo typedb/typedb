@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashSet, sync::Arc};
+use std::hash::Hash;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::DurabilityService;
@@ -12,10 +13,10 @@ use encoding::{
     AsBytes,
     graph::type_::{
         edge::{
-            build_edge_owns, build_edge_owns_prefix_from, build_edge_owns_reverse, build_edge_plays,
-            build_edge_plays_prefix_from, build_edge_plays_reverse, build_edge_relates, build_edge_relates_prefix_from,
-            build_edge_relates_reverse, build_edge_sub, build_edge_sub_prefix_from, build_edge_sub_reverse,
-            new_edge_owns, new_edge_plays, new_edge_relates, new_edge_sub,
+            build_edge_owns, build_edge_owns_reverse, build_edge_plays
+            , build_edge_plays_reverse, build_edge_relates,
+            build_edge_relates_reverse, build_edge_sub, build_edge_sub_reverse
+            ,
         },
         index::LabelToTypeVertexIndex,
         Kind,
@@ -25,36 +26,32 @@ use encoding::{
             build_property_type_label, build_property_type_value_type,
         },
         vertex::{
-            new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type,
-            TypeVertex,
+            new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type
+            ,
         },
         vertex_generator::TypeVertexGenerator,
     },
     Keyable, value::{
-        label::Label,
-        string::StringBytes,
-        value_type::{ValueType, ValueTypeID},
+        label::Label
+        ,
+        value_type::ValueType,
     },
 };
 use encoding::graph::type_::edge::TypeEdge;
-use encoding::graph::type_::property::{build_property_type_edge_annotation_cardinality, build_property_type_edge_annotation_distinct, build_property_type_edge_ordering, build_property_type_ordering, TypeEdgeProperty, TypeVertexProperty};
-use encoding::layout::infix::Infix;
+use encoding::graph::type_::property::{build_property_type_edge_annotation_cardinality, build_property_type_edge_annotation_distinct, build_property_type_edge_ordering, build_property_type_ordering};
 use encoding::layout::prefix::Prefix;
 use primitive::maybe_owns::MaybeOwns;
-use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     MVCCStorage,
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
-use storage::key_range::KeyRange;
-
 use crate::{
     error::ConceptReadError,
     type_::{
-        annotation::{AnnotationAbstract, AnnotationCardinality, AnnotationDistinct, AnnotationIndependent},
+        annotation::{AnnotationAbstract, AnnotationCardinality},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::{EntityType, EntityTypeAnnotation},
-        object_type::ObjectType,
         ObjectTypeAPI,
         owns::Owns,
         plays::Plays,
@@ -66,9 +63,10 @@ use crate::{
 };
 use crate::error::ConceptWriteError;
 use crate::thing::ObjectAPI;
-use crate::type_::{deserialise_annotation_cardinality, deserialise_ordering, IntoCanonicalTypeEdge, Ordering, OwnerAPI, PlayerAPI, serialise_annotation_cardinality, serialise_ordering};
+use crate::type_::{IntoCanonicalTypeEdge, Ordering, serialise_annotation_cardinality, serialise_ordering};
 use crate::type_::annotation::Annotation;
 use crate::type_::owns::OwnsAnnotation;
+use crate::type_::type_reader::TypeReader;
 
 // TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
 pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
@@ -105,6 +103,7 @@ impl<Snapshot> TypeManager<Snapshot> {
 //   if we drop/close without committing, then we need to release all the IDs taken back to the IDGenerator
 //   this is only applicable for type manager where we can only have 1 concurrent txn and IDs are precious
 
+
 macro_rules! get_type_methods {
     ($(
         fn $method_name:ident() -> $output_type:ident = $cache_method:ident | $new_vertex_method:ident;
@@ -114,22 +113,10 @@ macro_rules! get_type_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(label))
                 } else {
-                    self.get_labelled_type(label, |bytes| $output_type::new($new_vertex_method(bytes)))
+                    TypeReader::get_labelled_type::<$output_type<'static>>(self.snapshot.as_ref(), label)
                 }
             }
         )*
-
-        fn get_labelled_type<M, U>(&self, label: &Label<'_>, mapper: M) -> Result<Option<U>, ConceptReadError>
-            where
-                M: FnOnce(Bytes<'static, BUFFER_KEY_INLINE>) -> U,
-        {
-            let key = LabelToTypeVertexIndex::build(label).into_storage_key();
-            match self.snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {
-                Ok(None) => Ok(None),
-                Ok(Some(value)) => Ok(Some(mapper(Bytes::Array(value)))),
-                Err(error) => Err(ConceptReadError::SnapshotGet { source: error })
-            }
-        }
     }
 }
 
@@ -138,17 +125,11 @@ macro_rules! get_supertype_methods {
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
     )*) => {
         $(
-            // WARN: supertypes currently do NOT include themselves
             pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<Option<$type_<'static>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(type_))
                 } else {
-                    Ok(self
-                        .snapshot
-                        .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(type_.into_vertex().clone()), TypeEdge::FIXED_WIDTH_ENCODING))
-                        .first_cloned()
-                        .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
-                        .map(|(key, _)| $type_::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned())))
+                    TypeReader::get_supertype(self.snapshot.as_ref(), type_)
                 }
             }
         )*
@@ -165,14 +146,43 @@ macro_rules! get_supertypes_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
-                    let mut supertypes = Vec::new();
-                    let mut super_vertex = self.storage_get_supertype_vertex(type_);
-                    while super_vertex.is_some() {
-                        let super_type = $type_::new(super_vertex.as_ref().unwrap().clone());
-                        super_vertex = self.storage_get_supertype_vertex(super_type.clone());
-                        supertypes.push(super_type);
-                    }
+                    let supertypes = TypeReader::get_supertypes_transitive(self.snapshot.as_ref(), type_)?;
                     Ok(MaybeOwns::owned(supertypes))
+                }
+            }
+        )*
+    }
+}
+
+macro_rules! get_subtypes_methods {
+    ($(
+        fn $method_name:ident() -> $type_:ident = $cache_method:ident;
+    )*) => {
+        $(
+            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
+                if let Some(cache) = &self.type_cache {
+                    Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
+                } else {
+                    let subtypes = TypeReader::get_subtypes(self.snapshot.as_ref(), type_)?;
+                    Ok(MaybeOwns::owned(subtypes))
+                }
+            }
+        )*
+    }
+}
+
+macro_rules! get_subtypes_transitive_methods {
+    ($(
+        fn $method_name:ident() -> $type_:ident = $cache_method:ident;
+    )*) => {
+        $(
+            // WARN: supertypes currently do NOT include themselves
+            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
+                if let Some(cache) = &self.type_cache {
+                    Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
+                } else {
+                    let subtypes = TypeReader::get_subtypes_transitive(self.snapshot.as_ref(), type_)?;
+                    Ok(MaybeOwns::owned(subtypes))
                 }
             }
         )*
@@ -188,7 +198,8 @@ macro_rules! get_type_is_root_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(type_))
                 } else {
-                    Ok(*type_.get_label(self)? == $base_variant.root_label())
+                    let type_label = TypeReader::get_label(self.snapshot.as_ref(), type_)?.unwrap();
+                    Ok(Self::check_type_is_root(&type_label, $base_variant))
                 }
             }
         )*
@@ -204,7 +215,7 @@ macro_rules! get_type_label_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
-                    Ok(MaybeOwns::owned(self.storage_get_label(type_)?.unwrap()))
+                    Ok(MaybeOwns::owned(TypeReader::get_label(self.snapshot.as_ref(), type_)?.unwrap()))
                 }
             }
         )*
@@ -223,7 +234,7 @@ macro_rules! get_type_annotations {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
                     let mut annotations: HashSet<$annotation_type> = HashSet::new();
-                    let annotations = self.storage_get_type_annotations(type_)?
+                    let annotations = TypeReader::get_type_annotations(self.snapshot.as_ref(), type_)?
                         .into_iter()
                         .map(|annotation| $annotation_type::from(annotation))
                         .collect();
@@ -234,13 +245,18 @@ macro_rules! get_type_annotations {
     }
 }
 
-impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
+// TODO: The '_s is only here for the enforcement of pass-by-value of types. If we drop that, we can move it to the function signatures
+impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
+    where '_s: 'static {
     pub fn new(
         snapshot: Arc<Snapshot>,
         vertex_generator: Arc<TypeVertexGenerator>,
         schema_cache: Option<Arc<TypeCache>>,
     ) -> Self {
         TypeManager { snapshot, vertex_generator, type_cache: schema_cache }
+    }
+    pub(crate) fn check_type_is_root(type_label: &Label<'_>, kind: Kind) -> bool {
+        type_label == &kind.root_label()
     }
 
     get_type_methods! {
@@ -264,6 +280,20 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         fn get_attribute_type_supertypes() -> AttributeType = get_attribute_type_supertypes;
     }
 
+    get_subtypes_methods! {
+        fn get_entity_type_subtypes() -> EntityType = get_entity_type_subtypes;
+        fn get_relation_type_subtypes() -> RelationType = get_relation_type_subtypes;
+        fn get_role_type_subtypes() -> RoleType = get_role_type_subtypes;
+        fn get_attribute_type_subtypes() -> AttributeType = get_attribute_type_subtypes;
+    }
+
+    get_subtypes_transitive_methods! {
+        fn get_entity_type_subtypes_transitive() -> EntityType = get_entity_type_subtypes_transitive;
+        fn get_relation_type_subtypes_transitive() -> RelationType = get_relation_type_subtypes_transitive;
+        fn get_role_type_subtypes_transitive() -> RoleType = get_role_type_subtypes_transitive;
+        fn get_attribute_type_subtypes_transitive() -> AttributeType = get_attribute_type_subtypes_transitive;
+    }
+
     get_type_is_root_methods! {
         fn get_entity_type_is_root() -> EntityType = get_entity_type_is_root | Kind::Entity;
         fn get_relation_type_is_root() -> RelationType = get_relation_type_is_root | Kind::Relation;
@@ -285,9 +315,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_entity_type_owns(entity_type)))
         } else {
-            let owns = self.storage_get_owns(entity_type.clone(), |attr_vertex| {
-                Owns::new(ObjectType::Entity(entity_type.clone()), AttributeType::new(attr_vertex.clone().into_owned()))
-            })?;
+            let owns = TypeReader::get_owns(self.snapshot.as_ref(), entity_type.clone())?;
             Ok(MaybeOwns::owned(owns))
         }
     }
@@ -299,12 +327,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_relation_type_owns(relation_type)))
         } else {
-            let owns = self.storage_get_owns(relation_type.clone(), |attr_vertex| {
-                Owns::new(
-                    ObjectType::Relation(relation_type.clone()),
-                    AttributeType::new(attr_vertex.clone().into_owned()),
-                )
-            })?;
+            let owns = TypeReader::get_owns(self.snapshot.as_ref(), relation_type.clone())?;
             Ok(MaybeOwns::owned(owns))
         }
     }
@@ -316,9 +339,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_relation_type_relates(relation_type)))
         } else {
-            let relates = self.storage_get_relates(relation_type.clone(), |role_vertex| {
-                Relates::new(relation_type.clone(), RoleType::new(role_vertex.clone().into_owned()))
-            })?;
+            let relates = TypeReader::get_relates(self.snapshot.as_ref(), relation_type.clone())?;
             Ok(MaybeOwns::owned(relates))
         }
     }
@@ -344,9 +365,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_entity_type_plays(entity_type)))
         } else {
-            let plays = self.storage_get_plays(entity_type.clone(), |role_vertex| {
-                Plays::new(ObjectType::Entity(entity_type.clone()), RoleType::new(role_vertex.clone().into_owned()))
-            })?;
+            let plays = TypeReader::get_plays(self.snapshot.as_ref(), entity_type.clone())?;
             Ok(MaybeOwns::owned(plays))
         }
     }
@@ -358,7 +377,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_attribute_type_value_type(attribute_type))
         } else {
-            self.storage_get_value_type(attribute_type)
+            TypeReader::get_value_type(self.snapshot.as_ref(), attribute_type)
         }
     }
 
@@ -375,7 +394,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::borrowed(cache.get_owns_annotations(owns)))
         } else {
-            let annotations: HashSet<OwnsAnnotation> = self.storage_get_type_edge_annotations(owns)?
+            let annotations: HashSet<OwnsAnnotation> = TypeReader::get_type_edge_annotations(self.snapshot.as_ref(), owns)?
                 .into_iter()
                 .map(|annotation| OwnsAnnotation::from(annotation))
                 .collect();
@@ -383,167 +402,12 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         }
     }
 
-    pub(crate) fn get_owns_ordering(&self, owns: Owns<'_>) -> Result<Ordering, ConceptReadError> {
+    pub(crate) fn get_owns_ordering(&self, owns: Owns<'_s>) -> Result<Ordering, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_owns_ordering(owns))
         } else {
-            let ordering = self.snapshot
-                .get_mapped(
-                    build_property_type_edge_ordering(owns.into_type_edge()).into_storage_key().as_reference(),
-                    |bytes| deserialise_ordering(bytes),
-                )
-                .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
-            Ok(ordering.unwrap())
+            TypeReader::get_type_edge_ordering(self.snapshot.as_ref(), owns)
         }
-    }
-
-    fn storage_get_label(&self, type_: impl TypeAPI<'static>) -> Result<Option<Label<'static>>, ConceptReadError> {
-        let key = build_property_type_label(type_.into_vertex());
-        self.snapshot
-            .get_mapped(key.into_storage_key().as_reference(), |reference| {
-                let value = StringBytes::new(Bytes::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(reference));
-                Label::parse_from(value)
-            })
-            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
-    }
-
-    fn storage_get_supertype_vertex(&self, subtype: impl TypeAPI<'static>) -> Option<TypeVertex<'static>> {
-        // TODO: handle possible errors
-        self.snapshot
-            .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(subtype.into_vertex()), TypeEdge::FIXED_WIDTH_ENCODING))
-            .first_cloned()
-            .unwrap()
-            .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned())
-    }
-
-    fn storage_get_owns<F>(
-        &self,
-        owner: impl OwnerAPI<'static>,
-        mapper: F,
-    ) -> Result<HashSet<Owns<'static>>, ConceptReadError>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Owns<'static>,
-    {
-        let owns_prefix = build_edge_owns_prefix_from(owner.into_vertex());
-        // TODO: handle possible errors
-        self.snapshot
-            .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| {
-                let owns_edge = new_edge_owns(Bytes::Reference(key.byte_ref()));
-                mapper(owns_edge.to())
-            })
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
-    }
-
-    fn storage_get_plays<F>(
-        &self,
-        player: impl PlayerAPI<'static>,
-        mapper: F,
-    ) -> Result<HashSet<Plays<'static>>, ConceptReadError>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Plays<'static>,
-    {
-        let plays_prefix = build_edge_plays_prefix_from(player.into_vertex());
-        self.snapshot
-            .iterate_range(KeyRange::new_within(plays_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| {
-                let plays_edge = new_edge_plays(Bytes::Reference(key.byte_ref()));
-                mapper(plays_edge.to())
-            })
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
-    }
-
-    fn storage_get_relates<F>(
-        &self,
-        relation: RelationType<'static>,
-        mapper: F,
-    ) -> Result<HashSet<Relates<'static>>, ConceptReadError>
-        where
-            F: for<'b> Fn(TypeVertex<'b>) -> Relates<'static>,
-    {
-        let relates_prefix = build_edge_relates_prefix_from(relation.into_vertex());
-        self.snapshot
-            .iterate_range(KeyRange::new_within(relates_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| {
-                let relates_edge = new_edge_relates(Bytes::Reference(key.byte_ref()));
-                mapper(relates_edge.to())
-            })
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
-    }
-
-    fn storage_get_value_type(&self, type_: AttributeType<'static>) -> Result<Option<ValueType>, ConceptReadError> {
-        self.snapshot
-            .get_mapped(
-                build_property_type_value_type(type_.into_vertex()).into_storage_key().as_reference(),
-                |bytes| {
-                    ValueType::from_value_type_id(ValueTypeID::new(bytes.bytes().try_into().unwrap()))
-                },
-            )
-            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
-    }
-
-    fn storage_get_type_annotations(
-        &self,
-        type_: impl TypeAPI<'static>,
-    ) -> Result<HashSet<Annotation>, ConceptReadError> {
-        self.snapshot
-            .iterate_range(KeyRange::new_inclusive(
-                TypeVertexProperty::build(type_.vertex(), Infix::ANNOTATION_MIN).into_storage_key(),
-                TypeVertexProperty::build(type_.vertex(), Infix::ANNOTATION_MAX).into_storage_key(),
-            ))
-            .collect_cloned_hashset(|key, value| {
-                let annotation_key = TypeVertexProperty::new(Bytes::Reference(key.byte_ref()));
-                match annotation_key.infix() {
-                    Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract::new()),
-                    Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct::new()),
-                    Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent::new()),
-                    Infix::PropertyAnnotationCardinality => {
-                        Annotation::Cardinality(deserialise_annotation_cardinality(value))
-                    }
-                    Infix::_PropertyAnnotationLast
-                    | Infix::PropertyLabel
-                    | Infix::PropertyValueType
-                    | Infix::PropertyOrdering
-                    | Infix::PropertyHasOrder
-                    | Infix::PropertyRolePlayerOrder => {
-                        unreachable!("Retrieved unexpected infixes while reading annotations.")
-                    }
-                }
-            })
-            .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
-    }
-
-    // TODO: this is currently breaking our architectural pattern that none of the Manager methods should operate graphs
-    fn storage_get_type_edge_annotations<'a>(
-        &self,
-        into_type_edge: impl IntoCanonicalTypeEdge<'a>,
-    ) -> Result<HashSet<Annotation>, ConceptReadError> {
-        let type_edge = into_type_edge.into_type_edge();
-        self.snapshot
-            .iterate_range(KeyRange::new_inclusive(
-                TypeEdgeProperty::build(type_edge.clone(), Infix::ANNOTATION_MIN).into_storage_key(),
-                TypeEdgeProperty::build(type_edge, Infix::ANNOTATION_MAX).into_storage_key(),
-            ))
-            .collect_cloned_hashset(|key, value| {
-                let annotation_key = TypeEdgeProperty::new(Bytes::Reference(key.byte_ref()));
-                match annotation_key.infix() {
-                    Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract::new()),
-                    Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct::new()),
-                    Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent::new()),
-                    Infix::PropertyAnnotationCardinality => {
-                        Annotation::Cardinality(deserialise_annotation_cardinality(value))
-                    }
-                    Infix::_PropertyAnnotationLast
-                    | Infix::PropertyLabel
-                    | Infix::PropertyValueType
-                    | Infix::PropertyOrdering
-                    | Infix::PropertyHasOrder
-                    | Infix::PropertyRolePlayerOrder => {
-                        unreachable!("Retrieved unexpected infixes while reading annotations.")
-                    }
-                }
-            })
-            .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
 
     pub(crate) const fn role_default_cardinality(&self) -> AnnotationCardinality {
@@ -552,6 +416,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
     }
 }
 
+// TODO: Move this somewhere too?
 impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub fn create_entity_type(&self, label: &Label<'_>, is_root: bool) -> Result<EntityType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
@@ -614,7 +479,6 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         }
         Ok(attribute_type)
     }
-
     pub(crate) fn storage_set_label(&self, owner: impl TypeAPI<'static>, label: &Label<'_>) {
         self.storage_may_delete_label(owner.clone());
 
@@ -628,7 +492,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     fn storage_may_delete_label(&self, owner: impl TypeAPI<'static>) {
-        let existing_label = self.storage_get_label(owner.clone()).unwrap();
+        let existing_label = TypeReader::get_label(self.snapshot.as_ref(), owner.clone()).unwrap();
         if let Some(label) = existing_label {
             let vertex_to_label_key = build_property_type_label(owner.into_vertex());
             self.snapshot.as_ref().delete(vertex_to_label_key.into_storage_key().into_owned_array());
@@ -653,7 +517,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     fn storage_may_delete_supertype(&self, subtype: impl TypeAPI<'static>) {
-        let supertype_vertex = self.storage_get_supertype_vertex(subtype.clone());
+        let supertype_vertex = TypeReader::get_supertype_vertex(self.snapshot.as_ref(), subtype.clone().into_vertex()).unwrap();
         if let Some(supertype) = supertype_vertex {
             let sub = build_edge_sub(subtype.clone().into_vertex(), supertype.clone());
             self.snapshot.as_ref().delete(sub.into_storage_key().into_owned_array());
@@ -794,5 +658,51 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn storage_delete_edge_annotation_cardinality<'b>(&self, edge: impl IntoCanonicalTypeEdge<'b>) {
         let annotation_property = build_property_type_edge_annotation_cardinality(edge.into_type_edge());
         self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
+    }
+}
+
+pub trait ReadableType<'a, 'b> : TypeAPI<'a> {
+    // Consider replacing 'b with 'static
+    type SelfRead: ReadableType<'b, 'b>;
+    type AnnotationType : Hash + Eq + From<Annotation>;
+    const ROOT_KIND: Kind;
+    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead;
+}
+
+impl<'a, 'b> ReadableType<'a, 'b> for AttributeType<'a> {
+    type SelfRead = AttributeType<'b>;
+    type AnnotationType = AttributeTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Attribute;
+
+
+    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead {
+        AttributeType::new(new_vertex_attribute_type(b))
+    }
+}
+
+impl<'a, 'b> ReadableType<'a, 'b> for EntityType<'a> {
+    type SelfRead = EntityType<'b>;
+    type AnnotationType = EntityTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Entity;
+    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead {
+        EntityType::new(new_vertex_entity_type(b))
+    }
+}
+
+impl<'a, 'b> ReadableType<'a, 'b> for RelationType<'a> {
+    type SelfRead = RelationType<'b>;
+    type AnnotationType = RelationTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Relation;
+    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> RelationType<'b> {
+        RelationType::new(new_vertex_relation_type(b))
+    }
+}
+
+impl<'a, 'b> ReadableType<'a, 'b> for RoleType<'a> {
+    type SelfRead = RoleType<'b>;
+    type AnnotationType = RoleTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Role;
+    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> RoleType<'b> {
+        RoleType::new(new_vertex_role_type(b))
     }
 }
