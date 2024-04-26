@@ -17,6 +17,7 @@ use crate::{ConceptAPI, error::ConceptReadError, type_::{
     plays::Plays, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager,
 }};
 use crate::type_::{Ordering, TypeAPI};
+use crate::error::ConceptWriteError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ObjectType<'a> {
@@ -100,6 +101,13 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         match self {
             ObjectType::Entity(entity) => entity.is_abstract(type_manager),
             ObjectType::Relation(relation) => relation.is_abstract(type_manager)
+        }
+    }
+
+    fn delete(self, type_manager: &TypeManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+        match self {
+            ObjectType::Entity(entity) => entity.delete(type_manager),
+            ObjectType::Relation(relation) => relation.delete(type_manager)
         }
     }
 }

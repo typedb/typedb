@@ -39,6 +39,7 @@ impl Error for ConceptError {
 
 #[derive(Debug)]
 pub enum ConceptWriteError {
+    RootModification,
     SnapshotGet { source: SnapshotGetError },
     SnapshotIterate { source: Arc<SnapshotIteratorError> },
     ConceptRead { source: ConceptReadError },
@@ -68,6 +69,7 @@ impl Error for ConceptWriteError {
             Self::Encoding { source, .. } => Some(source),
             Self::ValueTypeMismatch { .. } => None,
             Self::RelationRoleCardinality { .. } => None,
+            Self::RootModification {..} => None,
         }
     }
 }

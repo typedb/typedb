@@ -68,15 +68,15 @@ impl<T: Prefix> KeyRange<T> {
         }
     }
 
-    pub fn contains(&self, value: T) -> bool {
-        if value < *self.start().borrow() {
-            false
-        } else {
-            self.within_end(value)
-        }
+    pub fn within(&self, value: &T) -> bool {
+        self.within_start(value) && self.within_end(value)
     }
 
-    pub fn within_end(&self, value: T) -> bool {
+    pub fn within_start(&self, value: &T) -> bool {
+        *value >= *self.start().borrow()
+    }
+
+    pub fn within_end(&self, value: &T) -> bool {
         match &self.end {
             RangeEnd::SameAsStart => value.starts_with(self.start()),
             RangeEnd::Inclusive(e) => value.cmp(e) == Ordering::Less || value.starts_with(e),

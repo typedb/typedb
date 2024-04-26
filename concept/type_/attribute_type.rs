@@ -25,6 +25,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::error::ConceptWriteError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
@@ -61,6 +62,10 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         let annotations = self.get_annotations(type_manager)?;
         Ok(annotations.contains(&AttributeTypeAnnotation::Abstract(AnnotationAbstract::new())))
     }
+
+    fn delete(self, type_manager: &TypeManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+        todo!()
+    }
 }
 
 impl<'a> AttributeType<'a> {
@@ -86,23 +91,27 @@ impl<'a> AttributeType<'a> {
         type_manager.get_attribute_type_label(self.clone().into_owned())
     }
 
-    fn set_label(&self, type_manager: &TypeManager<impl WritableSnapshot>, label: &Label<'_>) {
-        // TODO: setLabel should fail is setting label on Root type
-        type_manager.storage_set_label(self.clone().into_owned(), label)
+    pub fn set_label(&self, type_manager: &TypeManager<impl WritableSnapshot>, label: &Label<'_>) -> Result<(), ConceptWriteError>{
+        if self.is_root(type_manager)? {
+            Err(ConceptWriteError::RootModification)
+        } else {
+            Ok(type_manager.storage_set_label(self.clone().into_owned(), label))
+        }
     }
 
-    fn get_supertype(
+    pub fn get_supertype(
         &self,
         type_manager: &TypeManager<impl ReadableSnapshot>,
     ) -> Result<Option<AttributeType<'static>>, ConceptReadError> {
         type_manager.get_attribute_type_supertype(self.clone().into_owned())
     }
 
-    fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: AttributeType<'static>) {
-        type_manager.storage_set_supertype(self.clone().into_owned(), supertype)
+    pub fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: AttributeType<'static>) -> Result<(), ConceptWriteError> {
+        type_manager.storage_set_supertype(self.clone().into_owned(), supertype);
+        Ok(())
     }
 
-    fn get_supertypes<'m>(
+    pub fn get_supertypes<'m>(
         &self,
         type_manager: &'m TypeManager<impl ReadableSnapshot>,
     ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, ConceptReadError> {
@@ -144,7 +153,7 @@ impl<'a> AttributeType<'a> {
         &self,
         type_manager: &TypeManager<impl WritableSnapshot>,
         annotation: AttributeTypeAnnotation,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
                 type_manager.storage_set_annotation_abstract(self.clone().into_owned())
@@ -152,7 +161,8 @@ impl<'a> AttributeType<'a> {
             AttributeTypeAnnotation::Independent(_) => {
                 type_manager.storage_set_annotation_independent(self.clone().into_owned())
             }
-        }
+        };
+        Ok(())
     }
 
     fn delete_annotation(

@@ -139,7 +139,7 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
     /// Optimise range-check. We only need to do a single comparison, to the end
     /// of the range, since we can guarantee that we always start within the range and move forward.
     fn is_in_range(&self, key: &[u8]) -> bool {
-        self.range.within_end(Bytes::Reference(ByteReference::new(key)))
+        self.range.within_end(&Bytes::Reference(ByteReference::new(key)))
     }
 
     pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(

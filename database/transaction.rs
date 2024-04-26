@@ -84,7 +84,7 @@ impl<D: DurabilityService> TransactionWrite<D> {
 pub struct TransactionSchema<D> {
     database: Arc<Database<D>>,
     pub(crate) snapshot: Arc<SchemaSnapshot<D>>,
-    pub(crate) type_manager: Arc<TypeManager<SchemaSnapshot<D>>>,
+    pub(crate) type_manager: Arc<TypeManager<SchemaSnapshot<D>>>, // TODO: krishnan: Should this be an arc or direct ownership?
     pub(crate) thing_manager: ThingManager<SchemaSnapshot<D>>,
 }
 
@@ -103,7 +103,8 @@ impl<D: DurabilityService> TransactionSchema<D> {
 
     pub fn commit(self) -> Result<(), Vec<ConceptWriteError>> {
         self.thing_manager.finalise()?;
-        todo!("Finalise type manager");
+        let type_manager_owned = Arc::try_unwrap(self.type_manager).unwrap_or_else(|_| { panic!("Failed to unwrap type_manager arc"); });
+        type_manager_owned.finalise()?;
         let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
         snapshot_owned.commit().unwrap_or_else(|_| { panic!("Failed to commit snapshot"); });
         Ok(())

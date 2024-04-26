@@ -297,7 +297,7 @@ impl<D> MVCCStorage<D> {
     }
 
     pub fn open_snapshot_schema(self: Arc<Self>) -> SchemaSnapshot<D> {
-        todo!("schema snapshot locking");
+        // todo!("schema snapshot locking");
         let watermark = self.isolation_manager.watermark();
         SchemaSnapshot::new(self, watermark)
     }

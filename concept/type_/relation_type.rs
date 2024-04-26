@@ -73,6 +73,10 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
         let annotations = self.get_annotations(type_manager)?;
         Ok(annotations.contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract::new())))
     }
+
+    fn delete(self, type_manager: &TypeManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+        todo!()
+    }
 }
 
 impl<'a> ObjectTypeAPI<'a> for RelationType<'a> {}
@@ -89,9 +93,12 @@ impl<'a> RelationType<'a> {
         type_manager.get_relation_type_label(self.clone().into_owned())
     }
 
-    fn set_label(&self, type_manager: &TypeManager<impl WritableSnapshot>, label: &Label<'_>) {
-        // TODO: setLabel should fail is setting label on Root type
-        type_manager.storage_set_label(self.clone().into_owned(), label)
+    pub fn set_label(&self, type_manager: &TypeManager<impl WritableSnapshot>, label: &Label<'_>) -> Result<(), ConceptWriteError>{
+        if self.is_root(type_manager)? {
+            Err(ConceptWriteError::RootModification)
+        } else {
+            Ok(type_manager.storage_set_label(self.clone().into_owned(), label))
+        }
     }
 
     pub fn get_supertype(
@@ -101,8 +108,9 @@ impl<'a> RelationType<'a> {
         type_manager.get_relation_type_supertype(self.clone().into_owned())
     }
 
-    fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: RelationType<'static>) {
-        type_manager.storage_set_supertype(self.clone().into_owned(), supertype)
+    pub fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: RelationType<'static>) -> Result<(), ConceptWriteError> {
+        type_manager.storage_set_supertype(self.clone().into_owned(), supertype);
+        Ok(())
     }
 
     pub fn get_supertypes<'m>(
@@ -133,16 +141,17 @@ impl<'a> RelationType<'a> {
         type_manager.get_relation_type_annotations(self.clone().into_owned())
     }
 
-    pub(crate) fn set_annotation(
+    pub fn set_annotation(
         &self,
         type_manager: &TypeManager<impl WritableSnapshot>,
         annotation: RelationTypeAnnotation,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
                 type_manager.storage_set_annotation_abstract(self.clone().into_owned())
             }
-        }
+        };
+        Ok(())
     }
 
     fn delete_annotation(&self, type_manager: &TypeManager<impl WritableSnapshot>, annotation: RelationTypeAnnotation) {

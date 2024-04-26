@@ -35,6 +35,7 @@ use crate::{
     ConceptAPI,
 };
 use crate::type_::Ordering;
+use crate::error::ConceptWriteError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType<'a> {
@@ -71,6 +72,12 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
         let annotations = self.get_annotations(type_manager)?;
         Ok(annotations.contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract::new())))
     }
+
+    fn delete(self, type_manager: &TypeManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+        // todo!("Validation");
+        type_manager.delete_entity_type(self);
+        Ok(())
+    }
 }
 
 impl<'a> ObjectTypeAPI<'a> for EntityType<'a> {}
@@ -87,9 +94,12 @@ impl<'a> EntityType<'a> {
         type_manager.get_entity_type_label(self.clone().into_owned())
     }
 
-    fn set_label(&self, type_manager: &TypeManager<impl WritableSnapshot>, label: &Label<'_>) {
-        // TODO: setLabel should fail is setting label on Root type
-        type_manager.storage_set_label(self.clone().into_owned(), label)
+    pub fn set_label(&self, type_manager: &TypeManager<impl WritableSnapshot>, label: &Label<'_>) -> Result<(), ConceptWriteError> {
+        if self.is_root(type_manager)? {
+            Err(ConceptWriteError::RootModification)
+        } else {
+            Ok(type_manager.storage_set_label(self.clone().into_owned(), label))
+        }
     }
 
     pub fn get_supertype(
@@ -99,8 +109,9 @@ impl<'a> EntityType<'a> {
         type_manager.get_entity_type_supertype(self.clone().into_owned())
     }
 
-    pub fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: EntityType<'static>) {
+    pub fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: EntityType<'static>) -> Result<(), ConceptWriteError> {
         type_manager.storage_set_supertype(self.clone().into_owned(), supertype);
+        Ok(())
     }
 
     pub fn get_supertypes<'m>(
@@ -131,12 +142,13 @@ impl<'a> EntityType<'a> {
         type_manager.get_entity_type_annotations(self.clone().into_owned())
     }
 
-    pub fn set_annotation(&self, type_manager: &TypeManager<impl WritableSnapshot>, annotation: EntityTypeAnnotation) {
+    pub fn set_annotation(&self, type_manager: &TypeManager<impl WritableSnapshot>, annotation: EntityTypeAnnotation) -> Result<(), ConceptWriteError> {
         match annotation {
             EntityTypeAnnotation::Abstract(_) => {
                 type_manager.storage_set_annotation_abstract(self.clone().into_owned())
             }
-        }
+        };
+        Ok(())
     }
 
     fn delete_annotation(&self, type_manager: &TypeManager<impl WritableSnapshot>, annotation: EntityTypeAnnotation) {

@@ -64,7 +64,7 @@ use crate::{
 };
 use crate::error::ConceptWriteError;
 use crate::thing::ObjectAPI;
-use crate::type_::{IntoCanonicalTypeEdge, Ordering, serialise_annotation_cardinality, serialise_ordering};
+use crate::type_::{IntoCanonicalTypeEdge, OwnerAPI, PlayerAPI, Ordering, serialise_annotation_cardinality, serialise_ordering};
 use crate::type_::annotation::Annotation;
 use crate::type_::owns::OwnsAnnotation;
 use crate::type_::type_reader::TypeReader;
@@ -87,15 +87,20 @@ impl<Snapshot> TypeManager<Snapshot> {
         {
             let type_manager = TypeManager::new(snapshot.clone(), vertex_generator.clone(), None);
             let root_entity = type_manager.create_entity_type(&Kind::Entity.root_label(), true)?;
-            root_entity.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()));
+            root_entity.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
             let root_relation = type_manager.create_relation_type(&Kind::Relation.root_label(), true)?;
-            root_relation.set_annotation(&type_manager, RelationTypeAnnotation::Abstract(AnnotationAbstract::new()));
+            root_relation.set_annotation(&type_manager, RelationTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
             let root_role = type_manager.create_role_type(&Kind::Role.root_label(), root_relation.clone(), true, Ordering::Unordered)?;
-            root_role.set_annotation(&type_manager, RoleTypeAnnotation::Abstract(AnnotationAbstract::new()));
+            root_role.set_annotation(&type_manager, RoleTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
             let root_attribute = type_manager.create_attribute_type(&Kind::Attribute.root_label(), true)?;
-            root_attribute.set_annotation(&type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()));
+            root_attribute.set_annotation(&type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
         }
         Arc::try_unwrap(snapshot).ok().unwrap().commit().unwrap();
+        Ok(())
+    }
+
+    pub fn finalise(self) -> Result<(), Vec<ConceptWriteError>> {
+        todo!("Do we need to finalise anything here?");
         Ok(())
     }
 }
@@ -480,6 +485,31 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         }
         Ok(attribute_type)
     }
+
+    pub(crate) fn delete_entity_type(&self, entity_type: EntityType<'_>) {
+        let key = entity_type.into_vertex().into_storage_key().into_owned_array();
+        todo!("Do we need to lock?");
+        self.snapshot.delete(key)
+    }
+
+    pub(crate) fn delete_relation_type(&self, relation_type: RelationType<'_>) {
+        let key = relation_type.into_vertex().into_storage_key().into_owned_array();
+        todo!("Do we need to lock?");
+        self.snapshot.delete(key)
+    }
+
+    pub(crate) fn delete_attribute_type(&self, attribute_type: AttributeType<'_>) {
+        let key = attribute_type.into_vertex().into_storage_key().into_owned_array();
+        todo!("Do we need to lock?");
+        self.snapshot.delete(key);
+    }
+
+    pub(crate) fn delete_role_type(&self, role_type: RoleType<'_>) {
+        let key = role_type.into_vertex().into_storage_key().into_owned_array();
+        todo!("Do we need to lock?");
+        self.snapshot.delete(key);
+    }
+
     pub(crate) fn storage_set_label(&self, owner: impl TypeAPI<'static>, label: &Label<'_>) {
         self.storage_may_delete_label(owner.clone());
 

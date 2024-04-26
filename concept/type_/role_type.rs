@@ -31,7 +31,7 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::type_::owns::OwnsAnnotation::Cardinality;
+use crate::error::ConceptWriteError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -62,6 +62,10 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         let annotations = self.get_annotations(type_manager)?;
         Ok(annotations.contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract::new())))
     }
+
+    fn delete(self, type_manager: &TypeManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+        todo!()
+    }
 }
 
 impl<'a> RoleType<'a> {
@@ -90,8 +94,9 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_type_supertype(self.clone().into_owned())
     }
 
-    fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: RoleType<'static>) {
-        type_manager.storage_set_supertype(self.clone().into_owned(), supertype)
+    pub fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: RoleType<'static>) -> Result<(), ConceptWriteError> {
+        type_manager.storage_set_supertype(self.clone().into_owned(), supertype);
+        Ok(())
     }
 
     pub fn get_supertypes<'m>(
@@ -139,14 +144,15 @@ impl<'a> RoleType<'a> {
         &self,
         type_manager: &TypeManager<impl WritableSnapshot>,
         annotation: RoleTypeAnnotation,
-    ) {
+    )  -> Result<(), ConceptWriteError>  {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => type_manager.storage_set_annotation_abstract(self.clone().into_owned()),
             RoleTypeAnnotation::Distinct(_) => type_manager.storage_set_annotation_distinct(self.clone().into_owned()),
             RoleTypeAnnotation::Cardinality(cardinality) => {
                 type_manager.storage_set_annotation_cardinality(self.clone().into_owned(), cardinality)
             }
-        }
+        };
+        Ok(())
     }
 
     fn delete_annotation(&self, type_manager: &TypeManager<impl WritableSnapshot>, annotation: RoleTypeAnnotation) {

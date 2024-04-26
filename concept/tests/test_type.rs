@@ -54,7 +54,7 @@ fn entity_usage() {
         // --- person sub entity @abstract ---
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
-        person_type.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()));
+        person_type.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new())).unwrap();
 
         assert!(!person_type.is_root(&type_manager).unwrap());
         assert!(person_type
@@ -69,7 +69,7 @@ fn entity_usage() {
         // --- child sub person ---
         let child_label = Label::build("child");
         let child_type = type_manager.create_entity_type(&child_label, false).unwrap();
-        child_type.set_supertype(&type_manager, person_type.clone());
+        child_type.set_supertype(&type_manager, person_type.clone()).unwrap();
 
         assert!(!child_type.is_root(&type_manager).unwrap());
         assert_eq!(*child_type.get_label(&type_manager).unwrap(), child_label);
@@ -92,7 +92,7 @@ fn entity_usage() {
 
         // --- adult sub person ---
         let adult = type_manager.create_entity_type(&Label::build("adult"), false).unwrap();
-        adult.set_supertype(&type_manager, person_type.clone());
+        adult.set_supertype(&type_manager, person_type.clone()).unwrap();
         assert_eq!(root_entity.get_subtypes(&type_manager).unwrap().len(), 1);
         assert_eq!(root_entity.get_subtypes_transitive(&type_manager).unwrap().len(), 3);
         assert_eq!(person_type.get_subtypes(&type_manager).unwrap().len(), 2);

@@ -17,6 +17,7 @@ use server::typedb;
 use test_utils::TempDir;
 
 mod connection;
+mod concept;
 mod params;
 mod transaction_context;
 mod util;

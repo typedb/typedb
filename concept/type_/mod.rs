@@ -18,6 +18,7 @@ use crate::{
     type_::{attribute_type::AttributeType, owns::Owns, plays::Plays, role_type::RoleType, type_manager::TypeManager},
     ConceptAPI,
 };
+use crate::error::ConceptWriteError;
 use crate::type_::annotation::AnnotationCardinality;
 
 pub mod annotation;
@@ -39,6 +40,8 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
     fn into_vertex(self) -> TypeVertex<'a>;
 
     fn is_abstract(&self, type_manager: &TypeManager<impl ReadableSnapshot>) -> Result<bool, ConceptReadError>;
+
+    fn delete(self, type_manager: &TypeManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError>;
 }
 
 pub trait ObjectTypeAPI<'a>: TypeAPI<'a> {}

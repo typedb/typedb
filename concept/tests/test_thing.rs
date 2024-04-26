@@ -89,10 +89,10 @@ fn attribute_create() {
 
         let age_type = type_manager.create_attribute_type(&age_label, false).unwrap();
         age_type.set_value_type(&type_manager, ValueType::Long);
-        age_type.set_annotation(&type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent::new()));
+        age_type.set_annotation(&type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent::new())).unwrap();
         let name_type = type_manager.create_attribute_type(&name_label, false).unwrap();
         name_type.set_value_type(&type_manager, ValueType::String);
-        name_type.set_annotation(&type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent::new()));
+        name_type.set_annotation(&type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent::new())).unwrap();
 
         let mut age_1 = thing_manager.create_attribute(age_type.clone(), Value::Long(age_value)).unwrap();
         assert_eq!(age_1.get_value(&thing_manager).unwrap(), Value::Long(age_value));
@@ -340,13 +340,13 @@ fn role_player_distinct() {
         let employment_type = type_manager.create_relation_type(&employment_label, false).unwrap();
         employment_type.create_relates(&type_manager, employee_role, Ordering::Unordered).unwrap();
         let employee_type = employment_type.get_relates_role(&type_manager, employee_role).unwrap().unwrap().role();
-        employee_type.set_annotation(&type_manager, RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
+        employee_type.set_annotation(&type_manager, RoleTypeAnnotation::Distinct(AnnotationDistinct::new())).unwrap();
         employment_type.create_relates(&type_manager, employer_role, Ordering::Unordered).unwrap();
         let employer_type = employment_type.get_relates_role(&type_manager, employer_role).unwrap().unwrap().role();
-        employer_type.set_annotation(&type_manager, RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
+        employer_type.set_annotation(&type_manager, RoleTypeAnnotation::Distinct(AnnotationDistinct::new())).unwrap();
         employer_type.set_annotation(
             &type_manager, RoleTypeAnnotation::Cardinality(AnnotationCardinality::new(1, Some(2))),
-        );
+        ).unwrap();
 
         let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
         let company_type = type_manager.create_entity_type(&company_label, false).unwrap();
@@ -435,7 +435,7 @@ fn role_player_duplicates() {
         entry_type.set_annotation(
             &type_manager,
             RoleTypeAnnotation::Cardinality(AnnotationCardinality::new(0, Some(4))), // must be small to allow index to kick in
-        );
+        ).unwrap();
         list_type.create_relates(&type_manager, owner_role_label, Ordering::Unordered).unwrap();
         let owner_type = list_type.get_relates_role(&type_manager, owner_role_label).unwrap().unwrap().role();
 
