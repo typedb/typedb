@@ -15,7 +15,7 @@ use resource::constants::encoding::LABEL_SCOPED_NAME_STRING_INLINE;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use std::collections::HashSet;
 use bytes::byte_reference::ByteReference;
-use encoding::Keyable;
+use encoding::{AsBytes, Keyable};
 use encoding::layout::infix::Infix;
 use encoding::value::value_type::{ValueType, ValueTypeID};
 use storage::key_range::KeyRange;
@@ -50,11 +50,15 @@ impl<'_s> StorageTypeManagerSource
         }
     }
 
-    pub(crate) fn storage_get_supertype_vertex(snapshot: &impl ReadableSnapshot, subtype: impl TypeAPI<'_s>) -> Result<Option<TypeVertex<'static>>, ConceptReadError>
+    pub(crate) fn storage_get_supertype<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Option<U::SelfWithLifetime>, ConceptReadError> {
+        Ok(Self::storage_get_supertype_vertex(snapshot, subtype.into_vertex())?.map(|supertype_vertex| U::read_from(supertype_vertex.into_bytes())))
+    }
+
+    pub(crate) fn storage_get_supertype_vertex(snapshot: &impl ReadableSnapshot, subtype: TypeVertex<'_s>) -> Result<Option<TypeVertex<'static>>, ConceptReadError>
     {
         // TODO: handle possible errors
         Ok(snapshot
-            .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(subtype.clone().into_vertex()), TypeEdge::FIXED_WIDTH_ENCODING))
+            .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(subtype), TypeEdge::FIXED_WIDTH_ENCODING))
             .first_cloned()
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
             .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))

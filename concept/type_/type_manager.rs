@@ -15,8 +15,8 @@ use encoding::{
         edge::{
             build_edge_owns, build_edge_owns_reverse, build_edge_plays
             , build_edge_plays_reverse, build_edge_relates,
-            build_edge_relates_reverse, build_edge_sub, build_edge_sub_prefix_from, build_edge_sub_reverse
-            , new_edge_sub,
+            build_edge_relates_reverse, build_edge_sub, build_edge_sub_reverse
+            ,
         },
         index::LabelToTypeVertexIndex,
         Kind,
@@ -46,15 +46,12 @@ use storage::{
     MVCCStorage,
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
-use storage::key_range::KeyRange;
-
 use crate::{
     error::ConceptReadError,
     type_::{
         annotation::{AnnotationAbstract, AnnotationCardinality},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::{EntityType, EntityTypeAnnotation},
-        object_type::ObjectType,
         ObjectTypeAPI,
         owns::Owns,
         plays::Plays,
@@ -66,7 +63,7 @@ use crate::{
 };
 use crate::error::ConceptWriteError;
 use crate::thing::ObjectAPI;
-use crate::type_::{deserialise_ordering, IntoCanonicalTypeEdge, Ordering, serialise_annotation_cardinality, serialise_ordering};
+use crate::type_::{IntoCanonicalTypeEdge, Ordering, serialise_annotation_cardinality, serialise_ordering};
 use crate::type_::annotation::Annotation;
 use crate::type_::owns::OwnsAnnotation;
 use crate::type_::storage_source::StorageTypeManagerSource;
@@ -128,17 +125,11 @@ macro_rules! get_supertype_methods {
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
     )*) => {
         $(
-            // WARN: supertypes currently do NOT include themselves
             pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<Option<$type_<'static>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(type_))
                 } else {
-                    Ok(self
-                        .snapshot
-                        .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(type_.into_vertex().clone()), TypeEdge::FIXED_WIDTH_ENCODING))
-                        .first_cloned()
-                        .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
-                        .map(|(key, _)| $type_::new(new_edge_sub(key.into_byte_array_or_ref()).to().into_owned())))
+                    StorageTypeManagerSource::storage_get_supertype(self.snapshot.as_ref(), type_)
                 }
             }
         )*
@@ -151,16 +142,17 @@ macro_rules! get_supertypes_methods {
     )*) => {
         $(
             // WARN: supertypes currently do NOT include themselves
+            // ^ To fix, Just start with `let mut supertype = Some(type_)`
             pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
                     let mut supertypes = Vec::new();
-                    let mut super_vertex = StorageTypeManagerSource::storage_get_supertype_vertex(self.snapshot.as_ref(), type_)?;
-                    while super_vertex.is_some() {
-                        let super_type = $type_::new(super_vertex.as_ref().unwrap().clone());
-                        super_vertex = StorageTypeManagerSource::storage_get_supertype_vertex(self.snapshot.as_ref(), super_type.clone())?;
-                        supertypes.push(super_type);
+                    let mut supertype_opt = StorageTypeManagerSource::storage_get_supertype(self.snapshot.as_ref(), type_)?;
+                    while supertype_opt.is_some() {
+                        let supertype = supertype_opt.unwrap();
+                        supertypes.push(supertype.clone());
+                        supertype_opt = StorageTypeManagerSource::storage_get_supertype(self.snapshot.as_ref(), supertype.clone())?;
                     }
                     Ok(MaybeOwns::owned(supertypes))
                 }
@@ -242,16 +234,15 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
     //         StorageTypeManagerSource::storage_get_labelled_type::<T>(self.snapshot.as_ref(), label)
     //     }
     // }
-
-    pub fn get_supertype<'b, T: TypeAPI<'_s> + ReadableType<'_s, 'b>>(&self, type_: T) -> Result<Option<T::SelfWithLifetime>, ConceptReadError>
-    {
-        if let Some(cache) = &self.type_cache {
-            todo!("Ok(cache.$cache_method(label))")
-        } else {
-            Ok(StorageTypeManagerSource::storage_get_supertype_vertex(self.snapshot.as_ref(), type_)?
-                .map(|vertex| T::read_from(vertex.into_bytes())))
-        }
-    }
+    //
+    // pub fn get_supertype<'b, T: TypeAPI<'_s> + ReadableType<'_s, 'b>>(&self, type_: T) -> Result<Option<T::SelfWithLifetime>, ConceptReadError>
+    // {
+    //     if let Some(cache) = &self.type_cache {
+    //         todo!("Ok(cache.$cache_method(label))")
+    //     } else {
+    //         StorageTypeManagerSource::storage_get_supertype(self.snapshot.as_ref(), type_)
+    //     }
+    // }
 
     pub(crate) fn check_type_is_root(type_label: &Label<'_>, kind :Kind) -> bool {
         type_label == &kind.root_label()
@@ -503,7 +494,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     fn storage_may_delete_supertype(&self, subtype: impl TypeAPI<'static>) {
-        let supertype_vertex = StorageTypeManagerSource::storage_get_supertype_vertex(self.snapshot.as_ref(), subtype.clone()).unwrap();
+        let supertype_vertex = StorageTypeManagerSource::storage_get_supertype_vertex(self.snapshot.as_ref(), subtype.clone().into_vertex()).unwrap();
         if let Some(supertype) = supertype_vertex {
             let sub = build_edge_sub(subtype.clone().into_vertex(), supertype.clone());
             self.snapshot.as_ref().delete(sub.into_storage_key().into_owned_array());
