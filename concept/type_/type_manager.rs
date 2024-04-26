@@ -156,10 +156,10 @@ macro_rules! get_supertypes_methods {
                     Ok(MaybeOwns::borrowed(cache.$cache_method(type_)))
                 } else {
                     let mut supertypes = Vec::new();
-                    let mut super_vertex = StorageTypeManagerSource::storage_get_supertype_vertex(self.snapshot.as_ref(), type_);
+                    let mut super_vertex = StorageTypeManagerSource::storage_get_supertype_vertex(self.snapshot.as_ref(), type_)?;
                     while super_vertex.is_some() {
                         let super_type = $type_::new(super_vertex.as_ref().unwrap().clone());
-                        super_vertex = StorageTypeManagerSource::storage_get_supertype_vertex(self.snapshot.as_ref(), super_type.clone());
+                        super_vertex = StorageTypeManagerSource::storage_get_supertype_vertex(self.snapshot.as_ref(), super_type.clone())?;
                         supertypes.push(super_type);
                     }
                     Ok(MaybeOwns::owned(supertypes))
@@ -248,7 +248,8 @@ impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         if let Some(cache) = &self.type_cache {
             todo!("Ok(cache.$cache_method(label))")
         } else {
-            Ok(StorageTypeManagerSource::storage_get_supertype_vertex(self.snapshot.as_ref(), type_).map(|vertex| T::read_from(vertex.into_bytes())))
+            Ok(StorageTypeManagerSource::storage_get_supertype_vertex(self.snapshot.as_ref(), type_)?
+                .map(|vertex| T::read_from(vertex.into_bytes())))
         }
     }
 
@@ -502,7 +503,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     fn storage_may_delete_supertype(&self, subtype: impl TypeAPI<'static>) {
-        let supertype_vertex = StorageTypeManagerSource::storage_get_supertype_vertex(self.snapshot.as_ref(), subtype.clone());
+        let supertype_vertex = StorageTypeManagerSource::storage_get_supertype_vertex(self.snapshot.as_ref(), subtype.clone()).unwrap();
         if let Some(supertype) = supertype_vertex {
             let sub = build_edge_sub(subtype.clone().into_vertex(), supertype.clone());
             self.snapshot.as_ref().delete(sub.into_storage_key().into_owned_array());

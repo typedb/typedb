@@ -50,15 +50,14 @@ impl<'_s> StorageTypeManagerSource
         }
     }
 
-    pub(crate) fn storage_get_supertype_vertex(snapshot: &impl ReadableSnapshot, subtype: impl TypeAPI<'_s>) -> Option<TypeVertex<'static>>
+    pub(crate) fn storage_get_supertype_vertex(snapshot: &impl ReadableSnapshot, subtype: impl TypeAPI<'_s>) -> Result<Option<TypeVertex<'static>>, ConceptReadError>
     {
         // TODO: handle possible errors
-        snapshot
+        Ok(snapshot
             .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(subtype.clone().into_vertex()), TypeEdge::FIXED_WIDTH_ENCODING))
             .first_cloned()
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error }) // ?
-            .unwrap() // TODO: Remove unwrap
-            .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned())
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
+            .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
     }
 
     pub(crate) fn storage_get_label(snapshot: &impl ReadableSnapshot, type_: impl TypeAPI<'_s>) -> Result<Option<Label<'static>>, ConceptReadError> {

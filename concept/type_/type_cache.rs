@@ -69,7 +69,8 @@ struct TypeAPICache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
 impl<T> TypeAPICache<T> where T: TypeAPI<'static> + ReadableType<'static, 'static> {
     fn build_for<Snapshot: ReadableSnapshot>(snapshot: &Snapshot, type_ : T) -> TypeAPICache<T> {
         let label = StorageTypeManagerSource::storage_get_label(snapshot, type_.clone()).unwrap().unwrap();
-        let supertype = StorageTypeManagerSource::storage_get_supertype_vertex(snapshot, type_.clone()).map(|vertex| T::read_from(vertex.into_bytes()));
+        let supertype = StorageTypeManagerSource::storage_get_supertype_vertex(snapshot, type_.clone()).unwrap()
+            .map(|vertex| T::read_from(vertex.into_bytes()));
         let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
         let annotations_declared = StorageTypeManagerSource::storage_get_type_annotations(snapshot, type_.clone()).unwrap().into_iter()
             .map(|annotation| T::AnnotationType::from(annotation))
