@@ -29,7 +29,8 @@ public class Disjunction implements Pattern, Cloneable {
 
     private final List<Conjunction> conjunctions;
     private final int hash;
-    private final Set<Identifier.Variable.Name> sharedVariables;
+    private final Set<Identifier.Variable.Name> sharedVariables; // set of common variables shared across branches of the disjunction
+    private final Set<Identifier.Variable.Name> namedVariables; // set of named variables used in anywhere
 
     public Disjunction(List<Conjunction> conjunctions) {
         this.conjunctions = conjunctions;
@@ -38,6 +39,13 @@ public class Disjunction implements Pattern, Cloneable {
                 .flatMap(conjunction -> iterate(conjunction.retrieves()))
                 .filter(id -> id.isName() && iterate(conjunctions).allMatch(conjunction -> conjunction.retrieves().contains(id)))
                 .map(Identifier.Variable::asName).toSet();
+        this.namedVariables = iterate(conjunctions)
+                .flatMap(conjunction ->
+                        iterate(conjunction.retrieves()).filter(Identifier::isName).map(Identifier.Variable::asName)
+                                .link(
+                                        iterate(conjunction.negations()).flatMap(negation -> iterate(negation.disjunction().namedVariables()))
+                                )
+                ).toSet();
         // TODO: we should validate that named vars are not assigned to clashing thing/type/value classes (in TypeQL?)
     }
 
@@ -62,8 +70,12 @@ public class Disjunction implements Pattern, Cloneable {
         return iterate(conjunctions).allMatch(Conjunction::isCoherent);
     }
 
-    public Set<Identifier.Variable.Name> sharedVariables() {
+    public Set<Identifier.Variable.Name> returnedVariables() {
         return sharedVariables;
+    }
+
+    public Set<Identifier.Variable.Name> namedVariables() {
+        return namedVariables;
     }
 
     public FunctionalIterator<Label> getTypes(Identifier.Variable.Name id) {

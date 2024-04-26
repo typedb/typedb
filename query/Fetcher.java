@@ -70,7 +70,8 @@ public class Fetcher {
         this.match = match;
         this.projections = projections;
         this.filter = iterate(this.projections).flatMap(Projection::namedVariables)
-                .filter(varID -> this.match.sharedVariables().contains(varID))
+                .filter(varID -> this.match.returnedVariables().contains(varID))
+                .distinct()
                 .toList();
         if (this.modifiers.sort().isPresent()) {
             iterate(modifiers.sort().get().variables()).map(v -> Identifier.Variable.of(v.reference().asName()))
@@ -96,7 +97,7 @@ public class Fetcher {
     }
 
     public FunctionalIterator<Identifier.Variable.Name> namedVariables() {
-        return iterate(match.sharedVariables())
+        return iterate(match.namedVariables())
                 .link(iterate(projections).flatMap(p ->
                         iterate(p.namedVariables()).map(typeQLVar -> Identifier.Variable.of(typeQLVar.reference().asName()))
                 ));
@@ -137,7 +138,7 @@ public class Fetcher {
                         typeQLProjection.asAttribute().attributes()
                 );
             } else if (typeQLProjection.isSubquery()) {
-                Set<Identifier.Variable.Name> boundsMerged = new HashSet<>(match.sharedVariables());
+                Set<Identifier.Variable.Name> boundsMerged = new HashSet<>(match.returnedVariables());
                 boundsMerged.addAll(bounds);
                 return Subquery.create(reasoner, conceptMgr, context, boundsMerged,
                         typeQLProjection.asSubquery().key(), typeQLProjection.asSubquery().subquery()
@@ -167,7 +168,7 @@ public class Fetcher {
             public static Projection create(Disjunction match, TypeQLFetch.Key.Var key) {
                 if (!key.typeQLVar().reference().isName()) {
                     throw TypeDBException.of(PROJECTION_VARIABLE_UNNAMED, key.typeQLVar());
-                } else if (!match.sharedVariables().contains(Identifier.Variable.of(key.typeQLVar().reference().asName()))) {
+                } else if (!match.returnedVariables().contains(Identifier.Variable.of(key.typeQLVar().reference().asName()))) {
                     throw TypeDBException.of(PROJECTION_VARIABLE_UNBOUND, key.typeQLVar());
                 }
                 return new Variable(key);
@@ -219,7 +220,7 @@ public class Fetcher {
                     throw TypeDBException.of(PROJECTION_VARIABLE_UNNAMED, key.typeQLVar());
                 } else {
                     Identifier.Variable.Name id = Identifier.Variable.of(key.typeQLVar().reference().asName());
-                    if (!match.sharedVariables().contains(id)) {
+                    if (!match.returnedVariables().contains(id)) {
                         throw TypeDBException.of(PROJECTION_VARIABLE_UNBOUND, key.typeQLVar());
                     } else if (iterate(match.conjunctions()).flatMap(conj -> iterate(conj.variables()))
                             .anyMatch(var -> var.id().equals(id) && !var.isThing())) {
@@ -410,7 +411,7 @@ public class Fetcher {
 
                 @Override
                 public FunctionalIterator<Identifier.Variable.Name> namedVariables() {
-                    return iterate(getAggregator.getter().disjunction().sharedVariables());
+                    return iterate(getAggregator.getter().disjunction().namedVariables());
                 }
 
                 @Override
