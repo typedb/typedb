@@ -64,7 +64,6 @@ impl<'_s> StorageTypeManagerSource
         Ok(Self::storage_get_supertype_vertex(snapshot, subtype.into_vertex())?.map(|supertype_vertex| U::read_from(supertype_vertex.into_bytes())))
     }
 
-
     pub fn storage_get_supertypes_transitive<'b, U: ReadableType<'_s, 'b>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Vec<U::SelfWithLifetime>, ConceptReadError> {
         let mut supertypes = Vec::new();
         let mut supervertex_opt = StorageTypeManagerSource::storage_get_supertype_vertex(snapshot, subtype.clone().into_vertex())?;
@@ -74,7 +73,6 @@ impl<'_s> StorageTypeManagerSource
         }
         Ok(supertypes)
     }
-
 
     pub(crate) fn storage_get_label(snapshot: &impl ReadableSnapshot, type_: impl TypeAPI<'_s>) -> Result<Option<Label<'static>>, ConceptReadError> {
         let key = build_property_type_label(type_.into_vertex());

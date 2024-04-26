@@ -61,7 +61,7 @@ struct TypeAPICache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
     annotations_declared: HashSet<T::AnnotationType>,
     // TODO: Should these all be sets instead of vec?
     supertype: Option<T::SelfWithLifetime>,
-    supertypes: Vec<T>,  // TODO: use smallvec if we want to have some inline - benchmark.
+    supertypes: Vec<T::SelfWithLifetime>,  // TODO: use smallvec if we want to have some inline - benchmark.
     // subtypes_declared: Vec<AttributeType<'static>>, // TODO: benchmark smallvec.
     // subtypes_transitive: Vec<AttributeType<'static>>, // TODO: benchmark smallvec
 }
@@ -69,18 +69,19 @@ struct TypeAPICache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
 impl<T> TypeAPICache<T> where T: TypeAPI<'static> + ReadableType<'static, 'static> {
     fn build_for<Snapshot: ReadableSnapshot>(snapshot: &Snapshot, type_ : T) -> TypeAPICache<T> {
         let label = StorageTypeManagerSource::storage_get_label(snapshot, type_.clone()).unwrap().unwrap();
-        let supertype = StorageTypeManagerSource::storage_get_supertype(snapshot, type_.clone()).unwrap();
         let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
         let annotations_declared = StorageTypeManagerSource::storage_get_type_annotations(snapshot, type_.clone()).unwrap().into_iter()
             .map(|annotation| T::AnnotationType::from(annotation))
             .collect::<HashSet<T::AnnotationType>>();
+        let supertype = StorageTypeManagerSource::storage_get_supertype(snapshot, type_.clone()).unwrap();
+        let supertypes = StorageTypeManagerSource::storage_get_supertypes_transitive(snapshot, type_.clone()).unwrap();
         Self {
             type_,
             label,
             is_root,
             annotations_declared,
             supertype,
-            supertypes: Vec::new() // todo!()
+            supertypes
         }
     }
 }
@@ -195,23 +196,7 @@ impl TypeCache {
             };
             caches[entity.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
-        Self::set_entity_supertypes_transitive(&mut caches);
         caches
-    }
-
-    fn set_entity_supertypes_transitive(entity_type_caches: &mut [Option<EntityTypeCache>]) {
-        for index in 0..entity_type_caches.len() {
-            if entity_type_caches[index].is_none() {
-                continue;
-            }
-            let mut supertype = entity_type_caches[index].as_ref().unwrap().type_api_cache_.supertype.clone();
-            while let Some(current_supertype) = supertype {
-                let next_super_cache =
-                    Self::get_entity_type_cache(entity_type_caches, current_supertype.vertex().clone()).unwrap();
-                supertype = next_super_cache.type_api_cache_.supertype.as_ref().cloned();
-                entity_type_caches[index].as_mut().unwrap().type_api_cache_.supertypes.push(current_supertype);
-            }
-        }
     }
 
     fn create_relation_caches(
@@ -234,23 +219,7 @@ impl TypeCache {
             };
             caches[relation.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
-        Self::set_relation_supertypes_transitive(&mut caches);
         caches
-    }
-
-    fn set_relation_supertypes_transitive(relation_type_caches: &mut Box<[Option<RelationTypeCache>]>) {
-        for index in 0..relation_type_caches.len() {
-            if relation_type_caches[index].is_none() {
-                continue;
-            }
-            let mut supertype = relation_type_caches[index].as_ref().unwrap().type_api_cache_.supertype.clone();
-            while let Some(current_supertype) = supertype {
-                let next_super_cache =
-                    Self::get_relation_type_cache(relation_type_caches, current_supertype.vertex().clone()).unwrap();
-                supertype = next_super_cache.type_api_cache_.supertype.as_ref().cloned();
-                relation_type_caches[index].as_mut().unwrap().type_api_cache_.supertypes.push(current_supertype);
-            }
-        }
     }
 
     fn create_role_caches(
@@ -273,23 +242,7 @@ impl TypeCache {
             };
             caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
-        Self::set_role_supertypes_transitive(&mut caches);
         caches
-    }
-
-    fn set_role_supertypes_transitive(role_type_caches: &mut Box<[Option<RoleTypeCache>]>) {
-        for index in 0..role_type_caches.len() {
-            if role_type_caches[index].is_none() {
-                continue;
-            }
-            let mut supertype = role_type_caches[index].as_ref().unwrap().type_api_cache_.supertype.clone();
-            while let Some(current_supertype) = supertype {
-                let next_super_cache =
-                    Self::get_role_type_cache(role_type_caches, current_supertype.vertex().clone()).unwrap();
-                supertype = next_super_cache.type_api_cache_.supertype.as_ref().cloned();
-                role_type_caches[index].as_mut().unwrap().type_api_cache_.supertypes.push(current_supertype);
-            }
-        }
     }
 
     fn create_attribute_caches(
@@ -310,23 +263,7 @@ impl TypeCache {
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
-        Self::set_attribute_supertypes_transitive(&mut caches);
         caches
-    }
-
-    fn set_attribute_supertypes_transitive(attribute_type_caches: &mut Box<[Option<AttributeTypeCache>]>) {
-        for index in 0..attribute_type_caches.len() {
-            if attribute_type_caches[index].is_none() {
-                continue;
-            }
-            let mut supertype = attribute_type_caches[index].as_ref().unwrap().type_api_cache_.supertype.clone();
-            while let Some(current_supertype) = supertype {
-                let next_super_cache =
-                    Self::get_attribute_type_cache(attribute_type_caches, current_supertype.vertex().clone()).unwrap();
-                supertype = next_super_cache.type_api_cache_.supertype.as_ref().cloned();
-                attribute_type_caches[index].as_mut().unwrap().type_api_cache_.supertypes.push(current_supertype);
-            }
-        }
     }
 
     fn create_owns_caches(
