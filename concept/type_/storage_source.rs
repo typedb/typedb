@@ -59,7 +59,7 @@ impl<'_s> StorageTypeManagerSource
             .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned())
     }
 
-    pub(crate) fn storage_get_label(snapshot: &impl ReadableSnapshot, type_: impl TypeAPI<'static>) -> Result<Option<Label<'static>>, ConceptReadError> {
+    pub(crate) fn storage_get_label(snapshot: &impl ReadableSnapshot, type_: impl TypeAPI<'_s>) -> Result<Option<Label<'static>>, ConceptReadError> {
         let key = build_property_type_label(type_.into_vertex());
         snapshot
             .get_mapped(key.into_storage_key().as_reference(), |reference| {
@@ -69,10 +69,9 @@ impl<'_s> StorageTypeManagerSource
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
-
     pub(crate) fn storage_get_owns(
         snapshot: &impl ReadableSnapshot,
-        owner: impl OwnerAPI<'static>
+        owner: impl OwnerAPI<'_s>
     ) -> Result<HashSet<Owns<'static>>, ConceptReadError>
     {
         let owns_prefix = build_edge_owns_prefix_from(owner.into_vertex());
@@ -88,7 +87,7 @@ impl<'_s> StorageTypeManagerSource
 
     pub(crate) fn storage_get_plays(
         snapshot: &impl ReadableSnapshot,
-        player: impl PlayerAPI<'static>
+        player: impl PlayerAPI<'_s>
     ) -> Result<HashSet<Plays<'static>>, ConceptReadError>
     {
         let plays_prefix = build_edge_plays_prefix_from(player.into_vertex());
@@ -103,7 +102,7 @@ impl<'_s> StorageTypeManagerSource
 
     pub(crate) fn storage_get_relates(
         snapshot: &impl ReadableSnapshot,
-        relation: RelationType<'static>,
+        relation: RelationType<'_s>,
     ) -> Result<HashSet<Relates<'static>>, ConceptReadError>
     {
         let relates_prefix = build_edge_relates_prefix_from(relation.into_vertex());
@@ -118,7 +117,7 @@ impl<'_s> StorageTypeManagerSource
 
     pub(crate) fn storage_get_relations(
         snapshot: &impl ReadableSnapshot,
-        role: RoleType<'static>,
+        role: RoleType<'_s>,
     ) -> Result<Relates<'static>, ConceptReadError>
     {
         let relates_prefix = build_edge_relates_reverse_prefix_from(role.into_vertex());
@@ -131,8 +130,7 @@ impl<'_s> StorageTypeManagerSource
             .map(|v| { v.first().unwrap().clone() })
     }
 
-
-    pub(crate) fn storage_get_value_type(snapshot: &impl ReadableSnapshot, type_: AttributeType<'static>) -> Result<Option<ValueType>, ConceptReadError> {
+    pub(crate) fn storage_get_value_type(snapshot: &impl ReadableSnapshot, type_: AttributeType<'_s>) -> Result<Option<ValueType>, ConceptReadError> {
         snapshot
             .get_mapped(
                 build_property_type_value_type(type_.into_vertex()).into_storage_key().as_reference(),
@@ -145,7 +143,7 @@ impl<'_s> StorageTypeManagerSource
 
     pub(crate) fn storage_get_type_annotations(
         snapshot: &impl ReadableSnapshot,
-        type_: impl TypeAPI<'static>,
+        type_: impl TypeAPI<'_s>,
     ) -> Result<HashSet<Annotation>, ConceptReadError> {
         snapshot
             .iterate_range(KeyRange::new_inclusive(
@@ -206,5 +204,4 @@ impl<'_s> StorageTypeManagerSource
             })
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
-
 }
