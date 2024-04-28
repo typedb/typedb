@@ -174,12 +174,12 @@ fn role_usage() {
     let friend_name = "friend";
     let person_label = Label::build("person");
 
-    let snapshot: Arc<WriteSnapshot<_>> = Arc::new(storage.clone().open_snapshot_write());
+    let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
     {
         // Without cache, uncommitted
-        let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None);
-        let root_relation = type_manager.get_relation_type(&Kind::Relation.root_label()).unwrap().unwrap();
-        assert_eq!(*root_relation.get_label(&type_manager).unwrap(), Kind::Relation.root_label());
+        let type_manager = TypeManager::new(type_vertex_generator.clone(), None);
+        let root_relation = type_manager.get_relation_type(&snapshot, &Kind::Relation.root_label()).unwrap().unwrap();
+        assert_eq!(*root_relation.get_label(&snapshot, &type_manager).unwrap(), Kind::Relation.root_label());
         assert!(root_relation.is_root(&type_manager).unwrap());
         assert!(root_relation.get_supertype(&type_manager).unwrap().is_none());
         assert_eq!(root_relation.get_supertypes(&type_manager).unwrap().len(), 0);

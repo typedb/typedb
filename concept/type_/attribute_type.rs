@@ -9,13 +9,14 @@ use std::collections::HashSet;
 use encoding::{
     graph::type_::vertex::TypeVertex,
     layout::prefix::Prefix,
-    value::{label::Label, value_type::ValueType},
     Prefixed,
+    value::{label::Label, value_type::ValueType},
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    ConceptAPI,
     error::ConceptReadError,
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationIndependent},
@@ -23,7 +24,6 @@ use crate::{
         type_manager::TypeManager,
         TypeAPI,
     },
-    ConceptAPI,
 };
 use crate::error::ConceptWriteError;
 
@@ -56,126 +56,160 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         self.vertex
     }
 
-    fn is_abstract(
-        &self, type_manager: &TypeManager<impl ReadableSnapshot>
+    fn is_abstract<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
-        let annotations = self.get_annotations(type_manager)?;
+        let annotations = self.get_annotations(snapshot, type_manager)?;
         Ok(annotations.contains(&AttributeTypeAnnotation::Abstract(AnnotationAbstract::new())))
     }
 
-    fn delete(self, type_manager: &TypeManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+    fn delete<Snapshot: WritableSnapshot>(
+        self, snapshot: &mut Snapshot, type_manager: &TypeManager<Snapshot>,
+    ) -> Result<(), ConceptWriteError> {
         todo!()
     }
 }
 
 impl<'a> AttributeType<'a> {
-    pub fn is_root(&self, type_manager: &TypeManager<impl ReadableSnapshot>) -> Result<bool, ConceptReadError> {
-        type_manager.get_attribute_type_is_root(self.clone().into_owned())
-    }
-
-    pub fn set_value_type(&self, type_manager: &TypeManager<impl WritableSnapshot>, value_type: ValueType) {
-        type_manager.storage_set_value_type(self.clone().into_owned(), value_type)
-    }
-
-    pub fn get_value_type(
+    pub fn is_root<Snapshot: ReadableSnapshot>(
         &self,
-        type_manager: &TypeManager<impl ReadableSnapshot>,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+    ) -> Result<bool, ConceptReadError> {
+        type_manager.get_attribute_type_is_root(snapshot, self.clone().into_owned())
+    }
+
+    pub fn set_value_type<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        value_type: ValueType,
+    ) {
+        type_manager.storage_set_value_type(snapshot, self.clone().into_owned(), value_type)
+    }
+
+    pub fn get_value_type<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
     ) -> Result<Option<ValueType>, ConceptReadError> {
-        type_manager.get_attribute_type_value_type(self.clone().into_owned())
+        type_manager.get_attribute_type_value_type(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_label<'m>(
+    pub fn get_label<'m, Snapshot: ReadableSnapshot>(
         &self,
-        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
-        type_manager.get_attribute_type_label(self.clone().into_owned())
+        type_manager.get_attribute_type_label(snapshot, self.clone().into_owned())
     }
 
-    pub fn set_label(&self, type_manager: &TypeManager<impl WritableSnapshot>, label: &Label<'_>) -> Result<(), ConceptWriteError>{
-        if self.is_root(type_manager)? {
+    pub fn set_label<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        label: &Label<'_>,
+    ) -> Result<(), ConceptWriteError> {
+        if self.is_root(snapshot, type_manager)? {
             Err(ConceptWriteError::RootModification)
         } else {
-            Ok(type_manager.storage_set_label(self.clone().into_owned(), label))
+            Ok(type_manager.storage_set_label(snapshot, self.clone().into_owned(), label))
         }
     }
 
-    pub fn get_supertype(
+    pub fn get_supertype<Snapshot: ReadableSnapshot>(
         &self,
-        type_manager: &TypeManager<impl ReadableSnapshot>,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
     ) -> Result<Option<AttributeType<'static>>, ConceptReadError> {
-        type_manager.get_attribute_type_supertype(self.clone().into_owned())
+        type_manager.get_attribute_type_supertype(snapshot, self.clone().into_owned())
     }
 
-    pub fn set_supertype(&self, type_manager: &TypeManager<impl WritableSnapshot>, supertype: AttributeType<'static>) -> Result<(), ConceptWriteError> {
-        type_manager.storage_set_supertype(self.clone().into_owned(), supertype);
+    pub fn set_supertype<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        supertype: AttributeType<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        type_manager.storage_set_supertype(snapshot, self.clone().into_owned(), supertype);
         Ok(())
     }
 
-    pub fn get_supertypes<'m>(
+    pub fn get_supertypes<'m, Snapshot: ReadableSnapshot>(
         &self,
-        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, ConceptReadError> {
-        type_manager.get_attribute_type_supertypes(self.clone().into_owned())
+        type_manager.get_attribute_type_supertypes(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_subtypes<'m>(
+    pub fn get_subtypes<'m, Snapshot: ReadableSnapshot>(
         &self,
-        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, ConceptReadError> {
-        type_manager.get_attribute_type_subtypes(self.clone().into_owned())
+        type_manager.get_attribute_type_subtypes(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_subtypes_transitive<'m>(
+    pub fn get_subtypes_transitive<'m, Snapshot: ReadableSnapshot>(
         &self,
-        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, ConceptReadError> {
-        type_manager.get_attribute_type_subtypes_transitive(self.clone().into_owned())
+        type_manager.get_attribute_type_subtypes_transitive(snapshot, self.clone().into_owned())
     }
 
-    pub(crate) fn is_independent(
-        &self, type_manager: &TypeManager<impl ReadableSnapshot>
+    pub(crate) fn is_independent<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         Ok(
             self
-                .get_annotations(type_manager)?
+                .get_annotations(snapshot, type_manager)?
                 .contains(&AttributeTypeAnnotation::Independent(AnnotationIndependent::new()))
         )
     }
 
-    pub fn get_annotations<'m>(
+    pub fn get_annotations<'m, Snapshot: ReadableSnapshot>(
         &self,
-        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<AttributeTypeAnnotation>>, ConceptReadError> {
-        type_manager.get_attribute_type_annotations(self.clone().into_owned())
+        type_manager.get_attribute_type_annotations(snapshot, self.clone().into_owned())
     }
 
-    pub fn set_annotation(
+    pub fn set_annotation<Snapshot: WritableSnapshot>(
         &self,
-        type_manager: &TypeManager<impl WritableSnapshot>,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
         annotation: AttributeTypeAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.storage_set_annotation_abstract(self.clone().into_owned())
+                type_manager.storage_set_annotation_abstract(snapshot, self.clone().into_owned())
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.storage_set_annotation_independent(self.clone().into_owned())
+                type_manager.storage_set_annotation_independent(snapshot, self.clone().into_owned())
             }
         };
         Ok(())
     }
 
-    fn delete_annotation(
+    fn delete_annotation<Snapshot: WritableSnapshot>(
         &self,
-        type_manager: &TypeManager<impl WritableSnapshot>,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
         annotation: AttributeTypeAnnotation,
     ) {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.storage_delete_annotation_abstract(self.clone().into_owned())
+                type_manager.storage_delete_annotation_abstract(snapshot, self.clone().into_owned())
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.storage_storage_annotation_independent(self.clone().into_owned())
+                type_manager.storage_storage_annotation_independent(snapshot, self.clone().into_owned())
             }
         }
     }
@@ -187,15 +221,15 @@ impl<'a> AttributeType<'a> {
 
 // --- Owned API ---
 impl<'a> AttributeType<'a> {
-    fn get_owns<'m>(
+    fn get_owns<'m, Snapshot: ReadableSnapshot>(
         &self,
-        _type_manager: &'m TypeManager<impl ReadableSnapshot>,
+        snapshot: Snapshot,
+        _type_manager: &'m TypeManager<Snapshot>,
     ) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
         todo!()
     }
 
-    fn get_owns_owners(&self) {
-        // return iterator of Owns
+    fn get_owns_owners<Snapshot: ReadableSnapshot>(&self) {
         todo!()
     }
 }

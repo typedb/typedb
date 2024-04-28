@@ -15,17 +15,17 @@ use super::Database;
 
 pub struct TransactionRead<D> {
     database: Arc<Database<D>>,
-    pub(crate) snapshot: Arc<ReadSnapshot<D>>,
+    pub(crate) snapshot: ReadSnapshot<D>,
     pub(crate) type_manager: Arc<TypeManager<ReadSnapshot<D>>>,
     pub(crate) thing_manager: ThingManager<ReadSnapshot<D>>,
 }
 
 impl<D: DurabilityService> TransactionRead<D> {
     pub fn open(database: Arc<Database<D>>) -> Self {
-        let snapshot: Arc<ReadSnapshot<D>> = Arc::new(database.storage.clone().open_snapshot_read());
-        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), database.type_vertex_generator.clone(), None)); // TODO pass cache
+        let snapshot: ReadSnapshot<D> = database.storage.clone().open_snapshot_read();
+        let type_manager = Arc::new(TypeManager::new(database.type_vertex_generator.clone(), None)); // TODO pass cache
         let thing_manager =
-            ThingManager::new(snapshot.clone(), database.thing_vertex_generator.clone(), type_manager.clone());
+            ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
         Self { database, snapshot, type_manager, thing_manager }
     }
 
@@ -36,24 +36,23 @@ impl<D: DurabilityService> TransactionRead<D> {
     pub fn close(self) {
         drop(self.thing_manager);
         drop(self.type_manager);
-        let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
-        snapshot_owned.close_resources()
+        self.snapshot.close_resources()
     }
 }
 
 pub struct TransactionWrite<D> {
     database: Arc<Database<D>>,
-    pub(crate) snapshot: Arc<WriteSnapshot<D>>,
+    pub(crate) snapshot: WriteSnapshot<D>,
     pub(crate) type_manager: Arc<TypeManager<WriteSnapshot<D>>>,
     pub(crate) thing_manager: ThingManager<WriteSnapshot<D>>,
 }
 
 impl<D: DurabilityService> TransactionWrite<D> {
     pub fn open(database: Arc<Database<D>>) -> Self {
-        let snapshot: Arc<WriteSnapshot<D>> = Arc::new(database.storage.clone().open_snapshot_write());
-        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), database.type_vertex_generator.clone(), None)); // TODO pass cache
+        let snapshot: WriteSnapshot<D> = database.storage.clone().open_snapshot_write();
+        let type_manager = Arc::new(TypeManager::new(database.type_vertex_generator.clone(), None)); // TODO pass cache
         let thing_manager =
-            ThingManager::new(snapshot.clone(), database.thing_vertex_generator.clone(), type_manager.clone());
+            ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
         Self { database, snapshot, type_manager, thing_manager }
     }
 
@@ -68,32 +67,31 @@ impl<D: DurabilityService> TransactionWrite<D> {
     pub fn commit(self) -> Result<(), Vec<ConceptWriteError>> {
         self.thing_manager.finalise()?;
         drop(self.type_manager);
-        let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
-        snapshot_owned.commit().unwrap_or_else(|_| { panic!("Failed to commit snapshot"); });
+        // TODO: pass error up
+        self.snapshot.commit().unwrap_or_else(|_| { panic!("Failed to commit snapshot"); });
         Ok(())
     }
 
     pub fn close(self) {
         drop(self.thing_manager);
         drop(self.type_manager);
-        let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
-        snapshot_owned.close_resources();
+        self.snapshot.close_resources();
     }
 }
 
 pub struct TransactionSchema<D> {
     database: Arc<Database<D>>,
-    pub(crate) snapshot: Arc<SchemaSnapshot<D>>,
+    pub(crate) snapshot: SchemaSnapshot<D>,
     pub(crate) type_manager: Arc<TypeManager<SchemaSnapshot<D>>>, // TODO: krishnan: Should this be an arc or direct ownership?
     pub(crate) thing_manager: ThingManager<SchemaSnapshot<D>>,
 }
 
 impl<D: DurabilityService> TransactionSchema<D> {
     pub fn open(database: Arc<Database<D>>) -> Self {
-        let snapshot: Arc<SchemaSnapshot<D>> = Arc::new(database.storage.clone().open_snapshot_schema());
-        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), database.type_vertex_generator.clone(), None));
+        let snapshot: SchemaSnapshot<D> = database.storage.clone().open_snapshot_schema();
+        let type_manager = Arc::new(TypeManager::new(database.type_vertex_generator.clone(), None));
         let thing_manager =
-            ThingManager::new(snapshot.clone(), database.thing_vertex_generator.clone(), type_manager.clone());
+            ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
         Self { database, snapshot, type_manager, thing_manager }
     }
 
@@ -105,15 +103,13 @@ impl<D: DurabilityService> TransactionSchema<D> {
         self.thing_manager.finalise()?;
         let type_manager_owned = Arc::try_unwrap(self.type_manager).unwrap_or_else(|_| { panic!("Failed to unwrap type_manager arc"); });
         type_manager_owned.finalise()?;
-        let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
-        snapshot_owned.commit().unwrap_or_else(|_| { panic!("Failed to commit snapshot"); });
+        self.snapshot.commit().unwrap_or_else(|_| { panic!("Failed to commit snapshot"); });
         Ok(())
     }
 
     pub fn close(self) {
         drop(self.thing_manager);
         drop(self.type_manager);
-        let snapshot_owned = Arc::try_unwrap(self.snapshot).unwrap_or_else(|_| { panic!("Failed to unwrap snapshot arc"); });
-        snapshot_owned.close_resources();
+        self.snapshot.close_resources();
     }
 }

@@ -36,44 +36,52 @@ impl<'a> ObjectType<'a> {
 }
 
 impl<'a> OwnerAPI<'a> for ObjectType<'a> {
-    fn set_owns(
+    fn set_owns<Snapshot: WritableSnapshot>(
         &self,
-        type_manager: &TypeManager<impl WritableSnapshot>,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
     ) -> Owns<'static> {
         // TODO: decide behaviour (ok or error) if already owning
         match self {
-            ObjectType::Entity(entity) => entity.set_owns(type_manager, attribute_type, ordering),
-            ObjectType::Relation(relation) => relation.set_owns(type_manager, attribute_type, ordering),
+            ObjectType::Entity(entity) => entity.set_owns(snapshot, type_manager, attribute_type, ordering),
+            ObjectType::Relation(relation) => relation.set_owns(snapshot, type_manager, attribute_type, ordering),
         }
     }
 
-    fn delete_owns(&self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>) {
-        match self {
-            ObjectType::Entity(entity) => entity.delete_owns(type_manager, attribute_type),
-            ObjectType::Relation(relation) => relation.delete_owns(type_manager, attribute_type),
-        }
-    }
-
-    fn get_owns<'m>(
+    fn delete_owns<Snapshot: WritableSnapshot>(
         &self,
-        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        attribute_type: AttributeType<'static>
+    ) {
+        match self {
+            ObjectType::Entity(entity) => entity.delete_owns(snapshot, type_manager, attribute_type),
+            ObjectType::Relation(relation) => relation.delete_owns(snapshot, type_manager, attribute_type),
+        }
+    }
+
+    fn get_owns<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
         match self {
-            ObjectType::Entity(entity) => entity.get_owns(type_manager),
-            ObjectType::Relation(relation) => relation.get_owns(type_manager),
+            ObjectType::Entity(entity) => entity.get_owns(snapshot, type_manager),
+            ObjectType::Relation(relation) => relation.get_owns(snapshot, type_manager),
         }
     }
 
-    fn get_owns_attribute(
+    fn get_owns_attribute<Snapshot: ReadableSnapshot>(
         &self,
-        type_manager: &TypeManager<impl ReadableSnapshot>,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
         match self {
-            ObjectType::Entity(entity) => entity.get_owns_attribute(type_manager, attribute_type),
-            ObjectType::Relation(relation) => relation.get_owns_attribute(type_manager, attribute_type),
+            ObjectType::Entity(entity) => entity.get_owns_attribute(snapshot, type_manager, attribute_type),
+            ObjectType::Relation(relation) => relation.get_owns_attribute(snapshot, type_manager, attribute_type),
         }
     }
 }
@@ -95,56 +103,74 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         }
     }
 
-    fn is_abstract(
-        &self, type_manager: &TypeManager<impl ReadableSnapshot>,
+    fn is_abstract<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         match self {
-            ObjectType::Entity(entity) => entity.is_abstract(type_manager),
-            ObjectType::Relation(relation) => relation.is_abstract(type_manager)
+            ObjectType::Entity(entity) => entity.is_abstract(snapshot, type_manager),
+            ObjectType::Relation(relation) => relation.is_abstract(snapshot, type_manager)
         }
     }
 
-    fn delete(self, type_manager: &TypeManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+    fn delete<Snapshot: WritableSnapshot>(
+        self,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>
+    ) -> Result<(), ConceptWriteError> {
         match self {
-            ObjectType::Entity(entity) => entity.delete(type_manager),
-            ObjectType::Relation(relation) => relation.delete(type_manager)
+            ObjectType::Entity(entity) => entity.delete(snapshot, type_manager),
+            ObjectType::Relation(relation) => relation.delete(snapshot, type_manager)
         }
     }
 }
 
 impl<'a> PlayerAPI<'a> for ObjectType<'a> {
-    fn set_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>) -> Plays<'static> {
-        match self {
-            ObjectType::Entity(entity) => entity.set_plays(type_manager, role_type),
-            ObjectType::Relation(relation) => relation.set_plays(type_manager, role_type),
-        }
-    }
-
-    fn delete_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>) {
-        match self {
-            ObjectType::Entity(entity) => entity.delete_plays(type_manager, role_type),
-            ObjectType::Relation(relation) => relation.delete_plays(type_manager, role_type),
-        }
-    }
-
-    fn get_plays<'m>(
+    fn set_plays<Snapshot: WritableSnapshot>(
         &self,
-        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        role_type: RoleType<'static>
+    ) -> Plays<'static> {
+        match self {
+            ObjectType::Entity(entity) => entity.set_plays(snapshot, type_manager, role_type),
+            ObjectType::Relation(relation) => relation.set_plays(snapshot, type_manager, role_type),
+        }
+    }
+
+    fn delete_plays<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        role_type: RoleType<'static>
+    ) {
+        match self {
+            ObjectType::Entity(entity) => entity.delete_plays(snapshot, type_manager, role_type),
+            ObjectType::Relation(relation) => relation.delete_plays(snapshot, type_manager, role_type),
+        }
+    }
+
+    fn get_plays<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
         match self {
-            ObjectType::Entity(entity) => entity.get_plays(type_manager),
-            ObjectType::Relation(relation) => relation.get_plays(type_manager),
+            ObjectType::Entity(entity) => entity.get_plays(snapshot, type_manager),
+            ObjectType::Relation(relation) => relation.get_plays(snapshot, type_manager),
         }
     }
 
-    fn get_plays_role(
+    fn get_plays_role<Snapshot: ReadableSnapshot>(
         &self,
-        type_manager: &TypeManager<impl ReadableSnapshot>,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
         role_type: RoleType<'static>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError> {
         match self {
-            ObjectType::Entity(entity) => entity.get_plays_role(type_manager, role_type),
-            ObjectType::Relation(relation) => relation.get_plays_role(type_manager, role_type),
+            ObjectType::Entity(entity) => entity.get_plays_role(snapshot, type_manager, role_type),
+            ObjectType::Relation(relation) => relation.get_plays_role(snapshot, type_manager, role_type),
         }
     }
 }

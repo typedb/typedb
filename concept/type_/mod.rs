@@ -39,67 +39,91 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
 
     fn into_vertex(self) -> TypeVertex<'a>;
 
-    fn is_abstract(&self, type_manager: &TypeManager<impl ReadableSnapshot>) -> Result<bool, ConceptReadError>;
+    fn is_abstract<Snapshot: ReadableSnapshot>(
+        &self, snapshot: &Snapshot, type_manager: &TypeManager<Snapshot>
+    ) -> Result<bool, ConceptReadError>;
 
-    fn delete(self, type_manager: &TypeManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError>;
+    fn delete<Snapshot: WritableSnapshot>(
+        self, snapshot: &mut Snapshot, type_manager: &TypeManager<Snapshot>
+    ) -> Result<(), ConceptWriteError>;
 }
 
 pub trait ObjectTypeAPI<'a>: TypeAPI<'a> {}
 
 pub trait OwnerAPI<'a>: TypeAPI<'a> {
-    fn set_owns(
+    fn set_owns<Snapshot: WritableSnapshot>(
         &self,
-        type_manager: &TypeManager<impl WritableSnapshot>,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
     ) -> Owns<'static>;
 
-    fn delete_owns(&self, type_manager: &TypeManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>);
-
-    fn get_owns<'m>(
+    fn delete_owns<Snapshot: WritableSnapshot>(
         &self,
-        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        attribute_type: AttributeType<'static>
+    );
+
+    fn get_owns<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError>;
 
-    fn get_owns_attribute(
+    fn get_owns_attribute<Snapshot: ReadableSnapshot>(
         &self,
-        type_manager: &TypeManager<impl ReadableSnapshot>,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError>;
 
-    fn has_owns_attribute(
+    fn has_owns_attribute<Snapshot: ReadableSnapshot>(
         &self,
-        type_manager: &TypeManager<impl ReadableSnapshot>,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
         attribute_type: AttributeType<'static>,
     ) -> Result<bool, ConceptReadError> {
-        Ok(self.get_owns_attribute(type_manager, attribute_type)?.is_some())
+        Ok(self.get_owns_attribute(snapshot, type_manager, attribute_type)?.is_some())
     }
 }
 
 pub trait PlayerAPI<'a>: TypeAPI<'a> {
-    fn set_plays(
-        &self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>
+    fn set_plays<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        role_type: RoleType<'static>,
     ) -> Plays<'static>;
 
-    fn delete_plays(&self, type_manager: &TypeManager<impl WritableSnapshot>, role_type: RoleType<'static>);
-
-    fn get_plays<'m>(
+    fn delete_plays<Snapshot: WritableSnapshot>(
         &self,
-        type_manager: &'m TypeManager<impl ReadableSnapshot>,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        role_type: RoleType<'static>
+    );
+
+    fn get_plays<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError>;
 
-    fn get_plays_role(
+    fn get_plays_role<Snapshot: ReadableSnapshot>(
         &self,
-        type_manager: &TypeManager<impl ReadableSnapshot>,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
         role_type: RoleType<'static>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError>;
 
-    fn has_plays_role(
+    fn has_plays_role<Snapshot: ReadableSnapshot>(
         &self,
-        type_manager: &TypeManager<impl ReadableSnapshot>,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
         role_type: RoleType<'static>,
     ) -> Result<bool, ConceptReadError> {
-        Ok(self.get_plays_role(type_manager, role_type)?.is_some())
+        Ok(self.get_plays_role(snapshot, type_manager, role_type)?.is_some())
     }
 }
 

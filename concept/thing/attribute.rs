@@ -156,6 +156,7 @@ impl<'a> Ord for Attribute<'a> {
 /// Attribute iterators handle hiding dependent attributes that were not deleted yet
 ///
 pub struct AttributeIterator<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> {
+    snapshot: Option<&'a Snapshot>,
     type_manager: Option<&'a TypeManager<Snapshot>>,
     attributes_iterator: Option<SnapshotRangeIterator<'a, A_PS>>,
     has_reverse_iterator: Option<SnapshotRangeIterator<'a, H_PS>>,
@@ -166,9 +167,11 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
     pub(crate) fn new(
         attributes_iterator: SnapshotRangeIterator<'a, A_PS>,
         has_reverse_iterator: SnapshotRangeIterator<'a, H_PS>,
+        snapshot: &'a Snapshot,
         type_manager: &'a TypeManager<Snapshot>,
     ) -> Self {
         Self {
+            snapshot: Some(snapshot),
             type_manager: Some(type_manager),
             attributes_iterator: Some(attributes_iterator),
             has_reverse_iterator: Some(has_reverse_iterator),
@@ -177,7 +180,7 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
     }
 
     pub(crate) fn new_empty() -> Self {
-        Self { type_manager: None, attributes_iterator: None, has_reverse_iterator: None, state: State::Done }
+        Self { snapshot: None, type_manager: None, attributes_iterator: None, has_reverse_iterator: None, state: State::Done }
     }
 
     fn storage_key_to_attribute_vertex<'b>(storage_key_ref: StorageKeyReference<'b>) -> AttributeVertex<'b> {
@@ -254,7 +257,7 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
                     let attribute_vertex = Self::storage_key_to_attribute_vertex(key);
                     let independent = Attribute::new(attribute_vertex.as_reference())
                         .type_()
-                        .is_independent(self.type_manager.as_ref().unwrap());
+                        .is_independent(self.snapshot.clone().unwrap(), self.type_manager.clone().unwrap());
                     match independent {
                         Ok(true) => self.state = State::ItemReady,
                         Ok(false) => {

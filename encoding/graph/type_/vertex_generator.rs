@@ -97,7 +97,7 @@ impl TypeVertexGenerator {
         }
     }
 
-    pub fn create_entity_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
+    pub fn create_entity_type<Snapshot: WritableSnapshot>(&self, snapshot: &mut Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
         let vertex = self.next_entity.allocate(snapshot)?;
         snapshot.put(vertex.as_storage_key().into_owned_array());
         Ok(vertex)
