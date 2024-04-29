@@ -33,6 +33,10 @@ impl<D: DurabilityService> TransactionRead<D> {
         &self.type_manager
     }
 
+    pub fn snapshot(&self) -> &ReadSnapshot<D> {
+        &self.snapshot
+    }
+
     pub fn close(self) {
         drop(self.thing_manager);
         drop(self.type_manager);
@@ -64,8 +68,8 @@ impl<D: DurabilityService> TransactionWrite<D> {
         &self.thing_manager
     }
 
-    pub fn commit(self) -> Result<(), Vec<ConceptWriteError>> {
-        self.thing_manager.finalise()?;
+    pub fn commit(mut self) -> Result<(), Vec<ConceptWriteError>> {
+        self.thing_manager.finalise(&mut self.snapshot)?;
         drop(self.type_manager);
         // TODO: pass error up
         self.snapshot.commit().unwrap_or_else(|_| { panic!("Failed to commit snapshot"); });
@@ -99,8 +103,8 @@ impl<D: DurabilityService> TransactionSchema<D> {
         &self.type_manager
     }
 
-    pub fn commit(self) -> Result<(), Vec<ConceptWriteError>> {
-        self.thing_manager.finalise()?;
+    pub fn commit(mut self) -> Result<(), Vec<ConceptWriteError>> {
+        self.thing_manager.finalise(&mut self.snapshot)?;
         let type_manager_owned = Arc::try_unwrap(self.type_manager).unwrap_or_else(|_| { panic!("Failed to unwrap type_manager arc"); });
         type_manager_owned.finalise()?;
         self.snapshot.commit().unwrap_or_else(|_| { panic!("Failed to commit snapshot"); });

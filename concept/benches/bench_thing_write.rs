@@ -43,44 +43,42 @@ fn write_entity_attributes(
     thing_vertex_generator: Arc<ThingVertexGenerator>,
     schema_cache: Arc<TypeCache>,
 ) {
-    let snapshot = Arc::new(storage.clone().open_snapshot_write());
+    let mut snapshot = storage.clone().open_snapshot_write();
     {
-        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), Some(schema_cache)));
-        let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator.clone(), type_manager.clone());
+        let type_manager = Arc::new(TypeManager::new(type_vertex_generator.clone(), Some(schema_cache)));
+        let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
 
-        let person_type = type_manager.get_entity_type(PERSON_LABEL.get().unwrap()).unwrap().unwrap();
-        let age_type = type_manager.get_attribute_type(AGE_LABEL.get().unwrap()).unwrap().unwrap();
-        let name_type = type_manager.get_attribute_type(NAME_LABEL.get().unwrap()).unwrap().unwrap();
-        let person = thing_manager.create_entity(person_type).unwrap();
+        let person_type = type_manager.get_entity_type(&snapshot, PERSON_LABEL.get().unwrap()).unwrap().unwrap();
+        let age_type = type_manager.get_attribute_type(&snapshot, AGE_LABEL.get().unwrap()).unwrap().unwrap();
+        let name_type = type_manager.get_attribute_type(&snapshot, NAME_LABEL.get().unwrap()).unwrap().unwrap();
+        let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
 
         let random_long: i64 = rand::random();
         let length: u8 = rand::random();
         let random_string: String = Alphanumeric.sample_string(&mut rand::thread_rng(), length as usize);
 
-        let age = thing_manager.create_attribute(age_type, Value::Long(random_long)).unwrap();
-        let name = thing_manager.create_attribute(name_type, Value::String(Cow::Borrowed(&random_string))).unwrap();
-        person.set_has_unordered(&thing_manager, age).unwrap();
-        person.set_has_unordered(&thing_manager, name).unwrap();
+        let age = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(random_long)).unwrap();
+        let name = thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(&random_string))).unwrap();
+        person.set_has_unordered(&mut snapshot, &thing_manager, age).unwrap();
+        person.set_has_unordered(&mut snapshot, &thing_manager, name).unwrap();
     }
 
-    let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();
-    write_snapshot.commit().unwrap();
+    snapshot.commit().unwrap();
 }
 
 fn create_schema(storage: &Arc<MVCCStorage<WAL>>, type_vertex_generator: &Arc<TypeVertexGenerator>) {
-    let snapshot: Arc<WriteSnapshot<WAL>> = Arc::new(storage.clone().open_snapshot_write());
+    let mut snapshot: WriteSnapshot<WAL> = storage.clone().open_snapshot_write();
     {
-        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None));
-        let age_type = type_manager.create_attribute_type(AGE_LABEL.get().unwrap(), false).unwrap();
-        age_type.set_value_type(&type_manager, ValueType::Long);
-        let name_type = type_manager.create_attribute_type(NAME_LABEL.get().unwrap(), false).unwrap();
-        name_type.set_value_type(&type_manager, ValueType::String);
-        let person_type = type_manager.create_entity_type(PERSON_LABEL.get().unwrap(), false).unwrap();
-        person_type.set_owns(&type_manager, age_type, Ordering::Unordered);
-        person_type.set_owns(&type_manager, name_type, Ordering::Unordered);
+        let type_manager = Rc::new(TypeManager::new(type_vertex_generator.clone(), None));
+        let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap(), false).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long);
+        let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap(), false).unwrap();
+        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String);
+        let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap(), false).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, age_type, Ordering::Unordered);
+        person_type.set_owns(&mut snapshot, &type_manager, name_type, Ordering::Unordered);
     }
-    let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();
-    write_snapshot.commit().unwrap();
+    snapshot.commit().unwrap();
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

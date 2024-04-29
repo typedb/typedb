@@ -28,7 +28,7 @@ macro_rules! with_type {
                 $block
             },
             Kind::Entity => {
-                let $assign_to = $tx.type_manager().get_entity_type(&$label.to_typedb()).unwrap().unwrap();
+                let $assign_to = $tx.type_manager().get_entity_type(&snapshot, &$label.to_typedb()).unwrap().unwrap();
                 $block
             },
             Kind::Relation => {
@@ -44,7 +44,7 @@ fn with_object_type(tx: &ActiveTransaction, kind: Kind, label: &Label) -> Object
     tx_as_read! (tx, {
         match kind {
             Kind::Entity => {
-                let type_ = tx.type_manager().get_entity_type(&label.to_typedb()).unwrap().unwrap();
+                let type_ = tx.type_manager().get_entity_type(&snapshot, &label.to_typedb()).unwrap().unwrap();
                 return ObjectType::Entity(type_)
             },
             Kind::Relation => {
@@ -93,7 +93,7 @@ pub async fn type_is_null(context: &mut Context, root_label: RootLabel, type_lab
                 is_null.check(type_.is_none());
             },
             Kind::Entity => {
-                let type_ = tx.type_manager().get_entity_type(&type_label.to_typedb()).unwrap();
+                let type_ = tx.type_manager().get_entity_type(&snapshot, &type_label.to_typedb()).unwrap();
                 is_null.check(type_.is_none());
             },
             Kind::Relation => {
@@ -139,22 +139,22 @@ pub async fn type_set_abstract(context: &mut Context, root_label: RootLabel, typ
         match root_label.to_typedb() {
             Kind::Attribute => {
                 let type_ = tx.type_manager().get_attribute_type(&type_label.to_typedb()).unwrap().unwrap();
-                let res = type_.set_annotation(tx.type_manager(), AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()));
+                let res = type_.set_annotation(&mut snapshot, tx.type_manager(), AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()));
                 may_error.check(&res);
             },
             Kind::Entity => {
-                let type_ = tx.type_manager().get_entity_type(&type_label.to_typedb()).unwrap().unwrap();
-                let res = type_.set_annotation(tx.type_manager(), EntityTypeAnnotation::Abstract(AnnotationAbstract::new()));
+                let type_ = tx.type_manager().get_entity_type(&snapshot, &type_label.to_typedb()).unwrap().unwrap();
+                let res = type_.set_annotation(&mut snapshot, tx.type_manager(), EntityTypeAnnotation::Abstract(AnnotationAbstract::new()));
                 may_error.check(&res);
             },
             Kind::Relation => {
                 let type_ = tx.type_manager().get_relation_type(&type_label.to_typedb()).unwrap().unwrap();
-                let res = type_.set_annotation(tx.type_manager(), RelationTypeAnnotation::Abstract(AnnotationAbstract::new()));
+                let res = type_.set_annotation(&mut snapshot, tx.type_manager(), RelationTypeAnnotation::Abstract(AnnotationAbstract::new()));
                 may_error.check(&res);
             },
             Kind::Role => {
                 let type_ = tx.type_manager().get_role_type(&type_label.to_typedb()).unwrap().unwrap();
-                let res = type_.set_annotation(tx.type_manager(), RoleTypeAnnotation::Abstract(AnnotationAbstract::new()));
+                let res = type_.set_annotation(&mut snapshot, tx.type_manager(), RoleTypeAnnotation::Abstract(AnnotationAbstract::new()));
                 may_error.check(&res);
             },
         };
@@ -186,8 +186,8 @@ pub async fn type_set_supertype(context: &mut Context, root_label: RootLabel, ty
                 may_error.check(&res);
             },
             Kind::Entity => {
-                let thistype = tx.type_manager().get_entity_type(&type_label.to_typedb()).unwrap().unwrap();
-                let supertype = tx.type_manager().get_entity_type(&supertype_label.to_typedb()).unwrap().unwrap();
+                let thistype = tx.type_manager().get_entity_type(&snapshot, &type_label.to_typedb()).unwrap().unwrap();
+                let supertype = tx.type_manager().get_entity_type(&snapshot, &supertype_label.to_typedb()).unwrap().unwrap();
                 let res = thistype.set_supertype(tx.type_manager(), supertype);
                 may_error.check(&res);
             },
@@ -247,11 +247,11 @@ pub async fn set_owns(context: &mut Context, root_label: RootLabel, type_label: 
     let object_type = with_object_type(tx, root_label.to_typedb(), &type_label);
     tx_as_schema! (tx, {
         let attr_type = tx.type_manager().get_attribute_type(&attribute_type_label.to_typedb()).unwrap().unwrap();
-        let owns = object_type.set_owns(tx.type_manager(), attr_type, Ordering::Unordered);
+        let owns = object_type.set_owns(&mut snapshot, tx.type_manager(), attr_type, Ordering::Unordered);
         // todo!("Set override");
         // // todo!("Set annotations");
         // for owns_annotation in with_annotations.to_owns().iter() {
-        //     owns.set_annotation(tx.type_manager(), *owns_annotation);
+        //     owns.set_annotation(&mut snapshot, tx.type_manager(), *owns_annotation);
         // }
         // todo!("Error handling of may_error");
     });

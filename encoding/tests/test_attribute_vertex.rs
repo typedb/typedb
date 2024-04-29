@@ -115,10 +115,10 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     let type_id = TypeID::build(0);
     {
         let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
-        let entity_type_vertex = generator.create_entity_type(&snapshot).unwrap();
+        let entity_type_vertex = generator.create_entity_type(&mut snapshot).unwrap();
         debug_assert_eq!(type_id, entity_type_vertex.type_id_());
 
         let relation_type_vertex = generator.create_relation_type(&snapshot).unwrap();
@@ -129,9 +129,9 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
 
     for i in 0..5 {
         let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
-        let vertex = generator.create_entity(type_id, &snapshot);
+        let vertex = generator.create_entity(type_id, &mut snapshot);
         assert_eq!(type_id, vertex.type_id_());
         assert_eq!(i as u64, vertex.object_id().as_u64());
         snapshot.commit().unwrap();
@@ -139,9 +139,9 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
 
     for i in 0..5 {
         let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
-        let vertex = generator.create_relation(type_id, &snapshot);
+        let vertex = generator.create_relation(type_id, &mut snapshot);
         assert_eq!(type_id, vertex.type_id_());
         assert_eq!(i as u64, vertex.object_id().as_u64());
         snapshot.commit().unwrap();

@@ -81,7 +81,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
 
     fn has_owns_attribute<Snapshot: ReadableSnapshot>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &Snapshot,
         type_manager: &TypeManager<Snapshot>,
         attribute_type: AttributeType<'static>,
     ) -> Result<bool, ConceptReadError> {

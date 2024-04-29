@@ -34,9 +34,9 @@ fn entity_type_vertexes_are_reused() {
     // If we don't commit, it doesn't move.
     {
         for _ in 0..5 {
-            let snapshot = storage.clone().open_snapshot_write();
+            let mut snapshot = storage.clone().open_snapshot_write();
             let generator = TypeVertexGenerator::new();
-            let vertex = generator.create_entity_type(&snapshot).unwrap();
+            let vertex = generator.create_entity_type(&mut snapshot).unwrap();
             assert_eq!(0, vertex.type_id_().as_u16());
         }
     }
@@ -44,10 +44,10 @@ fn entity_type_vertexes_are_reused() {
     // create a bunch of types, delete, and assert that the IDs are re-used
     let create_till = 32;
     {
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
         for i in 0..=create_till {
-            let vertex = generator.create_entity_type(&snapshot).unwrap();
+            let vertex = generator.create_entity_type(&mut snapshot).unwrap();
             assert_eq!(i, vertex.type_id_().as_u16());
         }
         snapshot.commit().unwrap();
@@ -66,10 +66,10 @@ fn entity_type_vertexes_are_reused() {
 
     {
         let generator = TypeVertexGenerator::new();
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         for i in 0..=create_till {
             if i % 2 == 0 {
-                let vertex = generator.create_entity_type(&snapshot).unwrap();
+                let vertex = generator.create_entity_type(&mut snapshot).unwrap();
                 assert_eq!(i, vertex.type_id_().as_u16());
             }
         }
@@ -83,20 +83,20 @@ fn max_entity_type_vertexes() {
     let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let create_till = u16::MAX;
     {
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
         for i in 0..=create_till {
-            let vertex = generator.create_entity_type(&snapshot).unwrap();
+            let vertex = generator.create_entity_type(&mut snapshot).unwrap();
             assert_eq!(i, vertex.type_id_().as_u16());
         }
         snapshot.commit().unwrap();
     }
 
     {
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
-        let res = generator.create_entity_type(&snapshot); // Crashes
+        let res = generator.create_entity_type(&mut snapshot); // Crashes
         assert!(matches!(res, Err(EncodingError::TypeIDsExhausted { kind: encoding::graph::type_::Kind::Entity })));
     }
 }
@@ -109,10 +109,10 @@ fn loading_storage_assigns_next_vertex() {
 
     for i in 0..create_till {
         let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
-        let vertex = generator.create_entity_type(&snapshot).unwrap();
+        let vertex = generator.create_entity_type(&mut snapshot).unwrap();
         assert_eq!(i, vertex.type_id_().as_u16());
         snapshot.commit().unwrap();
     }

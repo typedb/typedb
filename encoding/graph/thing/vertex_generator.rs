@@ -133,7 +133,7 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_relation<Snapshot>(&self, type_id: TypeID, snapshot: &Snapshot) -> ObjectVertex<'static>
+    pub fn create_relation<Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex<'static>
     where
         Snapshot: WritableSnapshot,
     {
