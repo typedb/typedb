@@ -284,7 +284,7 @@ impl Keyspace {
 
 impl fmt::Debug for Keyspace {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Keyspace[name={}, path={:?}, id={}]", self.name, self.path, self.id,)
+        write!(f, "Keyspace[name={}, path={:?}, id={}]", self.name, self.path, self.id)
     }
 }
 
