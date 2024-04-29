@@ -14,9 +14,12 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
 use rand::{thread_rng, rngs::ThreadRng, Rng};
+use speedb::DB;
 use bench_rocks_impl::{
     rocks_database::{create_non_transactional_db},
 };
+use test_utils::create_tmp_dir;
+use crate::bench_rocks_impl::rocks_database::create_typedb;
 
 const N_DATABASES: usize = 1;
 const N_COL_FAMILIES_PER_DB: usize = 1;
@@ -30,8 +33,9 @@ pub trait RocksDatabase : std::marker::Sync + std::marker::Send {
 }
 
 pub trait RocksWriteBatch {
-    fn put<const KEY_SIZE: usize, const VALUE_SIZE: usize>(&mut self, database_index: usize, key: [u8; KEY_SIZE], value: [u8; VALUE_SIZE]);
-    fn commit(self) -> Result<(), speedb::Error>;
+    type CommitError: std::fmt::Debug;
+    fn put(&mut self, database_index: usize, key: [u8; KEY_SIZE]);
+    fn commit(self) -> Result<(), Self::CommitError>;
 }
 
 
@@ -87,7 +91,7 @@ impl BenchmarkRunner {
                         let batch_start_instant = Instant::now();
                         for _ in 0..self.batch_size {
                             let (k, v) = Self::generate_key_value(&mut rng);
-                            write_batch.put(0, k, v);
+                            write_batch.put(0, k);
                         }
                         write_batch.commit().unwrap();
                         let mut duration_for_batch = batch_timings.get(batch_number).unwrap().write().unwrap();
@@ -119,18 +123,28 @@ fn get_arg_as<T: std::str::FromStr>(args:&HashMap<String, String>, key: &str) ->
     }
 }
 
-fn main() {
-    let args : HashMap<String, String> = std::env::args()
-        .filter_map(|arg| arg.split_once("=").map(|(s1, s2)| (s1.to_string(), s2.to_string())))
-        .collect();
-
-    let database = create_non_transactional_db::<N_DATABASES>().unwrap();
+fn run_for(args: &HashMap<String, String>, database: &impl RocksDatabase) {
     let benchmarker = BenchmarkRunner {
         n_threads: get_arg_as::<u16>(&args, "threads").unwrap(),
         n_batches: get_arg_as::<usize>(&args, "batches").unwrap(),
         batch_size: get_arg_as::<usize>(&args, "batch_size").unwrap()
     };
-    let report = benchmarker.run(&database);
+
+
+    let report = benchmarker.run(database);
     println!("Done");
     report.print_report(&benchmarker);
+}
+
+
+fn main() {
+    let args : HashMap<String, String> = std::env::args()
+        .filter_map(|arg| arg.split_once("=").map(|(s1, s2)| (s1.to_string(), s2.to_string())))
+        .collect();
+
+    match get_arg_as::<String>(&args, "database").unwrap().as_str() {
+        "rocks_raw" => run_for(&args, &create_non_transactional_db::<N_DATABASES>().unwrap()),
+        "typedb" => run_for(&args, &create_typedb::<N_DATABASES>().unwrap()),
+        _ => panic!("Unrecognised argument for database. Supported: rocks_raw, typedb")
+    }
 }

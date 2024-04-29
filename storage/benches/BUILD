@@ -39,6 +39,10 @@ rust_test(
         "@crates//:rand",
         "@crates//:speedb",
 
+        "//common/bytes",
+        "//database:database",
+        "//storage/durability:durability",
+        "//storage:storage",
         "//util/test:test_utils",
     ],
     use_libtest_harness = False,
