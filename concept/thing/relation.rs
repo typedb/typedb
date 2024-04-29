@@ -270,7 +270,7 @@ impl<'a> Relation<'a> {
             thing_manager.relation_index_player_regenerate(
                 snapshot, self.as_reference(), player.as_reference(), role_type, 1,
                 &compound_update_guard,
-            );
+            )?;
         } else {
             thing_manager.set_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone());
         }
@@ -296,7 +296,7 @@ impl<'a> Relation<'a> {
             .map_err(|e| ConceptWriteError::ConceptRead { source: e })? {
             thing_manager.relation_index_player_regenerate(
                 snapshot, self.as_reference(), player.as_reference(), role_type, player_count, &compound_update_guard,
-            );
+            )?;
         }
         Ok(())
     }
@@ -364,7 +364,7 @@ impl<'a> Relation<'a> {
                 snapshot,
                 self.as_reference(), player.as_reference(), role_type, remaining_player_count,
                 &compound_update_guard,
-            );
+            )?;
         }
         Ok(())
     }

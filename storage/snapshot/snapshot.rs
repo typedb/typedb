@@ -55,39 +55,41 @@ pub trait ReadableSnapshot {
 pub trait WritableSnapshot: ReadableSnapshot {
     fn operations(&self) -> &OperationsBuffer;
 
+    fn operations_mut(&mut self) -> &mut OperationsBuffer;
+
     /// Insert a key with a new version
-    fn insert(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
+    fn insert(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
         self.insert_val(key, ByteArray::empty())
     }
 
-    fn insert_val(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
+    fn insert_val(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
         let keyspace_id = key.keyspace_id();
         let byte_array = key.into_byte_array();
-        self.operations().writes_in(keyspace_id).insert(byte_array, value);
+        self.operations_mut().writes_in_mut(keyspace_id).insert(byte_array, value);
     }
 
     /// Insert a key with a new version if it does not already exist.
     /// If the key exists, mark it as a preexisting insertion to escalate to Insert if there is a concurrent Delete.
-    fn put(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
+    fn put(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
         self.put_val(key, ByteArray::empty())
     }
 
-    fn put_val(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
+    fn put_val(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
         let keyspace_id = key.keyspace_id();
         let byte_array = key.into_byte_array();
-        self.operations().writes_in(keyspace_id).put(byte_array, value);
+        self.operations_mut().writes_in_mut(keyspace_id).put(byte_array, value);
     }
 
     /// Insert a delete marker for the key with a new version
-    fn delete(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
+    fn delete(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
         let keyspace_id = key.keyspace_id();
         let byte_array = key.into_byte_array();
-        self.operations().writes_in(keyspace_id).delete(byte_array);
+        self.operations_mut().writes_in_mut(keyspace_id).delete(byte_array);
     }
 
     /// Get a Value, and mark it as a required key
     fn get_required(
-        &self,
+        &mut self,
         key: StorageKey<'_, BUFFER_KEY_INLINE>,
     ) -> Result<ByteArray<BUFFER_VALUE_INLINE>, SnapshotGetError> {
         let keyspace_id = key.keyspace_id();
@@ -98,7 +100,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
         } else {
             let storage_value = self.get_mapped(key.as_reference(), |reference| ByteArray::from(reference))?;
             if let Some(value) = storage_value {
-                self.operations().lock_add(ByteArray::copy(key.bytes()), LockType::Unmodifiable);
+                self.operations_mut().lock_add(ByteArray::copy(key.bytes()), LockType::Unmodifiable);
                 Ok(value)
             } else {
                 // TODO: what if the user concurrent requires a concept while deleting it in another query
@@ -108,16 +110,16 @@ pub trait WritableSnapshot: ReadableSnapshot {
     }
 
     // TODO: technically we should never need this in a schema txn
-    fn unmodifiable_lock_add(&self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
-        self.operations().lock_add(key.into_byte_array(), LockType::Unmodifiable)
+    fn unmodifiable_lock_add(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
+        self.operations_mut().lock_add(key.into_byte_array(), LockType::Unmodifiable)
     }
 
-    fn unmodifiable_lock_remove(&self, key: &StorageKeyArray<BUFFER_KEY_INLINE>) {
-        self.operations().lock_remove(key.byte_array())
+    fn unmodifiable_lock_remove(&mut self, key: &StorageKeyArray<BUFFER_KEY_INLINE>) {
+        self.operations_mut().lock_remove(key.byte_array())
     }
 
-    fn exclusive_lock_add(&self, key: ByteArray<BUFFER_KEY_INLINE>) {
-        self.operations().lock_add(key, LockType::Exclusive)
+    fn exclusive_lock_add(&mut self, key: ByteArray<BUFFER_KEY_INLINE>) {
+        self.operations_mut().lock_add(key, LockType::Exclusive)
     }
 
     fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<64>, Write)> + '_ {
@@ -266,6 +268,10 @@ impl<D> WritableSnapshot for WriteSnapshot<D> {
         &self.operations
     }
 
+    fn operations_mut(&mut self) -> &mut OperationsBuffer {
+        &mut self.operations
+    }
+
     fn close_resources(&self) {
         self.storage.closed_snapshot_write(self.open_sequence_number());
     }
@@ -274,7 +280,7 @@ impl<D> WritableSnapshot for WriteSnapshot<D> {
 impl<D: DurabilityService> CommittableSnapshot<D> for WriteSnapshot<D> {
     // TODO: extract these two methods into separate trait
     fn commit(self) -> Result<(), SnapshotError> {
-        if self.operations.writes_empty() && self.operations.locks_empty() {
+        if self.operations.is_writes_empty() && self.operations.locks_empty() {
             Ok(())
         } else {
             self.storage.clone().snapshot_commit(self).map_err(|error| SnapshotError::Commit { source: error })
@@ -353,6 +359,10 @@ impl<D> WritableSnapshot for SchemaSnapshot<D> {
         &self.operations
     }
 
+    fn operations_mut(&mut self) -> &mut OperationsBuffer {
+        &mut self.operations
+    }
+
     fn close_resources(&self) {
         self.storage.closed_snapshot_write(self.open_sequence_number());
     }
@@ -361,7 +371,7 @@ impl<D> WritableSnapshot for SchemaSnapshot<D> {
 impl<D: DurabilityService> CommittableSnapshot<D> for SchemaSnapshot<D> {
     // TODO: extract these two methods into separate trait
     fn commit(self) -> Result<(), SnapshotError> {
-        if self.operations.writes_empty() {
+        if self.operations.is_writes_empty() {
             Ok(())
         } else {
             self.storage.clone().snapshot_commit(self).map_err(|error| SnapshotError::Commit { source: error })

@@ -54,7 +54,7 @@ fn entity_type_vertexes_are_reused() {
     }
 
     {
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         for i in 0..=create_till {
             if i % 2 == 0 {
                 let vertex = build_vertex_entity_type(TypeID::build(i));
@@ -119,30 +119,30 @@ fn loading_storage_assigns_next_vertex() {
 
     for i in 0..create_till {
         let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
-        let vertex = generator.create_attribute_type(&snapshot).unwrap();
+        let vertex = generator.create_attribute_type(&mut snapshot).unwrap();
         assert_eq!(i, vertex.type_id_().as_u16());
         snapshot.commit().unwrap();
     }
 
     for i in 0..create_till {
         let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
-        let vertex = generator.create_relation_type(&snapshot).unwrap();
+        let vertex = generator.create_relation_type(&mut snapshot).unwrap();
         assert_eq!(i, vertex.type_id_().as_u16());
         snapshot.commit().unwrap();
     }
 
     for i in 0..create_till {
         let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
-        let vertex = generator.create_role_type(&snapshot).unwrap();
+        let vertex = generator.create_role_type(&mut snapshot).unwrap();
         assert_eq!(i, vertex.type_id_().as_u16());
         snapshot.commit().unwrap();
     }

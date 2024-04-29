@@ -42,7 +42,7 @@ const VALUE_3: [u8; 1] = [0x88];
 fn setup_storage(storage_path: &Path) -> Arc<MVCCStorage<WAL>> {
     let storage = Arc::new(MVCCStorage::open::<TestKeyspaceSet>("storage", storage_path).unwrap());
 
-    let snapshot = storage.clone().open_snapshot_write();
+    let mut snapshot = storage.clone().open_snapshot_write();
     snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
     snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_2));
     snapshot.commit().unwrap();
@@ -56,7 +56,7 @@ fn commits_isolated() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_1 = storage.clone().open_snapshot_write();
+    let mut snapshot_1 = storage.clone().open_snapshot_write();
     let snapshot_2 = storage.clone().open_snapshot_read();
 
     let key_3 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_3));
@@ -90,8 +90,8 @@ fn g0_update_conflicts_fail() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_1 = storage.clone().open_snapshot_write();
-    let snapshot_2 = storage.clone().open_snapshot_write();
+    let mut snapshot_1 = storage.clone().open_snapshot_write();
+    let mut snapshot_2 = storage.clone().open_snapshot_write();
 
     let key_1 = StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
 
@@ -119,8 +119,8 @@ fn g0_dirty_writes() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_1 = storage.clone().open_snapshot_write();
-    let snapshot_2 = storage.clone().open_snapshot_write();
+    let mut snapshot_1 = storage.clone().open_snapshot_write();
+    let mut snapshot_2 = storage.clone().open_snapshot_write();
 
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let key_2 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
@@ -181,12 +181,12 @@ fn g1a_aborted_writes() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_setup = storage.clone().open_snapshot_write();
+    let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(value_1_0.bytes()));
     let result_snapshot = snapshot_setup.commit();
     assert!(result_snapshot.is_ok());
 
-    let snapshot_1 = storage.clone().open_snapshot_write();
+    let mut snapshot_1 = storage.clone().open_snapshot_write();
     let snapshot_2 = storage.clone().open_snapshot_write();
     snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(value_1_1.bytes()));
     let read_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1));
@@ -206,13 +206,13 @@ fn g1b_intermediate_read() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_setup = storage.clone().open_snapshot_write();
+    let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(value_1_0.bytes()));
     let result_snapshot = snapshot_setup.commit();
     assert!(result_snapshot.is_ok());
 
-    let snapshot_1 = storage.clone().open_snapshot_write();
-    let snapshot_2 = storage.open_snapshot_write();
+    let mut snapshot_1 = storage.clone().open_snapshot_write();
+    let mut snapshot_2 = storage.open_snapshot_write();
     snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(value_1_1i.bytes()));
     let read_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1));
     snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(value_1_1f.bytes()));
@@ -235,14 +235,14 @@ fn g1c_circular_info_flow() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_setup = storage.clone().open_snapshot_write();
+    let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(value_1_0.bytes()));
     snapshot_setup.put_val(key_2.to_owned(), ByteArray::copy(value_2_0.bytes()));
     let result_snapshot = snapshot_setup.commit();
     assert!(result_snapshot.is_ok());
 
-    let snapshot_1 = storage.clone().open_snapshot_write();
-    let snapshot_2 = storage.open_snapshot_write();
+    let mut snapshot_1 = storage.clone().open_snapshot_write();
+    let mut snapshot_2 = storage.open_snapshot_write();
     snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(value_1_1.bytes()));
     let read_1_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1));
     snapshot_2.put_val(key_2.to_owned(), ByteArray::copy(value_2_2.bytes()));
@@ -263,13 +263,13 @@ fn p4_g_cursor_lost_update() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_setup = storage.clone().open_snapshot_write();
+    let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(value_0.bytes()));
     let result_snapshot = snapshot_setup.commit();
     assert!(result_snapshot.is_ok());
 
-    let snapshot_1 = storage.clone().open_snapshot_write();
-    let snapshot_2 = storage.clone().open_snapshot_write();
+    let mut snapshot_1 = storage.clone().open_snapshot_write();
+    let mut snapshot_2 = storage.clone().open_snapshot_write();
     let read_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap();
     let read_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap();
     let to_write_1 = ByteArray::inline([read_1.bytes()[0] + 1], 1);
@@ -301,14 +301,14 @@ fn g_single_read_skew() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_setup = storage.clone().open_snapshot_write();
+    let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(value_1_0.bytes()));
     snapshot_setup.put_val(key_2.to_owned(), ByteArray::copy(value_2_0.bytes()));
     let result_snapshot = snapshot_setup.commit();
     assert!(result_snapshot.is_ok());
 
-    let snapshot_1 = storage.clone().open_snapshot_write();
-    let snapshot_2 = storage.open_snapshot_write();
+    let mut snapshot_1 = storage.clone().open_snapshot_write();
+    let mut snapshot_2 = storage.open_snapshot_write();
 
     let read_1_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_1));
     snapshot_2.put_val(key_1.to_owned(), ByteArray::copy(value_1_2.bytes()));
@@ -336,14 +336,14 @@ fn g2_item_write_skew_disjoint_read() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_setup = storage.clone().open_snapshot_write();
+    let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(value_0.bytes()));
     snapshot_setup.put_val(key_2.to_owned(), ByteArray::copy(value_0.bytes()));
     let result_snapshot = snapshot_setup.commit();
     assert!(result_snapshot.is_ok());
 
-    let snapshot_1 = storage.clone().open_snapshot_write();
-    let snapshot_2 = storage.clone().open_snapshot_write();
+    let mut snapshot_1 = storage.clone().open_snapshot_write();
+    let mut snapshot_2 = storage.clone().open_snapshot_write();
 
     let read_2_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_2));
     if read_2_1.unwrap().unwrap().bytes()[0] == 0 {
@@ -382,8 +382,8 @@ fn g2_predicate_anti_dependency_cycles() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_1 = storage.clone().open_snapshot_write();
-    let snapshot_2 = storage.open_snapshot_write();
+    let mut snapshot_1 = storage.clone().open_snapshot_write();
+    let mut snapshot_2 = storage.open_snapshot_write();
 
     let it_1 = snapshot_1.iterate_range(prefix.clone());
     let mut sum_1 = 0;
@@ -428,14 +428,14 @@ fn g2_antidependency_cycles_fekete() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_setup = storage.clone().open_snapshot_write();
+    let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(value_1_0.bytes()));
     snapshot_setup.put_val(key_2.to_owned(), ByteArray::copy(value_2_0.bytes()));
     let result_snapshot = snapshot_setup.commit();
     assert!(result_snapshot.is_ok());
 
-    let snapshot_1 = storage.clone().open_snapshot_write();
-    let snapshot_2 = storage.clone().open_snapshot_write();
+    let mut snapshot_1 = storage.clone().open_snapshot_write();
+    let mut snapshot_2 = storage.clone().open_snapshot_write();
 
     let read_1_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_1));
     let read_2_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_2));
@@ -481,14 +481,14 @@ fn otv() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_setup = storage.clone().open_snapshot_write();
+    let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(value_1_0.bytes()));
     snapshot_setup.put_val(key_2.to_owned(), ByteArray::copy(value_2_0.bytes()));
     let result_snapshot = snapshot_setup.commit();
     assert!(result_snapshot.is_ok());
 
-    let snapshot_1 = storage.clone().open_snapshot_write();
-    let snapshot_2 = storage.clone().open_snapshot_write();
+    let mut snapshot_1 = storage.clone().open_snapshot_write();
+    let mut snapshot_2 = storage.clone().open_snapshot_write();
     let snapshot_3 = storage.open_snapshot_read();
 
     snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(value_1_1.bytes()));
@@ -513,7 +513,7 @@ fn imp_setup() -> Arc<MVCCStorage<WAL>> {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
-    let snapshot_setup = storage.clone().open_snapshot_write();
+    let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(value_1_0.bytes()));
     snapshot_setup.put_val(key_2.to_owned(), ByteArray::copy(value_2_0.bytes()));
     let result_snapshot = snapshot_setup.commit();
@@ -521,7 +521,7 @@ fn imp_setup() -> Arc<MVCCStorage<WAL>> {
     storage
 }
 
-fn imp_ops<D>(snapshot_update: &WriteSnapshot<D>, snapshot_delete: &WriteSnapshot<D>)
+fn imp_ops<D>(snapshot_update: &mut WriteSnapshot<D>, snapshot_delete: &mut WriteSnapshot<D>)
 where
     D: DurabilityService,
 {
@@ -584,9 +584,9 @@ fn imp_commit_delete_first() {
     // By our implementation, committing the update first and delete second looks correct.
     // But committing the delete first and update second leaves both keys present.
     let storage = imp_setup();
-    let snapshot_update = storage.clone().open_snapshot_write();
-    let snapshot_delete = storage.clone().open_snapshot_write();
-    imp_ops(&snapshot_update, &snapshot_delete);
+    let mut snapshot_update = storage.clone().open_snapshot_write();
+    let mut snapshot_delete = storage.clone().open_snapshot_write();
+    imp_ops(&mut snapshot_update, &mut snapshot_delete);
     let result_delete = snapshot_delete.commit();
     let result_update = snapshot_update.commit();
 
@@ -599,9 +599,9 @@ fn imp_commit_delete_first() {
 #[test]
 fn imp_commit_update_first() {
     let storage = imp_setup();
-    let snapshot_update = storage.clone().open_snapshot_write();
-    let snapshot_delete = storage.clone().open_snapshot_write();
-    imp_ops(&snapshot_update, &snapshot_delete);
+    let mut snapshot_update = storage.clone().open_snapshot_write();
+    let mut snapshot_delete = storage.clone().open_snapshot_write();
+    imp_ops(&mut snapshot_update, &mut snapshot_delete);
     let result_update = snapshot_update.commit();
     let result_delete = snapshot_delete.commit();
 
@@ -620,30 +620,30 @@ fn isolation_manager_reads_evicted_from_disk() {
     let key_2 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_2));
     let value_1 = ByteArray::copy(&VALUE_1);
 
-    let snapshot0 = storage.clone().open_snapshot_write();
+    let mut snapshot0 = storage.clone().open_snapshot_write();
     snapshot0.put_val(key_1.clone().into_owned_array(), value_1.clone());
     snapshot0.commit().unwrap();
     let watermark_after_0 = storage.read_watermark();
 
-    let snapshot1 = storage.clone().open_snapshot_write();
+    let mut snapshot1 = storage.clone().open_snapshot_write();
     snapshot1.delete(key_1.clone().into_owned_array());
     snapshot1.commit().unwrap();
 
     for _i in 0..resource::constants::storage::TIMELINE_WINDOW_SIZE {
-        let snapshot_i = storage.clone().open_snapshot_write();
+        let mut snapshot_i = storage.clone().open_snapshot_write();
         snapshot_i.put_val(key_2.clone().into_owned_array(), value_1.clone());
         snapshot_i.commit().unwrap();
     }
 
     {
-        let snapshot_passes = storage.clone().open_snapshot_write_at(watermark_after_0).unwrap();
+        let mut snapshot_passes = storage.clone().open_snapshot_write_at(watermark_after_0).unwrap();
         snapshot_passes.put_val(key_2.clone().into_owned_array(), value_1.clone());
         let snapshot_passes_result = snapshot_passes.commit();
 
         assert!(snapshot_passes_result.is_ok());
     }
     {
-        let snapshot_conflicts = storage.open_snapshot_write_at(watermark_after_0).unwrap();
+        let mut snapshot_conflicts = storage.open_snapshot_write_at(watermark_after_0).unwrap();
         snapshot_conflicts.get_required(key_1.clone()).unwrap();
         snapshot_conflicts.put_val(key_2.clone().into_owned_array(), value_1.clone());
         let snapshot_conflicts_result = snapshot_conflicts.commit();
@@ -673,7 +673,7 @@ fn isolation_manager_correctly_recovers_from_disk() {
     let watermark_after_one_commit = {
         let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put_val(key_1.clone().into_owned_array(), value_1.clone());
         snapshot.commit().unwrap();
         storage.clone().read_watermark()

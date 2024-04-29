@@ -96,7 +96,6 @@ fn criterion_benchmark(c: &mut Criterion) {
     let w1 = storage.read_watermark();
     create_schema(&storage, &type_vertex_generator);
     let w2 = storage.read_watermark();
-    dbg!("before schema commit watermark: {}, after: {}", w1, w2);
     let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
 
     let mut group = c.benchmark_group("test writes");

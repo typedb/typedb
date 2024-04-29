@@ -103,19 +103,19 @@ impl TypeVertexGenerator {
         Ok(vertex)
     }
 
-    pub fn create_relation_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
+    pub fn create_relation_type<Snapshot: WritableSnapshot>(&self, snapshot: &mut Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
         let vertex = self.next_relation.allocate(snapshot)?;
         snapshot.put(vertex.as_storage_key().into_owned_array());
         Ok(vertex)
     }
 
-    pub fn create_role_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
+    pub fn create_role_type<Snapshot: WritableSnapshot>(&self, snapshot: &mut Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
         let vertex = self.next_role.allocate(snapshot)?;
         snapshot.put(vertex.as_storage_key().into_owned_array());
         Ok(vertex)
     }
 
-    pub fn create_attribute_type<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
+    pub fn create_attribute_type<Snapshot: WritableSnapshot>(&self, snapshot: &mut Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
         let vertex = self.next_attribute.allocate(snapshot)?;
         snapshot.put(vertex.as_storage_key().into_owned_array());
         Ok(vertex)

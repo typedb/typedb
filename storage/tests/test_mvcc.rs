@@ -58,7 +58,7 @@ fn test_commit_increments_watermark() {
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
     let wm_initial = storage.read_watermark();
-    let snapshot_0 = storage.clone().open_snapshot_write();
+    let mut snapshot_0 = storage.clone().open_snapshot_write();
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     snapshot_0.put_val(key_1.clone(), ByteArray::copy(&VALUE_1));
     snapshot_0.commit().unwrap();
@@ -75,7 +75,7 @@ fn test_reading_snapshots() {
     let key_1: &StorageKey<'_, 48> =
         &StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
 
-    let snapshot_write_0 = storage.clone().open_snapshot_write();
+    let mut snapshot_write_0 = storage.clone().open_snapshot_write();
     snapshot_write_0.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_0));
     snapshot_write_0.commit().unwrap();
 
@@ -84,7 +84,7 @@ fn test_reading_snapshots() {
     let snapshot_read_0 = storage.clone().open_snapshot_read();
     assert_eq!(snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
 
-    let snapshot_write_1 = storage.clone().open_snapshot_write();
+    let mut snapshot_write_1 = storage.clone().open_snapshot_write();
     snapshot_write_1.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
     let snapshot_read_01 = storage.clone().open_snapshot_read();
     assert_eq!(snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
@@ -117,15 +117,15 @@ fn test_conflicting_update_fails() {
     let key_1 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_1));
     let key_2 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_2));
 
-    let snapshot_write_0 = storage.clone().open_snapshot_write();
+    let mut snapshot_write_0 = storage.clone().open_snapshot_write();
     snapshot_write_0.put_val(key_1.clone().into_owned_array(), ByteArray::copy(&VALUE_0));
     snapshot_write_0.commit().unwrap();
 
     let watermark_after_initial_write = storage.read_watermark();
 
     {
-        let snapshot_write_11 = storage.clone().open_snapshot_write();
-        let snapshot_write_21 = storage.clone().open_snapshot_write();
+        let mut snapshot_write_11 = storage.clone().open_snapshot_write();
+        let mut snapshot_write_21 = storage.clone().open_snapshot_write();
         snapshot_write_11.delete(key_1.clone().into_owned_array());
         snapshot_write_21.get_required(key_1.clone()).unwrap();
         snapshot_write_21.put_val(key_2.clone().into_owned_array(), ByteArray::copy(&VALUE_2));
@@ -137,7 +137,7 @@ fn test_conflicting_update_fails() {
 
     {
         // Try the same, with the snapshot opened in the past
-        let snapshot_write_at_0 = storage.open_snapshot_write_at(watermark_after_initial_write).unwrap();
+        let mut snapshot_write_at_0 = storage.open_snapshot_write_at(watermark_after_initial_write).unwrap();
         snapshot_write_at_0.get_required(key_1.clone()).unwrap();
         snapshot_write_at_0.put_val(key_2.clone().into_owned_array(), ByteArray::copy(&VALUE_2));
         let result_write_at_0 = snapshot_write_at_0.commit();
@@ -156,7 +156,7 @@ fn test_open_snapshot_write_at() {
 
     let watermark_init = storage.read_watermark();
 
-    let snapshot_write_0 = storage.clone().open_snapshot_write();
+    let mut snapshot_write_0 = storage.clone().open_snapshot_write();
     snapshot_write_0.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_0));
     snapshot_write_0.commit().unwrap();
 
@@ -166,7 +166,7 @@ fn test_open_snapshot_write_at() {
     assert_eq!(snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0);
     snapshot_read_0.close_resources();
 
-    let snapshot_write_1 = storage.clone().open_snapshot_write_at(watermark_init).unwrap();
+    let mut snapshot_write_1 = storage.clone().open_snapshot_write_at(watermark_init).unwrap();
     snapshot_write_1.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
     snapshot_write_1.commit().unwrap();
 

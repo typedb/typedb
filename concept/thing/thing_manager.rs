@@ -640,7 +640,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
         if self.type_manager.relation_index_available(snapshot, relation.type_())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })? {
-            self.relation_index_player_deleted(snapshot, relation, player, role_type)
+            self.relation_index_player_deleted(snapshot, relation, player, role_type)?;
         }
         Ok(())
     }
@@ -724,7 +724,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     }
 
     ///
-    /// Clean up all parts of a relation index to do with a specific role player.
+    /// Clean up all parts of a relation index to do with a specific role player
+    /// after the player has been deleted.
     ///
     pub(crate) fn relation_index_player_deleted<'a>(
         &self,
@@ -732,28 +733,30 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
-    ) {
-        let mut players = relation.get_players(snapshot, self);
-        let mut role_player = players.next().transpose().unwrap();
-        while let Some((rp, _)) = role_player {
+    ) -> Result<(), ConceptWriteError> {
+        let players = relation.get_players(snapshot, self)
+            .collect_cloned_vec(|(roleplayer, count)| (roleplayer.player().into_owned(), roleplayer.role_type()))
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        for (rp_player, rp_role_type) in players {
+            debug_assert!(!(rp_player == Object::new(rp_player.vertex()) && role_type == rp_role_type));
             let index = ThingEdgeRelationIndex::build(
                 player.vertex(),
-                rp.player().vertex(),
+                rp_player.vertex(),
                 relation.vertex(),
                 role_type.vertex().type_id_(),
-                rp.role_type().vertex().type_id_(),
+                rp_role_type.vertex().type_id_(),
             );
             snapshot.delete(index.as_storage_key().into_owned_array());
             let index_reverse = ThingEdgeRelationIndex::build(
-                rp.player().vertex(),
+                rp_player.vertex(),
                 player.vertex(),
                 relation.vertex(),
-                rp.role_type().vertex().type_id_(),
+                rp_role_type.vertex().type_id_(),
                 role_type.vertex().type_id_(),
             );
             snapshot.delete(index_reverse.as_storage_key().into_owned_array());
-            role_player = players.next().transpose().unwrap();
         }
+        Ok(())
     }
 
     ///
@@ -768,12 +771,13 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         role_type: RoleType<'_>,
         total_player_count: u64,
         _update_guard: &MutexGuard<'_, ()>,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         debug_assert_ne!(total_player_count, 0);
-        let mut players = relation.get_players(snapshot, self);
-        let mut role_player = players.next().transpose().unwrap();
-        while let Some((rp, count)) = role_player {
-            let is_same_rp = rp.player() == player && rp.role_type() == role_type;
+        let players = relation.get_players(snapshot, self)
+            .collect_cloned_vec(|(roleplayer, count)| (roleplayer.player().into_owned(), roleplayer.role_type(), count))
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        for (rp_player, rp_role_type, rp_count) in players {
+            let is_same_rp = rp_player == player && rp_role_type == role_type;
             if is_same_rp && total_player_count > 1 {
                 let repetitions = total_player_count - 1;
                 let index = ThingEdgeRelationIndex::build(
@@ -785,27 +789,27 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 );
                 snapshot.put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
             } else if !is_same_rp {
-                let rp_repetitions = count;
+                let rp_repetitions = rp_count;
                 let index = ThingEdgeRelationIndex::build(
                     player.vertex(),
-                    rp.player().vertex(),
+                    rp_player.vertex(),
                     relation.vertex(),
                     role_type.vertex().type_id_(),
-                    rp.role_type().vertex().type_id_(),
+                    rp_role_type.vertex().type_id_(),
                 );
                 snapshot.put_val(index.as_storage_key().into_owned_array(), encode_value_u64(rp_repetitions));
                 let player_repetitions = total_player_count;
                 let index_reverse = ThingEdgeRelationIndex::build(
-                    rp.player().vertex(),
+                    rp_player.vertex(),
                     player.vertex(),
                     relation.vertex(),
-                    rp.role_type().vertex().type_id_(),
+                    rp_role_type.vertex().type_id_(),
                     role_type.vertex().type_id_(),
                 );
                 snapshot
                     .put_val(index_reverse.as_storage_key().into_owned_array(), encode_value_u64(player_repetitions));
             }
-            role_player = players.next().transpose().unwrap();
         }
+        Ok(())
     }
 }
