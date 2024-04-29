@@ -30,6 +30,19 @@ rust_test(
     use_libtest_harness = False,
 )
 
+rust_test(
+    name = "bench_rocks",
+    srcs = glob([
+        "bench_rocks.rs", "bench_rocks_impl/**/*.rs",
+    ]),
+    deps = [
+        "@crates//:speedb",
+        "//util/test:test_utils",
+    ],
+    use_libtest_harness = False,
+)
+
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*", "*/*/*"]),
