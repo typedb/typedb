@@ -48,7 +48,12 @@ impl IsolationManager {
     }
 
     pub(crate) fn opened_for_read(&self, sequence_number: SequenceNumber) {
-        debug_assert!(sequence_number <= self.watermark(), "Failed: {} <= {}", sequence_number, self.watermark());
+        debug_assert!(
+            sequence_number <= self.watermark(),
+            "assertion `{} <= {}` failed",
+            sequence_number,
+            self.watermark()
+        );
         self.timeline.record_reader(sequence_number);
     }
 
