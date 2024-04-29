@@ -38,9 +38,7 @@ use crate::{
         iterator::KeyspaceRangeIterator, Keyspace, KeyspaceCheckpointError, KeyspaceError, KeyspaceId,
         KeyspaceOpenError, KeyspaceSet, KeyspaceValidationError, Keyspaces,
     },
-    snapshot::{
-        buffer::OperationsBuffer, write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot,
-    },
+    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
     write_batches::WriteBatches,
 };
 
