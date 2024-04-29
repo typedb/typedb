@@ -8,6 +8,7 @@
 
 pub mod bench_rocks_impl;
 
+use std::collections::HashMap;
 use std::sync::RwLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
@@ -39,10 +40,22 @@ pub struct BenchmarkResult {
     pub total_time: Duration,
 }
 
+impl BenchmarkResult {
+    fn print_report(&self, runner: &BenchmarkRunner) {
+        println!("-- Report for benchmark threads = {}, batches={}, batch_size={} ---", runner.n_threads, runner.n_batches, runner.batch_size);
+        println!("key-size: {KEY_SIZE}; value_size: {VALUE_SIZE}");
+        println!("Total time (ns): {}", self.total_time.as_nanos());
+        println!("Batch timings (ns):");
+        self.batch_timings.iter().enumerate().for_each(|(batch_id, time)| {
+            println!("{:8}: {:12}", batch_id, time.as_nanos());
+        });
+    }
+}
+
 pub struct BenchmarkRunner {
     n_threads: u16,
     n_batches: usize,
-    n_keys_per_batch: u64,
+    batch_size: u64,
 }
 
 impl BenchmarkRunner {
@@ -62,13 +75,14 @@ impl BenchmarkRunner {
 
                         let mut write_batch = database_arc.open_batch();
                         let batch_start_instant = Instant::now();
-                        for _ in 0..self.n_keys_per_batch {
+                        for _ in 0..self.batch_size {
                             let (k, v) = Self::generate_key_value(&mut rng);
                             write_batch.put(0, k, v);
                         }
                         write_batch.commit().unwrap();
                         let mut duration_for_batch = batch_timings.get(batch_number).unwrap().write().unwrap();
                         *duration_for_batch = batch_start_instant.elapsed();
+                        println!("Thread completed batch {}", batch_number)
                     }
                 });
             }
@@ -88,10 +102,25 @@ impl BenchmarkRunner {
     }
 }
 
-fn main() {
-    let database = create_non_transactional_db::<N_DATABASES>().unwrap();
+fn get_arg_as<T: std::str::FromStr>(args:&HashMap<String, String>, key: &str) -> Result<T, String> {
+    match args.get(&key.to_string()) {
+        None => Err(format!("Pass {key} as arg")),
+        Some(value) => value.parse().map_err(|_| format!("Error parsing value for {key}"))
+    }
+}
 
-    let benchmarker = BenchmarkRunner { n_threads: 1, n_batches: 5, n_keys_per_batch: 5 };
-    benchmarker.run(&database);
+fn main() {
+    let args : HashMap<String, String> = std::env::args()
+        .filter_map(|arg| arg.split_once("=").map(|(s1, s2)| (s1.to_string(), s2.to_string())))
+        .collect();
+
+    let database = create_non_transactional_db::<N_DATABASES>().unwrap();
+    let benchmarker = BenchmarkRunner {
+        n_threads: get_arg_as::<u16>(&args, "threads").unwrap(),
+        n_batches: get_arg_as::<usize>(&args, "batches").unwrap(),
+        batch_size: get_arg_as::<u64>(&args, "batch_size").unwrap()
+    };
+    let report = benchmarker.run(&database);
     println!("Done");
+    report.print_report(&benchmarker);
 }
