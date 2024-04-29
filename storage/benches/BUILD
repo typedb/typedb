@@ -36,7 +36,9 @@ rust_test(
         "bench_rocks.rs", "bench_rocks_impl/**/*.rs",
     ]),
     deps = [
+        "@crates//:rand",
         "@crates//:speedb",
+
         "//util/test:test_utils",
     ],
     use_libtest_harness = False,

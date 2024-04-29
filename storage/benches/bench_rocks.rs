@@ -5,7 +5,18 @@
  */
 
 
-// pub struct BencmarkOptions { }  // impl BencmarkOptions {} // If we want to group the constants
+
+pub mod bench_rocks_impl;
+
+use std::sync::RwLock;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::thread;
+use std::time::{Duration, Instant};
+use rand::{thread_rng, rngs::ThreadRng, Rng};
+use bench_rocks_impl::{
+    rocks_database::{create_non_transactional_db},
+};
+
 const N_DATABASES: usize = 1;
 const N_COL_FAMILIES_PER_DB: usize = 1;
 
@@ -13,7 +24,7 @@ const KEY_SIZE: usize = 64;
 const VALUE_SIZE: usize = 0;
 
 
-pub trait RocksDatabase {
+pub trait RocksDatabase : std::marker::Sync + std::marker::Send {
     fn open_batch(&self) -> impl RocksWriteBatch;
 }
 
@@ -22,42 +33,65 @@ pub trait RocksWriteBatch {
     fn commit(self) -> Result<(), speedb::Error>;
 }
 
-mod benchmark_runner {
 
-    use crate::{RocksDatabase, RocksWriteBatch};
+pub struct BenchmarkResult {
+    pub batch_timings: Vec<Duration>,
+    pub total_time: Duration,
+}
+
+pub struct BenchmarkRunner {
+    n_threads: u16,
+    n_batches: usize,
+    n_keys_per_batch: u64,
+}
+
+impl BenchmarkRunner {
     const VALUE_EMPTY :[u8;0] = [];
-    pub struct ThreadedBenchmark {
-    }
+    fn run(&self, database_arc: &impl RocksDatabase) -> BenchmarkResult {
+        debug_assert_eq!(1, N_DATABASES, "I've not bothered implementing multiple databases");
+        let batch_timings: Vec<RwLock<Duration>> = (0..self.n_batches).into_iter().map({|_| RwLock::new(Duration::from_secs(0)) }).collect();
+        let batch_counter = AtomicUsize::new(0);
+        let benchmark_start_instant = Instant::now();
+        thread::scope(|s| {
+            for _ in 0..self.n_threads {
+                s.spawn(|| {
+                    let mut rng = thread_rng();
+                    loop {
+                        let batch_number = batch_counter.fetch_add(1, Ordering::Relaxed);
+                        if batch_number >= self.n_batches { break; }
 
-    fn generate_key_value() -> ([u8; crate::KEY_SIZE], [u8; crate::VALUE_SIZE]) {
-        ([0x12; crate::KEY_SIZE], VALUE_EMPTY)// TODO
-    }
-
-
-    impl ThreadedBenchmark {
-        pub fn run(n_threads: usize, database: &impl RocksDatabase) {
-            let N_BATCHES = 1;
-            let N_KEYS_PER_BATCH = 1;
-            for i in 0..N_BATCHES {
-                let mut batch = database.open_batch();
-                for j in 0..N_KEYS_PER_BATCH {
-                    let (k, v) = generate_key_value();
-                    batch.put(0, k, v);
-                }
-                batch.commit().unwrap();
+                        let mut write_batch = database_arc.open_batch();
+                        let batch_start_instant = Instant::now();
+                        for _ in 0..self.n_keys_per_batch {
+                            let (k, v) = Self::generate_key_value(&mut rng);
+                            write_batch.put(0, k, v);
+                        }
+                        write_batch.commit().unwrap();
+                        let mut duration_for_batch = batch_timings.get(batch_number).unwrap().write().unwrap();
+                        *duration_for_batch = batch_start_instant.elapsed();
+                    }
+                });
             }
+        });
+        assert!(batch_counter.load(Ordering::Relaxed) >= self.n_batches);
+        let total_time = benchmark_start_instant.elapsed();
+        BenchmarkResult {
+            batch_timings : batch_timings.iter().map(|x| x.read().unwrap().clone()).collect(),
+            total_time
         }
     }
 
+    fn generate_key_value(rng: &mut ThreadRng) -> ([u8; crate::KEY_SIZE], [u8; crate::VALUE_SIZE]) {
+        let mut key : [u8; crate::KEY_SIZE] = [0; crate::KEY_SIZE];
+        rng.fill(&mut key);
+        (key, Self::VALUE_EMPTY)
+    }
 }
-
-pub mod bench_rocks_impl;
-
-use benchmark_runner::{ThreadedBenchmark};
-use bench_rocks_impl::rocks_database::create_non_transactional_db;
 
 fn main() {
     let database = create_non_transactional_db::<N_DATABASES>().unwrap();
-    ThreadedBenchmark::run(1, &database);
-}
 
+    let benchmarker = BenchmarkRunner { n_threads: 1, n_batches: 5, n_keys_per_batch: 5 };
+    benchmarker.run(&database);
+    println!("Done");
+}
