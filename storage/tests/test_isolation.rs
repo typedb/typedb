@@ -28,7 +28,7 @@ use self::TestKeyspaceSet::Keyspace;
 
 macro_rules! fails_without_serializability {
     ($x:expr) => {
-        assert!(!($x));
+        assert!(!$x);
     };
 }
 
@@ -282,8 +282,7 @@ fn p4_g_cursor_lost_update() {
 
     if result_1.is_ok() && result_2.is_ok() {
         let snapshot_verify = storage.open_snapshot_read();
-        let read_verify: ByteArray<128> =
-            snapshot_verify.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap();
+        let read_verify = snapshot_verify.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap();
         fails_without_serializability!(2 == read_verify.bytes()[0]); // This does fail
     }
 }
@@ -388,27 +387,15 @@ fn g2_predicate_anti_dependency_cycles() {
 
     let it_1 = snapshot_1.iterate_range(prefix.clone());
     let mut sum_1 = 0;
-    for z in it_1
-        .collect_cloned_vec(|k, v| {
-            (StorageKeyArray::<BUFFER_KEY_INLINE>::from(k), ByteArray::<BUFFER_VALUE_INLINE>::from(v))
-        })
-        .unwrap()
-        .iter()
-    {
-        sum_1 += z.1.bytes()[0] as i64;
+    for v in it_1.collect_cloned_vec(|_, v| ByteArray::<BUFFER_VALUE_INLINE>::from(v)).unwrap().iter() {
+        sum_1 += v.bytes()[0] as i64;
     }
     assert!(sum_1 == 1);
 
     let it_2 = snapshot_2.iterate_range(prefix.clone());
     let mut sum_2 = 0;
-    for z in it_2
-        .collect_cloned_vec(|k, v| {
-            (StorageKeyArray::<BUFFER_KEY_INLINE>::from(k), ByteArray::<BUFFER_VALUE_INLINE>::from(v))
-        })
-        .unwrap()
-        .iter()
-    {
-        sum_2 += z.1.bytes()[0] as i64;
+    for v in it_2.collect_cloned_vec(|_, v| ByteArray::<BUFFER_VALUE_INLINE>::from(v)).unwrap().iter() {
+        sum_2 += v.bytes()[0] as i64;
     }
     assert!(sum_2 == 1);
 
