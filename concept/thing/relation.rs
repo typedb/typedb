@@ -250,55 +250,15 @@ impl<'a> Relation<'a> {
         let role_annotations = role_type.get_annotations(snapshot, thing_manager.type_manager()).unwrap();
         let distinct = role_annotations.contains(&RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
         if distinct {
-            self.add_player_distinct(snapshot, thing_manager, role_type, player)
+            thing_manager.set_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
         } else {
-            self.add_player_increment(snapshot, thing_manager, role_type, player)
+            thing_manager.increment_role_player(
+                snapshot,
+                self.as_reference(),
+                player.as_reference(),
+                role_type.clone(),
+            )
         }
-    }
-
-    fn add_player_distinct<Snapshot: WritableSnapshot>(
-        &self,
-        snapshot: &mut Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
-        role_type: RoleType<'static>,
-        player: Object<'_>,
-    ) -> Result<(), ConceptWriteError> {
-        if thing_manager.type_manager().relation_index_available(snapshot, self.type_())
-            .map_err(|e| ConceptWriteError::ConceptRead { source: e })? {
-            let compound_update_guard = thing_manager.relation_compound_update_mutex().lock().unwrap();
-            thing_manager.set_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone());
-            thing_manager.relation_index_player_regenerate(
-                snapshot, self.as_reference(), player.as_reference(), role_type, 1,
-                &compound_update_guard,
-            )?;
-        } else {
-            thing_manager.set_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone());
-        }
-        Ok(())
-    }
-
-    fn add_player_increment<Snapshot: WritableSnapshot>(
-        &self,
-        snapshot: &mut Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
-        role_type: RoleType<'static>,
-        player: Object<'_>,
-    ) -> Result<(), ConceptWriteError> {
-        let compound_update_guard = thing_manager.relation_compound_update_mutex().lock().unwrap();
-        let player_count = thing_manager.increment_role_player(
-            snapshot,
-            self.as_reference(),
-            player.as_reference(),
-            role_type.clone(),
-            &compound_update_guard,
-        );
-        if thing_manager.type_manager().relation_index_available(snapshot, self.type_())
-            .map_err(|e| ConceptWriteError::ConceptRead { source: e })? {
-            thing_manager.relation_index_player_regenerate(
-                snapshot, self.as_reference(), player.as_reference(), role_type, player_count, &compound_update_guard,
-            )?;
-        }
-        Ok(())
     }
 
     pub fn delete_player_single<Snapshot: WritableSnapshot>(
@@ -323,50 +283,16 @@ impl<'a> Relation<'a> {
         let distinct = role_annotations.contains(&RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
         if distinct {
             debug_assert_eq!(delete_count, 1);
-            self.delete_player_distinct(snapshot, thing_manager, role_type, player)
+            thing_manager.delete_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
         } else {
-            self.delete_player_decrement(snapshot, thing_manager, role_type, player, delete_count)
-        }
-    }
-
-    fn delete_player_distinct<Snapshot: WritableSnapshot>(
-        &self,
-        snapshot: &mut Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
-        role_type: RoleType<'static>,
-        player: Object<'_>,
-    ) -> Result<(), ConceptWriteError> {
-        thing_manager.delete_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone())?;
-        Ok(())
-    }
-
-    fn delete_player_decrement<Snapshot: WritableSnapshot>(
-        &self,
-        snapshot: &mut Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
-        role_type: RoleType<'static>,
-        player: Object<'_>,
-        decrement_count: u64,
-    ) -> Result<(), ConceptWriteError> {
-        let compound_update_guard = thing_manager.relation_compound_update_mutex().lock().unwrap();
-        let remaining_player_count = thing_manager.decrement_role_player(
-            snapshot,
-            self.as_reference(),
-            player.as_reference(),
-            role_type.clone(),
-            decrement_count,
-            &compound_update_guard,
-        );
-        if thing_manager.type_manager().relation_index_available(snapshot, self.type_())
-            .map_err(|e| ConceptWriteError::ConceptRead { source: e })? {
-            debug_assert_eq!(remaining_player_count, 0);
-            thing_manager.relation_index_player_regenerate(
+            thing_manager.decrement_role_player(
                 snapshot,
-                self.as_reference(), player.as_reference(), role_type, remaining_player_count,
-                &compound_update_guard,
-            )?;
+                self.as_reference(),
+                player.as_reference(),
+                role_type.clone(),
+                delete_count,
+            )
         }
-        Ok(())
     }
 
     pub(crate) fn into_owned(self) -> Relation<'static> {
@@ -422,10 +348,10 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         Ok(errors)
     }
 
-    fn delete<'m, Snapshot: WritableSnapshot>(
+    fn delete<Snapshot: WritableSnapshot>(
         self,
         snapshot: &mut Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>,
+        thing_manager: &ThingManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
         let mut has = self.get_has(snapshot, thing_manager)
             .collect_cloned_vec(|(key, value)| key.into_owned())
@@ -458,7 +384,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
             .map_err(|err| ConceptWriteError::ConceptRead { source: ConceptReadError::from(err) })?;
         for (role, player) in players {
             // TODO: Deleting one player at a time, each of which will delete parts of the relation index, isn't optimal
-            //       Instead, we could delete the players, then delete the entire index, if available.
+            //       Instead, we could delete the players, then delete the entire index at once, if there is one
             thing_manager.delete_role_player(snapshot, self.as_reference(), player, role)?;
         }
 

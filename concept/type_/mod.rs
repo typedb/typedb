@@ -40,7 +40,9 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
     fn into_vertex(self) -> TypeVertex<'a>;
 
     fn is_abstract<Snapshot: ReadableSnapshot>(
-        &self, snapshot: &Snapshot, type_manager: &TypeManager<Snapshot>
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>
     ) -> Result<bool, ConceptReadError>;
 
     fn delete<Snapshot: WritableSnapshot>(

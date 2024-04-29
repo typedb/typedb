@@ -604,18 +604,24 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         let role_player =
             ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
         let count: u64 = 1;
         snapshot.put_val(role_player.into_storage_key().into_owned_array(), encode_value_u64(count));
         let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
-            player.into_vertex(),
-            relation.into_vertex(),
-            role_type.into_vertex(),
+            player.clone().into_vertex(),
+            relation.clone().into_vertex(),
+            role_type.clone().into_vertex(),
         );
         // must be idempotent, so no lock required -- cannot fail
         snapshot.put_val(role_player_reverse.into_storage_key().into_owned_array(), encode_value_u64(count));
+
+        if self.type_manager.relation_index_available(snapshot, relation.type_())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })? {
+            self.relation_index_player_regenerate(snapshot, relation, Object::new(player.vertex()), role_type, 1)?;
+        }
+        Ok(())
     }
 
     ///
@@ -655,12 +661,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
-        _update_guard: &MutexGuard<'_, ()>,
-    ) -> u64 {
+    ) -> Result<(), ConceptWriteError> {
         let role_player =
             ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
         let role_player_reverse =
-            ThingEdgeRolePlayer::build_role_player_reverse(player.vertex(), relation.vertex(), role_type.into_vertex());
+            ThingEdgeRolePlayer::build_role_player_reverse(player.vertex(), relation.vertex(), role_type.clone().into_vertex());
 
         let mut count = 0;
         let rp_count =
@@ -677,7 +682,12 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
         // must lock to fail concurrent transactions updating the same counters
         snapshot.exclusive_lock_add(role_player.into_storage_key().into_owned_array().into_byte_array());
-        count
+
+        if self.type_manager.relation_index_available(snapshot, relation.type_())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })? {
+            self.relation_index_player_regenerate(snapshot, relation, Object::new(player.vertex()), role_type, count)?;
+        }
+        Ok(())
     }
 
     ///
@@ -691,12 +701,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
         decrement_count: u64,
-        _update_guard: &MutexGuard<'_, ()>,
-    ) -> u64 {
+    ) -> Result<(), ConceptWriteError> {
         let role_player =
             ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
         let role_player_reverse =
-            ThingEdgeRolePlayer::build_role_player_reverse(player.vertex(), relation.vertex(), role_type.into_vertex());
+            ThingEdgeRolePlayer::build_role_player_reverse(player.vertex(), relation.vertex(), role_type.clone().into_vertex());
 
         let rp_count =
             snapshot.get_mapped(role_player.as_storage_key().as_reference(), |val| decode_value_u64(val)).unwrap();
@@ -720,7 +729,12 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
         // must lock to fail concurrent transactions updating the same counters
         snapshot.exclusive_lock_add(role_player.into_storage_key().into_owned_array().into_byte_array());
-        count
+
+        if self.type_manager.relation_index_available(snapshot, relation.type_())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })? {
+            self.relation_index_player_regenerate(snapshot, relation, Object::new(player.vertex()), role_type, count)?
+        }
+        Ok(())
     }
 
     ///
@@ -770,7 +784,6 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         player: Object<'_>,
         role_type: RoleType<'_>,
         total_player_count: u64,
-        _update_guard: &MutexGuard<'_, ()>,
     ) -> Result<(), ConceptWriteError> {
         debug_assert_ne!(total_player_count, 0);
         let players = relation.get_players(snapshot, self)
