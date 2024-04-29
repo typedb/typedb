@@ -880,7 +880,6 @@ mod tests {
                 window.set_aborted(tx.commit_sequence_number);
             }
             let sequence_number = commit_record.open_sequence_number;
-            drop(commit_record);
             drop(window);
             timeline.remove_reader(sequence_number);
             timeline.may_increment_watermark(tx.commit_sequence_number);
