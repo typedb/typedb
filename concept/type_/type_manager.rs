@@ -76,17 +76,16 @@ impl<Snapshot> TypeManager<Snapshot> {
         {
             let type_manager = TypeManager::<WriteSnapshot<D>>::new(vertex_generator.clone(), None);
             let root_entity = type_manager.create_entity_type(&mut snapshot, &Kind::Entity.root_label(), true)?;
-            root_entity.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
+            root_entity.set_annotation(&mut snapshot, &type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
             let root_relation = type_manager.create_relation_type(&mut snapshot, &Kind::Relation.root_label(), true)?;
-            root_relation.set_annotation(&type_manager, RelationTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
+            root_relation.set_annotation(&mut snapshot, &type_manager, RelationTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
             let root_role = type_manager.create_role_type(
                 &mut snapshot, &Kind::Role.root_label(), root_relation.clone(), true, Ordering::Unordered
             ,
             )?;
-            root_role.set_annotation(&type_manager, RoleTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
+            root_role.set_annotation(&mut snapshot, &type_manager, RoleTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
             let root_attribute = type_manager.create_attribute_type(&mut snapshot, &Kind::Attribute.root_label(), true)?;
-            root_attribute
-                .set_annotation(&type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
+            root_attribute.set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
         }
         // TODO: pass error up
         snapshot.commit().unwrap();
@@ -358,12 +357,12 @@ where
         }
     }
 
-    pub(crate) fn relation_index_available(&self, relation_type: RelationType<'_>) -> Result<bool, ConceptReadError> {
+    pub(crate) fn relation_index_available(&self, snapshot: &Snapshot, relation_type: RelationType<'_>) -> Result<bool, ConceptReadError> {
         // TODO: it would be good if this doesn't require recomputation
         let mut max_card = 0;
-        let relates = relation_type.get_relates(self)?;
+        let relates = relation_type.get_relates(snapshot, self)?;
         for relates in relates.iter() {
-            let card = relates.role().get_cardinality(self)?;
+            let card = relates.role().get_cardinality(snapshot, self)?;
             match card.end() {
                 None => return Ok(false),
                 Some(end) => max_card += end,

@@ -25,7 +25,7 @@ use crate::{ConceptStatus, edge_iterator, thing::{attribute::Attribute, entity::
 use crate::error::{ConceptReadError, ConceptWriteError};
 use crate::thing::ThingAPI;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Object<'a> {
     Entity(Entity<'a>),
     Relation(Relation<'a>),
@@ -47,23 +47,30 @@ impl<'a> Object<'a> {
         }
     }
 
-    fn set_has(
-        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>
+    fn set_has<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
+        attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
         match self {
-            Object::Entity(entity) => entity.set_has_unordered(thing_manager, attribute),
-            Object::Relation(relation) => relation.set_has_unordered(thing_manager, attribute),
+            Object::Entity(entity) => entity.set_has_unordered(snapshot, thing_manager, attribute),
+            Object::Relation(relation) => relation.set_has_unordered(snapshot, thing_manager, attribute),
         }
     }
 
-    pub(crate) fn delete_has_many(
-        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>, count: u64
+    pub(crate) fn delete_has_many<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
+        attribute: Attribute<'_>,
+        count: u64,
     ) -> Result<(), ConceptWriteError> {
         match self {
             Object::Entity(entity) => {
                 todo!()
                 // entity.delete_has_many(thing_manager, attribute, count)
-            },
+            }
             Object::Relation(relation) => {
                 todo!()
                 // relation.delete_has_many(thing_manager, attribute, count)
@@ -87,31 +94,47 @@ impl<'a> Object<'a> {
 }
 
 impl<'a> ThingAPI<'a> for Object<'a> {
-    fn set_modified(&self, thing_manager: &ThingManager<impl WritableSnapshot>) {
+    fn set_modified<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager<Snapshot>
+    ) {
         match self {
-            Object::Entity(entity) => entity.set_modified(thing_manager),
-            Object::Relation(relation) => relation.set_modified(thing_manager),
+            Object::Entity(entity) => entity.set_modified(snapshot, thing_manager),
+            Object::Relation(relation) => relation.set_modified(snapshot, thing_manager),
         }
     }
 
-    fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus {
+    fn get_status<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>
+    ) -> ConceptStatus {
         match self {
-            Object::Entity(entity) => entity.get_status(thing_manager),
-            Object::Relation(relation) => relation.get_status(thing_manager),
+            Object::Entity(entity) => entity.get_status(snapshot, thing_manager),
+            Object::Relation(relation) => relation.get_status(snapshot, thing_manager),
         }
     }
 
-    fn errors(&self, thing_manager: &ThingManager<impl WritableSnapshot>) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
+    fn errors<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>
+    ) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
         match self {
-            Object::Entity(entity) => entity.errors(thing_manager),
-            Object::Relation(relation) => relation.errors(thing_manager),
+            Object::Entity(entity) => entity.errors(snapshot, thing_manager),
+            Object::Relation(relation) => relation.errors(snapshot, thing_manager),
         }
     }
 
-    fn delete(self, thing_manager: &ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
+    fn delete<Snapshot: WritableSnapshot>(
+        self,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager<Snapshot>
+    ) -> Result<(), ConceptWriteError> {
         match self {
-            Object::Entity(entity) => entity.delete(thing_manager),
-            Object::Relation(relation) => relation.delete(thing_manager),
+            Object::Entity(entity) => entity.delete(snapshot, thing_manager),
+            Object::Relation(relation) => relation.delete(snapshot, thing_manager),
         }
     }
 }

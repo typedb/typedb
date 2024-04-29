@@ -56,31 +56,37 @@ impl<'a> Attribute<'a> {
         self.vertex.bytes()
     }
 
-    pub fn get_value(
+    pub fn get_value<Snapshot: ReadableSnapshot>(
         &mut self,
-        thing_manager: &ThingManager<impl ReadableSnapshot>,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
     ) -> Result<Value<'_>, ConceptReadError> {
         if self.value.is_none() {
-            let value = thing_manager.get_attribute_value(self)?;
+            let value = thing_manager.get_attribute_value(snapshot, self)?;
             self.value = Some(value);
         }
         Ok(self.value.as_ref().unwrap().as_reference())
     }
 
-    pub fn has_owners<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> bool {
-        match self.get_status(thing_manager) {
-            ConceptStatus::Put | ConceptStatus::Persisted => thing_manager.has_owners(self.as_reference(), false),
+    pub fn has_owners<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
+    ) -> bool {
+        match self.get_status(snapshot, thing_manager) {
+            ConceptStatus::Put | ConceptStatus::Persisted => thing_manager.has_owners(snapshot, self.as_reference(), false),
             ConceptStatus::Inserted | ConceptStatus::Deleted => {
                 unreachable!("Attributes are expected to always have a PUT status.")
             }
         }
     }
 
-    pub fn get_owners<'m>(
+    pub fn get_owners<'m, Snapshot: ReadableSnapshot>(
         &self,
-        thing_manager: &'m ThingManager<impl ReadableSnapshot>,
+        snapshot: &'m Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
     ) -> AttributeOwnerIterator<'m, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
-        thing_manager.get_owners(self.as_reference())
+        thing_manager.get_owners(snapshot, self.as_reference())
     }
 
     pub fn as_reference(&self) -> Attribute<'_> {
@@ -103,31 +109,44 @@ impl<'a> Attribute<'a> {
 impl<'a> ConceptAPI<'a> for Attribute<'a> {}
 
 impl<'a> ThingAPI<'a> for Attribute<'a> {
-    fn set_modified(&self, thing_manager: &ThingManager<impl WritableSnapshot>) {
-        debug_assert_eq!(thing_manager.get_status(self.vertex().as_storage_key()), ConceptStatus::Put);
+    fn set_modified<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
+    ) {
+        debug_assert_eq!(thing_manager.get_status(snapshot, self.vertex().as_storage_key()), ConceptStatus::Put);
         // Attributes are always PUT, so we don't have to record a lock on modification
     }
 
-    fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus {
-        thing_manager.get_status(self.vertex().as_storage_key())
+    fn get_status<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
+    ) -> ConceptStatus {
+        thing_manager.get_status(snapshot, self.vertex().as_storage_key())
     }
 
-    fn errors(
+    fn errors<Snapshot: WritableSnapshot>(
         &self,
-        thing_manager: &ThingManager<impl WritableSnapshot>,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
     ) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
         Ok(Vec::new())
     }
 
-    fn delete<'m>(self, thing_manager: &'m ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
-        let mut owner_iter = self.get_owners(thing_manager);
-        let mut owner = owner_iter.next().transpose().map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        while let Some((object, count)) = owner {
-            object.delete_has_many(thing_manager, self.as_reference(), count)?;
-            owner = owner_iter.next().transpose().map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+    fn delete<'m, Snapshot: WritableSnapshot>(
+        self,
+        snapshot: &'m mut Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
+    ) -> Result<(), ConceptWriteError> {
+        let mut owners = self.get_owners(snapshot, thing_manager)
+            .collect_cloned_vec(|(key, value)| key.into_owned())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        for object in owners {
+            thing_manager.delete_has(snapshot, object, self.as_reference());
         }
 
-        thing_manager.delete_attribute(self);
+        thing_manager.delete_attribute(snapshot, self);
         Ok(())
     }
 }

@@ -23,7 +23,7 @@ pub mod thing_manager;
 pub mod value;
 
 pub trait ThingAPI<'a> {
-    fn set_modified<Snapshot: WritableSnapshot>(&self, thing_manager: &ThingManager<Snapshot>);
+    fn set_modified<Snapshot: WritableSnapshot>(&self, snapshot: &mut Snapshot, thing_manager: &ThingManager<Snapshot>);
 
     // TODO: implementers could cache the status in a OnceCell if we do many operations on the same Thing at once
     fn get_status<'m, Snapshot: ReadableSnapshot>(
@@ -45,7 +45,7 @@ pub trait ThingAPI<'a> {
     ) -> Result<(), ConceptWriteError>;
 }
 
-pub trait ObjectAPI<'a>: ThingAPI<'a> {
+pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
     fn vertex(&self) -> ObjectVertex<'_>;
 
     fn into_vertex(self) -> ObjectVertex<'a>;
