@@ -14,12 +14,13 @@ use std::{
     sync::{Arc, OnceLock},
 };
 use std::borrow::Cow;
+use std::time::Duration;
 
 use concept::{
     thing::{thing_manager::ThingManager, value::Value},
     type_::{type_cache::TypeCache, type_manager::TypeManager, OwnerAPI},
 };
-use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
+use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use durability::wal::WAL;
 use encoding::{
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
@@ -85,21 +86,20 @@ fn criterion_benchmark(c: &mut Criterion) {
     AGE_LABEL.set(Label::build("age")).unwrap();
     NAME_LABEL.set(Label::build("name")).unwrap();
     PERSON_LABEL.set(Label::build("person")).unwrap();
-
     init_logging();
-    let storage_path = create_tmp_dir();
-    let mut storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
-
-    let w1 = storage.read_watermark();
-    create_schema(&storage, &type_vertex_generator);
-    let w2 = storage.read_watermark();
-    let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
 
     let mut group = c.benchmark_group("test writes");
+    group.sample_size(1000);
+    // group.measurement_time(Duration::from_secs(60*5));
+    group.sampling_mode(SamplingMode::Linear);
     group.bench_function("thing_write", |b| {
+        let storage_path = create_tmp_dir();
+        let mut storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
+        let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
+        TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
+        create_schema(&storage, &type_vertex_generator);
+        let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
         b.iter(|| {
             write_entity_attributes(storage.clone(), type_vertex_generator.clone(), thing_vertex_generator.clone(), schema_cache.clone())
         });
