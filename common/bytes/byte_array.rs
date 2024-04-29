@@ -67,6 +67,10 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
         ByteArray::Boxed(ByteArrayBoxed::wrap(bytes))
     }
 
+    pub fn as_ref(&self) -> ByteReference<'_> {
+        ByteReference::new(self.bytes())
+    }
+
     pub fn bytes(&self) -> &[u8] {
         match self {
             ByteArray::Inline(inline) => inline.bytes(),

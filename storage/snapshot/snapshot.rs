@@ -31,8 +31,11 @@ pub trait ReadableSnapshot {
     fn get_mapped<T>(
         &self,
         key: StorageKeyReference<'_>,
-        mapper: impl FnMut(ByteReference<'_>) -> T,
-    ) -> Result<Option<T>, SnapshotGetError>;
+        mut mapper: impl FnMut(ByteReference<'_>) -> T,
+    ) -> Result<Option<T>, SnapshotGetError> {
+        let value = self.get::<BUFFER_VALUE_INLINE>(key)?;
+        Ok(value.map(|bytes| mapper(bytes.as_ref())))
+    }
 
     fn iterate_range<'this, const PS: usize>(
         &'this self,
@@ -172,23 +175,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         &self,
         key: StorageKeyReference<'_>,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        match self.storage.get(key, self.open_sequence_number) {
-            Ok(Some(bytes)) => Ok(Some(bytes)),
-            Ok(None) => Ok(None),
-            Err(error) => Err(SnapshotGetError::MVCCRead { source: error }),
-        }
-    }
-
-    fn get_mapped<T>(
-        &self,
-        key: StorageKeyReference<'_>,
-        mut mapper: impl FnMut(ByteReference<'_>) -> T,
-    ) -> Result<Option<T>, SnapshotGetError> {
-        match self.storage.get::<BUFFER_VALUE_INLINE>(key, self.open_sequence_number) {
-            Ok(Some(value)) => Ok(Some(mapper(ByteReference::from(&value)))),
-            Ok(None) => Ok(None),
-            Err(error) => Err(SnapshotGetError::MVCCRead { source: error }),
-        }
+        self.storage.get(key, self.open_sequence_number).map_err(|error| SnapshotGetError::MVCCRead { source: error })
     }
 
     fn iterate_range<'this, const PS: usize>(
@@ -238,26 +225,10 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match self.operations.writes_in(key.keyspace_id()).get(key.bytes()) {
             Some(bytes) => Ok(Some(bytes)),
-            None => match self.storage.get(key, self.open_sequence_number) {
-                Ok(Some(bytes)) => Ok(Some(bytes)),
-                Ok(None) => Ok(None),
-                Err(error) => Err(SnapshotGetError::MVCCRead { source: error }),
-            },
-        }
-    }
-
-    fn get_mapped<T>(
-        &self,
-        key: StorageKeyReference<'_>,
-        mut mapper: impl FnMut(ByteReference<'_>) -> T,
-    ) -> Result<Option<T>, SnapshotGetError> {
-        match self.operations.writes_in(key.keyspace_id()).get::<BUFFER_VALUE_INLINE>(key.bytes()) {
-            Some(value) => Ok(Some(mapper(ByteReference::from(&value)))),
-            None => match self.storage.get::<BUFFER_VALUE_INLINE>(key, self.open_sequence_number) {
-                Ok(Some(value)) => Ok(Some(mapper(ByteReference::from(&value)))),
-                Ok(None) => Ok(None),
-                Err(error) => Err(SnapshotGetError::MVCCRead { source: error }),
-            },
+            None => self
+                .storage
+                .get(key, self.open_sequence_number)
+                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
         }
     }
 
@@ -341,26 +312,10 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         match self.operations.writes_in(key.keyspace_id()).get(key.bytes()) {
             Some(array) => Ok(Some(array)),
-            None => match self.storage.get(key, self.open_sequence_number) {
-                Ok(Some(value)) => Ok(Some(value)),
-                Ok(None) => Ok(None),
-                Err(error) => Err(SnapshotGetError::MVCCRead { source: error }),
-            },
-        }
-    }
-
-    fn get_mapped<T>(
-        &self,
-        key: StorageKeyReference<'_>,
-        mut mapper: impl FnMut(ByteReference<'_>) -> T,
-    ) -> Result<Option<T>, SnapshotGetError> {
-        match self.operations.writes_in(key.keyspace_id()).get::<BUFFER_VALUE_INLINE>(key.bytes()) {
-            Some(value) => Ok(Some(mapper(ByteReference::from(&value)))),
-            None => match self.storage.get::<BUFFER_VALUE_INLINE>(key, self.open_sequence_number) {
-                Ok(Some(value)) => Ok(Some(mapper(ByteReference::from(&value)))),
-                Ok(None) => Ok(None),
-                Err(error) => Err(SnapshotGetError::MVCCRead { source: error }),
-            },
+            None => self
+                .storage
+                .get(key, self.open_sequence_number)
+                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
         }
     }
 
