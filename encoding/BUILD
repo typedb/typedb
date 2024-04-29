@@ -34,7 +34,14 @@ rust_library(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*"]),
+    include = glob([
+        "*",
+        "graph/*",
+        "graph/thing/*",
+        "graph/type_/*",
+        "layout/*",
+        "value/*",
+    ]),
     exclude = glob([
         "Cargo.*",
     ]),

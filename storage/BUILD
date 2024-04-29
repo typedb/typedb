@@ -47,7 +47,11 @@ rust_test(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob([
+        "*",
+        "keyspace/*",
+        "snapshot/*",
+    ]),
     exclude = glob([
         "Cargo.*",
     ]),
