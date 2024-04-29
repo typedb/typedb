@@ -94,7 +94,8 @@ impl IsolationManager {
         let window = self.timeline.get_or_create_window(sequence_number);
         window.insert_pending(sequence_number, commit_record);
         if let CommitStatus::Pending(commit_record) = window.get_status(sequence_number) {
-            let isolation_conflict = self.validate_all_concurrent(sequence_number, &commit_record, durability_service)?;
+            let isolation_conflict =
+                self.validate_all_concurrent(sequence_number, &commit_record, durability_service)?;
             if isolation_conflict.is_none() {
                 window.set_validated(sequence_number);
                 // We can't increment watermark here till the status is "applied"
@@ -806,15 +807,15 @@ impl UnsequencedDurabilityRecord for StatusRecord {}
 #[cfg(test)]
 mod tests {
     use std::{
+        array,
         sync::{
             atomic::{AtomicU64, Ordering},
-            mpsc, Arc,
+            Arc,
         },
-        thread,
+        thread::{self, JoinHandle},
     };
 
     use durability::SequenceNumber;
-    use itertools::Itertools;
 
     use crate::keyspace::{KeyspaceId, KeyspaceSet};
 
@@ -986,33 +987,28 @@ mod tests {
     #[test]
     fn test_highly_concurrent_correctness() {
         let timeline_and_counter = Arc::new((create_timeline(), AtomicU64::new(1)));
-        const NUM_THREADS: u64 = 32;
+        const NUM_THREADS: usize = 32;
         const TRANSACTIONS_PER_THREAD: u64 = 1000;
 
-        let receivers = (0..NUM_THREADS)
-            .map(|_| {
-                let timeline_and_counter = timeline_and_counter.clone();
-                let (tx, rx) = mpsc::channel();
-                thread::spawn(move || {
-                    for _ in 0..TRANSACTIONS_PER_THREAD {
-                        let (timeline, commit_sequence_number_counter) = &*timeline_and_counter;
-                        let index = commit_sequence_number_counter.fetch_add(1, Ordering::SeqCst);
-                        let tx = &MockTransaction::new(timeline.watermark(), _seq(index));
-                        tx_open(timeline, tx.read_sequence_number);
-                        tx_start_commit(timeline, tx);
-                        tx_finalise_commit_status(timeline, tx, true);
-                    }
-                    tx.send(()).unwrap();
-                });
-                rx
+        let join_handles: [JoinHandle<()>; NUM_THREADS] = array::from_fn(|_| {
+            let timeline_and_counter = timeline_and_counter.clone();
+            thread::spawn(move || {
+                for _ in 0..TRANSACTIONS_PER_THREAD {
+                    let (timeline, commit_sequence_number_counter) = &*timeline_and_counter;
+                    let index = commit_sequence_number_counter.fetch_add(1, Ordering::SeqCst);
+                    let tx = &MockTransaction::new(timeline.watermark(), _seq(index));
+                    tx_open(timeline, tx.read_sequence_number);
+                    tx_start_commit(timeline, tx);
+                    tx_finalise_commit_status(timeline, tx, true);
+                }
             })
-            .collect_vec();
+        });
 
-        for rx in receivers.iter() {
-            rx.recv().unwrap()
+        for join_handle in join_handles {
+            join_handle.join().unwrap()
         }
 
-        let expected_watermark = _seq(NUM_THREADS * TRANSACTIONS_PER_THREAD);
+        let expected_watermark = _seq(NUM_THREADS as u64 * TRANSACTIONS_PER_THREAD);
         let (timeline, _) = &*timeline_and_counter;
         assert_eq!(expected_watermark, timeline.watermark());
         let some_index_in_penultimate_window = expected_watermark - TIMELINE_WINDOW_SIZE - 1;
