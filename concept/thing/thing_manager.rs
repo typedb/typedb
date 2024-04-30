@@ -57,13 +57,12 @@ use crate::{
 pub struct ThingManager<Snapshot> {
     vertex_generator: Arc<ThingVertexGenerator>,
     type_manager: Arc<TypeManager<Snapshot>>,
-    relation_lock: Mutex<()>,
     snapshot: PhantomData<Snapshot>,
 }
 
 impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     pub fn new(vertex_generator: Arc<ThingVertexGenerator>, type_manager: Arc<TypeManager<Snapshot>>) -> Self {
-        ThingManager { vertex_generator, type_manager, relation_lock: Mutex::new(()), snapshot: PhantomData::default() }
+        ThingManager { vertex_generator, type_manager, snapshot: PhantomData::default() }
     }
 
     pub(crate) fn type_manager(&self) -> &TypeManager<Snapshot> {
@@ -374,10 +373,6 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 }
 
 impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
-    pub(crate) fn relation_compound_update_mutex(&self) -> &Mutex<()> {
-        &self.relation_lock
-    }
-
     pub(crate) fn lock_existing<'a>(
         &self,
         snapshot: &mut Snapshot,
