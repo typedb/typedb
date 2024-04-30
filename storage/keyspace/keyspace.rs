@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use speedb::{checkpoint::Checkpoint, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 
 use super::iterator;
-use crate::{key_range::KeyRange, write_batches::WriteBatches, StorageOpenError};
+use crate::{checkpoint::CheckpointLoadError, key_range::KeyRange, write_batches::WriteBatches, StorageOpenError};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct KeyspaceId(pub u8);
@@ -60,8 +60,9 @@ impl Keyspaces {
         Self { keyspaces: Vec::new(), index: std::array::from_fn(|_| None) }
     }
 
-    pub(crate) fn open<KS: KeyspaceSet>(storage_dir: impl AsRef<Path>) -> Result<Self, StorageOpenError> {
-        use StorageOpenError::{KeyspaceOpen, KeyspaceValidation};
+        // FIXME nonsense, why would that be the error type?
+    pub(crate) fn open<KS: KeyspaceSet>(storage_dir: impl AsRef<Path>) -> Result<Self, CheckpointLoadError> {
+        use CheckpointLoadError::{KeyspaceOpen, KeyspaceValidation};
 
         let path = storage_dir.as_ref();
         let mut keyspaces = Keyspaces::new();

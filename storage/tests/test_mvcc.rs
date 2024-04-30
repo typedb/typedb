@@ -168,8 +168,7 @@ fn test_open_snapshot_write_at() {
 
     let snapshot_write_1 = storage.clone().open_snapshot_write_at(watermark_init).unwrap();
     snapshot_write_1.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
-    let result_write_1 = snapshot_write_1.commit();
-    assert!(result_write_1.is_ok());
+    snapshot_write_1.commit().unwrap();
 
     let snapshot_read_1 = storage.open_snapshot_read();
     assert_eq!(snapshot_read_1.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0); // FIXME: value overwrite currently unsupported

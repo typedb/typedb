@@ -10,18 +10,17 @@
 #![allow(clippy::module_inception)]
 
 use std::{
-    collections::BTreeMap,
     error::Error,
     fmt,
-    fs::{self, File},
-    io::{self, Write as _},
+    fs::{self},
+    io::{self},
     path::{Path, PathBuf},
     sync::{atomic::Ordering, Arc},
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
-use chrono::Utc;
-use durability::{DurabilityError, DurabilityRecord, DurabilityService, RawRecord, SequenceNumber};
+use checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError};
+use durability::{DurabilityError, DurabilityService, SequenceNumber};
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
 use itertools::Itertools;
@@ -35,13 +34,14 @@ use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
-        iterator::KeyspaceRangeIterator, Keyspace, KeyspaceCheckpointError, KeyspaceError, KeyspaceId,
-        KeyspaceOpenError, KeyspaceSet, KeyspaceValidationError, Keyspaces,
+        iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet,
+        KeyspaceValidationError, Keyspaces,
     },
     snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
     write_batches::WriteBatches,
 };
 
+mod checkpoint;
 pub mod error;
 pub mod isolation_manager;
 pub mod iterator;
@@ -63,15 +63,11 @@ pub struct MVCCStorage<Durability> {
 impl<Durability> MVCCStorage<Durability> {
     const WAL_DIR_NAME: &'static str = "wal";
     const STORAGE_DIR_NAME: &'static str = "storage";
-    const CHECKPOINT_DIR_NAME: &'static str = "checkpoint";
-    const CHECKPOINT_METADATA_FILE_NAME: &'static str = "METADATA";
 
     pub fn open<KS: KeyspaceSet>(name: impl AsRef<str>, path: &Path) -> Result<Self, StorageOpenError>
     where
         Durability: DurabilityService,
     {
-        use StorageOpenError::{Commit, MetadataRead};
-
         let storage_dir = path.join(Self::STORAGE_DIR_NAME);
         if storage_dir.exists() {
             fs::remove_dir_all(&storage_dir).map_err(|_error| todo!())?;
@@ -84,38 +80,20 @@ impl<Durability> MVCCStorage<Durability> {
         durability_service.register_record_type::<CommitRecord>();
         durability_service.register_record_type::<StatusRecord>();
 
-        let checkpoint_dir = path.join(Self::CHECKPOINT_DIR_NAME);
+        let checkpoint = Checkpoint::load::<KS, _>(path, &durability_service).unwrap(); // TODO
+        let keyspaces = checkpoint.keyspaces;
+        let next_sequence_number = checkpoint.next_sequence_number;
+        let isolation_manager = IsolationManager::new(next_sequence_number);
+        // TODO only create new checkpoint if recovery happened
+        Checkpoint::create(next_sequence_number - 1, path, &keyspaces).unwrap(); // TODO
 
-        let checkpoint_sequence_number = {
-            if let Some(latest_checkpoint_dir) = find_latest_checkpoint(&checkpoint_dir)? {
-                for keyspace in KS::iter() {
-                    let keyspace_checkpoint_dir = latest_checkpoint_dir.join(keyspace.name());
-                    let keyspace_dir = storage_dir.join(keyspace.name());
-                    fs_utils::copy_dir_all(keyspace_checkpoint_dir, keyspace_dir).map_err(|_error| todo!())?;
-                }
-                let metadata_file_path = latest_checkpoint_dir.join(Self::CHECKPOINT_METADATA_FILE_NAME);
-                let metadata = fs::read_to_string(metadata_file_path)
-                    .map_err(|error| MetadataRead { dir: checkpoint_dir.clone(), source: error })?;
-                SequenceNumber::new(metadata.parse().unwrap()) // FIXME corrupt METADATA handling
-            } else {
-                SequenceNumber::MIN
-            }
-        };
-
-        let name = name.as_ref();
-        let keyspaces = Keyspaces::open::<KS>(&storage_dir)?;
-
-        let next_sequence_number = checkpoint_sequence_number + 1;
-        let (isolation_manager, commits_to_apply) = recover_isolation(name, next_sequence_number, &durability_service)
-            .map_err(|error| Commit { source: error })?;
-
-        for commit_sequence_number in commits_to_apply {
-            Self::apply_commit(commit_sequence_number, &keyspaces, &isolation_manager).map_err(|error| Commit {
-                source: StorageCommitError::Keyspace { name: name.to_owned(), source: Arc::new(error) },
-            })?;
-        }
-
-        Ok(Self { name: name.to_owned(), path: path.to_owned(), durability_service, keyspaces, isolation_manager })
+        Ok(Self {
+            name: name.as_ref().to_owned(),
+            path: path.to_owned(),
+            durability_service,
+            keyspaces,
+            isolation_manager,
+        })
     }
 
     fn name(&self) -> &str {
@@ -182,14 +160,18 @@ impl<Durability> MVCCStorage<Durability> {
             .sequenced_write(&commit_record)
             .map_err(|error| Durability { name: self.name.to_string(), source: error })?;
 
-        let conflict = self
+        let (conflict, write_batches) = self
             .isolation_manager
             .validate_commit(commit_sequence_number, commit_record, &self.durability_service)
             .map_err(|error| Durability { name: self.name.to_owned(), source: error })?;
 
         if conflict.is_none() {
-            Self::apply_commit(commit_sequence_number, &self.keyspaces, &self.isolation_manager)
+            // Write to the k-v storage
+            self.keyspaces
+                .write(write_batches.unwrap())
                 .map_err(|error| Keyspace { name: self.name.to_owned(), source: Arc::new(error) })?;
+            // Inform the isolation manager and increment the watermark
+            self.isolation_manager.applied(commit_sequence_number).unwrap();
         }
 
         Self::persist_commit_status(conflict.is_none(), commit_sequence_number, &self.durability_service)
@@ -226,22 +208,6 @@ impl<Durability> MVCCStorage<Durability> {
         }
     }
 
-    fn apply_commit(
-        commit_sequence_number: SequenceNumber,
-        keyspaces: &Keyspaces,
-        isolation_manager: &IsolationManager,
-    ) -> Result<(), KeyspaceError> {
-        // Write to the k-v storage
-        keyspaces.write(WriteBatches::from_operations(
-            commit_sequence_number,
-            isolation_manager.get_commit_record(commit_sequence_number).operations(),
-        ))?;
-
-        // Inform the isolation manager and increment the watermark
-        isolation_manager.applied(commit_sequence_number).unwrap();
-        Ok(())
-    }
-
     fn persist_commit_status(
         did_apply: bool,
         commit_sequence_number: SequenceNumber,
@@ -262,46 +228,8 @@ impl<Durability> MVCCStorage<Durability> {
         self.keyspaces.get(keyspace_id)
     }
 
-    pub fn checkpoint(&self) -> Result<(), StorageCheckpointError> {
-        use StorageCheckpointError::{
-            CreateCheckpointDir, CreateMetadataFile, KeyspaceCheckpoint, ReadCheckpointDir, RemoveOldCheckpoint,
-            WriteMetadata,
-        };
-
-        let watermark = self.read_watermark();
-
-        let checkpoint_dir = self.path.join(Self::CHECKPOINT_DIR_NAME);
-        if !checkpoint_dir.exists() {
-            fs::create_dir_all(&checkpoint_dir)
-                .map_err(|error| CreateCheckpointDir { dir: checkpoint_dir.clone(), source: error })?
-        }
-
-        let previous_checkpoints: Vec<_> = fs::read_dir(&checkpoint_dir)
-            .and_then(|entries| entries.map_ok(|entry| entry.path()).try_collect())
-            .map_err(|error| ReadCheckpointDir { dir: checkpoint_dir.clone(), source: error })?;
-
-        let current_checkpoint_dir = checkpoint_dir.join(format!("{}", Utc::now().timestamp_micros()));
-        fs::create_dir_all(&current_checkpoint_dir)
-            .map_err(|error| CreateCheckpointDir { dir: checkpoint_dir.clone(), source: error })?;
-
-        self.keyspaces
-            .checkpoint(&current_checkpoint_dir)
-            .map_err(|error| KeyspaceCheckpoint { dir: current_checkpoint_dir.clone(), source: error })?;
-
-        let metadata_file_path = current_checkpoint_dir.join(Self::CHECKPOINT_METADATA_FILE_NAME);
-        let mut metadata_file = File::create(&metadata_file_path)
-            .map_err(|error| CreateMetadataFile { file_path: metadata_file_path.clone(), source: error })?;
-        metadata_file
-            .write_all(watermark.number().to_string().as_bytes())
-            .and_then(|()| metadata_file.sync_all())
-            .map_err(|error| WriteMetadata { file_path: metadata_file_path.clone(), source: error })?;
-
-        for previous_checkpoint in previous_checkpoints {
-            fs::remove_dir_all(&previous_checkpoint)
-                .map_err(|error| RemoveOldCheckpoint { dir: previous_checkpoint, source: error })?
-        }
-
-        Ok(())
+    pub fn checkpoint(&self) -> Result<PathBuf, CheckpointCreateError> {
+        Checkpoint::create(self.read_watermark(), &self.path, &self.keyspaces)
     }
 
     pub fn delete_storage(self) -> Result<(), Vec<StorageDeleteError>> {
@@ -404,87 +332,6 @@ impl<Durability> MVCCStorage<Durability> {
     }
 }
 
-fn recover_isolation(
-    storage_name: &str,
-    next_sequence_number: SequenceNumber,
-    durability_service: &impl DurabilityService,
-) -> Result<(IsolationManager, Vec<SequenceNumber>), StorageCommitError> {
-    use StorageCommitError::{Durability, IO};
-
-    let isolation_manager = IsolationManager::new(next_sequence_number);
-
-    enum CheckpointCommitStatus {
-        Pending(CommitRecord),
-        Validated(Option<CommitRecord>),
-        Rejected,
-    }
-
-    let mut recovered_commits = BTreeMap::new();
-    for record in durability_service
-        .iter_from(next_sequence_number)
-        .map_err(|error| Durability { name: storage_name.to_owned(), source: error })?
-    {
-        let RawRecord { sequence_number, record_type, bytes } =
-            record.map_err(|error| IO { name: storage_name.to_owned(), source: error })?;
-        match record_type {
-            CommitRecord::RECORD_TYPE => {
-                let commit_record = CommitRecord::deserialise_from(&mut &*bytes).unwrap(); // FIXME
-                recovered_commits.insert(sequence_number, CheckpointCommitStatus::Pending(commit_record));
-            }
-            StatusRecord::RECORD_TYPE => {
-                let StatusRecord { commit_record_sequence_number, was_committed } =
-                    StatusRecord::deserialise_from(&mut &*bytes).unwrap(); // FIXME
-                if was_committed {
-                    let record = recovered_commits.remove(&commit_record_sequence_number).map(|status| {
-                        let CheckpointCommitStatus::Pending(record) = status else {
-                            unreachable!("found second commit status for a record")
-                        };
-                        record
-                    });
-                    recovered_commits.insert(commit_record_sequence_number, CheckpointCommitStatus::Validated(record));
-                } else {
-                    recovered_commits.insert(commit_record_sequence_number, CheckpointCommitStatus::Rejected);
-                }
-            }
-            _other => (), // skip?
-        }
-    }
-
-    let mut pending_commits = Vec::new();
-    for (commit_sequence_number, commit) in recovered_commits {
-        match commit {
-            CheckpointCommitStatus::Validated(commit_record) => {
-                isolation_manager.load_validated(commit_sequence_number, commit_record.unwrap());
-                pending_commits.push(commit_sequence_number);
-            }
-            CheckpointCommitStatus::Rejected => isolation_manager.load_aborted(commit_sequence_number),
-            CheckpointCommitStatus::Pending(commit_record) => {
-                isolation_manager.opened_for_read(commit_record.open_sequence_number());
-                let conflict = &isolation_manager
-                    .validate_commit(commit_sequence_number, commit_record, durability_service)
-                    .map_err(|error| Durability { name: storage_name.to_owned(), source: error })?;
-                MVCCStorage::persist_commit_status(conflict.is_none(), commit_sequence_number, durability_service)
-                    .map_err(|error| Durability { name: storage_name.to_owned(), source: error })?;
-                if conflict.is_none() {
-                    pending_commits.push(commit_sequence_number);
-                }
-            }
-        }
-    }
-
-    Ok((isolation_manager, pending_commits))
-}
-
-fn find_latest_checkpoint(checkpoint_dir: &Path) -> Result<Option<PathBuf>, StorageOpenError> {
-    if !checkpoint_dir.exists() {
-        return Ok(None);
-    }
-
-    fs::read_dir(checkpoint_dir)
-        .and_then(|mut entries| entries.try_fold(None, |cur, entry| Ok(cur.max(Some(entry?.path())))))
-        .map_err(|error| StorageOpenError::CheckpointRead { dir: checkpoint_dir.to_owned(), source: error })
-}
-
 #[derive(Debug)]
 pub enum ReadSnapshotOpenError {}
 
@@ -517,12 +364,9 @@ impl Error for WriteSnapshotOpenError {
 
 #[derive(Debug)]
 pub enum StorageOpenError {
-    KeyspaceValidation { source: KeyspaceValidationError },
-    KeyspaceOpen { source: KeyspaceOpenError },
     DurabilityServiceRead { source: DurabilityError },
     DurabilityServiceWrite { source: DurabilityError },
-    CheckpointRead { dir: PathBuf, source: io::Error },
-    MetadataRead { dir: PathBuf, source: io::Error },
+    CheckpointLoad { source: CheckpointLoadError },
     Commit { source: StorageCommitError },
 }
 
@@ -535,45 +379,10 @@ impl fmt::Display for StorageOpenError {
 impl Error for StorageOpenError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::KeyspaceValidation { source, .. } => Some(source),
-            Self::KeyspaceOpen { source, .. } => Some(source),
             Self::DurabilityServiceRead { source, .. } => Some(source),
             Self::DurabilityServiceWrite { source, .. } => Some(source),
-            Self::CheckpointRead { source, .. } => Some(source),
-            Self::MetadataRead { source, .. } => Some(source),
             Self::Commit { source, .. } => Some(source),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum StorageCheckpointError {
-    CreateCheckpointDir { dir: PathBuf, source: io::Error },
-    ReadCheckpointDir { dir: PathBuf, source: io::Error },
-
-    KeyspaceCheckpoint { dir: PathBuf, source: KeyspaceCheckpointError },
-
-    CreateMetadataFile { file_path: PathBuf, source: io::Error },
-    WriteMetadata { file_path: PathBuf, source: io::Error },
-
-    RemoveOldCheckpoint { dir: PathBuf, source: io::Error },
-}
-
-impl fmt::Display for StorageCheckpointError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for StorageCheckpointError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::CreateCheckpointDir { source, .. } => Some(source),
-            Self::ReadCheckpointDir { source, .. } => Some(source),
-            Self::KeyspaceCheckpoint { source, .. } => Some(source),
-            Self::CreateMetadataFile { source, .. } => Some(source),
-            Self::WriteMetadata { source, .. } => Some(source),
-            Self::RemoveOldCheckpoint { source, .. } => Some(source),
+            Self::CheckpointLoad { source, .. } => Some(source),
         }
     }
 }
@@ -769,12 +578,14 @@ mod tests {
             let commit_record = CommitRecord::new(OperationsBuffer::new(), SequenceNumber::MIN);
             let seq = storage.durability_service.sequenced_write(&commit_record).unwrap();
 
-            let conflict =
+            let (conflict, write_batches) =
                 storage.isolation_manager.validate_commit(seq, commit_record, &storage.durability_service).unwrap();
-            if conflict.is_none() {
-                MVCCStorage::<WAL>::apply_commit(seq, &storage.keyspaces, &storage.isolation_manager).unwrap();
-            }
-            MVCCStorage::persist_commit_status(conflict.is_none(), seq, &storage.durability_service).unwrap();
+            assert!(conflict.is_none());
+
+            storage.keyspaces.write(write_batches.unwrap()).unwrap();
+            storage.isolation_manager.applied(seq).unwrap();
+
+            MVCCStorage::persist_commit_status(true, seq, &storage.durability_service).unwrap();
 
             storage.read_watermark()
         };

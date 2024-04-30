@@ -52,9 +52,9 @@ pub trait DurabilityService: Sequencer {
     fn iter_from(
         &self,
         sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item = io::Result<RawRecord>>, DurabilityError>;
+    ) -> Result<impl Iterator<Item = Result<RawRecord, DurabilityError>>, DurabilityError>;
 
-    fn iter_from_start(&self) -> Result<impl Iterator<Item = io::Result<RawRecord>>, DurabilityError> {
+    fn iter_from_start(&self) -> Result<impl Iterator<Item = Result<RawRecord, DurabilityError>>, DurabilityError> {
         self.iter_from(SequenceNumber::MIN)
     }
 

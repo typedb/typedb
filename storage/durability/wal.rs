@@ -103,7 +103,7 @@ impl DurabilityService for WAL {
     fn iter_from(
         &self,
         sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item = io::Result<RawRecord>>, DurabilityError> {
+    ) -> Result<impl Iterator<Item = Result<RawRecord, DurabilityError>>, DurabilityError> {
         Ok(RecordIterator::new(self.files.read().unwrap(), sequence_number)?)
     }
 }
@@ -312,19 +312,20 @@ impl<'a> RecordIterator<'a> {
 }
 
 impl<'a> Iterator for RecordIterator<'a> {
-    type Item = io::Result<RawRecord>;
+    type Item = Result<RawRecord, DurabilityError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let reader = self.reader.as_mut()?;
         match reader.read_one_record().transpose() {
+            Some(Ok(item)) => Some(Ok(item)),
+            Some(Err(error)) => Some(Err(DurabilityError::IO { source: error })),
             None => match self.advance_file().transpose()? {
                 Ok(()) => self.next(),
-                Err(err) => {
+                Err(error) => {
                     self.reader = None;
-                    Some(Err(err))
+                    Some(Err(DurabilityError::IO { source: error }))
                 }
             },
-            some => some,
         }
     }
 }

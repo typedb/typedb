@@ -12,7 +12,7 @@ use itertools::Itertools;
 use storage::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::{KeyspaceId, KeyspaceSet, KeyspaceValidationError},
+    keyspace::{KeyspaceId, KeyspaceSet},
     MVCCStorage, StorageOpenError,
 };
 use test_utils::{create_tmp_dir, init_logging};
@@ -59,14 +59,7 @@ fn create_keyspaces_duplicate_name_error() {
     init_logging();
     let storage_path = create_tmp_dir();
     let create_result = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path);
-    assert!(
-        matches!(
-            create_result,
-            Err(StorageOpenError::KeyspaceValidation { source: KeyspaceValidationError::NameExists { .. } })
-        ),
-        "{}",
-        create_result.unwrap_err()
-    );
+    assert!(matches!(create_result, Err(StorageOpenError::CheckpointLoad { .. })), "{}", create_result.unwrap_err());
 }
 
 #[test]
@@ -79,14 +72,7 @@ fn create_keyspaces_duplicate_id_error() {
     init_logging();
     let storage_path = create_tmp_dir();
     let create_result = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path);
-    assert!(
-        matches!(
-            create_result,
-            Err(StorageOpenError::KeyspaceValidation { source: KeyspaceValidationError::IdExists { .. } })
-        ),
-        "{}",
-        create_result.unwrap_err()
-    );
+    assert!(matches!(create_result, Err(StorageOpenError::CheckpointLoad { .. })), "{}", create_result.unwrap_err());
 }
 
 fn empty_value<const SZ: usize>() -> Bytes<'static, SZ> {

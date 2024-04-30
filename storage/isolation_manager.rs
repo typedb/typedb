@@ -29,7 +29,10 @@ use project::{read_guard_project, ReadGuard, RwLockReadGuardProject};
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 use serde::{Deserialize, Serialize};
 
-use crate::snapshot::{buffer::OperationsBuffer, lock::LockType, write::Write};
+use crate::{
+    snapshot::{buffer::OperationsBuffer, lock::LockType, write::Write},
+    write_batches::WriteBatches,
+};
 
 #[derive(Debug)]
 pub(crate) struct IsolationManager {
@@ -90,7 +93,7 @@ impl IsolationManager {
         sequence_number: SequenceNumber,
         commit_record: CommitRecord,
         durability_service: &impl DurabilityService,
-    ) -> Result<Option<IsolationConflict>, DurabilityError> {
+    ) -> Result<(Option<IsolationConflict>, Option<WriteBatches>), DurabilityError> {
         let window = self.timeline.get_or_create_window(sequence_number);
         window.insert_pending(sequence_number, commit_record);
         if let CommitStatus::Pending(commit_record) = window.get_status(sequence_number) {
@@ -104,7 +107,10 @@ impl IsolationManager {
                 self.timeline.may_increment_watermark(sequence_number);
             }
             self.timeline.remove_reader(commit_record.open_sequence_number);
-            Ok(isolation_conflict)
+            let write_batches = isolation_conflict.is_none().then(|| {
+                WriteBatches::from_operations(sequence_number, self.get_commit_record(sequence_number).operations())
+            });
+            Ok((isolation_conflict, write_batches))
         } else {
             unreachable!()
         }
