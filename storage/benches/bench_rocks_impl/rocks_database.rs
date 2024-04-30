@@ -5,7 +5,7 @@
  */
 
 use speedb::{Options, WriteOptions};
-use non_transactional_database::NonTransactionalDatabase;
+use non_transactional_rocks::NonTransactionalRocks;
 use storage::StorageRecoverError;
 use crate::bench_rocks_impl::rocks_database::typedb_database::TypeDBDatabase;
 
@@ -19,8 +19,14 @@ fn write_options() -> WriteOptions {
     WriteOptions::default() // TODO
 }
 
-pub fn create_non_transactional_db<const N_DATABASES: usize>() -> Result<NonTransactionalDatabase<N_DATABASES>, speedb::Error> {
-    NonTransactionalDatabase::<N_DATABASES>::setup(database_options(), write_options())
+pub fn rocks_with_wal<const N_DATABASES: usize>() -> Result<NonTransactionalRocks<N_DATABASES>, speedb::Error> {
+    NonTransactionalRocks::<N_DATABASES>::setup(database_options(), write_options())
+}
+
+pub fn rocks_without_wal<const N_DATABASES: usize>() -> Result<NonTransactionalRocks<N_DATABASES>, speedb::Error> {
+    let mut write_options = write_options();
+    write_options.disable_wal(true);
+    NonTransactionalRocks::<N_DATABASES>::setup(database_options(), write_options)
 }
 
 pub fn create_typedb<const N_DATABASES: usize>() -> Result<TypeDBDatabase<N_DATABASES>, StorageRecoverError> {
@@ -28,30 +34,30 @@ pub fn create_typedb<const N_DATABASES: usize>() -> Result<TypeDBDatabase<N_DATA
 }
 
 
-mod non_transactional_database {
+mod non_transactional_rocks {
     // if we implement transactional rocks, extract trait.
     use test_utils::create_tmp_dir;
     use speedb::{Options, DB, WriteBatch, WriteOptions};
     use std::iter::zip;
     use crate::{RocksDatabase, RocksWriteBatch};
-    use crate::bench_rocks_impl::rocks_database::{database_options, non_transactional_database, write_options};
 
 
-    pub struct NonTransactionalDatabase<const N_DATABASES: usize> {
+    pub struct NonTransactionalRocks<const N_DATABASES: usize> {
         databases: [DB; crate::N_DATABASES],
         write_options: WriteOptions,
     }
 
-    impl<const N_DATABASES: usize> NonTransactionalDatabase<N_DATABASES> {
+    impl<const N_DATABASES: usize> NonTransactionalRocks<N_DATABASES> {
         pub(super) fn setup(options: Options, write_options: WriteOptions) -> Result<Self, speedb::Error> {
             let databases = core::array::from_fn(|_| {
                 DB::open(&options, &create_tmp_dir()).unwrap()
             });
+
             Ok(Self { databases, write_options })
         }
     }
 
-    impl<const N_DATABASES: usize> RocksDatabase for NonTransactionalDatabase<N_DATABASES> {
+    impl<const N_DATABASES: usize> RocksDatabase for NonTransactionalRocks<N_DATABASES> {
         fn open_batch(&self) -> impl RocksWriteBatch {
             let write_batches = core::array::from_fn(|_| { WriteBatch::default() });
             NonTransactionalWriteBatch { database: self, write_batches }
@@ -59,7 +65,7 @@ mod non_transactional_database {
     }
 
     pub struct NonTransactionalWriteBatch<'this, const N_DATABASES: usize> {
-        database: &'this NonTransactionalDatabase<N_DATABASES>,
+        database: &'this NonTransactionalRocks<N_DATABASES>,
         write_batches: [WriteBatch; N_DATABASES],
     }
 
@@ -103,7 +109,6 @@ mod typedb_database {
     }
 
     impl<const N_DATABASES:usize> RocksDatabase for TypeDBDatabase<N_DATABASES> {
-
         fn open_batch(&self) -> impl RocksWriteBatch {
             TypeDBSnapshot { snapshot: self.storage.clone().open_snapshot_write() }
         }

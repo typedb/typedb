@@ -13,13 +13,10 @@ use std::sync::RwLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
-use rand::{thread_rng, rngs::ThreadRng, Rng};
-use speedb::DB;
-use bench_rocks_impl::{
-    rocks_database::{create_non_transactional_db},
-};
-use test_utils::create_tmp_dir;
-use crate::bench_rocks_impl::rocks_database::create_typedb;
+use rand::random;
+use rand_core::RngCore;
+use xoshiro::Xoshiro256Plus;
+use crate::bench_rocks_impl::rocks_database::{create_typedb, rocks_with_wal, rocks_without_wal};
 
 const N_DATABASES: usize = 1;
 const N_COL_FAMILIES_PER_DB: usize = 1;
@@ -28,7 +25,7 @@ const KEY_SIZE: usize = 64;
 const VALUE_SIZE: usize = 0;
 
 
-pub trait RocksDatabase : std::marker::Sync + std::marker::Send {
+pub trait RocksDatabase : Sync + Send {
     fn open_batch(&self) -> impl RocksWriteBatch;
 }
 
@@ -49,12 +46,12 @@ impl BenchmarkResult {
         println!("-- Report for benchmark ---");
         println!("threads = {}, batches={}, batch_size={} ---", runner.n_threads, runner.n_batches, runner.batch_size);
         println!("key-size: {KEY_SIZE}; value_size: {VALUE_SIZE}");
-        println!("Batch timings (ns):");
-        println!("- - - - - - - -");
-        self.batch_timings.iter().enumerate().for_each(|(batch_id, time)| {
-            println!("{:8}: {:12}", batch_id, time.as_nanos());
-        });
-        println!("- - - - - - - -");
+        // println!("Batch timings (ns):");
+        // println!("- - - - - - - -");
+        // self.batch_timings.iter().enumerate().for_each(|(batch_id, time)| {
+        //     println!("{:8}: {:12}", batch_id, time.as_nanos());
+        // });
+        // println!("- - - - - - - -");
 
         let n_keys: usize = runner.n_batches * runner.batch_size;
         let data_size_mb : f64 = ((n_keys * (KEY_SIZE + VALUE_SIZE)) as f64) / ((1024 * 1024) as f64) ;
@@ -76,27 +73,32 @@ impl BenchmarkRunner {
     const VALUE_EMPTY :[u8;0] = [];
     fn run(&self, database_arc: &impl RocksDatabase) -> BenchmarkResult {
         debug_assert_eq!(1, N_DATABASES, "I've not bothered implementing multiple databases");
+        // Pre-generating data is 3x-4x faster.
+        let mut pre_rng = Xoshiro256Plus::from_seed_u64(random());
+        let mut data: Vec<[u8; KEY_SIZE]> = Vec::new();
+        for _ in 0..(self.n_batches * self.batch_size) {
+            data.push(Self::generate_key_value(&mut pre_rng).0);
+        }
+
         let batch_timings: Vec<RwLock<Duration>> = (0..self.n_batches).into_iter().map(|_| RwLock::new(Duration::from_secs(0))).collect();
         let batch_counter = AtomicUsize::new(0);
         let benchmark_start_instant = Instant::now();
         thread::scope(|s| {
             for _ in 0..self.n_threads {
                 s.spawn(|| {
-                    let mut rng = thread_rng();
                     loop {
                         let batch_number = batch_counter.fetch_add(1, Ordering::Relaxed);
                         if batch_number >= self.n_batches { break; }
-
                         let mut write_batch = database_arc.open_batch();
                         let batch_start_instant = Instant::now();
-                        for _ in 0..self.batch_size {
-                            let (k, v) = Self::generate_key_value(&mut rng);
-                            write_batch.put(0, k);
+                        for batch_idx in 0..self.batch_size {
+                            let k = data.get(batch_number * self.batch_size + batch_idx).unwrap();
+                            write_batch.put(0, k.clone());
                         }
                         write_batch.commit().unwrap();
+                        let batch_stop =  batch_start_instant.elapsed();
                         let mut duration_for_batch = batch_timings.get(batch_number).unwrap().write().unwrap();
-                        *duration_for_batch = batch_start_instant.elapsed();
-                        // println!("Thread completed batch {}", batch_number)
+                        *duration_for_batch = batch_stop;
                     }
                 });
             }
@@ -109,10 +111,10 @@ impl BenchmarkRunner {
         }
     }
 
-    fn generate_key_value(rng: &mut ThreadRng) -> ([u8; crate::KEY_SIZE], [u8; crate::VALUE_SIZE]) {
-        let mut key : [u8; crate::KEY_SIZE] = [0; crate::KEY_SIZE];
-        rng.fill(&mut key);
-        (key, Self::VALUE_EMPTY)
+    fn generate_key_value(rng: &mut Xoshiro256Plus) -> ([u8; KEY_SIZE], [u8; VALUE_SIZE]) {
+        let mut key : [u8; KEY_SIZE] = [0; KEY_SIZE];
+        rng.fill_bytes(&mut key);
+        (key , Self::VALUE_EMPTY)
     }
 }
 
@@ -127,7 +129,7 @@ fn run_for(args: &HashMap<String, String>, database: &impl RocksDatabase) {
     let benchmarker = BenchmarkRunner {
         n_threads: get_arg_as::<u16>(&args, "threads").unwrap(),
         n_batches: get_arg_as::<usize>(&args, "batches").unwrap(),
-        batch_size: get_arg_as::<usize>(&args, "batch_size").unwrap()
+        batch_size: get_arg_as::<usize>(&args, "batch_size").unwrap(),
     };
 
 
@@ -143,8 +145,9 @@ fn main() {
         .collect();
 
     match get_arg_as::<String>(&args, "database").unwrap().as_str() {
-        "rocks_raw" => run_for(&args, &create_non_transactional_db::<N_DATABASES>().unwrap()),
+        "rocks_no_wal" => run_for(&args, &rocks_without_wal::<N_DATABASES>().unwrap()),
+        "rocks_wal" => run_for(&args, &rocks_with_wal::<N_DATABASES>().unwrap()),
         "typedb" => run_for(&args, &create_typedb::<N_DATABASES>().unwrap()),
-        _ => panic!("Unrecognised argument for database. Supported: rocks_raw, typedb")
+        _ => panic!("Unrecognised argument for database. Supported: rocks_wal, rocks_no_wal, typedb")
     }
 }

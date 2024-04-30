@@ -26,6 +26,7 @@ rust_test(
         "@crates//:tracing",
         "@crates//:criterion",
         "@crates//:pprof",
+        "@crates//:xoshiro",
     ],
     use_libtest_harness = False,
 )
