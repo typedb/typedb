@@ -59,8 +59,8 @@ impl BenchmarkResult {
         let n_keys: usize = runner.n_batches * runner.batch_size;
         let data_size_mb : f64 = ((n_keys * (KEY_SIZE + VALUE_SIZE)) as f64) / ((1024 * 1024) as f64) ;
         println!("Summary:");
-        println!("Total time: {:12} ns; total_keys: {:10}; data_size: {:8} MB\nrate: {:.2} keys/s = {:.2} MB/s ",
-                 self.total_time.as_nanos(), n_keys, data_size_mb,
+        println!("Total time: {:12} ms; total_keys: {:10}; data_size: {:8} MB\nrate: {:.2} keys/s = {:.2} MB/s ",
+                 self.total_time.as_secs_f64() * 1000, n_keys, data_size_mb,
                  n_keys as f64 / self.total_time.as_secs_f64(), data_size_mb / self.total_time.as_secs_f64(),
         );
     }
