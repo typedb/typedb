@@ -6,13 +6,10 @@
 
 use std::fmt;
 
-use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use logger::result::ResultExt;
 
-use crate::{
-    error::EncodingError,
-    AsBytes,
-};
+use crate::{error::EncodingError, AsBytes};
 
 /*
 Both Rust and RocksDB use lexicographical ordering for comparing byte slices.
@@ -41,10 +38,7 @@ impl<'a, const INLINE_LENGTH: usize> StringBytes<'a, INLINE_LENGTH> {
 
     pub fn as_str(&self) -> &str {
         std::str::from_utf8(self.bytes.bytes())
-            .map_err(|err| EncodingError::UFT8Decode {
-                bytes: self.bytes.bytes().to_vec().into_boxed_slice(),
-                source: err,
-            })
+            .map_err(|err| EncodingError::UFT8Decode { bytes: Box::from(self.bytes.bytes()), source: err })
             .unwrap_or_log()
     }
 

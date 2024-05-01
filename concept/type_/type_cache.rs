@@ -15,29 +15,35 @@ use bytes::Bytes;
 use durability::SequenceNumber;
 use encoding::{
     graph::{
-        type_::vertex::{
-            build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
-            build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type,
-            new_vertex_relation_type, new_vertex_role_type, TypeVertex,
+        type_::{
+            edge::TypeEdge,
+            vertex::{
+                build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
+                build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type,
+                new_vertex_relation_type, new_vertex_role_type, TypeVertex,
+            },
         },
         Typed,
     },
     layout::prefix::Prefix,
+    value::{label::Label, value_type::ValueType},
     Prefixed,
-    value::{
-        label::Label
-        ,
-        value_type::ValueType,
-    },
 };
-use encoding::graph::type_::edge::TypeEdge;
-use storage::{MVCCStorage, ReadSnapshotOpenError, snapshot::ReadableSnapshot};
-use storage::key_range::KeyRange;
+use storage::{key_range::KeyRange, snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
 
-use crate::type_::{attribute_type::{AttributeType, AttributeTypeAnnotation}, entity_type::{EntityType, EntityTypeAnnotation}, object_type::ObjectType, Ordering, owns::Owns, plays::Plays, relates::Relates, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, TypeAPI};
-use crate::type_::owns::OwnsAnnotation;
-use crate::type_::type_manager::{ReadableType, TypeManager};
-use crate::type_::type_reader::TypeReader;
+use crate::type_::{
+    attribute_type::{AttributeType, AttributeTypeAnnotation},
+    entity_type::{EntityType, EntityTypeAnnotation},
+    object_type::ObjectType,
+    owns::{Owns, OwnsAnnotation},
+    plays::Plays,
+    relates::Relates,
+    relation_type::{RelationType, RelationTypeAnnotation},
+    role_type::{RoleType, RoleTypeAnnotation},
+    type_manager::{ReadableType, TypeManager},
+    type_reader::TypeReader,
+    Ordering, TypeAPI,
+};
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -65,16 +71,21 @@ struct CommonTypeCache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
     annotations_declared: HashSet<T::AnnotationType>,
     // TODO: Should these all be sets instead of vec?
     supertype: Option<T::SelfRead>, // TODO: use smallvec if we want to have some inline - benchmark.
-    supertypes: Vec<T::SelfRead>,  // TODO: use smallvec if we want to have some inline - benchmark.
+    supertypes: Vec<T::SelfRead>,   // TODO: use smallvec if we want to have some inline - benchmark.
     subtypes_declared: Vec<T::SelfRead>, // TODO: benchmark smallvec.
     subtypes_transitive: Vec<T::SelfRead>, // TODO: benchmark smallvec
 }
 
-impl<T> CommonTypeCache<T> where T: TypeAPI<'static> + ReadableType<'static, 'static> {
-    fn build_for<Snapshot: ReadableSnapshot>(snapshot: &Snapshot, type_ : T) -> CommonTypeCache<T> {
+impl<T> CommonTypeCache<T>
+where
+    T: TypeAPI<'static> + ReadableType<'static, 'static>,
+{
+    fn build_for<Snapshot: ReadableSnapshot>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T> {
         let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
         let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
-        let annotations_declared = TypeReader::get_type_annotations(snapshot, type_.clone()).unwrap().into_iter()
+        let annotations_declared = TypeReader::get_type_annotations(snapshot, type_.clone())
+            .unwrap()
+            .into_iter()
             .map(|annotation| T::AnnotationType::from(annotation))
             .collect::<HashSet<T::AnnotationType>>();
         let supertype = TypeReader::get_supertype(snapshot, type_.clone()).unwrap();
@@ -89,14 +100,14 @@ impl<T> CommonTypeCache<T> where T: TypeAPI<'static> + ReadableType<'static, 'st
             supertype,
             supertypes,
             subtypes_declared,
-            subtypes_transitive
+            subtypes_transitive,
         }
     }
 }
 
 #[derive(Debug)]
 struct EntityTypeCache {
-    type_api_cache_ : CommonTypeCache<EntityType<'static>>,
+    type_api_cache_: CommonTypeCache<EntityType<'static>>,
     owns_declared: HashSet<Owns<'static>>,
     plays_declared: HashSet<Plays<'static>>,
     // ...
@@ -112,14 +123,14 @@ struct RelationTypeCache {
 
 #[derive(Debug)]
 struct RoleTypeCache {
-    type_api_cache_ : CommonTypeCache<RoleType<'static>>,
+    type_api_cache_: CommonTypeCache<RoleType<'static>>,
     ordering: Ordering,
     relates_declared: Relates<'static>,
 }
 
 #[derive(Debug)]
 struct AttributeTypeCache {
-    type_api_cache_ :  CommonTypeCache<AttributeType<'static>>,
+    type_api_cache_: CommonTypeCache<AttributeType<'static>>,
     value_type: Option<ValueType>,
     // owners: HashSet<Owns<'static>>
 }
@@ -131,7 +142,6 @@ struct OwnsCache {
 }
 
 impl TypeCache {
-
     // If creation becomes slow, We should restore pre-fetching of the schema
     //  with a single pass on disk (as it was in 1f339733feaf4542e47ff604462f107d2ade1f1a)
     pub fn new<D>(
@@ -148,25 +158,35 @@ impl TypeCache {
         let entity_type_caches = Self::create_entity_caches(&snapshot);
         let entity_type_index_labels = entity_type_caches
             .iter()
-            .filter_map(|entry| entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone())))
+            .filter_map(|entry| {
+                entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone()))
+            })
             .collect();
 
         let relation_type_caches = Self::create_relation_caches(&snapshot);
         let relation_type_index_labels = relation_type_caches
             .iter()
-            .filter_map(|entry| entry.as_ref().map(|cache| (cache.common_type_cache.label.clone(), cache.common_type_cache.type_.clone())))
+            .filter_map(|entry| {
+                entry
+                    .as_ref()
+                    .map(|cache| (cache.common_type_cache.label.clone(), cache.common_type_cache.type_.clone()))
+            })
             .collect();
 
         let role_type_caches = Self::create_role_caches(&snapshot);
         let role_type_index_labels = role_type_caches
             .iter()
-            .filter_map(|entry| entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone())))
+            .filter_map(|entry| {
+                entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone()))
+            })
             .collect();
 
         let attribute_type_caches = Self::create_attribute_caches(&snapshot);
         let attribute_type_index_labels = attribute_type_caches
             .iter()
-            .filter_map(|entry| entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone())))
+            .filter_map(|entry| {
+                entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone()))
+            })
             .collect();
 
         Ok(TypeCache {
@@ -184,21 +204,22 @@ impl TypeCache {
         })
     }
 
-    fn create_entity_caches(
-        snapshot: &impl ReadableSnapshot
-    ) -> Box<[Option<EntityTypeCache>]> {
+    fn create_entity_caches(snapshot: &impl ReadableSnapshot) -> Box<[Option<EntityTypeCache>]> {
         let entities = snapshot
-            .iterate_range(KeyRange::new_within(build_vertex_entity_type_prefix(), Prefix::VertexEntityType.fixed_width_keys()))
+            .iterate_range(KeyRange::new_within(
+                build_vertex_entity_type_prefix(),
+                Prefix::VertexEntityType.fixed_width_keys(),
+            ))
             .collect_cloned_hashset(|key, _| {
                 EntityType::new(new_vertex_entity_type(Bytes::Reference(key.byte_ref())).into_owned())
             })
             .unwrap();
         let max_entity_id = entities.iter().map(|e| e.vertex().type_id_().as_u16()).max().unwrap();
-        let mut caches = (0..=max_entity_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let mut caches = (0..=max_entity_id).map(|_| None).collect::<Box<[_]>>();
 
         for entity in entities.into_iter() {
             let cache = EntityTypeCache {
-                type_api_cache_:  CommonTypeCache::build_for(snapshot, entity.clone()),
+                type_api_cache_: CommonTypeCache::build_for(snapshot, entity.clone()),
                 owns_declared: TypeReader::get_owns(snapshot, entity.clone()).unwrap(),
                 plays_declared: TypeReader::get_plays(snapshot, entity.clone()).unwrap(),
             };
@@ -207,32 +228,31 @@ impl TypeCache {
         caches
     }
 
-    fn create_relation_caches(
-        snapshot: &impl ReadableSnapshot
-    ) -> Box<[Option<RelationTypeCache>]> {
+    fn create_relation_caches(snapshot: &impl ReadableSnapshot) -> Box<[Option<RelationTypeCache>]> {
         let relations = snapshot
-            .iterate_range(KeyRange::new_within(build_vertex_relation_type_prefix(), Prefix::VertexRelationType.fixed_width_keys()))
+            .iterate_range(KeyRange::new_within(
+                build_vertex_relation_type_prefix(),
+                Prefix::VertexRelationType.fixed_width_keys(),
+            ))
             .collect_cloned_hashset(|key, _| {
                 RelationType::new(new_vertex_relation_type(Bytes::Reference(key.byte_ref())).into_owned())
             })
             .unwrap();
         let max_relation_id = relations.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
-        let mut caches = (0..=max_relation_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let mut caches = (0..=max_relation_id).map(|_| None).collect::<Box<[_]>>();
         for relation in relations.into_iter() {
             let cache = RelationTypeCache {
-                common_type_cache:  CommonTypeCache::build_for(snapshot, relation.clone()),
+                common_type_cache: CommonTypeCache::build_for(snapshot, relation.clone()),
                 relates_declared: TypeReader::get_relates(snapshot, relation.clone()).unwrap(),
-                owns_declared : TypeReader::get_owns(snapshot, relation.clone()).unwrap(),
-                plays_declared : TypeReader::get_plays(snapshot, relation.clone()).unwrap()
+                owns_declared: TypeReader::get_owns(snapshot, relation.clone()).unwrap(),
+                plays_declared: TypeReader::get_plays(snapshot, relation.clone()).unwrap(),
             };
             caches[relation.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
         caches
     }
 
-    fn create_role_caches(
-        snapshot: &impl ReadableSnapshot,
-    ) -> Box<[Option<RoleTypeCache>]> {
+    fn create_role_caches(snapshot: &impl ReadableSnapshot) -> Box<[Option<RoleTypeCache>]> {
         let roles = snapshot
             .iterate_range(KeyRange::new_within(build_vertex_role_type_prefix(), TypeVertex::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
@@ -240,22 +260,20 @@ impl TypeCache {
             })
             .unwrap();
         let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
-        let mut caches = (0..=max_role_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let mut caches = (0..=max_role_id).map(|_| None).collect::<Box<[_]>>();
         for role in roles.into_iter() {
             let ordering = TypeReader::get_type_ordering(snapshot, role.clone()).unwrap();
             let cache = RoleTypeCache {
-                type_api_cache_:  CommonTypeCache::build_for(snapshot, role.clone()),
+                type_api_cache_: CommonTypeCache::build_for(snapshot, role.clone()),
                 ordering,
-                relates_declared: TypeReader::get_relations(snapshot, role.clone()).unwrap()
+                relates_declared: TypeReader::get_relations(snapshot, role.clone()).unwrap(),
             };
             caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
         caches
     }
 
-    fn create_attribute_caches(
-        snapshot: &impl ReadableSnapshot,
-    ) -> Box<[Option<AttributeTypeCache>]> {
+    fn create_attribute_caches(snapshot: &impl ReadableSnapshot) -> Box<[Option<AttributeTypeCache>]> {
         let attributes = snapshot
             .iterate_range(KeyRange::new_within(build_vertex_attribute_type_prefix(), TypeVertex::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
@@ -263,10 +281,10 @@ impl TypeCache {
             })
             .unwrap();
         let max_attribute_id = attributes.iter().map(|a| a.vertex().type_id_().as_u16()).max().unwrap();
-        let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Box<[_]>>();
         for attribute in attributes {
             let cache = AttributeTypeCache {
-                type_api_cache_:  CommonTypeCache::build_for(snapshot, attribute.clone()),
+                type_api_cache_: CommonTypeCache::build_for(snapshot, attribute.clone()),
                 value_type: TypeReader::get_value_type(snapshot, attribute.clone()).unwrap(),
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
@@ -274,11 +292,12 @@ impl TypeCache {
         caches
     }
 
-    fn create_owns_caches(
-        snapshot: &impl ReadableSnapshot,
-    ) -> HashMap<Owns<'static>, OwnsCache> {
+    fn create_owns_caches(snapshot: &impl ReadableSnapshot) -> HashMap<Owns<'static>, OwnsCache> {
         snapshot
-            .iterate_range(KeyRange::new_within(TypeEdge::build_prefix(Prefix::EdgeOwnsReverse), TypeEdge::FIXED_WIDTH_ENCODING))
+            .iterate_range(KeyRange::new_within(
+                TypeEdge::build_prefix(Prefix::EdgeOwnsReverse),
+                TypeEdge::FIXED_WIDTH_ENCODING,
+            ))
             .collect_cloned_hashmap(|key, _| {
                 let edge = TypeEdge::new(Bytes::Reference(key.byte_ref()));
                 let attribute = AttributeType::new(edge.from().into_owned());
@@ -288,11 +307,12 @@ impl TypeCache {
                     owns.clone(),
                     OwnsCache {
                         ordering: TypeReader::get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
-                        annotations_declared: TypeReader::get_type_edge_annotations(snapshot, owns.clone()).unwrap()
+                        annotations_declared: TypeReader::get_type_edge_annotations(snapshot, owns.clone())
+                            .unwrap()
                             .into_iter()
                             .map(|annotation| OwnsAnnotation::from(annotation))
                             .collect(),
-                    }
+                    },
                 )
             })
             .unwrap()
@@ -315,14 +335,22 @@ impl TypeCache {
     }
 
     pub(crate) fn get_entity_type_supertype(&self, entity_type: EntityType<'static>) -> Option<EntityType<'static>> {
-        Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().type_api_cache_.supertype.clone()
+        Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex())
+            .unwrap()
+            .type_api_cache_
+            .supertype
+            .clone()
     }
 
     pub(crate) fn get_relation_type_supertype(
         &self,
         relation_type: RelationType<'static>,
     ) -> Option<RelationType<'static>> {
-        Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().common_type_cache.supertype.clone()
+        Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
+            .unwrap()
+            .common_type_cache
+            .supertype
+            .clone()
     }
 
     pub(crate) fn get_role_type_supertype(&self, role_type: RoleType<'static>) -> Option<RoleType<'static>> {
@@ -333,7 +361,11 @@ impl TypeCache {
         &self,
         attribute_type: AttributeType<'static>,
     ) -> Option<AttributeType<'static>> {
-        Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().type_api_cache_.supertype.clone()
+        Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
+            .unwrap()
+            .type_api_cache_
+            .supertype
+            .clone()
     }
 
     pub(crate) fn get_entity_type_supertypes(&self, entity_type: EntityType<'_>) -> &Vec<EntityType<'static>> {
@@ -344,7 +376,10 @@ impl TypeCache {
         &self,
         relation_type: RelationType<'static>,
     ) -> &Vec<RelationType<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().common_type_cache.supertypes
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
+            .unwrap()
+            .common_type_cache
+            .supertypes
     }
 
     pub(crate) fn get_role_type_supertypes(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
@@ -355,19 +390,27 @@ impl TypeCache {
         &self,
         attribute_type: AttributeType<'static>,
     ) -> &Vec<AttributeType<'static>> {
-        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().type_api_cache_.supertypes
+        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
+            .unwrap()
+            .type_api_cache_
+            .supertypes
     }
 
-
     pub(crate) fn get_entity_type_subtypes(&self, entity_type: EntityType<'_>) -> &Vec<EntityType<'static>> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().type_api_cache_.subtypes_declared
+        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex())
+            .unwrap()
+            .type_api_cache_
+            .subtypes_declared
     }
 
     pub(crate) fn get_relation_type_subtypes(
         &self,
         relation_type: RelationType<'static>,
     ) -> &Vec<RelationType<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().common_type_cache.subtypes_declared
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
+            .unwrap()
+            .common_type_cache
+            .subtypes_declared
     }
 
     pub(crate) fn get_role_type_subtypes(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
@@ -378,30 +421,44 @@ impl TypeCache {
         &self,
         attribute_type: AttributeType<'static>,
     ) -> &Vec<AttributeType<'static>> {
-        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().type_api_cache_.subtypes_declared
+        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
+            .unwrap()
+            .type_api_cache_
+            .subtypes_declared
     }
 
-
     pub(crate) fn get_entity_type_subtypes_transitive(&self, entity_type: EntityType<'_>) -> &Vec<EntityType<'static>> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().type_api_cache_.subtypes_transitive
+        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex())
+            .unwrap()
+            .type_api_cache_
+            .subtypes_transitive
     }
 
     pub(crate) fn get_relation_type_subtypes_transitive(
         &self,
         relation_type: RelationType<'static>,
     ) -> &Vec<RelationType<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().common_type_cache.subtypes_transitive
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
+            .unwrap()
+            .common_type_cache
+            .subtypes_transitive
     }
 
     pub(crate) fn get_role_type_subtypes_transitive(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
-        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().type_api_cache_.subtypes_transitive
+        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex())
+            .unwrap()
+            .type_api_cache_
+            .subtypes_transitive
     }
 
     pub(crate) fn get_attribute_type_subtypes_transitive(
         &self,
         attribute_type: AttributeType<'static>,
     ) -> &Vec<AttributeType<'static>> {
-        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().type_api_cache_.subtypes_transitive
+        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
+            .unwrap()
+            .type_api_cache_
+            .subtypes_transitive
     }
 
     pub(crate) fn get_entity_type_label(&self, entity_type: EntityType<'static>) -> &Label<'static> {
@@ -409,7 +466,10 @@ impl TypeCache {
     }
 
     pub(crate) fn get_relation_type_label(&self, relation_type: RelationType<'static>) -> &Label<'static> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().common_type_cache.label
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
+            .unwrap()
+            .common_type_cache
+            .label
     }
 
     pub(crate) fn get_role_type_label(&self, role_type: RoleType<'static>) -> &Label<'static> {
@@ -417,7 +477,10 @@ impl TypeCache {
     }
 
     pub(crate) fn get_attribute_type_label(&self, attribute_type: AttributeType<'static>) -> &Label<'static> {
-        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().type_api_cache_.label
+        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
+            .unwrap()
+            .type_api_cache_
+            .label
     }
 
     pub(crate) fn get_entity_type_is_root(&self, entity_type: EntityType<'static>) -> bool {
@@ -425,7 +488,10 @@ impl TypeCache {
     }
 
     pub(crate) fn get_relation_type_is_root(&self, relation_type: RelationType<'static>) -> bool {
-        Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().common_type_cache.is_root
+        Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
+            .unwrap()
+            .common_type_cache
+            .is_root
     }
 
     pub(crate) fn get_role_type_is_root(&self, role_type: RoleType<'static>) -> bool {
@@ -433,7 +499,10 @@ impl TypeCache {
     }
 
     pub(crate) fn get_attribute_type_is_root(&self, attribute_type: AttributeType<'static>) -> bool {
-        Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().type_api_cache_.is_root
+        Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
+            .unwrap()
+            .type_api_cache_
+            .is_root
     }
 
     pub(crate) fn get_role_type_ordering(&self, role_type: RoleType<'static>) -> Ordering {
@@ -468,25 +537,37 @@ impl TypeCache {
         &self,
         entity_type: EntityType<'static>,
     ) -> &HashSet<EntityTypeAnnotation> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().type_api_cache_.annotations_declared
+        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex())
+            .unwrap()
+            .type_api_cache_
+            .annotations_declared
     }
 
     pub(crate) fn get_relation_type_annotations(
         &self,
         relation_type: RelationType<'static>,
     ) -> &HashSet<RelationTypeAnnotation> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().common_type_cache.annotations_declared
+        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
+            .unwrap()
+            .common_type_cache
+            .annotations_declared
     }
 
     pub(crate) fn get_role_type_annotations(&self, role_type: RoleType<'static>) -> &HashSet<RoleTypeAnnotation> {
-        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().type_api_cache_.annotations_declared
+        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex())
+            .unwrap()
+            .type_api_cache_
+            .annotations_declared
     }
 
     pub(crate) fn get_attribute_type_annotations(
         &self,
         attribute_type: AttributeType<'static>,
     ) -> &HashSet<AttributeTypeAnnotation> {
-        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().type_api_cache_.annotations_declared
+        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
+            .unwrap()
+            .type_api_cache_
+            .annotations_declared
     }
 
     pub(crate) fn get_owns_annotations<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<OwnsAnnotation> {

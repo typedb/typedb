@@ -57,11 +57,8 @@ impl ThingVertexGenerator {
         // TODO: we should create a resizable Vector linked to the id of types/highest id of each type
         //       this will speed up booting time on load (loading this will require MAX types * 3 iterator searches) and reduce memory footprint
         ThingVertexGenerator {
-            entity_ids: (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice(),
-            relation_ids: (0..=TypeIDUInt::MAX)
-                .map(|_| AtomicU64::new(0))
-                .collect::<Vec<AtomicU64>>()
-                .into_boxed_slice(),
+            entity_ids: (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Box<[AtomicU64]>>(),
+            relation_ids: (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Box<[AtomicU64]>>(),
             large_value_hasher,
         }
     }
@@ -91,10 +88,8 @@ impl ThingVertexGenerator {
             .map_err(|err| EncodingError::ExistingTypesRead { source: err })?;
         read_snapshot.close_resources();
 
-        let entity_ids =
-            (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice();
-        let relation_ids =
-            (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice();
+        let entity_ids = (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Box<[AtomicU64]>>();
+        let relation_ids = (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Box<[AtomicU64]>>();
         for type_id in entity_types {
             let mut max_object_id =
                 ObjectVertex::build_entity(TypeID::build(type_id), ObjectID::build(u64::MAX)).into_bytes().into_array();
