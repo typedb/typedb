@@ -142,6 +142,7 @@ public class Conjunction implements Pattern, Cloneable {
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             }
         });
+        negations.forEach(negation -> negation.disjunction().conjunctions().forEach(conjunction -> conjunction.bound(bounds)));
     }
 
     public Variable variable(Identifier.Variable identifier) {

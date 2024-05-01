@@ -112,7 +112,7 @@ public class Inserter {
 
     private static void validate(TypeVariable var, @Nullable Getter getter) {
         if (var.id().isName() &&
-                (getter == null || !getter.disjunction().sharedVariables().contains(var.id().asName()))) {
+                (getter == null || !getter.disjunction().returnedVariables().contains(var.id().asName()))) {
             throw TypeDBException.of(ILLEGAL_UNBOUND_TYPE_VAR_IN_INSERT, var.id());
         }
     }
