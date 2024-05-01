@@ -9,6 +9,7 @@
 pub mod bench_rocks_impl;
 
 use std::collections::HashMap;
+use std::fmt::{format, Pointer};
 use std::sync::RwLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
@@ -43,10 +44,11 @@ pub struct BenchmarkResult {
 }
 
 impl BenchmarkResult {
-    fn print_report(&self, runner: &BenchmarkRunner) {
-        println!("-- Report for benchmark ---");
+    fn print_report(&self, args: &CLIArgs, runner: &BenchmarkRunner) {
+        println!("-- Report for benchmark: {} ---", args.database);
         println!("threads = {}, batches={}, batch_size={} ---", runner.n_threads, runner.n_batches, runner.batch_size);
         println!("key-size: {KEY_SIZE}; value_size: {VALUE_SIZE}");
+        println!("cli_args: [{}]", args.for_report());
         // println!("Batch timings (ns):");
         // println!("- - - - - - - -");
         // self.batch_timings.iter().enumerate().for_each(|(batch_id, time)| {
@@ -164,6 +166,14 @@ impl CLIArgs {
 
         Ok(args)
     }
+
+    fn for_report(&self) -> String {
+        let mut s = "".to_string();
+        if let Some(val) = self.rocks_disable_wal { s.push_str(format!("rocks_disable_wal={val}").as_str()); }
+        if let Some(val) = self.rocks_set_sync { s.push_str(format!("rocks_set_sync={val}").as_str()); }
+        if let Some(val) = self.rocks_write_buffer_mb { s.push_str(format!("rocks_write_buffer_mb={val}").as_str()); }
+        s
+    }
 }
 
 fn run_for(args: &CLIArgs, database: &impl RocksDatabase) {
@@ -174,8 +184,7 @@ fn run_for(args: &CLIArgs, database: &impl RocksDatabase) {
     };
 
     let report = benchmarker.run(database);
-    println!("Done");
-    report.print_report(&benchmarker);
+    report.print_report(&args, &benchmarker);
 }
 
 
