@@ -2,14 +2,27 @@ Install & Run: https://typedb.com/docs/home/install
 
 Download from TypeDB Package Repository: 
 
-Server only: [Distributions for 2.28.0-rc0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-server+version:2.28.0-rc0)
+Server only: [Distributions for 2.28.0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-server+version:2.28.0)
 
-Server + Console: [Distributions for 2.28.0-rc0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-all+version:2.28.0-rc0)
+Server + Console: [Distributions for 2.28.0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name:^typedb-all+version:2.28.0)
 
 
 ## New Features
+- **Use Rosetta for Intel Mac jobs in Circle CI**
+  
+  CircleCI is sunsetting its MacOS Intel architecture executors. This PR transitions our Mac x86_64 CI tests to run on ARM executors using Rosetta.
+  
+- **Sentry transaction**
+  
+  We reintroduce a simple notification task, when diagnostics is enabled, which notifies the diagnostics server of the server ID.
+  
 
 ## Bugs Fixed
+- **Fix application of query bounds through match-fetch queries**
+  
+  We fix a bug that was revealed when using `match-fetch` queries with subqueries that had nested patterns. This change now correctly applies 1) filtering to a parent match query so that the right outputs are generated 2) passes the bounds received from a preceding query correctly into all child patterns of subsequent query clauses.
+  
+  
 - **Check supertypes of relation when inferring player role types during insert**
   
   Given the following minimal schema:
@@ -55,8 +68,7 @@ Server + Console: [Distributions for 2.28.0-rc0](https://cloudsmith.io/~typedb/r
   
 
 ## Other Improvements
-- **Update README.md**
-
+  
 - **Update protocol dependency**
 
 - **Update bat file license headers**
@@ -65,7 +77,4 @@ Server + Console: [Distributions for 2.28.0-rc0](https://cloudsmith.io/~typedb/r
 
 - **Update windows choco dependencies**
 
-- **Sentry transaction**
-  
-  We reintroduce a simple notification task, when diagnostics is enabled, which notifies the diagnostics server of the server ID.
-  
+    
