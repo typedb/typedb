@@ -35,25 +35,31 @@ pub fn create_typedb<const N_DATABASES: usize>() -> Result<TypeDBDatabase<N_DATA
 
 
 mod non_transactional_rocks {
+    use std::fs;
+    use std::io::Write;
     // if we implement transactional rocks, extract trait.
-    use test_utils::create_tmp_dir;
+    use test_utils::{create_tmp_dir, TempDir};
     use speedb::{Options, DB, WriteBatch, WriteOptions};
     use std::iter::zip;
+    use std::path::Path;
+    use database::DatabaseRecoverError::DirectoryCreate;
     use crate::{RocksDatabase, RocksWriteBatch};
 
 
     pub struct NonTransactionalRocks<const N_DATABASES: usize> {
         databases: [DB; crate::N_DATABASES],
         write_options: WriteOptions,
+        path: TempDir,
     }
 
     impl<const N_DATABASES: usize> NonTransactionalRocks<N_DATABASES> {
         pub(super) fn setup(options: Options, write_options: WriteOptions) -> Result<Self, speedb::Error> {
-            let databases = core::array::from_fn(|_| {
-                DB::open(&options, &create_tmp_dir()).unwrap()
+            let path = create_tmp_dir();
+            let databases = core::array::from_fn(|i| {
+                DB::open(&options, path.join(format!("db_{i}"))).unwrap()
             });
 
-            Ok(Self { databases, write_options })
+            Ok(Self { path, databases, write_options })
         }
     }
 
@@ -93,18 +99,20 @@ mod typedb_database {
     use storage::{KeyspaceSet, MVCCStorage, StorageRecoverError};
     use storage::keyspace::KeyspaceId;
     use storage::snapshot::{CommittableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot};
-    use test_utils::create_tmp_dir;
+    use test_utils::{create_tmp_dir, TempDir};
     use crate::{KEY_SIZE, RocksDatabase, RocksWriteBatch};
 
     pub struct TypeDBDatabase<const N_DATABASES: usize> {
         storage : Arc<MVCCStorage<WAL>>,
+        pub path: TempDir,
     }
 
     impl<const N_DATABASES:usize> TypeDBDatabase<N_DATABASES> {
         pub(super) fn setup() -> Result<Self, StorageRecoverError> {
             let name = "bench_rocks__typedb";
-            let path = create_tmp_dir().join(name);
-            Ok(Self { storage: Arc::new(MVCCStorage::<WAL>::recover::<BenchKeySpace>(name, &path)?) })
+            let path = create_tmp_dir();
+            let storage = Arc::new(MVCCStorage::<WAL>::recover::<BenchKeySpace>(name, &path)?);
+            Ok(Self { path, storage })
         }
     }
 
