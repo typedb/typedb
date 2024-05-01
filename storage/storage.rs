@@ -63,7 +63,7 @@ impl<Durability> MVCCStorage<Durability> {
     where
         Durability: DurabilityService,
     {
-        use StorageOpenError::*;
+        use StorageOpenError::{CheckpointCreate, CheckpointLoad, DurabilityServiceOpen, StorageDirectoryCreate};
 
         let name = name.as_ref();
         let storage_dir = path.join(Self::STORAGE_DIR_NAME);
@@ -147,7 +147,7 @@ impl<Durability> MVCCStorage<Durability> {
     where
         Durability: DurabilityService,
     {
-        use StorageCommitError::*;
+        use StorageCommitError::{Internal, Isolation, MVCCRead, Keyspace, Durability};
 
         self.set_initial_put_status(&snapshot).map_err(|error| MVCCRead { source: error })?;
         let commit_record = snapshot.into_commit_record();
