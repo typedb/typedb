@@ -16,7 +16,7 @@ use std::time::{Duration, Instant};
 use rand::random;
 use rand_core::RngCore;
 use xoshiro::Xoshiro256Plus;
-use crate::bench_rocks_impl::rocks_database::{create_typedb, rocks_with_wal, rocks_without_wal};
+use crate::bench_rocks_impl::rocks_database::{create_typedb, rocks_sync_wal, rocks_with_wal, rocks_without_wal};
 
 const N_DATABASES: usize = 1;
 const N_COL_FAMILIES_PER_DB: usize = 1;
@@ -147,7 +147,8 @@ fn main() {
     match get_arg_as::<String>(&args, "database").unwrap().as_str() {
         "rocks_no_wal" => run_for(&args, &rocks_without_wal::<N_DATABASES>().unwrap()),
         "rocks_wal" => run_for(&args, &rocks_with_wal::<N_DATABASES>().unwrap()),
+        "rocks_sync" => run_for(&args, &rocks_sync_wal::<N_DATABASES>().unwrap()),
         "typedb" => run_for(&args, &create_typedb::<N_DATABASES>().unwrap()),
-        _ => panic!("Unrecognised argument for database. Supported: rocks_wal, rocks_no_wal, typedb")
+        _ => panic!("Unrecognised argument for database. Supported: rocks_no_wal, rocks_wal, rocks_sync, typedb")
     }
 }

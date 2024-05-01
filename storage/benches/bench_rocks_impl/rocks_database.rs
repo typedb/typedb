@@ -19,16 +19,21 @@ fn write_options() -> WriteOptions {
     WriteOptions::default() // TODO
 }
 
-pub fn rocks_with_wal<const N_DATABASES: usize>() -> Result<NonTransactionalRocks<N_DATABASES>, speedb::Error> {
-    NonTransactionalRocks::<N_DATABASES>::setup(database_options(), write_options())
-}
-
 pub fn rocks_without_wal<const N_DATABASES: usize>() -> Result<NonTransactionalRocks<N_DATABASES>, speedb::Error> {
     let mut write_options = write_options();
     write_options.disable_wal(true);
     NonTransactionalRocks::<N_DATABASES>::setup(database_options(), write_options)
 }
 
+pub fn rocks_with_wal<const N_DATABASES: usize>() -> Result<NonTransactionalRocks<N_DATABASES>, speedb::Error> {
+    NonTransactionalRocks::<N_DATABASES>::setup(database_options(), write_options())
+}
+
+pub fn rocks_sync_wal<const N_DATABASES: usize>() -> Result<NonTransactionalRocks<N_DATABASES>, speedb::Error> {
+    let mut write_options = write_options();
+    write_options.set_sync(true);
+    NonTransactionalRocks::<N_DATABASES>::setup(database_options(), write_options)
+}
 pub fn create_typedb<const N_DATABASES: usize>() -> Result<TypeDBDatabase<N_DATABASES>, StorageRecoverError> {
     TypeDBDatabase::<N_DATABASES>::setup()
 }
