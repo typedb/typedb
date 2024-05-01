@@ -178,7 +178,7 @@ impl IsolationManager {
             let mut window = &windows[window_index];
             debug_assert!(window_index < windows.len());
             resolve_concurrent(commit_record, validate_against, window)?;
-            if validate_against >= window.end() {
+            if validate_against + 1 >= window.end() {
                 window_index += 1;
             }
         }
@@ -438,8 +438,8 @@ impl Timeline {
         commit_sequence_number: SequenceNumber,
     ) -> (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, SequenceNumber) {
         let windows = &*self.windows.read().unwrap_or_log();
-        let first_concurrent_window_index = Self::resolve_window(windows, open_sequence_number).unwrap_or(0);
-        let last_concurrent_window_index = Self::resolve_window(windows, commit_sequence_number).unwrap();
+        let first_concurrent_window_index = Self::resolve_window(windows, open_sequence_number.next()).unwrap_or(0);
+        let last_concurrent_window_index = Self::resolve_window(windows, commit_sequence_number.previous()).unwrap_or(0);
         let mut concurrent_windows: Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> = Vec::new();
         (first_concurrent_window_index..=last_concurrent_window_index).for_each(|window_index| {
             concurrent_windows.push(windows.get(window_index).unwrap().clone());
