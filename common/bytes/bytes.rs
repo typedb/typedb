@@ -81,7 +81,7 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> Bytes<'bytes, ARRAY_INLINE_SIZE> {
 
     pub fn as_reference(&'bytes self) -> ByteReference<'bytes> {
         match self {
-            Bytes::Array(array) => ByteReference::from(array),
+            Bytes::Array(array) => array.as_ref(),
             Bytes::Reference(reference) => *reference,
         }
     }
