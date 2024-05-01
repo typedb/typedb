@@ -13,6 +13,7 @@ use std::{
 };
 
 use concept::{error::ConceptWriteError, type_::type_manager::TypeManager};
+use concept::thing::statistics::Statistics;
 use durability::DurabilityService;
 use encoding::{
     error::EncodingError,
@@ -30,6 +31,7 @@ pub struct Database<D> {
     pub(super) storage: Arc<MVCCStorage<D>>,
     pub(super) type_vertex_generator: Arc<TypeVertexGenerator>,
     pub(super) thing_vertex_generator: Arc<ThingVertexGenerator>,
+    thing_statistics: Arc<Statistics>,
 }
 
 impl<D> fmt::Debug for Database<D> {
@@ -56,6 +58,7 @@ impl<D> Database<D> {
             Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
         TypeManager::<WriteSnapshot<D>>::initialise_types(storage.clone(), type_vertex_generator.clone())
             .map_err(|err| SchemaInitialise { source: err })?;
+        let statistics = Statistics::new(storage.);
 
         Ok(Self {
             name: name.to_owned(),

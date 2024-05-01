@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::hash::{Hash, Hasher};
 use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;

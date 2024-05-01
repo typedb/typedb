@@ -25,9 +25,9 @@ use durability::{
 };
 use logger::result::ResultExt;
 use primitive::maybe_owns::MaybeOwns;
-use project::{read_guard_project, ReadGuard, RwLockReadGuardProject};
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 use serde::{Deserialize, Serialize};
+use project::{read_guard_project, ReadGuard, RwLockReadGuardProject};
 
 use crate::{
     snapshot::{buffer::OperationsBuffer, lock::LockType, write::Write},

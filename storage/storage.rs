@@ -13,7 +13,7 @@ use std::{
     error::Error,
     fmt, fs, io,
     path::{Path, PathBuf},
-    sync::{atomic::Ordering, Arc},
+    sync::{Arc, atomic::Ordering},
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
@@ -45,6 +45,7 @@ pub mod key_value;
 pub mod keyspace;
 pub mod snapshot;
 mod write_batches;
+mod statistics;
 
 #[derive(Debug)]
 pub struct MVCCStorage<Durability> {
@@ -566,6 +567,7 @@ mod tests {
         snapshot::{buffer::OperationsBuffer, CommittableSnapshot, WritableSnapshot},
         write_batches::WriteBatches,
     };
+    use crate::{KeyspaceId, KeyspaceSet, MVCCStorage};
 
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
