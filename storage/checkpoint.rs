@@ -281,6 +281,7 @@ impl Error for CheckpointLoadError {
             Self::CheckpointRestore { source, .. } => Some(source),
             Self::MetadataRead { source, .. } => Some(source),
             Self::CommitPending { source, .. } => Some(source),
+            Self::Deserialize { source, .. } => Some(source),
             Self::DurabilityServiceRead { source, .. } => Some(source),
             Self::DurabilityServiceWrite { source, .. } => Some(source),
             Self::KeyspaceValidation { source, .. } => Some(source),
