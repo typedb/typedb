@@ -76,7 +76,7 @@ impl IsolationManager {
     pub(crate) fn load_validated(&self, sequence_number: SequenceNumber, commit_record: CommitRecord) {
         let window = self.timeline.get_or_create_window(sequence_number);
         window.insert_pending(sequence_number, commit_record);
-        window.set_applied(sequence_number);
+        window.set_validated(sequence_number);
         drop(window);
         self.timeline.may_increment_watermark(sequence_number);
     }
