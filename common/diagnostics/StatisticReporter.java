@@ -57,22 +57,21 @@ public class StatisticReporter {
 
     private void report() {
         try {
+            String metricsJSON = metrics.formatJSON(true);
+            metrics.takeSnapshot(); // Forget about this period for consistency even if the https write is not successful
+
             HttpsURLConnection conn = (HttpsURLConnection) (new URL(reportingURI)).openConnection();
 
             conn.setRequestMethod("POST");
-
             conn.setRequestProperty("Charset", "utf-8");
             conn.setRequestProperty("Connection", "close");
             conn.setRequestProperty("Content-Type", "application/json");
 
             conn.setDoOutput(true);
-            conn.getOutputStream().write(metrics.formatJSON(true).getBytes(StandardCharsets.UTF_8));
+            conn.getOutputStream().write(metricsJSON.getBytes(StandardCharsets.UTF_8));
 
             conn.connect();
-
             conn.getInputStream().readAllBytes();
-
-            metrics.takeSnapshot();
         } catch (Exception e) {
             LOG.warn("Failed to push metrics to {}: {}", reportingURI, e.getMessage());
             // do nothing and try again after the standard delay

@@ -242,11 +242,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             boolean contains = databaseMgr.contains(request.getName());
             responder.onNext(containsRes(contains));
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASES_CONTAINS);
+            Diagnostics.get().requestSuccess(request.getName(), DATABASES_CONTAINS);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASES_CONTAINS);
-            Diagnostics.get().submitError(null, e);
+            Diagnostics.get().requestFail(request.getName(), DATABASES_CONTAINS);
+            Diagnostics.get().submitError(request.getName(), e);
             responder.onError(exception(e));
         }
     }
@@ -257,11 +257,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             doCreateDatabase(request.getName());
             responder.onNext(createRes());
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASES_CREATE);
+            Diagnostics.get().requestSuccess(request.getName(), DATABASES_CREATE);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASES_CREATE);
-            Diagnostics.get().submitError(null, e);
+            Diagnostics.get().requestFail(request.getName(), DATABASES_CREATE);
+            Diagnostics.get().submitError(request.getName(), e);
             responder.onError(exception(e));
         }
     }
@@ -271,11 +271,11 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         try {
             responder.onNext(getRes(address, request.getName()));
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, DATABASES_GET);
+            Diagnostics.get().requestSuccess(request.getName(), DATABASES_GET);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, DATABASES_GET);
-            Diagnostics.get().submitError(null, e);
+            Diagnostics.get().requestFail(request.getName(), DATABASES_GET);
+            Diagnostics.get().submitError(request.getName(), e);
             responder.onError(exception(e));
         }
     }
@@ -380,18 +380,20 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     @Override
     public void sessionClose(SessionProto.Session.Close.Req request,
                              StreamObserver<SessionProto.Session.Close.Res> responder) {
+        String databaseName = null;
         try {
             UUID sessionID = byteStringAsUUID(request.getSessionId());
             SessionService sessionSvc = sessionServices.get(sessionID);
             if (sessionSvc == null) throw TypeDBException.of(SESSION_NOT_FOUND, sessionID);
+            databaseName = sessionSvc.session().database().name();
             sessionSvc.close();
             responder.onNext(closeRes());
             responder.onCompleted();
-            Diagnostics.get().requestSuccess(null, SESSION_CLOSE);
+            Diagnostics.get().requestSuccess(databaseName, SESSION_CLOSE);
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().requestFail(null, SESSION_CLOSE);
-            Diagnostics.get().submitError(null, e);
+            Diagnostics.get().requestFail(databaseName, SESSION_CLOSE);
+            Diagnostics.get().submitError(databaseName, e);
             responder.onError(exception(e));
         }
     }
