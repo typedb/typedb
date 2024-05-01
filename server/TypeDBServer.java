@@ -181,8 +181,8 @@ public class TypeDBServer implements AutoCloseable {
         try {
             Diagnostics.Core.initialise(
                     deploymentID(), serverID(), name(), Version.VERSION,
-                    config.diagnostics().reporting().errors(), DIAGNOSTICS_REPORTING_URI,
-                    config.diagnostics().reporting().statistics(), USAGE_STATISTICS_REPORTING_URI,
+                    config.diagnostics().reporting().errors(), ERROR_REPORTING_URI,
+                    config.diagnostics().reporting().statistics(), DIAGNOSTICS_REPORTING_URI,
                     config.diagnostics().monitoring().enable(), config.diagnostics().monitoring().port(),
                     config.storage().dataDir()
             );
