@@ -18,17 +18,18 @@ use durability::{DurabilityError, DurabilityRecord, DurabilityService, RawRecord
 use itertools::Itertools;
 
 use crate::{
-    isolation_manager::{CommitRecord, IsolationManager, StatusRecord},
+    isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
     keyspace::{
         KeyspaceCheckpointError, KeyspaceError, KeyspaceOpenError, KeyspaceSet, KeyspaceValidationError, Keyspaces,
     },
-    write_batches::{self, WriteBatches},
-    MVCCStorage, StorageCommitError, StorageOpenError,
+    write_batches::WriteBatches,
+    MVCCStorage, StorageCommitError,
 };
 
 pub(crate) struct Checkpoint {
-    pub(crate) keyspaces: Keyspaces,
-    pub(crate) next_sequence_number: SequenceNumber,
+    pub keyspaces: Keyspaces,
+    pub next_sequence_number: SequenceNumber,
+    pub directory: Option<PathBuf>,
 }
 
 impl Checkpoint {
@@ -83,22 +84,27 @@ impl Checkpoint {
         storage_path: &Path,
         durability_service: &Durability,
     ) -> Result<Self, CheckpointLoadError> {
-        use CheckpointLoadError::{KeyspaceWrite, MetadataRead};
+        use CheckpointLoadError::{CheckpointRestore, MetadataRead};
 
         let checkpoint_dir = storage_path.join(Self::CHECKPOINT_DIR_NAME);
         let storage_dir = storage_path.join(MVCCStorage::<Durability>::STORAGE_DIR_NAME);
 
+        let latest_checkpoint_dir = find_latest_checkpoint(&checkpoint_dir)?;
+
         let checkpoint_sequence_number = {
-            if let Some(latest_checkpoint_dir) = find_latest_checkpoint(&checkpoint_dir)? {
+            if let Some(latest_checkpoint_dir) = latest_checkpoint_dir.as_deref() {
                 for keyspace in KS::iter() {
                     let keyspace_checkpoint_dir = latest_checkpoint_dir.join(keyspace.name());
                     let keyspace_dir = storage_dir.join(keyspace.name());
-                    fs_utils::copy_dir_all(keyspace_checkpoint_dir, keyspace_dir).map_err(|_error| todo!())?;
+                    fs_utils::copy_dir_all(keyspace_checkpoint_dir, keyspace_dir)
+                        .map_err(|error| CheckpointRestore { dir: checkpoint_dir.clone(), source: error })?;
                 }
                 let metadata_file_path = latest_checkpoint_dir.join(Self::CHECKPOINT_METADATA_FILE_NAME);
                 let metadata = fs::read_to_string(metadata_file_path)
                     .map_err(|error| MetadataRead { dir: checkpoint_dir.clone(), source: error })?;
-                SequenceNumber::new(metadata.parse().unwrap()) // FIXME corrupt METADATA handling
+                SequenceNumber::new(
+                    metadata.parse().expect("corrupt METADATA file (should try to restore from prev checkpoint)"),
+                )
             } else {
                 SequenceNumber::MIN
             }
@@ -107,30 +113,19 @@ impl Checkpoint {
         let keyspaces = Keyspaces::open::<KS>(&storage_dir)?;
 
         let recovery_start = checkpoint_sequence_number + 1;
-        let (pending_writes, next_sequence_number) = recover_isolation(recovery_start, durability_service)?;
+        let recovered_commits = read_commits_past_checkpoint(recovery_start, durability_service)?;
+        let next_sequence_number = recovered_commits.keys().max().copied().unwrap_or(recovery_start - 1) + 1;
+        apply_recovered_commits(recovery_start, recovered_commits, durability_service, &keyspaces)?;
 
-        for write_batches in pending_writes {
-            keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
-            // Inform the isolation manager and increment the watermark
-        }
-
-        Ok(Self { keyspaces, next_sequence_number })
+        Ok(Self { keyspaces, next_sequence_number, directory: latest_checkpoint_dir })
     }
 }
 
-fn recover_isolation(
+fn read_commits_past_checkpoint(
     recovery_start: SequenceNumber,
     durability_service: &impl DurabilityService,
-) -> Result<(Vec<WriteBatches>, SequenceNumber), CheckpointLoadError> {
-    use CheckpointLoadError::*;
-
-    let isolation_manager = IsolationManager::new(recovery_start);
-
-    enum CheckpointCommitStatus {
-        Pending(CommitRecord),
-        Validated(Option<CommitRecord>),
-        Rejected,
-    }
+) -> Result<BTreeMap<SequenceNumber, CheckpointCommitStatus>, CheckpointLoadError> {
+    use CheckpointLoadError::{Deserialize, DurabilityServiceRead};
 
     let mut recovered_commits = BTreeMap::new();
     for record in
@@ -140,12 +135,13 @@ fn recover_isolation(
             record.map_err(|error| DurabilityServiceRead { source: error })?;
         match record_type {
             CommitRecord::RECORD_TYPE => {
-                let commit_record = CommitRecord::deserialise_from(&mut &*bytes).unwrap(); // FIXME
+                let commit_record =
+                    CommitRecord::deserialise_from(&mut &*bytes).map_err(|error| Deserialize { source: error })?;
                 recovered_commits.insert(sequence_number, CheckpointCommitStatus::Pending(commit_record));
             }
             StatusRecord::RECORD_TYPE => {
                 let StatusRecord { commit_record_sequence_number, was_committed } =
-                    StatusRecord::deserialise_from(&mut &*bytes).unwrap(); // FIXME
+                    StatusRecord::deserialise_from(&mut &*bytes).map_err(|error| Deserialize { source: error })?;
                 if was_committed {
                     let record = recovered_commits.remove(&commit_record_sequence_number).map(|status| {
                         let CheckpointCommitStatus::Pending(record) = status else {
@@ -161,8 +157,18 @@ fn recover_isolation(
             _other => unreachable!("Unexpected record read from durability service"),
         }
     }
+    Ok(recovered_commits)
+}
 
-    let next_sequence_number = recovered_commits.keys().max().copied().unwrap_or(recovery_start - 1) + 1;
+fn apply_recovered_commits(
+    recovery_start: SequenceNumber,
+    recovered_commits: BTreeMap<SequenceNumber, CheckpointCommitStatus>,
+    durability_service: &impl DurabilityService,
+    keyspaces: &Keyspaces,
+) -> Result<(), CheckpointLoadError> {
+    use CheckpointLoadError::{DurabilityServiceRead, DurabilityServiceWrite, KeyspaceWrite};
+
+    let isolation_manager = IsolationManager::new(recovery_start);
 
     let mut pending_writes = Vec::new();
     for (commit_sequence_number, commit) in recovered_commits {
@@ -175,19 +181,29 @@ fn recover_isolation(
             CheckpointCommitStatus::Rejected => isolation_manager.load_aborted(commit_sequence_number),
             CheckpointCommitStatus::Pending(commit_record) => {
                 isolation_manager.opened_for_read(commit_record.open_sequence_number());
-                let (conflict, write_batches) = isolation_manager
+                let validated_commit = isolation_manager
                     .validate_commit(commit_sequence_number, commit_record, durability_service)
                     .map_err(|error| DurabilityServiceRead { source: error })?;
-                MVCCStorage::persist_commit_status(conflict.is_none(), commit_sequence_number, durability_service)
-                    .map_err(|error| DurabilityServiceWrite { source: error })?;
-                if conflict.is_none() {
-                    pending_writes.push(write_batches.unwrap());
+                match validated_commit {
+                    ValidatedCommit::Write(write_batches) => {
+                        MVCCStorage::persist_commit_status(true, commit_sequence_number, durability_service)
+                            .map_err(|error| DurabilityServiceWrite { source: error })?;
+                        pending_writes.push(write_batches);
+                    }
+                    ValidatedCommit::Conflict(_) => {
+                        MVCCStorage::persist_commit_status(false, commit_sequence_number, durability_service)
+                            .map_err(|error| DurabilityServiceWrite { source: error })?;
+                    }
                 }
             }
         }
     }
 
-    Ok((pending_writes, next_sequence_number))
+    for write_batches in pending_writes {
+        keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
+    }
+
+    Ok(())
 }
 
 fn find_latest_checkpoint(checkpoint_dir: &Path) -> Result<Option<PathBuf>, CheckpointLoadError> {
@@ -198,6 +214,12 @@ fn find_latest_checkpoint(checkpoint_dir: &Path) -> Result<Option<PathBuf>, Chec
     fs::read_dir(checkpoint_dir)
         .and_then(|mut entries| entries.try_fold(None, |cur, entry| Ok(cur.max(Some(entry?.path())))))
         .map_err(|error| CheckpointLoadError::CheckpointRead { dir: checkpoint_dir.to_owned(), source: error })
+}
+
+enum CheckpointCommitStatus {
+    Pending(CommitRecord),
+    Validated(Option<CommitRecord>),
+    Rejected,
 }
 
 #[derive(Debug)]
@@ -236,7 +258,9 @@ impl Error for CheckpointCreateError {
 pub enum CheckpointLoadError {
     CheckpointRead { dir: PathBuf, source: io::Error },
     MetadataRead { dir: PathBuf, source: io::Error },
-    Commit { source: StorageCommitError }, // TODO
+    CheckpointRestore { dir: PathBuf, source: io::Error },
+    CommitPending { source: StorageCommitError },
+    Deserialize { source: bincode::Error },
     DurabilityServiceRead { source: DurabilityError },
     DurabilityServiceWrite { source: DurabilityError },
     KeyspaceValidation { source: KeyspaceValidationError },
@@ -254,8 +278,9 @@ impl Error for CheckpointLoadError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::CheckpointRead { source, .. } => Some(source),
+            Self::CheckpointRestore { source, .. } => Some(source),
             Self::MetadataRead { source, .. } => Some(source),
-            Self::Commit { source, .. } => Some(source),
+            Self::CommitPending { source, .. } => Some(source),
             Self::DurabilityServiceRead { source, .. } => Some(source),
             Self::DurabilityServiceWrite { source, .. } => Some(source),
             Self::KeyspaceValidation { source, .. } => Some(source),

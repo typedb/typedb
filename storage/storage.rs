@@ -11,9 +11,7 @@
 
 use std::{
     error::Error,
-    fmt,
-    fs::{self},
-    io::{self},
+    fmt, fs, io,
     path::{Path, PathBuf},
     sync::{atomic::Ordering, Arc},
 };
@@ -24,21 +22,18 @@ use durability::{DurabilityError, DurabilityService, SequenceNumber};
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
 use itertools::Itertools;
+use keyspace::KeyspaceDeleteError;
 use logger::{error, result::ResultExt};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
 use crate::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
-    isolation_manager::{CommitRecord, IsolationManager, StatusRecord},
+    isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
     iterator::MVCCRangeIterator,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
-    keyspace::{
-        iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet,
-        KeyspaceValidationError, Keyspaces,
-    },
+    keyspace::{iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError, KeyspaceId, KeyspaceSet, Keyspaces},
     snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
-    write_batches::WriteBatches,
 };
 
 mod checkpoint;
@@ -68,32 +63,34 @@ impl<Durability> MVCCStorage<Durability> {
     where
         Durability: DurabilityService,
     {
+        use StorageOpenError::*;
+
+        let name = name.as_ref();
         let storage_dir = path.join(Self::STORAGE_DIR_NAME);
         if storage_dir.exists() {
-            fs::remove_dir_all(&storage_dir).map_err(|_error| todo!())?;
+            fs::remove_dir_all(&storage_dir)
+                .map_err(|error| StorageDirectoryCreate { name: name.to_owned(), source: error })?;
         }
-        fs::create_dir_all(&storage_dir).map_err(|_error| todo!())?;
+        fs::create_dir_all(&storage_dir)
+            .map_err(|error| StorageDirectoryCreate { name: name.to_owned(), source: error })?;
 
-        // FIXME proper error
-        let mut durability_service =
-            Durability::open(path.join(Self::WAL_DIR_NAME)).expect("Could not create WAL directory");
+        let mut durability_service = Durability::open(path.join(Self::WAL_DIR_NAME))
+            .map_err(|error| DurabilityServiceOpen { name: name.to_owned(), source: error })?;
         durability_service.register_record_type::<CommitRecord>();
         durability_service.register_record_type::<StatusRecord>();
 
-        let checkpoint = Checkpoint::load::<KS, _>(path, &durability_service).unwrap(); // TODO
+        let checkpoint = Checkpoint::load::<KS, _>(path, &durability_service)
+            .map_err(|error| CheckpointLoad { name: name.to_owned(), source: error })?;
+
         let keyspaces = checkpoint.keyspaces;
         let next_sequence_number = checkpoint.next_sequence_number;
         let isolation_manager = IsolationManager::new(next_sequence_number);
-        // TODO only create new checkpoint if recovery happened
-        Checkpoint::create(next_sequence_number - 1, path, &keyspaces).unwrap(); // TODO
 
-        Ok(Self {
-            name: name.as_ref().to_owned(),
-            path: path.to_owned(),
-            durability_service,
-            keyspaces,
-            isolation_manager,
-        })
+        // TODO only create new checkpoint if recovery happened
+        Checkpoint::create(next_sequence_number - 1, path, &keyspaces)
+            .map_err(|error| CheckpointCreate { name: name.to_owned(), source: error })?;
+
+        Ok(Self { name: name.to_owned(), path: path.to_owned(), durability_service, keyspaces, isolation_manager })
     }
 
     fn name(&self) -> &str {
@@ -150,9 +147,9 @@ impl<Durability> MVCCStorage<Durability> {
     where
         Durability: DurabilityService,
     {
-        use StorageCommitError::{Durability, Keyspace};
+        use StorageCommitError::*;
 
-        self.set_initial_put_status(&snapshot);
+        self.set_initial_put_status(&snapshot).map_err(|error| MVCCRead { source: error })?;
         let commit_record = snapshot.into_commit_record();
 
         let commit_sequence_number = self
@@ -160,30 +157,37 @@ impl<Durability> MVCCStorage<Durability> {
             .sequenced_write(&commit_record)
             .map_err(|error| Durability { name: self.name.to_string(), source: error })?;
 
-        let (conflict, write_batches) = self
+        let validated_commit = self
             .isolation_manager
             .validate_commit(commit_sequence_number, commit_record, &self.durability_service)
             .map_err(|error| Durability { name: self.name.to_owned(), source: error })?;
 
-        if conflict.is_none() {
-            // Write to the k-v storage
-            self.keyspaces
-                .write(write_batches.unwrap())
-                .map_err(|error| Keyspace { name: self.name.to_owned(), source: Arc::new(error) })?;
-            // Inform the isolation manager and increment the watermark
-            self.isolation_manager.applied(commit_sequence_number).unwrap();
-        }
+        match validated_commit {
+            ValidatedCommit::Write(write_batches) => {
+                // Write to the k-v storage
+                self.keyspaces
+                    .write(write_batches)
+                    .map_err(|error| Keyspace { name: self.name.to_owned(), source: Arc::new(error) })?;
 
-        Self::persist_commit_status(conflict.is_none(), commit_sequence_number, &self.durability_service)
-            .map_err(|error| Durability { name: self.name.clone(), source: error })?;
+                // Inform the isolation manager and increment the watermark
+                self.isolation_manager
+                    .applied(commit_sequence_number)
+                    .map_err(|error| Internal { name: self.name.clone(), source: Box::new(error) })?;
 
-        match conflict {
-            Some(conflict) => Err(StorageCommitError::Isolation { name: self.name.clone(), conflict }),
-            None => Ok(()),
+                Self::persist_commit_status(true, commit_sequence_number, &self.durability_service)
+                    .map_err(|error| Durability { name: self.name.clone(), source: error })?;
+
+                Ok(())
+            }
+            ValidatedCommit::Conflict(conflict) => {
+                Self::persist_commit_status(false, commit_sequence_number, &self.durability_service)
+                    .map_err(|error| Durability { name: self.name.clone(), source: error })?;
+                Err(StorageCommitError::Isolation { name: self.name.clone(), conflict })
+            }
         }
     }
 
-    fn set_initial_put_status(&self, snapshot: &impl CommittableSnapshot<Durability>)
+    fn set_initial_put_status(&self, snapshot: &impl CommittableSnapshot<Durability>) -> Result<(), MVCCReadError>
     where
         Durability: DurabilityService,
     {
@@ -194,18 +198,18 @@ impl<Durability> MVCCStorage<Durability> {
                 _ => None,
             });
             for (key, value, reinsert, known_to_exist) in puts {
-                let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, ByteReference::new(key.bytes()));
+                let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key.as_ref());
                 if known_to_exist {
                     reinsert.store(false, Ordering::Release);
                 } else {
                     let existing_stored = self
-                        .get::<BUFFER_VALUE_INLINE>(wrapped, snapshot.open_sequence_number())
-                        .unwrap() // TODO
+                        .get::<BUFFER_VALUE_INLINE>(wrapped, snapshot.open_sequence_number())?
                         .is_some_and(|reference| reference.bytes() == value.bytes());
                     reinsert.store(!existing_stored, Ordering::Release);
                 }
             }
         }
+        Ok(())
     }
 
     fn persist_commit_status(
@@ -364,9 +368,15 @@ impl Error for WriteSnapshotOpenError {
 
 #[derive(Debug)]
 pub enum StorageOpenError {
-    DurabilityServiceRead { source: DurabilityError },
-    DurabilityServiceWrite { source: DurabilityError },
-    CheckpointLoad { source: CheckpointLoadError },
+    StorageDirectoryCreate { name: String, source: io::Error },
+
+    DurabilityServiceOpen { name: String, source: io::Error },
+    DurabilityServiceRead { name: String, source: DurabilityError },
+    DurabilityServiceWrite { name: String, source: DurabilityError },
+
+    CheckpointLoad { name: String, source: CheckpointLoadError },
+    CheckpointCreate { name: String, source: CheckpointCreateError },
+
     Commit { source: StorageCommitError },
 }
 
@@ -379,18 +389,23 @@ impl fmt::Display for StorageOpenError {
 impl Error for StorageOpenError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
+            Self::StorageDirectoryCreate { source, .. } => Some(source),
+            Self::DurabilityServiceOpen { source, .. } => Some(source),
             Self::DurabilityServiceRead { source, .. } => Some(source),
             Self::DurabilityServiceWrite { source, .. } => Some(source),
             Self::Commit { source, .. } => Some(source),
             Self::CheckpointLoad { source, .. } => Some(source),
+            Self::CheckpointCreate { source, .. } => Some(source),
         }
     }
 }
 
 #[derive(Debug)]
 pub enum StorageCommitError {
+    Internal { name: String, source: Box<dyn Error> },
     Isolation { name: String, conflict: IsolationConflict },
     IO { name: String, source: io::Error },
+    MVCCRead { source: MVCCReadError },
     Keyspace { name: String, source: Arc<KeyspaceError> },
     Durability { name: String, source: DurabilityError },
 }
@@ -404,8 +419,10 @@ impl fmt::Display for StorageCommitError {
 impl Error for StorageCommitError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
+            Self::Internal { source, .. } => Some(&**source),
             Self::Isolation { .. } => None,
             Self::IO { source, .. } => Some(source),
+            Self::MVCCRead { source, .. } => Some(source),
             Self::Keyspace { source, .. } => Some(source),
             Self::Durability { source, .. } => Some(source),
         }
@@ -414,7 +431,7 @@ impl Error for StorageCommitError {
 
 #[derive(Debug)]
 pub enum StorageDeleteError {
-    KeyspaceDelete { name: String, source: KeyspaceError },
+    KeyspaceDelete { name: String, source: KeyspaceDeleteError },
     DirectoryDelete { name: String, source: io::Error },
 }
 
@@ -542,7 +559,7 @@ mod tests {
 
     use super::MVCCStorage;
     use crate::{
-        isolation_manager::CommitRecord,
+        isolation_manager::{CommitRecord, ValidatedCommit},
         key_value::{StorageKeyArray, StorageKeyReference},
         keyspace::{KeyspaceId, KeyspaceSet, Keyspaces},
         snapshot::{buffer::OperationsBuffer, CommittableSnapshot, WritableSnapshot},
@@ -578,11 +595,13 @@ mod tests {
             let commit_record = CommitRecord::new(OperationsBuffer::new(), SequenceNumber::MIN);
             let seq = storage.durability_service.sequenced_write(&commit_record).unwrap();
 
-            let (conflict, write_batches) =
+            let validated_commit =
                 storage.isolation_manager.validate_commit(seq, commit_record, &storage.durability_service).unwrap();
-            assert!(conflict.is_none());
+            assert!(matches!(validated_commit, ValidatedCommit::Write(_)));
 
-            storage.keyspaces.write(write_batches.unwrap()).unwrap();
+            let ValidatedCommit::Write(write_batches) = validated_commit else { unreachable!() };
+
+            storage.keyspaces.write(write_batches).unwrap();
             storage.isolation_manager.applied(seq).unwrap();
 
             MVCCStorage::persist_commit_status(true, seq, &storage.durability_service).unwrap();

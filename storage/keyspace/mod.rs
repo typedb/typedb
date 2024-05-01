@@ -7,7 +7,5 @@
 pub mod iterator;
 mod keyspace;
 
-pub(crate) use keyspace::{
-    Keyspace, KeyspaceCheckpointError, KeyspaceError, KeyspaceOpenError, Keyspaces, KEYSPACE_MAXIMUM_COUNT,
-};
-pub use keyspace::{KeyspaceId, KeyspaceSet, KeyspaceValidationError};
+pub(crate) use keyspace::{Keyspace, KeyspaceCheckpointError, KeyspaceError, Keyspaces, KEYSPACE_MAXIMUM_COUNT};
+pub use keyspace::{KeyspaceDeleteError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, KeyspaceValidationError};

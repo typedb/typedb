@@ -6,7 +6,7 @@
 
 use std::{
     error::Error,
-    fmt,
+    fmt, fs,
     path::{Path, PathBuf},
 };
 
@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use speedb::{checkpoint::Checkpoint, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 
 use super::iterator;
-use crate::{checkpoint::CheckpointLoadError, key_range::KeyRange, write_batches::WriteBatches, StorageOpenError};
+use crate::{checkpoint::CheckpointLoadError, key_range::KeyRange, write_batches::WriteBatches};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct KeyspaceId(pub u8);
@@ -60,7 +60,7 @@ impl Keyspaces {
         Self { keyspaces: Vec::new(), index: std::array::from_fn(|_| None) }
     }
 
-        // FIXME nonsense, why would that be the error type?
+    // FIXME nonsense, why would that be the error type?
     pub(crate) fn open<KS: KeyspaceSet>(storage_dir: impl AsRef<Path>) -> Result<Self, CheckpointLoadError> {
         use CheckpointLoadError::{KeyspaceOpen, KeyspaceValidation};
 
@@ -124,7 +124,7 @@ impl Keyspaces {
         Ok(())
     }
 
-    pub(crate) fn delete(self) -> Result<(), Vec<KeyspaceError>> {
+    pub(crate) fn delete(self) -> Result<(), Vec<KeyspaceDeleteError>> {
         let errors = self.keyspaces.into_iter().filter_map(|keyspace| keyspace.delete().err()).collect_vec();
         if !errors.is_empty() {
             return Err(errors);
@@ -275,11 +275,10 @@ impl Keyspace {
         Ok(())
     }
 
-    pub(crate) fn delete(self) -> Result<(), KeyspaceError> {
-        match std::fs::remove_dir_all(self.path.clone()) {
-            Ok(_) => Ok(()),
-            Err(error) => Err(KeyspaceError::KeyspaceDelete { name: self.name, source: error }),
-        }
+    pub(crate) fn delete(self) -> Result<(), KeyspaceDeleteError> {
+        fs::remove_dir_all(self.path.clone())
+            .map_err(|error| KeyspaceDeleteError::DirectoryRemove { name: self.name, source: error })?;
+        Ok(())
     }
 }
 
@@ -330,8 +329,26 @@ impl Error for KeyspaceCheckpointError {
 }
 
 #[derive(Debug)]
+pub enum KeyspaceDeleteError {
+    DirectoryRemove { name: &'static str, source: std::io::Error },
+}
+
+impl fmt::Display for KeyspaceDeleteError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for KeyspaceDeleteError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match &self {
+            Self::DirectoryRemove { source, .. } => Some(source),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum KeyspaceError {
-    KeyspaceDelete { name: &'static str, source: std::io::Error },
     Get { name: &'static str, source: speedb::Error },
     Put { name: &'static str, source: speedb::Error },
     BatchWrite { name: &'static str, source: speedb::Error },
@@ -347,7 +364,6 @@ impl fmt::Display for KeyspaceError {
 impl Error for KeyspaceError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self {
-            Self::KeyspaceDelete { source, .. } => Some(source),
             Self::Get { source, .. } => Some(source),
             Self::Put { source, .. } => Some(source),
             Self::BatchWrite { source, .. } => Some(source),

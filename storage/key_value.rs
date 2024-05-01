@@ -7,8 +7,8 @@
 use std::{borrow::Borrow, cmp::Ordering};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
-use serde::{Deserialize, Serialize};
 use primitive::prefix::Prefix;
+use serde::{Deserialize, Serialize};
 
 use crate::keyspace::{KeyspaceId, KeyspaceSet};
 
@@ -237,7 +237,7 @@ impl<'bytes> StorageKeyReference<'bytes> {
 
 impl<'bytes, const SZ: usize> From<&'bytes StorageKeyArray<SZ>> for StorageKeyReference<'bytes> {
     fn from(array_ref: &'bytes StorageKeyArray<SZ>) -> Self {
-        StorageKeyReference::new_raw(array_ref.keyspace_id, ByteReference::from(array_ref.byte_array()))
+        StorageKeyReference::new_raw(array_ref.keyspace_id, array_ref.byte_array().as_ref())
     }
 }
 

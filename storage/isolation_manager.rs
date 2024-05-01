@@ -93,26 +93,25 @@ impl IsolationManager {
         sequence_number: SequenceNumber,
         commit_record: CommitRecord,
         durability_service: &impl DurabilityService,
-    ) -> Result<(Option<IsolationConflict>, Option<WriteBatches>), DurabilityError> {
+    ) -> Result<ValidatedCommit, DurabilityError> {
         let window = self.timeline.get_or_create_window(sequence_number);
         window.insert_pending(sequence_number, commit_record);
-        if let CommitStatus::Pending(commit_record) = window.get_status(sequence_number) {
-            let isolation_conflict =
-                self.validate_all_concurrent(sequence_number, &commit_record, durability_service)?;
-            if isolation_conflict.is_none() {
-                window.set_validated(sequence_number);
-                // We can't increment watermark here till the status is "applied"
-            } else {
-                window.set_aborted(sequence_number);
-                self.timeline.may_increment_watermark(sequence_number);
-            }
-            self.timeline.remove_reader(commit_record.open_sequence_number);
-            let write_batches = isolation_conflict.is_none().then(|| {
-                WriteBatches::from_operations(sequence_number, self.get_commit_record(sequence_number).operations())
-            });
-            Ok((isolation_conflict, write_batches))
+        let CommitStatus::Pending(commit_record) = window.get_status(sequence_number) else { unreachable!() };
+        let isolation_conflict = self.validate_all_concurrent(sequence_number, &commit_record, durability_service)?;
+        if isolation_conflict.is_none() {
+            window.set_validated(sequence_number);
+            // We can't increment watermark here till the status is "applied"
         } else {
-            unreachable!()
+            window.set_aborted(sequence_number);
+            self.timeline.may_increment_watermark(sequence_number);
+        }
+        self.timeline.remove_reader(commit_record.open_sequence_number);
+        match isolation_conflict {
+            Some(conflict) => Ok(ValidatedCommit::Conflict(conflict)),
+            None => Ok(ValidatedCommit::Write(WriteBatches::from_operations(
+                sequence_number,
+                self.get_commit_record(sequence_number).operations(),
+            ))),
         }
     }
 
@@ -244,6 +243,11 @@ impl IsolationManager {
             }
         }
     }
+}
+
+pub(crate) enum ValidatedCommit {
+    Conflict(IsolationConflict),
+    Write(WriteBatches),
 }
 
 fn resolve_concurrent(
