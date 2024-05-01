@@ -13,10 +13,11 @@ use std::sync::RwLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
+use itertools::Itertools;
 use rand::random;
 use rand_core::RngCore;
 use xoshiro::Xoshiro256Plus;
-use crate::bench_rocks_impl::rocks_database::{create_typedb, rocks_sync_wal, rocks_with_wal, rocks_without_wal};
+use crate::bench_rocks_impl::rocks_database::{create_typedb, rocks};
 
 const N_DATABASES: usize = 1;
 const N_COL_FAMILIES_PER_DB: usize = 1;
@@ -118,20 +119,59 @@ impl BenchmarkRunner {
     }
 }
 
-fn get_arg_as<T: std::str::FromStr>(args:&HashMap<String, String>, key: &str) -> Result<T, String> {
-    match args.get(&key.to_string()) {
-        None => Err(format!("Pass {key} as arg")),
-        Some(value) => value.parse().map_err(|_| format!("Error parsing value for {key}"))
+#[derive(Default)]
+struct CLIArgs {
+    database: String,
+
+    n_threads: u16,
+    n_batches: usize,
+    batch_size: usize,
+
+    rocks_disable_wal: Option<bool>,
+    rocks_set_sync: Option<bool>,   // Needs WAL, fsync on write.
+    rocks_write_buffer_mb: Option<usize>, // Size of memtable per column family. Useful for getting a no-op timing.
+}
+
+impl CLIArgs {
+    const VALID_ARGS : [&'static str; 7] = [
+        "database", "threads", "batches", "batch_size",
+        "rocks_disable_wal", "rocks_set_sync", "rocks_write_buffer_mb"
+    ];
+    fn get_arg_as<T: std::str::FromStr>(args:&HashMap<String, String>, key: &str, required: bool) -> Result<Option<T>, String> {
+        match args.get(&key.to_string()) {
+            None => { if required { Err(format!("Pass {key} as arg")) } else { Ok(None) } },
+            Some(value) => Ok(Some(value.parse().map_err(|_| format!("Error parsing value for {key}"))?))
+        }
+    }
+    fn parse_args() -> Result<CLIArgs, String> {
+        let arg_map: HashMap<String, String> = std::env::args()
+            .filter_map(|arg| arg.split_once("=").map(|(s1, s2)| (s1.to_string(), s2.to_string())))
+            .collect();
+        let invalid_keys = arg_map.keys().filter(|key| !Self::VALID_ARGS.contains(&key.as_str())).join(",");
+        if ! invalid_keys.is_empty() {
+            return Err(format!("Invalid keys: {invalid_keys}"));
+        }
+
+        let mut args = CLIArgs::default();
+        args.database = Self::get_arg_as::<String>(&arg_map, "database", true)?.unwrap();
+        args.n_threads = Self::get_arg_as::<u16>(&arg_map, "threads", true)?.unwrap();
+        args.n_batches = Self::get_arg_as::<usize>(&arg_map, "batches", true)?.unwrap();
+        args.batch_size = Self::get_arg_as::<usize>(&arg_map, "batch_size", true)?.unwrap();
+
+        args.rocks_disable_wal = Self::get_arg_as::<bool>(&arg_map, "rocks_disable_wal", false)?;
+        args.rocks_set_sync = Self::get_arg_as::<bool>(&arg_map, "rocks_set_sync", false)?;
+        args.rocks_write_buffer_mb = Self::get_arg_as::<usize>(&arg_map, "rocks_write_buffer_mb", false)?;
+
+        Ok(args)
     }
 }
 
-fn run_for(args: &HashMap<String, String>, database: &impl RocksDatabase) {
+fn run_for(args: &CLIArgs, database: &impl RocksDatabase) {
     let benchmarker = BenchmarkRunner {
-        n_threads: get_arg_as::<u16>(&args, "threads").unwrap(),
-        n_batches: get_arg_as::<usize>(&args, "batches").unwrap(),
-        batch_size: get_arg_as::<usize>(&args, "batch_size").unwrap(),
+        n_threads: args.n_threads,
+        n_batches: args.n_batches,
+        batch_size: args.batch_size,
     };
-
 
     let report = benchmarker.run(database);
     println!("Done");
@@ -140,15 +180,10 @@ fn run_for(args: &HashMap<String, String>, database: &impl RocksDatabase) {
 
 
 fn main() {
-    let args : HashMap<String, String> = std::env::args()
-        .filter_map(|arg| arg.split_once("=").map(|(s1, s2)| (s1.to_string(), s2.to_string())))
-        .collect();
-
-    match get_arg_as::<String>(&args, "database").unwrap().as_str() {
-        "rocks_no_wal" => run_for(&args, &rocks_without_wal::<N_DATABASES>().unwrap()),
-        "rocks_wal" => run_for(&args, &rocks_with_wal::<N_DATABASES>().unwrap()),
-        "rocks_sync" => run_for(&args, &rocks_sync_wal::<N_DATABASES>().unwrap()),
+    let args = CLIArgs::parse_args().unwrap();
+    match args.database.as_str() {
+        "rocks" => run_for(&args, &rocks::<N_DATABASES>(&args).unwrap()),
         "typedb" => run_for(&args, &create_typedb::<N_DATABASES>().unwrap()),
-        _ => panic!("Unrecognised argument for database. Supported: rocks_no_wal, rocks_wal, rocks_sync, typedb")
+        _ => panic!("Unrecognised argument for database. Supported: rocks, typedb")
     }
 }

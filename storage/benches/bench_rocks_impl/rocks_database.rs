@@ -8,46 +8,43 @@ use speedb::{Options, WriteOptions};
 use non_transactional_rocks::NonTransactionalRocks;
 use storage::StorageRecoverError;
 use crate::bench_rocks_impl::rocks_database::typedb_database::TypeDBDatabase;
+use crate::CLIArgs;
 
-fn database_options() -> Options {
+fn database_options(args: &CLIArgs) -> Options {
     let mut opts = Options::default();
     opts.create_if_missing(true); // TODO
+    if let Some(write_buffer_size_mb) = args.rocks_write_buffer_mb {
+        println!("WRITE BUFFER!");
+        opts.set_write_buffer_size(write_buffer_size_mb * 1024 * 1024);
+    }
     opts
 }
 
-fn write_options() -> WriteOptions {
-    WriteOptions::default() // TODO
+fn write_options(args: &CLIArgs) -> WriteOptions {
+    let mut write_options = WriteOptions::default(); // TODO
+    if let Some(disable_wal) = args.rocks_disable_wal {
+        write_options.disable_wal(disable_wal);
+    }
+    if let Some(set_sync) = args.rocks_set_sync {
+        write_options.set_sync(set_sync);
+    }
+    write_options
 }
 
-pub fn rocks_without_wal<const N_DATABASES: usize>() -> Result<NonTransactionalRocks<N_DATABASES>, speedb::Error> {
-    let mut write_options = write_options();
-    write_options.disable_wal(true);
-    NonTransactionalRocks::<N_DATABASES>::setup(database_options(), write_options)
+pub fn rocks<const N_DATABASES: usize>(args: &CLIArgs) -> Result<NonTransactionalRocks<N_DATABASES>, speedb::Error> {
+    NonTransactionalRocks::<N_DATABASES>::setup(database_options(args), write_options(args))
 }
 
-pub fn rocks_with_wal<const N_DATABASES: usize>() -> Result<NonTransactionalRocks<N_DATABASES>, speedb::Error> {
-    NonTransactionalRocks::<N_DATABASES>::setup(database_options(), write_options())
-}
-
-pub fn rocks_sync_wal<const N_DATABASES: usize>() -> Result<NonTransactionalRocks<N_DATABASES>, speedb::Error> {
-    let mut write_options = write_options();
-    write_options.set_sync(true);
-    NonTransactionalRocks::<N_DATABASES>::setup(database_options(), write_options)
-}
 pub fn create_typedb<const N_DATABASES: usize>() -> Result<TypeDBDatabase<N_DATABASES>, StorageRecoverError> {
     TypeDBDatabase::<N_DATABASES>::setup()
 }
 
 
 mod non_transactional_rocks {
-    use std::fs;
-    use std::io::Write;
     // if we implement transactional rocks, extract trait.
     use test_utils::{create_tmp_dir, TempDir};
     use speedb::{Options, DB, WriteBatch, WriteOptions};
     use std::iter::zip;
-    use std::path::Path;
-    use database::DatabaseRecoverError::DirectoryCreate;
     use crate::{RocksDatabase, RocksWriteBatch};
 
 
