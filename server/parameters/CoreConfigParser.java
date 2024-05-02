@@ -28,7 +28,15 @@ import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_EX
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_NAME;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.KeyValue.Dynamic;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.KeyValue.Predefined;
-import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.*;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.BOOLEAN;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.BYTES_SIZE;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.INET_SOCKET_ADDRESS;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.INTEGER;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.LIST_STRING;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.PATH;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.STRING;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.TIME_PERIOD;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.TIME_PERIOD_NAME;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.dynamic;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.predefined;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.restricted;

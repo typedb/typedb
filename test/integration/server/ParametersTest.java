@@ -23,7 +23,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
-import static com.vaticle.typedb.core.server.common.Constants.*;
+import static com.vaticle.typedb.core.server.common.Constants.DEPLOYMENT_ID_FILE_NAME;
+import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_FILE_NAME;
+import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_ARCHIVE_EXT;
 import static com.vaticle.typedb.core.test.integration.util.Util.deleteDirectory;
 import static org.junit.Assert.assertEquals;
 
