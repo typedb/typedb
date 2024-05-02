@@ -67,12 +67,10 @@ impl<Durability> MVCCStorage<Durability> {
 
         let name = name.as_ref();
         let storage_dir = path.join(Self::STORAGE_DIR_NAME);
-        if storage_dir.exists() {
-            fs::remove_dir_all(&storage_dir)
+        if !storage_dir.exists() {
+            fs::create_dir_all(&storage_dir)
                 .map_err(|error| StorageDirectoryCreate { name: name.to_owned(), source: error })?;
         }
-        fs::create_dir_all(&storage_dir)
-            .map_err(|error| StorageDirectoryCreate { name: name.to_owned(), source: error })?;
 
         let mut durability_service = Durability::open(path.join(Self::WAL_DIR_NAME))
             .map_err(|error| DurabilityServiceOpen { name: name.to_owned(), source: error })?;
@@ -147,7 +145,7 @@ impl<Durability> MVCCStorage<Durability> {
     where
         Durability: DurabilityService,
     {
-        use StorageCommitError::{Internal, Isolation, MVCCRead, Keyspace, Durability};
+        use StorageCommitError::{Durability, Internal, Keyspace, MVCCRead};
 
         self.set_initial_put_status(&snapshot).map_err(|error| MVCCRead { source: error })?;
         let commit_record = snapshot.into_commit_record();
@@ -731,7 +729,9 @@ mod tests {
             full_operations.writes_in_mut(key_2.keyspace_id()).insert(key_2.byte_array().clone(), ByteArray::empty());
 
             let mut partial_operations = OperationsBuffer::new();
-            partial_operations.writes_in_mut(key_1.keyspace_id()).insert(key_1.byte_array().clone(), ByteArray::empty());
+            partial_operations
+                .writes_in_mut(key_1.keyspace_id())
+                .insert(key_1.byte_array().clone(), ByteArray::empty());
 
             let mut durability_service = WAL::open(storage_path.join(MVCCStorage::<WAL>::WAL_DIR_NAME)).unwrap();
             durability_service.register_record_type::<CommitRecord>();

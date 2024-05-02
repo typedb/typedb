@@ -28,14 +28,14 @@ rust_library(
         "//common/iterator",
         "//resource",
         "//util/project",
-        "//util/fs:fs_utils",
 
         "@crates//:bincode",
         "@crates//:chrono",
         "@crates//:itertools",
+        "@crates//:same-file",
+        "@crates//:serde",
         "@crates//:speedb",
         "@crates//:tracing",
-        "@crates//:serde",
     ]
 )
 

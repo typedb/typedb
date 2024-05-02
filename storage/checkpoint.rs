@@ -16,6 +16,7 @@ use std::{
 use chrono::Utc;
 use durability::{DurabilityError, DurabilityRecord, DurabilityService, RawRecord, SequenceNumber};
 use itertools::Itertools;
+use same_file::is_same_file;
 
 use crate::{
     isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
@@ -94,7 +95,7 @@ impl Checkpoint {
                 for keyspace in KS::iter() {
                     let keyspace_checkpoint_dir = latest_checkpoint_dir.join(keyspace.name());
                     let keyspace_dir = storage_dir.join(keyspace.name());
-                    fs_utils::copy_dir_all(keyspace_checkpoint_dir, keyspace_dir)
+                    restore_storage_from_checkpoint(keyspace_dir, keyspace_checkpoint_dir)
                         .map_err(|error| CheckpointRestore { dir: checkpoint_dir.clone(), source: error })?;
                 }
                 let metadata_file_path = latest_checkpoint_dir.join(Self::CHECKPOINT_METADATA_FILE_NAME);
@@ -117,6 +118,28 @@ impl Checkpoint {
 
         Ok(Self { keyspaces, next_sequence_number, directory: latest_checkpoint_dir })
     }
+}
+
+fn restore_storage_from_checkpoint(keyspace_dir: PathBuf, keyspace_checkpoint_dir: PathBuf) -> io::Result<()> {
+    fs::create_dir_all(&keyspace_dir)?;
+
+    for entry in fs::read_dir(&keyspace_dir)? {
+        let storage_file = entry?.path();
+        let checkpoint_file = keyspace_checkpoint_dir.join(storage_file.file_name().unwrap());
+        if !checkpoint_file.exists() {
+            fs::remove_file(storage_file)?;
+        }
+    }
+
+    for entry in fs::read_dir(&keyspace_checkpoint_dir)? {
+        let checkpoint_file = entry?.path();
+        let storage_file = keyspace_dir.join(checkpoint_file.file_name().unwrap());
+        if !storage_file.exists() || !is_same_file(&storage_file, &checkpoint_file)? {
+            fs::copy(checkpoint_file, storage_file)?;
+        }
+    }
+
+    Ok(())
 }
 
 fn read_commits_past_checkpoint(
