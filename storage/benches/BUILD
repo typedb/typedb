@@ -42,7 +42,6 @@ rust_test(
     deps = [
         "@crates//:rand",
         "@crates//:speedb",
-        "@crates//:rand_core",
         "@crates//:xoshiro",
         "@crates//:itertools",
 
@@ -54,7 +53,6 @@ rust_test(
     ],
     use_libtest_harness = False,
 )
-
 
 checkstyle_test(
     name = "checkstyle",
