@@ -40,7 +40,6 @@ pub fn create_typedb<const N_DATABASES: usize>() -> Result<TypeDBDatabase<N_DATA
 
 
 mod non_transactional_rocks {
-    // if we implement transactional rocks, extract trait.
     use test_utils::{create_tmp_dir, TempDir};
     use speedb::{Options, DB, WriteBatch, WriteOptions};
     use std::iter::zip;
@@ -145,7 +144,6 @@ mod typedb_database {
 
     #[derive(Copy, Clone)]
     pub struct BenchKeySpace {
-        // I guess this is what we'll parameterise by N_DATABASES
         id: u8,
     }
 

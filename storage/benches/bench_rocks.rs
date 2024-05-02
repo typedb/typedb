@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
-
 pub mod bench_rocks_impl;
 
 use std::collections::HashMap;
@@ -16,7 +14,6 @@ use std::thread;
 use std::time::{Duration, Instant};
 use itertools::Itertools;
 use rand::random;
-use rand_core::RngCore;
 use xoshiro::Xoshiro256Plus;
 use crate::bench_rocks_impl::rocks_database::{create_typedb, rocks};
 
@@ -35,7 +32,6 @@ pub trait RocksWriteBatch {
     fn put(&mut self, database_index: usize, key: [u8; KEY_SIZE]);
     fn commit(self) -> Result<(), Self::CommitError>;
 }
-
 
 pub struct BenchmarkResult {
     pub batch_timings: Vec<Duration>,
