@@ -19,9 +19,7 @@ use itertools::Itertools;
 
 use crate::{
     isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
-    keyspace::{
-        KeyspaceCheckpointError, KeyspaceError, KeyspaceOpenError, KeyspaceSet, KeyspaceValidationError, Keyspaces,
-    },
+    keyspace::{KeyspaceCheckpointError, KeyspaceError, KeyspaceOpenError, KeyspaceSet, Keyspaces},
     write_batches::WriteBatches,
     MVCCStorage, StorageCommitError,
 };
@@ -84,7 +82,7 @@ impl Checkpoint {
         storage_path: &Path,
         durability_service: &Durability,
     ) -> Result<Self, CheckpointLoadError> {
-        use CheckpointLoadError::{CheckpointRestore, MetadataRead};
+        use CheckpointLoadError::{CheckpointRestore, KeyspaceOpen, MetadataRead};
 
         let checkpoint_dir = storage_path.join(Self::CHECKPOINT_DIR_NAME);
         let storage_dir = storage_path.join(MVCCStorage::<Durability>::STORAGE_DIR_NAME);
@@ -110,7 +108,7 @@ impl Checkpoint {
             }
         };
 
-        let keyspaces = Keyspaces::open::<KS>(&storage_dir)?;
+        let keyspaces = Keyspaces::open::<KS>(&storage_dir).map_err(|error| KeyspaceOpen { source: error })?;
 
         let recovery_start = checkpoint_sequence_number + 1;
         let recovered_commits = read_commits_past_checkpoint(recovery_start, durability_service)?;
@@ -263,7 +261,6 @@ pub enum CheckpointLoadError {
     Deserialize { source: bincode::Error },
     DurabilityServiceRead { source: DurabilityError },
     DurabilityServiceWrite { source: DurabilityError },
-    KeyspaceValidation { source: KeyspaceValidationError },
     KeyspaceOpen { source: KeyspaceOpenError },
     KeyspaceWrite { source: KeyspaceError },
 }
@@ -284,7 +281,6 @@ impl Error for CheckpointLoadError {
             Self::Deserialize { source, .. } => Some(source),
             Self::DurabilityServiceRead { source, .. } => Some(source),
             Self::DurabilityServiceWrite { source, .. } => Some(source),
-            Self::KeyspaceValidation { source, .. } => Some(source),
             Self::KeyspaceOpen { source, .. } => Some(source),
             Self::KeyspaceWrite { source, .. } => Some(source),
         }

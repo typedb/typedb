@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use speedb::{checkpoint::Checkpoint, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 
 use super::iterator;
-use crate::{checkpoint::CheckpointLoadError, key_range::KeyRange, write_batches::WriteBatches};
+use crate::{key_range::KeyRange, write_batches::WriteBatches};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct KeyspaceId(pub u8);
@@ -60,18 +60,15 @@ impl Keyspaces {
         Self { keyspaces: Vec::new(), index: std::array::from_fn(|_| None) }
     }
 
-    // FIXME nonsense, why would that be the error type?
-    pub(crate) fn open<KS: KeyspaceSet>(storage_dir: impl AsRef<Path>) -> Result<Self, CheckpointLoadError> {
-        use CheckpointLoadError::{KeyspaceOpen, KeyspaceValidation};
-
+    pub(crate) fn open<KS: KeyspaceSet>(storage_dir: impl AsRef<Path>) -> Result<Self, KeyspaceOpenError> {
         let path = storage_dir.as_ref();
         let mut keyspaces = Keyspaces::new();
         let options = db_options();
         for keyspace_id in KS::iter() {
-            keyspaces.validate_new_keyspace(keyspace_id).map_err(|error| KeyspaceValidation { source: error })?;
             keyspaces
-                .keyspaces
-                .push(Keyspace::open(path, keyspace_id, &options).map_err(|error| KeyspaceOpen { source: error })?);
+                .validate_new_keyspace(keyspace_id)
+                .map_err(|error| KeyspaceOpenError::Validation { source: error })?;
+            keyspaces.keyspaces.push(Keyspace::open(path, keyspace_id, &options)?);
             keyspaces.index[keyspace_id.id().0 as usize] = Some(KeyspaceId(keyspaces.keyspaces.len() as u8 - 1));
         }
         Ok(keyspaces)
@@ -291,6 +288,7 @@ impl fmt::Debug for Keyspace {
 #[derive(Debug)]
 pub enum KeyspaceOpenError {
     SpeeDB { name: &'static str, source: speedb::Error },
+    Validation { source: KeyspaceValidationError },
 }
 
 impl fmt::Display for KeyspaceOpenError {
@@ -303,6 +301,7 @@ impl Error for KeyspaceOpenError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::SpeeDB { source, .. } => Some(source),
+            Self::Validation { source, .. } => Some(source),
         }
     }
 }
