@@ -26,20 +26,25 @@ rust_test(
         "@crates//:tracing",
         "@crates//:criterion",
         "@crates//:pprof",
-        "@crates//:rand_core",
-        "@crates//:xoshiro",
     ],
     use_libtest_harness = False,
 )
 
+# Usage:
+#  bazel test //storage/benches:bench_rocks --test_output=streamed --cache_test_results=no --test_arg=threads=1--test_arg=batch_size=64 --test_arg=batches=10000 --test_arg=database=rocks [rocks_disable_wal=true|rocks_set_sync=true]
+#  cargo test --release  --bench bench_rocks --package storage -- threads=1 batches=10000 batch_size=64 database=typedb
 rust_test(
     name = "bench_rocks",
     srcs = glob([
-        "bench_rocks.rs", "bench_rocks_impl/**/*.rs",
+        "bench_rocks.rs",
+        "bench_rocks_impl/**/*.rs",
     ]),
     deps = [
         "@crates//:rand",
         "@crates//:speedb",
+        "@crates//:rand_core",
+        "@crates//:xoshiro",
+        "@crates//:itertools",
 
         "//common/bytes",
         "//database:database",
