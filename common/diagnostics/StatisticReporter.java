@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static java.lang.Math.abs;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -55,7 +56,7 @@ public class StatisticReporter {
         }
     }
 
-    private void report() {
+    private boolean report() {
         try {
             String metricsJSON = metrics.formatJSON(true);
             metrics.takeSnapshot(); // Forget about this period for consistency even if the https write is not successful
@@ -72,9 +73,11 @@ public class StatisticReporter {
 
             conn.connect();
             conn.getInputStream().readAllBytes();
+            return true;
         } catch (Exception e) {
             LOG.warn("Failed to push metrics to {}: {}", reportingURI, e.getMessage());
             // do nothing and try again after the standard delay
+            return false;
         }
     }
 
@@ -83,14 +86,22 @@ public class StatisticReporter {
     }
 
     private void reportOnceIfNeeded() {
+        Path disabledReportingFile = dataDirectory.resolve(DISABLED_REPORTING_FILE_NAME);
+        if (!disabledReportingFile.toFile().exists()) {
+            scheduled.schedule(() -> {
+                if (report()) {
+                    saveDisabledReportingFile();
+                }
+            }, 1, TimeUnit.HOURS);
+        }
+    }
+
+    private void saveDisabledReportingFile() {
         try {
             Path disabledReportingFile = dataDirectory.resolve(DISABLED_REPORTING_FILE_NAME);
-            if (!disabledReportingFile.toFile().exists()) {
-                report();
-                Files.writeString(disabledReportingFile, LocalDateTime.now().toString());
-            }
+            Files.writeString(disabledReportingFile, LocalDateTime.now().toString());
         } catch (IOException e) {
-            LOG.debug("Failed to create or read disabled reporting file: ", e);
+            LOG.debug("Failed to save disabled reporting file: ", e);
         }
     }
 
