@@ -12,16 +12,15 @@ use crate::CLIArgs;
 
 fn database_options(args: &CLIArgs) -> Options {
     let mut opts = Options::default();
-    opts.create_if_missing(true); // TODO
+    opts.create_if_missing(true);
     if let Some(write_buffer_size_mb) = args.rocks_write_buffer_mb {
-        println!("WRITE BUFFER!");
         opts.set_write_buffer_size(write_buffer_size_mb * 1024 * 1024);
     }
     opts
 }
 
 fn write_options(args: &CLIArgs) -> WriteOptions {
-    let mut write_options = WriteOptions::default(); // TODO
+    let mut write_options = WriteOptions::default();
     if let Some(disable_wal) = args.rocks_disable_wal {
         write_options.disable_wal(disable_wal);
     }

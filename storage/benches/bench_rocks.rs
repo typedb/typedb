@@ -9,7 +9,7 @@
 pub mod bench_rocks_impl;
 
 use std::collections::HashMap;
-use std::fmt::{format, Pointer};
+use std::fmt::Pointer;
 use std::sync::RwLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
@@ -21,7 +21,6 @@ use xoshiro::Xoshiro256Plus;
 use crate::bench_rocks_impl::rocks_database::{create_typedb, rocks};
 
 const N_DATABASES: usize = 1;
-const N_COL_FAMILIES_PER_DB: usize = 1;
 
 const KEY_SIZE: usize = 64;
 const VALUE_SIZE: usize = 0;
@@ -49,13 +48,10 @@ impl BenchmarkResult {
         println!("threads = {}, batches={}, batch_size={} ---", runner.n_threads, runner.n_batches, runner.batch_size);
         println!("key-size: {KEY_SIZE}; value_size: {VALUE_SIZE}");
         println!("cli_args: [{}]", args.for_report());
-        // println!("Batch timings (ns):");
-        // println!("- - - - - - - -");
+        // println!("- - - Batch timings (ns): - - -");
         // self.batch_timings.iter().enumerate().for_each(|(batch_id, time)| {
         //     println!("{:8}: {:12}", batch_id, time.as_nanos());
         // });
-        // println!("- - - - - - - -");
-
         let n_keys: usize = runner.n_batches * runner.batch_size;
         let data_size_mb : f64 = ((n_keys * (KEY_SIZE + VALUE_SIZE)) as f64) / ((1024 * 1024) as f64) ;
         println!("Summary:");
@@ -76,26 +72,20 @@ impl BenchmarkRunner {
     const VALUE_EMPTY :[u8;0] = [];
     fn run(&self, database_arc: &impl RocksDatabase) -> BenchmarkResult {
         debug_assert_eq!(1, N_DATABASES, "I've not bothered implementing multiple databases");
-        // Pre-generating data is 3x-4x faster.
-        let mut pre_rng = Xoshiro256Plus::from_seed_u64(random());
-        let mut data: Vec<[u8; KEY_SIZE]> = Vec::new();
-        for _ in 0..(self.n_batches * self.batch_size) {
-            data.push(Self::generate_key_value(&mut pre_rng).0);
-        }
-
         let batch_timings: Vec<RwLock<Duration>> = (0..self.n_batches).into_iter().map(|_| RwLock::new(Duration::from_secs(0))).collect();
         let batch_counter = AtomicUsize::new(0);
         let benchmark_start_instant = Instant::now();
         thread::scope(|s| {
             for _ in 0..self.n_threads {
                 s.spawn(|| {
+                    let mut in_rng = Xoshiro256Plus::from_seed_u64(random());
                     loop {
                         let batch_number = batch_counter.fetch_add(1, Ordering::Relaxed);
                         if batch_number >= self.n_batches { break; }
                         let mut write_batch = database_arc.open_batch();
                         let batch_start_instant = Instant::now();
-                        for batch_idx in 0..self.batch_size {
-                            let k = data.get(batch_number * self.batch_size + batch_idx).unwrap();
+                        for _ in 0..self.batch_size {
+                            let (k,_) = Self::generate_key_value(&mut in_rng);
                             write_batch.put(0, k.clone());
                         }
                         write_batch.commit().unwrap();
@@ -105,6 +95,7 @@ impl BenchmarkRunner {
                     }
                 });
             }
+
         });
         assert!(batch_counter.load(Ordering::Relaxed) >= self.n_batches);
         let total_time = benchmark_start_instant.elapsed();
@@ -115,8 +106,25 @@ impl BenchmarkRunner {
     }
 
     fn generate_key_value(rng: &mut Xoshiro256Plus) -> ([u8; KEY_SIZE], [u8; VALUE_SIZE]) {
+        // Rust's inbuilt ThreadRng is secure and slow. Xoshiro is significantly faster.
+        // This ~(50 GB/s) is faster than generating 64 random bytes (~6 GB/s) or loading pre-generated (~18 GB/s).
         let mut key : [u8; KEY_SIZE] = [0; KEY_SIZE];
-        rng.fill_bytes(&mut key);
+        let mut z = rng.next_u64();
+        key[0..8].copy_from_slice(&z.to_le_bytes());
+        z = u64::rotate_left(z, 1); // Rotation beats the compression.
+        key[8..16].copy_from_slice(&z.to_le_bytes());
+        z = u64::rotate_left(z, 1);
+        key[16..24].copy_from_slice(&z.to_le_bytes());
+        z = u64::rotate_left(z, 1);
+        key[24..32].copy_from_slice(&z.to_le_bytes());
+        z = u64::rotate_left(z, 1);
+        key[32..40].copy_from_slice(&z.to_le_bytes());
+        z = u64::rotate_left(z, 1);
+        key[40..48].copy_from_slice(&z.to_le_bytes());
+        z = u64::rotate_left(z, 1);
+        key[48..56].copy_from_slice(&z.to_le_bytes());
+        z = u64::rotate_left(z, 1);
+        key[56..64].copy_from_slice(&z.to_le_bytes());
         (key , Self::VALUE_EMPTY)
     }
 }
