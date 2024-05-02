@@ -58,7 +58,7 @@ impl<D> Database<D> {
             Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
         TypeManager::<WriteSnapshot<D>>::initialise_types(storage.clone(), type_vertex_generator.clone())
             .map_err(|err| SchemaInitialise { source: err })?;
-        let statistics = Statistics::new(storage.);
+        // let statistics = Statistics::new(storage.);
 
         Ok(Self {
             name: name.to_owned(),
