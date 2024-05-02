@@ -14,6 +14,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 use itertools::Itertools;
 use rand::random;
+use rand_core::RngCore;
 use xoshiro::Xoshiro256Plus;
 use crate::bench_rocks_impl::rocks_database::{create_typedb, rocks};
 

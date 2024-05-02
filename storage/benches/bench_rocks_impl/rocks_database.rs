@@ -6,7 +6,7 @@
 
 use speedb::{Options, WriteOptions};
 use non_transactional_rocks::NonTransactionalRocks;
-use storage::StorageRecoverError;
+use storage::StorageOpenError;
 use crate::bench_rocks_impl::rocks_database::typedb_database::TypeDBDatabase;
 use crate::CLIArgs;
 
@@ -34,7 +34,7 @@ pub fn rocks<const N_DATABASES: usize>(args: &CLIArgs) -> Result<NonTransactiona
     NonTransactionalRocks::<N_DATABASES>::setup(database_options(args), write_options(args))
 }
 
-pub fn create_typedb<const N_DATABASES: usize>() -> Result<TypeDBDatabase<N_DATABASES>, StorageRecoverError> {
+pub fn create_typedb<const N_DATABASES: usize>() -> Result<TypeDBDatabase<N_DATABASES>, StorageOpenError> {
     TypeDBDatabase::<N_DATABASES>::setup()
 }
 
@@ -96,7 +96,7 @@ mod typedb_database {
     use bytes::byte_array::ByteArray;
     use durability::wal::WAL;
     use storage::key_value::StorageKeyArray;
-    use storage::{KeyspaceSet, MVCCStorage, StorageRecoverError};
+    use storage::{MVCCStorage, keyspace::KeyspaceSet, StorageOpenError};
     use storage::keyspace::KeyspaceId;
     use storage::snapshot::{CommittableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot};
     use test_utils::{create_tmp_dir, TempDir};
@@ -108,10 +108,10 @@ mod typedb_database {
     }
 
     impl<const N_DATABASES:usize> TypeDBDatabase<N_DATABASES> {
-        pub(super) fn setup() -> Result<Self, StorageRecoverError> {
+        pub(super) fn setup() -> Result<Self, StorageOpenError> {
             let name = "bench_rocks__typedb";
             let path = create_tmp_dir();
-            let storage = Arc::new(MVCCStorage::<WAL>::recover::<BenchKeySpace>(name, &path)?);
+            let storage = Arc::new(MVCCStorage::<WAL>::open::<BenchKeySpace>(name, &path)?);
             Ok(Self { path, storage })
         }
     }
