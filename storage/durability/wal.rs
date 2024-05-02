@@ -165,7 +165,7 @@ impl Files {
         )?;
 
         self.writer.write_all(&buf)?;
-        self.writer.flush()?;
+        // self.writer.flush()?; // TODO: UNCOMMENTED FOR TEMPORARY BENCHMARK EXPERIMENT.
 
         self.files.last_mut().unwrap().len = self.writer.stream_position()?;
         Ok(())
