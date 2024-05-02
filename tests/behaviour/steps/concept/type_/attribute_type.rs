@@ -21,7 +21,7 @@ pub async fn put_attribute_type(context: &mut Context, type_label: params::Label
     let tx = context.transaction().unwrap();
     tx_as_schema! (tx, {
         let attribute_type = tx.type_manager().create_attribute_type(&type_label.to_typedb(), false).unwrap();
-        attribute_type.set_value_type(tx.type_manager(), value_type.to_typedb())
+        attribute_type.set_value_type(&mut snapshot, tx.type_manager(), value_type.to_typedb())
     });
 }
 

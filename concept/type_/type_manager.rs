@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashSet, hash::Hash, sync::Arc};
+use std::marker::PhantomData;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::DurabilityService;
@@ -36,6 +37,7 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
     MVCCStorage,
 };
+use storage::snapshot::WriteSnapshot;
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
@@ -60,9 +62,9 @@ use crate::{
 pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
 
 pub struct TypeManager<Snapshot> {
-    snapshot: Arc<Snapshot>,
     vertex_generator: Arc<TypeVertexGenerator>,
     type_cache: Option<Arc<TypeCache>>,
+    snapshot: PhantomData<Snapshot>,
 }
 
 impl<Snapshot> TypeManager<Snapshot> {
@@ -70,25 +72,23 @@ impl<Snapshot> TypeManager<Snapshot> {
         storage: Arc<MVCCStorage<D>>,
         vertex_generator: Arc<TypeVertexGenerator>,
     ) -> Result<(), ConceptWriteError> {
-        let snapshot = Arc::new(storage.clone().open_snapshot_write());
+        let mut snapshot = storage.clone().open_snapshot_write();
         {
-            let type_manager = TypeManager::new(snapshot.clone(), vertex_generator.clone(), None);
-            let root_entity = type_manager.create_entity_type(&Kind::Entity.root_label(), true)?;
-            root_entity.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
-            let root_relation = type_manager.create_relation_type(&Kind::Relation.root_label(), true)?;
-            root_relation.set_annotation(&type_manager, RelationTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
+            let type_manager = TypeManager::<WriteSnapshot<D>>::new(vertex_generator.clone(), None);
+            let root_entity = type_manager.create_entity_type(&mut snapshot, &Kind::Entity.root_label(), true)?;
+            root_entity.set_annotation(&mut snapshot, &type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
+            let root_relation = type_manager.create_relation_type(&mut snapshot, &Kind::Relation.root_label(), true)?;
+            root_relation.set_annotation(&mut snapshot, &type_manager, RelationTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
             let root_role = type_manager.create_role_type(
-                &Kind::Role.root_label(),
-                root_relation.clone(),
-                true,
-                Ordering::Unordered,
+                &mut snapshot, &Kind::Role.root_label(), root_relation.clone(), true, Ordering::Unordered
+            ,
             )?;
-            root_role.set_annotation(&type_manager, RoleTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
-            let root_attribute = type_manager.create_attribute_type(&Kind::Attribute.root_label(), true)?;
-            root_attribute
-                .set_annotation(&type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
+            root_role.set_annotation(&mut snapshot, &type_manager, RoleTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
+            let root_attribute = type_manager.create_attribute_type(&mut snapshot, &Kind::Attribute.root_label(), true)?;
+            root_attribute.set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()))?;
         }
-        Arc::into_inner(snapshot).unwrap().commit().unwrap();
+        // TODO: pass error up
+        snapshot.commit().unwrap();
         Ok(())
     }
 
@@ -98,20 +98,18 @@ impl<Snapshot> TypeManager<Snapshot> {
     }
 }
 
-// TODO:
-//   if we drop/close without committing, then we need to release all the IDs taken back to the IDGenerator
-//   this is only applicable for type manager where we can only have 1 concurrent txn and IDs are precious
-
 macro_rules! get_type_methods {
     ($(
         fn $method_name:ident() -> $output_type:ident = $cache_method:ident | $new_vertex_method:ident;
     )*) => {
         $(
-            pub fn $method_name(&self, label: &Label<'_>) -> Result<Option<$output_type<'static>>, ConceptReadError> {
+            pub fn $method_name(
+                &self, snapshot: &Snapshot, label: &Label<'_>
+            ) -> Result<Option<$output_type<'static>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(label))
                 } else {
-                    TypeReader::get_labelled_type::<$output_type<'static>>(self.snapshot.as_ref(), label)
+                    TypeReader::get_labelled_type::<$output_type<'static>>(snapshot, label)
                 }
             }
         )*
@@ -123,11 +121,13 @@ macro_rules! get_supertype_methods {
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<Option<$type_<'static>>, ConceptReadError> {
+            pub(crate) fn $method_name(
+                &self, snapshot: &Snapshot, type_: $type_<'static>
+            ) -> Result<Option<$type_<'static>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(type_))
                 } else {
-                    TypeReader::get_supertype(self.snapshot.as_ref(), type_)
+                    TypeReader::get_supertype(snapshot, type_)
                 }
             }
         )*
@@ -140,11 +140,13 @@ macro_rules! get_supertypes_methods {
     )*) => {
         $(
             // WARN: supertypes currently do NOT include themselves
-            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
+            pub(crate) fn $method_name(
+                &self, snapshot: &Snapshot, type_: $type_<'static>
+            ) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
-                    let supertypes = TypeReader::get_supertypes_transitive(self.snapshot.as_ref(), type_)?;
+                    let supertypes = TypeReader::get_supertypes_transitive(snapshot, type_)?;
                     Ok(MaybeOwns::Owned(supertypes))
                 }
             }
@@ -157,11 +159,13 @@ macro_rules! get_subtypes_methods {
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
+            pub(crate) fn $method_name(
+                &self, snapshot: &Snapshot, type_: $type_<'static>
+            ) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
-                    let subtypes = TypeReader::get_subtypes(self.snapshot.as_ref(), type_)?;
+                    let subtypes = TypeReader::get_subtypes(snapshot, type_)?;
                     Ok(MaybeOwns::Owned(subtypes))
                 }
             }
@@ -175,11 +179,13 @@ macro_rules! get_subtypes_transitive_methods {
     )*) => {
         $(
             // WARN: supertypes currently do NOT include themselves
-            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
+            pub(crate) fn $method_name(
+                &self, snapshot: &Snapshot, type_: $type_<'static>
+            ) -> Result<MaybeOwns<'_, Vec<$type_<'static>>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
-                    let subtypes = TypeReader::get_subtypes_transitive(self.snapshot.as_ref(), type_)?;
+                    let subtypes = TypeReader::get_subtypes_transitive(snapshot, type_)?;
                     Ok(MaybeOwns::Owned(subtypes))
                 }
             }
@@ -192,11 +198,13 @@ macro_rules! get_type_is_root_methods {
         fn $method_name:ident() -> $type_:ident = $cache_method:ident | $base_variant:expr;
     )*) => {
         $(
-            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<bool, ConceptReadError> {
+            pub(crate) fn $method_name(
+                &self, snapshot: &Snapshot, type_: $type_<'static>
+            ) -> Result<bool, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(type_))
                 } else {
-                    let type_label = TypeReader::get_label(self.snapshot.as_ref(), type_)?.unwrap();
+                    let type_label = TypeReader::get_label(snapshot, type_)?.unwrap();
                     Ok(Self::check_type_is_root(&type_label, $base_variant))
                 }
             }
@@ -209,11 +217,13 @@ macro_rules! get_type_label_methods {
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(&self, type_: $type_<'static>) -> Result<MaybeOwns<'_, Label<'static>>, ConceptReadError> {
+            pub(crate) fn $method_name(
+                &self, snapshot: &Snapshot, type_: $type_<'static>
+            ) -> Result<MaybeOwns<'_, Label<'static>>, ConceptReadError> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
-                    Ok(MaybeOwns::Owned(TypeReader::get_label(self.snapshot.as_ref(), type_)?.unwrap()))
+                    Ok(MaybeOwns::Owned(TypeReader::get_label(snapshot, type_)?.unwrap()))
                 }
             }
         )*
@@ -226,13 +236,13 @@ macro_rules! get_type_annotations {
     )*) => {
         $(
             pub(crate) fn $method_name(
-                &self, type_: $type_<'static>
+                &self, snapshot: &Snapshot, type_: $type_<'static>
             ) -> Result<MaybeOwns<'_, HashSet<$annotation_type>>, ConceptReadError> {
                  if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
                     let mut annotations: HashSet<$annotation_type> = HashSet::new();
-                    let annotations = TypeReader::get_type_annotations(self.snapshot.as_ref(), type_)?
+                    let annotations = TypeReader::get_type_annotations(snapshot, type_)?
                         .into_iter()
                         .map(|annotation| $annotation_type::from(annotation))
                         .collect();
@@ -249,12 +259,12 @@ where
     '_s: 'static,
 {
     pub fn new(
-        snapshot: Arc<Snapshot>,
         vertex_generator: Arc<TypeVertexGenerator>,
         schema_cache: Option<Arc<TypeCache>>,
     ) -> Self {
-        TypeManager { snapshot, vertex_generator, type_cache: schema_cache }
+        TypeManager { vertex_generator, type_cache: schema_cache, snapshot: PhantomData::default() }
     }
+
     pub(crate) fn check_type_is_root(type_label: &Label<'_>, kind: Kind) -> bool {
         type_label == &kind.root_label()
     }
@@ -310,46 +320,49 @@ where
 
     pub(crate) fn get_entity_type_owns(
         &self,
+        snapshot: &Snapshot,
         entity_type: EntityType<'static>,
     ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_entity_type_owns(entity_type)))
         } else {
-            let owns = TypeReader::get_owns(self.snapshot.as_ref(), entity_type.clone())?;
+            let owns = TypeReader::get_owns(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
 
     pub(crate) fn get_relation_type_owns(
         &self,
+        snapshot: &Snapshot,
         relation_type: RelationType<'static>,
     ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_owns(relation_type)))
         } else {
-            let owns = TypeReader::get_owns(self.snapshot.as_ref(), relation_type.clone())?;
+            let owns = TypeReader::get_owns(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
 
     pub(crate) fn get_relation_type_relates(
         &self,
+        snapshot: &Snapshot,
         relation_type: RelationType<'static>,
     ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates(relation_type)))
         } else {
-            let relates = TypeReader::get_relates(self.snapshot.as_ref(), relation_type.clone())?;
+            let relates = TypeReader::get_relates(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(relates))
         }
     }
 
-    pub(crate) fn relation_index_available(&self, relation_type: RelationType<'_>) -> Result<bool, ConceptReadError> {
+    pub(crate) fn relation_index_available(&self, snapshot: &Snapshot, relation_type: RelationType<'_>) -> Result<bool, ConceptReadError> {
         // TODO: it would be good if this doesn't require recomputation
         let mut max_card = 0;
-        let relates = relation_type.get_relates(self)?;
+        let relates = relation_type.get_relates(snapshot, self)?;
         for relates in relates.iter() {
-            let card = relates.role().get_cardinality(self)?;
+            let card = relates.role().get_cardinality(snapshot, self)?;
             match card.end() {
                 None => return Ok(false),
                 Some(end) => max_card += end,
@@ -360,24 +373,26 @@ where
 
     pub(crate) fn get_entity_type_plays<'this>(
         &'this self,
+        snapshot: &Snapshot,
         entity_type: EntityType<'static>,
     ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_entity_type_plays(entity_type)))
         } else {
-            let plays = TypeReader::get_plays(self.snapshot.as_ref(), entity_type.clone())?;
+            let plays = TypeReader::get_plays(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
 
     pub(crate) fn get_attribute_type_value_type(
         &self,
+        snapshot: &Snapshot,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<ValueType>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_attribute_type_value_type(attribute_type))
         } else {
-            TypeReader::get_value_type(self.snapshot.as_ref(), attribute_type)
+            TypeReader::get_value_type(snapshot, attribute_type)
         }
     }
 
@@ -390,13 +405,14 @@ where
 
     pub(crate) fn get_owns_annotations<'this>(
         &'this self,
+        snapshot: &Snapshot,
         owns: Owns<'this>,
     ) -> Result<MaybeOwns<'this, HashSet<OwnsAnnotation>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_annotations(owns)))
         } else {
             let annotations: HashSet<OwnsAnnotation> =
-                TypeReader::get_type_edge_annotations(self.snapshot.as_ref(), owns)?
+                TypeReader::get_type_edge_annotations(snapshot, owns)?
                     .into_iter()
                     .map(|annotation| OwnsAnnotation::from(annotation))
                     .collect();
@@ -404,11 +420,11 @@ where
         }
     }
 
-    pub(crate) fn get_owns_ordering(&self, owns: Owns<'_s>) -> Result<Ordering, ConceptReadError> {
+    pub(crate) fn get_owns_ordering(&self, snapshot: &Snapshot, owns: Owns<'_s>) -> Result<Ordering, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_owns_ordering(owns))
         } else {
-            TypeReader::get_type_edge_ordering(self.snapshot.as_ref(), owns)
+            TypeReader::get_type_edge_ordering(snapshot, owns)
         }
     }
 
@@ -421,42 +437,42 @@ where
 // TODO: Move this somewhere too?
 impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub fn create_entity_type(
-        &self,
-        label: &Label<'_>,
+        &self, snapshot: &mut Snapshot, label: &Label<'_>,
         is_root: bool,
     ) -> Result<EntityType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
         let type_vertex = self
             .vertex_generator
-            .create_entity_type(self.snapshot.as_ref())
+            .create_entity_type(snapshot)
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let entity = EntityType::new(type_vertex);
-        self.storage_set_label(entity.clone(), label);
+        self.storage_set_label(snapshot, entity.clone(), label);
         if !is_root {
             self.storage_set_supertype(
+                snapshot,
                 entity.clone(),
-                self.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap(),
+                self.get_entity_type(snapshot, &Kind::Entity.root_label()).unwrap().unwrap(),
             );
         }
         Ok(entity)
     }
 
     pub fn create_relation_type(
-        &self,
-        label: &Label<'_>,
+        &self, snapshot: &mut Snapshot, label: &Label<'_>,
         is_root: bool,
     ) -> Result<RelationType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
         let type_vertex = self
             .vertex_generator
-            .create_relation_type(self.snapshot.as_ref())
+            .create_relation_type(snapshot)
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let relation = RelationType::new(type_vertex);
-        self.storage_set_label(relation.clone(), label);
+        self.storage_set_label(snapshot, relation.clone(), label);
         if !is_root {
             self.storage_set_supertype(
+                snapshot,
                 relation.clone(),
-                self.get_relation_type(&Kind::Relation.root_label()).unwrap().unwrap(),
+                self.get_relation_type(snapshot, &Kind::Relation.root_label()).unwrap().unwrap(),
             );
         }
         Ok(relation)
@@ -464,6 +480,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
 
     pub(crate) fn create_role_type(
         &self,
+        snapshot: &mut Snapshot,
         label: &Label<'_>,
         relation_type: RelationType<'static>,
         is_root: bool,
@@ -472,253 +489,261 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         // TODO: validate type doesn't exist already
         let type_vertex = self
             .vertex_generator
-            .create_role_type(self.snapshot.as_ref())
+            .create_role_type(snapshot)
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let role = RoleType::new(type_vertex);
-        self.storage_set_label(role.clone(), label);
-        self.storage_set_relates(relation_type, role.clone());
-        self.storage_set_role_ordering(role.clone(), ordering);
+        self.storage_set_label(snapshot, role.clone(), label);
+        self.storage_set_relates(snapshot, relation_type, role.clone());
+        self.storage_set_role_ordering(snapshot, role.clone(), ordering);
         if !is_root {
-            self.storage_set_supertype(role.clone(), self.get_role_type(&Kind::Role.root_label()).unwrap().unwrap());
+            self.storage_set_supertype(
+                snapshot, role.clone(), self.get_role_type(snapshot, &Kind::Role.root_label()).unwrap().unwrap(),
+            );
         }
         Ok(role)
     }
 
     pub fn create_attribute_type(
-        &self,
-        label: &Label<'_>,
+        &self, snapshot: &mut Snapshot, label: &Label<'_>,
         is_root: bool,
     ) -> Result<AttributeType<'static>, ConceptWriteError> {
         // TODO: validate type doesn't exist already
         let type_vertex = self
             .vertex_generator
-            .create_attribute_type(self.snapshot.as_ref())
+            .create_attribute_type(snapshot)
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let attribute_type = AttributeType::new(type_vertex);
-        self.storage_set_label(attribute_type.clone(), label);
+        self.storage_set_label(snapshot, attribute_type.clone(), label);
         if !is_root {
             self.storage_set_supertype(
+                snapshot,
                 attribute_type.clone(),
-                self.get_attribute_type(&Kind::Attribute.root_label()).unwrap().unwrap(),
+                self.get_attribute_type(snapshot, &Kind::Attribute.root_label()).unwrap().unwrap(),
             );
         }
         Ok(attribute_type)
     }
 
-    pub(crate) fn delete_entity_type(&self, entity_type: EntityType<'_>) {
+    pub(crate) fn delete_entity_type(&self, snapshot: &mut Snapshot, entity_type: EntityType<'_>) {
         let key = entity_type.into_vertex().into_storage_key().into_owned_array();
         todo!("Do we need to lock?");
-        self.snapshot.delete(key)
+        snapshot.delete(key)
     }
 
-    pub(crate) fn delete_relation_type(&self, relation_type: RelationType<'_>) {
+    pub(crate) fn delete_relation_type(&self, snapshot: &mut Snapshot, relation_type: RelationType<'_>) {
         let key = relation_type.into_vertex().into_storage_key().into_owned_array();
         todo!("Do we need to lock?");
-        self.snapshot.delete(key)
+        snapshot.delete(key)
     }
 
-    pub(crate) fn delete_attribute_type(&self, attribute_type: AttributeType<'_>) {
+    pub(crate) fn delete_attribute_type(&self, snapshot: &mut Snapshot, attribute_type: AttributeType<'_>) {
         let key = attribute_type.into_vertex().into_storage_key().into_owned_array();
         todo!("Do we need to lock?");
-        self.snapshot.delete(key);
+        snapshot.delete(key);
     }
 
-    pub(crate) fn delete_role_type(&self, role_type: RoleType<'_>) {
+    pub(crate) fn delete_role_type(&self, snapshot: &mut Snapshot, role_type: RoleType<'_>) {
         let key = role_type.into_vertex().into_storage_key().into_owned_array();
         todo!("Do we need to lock?");
-        self.snapshot.delete(key);
+        snapshot.delete(key);
     }
 
-    pub(crate) fn storage_set_label(&self, owner: impl TypeAPI<'static>, label: &Label<'_>) {
-        self.storage_may_delete_label(owner.clone());
+    pub(crate) fn storage_set_label(&self, snapshot: &mut Snapshot, owner: impl TypeAPI<'static>, label: &Label<'_>) {
+        self.storage_may_delete_label(snapshot, owner.clone());
 
         let vertex_to_label_key = build_property_type_label(owner.clone().into_vertex());
         let label_value = ByteArray::from(label.scoped_name().bytes());
-        self.snapshot.as_ref().put_val(vertex_to_label_key.into_storage_key().into_owned_array(), label_value);
+        snapshot.put_val(vertex_to_label_key.into_storage_key().into_owned_array(), label_value);
 
         let label_to_vertex_key = LabelToTypeVertexIndex::build(label);
         let vertex_value = ByteArray::from(owner.into_vertex().bytes());
-        self.snapshot.as_ref().put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
+        snapshot.put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
     }
 
-    fn storage_may_delete_label(&self, owner: impl TypeAPI<'static>) {
-        let existing_label = TypeReader::get_label(self.snapshot.as_ref(), owner.clone()).unwrap();
+    fn storage_may_delete_label(&self, snapshot: &mut Snapshot, owner: impl TypeAPI<'static>) {
+        let existing_label = TypeReader::get_label(snapshot, owner.clone()).unwrap();
         if let Some(label) = existing_label {
             let vertex_to_label_key = build_property_type_label(owner.into_vertex());
-            self.snapshot.as_ref().delete(vertex_to_label_key.into_storage_key().into_owned_array());
+            snapshot.delete(vertex_to_label_key.into_storage_key().into_owned_array());
             let label_to_vertex_key = LabelToTypeVertexIndex::build(&label);
-            self.snapshot.as_ref().delete(label_to_vertex_key.into_storage_key().into_owned_array());
+            snapshot.delete(label_to_vertex_key.into_storage_key().into_owned_array());
         }
     }
 
-    fn storage_set_role_ordering(&self, role: RoleType<'_>, ordering: Ordering) {
-        self.snapshot.as_ref().put_val(
+    fn storage_set_role_ordering(&self, snapshot: &mut Snapshot, role: RoleType<'_>, ordering: Ordering) {
+        snapshot.put_val(
             build_property_type_ordering(role.into_vertex()).into_storage_key().into_owned_array(),
             ByteArray::boxed(serialise_ordering(ordering)),
         )
     }
 
-    pub(crate) fn storage_set_supertype<K: TypeAPI<'static>>(&self, subtype: K, supertype: K) {
-        self.storage_may_delete_supertype(subtype.clone());
+    pub(crate) fn storage_set_supertype<K: TypeAPI<'static>>(&self, snapshot: &mut Snapshot, subtype: K, supertype: K) {
+        self.storage_may_delete_supertype(snapshot, subtype.clone());
         let sub = build_edge_sub(subtype.clone().into_vertex(), supertype.clone().into_vertex());
-        self.snapshot.as_ref().put(sub.into_storage_key().into_owned_array());
+        snapshot.put(sub.into_storage_key().into_owned_array());
         let sub_reverse = build_edge_sub_reverse(supertype.into_vertex(), subtype.into_vertex());
-        self.snapshot.as_ref().put(sub_reverse.into_storage_key().into_owned_array());
+        snapshot.put(sub_reverse.into_storage_key().into_owned_array());
     }
 
-    fn storage_may_delete_supertype(&self, subtype: impl TypeAPI<'static>) {
+    fn storage_may_delete_supertype(&self, snapshot: &mut Snapshot, subtype: impl TypeAPI<'static>) {
         let supertype_vertex =
-            TypeReader::get_supertype_vertex(self.snapshot.as_ref(), subtype.clone().into_vertex()).unwrap();
+            TypeReader::get_supertype_vertex(snapshot, subtype.clone().into_vertex()).unwrap();
         if let Some(supertype) = supertype_vertex {
             let sub = build_edge_sub(subtype.clone().into_vertex(), supertype.clone());
-            self.snapshot.as_ref().delete(sub.into_storage_key().into_owned_array());
+            snapshot.delete(sub.into_storage_key().into_owned_array());
             let sub_reverse = build_edge_sub_reverse(supertype, subtype.into_vertex());
-            self.snapshot.as_ref().delete(sub_reverse.into_storage_key().into_owned_array());
+            snapshot.delete(sub_reverse.into_storage_key().into_owned_array());
         }
     }
 
-    pub(crate) fn storage_set_owns(
-        &self,
-        owner: impl ObjectTypeAPI<'static>,
+    pub(crate) fn storage_set_owns(&self, snapshot: &mut Snapshot, owner: impl ObjectTypeAPI<'static>,
         attribute: AttributeType<'static>,
         ordering: Ordering,
     ) {
         let owns = build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex());
-        self.snapshot.as_ref().put(owns.clone().into_storage_key().into_owned_array());
+        snapshot.put(owns.clone().into_storage_key().into_owned_array());
         let owns_reverse = build_edge_owns_reverse(attribute.into_vertex(), owner.into_vertex());
-        self.snapshot.as_ref().put(owns_reverse.into_storage_key().into_owned_array());
-        self.storage_set_owns_ordering(owns, ordering);
+        snapshot.put(owns_reverse.into_storage_key().into_owned_array());
+        self.storage_set_owns_ordering(snapshot, owns, ordering);
     }
 
-    pub(crate) fn storage_set_owns_ordering(&self, owns_edge: TypeEdge<'_>, ordering: Ordering) {
+    pub(crate) fn storage_set_owns_ordering(&self, snapshot: &mut Snapshot, owns_edge: TypeEdge<'_>, ordering: Ordering) {
         debug_assert_eq!(owns_edge.prefix(), Prefix::EdgeOwns);
-        self.snapshot.as_ref().put_val(
+        snapshot.put_val(
             build_property_type_edge_ordering(owns_edge).into_storage_key().into_owned_array(),
             ByteArray::boxed(serialise_ordering(ordering)),
         )
     }
 
-    pub(crate) fn storage_delete_owns(&self, owner: impl ObjectTypeAPI<'static>, attribute: AttributeType<'static>) {
+    pub(crate) fn storage_delete_owns(&self, snapshot: &mut Snapshot, owner: impl ObjectTypeAPI<'static>, attribute: AttributeType<'static>) {
         let owns_edge = build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex());
-        self.snapshot.as_ref().delete(owns_edge.as_storage_key().into_owned_array());
+        snapshot.delete(owns_edge.as_storage_key().into_owned_array());
         let owns_reverse = build_edge_owns_reverse(attribute.into_vertex(), owner.into_vertex());
-        self.snapshot.as_ref().delete(owns_reverse.into_storage_key().into_owned_array());
-        self.storage_delete_owns_ordering(owns_edge);
+        snapshot.delete(owns_reverse.into_storage_key().into_owned_array());
+        self.storage_delete_owns_ordering(snapshot, owns_edge);
     }
 
-    pub(crate) fn storage_delete_owns_ordering(&self, owns_edge: TypeEdge<'_>) {
+    pub(crate) fn storage_delete_owns_ordering(&self, snapshot: &mut Snapshot, owns_edge: TypeEdge<'_>) {
         debug_assert_eq!(owns_edge.prefix(), Prefix::EdgeOwns);
-        self.snapshot
-            .as_ref()
-            .delete(build_property_type_edge_ordering(owns_edge).into_storage_key().into_owned_array())
+        snapshot.delete(
+            build_property_type_edge_ordering(owns_edge).into_storage_key().into_owned_array(),
+        )
     }
-    pub(crate) fn storage_set_plays(&self, player: impl ObjectTypeAPI<'static>, role: RoleType<'static>) {
+    pub(crate) fn storage_set_plays(&self, snapshot: &mut Snapshot, player: impl ObjectTypeAPI<'static>, role: RoleType<'static>) {
         let plays = build_edge_plays(player.clone().into_vertex(), role.clone().into_vertex());
-        self.snapshot.as_ref().put(plays.into_storage_key().into_owned_array());
+        snapshot.put(plays.into_storage_key().into_owned_array());
         let plays_reverse = build_edge_plays_reverse(role.into_vertex(), player.into_vertex());
-        self.snapshot.as_ref().put(plays_reverse.into_storage_key().into_owned_array());
+        snapshot.put(plays_reverse.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_plays(&self, player: impl ObjectTypeAPI<'static>, role: RoleType<'static>) {
+    pub(crate) fn storage_delete_plays(&self, snapshot: &mut Snapshot, player: impl ObjectTypeAPI<'static>, role: RoleType<'static>) {
         let plays = build_edge_plays(player.clone().into_vertex(), role.clone().into_vertex());
-        self.snapshot.as_ref().delete(plays.into_storage_key().into_owned_array());
+        snapshot.delete(plays.into_storage_key().into_owned_array());
         let plays_reverse = build_edge_plays_reverse(role.into_vertex(), player.into_vertex());
-        self.snapshot.as_ref().delete(plays_reverse.into_storage_key().into_owned_array());
+        snapshot.delete(plays_reverse.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_set_relates(&self, relation: RelationType<'static>, role: RoleType<'static>) {
+    pub(crate) fn storage_set_relates(&self, snapshot: &mut Snapshot, relation: RelationType<'static>, role: RoleType<'static>) {
         let relates = build_edge_relates(relation.clone().into_vertex(), role.clone().into_vertex());
-        self.snapshot.as_ref().put(relates.into_storage_key().into_owned_array());
+        snapshot.put(relates.into_storage_key().into_owned_array());
         let relates_reverse = build_edge_relates_reverse(role.into_vertex(), relation.into_vertex());
-        self.snapshot.as_ref().put(relates_reverse.into_storage_key().into_owned_array());
+        snapshot.put(relates_reverse.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_relates(&self, relation: RelationType<'static>, role: RoleType<'static>) {
+    pub(crate) fn storage_delete_relates(&self, snapshot: &mut Snapshot, relation: RelationType<'static>, role: RoleType<'static>) {
         let relates = build_edge_relates(relation.clone().into_vertex(), role.clone().into_vertex());
-        self.snapshot.as_ref().delete(relates.into_storage_key().into_owned_array());
+        snapshot.delete(relates.into_storage_key().into_owned_array());
         let relates_reverse = build_edge_relates_reverse(role.into_vertex(), relation.into_vertex());
-        self.snapshot.as_ref().delete(relates_reverse.into_storage_key().into_owned_array());
+        snapshot.delete(relates_reverse.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_set_value_type(&self, attribute: AttributeType<'static>, value_type: ValueType) {
+    pub(crate) fn storage_set_value_type(&self, snapshot: &mut Snapshot, attribute: AttributeType<'static>, value_type: ValueType) {
         let property_key =
             build_property_type_value_type(attribute.into_vertex()).into_storage_key().into_owned_array();
         let property_value = ByteArray::copy(&value_type.value_type_id().bytes());
-        self.snapshot.as_ref().put_val(property_key, property_value);
+        snapshot.put_val(property_key, property_value);
     }
 
-    pub(crate) fn storage_set_annotation_abstract(&self, type_: impl TypeAPI<'static>) {
+    pub(crate) fn storage_set_annotation_abstract(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_abstract(type_.into_vertex());
-        self.snapshot.as_ref().put(annotation_property.into_storage_key().into_owned_array());
+        snapshot.put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_annotation_abstract(&self, type_: impl TypeAPI<'static>) {
+    pub(crate) fn storage_delete_annotation_abstract(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_abstract(type_.into_vertex());
-        self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
+        snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_set_annotation_distinct(&self, type_: impl TypeAPI<'static>) {
+    pub(crate) fn storage_set_annotation_distinct(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_distinct(type_.into_vertex());
-        self.snapshot.as_ref().put(annotation_property.into_storage_key().into_owned_array());
+        snapshot.put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_annotation_distinct(&self, type_: impl TypeAPI<'static>) {
+    pub(crate) fn storage_delete_annotation_distinct(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_distinct(type_.into_vertex());
-        self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
+        snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_set_edge_annotation_distinct<'b>(&self, edge: impl IntoCanonicalTypeEdge<'b>) {
+    pub(crate) fn storage_set_edge_annotation_distinct<'b>(&self, snapshot: &mut Snapshot, edge: impl IntoCanonicalTypeEdge<'b>) {
         let annotation_property = build_property_type_edge_annotation_distinct(edge.into_type_edge());
-        self.snapshot.as_ref().put(annotation_property.into_storage_key().into_owned_array());
+        snapshot.put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_edge_annotation_distinct<'b>(&self, edge: impl IntoCanonicalTypeEdge<'b>) {
+    pub(crate) fn storage_delete_edge_annotation_distinct<'b>(&self, snapshot: &mut Snapshot, edge: impl IntoCanonicalTypeEdge<'b>) {
         let annotation_property = build_property_type_edge_annotation_distinct(edge.into_type_edge());
-        self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
+        snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_set_annotation_independent(&self, type_: impl TypeAPI<'static>) {
+    pub(crate) fn storage_set_annotation_independent(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_independent(type_.into_vertex());
-        self.snapshot.as_ref().put(annotation_property.into_storage_key().into_owned_array());
+        snapshot.put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_storage_annotation_independent(&self, type_: impl TypeAPI<'static>) {
+    pub(crate) fn storage_storage_annotation_independent(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_independent(type_.into_vertex());
-        self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
+        snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_set_annotation_cardinality(
         &self,
+        snapshot: &mut Snapshot,
         type_: impl TypeAPI<'static>,
         annotation: AnnotationCardinality,
     ) {
-        self.snapshot.as_ref().put_val(
-            build_property_type_annotation_cardinality(type_.into_vertex()).into_storage_key().into_owned_array(),
-            ByteArray::boxed(serialise_annotation_cardinality(annotation)),
-        );
+        snapshot.put_val(
+                build_property_type_annotation_cardinality(type_.into_vertex()).into_storage_key().into_owned_array(),
+                ByteArray::boxed(serialise_annotation_cardinality(annotation)),
+            );
     }
 
-    pub(crate) fn storage_delete_annotation_cardinality(&self, type_: impl TypeAPI<'static>) {
+    pub(crate) fn storage_delete_annotation_cardinality(
+        &self,
+        snapshot: &mut Snapshot,
+        type_: impl TypeAPI<'static>,
+    ) {
         let annotation_property = build_property_type_annotation_cardinality(type_.into_vertex());
-        self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
+        snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_set_edge_annotation_cardinality<'b>(
         &self,
+        snapshot: &mut Snapshot,
         edge: impl IntoCanonicalTypeEdge<'b>,
         annotation: AnnotationCardinality,
     ) {
-        self.snapshot.as_ref().put_val(
-            build_property_type_edge_annotation_cardinality(edge.into_type_edge())
-                .into_storage_key()
-                .into_owned_array(),
-            ByteArray::boxed(serialise_annotation_cardinality(annotation)),
-        );
+        snapshot.put_val(
+                build_property_type_edge_annotation_cardinality(edge.into_type_edge()).into_storage_key().into_owned_array(),
+                ByteArray::boxed(serialise_annotation_cardinality(annotation)),
+            );
     }
 
-    pub(crate) fn storage_delete_edge_annotation_cardinality<'b>(&self, edge: impl IntoCanonicalTypeEdge<'b>) {
+    pub(crate) fn storage_delete_edge_annotation_cardinality<'b>(
+        &self,
+        snapshot: &mut Snapshot,
+        edge: impl IntoCanonicalTypeEdge<'b>,
+    ) {
         let annotation_property = build_property_type_edge_annotation_cardinality(edge.into_type_edge());
-        self.snapshot.as_ref().delete(annotation_property.into_storage_key().into_owned_array());
+        snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
 }
 

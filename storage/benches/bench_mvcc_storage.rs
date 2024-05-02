@@ -101,7 +101,7 @@ fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(
 }
 
 fn bench_snapshot_write_put(storage: Arc<MVCCStorage<WAL>>, keyspace: TestKeyspaceSet, batch_size: usize) {
-    let snapshot = storage.open_snapshot_write();
+    let mut snapshot = storage.open_snapshot_write();
     for _ in 0..batch_size {
         snapshot.put(random_key_24(keyspace));
     }

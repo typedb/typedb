@@ -14,12 +14,13 @@ use std::{
     sync::{Arc, OnceLock},
 };
 use std::borrow::Cow;
+use std::time::Duration;
 
 use concept::{
     thing::{thing_manager::ThingManager, value::Value},
     type_::{type_cache::TypeCache, type_manager::TypeManager, OwnerAPI},
 };
-use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
+use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use durability::wal::WAL;
 use encoding::{
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
@@ -43,66 +44,62 @@ fn write_entity_attributes(
     thing_vertex_generator: Arc<ThingVertexGenerator>,
     schema_cache: Arc<TypeCache>,
 ) {
-    let snapshot = Arc::new(storage.clone().open_snapshot_write());
+    let mut snapshot = storage.clone().open_snapshot_write();
     {
-        let type_manager = Arc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), Some(schema_cache)));
-        let thing_manager = ThingManager::new(snapshot.clone(), thing_vertex_generator.clone(), type_manager.clone());
+        let type_manager = Arc::new(TypeManager::new(type_vertex_generator.clone(), Some(schema_cache)));
+        let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
 
-        let person_type = type_manager.get_entity_type(PERSON_LABEL.get().unwrap()).unwrap().unwrap();
-        let age_type = type_manager.get_attribute_type(AGE_LABEL.get().unwrap()).unwrap().unwrap();
-        let name_type = type_manager.get_attribute_type(NAME_LABEL.get().unwrap()).unwrap().unwrap();
-        let person = thing_manager.create_entity(person_type).unwrap();
+        let person_type = type_manager.get_entity_type(&snapshot, PERSON_LABEL.get().unwrap()).unwrap().unwrap();
+        let age_type = type_manager.get_attribute_type(&snapshot, AGE_LABEL.get().unwrap()).unwrap().unwrap();
+        let name_type = type_manager.get_attribute_type(&snapshot, NAME_LABEL.get().unwrap()).unwrap().unwrap();
+        let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
 
         let random_long: i64 = rand::random();
         let length: u8 = rand::random();
         let random_string: String = Alphanumeric.sample_string(&mut rand::thread_rng(), length as usize);
 
-        let age = thing_manager.create_attribute(age_type, Value::Long(random_long)).unwrap();
-        let name = thing_manager.create_attribute(name_type, Value::String(Cow::Borrowed(&random_string))).unwrap();
-        person.set_has_unordered(&thing_manager, age).unwrap();
-        person.set_has_unordered(&thing_manager, name).unwrap();
+        let age = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(random_long)).unwrap();
+        let name = thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(&random_string))).unwrap();
+        person.set_has_unordered(&mut snapshot, &thing_manager, age).unwrap();
+        person.set_has_unordered(&mut snapshot, &thing_manager, name).unwrap();
     }
 
-    let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();
-    write_snapshot.commit().unwrap();
+    snapshot.commit().unwrap();
 }
 
 fn create_schema(storage: &Arc<MVCCStorage<WAL>>, type_vertex_generator: &Arc<TypeVertexGenerator>) {
-    let snapshot: Arc<WriteSnapshot<WAL>> = Arc::new(storage.clone().open_snapshot_write());
+    let mut snapshot: WriteSnapshot<WAL> = storage.clone().open_snapshot_write();
     {
-        let type_manager = Rc::new(TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None));
-        let age_type = type_manager.create_attribute_type(AGE_LABEL.get().unwrap(), false).unwrap();
-        age_type.set_value_type(&type_manager, ValueType::Long);
-        let name_type = type_manager.create_attribute_type(NAME_LABEL.get().unwrap(), false).unwrap();
-        name_type.set_value_type(&type_manager, ValueType::String);
-        let person_type = type_manager.create_entity_type(PERSON_LABEL.get().unwrap(), false).unwrap();
-        person_type.set_owns(&type_manager, age_type, Ordering::Unordered);
-        person_type.set_owns(&type_manager, name_type, Ordering::Unordered);
+        let type_manager = Rc::new(TypeManager::new(type_vertex_generator.clone(), None));
+        let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap(), false).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long);
+        let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap(), false).unwrap();
+        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String);
+        let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap(), false).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, age_type, Ordering::Unordered);
+        person_type.set_owns(&mut snapshot, &type_manager, name_type, Ordering::Unordered);
     }
-    let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap();
-    write_snapshot.commit().unwrap();
+    snapshot.commit().unwrap();
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
     AGE_LABEL.set(Label::build("age")).unwrap();
     NAME_LABEL.set(Label::build("name")).unwrap();
     PERSON_LABEL.set(Label::build("person")).unwrap();
-
     init_logging();
-    let storage_path = create_tmp_dir();
-    let mut storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
-
-    let w1 = storage.read_watermark();
-    create_schema(&storage, &type_vertex_generator);
-    let w2 = storage.read_watermark();
-    dbg!("before schema commit watermark: {}, after: {}", w1, w2);
-    let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
 
     let mut group = c.benchmark_group("test writes");
+    group.sample_size(1000);
+    // group.measurement_time(Duration::from_secs(60*5));
+    group.sampling_mode(SamplingMode::Linear);
     group.bench_function("thing_write", |b| {
+        let storage_path = create_tmp_dir();
+        let mut storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
+        let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
+        TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
+        create_schema(&storage, &type_vertex_generator);
+        let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
         b.iter(|| {
             write_entity_attributes(storage.clone(), type_vertex_generator.clone(), thing_vertex_generator.clone(), schema_cache.clone())
         });

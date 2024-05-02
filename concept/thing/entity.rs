@@ -67,41 +67,47 @@ impl<'a> Entity<'a> {
         self.vertex.bytes()
     }
 
-    pub fn has_attribute(
+    pub fn has_attribute<Snapshot: ReadableSnapshot>(
         &self,
-        thing_manager: &ThingManager<impl ReadableSnapshot>,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<bool, ConceptReadError> {
-        thing_manager.has_attribute(self.as_reference(), attribute_type, value)
+        thing_manager.has_attribute(snapshot, self.as_reference(), attribute_type, value)
     }
 
-    pub fn get_has<'m>(
+    pub fn get_has<'m, Snapshot: ReadableSnapshot>(
         &self,
-        thing_manager: &'m ThingManager<impl ReadableSnapshot>,
+        snapshot: &'m Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
     ) -> HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
-        thing_manager.get_has_unordered(self.as_reference())
+        thing_manager.get_has_unordered(snapshot, self.as_reference())
     }
 
-    pub fn get_has_type<'m>(
+    pub fn get_has_type<'m, Snapshot: ReadableSnapshot>(
         &self,
-        thing_manager: &'m ThingManager<impl ReadableSnapshot>,
+        snapshot: &'m Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
         attribute_type: AttributeType<'static>,
     ) -> Result<HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }>, ConceptReadError> {
-        thing_manager.get_has_type_unordered(self.as_reference(), attribute_type)
+        thing_manager.get_has_type_unordered(snapshot, self.as_reference(), attribute_type)
     }
 
-    pub fn set_has_unordered(
-        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>,
+    pub fn set_has_unordered<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
+        attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: validate schema
-        let owns = self.get_type_owns(thing_manager.type_manager(), attribute.type_())
+        let owns = self.get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        let ordering = owns.get_ordering(thing_manager.type_manager())
+        let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         match ordering {
             Ordering::Unordered => {
-                thing_manager.set_has(self.as_reference(), attribute.as_reference());
+                thing_manager.set_has(snapshot, self.as_reference(), attribute.as_reference());
                 Ok(())
             }
             Ordering::Ordered => {
@@ -110,16 +116,18 @@ impl<'a> Entity<'a> {
         }
     }
 
-    pub fn delete_has_unordered(
-        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute: Attribute<'_>,
+    pub fn delete_has_unordered<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager<Snapshot>, attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
-        let owns = self.get_type_owns(thing_manager.type_manager(), attribute.type_())
+        let owns = self.get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        let ordering = owns.get_ordering(thing_manager.type_manager())
+        let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         match ordering {
             Ordering::Unordered => {
-                thing_manager.delete_has(self.as_reference(), attribute);
+                thing_manager.delete_has(snapshot, self.as_reference(), attribute);
                 Ok(())
             }
             Ordering::Ordered => {
@@ -128,13 +136,16 @@ impl<'a> Entity<'a> {
         }
     }
 
-    pub fn set_has_ordered(
-        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>,
+    pub fn set_has_ordered<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
+        attribute_type: AttributeType<'static>,
         attributes: Vec<Attribute<'_>>,
     ) -> Result<(), ConceptWriteError> {
-        let owns = self.get_type_owns(thing_manager.type_manager(), attribute_type.clone())
+        let owns = self.get_type_owns(snapshot, thing_manager.type_manager(), attribute_type.clone())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        let ordering = owns.get_ordering(thing_manager.type_manager())
+        let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         match ordering {
             Ordering::Unordered => {
@@ -142,7 +153,7 @@ impl<'a> Entity<'a> {
             }
             Ordering::Ordered => {
                 // 1. get owned list
-                let attributes = thing_manager.get_has_type_ordered(self.as_reference(), attribute_type.clone())
+                let attributes = thing_manager.get_has_type_ordered(snapshot, self.as_reference(), attribute_type.clone())
                     .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
 
                 // 2. Delete existing but no-longer necessary has, and add new ones, with the correct counts (!)
@@ -155,12 +166,15 @@ impl<'a> Entity<'a> {
         }
     }
 
-    pub fn delete_has_ordered(
-        &self, thing_manager: &ThingManager<impl WritableSnapshot>, attribute_type: AttributeType<'static>,
+    pub fn delete_has_ordered<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
+        attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        let owns = self.get_type_owns(thing_manager.type_manager(), attribute_type)
+        let owns = self.get_type_owns(snapshot, thing_manager.type_manager(), attribute_type)
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        let ordering = owns.get_ordering(thing_manager.type_manager())
+        let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         match ordering {
             Ordering::Unordered => {
@@ -173,10 +187,13 @@ impl<'a> Entity<'a> {
         }
     }
 
-    fn get_type_owns<'m>(
-        &self, type_manager: &'m TypeManager<impl ReadableSnapshot>, attribute_type: AttributeType<'static>,
+    fn get_type_owns<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+        attribute_type: AttributeType<'static>,
     ) -> Result<Owns<'m>, ConceptReadError> {
-        let owns = self.type_().get_owns_attribute(type_manager, attribute_type)?;
+        let owns = self.type_().get_owns_attribute(snapshot, type_manager, attribute_type)?;
         match owns {
             None => {
                 todo!("throw useful schema error")
@@ -187,18 +204,20 @@ impl<'a> Entity<'a> {
         }
     }
 
-    pub fn get_relations<'m>(
+    pub fn get_relations<'m, Snapshot: ReadableSnapshot>(
         &self,
-        thing_manager: &'m ThingManager<impl ReadableSnapshot>,
+        snapshot: &'m Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
     ) -> RelationRoleIterator<'m, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
-        thing_manager.get_relations_roles(self.as_reference())
+        thing_manager.get_relations_roles(snapshot, self.as_reference())
     }
 
-    pub fn get_indexed_players<'m>(
-        &self,
-        thing_manager: &'m ThingManager<impl ReadableSnapshot>,
+    pub fn get_indexed_players<'m, Snapshot: ReadableSnapshot>(
+        &'m self,
+        snapshot: &'m Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
     ) -> IndexedPlayersIterator<'m, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
-        thing_manager.get_indexed_players(Object::Entity(self.as_reference()))
+        thing_manager.get_indexed_players(snapshot, Object::Entity(self.as_reference()))
     }
 
     pub(crate) fn into_owned(self) -> Entity<'static> {
@@ -209,52 +228,63 @@ impl<'a> Entity<'a> {
 impl<'a> ConceptAPI<'a> for Entity<'a> {}
 
 impl<'a> ThingAPI<'a> for Entity<'a> {
-    fn set_modified(&self, thing_manager: &ThingManager<impl WritableSnapshot>) {
-        if matches!(self.get_status(thing_manager), ConceptStatus::Persisted) {
-            thing_manager.lock_existing(self.as_reference());
+    fn set_modified<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
+    ) {
+        if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
+            thing_manager.lock_existing(snapshot, self.as_reference());
         }
     }
 
-    fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus {
-        thing_manager.get_status(self.vertex().as_storage_key())
+    fn get_status<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
+    ) -> ConceptStatus {
+        thing_manager.get_status(snapshot, self.vertex().as_storage_key())
     }
 
-    fn errors(&self, thing_manager: &ThingManager<impl WritableSnapshot>) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
+    fn errors<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
         todo!()
     }
 
-    fn delete<'m>(self, thing_manager: &'m ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError> {
-        let mut has_iter = self.get_has(thing_manager);
-        let mut has = has_iter.next().transpose()
+    fn delete<'m, Snapshot: WritableSnapshot>(
+        self,
+        snapshot: &mut Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>
+    ) -> Result<(), ConceptWriteError> {
+        let has = self.get_has(snapshot, thing_manager)
+            .collect_cloned_vec(|(k, v)| k.into_owned())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         let mut has_attr_type_deleted = HashSet::new();
-        while let Some((attr, count)) = has {
+        for attr in has {
             has_attr_type_deleted.add(attr.type_());
-            thing_manager.delete_has(self.as_reference(), attr);
-            has = has_iter.next().transpose()
-                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+            thing_manager.delete_has(snapshot, self.as_reference(), attr);
         }
 
-        for owns in self.type_().get_owns(thing_manager.type_manager())
+        for owns in self.type_().get_owns(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
             .iter() {
-            let ordering = owns.get_ordering(thing_manager.type_manager())
+            let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())
                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
             if matches!(ordering, Ordering::Ordered) {
-                thing_manager.delete_has_ordered(self.as_reference(), owns.attribute());
+                thing_manager.delete_has_ordered(snapshot, self.as_reference(), owns.attribute());
             }
         }
 
-        let mut relation_iter = self.get_relations(thing_manager);
-        let mut playing = relation_iter.next().transpose()
+        let relations_roles = self.get_relations(snapshot, thing_manager)
+            .collect_cloned_vec(|(relation, role, count)| (relation.into_owned(), role.into_owned()))
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        while let Some((relation, role, count)) = playing {
-            relation.delete_player_many(thing_manager, role, Object::Entity(self.as_reference()), count)?;
-            playing = relation_iter.next().transpose()
-                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+        for (relation, role) in relations_roles {
+            thing_manager.delete_role_player(snapshot, relation, self.as_reference(), role)?;
         }
 
-        thing_manager.delete_entity(self);
+        thing_manager.delete_entity(snapshot, self);
         Ok(())
     }
 }

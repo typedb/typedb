@@ -32,133 +32,131 @@ fn entity_usage() {
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
-    let snapshot: Arc<WriteSnapshot<_>> = Arc::new(storage.clone().open_snapshot_write());
+    let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
     {
         // Without cache, uncommitted
-        let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None);
+        let type_manager = TypeManager::new(type_vertex_generator.clone(), None);
 
-        let root_entity = type_manager.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap();
-        assert_eq!(*root_entity.get_label(&type_manager).unwrap(), Kind::Entity.root_label());
-        assert!(root_entity.is_root(&type_manager).unwrap());
+        let root_entity = type_manager.get_entity_type(&snapshot, &Kind::Entity.root_label()).unwrap().unwrap();
+        assert_eq!(*root_entity.get_label(&snapshot, &type_manager).unwrap(), Kind::Entity.root_label());
+        assert!(root_entity.is_root(&snapshot, &type_manager).unwrap());
 
         // --- age sub attribute ---
         let age_label = Label::build("age");
-        let age_type = type_manager.create_attribute_type(&age_label, false).unwrap();
-        age_type.set_value_type(&type_manager, ValueType::Long);
+        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long);
 
-        assert!(!age_type.is_root(&type_manager).unwrap());
-        assert!(age_type.get_annotations(&type_manager).unwrap().is_empty());
-        assert_eq!(*age_type.get_label(&type_manager).unwrap(), age_label);
-        assert_eq!(age_type.get_value_type(&type_manager).unwrap(), Some(ValueType::Long));
+        assert!(!age_type.is_root(&snapshot, &type_manager).unwrap());
+        assert!(age_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert_eq!(*age_type.get_label(&snapshot, &type_manager).unwrap(), age_label);
+        assert_eq!(age_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
 
         // --- person sub entity @abstract ---
         let person_label = Label::build("person");
-        let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
-        person_type.set_annotation(&type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new())).unwrap();
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
+        person_type.set_annotation(&mut snapshot, &type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new())).unwrap();
 
-        assert!(!person_type.is_root(&type_manager).unwrap());
+        assert!(!person_type.is_root(&snapshot, &type_manager).unwrap());
         assert!(person_type
-            .get_annotations(&type_manager)
+            .get_annotations(&snapshot, &type_manager)
             .unwrap()
             .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract::new())));
-        assert_eq!(*person_type.get_label(&type_manager).unwrap(), person_label);
+        assert_eq!(*person_type.get_label(&snapshot, &type_manager).unwrap(), person_label);
 
-        let supertype = person_type.get_supertype(&type_manager).unwrap().unwrap();
+        let supertype = person_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
         assert_eq!(supertype, root_entity);
 
         // --- child sub person ---
         let child_label = Label::build("child");
-        let child_type = type_manager.create_entity_type(&child_label, false).unwrap();
-        child_type.set_supertype(&type_manager, person_type.clone()).unwrap();
+        let child_type = type_manager.create_entity_type(&mut snapshot, &child_label, false).unwrap();
+        child_type.set_supertype(&mut snapshot, &type_manager, person_type.clone()).unwrap();
 
-        assert!(!child_type.is_root(&type_manager).unwrap());
-        assert_eq!(*child_type.get_label(&type_manager).unwrap(), child_label);
+        assert!(!child_type.is_root(&snapshot, &type_manager).unwrap());
+        assert_eq!(*child_type.get_label(&snapshot, &type_manager).unwrap(), child_label);
 
-        let supertype = child_type.get_supertype(&type_manager).unwrap().unwrap();
+        let supertype = child_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
         assert_eq!(supertype, person_type);
-        let supertypes = child_type.get_supertypes(&type_manager).unwrap();
+        let supertypes = child_type.get_supertypes(&snapshot, &type_manager).unwrap();
         assert_eq!(supertypes.len(), 2);
 
         // --- child owns age ---
-         child_type.set_owns(&type_manager, age_type.clone().into_owned(), Ordering::Unordered);
-        let owns = child_type.get_owns_attribute(&type_manager, age_type.clone().into_owned()).unwrap().unwrap();
+        child_type.set_owns(&mut snapshot, &type_manager, age_type.clone().into_owned(), Ordering::Unordered);
+        let owns = child_type.get_owns_attribute(&snapshot, &type_manager, age_type.clone().into_owned()).unwrap().unwrap();
         // TODO: test 'owns' structure directly
 
-        let all_owns = child_type.get_owns(&type_manager).unwrap();
+        let all_owns = child_type.get_owns(&snapshot, &type_manager).unwrap();
         assert_eq!(all_owns.len(), 1);
         assert!(all_owns.contains(&owns));
-        assert_eq!(child_type.get_owns_attribute(&type_manager, age_type.clone()).unwrap(), Some(owns));
-        assert!(child_type.has_owns_attribute(&type_manager, age_type.clone()).unwrap());
+        assert_eq!(child_type.get_owns_attribute(&snapshot, &type_manager, age_type.clone()).unwrap(), Some(owns));
+        assert!(child_type.has_owns_attribute(&snapshot, &type_manager, age_type.clone()).unwrap());
 
         // --- adult sub person ---
-        let adult = type_manager.create_entity_type(&Label::build("adult"), false).unwrap();
-        adult.set_supertype(&type_manager, person_type.clone()).unwrap();
-        assert_eq!(root_entity.get_subtypes(&type_manager).unwrap().len(), 1);
-        assert_eq!(root_entity.get_subtypes_transitive(&type_manager).unwrap().len(), 3);
-        assert_eq!(person_type.get_subtypes(&type_manager).unwrap().len(), 2);
-        assert_eq!(person_type.get_subtypes_transitive(&type_manager).unwrap().len(), 2);
+        let adult = type_manager.create_entity_type(&mut snapshot, &Label::build("adult"), false).unwrap();
+        adult.set_supertype(&mut snapshot, &type_manager, person_type.clone()).unwrap();
+        assert_eq!(root_entity.get_subtypes(&snapshot, &type_manager).unwrap().len(), 1);
+        assert_eq!(root_entity.get_subtypes_transitive(&snapshot, &type_manager).unwrap().len(), 3);
+        assert_eq!(person_type.get_subtypes(&snapshot, &type_manager).unwrap().len(), 2);
+        assert_eq!(person_type.get_subtypes_transitive(&snapshot, &type_manager).unwrap().len(), 2);
     }
-    if let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap() {
-        write_snapshot.commit().unwrap();
-    }
+    snapshot.commit().unwrap();
 
     {
         // With cache, committed
-        let snapshot: Arc<ReadSnapshot<_>> = Arc::new(storage.clone().open_snapshot_read());
+        let snapshot: ReadSnapshot<_> = storage.clone().open_snapshot_read();
         let type_cache = Arc::new(TypeCache::new(storage.clone(), snapshot.open_sequence_number()).unwrap());
-        let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), Some(type_cache));
+        let type_manager = TypeManager::new(type_vertex_generator.clone(), Some(type_cache));
 
-        let root_entity = type_manager.get_entity_type(&Kind::Entity.root_label()).unwrap().unwrap();
-        assert_eq!(*root_entity.get_label(&type_manager).unwrap(), Kind::Entity.root_label());
-        assert!(root_entity.is_root(&type_manager).unwrap());
+        let root_entity = type_manager.get_entity_type(&snapshot, &Kind::Entity.root_label()).unwrap().unwrap();
+        assert_eq!(*root_entity.get_label(&snapshot, &type_manager).unwrap(), Kind::Entity.root_label());
+        assert!(root_entity.is_root(&snapshot, &type_manager).unwrap());
 
         // --- age sub attribute ---
         let age_label = Label::build("age");
-        let age_type = type_manager.get_attribute_type(&age_label).unwrap().unwrap();
+        let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
 
-        assert!(!age_type.is_root(&type_manager).unwrap());
-        assert!(age_type.get_annotations(&type_manager).unwrap().is_empty());
-        assert_eq!(*age_type.get_label(&type_manager).unwrap(), age_label);
-        assert_eq!(age_type.get_value_type(&type_manager).unwrap(), Some(ValueType::Long));
+        assert!(!age_type.is_root(&snapshot, &type_manager).unwrap());
+        assert!(age_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert_eq!(*age_type.get_label(&snapshot, &type_manager).unwrap(), age_label);
+        assert_eq!(age_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
 
         // --- person sub entity ---
         let person_label = Label::build("person");
-        let person_type = type_manager.get_entity_type(&person_label).unwrap().unwrap();
-        assert!(!person_type.is_root(&type_manager).unwrap());
+        let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
+        assert!(!person_type.is_root(&snapshot, &type_manager).unwrap());
         assert!(person_type
-            .get_annotations(&type_manager)
+            .get_annotations(&snapshot, &type_manager)
             .unwrap()
             .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract::new())));
-        assert_eq!(*person_type.get_label(&type_manager).unwrap(), person_label);
+        assert_eq!(*person_type.get_label(&snapshot, &type_manager).unwrap(), person_label);
 
-        let supertype = person_type.get_supertype(&type_manager).unwrap().unwrap();
+        let supertype = person_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
         assert_eq!(supertype, root_entity);
 
         // --- child sub person ---
         let child_label = Label::build("child");
-        let child_type = type_manager.get_entity_type(&child_label).unwrap().unwrap();
+        let child_type = type_manager.get_entity_type(&snapshot, &child_label).unwrap().unwrap();
 
-        assert!(!child_type.is_root(&type_manager).unwrap());
-        assert_eq!(*child_type.get_label(&type_manager).unwrap(), child_label);
+        assert!(!child_type.is_root(&snapshot, &type_manager).unwrap());
+        assert_eq!(*child_type.get_label(&snapshot, &type_manager).unwrap(), child_label);
 
-        let supertype = child_type.get_supertype(&type_manager).unwrap().unwrap();
+        let supertype = child_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
         assert_eq!(supertype, person_type);
-        let supertypes = child_type.get_supertypes(&type_manager).unwrap();
+        let supertypes = child_type.get_supertypes(&snapshot, &type_manager).unwrap();
         assert_eq!(supertypes.len(), 2);
 
         // --- child owns age ---
-        let all_owns = child_type.get_owns(&type_manager).unwrap();
+        let all_owns = child_type.get_owns(&snapshot, &type_manager).unwrap();
         assert_eq!(all_owns.len(), 1);
         let expected_owns = Owns::new(ObjectType::Entity(child_type.clone()), age_type.clone());
         assert!(all_owns.contains(&expected_owns));
-        assert_eq!(child_type.get_owns_attribute(&type_manager, age_type.clone()).unwrap(), Some(expected_owns));
-        assert!(child_type.has_owns_attribute(&type_manager, age_type.clone()).unwrap());
+        assert_eq!(child_type.get_owns_attribute(&snapshot, &type_manager, age_type.clone()).unwrap(), Some(expected_owns));
+        assert!(child_type.has_owns_attribute(&snapshot, &type_manager, age_type.clone()).unwrap());
 
         // --- adult sub person ---
-        assert_eq!(root_entity.get_subtypes(&type_manager).unwrap().len(), 1);
-        assert_eq!(root_entity.get_subtypes_transitive(&type_manager).unwrap().len(), 3);
-        assert_eq!(person_type.get_subtypes(&type_manager).unwrap().len(), 2);
-        assert_eq!(person_type.get_subtypes_transitive(&type_manager).unwrap().len(), 2);
+        assert_eq!(root_entity.get_subtypes(&snapshot, &type_manager).unwrap().len(), 1);
+        assert_eq!(root_entity.get_subtypes_transitive(&snapshot, &type_manager).unwrap().len(), 3);
+        assert_eq!(person_type.get_subtypes(&snapshot, &type_manager).unwrap().len(), 2);
+        assert_eq!(person_type.get_subtypes_transitive(&snapshot, &type_manager).unwrap().len(), 2);
     }
 }
 
@@ -174,67 +172,65 @@ fn role_usage() {
     let friend_name = "friend";
     let person_label = Label::build("person");
 
-    let snapshot: Arc<WriteSnapshot<_>> = Arc::new(storage.clone().open_snapshot_write());
+    let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
     {
         // Without cache, uncommitted
-        let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), None);
-        let root_relation = type_manager.get_relation_type(&Kind::Relation.root_label()).unwrap().unwrap();
-        assert_eq!(*root_relation.get_label(&type_manager).unwrap(), Kind::Relation.root_label());
-        assert!(root_relation.is_root(&type_manager).unwrap());
-        assert!(root_relation.get_supertype(&type_manager).unwrap().is_none());
-        assert_eq!(root_relation.get_supertypes(&type_manager).unwrap().len(), 0);
+        let type_manager = TypeManager::new(type_vertex_generator.clone(), None);
+        let root_relation = type_manager.get_relation_type(&snapshot, &Kind::Relation.root_label()).unwrap().unwrap();
+        assert_eq!(*root_relation.get_label(&snapshot, &type_manager).unwrap(), Kind::Relation.root_label());
+        assert!(root_relation.is_root(&snapshot, &type_manager).unwrap());
+        assert!(root_relation.get_supertype(&snapshot, &type_manager).unwrap().is_none());
+        assert_eq!(root_relation.get_supertypes(&snapshot, &type_manager).unwrap().len(), 0);
         assert!(root_relation
-            .get_annotations(&type_manager)
+            .get_annotations(&snapshot, &type_manager)
             .unwrap()
             .contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract::new())));
 
-        let root_role = type_manager.get_role_type(&Kind::Role.root_label()).unwrap().unwrap();
-        assert_eq!(*root_role.get_label(&type_manager).unwrap(), Kind::Role.root_label());
-        assert!(root_role.is_root(&type_manager).unwrap());
-        assert!(root_role.get_supertype(&type_manager).unwrap().is_none());
-        assert_eq!(root_role.get_supertypes(&type_manager).unwrap().len(), 0);
+        let root_role = type_manager.get_role_type(&snapshot, &Kind::Role.root_label()).unwrap().unwrap();
+        assert_eq!(*root_role.get_label(&snapshot, &type_manager).unwrap(), Kind::Role.root_label());
+        assert!(root_role.is_root(&snapshot, &type_manager).unwrap());
+        assert!(root_role.get_supertype(&snapshot, &type_manager).unwrap().is_none());
+        assert_eq!(root_role.get_supertypes(&snapshot, &type_manager).unwrap().len(), 0);
         assert!(root_role
-            .get_annotations(&type_manager)
+            .get_annotations(&snapshot, &type_manager)
             .unwrap()
             .contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract::new())));
 
         // --- friendship sub relation, relates friend ---
-        let friendship_type = type_manager.create_relation_type(&friendship_label, false).unwrap();
-        friendship_type.create_relates(&type_manager, friend_name, Ordering::Unordered).unwrap();
-        let relates = friendship_type.get_relates_role(&type_manager, friend_name).unwrap().unwrap();
-        let role_type = friendship_type.get_role(&type_manager, friend_name).unwrap().unwrap();
+        let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label, false).unwrap();
+        friendship_type.create_relates(&mut snapshot, &type_manager, friend_name, Ordering::Unordered).unwrap();
+        let relates = friendship_type.get_relates_role(&snapshot, &type_manager, friend_name).unwrap().unwrap();
+        let role_type = friendship_type.get_role(&snapshot, &type_manager, friend_name).unwrap().unwrap();
         debug_assert_eq!(relates.relation(), friendship_type);
         debug_assert_eq!(relates.role(), role_type);
 
         // --- person plays friendship:friend ---
-        let person_type = type_manager.create_entity_type(&person_label, false).unwrap();
-        person_type.set_plays(&type_manager, role_type.clone().into_owned());
-        let plays = person_type.get_plays_role(&type_manager, role_type.clone().into_owned()).unwrap().unwrap();
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
+        person_type.set_plays(&mut snapshot, &type_manager, role_type.clone().into_owned());
+        let plays = person_type.get_plays_role(&snapshot, &type_manager, role_type.clone().into_owned()).unwrap().unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type.clone()));
         debug_assert_eq!(plays.role(), role_type);
     }
-    if let write_snapshot = Arc::try_unwrap(snapshot).ok().unwrap() {
-        write_snapshot.commit().unwrap();
-    }
+    snapshot.commit().unwrap();
 
     {
         // With cache, committed
-        let snapshot: Arc<ReadSnapshot<_>> = Arc::new(storage.clone().open_snapshot_read());
+        let snapshot: ReadSnapshot<_> = storage.clone().open_snapshot_read();
         let type_cache = Arc::new(TypeCache::new(storage.clone(), snapshot.open_sequence_number()).unwrap());
-        let type_manager = TypeManager::new(snapshot.clone(), type_vertex_generator.clone(), Some(type_cache));
+        let type_manager = TypeManager::new(type_vertex_generator.clone(), Some(type_cache));
 
         // --- friendship sub relation, relates friend ---
-        let friendship_type = type_manager.get_relation_type(&friendship_label).unwrap().unwrap();
-        let relates = friendship_type.get_relates_role(&type_manager, friend_name).unwrap();
+        let friendship_type = type_manager.get_relation_type(&snapshot, &friendship_label).unwrap().unwrap();
+        let relates = friendship_type.get_relates_role(&snapshot, &type_manager, friend_name).unwrap();
         debug_assert!(relates.is_some());
         let relates = relates.unwrap();
-        let role_type = friendship_type.get_role(&type_manager, friend_name).unwrap().unwrap();
+        let role_type = friendship_type.get_role(&snapshot, &type_manager, friend_name).unwrap().unwrap();
         debug_assert_eq!(relates.relation(), friendship_type);
         debug_assert_eq!(relates.role(), role_type);
 
         // --- person plays friendship:friend ---
-        let person_type = type_manager.get_entity_type(&person_label).unwrap().unwrap();
-        let plays = person_type.get_plays_role(&type_manager, role_type.clone().into_owned()).unwrap().unwrap();
+        let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
+        let plays = person_type.get_plays_role(&snapshot, &type_manager, role_type.clone().into_owned()).unwrap().unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type.clone()));
         debug_assert_eq!(plays.role(), role_type);
     }

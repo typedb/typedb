@@ -123,7 +123,7 @@ impl ThingVertexGenerator {
         ObjectVertex::new(Bytes::Array(ByteArray::copy(k.key())))
     }
 
-    pub fn create_entity<Snapshot>(&self, type_id: TypeID, snapshot: &Snapshot) -> ObjectVertex<'static>
+    pub fn create_entity<Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex<'static>
     where
         Snapshot: WritableSnapshot,
     {
@@ -133,7 +133,7 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_relation<Snapshot>(&self, type_id: TypeID, snapshot: &Snapshot) -> ObjectVertex<'static>
+    pub fn create_relation<Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex<'static>
     where
         Snapshot: WritableSnapshot,
     {
@@ -147,7 +147,7 @@ impl ThingVertexGenerator {
         &self,
         type_id: TypeID,
         value: LongBytes,
-        snapshot: &Snapshot,
+        snapshot: &mut Snapshot,
     ) -> AttributeVertex<'static>
     where
         Snapshot: WritableSnapshot,
@@ -176,7 +176,7 @@ impl ThingVertexGenerator {
         &self,
         type_id: TypeID,
         value: StringBytes<'_, INLINE_LENGTH>,
-        snapshot: &Snapshot,
+        snapshot: &mut Snapshot,
     ) -> Result<AttributeVertex<'static>, Arc<SnapshotIteratorError>>
     where
         Snapshot: WritableSnapshot,
@@ -191,7 +191,7 @@ impl ThingVertexGenerator {
         &self,
         type_id: TypeID,
         string: StringBytes<'_, INLINE_LENGTH>,
-        snapshot: &Snapshot,
+        snapshot: &mut Snapshot,
     ) -> Result<StringAttributeID, Arc<SnapshotIteratorError>>
     where
         Snapshot: WritableSnapshot,

@@ -24,7 +24,7 @@ use test_utils::{create_tmp_dir, init_logging};
 fn vertex_generation<D>(
     thing_vertex_generator: Arc<ThingVertexGenerator>,
     type_id: TypeID,
-    write_snapshot: &WriteSnapshot<D>,
+    write_snapshot: &mut WriteSnapshot<D>,
 ) -> ObjectVertex<'static> {
     thing_vertex_generator.create_entity(type_id, write_snapshot)
 }
@@ -32,7 +32,7 @@ fn vertex_generation<D>(
 fn vertex_generation_to_key<D>(
     thing_vertex_generator: Arc<ThingVertexGenerator>,
     type_id: TypeID,
-    write_snapshot: &WriteSnapshot<D>,
+    write_snapshot: &mut WriteSnapshot<D>,
 ) -> StorageKey<'static, { BUFFER_KEY_INLINE }> {
     thing_vertex_generator.create_entity(type_id, write_snapshot).into_storage_key()
 }
@@ -45,14 +45,14 @@ fn criterion_benchmark(c: &mut Criterion) {
     let type_id = TypeID::build(0);
     let vertex_generator = Arc::new(ThingVertexGenerator::new());
 
-    let snapshot = storage.clone().open_snapshot_write();
+    let mut snapshot = storage.clone().open_snapshot_write();
     c.bench_function("vertex_generation", |b| {
-        b.iter(|| vertex_generation(vertex_generator.clone(), type_id, &snapshot))
+        b.iter(|| vertex_generation(vertex_generator.clone(), type_id, &mut snapshot))
     });
 
-    let snapshot = storage.clone().open_snapshot_write();
+    let mut snapshot = storage.clone().open_snapshot_write();
     c.bench_function("vertex_generation_to_storage_key", |b| {
-        b.iter(|| vertex_generation_to_key(vertex_generator.clone(), type_id, &snapshot))
+        b.iter(|| vertex_generation_to_key(vertex_generator.clone(), type_id, &mut snapshot))
     });
 }
 

@@ -659,6 +659,10 @@ impl CommitRecord {
         &self.operations
     }
 
+    pub(crate) fn operations_mut(&mut self) -> &mut OperationsBuffer {
+        &mut self.operations
+    }
+
     pub(crate) fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
     }
@@ -683,15 +687,15 @@ impl CommitRecord {
         //   if our buffer contains a delete, we check the predecessor doesn't have an Existing lock on it
         // We check
 
-        let locks = self.operations().locks().read().unwrap();
-        let predecessor_locks = predecessor.operations().locks().read().unwrap();
+        let locks = self.operations().locks();
+        let predecessor_locks = predecessor.operations().locks();
         for (write_buffer, pred_write_buffer) in self.operations().write_buffers().zip(predecessor.operations()) {
-            let writes = write_buffer.writes().read().unwrap();
+            let writes = write_buffer.writes();
             // if writes.is_empty() && locks.is_empty() {
             //     continue;
             // }
 
-            let predecessor_writes = pred_write_buffer.writes().read().unwrap();
+            let predecessor_writes = pred_write_buffer.writes();
             // if predecessor_writes.is_empty() && predecessor_locks.is_empty() {
             //     continue;
             // }

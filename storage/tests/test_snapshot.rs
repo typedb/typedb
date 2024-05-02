@@ -35,7 +35,7 @@ fn snapshot_buffered_put_get() {
     let storage_path = create_tmp_dir();
     let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
-    let snapshot = storage.open_snapshot_write();
+    let mut snapshot = storage.open_snapshot_write();
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0, 0x1]));
     let key_2 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x1, 0x0, 0x10]));
@@ -61,7 +61,7 @@ fn snapshot_buffered_put_iterate() {
     let storage_path = create_tmp_dir();
     let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
-    let snapshot = storage.open_snapshot_write();
+    let mut snapshot = storage.open_snapshot_write();
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0, 0x1]));
     let key_2 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x1, 0x0, 0x10]));
@@ -86,7 +86,7 @@ fn snapshot_buffered_delete() {
     let storage_path = create_tmp_dir();
     let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
-    let snapshot = storage.open_snapshot_write();
+    let mut snapshot = storage.open_snapshot_write();
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0, 0x1]));
     let key_2 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x1, 0x0, 0x10]));
@@ -121,7 +121,7 @@ fn snapshot_read_through() {
     let key_3 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x1, 0x0, 0xff]));
     let key_4 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x2, 0x0, 0xff]));
 
-    let snapshot = storage.clone().open_snapshot_write();
+    let mut snapshot = storage.clone().open_snapshot_write();
     snapshot.put(key_1.clone());
     snapshot.put(key_2.clone());
     snapshot.put(key_3.clone());
@@ -131,7 +131,7 @@ fn snapshot_read_through() {
     let key_5 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x1, 0x2, 0x0]));
 
     // test put - iterate read-through
-    let snapshot = storage.open_snapshot_write();
+    let mut snapshot = storage.open_snapshot_write();
     snapshot.put(key_5.clone());
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x1]));
@@ -168,11 +168,11 @@ fn snapshot_delete_reinserted() {
     let value_0 = ByteArray::copy(&[0, 0, 0, 0]);
     let value_1 = ByteArray::copy(&[0, 0, 0, 1]);
 
-    let snapshot_0 = storage.clone().open_snapshot_write();
+    let mut snapshot_0 = storage.clone().open_snapshot_write();
     snapshot_0.put_val(key_1.clone(), value_0);
     snapshot_0.commit().unwrap();
 
-    let snapshot_1 = storage.clone().open_snapshot_write();
+    let mut snapshot_1 = storage.clone().open_snapshot_write();
     snapshot_1.put_val(key_1.clone(), value_1);
     snapshot_1.delete(key_1.clone());
     snapshot_1.commit().unwrap();

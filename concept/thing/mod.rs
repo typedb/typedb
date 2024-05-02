@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::io::Read;
 use bytes::byte_array::ByteArray;
 use encoding::graph::thing::vertex_attribute::AttributeID;
 use encoding::graph::thing::vertex_object::ObjectVertex;
@@ -22,17 +23,29 @@ pub mod thing_manager;
 pub mod value;
 
 pub trait ThingAPI<'a> {
-    fn set_modified(&self, thing_manager: &ThingManager<impl WritableSnapshot>);
+    fn set_modified<Snapshot: WritableSnapshot>(&self, snapshot: &mut Snapshot, thing_manager: &ThingManager<Snapshot>);
 
     // TODO: implementers could cache the status in a OnceCell if we do many operations on the same Thing at once
-    fn get_status<'m>(&self, thing_manager: &'m ThingManager<impl ReadableSnapshot>) -> ConceptStatus;
+    fn get_status<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>
+    ) -> ConceptStatus;
 
-    fn errors(&self, thing_manager: &ThingManager<impl WritableSnapshot>)  -> Result<Vec<ConceptWriteError>, ConceptReadError>;
+    fn errors<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>
+    )  -> Result<Vec<ConceptWriteError>, ConceptReadError>;
 
-    fn delete(self, thing_manager: &ThingManager<impl WritableSnapshot>) -> Result<(), ConceptWriteError>;
+    fn delete<Snapshot: WritableSnapshot>(
+        self,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager<Snapshot>
+    ) -> Result<(), ConceptWriteError>;
 }
 
-pub trait ObjectAPI<'a>: ThingAPI<'a> {
+pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
     fn vertex(&self) -> ObjectVertex<'_>;
 
     fn into_vertex(self) -> ObjectVertex<'a>;
