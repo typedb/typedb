@@ -15,9 +15,9 @@ use pprof::ProfilerGuard;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::KeyspaceId,
+    keyspace::{KeyspaceId, KeyspaceSet},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
-    KeyspaceSet, MVCCStorage,
+    MVCCStorage,
 };
 use storage::key_range::KeyRange;
 use test_utils::{create_tmp_dir, init_logging};
@@ -46,13 +46,13 @@ use self::TestKeyspaceSet::Keyspace;
 fn random_key_24(keyspace: TestKeyspaceSet) -> StorageKeyArray<BUFFER_KEY_INLINE> {
     let mut bytes: [u8; 24] = rand::random();
     bytes[0] = 0b0;
-    StorageKeyArray::from((bytes.as_slice(), keyspace))
+    StorageKeyArray::from((keyspace, bytes))
 }
 
 fn random_key_4(keyspace: TestKeyspaceSet) -> StorageKeyArray<BUFFER_KEY_INLINE> {
     let mut bytes: [u8; 4] = rand::random();
     bytes[0] = 0b0;
-    StorageKeyArray::from((bytes.as_slice(), keyspace))
+    StorageKeyArray::from((keyspace, bytes))
 }
 
 fn populate_storage(storage: Arc<MVCCStorage<WAL>>, keyspace: TestKeyspaceSet, key_count: usize) -> usize {
@@ -109,7 +109,7 @@ fn bench_snapshot_write_put(storage: Arc<MVCCStorage<WAL>>, keyspace: TestKeyspa
 }
 
 fn setup_storage(storage_path: &Path, key_count: usize) -> Arc<MVCCStorage<WAL>> {
-    let storage = Arc::new(MVCCStorage::recover::<TestKeyspaceSet>("storage_bench", storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::open::<TestKeyspaceSet>("storage_bench", storage_path).unwrap());
     let keys = populate_storage(storage.clone(), Keyspace, key_count);
     println!("Initialised storage with '{}' keys", keys);
     storage

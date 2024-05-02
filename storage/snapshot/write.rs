@@ -18,7 +18,7 @@ pub enum Write {
     // Insert KeyValue with a new version. Never conflicts. May represent a brand new key or re-inserting an existing key blindly
     Insert { value: ByteArray<BUFFER_VALUE_INLINE> },
     // Insert KeyValue with new version if a concurrent Txn deletes Key. Boolean indicates requires re-insertion. Never conflicts.
-    Put { value: ByteArray<BUFFER_VALUE_INLINE>, reinsert: Arc<AtomicBool> },
+    Put { value: ByteArray<BUFFER_VALUE_INLINE>, reinsert: Arc<AtomicBool>, known_to_exist: bool },
     // Delete with a new version. Conflicts with Require.
     Delete,
 }
@@ -27,8 +27,12 @@ impl PartialEq for Write {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Insert { value }, Self::Insert { value: other_value }) => value == other_value,
-            (Self::Put { value, reinsert }, Self::Put { value: other_value, reinsert: other_reinsert }) => {
-                other_value == value && reinsert.load(Ordering::Acquire) == other_reinsert.load(Ordering::Acquire)
+            (
+                Self::Put { value, reinsert, known_to_exist },
+                Self::Put { value: other_value, reinsert: other_reinsert, known_to_exist: other_known_to_exist },
+            ) => {
+                (value, reinsert.load(Ordering::Acquire), known_to_exist)
+                    == (other_value, other_reinsert.load(Ordering::Acquire), other_known_to_exist)
             }
             (Self::Delete, Self::Delete) => true,
             _ => false,

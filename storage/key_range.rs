@@ -5,8 +5,8 @@
  */
 
 use std::{borrow::Borrow, cmp::Ordering, fmt::Debug};
-use primitive::prefix::Prefix;
 
+use primitive::prefix::Prefix;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct KeyRange<T: Prefix> {
@@ -30,7 +30,7 @@ impl<T: Prefix> KeyRange<T> {
     }
 
     pub fn new_within(prefix: T, fixed_width_keys: bool) -> Self {
-        Self { start: prefix, end: RangeEnd::SameAsStart, fixed_width_keys: false }
+        Self { start: prefix, end: RangeEnd::SameAsStart, fixed_width_keys }
     }
 
     pub fn new_inclusive(start: T, end_inclusive: T) -> Self {
@@ -57,14 +57,18 @@ impl<T: Prefix> KeyRange<T> {
         (self.start, self.end, self.fixed_width_keys)
     }
 
-    pub fn map<V: Prefix>(self, prefix_mapper: impl Fn(T) -> V, fixed_width_mapper: impl Fn(bool) -> bool) -> KeyRange<V> {
+    pub fn map<V: Prefix>(
+        self,
+        prefix_mapper: impl Fn(T) -> V,
+        fixed_width_mapper: impl Fn(bool) -> bool,
+    ) -> KeyRange<V> {
         let (start, end, fixed_width) = self.into_raw();
         let start = prefix_mapper(start);
         let end = end.map(prefix_mapper);
         let fixed_width = fixed_width_mapper(fixed_width);
         match fixed_width {
             true => KeyRange::new_fixed_width(start, end),
-            false => KeyRange::new(start, end)
+            false => KeyRange::new(start, end),
         }
     }
 
@@ -97,8 +101,8 @@ impl<T: Prefix> KeyRange<T> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RangeEnd<T>
-    where
-        T: Ord + Debug,
+where
+    T: Ord + Debug,
 {
     SameAsStart,
     Inclusive(T),
@@ -107,8 +111,8 @@ pub enum RangeEnd<T>
 }
 
 impl<T> RangeEnd<T>
-    where
-        T: Ord + Debug,
+where
+    T: Ord + Debug,
 {
     pub fn new_same_as_start() -> Self {
         RangeEnd::SameAsStart
@@ -135,4 +139,3 @@ impl<T> RangeEnd<T>
         }
     }
 }
-

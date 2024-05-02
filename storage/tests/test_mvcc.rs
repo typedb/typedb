@@ -30,9 +30,9 @@ use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use durability::wal::WAL;
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::KeyspaceId,
+    keyspace::{KeyspaceId, KeyspaceSet},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
-    KeyspaceSet, MVCCStorage,
+    MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
 
@@ -49,7 +49,7 @@ const VALUE_1: [u8; 1] = [0x1];
 const VALUE_2: [u8; 1] = [0x2];
 
 fn setup_storage(storage_path: &Path) -> Arc<MVCCStorage<WAL>> {
-    Arc::new(MVCCStorage::recover::<TestKeyspaceSet>("storage", storage_path).unwrap())
+    Arc::new(MVCCStorage::open::<TestKeyspaceSet>("storage", storage_path).unwrap())
 }
 
 #[test]
@@ -168,8 +168,7 @@ fn test_open_snapshot_write_at() {
 
     let snapshot_write_1 = storage.clone().open_snapshot_write_at(watermark_init).unwrap();
     snapshot_write_1.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
-    let result_write_1 = snapshot_write_1.commit();
-    assert!(result_write_1.is_ok());
+    snapshot_write_1.commit().unwrap();
 
     let snapshot_read_1 = storage.open_snapshot_read();
     assert_eq!(snapshot_read_1.get::<128>(key_1.as_reference()).unwrap().unwrap().bytes(), VALUE_0); // FIXME: value overwrite currently unsupported

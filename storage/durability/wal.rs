@@ -4,16 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, ffi::OsStr, fs::{self, File as StdFile, OpenOptions}, io::{self, BufReader, BufWriter, Read, Seek, Write}, mem, path::{Path, PathBuf}, sync::{
-    atomic::{AtomicU64, Ordering},
-    RwLock, RwLockReadGuard,
-}};
+use std::{
+    collections::HashMap,
+    ffi::OsStr,
+    fs::{self, File as StdFile, OpenOptions},
+    io::{self, BufReader, BufWriter, Read, Seek, Write},
+    mem,
+    path::{Path, PathBuf},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        RwLock, RwLockReadGuard,
+    },
+};
 
 use itertools::Itertools;
 
 use crate::{
-    DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, RecordHeader, Result, SequenceNumber,
-    Sequencer,
+    DurabilityError, DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, RecordHeader,
+    SequenceNumber, Sequencer,
 };
 
 const MAX_WAL_FILE_SIZE: u64 = 16 * 1024 * 1024;
@@ -28,7 +36,7 @@ pub struct WAL {
 }
 
 impl WAL {
-    fn recover_impl(directory: PathBuf) -> io::Result<Self> {
+    fn open_impl(directory: PathBuf) -> io::Result<Self> {
         if !directory.exists() {
             fs::create_dir_all(&directory)?;
         }
@@ -60,8 +68,8 @@ impl Sequencer for WAL {
 }
 
 impl DurabilityService for WAL {
-    fn recover(directory: impl AsRef<Path>) -> io::Result<Self> {
-        Self::recover_impl(directory.as_ref().to_owned())
+    fn open(directory: impl AsRef<Path>) -> io::Result<Self> {
+        Self::open_impl(directory.as_ref().to_owned())
     }
 
     fn register_record_type<Record: DurabilityRecord>(&mut self) {
@@ -71,7 +79,7 @@ impl DurabilityService for WAL {
         self.registered_types.insert(Record::RECORD_TYPE, Record::RECORD_NAME);
     }
 
-    fn unsequenced_write<Record>(&self, record: &Record) -> Result<()>
+    fn unsequenced_write<Record>(&self, record: &Record) -> Result<(), DurabilityError>
     where
         Record: DurabilityRecord,
     {
@@ -81,7 +89,7 @@ impl DurabilityService for WAL {
         Ok(())
     }
 
-    fn sequenced_write<Record>(&self, record: &Record) -> Result<SequenceNumber>
+    fn sequenced_write<Record>(&self, record: &Record) -> Result<SequenceNumber, DurabilityError>
     where
         Record: DurabilityRecord,
     {
@@ -92,7 +100,10 @@ impl DurabilityService for WAL {
         Ok(seq)
     }
 
-    fn iter_from(&self, sequence_number: SequenceNumber) -> Result<impl Iterator<Item = io::Result<RawRecord>>> {
+    fn iter_from(
+        &self,
+        sequence_number: SequenceNumber,
+    ) -> Result<impl Iterator<Item = Result<RawRecord, DurabilityError>>, DurabilityError> {
         Ok(RecordIterator::new(self.files.read().unwrap(), sequence_number)?)
     }
 }
@@ -117,7 +128,7 @@ impl Files {
         files.sort_unstable_by(|lhs, rhs| lhs.path.cmp(&rhs.path));
 
         if files.is_empty() {
-            files.push(File::open_at(directory.clone(), SequenceNumber::from(SequenceNumber::MIN.next()))?);
+            files.push(File::open_at(directory.clone(), SequenceNumber::MIN.next())?);
         }
 
         let writer = files.last().unwrap().writer()?;
@@ -132,7 +143,7 @@ impl Files {
         Ok(())
     }
 
-    fn write_record<Record>(&mut self, record: &Record, sequence_number: SequenceNumber) -> Result<()>
+    fn write_record<Record>(&mut self, record: &Record, sequence_number: SequenceNumber) -> Result<(), DurabilityError>
     where
         Record: DurabilityRecord,
     {
@@ -219,7 +230,7 @@ impl FileReader {
         }
         let mut buf = [0; mem::size_of::<u64>()];
         self.reader.read_exact(&mut buf)?;
-        self.reader.seek_relative(-1 * buf.len() as i64)?;
+        self.reader.seek_relative(-(buf.len() as i64))?;
         Ok(Some(SequenceNumber::from_be_bytes(&buf)))
     }
 
@@ -239,7 +250,7 @@ impl FileReader {
     }
 
     fn read_header(&mut self) -> io::Result<RecordHeader> {
-        let mut buf : [u8; mem::size_of::<u64>()] = [0; mem::size_of::<u64>()];
+        let mut buf: [u8; mem::size_of::<u64>()] = [0; mem::size_of::<u64>()];
         self.reader.read_exact(&mut buf)?;
         let sequence_number = SequenceNumber::from_be_bytes(&buf);
 
@@ -285,7 +296,7 @@ impl<'a> RecordIterator<'a> {
                 }
             }
         }
-        Ok( Self { files, current, reader: Some(reader) })
+        Ok(Self { files, current, reader: Some(reader) })
     }
 
     fn advance_file(&mut self) -> io::Result<Option<()>> {
@@ -301,19 +312,20 @@ impl<'a> RecordIterator<'a> {
 }
 
 impl<'a> Iterator for RecordIterator<'a> {
-    type Item = io::Result<RawRecord>;
+    type Item = Result<RawRecord, DurabilityError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let reader = self.reader.as_mut()?;
         match reader.read_one_record().transpose() {
+            Some(Ok(item)) => Some(Ok(item)),
+            Some(Err(error)) => Some(Err(DurabilityError::IO { source: error })),
             None => match self.advance_file().transpose()? {
                 Ok(()) => self.next(),
-                Err(err) => {
+                Err(error) => {
                     self.reader = None;
-                    Some(Err(err))
+                    Some(Err(DurabilityError::IO { source: error }))
                 }
             },
-            some => some,
         }
     }
 }
@@ -324,7 +336,9 @@ mod test {
     use tempdir::TempDir;
 
     use super::WAL;
-    use crate::{DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, SequencedDurabilityRecord, SequenceNumber};
+    use crate::{
+        DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, SequenceNumber, SequencedDurabilityRecord,
+    };
 
     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
     struct TestRecord {
@@ -350,7 +364,7 @@ mod test {
     impl SequencedDurabilityRecord for TestRecord {}
 
     fn open_wal(directory: &TempDir) -> WAL {
-        let mut wal = WAL::recover(directory).unwrap();
+        let mut wal = WAL::open(directory).unwrap();
         wal.register_record_type::<TestRecord>();
         wal
     }
@@ -395,7 +409,7 @@ mod test {
     }
 
     #[test]
-    fn test_wal_recover() {
+    fn test_wal_open() {
         let directory = TempDir::new("wal-test").unwrap();
 
         let record = TestRecord { bytes: *b"test" };
@@ -413,7 +427,7 @@ mod test {
     }
 
     #[test]
-    fn test_wal_recover_multiple() {
+    fn test_wal_open_multiple() {
         let directory = TempDir::new("wal-test").unwrap();
 
         let records = [TestRecord { bytes: *b"test" }, TestRecord { bytes: *b"abcd" }];

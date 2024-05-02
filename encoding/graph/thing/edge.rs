@@ -4,23 +4,28 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::io::Read;
 use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::{StorageKey, StorageKeyReference};
-use storage::KeyspaceSet;
+use storage::{
+    key_value::{StorageKey, StorageKeyReference},
+    keyspace::KeyspaceSet,
+};
 
-use crate::{AsBytes, EncodingKeyspace, graph::{
-    thing::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex},
-    type_::vertex::TypeVertex,
-}, Keyable, Prefixed};
-use crate::graph::thing::vertex_attribute::AttributeID;
-use crate::graph::type_::vertex::TypeID;
-use crate::graph::Typed;
-use crate::layout::prefix::{Prefix, PrefixID};
-use crate::value::value_type::ValueType;
+use crate::{
+    graph::{
+        thing::{
+            vertex_attribute::{AttributeID, AttributeVertex},
+            vertex_object::ObjectVertex,
+        },
+        type_::vertex::{TypeID, TypeVertex},
+        Typed,
+    },
+    layout::prefix::{Prefix, PrefixID},
+    value::value_type::ValueType,
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+};
 
 ///
 /// [has][object][Attribute8|Attribute17]
@@ -63,13 +68,16 @@ impl<'a> ThingEdgeHas<'a> {
     }
 
     pub fn prefix_from_object_to_type(
-        from: ObjectVertex, to_value_type: ValueType, to_type: TypeVertex,
+        from: ObjectVertex,
+        to_value_type: ValueType,
+        to_type: TypeVertex,
     ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         let to_prefix = AttributeVertex::build_prefix_type(
-            AttributeVertex::value_type_to_prefix_type(to_value_type), to_type.type_id_(),
+            AttributeVertex::value_type_to_prefix_type(to_value_type),
+            to_type.type_id_(),
         );
         let to_type_range = Self::range_from().end..Self::range_from().end + to_prefix.length();
         bytes.bytes_mut()[to_type_range].copy_from_slice(to_prefix.bytes());
@@ -81,8 +89,9 @@ impl<'a> ThingEdgeHas<'a> {
     }
 
     pub fn is_has(key: StorageKeyReference<'_>) -> bool {
-        key.keyspace_id() == Self::KEYSPACE.id() && key.bytes().len() > 0 &&
-            key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes()
+        key.keyspace_id() == Self::KEYSPACE.id()
+            && key.bytes().len() > 0
+            && key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes()
     }
 
     fn from(&'a self) -> ObjectVertex<'a> {
@@ -153,8 +162,10 @@ impl<'a> ThingEdgeHasReverse<'a> {
     const INDEX_FROM_PREFIX: usize = PrefixID::LENGTH;
     pub const LENGTH_PREFIX_FROM_PREFIX: usize = PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_PREFIX;
     pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
-    pub const LENGTH_BOUND_PREFIX_FROM: usize = PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE + AttributeID::max_length();
-    const LENGTH_BOUND_PREFIX_FROM_TO_TYPE: usize = PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE + AttributeID::max_length();
+    pub const LENGTH_BOUND_PREFIX_FROM: usize =
+        PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE + AttributeID::max_length();
+    const LENGTH_BOUND_PREFIX_FROM_TO_TYPE: usize =
+        PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE + AttributeID::max_length();
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ThingEdgeHasReverse<'a> {
         debug_assert_eq!(bytes.bytes()[Self::RANGE_PREFIX], Self::PREFIX.prefix_id().bytes());
@@ -182,7 +193,8 @@ impl<'a> ThingEdgeHasReverse<'a> {
     }
 
     pub fn prefix_from_type(
-        from_prefix: Prefix, from_type_id: TypeID,
+        from_prefix: Prefix,
+        from_type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
@@ -203,7 +215,8 @@ impl<'a> ThingEdgeHasReverse<'a> {
     }
 
     pub fn prefix_from_attribute_to_type(
-        from: AttributeVertex<'_>, to_type: TypeVertex,
+        from: AttributeVertex<'_>,
+        to_type: TypeVertex,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_BOUND_PREFIX_FROM_TO_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
@@ -215,8 +228,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
     }
 
     pub fn is_has_reverse(key: StorageKeyReference<'_>) -> bool {
-        if key.bytes().len() > 0 &&
-            key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes() {
+        if key.bytes().len() > 0 && key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes() {
             let edge = ThingEdgeHasReverse::new(Bytes::Reference(key.byte_ref()));
             edge.keyspace().id() == key.keyspace_id()
         } else {
@@ -257,12 +269,13 @@ impl<'a> ThingEdgeHasReverse<'a> {
 
     fn keyspace_for_from_prefix(prefix: Prefix) -> EncodingKeyspace {
         match prefix {
-            Prefix::VertexAttributeBoolean
-            | Prefix::VertexAttributeLong
-            | Prefix::VertexAttributeDouble => EncodingKeyspace::Data,
+            Prefix::VertexAttributeBoolean | Prefix::VertexAttributeLong | Prefix::VertexAttributeDouble => {
+                EncodingKeyspace::Data
+            }
+
             Prefix::VertexAttributeString => EncodingKeyspace::Data,
             Prefix::_VertexAttributeLast => EncodingKeyspace::Data,
-            _ => unreachable!("Unrecognised attribute prefix type.")
+            _ => unreachable!("Unrecognised attribute prefix type."),
         }
     }
 
@@ -336,7 +349,11 @@ impl<'a> ThingEdgeRolePlayer<'a> {
         ThingEdgeRolePlayer { bytes: Bytes::Array(bytes) }
     }
 
-    pub fn build_role_player_reverse(player: ObjectVertex<'_>, relation: ObjectVertex<'_>, role_type: TypeVertex<'_>) -> Self {
+    pub fn build_role_player_reverse(
+        player: ObjectVertex<'_>,
+        relation: ObjectVertex<'_>,
+        role_type: TypeVertex<'_>,
+    ) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
@@ -345,14 +362,18 @@ impl<'a> ThingEdgeRolePlayer<'a> {
         ThingEdgeRolePlayer { bytes: Bytes::Array(bytes) }
     }
 
-    pub fn prefix_from_relation(relation: ObjectVertex<'_>) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
+    pub fn prefix_from_relation(
+        relation: ObjectVertex<'_>,
+    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(relation.bytes().bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
-    pub fn prefix_reverse_from_player(player: ObjectVertex<'_>) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
+    pub fn prefix_reverse_from_player(
+        player: ObjectVertex<'_>,
+    ) -> StorageKey<'static, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX_REVERSE.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
@@ -368,11 +389,10 @@ impl<'a> ThingEdgeRolePlayer<'a> {
     }
 
     pub fn is_role_player(key: StorageKeyReference<'_>) -> bool {
-        key.keyspace_id() == Self::KEYSPACE.id() && key.bytes().len() == Self::LENGTH &&
-            (
-                key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes()
-                    || key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX_REVERSE.prefix_id().bytes()
-            )
+        key.keyspace_id() == Self::KEYSPACE.id()
+            && key.bytes().len() == Self::LENGTH
+            && (key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes()
+                || key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX_REVERSE.prefix_id().bytes())
     }
 
     pub fn from(&self) -> ObjectVertex<'_> {
@@ -429,7 +449,8 @@ impl<'a> ThingEdgeRelationIndex<'a> {
     const RANGE_TO: Range<usize> = Self::RANGE_FROM.end..Self::RANGE_FROM.end + ObjectVertex::LENGTH;
     const RANGE_RELATION: Range<usize> = Self::RANGE_TO.end..Self::RANGE_TO.end + ObjectVertex::LENGTH;
     const RANGE_FROM_ROLE_TYPE_ID: Range<usize> = Self::RANGE_RELATION.end..Self::RANGE_RELATION.end + TypeID::LENGTH;
-    const RANGE_TO_ROLE_TYPE_ID: Range<usize> = Self::RANGE_FROM_ROLE_TYPE_ID.end..Self::RANGE_FROM_ROLE_TYPE_ID.end + TypeID::LENGTH;
+    const RANGE_TO_ROLE_TYPE_ID: Range<usize> =
+        Self::RANGE_FROM_ROLE_TYPE_ID.end..Self::RANGE_FROM_ROLE_TYPE_ID.end + TypeID::LENGTH;
     const LENGTH: usize = PrefixID::LENGTH + 3 * ObjectVertex::LENGTH + 2 * TypeID::LENGTH;
     pub const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + 1 * ObjectVertex::LENGTH;
 
@@ -464,8 +485,9 @@ impl<'a> ThingEdgeRelationIndex<'a> {
     }
 
     pub fn is_index(key: StorageKeyReference<'_>) -> bool {
-        key.keyspace_id() == Self::KEYSPACE.id() && key.bytes().len() == Self::LENGTH &&
-            key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes()
+        key.keyspace_id() == Self::KEYSPACE.id()
+            && key.bytes().len() == Self::LENGTH
+            && key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes()
     }
 
     pub(crate) fn from(&self) -> ObjectVertex<'_> {

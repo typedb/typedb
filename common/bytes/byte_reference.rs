@@ -45,7 +45,7 @@ impl<'bytes> ByteReference<'bytes> {
 }
 
 impl<'bytes, const INLINE_SIZE: usize> From<&'bytes ByteArray<INLINE_SIZE>> for ByteReference<'bytes> {
-    fn from(array_ref: &'bytes ByteArray<INLINE_SIZE>) -> Self {
-        ByteReference::new(array_ref.bytes())
+    fn from(array: &'bytes ByteArray<INLINE_SIZE>) -> Self {
+        array.as_ref()
     }
 }

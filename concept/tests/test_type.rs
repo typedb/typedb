@@ -28,7 +28,7 @@ We don't aim for complete coverage of all APIs, and will rely on the BDD scenari
 fn entity_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap());
+    let mut storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
@@ -166,7 +166,7 @@ fn entity_usage() {
 fn role_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 

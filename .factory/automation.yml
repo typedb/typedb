@@ -24,6 +24,8 @@ build:
     build:
       image: vaticle-ubuntu-22.04
       command: |
+        sudo apt update
+        sudo apt install -y libclang-dev
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel build //...
         bazel run @vaticle_dependencies//tool/checkstyle:test-coverage

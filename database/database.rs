@@ -11,17 +11,18 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use concept::error::ConceptWriteError;
 
-use concept::type_::type_manager::TypeManager;
+use concept::{error::ConceptWriteError, type_::type_manager::TypeManager};
 use durability::DurabilityService;
 use encoding::{
+    error::EncodingError,
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
     EncodingKeyspace,
 };
-use encoding::error::EncodingError;
-use storage::{snapshot::WriteSnapshot, MVCCStorage, StorageRecoverError};
-use storage::snapshot::iterator::SnapshotIteratorError;
+use storage::{
+    snapshot::{iterator::SnapshotIteratorError, WriteSnapshot},
+    MVCCStorage, StorageOpenError,
+};
 
 pub struct Database<D> {
     name: String,
@@ -38,26 +39,23 @@ impl<D> fmt::Debug for Database<D> {
 }
 
 impl<D> Database<D> {
-    pub fn recover(path: &Path, database_name: impl AsRef<str>) -> Result<Self, DatabaseRecoverError>
+    pub fn open(path: &Path, database_name: impl AsRef<str>) -> Result<Self, DatabaseOpenError>
     where
         D: DurabilityService,
     {
-        use DatabaseRecoverError::*;
+        use DatabaseOpenError::{DirectoryCreate, Encoding, SchemaInitialise, StorageOpen};
 
         let name = database_name.as_ref();
         if !path.exists() {
             fs::create_dir(path).map_err(|error| DirectoryCreate { path: path.to_owned(), source: error })?;
         }
-        let storage = Arc::new(
-            MVCCStorage::recover::<EncodingKeyspace>(name, path).map_err(|error| StorageRecover { source: error })?,
-        );
+        let storage =
+            Arc::new(MVCCStorage::open::<EncodingKeyspace>(name, path).map_err(|error| StorageOpen { source: error })?);
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-        let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage.clone())
-            .map_err(|err| { DatabaseRecoverError::EncodingRecover { source: err } })?);
+        let thing_vertex_generator =
+            Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
         TypeManager::<WriteSnapshot<D>>::initialise_types(storage.clone(), type_vertex_generator.clone())
-            .map_err(|err| { DatabaseRecoverError::SchemaInitialise { source: err } })?;
-
-        storage.checkpoint().unwrap();
+            .map_err(|err| SchemaInitialise { source: err })?;
 
         Ok(Self {
             name: name.to_owned(),
@@ -70,26 +68,26 @@ impl<D> Database<D> {
 }
 
 #[derive(Debug)]
-pub enum DatabaseRecoverError {
+pub enum DatabaseOpenError {
     DirectoryCreate { path: PathBuf, source: io::Error },
-    StorageRecover { source: StorageRecoverError },
-    EncodingRecover { source: EncodingError},
-    SchemaInitialise { source: ConceptWriteError }
+    StorageOpen { source: StorageOpenError },
+    Encoding { source: EncodingError },
+    SchemaInitialise { source: ConceptWriteError },
 }
 
-impl fmt::Display for DatabaseRecoverError {
+impl fmt::Display for DatabaseOpenError {
     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }
 
-impl Error for DatabaseRecoverError {
+impl Error for DatabaseOpenError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::DirectoryCreate { source, .. } => Some(source),
-            Self::StorageRecover { source } => Some(source),
+            Self::StorageOpen { source } => Some(source),
             Self::SchemaInitialise { source } => Some(source),
-            Self::EncodingRecover { source } => Some(source),
+            Self::Encoding { source } => Some(source),
         }
     }
 }

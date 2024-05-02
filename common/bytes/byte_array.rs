@@ -9,8 +9,8 @@ use std::{
     cmp::Ordering,
     fmt,
     hash::{Hash, Hasher},
+    ops::Range,
 };
-use std::ops::Range;
 
 use serde::{
     de::{self, MapAccess, SeqAccess, Visitor},
@@ -65,6 +65,10 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
 
     pub fn boxed(bytes: Box<[u8]>) -> ByteArray<INLINE_BYTES> {
         ByteArray::Boxed(ByteArrayBoxed::wrap(bytes))
+    }
+
+    pub fn as_ref(&self) -> ByteReference<'_> {
+        ByteReference::new(self.bytes())
     }
 
     pub fn bytes(&self) -> &[u8] {
@@ -136,7 +140,7 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
 
     const fn zeros(length: usize) -> ByteArrayInline<BYTES> {
         assert!(length <= BYTES);
-        ByteArrayInline { data: [0; BYTES], start: 0, length: length }
+        ByteArrayInline { data: [0; BYTES], start: 0, length }
     }
 
     fn from(bytes: &[u8]) -> ByteArrayInline<BYTES> {
@@ -144,7 +148,7 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
         assert!(length <= BYTES);
         let mut data = [0; BYTES];
         data[0..length].copy_from_slice(bytes);
-        ByteArrayInline { data, start: 0, length: length }
+        ByteArrayInline { data, start: 0, length }
     }
 
     fn concat<const N: usize>(slices: [&[u8]; N]) -> ByteArrayInline<BYTES> {
@@ -156,11 +160,11 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
             data[end..][..slice.len()].copy_from_slice(slice);
             end += slice.len();
         }
-        ByteArrayInline { data, start: 0, length: length }
+        ByteArrayInline { data, start: 0, length }
     }
 
     fn new(bytes: [u8; BYTES], length: usize) -> ByteArrayInline<BYTES> {
-        ByteArrayInline { data: bytes, start: 0, length: length }
+        ByteArrayInline { data: bytes, start: 0, length }
     }
 
     pub fn bytes(&self) -> &[u8] {
@@ -185,8 +189,8 @@ impl<const BYTES: usize> ByteArrayInline<BYTES> {
 
 impl<const SIZE: usize> Serialize for ByteArrayInline<SIZE> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         let mut state = serializer.serialize_struct("ByteArrayInline", 1)?;
         state.serialize_field("data", self.bytes())?;
@@ -196,8 +200,8 @@ impl<const SIZE: usize> Serialize for ByteArrayInline<SIZE> {
 
 impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         enum Field {
             Data,
@@ -205,8 +209,8 @@ impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
 
         impl<'de> Deserialize<'de> for Field {
             fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
-                where
-                    D: Deserializer<'de>,
+            where
+                D: Deserializer<'de>,
             {
                 struct FieldVisitor;
 
@@ -218,8 +222,8 @@ impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
                     }
 
                     fn visit_str<E>(self, value: &str) -> Result<Field, E>
-                        where
-                            E: de::Error,
+                    where
+                        E: de::Error,
                     {
                         match value {
                             "data" => Ok(Field::Data),
@@ -242,16 +246,16 @@ impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
             }
 
             fn visit_seq<V>(self, mut seq: V) -> Result<ByteArrayInline<SIZE>, V::Error>
-                where
-                    V: SeqAccess<'de>,
+            where
+                V: SeqAccess<'de>,
             {
                 let bytes: &[u8] = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 Ok(ByteArrayInline::from(bytes))
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<ByteArrayInline<SIZE>, V::Error>
-                where
-                    V: MapAccess<'de>,
+            where
+                V: MapAccess<'de>,
             {
                 let mut bytes: Option<&[u8]> = None;
                 while let Some(key) = map.next_key()? {
@@ -301,7 +305,7 @@ impl ByteArrayBoxed {
     }
 
     fn wrap(bytes: Box<[u8]>) -> ByteArrayBoxed {
-        ByteArrayBoxed { length: bytes.len(),  start: 0,data: bytes }
+        ByteArrayBoxed { length: bytes.len(), start: 0, data: bytes }
     }
 
     fn bytes(&self) -> &[u8] {
@@ -344,11 +348,7 @@ impl<const INLINE_BYTES: usize> Ord for ByteArray<INLINE_BYTES> {
 
 impl<const INLINE_BYTES: usize> PartialEq for ByteArray<INLINE_BYTES> {
     fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            // Note: we assume boxed and inline will never be equal since they are split by size
-            (ByteArray::Inline(_), ByteArray::Boxed(_)) | (ByteArray::Boxed(_), ByteArray::Inline(_)) => false,
-            (_, _) => self.bytes() == other.bytes(),
-        }
+        self.bytes() == other.bytes()
     }
 }
 

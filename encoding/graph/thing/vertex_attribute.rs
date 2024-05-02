@@ -4,28 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::io::Read;
-use std::ops::Range;
-use std::sync::Arc;
+use std::{ops::Range, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_range::KeyRange;
-use storage::key_value::{StorageKey, StorageKeyReference};
-use storage::KeyspaceSet;
-use storage::snapshot::iterator::SnapshotIteratorError;
-use storage::snapshot::ReadableSnapshot;
+use storage::{
+    key_range::KeyRange,
+    key_value::{StorageKey, StorageKeyReference},
+    keyspace::KeyspaceSet,
+    snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot},
+};
 
 use crate::{
-    AsBytes,
-    EncodingKeyspace,
     graph::{type_::vertex::TypeID, Typed},
-    Keyable, layout::prefix::{Prefix, PrefixID}, Prefixed, value::value_type::ValueType,
+    layout::prefix::{Prefix, PrefixID},
+    value::{long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType, ValueEncodable},
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::value::long_bytes::LongBytes;
-use crate::value::string_bytes::StringBytes;
-use crate::value::ValueEncodable;
 
 #[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub struct AttributeVertex<'a> {
@@ -76,11 +72,10 @@ impl<'a> AttributeVertex<'a> {
     }
 
     pub fn is_attribute_vertex(storage_key: StorageKeyReference<'_>) -> bool {
-        storage_key.keyspace_id() == Self::KEYSPACE.id() && storage_key.bytes().len() > 0 &&
-            (
-                &storage_key.bytes()[Self::RANGE_PREFIX] >= &Prefix::ATTRIBUTE_MIN.prefix_id().bytes()
-                    && &storage_key.bytes()[Self::RANGE_PREFIX] <= &Prefix::ATTRIBUTE_MAX.prefix_id().bytes()
-            )
+        storage_key.keyspace_id() == Self::KEYSPACE.id()
+            && storage_key.bytes().len() > 0
+            && (&storage_key.bytes()[Self::RANGE_PREFIX] >= &Prefix::ATTRIBUTE_MIN.prefix_id().bytes()
+                && &storage_key.bytes()[Self::RANGE_PREFIX] <= &Prefix::ATTRIBUTE_MAX.prefix_id().bytes())
     }
 
     pub fn value_type_to_prefix_type(value_type: ValueType) -> Prefix {
@@ -98,7 +93,7 @@ impl<'a> AttributeVertex<'a> {
             Prefix::VertexAttributeLong => ValueType::Long,
             Prefix::VertexAttributeDouble => ValueType::Double,
             Prefix::VertexAttributeString => ValueType::String,
-            _ => unreachable!("Unrecognised attribute vertex prefix type")
+            _ => unreachable!("Unrecognised attribute vertex prefix type"),
         }
     }
 
@@ -227,7 +222,7 @@ impl AttributeID {
             ValueType::Boolean => todo!(),
             ValueType::Long => LongAttributeID::is_inlineable(),
             ValueType::Double => todo!(),
-            ValueType::String => StringAttributeID::is_inlineable(value.encode_string::<256>())
+            ValueType::String => StringAttributeID::is_inlineable(value.encode_string::<256>()),
         }
     }
 
@@ -327,7 +322,8 @@ impl StringAttributeID {
     pub const ENCODING_STRING_HASH_LENGTH: usize = 8;
     const ENCODING_STRING_HASH_RANGE: Range<usize> = Self::ENCODING_STRING_PREFIX_RANGE.end
         ..Self::ENCODING_STRING_PREFIX_RANGE.end + Self::ENCODING_STRING_HASH_LENGTH;
-    const ENCODING_STRING_PREFIX_HASH_LENGTH: usize = Self::ENCODING_STRING_PREFIX_LENGTH + Self::ENCODING_STRING_HASH_LENGTH;
+    const ENCODING_STRING_PREFIX_HASH_LENGTH: usize =
+        Self::ENCODING_STRING_PREFIX_LENGTH + Self::ENCODING_STRING_HASH_LENGTH;
     const ENCODING_STRING_PREFIX_HASH_RANGE: Range<usize> = Self::ENCODING_STRING_PREFIX_RANGE.start
         ..Self::ENCODING_STRING_PREFIX_RANGE.start + Self::ENCODING_STRING_PREFIX_HASH_LENGTH;
 
@@ -355,7 +351,7 @@ impl StringAttributeID {
     ///
     fn set_tail_inline_length(bytes: &mut [u8; Self::LENGTH], length: u8) {
         assert!(length & Self::ENCODING_STRING_TAIL_MASK == 0); // ie < 128, high bit not set
-        // because the high bit is not set, we already conform to the required mask of high bit = 0
+                                                                // because the high bit is not set, we already conform to the required mask of high bit = 0
         bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = length;
     }
 
@@ -370,13 +366,12 @@ impl StringAttributeID {
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Result<Self, Arc<SnapshotIteratorError>>
-        where Snapshot: ReadableSnapshot
+    where
+        Snapshot: ReadableSnapshot,
     {
         debug_assert!(!Self::is_inlineable(string.as_reference()));
         let mut id_bytes = Self::build_hashed_id_without_tail(string.as_reference(), hasher);
-        let existing_or_tail = Self::find_hashed_id_or_next_tail(
-            type_id, string, id_bytes, snapshot,
-        )?;
+        let existing_or_tail = Self::find_hashed_id_or_next_tail(type_id, string, id_bytes, snapshot)?;
         match existing_or_tail {
             Either::First(existing) => Ok(existing),
             Either::Second(tail) => {
@@ -397,14 +392,19 @@ impl StringAttributeID {
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Result<Option<Self>, Arc<SnapshotIteratorError>>
-        where Snapshot: ReadableSnapshot {
+    where
+        Snapshot: ReadableSnapshot,
+    {
         debug_assert!(!Self::is_inlineable(string.as_reference()));
         let existing_or_tail = Self::find_hashed_id_or_next_tail(
-            type_id, string.as_reference(), Self::build_hashed_id_without_tail(string.as_reference(), hasher), snapshot,
+            type_id,
+            string.as_reference(),
+            Self::build_hashed_id_without_tail(string.as_reference(), hasher),
+            snapshot,
         )?;
         match existing_or_tail {
             Either::First(existing) => Ok(Some(existing)),
-            Either::Second(_) => Ok(None)
+            Either::Second(_) => Ok(None),
         }
     }
 
@@ -413,9 +413,8 @@ impl StringAttributeID {
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> [u8; Self::LENGTH] {
         let mut bytes = [0u8; Self::LENGTH];
-        bytes[Self::ENCODING_STRING_PREFIX_RANGE].copy_from_slice(
-            &string.bytes().bytes()[Self::ENCODING_STRING_PREFIX_RANGE]
-        );
+        bytes[Self::ENCODING_STRING_PREFIX_RANGE]
+            .copy_from_slice(&string.bytes().bytes()[Self::ENCODING_STRING_PREFIX_RANGE]);
         let hash_bytes: [u8; Self::ENCODING_STRING_HASH_LENGTH] = Self::apply_hash(string, hasher);
         bytes[Self::ENCODING_STRING_HASH_RANGE].copy_from_slice(&hash_bytes);
         bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = Self::ENCODING_STRING_TAIL_MASK;
@@ -428,7 +427,9 @@ impl StringAttributeID {
         id_without_tail: [u8; Self::LENGTH],
         snapshot: &Snapshot,
     ) -> Result<Either<Self, u8>, Arc<SnapshotIteratorError>>
-        where Snapshot: ReadableSnapshot {
+    where
+        Snapshot: ReadableSnapshot,
+    {
         debug_assert!(!Self::is_inlineable(string.as_reference()));
         let prefix_search = KeyRange::new_within(
             AttributeVertex::build_prefix_type_attribute_id(ValueType::String, type_id, &id_without_tail),
@@ -453,7 +454,8 @@ impl StringAttributeID {
     }
 
     fn apply_hash<const INLINE_LENGTH: usize>(
-        string: StringBytes<'_, INLINE_LENGTH>, hasher: &impl Fn(&[u8]) -> u64,
+        string: StringBytes<'_, INLINE_LENGTH>,
+        hasher: &impl Fn(&[u8]) -> u64,
     ) -> [u8; Self::ENCODING_STRING_HASH_LENGTH] {
         hasher(string.bytes().bytes()).to_be_bytes()
     }
@@ -463,7 +465,7 @@ impl StringAttributeID {
     ///
     fn set_tail_hash_disambiguator(bytes: &mut [u8; Self::LENGTH], disambiguator: u8) {
         debug_assert!(disambiguator & Self::ENCODING_STRING_TAIL_MASK == 0); // ie. disambiguator < 128, not using high bit
-        // sets 0x1[disambiguator]
+                                                                             // sets 0x1[disambiguator]
         bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = disambiguator | Self::ENCODING_STRING_TAIL_MASK;
     }
 

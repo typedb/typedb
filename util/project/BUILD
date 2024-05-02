@@ -3,6 +3,19 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@rules_rust//rust:defs.bzl", "rust_library")
+package(default_visibility = ["//visibility:public"])
+
+rust_library(
+    name = "project",
+    crate_root = "project.rs",
+    srcs = glob([
+        "*.rs",
+    ]),
+    deps = [
+        "//common/logger",
+    ]
+)
 
 checkstyle_test(
     name = "checkstyle",
@@ -12,3 +25,4 @@ checkstyle_test(
     ]),
     license_type = "mpl-header",
 )
+

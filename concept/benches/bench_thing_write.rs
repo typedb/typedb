@@ -90,7 +90,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = Arc::new(MVCCStorage::<WAL>::recover::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let mut storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
     TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
