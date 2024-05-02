@@ -200,6 +200,9 @@ impl<Durability> MVCCStorage<Durability> {
             for (key, value, reinsert, known_to_exist) in puts {
                 let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key.as_ref());
                 if known_to_exist {
+                    debug_assert!(self
+                        .get::<0>(wrapped, snapshot.open_sequence_number())
+                        .is_ok_and(|opt| opt.is_some()));
                     reinsert.store(false, Ordering::Release);
                 } else {
                     let existing_stored = self
