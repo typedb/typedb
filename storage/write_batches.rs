@@ -28,10 +28,10 @@ impl WriteBatches {
         let mut write_batches = Self::default();
 
         for (index, buffer) in operations.write_buffers().enumerate() {
-            let map = buffer.writes().read().unwrap();
-            if !map.is_empty() {
+            let writes = buffer.writes();
+            if !writes.is_empty() {
                 let write_batch = write_batches[index].insert(WriteBatch::default());
-                for (key, write) in &*map {
+                for (key, write) in &*writes {
                     match write {
                         Write::Insert { value } => write_batch
                             .put(MVCCKey::build(key.bytes(), seq, StorageOperation::Insert).bytes(), value.bytes()),

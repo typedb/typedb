@@ -192,7 +192,7 @@ impl<Durability> MVCCStorage<Durability> {
         Durability: DurabilityService,
     {
         for buffer in snapshot.operations() {
-            let writes = buffer.writes().write().unwrap();
+            let writes = buffer.writes();
             let puts = writes.iter().filter_map(|(key, write)| match write {
                 Write::Put { value, reinsert, known_to_exist } => Some((key, value, reinsert, *known_to_exist)),
                 _ => None,
@@ -638,7 +638,7 @@ mod tests {
         let key = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"hello"));
 
         let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key.clone());
         snapshot.commit().unwrap();
         drop(storage);
@@ -661,14 +661,14 @@ mod tests {
         let key_world = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"world"));
 
         let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_hello.clone());
         snapshot.commit().unwrap();
         storage.checkpoint().unwrap();
         drop(storage);
 
         let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
-        let snapshot = storage.clone().open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_world.clone());
         snapshot.commit().unwrap();
         drop(storage);
@@ -701,8 +701,8 @@ mod tests {
         let key = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"hello"));
 
         let seq = {
-            let operations = OperationsBuffer::new();
-            operations.writes_in(key.keyspace_id()).insert(key.byte_array().clone(), ByteArray::empty());
+            let mut operations = OperationsBuffer::new();
+            operations.writes_in_mut(key.keyspace_id()).insert(key.byte_array().clone(), ByteArray::empty());
             let mut durability_service = WAL::open(storage_path.join(MVCCStorage::<WAL>::WAL_DIR_NAME)).unwrap();
             durability_service.register_record_type::<CommitRecord>();
             durability_service.sequenced_write(&CommitRecord::new(operations, durability_service.previous())).unwrap()
@@ -726,12 +726,12 @@ mod tests {
         let key_2 = StorageKeyArray::from((TestKeyspaceSet::FailedKeyspace, b"world"));
 
         let seq = {
-            let full_operations = OperationsBuffer::new();
-            full_operations.writes_in(key_1.keyspace_id()).insert(key_1.byte_array().clone(), ByteArray::empty());
-            full_operations.writes_in(key_2.keyspace_id()).insert(key_2.byte_array().clone(), ByteArray::empty());
+            let mut full_operations = OperationsBuffer::new();
+            full_operations.writes_in_mut(key_1.keyspace_id()).insert(key_1.byte_array().clone(), ByteArray::empty());
+            full_operations.writes_in_mut(key_2.keyspace_id()).insert(key_2.byte_array().clone(), ByteArray::empty());
 
-            let partial_operations = OperationsBuffer::new();
-            partial_operations.writes_in(key_1.keyspace_id()).insert(key_1.byte_array().clone(), ByteArray::empty());
+            let mut partial_operations = OperationsBuffer::new();
+            partial_operations.writes_in_mut(key_1.keyspace_id()).insert(key_1.byte_array().clone(), ByteArray::empty());
 
             let mut durability_service = WAL::open(storage_path.join(MVCCStorage::<WAL>::WAL_DIR_NAME)).unwrap();
             durability_service.register_record_type::<CommitRecord>();

@@ -9,6 +9,7 @@ use std::{
     collections::HashSet,
     sync::{Arc, Mutex, MutexGuard},
 };
+use std::marker::PhantomData;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
