@@ -6,8 +6,14 @@
 
 use std::str::FromStr;
 use cucumber::Parameter;
-use concept::type_::annotation::AnnotationDistinct;
+use concept::ConceptAPI;
+use concept::type_::{annotation, TypeAPI};
+use concept::type_::annotation::{Annotation as TypeDBAnnotation};
+use concept::type_::attribute_type::{AttributeType, AttributeTypeAnnotation};
+use concept::type_::entity_type::{EntityType, EntityTypeAnnotation};
 use concept::type_::owns::OwnsAnnotation;
+use concept::type_::relation_type::RelationTypeAnnotation;
+use concept::type_::role_type::RoleTypeAnnotation;
 use encoding::{
     graph::type_::Kind as TypeDBTypeKind,
     value::{
@@ -17,7 +23,7 @@ use encoding::{
 };
 
 #[derive(Debug, Default, Parameter)]
-#[param(name = "may_error", regex = "(throws exception|)")]
+#[param(name = "may_error", regex = "(fails|)")]
 pub(crate) enum MayError {
     #[default]
     False,
@@ -37,7 +43,7 @@ impl FromStr for MayError {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
-            "throws exception" => Self::True,
+            "fails" => Self::True,
             "" => Self::False,
             invalid => return Err(format!("Invalid `MayError`: {invalid}")),
         })
@@ -82,16 +88,20 @@ pub(crate) enum ContainsOrDoesnt {
 }
 
 impl ContainsOrDoesnt {
-    pub fn check<T: PartialEq + std::fmt::Display>(&self, expected: Vec<T>, actual: Vec<T>) {
-        let expected_contains: bool = match self {
-            ContainsOrDoesnt::Contains => true,
-            ContainsOrDoesnt::DoesNotContain => false,
-        };
+    pub fn check<T: PartialEq + std::fmt::Debug>(&self, expected: Vec<T>, actual: Vec<T>) {
+        let expected_contains: bool = self.expected_contains();
 
         expected.iter().for_each(|expected_item| {
-            println!("Check contains({}) : {} = {}", expected_item, expected_contains, actual.contains(&expected_item));
+            println!("Check contains({:?}) : {:?} = {:?}", expected_item, expected_contains, actual.contains(&expected_item));
             assert_eq!(expected_contains, actual.contains(&expected_item));
         });
+    }
+
+    pub fn expected_contains(&self) -> bool {
+        match self {
+            ContainsOrDoesnt::Contains => true,
+            ContainsOrDoesnt::DoesNotContain => false,
+        }
     }
 }
 
@@ -218,28 +228,30 @@ impl FromStr for ValueType {
 }
 
 
-#[derive(Debug, Default, Parameter)]
-#[param(name = "with_annotations", regex = r"(with annotations: [a-z\\,\\s]+|)")]
-pub(crate) struct WithAnnotations {
-    annotation_list : Vec<String>,
+
+#[derive(Debug, Parameter)]
+#[param(name = "annotation", regex = r"(@[a-z]+\([^\)]+\)|@[a-z]+)")]
+pub(crate) struct  Annotation {
+    typedb_annotation: TypeDBAnnotation,
 }
 
-impl WithAnnotations {
-    pub(crate) fn to_owns(&self) -> Vec<OwnsAnnotation> {
-        self.annotation_list.iter().map(|annotation_str| {
-            todo!()
-        }).collect::<Vec<OwnsAnnotation>>()
+impl Annotation {
+    pub fn to_typedb(&self) -> TypeDBAnnotation {
+        self.typedb_annotation
     }
+
 }
-impl FromStr for WithAnnotations {
+
+impl FromStr for crate::params::Annotation {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.starts_with("with annotations:") {
-            let (_, annotations_str) = s.split_once(":").unwrap();
-            let annotation_list = annotations_str.split(",").map(|s| { s.trim().to_string() }).collect::<Vec<String>>();
-            Ok(Self { annotation_list  })
-        } else {
-            Ok(Self { annotation_list : vec!() })
-        }
+        // This will have to be smarter to parse annotations out.
+        let typedb_annotation = match s {
+            "@abstract" =>  { TypeDBAnnotation::Abstract(annotation::AnnotationAbstract::new()) },
+            _ => panic!("Unrecognised (or unimplemented) annotation: {s}")
+        };
+        Ok(Self { typedb_annotation })
     }
+
 }
+

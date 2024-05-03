@@ -16,8 +16,8 @@ use crate::{
 use crate::params;
 
 #[apply(generic_step)]
-#[step(expr = "put attribute type: {type_label}, with value type: {value_type}")]
-pub async fn put_attribute_type(context: &mut Context, type_label: params::Label, value_type: params::ValueType){
+#[step(expr = "attribute\\({type_label}\\) set value-type: {value_type}")]
+pub async fn attribute_type_set_value_type(context: &mut Context, type_label: params::Label, value_type: params::ValueType){
     let tx = context.transaction().unwrap();
     tx_as_schema! (tx, {
         let attribute_type = tx.type_manager.create_attribute_type(&mut tx.snapshot, &type_label.to_typedb(), false).unwrap();

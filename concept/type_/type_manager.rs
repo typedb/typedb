@@ -93,7 +93,7 @@ impl<Snapshot> TypeManager<Snapshot> {
     }
 
     pub fn finalise(self) -> Result<(), Vec<ConceptWriteError>> {
-        todo!("Do we need to finalise anything here?");
+        // todo!("Do we need to finalise anything here?");
         Ok(())
     }
 }
