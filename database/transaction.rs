@@ -5,6 +5,7 @@
  */
 
 use std::sync::{Arc, RwLock};
+use speedb::Snapshot;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use concept::error::ConceptWriteError;

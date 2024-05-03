@@ -74,8 +74,8 @@ impl Context {
         self.active_transaction = Some(txn);
     }
 
-    pub fn transaction(&mut self) -> Option<&ActiveTransaction> {
-        self.active_transaction.as_ref()
+    pub fn transaction(&mut self) -> Option<&mut ActiveTransaction> {
+        self.active_transaction.as_mut()
     }
 
     pub fn take_transaction(&mut self) -> Option<ActiveTransaction> {
