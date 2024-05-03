@@ -6,14 +6,8 @@
 
 use std::str::FromStr;
 use cucumber::Parameter;
-use concept::ConceptAPI;
-use concept::type_::{annotation, TypeAPI};
+use concept::type_::annotation;
 use concept::type_::annotation::{Annotation as TypeDBAnnotation};
-use concept::type_::attribute_type::{AttributeType, AttributeTypeAnnotation};
-use concept::type_::entity_type::{EntityType, EntityTypeAnnotation};
-use concept::type_::owns::OwnsAnnotation;
-use concept::type_::relation_type::RelationTypeAnnotation;
-use concept::type_::role_type::RoleTypeAnnotation;
 use encoding::{
     graph::type_::Kind as TypeDBTypeKind,
     value::{
@@ -118,7 +112,7 @@ impl FromStr for ContainsOrDoesnt {
 
 
 #[derive(Debug, Parameter)]
-#[param(name = "type_label", regex = r"[A-Za-z0-9_\-]+")]
+#[param(name = "type_label", regex = r"[A-Za-z0-9_\-:]+")]
 pub(crate) struct Label {
     label_string: String,
 }
@@ -166,28 +160,6 @@ impl FromStr for RootLabel {
         Ok(RootLabel { kind })
     }
 }
-
-
-#[derive(Debug, Default, Parameter)]
-#[param(name = "optional_override", regex = r"(| as [A-Za-z0-9_\-]+)")]
-pub(crate) struct OptionalOverride {
-    optional_override: Option<TypeDBLabel<'static>>
-}
-
-impl FromStr for OptionalOverride {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.starts_with(" as ") {
-            let label_str = TypeDBLabel::build(s.strip_prefix(" as ").unwrap());
-            Ok(Self { optional_override: Some( label_str ) })
-        } else if s.is_empty() {
-            Ok(Self { optional_override: None })
-        } else {
-            return Err(format!("Invalid `OptionalOverride`: {}", s))
-        }
-    }
-}
-
 
 
 #[derive(Debug, Default, Parameter)]

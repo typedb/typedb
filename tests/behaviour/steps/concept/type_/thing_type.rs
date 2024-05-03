@@ -6,20 +6,19 @@
 
 use cucumber::gherkin::Step;
 use macro_rules_attribute::apply;
-use crate::{generic_step, tx_as_read, tx_as_write, tx_as_schema, concept, Context, params::{Boolean, MayError, ContainsOrDoesnt, RootLabel, Label}, transaction_context::{ActiveTransaction}, util};
+use crate::{with_type, generic_step, tx_as_read, tx_as_write, tx_as_schema, Context,
+            params::{Boolean, MayError, ContainsOrDoesnt, RootLabel, Label},
+            transaction_context::{ActiveTransaction},
+            util};
 use ::concept::type_::{
-    TypeAPI, OwnerAPI,
-    annotation::AnnotationAbstract,
-    attribute_type::AttributeTypeAnnotation,
-    entity_type::EntityTypeAnnotation,
-    relation_type::RelationTypeAnnotation,
-    role_type::RoleTypeAnnotation,
+    TypeAPI, OwnerAPI, PlayerAPI,
     object_type::ObjectType,
     Ordering
 };
 use encoding::graph::type_::Kind;
-use crate::params::{Annotation, OptionalOverride};
+use crate::params::Annotation;
 
+#[macro_export]
 macro_rules! with_type {
     ($tx:ident, $kind:ident, $label:ident, $assign_to:ident, $block:block) => {
         match $kind.to_typedb() {
@@ -40,7 +39,7 @@ macro_rules! with_type {
     };
 }
 
-fn with_object_type(tx: &ActiveTransaction, kind: Kind, label: &Label) -> ObjectType<'static> {
+fn get_as_object_type(tx: &ActiveTransaction, kind: Kind, label: &Label) -> ObjectType<'static> {
     tx_as_read! (tx, {
         match kind {
             Kind::Entity => {
@@ -220,32 +219,32 @@ pub async fn get_supertypes_contain(context: &mut Context, root_label: RootLabel
 #[step(expr = "{root_label}\\({type_label}\\) set owns: {type_label}")]
 pub async fn set_owns(context: &mut Context, root_label: RootLabel, type_label: Label, attribute_type_label: Label) {
     let tx = context.transaction().unwrap();
-    let object_type = with_object_type(tx, root_label.to_typedb(), &type_label);
+    let object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
     tx_as_schema! (tx, {
         let attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.to_typedb()).unwrap().unwrap();
-        let owns = object_type.set_owns(&mut tx.snapshot, &tx.type_manager, attr_type, Ordering::Unordered);
+        object_type.set_owns(&mut tx.snapshot, &tx.type_manager, attr_type, Ordering::Unordered);
     });
 }
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) unset owns: {type_label}")]
 pub async fn unset_owns(context: &mut Context, root_label: RootLabel, type_label: Label, attribute_type_label: Label) {
     let tx = context.transaction().unwrap();
-    let object_type = with_object_type(tx, root_label.to_typedb(), &type_label);
+    let object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
     tx_as_schema! (tx, {
         let attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.to_typedb()).unwrap().unwrap();
-        let owns = object_type.delete_owns(&mut tx.snapshot, &tx.type_manager, attr_type);
+        object_type.delete_owns(&mut tx.snapshot, &tx.type_manager, attr_type);
     });
 }
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) get owns: {type_label}; set override: {type_label}")]
-pub async fn get_owns_set_override(context: &mut Context, root_label: RootLabel, type_label: Label, attr_type_label: Label, overridden_type_label: Label, annotation: Annotation) {
+pub async fn get_owns_set_override(context: &mut Context, root_label: RootLabel, type_label: Label, attr_type_label: Label, overridden_type_label: Label) {
     let tx = context.transaction().unwrap();
-    let object_type = with_object_type(tx, root_label.to_typedb(), &type_label);
+    let object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
     tx_as_schema! (tx, {
         let attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
-        let overridden_type = tx.type_manager.get_attribute_type(&tx.snapshot, &overridden_type_label.to_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let _overridden_type = tx.type_manager.get_attribute_type(&tx.snapshot, &overridden_type_label.to_typedb()).unwrap().unwrap();
+        let _owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         todo!("Overriding is not implemented?");
         // owns..set_override(&mut tx.snapshot, &tx.type_manager, overridden_type);
     });
@@ -255,7 +254,7 @@ pub async fn get_owns_set_override(context: &mut Context, root_label: RootLabel,
 #[step(expr = "{root_label}\\({type_label}\\) get owns: {type_label}, set annotation: {annotation}")]
 pub async fn get_owns_set_annotation(context: &mut Context, root_label: RootLabel, type_label: Label, attr_type_label: Label, annotation: Annotation) {
     let tx = context.transaction().unwrap();
-    let object_type = with_object_type(tx, root_label.to_typedb(), &type_label);
+    let object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
     tx_as_schema! (tx, {
         let attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
@@ -268,7 +267,7 @@ pub async fn get_owns_set_annotation(context: &mut Context, root_label: RootLabe
 pub async fn get_owns_contain(context: &mut Context, root_label: RootLabel, type_label: Label, contains: ContainsOrDoesnt, step: &Step) {
     let expected_labels: Vec<String> = util::iter_table(step).map(|str| { str.to_string() }).collect::<Vec<String>>();
     let tx = context.transaction().unwrap();
-    let object_type = with_object_type(tx, root_label.to_typedb(), &type_label);
+    let object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
     tx_as_read! (tx, {
         let actual_labels = object_type.get_owns(&tx.snapshot, &tx.type_manager).unwrap().iter().map(|owns| {
             owns.attribute().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_string()
@@ -279,28 +278,44 @@ pub async fn get_owns_contain(context: &mut Context, root_label: RootLabel, type
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) get owns overridden\\({type_label}\\) exists: {boolean}")]
-pub async fn get_owns_overridden_exists(context: &mut Context, root_label: RootLabel, type_label: Label, attr_type_label: Label, exists: Boolean, step: &Step) {
-    let expected_labels: Vec<String> = util::iter_table(step).map(|str| { str.to_string() }).collect::<Vec<String>>();
+pub async fn get_owns_overridden_exists(context: &mut Context, root_label: RootLabel, type_label: Label, attr_type_label: Label, _exists: Boolean) {
     let tx = context.transaction().unwrap();
-    let object_type = with_object_type(tx, root_label.to_typedb(), &type_label);
+    let _object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
     tx_as_read! (tx, {
-        let attr_type_opt = tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap();
-        exists.check(attr_type_opt.is_some());
+        let _attr_type_opt = tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap();
+        todo!("Overridden owns");
+        // let overriden_type_opt = todo!();
+        // exists.check(overriden_type_opt.is_some());
     });
 }
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) get owns overridden\\({type_label}\\) get_label: {type_label}")]
-pub async fn get_owns_overridden_get_label(context: &mut Context, root_label: RootLabel, type_label: Label, attr_type_label: Label, expected_overridden: Label, step: &Step) {
-    let expected_labels: Vec<String> = util::iter_table(step).map(|str| { str.to_string() }).collect::<Vec<String>>();
+pub async fn get_owns_overridden_get_label(context: &mut Context, root_label: RootLabel, type_label: Label, attr_type_label: Label, _expected_overridden: Label) {
     let tx = context.transaction().unwrap();
-    let object_type = with_object_type(tx, root_label.to_typedb(), &type_label);
+    let _object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
     tx_as_read! (tx, {
-        let attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
-        let actual_type_label = attr_type.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_string();
-        assert_eq!(expected_overridden.to_typedb().scoped_name().as_str().to_string(), actual_type_label);
+        let _attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
+        let _overriden_owns = todo!("Overridden");
+        // let actual_type_label = overriden_owns.attribute().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_string();
+        // assert_eq!(expected_overridden.to_typedb().scoped_name().as_str().to_string(), actual_type_label);
     });
 }
+
+
+#[apply(generic_step)]
+#[step(expr = "{root_label}\\({type_label}\\) set plays role: {type_label}(; ){may_error}")]
+pub async fn set_plays_role(context: &mut Context, root_label: RootLabel, type_label: Label, role_label: Label, _may_error: MayError) {
+    let tx = context.transaction().unwrap();
+    let object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
+    tx_as_schema! (tx, {
+        let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.to_typedb()).unwrap().unwrap();
+        let _res = object_type.set_plays(&mut tx.snapshot, &tx.type_manager, role_type);
+        todo!("That doesn't return an error yet");
+        // may_error.check(&res);
+    });
+}
+
 
 // #[apply(generic_step)]
 // #[step(expr = "{root_label}\\({type_label}\\) get subtypes {contains_or_doesnt}:")]
