@@ -15,9 +15,9 @@ use super::Database;
 
 pub struct TransactionRead<D> {
     database: Arc<Database<D>>,
-    pub(crate) snapshot: ReadSnapshot<D>,
-    pub(crate) type_manager: Arc<TypeManager<ReadSnapshot<D>>>,
-    pub(crate) thing_manager: ThingManager<ReadSnapshot<D>>,
+    pub snapshot: ReadSnapshot<D>,
+    pub type_manager: Arc<TypeManager<ReadSnapshot<D>>>,
+    pub thing_manager: ThingManager<ReadSnapshot<D>>,
 }
 
 impl<D: DurabilityService> TransactionRead<D> {
@@ -29,14 +29,6 @@ impl<D: DurabilityService> TransactionRead<D> {
         Self { database, snapshot, type_manager, thing_manager }
     }
 
-    pub fn type_manager(&self) -> &TypeManager<ReadSnapshot<D>> {
-        &self.type_manager
-    }
-
-    pub fn snapshot(&self) -> &ReadSnapshot<D> {
-        &self.snapshot
-    }
-
     pub fn close(self) {
         drop(self.thing_manager);
         drop(self.type_manager);
@@ -46,9 +38,9 @@ impl<D: DurabilityService> TransactionRead<D> {
 
 pub struct TransactionWrite<D> {
     database: Arc<Database<D>>,
-    pub(crate) snapshot: WriteSnapshot<D>,
-    pub(crate) type_manager: Arc<TypeManager<WriteSnapshot<D>>>,
-    pub(crate) thing_manager: ThingManager<WriteSnapshot<D>>,
+    pub snapshot: WriteSnapshot<D>,
+    pub type_manager: Arc<TypeManager<WriteSnapshot<D>>>,
+    pub thing_manager: ThingManager<WriteSnapshot<D>>,
 }
 
 impl<D: DurabilityService> TransactionWrite<D> {
@@ -58,14 +50,6 @@ impl<D: DurabilityService> TransactionWrite<D> {
         let thing_manager =
             ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
         Self { database, snapshot, type_manager, thing_manager }
-    }
-
-    pub fn type_manager(&self) -> &TypeManager<WriteSnapshot<D>> {
-        &self.type_manager
-    }
-
-    pub fn thing_manager(&self) -> &ThingManager<WriteSnapshot<D>> {
-        &self.thing_manager
     }
 
     pub fn commit(mut self) -> Result<(), Vec<ConceptWriteError>> {
@@ -85,9 +69,9 @@ impl<D: DurabilityService> TransactionWrite<D> {
 
 pub struct TransactionSchema<D> {
     database: Arc<Database<D>>,
-    pub(crate) snapshot: SchemaSnapshot<D>,
-    pub(crate) type_manager: Arc<TypeManager<SchemaSnapshot<D>>>, // TODO: krishnan: Should this be an arc or direct ownership?
-    pub(crate) thing_manager: ThingManager<SchemaSnapshot<D>>,
+    pub snapshot: SchemaSnapshot<D>,
+    pub type_manager: Arc<TypeManager<SchemaSnapshot<D>>>, // TODO: krishnan: Should this be an arc or direct ownership?
+    pub thing_manager: ThingManager<SchemaSnapshot<D>>,
 }
 
 impl<D: DurabilityService> TransactionSchema<D> {
@@ -97,10 +81,6 @@ impl<D: DurabilityService> TransactionSchema<D> {
         let thing_manager =
             ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
         Self { database, snapshot, type_manager, thing_manager }
-    }
-
-    pub fn type_manager(&self) -> &TypeManager<SchemaSnapshot<D>> {
-        &self.type_manager
     }
 
     pub fn commit(mut self) -> Result<(), Vec<ConceptWriteError>> {
