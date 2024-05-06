@@ -743,19 +743,14 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 }
 
-pub trait ReadableType<'a, 'b>: TypeAPI<'a> {
+pub trait ReadableType<'a, 'b>: TypeAPI<'a> + CommonType<'a> {
     // Consider replacing 'b with 'static
     type SelfRead: ReadableType<'b, 'b>;
-    type AnnotationType: Hash + Eq + From<Annotation>;
-    const ROOT_KIND: Kind;
     fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead;
 }
 
 impl<'a, 'b> ReadableType<'a, 'b> for AttributeType<'a> {
     type SelfRead = AttributeType<'b>;
-    type AnnotationType = AttributeTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Attribute;
-
     fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead {
         AttributeType::new(new_vertex_attribute_type(b))
     }
@@ -763,8 +758,6 @@ impl<'a, 'b> ReadableType<'a, 'b> for AttributeType<'a> {
 
 impl<'a, 'b> ReadableType<'a, 'b> for EntityType<'a> {
     type SelfRead = EntityType<'b>;
-    type AnnotationType = EntityTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Entity;
     fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead {
         EntityType::new(new_vertex_entity_type(b))
     }
@@ -772,8 +765,6 @@ impl<'a, 'b> ReadableType<'a, 'b> for EntityType<'a> {
 
 impl<'a, 'b> ReadableType<'a, 'b> for RelationType<'a> {
     type SelfRead = RelationType<'b>;
-    type AnnotationType = RelationTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Relation;
     fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> RelationType<'b> {
         RelationType::new(new_vertex_relation_type(b))
     }
@@ -781,9 +772,33 @@ impl<'a, 'b> ReadableType<'a, 'b> for RelationType<'a> {
 
 impl<'a, 'b> ReadableType<'a, 'b> for RoleType<'a> {
     type SelfRead = RoleType<'b>;
-    type AnnotationType = RoleTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Role;
     fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> RoleType<'b> {
         RoleType::new(new_vertex_role_type(b))
     }
+}
+
+
+pub trait CommonType<'a>: TypeAPI<'a> {
+    type AnnotationType: Hash + Eq + From<Annotation>;
+    const ROOT_KIND: Kind;
+}
+
+impl<'a> CommonType<'a> for AttributeType<'a> {
+    type AnnotationType = AttributeTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Attribute;
+}
+
+impl<'a> CommonType<'a> for EntityType<'a> {
+    type AnnotationType = EntityTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Entity;
+}
+
+impl<'a> CommonType<'a> for RelationType<'a> {
+    type AnnotationType = RelationTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Relation;
+}
+
+impl<'a> CommonType<'a> for RoleType<'a> {
+    type AnnotationType = RoleTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Role;
 }

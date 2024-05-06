@@ -44,6 +44,7 @@ use crate::type_::{
     type_reader::TypeReader,
     Ordering, TypeAPI,
 };
+use crate::type_::type_manager::CommonType;
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -64,45 +65,16 @@ pub struct TypeCache {
 }
 
 #[derive(Debug)]
-struct CommonTypeCache<T: TypeAPI<'static> + ReadableType<'static, 'static>> {
+struct CommonTypeCache<T: TypeAPI<'static> + CommonType<'static>> {
     type_: T,
     label: Label<'static>,
     is_root: bool,
     annotations_declared: HashSet<T::AnnotationType>,
     // TODO: Should these all be sets instead of vec?
-    supertype: Option<T::SelfRead>, // TODO: use smallvec if we want to have some inline - benchmark.
-    supertypes: Vec<T::SelfRead>,   // TODO: use smallvec if we want to have some inline - benchmark.
-    subtypes_declared: Vec<T::SelfRead>, // TODO: benchmark smallvec.
-    subtypes_transitive: Vec<T::SelfRead>, // TODO: benchmark smallvec
-}
-
-impl<T> CommonTypeCache<T>
-where
-    T: TypeAPI<'static> + ReadableType<'static, 'static>,
-{
-    fn build_for<Snapshot: ReadableSnapshot>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T> {
-        let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
-        let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
-        let annotations_declared = TypeReader::get_type_annotations(snapshot, type_.clone())
-            .unwrap()
-            .into_iter()
-            .map(|annotation| T::AnnotationType::from(annotation))
-            .collect::<HashSet<T::AnnotationType>>();
-        let supertype = TypeReader::get_supertype(snapshot, type_.clone()).unwrap();
-        let supertypes = TypeReader::get_supertypes_transitive(snapshot, type_.clone()).unwrap();
-        let subtypes_declared = TypeReader::get_subtypes(snapshot, type_.clone()).unwrap();
-        let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_.clone()).unwrap();
-        Self {
-            type_,
-            label,
-            is_root,
-            annotations_declared,
-            supertype,
-            supertypes,
-            subtypes_declared,
-            subtypes_transitive,
-        }
-    }
+    supertype: Option<T>, // TODO: use smallvec if we want to have some inline - benchmark.
+    supertypes: Vec<T>,   // TODO: use smallvec if we want to have some inline - benchmark.
+    subtypes_declared: Vec<T>, // TODO: benchmark smallvec.
+    subtypes_transitive: Vec<T>, // TODO: benchmark smallvec
 }
 
 #[derive(Debug)]
@@ -204,6 +176,30 @@ impl TypeCache {
         })
     }
 
+    fn build_common_cache<Snapshot: ReadableSnapshot, T: ReadableType<'static, 'static, SelfRead = T>>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T::SelfRead> {
+        let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
+        let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
+        let annotations_declared = TypeReader::get_type_annotations(snapshot, type_.clone())
+            .unwrap()
+            .into_iter()
+            .map(|annotation| T::AnnotationType::from(annotation))
+            .collect::<HashSet<T::AnnotationType>>();
+        let supertype = TypeReader::get_supertype(snapshot, type_.clone()).unwrap();
+        let supertypes = TypeReader::get_supertypes_transitive(snapshot, type_.clone()).unwrap();
+        let subtypes_declared = TypeReader::get_subtypes(snapshot, type_.clone()).unwrap();
+        let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_.clone()).unwrap();
+        CommonTypeCache {
+            type_,
+            label,
+            is_root,
+            annotations_declared,
+            supertype,
+            supertypes,
+            subtypes_declared,
+            subtypes_transitive,
+        }
+    }
+
     fn create_entity_caches(snapshot: &impl ReadableSnapshot) -> Box<[Option<EntityTypeCache>]> {
         let entities = snapshot
             .iterate_range(KeyRange::new_within(
@@ -219,7 +215,7 @@ impl TypeCache {
 
         for entity in entities.into_iter() {
             let cache = EntityTypeCache {
-                type_api_cache_: CommonTypeCache::build_for(snapshot, entity.clone()),
+                type_api_cache_: Self::build_common_cache(snapshot, entity.clone()),
                 owns_declared: TypeReader::get_owns(snapshot, entity.clone()).unwrap(),
                 plays_declared: TypeReader::get_plays(snapshot, entity.clone()).unwrap(),
             };
@@ -242,7 +238,7 @@ impl TypeCache {
         let mut caches = (0..=max_relation_id).map(|_| None).collect::<Box<[_]>>();
         for relation in relations.into_iter() {
             let cache = RelationTypeCache {
-                common_type_cache: CommonTypeCache::build_for(snapshot, relation.clone()),
+                common_type_cache: Self::build_common_cache(snapshot, relation.clone()),
                 relates_declared: TypeReader::get_relates(snapshot, relation.clone()).unwrap(),
                 owns_declared: TypeReader::get_owns(snapshot, relation.clone()).unwrap(),
                 plays_declared: TypeReader::get_plays(snapshot, relation.clone()).unwrap(),
@@ -264,7 +260,7 @@ impl TypeCache {
         for role in roles.into_iter() {
             let ordering = TypeReader::get_type_ordering(snapshot, role.clone()).unwrap();
             let cache = RoleTypeCache {
-                type_api_cache_: CommonTypeCache::build_for(snapshot, role.clone()),
+                type_api_cache_: Self::build_common_cache(snapshot, role.clone()),
                 ordering,
                 relates_declared: TypeReader::get_relations(snapshot, role.clone()).unwrap(),
             };
@@ -284,7 +280,7 @@ impl TypeCache {
         let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Box<[_]>>();
         for attribute in attributes {
             let cache = AttributeTypeCache {
-                type_api_cache_: CommonTypeCache::build_for(snapshot, attribute.clone()),
+                type_api_cache_: Self::build_common_cache(snapshot, attribute.clone()),
                 value_type: TypeReader::get_value_type(snapshot, attribute.clone()).unwrap(),
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
