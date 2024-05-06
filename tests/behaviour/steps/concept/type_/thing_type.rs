@@ -316,12 +316,21 @@ pub async fn set_plays_role(context: &mut Context, root_label: RootLabel, type_l
 }
 
 
-// #[apply(generic_step)]
-// #[step(expr = "{root_label}\\({type_label}\\) get subtypes {contains_or_doesnt}:")]
-// pub async fn get_subtypes_contain(context: &mut Context, root_label: RootLabel, type_label: Label, contains: ContainsOrDoesnt, step: &Step) {
-//     todo!();
-// }
-//
+#[apply(generic_step)]
+#[step(expr = "{root_label}\\({type_label}\\) get subtypes {contains_or_doesnt}:")]
+pub async fn get_subtypes_contain(context: &mut Context, root_label: RootLabel, type_label: Label, contains: ContainsOrDoesnt, step: &Step) {
+    let expected_labels: Vec<String> = util::iter_table(step).map(|str| { str.to_string() }).collect::<Vec<String>>();
+    let tx = context.transaction().unwrap();
+    tx_as_read! (tx, {
+        with_type!(tx, root_label, type_label, type_, {
+            let subtype_labels: Vec<String> = type_.get_subtypes(&tx.snapshot, &tx.type_manager)
+            .unwrap().iter().map(|subtype| { subtype.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_string() })
+            .collect::<Vec<String>>();
+            contains.check(expected_labels, subtype_labels.into_iter().collect());
+        });
+    });
+}
+
 // // #[apply(generic_step)]
 // // #[step(expr = "{root_label}\\({type_label}\\) get owns explicit attribute types, with annotations: {annotations}; contain:")]
 // // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
