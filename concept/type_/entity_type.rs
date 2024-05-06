@@ -195,7 +195,7 @@ impl<'a> EntityType<'a> {
         }
     }
 
-    fn into_owned(self) -> EntityType<'static> {
+    pub fn into_owned(self) -> EntityType<'static> {
         EntityType { vertex: self.vertex.into_owned() }
     }
 }

@@ -245,7 +245,7 @@ impl<'a> RelationType<'a> {
         Ok(self.get_relates_role(snapshot, type_manager, name)?.is_some())
     }
 
-    fn into_owned(self) -> RelationType<'static> {
+    pub fn into_owned(self) -> RelationType<'static> {
         RelationType { vertex: self.vertex.into_owned() }
     }
 }

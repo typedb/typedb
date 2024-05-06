@@ -525,19 +525,23 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     pub(crate) fn delete_entity_type(&self, snapshot: &mut Snapshot, entity_type: EntityType<'_>) {
-        todo!()
+        self.storage_may_delete_label(snapshot, entity_type.clone().into_owned());
+        self.storage_may_delete_supertype(snapshot, entity_type.clone().into_owned());
     }
 
     pub(crate) fn delete_relation_type(&self, snapshot: &mut Snapshot, relation_type: RelationType<'_>) {
-        todo!()
+        self.storage_may_delete_label(snapshot, relation_type.clone().into_owned());
+        self.storage_may_delete_supertype(snapshot, relation_type.clone().into_owned());
     }
 
     pub(crate) fn delete_attribute_type(&self, snapshot: &mut Snapshot, attribute_type: AttributeType<'_>) {
-        todo!()
+        self.storage_may_delete_label(snapshot, attribute_type.clone().into_owned());
+        self.storage_may_delete_supertype(snapshot, attribute_type.clone().into_owned());
     }
 
     pub(crate) fn delete_role_type(&self, snapshot: &mut Snapshot, role_type: RoleType<'_>) {
-        todo!()
+        self.storage_may_delete_label(snapshot, role_type.clone().into_owned());
+        self.storage_may_delete_supertype(snapshot, role_type.clone().into_owned());
     }
 
     pub(crate) fn storage_set_label(&self, snapshot: &mut Snapshot, owner: impl TypeAPI<'static>, label: &Label<'_>) {
