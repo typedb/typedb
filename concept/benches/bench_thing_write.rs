@@ -76,8 +76,8 @@ fn create_schema(storage: &Arc<MVCCStorage<WAL>>, type_vertex_generator: &Arc<Ty
         let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap(), false).unwrap();
         name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String);
         let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap(), false).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, age_type, Ordering::Unordered);
-        person_type.set_owns(&mut snapshot, &type_manager, name_type, Ordering::Unordered);
+        person_type.set_owns(&mut snapshot, &type_manager, age_type, Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, name_type, Ordering::Unordered).unwrap();
     }
     snapshot.commit().unwrap();
 }

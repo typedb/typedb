@@ -50,7 +50,7 @@ fn get_as_object_type(tx: &ActiveTransaction, kind: Kind, label: &Label) -> Obje
                 let type_ = tx.type_manager.get_relation_type(&tx.snapshot, &label.to_typedb()).unwrap().unwrap();
                 return ObjectType::Relation(type_)
             },
-            _ => unreachable!(),
+            _ => unreachable!("Attribute type as ObjectType is deprecated."),
         };
     })
 }
@@ -222,7 +222,7 @@ pub async fn set_owns(context: &mut Context, root_label: RootLabel, type_label: 
     let object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
     tx_as_schema! (tx, {
         let attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.to_typedb()).unwrap().unwrap();
-        object_type.set_owns(&mut tx.snapshot, &tx.type_manager, attr_type, Ordering::Unordered);
+        object_type.set_owns(&mut tx.snapshot, &tx.type_manager, attr_type, Ordering::Unordered).unwrap();
     });
 }
 #[apply(generic_step)]
@@ -232,7 +232,7 @@ pub async fn unset_owns(context: &mut Context, root_label: RootLabel, type_label
     let object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
     tx_as_schema! (tx, {
         let attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.to_typedb()).unwrap().unwrap();
-        object_type.delete_owns(&mut tx.snapshot, &tx.type_manager, attr_type);
+        object_type.delete_owns(&mut tx.snapshot, &tx.type_manager, attr_type).unwrap();
     });
 }
 
@@ -305,14 +305,13 @@ pub async fn get_owns_overridden_get_label(context: &mut Context, root_label: Ro
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) set plays role: {type_label}(; ){may_error}")]
-pub async fn set_plays_role(context: &mut Context, root_label: RootLabel, type_label: Label, role_label: Label, _may_error: MayError) {
+pub async fn set_plays_role(context: &mut Context, root_label: RootLabel, type_label: Label, role_label: Label, may_error: MayError) {
     let tx = context.transaction().unwrap();
     let object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
     tx_as_schema! (tx, {
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.to_typedb()).unwrap().unwrap();
-        let _res = object_type.set_plays(&mut tx.snapshot, &tx.type_manager, role_type);
-        todo!("That doesn't return an error yet");
-        // may_error.check(&res);
+        let res = object_type.set_plays(&mut tx.snapshot, &tx.type_manager, role_type);
+        may_error.check(&res);
     });
 }
 

@@ -42,7 +42,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         type_manager: &TypeManager<Snapshot>,
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
-    ) -> Owns<'static> {
+    ) -> Result<Owns<'static>, ConceptWriteError> {
         // TODO: decide behaviour (ok or error) if already owning
         match self {
             ObjectType::Entity(entity) => entity.set_owns(snapshot, type_manager, attribute_type, ordering),
@@ -55,7 +55,7 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         attribute_type: AttributeType<'static>
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         match self {
             ObjectType::Entity(entity) => entity.delete_owns(snapshot, type_manager, attribute_type),
             ObjectType::Relation(relation) => relation.delete_owns(snapshot, type_manager, attribute_type),
@@ -132,7 +132,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         role_type: RoleType<'static>
-    ) -> Plays<'static> {
+    ) -> Result<Plays<'static>, ConceptWriteError> {
         match self {
             ObjectType::Entity(entity) => entity.set_plays(snapshot, type_manager, role_type),
             ObjectType::Relation(relation) => relation.set_plays(snapshot, type_manager, role_type),
@@ -144,7 +144,7 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         role_type: RoleType<'static>
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         match self {
             ObjectType::Entity(entity) => entity.delete_plays(snapshot, type_manager, role_type),
             ObjectType::Relation(relation) => relation.delete_plays(snapshot, type_manager, role_type),

@@ -207,9 +207,9 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         type_manager: &TypeManager<Snapshot>,
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
-    ) -> Owns<'static> {
+    ) -> Result<Owns<'static>, ConceptWriteError> {
         type_manager.storage_set_owns(snapshot, self.clone().into_owned(), attribute_type.clone(), ordering);
-        Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type)
+        Ok(Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type))
     }
 
     fn delete_owns<Snapshot: WritableSnapshot>(
@@ -217,9 +217,10 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         attribute_type: AttributeType<'static>
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         // TODO: error if not owned?
-        type_manager.storage_delete_owns(snapshot, self.clone().into_owned(), attribute_type)
+        type_manager.storage_delete_owns(snapshot, self.clone().into_owned(), attribute_type);
+        Ok(())
     }
 
     fn get_owns<'m, Snapshot: ReadableSnapshot>(
@@ -247,10 +248,10 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         role_type: RoleType<'static>,
-    ) -> Plays<'static> {
+    ) -> Result<Plays<'static>, ConceptWriteError> {
         // TODO: decide behaviour (ok or error) if already playing
         type_manager.storage_set_plays(snapshot, self.clone().into_owned(), role_type.clone());
-        Plays::new(ObjectType::Entity(self.clone().into_owned()), role_type)
+        Ok(Plays::new(ObjectType::Entity(self.clone().into_owned()), role_type))
     }
 
     fn delete_plays<Snapshot: WritableSnapshot>(
@@ -258,9 +259,10 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         role_type: RoleType<'static>
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         // TODO: error if not playing
-        type_manager.storage_delete_plays(snapshot, self.clone().into_owned(), role_type)
+        type_manager.storage_delete_plays(snapshot, self.clone().into_owned(), role_type);
+        Ok(())
     }
 
     fn get_plays<'m, Snapshot: ReadableSnapshot>(

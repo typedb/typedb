@@ -59,14 +59,14 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         type_manager: &TypeManager<Snapshot>,
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
-    ) -> Owns<'static>;
+    ) -> Result<Owns<'static>, ConceptWriteError>;
 
     fn delete_owns<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         attribute_type: AttributeType<'static>
-    );
+    ) -> Result<(), ConceptWriteError>;
 
     fn get_owns<'m, Snapshot: ReadableSnapshot>(
         &self,
@@ -97,14 +97,14 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         role_type: RoleType<'static>,
-    ) -> Plays<'static>;
+    ) -> Result<Plays<'static>, ConceptWriteError>;
 
     fn delete_plays<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         role_type: RoleType<'static>
-    );
+    ) -> Result<(), ConceptWriteError>;
 
     fn get_plays<'m, Snapshot: ReadableSnapshot>(
         &self,

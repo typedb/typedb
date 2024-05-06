@@ -80,7 +80,7 @@ fn entity_usage() {
         assert_eq!(supertypes.len(), 2);
 
         // --- child owns age ---
-        child_type.set_owns(&mut snapshot, &type_manager, age_type.clone().into_owned(), Ordering::Unordered);
+        child_type.set_owns(&mut snapshot, &type_manager, age_type.clone().into_owned(), Ordering::Unordered).unwrap();
         let owns = child_type.get_owns_attribute(&snapshot, &type_manager, age_type.clone().into_owned()).unwrap().unwrap();
         // TODO: test 'owns' structure directly
 
@@ -206,7 +206,7 @@ fn role_usage() {
 
         // --- person plays friendship:friend ---
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
-        person_type.set_plays(&mut snapshot, &type_manager, role_type.clone().into_owned());
+        person_type.set_plays(&mut snapshot, &type_manager, role_type.clone().into_owned()).unwrap();
         let plays = person_type.get_plays_role(&snapshot, &type_manager, role_type.clone().into_owned()).unwrap().unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type.clone()));
         debug_assert_eq!(plays.role(), role_type);

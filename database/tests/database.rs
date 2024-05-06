@@ -23,8 +23,8 @@ fn create_delete_database() {
     let db = Arc::new(db_result.unwrap());
 
     let txn = TransactionRead::open(db.clone());
-    let types = txn.type_manager();
-    let root_entity_type = types.get_entity_type(txn.snapshot(), &Kind::Entity.root_label());
+    let types = txn.type_manager;
+    let root_entity_type = types.get_entity_type(&txn.snapshot, &Kind::Entity.root_label());
     eprintln!("Root entity type: {:?}", root_entity_type);
     // let delete_result = db.delete();
     // assert!(delete_result.is_ok());
