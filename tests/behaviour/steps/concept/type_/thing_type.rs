@@ -216,6 +216,22 @@ pub async fn get_supertypes_contain(context: &mut Context, root_label: RootLabel
 }
 
 #[apply(generic_step)]
+#[step(expr = "{root_label}\\({type_label}\\) get subtypes {contains_or_doesnt}:")]
+pub async fn get_subtypes_contain(context: &mut Context, root_label: RootLabel, type_label: Label, contains: ContainsOrDoesnt, step: &Step) {
+    let expected_labels: Vec<String> = util::iter_table(step).map(|str| { str.to_string() }).collect::<Vec<String>>();
+    let tx = context.transaction().unwrap();
+    tx_as_read! (tx, {
+        with_type!(tx, root_label, type_label, type_, {
+            let subtype_labels: Vec<String> = type_.get_subtypes(&tx.snapshot, &tx.type_manager)
+            .unwrap().iter().map(|subtype| { subtype.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_string() })
+            .collect::<Vec<String>>();
+            contains.check(expected_labels, subtype_labels.into_iter().collect());
+        });
+    });
+}
+
+// Owns
+#[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) set owns: {type_label}")]
 pub async fn set_owns(context: &mut Context, root_label: RootLabel, type_label: Label, attribute_type_label: Label) {
     let tx = context.transaction().unwrap();
@@ -302,7 +318,7 @@ pub async fn get_owns_overridden_get_label(context: &mut Context, root_label: Ro
     });
 }
 
-
+// Plays
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) set plays role: {type_label}(; ){may_error}")]
 pub async fn set_plays_role(context: &mut Context, root_label: RootLabel, type_label: Label, role_label: Label, may_error: MayError) {
@@ -315,21 +331,46 @@ pub async fn set_plays_role(context: &mut Context, root_label: RootLabel, type_l
     });
 }
 
-
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get subtypes {contains_or_doesnt}:")]
-pub async fn get_subtypes_contain(context: &mut Context, root_label: RootLabel, type_label: Label, contains: ContainsOrDoesnt, step: &Step) {
-    let expected_labels: Vec<String> = util::iter_table(step).map(|str| { str.to_string() }).collect::<Vec<String>>();
+#[step(expr = "{root_label}\\({type_label}\\) unset plays role: {type_label}(; ){may_error}")]
+pub async fn unset_plays_role(context: &mut Context, root_label: RootLabel, type_label: Label, role_label: Label, may_error: MayError) {
     let tx = context.transaction().unwrap();
-    tx_as_read! (tx, {
-        with_type!(tx, root_label, type_label, type_, {
-            let subtype_labels: Vec<String> = type_.get_subtypes(&tx.snapshot, &tx.type_manager)
-            .unwrap().iter().map(|subtype| { subtype.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_string() })
-            .collect::<Vec<String>>();
-            contains.check(expected_labels, subtype_labels.into_iter().collect());
-        });
+    let object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
+    tx_as_schema! (tx, {
+        let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.to_typedb()).unwrap().unwrap();
+        let res = object_type.delete_plays(&mut tx.snapshot, &tx.type_manager, role_type);
+        may_error.check(&res);
     });
 }
+
+#[apply(generic_step)]
+#[step(expr = "{root_label}\\({type_label}\\) get plays role: {type_label}; set override: {type_label}(; ){may_error}")]
+pub async fn get_plays_set_override(context: &mut Context, root_label: RootLabel, type_label: Label, role_label: Label, overridden_role_label: Label, may_error: MayError) {
+    let tx = context.transaction().unwrap();
+    let object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
+    tx_as_schema! (tx, {
+        let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.to_typedb()).unwrap().unwrap();
+        let overridden_role_type = tx.type_manager.get_role_type(&tx.snapshot, &overridden_role_label.to_typedb()).unwrap().unwrap();
+        let plays = object_type.get_plays_role(&mut tx.snapshot, &tx.type_manager, role_type).unwrap();
+        todo!("Override plays");
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = "{root_label}\\({type_label}\\) get plays roles {contains_or_doesnt}:(; ){may_error}")]
+pub async fn get_plays_roles_contain(context: &mut Context, root_label: RootLabel, type_label: Label, contains: ContainsOrDoesnt, may_error: MayError, step: &Step) {
+    let expected_labels: Vec<String> = util::iter_table(step).map(|str| { str.to_string() }).collect::<Vec<String>>();
+    let tx = context.transaction().unwrap();
+    let object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
+    tx_as_read! (tx, {
+        let actual_labels = object_type.get_plays(&tx.snapshot, &tx.type_manager).unwrap().iter().map(|plays| {
+            plays.role().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_string()
+        }).collect::<Vec<String>>();
+        println!("Actual roles played: {:?}", actual_labels);
+        contains.check(expected_labels, actual_labels);
+    });
+}
+
 
 // // #[apply(generic_step)]
 // // #[step(expr = "{root_label}\\({type_label}\\) get owns explicit attribute types contain:")]
@@ -337,30 +378,6 @@ pub async fn get_subtypes_contain(context: &mut Context, root_label: RootLabel, 
 // //
 // // #[apply(generic_step)]
 // // #[step(expr = "{root_label}\\({type_label}\\) get owns explicit attribute types do not contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) set plays role: {scoped_label}")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) set plays role: {scoped_label}; fails")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) set plays role: {scoped_label} as {scoped_label}")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) set plays role: {scoped_label} as {scoped_label}; fails")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) unset plays role: {scoped_label}")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) unset plays role: {scoped_label}; fails")]
 // // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
 // //
 // // #[apply(generic_step)]
