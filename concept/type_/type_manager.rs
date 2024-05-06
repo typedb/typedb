@@ -525,27 +525,19 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     pub(crate) fn delete_entity_type(&self, snapshot: &mut Snapshot, entity_type: EntityType<'_>) {
-        let key = entity_type.into_vertex().into_storage_key().into_owned_array();
-        todo!("Do we need to lock?");
-        snapshot.delete(key)
+        todo!()
     }
 
     pub(crate) fn delete_relation_type(&self, snapshot: &mut Snapshot, relation_type: RelationType<'_>) {
-        let key = relation_type.into_vertex().into_storage_key().into_owned_array();
-        todo!("Do we need to lock?");
-        snapshot.delete(key)
+        todo!()
     }
 
     pub(crate) fn delete_attribute_type(&self, snapshot: &mut Snapshot, attribute_type: AttributeType<'_>) {
-        let key = attribute_type.into_vertex().into_storage_key().into_owned_array();
-        todo!("Do we need to lock?");
-        snapshot.delete(key);
+        todo!()
     }
 
     pub(crate) fn delete_role_type(&self, snapshot: &mut Snapshot, role_type: RoleType<'_>) {
-        let key = role_type.into_vertex().into_storage_key().into_owned_array();
-        todo!("Do we need to lock?");
-        snapshot.delete(key);
+        todo!()
     }
 
     pub(crate) fn storage_set_label(&self, snapshot: &mut Snapshot, owner: impl TypeAPI<'static>, label: &Label<'_>) {
