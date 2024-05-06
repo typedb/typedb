@@ -332,30 +332,6 @@ pub async fn get_subtypes_contain(context: &mut Context, root_label: RootLabel, 
 }
 
 // // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) get owns explicit attribute types, with annotations: {annotations}; contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) get owns explicit attribute types, with annotations: {annotations}; do not contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-//
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) get owns overridden attribute\\({type_label}\\) is null: {boolean}")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) get owns overridden attribute\\({type_label}\\) get label: {type_label}")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) get owns attribute types contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) get owns attribute types do not contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
 // // #[step(expr = "{root_label}\\({type_label}\\) get owns explicit attribute types contain:")]
 // // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
 // //
