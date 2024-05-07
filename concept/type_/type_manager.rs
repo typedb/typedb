@@ -54,7 +54,7 @@ use crate::{
         serialise_annotation_cardinality, serialise_ordering,
         type_cache::TypeCache,
         type_reader::TypeReader,
-        IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
 
@@ -109,7 +109,7 @@ macro_rules! get_type_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(label))
                 } else {
-                    TypeReader::get_labelled_type::<$output_type<'static>, $output_type<'static>>(snapshot, label)
+                    TypeReader::get_labelled_type::<$output_type<'static>>(snapshot, label)
                 }
             }
         )*
@@ -241,7 +241,6 @@ macro_rules! get_type_annotations {
                  if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
-                    let mut annotations: HashSet<$annotation_type> = HashSet::new();
                     let annotations = TypeReader::get_type_annotations(snapshot, type_)?
                         .into_iter()
                         .map(|annotation| $annotation_type::from(annotation))
@@ -743,31 +742,37 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 }
 
-pub trait ReadableType<'out, OUT: 'out> {
+pub trait ReadableType {
     // Consider replacing 'b with 'static
-    fn read_from(b: Bytes<'out, BUFFER_KEY_INLINE>) -> OUT;
+    type Out<'out>: 'out;
+    fn read_from<'out>(b: Bytes<'out, BUFFER_KEY_INLINE>) -> Self::Out<'out>;
 }
 
-impl<'a, 'out> ReadableType<'out, AttributeType<'out>> for AttributeType<'a> {
-    fn read_from(b: Bytes<'out, BUFFER_KEY_INLINE>) -> AttributeType<'out> {
+
+impl<'a> ReadableType for AttributeType<'a> {
+    type Out<'out> = AttributeType<'out>;
+    fn read_from<'out>(b: Bytes<'out, BUFFER_KEY_INLINE>) -> Self::Out<'out> {
         AttributeType::new(new_vertex_attribute_type(b))
     }
 }
 
-impl<'a, 'out> ReadableType<'out, EntityType<'out>> for EntityType<'a> {
-    fn read_from(b: Bytes<'out, BUFFER_KEY_INLINE>) -> EntityType<'out> {
+impl<'a> ReadableType for EntityType<'a> {
+    type Out<'out> = EntityType<'out>;
+    fn read_from<'out>(b: Bytes<'out, BUFFER_KEY_INLINE>) -> Self::Out<'out> {
         EntityType::new(new_vertex_entity_type(b))
     }
 }
 
-impl<'a, 'out> ReadableType<'out, RelationType<'out>> for RelationType<'a> {
-    fn read_from(b: Bytes<'out, BUFFER_KEY_INLINE>) -> RelationType<'out> {
+impl<'a> ReadableType for RelationType<'a> {
+    type Out<'out> = RelationType<'out>;
+    fn read_from<'out>(b: Bytes<'out, BUFFER_KEY_INLINE>) -> Self::Out<'out> {
         RelationType::new(new_vertex_relation_type(b))
     }
 }
 
-impl<'a, 'out> ReadableType<'out, RoleType<'out>> for RoleType<'a> {
-    fn read_from(b: Bytes<'out, BUFFER_KEY_INLINE>) -> RoleType<'out> {
+impl<'a> ReadableType for RoleType<'a> {
+    type Out<'out> = RoleType<'out>;
+    fn read_from<'out>(b: Bytes<'out, BUFFER_KEY_INLINE>) -> Self::Out<'out> {
         RoleType::new(new_vertex_role_type(b))
     }
 }
