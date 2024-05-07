@@ -141,7 +141,6 @@ public class CoreConfigTest {
             CoreConfigFactory.config(configUnrecognisedOption, new HashSet<>(), new CoreConfigParser());
             fail();
         } catch (TypeDBException e) {
-            System.out.println(e.getMessage());
             assertEquals(CONFIGS_UNRECOGNISED.code(), e.errorMessage().code());
             assertEquals(CONFIGS_UNRECOGNISED.message(list("log.custom-logger-invalid")), e.getMessage());
         }

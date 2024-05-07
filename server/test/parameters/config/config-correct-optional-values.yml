@@ -50,7 +50,7 @@ log:
       type: reasoner-perf-counters
 
 diagnostics:
-  deployment-id: SERVERIDNUMBER123987<AND>MORE! # Optional # TODO: Check the length?
+  deployment-id: SERVERIDNUMBER123987<AND>MORE! # Optional
   reporting:
     errors: true
     statistics: true
