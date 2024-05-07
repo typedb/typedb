@@ -773,27 +773,27 @@ impl<'a, 'out> ReadableType<'out, RoleType<'out>> for RoleType<'a> {
 }
 
 
-pub trait CommonType<'a>: TypeAPI<'a> {
+pub trait TypeAPITraits {
     type AnnotationType: Hash + Eq + From<Annotation>;
     const ROOT_KIND: Kind;
 }
 
-impl<'a> CommonType<'a> for AttributeType<'a> {
+impl<'a> TypeAPITraits for AttributeType<'a> {
     type AnnotationType = AttributeTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Attribute;
 }
 
-impl<'a> CommonType<'a> for EntityType<'a> {
+impl<'a> TypeAPITraits for EntityType<'a> {
     type AnnotationType = EntityTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Entity;
 }
 
-impl<'a> CommonType<'a> for RelationType<'a> {
+impl<'a> TypeAPITraits for RelationType<'a> {
     type AnnotationType = RelationTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Relation;
 }
 
-impl<'a> CommonType<'a> for RoleType<'a> {
+impl<'a> TypeAPITraits for RoleType<'a> {
     type AnnotationType = RoleTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Role;
 }

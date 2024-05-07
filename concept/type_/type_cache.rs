@@ -39,7 +39,7 @@ use crate::type_::{
     type_reader::TypeReader,
     Ordering, TypeAPI,
 };
-use crate::type_::type_manager::CommonType;
+use crate::type_::type_manager::TypeAPITraits;
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -60,7 +60,7 @@ pub struct TypeCache {
 }
 
 #[derive(Debug)]
-struct CommonTypeCache<T: TypeAPI<'static> + CommonType<'static>> {
+struct CommonTypeCache<T: TypeAPI<'static> + TypeAPITraits> {
     type_: T,
     label: Label<'static>,
     is_root: bool,
@@ -174,7 +174,7 @@ impl TypeCache {
     fn build_common_cache<Snapshot: ReadableSnapshot, OUT: 'static, T>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<OUT>
     where
         T: TypeAPI<'static> + ReadableType<'static, OUT>,
-        OUT: TypeAPI<'static> + CommonType<'static> + 'static
+        OUT: TypeAPI<'static> + TypeAPITraits + 'static
     {
         let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
         let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, OUT::ROOT_KIND);
