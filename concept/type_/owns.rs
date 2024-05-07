@@ -48,6 +48,15 @@ impl<'a> Owns<'a> {
         }
     }
 
+    // TODO: Should it be 'this or just 'tm on type_manager?
+    pub fn get_override<'this, Snapshot: ReadableSnapshot>(
+        &'this self,
+        snapshot: &Snapshot,
+        type_manager: &'this TypeManager<Snapshot>
+    ) -> Result<MaybeOwns<'this, Option<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_overridden(snapshot, self.clone().into_owned())
+    }
+
     pub fn set_override<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,

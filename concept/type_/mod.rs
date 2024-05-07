@@ -101,7 +101,9 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         snapshot: &Snapshot,
         type_manager: &'m TypeManager<Snapshot>,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<Owns<'static>>, ConceptReadError>;
+    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
+        Ok(self.get_owns_transitive(snapshot, type_manager)?.get(&attribute_type).map(|owns| { owns.clone() }))
+    }
 }
 
 pub trait PlayerAPI<'a>: TypeAPI<'a> {

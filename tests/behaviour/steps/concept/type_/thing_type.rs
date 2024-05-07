@@ -258,10 +258,14 @@ pub async fn get_owns_set_override(context: &mut Context, root_label: RootLabel,
     let tx = context.transaction().unwrap();
     let object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
     tx_as_schema! (tx, {
+        println!("Will get attribute type?");
         let attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
+        println!("Did get attribute type; Will get owns?");
         let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        println!("Did get owns; Will get overridden attribute type?");
         let overridden_attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &overridden_type_label.to_typedb()).unwrap().unwrap();
-        let overridden_owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, overridden_attr_type).unwrap().unwrap();
+        println!("Did get overridden attribute type; Will get overridden owns?");
+        let overridden_owns = object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, overridden_attr_type).unwrap().unwrap();
         owns.set_override(&mut tx.snapshot, &tx.type_manager, overridden_owns);
     });
 }
@@ -306,15 +310,18 @@ pub async fn get_owns_overridden_exists(context: &mut Context, root_label: RootL
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns overridden\\({type_label}\\) get_label: {type_label}")]
-pub async fn get_owns_overridden_get_label(context: &mut Context, root_label: RootLabel, type_label: Label, attr_type_label: Label, _expected_overridden: Label) {
+#[step(expr = "{root_label}\\({type_label}\\) get owns overridden\\({type_label}\\) get label: {type_label}")]
+pub async fn get_owns_overridden_get_label(context: &mut Context, root_label: RootLabel, type_label: Label, attr_type_label: Label, expected_overridden: Label) {
     let tx = context.transaction().unwrap();
-    let _object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
+    let owner = get_as_object_type(tx, root_label.to_typedb(), &type_label);
     tx_as_read! (tx, {
-        let _attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
-        let _overriden_owns = todo!("Overridden");
-        // let actual_type_label = overriden_owns.attribute().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_string();
-        // assert_eq!(expected_overridden.to_typedb().scoped_name().as_str().to_string(), actual_type_label);
+        let attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
+        // TODO: This doesn't include ones that are already hidden. So you can't override one that's already overridden.
+        let owns = owner.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let overridden_owns_opt = owns.get_override(&tx.snapshot, &tx.type_manager).unwrap();
+        let overridden_owns = overridden_owns_opt.as_ref().unwrap();
+        let actual_type_label = overridden_owns.attribute().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_string();
+        assert_eq!(expected_overridden.to_typedb().scoped_name().as_str().to_string(), actual_type_label);
     });
 }
 

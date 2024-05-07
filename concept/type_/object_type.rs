@@ -95,18 +95,6 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
             ObjectType::Relation(relation) => relation.get_owns_transitive(snapshot, type_manager),
         }
     }
-
-    fn get_owns_attribute_transitive<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        type_manager: &'m TypeManager<Snapshot>,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        match self {
-            ObjectType::Entity(entity) => entity.get_owns_attribute_transitive(snapshot, type_manager, attribute_type),
-            ObjectType::Relation(relation) => relation.get_owns_attribute_transitive(snapshot, type_manager, attribute_type),
-        }
-    }
 }
 
 impl<'a> ConceptAPI<'a> for ObjectType<'a> {}

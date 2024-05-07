@@ -298,15 +298,6 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
     ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
         type_manager.get_relation_type_owns_transitive(snapshot, self.clone().into_owned())
     }
-
-    fn get_owns_attribute_transitive<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        type_manager: &'m TypeManager<Snapshot>,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        Ok(self.get_owns_transitive(snapshot, type_manager)?.get(&attribute_type).map(|owns| { owns.clone() }))
-    }
 }
 
 impl<'a> PlayerAPI<'a> for RelationType<'a> {
