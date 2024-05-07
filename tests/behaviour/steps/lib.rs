@@ -48,7 +48,11 @@ impl Context {
                     context.unwrap().after_scenario().await.unwrap();
                 })
             })
-            .filter_run(glob, |_, _, sc| !sc.tags.iter().any(|tag| is_ignore(tag)))
+            .filter_run(glob, |_, _, sc| {
+                sc.name.contains(std::env::var("SCENARIO_FILTER").as_deref().unwrap_or("")) &&
+                !sc.tags.iter().any(|tag| is_ignore(tag))
+            })
+
             .await
             .execution_has_failed()
     }
