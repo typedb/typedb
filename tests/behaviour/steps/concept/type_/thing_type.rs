@@ -259,10 +259,10 @@ pub async fn get_owns_set_override(context: &mut Context, root_label: RootLabel,
     let object_type = get_as_object_type(tx, root_label.to_typedb(), &type_label);
     tx_as_schema! (tx, {
         let attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
-        let _overridden_type = tx.type_manager.get_attribute_type(&tx.snapshot, &overridden_type_label.to_typedb()).unwrap().unwrap();
-        let _owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        todo!("Overriding is not implemented?");
-        // owns..set_override(&mut tx.snapshot, &tx.type_manager, overridden_type);
+        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let overridden_attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &overridden_type_label.to_typedb()).unwrap().unwrap();
+        let overridden_owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, overridden_attr_type).unwrap().unwrap();
+        owns.set_override(&mut tx.snapshot, &tx.type_manager, overridden_owns);
     });
 }
 

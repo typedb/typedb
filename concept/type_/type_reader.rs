@@ -7,7 +7,7 @@
 use bytes::Bytes;
 use encoding::graph::type_::edge::{build_edge_owns_prefix_from, build_edge_plays_prefix_from, build_edge_relates_prefix_from, build_edge_relates_reverse_prefix_from, build_edge_sub_prefix_from, build_edge_sub_reverse_prefix_from, new_edge_owns, new_edge_plays, new_edge_relates, new_edge_relates_reverse, new_edge_sub, new_edge_sub_reverse, TypeEdge};
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
-use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_label, build_property_type_ordering, build_property_type_value_type, TypeEdgeProperty, TypeVertexProperty};
+use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label, build_property_type_ordering, build_property_type_value_type, new_property_type_edge_override, TypeEdgeProperty, TypeVertexProperty};
 use encoding::graph::type_::vertex::TypeVertex;
 use encoding::value::label::Label;
 use resource::constants::encoding::LABEL_SCOPED_NAME_STRING_INLINE;
@@ -210,6 +210,7 @@ impl TypeReader {
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
                     | Infix::PropertyOrdering
+                    | Infix::PropertyOverride
                     | Infix::PropertyHasOrder
                     | Infix::PropertyRolePlayerOrder => {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")
@@ -218,6 +219,21 @@ impl TypeReader {
                 T::AnnotationType::from(annotation)
             })
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
+    }
+
+    // TODO: Merge with plays_override when we get there.
+    pub(crate) fn get_owns_override(
+        snapshot: &impl ReadableSnapshot,
+        owns: Owns<'static>
+    ) -> Result<Option<Owns<'static>>, ConceptReadError>
+    {
+        let override_property_key = build_property_type_edge_override(owns.into_type_edge());
+        snapshot
+            .get_mapped(override_property_key.into_storage_key().as_reference(), |overridden_edge_bytes| {
+                let overridden_edge = new_edge_owns(Bytes::Reference(overridden_edge_bytes));
+                Owns::new(ObjectType::new(overridden_edge.from().into_owned()), AttributeType::new(overridden_edge.to().into_owned()))
+            })
+            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
     // TODO: this is currently breaking our architectural pattern that none of the Manager methods should operate graphs
@@ -244,6 +260,7 @@ impl TypeReader {
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
                     | Infix::PropertyOrdering
+                    | Infix::PropertyOverride
                     | Infix::PropertyHasOrder
                     | Infix::PropertyRolePlayerOrder => {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")

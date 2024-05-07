@@ -31,6 +31,8 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     AsBytes, Keyable,
 };
+use encoding::graph::type_::edge::new_edge_owns;
+use encoding::graph::type_::property::build_property_type_edge_override;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -396,6 +398,14 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         fn get_attribute_type_annotations() -> AttributeType = get_annotations | AttributeTypeAnnotation;
     }
 
+    pub(crate) fn get_owns_overridden(&self, snapshot: &Snapshot, owns: Owns<'static>) -> Result<MaybeOwns<'_, Option<Owns<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_owns_override(owns)))
+        } else {
+            Ok(MaybeOwns::Owned(TypeReader::get_owns_override(snapshot, owns)?))
+        }
+    }
+
     pub(crate) fn get_owns_annotations<'this>(
         &'this self,
         snapshot: &Snapshot,
@@ -594,6 +604,13 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         let owns_reverse = build_edge_owns_reverse(attribute.into_vertex(), owner.into_vertex());
         snapshot.put(owns_reverse.into_storage_key().into_owned_array());
         self.storage_set_owns_ordering(snapshot, owns, ordering);
+    }
+
+    pub(crate) fn storage_set_owns_overridden(&self, snapshot: &mut Snapshot, owns: Owns<'static>, overridden: Owns<'static>) {
+        let property_key =
+            build_property_type_edge_override(owns.into_type_edge()).into_storage_key().into_owned_array();
+        let overridden_owns = ByteArray::copy(overridden.into_type_edge().into_bytes().bytes());
+        snapshot.put_val(property_key, overridden_owns);
     }
 
     pub(crate) fn storage_set_owns_ordering(&self, snapshot: &mut Snapshot, owns_edge: TypeEdge<'_>, ordering: Ordering) {

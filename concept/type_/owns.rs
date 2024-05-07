@@ -10,7 +10,7 @@ use encoding::graph::type_::edge::{build_edge_owns, TypeEdge};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::error::ConceptReadError;
+use crate::error::{ConceptReadError, ConceptWriteError};
 use crate::type_::{attribute_type::AttributeType, IntoCanonicalTypeEdge, object_type::ObjectType, Ordering, TypeAPI};
 use crate::type_::annotation::{Annotation, AnnotationCardinality, AnnotationDistinct};
 use crate::type_::type_manager::TypeManager;
@@ -47,6 +47,16 @@ impl<'a> Owns<'a> {
             Ok(true)
         }
     }
+
+    pub fn set_override<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        overridden: Owns<'static>
+    ) {
+        type_manager.storage_set_owns_overridden(snapshot, self.clone().into_owned(), overridden)
+    }
+
 
     pub(crate) fn get_annotations<'this, Snapshot: ReadableSnapshot>(
         &'this self,

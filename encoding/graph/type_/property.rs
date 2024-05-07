@@ -244,6 +244,13 @@ type_edge_property_constructors!(
 );
 
 type_edge_property_constructors!(
+    new_property_type_edge_override,
+    build_property_type_edge_override,
+    is_property_type_edge_override,
+    InfixType::PropertyOverride
+);
+
+type_edge_property_constructors!(
     new_property_type_edge_ordering,
     build_property_type_edge_ordering,
     is_property_type_edge_ordering,

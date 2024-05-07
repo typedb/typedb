@@ -73,6 +73,7 @@ pub(crate) struct AttributeTypeCache {
 #[derive(Debug)]
 pub(crate) struct OwnsCache {
     pub(super) ordering: Ordering,
+    pub(super) overrides: Option<Owns<'static>>,
     pub(super) annotations_declared: HashSet<OwnsAnnotation>,
 }
 
@@ -204,6 +205,7 @@ impl OwnsCache {
                     owns.clone(),
                     OwnsCache {
                         ordering: TypeReader::get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
+                        overrides : TypeReader::get_owns_override(snapshot, owns.clone()).unwrap(),
                         annotations_declared: TypeReader::get_type_edge_annotations(snapshot, owns.clone())
                             .unwrap()
                             .into_iter()

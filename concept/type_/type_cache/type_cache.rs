@@ -206,6 +206,11 @@ impl TypeCache {
     pub(crate) fn get_owns_ordering<'c>(&'c self, owns: Owns<'c>) -> Ordering {
         self.owns.get(&owns).unwrap().ordering
     }
+
+    pub(crate) fn get_owns_override<'c>(&'c self, owns: Owns<'c>) -> &'c Option<Owns<'static>> {
+        &self.owns.get(&owns).unwrap().overrides
+    }
+
 }
 
 #[derive(Debug)]
