@@ -171,24 +171,23 @@ impl TypeCache {
         })
     }
 
-    fn build_common_cache<Snapshot: ReadableSnapshot, OUT, T>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<OUT>
+    fn build_common_cache<Snapshot: ReadableSnapshot, T>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
     where
-        T: TypeAPI<'static> + ReadableType<Output<'static>=OUT>,
-        OUT: TypeAPI<'static> + TypeAPITraits + 'static
+        T: TypeAPI<'static> + TypeAPITraits + ReadableType<Output<'static>=T>,
     {
         let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
-        let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, OUT::ROOT_KIND);
+        let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
         let annotations_declared = TypeReader::get_type_annotations(snapshot, type_.clone())
             .unwrap()
             .into_iter()
-            .map(|annotation| OUT::AnnotationType::from(annotation))
-            .collect::<HashSet<OUT::AnnotationType>>();
+            .map(|annotation| T::AnnotationType::from(annotation))
+            .collect::<HashSet<T::AnnotationType>>();
         let supertype = TypeReader::get_supertype(snapshot, type_.clone()).unwrap();
         let supertypes = TypeReader::get_supertypes_transitive(snapshot, type_.clone()).unwrap();
         let subtypes_declared = TypeReader::get_subtypes(snapshot, type_.clone()).unwrap();
         let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_.clone()).unwrap();
         CommonTypeCache {
-            type_ : T::read_from(type_.vertex().into_bytes().into_owned()),
+            type_,
             label,
             is_root,
             annotations_declared,
