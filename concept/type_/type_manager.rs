@@ -109,7 +109,7 @@ macro_rules! get_type_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(label))
                 } else {
-                    TypeReader::get_labelled_type::<$output_type<'static>>(snapshot, label)
+                    TypeReader::get_labelled_type::<$output_type<'static>, $output_type<'static>>(snapshot, label)
                 }
             }
         )*
@@ -743,36 +743,31 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 }
 
-pub trait ReadableType<'a, 'b>: TypeAPI<'a> + CommonType<'a> {
+pub trait ReadableType<'out, OUT: 'out> {
     // Consider replacing 'b with 'static
-    type SelfRead: ReadableType<'b, 'b>;
-    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead;
+    fn read_from(b: Bytes<'out, BUFFER_KEY_INLINE>) -> OUT;
 }
 
-impl<'a, 'b> ReadableType<'a, 'b> for AttributeType<'a> {
-    type SelfRead = AttributeType<'b>;
-    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead {
+impl<'a, 'out> ReadableType<'out, AttributeType<'out>> for AttributeType<'a> {
+    fn read_from(b: Bytes<'out, BUFFER_KEY_INLINE>) -> AttributeType<'out> {
         AttributeType::new(new_vertex_attribute_type(b))
     }
 }
 
-impl<'a, 'b> ReadableType<'a, 'b> for EntityType<'a> {
-    type SelfRead = EntityType<'b>;
-    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead {
+impl<'a, 'out> ReadableType<'out, EntityType<'out>> for EntityType<'a> {
+    fn read_from(b: Bytes<'out, BUFFER_KEY_INLINE>) -> EntityType<'out> {
         EntityType::new(new_vertex_entity_type(b))
     }
 }
 
-impl<'a, 'b> ReadableType<'a, 'b> for RelationType<'a> {
-    type SelfRead = RelationType<'b>;
-    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> RelationType<'b> {
+impl<'a, 'out> ReadableType<'out, RelationType<'out>> for RelationType<'a> {
+    fn read_from(b: Bytes<'out, BUFFER_KEY_INLINE>) -> RelationType<'out> {
         RelationType::new(new_vertex_relation_type(b))
     }
 }
 
-impl<'a, 'b> ReadableType<'a, 'b> for RoleType<'a> {
-    type SelfRead = RoleType<'b>;
-    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> RoleType<'b> {
+impl<'a, 'out> ReadableType<'out, RoleType<'out>> for RoleType<'a> {
+    fn read_from(b: Bytes<'out, BUFFER_KEY_INLINE>) -> RoleType<'out> {
         RoleType::new(new_vertex_role_type(b))
     }
 }

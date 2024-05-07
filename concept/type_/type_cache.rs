@@ -13,22 +13,17 @@ use std::{
 
 use bytes::Bytes;
 use durability::SequenceNumber;
-use encoding::{
-    graph::{
-        type_::{
-            edge::TypeEdge,
-            vertex::{
-                build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
-                build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type,
-                new_vertex_relation_type, new_vertex_role_type, TypeVertex,
-            },
+use encoding::{graph::{
+    type_::{
+        edge::TypeEdge,
+        vertex::{
+            build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
+            build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type,
+            new_vertex_relation_type, new_vertex_role_type, TypeVertex,
         },
-        Typed,
     },
-    layout::prefix::Prefix,
-    value::{label::Label, value_type::ValueType},
-    Prefixed,
-};
+    Typed,
+}, layout::prefix::Prefix, value::{label::Label, value_type::ValueType}, Prefixed, AsBytes};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
 
 use crate::type_::{
@@ -176,20 +171,24 @@ impl TypeCache {
         })
     }
 
-    fn build_common_cache<Snapshot: ReadableSnapshot, T: ReadableType<'static, 'static, SelfRead = T>>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T::SelfRead> {
+    fn build_common_cache<Snapshot: ReadableSnapshot, OUT: 'static, T>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<OUT>
+    where
+        T: TypeAPI<'static> + ReadableType<'static, OUT>,
+        OUT: TypeAPI<'static> + CommonType<'static> + 'static
+    {
         let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
-        let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
+        let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, OUT::ROOT_KIND);
         let annotations_declared = TypeReader::get_type_annotations(snapshot, type_.clone())
             .unwrap()
             .into_iter()
-            .map(|annotation| T::AnnotationType::from(annotation))
-            .collect::<HashSet<T::AnnotationType>>();
+            .map(|annotation| OUT::AnnotationType::from(annotation))
+            .collect::<HashSet<OUT::AnnotationType>>();
         let supertype = TypeReader::get_supertype(snapshot, type_.clone()).unwrap();
         let supertypes = TypeReader::get_supertypes_transitive(snapshot, type_.clone()).unwrap();
         let subtypes_declared = TypeReader::get_subtypes(snapshot, type_.clone()).unwrap();
         let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_.clone()).unwrap();
         CommonTypeCache {
-            type_,
+            type_ : T::read_from(type_.vertex().into_bytes().into_owned()),
             label,
             is_root,
             annotations_declared,
