@@ -12,11 +12,12 @@ use encoding::graph::type_::vertex::TypeVertex;
 use encoding::value::label::Label;
 use resource::constants::encoding::LABEL_SCOPED_NAME_STRING_INLINE;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use encoding::{AsBytes, Keyable};
 use encoding::layout::infix::Infix;
 use encoding::value::string_bytes::StringBytes;
 use encoding::value::value_type::{ValueType, ValueTypeID};
+use iterator::Collector;
 use storage::key_range::KeyRange;
 use storage::snapshot::ReadableSnapshot;
 use crate::error::ConceptReadError;
@@ -130,6 +131,33 @@ impl TypeReader {
                 Owns::new(ObjectType::new(owns_edge.from().into_owned()), AttributeType::new(owns_edge.to().into_owned())) // TODO: Should we make this more type safe.
             })
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
+    }
+
+
+    pub(crate) fn get_owns_transitive<T: OwnerAPI<'static> + ReadableType<Output<'static>=T>> (
+        snapshot: &impl ReadableSnapshot,
+        owner: T
+    ) -> Result<HashMap<AttributeType<'static>, Owns<'static>>, ConceptReadError>
+    {
+        // TODO: Should the owner of a transitive owns be the declaring owner or the inheritor?
+        let mut transitive_owns: HashMap<AttributeType<'static>, Owns<'static>> = HashMap::new();
+        let mut overridden_owns: HashSet<AttributeType<'static>> = HashSet::new(); // TODO: Should this store the owns? This feels more fool-proof if it's correct.
+        let mut current_type = Some(owner);
+        while current_type.is_some() {
+            let declared_owns = Self::get_owns(snapshot, current_type.as_ref().unwrap().clone())?;
+            for owns in declared_owns.into_iter() {
+                let attribute = owns.attribute();
+                if !overridden_owns.contains(&attribute) {
+                    debug_assert!(!transitive_owns.contains_key(&attribute));
+                    transitive_owns.insert(owns.attribute(), owns.clone());
+                    if let Some(overridden) = Self::get_owns_override(snapshot, owns.clone())? {
+                        overridden_owns.add(overridden.attribute());
+                    }
+                }
+            }
+            current_type = Self::get_supertype(snapshot, current_type.unwrap())?;
+        }
+        Ok(transitive_owns)
     }
 
     pub(crate) fn get_plays(

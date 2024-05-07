@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 use bytes::byte_reference::ByteReference;
 use encoding::graph::type_::edge::TypeEdge;
@@ -89,6 +89,19 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_owns_attribute(snapshot, type_manager, attribute_type)?.is_some())
     }
+
+    fn get_owns_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError>;
+
+    fn get_owns_attribute_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Option<Owns<'static>>, ConceptReadError>;
 }
 
 pub trait PlayerAPI<'a>: TypeAPI<'a> {

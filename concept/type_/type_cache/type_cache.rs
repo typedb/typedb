@@ -179,6 +179,13 @@ impl TypeCache {
         &T::get_cache(self, type_).owner_player_cache().owns_declared
     }
 
+    pub(crate) fn get_owns_transitive<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashMap<AttributeType<'static>, Owns<'static>>
+        where T:  OwnerAPI<'static> + PlayerAPI<'static> + CacheGetter<CacheType=CACHE>,
+              CACHE: HasOwnerPlayerCache + 'this
+    {
+        &T::get_cache(self, type_).owner_player_cache().owns_transitive
+    }
+
     pub(crate) fn get_role_type_ordering(&self, role_type: RoleType<'static>) -> Ordering {
         RoleType::get_cache(&self, role_type).ordering
     }
@@ -207,9 +214,11 @@ impl TypeCache {
         self.owns.get(&owns).unwrap().ordering
     }
 
+    // TODO: Collapse by parametrised type
     pub(crate) fn get_owns_override<'c>(&'c self, owns: Owns<'c>) -> &'c Option<Owns<'static>> {
         &self.owns.get(&owns).unwrap().overrides
     }
+
 
 }
 

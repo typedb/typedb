@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use bytes::Bytes;
 use encoding::{
@@ -289,6 +289,23 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
         let expected_owns = Owns::new(ObjectType::Relation(self.clone().into_owned()), attribute_type);
         Ok(self.get_owns(snapshot, type_manager)?.contains(&expected_owns).then_some(expected_owns))
+    }
+
+    fn get_owns_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
+        type_manager.get_relation_type_owns_transitive(snapshot, self.clone().into_owned())
+    }
+
+    fn get_owns_attribute_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
+        Ok(self.get_owns_transitive(snapshot, type_manager)?.get(&attribute_type).map(|owns| { owns.clone() }))
     }
 }
 

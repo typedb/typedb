@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use encoding::graph::type_::vertex::TypeVertex;
 use encoding::layout::prefix::Prefix;
@@ -82,6 +82,29 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         match self {
             ObjectType::Entity(entity) => entity.get_owns_attribute(snapshot, type_manager, attribute_type),
             ObjectType::Relation(relation) => relation.get_owns_attribute(snapshot, type_manager, attribute_type),
+        }
+    }
+
+    fn get_owns_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
+        match self {
+            ObjectType::Entity(entity) => entity.get_owns_transitive(snapshot, type_manager),
+            ObjectType::Relation(relation) => relation.get_owns_transitive(snapshot, type_manager),
+        }
+    }
+
+    fn get_owns_attribute_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
+        match self {
+            ObjectType::Entity(entity) => entity.get_owns_attribute_transitive(snapshot, type_manager, attribute_type),
+            ObjectType::Relation(relation) => relation.get_owns_attribute_transitive(snapshot, type_manager, attribute_type),
         }
     }
 }

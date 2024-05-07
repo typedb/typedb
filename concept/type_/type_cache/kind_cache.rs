@@ -93,6 +93,7 @@ pub(crate) struct CommonTypeCache<T: KindAPI<'static>> {
 #[derive(Debug)]
 pub struct OwnerPlayerCache {
     pub(super) owns_declared: HashSet<Owns<'static>>,
+    pub(super) owns_transitive: HashMap<AttributeType<'static>, Owns<'static>>,
     pub(super) plays_declared: HashSet<Plays<'static>>,
 }
 
@@ -251,6 +252,7 @@ impl OwnerPlayerCache {
         OwnerPlayerCache {
             owns_declared: TypeReader::get_owns(snapshot, type_.clone()).unwrap(),
             plays_declared: TypeReader::get_plays(snapshot, type_.clone()).unwrap(),
+            owns_transitive: TypeReader::get_owns_transitive(snapshot, type_.clone()).unwrap()
         }
     }
 }

@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashSet, hash::Hash, sync::Arc};
+use std::collections::HashMap;
 use std::marker::PhantomData;
 
 use bytes::{byte_array::ByteArray, Bytes};
@@ -349,6 +350,32 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         } else {
             let relates = TypeReader::get_relates(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(relates))
+        }
+    }
+
+    pub(crate) fn get_entity_type_owns_transitive(
+        &self,
+        snapshot: &Snapshot,
+        entity_type: EntityType<'static>,
+    ) -> Result<MaybeOwns<'_, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_owns_transitive(entity_type)))
+        } else {
+            let owns = TypeReader::get_owns_transitive(snapshot, entity_type.clone())?;
+            Ok(MaybeOwns::Owned(owns))
+        }
+    }
+
+    pub(crate) fn get_relation_type_owns_transitive(
+        &self,
+        snapshot: &Snapshot,
+        relation_type: RelationType<'static>,
+    ) -> Result<MaybeOwns<'_, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_owns_transitive(relation_type)))
+        } else {
+            let owns = TypeReader::get_owns_transitive(snapshot, relation_type.clone())?;
+            Ok(MaybeOwns::Owned(owns))
         }
     }
 
