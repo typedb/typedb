@@ -33,9 +33,7 @@ use crate::type_::role_type::RoleType;
 
 pub struct TypeReader { }
 
-// TODO: The '_s is only here for the enforcement of pass-by-value of types. If we drop that, we can move it to the function signatures
-impl<'_s> TypeReader
-    where '_s : 'static {
+impl TypeReader {
 
     pub(crate) fn get_labelled_type<U: ReadableType>(snapshot: &impl ReadableSnapshot, label: &Label<'_>) -> Result<Option<U::Output<'static>>, ConceptReadError>
     {
@@ -48,7 +46,7 @@ impl<'_s> TypeReader
     }
 
     // Used in type_manager to set supertype
-    pub(crate) fn get_supertype_vertex(snapshot: &impl ReadableSnapshot, subtype: TypeVertex<'_s>) -> Result<Option<TypeVertex<'static>>, ConceptReadError>
+    pub(crate) fn get_supertype_vertex(snapshot: &impl ReadableSnapshot, subtype: TypeVertex<'static>) -> Result<Option<TypeVertex<'static>>, ConceptReadError>
     {
         Ok(snapshot
             .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(subtype), TypeEdge::FIXED_WIDTH_ENCODING))
@@ -57,11 +55,11 @@ impl<'_s> TypeReader
             .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
     }
 
-    pub(crate) fn get_supertype<U: ReadableType + TypeAPI<'_s>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Option<U::Output<'static>>, ConceptReadError> {
+    pub(crate) fn get_supertype<U: ReadableType + TypeAPI<'static>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Option<U::Output<'static>>, ConceptReadError> {
         Ok(Self::get_supertype_vertex(snapshot, subtype.into_vertex())?.map(|supertype_vertex| U::read_from(supertype_vertex.into_bytes())))
     }
 
-    pub fn get_supertypes_transitive<U: ReadableType + TypeAPI<'_s>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Vec<U::Output<'static>>, ConceptReadError> {
+    pub fn get_supertypes_transitive<U: ReadableType + TypeAPI<'static>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Vec<U::Output<'static>>, ConceptReadError> {
         // WARN: supertypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut supertype = Some(type_)`
         let mut supertypes = Vec::new();
@@ -73,7 +71,7 @@ impl<'_s> TypeReader
         Ok(supertypes)
     }
 
-    fn get_subtypes_vertex(snapshot: &impl ReadableSnapshot, supertype: TypeVertex<'_s>) -> Result<Vec<TypeVertex<'static>>, ConceptReadError>
+    fn get_subtypes_vertex(snapshot: &impl ReadableSnapshot, supertype: TypeVertex<'static>) -> Result<Vec<TypeVertex<'static>>, ConceptReadError>
     {
         snapshot
             .iterate_range(KeyRange::new_within(build_edge_sub_reverse_prefix_from(supertype), TypeEdge::FIXED_WIDTH_ENCODING))
@@ -81,13 +79,13 @@ impl<'_s> TypeReader
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn get_subtypes<U: ReadableType + TypeAPI<'_s>>(snapshot: &impl ReadableSnapshot, supertype: U) -> Result<Vec<U::Output<'static>>, ConceptReadError> {
+    pub(crate) fn get_subtypes<U: ReadableType + TypeAPI<'static>>(snapshot: &impl ReadableSnapshot, supertype: U) -> Result<Vec<U::Output<'static>>, ConceptReadError> {
         Ok(Self::get_subtypes_vertex(snapshot, supertype.into_vertex())?.into_iter()
             .map(|subtype_vertex| U::read_from(subtype_vertex.into_bytes()))
             .collect::<Vec<U::Output<'static>>>())
     }
 
-    pub fn get_subtypes_transitive<U: TypeAPI<'_s> + ReadableType>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Vec<U::Output<'static>>, ConceptReadError> {
+    pub fn get_subtypes_transitive<U: TypeAPI<'static> + ReadableType>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Vec<U::Output<'static>>, ConceptReadError> {
         // WARN: subtypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut stack = vec!(subtype.clone());`
         let mut subtypes = Vec::new();
@@ -100,7 +98,7 @@ impl<'_s> TypeReader
         Ok(subtypes)
     }
 
-    pub(crate) fn get_label(snapshot: &impl ReadableSnapshot, type_: impl TypeAPI<'_s>) -> Result<Option<Label<'static>>, ConceptReadError> {
+    pub(crate) fn get_label(snapshot: &impl ReadableSnapshot, type_: impl TypeAPI<'static>) -> Result<Option<Label<'static>>, ConceptReadError> {
         let key = build_property_type_label(type_.into_vertex());
         snapshot
             .get_mapped(key.into_storage_key().as_reference(), |reference| {
@@ -112,7 +110,7 @@ impl<'_s> TypeReader
 
     pub(crate) fn get_owns(
         snapshot: &impl ReadableSnapshot,
-        owner: impl OwnerAPI<'_s>
+        owner: impl OwnerAPI<'static>
     ) -> Result<HashSet<Owns<'static>>, ConceptReadError>
     {
         let owns_prefix = build_edge_owns_prefix_from(owner.into_vertex());
@@ -127,7 +125,7 @@ impl<'_s> TypeReader
 
     pub(crate) fn get_plays(
         snapshot: &impl ReadableSnapshot,
-        player: impl PlayerAPI<'_s>
+        player: impl PlayerAPI<'static>
     ) -> Result<HashSet<Plays<'static>>, ConceptReadError>
     {
         let plays_prefix = build_edge_plays_prefix_from(player.into_vertex());
@@ -142,7 +140,7 @@ impl<'_s> TypeReader
 
     pub(crate) fn get_relates(
         snapshot: &impl ReadableSnapshot,
-        relation: RelationType<'_s>,
+        relation: RelationType<'static>,
     ) -> Result<HashSet<Relates<'static>>, ConceptReadError>
     {
         let relates_prefix = build_edge_relates_prefix_from(relation.into_vertex());
@@ -157,7 +155,7 @@ impl<'_s> TypeReader
 
     pub(crate) fn get_relations(
         snapshot: &impl ReadableSnapshot,
-        role: RoleType<'_s>,
+        role: RoleType<'static>,
     ) -> Result<Relates<'static>, ConceptReadError>
     {
         let relates_prefix = build_edge_relates_reverse_prefix_from(role.into_vertex());
@@ -170,7 +168,7 @@ impl<'_s> TypeReader
             .map(|v| { v.first().unwrap().clone() })
     }
 
-    pub(crate) fn get_value_type(snapshot: &impl ReadableSnapshot, type_: AttributeType<'_s>) -> Result<Option<ValueType>, ConceptReadError> {
+    pub(crate) fn get_value_type(snapshot: &impl ReadableSnapshot, type_: AttributeType<'static>) -> Result<Option<ValueType>, ConceptReadError> {
         snapshot
             .get_mapped(
                 build_property_type_value_type(type_.into_vertex()).into_storage_key().as_reference(),
@@ -183,7 +181,7 @@ impl<'_s> TypeReader
 
     pub(crate) fn get_type_annotations(
         snapshot: &impl ReadableSnapshot,
-        type_: impl TypeAPI<'_s>,
+        type_: impl TypeAPI<'static>,
     ) -> Result<HashSet<Annotation>, ConceptReadError> {
         snapshot
             .iterate_range(KeyRange::new_inclusive(
@@ -245,7 +243,7 @@ impl<'_s> TypeReader
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
 
-    pub(crate) fn get_type_ordering<'a>(snapshot: &impl ReadableSnapshot, role_type: RoleType<'_s>) -> Result<Ordering, ConceptReadError> {
+    pub(crate) fn get_type_ordering<'a>(snapshot: &impl ReadableSnapshot, role_type: RoleType<'static>) -> Result<Ordering, ConceptReadError> {
         let ordering = snapshot
             .get_mapped(
                 build_property_type_ordering(role_type.vertex()).into_storage_key().as_reference(),
@@ -254,7 +252,7 @@ impl<'_s> TypeReader
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
         Ok(ordering.unwrap())
     }
-    pub(crate) fn get_type_edge_ordering<'a>(snapshot: &impl ReadableSnapshot, owns: Owns<'_s>)  -> Result<Ordering, ConceptReadError> {
+    pub(crate) fn get_type_edge_ordering<'a>(snapshot: &impl ReadableSnapshot, owns: Owns<'static>)  -> Result<Ordering, ConceptReadError> {
         let ordering = snapshot
             .get_mapped(
                 build_property_type_edge_ordering(owns.into_type_edge()).into_storage_key().as_reference(),

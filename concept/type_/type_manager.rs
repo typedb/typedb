@@ -252,10 +252,7 @@ macro_rules! get_type_annotations {
     }
 }
 
-// TODO: The '_s is only here for the enforcement of pass-by-value of types. If we drop that, we can move it to the function signatures
-impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
-where
-    '_s: 'static,
+impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
 {
     pub fn new(
         vertex_generator: Arc<TypeVertexGenerator>,
@@ -419,7 +416,7 @@ where
         }
     }
 
-    pub(crate) fn get_owns_ordering(&self, snapshot: &Snapshot, owns: Owns<'_s>) -> Result<Ordering, ConceptReadError> {
+    pub(crate) fn get_owns_ordering(&self, snapshot: &Snapshot, owns: Owns<'static>) -> Result<Ordering, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_owns_ordering(owns))
         } else {
