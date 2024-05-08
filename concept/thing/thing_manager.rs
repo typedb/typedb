@@ -155,7 +155,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         }
     }
 
-    pub(crate) fn get_attribute_with_value(
+    pub fn get_attribute_with_value(
         &self,
         snapshot: &Snapshot,
         attribute_type: AttributeType<'static>,
