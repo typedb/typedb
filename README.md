@@ -17,7 +17,7 @@ TypeDB is a general-purpose database designed with a new kind of high-level, dec
 - Explore the basics of TypeDB in our easy [Crash Course](https://typedb.com/docs/home/crash-course).
 - Discover more of TypeDB’s unique [features](https://typedb.com/features).
 - Master TypeDB with our end-to-end [Learning Course](https://typedb.com/docs/learn/overview).
-- Learn about TypeDB’s novel [querying formalism](https://typedb.com/blog/towards-typeful-database-languages).
+- Learn more at TypeDB's [Learning Center](https://typedb.com/learn).
 
 > **IMPORTANT NOTE:** TypeDB & TypeQL are in the process of being rewritten in [Rust](https://www.rust-lang.org). There will be significant refinement to the language, and minor breaks in backwards compatibility. Learn about the changes on our [roadmap issue on GitHub](https://github.com/vaticle/typedb/issues/6764). The biggest change to TypeDB 3.0 will be our storage data structure and architecture that significantly boosts performance. We’re aiming to release 3.0 in the summer this year, along with preliminary benchmarks of TypeDB.
 
