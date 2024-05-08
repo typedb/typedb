@@ -78,6 +78,12 @@ pub(crate) struct OwnsCache {
 }
 
 #[derive(Debug)]
+pub(crate) struct PlaysCache {
+    pub(super) overrides: Option<Plays<'static>>
+}
+
+
+#[derive(Debug)]
 pub(crate) struct CommonTypeCache<T: KindAPI<'static>> {
     pub(super) type_: T,
     pub(super) label: Label<'static>,
@@ -212,6 +218,29 @@ impl OwnsCache {
                             .into_iter()
                             .map(|annotation| OwnsAnnotation::from(annotation))
                             .collect(),
+                    },
+                )
+            })
+            .unwrap()
+    }
+}
+
+impl PlaysCache {
+    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Plays<'static>, PlaysCache> {
+        snapshot
+            .iterate_range(KeyRange::new_within(
+                TypeEdge::build_prefix(Prefix::EdgePlays),
+                TypeEdge::FIXED_WIDTH_ENCODING,
+            ))
+            .collect_cloned_hashmap(|key, _| {
+                let edge = TypeEdge::new(Bytes::Reference(key.byte_ref()));
+                let player = ObjectType::new(edge.from().into_owned());
+                let role = RoleType::new(edge.to().into_owned());
+                let plays = Plays::new(player, role);
+                (
+                    plays.clone(),
+                    PlaysCache {
+                        overrides : TypeReader::get_plays_override(snapshot, plays.clone()).unwrap(),
                     },
                 )
             })

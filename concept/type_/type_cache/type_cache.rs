@@ -17,7 +17,7 @@ use encoding::{
 use storage::{snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
 
 use crate::type_::{attribute_type::AttributeType, entity_type::EntityType, owns::{Owns, OwnsAnnotation}, plays::Plays, relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::ReadableType, Ordering, TypeAPI, OwnerAPI, PlayerAPI};
-use crate::type_::type_cache::kind_cache::{AttributeTypeCache, EntityTypeCache, RelationTypeCache, RoleTypeCache, OwnsCache, CommonTypeCache, OwnerPlayerCache};
+use crate::type_::type_cache::kind_cache::{AttributeTypeCache, EntityTypeCache, RelationTypeCache, RoleTypeCache, OwnsCache, PlaysCache, CommonTypeCache, OwnerPlayerCache};
 use crate::type_::type_cache::selection;
 use crate::type_::type_cache::selection::{HasOwnerPlayerCache, HasCommonTypeCache, CacheGetter};
 use crate::type_::type_manager::KindAPI;
@@ -34,6 +34,7 @@ pub struct TypeCache {
     attribute_types: Box<[Option<AttributeTypeCache>]>,
 
     owns: HashMap<Owns<'static>, OwnsCache>,
+    plays: HashMap<Plays<'static>, PlaysCache>,
 
     entity_types_index_label: HashMap<Label<'static>, EntityType<'static>>,
     relation_types_index_label: HashMap<Label<'static>, RelationType<'static>>,
@@ -86,6 +87,7 @@ impl TypeCache {
             role_types: role_type_caches,
             attribute_types: attribute_type_caches,
             owns: OwnsCache::create(&snapshot),
+            plays: PlaysCache::create(&snapshot),
 
             entity_types_index_label,
             relation_types_index_label,
@@ -214,12 +216,14 @@ impl TypeCache {
         self.owns.get(&owns).unwrap().ordering
     }
 
-    // TODO: Collapse by parametrised type
+    // TODO: Rearrange
     pub(crate) fn get_owns_override<'c>(&'c self, owns: Owns<'c>) -> &'c Option<Owns<'static>> {
         &self.owns.get(&owns).unwrap().overrides
     }
 
-
+    pub(crate) fn get_plays_override<'c>(&'c self, plays: Plays<'c>) -> &'c Option<Plays<'static>> {
+        &self.plays.get(&plays).unwrap().overrides
+    }
 }
 
 #[derive(Debug)]

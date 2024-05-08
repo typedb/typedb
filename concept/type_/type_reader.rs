@@ -175,6 +175,19 @@ impl TypeReader {
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
+    pub(crate) fn get_plays_override(
+        snapshot: &impl ReadableSnapshot,
+        plays: Plays<'static>
+    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
+        let override_property_key = build_property_type_edge_override(plays.into_type_edge());
+        snapshot
+            .get_mapped(override_property_key.into_storage_key().as_reference(), |overridden_edge_bytes| {
+                let overridden_edge = new_edge_plays(Bytes::Reference(overridden_edge_bytes));
+                Plays::new(ObjectType::new(overridden_edge.from().into_owned()), RoleType::new(overridden_edge.to().into_owned()))
+            })
+            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
+    }
+
     pub(crate) fn get_relates(
         snapshot: &impl ReadableSnapshot,
         relation: RelationType<'static>,

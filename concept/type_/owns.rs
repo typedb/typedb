@@ -67,7 +67,6 @@ impl<'a> Owns<'a> {
         type_manager.storage_set_owns_overridden(snapshot, self.clone().into_owned(), overridden)
     }
 
-
     pub(crate) fn get_annotations<'this, Snapshot: ReadableSnapshot>(
         &'this self,
         snapshot: &Snapshot,

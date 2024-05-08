@@ -32,7 +32,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     AsBytes, Keyable,
 };
-use encoding::graph::type_::edge::new_edge_owns;
+
 use encoding::graph::type_::property::build_property_type_edge_override;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -406,6 +406,14 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         }
     }
 
+    pub(crate) fn get_plays_overridden(&self, snapshot: &Snapshot, plays: Plays<'static>) -> Result<MaybeOwns<'_, Option<Plays<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_plays_override(plays)))
+        } else {
+            Ok(MaybeOwns::Owned(TypeReader::get_plays_override(snapshot, plays)?))
+        }
+    }
+
     pub(crate) fn get_attribute_type_value_type(
         &self,
         snapshot: &Snapshot,
@@ -674,6 +682,13 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.delete(plays.into_storage_key().into_owned_array());
         let plays_reverse = build_edge_plays_reverse(role.into_vertex(), player.into_vertex());
         snapshot.delete(plays_reverse.into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn storage_set_plays_overridden(&self, snapshot: &mut Snapshot, plays: Plays<'static>, overridden: Plays<'static>) {
+        let property_key =
+            build_property_type_edge_override(plays.into_type_edge()).into_storage_key().into_owned_array();
+        let overridden_plays = ByteArray::copy(overridden.into_type_edge().into_bytes().bytes());
+        snapshot.put_val(property_key, overridden_plays);
     }
 
     pub(crate) fn storage_set_relates(&self, snapshot: &mut Snapshot, relation: RelationType<'static>, role: RoleType<'static>) {
