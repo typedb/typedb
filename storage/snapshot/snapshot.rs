@@ -99,7 +99,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
                 Write::Insert {value, .. } | Write::Put {value, .. } => {
                     Ok(ByteArray::copy(value.bytes()))
                 },
-                Write::Delete => unreachable!("Require key exists in snapshot or in storage.")
+                Write::Delete => Err(SnapshotGetError::GetRequiredKeyDoesntExist { key: StorageKey::Array(key.into_owned_array()) })
             }
         } else {
             let storage_value = self.get_mapped(key.as_reference(), |reference| ByteArray::from(reference))?;
@@ -107,8 +107,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
                 self.operations_mut().lock_add(ByteArray::copy(key.bytes()), LockType::Unmodifiable);
                 Ok(value)
             } else {
-                // TODO: what if the user concurrent requires a concept while deleting it in another query
-                unreachable!("Require key exists in snapshot or in storage.");
+                Err(SnapshotGetError::GetRequiredKeyDoesntExist { key: StorageKey::Array(key.into_owned_array()) })
             }
         }
     }
@@ -426,6 +425,7 @@ impl Error for SnapshotError {
 #[derive(Debug, Clone)]
 pub enum SnapshotGetError {
     MVCCRead { source: MVCCReadError },
+    GetRequiredKeyDoesntExist { key: StorageKey<'static, BUFFER_KEY_INLINE> }
 }
 
 impl fmt::Display for SnapshotGetError {
@@ -438,6 +438,7 @@ impl Error for SnapshotGetError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::MVCCRead { source, .. } => Some(source),
+            SnapshotGetError::GetRequiredKeyDoesntExist { .. } => None,
         }
     }
 }
