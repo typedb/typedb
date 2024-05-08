@@ -10,6 +10,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use ::concept::thing::attribute::Attribute;
 use cucumber::{StatsWriter, World};
 use database::Database;
 use durability::wal::WAL;
@@ -29,6 +30,7 @@ pub struct Context {
     server_dir: Option<TempDir>,
     server: Option<typedb::Server>,
     active_transaction: Option<ActiveTransaction>,
+    attributes: HashMap<String, Option<Attribute<'static>>>
 }
 
 impl Context {
@@ -98,7 +100,6 @@ macro_rules! generic_step {
         $vis $async fn $fn_name $args $(-> $res)? $body
 
         const _: () = {
-            #[allow(unused)]
             $(
             #[::cucumber::given($pattern)]
             #[::cucumber::when($pattern)]

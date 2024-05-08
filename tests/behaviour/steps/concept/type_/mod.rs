@@ -4,6 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod attribute_type;
+pub mod attribute_type;
 mod relation_type;
 mod thing_type;

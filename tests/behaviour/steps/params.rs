@@ -4,16 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::str::FromStr;
+use std::{convert::Infallible, str::FromStr};
+
+use concept::{
+    thing::value::Value as TypeDBValue,
+    type_::{annotation, annotation::Annotation as TypeDBAnnotation},
+};
 use cucumber::Parameter;
-use concept::type_::annotation;
-use concept::type_::annotation::{Annotation as TypeDBAnnotation};
 use encoding::{
     graph::type_::Kind as TypeDBTypeKind,
-    value::{
-        label::Label as TypeDBLabel,
-        value_type::ValueType as TypeDBValueType,
-    },
+    value::{label::Label as TypeDBLabel, value_type::ValueType as TypeDBValueType},
 };
 
 #[derive(Debug, Default, Parameter)]
@@ -25,7 +25,7 @@ pub(crate) enum MayError {
 }
 
 impl MayError {
-    pub fn check<T,E>(&self, res: &Result<T,E>) {
+    pub fn check<T, E>(&self, res: &Result<T, E>) {
         match self {
             MayError::False => assert!(res.is_ok()),
             MayError::True => assert!(res.is_err()),
@@ -43,7 +43,6 @@ impl FromStr for MayError {
         })
     }
 }
-
 
 #[derive(Debug, Default, Parameter)]
 #[param(name = "boolean", regex = "(true|false)")]
@@ -108,7 +107,6 @@ impl FromStr for ContainsOrDoesnt {
     }
 }
 
-
 #[derive(Debug, Parameter)]
 #[param(name = "type_label", regex = r"[A-Za-z0-9_\-:]+")]
 pub(crate) struct Label {
@@ -130,7 +128,7 @@ impl Label {
 impl FromStr for Label {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok( Self { label_string: s.to_string() })
+        Ok(Self { label_string: s.to_string() })
     }
 }
 
@@ -142,7 +140,7 @@ pub(crate) struct RootLabel {
 
 impl RootLabel {
     pub fn to_typedb(&self) -> TypeDBTypeKind {
-         self.kind
+        self.kind
     }
 }
 
@@ -153,12 +151,11 @@ impl FromStr for RootLabel {
             "attribute" => TypeDBTypeKind::Attribute,
             "entity" => TypeDBTypeKind::Entity,
             "relation" => TypeDBTypeKind::Relation,
-            _ => unreachable!()
+            _ => unreachable!(),
         };
         Ok(RootLabel { kind })
     }
 }
-
 
 #[derive(Debug, Default, Parameter)]
 #[param(name = "value_type", regex = "(boolean|long|double|string|datetime)")]
@@ -168,7 +165,7 @@ pub(crate) enum ValueType {
     Long,
     Double,
     String,
-    DateTime
+    DateTime,
 }
 
 impl ValueType {
@@ -192,16 +189,36 @@ impl FromStr for ValueType {
             "boolean" => Self::Boolean,
             "double" => Self::Double,
             "datetime" => Self::DateTime,
-            _ => panic!("Unrecognised value type")
+            _ => panic!("Unrecognised value type"),
         })
     }
 }
 
+#[derive(Debug, Default, Parameter)]
+#[param(name = "value", regex = "(.*)")]
+pub(crate) struct Value {
+    raw_value: String,
+}
 
+impl Value {
+    pub fn to_typedb(&self, value_type: TypeDBValueType) -> TypeDBValue<'static> {
+        match value_type {
+            TypeDBValueType::Long => TypeDBValue::Long(self.raw_value.parse().unwrap()),
+            _ => todo!(),
+        }
+    }
+}
+
+impl FromStr for Value {
+    type Err = Infallible;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self { raw_value: s.to_owned() })
+    }
+}
 
 #[derive(Debug, Parameter)]
 #[param(name = "annotation", regex = r"(@[a-z]+\([^\)]+\)|@[a-z]+)")]
-pub(crate) struct  Annotation {
+pub(crate) struct Annotation {
     typedb_annotation: TypeDBAnnotation,
 }
 
@@ -209,19 +226,30 @@ impl Annotation {
     pub fn to_typedb(&self) -> TypeDBAnnotation {
         self.typedb_annotation
     }
-
 }
 
-impl FromStr for crate::params::Annotation {
+impl FromStr for Annotation {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // This will have to be smarter to parse annotations out.
         let typedb_annotation = match s {
-            "@abstract" =>  { TypeDBAnnotation::Abstract(annotation::AnnotationAbstract::new()) },
-            _ => panic!("Unrecognised (or unimplemented) annotation: {s}")
+            "@abstract" => TypeDBAnnotation::Abstract(annotation::AnnotationAbstract::new()),
+            _ => panic!("Unrecognised (or unimplemented) annotation: {s}"),
         };
         Ok(Self { typedb_annotation })
     }
-
 }
 
+#[derive(Clone, Debug, Default, Parameter)]
+#[param(name = "var", regex = r"(\$[\w_-]+)")]
+pub struct Var {
+    pub name: String,
+}
+
+impl FromStr for Var {
+    type Err = Infallible;
+
+    fn from_str(name: &str) -> Result<Self, Self::Err> {
+        Ok(Self { name: name.to_owned() })
+    }
+}
