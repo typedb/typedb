@@ -171,8 +171,9 @@ impl TypeCache {
         })
     }
 
-    fn build_common_cache<Snapshot: ReadableSnapshot, T>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
+    fn build_common_cache<Snapshot, T>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
     where
+        Snapshot: ReadableSnapshot,
         T: TypeAPI<'static> + TypeAPITraits + ReadableType<Output<'static>=T>,
     {
         let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();

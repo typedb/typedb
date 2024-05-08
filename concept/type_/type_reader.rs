@@ -35,12 +35,13 @@ pub struct TypeReader { }
 
 impl TypeReader {
 
-    pub(crate) fn get_labelled_type<U: ReadableType>(snapshot: &impl ReadableSnapshot, label: &Label<'_>) -> Result<Option<U::Output<'static>>, ConceptReadError>
+    pub(crate) fn get_labelled_type<Tgi>(snapshot: &impl ReadableSnapshot, label: &Label<'_>) -> Result<Option<T::Output<'static>>, ConceptReadError>
+        where T: ReadableType
     {
         let key = LabelToTypeVertexIndex::build(label).into_storage_key();
         match snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {
             Ok(None) => Ok(None),
-            Ok(Some(value)) => Ok(Some(U::read_from(Bytes::Array(value)))),
+            Ok(Some(value)) => Ok(Some(T::read_from(Bytes::Array(value)))),
             Err(error) => Err(ConceptReadError::SnapshotGet { source: error })
         }
     }
@@ -55,17 +56,21 @@ impl TypeReader {
             .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
     }
 
-    pub(crate) fn get_supertype<U: ReadableType + TypeAPI<'static>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Option<U::Output<'static>>, ConceptReadError> {
-        Ok(Self::get_supertype_vertex(snapshot, subtype.into_vertex())?.map(|supertype_vertex| U::read_from(supertype_vertex.into_bytes())))
+    pub(crate) fn get_supertype<T: ReadableType + TypeAPI<'static>>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Option<T::Output<'static>>, ConceptReadError>
+        where T: ReadableType + TypeAPI<'static>
+    {
+        Ok(Self::get_supertype_vertex(snapshot, subtype.into_vertex())?.map(|supertype_vertex| T::read_from(supertype_vertex.into_bytes())))
     }
 
-    pub fn get_supertypes_transitive<U: ReadableType + TypeAPI<'static>>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Vec<U::Output<'static>>, ConceptReadError> {
+    pub fn get_supertypes_transitive<T: ReadableType + TypeAPI<'static>>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Vec<T::Output<'static>>, ConceptReadError>
+        where T: ReadableType + TypeAPI<'static>
+    {
         // WARN: supertypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut supertype = Some(type_)`
         let mut supertypes = Vec::new();
         let mut supervertex_opt = TypeReader::get_supertype_vertex(snapshot, subtype.clone().into_vertex())?;
         while let Some(supervertex) = supervertex_opt {
-            supertypes.push(U::read_from(supervertex.clone().into_bytes()));
+            supertypes.push(T::read_from(supervertex.clone().into_bytes()));
             supervertex_opt = TypeReader::get_supertype_vertex(snapshot, supervertex.clone())?;
         }
         Ok(supertypes)
@@ -79,20 +84,24 @@ impl TypeReader {
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn get_subtypes<U: ReadableType + TypeAPI<'static>>(snapshot: &impl ReadableSnapshot, supertype: U) -> Result<Vec<U::Output<'static>>, ConceptReadError> {
+    pub(crate) fn get_subtypes<T>(snapshot: &impl ReadableSnapshot, supertype: T) -> Result<Vec<T::Output<'static>>, ConceptReadError>
+        where T: ReadableType + TypeAPI<'static>
+    {
         Ok(Self::get_subtypes_vertex(snapshot, supertype.into_vertex())?.into_iter()
-            .map(|subtype_vertex| U::read_from(subtype_vertex.into_bytes()))
-            .collect::<Vec<U::Output<'static>>>())
+            .map(|subtype_vertex| T::read_from(subtype_vertex.into_bytes()))
+            .collect::<Vec<T::Output<'static>>>())
     }
 
-    pub fn get_subtypes_transitive<U: TypeAPI<'static> + ReadableType>(snapshot: &impl ReadableSnapshot, subtype: U) -> Result<Vec<U::Output<'static>>, ConceptReadError> {
+    pub fn get_subtypes_transitive<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Vec<T::Output<'static>>, ConceptReadError>
+        where T: ReadableType + TypeAPI<'static>
+    {
         // WARN: subtypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut stack = vec!(subtype.clone());`
         let mut subtypes = Vec::new();
         let mut stack = TypeReader::get_subtypes_vertex(snapshot, subtype.clone().into_vertex())?;
         while !stack.is_empty() {
             let subvertex = stack.pop().unwrap();
-            subtypes.push(U::read_from(subvertex.clone().into_bytes()));
+            subtypes.push(T::read_from(subvertex.clone().into_bytes()));
             stack.append(&mut TypeReader::get_subtypes_vertex(snapshot, subvertex.clone())?); // TODO: Should we pass an accumulator instead?
         }
         Ok(subtypes)
