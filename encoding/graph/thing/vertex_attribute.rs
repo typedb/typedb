@@ -277,7 +277,7 @@ impl LongAttributeID {
     }
 
     pub(crate) const fn is_inlineable() -> bool {
-        false
+        true
     }
 
     pub fn bytes(&self) -> [u8; Self::LENGTH] {
