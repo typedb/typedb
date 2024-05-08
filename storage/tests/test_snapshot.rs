@@ -159,6 +159,31 @@ fn snapshot_read_through() {
 }
 
 #[test]
+fn snapshot_read_buffered_delete_of_persisted_key() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+
+    let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0, 0x1]));
+    let key_2 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x1, 0x0, 0x10]));
+    {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        snapshot.put(key_1.clone());
+        snapshot.put(key_2.clone());
+        snapshot.commit().unwrap();
+    }
+
+    {
+        let mut snapshot = storage.clone().open_snapshot_write();;
+        assert!(snapshot.get::<48>(StorageKey::Array(key_1.clone()).as_reference()).unwrap().is_some());
+        assert!(snapshot.get::<48>(StorageKey::Array(key_2.clone()).as_reference()).unwrap().is_some());
+        snapshot.delete(key_2.clone());
+        assert!(snapshot.get::<48>(StorageKey::Array(key_2.clone()).as_reference()).unwrap().is_none());
+        snapshot.commit().unwrap();
+    }
+}
+
+#[test]
 fn snapshot_delete_reinserted() {
     init_logging();
     let storage_path = create_tmp_dir();
