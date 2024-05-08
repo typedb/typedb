@@ -145,7 +145,7 @@ impl CLIArgs {
         "rocks_disable_wal", "rocks_set_sync", "rocks_write_buffer_mb"
     ];
     fn get_arg_as<T: std::str::FromStr>(args:&HashMap<String, String>, key: &str, required: bool) -> Result<Option<T>, String> {
-        match args.get(&key.to_string()) {
+        match args.get(&key.to_owned()) {
             None => { if required { Err(format!("Pass {key} as arg")) } else { Ok(None) } },
             Some(value) => Ok(Some(value.parse().map_err(|_| format!("Error parsing value for {key}"))?))
         }

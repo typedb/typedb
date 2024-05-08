@@ -242,7 +242,7 @@ impl TypeReader {
             for relates in declared_relates.into_iter() {
                 let role = relates.role();
                 if !overridden_relates.contains(&role) {
-                    let role_name = Self::get_label(snapshot, relates.role())?.unwrap().name.to_string();
+                    let role_name = Self::get_label(snapshot, relates.role())?.unwrap().name.as_str().to_owned();
                     debug_assert!(!transitive_relates.contains_key(&role_name));
                     transitive_relates.insert(role_name, relates.clone());
                     if let Some(overridden) = Self::get_supertype(snapshot, relates.role().clone())? {

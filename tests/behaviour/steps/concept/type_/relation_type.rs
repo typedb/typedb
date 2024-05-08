@@ -55,7 +55,7 @@ pub async fn relation_type_override_role(
         let overridden_relates_opt = relation_supertype
             .get_relates_role_transitive(&mut tx.snapshot, &tx.type_manager, overridden_label.to_typedb().name().as_str())
             .unwrap();
-        debug_assert!(overridden_relates_opt.is_some(), "Ah, get_role_transitive returned opt");
+        debug_assert!(overridden_relates_opt.is_some(), "Ah, get_role_transitive returned None");
         }
 
         let overridden_relates = relation_supertype

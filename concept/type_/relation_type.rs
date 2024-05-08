@@ -252,7 +252,6 @@ impl<'a> RelationType<'a> {
         type_manager: &TypeManager<Snapshot>,
         name: &str,
     ) -> Result<Option<Relates<'static>>, ConceptReadError> {
-        self.get_relates_transitive(snapshot, type_manager).unwrap().iter().for_each(|(k,v)| { println!("- '{}':'{:?}' ; Does it match '{}'?", k, v, name);});
         Ok(self.get_relates_transitive(snapshot, type_manager)?.get(name).map(|relates| { relates.clone() }))
     }
 
