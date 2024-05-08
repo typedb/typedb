@@ -69,7 +69,9 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
-        todo!()
+        // TODO: Validation
+        type_manager.delete_attribute_type(snapshot, self);
+        Ok(())
     }
 }
 

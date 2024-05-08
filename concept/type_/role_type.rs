@@ -69,7 +69,9 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
-        todo!()
+        // TODO: validation
+        type_manager.delete_role_type(snapshot, self);
+        Ok(())
     }
 }
 

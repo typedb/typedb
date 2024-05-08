@@ -11,7 +11,7 @@ use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    error::{ConceptReadError, ConceptWriteError},
+    error::ConceptReadError,
     type_::{
         annotation::{Annotation, AnnotationCardinality, AnnotationDistinct},
         attribute_type::AttributeType,

@@ -79,7 +79,9 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
-        todo!()
+        // TODO: validation
+        type_manager.delete_relation_type(snapshot, self);
+        Ok(())
     }
 }
 
@@ -350,7 +352,7 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
 
     fn get_plays<'m, Snapshot: ReadableSnapshot>(
         &self,
-        snapshot: &Snapshot,
+        _snapshot: &Snapshot,
         _type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
         todo!()

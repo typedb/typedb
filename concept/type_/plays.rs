@@ -4,14 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::{build_edge_owns, build_edge_plays, TypeEdge};
+use encoding::graph::type_::edge::{build_edge_plays, TypeEdge};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::ConceptReadError,
     type_::{
-        object_type::ObjectType, owns::Owns, relates::Relates, role_type::RoleType, type_manager::TypeManager,
+        object_type::ObjectType, role_type::RoleType, type_manager::TypeManager,
         IntoCanonicalTypeEdge, TypeAPI,
     },
 };

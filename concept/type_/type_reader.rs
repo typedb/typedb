@@ -18,7 +18,7 @@ use encoding::{
         index::LabelToTypeVertexIndex,
         property::{
             build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label,
-            build_property_type_ordering, build_property_type_value_type, new_property_type_edge_override,
+            build_property_type_ordering, build_property_type_value_type,
             TypeEdgeProperty, TypeVertexProperty,
         },
         vertex::TypeVertex,
@@ -48,7 +48,7 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::ReadableType,
-        IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        IntoCanonicalTypeEdge, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 use crate::type_::type_manager::KindAPI;
