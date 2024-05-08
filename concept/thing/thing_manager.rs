@@ -480,12 +480,12 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         ))
     }
 
-    pub fn create_attribute(
+    pub fn create_attribute<'a>(
         &self,
         snapshot: &mut Snapshot,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
-    ) -> Result<Attribute<'_>, ConceptWriteError> {
+    ) -> Result<Attribute<'a>, ConceptWriteError> {
         let value_type = attribute_type.get_value_type(snapshot, self.type_manager.as_ref())?;
         if Some(value.value_type()) == value_type {
             let vertex = match value {
