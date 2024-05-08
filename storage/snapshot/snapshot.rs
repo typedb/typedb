@@ -99,7 +99,9 @@ pub trait WritableSnapshot: ReadableSnapshot {
                 Write::Insert {value, .. } | Write::Put {value, .. } => {
                     Ok(ByteArray::copy(value.bytes()))
                 },
-                Write::Delete => Err(SnapshotGetError::GetRequiredKeyDoesntExist { key: StorageKey::Array(key.into_owned_array()) })
+                Write::Delete => {
+                    Err(SnapshotGetError::GetRequiredKeyDoesntExist { key: StorageKey::Array(key.into_owned_array()) })
+                }
             }
         } else {
             let storage_value = self.get_mapped(key.as_reference(), |reference| ByteArray::from(reference))?;
