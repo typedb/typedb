@@ -740,36 +740,36 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
 }
 
 pub trait ReadableType {
-    // Consider replacing 'b with 'static
-    type Output<'b>: 'b;
-    fn read_from<'b>(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::Output<'b>;
+    // Consider replacing 'bytes with 'static
+    type Output<'bytes>: 'bytes;
+    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::Output<'bytes>;
 }
 
 
 impl<'a> ReadableType for AttributeType<'a> {
-    type Output<'b> = AttributeType<'b>;
-    fn read_from<'b>(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::Output<'b> {
+    type Output<'bytes> = AttributeType<'bytes>;
+    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::Output<'bytes> {
         AttributeType::new(new_vertex_attribute_type(b))
     }
 }
 
 impl<'a> ReadableType for EntityType<'a> {
-    type Output<'b> = EntityType<'b>;
-    fn read_from<'b>(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::Output<'b> {
+    type Output<'bytes> = EntityType<'bytes>;
+    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::Output<'bytes> {
         EntityType::new(new_vertex_entity_type(b))
     }
 }
 
 impl<'a> ReadableType for RelationType<'a> {
-    type Output<'b> = RelationType<'b>;
-    fn read_from<'b>(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::Output<'b> {
+    type Output<'bytes> = RelationType<'bytes>;
+    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::Output<'bytes> {
         RelationType::new(new_vertex_relation_type(b))
     }
 }
 
 impl<'a> ReadableType for RoleType<'a> {
-    type Output<'b> = RoleType<'b>;
-    fn read_from<'b>(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::Output<'b> {
+    type Output<'bytes> = RoleType<'bytes>;
+    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::Output<'bytes> {
         RoleType::new(new_vertex_role_type(b))
     }
 }

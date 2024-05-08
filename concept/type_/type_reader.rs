@@ -35,7 +35,7 @@ pub struct TypeReader { }
 
 impl TypeReader {
 
-    pub(crate) fn get_labelled_type<Tgi>(snapshot: &impl ReadableSnapshot, label: &Label<'_>) -> Result<Option<T::Output<'static>>, ConceptReadError>
+    pub(crate) fn get_labelled_type<T>(snapshot: &impl ReadableSnapshot, label: &Label<'_>) -> Result<Option<T::Output<'static>>, ConceptReadError>
         where T: ReadableType
     {
         let key = LabelToTypeVertexIndex::build(label).into_storage_key();
