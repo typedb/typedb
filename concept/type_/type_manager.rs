@@ -353,6 +353,19 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         }
     }
 
+    pub(crate) fn get_relation_type_relates_transitive(
+        &self,
+        snapshot: &Snapshot,
+        relation_type: RelationType<'static>
+    ) -> Result<MaybeOwns<'_, HashMap<String, Relates<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates_transitive(relation_type)))
+        } else {
+            let relates = TypeReader::get_relates_transitive(snapshot, relation_type.clone())?;
+            Ok(MaybeOwns::Owned(relates))
+        }
+    }
+
     pub(crate) fn get_entity_type_owns_transitive(
         &self,
         snapshot: &Snapshot,

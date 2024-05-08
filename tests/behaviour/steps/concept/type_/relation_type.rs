@@ -50,10 +50,18 @@ pub async fn relation_type_override_role(
             .unwrap()
             .unwrap();
         let relation_supertype =  relation_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
-        let overridden_relates = relation_supertype
+
+        {
+        let overridden_relates_opt = relation_supertype
             .get_relates_role_transitive(&mut tx.snapshot, &tx.type_manager, overridden_label.to_typedb().name().as_str())
-            .unwrap()
             .unwrap();
+        debug_assert!(overridden_relates_opt.is_some(), "Ah, get_role_transitive returned opt");
+        }
+
+        let overridden_relates = relation_supertype
+            .get_relates_role(&mut tx.snapshot, &tx.type_manager, overridden_label.to_typedb().name().as_str()) // MUST get_relates_role_transitive
+            .unwrap().unwrap();
+
         // TODO: Is it ok to just set supertype here?
         let res = relates.role().set_supertype(&mut tx.snapshot, &tx.type_manager, overridden_relates.role());
         may_error.check(&res);

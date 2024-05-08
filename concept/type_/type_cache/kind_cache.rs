@@ -53,6 +53,7 @@ pub(crate) struct EntityTypeCache {
 pub(crate) struct RelationTypeCache {
     pub(super) common_type_cache: CommonTypeCache<RelationType<'static>>,
     pub(super) relates_declared: HashSet<Relates<'static>>,
+    pub(super) relates_transitive: HashMap<String, Relates<'static>>,
     pub(super) owner_player_cache: OwnerPlayerCache,
 }
 
@@ -147,6 +148,7 @@ impl RelationTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, relation.clone()),
                 owner_player_cache: OwnerPlayerCache::create(snapshot, relation.clone()),
                 relates_declared: TypeReader::get_relates(snapshot, relation.clone()).unwrap(),
+                relates_transitive: TypeReader::get_relates_transitive(snapshot, relation.clone()).unwrap(),
             };
             caches[relation.vertex().type_id_().as_u16() as usize] = Some(cache);
         }

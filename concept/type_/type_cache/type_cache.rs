@@ -196,6 +196,10 @@ impl TypeCache {
         &RelationType::get_cache(self, relation_type).relates_declared
     }
 
+    pub(crate) fn get_relation_type_relates_transitive(&self, relation_type: RelationType<'static>) -> &HashMap<String, Relates<'static>> {
+        &RelationType::get_cache(self, relation_type).relates_transitive
+    }
+
     // TODO: Look for unused <'a> and use them
     pub(crate) fn get_plays<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Plays<'static>>
         where T:  OwnerAPI<'static> + PlayerAPI<'static> + CacheGetter<CacheType=CACHE>,

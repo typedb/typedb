@@ -200,7 +200,6 @@ impl TypeReader {
         Ok(transitive_plays)
     }
 
-
     pub(crate) fn get_plays_override(
         snapshot: &impl ReadableSnapshot,
         plays: Plays<'static>
@@ -228,6 +227,34 @@ impl TypeReader {
             })
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
+
+    pub(crate) fn get_relates_transitive(
+        snapshot: &impl ReadableSnapshot,
+        relation: RelationType<'static>,
+    ) -> Result<HashMap<String, Relates<'static>>, ConceptReadError>
+    {
+        // TODO: Should the relation of a transitive relates be the declaring relation or the inheriting relation?
+        let mut transitive_relates: HashMap<String, Relates<'static>> = HashMap::new();
+        let mut overridden_relates: HashSet<RoleType<'static>> = HashSet::new(); // TODO: Should this store the relates? This feels more fool-proof if it's correct.
+        let mut current_relation = Some(relation);
+        while current_relation.is_some() {
+            let declared_relates = Self::get_relates(snapshot, current_relation.as_ref().unwrap().clone())?;
+            for relates in declared_relates.into_iter() {
+                let role = relates.role();
+                if !overridden_relates.contains(&role) {
+                    let role_name = Self::get_label(snapshot, relates.role())?.unwrap().name.to_string();
+                    debug_assert!(!transitive_relates.contains_key(&role_name));
+                    transitive_relates.insert(role_name, relates.clone());
+                    if let Some(overridden) = Self::get_supertype(snapshot, relates.role().clone())? {
+                        overridden_relates.add(overridden);
+                    }
+                }
+            }
+            current_relation = Self::get_supertype(snapshot, current_relation.unwrap())?;
+        }
+        Ok(transitive_relates)
+    }
+
 
     pub(crate) fn get_relations(
         snapshot: &impl ReadableSnapshot,

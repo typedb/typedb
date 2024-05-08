@@ -189,6 +189,7 @@ impl<'a> RelationType<'a> {
         }
     }
 
+    // TODO: krishnan: Make this private? get_relates_role is interface enough.
     pub fn get_role<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
@@ -219,7 +220,7 @@ impl<'a> RelationType<'a> {
         type_manager.storage_delete_relates(snapshot, self.clone().into_owned(), role_type)
     }
 
-    pub(crate) fn get_relates<'m, Snapshot: ReadableSnapshot>(
+    pub fn get_relates<'m, Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
         type_manager: &'m TypeManager<Snapshot>,
@@ -234,6 +235,25 @@ impl<'a> RelationType<'a> {
         name: &str,
     ) -> Result<Option<Relates<'static>>, ConceptReadError> {
         Ok(self.get_role(snapshot, type_manager, name)?.map(|role_type| Relates::new(self.clone().into_owned(), role_type)))
+    }
+
+    pub fn get_relates_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashMap<String, Relates<'static>>>, ConceptReadError> { // TODO: krishnan: Review usage of String as key. It looks strange but fits.
+        type_manager.get_relation_type_relates_transitive(snapshot, self.clone().into_owned())
+    }
+
+    // TODO: Review. This is a bit convoluted thanks to wanting to return the relates with the declaring relation
+    pub fn get_relates_role_transitive<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        name: &str,
+    ) -> Result<Option<Relates<'static>>, ConceptReadError> {
+        self.get_relates_transitive(snapshot, type_manager).unwrap().iter().for_each(|(k,v)| { println!("- '{}':'{:?}' ; Does it match '{}'?", k, v, name);});
+        Ok(self.get_relates_transitive(snapshot, type_manager)?.get(name).map(|relates| { relates.clone() }))
     }
 
     fn has_relates_role<Snapshot: ReadableSnapshot>(
