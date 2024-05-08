@@ -94,17 +94,21 @@ pub trait WritableSnapshot: ReadableSnapshot {
     ) -> Result<ByteArray<BUFFER_VALUE_INLINE>, SnapshotGetError> {
         let keyspace_id = key.keyspace_id();
         let writes = self.operations().writes_in(keyspace_id);
-        let existing = writes.get(key.bytes());
-        if let Some(existing) = existing {
-            Ok(existing)
-        } else {
-            let storage_value = self.get_mapped(key.as_reference(), |reference| ByteArray::from(reference))?;
-            if let Some(value) = storage_value {
-                self.operations_mut().lock_add(ByteArray::copy(key.bytes()), LockType::Unmodifiable);
-                Ok(value)
-            } else {
-                // TODO: what if the user concurrent requires a concept while deleting it in another query
-                unreachable!("Require key exists in snapshot or in storage.");
+        match writes.get(key.bytes()) {
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => {
+                Ok(ByteArray::copy(value.bytes()))
+            },
+            Some(Write::Delete) => {
+                Err(SnapshotGetError::ExpectedRequiredKeyToExist { key: StorageKey::Array(key.into_owned_array()) })
+            }
+            None => {
+                let storage_value = self.get_mapped(key.as_reference(), |reference| ByteArray::from(reference))?;
+                if let Some(value) = storage_value {
+                    self.operations_mut().lock_add(ByteArray::copy(key.bytes()), LockType::Unmodifiable);
+                    Ok(value)
+                } else {
+                    Err(SnapshotGetError::ExpectedRequiredKeyToExist { key: StorageKey::Array(key.into_owned_array()) })
+                }
             }
         }
     }
@@ -225,12 +229,18 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         &self,
         key: StorageKeyReference<'_>,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        match self.operations.writes_in(key.keyspace_id()).get(key.bytes()) {
-            Some(bytes) => Ok(Some(bytes)),
-            None => self
-                .storage
-                .get(key, self.open_sequence_number)
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+        let writes = self.operations().writes_in(key.keyspace_id());
+        match writes.get(key.bytes()) {
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => {
+                Ok(Some(ByteArray::copy(value.bytes())))
+            },
+            Some(Write::Delete) => Ok(None),
+            None => {
+                self
+                    .storage
+                    .get(key, self.open_sequence_number)
+                    .map_err(|error| SnapshotGetError::MVCCRead { source: error })
+            }
         }
     }
 
@@ -316,12 +326,18 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         &self,
         key: StorageKeyReference<'_>,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        match self.operations.writes_in(key.keyspace_id()).get(key.bytes()) {
-            Some(array) => Ok(Some(array)),
-            None => self
-                .storage
-                .get(key, self.open_sequence_number)
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+        let writes = self.operations().writes_in(key.keyspace_id());
+        match writes.get(key.bytes()) {
+            Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => {
+                Ok(Some(ByteArray::copy(value.bytes())))
+            },
+            Some(Write::Delete) => Ok(None),
+            None => {
+                self
+                    .storage
+                    .get(key, self.open_sequence_number)
+                    .map_err(|error| SnapshotGetError::MVCCRead { source: error })
+            }
         }
     }
 
@@ -409,6 +425,7 @@ impl Error for SnapshotError {
 #[derive(Debug, Clone)]
 pub enum SnapshotGetError {
     MVCCRead { source: MVCCReadError },
+    ExpectedRequiredKeyToExist { key: StorageKey<'static, BUFFER_KEY_INLINE> }
 }
 
 impl fmt::Display for SnapshotGetError {
@@ -421,6 +438,7 @@ impl Error for SnapshotGetError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::MVCCRead { source, .. } => Some(source),
+            SnapshotGetError::ExpectedRequiredKeyToExist { .. } => None,
         }
     }
 }
