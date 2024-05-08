@@ -99,7 +99,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
                 Ok(ByteArray::copy(value.bytes()))
             },
             Some(Write::Delete) => {
-                Err(SnapshotGetError::GetRequiredKeyDoesntExist { key: StorageKey::Array(key.into_owned_array()) })
+                Err(SnapshotGetError::ExpectedRequiredKeyToExist { key: StorageKey::Array(key.into_owned_array()) })
             }
             None => {
                 let storage_value = self.get_mapped(key.as_reference(), |reference| ByteArray::from(reference))?;
@@ -107,7 +107,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
                     self.operations_mut().lock_add(ByteArray::copy(key.bytes()), LockType::Unmodifiable);
                     Ok(value)
                 } else {
-                    Err(SnapshotGetError::GetRequiredKeyDoesntExist { key: StorageKey::Array(key.into_owned_array()) })
+                    Err(SnapshotGetError::ExpectedRequiredKeyToExist { key: StorageKey::Array(key.into_owned_array()) })
                 }
             }
         }
@@ -425,7 +425,7 @@ impl Error for SnapshotError {
 #[derive(Debug, Clone)]
 pub enum SnapshotGetError {
     MVCCRead { source: MVCCReadError },
-    GetRequiredKeyDoesntExist { key: StorageKey<'static, BUFFER_KEY_INLINE> }
+    ExpectedRequiredKeyToExist { key: StorageKey<'static, BUFFER_KEY_INLINE> }
 }
 
 impl fmt::Display for SnapshotGetError {
@@ -438,7 +438,7 @@ impl Error for SnapshotGetError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::MVCCRead { source, .. } => Some(source),
-            SnapshotGetError::GetRequiredKeyDoesntExist { .. } => None,
+            SnapshotGetError::ExpectedRequiredKeyToExist { .. } => None,
         }
     }
 }
