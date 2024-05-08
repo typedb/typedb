@@ -56,13 +56,13 @@ impl TypeReader {
             .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
     }
 
-    pub(crate) fn get_supertype<T: ReadableType + TypeAPI<'static>>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Option<T::Output<'static>>, ConceptReadError>
+    pub(crate) fn get_supertype<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Option<T::Output<'static>>, ConceptReadError>
         where T: ReadableType + TypeAPI<'static>
     {
         Ok(Self::get_supertype_vertex(snapshot, subtype.into_vertex())?.map(|supertype_vertex| T::read_from(supertype_vertex.into_bytes())))
     }
 
-    pub fn get_supertypes_transitive<T: ReadableType + TypeAPI<'static>>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Vec<T::Output<'static>>, ConceptReadError>
+    pub fn get_supertypes_transitive<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Vec<T::Output<'static>>, ConceptReadError>
         where T: ReadableType + TypeAPI<'static>
     {
         // WARN: supertypes currently do NOT include themselves
@@ -177,7 +177,7 @@ impl TypeReader {
             .map(|v| { v.first().unwrap().clone() })
     }
 
-    pub(crate) fn get_value_type(snapshot: &impl ReadableSnapshot, type_: AttributeType<'static>) -> Result<Option<ValueType>, ConceptReadError> {
+    pub(crate) fn get_value_type<'a>(snapshot: &impl ReadableSnapshot, type_: AttributeType<'a>) -> Result<Option<ValueType>, ConceptReadError> {
         snapshot
             .get_mapped(
                 build_property_type_value_type(type_.into_vertex()).into_storage_key().as_reference(),
@@ -188,9 +188,9 @@ impl TypeReader {
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
-    pub(crate) fn get_type_annotations(
+    pub(crate) fn get_type_annotations<'a>(
         snapshot: &impl ReadableSnapshot,
-        type_: impl TypeAPI<'static>,
+        type_: impl TypeAPI<'a>,
     ) -> Result<HashSet<Annotation>, ConceptReadError> {
         snapshot
             .iterate_range(KeyRange::new_inclusive(
@@ -252,7 +252,7 @@ impl TypeReader {
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
 
-    pub(crate) fn get_type_ordering<'a>(snapshot: &impl ReadableSnapshot, role_type: RoleType<'static>) -> Result<Ordering, ConceptReadError> {
+    pub(crate) fn get_type_ordering<'a>(snapshot: &impl ReadableSnapshot, role_type: RoleType<'a>) -> Result<Ordering, ConceptReadError> {
         let ordering = snapshot
             .get_mapped(
                 build_property_type_ordering(role_type.vertex()).into_storage_key().as_reference(),
@@ -261,7 +261,7 @@ impl TypeReader {
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
         Ok(ordering.unwrap())
     }
-    pub(crate) fn get_type_edge_ordering<'a>(snapshot: &impl ReadableSnapshot, owns: Owns<'static>)  -> Result<Ordering, ConceptReadError> {
+    pub(crate) fn get_type_edge_ordering<'a>(snapshot: &impl ReadableSnapshot, owns: Owns<'a>)  -> Result<Ordering, ConceptReadError> {
         let ordering = snapshot
             .get_mapped(
                 build_property_type_edge_ordering(owns.into_type_edge()).into_storage_key().as_reference(),
