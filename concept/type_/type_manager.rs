@@ -54,7 +54,7 @@ use crate::{
         serialise_annotation_cardinality, serialise_ordering,
         type_cache::TypeCache,
         type_reader::TypeReader,
-        IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
 
@@ -241,7 +241,6 @@ macro_rules! get_type_annotations {
                  if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
-                    let mut annotations: HashSet<$annotation_type> = HashSet::new();
                     let annotations = TypeReader::get_type_annotations(snapshot, type_)?
                         .into_iter()
                         .map(|annotation| $annotation_type::from(annotation))
@@ -253,10 +252,7 @@ macro_rules! get_type_annotations {
     }
 }
 
-// TODO: The '_s is only here for the enforcement of pass-by-value of types. If we drop that, we can move it to the function signatures
-impl<'_s, Snapshot: ReadableSnapshot> TypeManager<Snapshot>
-where
-    '_s: 'static,
+impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
 {
     pub fn new(
         vertex_generator: Arc<TypeVertexGenerator>,
@@ -420,7 +416,7 @@ where
         }
     }
 
-    pub(crate) fn get_owns_ordering(&self, snapshot: &Snapshot, owns: Owns<'_s>) -> Result<Ordering, ConceptReadError> {
+    pub(crate) fn get_owns_ordering(&self, snapshot: &Snapshot, owns: Owns<'static>) -> Result<Ordering, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_owns_ordering(owns))
         } else {
@@ -743,62 +739,62 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 }
 
-pub trait ReadableType<'a, 'b>: TypeAPI<'a> + CommonType<'a> {
-    // Consider replacing 'b with 'static
-    type SelfRead: ReadableType<'b, 'b>;
-    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead;
+pub trait ReadableType {
+    // Consider replacing 'bytes with 'static
+    type Output<'bytes>: 'bytes;
+    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::Output<'bytes>;
 }
 
-impl<'a, 'b> ReadableType<'a, 'b> for AttributeType<'a> {
-    type SelfRead = AttributeType<'b>;
-    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead {
+
+impl<'a> ReadableType for AttributeType<'a> {
+    type Output<'bytes> = AttributeType<'bytes>;
+    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::Output<'bytes> {
         AttributeType::new(new_vertex_attribute_type(b))
     }
 }
 
-impl<'a, 'b> ReadableType<'a, 'b> for EntityType<'a> {
-    type SelfRead = EntityType<'b>;
-    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> Self::SelfRead {
+impl<'a> ReadableType for EntityType<'a> {
+    type Output<'bytes> = EntityType<'bytes>;
+    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::Output<'bytes> {
         EntityType::new(new_vertex_entity_type(b))
     }
 }
 
-impl<'a, 'b> ReadableType<'a, 'b> for RelationType<'a> {
-    type SelfRead = RelationType<'b>;
-    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> RelationType<'b> {
+impl<'a> ReadableType for RelationType<'a> {
+    type Output<'bytes> = RelationType<'bytes>;
+    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::Output<'bytes> {
         RelationType::new(new_vertex_relation_type(b))
     }
 }
 
-impl<'a, 'b> ReadableType<'a, 'b> for RoleType<'a> {
-    type SelfRead = RoleType<'b>;
-    fn read_from(b: Bytes<'b, BUFFER_KEY_INLINE>) -> RoleType<'b> {
+impl<'a> ReadableType for RoleType<'a> {
+    type Output<'bytes> = RoleType<'bytes>;
+    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::Output<'bytes> {
         RoleType::new(new_vertex_role_type(b))
     }
 }
 
-
-pub trait CommonType<'a>: TypeAPI<'a> {
+pub trait TypeAPITraits {
     type AnnotationType: Hash + Eq + From<Annotation>;
     const ROOT_KIND: Kind;
 }
 
-impl<'a> CommonType<'a> for AttributeType<'a> {
+impl<'a> TypeAPITraits for AttributeType<'a> {
     type AnnotationType = AttributeTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Attribute;
 }
 
-impl<'a> CommonType<'a> for EntityType<'a> {
+impl<'a> TypeAPITraits for EntityType<'a> {
     type AnnotationType = EntityTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Entity;
 }
 
-impl<'a> CommonType<'a> for RelationType<'a> {
+impl<'a> TypeAPITraits for RelationType<'a> {
     type AnnotationType = RelationTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Relation;
 }
 
-impl<'a> CommonType<'a> for RoleType<'a> {
+impl<'a> TypeAPITraits for RoleType<'a> {
     type AnnotationType = RoleTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Role;
 }

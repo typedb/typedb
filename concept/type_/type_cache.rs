@@ -13,22 +13,17 @@ use std::{
 
 use bytes::Bytes;
 use durability::SequenceNumber;
-use encoding::{
-    graph::{
-        type_::{
-            edge::TypeEdge,
-            vertex::{
-                build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
-                build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type,
-                new_vertex_relation_type, new_vertex_role_type, TypeVertex,
-            },
+use encoding::{graph::{
+    type_::{
+        edge::TypeEdge,
+        vertex::{
+            build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
+            build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type,
+            new_vertex_relation_type, new_vertex_role_type, TypeVertex,
         },
-        Typed,
     },
-    layout::prefix::Prefix,
-    value::{label::Label, value_type::ValueType},
-    Prefixed,
-};
+    Typed,
+}, layout::prefix::Prefix, value::{label::Label, value_type::ValueType}, Prefixed, AsBytes};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
 
 use crate::type_::{
@@ -44,7 +39,7 @@ use crate::type_::{
     type_reader::TypeReader,
     Ordering, TypeAPI,
 };
-use crate::type_::type_manager::CommonType;
+use crate::type_::type_manager::TypeAPITraits;
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -65,7 +60,7 @@ pub struct TypeCache {
 }
 
 #[derive(Debug)]
-struct CommonTypeCache<T: TypeAPI<'static> + CommonType<'static>> {
+struct CommonTypeCache<T: TypeAPI<'static> + TypeAPITraits> {
     type_: T,
     label: Label<'static>,
     is_root: bool,
@@ -176,7 +171,11 @@ impl TypeCache {
         })
     }
 
-    fn build_common_cache<Snapshot: ReadableSnapshot, T: ReadableType<'static, 'static, SelfRead = T>>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T::SelfRead> {
+    fn build_common_cache<Snapshot, T>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
+    where
+        Snapshot: ReadableSnapshot,
+        T: TypeAPI<'static> + TypeAPITraits + ReadableType<Output<'static>=T>,
+    {
         let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
         let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
         let annotations_declared = TypeReader::get_type_annotations(snapshot, type_.clone())

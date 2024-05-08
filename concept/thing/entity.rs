@@ -29,7 +29,7 @@ use crate::{
     concept_iterator,
     ConceptAPI,
     ConceptStatus,
-    error::ConceptWriteError, GetStatus, thing::{
+    error::ConceptWriteError, thing::{
         attribute::Attribute,
         object::{HasAttributeIterator, Object},
         ObjectAPI,
