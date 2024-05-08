@@ -136,11 +136,8 @@ impl WriteBuffer {
         self.writes.get(key.bytes()).is_some()
     }
 
-    pub(crate) fn get<const INLINE_BYTES: usize>(&self, key: &[u8]) -> Option<ByteArray<INLINE_BYTES>> {
-        match self.writes.get(key) {
-            Some(Write::Insert { value }) | Some(Write::Put { value, .. }) => Some(ByteArray::copy(value.bytes())),
-            Some(Write::Delete) | None => None,
-        }
+    pub(crate) fn get(&self, key: &[u8]) -> Option<&Write> {
+        self.writes.get(key)
     }
 
     pub(crate) fn iterate_range<const INLINE: usize>(

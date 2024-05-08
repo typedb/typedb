@@ -94,9 +94,13 @@ pub trait WritableSnapshot: ReadableSnapshot {
     ) -> Result<ByteArray<BUFFER_VALUE_INLINE>, SnapshotGetError> {
         let keyspace_id = key.keyspace_id();
         let writes = self.operations().writes_in(keyspace_id);
-        let existing = writes.get(key.bytes());
-        if let Some(existing) = existing {
-            Ok(existing)
+        if let Some(operation) = writes.get(key.bytes()) {
+            match operation {
+                Write::Insert {value, .. } | Write::Put {value, .. } => {
+                    Ok(ByteArray::copy(value.bytes()))
+                },
+                Write::Delete => unreachable!("Require key exists in snapshot or in storage.")
+            }
         } else {
             let storage_value = self.get_mapped(key.as_reference(), |reference| ByteArray::from(reference))?;
             if let Some(value) = storage_value {
@@ -225,12 +229,19 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         &self,
         key: StorageKeyReference<'_>,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        match self.operations.writes_in(key.keyspace_id()).get(key.bytes()) {
-            Some(bytes) => Ok(Some(bytes)),
-            None => self
+        if let Some(operation) = self.operations.writes_in(key.keyspace_id()).get(key.bytes()) {
+            match operation {
+                Write::Insert { value, .. }
+                | Write::Put { value, .. } => {
+                    Ok(Some(ByteArray::copy(value.bytes())))
+                },
+                Write::Delete => Ok(None),
+            }
+        } else {
+            self
                 .storage
                 .get(key, self.open_sequence_number)
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+                .map_err(|error| SnapshotGetError::MVCCRead { source: error })
         }
     }
 
@@ -316,12 +327,18 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         &self,
         key: StorageKeyReference<'_>,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        match self.operations.writes_in(key.keyspace_id()).get(key.bytes()) {
-            Some(array) => Ok(Some(array)),
-            None => self
+        if let Some(operation) = self.operations.writes_in(key.keyspace_id()).get(key.bytes()) {
+            match operation {
+                Write::Insert { value, .. } | Write::Put { value, .. } => {
+                    Ok(Some(ByteArray::copy(value.bytes())))
+                },
+                Write::Delete => Ok(None),
+            }
+        } else {
+            self
                 .storage
                 .get(key, self.open_sequence_number)
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+                .map_err(|error| SnapshotGetError::MVCCRead { source: error })
         }
     }
 

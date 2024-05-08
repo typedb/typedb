@@ -164,8 +164,8 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
     let storage_path = create_tmp_dir();
     let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
 
-    let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0, 0x1]));
-    let key_2 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x1, 0x0, 0x10]));
+    let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0]));
+    let key_2 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x1]));
     {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_1.clone());
@@ -177,8 +177,10 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
         let mut snapshot = storage.clone().open_snapshot_write();;
         assert!(snapshot.get::<48>(StorageKey::Array(key_1.clone()).as_reference()).unwrap().is_some());
         assert!(snapshot.get::<48>(StorageKey::Array(key_2.clone()).as_reference()).unwrap().is_some());
+        assert_eq!(2, snapshot.iterate_range(KeyRange::new_within(StorageKey::Array(StorageKeyArray::new(Keyspace, ByteArray::inline([0x0], 1))), false)).count());
         snapshot.delete(key_2.clone());
         assert!(snapshot.get::<48>(StorageKey::Array(key_2.clone()).as_reference()).unwrap().is_none());
+        assert_eq!(1, snapshot.iterate_range(KeyRange::new_within(StorageKey::Array(StorageKeyArray::new(Keyspace, ByteArray::inline([0x0], 1))), false)).count());
         snapshot.commit().unwrap();
     }
 }
