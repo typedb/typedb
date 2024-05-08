@@ -34,7 +34,6 @@ impl<'a> Plays<'a> {
         self.role.clone()
     }
 
-
     pub fn get_override<'this, Snapshot: ReadableSnapshot>(
         &'this self,
         snapshot: &Snapshot,

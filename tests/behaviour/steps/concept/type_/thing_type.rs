@@ -361,11 +361,11 @@ pub async fn get_owns_contain(
     let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
-            .get_owns(&tx.snapshot, &tx.type_manager)
+            .get_owns_transitive(&tx.snapshot, &tx.type_manager)
             .unwrap()
             .iter()
-            .map(|owns| {
-                owns.attribute().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_string()
+            .map(|(attribute, _owns)| {
+                attribute.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_string()
             })
             .collect::<Vec<String>>();
         contains.check(expected_labels, actual_labels);
@@ -462,13 +462,16 @@ pub async fn get_plays_set_override(
     overridden_role_label: Label,
     may_error: MayError,
 ) {
-    let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
+    let player_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.to_typedb()).unwrap().unwrap();
+        let plays = player_type.get_plays_role(&mut tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
+
+        let player_supertype = player_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
         let overridden_role_type =
             tx.type_manager.get_role_type(&tx.snapshot, &overridden_role_label.to_typedb()).unwrap().unwrap();
-        let plays = object_type.get_plays_role(&mut tx.snapshot, &tx.type_manager, role_type).unwrap();
-        todo!("Override plays");
+        let overridden_plays = player_supertype.get_plays_role_transitive(&tx.snapshot, &tx.type_manager, overridden_role_type).unwrap().unwrap();
+        plays.set_override(&mut tx.snapshot, &tx.type_manager, overridden_plays);
     });
 }
 
@@ -486,14 +489,13 @@ pub async fn get_plays_roles_contain(
     let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
-            .get_plays(&tx.snapshot, &tx.type_manager)
+            .get_plays_transitive(&tx.snapshot, &tx.type_manager)
             .unwrap()
             .iter()
-            .map(|plays| {
-                plays.role().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_string()
+            .map(|(role, _plays)| {
+                role.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_string()
             })
             .collect::<Vec<String>>();
-        println!("Actual roles played: {:?}", actual_labels);
         contains.check(expected_labels, actual_labels);
     });
 }

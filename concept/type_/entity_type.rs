@@ -287,6 +287,10 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         let expected_plays = Plays::new(ObjectType::Entity(self.clone().into_owned()), role_type);
         Ok(self.get_plays(snapshot, type_manager)?.contains(&expected_plays).then_some(expected_plays))
     }
+
+    fn get_plays_transitive<'m, Snapshot: ReadableSnapshot>(&self, snapshot: &Snapshot, type_manager: &'m TypeManager<Snapshot>) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
+        type_manager.get_entity_type_plays_transitive(snapshot, self.clone().into_owned())
+    }
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]

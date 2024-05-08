@@ -405,6 +405,18 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
             Ok(MaybeOwns::Owned(plays))
         }
     }
+    pub(crate) fn get_entity_type_plays_transitive(
+        &self,
+        snapshot: &Snapshot,
+        entity_type: EntityType<'static>,
+    ) -> Result<MaybeOwns<'_, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_plays_transitive(entity_type)))
+        } else {
+            let plays = TypeReader::get_plays_transitive(snapshot, entity_type.clone())?;
+            Ok(MaybeOwns::Owned(plays))
+        }
+    }
 
     pub(crate) fn get_plays_overridden(&self, snapshot: &Snapshot, plays: Plays<'static>) -> Result<MaybeOwns<'_, Option<Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {

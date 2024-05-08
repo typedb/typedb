@@ -104,6 +104,15 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
         Ok(self.get_owns_transitive(snapshot, type_manager)?.get(&attribute_type).map(|owns| { owns.clone() }))
     }
+
+    fn has_owns_attribute_transitive<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self.get_owns_attribute_transitive(snapshot, type_manager, attribute_type)?.is_some())
+    }
 }
 
 pub trait PlayerAPI<'a>: TypeAPI<'a> {
@@ -141,6 +150,30 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         role_type: RoleType<'static>,
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_plays_role(snapshot, type_manager, role_type)?.is_some())
+    }
+
+    fn get_plays_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError>;
+
+    fn get_plays_role_transitive<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        role_type: RoleType<'static>,
+    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
+        Ok(self.get_plays_transitive(snapshot, type_manager)?.get(&role_type).map(|plays| { plays.clone() }))
+    }
+
+    fn has_plays_role_transitive<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        role_type: RoleType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self.get_plays_role_transitive(snapshot, type_manager, role_type)?.is_some())
     }
 }
 

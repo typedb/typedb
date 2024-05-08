@@ -84,9 +84,7 @@ pub(crate) enum ContainsOrDoesnt {
 impl ContainsOrDoesnt {
     pub fn check<T: PartialEq + std::fmt::Debug>(&self, expected: Vec<T>, actual: Vec<T>) {
         let expected_contains: bool = self.expected_contains();
-
         expected.iter().for_each(|expected_item| {
-            println!("Check contains({:?}) : {:?} = {:?}", expected_item, expected_contains, actual.contains(&expected_item));
             assert_eq!(expected_contains, actual.contains(&expected_item));
         });
     }

@@ -195,4 +195,11 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
             ObjectType::Relation(relation) => relation.get_plays_role(snapshot, type_manager, role_type),
         }
     }
+
+    fn get_plays_transitive<'m, Snapshot: ReadableSnapshot>(&self, snapshot: &Snapshot, type_manager: &'m TypeManager<Snapshot>) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
+        match self {
+            ObjectType::Entity(entity) => entity.get_plays_transitive(snapshot, type_manager),
+            ObjectType::Relation(relation) => relation.get_plays_transitive(snapshot, type_manager),
+        }
+    }
 }

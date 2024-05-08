@@ -35,7 +35,7 @@ pub async fn relation_type_create_role(
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get role: {type_label}; set override: {type_label}(; ){may_error}")]
+#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\); set override: {type_label}(; ){may_error}")]
 pub async fn relation_type_override_role(
     context: &mut Context,
     type_label: Label,
@@ -49,8 +49,9 @@ pub async fn relation_type_override_role(
             .get_relates_role(&mut tx.snapshot, &tx.type_manager, role_label.to_typedb().name().as_str())
             .unwrap()
             .unwrap();
-        let overridden_relates = relation_type
-            .get_relates_role(&mut tx.snapshot, &tx.type_manager, overridden_label.to_typedb().name().as_str())
+        let relation_supertype =  relation_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
+        let overridden_relates = relation_supertype
+            .get_relates_role_transitive(&mut tx.snapshot, &tx.type_manager, overridden_label.to_typedb().name().as_str())
             .unwrap()
             .unwrap();
         // TODO: Is it ok to just set supertype here?
@@ -58,4 +59,3 @@ pub async fn relation_type_override_role(
         may_error.check(&res);
     });
 }
-

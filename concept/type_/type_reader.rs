@@ -139,7 +139,7 @@ impl TypeReader {
         owner: T
     ) -> Result<HashMap<AttributeType<'static>, Owns<'static>>, ConceptReadError>
     {
-        // TODO: Should the owner of a transitive owns be the declaring owner or the inheritor?
+        // TODO: Should the owner of a transitive owns be the declaring owner or the inheriting owner?
         let mut transitive_owns: HashMap<AttributeType<'static>, Owns<'static>> = HashMap::new();
         let mut overridden_owns: HashSet<AttributeType<'static>> = HashSet::new(); // TODO: Should this store the owns? This feels more fool-proof if it's correct.
         let mut current_type = Some(owner);
@@ -174,6 +174,32 @@ impl TypeReader {
             })
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
+
+    pub(crate) fn get_plays_transitive<T: PlayerAPI<'static> + ReadableType<Output<'static>=T>> (
+        snapshot: &impl ReadableSnapshot,
+        player: T
+    ) -> Result<HashMap<RoleType<'static>, Plays<'static>>, ConceptReadError> {
+        // TODO: Should the player of a transitive plays be the declaring player or the inheriting player?
+        let mut transitive_plays: HashMap<RoleType<'static>, Plays<'static>> = HashMap::new();
+        let mut overridden_plays: HashSet<RoleType<'static>> = HashSet::new(); // TODO: Should this store the plays? This feels more fool-proof if it's correct.
+        let mut current_type = Some(player);
+        while current_type.is_some() {
+            let declared_plays = Self::get_plays(snapshot, current_type.as_ref().unwrap().clone())?;
+            for plays in declared_plays.into_iter() {
+                let role = plays.role();
+                if !overridden_plays.contains(&role) {
+                    debug_assert!(!transitive_plays.contains_key(&role));
+                    transitive_plays.insert(plays.role(), plays.clone());
+                    if let Some(overridden) = Self::get_plays_override(snapshot, plays.clone())? {
+                        overridden_plays.add(overridden.role());
+                    }
+                }
+            }
+            current_type = Self::get_supertype(snapshot, current_type.unwrap())?;
+        }
+        Ok(transitive_plays)
+    }
+
 
     pub(crate) fn get_plays_override(
         snapshot: &impl ReadableSnapshot,

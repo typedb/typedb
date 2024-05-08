@@ -101,6 +101,7 @@ pub struct OwnerPlayerCache {
     pub(super) owns_declared: HashSet<Owns<'static>>,
     pub(super) owns_transitive: HashMap<AttributeType<'static>, Owns<'static>>,
     pub(super) plays_declared: HashSet<Plays<'static>>,
+    pub(super) plays_transitive: HashMap<RoleType<'static>, Plays<'static>>,
 }
 
 impl EntityTypeCache {
@@ -280,8 +281,9 @@ impl OwnerPlayerCache {
     {
         OwnerPlayerCache {
             owns_declared: TypeReader::get_owns(snapshot, type_.clone()).unwrap(),
+            owns_transitive: TypeReader::get_owns_transitive(snapshot, type_.clone()).unwrap(),
             plays_declared: TypeReader::get_plays(snapshot, type_.clone()).unwrap(),
-            owns_transitive: TypeReader::get_owns_transitive(snapshot, type_.clone()).unwrap()
+            plays_transitive: TypeReader::get_plays_transitive(snapshot, type_.clone()).unwrap(),
         }
     }
 }

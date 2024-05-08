@@ -194,14 +194,21 @@ impl TypeCache {
 
     pub(crate) fn get_relation_type_relates(&self, relation_type: RelationType<'static>) -> &HashSet<Relates<'static>> {
         &RelationType::get_cache(self, relation_type).relates_declared
-        // &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().relates_declared
     }
 
+    // TODO: Look for unused <'a> and use them
     pub(crate) fn get_plays<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Plays<'static>>
         where T:  OwnerAPI<'static> + PlayerAPI<'static> + CacheGetter<CacheType=CACHE>,
               CACHE: HasOwnerPlayerCache + 'this
     {
         &T::get_cache(self, type_).owner_player_cache().plays_declared
+    }
+
+    pub(crate) fn get_plays_transitive<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this HashMap<RoleType<'static>, Plays<'static>>
+        where T:  OwnerAPI<'static> + PlayerAPI<'static> + CacheGetter<CacheType=CACHE>,
+        CACHE: HasOwnerPlayerCache + 'this
+    {
+        &T::get_cache(self, type_).owner_player_cache().plays_transitive
     }
 
     pub(crate) fn get_attribute_type_value_type(&self, attribute_type: AttributeType<'static>) -> Option<ValueType> {
