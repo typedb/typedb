@@ -251,7 +251,7 @@ impl PlaysCache {
     }
 }
 
-impl<T: KindAPI<'static> + ReadableType<Output<'static>=T>> CommonTypeCache<T> {
+impl<T: KindAPI<'static> + ReadableType<ReadOutput<'static>=T>> CommonTypeCache<T> {
     fn create< Snapshot>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
         where
             Snapshot: ReadableSnapshot
@@ -279,7 +279,7 @@ impl OwnerPlayerCache {
     fn create<'a, Snapshot, T>(snapshot: &Snapshot, type_: T) -> OwnerPlayerCache
         where
             Snapshot: ReadableSnapshot,
-            T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static> + ReadableType<Output<'static>=T>,
+            T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static> + ReadableType<ReadOutput<'static>=T>,
     {
         OwnerPlayerCache {
             owns_declared: TypeReader::get_owns(snapshot, type_.clone()).unwrap(),

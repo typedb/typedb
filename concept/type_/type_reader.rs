@@ -36,7 +36,7 @@ pub struct TypeReader { }
 
 impl TypeReader {
 
-    pub(crate) fn get_labelled_type<T>(snapshot: &impl ReadableSnapshot, label: &Label<'_>) -> Result<Option<T::Output<'static>>, ConceptReadError>
+    pub(crate) fn get_labelled_type<T>(snapshot: &impl ReadableSnapshot, label: &Label<'_>) -> Result<Option<T::ReadOutput<'static>>, ConceptReadError>
         where T: ReadableType
     {
         let key = LabelToTypeVertexIndex::build(label).into_storage_key();
@@ -57,13 +57,13 @@ impl TypeReader {
             .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
     }
 
-    pub(crate) fn get_supertype<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Option<T::Output<'static>>, ConceptReadError>
+    pub(crate) fn get_supertype<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Option<T::ReadOutput<'static>>, ConceptReadError>
         where T: ReadableType + TypeAPI<'static>
     {
         Ok(Self::get_supertype_vertex(snapshot, subtype.into_vertex())?.map(|supertype_vertex| T::read_from(supertype_vertex.into_bytes())))
     }
 
-    pub fn get_supertypes_transitive<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Vec<T::Output<'static>>, ConceptReadError>
+    pub fn get_supertypes_transitive<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Vec<T::ReadOutput<'static>>, ConceptReadError>
         where T: ReadableType + TypeAPI<'static>
     {
         // WARN: supertypes currently do NOT include themselves
@@ -85,15 +85,15 @@ impl TypeReader {
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn get_subtypes<T>(snapshot: &impl ReadableSnapshot, supertype: T) -> Result<Vec<T::Output<'static>>, ConceptReadError>
+    pub(crate) fn get_subtypes<T>(snapshot: &impl ReadableSnapshot, supertype: T) -> Result<Vec<T::ReadOutput<'static>>, ConceptReadError>
         where T: ReadableType + TypeAPI<'static>
     {
         Ok(Self::get_subtypes_vertex(snapshot, supertype.into_vertex())?.into_iter()
             .map(|subtype_vertex| T::read_from(subtype_vertex.into_bytes()))
-            .collect::<Vec<T::Output<'static>>>())
+            .collect::<Vec<T::ReadOutput<'static>>>())
     }
 
-    pub fn get_subtypes_transitive<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Vec<T::Output<'static>>, ConceptReadError>
+    pub fn get_subtypes_transitive<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Vec<T::ReadOutput<'static>>, ConceptReadError>
         where T: ReadableType + TypeAPI<'static>
     {
         // WARN: subtypes currently do NOT include themselves
@@ -134,10 +134,11 @@ impl TypeReader {
     }
 
 
-    pub(crate) fn get_owns_transitive<T: OwnerAPI<'static> + ReadableType<Output<'static>=T>> (
+    pub(crate) fn get_owns_transitive<T> (
         snapshot: &impl ReadableSnapshot,
         owner: T
     ) -> Result<HashMap<AttributeType<'static>, Owns<'static>>, ConceptReadError>
+    where T : OwnerAPI<'static> + ReadableType<ReadOutput<'static>=T> // ReadOutput=T is needed for supertype transitivity
     {
         // TODO: Should the owner of a transitive owns be the declaring owner or the inheriting owner?
         let mut transitive_owns: HashMap<AttributeType<'static>, Owns<'static>> = HashMap::new();
@@ -175,10 +176,12 @@ impl TypeReader {
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
-    pub(crate) fn get_plays_transitive<T: PlayerAPI<'static> + ReadableType<Output<'static>=T>> (
+    pub(crate) fn get_plays_transitive<T> (
         snapshot: &impl ReadableSnapshot,
         player: T
-    ) -> Result<HashMap<RoleType<'static>, Plays<'static>>, ConceptReadError> {
+    ) -> Result<HashMap<RoleType<'static>, Plays<'static>>, ConceptReadError>
+        where T : PlayerAPI<'static> + ReadableType<ReadOutput<'static>=T> // ReadOutput=T is needed for supertype transitivity
+    {
         // TODO: Should the player of a transitive plays be the declaring player or the inheriting player?
         let mut transitive_plays: HashMap<RoleType<'static>, Plays<'static>> = HashMap::new();
         let mut overridden_plays: HashSet<RoleType<'static>> = HashSet::new(); // TODO: Should this store the plays? This feels more fool-proof if it's correct.

@@ -94,12 +94,17 @@ fn is_ignore(tag: &str) -> bool {
 #[macro_export]
 macro_rules! generic_step {
     {$(#[step($pattern:expr)])+ $vis:vis $async:ident fn $fn_name:ident $args:tt $(-> $res:ty)? $body:block} => {
-        $(
-        #[::cucumber::given($pattern)]
-        #[::cucumber::when($pattern)]
-        #[::cucumber::then($pattern)]
-        )+
+        #[allow(unused)]
         $vis $async fn $fn_name $args $(-> $res)? $body
+
+        const _: () = {
+            #[allow(unused)]
+            $(
+            #[::cucumber::given($pattern)]
+            #[::cucumber::when($pattern)]
+            #[::cucumber::then($pattern)]
+            )+
+            $vis $async fn step $args $(-> $res)? $body
+        };
     };
 }
-
