@@ -21,7 +21,7 @@ use storage::{
 
 use crate::{
     concept_iterator,
-    error::ConceptReadError,
+    error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationDistinct},
         plays::Plays,
@@ -31,7 +31,6 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::error::ConceptWriteError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -78,7 +77,8 @@ impl<'a> RoleType<'a> {
     pub fn is_root<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        type_manager: &TypeManager<Snapshot>) -> Result<bool, ConceptReadError> {
+        type_manager: &TypeManager<Snapshot>,
+    ) -> Result<bool, ConceptReadError> {
         type_manager.get_role_type_is_root(snapshot, self.clone().into_owned())
     }
 
@@ -113,7 +113,9 @@ impl<'a> RoleType<'a> {
     pub fn set_supertype<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
-        type_manager: &TypeManager<Snapshot>, supertype: RoleType<'static>) -> Result<(), ConceptWriteError> {
+        type_manager: &TypeManager<Snapshot>,
+        supertype: RoleType<'static>,
+    ) -> Result<(), ConceptWriteError> {
         type_manager.storage_set_supertype(snapshot, self.clone().into_owned(), supertype);
         Ok(())
     }
@@ -148,12 +150,14 @@ impl<'a> RoleType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
-        let card: AnnotationCardinality = annotations.iter().filter_map(|annotation|
-            match annotation {
+        let card: AnnotationCardinality = annotations
+            .iter()
+            .filter_map(|annotation| match annotation {
                 RoleTypeAnnotation::Cardinality(card) => Some(card.clone()),
-                _ => None
-            }
-        ).next().unwrap_or_else(|| type_manager.role_default_cardinality());
+                _ => None,
+            })
+            .next()
+            .unwrap_or_else(|| type_manager.role_default_cardinality());
         Ok(card)
     }
 

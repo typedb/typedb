@@ -74,9 +74,7 @@ impl AnnotationCardinality {
     }
 
     pub fn is_valid(&self, count: u64) -> bool {
-        self.start_inclusive <= count && (
-            self.end_inclusive.is_none() || count <= self.end_inclusive.clone().unwrap()
-        )
+        self.start_inclusive <= count && (self.end_inclusive.is_none() || count <= self.end_inclusive.clone().unwrap())
     }
 
     pub fn start(&self) -> u64 {

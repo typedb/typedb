@@ -10,8 +10,8 @@ use bytes::Bytes;
 use encoding::{
     graph::type_::vertex::{new_vertex_entity_type, TypeVertex},
     layout::prefix::Prefix,
-    Prefixed,
     value::label::Label,
+    Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::{
@@ -21,21 +21,19 @@ use storage::{
 
 use crate::{
     concept_iterator,
-    ConceptAPI,
-    error::ConceptReadError,
+    error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract},
         attribute_type::AttributeType,
         object_type::ObjectType,
-        ObjectTypeAPI,
-        OwnerAPI,
         owns::Owns,
-        PlayerAPI,
-        plays::Plays, role_type::RoleType, type_manager::TypeManager, TypeAPI,
+        plays::Plays,
+        role_type::RoleType,
+        type_manager::TypeManager,
+        ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
+    ConceptAPI,
 };
-use crate::error::ConceptWriteError;
-use crate::type_::Ordering;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType<'a> {
@@ -172,7 +170,7 @@ impl<'a> EntityType<'a> {
         &self,
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
-        annotation: EntityTypeAnnotation
+        annotation: EntityTypeAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             EntityTypeAnnotation::Abstract(_) => {
@@ -186,7 +184,7 @@ impl<'a> EntityType<'a> {
         &self,
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
-        annotation: EntityTypeAnnotation
+        annotation: EntityTypeAnnotation,
     ) {
         match annotation {
             EntityTypeAnnotation::Abstract(_) => {
@@ -216,7 +214,7 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         &self,
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
-        attribute_type: AttributeType<'static>
+        attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: error if not owned?
         type_manager.storage_delete_owns(snapshot, self.clone().into_owned(), attribute_type);
@@ -241,8 +239,11 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         Ok(self.get_owns(snapshot, type_manager)?.contains(&expected_owns).then_some(expected_owns))
     }
 
-    fn get_owns_transitive<'m, Snapshot: ReadableSnapshot>(&self, snapshot: &Snapshot, type_manager: &'m TypeManager<Snapshot>)
-        -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
+    fn get_owns_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_owns_transitive(snapshot, self.clone().into_owned())
     }
 }
@@ -263,7 +264,7 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         &self,
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
-        role_type: RoleType<'static>
+        role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: error if not playing
         type_manager.storage_delete_plays(snapshot, self.clone().into_owned(), role_type);
@@ -288,7 +289,11 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         Ok(self.get_plays(snapshot, type_manager)?.contains(&expected_plays).then_some(expected_plays))
     }
 
-    fn get_plays_transitive<'m, Snapshot: ReadableSnapshot>(&self, snapshot: &Snapshot, type_manager: &'m TypeManager<Snapshot>) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
+    fn get_plays_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_plays_transitive(snapshot, self.clone().into_owned())
     }
 }
