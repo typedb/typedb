@@ -63,6 +63,7 @@ impl<'a> Owns<'a> {
         type_manager: &TypeManager<Snapshot>,
         overridden: Owns<'static>
     ) {
+        // TODO: Validation
         type_manager.storage_set_owns_overridden(snapshot, self.clone().into_owned(), overridden)
     }
 

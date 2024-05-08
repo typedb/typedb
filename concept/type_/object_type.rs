@@ -33,6 +33,17 @@ impl<'a> ObjectType<'a> {
             _ => unreachable!("Object type creation requires either entity type or relation type vertex."),
         }
     }
+
+    pub fn get_supertype<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+    ) -> Result<Option<ObjectType<'_>>, ConceptReadError> {
+        Ok(match self {
+            ObjectType::Entity(entity) => entity.get_supertype(snapshot, type_manager)?.map(|supertype| ObjectType::Entity(supertype)),
+            ObjectType::Relation(relation) => relation.get_supertype(snapshot, type_manager)?.map(|supertype| ObjectType::Relation(supertype))
+        })
+    }
 }
 
 impl<'a> OwnerAPI<'a> for ObjectType<'a> {
