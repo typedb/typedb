@@ -20,6 +20,7 @@ rust_library(
         "//util/test:test_utils",
 
         "@crates//:cucumber",
+        "@crates//:itertools",
         "@crates//:macro_rules_attribute",
     ],
 )

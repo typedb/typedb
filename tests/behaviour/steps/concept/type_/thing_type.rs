@@ -7,6 +7,7 @@
 use ::concept::type_::{object_type::ObjectType, Ordering, OwnerAPI, PlayerAPI, TypeAPI};
 use cucumber::gherkin::Step;
 use encoding::graph::type_::Kind;
+use itertools::Itertools;
 use macro_rules_attribute::apply;
 
 use crate::{
@@ -240,18 +241,18 @@ pub async fn get_supertypes_contain(
     contains: ContainsOrDoesnt,
     step: &Step,
 ) {
-    let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
+    let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     with_read_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
-            let supertype_labels: Vec<String> = type_
+            let supertype_labels = type_
                 .get_supertypes(&tx.snapshot, &tx.type_manager)
                 .unwrap()
                 .iter()
                 .map(|supertype| {
                     supertype.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
                 })
-                .collect::<Vec<String>>();
-            contains.check(expected_labels, supertype_labels.into_iter().collect());
+                .collect_vec();
+            contains.check(&expected_labels, &supertype_labels);
         });
     });
 }
@@ -265,18 +266,18 @@ pub async fn get_subtypes_contain(
     contains: ContainsOrDoesnt,
     step: &Step,
 ) {
-    let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
+    let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     with_read_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
-            let subtype_labels: Vec<String> = type_
+            let subtype_labels = type_
                 .get_subtypes(&tx.snapshot, &tx.type_manager)
                 .unwrap()
                 .iter()
                 .map(|subtype| {
                     subtype.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
                 })
-                .collect::<Vec<String>>();
-            contains.check(expected_labels, subtype_labels.into_iter().collect());
+                .collect_vec();
+            contains.check(&expected_labels, &subtype_labels);
         });
     });
 }
@@ -357,7 +358,7 @@ pub async fn get_owns_contain(
     contains: ContainsOrDoesnt,
     step: &Step,
 ) {
-    let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
+    let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
@@ -367,8 +368,8 @@ pub async fn get_owns_contain(
             .map(|(_attribute, owns)| {
                 owns.attribute().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
-            .collect::<Vec<String>>();
-        contains.check(expected_labels, actual_labels);
+            .collect_vec();
+        contains.check(&expected_labels, &actual_labels);
     });
 }
 
@@ -381,7 +382,7 @@ pub async fn get_declared_owns_contain(
     contains: ContainsOrDoesnt,
     step: &Step,
 ) {
-    let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
+    let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
@@ -391,8 +392,8 @@ pub async fn get_declared_owns_contain(
             .map(|owns| {
                 owns.attribute().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
-            .collect::<Vec<String>>();
-        contains.check(expected_labels, actual_labels);
+            .collect_vec();
+        contains.check(&expected_labels, &actual_labels);
     });
 }
 
@@ -489,12 +490,15 @@ pub async fn get_plays_set_override(
     let player_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.to_typedb()).unwrap().unwrap();
-        let plays = player_type.get_plays_role(&mut tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
+        let plays = player_type.get_plays_role(&tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
 
         let player_supertype = player_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
         let overridden_role_type =
             tx.type_manager.get_role_type(&tx.snapshot, &overridden_role_label.to_typedb()).unwrap().unwrap();
-        let overridden_plays = player_supertype.get_plays_role_transitive(&tx.snapshot, &tx.type_manager, overridden_role_type).unwrap().unwrap();
+        let overridden_plays = player_supertype
+            .get_plays_role_transitive(&tx.snapshot, &tx.type_manager, overridden_role_type)
+            .unwrap()
+            .unwrap();
         plays.set_override(&mut tx.snapshot, &tx.type_manager, overridden_plays);
     });
 }
@@ -509,7 +513,7 @@ pub async fn get_plays_roles_contain(
     may_error: MayError,
     step: &Step,
 ) {
-    let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
+    let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
@@ -519,11 +523,10 @@ pub async fn get_plays_roles_contain(
             .map(|(_role, plays)| {
                 plays.role().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
-            .collect::<Vec<String>>();
-        contains.check(expected_labels, actual_labels);
+            .collect_vec();
+        contains.check(&expected_labels, &actual_labels);
     });
 }
-
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) get plays roles explicit {contains_or_doesnt}:(; ){may_error}")]
@@ -535,7 +538,7 @@ pub async fn get_declared_plays_roles_contain(
     may_error: MayError,
     step: &Step,
 ) {
-    let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
+    let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let actual_labels = object_type
@@ -545,8 +548,8 @@ pub async fn get_declared_plays_roles_contain(
             .map(|plays| {
                 plays.role().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
             })
-            .collect::<Vec<String>>();
-        contains.check(expected_labels, actual_labels);
+            .collect_vec();
+        contains.check(&expected_labels, &actual_labels);
     });
 }
 
