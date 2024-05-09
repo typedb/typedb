@@ -303,7 +303,7 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
                 Some(Err(err)) => self.state = State::Error(ConceptReadError::SnapshotIterate { source: err.clone() }),
             }
             if advance_attribute {
-                let _ = self.attributes_iterator.as_mut().unwrap();
+                self.attributes_iterator.as_mut().unwrap().next();
             }
         }
     }

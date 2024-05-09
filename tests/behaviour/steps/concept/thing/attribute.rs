@@ -32,14 +32,14 @@ pub async fn attribute_put_instance_with_value(
 #[apply(generic_step)]
 #[step(expr = r"attribute {var} exists")]
 pub async fn attribute_exists(context: &mut Context, var: params::Var) {
-    let attribute = context.attributes.get(&var.name).expect("no variable {} in context.things");
+    let attribute = context.attributes.get(&var.name).expect("no variable {} in context.");
     assert!(attribute.is_some(), "variable {} does not exist", var.name);
 }
 
 #[apply(generic_step)]
 #[step(expr = r"attribute {var} does not exist")]
 pub async fn attribute_does_not_exist(context: &mut Context, var: params::Var) {
-    let attribute = context.attributes.get(&var.name).expect("no variable {} in context.things");
+    let attribute = context.attributes.get(&var.name).expect("no variable {} in context.");
     assert!(attribute.is_none(), "variable {} exists: {:?}", var.name, attribute);
 }
 
@@ -109,5 +109,22 @@ pub async fn attribute_is_deleted(context: &mut Context, var: params::Var, is_de
         let value = attribute.get_value(&tx.snapshot, &tx.thing_manager).unwrap();
         tx.thing_manager.get_attribute_with_value(&tx.snapshot, attribute_type, value).unwrap()
     });
-    is_deleted.check(dbg!(get).is_none());
+    is_deleted.check(get.is_none());
+}
+
+#[apply(generic_step)]
+#[step(expr = r"attribute\({type_label}\) get instances {contains_or_doesnt}: {var}")]
+pub async fn attribute_instances_contain(
+    context: &mut Context,
+    type_label: params::Label,
+    containment: params::ContainsOrDoesnt,
+    var: params::Var,
+) {
+    let attribute = context.attributes.get(&var.name).expect("no variable {} in context.").as_ref().unwrap();
+    with_read_tx!(context, |tx| {
+        let attribute_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
+        let actuals = tx.thing_manager.get_attributes_in(&tx.snapshot, attribute_type).unwrap().collect_cloned();
+        containment.check(std::slice::from_ref(attribute), &actuals);
+    });
 }

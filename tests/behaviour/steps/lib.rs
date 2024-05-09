@@ -54,7 +54,6 @@ impl Context {
                 sc.name.contains(std::env::var("SCENARIO_FILTER").as_deref().unwrap_or("")) &&
                 !sc.tags.iter().any(|tag| is_ignore(tag))
             })
-
             .await
             .execution_has_failed()
     }
