@@ -61,7 +61,7 @@ struct CommonTypeCache<T: KindAPI<'static>> {
 }
 
 #[derive(Debug)]
-pub struct OwnsPlaysCache {
+pub struct OwnerPlayerCache {
     owns_declared: HashSet<Owns<'static>>,
     plays_declared: HashSet<Plays<'static>>,
 }
@@ -69,7 +69,7 @@ pub struct OwnsPlaysCache {
 #[derive(Debug)]
 pub(crate) struct EntityTypeCache {
     common_type_cache: CommonTypeCache<EntityType<'static>>,
-    owns_plays_cache: OwnsPlaysCache,
+    owner_player_cache: OwnerPlayerCache,
     // ...
 }
 
@@ -77,7 +77,7 @@ pub(crate) struct EntityTypeCache {
 pub(crate) struct RelationTypeCache {
     common_type_cache: CommonTypeCache<RelationType<'static>>,
     relates_declared: HashSet<Relates<'static>>,
-    owns_plays_cache: OwnsPlaysCache,
+    owner_player_cache: OwnerPlayerCache,
 }
 
 #[derive(Debug)]
@@ -98,6 +98,49 @@ pub(crate) struct AttributeTypeCache {
 struct OwnsCache {
     ordering: Ordering,
     annotations_declared: HashSet<OwnsAnnotation>,
+}
+
+impl<T: KindAPI<'static> + ReadableType<Output<'static>=T>> CommonTypeCache<T> {
+
+    fn build<'a, Snapshot>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
+        where
+            Snapshot: ReadableSnapshot
+    {
+        let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
+        let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
+        let annotations_declared = TypeReader::get_type_annotations(snapshot, type_.clone())
+            .unwrap()
+            .into_iter()
+            .map(|annotation| T::AnnotationType::from(annotation))
+            .collect::<HashSet<T::AnnotationType>>();
+        let supertype = TypeReader::get_supertype(snapshot, type_.clone()).unwrap();
+        let supertypes = TypeReader::get_supertypes_transitive(snapshot, type_.clone()).unwrap();
+        let subtypes_declared = TypeReader::get_subtypes(snapshot, type_.clone()).unwrap();
+        let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_.clone()).unwrap();
+        CommonTypeCache {
+            type_,
+            label,
+            is_root,
+            annotations_declared,
+            supertype,
+            supertypes,
+            subtypes_declared,
+            subtypes_transitive,
+        }
+    }
+}
+
+impl OwnerPlayerCache {
+    fn build<'a, Snapshot, T>(snapshot: &Snapshot, type_: T) -> OwnerPlayerCache
+        where
+            Snapshot: ReadableSnapshot,
+            T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static> + ReadableType<Output<'static>=T>,
+    {
+        OwnerPlayerCache {
+            owns_declared: TypeReader::get_owns(snapshot, type_.clone()).unwrap(),
+            plays_declared: TypeReader::get_plays(snapshot, type_.clone()).unwrap(),
+        }
+    }
 }
 
 impl TypeCache {
@@ -139,34 +182,6 @@ impl TypeCache {
         })
     }
 
-    fn build_common_cache<Snapshot, T>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
-    where
-        Snapshot: ReadableSnapshot,
-        T: KindAPI<'static> + ReadableType<Output<'static>=T>,
-    {
-        let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
-        let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
-        let annotations_declared = TypeReader::get_type_annotations(snapshot, type_.clone())
-            .unwrap()
-            .into_iter()
-            .map(|annotation| T::AnnotationType::from(annotation))
-            .collect::<HashSet<T::AnnotationType>>();
-        let supertype = TypeReader::get_supertype(snapshot, type_.clone()).unwrap();
-        let supertypes = TypeReader::get_supertypes_transitive(snapshot, type_.clone()).unwrap();
-        let subtypes_declared = TypeReader::get_subtypes(snapshot, type_.clone()).unwrap();
-        let subtypes_transitive = TypeReader::get_subtypes_transitive(snapshot, type_.clone()).unwrap();
-        CommonTypeCache {
-            type_,
-            label,
-            is_root,
-            annotations_declared,
-            supertype,
-            supertypes,
-            subtypes_declared,
-            subtypes_transitive,
-        }
-    }
-
     fn build_label_to_type_index<T : KindAPI<'static>, CACHE: HasCommonTypeCache<T>>(type_cache_array: &Box<[Option<CACHE>]>) -> HashMap<Label<'static>, T>{
         type_cache_array
             .iter()
@@ -174,17 +189,6 @@ impl TypeCache {
                 entry.as_ref().map(|cache| (cache.common_type_cache().label.clone(), cache.common_type_cache().type_.clone()))
             })
             .collect()
-    }
-
-    fn build_owns_plays_cache<Snapshot, T>(snapshot: &Snapshot, type_: T) -> OwnsPlaysCache
-        where
-            Snapshot: ReadableSnapshot,
-            T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static> + ReadableType<Output<'static>=T>,
-    {
-        OwnsPlaysCache {
-            owns_declared: TypeReader::get_owns(snapshot, type_.clone()).unwrap(),
-            plays_declared: TypeReader::get_plays(snapshot, type_.clone()).unwrap(),
-        }
     }
 
     fn create_entity_caches(snapshot: &impl ReadableSnapshot) -> Box<[Option<EntityTypeCache>]> {
@@ -202,8 +206,8 @@ impl TypeCache {
 
         for entity in entities.into_iter() {
             let cache = EntityTypeCache {
-                common_type_cache: Self::build_common_cache(snapshot, entity.clone()),
-                owns_plays_cache : Self::build_owns_plays_cache(snapshot, entity.clone()),
+                common_type_cache: CommonTypeCache::build(snapshot, entity.clone()),
+                owner_player_cache: OwnerPlayerCache::build(snapshot, entity.clone()),
             };
             caches[entity.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -224,9 +228,9 @@ impl TypeCache {
         let mut caches = (0..=max_relation_id).map(|_| None).collect::<Box<[_]>>();
         for relation in relations.into_iter() {
             let cache = RelationTypeCache {
-                common_type_cache: Self::build_common_cache(snapshot, relation.clone()),
+                common_type_cache: CommonTypeCache::build(snapshot, relation.clone()),
+                owner_player_cache: OwnerPlayerCache::build(snapshot, relation.clone()),
                 relates_declared: TypeReader::get_relates(snapshot, relation.clone()).unwrap(),
-                owns_plays_cache: Self::build_owns_plays_cache(snapshot, relation.clone()),
             };
             caches[relation.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -245,7 +249,7 @@ impl TypeCache {
         for role in roles.into_iter() {
             let ordering = TypeReader::get_type_ordering(snapshot, role.clone()).unwrap();
             let cache = RoleTypeCache {
-                common_type_cache: Self::build_common_cache(snapshot, role.clone()),
+                common_type_cache: CommonTypeCache::build(snapshot, role.clone()),
                 ordering,
                 relates_declared: TypeReader::get_relations(snapshot, role.clone()).unwrap(),
             };
@@ -265,7 +269,7 @@ impl TypeCache {
         let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Box<[_]>>();
         for attribute in attributes {
             let cache = AttributeTypeCache {
-                common_type_cache: Self::build_common_cache(snapshot, attribute.clone()),
+                common_type_cache: CommonTypeCache::build(snapshot, attribute.clone()),
                 value_type: TypeReader::get_value_type(snapshot, attribute.clone()).unwrap(),
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
@@ -366,9 +370,9 @@ impl TypeCache {
 
     pub(crate) fn get_owns<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns<'static>>
         where T:  OwnerAPI<'static> + PlayerAPI<'static> + CacheGetter<CacheType=CACHE>,
-              CACHE: HasOwnsPlaysCache + 'this
+              CACHE: HasOwnerPlayerCache + 'this
     {
-        &T::get_cache(self, type_).owns_plays_cache().owns_declared
+        &T::get_cache(self, type_).owner_player_cache().owns_declared
     }
 
     pub(crate) fn get_role_type_ordering(&self, role_type: RoleType<'static>) -> Ordering {
@@ -382,9 +386,9 @@ impl TypeCache {
 
     pub(crate) fn get_plays<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Plays<'static>>
         where T:  OwnerAPI<'static> + PlayerAPI<'static> + CacheGetter<CacheType=CACHE>,
-              CACHE: HasOwnsPlaysCache + 'this
+              CACHE: HasOwnerPlayerCache + 'this
     {
-        &T::get_cache(self, type_).owns_plays_cache().plays_declared
+        &T::get_cache(self, type_).owner_player_cache().plays_declared
     }
 
     pub(crate) fn get_attribute_type_value_type(&self, attribute_type: AttributeType<'static>) -> Option<ValueType> {
@@ -440,20 +444,20 @@ impl_has_common_type_cache!(AttributeTypeCache, AttributeType<'static>);
 impl_has_common_type_cache!(RelationTypeCache, RelationType<'static>);
 impl_has_common_type_cache!(RoleTypeCache, RoleType<'static>);
 
-pub trait HasOwnsPlaysCache {
-    fn owns_plays_cache(&self) -> &OwnsPlaysCache;
+pub trait HasOwnerPlayerCache {
+    fn owner_player_cache(&self) -> &OwnerPlayerCache;
 }
-macro_rules! impl_has_owns_plays_cache {
+macro_rules! impl_has_owner_player_cache {
     ($cache_type: ty, $inner_type: ty) => {
-        impl HasOwnsPlaysCache for $cache_type {
-            fn owns_plays_cache(&self) -> &OwnsPlaysCache {
-                &self.owns_plays_cache
+        impl HasOwnerPlayerCache for $cache_type {
+            fn owner_player_cache(&self) -> &OwnerPlayerCache {
+                &self.owner_player_cache
             }
         }
     };
 }
-impl_has_owns_plays_cache!(EntityTypeCache, EntityType<'static>);
-impl_has_owns_plays_cache!(RelationTypeCache, RelationType<'static>);
+impl_has_owner_player_cache!(EntityTypeCache, EntityType<'static>);
+impl_has_owner_player_cache!(RelationTypeCache, RelationType<'static>);
 
 
 #[derive(Debug)]
