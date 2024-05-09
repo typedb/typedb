@@ -13,6 +13,7 @@ rust_test(
         "@crates//:tokio",
     ],
     data = ["@vaticle_typedb_behaviour//concept/thing:attribute.feature"],
+    crate_features = ["bazel"],
 )
 
 checkstyle_test(
