@@ -115,38 +115,14 @@ impl TypeCache {
             storage.open_snapshot_read_at(open_sequence_number).map_err(|error| SnapshotOpen { source: error })?;
 
         let entity_type_caches = Self::create_entity_caches(&snapshot);
-        let entity_type_index_labels = entity_type_caches
-            .iter()
-            .filter_map(|entry| {
-                entry.as_ref().map(|cache| (cache.common_type_cache.label.clone(), cache.common_type_cache.type_.clone()))
-            })
-            .collect();
-
         let relation_type_caches = Self::create_relation_caches(&snapshot);
-        let relation_type_index_labels = relation_type_caches
-            .iter()
-            .filter_map(|entry| {
-                entry
-                    .as_ref()
-                    .map(|cache| (cache.common_type_cache.label.clone(), cache.common_type_cache.type_.clone()))
-            })
-            .collect();
-
         let role_type_caches = Self::create_role_caches(&snapshot);
-        let role_type_index_labels = role_type_caches
-            .iter()
-            .filter_map(|entry| {
-                entry.as_ref().map(|cache| (cache.common_type_cache.label.clone(), cache.common_type_cache.type_.clone()))
-            })
-            .collect();
-
         let attribute_type_caches = Self::create_attribute_caches(&snapshot);
-        let attribute_type_index_labels = attribute_type_caches
-            .iter()
-            .filter_map(|entry| {
-                entry.as_ref().map(|cache| (cache.common_type_cache.label.clone(), cache.common_type_cache.type_.clone()))
-            })
-            .collect();
+
+        let entity_types_index_label = Self::build_label_to_type_index(&entity_type_caches);
+        let relation_types_index_label = Self::build_label_to_type_index(&relation_type_caches);
+        let role_types_index_label = Self::build_label_to_type_index(&role_type_caches);
+        let attribute_types_index_label = Self::build_label_to_type_index(&attribute_type_caches);
 
         Ok(TypeCache {
             open_sequence_number,
@@ -156,10 +132,10 @@ impl TypeCache {
             attribute_types: attribute_type_caches,
             owns: Self::create_owns_caches(&snapshot),
 
-            entity_types_index_label: entity_type_index_labels,
-            relation_types_index_label: relation_type_index_labels,
-            role_types_index_label: role_type_index_labels,
-            attribute_types_index_label: attribute_type_index_labels,
+            entity_types_index_label,
+            relation_types_index_label,
+            role_types_index_label,
+            attribute_types_index_label,
         })
     }
 
@@ -190,6 +166,16 @@ impl TypeCache {
             subtypes_transitive,
         }
     }
+
+    fn build_label_to_type_index<T : KindAPI<'static>, CACHE: HasCommonTypeCache<T>>(type_cache_array: &Box<[Option<CACHE>]>) -> HashMap<Label<'static>, T>{
+        type_cache_array
+            .iter()
+            .filter_map(|entry| {
+                entry.as_ref().map(|cache| (cache.common_type_cache().label.clone(), cache.common_type_cache().type_.clone()))
+            })
+            .collect()
+    }
+
     fn build_owns_plays_cache<Snapshot, T>(snapshot: &Snapshot, type_: T) -> OwnsPlaysCache
         where
             Snapshot: ReadableSnapshot,
