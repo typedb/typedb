@@ -329,176 +329,55 @@ impl TypeCache {
         self.attribute_types_index_label.get(label).cloned()
     }
 
-    pub(crate) fn get_entity_type_supertype(&self, entity_type: EntityType<'static>) -> Option<EntityType<'static>> {
-        Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .supertype
-            .clone()
+    pub(crate) fn get_supertype<'a, 'this, T, CACHE>(&'this self, type_: T) -> Option<T::SelfStatic>
+        where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
+              CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
+    {
+        // TODO: Why does this not return &Option<EntityType<'static>> ?
+        Some(T::get_cache(self, type_).common_type_cache().supertype.as_ref()?.clone())
     }
 
-    pub(crate) fn get_relation_type_supertype(
-        &self,
-        relation_type: RelationType<'static>,
-    ) -> Option<RelationType<'static>> {
-        Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .supertype
-            .clone()
+    pub(crate) fn get_supertypes<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T::SelfStatic>
+        where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
+              CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
+    {
+        &T::get_cache(self, type_).common_type_cache().supertypes
+    }
+    pub(crate) fn get_subtypes<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T::SelfStatic>
+        where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
+              CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
+    {
+        &T::get_cache(self, type_).common_type_cache().subtypes_declared
     }
 
-    pub(crate) fn get_role_type_supertype(&self, role_type: RoleType<'static>) -> Option<RoleType<'static>> {
-        Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().common_type_cache.supertype.clone()
+    pub(crate) fn get_subtypes_transitive<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T::SelfStatic>
+        where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
+              CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
+    {
+        &T::get_cache(self, type_).common_type_cache().subtypes_transitive
     }
 
-    pub(crate) fn get_attribute_type_supertype(
-        &self,
-        attribute_type: AttributeType<'static>,
-    ) -> Option<AttributeType<'static>> {
-        Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .supertype
-            .clone()
+    pub(crate) fn get_label<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Label<'static>
+        where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
+              CACHE : HasCommonTypeCache<T::SelfStatic> + 'this
+    {
+        &T::get_cache(self, type_).common_type_cache().label
     }
 
-    pub(crate) fn get_entity_type_supertypes(&self, entity_type: EntityType<'_>) -> &Vec<EntityType<'static>> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().common_type_cache.supertypes
+    pub(crate) fn is_root<'a, 'this, T, CACHE>(&'this self, type_: T) -> bool
+        where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
+              CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
+    {
+        T::get_cache(self, type_).common_type_cache().is_root
     }
 
-    pub(crate) fn get_relation_type_supertypes(
-        &self,
-        relation_type: RelationType<'static>,
-    ) -> &Vec<RelationType<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .supertypes
+    pub(crate) fn get_annotations<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<<<T as KindAPI<'a>>::SelfStatic as KindAPI<'static>>::AnnotationType>
+        where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
+              CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
+    {
+        &T::get_cache(self, type_).common_type_cache().annotations_declared
     }
 
-    pub(crate) fn get_role_type_supertypes(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
-        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().common_type_cache.supertypes
-    }
-
-    pub(crate) fn get_attribute_type_supertypes(
-        &self,
-        attribute_type: AttributeType<'static>,
-    ) -> &Vec<AttributeType<'static>> {
-        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .supertypes
-    }
-
-    pub(crate) fn get_entity_type_subtypes(&self, entity_type: EntityType<'_>) -> &Vec<EntityType<'static>> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .subtypes_declared
-    }
-
-    pub(crate) fn get_relation_type_subtypes(
-        &self,
-        relation_type: RelationType<'static>,
-    ) -> &Vec<RelationType<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .subtypes_declared
-    }
-
-    pub(crate) fn get_role_type_subtypes(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
-        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().common_type_cache.subtypes_declared
-    }
-
-    pub(crate) fn get_attribute_type_subtypes(
-        &self,
-        attribute_type: AttributeType<'static>,
-    ) -> &Vec<AttributeType<'static>> {
-        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .subtypes_declared
-    }
-
-    pub(crate) fn get_entity_type_subtypes_transitive(&self, entity_type: EntityType<'_>) -> &Vec<EntityType<'static>> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .subtypes_transitive
-    }
-
-    pub(crate) fn get_relation_type_subtypes_transitive(
-        &self,
-        relation_type: RelationType<'static>,
-    ) -> &Vec<RelationType<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .subtypes_transitive
-    }
-
-    pub(crate) fn get_role_type_subtypes_transitive(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
-        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .subtypes_transitive
-    }
-
-    pub(crate) fn get_attribute_type_subtypes_transitive(
-        &self,
-        attribute_type: AttributeType<'static>,
-    ) -> &Vec<AttributeType<'static>> {
-        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .subtypes_transitive
-    }
-
-    pub(crate) fn get_entity_type_label(&self, entity_type: EntityType<'static>) -> &Label<'static> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().common_type_cache.label
-    }
-
-    pub(crate) fn get_relation_type_label(&self, relation_type: RelationType<'static>) -> &Label<'static> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .label
-    }
-
-    pub(crate) fn get_role_type_label(&self, role_type: RoleType<'static>) -> &Label<'static> {
-        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().common_type_cache.label
-    }
-
-    pub(crate) fn get_attribute_type_label(&self, attribute_type: AttributeType<'static>) -> &Label<'static> {
-        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .label
-    }
-
-    pub(crate) fn get_entity_type_is_root(&self, entity_type: EntityType<'static>) -> bool {
-        Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().common_type_cache.is_root
-    }
-
-    pub(crate) fn get_relation_type_is_root(&self, relation_type: RelationType<'static>) -> bool {
-        Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .is_root
-    }
-
-    pub(crate) fn get_role_type_is_root(&self, role_type: RoleType<'static>) -> bool {
-        Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().common_type_cache.is_root
-    }
-
-    pub(crate) fn get_attribute_type_is_root(&self, attribute_type: AttributeType<'static>) -> bool {
-        Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .is_root
-    }
 
     pub(crate) fn get_role_type_ordering(&self, role_type: RoleType<'static>) -> Ordering {
         Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().ordering
@@ -531,43 +410,6 @@ impl TypeCache {
 
     pub(crate) fn get_attribute_type_value_type(&self, attribute_type: AttributeType<'static>) -> Option<ValueType> {
         Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().value_type
-    }
-
-    pub(crate) fn get_entity_type_annotations(
-        &self,
-        entity_type: EntityType<'static>,
-    ) -> &HashSet<EntityTypeAnnotation> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .annotations_declared
-    }
-
-    pub(crate) fn get_relation_type_annotations(
-        &self,
-        relation_type: RelationType<'static>,
-    ) -> &HashSet<RelationTypeAnnotation> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .annotations_declared
-    }
-
-    pub(crate) fn get_role_type_annotations(&self, role_type: RoleType<'static>) -> &HashSet<RoleTypeAnnotation> {
-        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .annotations_declared
-    }
-
-    pub(crate) fn get_attribute_type_annotations(
-        &self,
-        attribute_type: AttributeType<'static>,
-    ) -> &HashSet<AttributeTypeAnnotation> {
-        &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
-            .unwrap()
-            .common_type_cache
-            .annotations_declared
     }
 
     pub(crate) fn get_owns_annotations<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<OwnsAnnotation> {
@@ -612,13 +454,6 @@ impl TypeCache {
         debug_assert_eq!(type_vertex.prefix(), Prefix::VertexAttributeType);
         let as_u16 = type_vertex.type_id_().as_u16();
         attribute_type_caches[as_u16 as usize].as_ref()
-    }
-
-    pub(crate) fn __generalised__get_label<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Label<'static>
-    where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-          CACHE : HasCommonTypeCache<T::SelfStatic> + 'this
-    {
-        &T::get_cache(self, type_).common_type_cache().label
     }
 }
 
