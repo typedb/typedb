@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{convert::Infallible, str::FromStr};
+use std::{convert::Infallible, fmt, str::FromStr};
 
 use concept::{
     thing::value::Value as TypeDBValue,
@@ -72,20 +72,19 @@ impl FromStr for Boolean {
     }
 }
 
-#[derive(Debug, Default, Parameter)]
+#[derive(Debug, Parameter)]
 #[param(name = "contains_or_doesnt", regex = "(contain|do not contain)")]
 pub(crate) enum ContainsOrDoesnt {
-    #[default]
     Contains,
     DoesNotContain,
 }
 
 impl ContainsOrDoesnt {
-    pub fn check<T: PartialEq + std::fmt::Debug>(&self, expected: &[T], actual: &[T]) {
-        let expected_contains: bool = self.expected_contains();
-        expected.iter().for_each(|expected_item| {
-            assert_eq!(expected_contains, actual.contains(expected_item));
-        });
+    pub fn check<T: PartialEq + fmt::Debug>(&self, expected: &[T], actual: &[T]) {
+        let expected_contains = self.expected_contains();
+        for expected_item in expected {
+            assert_eq!(expected_contains, actual.contains(expected_item))
+        }
     }
 
     pub fn expected_contains(&self) -> bool {
@@ -201,9 +200,10 @@ pub(crate) struct Value {
 }
 
 impl Value {
-    pub fn to_typedb(&self, value_type: TypeDBValueType) -> TypeDBValue<'static> {
+    pub fn into_typedb(self, value_type: TypeDBValueType) -> TypeDBValue<'static> {
         match value_type {
             TypeDBValueType::Long => TypeDBValue::Long(self.raw_value.parse().unwrap()),
+            TypeDBValueType::String => TypeDBValue::String(std::borrow::Cow::Owned(self.raw_value)),
             _ => todo!(),
         }
     }

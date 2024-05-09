@@ -99,25 +99,23 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &'this self,
         snapshot: &'this Snapshot,
         attribute_type: AttributeType<'_>,
-    ) -> Result<AttributeIterator<'_, Snapshot, 3, 4>, ConceptReadError> {
-        Ok(attribute_type
-            .get_value_type(snapshot, self.type_manager.as_ref())?
-            .map(|value_type| {
-                let attribute_value_type_prefix = AttributeVertex::value_type_to_prefix_type(value_type);
-                let prefix =
-                    AttributeVertex::build_prefix_type(attribute_value_type_prefix, attribute_type.vertex().type_id_());
-                let attribute_iterator = snapshot
-                    .iterate_range(KeyRange::new_within(prefix, attribute_value_type_prefix.fixed_width_keys()));
+    ) -> Result<AttributeIterator<'this, Snapshot, 3, 4>, ConceptReadError> {
+        let Some(value_type) = attribute_type.get_value_type(snapshot, self.type_manager.as_ref())? else {
+            return Ok(AttributeIterator::new_empty());
+        };
 
-                let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_type(
-                    attribute_value_type_prefix,
-                    attribute_type.vertex().type_id_(),
-                );
-                let has_reverse_iterator = snapshot
-                    .iterate_range(KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING));
-                AttributeIterator::new(attribute_iterator, has_reverse_iterator, snapshot, self.type_manager())
-            })
-            .unwrap_or_else(AttributeIterator::new_empty))
+        let attribute_value_type_prefix = AttributeVertex::value_type_to_prefix_type(value_type);
+        let prefix =
+            AttributeVertex::build_prefix_type(attribute_value_type_prefix, attribute_type.vertex().type_id_());
+        let attribute_iterator =
+            snapshot.iterate_range(KeyRange::new_within(prefix, attribute_value_type_prefix.fixed_width_keys()));
+
+        let has_reverse_prefix =
+            ThingEdgeHasReverse::prefix_from_type(attribute_value_type_prefix, attribute_type.vertex().type_id_());
+        let has_reverse_iterator =
+            snapshot.iterate_range(KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING));
+
+        Ok(AttributeIterator::new(attribute_iterator, has_reverse_iterator, snapshot, self.type_manager()))
     }
 
     pub(crate) fn get_attribute_value(

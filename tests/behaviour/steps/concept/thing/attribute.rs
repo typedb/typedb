@@ -13,8 +13,24 @@ use crate::{
 };
 
 #[apply(generic_step)]
-#[step(expr = r"{var} = attribute\({type_label}\) put instance with value: {value}")]
+#[step(expr = r"attribute\({type_label}\) put instance with value: {value}(; ){may_error}")]
 pub async fn attribute_put_instance_with_value(
+    context: &mut Context,
+    type_label: params::Label,
+    value: params::Value,
+    may_error: params::MayError,
+) {
+    with_write_tx!(context, |tx| {
+        let attribute_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
+        let value = value.into_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
+        may_error.check(&tx.thing_manager.create_attribute(&mut tx.snapshot, attribute_type, value));
+    })
+}
+
+#[apply(generic_step)]
+#[step(expr = r"{var} = attribute\({type_label}\) put instance with value: {value}")]
+pub async fn attribute_put_instance_with_value_var(
     context: &mut Context,
     var: params::Var,
     type_label: params::Label,
@@ -23,7 +39,7 @@ pub async fn attribute_put_instance_with_value(
     let att = with_write_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
-        let value = value.to_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
+        let value = value.into_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
         tx.thing_manager.create_attribute(&mut tx.snapshot, attribute_type, value).unwrap()
     });
     context.attributes.insert(var.name, Some(att));
@@ -70,7 +86,7 @@ pub async fn attribute_has_value(context: &mut Context, var: params::Var, value:
     let attribute = context.attributes.get_mut(&var.name).unwrap().as_mut().unwrap();
     let attribute_type = attribute.type_();
     with_read_tx!(context, |tx| {
-        let value = value.to_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
+        let value = value.into_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
         assert_eq!(attribute.get_value(&tx.snapshot, &tx.thing_manager).unwrap(), value);
     });
 }
@@ -86,7 +102,7 @@ pub async fn attribute_get_instance_with_value(
     let att = with_read_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
-        let value = value.to_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
+        let value = value.into_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
         tx.thing_manager.get_attribute_with_value(&tx.snapshot, attribute_type, value).unwrap()
     });
     context.attributes.insert(var.name, att);
