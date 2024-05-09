@@ -39,7 +39,7 @@ use crate::type_::{
     type_reader::TypeReader,
     Ordering, TypeAPI,
 };
-use crate::type_::type_manager::TypeAPITraits;
+use crate::type_::type_manager::KindAPI;
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -60,7 +60,7 @@ pub struct TypeCache {
 }
 
 #[derive(Debug)]
-struct CommonTypeCache<T: TypeAPI<'static> + TypeAPITraits> {
+struct CommonTypeCache<T: KindAPI<'static>> {
     type_: T,
     label: Label<'static>,
     is_root: bool,
@@ -73,15 +73,15 @@ struct CommonTypeCache<T: TypeAPI<'static> + TypeAPITraits> {
 }
 
 #[derive(Debug)]
-struct EntityTypeCache {
-    type_api_cache_: CommonTypeCache<EntityType<'static>>,
+pub(crate) struct EntityTypeCache {
+    common_type_cache: CommonTypeCache<EntityType<'static>>,
     owns_declared: HashSet<Owns<'static>>,
     plays_declared: HashSet<Plays<'static>>,
     // ...
 }
 
 #[derive(Debug)]
-struct RelationTypeCache {
+pub(crate) struct RelationTypeCache {
     common_type_cache: CommonTypeCache<RelationType<'static>>,
     relates_declared: HashSet<Relates<'static>>,
     owns_declared: HashSet<Owns<'static>>,
@@ -89,15 +89,15 @@ struct RelationTypeCache {
 }
 
 #[derive(Debug)]
-struct RoleTypeCache {
-    type_api_cache_: CommonTypeCache<RoleType<'static>>,
+pub(crate) struct RoleTypeCache {
+    common_type_cache: CommonTypeCache<RoleType<'static>>,
     ordering: Ordering,
     relates_declared: Relates<'static>,
 }
 
 #[derive(Debug)]
-struct AttributeTypeCache {
-    type_api_cache_: CommonTypeCache<AttributeType<'static>>,
+pub(crate) struct AttributeTypeCache {
+    common_type_cache: CommonTypeCache<AttributeType<'static>>,
     value_type: Option<ValueType>,
     // owners: HashSet<Owns<'static>>
 }
@@ -126,7 +126,7 @@ impl TypeCache {
         let entity_type_index_labels = entity_type_caches
             .iter()
             .filter_map(|entry| {
-                entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone()))
+                entry.as_ref().map(|cache| (cache.common_type_cache.label.clone(), cache.common_type_cache.type_.clone()))
             })
             .collect();
 
@@ -144,7 +144,7 @@ impl TypeCache {
         let role_type_index_labels = role_type_caches
             .iter()
             .filter_map(|entry| {
-                entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone()))
+                entry.as_ref().map(|cache| (cache.common_type_cache.label.clone(), cache.common_type_cache.type_.clone()))
             })
             .collect();
 
@@ -152,7 +152,7 @@ impl TypeCache {
         let attribute_type_index_labels = attribute_type_caches
             .iter()
             .filter_map(|entry| {
-                entry.as_ref().map(|cache| (cache.type_api_cache_.label.clone(), cache.type_api_cache_.type_.clone()))
+                entry.as_ref().map(|cache| (cache.common_type_cache.label.clone(), cache.common_type_cache.type_.clone()))
             })
             .collect();
 
@@ -174,7 +174,7 @@ impl TypeCache {
     fn build_common_cache<Snapshot, T>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
     where
         Snapshot: ReadableSnapshot,
-        T: TypeAPI<'static> + TypeAPITraits + ReadableType<Output<'static>=T>,
+        T: KindAPI<'static> + ReadableType<Output<'static>=T>,
     {
         let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
         let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
@@ -214,7 +214,7 @@ impl TypeCache {
 
         for entity in entities.into_iter() {
             let cache = EntityTypeCache {
-                type_api_cache_: Self::build_common_cache(snapshot, entity.clone()),
+                common_type_cache: Self::build_common_cache(snapshot, entity.clone()),
                 owns_declared: TypeReader::get_owns(snapshot, entity.clone()).unwrap(),
                 plays_declared: TypeReader::get_plays(snapshot, entity.clone()).unwrap(),
             };
@@ -259,7 +259,7 @@ impl TypeCache {
         for role in roles.into_iter() {
             let ordering = TypeReader::get_type_ordering(snapshot, role.clone()).unwrap();
             let cache = RoleTypeCache {
-                type_api_cache_: Self::build_common_cache(snapshot, role.clone()),
+                common_type_cache: Self::build_common_cache(snapshot, role.clone()),
                 ordering,
                 relates_declared: TypeReader::get_relations(snapshot, role.clone()).unwrap(),
             };
@@ -279,7 +279,7 @@ impl TypeCache {
         let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Box<[_]>>();
         for attribute in attributes {
             let cache = AttributeTypeCache {
-                type_api_cache_: Self::build_common_cache(snapshot, attribute.clone()),
+                common_type_cache: Self::build_common_cache(snapshot, attribute.clone()),
                 value_type: TypeReader::get_value_type(snapshot, attribute.clone()).unwrap(),
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
@@ -332,7 +332,7 @@ impl TypeCache {
     pub(crate) fn get_entity_type_supertype(&self, entity_type: EntityType<'static>) -> Option<EntityType<'static>> {
         Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex())
             .unwrap()
-            .type_api_cache_
+            .common_type_cache
             .supertype
             .clone()
     }
@@ -349,7 +349,7 @@ impl TypeCache {
     }
 
     pub(crate) fn get_role_type_supertype(&self, role_type: RoleType<'static>) -> Option<RoleType<'static>> {
-        Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().type_api_cache_.supertype.clone()
+        Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().common_type_cache.supertype.clone()
     }
 
     pub(crate) fn get_attribute_type_supertype(
@@ -358,13 +358,13 @@ impl TypeCache {
     ) -> Option<AttributeType<'static>> {
         Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
             .unwrap()
-            .type_api_cache_
+            .common_type_cache
             .supertype
             .clone()
     }
 
     pub(crate) fn get_entity_type_supertypes(&self, entity_type: EntityType<'_>) -> &Vec<EntityType<'static>> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().type_api_cache_.supertypes
+        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().common_type_cache.supertypes
     }
 
     pub(crate) fn get_relation_type_supertypes(
@@ -378,7 +378,7 @@ impl TypeCache {
     }
 
     pub(crate) fn get_role_type_supertypes(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
-        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().type_api_cache_.supertypes
+        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().common_type_cache.supertypes
     }
 
     pub(crate) fn get_attribute_type_supertypes(
@@ -387,14 +387,14 @@ impl TypeCache {
     ) -> &Vec<AttributeType<'static>> {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
             .unwrap()
-            .type_api_cache_
+            .common_type_cache
             .supertypes
     }
 
     pub(crate) fn get_entity_type_subtypes(&self, entity_type: EntityType<'_>) -> &Vec<EntityType<'static>> {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex())
             .unwrap()
-            .type_api_cache_
+            .common_type_cache
             .subtypes_declared
     }
 
@@ -409,7 +409,7 @@ impl TypeCache {
     }
 
     pub(crate) fn get_role_type_subtypes(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
-        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().type_api_cache_.subtypes_declared
+        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().common_type_cache.subtypes_declared
     }
 
     pub(crate) fn get_attribute_type_subtypes(
@@ -418,14 +418,14 @@ impl TypeCache {
     ) -> &Vec<AttributeType<'static>> {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
             .unwrap()
-            .type_api_cache_
+            .common_type_cache
             .subtypes_declared
     }
 
     pub(crate) fn get_entity_type_subtypes_transitive(&self, entity_type: EntityType<'_>) -> &Vec<EntityType<'static>> {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex())
             .unwrap()
-            .type_api_cache_
+            .common_type_cache
             .subtypes_transitive
     }
 
@@ -442,7 +442,7 @@ impl TypeCache {
     pub(crate) fn get_role_type_subtypes_transitive(&self, role_type: RoleType<'static>) -> &Vec<RoleType<'static>> {
         &Self::get_role_type_cache(&self.role_types, role_type.into_vertex())
             .unwrap()
-            .type_api_cache_
+            .common_type_cache
             .subtypes_transitive
     }
 
@@ -452,12 +452,12 @@ impl TypeCache {
     ) -> &Vec<AttributeType<'static>> {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
             .unwrap()
-            .type_api_cache_
+            .common_type_cache
             .subtypes_transitive
     }
 
     pub(crate) fn get_entity_type_label(&self, entity_type: EntityType<'static>) -> &Label<'static> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().type_api_cache_.label
+        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().common_type_cache.label
     }
 
     pub(crate) fn get_relation_type_label(&self, relation_type: RelationType<'static>) -> &Label<'static> {
@@ -468,18 +468,18 @@ impl TypeCache {
     }
 
     pub(crate) fn get_role_type_label(&self, role_type: RoleType<'static>) -> &Label<'static> {
-        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().type_api_cache_.label
+        &Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().common_type_cache.label
     }
 
     pub(crate) fn get_attribute_type_label(&self, attribute_type: AttributeType<'static>) -> &Label<'static> {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
             .unwrap()
-            .type_api_cache_
+            .common_type_cache
             .label
     }
 
     pub(crate) fn get_entity_type_is_root(&self, entity_type: EntityType<'static>) -> bool {
-        Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().type_api_cache_.is_root
+        Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().common_type_cache.is_root
     }
 
     pub(crate) fn get_relation_type_is_root(&self, relation_type: RelationType<'static>) -> bool {
@@ -490,13 +490,13 @@ impl TypeCache {
     }
 
     pub(crate) fn get_role_type_is_root(&self, role_type: RoleType<'static>) -> bool {
-        Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().type_api_cache_.is_root
+        Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().common_type_cache.is_root
     }
 
     pub(crate) fn get_attribute_type_is_root(&self, attribute_type: AttributeType<'static>) -> bool {
         Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
             .unwrap()
-            .type_api_cache_
+            .common_type_cache
             .is_root
     }
 
@@ -513,12 +513,17 @@ impl TypeCache {
     }
 
     pub(crate) fn get_relation_type_relates(&self, relation_type: RelationType<'static>) -> &HashSet<Relates<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().relates_declared
+        &RelationType::get_cache(self, relation_type).relates_declared
+        // &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().relates_declared
     }
 
     pub(crate) fn get_entity_type_plays(&self, entity_type: EntityType<'static>) -> &HashSet<Plays<'static>> {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().plays_declared
     }
+
+    // pub(crate) fn get_relation_type_plays(&self, relation_type: RelationType<'static>) -> &HashSet<Plays<'static>> {
+    //     &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().plays_declared
+    // }
 
     pub(crate) fn get_relation_type_plays(&self, relation_type: RelationType<'static>) -> &HashSet<Plays<'static>> {
         &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().plays_declared
@@ -534,7 +539,7 @@ impl TypeCache {
     ) -> &HashSet<EntityTypeAnnotation> {
         &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex())
             .unwrap()
-            .type_api_cache_
+            .common_type_cache
             .annotations_declared
     }
 
@@ -551,7 +556,7 @@ impl TypeCache {
     pub(crate) fn get_role_type_annotations(&self, role_type: RoleType<'static>) -> &HashSet<RoleTypeAnnotation> {
         &Self::get_role_type_cache(&self.role_types, role_type.into_vertex())
             .unwrap()
-            .type_api_cache_
+            .common_type_cache
             .annotations_declared
     }
 
@@ -561,7 +566,7 @@ impl TypeCache {
     ) -> &HashSet<AttributeTypeAnnotation> {
         &Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex())
             .unwrap()
-            .type_api_cache_
+            .common_type_cache
             .annotations_declared
     }
 
@@ -610,54 +615,84 @@ impl TypeCache {
     }
 
 
-    pub(crate) fn __generalised__get_supertype<'a, T>(&self, type_: T) -> Option<T::CacheParameter>
-    where T: TypeAPI<'a> + CommonTypeCacheSelector
+    pub(crate) fn __generalised__get_supertype<'a, 'this, T, CACHE>(&self, type_: T) -> Option<T::SelfStatic>
+    where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
+          CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
     {
         // TODO: Why does this not return &Option<EntityType<'static>> ?
-        // TODO: All the unwrap
-        Some(T::select(self, type_).supertype.as_ref()?.clone())
+        Some(T::get_cache(self, type_).common_type_cache().supertype.as_ref()?.clone())
     }
 
-    pub(crate) fn __generalised__get_label<'a, T>(&self, type_: T) -> &Label<'static>
-    where T: TypeAPI<'a> + CommonTypeCacheSelector,
-          <T as CommonTypeCacheSelector>::CacheParameter: 'static
+    pub(crate) fn __generalised__get_label<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Label<'static>
+    where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
+          CACHE : HasCommonTypeCache<T::SelfStatic> + 'this
     {
-        &T::select(self, type_).label
+        &T::get_cache(self, type_).common_type_cache().label
     }
 }
 
-pub(crate) trait CommonTypeCacheSelector {
-    type CacheParameter : TypeAPI<'static> + TypeAPITraits;
+pub(crate) trait CacheGetter {
+    type CacheType;
 
-    fn select<'cache>(type_cache: &'cache TypeCache, type_: Self) -> &'cache CommonTypeCache<Self::CacheParameter>;
-}
-
-impl<'a> CommonTypeCacheSelector for EntityType<'a> {
-    type CacheParameter = EntityType<'static>;
-    fn select<'cache>(type_cache: &'cache TypeCache, type_: EntityType<'a>) -> &'cache CommonTypeCache<Self::CacheParameter> {
-        &TypeCache::get_entity_type_cache(&type_cache.entity_types, type_.vertex()).unwrap().type_api_cache_
-    }
-}
-impl<'a> CommonTypeCacheSelector for AttributeType<'a> {
-    type CacheParameter = AttributeType<'static>;
-    fn select<'cache>(type_cache: &'cache TypeCache, type_: AttributeType<'a>) -> &'cache CommonTypeCache<Self::CacheParameter> {
-        &TypeCache::get_attribute_type_cache(&type_cache.attribute_types, type_.vertex()).unwrap().type_api_cache_
-    }
+    fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: Self) -> &'cache Self::CacheType;
 }
 
-impl<'a> CommonTypeCacheSelector for RelationType<'a> {
-    type CacheParameter = RelationType<'static>;
-    fn select<'cache>(type_cache: &'cache TypeCache, type_: RelationType<'a>) -> &'cache CommonTypeCache<Self::CacheParameter> {
-        &TypeCache::get_relation_type_cache(&type_cache.relation_types, type_.vertex()).unwrap().common_type_cache
+impl<'a> CacheGetter for EntityType<'a> {
+    type CacheType = EntityTypeCache;
+    fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: EntityType<'a>) -> &'cache Self::CacheType {
+        let as_u16 = type_.vertex().type_id_().as_u16();
+        type_cache.entity_types[as_u16 as usize].as_ref().unwrap()
     }
+}
+// impl<'a> CacheGetter for AttributeType<'a> {
+//     type CacheType = AttributeTypeCache;
+//     fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: AttributeType<'a>) -> &'cache Self::CacheType {
+//         let as_u16 = type_.vertex().type_id_().as_u16();
+//         type_cache.attribute_types[as_u16 as usize].as_ref().unwrap()
+//     }
+// }
+//
+impl<'a> CacheGetter for RelationType<'a> {
+    type CacheType = RelationTypeCache;
+    fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: RelationType<'a>) -> &'cache Self::CacheType {
+        let as_u16 = type_.vertex().type_id_().as_u16();
+        type_cache.relation_types[as_u16 as usize].as_ref().unwrap()
+    }
+}
+//
+// impl<'a> CacheGetter for RoleType<'a> {
+//     type CacheType = RoleTypeCache;
+//     fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: RoleType<'a>) -> &'cache Self::CacheType {
+//         let as_u16 = type_.vertex().type_id_().as_u16();
+//         type_cache.role_types
+//             [as_u16 as usize].as_ref().unwrap()
+//     }
+// }
+
+pub trait HasCommonTypeCache<T: KindAPI<'static>> {
+    fn common_type_cache(&self) -> &CommonTypeCache<T>;
 }
 
-impl<'a> CommonTypeCacheSelector for RoleType<'a> {
-    type CacheParameter = RoleType<'static>;
-    fn select<'cache>(type_cache: &'cache TypeCache, type_: RoleType<'a>) -> &'cache CommonTypeCache<Self::CacheParameter> {
-        &TypeCache::get_role_type_cache(&type_cache.role_types, type_.vertex()).unwrap().type_api_cache_
+impl HasCommonTypeCache<EntityType<'static>> for EntityTypeCache {
+    fn common_type_cache(&self) -> &CommonTypeCache<EntityType<'static>> {
+        &self.common_type_cache
     }
 }
+// macro_rules! impl_has_common_type_cache {
+//     ($inner_type: ty) => {
+//         impl HasCommonTypeCache for $inner_type {
+//             type SelfStatic = $inner_type;
+//             fn common_type_cache(cache: &impl CacheGetter) -> &CommonTypeCache<Self::SelfStatic> {
+//                 &cache.common_type_cache
+//             }
+//         }
+//     };
+// }
+
+// impl_has_common_type_cache!(EntityType<'static>);
+// impl_has_common_type_cache!(AttributeType<'static>);
+// impl_has_common_type_cache!(RelationType<'static>);
+// impl_has_common_type_cache!(RoleType<'static>);
 
 #[derive(Debug)]
 pub enum TypeCacheCreateError {

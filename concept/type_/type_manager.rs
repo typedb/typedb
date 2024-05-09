@@ -273,10 +273,10 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
     }
 
     get_supertype_methods! {
-        fn get_entity_type_supertype() -> EntityType = __generalised__get_supertype;
-        fn get_relation_type_supertype() -> RelationType = __generalised__get_supertype;
-        fn get_role_type_supertype() -> RoleType = __generalised__get_supertype;
-        fn get_attribute_type_supertype() -> AttributeType = __generalised__get_supertype;
+        fn get_entity_type_supertype() -> EntityType = get_entity_type_supertype;
+        fn get_relation_type_supertype() -> RelationType = get_relation_type_supertype;
+        fn get_role_type_supertype() -> RoleType = get_role_type_supertype;
+        fn get_attribute_type_supertype() -> AttributeType = get_attribute_type_supertype;
     }
 
     get_supertypes_methods! {
@@ -308,10 +308,10 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
     }
 
     get_type_label_methods! {
-        fn get_entity_type_label() -> EntityType = __generalised__get_label;
-        fn get_relation_type_label() -> RelationType = __generalised__get_label;
-        fn get_role_type_label() -> RoleType = __generalised__get_label;
-        fn get_attribute_type_label() -> AttributeType = __generalised__get_label;
+        fn get_entity_type_label() -> EntityType = get_entity_type_label;
+        fn get_relation_type_label() -> RelationType = get_relation_type_label;
+        fn get_role_type_label() -> RoleType = get_role_type_label;
+        fn get_attribute_type_label() -> AttributeType = get_attribute_type_label;
     }
 
     pub(crate) fn get_entity_type_owns(
@@ -774,27 +774,32 @@ impl<'a> ReadableType for RoleType<'a> {
     }
 }
 
-pub trait TypeAPITraits {
+pub trait KindAPI<'a> : TypeAPI<'a> {
+    type SelfStatic : KindAPI<'static> + 'static;
     type AnnotationType: Hash + Eq + From<Annotation>;
     const ROOT_KIND: Kind;
 }
 
-impl<'a> TypeAPITraits for AttributeType<'a> {
+impl<'a> KindAPI<'a> for AttributeType<'a> {
+    type SelfStatic = AttributeType<'static>;
     type AnnotationType = AttributeTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Attribute;
 }
 
-impl<'a> TypeAPITraits for EntityType<'a> {
+impl<'a> KindAPI<'a> for EntityType<'a> {
+    type SelfStatic = EntityType<'static>;
     type AnnotationType = EntityTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Entity;
 }
 
-impl<'a> TypeAPITraits for RelationType<'a> {
+impl<'a> KindAPI<'a> for RelationType<'a> {
+    type SelfStatic = RelationType<'static>;
     type AnnotationType = RelationTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Relation;
 }
 
-impl<'a> TypeAPITraits for RoleType<'a> {
+impl<'a> KindAPI<'a> for RoleType<'a> {
+    type SelfStatic = RoleType<'static>;
     type AnnotationType = RoleTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Role;
 }
