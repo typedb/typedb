@@ -614,15 +614,6 @@ impl TypeCache {
         attribute_type_caches[as_u16 as usize].as_ref()
     }
 
-
-    pub(crate) fn __generalised__get_supertype<'a, 'this, T, CACHE>(&self, type_: T) -> Option<T::SelfStatic>
-    where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-          CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
-    {
-        // TODO: Why does this not return &Option<EntityType<'static>> ?
-        Some(T::get_cache(self, type_).common_type_cache().supertype.as_ref()?.clone())
-    }
-
     pub(crate) fn __generalised__get_label<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Label<'static>
     where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
           CACHE : HasCommonTypeCache<T::SelfStatic> + 'this
@@ -633,66 +624,44 @@ impl TypeCache {
 
 pub(crate) trait CacheGetter {
     type CacheType;
-
     fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: Self) -> &'cache Self::CacheType;
 }
 
-impl<'a> CacheGetter for EntityType<'a> {
-    type CacheType = EntityTypeCache;
-    fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: EntityType<'a>) -> &'cache Self::CacheType {
-        let as_u16 = type_.vertex().type_id_().as_u16();
-        type_cache.entity_types[as_u16 as usize].as_ref().unwrap()
-    }
+macro_rules! impl_cache_getter {
+    ($cache_type: ty, $inner_type: ident, $member_name: ident) => {
+        impl<'a> CacheGetter for $inner_type<'a> {
+            type CacheType = $cache_type;
+            fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: $inner_type<'a>) -> &'cache Self::CacheType {
+                let as_u16 = type_.vertex().type_id_().as_u16();
+                type_cache.$member_name[as_u16 as usize].as_ref().unwrap()
+            }
+        }
+    };
 }
-// impl<'a> CacheGetter for AttributeType<'a> {
-//     type CacheType = AttributeTypeCache;
-//     fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: AttributeType<'a>) -> &'cache Self::CacheType {
-//         let as_u16 = type_.vertex().type_id_().as_u16();
-//         type_cache.attribute_types[as_u16 as usize].as_ref().unwrap()
-//     }
-// }
-//
-impl<'a> CacheGetter for RelationType<'a> {
-    type CacheType = RelationTypeCache;
-    fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: RelationType<'a>) -> &'cache Self::CacheType {
-        let as_u16 = type_.vertex().type_id_().as_u16();
-        type_cache.relation_types[as_u16 as usize].as_ref().unwrap()
-    }
-}
-//
-// impl<'a> CacheGetter for RoleType<'a> {
-//     type CacheType = RoleTypeCache;
-//     fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: RoleType<'a>) -> &'cache Self::CacheType {
-//         let as_u16 = type_.vertex().type_id_().as_u16();
-//         type_cache.role_types
-//             [as_u16 as usize].as_ref().unwrap()
-//     }
-// }
+
+impl_cache_getter!(EntityTypeCache, EntityType, entity_types);
+impl_cache_getter!(AttributeTypeCache, AttributeType, attribute_types);
+impl_cache_getter!(RelationTypeCache, RelationType, relation_types);
+impl_cache_getter!(RoleTypeCache, RoleType, role_types);
 
 pub trait HasCommonTypeCache<T: KindAPI<'static>> {
     fn common_type_cache(&self) -> &CommonTypeCache<T>;
 }
 
-impl HasCommonTypeCache<EntityType<'static>> for EntityTypeCache {
-    fn common_type_cache(&self) -> &CommonTypeCache<EntityType<'static>> {
-        &self.common_type_cache
-    }
+macro_rules! impl_has_common_type_cache {
+    ($cache_type: ty, $inner_type: ty) => {
+        impl HasCommonTypeCache<$inner_type> for $cache_type {
+            fn common_type_cache(&self) -> &CommonTypeCache<$inner_type> {
+                &self.common_type_cache
+            }
+        }
+    };
 }
-// macro_rules! impl_has_common_type_cache {
-//     ($inner_type: ty) => {
-//         impl HasCommonTypeCache for $inner_type {
-//             type SelfStatic = $inner_type;
-//             fn common_type_cache(cache: &impl CacheGetter) -> &CommonTypeCache<Self::SelfStatic> {
-//                 &cache.common_type_cache
-//             }
-//         }
-//     };
-// }
 
-// impl_has_common_type_cache!(EntityType<'static>);
-// impl_has_common_type_cache!(AttributeType<'static>);
-// impl_has_common_type_cache!(RelationType<'static>);
-// impl_has_common_type_cache!(RoleType<'static>);
+impl_has_common_type_cache!(EntityTypeCache, EntityType<'static>);
+impl_has_common_type_cache!(AttributeTypeCache, AttributeType<'static>);
+impl_has_common_type_cache!(RelationTypeCache, RelationType<'static>);
+impl_has_common_type_cache!(RoleTypeCache, RoleType<'static>);
 
 #[derive(Debug)]
 pub enum TypeCacheCreateError {
