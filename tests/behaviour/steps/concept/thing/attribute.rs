@@ -32,7 +32,15 @@ pub async fn attribute_put_instance_with_value(
 #[apply(generic_step)]
 #[step(expr = r"attribute {var} exists")]
 pub async fn attribute_exists(context: &mut Context, var: params::Var) {
-    assert!(context.attributes.contains_key(&var.name), "no variable {} in context.things", var.name);
+    let attribute = context.attributes.get(&var.name).expect("no variable {} in context.things");
+    assert!(attribute.is_some(), "variable {} does not exist", var.name);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"attribute {var} does not exist")]
+pub async fn attribute_does_not_exist(context: &mut Context, var: params::Var) {
+    let attribute = context.attributes.get(&var.name).expect("no variable {} in context.things");
+    assert!(attribute.is_none(), "variable {} exists: {:?}", var.name, attribute);
 }
 
 #[apply(generic_step)]
@@ -59,7 +67,7 @@ pub async fn attribute_has_value_type(context: &mut Context, var: params::Var, v
 #[apply(generic_step)]
 #[step(expr = r"attribute {var} has value: {value}")]
 pub async fn attribute_has_value(context: &mut Context, var: params::Var, value: params::Value) {
-    let mut attribute = context.attributes[&var.name].clone().unwrap();
+    let attribute = context.attributes.get_mut(&var.name).unwrap().as_mut().unwrap();
     let attribute_type = attribute.type_();
     with_read_tx!(context, |tx| {
         let value = value.to_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
@@ -82,4 +90,24 @@ pub async fn attribute_get_instance_with_value(
         tx.thing_manager.get_attribute_with_value(&tx.snapshot, attribute_type, value).unwrap()
     });
     context.attributes.insert(var.name, att);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"delete attribute: {var}")]
+pub async fn delete_attribute(context: &mut Context, var: params::Var) {
+    with_write_tx!(context, |tx| {
+        tx.thing_manager.delete_attribute(&mut tx.snapshot, context.attributes[&var.name].clone().unwrap()).unwrap()
+    })
+}
+
+#[apply(generic_step)]
+#[step(expr = r"attribute {var} is deleted: {boolean}")]
+pub async fn attribute_is_deleted(context: &mut Context, var: params::Var, is_deleted: params::Boolean) {
+    let attribute = context.attributes.get_mut(&var.name).unwrap().as_mut().unwrap();
+    let attribute_type = attribute.type_();
+    let get = with_read_tx!(context, |tx| {
+        let value = attribute.get_value(&tx.snapshot, &tx.thing_manager).unwrap();
+        tx.thing_manager.get_attribute_with_value(&tx.snapshot, attribute_type, value).unwrap()
+    });
+    is_deleted.check(dbg!(get).is_none());
 }

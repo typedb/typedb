@@ -7,9 +7,9 @@
 use std::{
     borrow::Cow,
     collections::HashSet,
+    marker::PhantomData,
     sync::{Arc, Mutex, MutexGuard},
 };
-use std::marker::PhantomData;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -91,8 +91,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
         let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix(Prefix::ATTRIBUTE_MIN);
         let has_reverse_end = ThingEdgeHasReverse::prefix_from_prefix(Prefix::ATTRIBUTE_MAX);
-        let has_reverse_iterator =
-            snapshot.iterate_range(KeyRange::new_inclusive(has_reverse_start, has_reverse_end));
+        let has_reverse_iterator = snapshot.iterate_range(KeyRange::new_inclusive(has_reverse_start, has_reverse_end));
         AttributeIterator::new(attribute_iterator, has_reverse_iterator, snapshot, self.type_manager())
     }
 
@@ -300,15 +299,9 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         )
     }
 
-    pub(crate) fn has_owners<'a>(
-        &self,
-        snapshot: &Snapshot,
-        attribute: Attribute<'a>,
-        buffered_only: bool,
-    ) -> bool {
+    pub(crate) fn has_owners(&self, snapshot: &Snapshot, attribute: Attribute<'_>, buffered_only: bool) -> bool {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.into_vertex());
-        snapshot
-            .any_in_range(KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING), buffered_only)
+        snapshot.any_in_range(KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING), buffered_only)
     }
 
     pub(crate) fn get_relations_roles<'this, 'a>(
@@ -329,8 +322,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         buffered_only: bool, // FIXME use enums
     ) -> bool {
         let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation.into_vertex());
-        snapshot
-            .any_in_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING), buffered_only)
+        snapshot.any_in_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING), buffered_only)
     }
 
     pub(crate) fn get_role_players<'a>(
@@ -355,11 +347,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         )
     }
 
-    pub(crate) fn get_status(
-        &self,
-        snapshot: &Snapshot,
-        key: StorageKey<'_, BUFFER_KEY_INLINE>,
-    ) -> ConceptStatus {
+    pub(crate) fn get_status(&self, snapshot: &Snapshot, key: StorageKey<'_, BUFFER_KEY_INLINE>) -> ConceptStatus {
         snapshot
             .get_buffered_write_mapped(key.as_reference(), |write| match write {
                 Write::Insert { .. } => ConceptStatus::Inserted,
@@ -374,11 +362,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 }
 
 impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
-    pub(crate) fn lock_existing<'a>(
-        &self,
-        snapshot: &mut Snapshot,
-        object: impl ObjectAPI<'a>,
-    ) {
+    pub(crate) fn lock_existing<'a>(&self, snapshot: &mut Snapshot, object: impl ObjectAPI<'a>) {
         snapshot.unmodifiable_lock_add(object.into_vertex().as_storage_key().into_owned_array())
     }
 
@@ -475,9 +459,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         snapshot: &mut Snapshot,
         relation_type: RelationType<'static>,
     ) -> Result<Relation<'_>, ConceptWriteError> {
-        Ok(Relation::new(
-            self.vertex_generator.create_relation(relation_type.vertex().type_id_(), snapshot),
-        ))
+        Ok(Relation::new(self.vertex_generator.create_relation(relation_type.vertex().type_id_(), snapshot)))
     }
 
     pub fn create_attribute<'a>(
@@ -506,11 +488,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 Value::String(string) => {
                     let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);
                     self.vertex_generator
-                        .create_attribute_string(
-                            attribute_type.vertex().type_id_(),
-                            encoded_string,
-                            snapshot,
-                        )
+                        .create_attribute_string(attribute_type.vertex().type_id_(), encoded_string, snapshot)
                         .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
                 }
             };
@@ -532,9 +510,10 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         snapshot.delete(key)
     }
 
-    pub(crate) fn delete_attribute(&self, snapshot: &mut Snapshot, attribute: Attribute<'_>) {
+    pub fn delete_attribute(&self, snapshot: &mut Snapshot, attribute: Attribute<'_>) -> Result<(), ConceptWriteError> {
         let key = attribute.into_vertex().into_storage_key().into_owned_array();
         snapshot.delete(key);
+        Ok(())
     }
 
     pub(crate) fn set_has<'a>(&self, snapshot: &mut Snapshot, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
@@ -569,7 +548,12 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         snapshot.put_val(key.into_storage_key().into_owned_array(), value)
     }
 
-    pub(crate) fn increment_has<'a>(&self, snapshot: &mut Snapshot, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
+    pub(crate) fn increment_has<'a>(
+        &self,
+        snapshot: &mut Snapshot,
+        owner: impl ObjectAPI<'a>,
+        attribute: Attribute<'_>,
+    ) {
         todo!()
     }
 
@@ -613,8 +597,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         // must be idempotent, so no lock required -- cannot fail
         snapshot.put_val(role_player_reverse.into_storage_key().into_owned_array(), encode_value_u64(count));
 
-        if self.type_manager.relation_index_available(snapshot, relation.type_())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })? {
+        if self
+            .type_manager
+            .relation_index_available(snapshot, relation.type_())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
+        {
             self.relation_index_player_regenerate(snapshot, relation, Object::new(player.vertex()), role_type, 1)?;
         }
         Ok(())
@@ -640,8 +627,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         );
         snapshot.delete(role_player_reverse.into_storage_key().into_owned_array());
 
-        if self.type_manager.relation_index_available(snapshot, relation.type_())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })? {
+        if self
+            .type_manager
+            .relation_index_available(snapshot, relation.type_())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
+        {
             self.relation_index_player_deleted(snapshot, relation, player, role_type)?;
         }
         Ok(())
@@ -660,8 +650,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     ) -> Result<(), ConceptWriteError> {
         let role_player =
             ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
-        let role_player_reverse =
-            ThingEdgeRolePlayer::build_role_player_reverse(player.vertex(), relation.vertex(), role_type.clone().into_vertex());
+        let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
+            player.vertex(),
+            relation.vertex(),
+            role_type.clone().into_vertex(),
+        );
 
         let mut count = 0;
         let rp_count =
@@ -679,8 +672,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         // must lock to fail concurrent transactions updating the same counters
         snapshot.exclusive_lock_add(role_player.into_storage_key().into_owned_array().into_byte_array());
 
-        if self.type_manager.relation_index_available(snapshot, relation.type_())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })? {
+        if self
+            .type_manager
+            .relation_index_available(snapshot, relation.type_())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
+        {
             self.relation_index_player_regenerate(snapshot, relation, Object::new(player.vertex()), role_type, count)?;
         }
         Ok(())
@@ -700,14 +696,15 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     ) -> Result<(), ConceptWriteError> {
         let role_player =
             ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
-        let role_player_reverse =
-            ThingEdgeRolePlayer::build_role_player_reverse(player.vertex(), relation.vertex(), role_type.clone().into_vertex());
+        let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
+            player.vertex(),
+            relation.vertex(),
+            role_type.clone().into_vertex(),
+        );
 
-        let rp_count =
-            snapshot.get_mapped(role_player.as_storage_key().as_reference(), |val| decode_value_u64(val)).unwrap();
-        let rp_reverse_count = snapshot
-            .get_mapped(role_player_reverse.as_storage_key().as_reference(), |val| decode_value_u64(val))
-            .unwrap();
+        let rp_count = snapshot.get_mapped(role_player.as_storage_key().as_reference(), decode_value_u64).unwrap();
+        let rp_reverse_count =
+            snapshot.get_mapped(role_player_reverse.as_storage_key().as_reference(), decode_value_u64).unwrap();
         debug_assert_eq!(&rp_count, &rp_reverse_count);
 
         let count = rp_count.unwrap() - decrement_count;
@@ -719,15 +716,17 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             snapshot.delete(role_player_reverse.as_storage_key().into_owned_array());
         } else {
             snapshot.put_val(role_player.as_storage_key().into_owned_array(), encode_value_u64(count));
-            snapshot
-                .put_val(role_player_reverse.as_storage_key().into_owned_array(), encode_value_u64(reverse_count));
+            snapshot.put_val(role_player_reverse.as_storage_key().into_owned_array(), encode_value_u64(reverse_count));
         }
 
         // must lock to fail concurrent transactions updating the same counters
         snapshot.exclusive_lock_add(role_player.into_storage_key().into_owned_array().into_byte_array());
 
-        if self.type_manager.relation_index_available(snapshot, relation.type_())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })? {
+        if self
+            .type_manager
+            .relation_index_available(snapshot, relation.type_())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
+        {
             self.relation_index_player_regenerate(snapshot, relation, Object::new(player.vertex()), role_type, count)?
         }
         Ok(())
@@ -744,7 +743,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
     ) -> Result<(), ConceptWriteError> {
-        let players = relation.get_players(snapshot, self)
+        let players = relation
+            .get_players(snapshot, self)
             .collect_cloned_vec(|(roleplayer, count)| (roleplayer.player().into_owned(), roleplayer.role_type()))
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for (rp_player, rp_role_type) in players {
@@ -782,7 +782,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         total_player_count: u64,
     ) -> Result<(), ConceptWriteError> {
         debug_assert_ne!(total_player_count, 0);
-        let players = relation.get_players(snapshot, self)
+        let players = relation
+            .get_players(snapshot, self)
             .collect_cloned_vec(|(roleplayer, count)| (roleplayer.player().into_owned(), roleplayer.role_type(), count))
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for (rp_player, rp_role_type, rp_count) in players {
