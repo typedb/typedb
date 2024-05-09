@@ -23,22 +23,10 @@ use encoding::{graph::{
         },
     },
     Typed,
-}, layout::prefix::Prefix, value::{label::Label, value_type::ValueType}, Prefixed, AsBytes};
+}, layout::prefix::Prefix, value::{label::Label, value_type::ValueType}, Prefixed};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
 
-use crate::type_::{
-    attribute_type::{AttributeType, AttributeTypeAnnotation},
-    entity_type::{EntityType, EntityTypeAnnotation},
-    object_type::ObjectType,
-    owns::{Owns, OwnsAnnotation},
-    plays::Plays,
-    relates::Relates,
-    relation_type::{RelationType, RelationTypeAnnotation},
-    role_type::{RoleType, RoleTypeAnnotation},
-    type_manager::{ReadableType, TypeManager},
-    type_reader::TypeReader,
-    Ordering, TypeAPI,
-};
+use crate::type_::{attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, owns::{Owns, OwnsAnnotation}, plays::Plays, relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::{ReadableType, TypeManager}, type_reader::TypeReader, Ordering, TypeAPI, OwnerAPI, PlayerAPI, attribute_type};
 use crate::type_::type_manager::KindAPI;
 
 // TODO: could/should we slab allocate the schema cache?
@@ -73,10 +61,15 @@ struct CommonTypeCache<T: KindAPI<'static>> {
 }
 
 #[derive(Debug)]
-pub(crate) struct EntityTypeCache {
-    common_type_cache: CommonTypeCache<EntityType<'static>>,
+pub struct OwnsPlaysCache {
     owns_declared: HashSet<Owns<'static>>,
     plays_declared: HashSet<Plays<'static>>,
+}
+
+#[derive(Debug)]
+pub(crate) struct EntityTypeCache {
+    common_type_cache: CommonTypeCache<EntityType<'static>>,
+    owns_plays_cache: OwnsPlaysCache,
     // ...
 }
 
@@ -84,8 +77,7 @@ pub(crate) struct EntityTypeCache {
 pub(crate) struct RelationTypeCache {
     common_type_cache: CommonTypeCache<RelationType<'static>>,
     relates_declared: HashSet<Relates<'static>>,
-    owns_declared: HashSet<Owns<'static>>,
-    plays_declared: HashSet<Plays<'static>>,
+    owns_plays_cache: OwnsPlaysCache,
 }
 
 #[derive(Debug)]
@@ -198,6 +190,16 @@ impl TypeCache {
             subtypes_transitive,
         }
     }
+    fn build_owns_plays_cache<Snapshot, T>(snapshot: &Snapshot, type_: T) -> OwnsPlaysCache
+        where
+            Snapshot: ReadableSnapshot,
+            T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static> + ReadableType<Output<'static>=T>,
+    {
+        OwnsPlaysCache {
+            owns_declared: TypeReader::get_owns(snapshot, type_.clone()).unwrap(),
+            plays_declared: TypeReader::get_plays(snapshot, type_.clone()).unwrap(),
+        }
+    }
 
     fn create_entity_caches(snapshot: &impl ReadableSnapshot) -> Box<[Option<EntityTypeCache>]> {
         let entities = snapshot
@@ -215,8 +217,7 @@ impl TypeCache {
         for entity in entities.into_iter() {
             let cache = EntityTypeCache {
                 common_type_cache: Self::build_common_cache(snapshot, entity.clone()),
-                owns_declared: TypeReader::get_owns(snapshot, entity.clone()).unwrap(),
-                plays_declared: TypeReader::get_plays(snapshot, entity.clone()).unwrap(),
+                owns_plays_cache : Self::build_owns_plays_cache(snapshot, entity.clone()),
             };
             caches[entity.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -239,8 +240,7 @@ impl TypeCache {
             let cache = RelationTypeCache {
                 common_type_cache: Self::build_common_cache(snapshot, relation.clone()),
                 relates_declared: TypeReader::get_relates(snapshot, relation.clone()).unwrap(),
-                owns_declared: TypeReader::get_owns(snapshot, relation.clone()).unwrap(),
-                plays_declared: TypeReader::get_plays(snapshot, relation.clone()).unwrap(),
+                owns_plays_cache: Self::build_owns_plays_cache(snapshot, relation.clone()),
             };
             caches[relation.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -378,17 +378,15 @@ impl TypeCache {
         &T::get_cache(self, type_).common_type_cache().annotations_declared
     }
 
+    pub(crate) fn get_owns<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns<'static>>
+        where T:  OwnerAPI<'static> + PlayerAPI<'static> + CacheGetter<CacheType=CACHE>,
+              CACHE: HasOwnsPlaysCache + 'this
+    {
+        &T::get_cache(self, type_).owns_plays_cache().owns_declared
+    }
 
     pub(crate) fn get_role_type_ordering(&self, role_type: RoleType<'static>) -> Ordering {
-        Self::get_role_type_cache(&self.role_types, role_type.into_vertex()).unwrap().ordering
-    }
-
-    pub(crate) fn get_entity_type_owns(&self, entity_type: EntityType<'static>) -> &HashSet<Owns<'static>> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().owns_declared
-    }
-
-    pub(crate) fn get_relation_type_owns(&self, relation_type: RelationType<'static>) -> &HashSet<Owns<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().owns_declared
+        RoleType::get_cache(&self, role_type).ordering
     }
 
     pub(crate) fn get_relation_type_relates(&self, relation_type: RelationType<'static>) -> &HashSet<Relates<'static>> {
@@ -396,20 +394,15 @@ impl TypeCache {
         // &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().relates_declared
     }
 
-    pub(crate) fn get_entity_type_plays(&self, entity_type: EntityType<'static>) -> &HashSet<Plays<'static>> {
-        &Self::get_entity_type_cache(&self.entity_types, entity_type.into_vertex()).unwrap().plays_declared
-    }
-
-    // pub(crate) fn get_relation_type_plays(&self, relation_type: RelationType<'static>) -> &HashSet<Plays<'static>> {
-    //     &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().plays_declared
-    // }
-
-    pub(crate) fn get_relation_type_plays(&self, relation_type: RelationType<'static>) -> &HashSet<Plays<'static>> {
-        &Self::get_relation_type_cache(&self.relation_types, relation_type.into_vertex()).unwrap().plays_declared
+    pub(crate) fn get_plays<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Plays<'static>>
+        where T:  OwnerAPI<'static> + PlayerAPI<'static> + CacheGetter<CacheType=CACHE>,
+              CACHE: HasOwnsPlaysCache + 'this
+    {
+        &T::get_cache(self, type_).owns_plays_cache().plays_declared
     }
 
     pub(crate) fn get_attribute_type_value_type(&self, attribute_type: AttributeType<'static>) -> Option<ValueType> {
-        Self::get_attribute_type_cache(&self.attribute_types, attribute_type.into_vertex()).unwrap().value_type
+        AttributeType::get_cache(&self, attribute_type).value_type
     }
 
     pub(crate) fn get_owns_annotations<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<OwnsAnnotation> {
@@ -418,42 +411,6 @@ impl TypeCache {
 
     pub(crate) fn get_owns_ordering<'c>(&'c self, owns: Owns<'c>) -> Ordering {
         self.owns.get(&owns).unwrap().ordering
-    }
-
-    fn get_entity_type_cache<'c>(
-        entity_type_caches: &'c [Option<EntityTypeCache>],
-        type_vertex: TypeVertex<'_>,
-    ) -> Option<&'c EntityTypeCache> {
-        debug_assert_eq!(type_vertex.prefix(), Prefix::VertexEntityType);
-        let as_u16 = type_vertex.type_id_().as_u16();
-        entity_type_caches[as_u16 as usize].as_ref()
-    }
-
-    fn get_relation_type_cache<'c>(
-        relation_type_caches: &'c [Option<RelationTypeCache>],
-        type_vertex: TypeVertex<'_>,
-    ) -> Option<&'c RelationTypeCache> {
-        debug_assert_eq!(type_vertex.prefix(), Prefix::VertexRelationType);
-        let as_u16 = type_vertex.type_id_().as_u16();
-        relation_type_caches[as_u16 as usize].as_ref()
-    }
-
-    fn get_role_type_cache<'c>(
-        role_type_caches: &'c [Option<RoleTypeCache>],
-        type_vertex: TypeVertex<'_>,
-    ) -> Option<&'c RoleTypeCache> {
-        debug_assert_eq!(type_vertex.prefix(), Prefix::VertexRoleType);
-        let as_u16 = type_vertex.type_id_().as_u16();
-        role_type_caches[as_u16 as usize].as_ref()
-    }
-
-    fn get_attribute_type_cache<'c>(
-        attribute_type_caches: &'c [Option<AttributeTypeCache>],
-        type_vertex: TypeVertex<'_>,
-    ) -> Option<&'c AttributeTypeCache> {
-        debug_assert_eq!(type_vertex.prefix(), Prefix::VertexAttributeType);
-        let as_u16 = type_vertex.type_id_().as_u16();
-        attribute_type_caches[as_u16 as usize].as_ref()
     }
 }
 
@@ -492,11 +449,26 @@ macro_rules! impl_has_common_type_cache {
         }
     };
 }
-
 impl_has_common_type_cache!(EntityTypeCache, EntityType<'static>);
 impl_has_common_type_cache!(AttributeTypeCache, AttributeType<'static>);
 impl_has_common_type_cache!(RelationTypeCache, RelationType<'static>);
 impl_has_common_type_cache!(RoleTypeCache, RoleType<'static>);
+
+pub trait HasOwnsPlaysCache {
+    fn owns_plays_cache(&self) -> &OwnsPlaysCache;
+}
+macro_rules! impl_has_owns_plays_cache {
+    ($cache_type: ty, $inner_type: ty) => {
+        impl HasOwnsPlaysCache for $cache_type {
+            fn owns_plays_cache(&self) -> &OwnsPlaysCache {
+                &self.owns_plays_cache
+            }
+        }
+    };
+}
+impl_has_owns_plays_cache!(EntityTypeCache, EntityType<'static>);
+impl_has_owns_plays_cache!(RelationTypeCache, RelationType<'static>);
+
 
 #[derive(Debug)]
 pub enum TypeCacheCreateError {

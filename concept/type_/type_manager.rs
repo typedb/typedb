@@ -320,7 +320,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         entity_type: EntityType<'static>,
     ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_entity_type_owns(entity_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_owns(entity_type)))
         } else {
             let owns = TypeReader::get_owns(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
@@ -333,7 +333,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         relation_type: RelationType<'static>,
     ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_relation_type_owns(relation_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_owns(relation_type)))
         } else {
             let owns = TypeReader::get_owns(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
@@ -373,7 +373,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         entity_type: EntityType<'static>,
     ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_entity_type_plays(entity_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_plays(entity_type)))
         } else {
             let plays = TypeReader::get_plays(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(plays))
