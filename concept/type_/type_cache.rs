@@ -608,37 +608,54 @@ impl TypeCache {
         let as_u16 = type_vertex.type_id_().as_u16();
         attribute_type_caches[as_u16 as usize].as_ref()
     }
+
+
+    pub(crate) fn __generalised__get_supertype<'a, T>(&self, type_: T) -> Option<T::CacheParameter>
+    where T: TypeAPI<'a> + CommonTypeCacheSelector
+    {
+        // TODO: Why does this not return &Option<EntityType<'static>> ?
+        // TODO: All the unwrap
+        Some(T::select(self, type_).supertype.as_ref()?.clone())
+    }
+
+    pub(crate) fn __generalised__get_label<'a, T>(&self, type_: T) -> &Label<'static>
+    where T: TypeAPI<'a> + CommonTypeCacheSelector,
+          <T as CommonTypeCacheSelector>::CacheParameter: 'static
+    {
+        &T::select(self, type_).label
+    }
 }
 
 pub(crate) trait CommonTypeCacheSelector {
     type CacheParameter : TypeAPI<'static> + TypeAPITraits;
-    fn select<'cache>(type_cache: &'cache TypeCache, type_: Self) -> Option<&'cache CommonTypeCache<Self::CacheParameter>>;
+
+    fn select<'cache>(type_cache: &'cache TypeCache, type_: Self) -> &'cache CommonTypeCache<Self::CacheParameter>;
 }
 
 impl<'a> CommonTypeCacheSelector for EntityType<'a> {
     type CacheParameter = EntityType<'static>;
-    fn select<'cache>(type_cache: &'cache TypeCache, type_: EntityType<'a>) -> Option<&'cache CommonTypeCache<Self::CacheParameter>> {
-        Some(&TypeCache::get_entity_type_cache(&type_cache.entity_types, type_.vertex())?.type_api_cache_)
+    fn select<'cache>(type_cache: &'cache TypeCache, type_: EntityType<'a>) -> &'cache CommonTypeCache<Self::CacheParameter> {
+        &TypeCache::get_entity_type_cache(&type_cache.entity_types, type_.vertex()).unwrap().type_api_cache_
     }
 }
 impl<'a> CommonTypeCacheSelector for AttributeType<'a> {
     type CacheParameter = AttributeType<'static>;
-    fn select<'cache>(type_cache: &'cache TypeCache, type_: AttributeType<'a>) -> Option<&'cache CommonTypeCache<Self::CacheParameter>> {
-        Some(&TypeCache::get_attribute_type_cache(&type_cache.attribute_types, type_.vertex())?.type_api_cache_)
+    fn select<'cache>(type_cache: &'cache TypeCache, type_: AttributeType<'a>) -> &'cache CommonTypeCache<Self::CacheParameter> {
+        &TypeCache::get_attribute_type_cache(&type_cache.attribute_types, type_.vertex()).unwrap().type_api_cache_
     }
 }
 
 impl<'a> CommonTypeCacheSelector for RelationType<'a> {
     type CacheParameter = RelationType<'static>;
-    fn select<'cache>(type_cache: &'cache TypeCache, type_: RelationType<'a>) -> Option<&'cache CommonTypeCache<Self::CacheParameter>> {
-        Some(&TypeCache::get_relation_type_cache(&type_cache.relation_types, type_.vertex())?.common_type_cache)
+    fn select<'cache>(type_cache: &'cache TypeCache, type_: RelationType<'a>) -> &'cache CommonTypeCache<Self::CacheParameter> {
+        &TypeCache::get_relation_type_cache(&type_cache.relation_types, type_.vertex()).unwrap().common_type_cache
     }
 }
 
 impl<'a> CommonTypeCacheSelector for RoleType<'a> {
     type CacheParameter = RoleType<'static>;
-    fn select<'cache>(type_cache: &'cache TypeCache, type_: RoleType<'a>) -> Option<&'cache CommonTypeCache<Self::CacheParameter>> {
-        Some(&TypeCache::get_role_type_cache(&type_cache.role_types, type_.vertex())?.type_api_cache_)
+    fn select<'cache>(type_cache: &'cache TypeCache, type_: RoleType<'a>) -> &'cache CommonTypeCache<Self::CacheParameter> {
+        &TypeCache::get_role_type_cache(&type_cache.role_types, type_.vertex()).unwrap().type_api_cache_
     }
 }
 

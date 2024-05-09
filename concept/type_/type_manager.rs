@@ -273,10 +273,10 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
     }
 
     get_supertype_methods! {
-        fn get_entity_type_supertype() -> EntityType = get_entity_type_supertype;
-        fn get_relation_type_supertype() -> RelationType = get_relation_type_supertype;
-        fn get_role_type_supertype() -> RoleType = get_role_type_supertype;
-        fn get_attribute_type_supertype() -> AttributeType = get_attribute_type_supertype;
+        fn get_entity_type_supertype() -> EntityType = __generalised__get_supertype;
+        fn get_relation_type_supertype() -> RelationType = __generalised__get_supertype;
+        fn get_role_type_supertype() -> RoleType = __generalised__get_supertype;
+        fn get_attribute_type_supertype() -> AttributeType = __generalised__get_supertype;
     }
 
     get_supertypes_methods! {
@@ -308,10 +308,10 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
     }
 
     get_type_label_methods! {
-        fn get_entity_type_label() -> EntityType = get_entity_type_label;
-        fn get_relation_type_label() -> RelationType = get_relation_type_label;
-        fn get_role_type_label() -> RoleType = get_role_type_label;
-        fn get_attribute_type_label() -> AttributeType = get_attribute_type_label;
+        fn get_entity_type_label() -> EntityType = __generalised__get_label;
+        fn get_relation_type_label() -> RelationType = __generalised__get_label;
+        fn get_role_type_label() -> RoleType = __generalised__get_label;
+        fn get_attribute_type_label() -> AttributeType = __generalised__get_label;
     }
 
     pub(crate) fn get_entity_type_owns(
