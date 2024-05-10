@@ -52,7 +52,7 @@ impl<D> Database<D> {
             fs::create_dir(path).map_err(|error| DirectoryCreate { path: path.to_owned(), source: error })?;
         }
         let storage =
-            Arc::new(MVCCStorage::open::<EncodingKeyspace>(name, path).map_err(|error| StorageOpen { source: error })?);
+            Arc::new(MVCCStorage::load::<EncodingKeyspace>(name, path).map_err(|error| StorageOpen { source: error })?);
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
             Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);

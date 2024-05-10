@@ -19,6 +19,7 @@ rust_library(
         "*.rs",
         "keyspace/*.rs",
         "snapshot/*.rs",
+        "recovery/*.rs",
     ]),
     deps = [
         "//storage/durability",

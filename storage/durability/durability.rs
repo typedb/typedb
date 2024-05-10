@@ -17,6 +17,7 @@ use std::{
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use crate::wal::WALError;
 
 pub mod wal;
 
@@ -35,9 +36,13 @@ pub struct RawRecord {
 }
 
 pub trait DurabilityService: Sequencer {
-    fn open(directory: impl AsRef<Path>) -> io::Result<Self>
+    fn create(directory: impl AsRef<Path>) -> Result<Self, DurabilityError>
     where
         Self: Sized;
+
+    fn load(directory: impl AsRef<Path>) -> Result<Self, DurabilityError>
+        where
+            Self: Sized;
 
     fn register_record_type<Record: DurabilityRecord>(&mut self);
 
@@ -101,6 +106,8 @@ pub trait DurabilityService: Sequencer {
     ) -> Result<impl Iterator<Item = Result<Record, DurabilityError>>, DurabilityError> {
         self.iter_unsequenced_type_from(SequenceNumber::MIN)
     }
+
+    fn delete_durability(self) -> Result<(), DurabilityError>;
 }
 
 pub type DurabilityRecordType = u8;
@@ -223,6 +230,9 @@ pub enum DurabilityError {
 
     #[non_exhaustive]
     IO { source: io::Error },
+    WAL { source: WALError },
+
+    DeleteFailed { source: io:: Error },
 }
 
 impl fmt::Display for DurabilityError {
@@ -248,6 +258,8 @@ impl Error for DurabilityError {
         match self {
             Self::BincodeSerialize { source, .. } => Some(source),
             Self::IO { source, .. } => Some(source),
+            Self::WAL { source, .. } => Some(source),
+            Self::DeleteFailed { source, .. } => Some(source),
         }
     }
 }

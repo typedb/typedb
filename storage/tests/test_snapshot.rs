@@ -6,34 +6,31 @@
 
 #![deny(unused_must_use)]
 
-mod test_common;
-
-use std::sync::Arc;
-
 use bytes::byte_array::ByteArray;
-use durability::wal::WAL;
+use durability::DurabilityService;
 use logger::result::ResultExt;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyArray},
-    keyspace::{KeyspaceId, KeyspaceSet},
-    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
-    MVCCStorage,
+    keyspace::KeyspaceSet,
+    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot}
+    ,
 };
 use storage::key_range::KeyRange;
 use test_utils::{create_tmp_dir, init_logging};
+use crate::test_common::create_storage;
+use self::TestKeyspaceSet::Keyspace;
+
+mod test_common;
 
 test_keyspace_set! {
     Keyspace => 0: "keyspace",
 }
-use self::TestKeyspaceSet::Keyspace;
-
 #[test]
 fn snapshot_buffered_put_get() {
     init_logging();
-
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+    let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let mut snapshot = storage.open_snapshot_write();
 
@@ -59,7 +56,7 @@ fn snapshot_buffered_put_get() {
 fn snapshot_buffered_put_iterate() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+    let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let mut snapshot = storage.open_snapshot_write();
 
@@ -84,7 +81,7 @@ fn snapshot_buffered_put_iterate() {
 fn snapshot_buffered_delete() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+    let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let mut snapshot = storage.open_snapshot_write();
 
@@ -114,7 +111,7 @@ fn snapshot_buffered_delete() {
 fn snapshot_read_through() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+    let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0, 0x1]));
     let key_2 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x1, 0x0, 0x10]));
@@ -189,7 +186,7 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
 fn snapshot_delete_reinserted() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+    let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0, 0x1]));
     let value_0 = ByteArray::copy(&[0, 0, 0, 0]);

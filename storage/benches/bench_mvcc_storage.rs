@@ -12,6 +12,7 @@ use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
 use durability::wal::WAL;
 use pprof::ProfilerGuard;
+use durability::DurabilityService;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
@@ -109,7 +110,11 @@ fn bench_snapshot_write_put(storage: Arc<MVCCStorage<WAL>>, keyspace: TestKeyspa
 }
 
 fn setup_storage(storage_path: &Path, key_count: usize) -> Arc<MVCCStorage<WAL>> {
-    let storage = Arc::new(MVCCStorage::open::<TestKeyspaceSet>("storage_bench", storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::create::<TestKeyspaceSet>(
+        "storage_bench",
+        storage_path,
+        WAL::create(storage_path).unwrap()
+    ).unwrap());
     let keys = populate_storage(storage.clone(), Keyspace, key_count);
     println!("Initialised storage with '{}' keys", keys);
     storage

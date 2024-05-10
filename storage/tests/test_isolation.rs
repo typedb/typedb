@@ -4,28 +4,29 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod test_common;
-
-use std::{path::Path, sync::Arc};
+use std::path::Path;
+use std::sync::Arc;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
-use durability::{wal::WAL, DurabilityService};
+use durability::{DurabilityService, wal::WAL};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     isolation_manager::IsolationConflict,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::{KeyspaceId, KeyspaceSet},
-    snapshot::{CommittableSnapshot, ReadableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
-    MVCCStorage, StorageCommitError,
+    keyspace::KeyspaceSet,
+    MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot}, StorageCommitError,
 };
 use test_utils::{create_tmp_dir, init_logging};
+use crate::test_common::{create_storage, load_storage};
+use self::TestKeyspaceSet::Keyspace;
+
+mod test_common;
 
 test_keyspace_set! {
     Keyspace => 0: "keyspace",
 }
-use self::TestKeyspaceSet::Keyspace;
-
 macro_rules! fails_without_serializability {
     ($x:expr) => {
         assert!(!$x);
@@ -39,9 +40,8 @@ const VALUE_1: [u8; 1] = [0x0];
 const VALUE_2: [u8; 1] = [0x1];
 const VALUE_3: [u8; 1] = [0x88];
 
-fn setup_storage(storage_path: &Path) -> Arc<MVCCStorage<WAL>> {
-    let storage = Arc::new(MVCCStorage::open::<TestKeyspaceSet>("storage", storage_path).unwrap());
-
+fn setup_storage(path: &Path) -> Arc<MVCCStorage<WAL>> {
+    let storage = create_storage::<TestKeyspaceSet>(&path).unwrap();
     let mut snapshot = storage.clone().open_snapshot_write();
     snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
     snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_2));
@@ -298,6 +298,7 @@ fn g_single_read_skew() {
     let value_1_2 = ByteArray::inline([12], 1);
     let value_2_0 = ByteArray::inline([20], 1);
     let value_2_2 = ByteArray::inline([22], 1);
+
     let storage_path = create_tmp_dir();
     let storage = setup_storage(&storage_path);
 
@@ -504,14 +505,13 @@ fn otv() {
     assert_eq!(value_2_0.bytes(), read_2_3.unwrap().unwrap().bytes());
 }
 
-fn imp_setup() -> Arc<MVCCStorage<WAL>> {
+fn imp_setup(path: &Path) -> Arc<MVCCStorage<WAL>> {
     init_logging();
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let key_2 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
     let value_1_0 = ByteArray::inline([10], 1);
     let value_2_0 = ByteArray::inline([20], 1);
-    let storage_path = create_tmp_dir();
-    let storage = setup_storage(&storage_path);
+    let storage = setup_storage(&path);
 
     let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(value_1_0.bytes()));
@@ -522,8 +522,8 @@ fn imp_setup() -> Arc<MVCCStorage<WAL>> {
 }
 
 fn imp_ops<D>(snapshot_update: &mut WriteSnapshot<D>, snapshot_delete: &mut WriteSnapshot<D>)
-where
-    D: DurabilityService,
+    where
+        D: DurabilityService,
 {
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let key_2 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
@@ -547,8 +547,8 @@ where
 }
 
 fn imp_validate_serializable<D>(storage: Arc<MVCCStorage<D>>) -> bool
-where
-    D: DurabilityService,
+    where
+        D: DurabilityService,
 {
     let key_1: StorageKeyArray<BUFFER_KEY_INLINE> = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let key_2: StorageKeyArray<BUFFER_KEY_INLINE> = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
@@ -583,7 +583,8 @@ fn imp_commit_delete_first() {
     //  t_delete performs "delete (k,v) where v == 20"
     // By our implementation, committing the update first and delete second looks correct.
     // But committing the delete first and update second leaves both keys present.
-    let storage = imp_setup();
+    let storage_path = create_tmp_dir();
+    let storage = imp_setup(&storage_path);
     let mut snapshot_update = storage.clone().open_snapshot_write();
     let mut snapshot_delete = storage.clone().open_snapshot_write();
     imp_ops(&mut snapshot_update, &mut snapshot_delete);
@@ -598,7 +599,8 @@ fn imp_commit_delete_first() {
 
 #[test]
 fn imp_commit_update_first() {
-    let storage = imp_setup();
+    let storage_path = create_tmp_dir();
+    let storage = imp_setup(&storage_path);
     let mut snapshot_update = storage.clone().open_snapshot_write();
     let mut snapshot_delete = storage.clone().open_snapshot_write();
     imp_ops(&mut snapshot_update, &mut snapshot_delete);
@@ -665,14 +667,13 @@ fn isolation_manager_reads_evicted_from_disk() {
 #[test]
 fn isolation_manager_correctly_recovers_from_disk() {
     init_logging();
-    let storage_path = create_tmp_dir();
 
     let key_1 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_1));
     let value_1 = ByteArray::copy(&VALUE_1);
 
+    let storage_path = create_tmp_dir();
     let watermark_after_one_commit = {
-        let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
-
+        let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put_val(key_1.clone().into_owned_array(), value_1.clone());
         snapshot.commit().unwrap();
@@ -681,7 +682,7 @@ fn isolation_manager_correctly_recovers_from_disk() {
 
     {
         // TODO: Find a way to make commits crash before they're committed
-        let storage = MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap();
+        let storage = load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), None).unwrap();
         assert_eq!(watermark_after_one_commit, storage.read_watermark());
     };
 }

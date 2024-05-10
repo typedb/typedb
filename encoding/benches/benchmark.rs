@@ -9,6 +9,7 @@
 use std::sync::Arc;
 
 use criterion::{criterion_group, criterion_main, Criterion};
+use durability::DurabilityService;
 use durability::wal::WAL;
 use encoding::{
     graph::{
@@ -40,7 +41,8 @@ fn vertex_generation_to_key<D>(
 fn criterion_benchmark(c: &mut Criterion) {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
 
     let type_id = TypeID::build(0);
     let vertex_generator = Arc::new(ThingVertexGenerator::new());

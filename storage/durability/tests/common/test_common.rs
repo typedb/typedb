@@ -31,8 +31,14 @@ impl DurabilityRecord for TestRecord {
 
 impl SequencedDurabilityRecord for TestRecord {}
 
-pub fn open_wal(directory: impl AsRef<Path>) -> WAL {
-    let mut wal = WAL::open(directory).unwrap();
+pub fn create_wal(directory: impl AsRef<Path>) -> WAL {
+    let mut wal = WAL::create(directory).unwrap();
+    wal.register_record_type::<TestRecord>();
+    wal
+}
+
+pub fn load_wal(directory: impl AsRef<Path>) -> WAL {
+    let mut wal = WAL::load(directory).unwrap();
     wal.register_record_type::<TestRecord>();
     wal
 }

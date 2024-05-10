@@ -4,18 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    ffi::OsStr,
-    fs::{self, File as StdFile, OpenOptions},
-    io::{self, BufReader, BufWriter, Read, Seek, Write},
-    mem,
-    path::{Path, PathBuf},
-    sync::{
-        atomic::{AtomicU64, Ordering},
-        RwLock, RwLockReadGuard,
-    },
-};
+use std::{collections::HashMap, ffi::OsStr, fmt, fs::{self, File as StdFile, OpenOptions}, io::{self, BufReader, BufWriter, Read, Seek, Write}, mem, path::{Path, PathBuf}, sync::{
+    atomic::{AtomicU64, Ordering},
+    RwLock, RwLockReadGuard,
+}};
+use std::error::Error;
 
 use itertools::Itertools;
 
@@ -36,15 +29,41 @@ pub struct WAL {
 }
 
 impl WAL {
-    fn open_impl(directory: PathBuf) -> io::Result<Self> {
-        if !directory.exists() {
-            fs::create_dir_all(&directory)?;
+    pub const WAL_DIR_NAME: &'static str = "wal";
+
+    fn create_impl(path: PathBuf) -> Result<Self, WALError> {
+        let directory = path.join(Self::WAL_DIR_NAME);
+        if directory.exists() {
+            Err(WALError::CreateErrorDirectoryExists { directory: directory.clone() })?
+        } else {
+            fs::create_dir_all(directory.clone()).map_err(|err| WALError::CreateError { source: err })?;
         }
 
-        let files = Files::open(directory.clone())?;
+        let files = Files::open(directory.clone())
+            .map_err(|err| WALError::CreateError { source: err })?;
 
         let files = RwLock::new(files);
-        let next = RecordIterator::new(files.read().unwrap(), SequenceNumber::MIN)?
+        let next = RecordIterator::new(files.read().unwrap(), SequenceNumber::MIN)
+            .map_err(|err| WALError::CreateError { source: err })?
+            .last()
+            .map(|rr| rr.unwrap().sequence_number.next())
+            .unwrap_or(SequenceNumber::MIN.next());
+
+        Ok(Self { registered_types: HashMap::new(), next_sequence_number: AtomicU64::new(next.number()), files })
+    }
+
+    fn load_impl(path: PathBuf) -> Result<Self, WALError> {
+        let directory = path.join(Self::WAL_DIR_NAME);
+        if !directory.exists() {
+            Err(WALError::LoadErrorDirectoryMissing { directory: directory.clone() })?
+        }
+
+        let files = Files::open(directory.clone())
+            .map_err(|err| WALError::LoadError { source: err })?;
+
+        let files = RwLock::new(files);
+        let next = RecordIterator::new(files.read().unwrap(), SequenceNumber::MIN)
+            .map_err(|err| WALError::LoadError { source: err })?
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(SequenceNumber::MIN.next());
@@ -68,8 +87,14 @@ impl Sequencer for WAL {
 }
 
 impl DurabilityService for WAL {
-    fn open(directory: impl AsRef<Path>) -> io::Result<Self> {
-        Self::open_impl(directory.as_ref().to_owned())
+    fn create(directory: impl AsRef<Path>) -> Result<Self, DurabilityError> {
+        Self::create_impl(directory.as_ref().to_owned())
+            .map_err(|err| DurabilityError::WAL { source: err })
+    }
+
+    fn load(directory: impl AsRef<Path>) -> Result<Self, DurabilityError> {
+        Self::load_impl(directory.as_ref().to_owned())
+            .map_err(|err| DurabilityError::WAL { source: err })
     }
 
     fn register_record_type<Record: DurabilityRecord>(&mut self) {
@@ -80,8 +105,8 @@ impl DurabilityService for WAL {
     }
 
     fn unsequenced_write<Record>(&self, record: &Record) -> Result<(), DurabilityError>
-    where
-        Record: DurabilityRecord,
+        where
+            Record: DurabilityRecord,
     {
         debug_assert!(self.registered_types.get(&Record::RECORD_TYPE) == Some(&Record::RECORD_NAME));
         let mut files = self.files.write().unwrap();
@@ -90,8 +115,8 @@ impl DurabilityService for WAL {
     }
 
     fn sequenced_write<Record>(&self, record: &Record) -> Result<SequenceNumber, DurabilityError>
-    where
-        Record: DurabilityRecord,
+        where
+            Record: DurabilityRecord,
     {
         debug_assert!(self.registered_types.get(&Record::RECORD_TYPE) == Some(&Record::RECORD_NAME));
         let mut files = self.files.write().unwrap();
@@ -103,8 +128,39 @@ impl DurabilityService for WAL {
     fn iter_from(
         &self,
         sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item = Result<RawRecord, DurabilityError>>, DurabilityError> {
+    ) -> Result<impl Iterator<Item=Result<RawRecord, DurabilityError>>, DurabilityError> {
         Ok(RecordIterator::new(self.files.read().unwrap(), sequence_number)?)
+    }
+
+    fn delete_durability(self) -> Result<(), DurabilityError> {
+        let files = self.files.into_inner().unwrap();
+        files.delete().map_err(|err| DurabilityError::DeleteFailed { source: err })
+    }
+}
+
+
+#[derive(Debug)]
+pub enum WALError {
+    CreateError { source: io::Error },
+    CreateErrorDirectoryExists { directory: PathBuf },
+    LoadError { source: io::Error },
+    LoadErrorDirectoryMissing { directory: PathBuf },
+}
+
+impl fmt::Display for WALError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for WALError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::CreateError { source, .. } => Some(source),
+            Self::CreateErrorDirectoryExists { .. } => None,
+            Self::LoadError { source, .. } => Some(source),
+            Self::LoadErrorDirectoryMissing { .. } => None,
+        }
     }
 }
 
@@ -144,8 +200,8 @@ impl Files {
     }
 
     fn write_record<Record>(&mut self, record: &Record, sequence_number: SequenceNumber) -> Result<(), DurabilityError>
-    where
-        Record: DurabilityRecord,
+        where
+            Record: DurabilityRecord,
     {
         if self.files.last().unwrap().len >= MAX_WAL_FILE_SIZE {
             self.open_new_file_at(sequence_number)?;
@@ -171,8 +227,13 @@ impl Files {
         Ok(())
     }
 
-    fn iter(&self) -> impl Iterator<Item = &File> {
+    fn iter(&self) -> impl Iterator<Item=&File> {
         self.files.iter()
+    }
+
+    fn delete(self) -> Result<(), io::Error> {
+        drop(self.files);
+        std::fs::remove_dir_all(&self.directory)
     }
 }
 
@@ -363,8 +424,14 @@ mod test {
 
     impl SequencedDurabilityRecord for TestRecord {}
 
-    fn open_wal(directory: &TempDir) -> WAL {
-        let mut wal = WAL::open(directory).unwrap();
+    fn create_wal(directory: &TempDir) -> WAL {
+        let mut wal = WAL::create(directory).unwrap();
+        wal.register_record_type::<TestRecord>();
+        wal
+    }
+
+    fn load_wal(directory: &TempDir) -> WAL {
+        let mut wal = WAL::load(directory).unwrap();
         wal.register_record_type::<TestRecord>();
         wal
     }
@@ -375,7 +442,7 @@ mod test {
 
         let record = TestRecord { bytes: *b"test" };
 
-        let wal = open_wal(&directory);
+        let wal = create_wal(&directory);
         wal.sequenced_write(&record).unwrap();
 
         let RawRecord { record_type, bytes, .. } = wal.iter_from_start().unwrap().next().unwrap().unwrap();
@@ -391,7 +458,7 @@ mod test {
 
         let records = [TestRecord { bytes: *b"test" }; 1024];
 
-        let wal = open_wal(&directory);
+        let wal = create_wal(&directory);
         records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ())).unwrap();
 
         let read_records = wal
@@ -409,16 +476,16 @@ mod test {
     }
 
     #[test]
-    fn test_wal_open() {
+    fn test_wal_load() {
         let directory = TempDir::new("wal-test").unwrap();
 
         let record = TestRecord { bytes: *b"test" };
 
-        let wal = open_wal(&directory);
+        let wal = create_wal(&directory);
         wal.sequenced_write(&record).unwrap();
         drop(wal);
 
-        let wal = open_wal(&directory);
+        let wal = load_wal(&directory);
         let RawRecord { record_type, bytes, .. } = wal.iter_from_start().unwrap().next().unwrap().unwrap();
         assert_eq!(record_type, TestRecord::RECORD_TYPE);
 
@@ -432,11 +499,11 @@ mod test {
 
         let records = [TestRecord { bytes: *b"test" }, TestRecord { bytes: *b"abcd" }];
 
-        let wal = open_wal(&directory);
+        let wal = create_wal(&directory);
         records.iter().try_for_each(|record| wal.sequenced_write(record).map(|_| ())).unwrap();
         drop(wal);
 
-        let wal = open_wal(&directory);
+        let wal = load_wal(&directory);
         let read_records = wal
             .iter_from_start()
             .unwrap()
@@ -456,7 +523,7 @@ mod test {
 
         let records = [TestRecord { bytes: *b"test" }, TestRecord { bytes: *b"abcd" }];
 
-        let wal = open_wal(&directory);
+        let wal = create_wal(&directory);
         let sequence_numbers: Vec<_> = records.iter().map(|record| wal.sequenced_write(record)).try_collect().unwrap();
         let iter_start = sequence_numbers[1];
 
@@ -473,7 +540,7 @@ mod test {
 
         drop(wal);
 
-        let wal = open_wal(&directory);
+        let wal = load_wal(&directory);
         let read_records = wal
             .iter_from(iter_start)
             .unwrap()
@@ -485,7 +552,7 @@ mod test {
             .collect_vec();
         assert_eq!(&records[1..], &*read_records);
 
-        let wal = open_wal(&directory);
+        let wal = load_wal(&directory);
         let read_records = wal.iter_from(SequenceNumber::MAX).unwrap().map(|res| res.unwrap()).collect_vec();
         assert!(read_records.is_empty());
     }

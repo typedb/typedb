@@ -47,6 +47,28 @@ rust_test(
 )
 
 rust_test(
+    name = "test_recovery",
+    srcs = glob([
+        "test_recovery.rs",
+        "test_common/*.rs",
+    ]),
+    deps = [
+        "//common/bytes",
+        "//common/logger",
+        "//common/primitive",
+        "//storage",
+        "//storage/durability",
+        "//resource",
+        "//util/test:test_utils",
+
+        "@crates//:itertools",
+        "@crates//:rand",
+        "@crates//:tracing",
+    ]
+)
+
+
+rust_test(
     name = "test_mvcc",
     srcs = glob([
         "test_mvcc.rs",

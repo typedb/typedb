@@ -22,25 +22,23 @@ This file should comprise a set of low-level tests relating to MVCC.
    After cleanup is run, if we iterate directly on the storage layer, we should be able to confirm the keys are actually not present anymore (Rocks may defer the disk delete till compaction, but to us they are "gone").
 
  */
-mod test_common;
-
-use std::{path::Path, sync::Arc};
-
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
-use durability::wal::WAL;
+use durability::DurabilityService;
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{KeyspaceId, KeyspaceSet},
-    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
-    MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot}
+    ,
 };
 use test_utils::{create_tmp_dir, init_logging};
+use crate::test_common::create_storage;
+use self::TestKeyspaceSet::Keyspace;
+
+mod test_common;
 
 test_keyspace_set! {
     Keyspace => 0: "keyspace",
 }
-
-use self::TestKeyspaceSet::Keyspace;
 
 const KEY_1: [u8; 4] = [0x0, 0x0, 0x0, 0x1];
 const KEY_2: [u8; 4] = [0x0, 0x0, 0x0, 0x2];
@@ -48,15 +46,12 @@ const VALUE_0: [u8; 1] = [0x0];
 const VALUE_1: [u8; 1] = [0x1];
 const VALUE_2: [u8; 1] = [0x2];
 
-fn setup_storage(storage_path: &Path) -> Arc<MVCCStorage<WAL>> {
-    Arc::new(MVCCStorage::open::<TestKeyspaceSet>("storage", storage_path).unwrap())
-}
 
 #[test]
 fn test_commit_increments_watermark() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = setup_storage(&storage_path);
+    let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
     let wm_initial = storage.read_watermark();
     let mut snapshot_0 = storage.clone().open_snapshot_write();
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
@@ -70,7 +65,7 @@ fn test_commit_increments_watermark() {
 fn test_reading_snapshots() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = setup_storage(&storage_path);
+    let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1: &StorageKey<'_, 48> =
         &StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
@@ -112,7 +107,7 @@ fn test_conflicting_update_fails() {
     // TODO: Why does this exist if we have separate isolation tests?
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = setup_storage(&storage_path);
+    let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_1));
     let key_2 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_2));
@@ -149,7 +144,7 @@ fn test_conflicting_update_fails() {
 fn test_open_snapshot_write_at() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = setup_storage(&storage_path);
+    let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1: &StorageKey<'_, 48> =
         &StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));

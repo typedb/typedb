@@ -34,15 +34,15 @@ impl DurabilityRecord for TestRecord {
 
 impl SequencedDurabilityRecord for TestRecord {}
 
-pub fn open_wal(directory: impl AsRef<Path>) -> WAL {
-    let mut wal = WAL::open(directory).unwrap();
+pub fn create_wal(directory: impl AsRef<Path>) -> WAL {
+    let mut wal = WAL::create(directory).unwrap();
     wal.register_record_type::<TestRecord>();
     wal
 }
 
 fn throughput_small(c: &mut Criterion) {
     let directory = TempDir::new("wal-test").unwrap();
-    let wal = open_wal(&directory);
+    let wal = create_wal(&directory);
 
     let message = TestRecord { bytes: b"hello world".to_vec() };
     let serialized_len = {
@@ -59,7 +59,7 @@ fn throughput_small(c: &mut Criterion) {
 
 fn throughput_large(c: &mut Criterion) {
     let directory = TempDir::new("wal-test").unwrap();
-    let wal = open_wal(&directory);
+    let wal = create_wal(&directory);
 
     let message = TestRecord { bytes: std::iter::repeat(*b"hello world").take(100).flatten().collect_vec() };
     let serialized_len = {

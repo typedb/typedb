@@ -30,6 +30,7 @@ use encoding::{
 use pprof::ProfilerGuard;
 use rand::distributions::{Alphanumeric, DistString};
 use concept::type_::Ordering;
+use durability::DurabilityService;
 use storage::{MVCCStorage};
 use storage::snapshot::{CommittableSnapshot, WriteSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
@@ -94,7 +95,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.sampling_mode(SamplingMode::Linear);
     group.bench_function("thing_write", |b| {
         let storage_path = create_tmp_dir();
-        let mut storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let wal = WAL::create(&storage_path).unwrap();
+        let mut storage = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
         TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
