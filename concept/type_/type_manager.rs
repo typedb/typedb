@@ -98,8 +98,6 @@ impl<Snapshot> TypeManager<Snapshot> {
     }
 }
 
-
-
 macro_rules! get_type_methods {
     ($(
         fn $method_name:ident() -> $output_type:ident = $cache_method:ident;
