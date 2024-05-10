@@ -5,33 +5,50 @@
  */
 
 use std::collections::{HashMap, HashSet};
+
 use bytes::Bytes;
-use encoding::graph::type_::edge::TypeEdge;
-use encoding::graph::type_::vertex::{build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix, build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type, TypeVertex};
-use encoding::graph::Typed;
-use encoding::layout::prefix::Prefix;
-use encoding::value::label::Label;
-use storage::key_range::KeyRange;
-use storage::snapshot::ReadableSnapshot;
-use crate::type_::attribute_type::AttributeType;
-use crate::type_::entity_type::EntityType;
-use crate::type_::object_type::ObjectType;
-use crate::type_::owns::{Owns, OwnsAnnotation};
-use crate::type_::relation_type::RelationType;
-use crate::type_::role_type::RoleType;
-use crate::type_::type_cache::{AttributeTypeCache, CommonTypeCache, EntityTypeCache, OwnerPlayerCache, OwnsCache, RelationTypeCache, RoleTypeCache};
-use crate::type_::type_manager::{KindAPI, ReadableType, TypeManager};
+use encoding::{
+    graph::{
+        type_::{
+            edge::TypeEdge,
+            vertex::{
+                build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
+                build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type,
+                new_vertex_relation_type, new_vertex_role_type, TypeVertex,
+            },
+        },
+        Typed,
+    },
+    layout::prefix::Prefix,
+    value::label::Label,
+};
+use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
-use crate::type_::type_reader::TypeReader;
-use crate::type_::{OwnerAPI, PlayerAPI, TypeAPI};
-use crate::type_::type_cache::selection::HasCommonTypeCache;
+use crate::type_::{
+    attribute_type::AttributeType,
+    entity_type::EntityType,
+    object_type::ObjectType,
+    owns::{Owns, OwnsAnnotation},
+    relation_type::RelationType,
+    role_type::RoleType,
+    type_cache::{
+        selection::HasCommonTypeCache, AttributeTypeCache, CommonTypeCache, EntityTypeCache, OwnerPlayerCache,
+        OwnsCache, RelationTypeCache, RoleTypeCache,
+    },
+    type_manager::{KindAPI, ReadableType, TypeManager},
+    type_reader::TypeReader,
+    OwnerAPI, PlayerAPI, TypeAPI,
+};
 
-
-pub(super) fn build_label_to_type_index<T : KindAPI<'static>, CACHE: HasCommonTypeCache<T>>(type_cache_array: &Box<[Option<CACHE>]>) -> HashMap<Label<'static>, T>{
+pub(super) fn build_label_to_type_index<T: KindAPI<'static>, CACHE: HasCommonTypeCache<T>>(
+    type_cache_array: &Box<[Option<CACHE>]>,
+) -> HashMap<Label<'static>, T> {
     type_cache_array
         .iter()
         .filter_map(|entry| {
-            entry.as_ref().map(|cache| (cache.common_type_cache().label.clone(), cache.common_type_cache().type_.clone()))
+            entry
+                .as_ref()
+                .map(|cache| (cache.common_type_cache().label.clone(), cache.common_type_cache().type_.clone()))
         })
         .collect()
 }
@@ -148,9 +165,9 @@ pub(super) fn create_role_caches(snapshot: &impl ReadableSnapshot) -> Box<[Optio
 }
 
 fn create_common_type_cache<'a, Snapshot, T>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
-    where
-        Snapshot: ReadableSnapshot,
-        T: KindAPI<'static> + ReadableType<Output<'static>=T>
+where
+    Snapshot: ReadableSnapshot,
+    T: KindAPI<'static> + ReadableType<Output<'static> = T>,
 {
     let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
     let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
@@ -172,9 +189,9 @@ fn create_common_type_cache<'a, Snapshot, T>(snapshot: &Snapshot, type_: T) -> C
 }
 
 fn create_owner_player_cache<'a, Snapshot, T>(snapshot: &Snapshot, type_: T) -> OwnerPlayerCache
-    where
-        Snapshot: ReadableSnapshot,
-        T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static> + ReadableType<Output<'static>=T>,
+where
+    Snapshot: ReadableSnapshot,
+    T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static> + ReadableType<Output<'static> = T>,
 {
     OwnerPlayerCache {
         owns_declared: TypeReader::get_owns(snapshot, type_.clone()).unwrap(),
