@@ -17,11 +17,11 @@ use encoding::{
 use storage::{snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
 
 use crate::type_::{attribute_type::AttributeType, entity_type::EntityType, owns::{Owns, OwnsAnnotation}, plays::Plays, relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::ReadableType, Ordering, TypeAPI, OwnerAPI, PlayerAPI};
+use crate::type_::type_cache::kind_cache::{AttributeTypeCache, EntityTypeCache, RelationTypeCache, RoleTypeCache, OwnsCache, CommonTypeCache, OwnerPlayerCache};
+use crate::type_::type_cache::selection;
 use crate::type_::type_cache::selection::{HasOwnerPlayerCache, HasCommonTypeCache, CacheGetter};
 use crate::type_::type_manager::KindAPI;
 
-mod construction;
-mod selection;
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -41,58 +41,6 @@ pub struct TypeCache {
     attribute_types_index_label: HashMap<Label<'static>, AttributeType<'static>>,
 }
 
-#[derive(Debug)]
-pub(crate) struct EntityTypeCache {
-    common_type_cache: CommonTypeCache<EntityType<'static>>,
-    owner_player_cache: OwnerPlayerCache,
-    // ...
-}
-
-#[derive(Debug)]
-pub(crate) struct RelationTypeCache {
-    common_type_cache: CommonTypeCache<RelationType<'static>>,
-    relates_declared: HashSet<Relates<'static>>,
-    owner_player_cache: OwnerPlayerCache,
-}
-
-#[derive(Debug)]
-pub(crate) struct RoleTypeCache {
-    common_type_cache: CommonTypeCache<RoleType<'static>>,
-    ordering: Ordering,
-    relates_declared: Relates<'static>,
-}
-
-#[derive(Debug)]
-pub(crate) struct AttributeTypeCache {
-    common_type_cache: CommonTypeCache<AttributeType<'static>>,
-    value_type: Option<ValueType>,
-    // owners: HashSet<Owns<'static>>
-}
-
-#[derive(Debug)]
-struct OwnsCache {
-    ordering: Ordering,
-    annotations_declared: HashSet<OwnsAnnotation>,
-}
-
-#[derive(Debug)]
-struct CommonTypeCache<T: KindAPI<'static>> {
-    type_: T,
-    label: Label<'static>,
-    is_root: bool,
-    annotations_declared: HashSet<T::AnnotationType>,
-    // TODO: Should these all be sets instead of vec?
-    supertype: Option<T>, // TODO: use smallvec if we want to have some inline - benchmark.
-    supertypes: Vec<T>,   // TODO: use smallvec if we want to have some inline - benchmark.
-    subtypes_declared: Vec<T>, // TODO: benchmark smallvec.
-    subtypes_transitive: Vec<T>, // TODO: benchmark smallvec
-}
-
-#[derive(Debug)]
-pub struct OwnerPlayerCache {
-    owns_declared: HashSet<Owns<'static>>,
-    plays_declared: HashSet<Plays<'static>>,
-}
 
 selection::impl_cache_getter!(EntityTypeCache, EntityType, entity_types);
 selection::impl_cache_getter!(AttributeTypeCache, AttributeType, attribute_types);
@@ -121,15 +69,15 @@ impl TypeCache {
         let snapshot =
             storage.open_snapshot_read_at(open_sequence_number).map_err(|error| SnapshotOpen { source: error })?;
 
-        let entity_type_caches = construction::create_entity_type_caches(&snapshot);
-        let relation_type_caches = construction::create_relation_type_cache(&snapshot);
-        let role_type_caches = construction::create_role_caches(&snapshot);
-        let attribute_type_caches = construction::create_attribute_caches(&snapshot);
+        let entity_type_caches = EntityTypeCache::create(&snapshot);
+        let relation_type_caches = RelationTypeCache::create(&snapshot);
+        let role_type_caches = RoleTypeCache::create(&snapshot);
+        let attribute_type_caches = AttributeTypeCache::create(&snapshot);
 
-        let entity_types_index_label = construction::build_label_to_type_index(&entity_type_caches);
-        let relation_types_index_label = construction::build_label_to_type_index(&relation_type_caches);
-        let role_types_index_label = construction::build_label_to_type_index(&role_type_caches);
-        let attribute_types_index_label = construction::build_label_to_type_index(&attribute_type_caches);
+        let entity_types_index_label = Self::build_label_to_type_index(&entity_type_caches);
+        let relation_types_index_label = Self::build_label_to_type_index(&relation_type_caches);
+        let role_types_index_label = Self::build_label_to_type_index(&role_type_caches);
+        let attribute_types_index_label = Self::build_label_to_type_index(&attribute_type_caches);
 
         Ok(TypeCache {
             open_sequence_number,
@@ -137,7 +85,7 @@ impl TypeCache {
             relation_types: relation_type_caches,
             role_types: role_type_caches,
             attribute_types: attribute_type_caches,
-            owns: construction::create_owns_caches(&snapshot),
+            owns: OwnsCache::create(&snapshot),
 
             entity_types_index_label,
             relation_types_index_label,
@@ -146,6 +94,18 @@ impl TypeCache {
         })
     }
 
+    fn build_label_to_type_index<T: KindAPI<'static>, CACHE: HasCommonTypeCache<T>>(
+        type_cache_array: &Box<[Option<CACHE>]>,
+    ) -> HashMap<Label<'static>, T> {
+        type_cache_array
+            .iter()
+            .filter_map(|entry| {
+                entry
+                    .as_ref()
+                    .map(|cache| (cache.common_type_cache().label.clone(), cache.common_type_cache().type_.clone()))
+            })
+            .collect()
+    }
 
     pub(crate) fn get_entity_type(&self, label: &Label<'_>) -> Option<EntityType<'static>> {
         self.entity_types_index_label.get(label).cloned()
