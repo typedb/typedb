@@ -646,7 +646,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         self.storage_may_delete_supertype(snapshot, role_type.clone().into_owned());
     }
 
-    pub(crate) fn storage_set_label(&self, snapshot: &mut Snapshot, owner: impl TypeAPI<'static>, label: &Label<'_>) {
+    pub(crate) fn storage_set_label(&self, snapshot: &mut Snapshot, owner: impl KindAPI<'static>, label: &Label<'_>) {
         self.storage_may_delete_label(snapshot, owner.clone());
 
         let vertex_to_label_key = build_property_type_label(owner.clone().into_vertex());
@@ -658,7 +658,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
     }
 
-    fn storage_may_delete_label(&self, snapshot: &mut Snapshot, owner: impl TypeAPI<'static>) {
+    fn storage_may_delete_label(&self, snapshot: &mut Snapshot, owner: impl KindAPI<'static>) {
         let existing_label = TypeReader::get_label(snapshot, owner.clone()).unwrap();
         if let Some(label) = existing_label {
             let vertex_to_label_key = build_property_type_label(owner.into_vertex());

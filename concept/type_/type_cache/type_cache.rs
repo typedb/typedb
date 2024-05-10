@@ -16,7 +16,7 @@ use encoding::{
 };
 use storage::{snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
 
-use crate::type_::{attribute_type::AttributeType, entity_type::EntityType, owns::{Owns, OwnsAnnotation}, plays::Plays, relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::ReadableType, Ordering, TypeAPI, OwnerAPI, PlayerAPI};
+use crate::type_::{attribute_type::AttributeType, entity_type::EntityType, owns::{Owns, OwnsAnnotation}, plays::Plays, relates::Relates, relation_type::RelationType, role_type::RoleType, Ordering, TypeAPI, OwnerAPI, PlayerAPI};
 use crate::type_::type_cache::kind_cache::{AttributeTypeCache, EntityTypeCache, RelationTypeCache, RoleTypeCache, OwnsCache, PlaysCache, CommonTypeCache, OwnerPlayerCache};
 use crate::type_::type_cache::selection;
 use crate::type_::type_cache::selection::{HasOwnerPlayerCache, HasCommonTypeCache, CacheGetter};
@@ -175,47 +175,47 @@ impl TypeCache {
     }
 
     pub(crate) fn get_owns<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns<'static>>
-        where T:  OwnerAPI<'static> + PlayerAPI<'static> + CacheGetter<CacheType=CACHE>,
+        where T:  OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
               CACHE: HasOwnerPlayerCache + 'this
     {
         &T::get_cache(self, type_).owner_player_cache().owns_declared
     }
 
     pub(crate) fn get_owns_transitive<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashMap<AttributeType<'static>, Owns<'static>>
-        where T:  OwnerAPI<'static> + PlayerAPI<'static> + CacheGetter<CacheType=CACHE>,
+        where T:  OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
               CACHE: HasOwnerPlayerCache + 'this
     {
         &T::get_cache(self, type_).owner_player_cache().owns_transitive
     }
 
-    pub(crate) fn get_role_type_ordering(&self, role_type: RoleType<'static>) -> Ordering {
+    pub(crate) fn get_role_type_ordering<'a>(&self, role_type: RoleType<'a>) -> Ordering {
         RoleType::get_cache(&self, role_type).ordering
     }
 
-    pub(crate) fn get_relation_type_relates(&self, relation_type: RelationType<'static>) -> &HashSet<Relates<'static>> {
+    pub(crate) fn get_relation_type_relates<'a>(&self, relation_type: RelationType<'a>) -> &HashSet<Relates<'static>> {
         &RelationType::get_cache(self, relation_type).relates_declared
     }
 
-    pub(crate) fn get_relation_type_relates_transitive(&self, relation_type: RelationType<'static>) -> &HashMap<String, Relates<'static>> {
+    pub(crate) fn get_relation_type_relates_transitive<'a>(&self, relation_type: RelationType<'a>) -> &HashMap<String, Relates<'static>> {
         &RelationType::get_cache(self, relation_type).relates_transitive
     }
 
     // TODO: Look for unused <'a> and use them
     pub(crate) fn get_plays<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Plays<'static>>
-        where T:  OwnerAPI<'static> + PlayerAPI<'static> + CacheGetter<CacheType=CACHE>,
+        where T:  OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
               CACHE: HasOwnerPlayerCache + 'this
     {
         &T::get_cache(self, type_).owner_player_cache().plays_declared
     }
 
     pub(crate) fn get_plays_transitive<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this HashMap<RoleType<'static>, Plays<'static>>
-        where T:  OwnerAPI<'static> + PlayerAPI<'static> + CacheGetter<CacheType=CACHE>,
+        where T:  OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
         CACHE: HasOwnerPlayerCache + 'this
     {
         &T::get_cache(self, type_).owner_player_cache().plays_transitive
     }
 
-    pub(crate) fn get_attribute_type_value_type(&self, attribute_type: AttributeType<'static>) -> Option<ValueType> {
+    pub(crate) fn get_attribute_type_value_type<'a>(&self, attribute_type: AttributeType<'a>) -> Option<ValueType> {
         AttributeType::get_cache(&self, attribute_type).value_type
     }
 
@@ -227,7 +227,7 @@ impl TypeCache {
         self.owns.get(&owns).unwrap().ordering
     }
 
-    // TODO: Rearrange
+    // TODO: Why does map.get() uses the same lifetime for key as the map?
     pub(crate) fn get_owns_override<'c>(&'c self, owns: Owns<'c>) -> &'c Option<Owns<'static>> {
         &self.owns.get(&owns).unwrap().overrides
     }

@@ -47,11 +47,10 @@ use crate::{
         relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::ReadableType,
+        type_manager::{KindAPI, ReadableType},
         IntoCanonicalTypeEdge, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
-use crate::type_::type_manager::KindAPI;
 
 pub struct TypeReader {}
 
@@ -88,7 +87,7 @@ impl TypeReader {
         subtype: T,
     ) -> Result<Option<T::ReadOutput<'static>>, ConceptReadError>
     where
-        T: ReadableType + TypeAPI<'static>,
+        T: ReadableType + KindAPI<'static>,
     {
         Ok(Self::get_supertype_vertex(snapshot, subtype.into_vertex())?
             .map(|supertype_vertex| T::read_from(supertype_vertex.into_bytes())))
@@ -99,7 +98,7 @@ impl TypeReader {
         subtype: T,
     ) -> Result<Vec<T::ReadOutput<'static>>, ConceptReadError>
     where
-        T: ReadableType + TypeAPI<'static>,
+        T: ReadableType + KindAPI<'static>,
     {
         // WARN: supertypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut supertype = Some(type_)`
@@ -130,7 +129,7 @@ impl TypeReader {
         supertype: T,
     ) -> Result<Vec<T::ReadOutput<'static>>, ConceptReadError>
     where
-        T: ReadableType + TypeAPI<'static>,
+        T: ReadableType + KindAPI<'static>,
     {
         Ok(Self::get_subtypes_vertex(snapshot, supertype.into_vertex())?
             .into_iter()
@@ -143,7 +142,7 @@ impl TypeReader {
         subtype: T,
     ) -> Result<Vec<T::ReadOutput<'static>>, ConceptReadError>
     where
-        T: ReadableType + TypeAPI<'static>,
+        T: ReadableType + KindAPI<'static>,
     {
         // WARN: subtypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut stack = vec!(subtype.clone());`
@@ -160,7 +159,7 @@ impl TypeReader {
 
     pub(crate) fn get_label(
         snapshot: &impl ReadableSnapshot,
-        type_: impl TypeAPI<'static>,
+        type_: impl KindAPI<'static>,
     ) -> Result<Option<Label<'static>>, ConceptReadError> {
         let key = build_property_type_label(type_.into_vertex());
         snapshot
@@ -193,7 +192,7 @@ impl TypeReader {
         owner: T,
     ) -> Result<HashMap<AttributeType<'static>, Owns<'static>>, ConceptReadError>
     where
-        T: OwnerAPI<'static> + ReadableType<ReadOutput<'static> = T>, // ReadOutput=T is needed for supertype transitivity
+        T: OwnerAPI<'static> + KindAPI<'static> + ReadableType<ReadOutput<'static> = T>, // ReadOutput=T is needed for supertype transitivity
     {
         // TODO: Should the owner of a transitive owns be the declaring owner or the inheriting owner?
         let mut transitive_owns: HashMap<AttributeType<'static>, Owns<'static>> = HashMap::new();
@@ -235,7 +234,7 @@ impl TypeReader {
         player: T,
     ) -> Result<HashMap<RoleType<'static>, Plays<'static>>, ConceptReadError>
     where
-        T: PlayerAPI<'static> + ReadableType<ReadOutput<'static> = T>, // ReadOutput=T is needed for supertype transitivity
+        T: PlayerAPI<'static> + KindAPI<'static> + ReadableType<ReadOutput<'static> = T>, // ReadOutput=T is needed for supertype transitivity
     {
         // TODO: Should the player of a transitive plays be the declaring player or the inheriting player?
         let mut transitive_plays: HashMap<RoleType<'static>, Plays<'static>> = HashMap::new();
@@ -258,9 +257,9 @@ impl TypeReader {
         Ok(transitive_plays)
     }
 
-    pub(crate) fn get_plays_override(
+    pub(crate) fn get_plays_override<'a>(
         snapshot: &impl ReadableSnapshot,
-        plays: Plays<'static>,
+        plays: Plays<'a>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError> {
         let override_property_key = build_property_type_edge_override(plays.into_type_edge());
         snapshot
