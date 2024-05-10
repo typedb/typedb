@@ -102,7 +102,7 @@ impl<Snapshot> TypeManager<Snapshot> {
 
 macro_rules! get_type_methods {
     ($(
-        fn $method_name:ident() -> $output_type:ident = $cache_method:ident | $new_vertex_method:ident;
+        fn $method_name:ident() -> $output_type:ident = $cache_method:ident;
     )*) => {
         $(
             pub fn $method_name(
@@ -265,10 +265,10 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
     }
 
     get_type_methods! {
-        fn get_entity_type() -> EntityType = get_entity_type | new_vertex_entity_type;
-        fn get_relation_type() -> RelationType = get_relation_type | new_vertex_relation_type;
-        fn get_role_type() -> RoleType = get_role_type | new_vertex_role_type;
-        fn get_attribute_type() -> AttributeType = get_attribute_type | new_vertex_attribute_type;
+        fn get_entity_type() -> EntityType = get_entity_type;
+        fn get_relation_type() -> RelationType = get_relation_type;
+        fn get_role_type() -> RoleType = get_role_type;
+        fn get_attribute_type() -> AttributeType = get_attribute_type;
     }
 
     get_supertype_methods! {
