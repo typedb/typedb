@@ -205,9 +205,10 @@ impl TypeReader {
                 if !overridden_owns.contains(&attribute) {
                     debug_assert!(!transitive_owns.contains_key(&attribute));
                     transitive_owns.insert(owns.attribute(), owns.clone());
-                    if let Some(overridden) = Self::get_owns_override(snapshot, owns.clone())? {
-                        overridden_owns.add(overridden.attribute());
-                    }
+                }
+                // Has to be outside so we ignore transitively overridden ones too
+                if let Some(overridden) = Self::get_owns_override(snapshot, owns.clone())? {
+                    overridden_owns.add(overridden.attribute());
                 }
             }
             current_type = Self::get_supertype(snapshot, current_type.unwrap())?;
@@ -238,18 +239,19 @@ impl TypeReader {
     {
         // TODO: Should the player of a transitive plays be the declaring player or the inheriting player?
         let mut transitive_plays: HashMap<RoleType<'static>, Plays<'static>> = HashMap::new();
-        let mut overridden_plays: HashSet<RoleType<'static>> = HashSet::new(); // TODO: Should this store the plays? This feels more fool-proof if it's correct.
+        let mut overridden_roles: HashSet<RoleType<'static>> = HashSet::new(); // TODO: Should this store the plays? This feels more fool-proof if it's correct.
         let mut current_type = Some(player);
         while current_type.is_some() {
             let declared_plays = Self::get_plays(snapshot, current_type.as_ref().unwrap().clone())?;
             for plays in declared_plays.into_iter() {
                 let role = plays.role();
-                if !overridden_plays.contains(&role) {
+                if !overridden_roles.contains(&role) {
                     debug_assert!(!transitive_plays.contains_key(&role));
                     transitive_plays.insert(plays.role(), plays.clone());
-                    if let Some(overridden) = Self::get_plays_override(snapshot, plays.clone())? {
-                        overridden_plays.add(overridden.role());
-                    }
+                }
+                // Has to be outside so we ignore transitively overridden ones too
+                if let Some(overridden) = Self::get_plays_override(snapshot, plays.clone())? {
+                    overridden_roles.add(overridden.role());
                 }
             }
             current_type = Self::get_supertype(snapshot, current_type.unwrap())?;
@@ -306,9 +308,9 @@ impl TypeReader {
                     let role_name = Self::get_label(snapshot, relates.role())?.unwrap().name.as_str().to_owned();
                     debug_assert!(!transitive_relates.contains_key(&role_name));
                     transitive_relates.insert(role_name, relates.clone());
-                    if let Some(overridden) = Self::get_supertype(snapshot, relates.role().clone())? {
-                        overridden_relates.add(overridden);
-                    }
+                }
+                if let Some(overridden) = Self::get_supertype(snapshot, relates.role().clone())? {
+                    overridden_relates.add(overridden);
                 }
             }
             current_relation = Self::get_supertype(snapshot, current_relation.unwrap())?;

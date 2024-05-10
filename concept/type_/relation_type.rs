@@ -352,11 +352,10 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
 
     fn get_plays<'m, Snapshot: ReadableSnapshot>(
         &self,
-        _snapshot: &Snapshot,
-        _type_manager: &'m TypeManager<Snapshot>,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
-        todo!()
-        // type_manager.get_relation_type_plays(self.clone().into_owned())
+        type_manager.get_relation_type_plays(snapshot, self.clone().into_owned())
     }
 
     fn get_plays_role<Snapshot: ReadableSnapshot>(
@@ -374,7 +373,7 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         snapshot: &Snapshot,
         type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
-        todo!()
+        type_manager.get_relation_type_plays_transitive(snapshot, self.clone().into_owned())
     }
 }
 

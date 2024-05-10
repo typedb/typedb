@@ -451,6 +451,32 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         }
     }
 
+    pub(crate) fn get_relation_type_plays<'this>(
+        &'this self,
+        snapshot: &Snapshot,
+        relation_type: RelationType<'static>,
+    ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_plays(relation_type)))
+        } else {
+            let plays = TypeReader::get_plays(snapshot, relation_type.clone())?;
+            Ok(MaybeOwns::Owned(plays))
+        }
+    }
+
+    pub(crate) fn get_relation_type_plays_transitive(
+        &self,
+        snapshot: &Snapshot,
+        relation_type: RelationType<'static>,
+    ) -> Result<MaybeOwns<'_, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_plays_transitive(relation_type)))
+        } else {
+            let plays = TypeReader::get_plays_transitive(snapshot, relation_type.clone())?;
+            Ok(MaybeOwns::Owned(plays))
+        }
+    }
+
     pub(crate) fn get_plays_overridden(
         &self,
         snapshot: &Snapshot,
