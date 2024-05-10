@@ -61,7 +61,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract::new())))
+        Ok(annotations.contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
     fn delete<Snapshot: WritableSnapshot>(

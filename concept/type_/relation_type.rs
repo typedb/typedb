@@ -71,7 +71,7 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract::new())))
+        Ok(annotations.contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
     fn delete<Snapshot: WritableSnapshot>(

@@ -82,13 +82,13 @@ impl<Snapshot> TypeManager<Snapshot> {
             root_entity.set_annotation(
                 &mut snapshot,
                 &type_manager,
-                EntityTypeAnnotation::Abstract(AnnotationAbstract::new()),
+                EntityTypeAnnotation::Abstract(AnnotationAbstract),
             )?;
             let root_relation = type_manager.create_relation_type(&mut snapshot, &Kind::Relation.root_label(), true)?;
             root_relation.set_annotation(
                 &mut snapshot,
                 &type_manager,
-                RelationTypeAnnotation::Abstract(AnnotationAbstract::new()),
+                RelationTypeAnnotation::Abstract(AnnotationAbstract),
             )?;
             let root_role = type_manager.create_role_type(
                 &mut snapshot,
@@ -100,14 +100,14 @@ impl<Snapshot> TypeManager<Snapshot> {
             root_role.set_annotation(
                 &mut snapshot,
                 &type_manager,
-                RoleTypeAnnotation::Abstract(AnnotationAbstract::new()),
+                RoleTypeAnnotation::Abstract(AnnotationAbstract),
             )?;
             let root_attribute =
                 type_manager.create_attribute_type(&mut snapshot, &Kind::Attribute.root_label(), true)?;
             root_attribute.set_annotation(
                 &mut snapshot,
                 &type_manager,
-                AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()),
+                AttributeTypeAnnotation::Abstract(AnnotationAbstract),
             )?;
         }
         // TODO: pass error up
@@ -274,7 +274,7 @@ macro_rules! get_type_annotations {
 
 impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
     pub fn new(vertex_generator: Arc<TypeVertexGenerator>, schema_cache: Option<Arc<TypeCache>>) -> Self {
-        TypeManager { vertex_generator, type_cache: schema_cache, snapshot: PhantomData::default() }
+        TypeManager { vertex_generator, type_cache: schema_cache, snapshot: PhantomData }
     }
 
     pub(crate) fn check_type_is_root(type_label: &Label<'_>, kind: Kind) -> bool {

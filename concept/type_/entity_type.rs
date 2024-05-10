@@ -70,7 +70,7 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract::new())))
+        Ok(annotations.contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
     fn delete<Snapshot: WritableSnapshot>(

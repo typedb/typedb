@@ -25,7 +25,7 @@ pub async fn attribute_put_instance_with_value(
             tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
         let value = value.into_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
         may_error.check(&tx.thing_manager.create_attribute(&mut tx.snapshot, attribute_type, value));
-    })
+    });
 }
 
 #[apply(generic_step)]

@@ -124,16 +124,12 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         attribute: &Attribute<'_>,
     ) -> Result<Value<'static>, ConceptReadError> {
         match attribute.value_type() {
-            ValueType::Boolean => {
-                todo!()
-            }
+            ValueType::Boolean => todo!(),
             ValueType::Long => {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_long();
                 Ok(Value::Long(LongBytes::new(attribute_id.bytes()).as_i64()))
             }
-            ValueType::Double => {
-                todo!()
-            }
+            ValueType::Double => todo!(),
             ValueType::String => {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_string();
                 if attribute_id.is_inline() {
@@ -149,6 +145,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                         .unwrap())
                 }
             }
+            ValueType::DateTime => todo!(),
         }
     }
 
@@ -183,6 +180,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                         })
                 }
             }
+            ValueType::DateTime => todo!(),
         }
     }
 

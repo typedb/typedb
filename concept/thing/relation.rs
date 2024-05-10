@@ -248,7 +248,7 @@ impl<'a> Relation<'a> {
     ) -> Result<(), ConceptWriteError> {
         // TODO: validate schema
         let role_annotations = role_type.get_annotations(snapshot, thing_manager.type_manager()).unwrap();
-        let distinct = role_annotations.contains(&RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
+        let distinct = role_annotations.contains(&RoleTypeAnnotation::Distinct(AnnotationDistinct));
         if distinct {
             thing_manager.set_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
         } else {
@@ -280,7 +280,7 @@ impl<'a> Relation<'a> {
         delete_count: u64,
     ) -> Result<(), ConceptWriteError> {
         let role_annotations = role_type.get_annotations(snapshot, thing_manager.type_manager()).unwrap();
-        let distinct = role_annotations.contains(&RoleTypeAnnotation::Distinct(AnnotationDistinct::new()));
+        let distinct = role_annotations.contains(&RoleTypeAnnotation::Distinct(AnnotationDistinct));
         if distinct {
             debug_assert_eq!(delete_count, 1);
             thing_manager.delete_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone())

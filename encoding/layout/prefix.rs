@@ -47,6 +47,7 @@ impl PrefixID {
             Prefix::VertexAttributeLong => todo!(),
             Prefix::VertexAttributeDouble => todo!(),
             Prefix::VertexAttributeString => todo!(),
+            Prefix::VertexAttributeDateTime => todo!(),
             Prefix::EdgeHas => todo!(),
             Prefix::EdgeHasReverse => todo!(),
             Prefix::EdgeRolePlayer => todo!(),
@@ -72,6 +73,7 @@ pub enum Prefix {
     VertexAttributeLong,
     VertexAttributeDouble,
     VertexAttributeString,
+    VertexAttributeDateTime,
     _VertexAttributeLast,   // marker to indicate reserved range for attribute types
 
     EdgeSub,
@@ -165,6 +167,7 @@ impl Prefix {
            VertexAttributeLong => [51], true;
            VertexAttributeDouble => [52], true;
            VertexAttributeString => [53], true;
+           VertexAttributeDateTime => [54], true;
            _VertexAttributeLast => [99], true;
 
            EdgeSub => [100], true;

@@ -48,7 +48,7 @@ impl<'a> Owns<'a> {
         let is_ordered = false; // TODO
         if is_ordered {
             let annotations = self.get_annotations(snapshot, type_manager)?;
-            Ok(annotations.contains(&OwnsAnnotation::Distinct(AnnotationDistinct::new())))
+            Ok(annotations.contains(&OwnsAnnotation::Distinct(AnnotationDistinct)))
         } else {
             Ok(true)
         }

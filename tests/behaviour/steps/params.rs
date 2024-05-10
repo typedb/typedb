@@ -156,10 +156,9 @@ impl FromStr for RootLabel {
     }
 }
 
-#[derive(Debug, Default, Parameter)]
+#[derive(Debug, Parameter)]
 #[param(name = "value_type", regex = "(boolean|long|double|string|datetime)")]
 pub(crate) enum ValueType {
-    #[default]
     Boolean,
     Long,
     Double,
@@ -174,7 +173,7 @@ impl ValueType {
             ValueType::Long => TypeDBValueType::Long,
             ValueType::Double => TypeDBValueType::Double,
             ValueType::String => TypeDBValueType::String,
-            ValueType::DateTime => todo!(),
+            ValueType::DateTime => TypeDBValueType::DateTime,
         }
     }
 }
@@ -233,7 +232,8 @@ impl FromStr for Annotation {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // This will have to be smarter to parse annotations out.
         let typedb_annotation = match s {
-            "@abstract" => TypeDBAnnotation::Abstract(annotation::AnnotationAbstract::new()),
+            "@abstract" => TypeDBAnnotation::Abstract(annotation::AnnotationAbstract),
+            "@independent" => TypeDBAnnotation::Independent(annotation::AnnotationIndependent),
             _ => panic!("Unrecognised (or unimplemented) annotation: {s}"),
         };
         Ok(Self { typedb_annotation })

@@ -360,9 +360,9 @@ impl TypeReader {
             .collect_cloned_hashset(|key, value| {
                 let annotation_key = TypeVertexProperty::new(Bytes::Reference(key.byte_ref()));
                 let annotation = match annotation_key.infix() {
-                    Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract::new()),
-                    Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct::new()),
-                    Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent::new()),
+                    Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract),
+                    Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
+                    Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
                     Infix::PropertyAnnotationCardinality => {
                         Annotation::Cardinality(deserialise_annotation_cardinality(value))
                     }
@@ -412,13 +412,13 @@ impl TypeReader {
             .collect_cloned_hashset(|key, value| {
                 let annotation_key = TypeEdgeProperty::new(Bytes::Reference(key.byte_ref()));
                 match annotation_key.infix() {
-                    Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract::new()),
-                    Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct::new()),
-                    Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent::new()),
+                    Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract),
+                    Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
+                    Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
                     Infix::PropertyAnnotationCardinality => {
                         Annotation::Cardinality(deserialise_annotation_cardinality(value))
                     }
-                    Infix::_PropertyAnnotationLast
+                    | Infix::_PropertyAnnotationLast
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
                     | Infix::PropertyOrdering

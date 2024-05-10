@@ -84,6 +84,7 @@ impl<'a> AttributeVertex<'a> {
             ValueType::Long => Prefix::VertexAttributeLong,
             ValueType::Double => Prefix::VertexAttributeDouble,
             ValueType::String => Prefix::VertexAttributeString,
+            ValueType::DateTime => Prefix::VertexAttributeDateTime,
         }
     }
 
@@ -93,6 +94,7 @@ impl<'a> AttributeVertex<'a> {
             Prefix::VertexAttributeLong => ValueType::Long,
             Prefix::VertexAttributeDouble => ValueType::Double,
             Prefix::VertexAttributeString => ValueType::String,
+            Prefix::VertexAttributeDateTime => ValueType::DateTime,
             _ => unreachable!("Unrecognised attribute vertex prefix type"),
         }
     }
@@ -191,6 +193,7 @@ impl AttributeID {
             ValueType::Long => Self::Long(LongAttributeID::new(bytes.try_into().unwrap())),
             ValueType::Double => todo!(),
             ValueType::String => Self::String(StringAttributeID::new(bytes.try_into().unwrap())),
+            ValueType::DateTime => todo!(),
         }
     }
 
@@ -201,6 +204,7 @@ impl AttributeID {
             ValueType::Long => Self::Long(LongAttributeID::build(value.encode_long())),
             ValueType::Double => todo!(),
             ValueType::String => Self::String(StringAttributeID::build_inline_id(value.encode_string::<256>())),
+            ValueType::DateTime => todo!(),
         }
     }
 
@@ -210,6 +214,7 @@ impl AttributeID {
             ValueType::Long => LongAttributeID::LENGTH,
             ValueType::Double => todo!(),
             ValueType::String => StringAttributeID::LENGTH,
+            ValueType::DateTime => todo!(),
         }
     }
 
@@ -223,6 +228,7 @@ impl AttributeID {
             ValueType::Long => LongAttributeID::is_inlineable(),
             ValueType::Double => todo!(),
             ValueType::String => StringAttributeID::is_inlineable(value.encode_string::<256>()),
+            ValueType::DateTime => todo!(),
         }
     }
 

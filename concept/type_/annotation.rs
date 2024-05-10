@@ -14,50 +14,14 @@ pub enum Annotation {
     Cardinality(AnnotationCardinality),
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct AnnotationAbstract {}
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationAbstract;
 
-impl Default for AnnotationAbstract {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationDistinct;
 
-impl AnnotationAbstract {
-    pub fn new() -> Self {
-        AnnotationAbstract {}
-    }
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct AnnotationDistinct {}
-
-impl Default for AnnotationDistinct {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl AnnotationDistinct {
-    pub fn new() -> Self {
-        AnnotationDistinct {}
-    }
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct AnnotationIndependent {}
-
-impl Default for AnnotationIndependent {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl AnnotationIndependent {
-    pub fn new() -> Self {
-        AnnotationIndependent {}
-    }
-}
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationIndependent;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationCardinality {

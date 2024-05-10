@@ -61,7 +61,7 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains(&AttributeTypeAnnotation::Abstract(AnnotationAbstract::new())))
+        Ok(annotations.contains(&AttributeTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
     fn delete<Snapshot: WritableSnapshot>(
@@ -171,7 +171,7 @@ impl<'a> AttributeType<'a> {
     ) -> Result<bool, ConceptReadError> {
         Ok(self
             .get_annotations(snapshot, type_manager)?
-            .contains(&AttributeTypeAnnotation::Independent(AnnotationIndependent::new())))
+            .contains(&AttributeTypeAnnotation::Independent(AnnotationIndependent)))
     }
 
     pub fn get_annotations<'m, Snapshot: ReadableSnapshot>(
