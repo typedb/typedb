@@ -6,12 +6,13 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
     Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),
     Independent(AnnotationIndependent),
     Cardinality(AnnotationCardinality),
+    Regex(AnnotationRegex),
 }
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
@@ -34,7 +35,7 @@ pub struct AnnotationCardinality {
 
 impl AnnotationCardinality {
     pub const fn new(start_inclusive: u64, end_inclusive: Option<u64>) -> Self {
-        AnnotationCardinality { start_inclusive, end_inclusive }
+        Self { start_inclusive, end_inclusive }
     }
 
     pub fn is_valid(&self, count: u64) -> bool {
@@ -47,5 +48,20 @@ impl AnnotationCardinality {
 
     pub fn end(&self) -> Option<u64> {
         self.end_inclusive.clone()
+    }
+}
+
+#[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationRegex {
+    regex: String,
+}
+
+impl AnnotationRegex {
+    pub const fn new(regex: String) -> Self {
+        Self { regex }
+    }
+
+    pub fn regex(&self) -> &str {
+        &self.regex
     }
 }

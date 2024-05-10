@@ -227,7 +227,7 @@ pub(crate) struct Annotation {
 }
 
 impl Annotation {
-    pub fn to_typedb(&self) -> TypeDBAnnotation {
+    pub fn into_typedb(self) -> TypeDBAnnotation {
         self.typedb_annotation
     }
 }
@@ -239,6 +239,14 @@ impl FromStr for Annotation {
         let typedb_annotation = match s {
             "@abstract" => TypeDBAnnotation::Abstract(annotation::AnnotationAbstract),
             "@independent" => TypeDBAnnotation::Independent(annotation::AnnotationIndependent),
+            regex if regex.starts_with("@regex") => {
+                assert!(
+                    regex.starts_with(r#"@regex(""#) && regex.ends_with(r#"")"#),
+                    r#"Invalid @regex format: {regex:?}. Expected "@regex("regex-here")""#
+                );
+                let regex = &regex[r#"@regex(""#.len()..regex.len() - r#"")"#.len()];
+                TypeDBAnnotation::Regex(annotation::AnnotationRegex::new(regex.to_owned()))
+            }
             _ => panic!("Unrecognised (or unimplemented) annotation: {s}"),
         };
         Ok(Self { typedb_annotation })

@@ -15,6 +15,7 @@ use encoding::{
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
+use super::annotation::AnnotationRegex;
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
@@ -195,6 +196,9 @@ impl<'a> AttributeType<'a> {
             AttributeTypeAnnotation::Independent(_) => {
                 type_manager.storage_set_annotation_independent(snapshot, self.clone().into_owned())
             }
+            AttributeTypeAnnotation::Regex(regex) => {
+                type_manager.storage_set_annotation_regex(snapshot, self.clone().into_owned(), regex)
+            }
         };
         Ok(())
     }
@@ -210,7 +214,10 @@ impl<'a> AttributeType<'a> {
                 type_manager.storage_delete_annotation_abstract(snapshot, self.clone().into_owned())
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.storage_storage_annotation_independent(snapshot, self.clone().into_owned())
+                type_manager.storage_delete_annotation_independent(snapshot, self.clone().into_owned())
+            }
+            AttributeTypeAnnotation::Regex(regex) => {
+                type_manager.storage_delete_annotation_regex(snapshot, self.clone().into_owned(), regex)
             }
         }
     }
@@ -235,10 +242,11 @@ impl<'a> AttributeType<'a> {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AttributeTypeAnnotation {
     Abstract(AnnotationAbstract),
     Independent(AnnotationIndependent),
+    Regex(AnnotationRegex),
 }
 
 impl From<Annotation> for AttributeTypeAnnotation {
@@ -248,6 +256,7 @@ impl From<Annotation> for AttributeTypeAnnotation {
             Annotation::Independent(annotation) => AttributeTypeAnnotation::Independent(annotation),
             Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Attribute type."),
             Annotation::Cardinality(_) => unreachable!("Cardinality annotation not available for Attribute type."),
+            Annotation::Regex(annotation) => AttributeTypeAnnotation::Regex(annotation),
         }
     }
 }

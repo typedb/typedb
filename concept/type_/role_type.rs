@@ -243,6 +243,7 @@ impl From<Annotation> for RoleTypeAnnotation {
             Annotation::Distinct(annotation) => RoleTypeAnnotation::Distinct(annotation),
             Annotation::Cardinality(annotation) => RoleTypeAnnotation::Cardinality(annotation),
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Role type."),
+            Annotation::Regex(_) => unreachable!("Regex annotation not available for Role type."),
         }
     }
 }

@@ -34,6 +34,7 @@ pub enum Infix {
     PropertyAnnotationDistinct,
     PropertyAnnotationIndependent,
     PropertyAnnotationCardinality,
+    PropertyAnnotationRegex,
     _PropertyAnnotationLast, // marker to indicate end of reserved range for annotations
 
     // Data properties
@@ -55,6 +56,7 @@ macro_rules! infix_functions {
         }
 
         pub(crate) fn from_infix_id(infix_id: InfixID) -> Self {
+            #[deny(unreachable_patterns)] // fail to compile if any infixes are the same
             match infix_id.bytes() {
                 $(
                     $bytes => {Self::$name}
@@ -80,6 +82,7 @@ impl Infix {
         PropertyAnnotationDistinct => [51];
         PropertyAnnotationIndependent => [52];
         PropertyAnnotationCardinality => [53];
+        PropertyAnnotationRegex => [54];
         _PropertyAnnotationLast => [99];
 
         PropertyHasOrder => [100];

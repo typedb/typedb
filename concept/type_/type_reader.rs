@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    str,
+};
 
 use bytes::Bytes;
 use encoding::{
@@ -18,8 +21,7 @@ use encoding::{
         index::LabelToTypeVertexIndex,
         property::{
             build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label,
-            build_property_type_ordering, build_property_type_value_type,
-            TypeEdgeProperty, TypeVertexProperty,
+            build_property_type_ordering, build_property_type_value_type, TypeEdgeProperty, TypeVertexProperty,
         },
         vertex::TypeVertex,
     },
@@ -41,7 +43,7 @@ use crate::{
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent},
         attribute_type::AttributeType,
-        deserialise_annotation_cardinality, deserialise_ordering,
+        deserialise_annotation_cardinality, deserialise_annotation_regex, deserialise_ordering,
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
@@ -366,6 +368,7 @@ impl TypeReader {
                     Infix::PropertyAnnotationCardinality => {
                         Annotation::Cardinality(deserialise_annotation_cardinality(value))
                     }
+                    Infix::PropertyAnnotationRegex => Annotation::Regex(deserialise_annotation_regex(value)),
                     Infix::_PropertyAnnotationLast
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
@@ -418,6 +421,7 @@ impl TypeReader {
                     Infix::PropertyAnnotationCardinality => {
                         Annotation::Cardinality(deserialise_annotation_cardinality(value))
                     }
+                    Infix::PropertyAnnotationRegex => Annotation::Regex(deserialise_annotation_regex(value)),
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType

@@ -88,6 +88,13 @@ type_vertex_property_constructors!(
 );
 
 type_vertex_property_constructors!(
+    new_property_type_annotation_regex,
+    build_property_type_annotation_regex,
+    is_property_type_annotation_regex,
+    InfixType::PropertyAnnotationRegex
+);
+
+type_vertex_property_constructors!(
     new_property_type_ordering,
     build_property_type_ordering,
     is_property_type_ordering,

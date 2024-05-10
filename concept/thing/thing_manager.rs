@@ -25,6 +25,7 @@ use encoding::{
     },
     Keyable,
 };
+use regex::Regex;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_range::KeyRange,
@@ -44,8 +45,12 @@ use crate::{
         ObjectAPI, ThingAPI,
     },
     type_::{
-        attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType, role_type::RoleType,
-        type_manager::TypeManager, TypeAPI,
+        attribute_type::{AttributeType, AttributeTypeAnnotation},
+        entity_type::EntityType,
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::TypeManager,
+        TypeAPI,
     },
     ConceptStatus,
 };
@@ -501,6 +506,23 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                     )
                 }
                 Value::String(string) => {
+                    let annotations =
+                        self.type_manager.get_attribute_type_annotations(snapshot, attribute_type.clone())?;
+                    for annotation in annotations.iter() {
+                        match annotation {
+                            AttributeTypeAnnotation::Abstract(_) => todo!("create abstract attribute"),
+                            AttributeTypeAnnotation::Independent(_) => (),
+                            AttributeTypeAnnotation::Regex(regex) => {
+                                let regex = regex.regex();
+                                if !Regex::new(regex).unwrap().is_match(&string) {
+                                    return Err(ConceptWriteError::StringAttributeRegex {
+                                        regex: regex.to_owned(),
+                                        value: string.into_owned(),
+                                    });
+                                }
+                            }
+                        }
+                    }
                     let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);
                     self.vertex_generator
                         .create_attribute_string(attribute_type.vertex().type_id_(), encoded_string, snapshot)

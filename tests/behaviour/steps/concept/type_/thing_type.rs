@@ -144,7 +144,7 @@ pub async fn type_set_annotation(
 ) {
     with_write_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
-            let res = type_.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.to_typedb().into());
+            let res = type_.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb().into());
             may_error.check(&res);
         });
     });
@@ -162,7 +162,7 @@ pub async fn type_annotations_contain(
     with_read_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
             let actual_contains =
-                type_.get_annotations(&tx.snapshot, &tx.type_manager).unwrap().contains(&annotation.to_typedb().into());
+                type_.get_annotations(&tx.snapshot, &tx.type_manager).unwrap().contains(&annotation.into_typedb().into());
             assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
         });
     });
@@ -345,7 +345,7 @@ pub async fn get_owns_set_annotation(
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        owns.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.to_typedb().into());
+        owns.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb().into());
     });
 }
 

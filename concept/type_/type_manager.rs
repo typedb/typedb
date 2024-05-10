@@ -23,9 +23,10 @@ use encoding::{
         property::{
             build_property_type_annotation_abstract, build_property_type_annotation_cardinality,
             build_property_type_annotation_distinct, build_property_type_annotation_independent,
-            build_property_type_edge_annotation_cardinality, build_property_type_edge_annotation_distinct,
-            build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label,
-            build_property_type_ordering, build_property_type_value_type,
+            build_property_type_annotation_regex, build_property_type_edge_annotation_cardinality,
+            build_property_type_edge_annotation_distinct, build_property_type_edge_ordering,
+            build_property_type_edge_override, build_property_type_label, build_property_type_ordering,
+            build_property_type_value_type,
         },
         vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type},
         vertex_generator::TypeVertexGenerator,
@@ -42,6 +43,7 @@ use storage::{
     MVCCStorage,
 };
 
+use super::annotation::AnnotationRegex;
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::ObjectAPI,
@@ -97,11 +99,7 @@ impl<Snapshot> TypeManager<Snapshot> {
                 true,
                 Ordering::Unordered,
             )?;
-            root_role.set_annotation(
-                &mut snapshot,
-                &type_manager,
-                RoleTypeAnnotation::Abstract(AnnotationAbstract),
-            )?;
+            root_role.set_annotation(&mut snapshot, &type_manager, RoleTypeAnnotation::Abstract(AnnotationAbstract))?;
             let root_attribute =
                 type_manager.create_attribute_type(&mut snapshot, &Kind::Attribute.root_label(), true)?;
             root_attribute.set_annotation(
@@ -912,7 +910,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_storage_annotation_independent(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
+    pub(crate) fn storage_delete_annotation_independent(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_independent(type_.into_vertex());
         snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
@@ -954,6 +952,30 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         edge: impl IntoCanonicalTypeEdge<'b>,
     ) {
         let annotation_property = build_property_type_edge_annotation_cardinality(edge.into_type_edge());
+        snapshot.delete(annotation_property.into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn storage_set_annotation_regex(
+        &self,
+        snapshot: &mut Snapshot,
+        type_: impl TypeAPI<'static>,
+        regex: AnnotationRegex,
+    ) {
+        let annotation_property = build_property_type_annotation_regex(type_.into_vertex());
+        snapshot.put_val(
+            annotation_property.into_storage_key().into_owned_array(),
+            ByteArray::copy(regex.regex().as_bytes()),
+        );
+    }
+
+    pub(crate) fn storage_delete_annotation_regex(
+        &self,
+        snapshot: &mut Snapshot,
+        type_: impl TypeAPI<'static>,
+        regex: AnnotationRegex,
+    ) {
+        // TODO debug assert that stored regex matches
+        let annotation_property = build_property_type_annotation_regex(type_.into_vertex());
         snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
 }
