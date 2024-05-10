@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+use durability::DurabilityService;
 
 use durability::wal::WAL;
 use encoding::{
@@ -23,6 +24,7 @@ use storage::{
     snapshot::{CommittableSnapshot, WritableSnapshot},
     MVCCStorage,
 };
+use storage::recovery::checkpoint::Checkpoint;
 use test_utils::{create_tmp_dir, init_logging};
 
 // TODO: Update all tests with higher level APIs
@@ -30,7 +32,8 @@ use test_utils::{create_tmp_dir, init_logging};
 fn entity_type_vertexes_are_reused() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
     // If we don't commit, it doesn't move.
     {
         for _ in 0..5 {
@@ -80,7 +83,8 @@ fn entity_type_vertexes_are_reused() {
 fn max_entity_type_vertexes() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
     let create_till = u16::MAX;
     {
         let mut snapshot = storage.clone().open_snapshot_write();
@@ -105,10 +109,15 @@ fn max_entity_type_vertexes() {
 fn loading_storage_assigns_next_vertex() {
     init_logging();
     let storage_path = create_tmp_dir();
+    {
+        let wal = WAL::create(&storage_path).unwrap();
+        let _ = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
+    }
     let create_till = 5;
 
     for i in 0..create_till {
-        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let wal = WAL::load(&storage_path).unwrap();
+        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, None).unwrap());
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
@@ -118,7 +127,8 @@ fn loading_storage_assigns_next_vertex() {
     }
 
     for i in 0..create_till {
-        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let wal = WAL::load(&storage_path).unwrap();
+        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, None).unwrap());
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
@@ -127,18 +137,35 @@ fn loading_storage_assigns_next_vertex() {
         snapshot.commit().unwrap();
     }
 
+    // try with checkpoints
+    let mut checkpoint = None;
     for i in 0..create_till {
-        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let wal = WAL::load(&storage_path).unwrap();
+        let storage = match checkpoint {
+            None => {
+                Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, None).unwrap())
+            }
+            Some(checkpoint) => {
+                Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, Some(checkpoint)).unwrap())
+            }
+        };
+
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
         let vertex = generator.create_relation_type(&mut snapshot).unwrap();
         assert_eq!(i, vertex.type_id_().as_u16());
         snapshot.commit().unwrap();
+
+        let check = Checkpoint::new(&storage_path).unwrap();
+        storage.checkpoint(&check).unwrap();
+        check.finish().unwrap();
+        checkpoint = Some(check);
     }
 
     for i in 0..create_till {
-        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let wal = WAL::load(&storage_path).unwrap();
+        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, None).unwrap());
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 

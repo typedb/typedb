@@ -75,7 +75,7 @@ impl Checkpoint {
         Ok(())
     }
 
-    pub fn finish(&mut self) -> Result<(), CheckpointCreateError> {
+    pub fn finish(&self) -> Result<(), CheckpointCreateError> {
         use CheckpointCreateError::{CheckpointDirRead, MissingStorageData, OldCheckpointRemove};
 
         if !self.directory.join(Self::STORAGE_METADATA_FILE_NAME).exists() {
@@ -98,15 +98,10 @@ impl Checkpoint {
         Ok(())
     }
 
-    pub(crate) fn open_latest<KS: KeyspaceSet, Durability: DurabilityService>(
-        storage_path: &Path,
-    ) -> Result<Self, CheckpointLoadError> {
-        use CheckpointLoadError::CheckpointNotFound;
-
+    pub fn open_latest(storage_path: &Path) -> Result<Option<Self>, CheckpointLoadError> {
         let checkpoint_dir = storage_path.join(Self::CHECKPOINT_DIR_NAME);
-        let latest_checkpoint_dir = find_latest_checkpoint(&checkpoint_dir)?
-            .ok_or(CheckpointNotFound { dir: checkpoint_dir.clone() })?;
-        Ok(Checkpoint { directory: latest_checkpoint_dir })
+        find_latest_checkpoint(&checkpoint_dir)
+            .map(|path| path.map(|p| Checkpoint { directory: p }))
     }
 
     pub(crate) fn recover_storage<KS: KeyspaceSet, Durability: DurabilityService>(

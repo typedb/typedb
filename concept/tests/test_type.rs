@@ -9,6 +9,7 @@
 use std::{rc::Rc, sync::Arc};
 
 use concept::type_::{annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, owns::Owns, relation_type::RelationTypeAnnotation, role_type::RoleTypeAnnotation, type_cache::TypeCache, type_manager::TypeManager, OwnerAPI, PlayerAPI, Ordering};
+use durability::DurabilityService;
 use durability::wal::WAL;
 use encoding::{
     graph::type_::{vertex_generator::TypeVertexGenerator, Kind},
@@ -28,7 +29,8 @@ We don't aim for complete coverage of all APIs, and will rely on the BDD scenari
 fn entity_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap());
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
@@ -188,7 +190,8 @@ fn entity_usage() {
 fn role_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap());
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
