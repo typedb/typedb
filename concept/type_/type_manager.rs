@@ -100,7 +100,7 @@ impl<Snapshot> TypeManager<Snapshot> {
 
 macro_rules! get_type_methods {
     ($(
-        fn $method_name:ident() -> $output_type:ident = $cache_method:ident | $new_vertex_method:ident;
+        fn $method_name:ident() -> $output_type:ident = $cache_method:ident;
     )*) => {
         $(
             pub fn $method_name(
@@ -195,7 +195,7 @@ macro_rules! get_subtypes_transitive_methods {
 
 macro_rules! get_type_is_root_methods {
     ($(
-        fn $method_name:ident() -> $type_:ident = $cache_method:ident | $base_variant:expr;
+        fn $method_name:ident() -> $type_:ident = $cache_method:ident;
     )*) => {
         $(
             pub(crate) fn $method_name(
@@ -205,7 +205,7 @@ macro_rules! get_type_is_root_methods {
                     Ok(cache.$cache_method(type_))
                 } else {
                     let type_label = TypeReader::get_label(snapshot, type_)?.unwrap();
-                    Ok(Self::check_type_is_root(&type_label, $base_variant))
+                    Ok(Self::check_type_is_root(&type_label, $type_::ROOT_KIND))
                 }
             }
         )*
@@ -241,10 +241,7 @@ macro_rules! get_type_annotations {
                  if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
-                    let annotations = TypeReader::get_type_annotations(snapshot, type_)?
-                        .into_iter()
-                        .map(|annotation| $annotation_type::from(annotation))
-                        .collect();
+                    let annotations = TypeReader::get_type_annotations(snapshot, type_)?;
                     Ok(MaybeOwns::Owned(annotations))
                 }
             }
@@ -266,52 +263,52 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
     }
 
     get_type_methods! {
-        fn get_entity_type() -> EntityType = get_entity_type | new_vertex_entity_type;
-        fn get_relation_type() -> RelationType = get_relation_type | new_vertex_relation_type;
-        fn get_role_type() -> RoleType = get_role_type | new_vertex_role_type;
-        fn get_attribute_type() -> AttributeType = get_attribute_type | new_vertex_attribute_type;
+        fn get_entity_type() -> EntityType = get_entity_type;
+        fn get_relation_type() -> RelationType = get_relation_type;
+        fn get_role_type() -> RoleType = get_role_type;
+        fn get_attribute_type() -> AttributeType = get_attribute_type;
     }
 
     get_supertype_methods! {
-        fn get_entity_type_supertype() -> EntityType = get_entity_type_supertype;
-        fn get_relation_type_supertype() -> RelationType = get_relation_type_supertype;
-        fn get_role_type_supertype() -> RoleType = get_role_type_supertype;
-        fn get_attribute_type_supertype() -> AttributeType = get_attribute_type_supertype;
+        fn get_entity_type_supertype() -> EntityType = get_supertype;
+        fn get_relation_type_supertype() -> RelationType = get_supertype;
+        fn get_role_type_supertype() -> RoleType = get_supertype;
+        fn get_attribute_type_supertype() -> AttributeType = get_supertype;
     }
 
     get_supertypes_methods! {
-        fn get_entity_type_supertypes() -> EntityType = get_entity_type_supertypes;
-        fn get_relation_type_supertypes() -> RelationType = get_relation_type_supertypes;
-        fn get_role_type_supertypes() -> RoleType = get_role_type_supertypes;
-        fn get_attribute_type_supertypes() -> AttributeType = get_attribute_type_supertypes;
+        fn get_entity_type_supertypes() -> EntityType = get_supertypes;
+        fn get_relation_type_supertypes() -> RelationType = get_supertypes;
+        fn get_role_type_supertypes() -> RoleType = get_supertypes;
+        fn get_attribute_type_supertypes() -> AttributeType = get_supertypes;
     }
 
     get_subtypes_methods! {
-        fn get_entity_type_subtypes() -> EntityType = get_entity_type_subtypes;
-        fn get_relation_type_subtypes() -> RelationType = get_relation_type_subtypes;
-        fn get_role_type_subtypes() -> RoleType = get_role_type_subtypes;
-        fn get_attribute_type_subtypes() -> AttributeType = get_attribute_type_subtypes;
+        fn get_entity_type_subtypes() -> EntityType = get_subtypes;
+        fn get_relation_type_subtypes() -> RelationType = get_subtypes;
+        fn get_role_type_subtypes() -> RoleType = get_subtypes;
+        fn get_attribute_type_subtypes() -> AttributeType = get_subtypes;
     }
 
     get_subtypes_transitive_methods! {
-        fn get_entity_type_subtypes_transitive() -> EntityType = get_entity_type_subtypes_transitive;
-        fn get_relation_type_subtypes_transitive() -> RelationType = get_relation_type_subtypes_transitive;
-        fn get_role_type_subtypes_transitive() -> RoleType = get_role_type_subtypes_transitive;
-        fn get_attribute_type_subtypes_transitive() -> AttributeType = get_attribute_type_subtypes_transitive;
+        fn get_entity_type_subtypes_transitive() -> EntityType = get_subtypes_transitive;
+        fn get_relation_type_subtypes_transitive() -> RelationType = get_subtypes_transitive;
+        fn get_role_type_subtypes_transitive() -> RoleType = get_subtypes_transitive;
+        fn get_attribute_type_subtypes_transitive() -> AttributeType = get_subtypes_transitive;
     }
 
     get_type_is_root_methods! {
-        fn get_entity_type_is_root() -> EntityType = get_entity_type_is_root | Kind::Entity;
-        fn get_relation_type_is_root() -> RelationType = get_relation_type_is_root | Kind::Relation;
-        fn get_role_type_is_root() -> RoleType = get_role_type_is_root | Kind::Role;
-        fn get_attribute_type_is_root() -> AttributeType = get_attribute_type_is_root | Kind::Attribute;
+        fn get_entity_type_is_root() -> EntityType = is_root;
+        fn get_relation_type_is_root() -> RelationType = is_root;
+        fn get_role_type_is_root() -> RoleType = is_root;
+        fn get_attribute_type_is_root() -> AttributeType = is_root;
     }
 
     get_type_label_methods! {
-        fn get_entity_type_label() -> EntityType = get_entity_type_label;
-        fn get_relation_type_label() -> RelationType = get_relation_type_label;
-        fn get_role_type_label() -> RoleType = get_role_type_label;
-        fn get_attribute_type_label() -> AttributeType = get_attribute_type_label;
+        fn get_entity_type_label() -> EntityType = get_label;
+        fn get_relation_type_label() -> RelationType = get_label;
+        fn get_role_type_label() -> RoleType = get_label;
+        fn get_attribute_type_label() -> AttributeType = get_label;
     }
 
     pub(crate) fn get_entity_type_owns(
@@ -320,7 +317,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         entity_type: EntityType<'static>,
     ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_entity_type_owns(entity_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_owns(entity_type)))
         } else {
             let owns = TypeReader::get_owns(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
@@ -333,7 +330,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         relation_type: RelationType<'static>,
     ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_relation_type_owns(relation_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_owns(relation_type)))
         } else {
             let owns = TypeReader::get_owns(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
@@ -373,7 +370,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
         entity_type: EntityType<'static>,
     ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_entity_type_plays(entity_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_plays(entity_type)))
         } else {
             let plays = TypeReader::get_plays(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(plays))
@@ -393,10 +390,10 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot>
     }
 
     get_type_annotations! {
-        fn get_entity_type_annotations() -> EntityType = get_entity_type_annotations | EntityTypeAnnotation;
-        fn get_relation_type_annotations() -> RelationType = get_relation_type_annotations | RelationTypeAnnotation;
-        fn get_role_type_annotations() -> RoleType = get_role_type_annotations | RoleTypeAnnotation;
-        fn get_attribute_type_annotations() -> AttributeType = get_attribute_type_annotations | AttributeTypeAnnotation;
+        fn get_entity_type_annotations() -> EntityType = get_annotations | EntityTypeAnnotation;
+        fn get_relation_type_annotations() -> RelationType = get_annotations | RelationTypeAnnotation;
+        fn get_role_type_annotations() -> RoleType = get_annotations | RoleTypeAnnotation;
+        fn get_attribute_type_annotations() -> AttributeType = get_annotations | AttributeTypeAnnotation;
     }
 
     pub(crate) fn get_owns_annotations<'this>(
@@ -774,27 +771,32 @@ impl<'a> ReadableType for RoleType<'a> {
     }
 }
 
-pub trait TypeAPITraits {
+pub trait KindAPI<'a> : TypeAPI<'a> {
+    type SelfStatic : KindAPI<'static> + 'static;
     type AnnotationType: Hash + Eq + From<Annotation>;
     const ROOT_KIND: Kind;
 }
 
-impl<'a> TypeAPITraits for AttributeType<'a> {
+impl<'a> KindAPI<'a> for AttributeType<'a> {
+    type SelfStatic = AttributeType<'static>;
     type AnnotationType = AttributeTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Attribute;
 }
 
-impl<'a> TypeAPITraits for EntityType<'a> {
+impl<'a> KindAPI<'a> for EntityType<'a> {
+    type SelfStatic = EntityType<'static>;
     type AnnotationType = EntityTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Entity;
 }
 
-impl<'a> TypeAPITraits for RelationType<'a> {
+impl<'a> KindAPI<'a> for RelationType<'a> {
+    type SelfStatic = RelationType<'static>;
     type AnnotationType = RelationTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Relation;
 }
 
-impl<'a> TypeAPITraits for RoleType<'a> {
+impl<'a> KindAPI<'a> for RoleType<'a> {
+    type SelfStatic = RoleType<'static>;
     type AnnotationType = RoleTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Role;
 }
