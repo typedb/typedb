@@ -196,7 +196,7 @@ impl TypeCache {
         &RelationType::get_cache(self, relation_type).relates_declared
     }
 
-    pub(crate) fn get_relation_type_relates_transitive<'a>(&self, relation_type: RelationType<'a>) -> &HashMap<String, Relates<'static>> {
+    pub(crate) fn get_relation_type_relates_transitive<'a>(&self, relation_type: RelationType<'a>) -> &HashMap<RoleType<'static>, Relates<'static>> {
         &RelationType::get_cache(self, relation_type).relates_transitive
     }
 

@@ -32,6 +32,7 @@ use encoding::{
     AsBytes, Keyable,
 };
 use iterator::Collector;
+use primitive::maybe_owns::MaybeOwns;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
@@ -295,9 +296,9 @@ impl TypeReader {
     pub(crate) fn get_relates_transitive(
         snapshot: &impl ReadableSnapshot,
         relation: RelationType<'static>,
-    ) -> Result<HashMap<String, Relates<'static>>, ConceptReadError> {
+    ) -> Result<HashMap<RoleType<'static>, Relates<'static>>, ConceptReadError> {
         // TODO: Should the relation of a transitive relates be the declaring relation or the inheriting relation?
-        let mut transitive_relates: HashMap<String, Relates<'static>> = HashMap::new();
+        let mut transitive_relates: HashMap<RoleType<'static>, Relates<'static>> = HashMap::new();
         let mut overridden_relates: HashSet<RoleType<'static>> = HashSet::new(); // TODO: Should this store the relates? This feels more fool-proof if it's correct.
         let mut current_relation = Some(relation);
         while current_relation.is_some() {
@@ -305,9 +306,8 @@ impl TypeReader {
             for relates in declared_relates.into_iter() {
                 let role = relates.role();
                 if !overridden_relates.contains(&role) {
-                    let role_name = Self::get_label(snapshot, relates.role())?.unwrap().name.as_str().to_owned();
-                    debug_assert!(!transitive_relates.contains_key(&role_name));
-                    transitive_relates.insert(role_name, relates.clone());
+                    debug_assert!(!transitive_relates.contains_key(&role));
+                    transitive_relates.insert(role, relates.clone());
                 }
                 if let Some(overridden) = Self::get_supertype(snapshot, relates.role().clone())? {
                     overridden_relates.add(overridden);
@@ -318,7 +318,7 @@ impl TypeReader {
         Ok(transitive_relates)
     }
 
-    pub(crate) fn get_relations(
+    pub(crate) fn get_relation(
         snapshot: &impl ReadableSnapshot,
         role: RoleType<'static>,
     ) -> Result<Relates<'static>, ConceptReadError> {

@@ -151,7 +151,7 @@ pub async fn type_set_annotation(
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) get annotations {contains_or_doesnt}: {annotation}")]
-pub async fn type_is_abstract(
+pub async fn type_annotations_contain(
     context: &mut Context,
     root_label: RootLabel,
     type_label: Label,

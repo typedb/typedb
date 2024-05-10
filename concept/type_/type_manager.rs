@@ -281,6 +281,19 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         type_label == &kind.root_label()
     }
 
+    pub fn resolve_relates(&self, snapshot: &Snapshot, relation: RelationType<'static>, role_name : &str) -> Result<Option<Relates<'static>>, ConceptReadError> {
+        // TODO: Efficiency. We could build an index in TypeCache.
+        Ok(self.get_relation_type_relates_transitive(snapshot, relation)?.iter()
+            .find_map(|(_role, relates)| {
+                if self.get_role_type_label(snapshot, relates.role()).unwrap().name.as_str() == role_name {
+                    Some(relates.clone())
+                } else {
+                    None
+                }
+            })
+        )
+    }
+
     get_type_methods! {
         fn get_entity_type() -> EntityType = get_entity_type;
         fn get_relation_type() -> RelationType = get_relation_type;
@@ -373,7 +386,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         &self,
         snapshot: &Snapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<String, Relates<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashMap<RoleType<'static>, Relates<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates_transitive(relation_type)))
         } else {
@@ -668,8 +681,13 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     pub(crate) fn delete_role_type(&self, snapshot: &mut Snapshot, role_type: RoleType<'_>) {
-        self.storage_may_delete_label(snapshot, role_type.clone().into_owned());
-        self.storage_may_delete_supertype(snapshot, role_type.clone().into_owned());
+        let relates = TypeReader::get_relation(snapshot, role_type.clone().into_owned()).unwrap();
+        let relation = relates.relation();
+        let role = relates.role();
+        self.storage_delete_relates(snapshot, relation.clone(), role.clone());
+
+        self.storage_may_delete_label(snapshot, role.clone().into_owned());
+        self.storage_may_delete_supertype(snapshot, role.clone().into_owned());
     }
 
     pub(crate) fn storage_set_label(&self, snapshot: &mut Snapshot, owner: impl KindAPI<'static>, label: &Label<'_>) {
@@ -811,7 +829,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.put_val(property_key, overridden_plays);
     }
 
-    pub(crate) fn storage_set_relates(
+    fn storage_set_relates(
         &self,
         snapshot: &mut Snapshot,
         relation: RelationType<'static>,
@@ -823,7 +841,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.put(relates_reverse.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_relates(
+    fn storage_delete_relates(
         &self,
         snapshot: &mut Snapshot,
         relation: RelationType<'static>,

@@ -216,15 +216,6 @@ impl<'a> RelationType<'a> {
         type_manager.create_role_type(snapshot, &label, self.clone().into_owned(), false, ordering)
     }
 
-    fn delete_relates<Snapshot: WritableSnapshot>(
-        &self,
-        snapshot: &mut Snapshot,
-        type_manager: &TypeManager<Snapshot>,
-        role_type: RoleType<'static>,
-    ) {
-        type_manager.storage_delete_relates(snapshot, self.clone().into_owned(), role_type)
-    }
-
     pub fn get_relates<'m, Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
@@ -248,19 +239,20 @@ impl<'a> RelationType<'a> {
         &self,
         snapshot: &Snapshot,
         type_manager: &'m TypeManager<Snapshot>,
-    ) -> Result<MaybeOwns<'m, HashMap<String, Relates<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Relates<'static>>>, ConceptReadError> {
         // TODO: krishnan: Review usage of String as key. It looks strange but fits.
         type_manager.get_relation_type_relates_transitive(snapshot, self.clone().into_owned())
     }
 
     // TODO: Review. This is a bit convoluted thanks to wanting to return the relates with the declaring relation
-    pub fn get_relates_role_transitive<Snapshot: ReadableSnapshot>(
+    pub fn get_relates_role_transitive<'b, Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
         type_manager: &TypeManager<Snapshot>,
-        name: &str,
+        role_type: RoleType<'b>,
     ) -> Result<Option<Relates<'static>>, ConceptReadError> {
-        Ok(self.get_relates_transitive(snapshot, type_manager)?.get(name).map(|relates| relates.clone()))
+        Ok(self.get_relates_transitive(snapshot, type_manager)?.get(&role_type)
+            .map(|relates| relates.clone()))
     }
 
     fn has_relates_role<Snapshot: ReadableSnapshot>(

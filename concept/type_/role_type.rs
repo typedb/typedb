@@ -92,7 +92,7 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_type_label(snapshot, self.clone().into_owned())
     }
 
-    fn set_name<Snapshot: WritableSnapshot>(
+    pub fn set_name<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
         _type_manager: &TypeManager<Snapshot>,
@@ -100,7 +100,6 @@ impl<'a> RoleType<'a> {
     ) {
         // // TODO: setLabel should fail is setting label on Root type
         // type_manager.set_storage_label(self.clone().into_owned(), label);
-
         todo!()
     }
 
