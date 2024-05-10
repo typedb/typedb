@@ -117,6 +117,27 @@ pub(super) fn create_attribute_caches(snapshot: &impl ReadableSnapshot) -> Box<[
     caches
 }
 
+pub(super) fn create_role_caches(snapshot: &impl ReadableSnapshot) -> Box<[Option<RoleTypeCache>]> {
+    let roles = snapshot
+        .iterate_range(KeyRange::new_within(build_vertex_role_type_prefix(), TypeVertex::FIXED_WIDTH_ENCODING))
+        .collect_cloned_hashset(|key, _| {
+            RoleType::new(new_vertex_role_type(Bytes::Reference(key.byte_ref())).into_owned())
+        })
+        .unwrap();
+    let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
+    let mut caches = (0..=max_role_id).map(|_| None).collect::<Box<[_]>>();
+    for role in roles.into_iter() {
+        let ordering = TypeReader::get_type_ordering(snapshot, role.clone()).unwrap();
+        let cache = RoleTypeCache {
+            common_type_cache: create_common_type_cache(snapshot, role.clone()),
+            ordering,
+            relates_declared: TypeReader::get_relations(snapshot, role.clone()).unwrap(),
+        };
+        caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
+    }
+    caches
+}
+
 pub(super) fn create_owns_caches(snapshot: &impl ReadableSnapshot) -> HashMap<Owns<'static>, OwnsCache> {
     snapshot
         .iterate_range(KeyRange::new_within(
@@ -141,27 +162,6 @@ pub(super) fn create_owns_caches(snapshot: &impl ReadableSnapshot) -> HashMap<Ow
             )
         })
         .unwrap()
-}
-
-pub(super) fn create_role_caches(snapshot: &impl ReadableSnapshot) -> Box<[Option<RoleTypeCache>]> {
-    let roles = snapshot
-        .iterate_range(KeyRange::new_within(build_vertex_role_type_prefix(), TypeVertex::FIXED_WIDTH_ENCODING))
-        .collect_cloned_hashset(|key, _| {
-            RoleType::new(new_vertex_role_type(Bytes::Reference(key.byte_ref())).into_owned())
-        })
-        .unwrap();
-    let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
-    let mut caches = (0..=max_role_id).map(|_| None).collect::<Box<[_]>>();
-    for role in roles.into_iter() {
-        let ordering = TypeReader::get_type_ordering(snapshot, role.clone()).unwrap();
-        let cache = RoleTypeCache {
-            common_type_cache: create_common_type_cache(snapshot, role.clone()),
-            ordering,
-            relates_declared: TypeReader::get_relations(snapshot, role.clone()).unwrap(),
-        };
-        caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
-    }
-    caches
 }
 
 fn create_common_type_cache<'a, Snapshot, T>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
