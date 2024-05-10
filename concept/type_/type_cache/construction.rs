@@ -154,11 +154,7 @@ fn create_common_type_cache<'a, Snapshot, T>(snapshot: &Snapshot, type_: T) -> C
 {
     let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
     let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
-    let annotations_declared = TypeReader::get_type_annotations(snapshot, type_.clone())
-        .unwrap()
-        .into_iter()
-        .map(|annotation| T::AnnotationType::from(annotation))
-        .collect::<HashSet<T::AnnotationType>>();
+    let annotations_declared = TypeReader::get_type_annotations(snapshot, type_.clone()).unwrap();
     let supertype = TypeReader::get_supertype(snapshot, type_.clone()).unwrap();
     let supertypes = TypeReader::get_supertypes_transitive(snapshot, type_.clone()).unwrap();
     let subtypes_declared = TypeReader::get_subtypes(snapshot, type_.clone()).unwrap();

@@ -98,6 +98,8 @@ impl<Snapshot> TypeManager<Snapshot> {
     }
 }
 
+
+
 macro_rules! get_type_methods {
     ($(
         fn $method_name:ident() -> $output_type:ident = $cache_method:ident | $new_vertex_method:ident;
@@ -241,10 +243,7 @@ macro_rules! get_type_annotations {
                  if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
-                    let annotations = TypeReader::get_type_annotations(snapshot, type_)?
-                        .into_iter()
-                        .map(|annotation| $annotation_type::from(annotation))
-                        .collect();
+                    let annotations = TypeReader::get_type_annotations(snapshot, type_)?;
                     Ok(MaybeOwns::Owned(annotations))
                 }
             }

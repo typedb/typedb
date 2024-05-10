@@ -20,7 +20,7 @@ use encoding::value::value_type::{ValueType, ValueTypeID};
 use storage::key_range::KeyRange;
 use storage::snapshot::ReadableSnapshot;
 use crate::error::ConceptReadError;
-use crate::type_::type_manager::ReadableType;
+use crate::type_::type_manager::{KindAPI, ReadableType};
 use crate::type_::{deserialise_annotation_cardinality, deserialise_ordering, IntoCanonicalTypeEdge, Ordering, OwnerAPI, PlayerAPI, TypeAPI};
 use crate::type_::annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent};
 use crate::type_::attribute_type::AttributeType;
@@ -188,10 +188,10 @@ impl TypeReader {
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
-    pub(crate) fn get_type_annotations<'a>(
+    pub(crate) fn get_type_annotations<'a, T: KindAPI<'a>>(
         snapshot: &impl ReadableSnapshot,
-        type_: impl TypeAPI<'a>,
-    ) -> Result<HashSet<Annotation>, ConceptReadError> {
+        type_: T,
+    ) -> Result<HashSet<T::AnnotationType>, ConceptReadError> {
         snapshot
             .iterate_range(KeyRange::new_inclusive(
                 TypeVertexProperty::build(type_.vertex(), Infix::ANNOTATION_MIN).into_storage_key(),
@@ -199,7 +199,7 @@ impl TypeReader {
             ))
             .collect_cloned_hashset(|key, value| {
                 let annotation_key = TypeVertexProperty::new(Bytes::Reference(key.byte_ref()));
-                match annotation_key.infix() {
+                let annotation = match annotation_key.infix() {
                     Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract::new()),
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct::new()),
                     Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent::new()),
@@ -214,7 +214,8 @@ impl TypeReader {
                     | Infix::PropertyRolePlayerOrder => {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")
                     }
-                }
+                };
+                T::AnnotationType::from(annotation)
             })
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
