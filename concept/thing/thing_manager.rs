@@ -4,12 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    borrow::Cow,
-    collections::HashSet,
-    marker::PhantomData,
-    sync::{Arc, Mutex, MutexGuard},
-};
+use std::{borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -25,8 +20,8 @@ use encoding::{
     },
     layout::prefix::Prefix,
     value::{
-        decode_value_u64, encode_value_u64, long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType,
-        ValueEncodable,
+        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, decode_value_u64, double_bytes::DoubleBytes,
+        encode_value_u64, long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType, ValueEncodable,
     },
     Keyable,
 };
@@ -63,7 +58,7 @@ pub struct ThingManager<Snapshot> {
 
 impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     pub fn new(vertex_generator: Arc<ThingVertexGenerator>, type_manager: Arc<TypeManager<Snapshot>>) -> Self {
-        ThingManager { vertex_generator, type_manager, snapshot: PhantomData::default() }
+        ThingManager { vertex_generator, type_manager, snapshot: PhantomData }
     }
 
     pub(crate) fn type_manager(&self) -> &TypeManager<Snapshot> {
@@ -124,12 +119,22 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         attribute: &Attribute<'_>,
     ) -> Result<Value<'static>, ConceptReadError> {
         match attribute.value_type() {
-            ValueType::Boolean => todo!(),
+            ValueType::Boolean => {
+                let attribute_id = attribute.vertex().attribute_id().unwrap_boolean();
+                Ok(Value::Boolean(BooleanBytes::new(attribute_id.bytes()).as_bool()))
+            }
             ValueType::Long => {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_long();
                 Ok(Value::Long(LongBytes::new(attribute_id.bytes()).as_i64()))
             }
-            ValueType::Double => todo!(),
+            ValueType::Double => {
+                let attribute_id = attribute.vertex().attribute_id().unwrap_double();
+                Ok(Value::Double(DoubleBytes::new(attribute_id.bytes()).as_f64()))
+            }
+            ValueType::DateTime => {
+                let attribute_id = attribute.vertex().attribute_id().unwrap_date_time();
+                Ok(Value::DateTime(DateTimeBytes::new(attribute_id.bytes()).as_naive_date_time()))
+            }
             ValueType::String => {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_string();
                 if attribute_id.is_inline() {
@@ -145,7 +150,6 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                         .unwrap())
                 }
             }
-            ValueType::DateTime => todo!(),
         }
     }
 
@@ -156,12 +160,10 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         value: Value<'_>,
     ) -> Result<Option<Attribute<'static>>, ConceptReadError> {
         match value.value_type() {
-            ValueType::Boolean => todo!(),
-            ValueType::Long => {
+            ValueType::Boolean | ValueType::Long | ValueType::Double | ValueType::DateTime => {
                 debug_assert!(AttributeID::is_inlineable(value.as_reference()));
                 self.get_attribute_with_value_inline(snapshot, attribute_type, value)
             }
-            ValueType::Double => todo!(),
             ValueType::String => {
                 if AttributeID::is_inlineable(value.as_reference()) {
                     self.get_attribute_with_value_inline(snapshot, attribute_type, value)
@@ -180,7 +182,6 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                         })
                 }
             }
-            ValueType::DateTime => todo!(),
         }
     }
 
@@ -284,10 +285,10 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         Ok(attributes)
     }
 
-    pub(crate) fn get_owners<'this, 'a>(
+    pub(crate) fn get_owners<'this>(
         &'this self,
         snapshot: &'this Snapshot,
-        attribute: Attribute<'a>,
+        attribute: Attribute<'_>,
     ) -> AttributeOwnerIterator<'this, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.into_vertex());
         AttributeOwnerIterator::new(
@@ -311,10 +312,10 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         )
     }
 
-    pub(crate) fn has_role_players<'a>(
+    pub(crate) fn has_role_players(
         &self,
         snapshot: &Snapshot,
-        relation: Relation<'a>,
+        relation: Relation<'_>,
         buffered_only: bool, // FIXME use enums
     ) -> bool {
         let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation.into_vertex());
@@ -467,8 +468,13 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         let value_type = attribute_type.get_value_type(snapshot, self.type_manager.as_ref())?;
         if Some(value.value_type()) == value_type {
             let vertex = match value {
-                Value::Boolean(_bool) => {
-                    todo!()
+                Value::Boolean(bool) => {
+                    let encoded_boolean = BooleanBytes::build(bool);
+                    self.vertex_generator.create_attribute_boolean(
+                        attribute_type.vertex().type_id_(),
+                        encoded_boolean,
+                        snapshot,
+                    )
                 }
                 Value::Long(long) => {
                     let encoded_long = LongBytes::build(long);
@@ -478,8 +484,21 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                         snapshot,
                     )
                 }
-                Value::Double(_double) => {
-                    todo!()
+                Value::Double(double) => {
+                    let encoded_double = DoubleBytes::build(double);
+                    self.vertex_generator.create_attribute_double(
+                        attribute_type.vertex().type_id_(),
+                        encoded_double,
+                        snapshot,
+                    )
+                }
+                Value::DateTime(date_time) => {
+                    let encoded_date_time = DateTimeBytes::build(date_time);
+                    self.vertex_generator.create_attribute_date_time(
+                        attribute_type.vertex().type_id_(),
+                        encoded_date_time,
+                        snapshot,
+                    )
                 }
                 Value::String(string) => {
                     let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);

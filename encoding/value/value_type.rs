@@ -30,14 +30,14 @@ pub enum ValueType {
     Boolean,
     Long,
     Double,
-    String,
 
     // TODO: consider splitting with/without timezone
     DateTime,
-
     /*
     Duration, // Naming: 'interval'?
      */
+
+    String,
 }
 
 macro_rules! value_type_functions {

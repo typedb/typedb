@@ -6,7 +6,7 @@
 
 #[derive(Debug, Copy, Clone)]
 pub struct LongBytes {
-    bytes: [u8; LongBytes::LENGTH],
+    bytes: [u8; Self::LENGTH],
 }
 
 impl LongBytes {

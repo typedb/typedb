@@ -4,8 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{convert::Infallible, fmt, str::FromStr};
+use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr};
 
+use chrono::NaiveDateTime;
 use concept::{
     thing::value::Value as TypeDBValue,
     type_::{annotation, annotation::Annotation as TypeDBAnnotation},
@@ -107,7 +108,7 @@ impl FromStr for ContainsOrDoesnt {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "type_label", regex = r"[A-Za-z0-9_\-:]+")]
+#[param(name = "type_label", regex = r"[A-Za-z0-9_:-]+")]
 pub(crate) struct Label {
     label_string: String,
 }
@@ -193,7 +194,7 @@ impl FromStr for ValueType {
 }
 
 #[derive(Debug, Default, Parameter)]
-#[param(name = "value", regex = "(.*)")]
+#[param(name = "value", regex = ".*?")]
 pub(crate) struct Value {
     raw_value: String,
 }
@@ -201,9 +202,13 @@ pub(crate) struct Value {
 impl Value {
     pub fn into_typedb(self, value_type: TypeDBValueType) -> TypeDBValue<'static> {
         match value_type {
+            TypeDBValueType::Boolean => TypeDBValue::Boolean(self.raw_value.parse().unwrap()),
             TypeDBValueType::Long => TypeDBValue::Long(self.raw_value.parse().unwrap()),
-            TypeDBValueType::String => TypeDBValue::String(std::borrow::Cow::Owned(self.raw_value)),
-            _ => todo!(),
+            TypeDBValueType::Double => TypeDBValue::Double(self.raw_value.parse().unwrap()),
+            TypeDBValueType::DateTime => {
+                TypeDBValue::DateTime(NaiveDateTime::parse_from_str(&self.raw_value, "%Y-%m-%d %H:%M:%S").unwrap())
+            }
+            TypeDBValueType::String => TypeDBValue::String(Cow::Owned(self.raw_value)),
         }
     }
 }

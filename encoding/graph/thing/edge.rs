@@ -269,10 +269,10 @@ impl<'a> ThingEdgeHasReverse<'a> {
 
     fn keyspace_for_from_prefix(prefix: Prefix) -> EncodingKeyspace {
         match prefix {
-            Prefix::VertexAttributeBoolean | Prefix::VertexAttributeLong | Prefix::VertexAttributeDouble => {
-                EncodingKeyspace::Data
-            }
-
+            Prefix::VertexAttributeBoolean => EncodingKeyspace::Data,
+            Prefix::VertexAttributeLong => EncodingKeyspace::Data,
+            Prefix::VertexAttributeDouble => EncodingKeyspace::Data,
+            Prefix::VertexAttributeDateTime => EncodingKeyspace::Data,
             Prefix::VertexAttributeString => EncodingKeyspace::Data,
             Prefix::_VertexAttributeLast => EncodingKeyspace::Data,
             _ => unreachable!("Unrecognised attribute prefix type."),
