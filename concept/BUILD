@@ -14,7 +14,7 @@ rust_library(
     name = "concept",
     srcs = glob([
         "*.rs",
-        "type_/*.rs",
+        "type_/**/*.rs",
         "thing/*.rs",
     ]),
     deps = [
