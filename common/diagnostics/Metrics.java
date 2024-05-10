@@ -15,6 +15,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -252,6 +253,7 @@ public class Metrics {
     }
 
     static class ServerProperties {
+        private final LocalDateTime startTime;
         private final String osName;
         private final String osArch;
         private final String osVersion;
@@ -259,11 +261,16 @@ public class Metrics {
         private final File dbRoot;
 
         ServerProperties(String version, Path dataDirectory) {
+            this.startTime = LocalDateTime.now(ZoneOffset.UTC);
             this.osName = System.getProperty("os.name");
             this.osArch = System.getProperty("os.arch");
             this.osVersion = System.getProperty("os.version");
             this.version = version;
             this.dbRoot = dataDirectory.toFile();
+        }
+
+        private long getUptimeInSeconds() {
+            return Duration.between(startTime, LocalDateTime.now(ZoneOffset.UTC)).getSeconds();
         }
 
         JsonObject asJSON(boolean isNoUsageDiagnostics) {
@@ -277,6 +284,8 @@ public class Metrics {
             if (isNoUsageDiagnostics) {
                 return server;
             }
+
+            server.add("uptimeInSeconds", getUptimeInSeconds());
 
             JsonObject os = new JsonObject();
             os.add("name", osName);
