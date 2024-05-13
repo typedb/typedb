@@ -238,8 +238,7 @@ impl<'a> RelationType<'a> {
         type_manager: &TypeManager<Snapshot>,
         role_type: RoleType<'b>,
     ) -> Result<Option<Relates<'static>>, ConceptReadError> {
-        Ok(self.get_relates_transitive(snapshot, type_manager)?.get(&role_type)
-            .map(|relates| relates.clone()))
+        Ok(self.get_relates_transitive(snapshot, type_manager)?.get(&role_type).cloned())
     }
 
     fn has_relates_role<Snapshot: ReadableSnapshot>(

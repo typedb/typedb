@@ -10,7 +10,6 @@ pub(crate) struct InfixID {
 }
 
 impl InfixID {
-
     pub(crate) const LENGTH: usize = 1;
 
     pub(crate) const fn new(bytes: [u8; InfixID::LENGTH]) -> Self {

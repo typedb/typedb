@@ -6,20 +6,18 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
 use crate::{
-    graph::type_::vertex::TypeVertex,
+    graph::type_::{edge::TypeEdge, vertex::TypeVertex},
     layout::{
-        infix::{InfixID, Infix},
-        prefix::{PrefixID},
+        infix::{Infix, InfixID},
+        prefix::{Prefix, PrefixID},
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::graph::type_::edge::TypeEdge;
-use crate::layout::prefix::Prefix;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct TypeVertexProperty<'a> {
@@ -40,7 +38,7 @@ macro_rules! type_vertex_property_constructors {
 
         pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
             Prefix::from_prefix_id(PrefixID::new([bytes.bytes()[0]])) == TypeVertexProperty::PREFIX
-            && $new_name(bytes).infix() == Infix::$infix
+                && $new_name(bytes).infix() == Infix::$infix
         }
     };
 }
@@ -269,7 +267,7 @@ impl<'a> TypeEdgeProperty<'a> {
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
         let property = TypeEdgeProperty { bytes };
-        debug_assert_eq!(property.prefix(),Self::PREFIX);
+        debug_assert_eq!(property.prefix(), Self::PREFIX);
         property
     }
 

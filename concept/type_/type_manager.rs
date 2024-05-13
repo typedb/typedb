@@ -279,17 +279,20 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         type_label == &kind.root_label()
     }
 
-    pub fn resolve_relates(&self, snapshot: &Snapshot, relation: RelationType<'static>, role_name : &str) -> Result<Option<Relates<'static>>, ConceptReadError> {
+    pub fn resolve_relates(
+        &self,
+        snapshot: &Snapshot,
+        relation: RelationType<'static>,
+        role_name: &str,
+    ) -> Result<Option<Relates<'static>>, ConceptReadError> {
         // TODO: Efficiency. We could build an index in TypeCache.
-        Ok(self.get_relation_type_relates_transitive(snapshot, relation)?.iter()
-            .find_map(|(_role, relates)| {
-                if self.get_role_type_label(snapshot, relates.role()).unwrap().name.as_str() == role_name {
-                    Some(relates.clone())
-                } else {
-                    None
-                }
-            })
-        )
+        Ok(self.get_relation_type_relates_transitive(snapshot, relation)?.iter().find_map(|(_role, relates)| {
+            if self.get_role_type_label(snapshot, relates.role()).unwrap().name.as_str() == role_name {
+                Some(relates.clone())
+            } else {
+                None
+            }
+        }))
     }
 
     get_type_methods! {
@@ -831,12 +834,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.put_val(property_key, overridden_plays);
     }
 
-    fn storage_set_relates(
-        &self,
-        snapshot: &mut Snapshot,
-        relation: RelationType<'static>,
-        role: RoleType<'static>,
-    ) {
+    fn storage_set_relates(&self, snapshot: &mut Snapshot, relation: RelationType<'static>, role: RoleType<'static>) {
         let relates = build_edge_relates(relation.clone().into_vertex(), role.clone().into_vertex());
         snapshot.put(relates.into_storage_key().into_owned_array());
         let relates_reverse = build_edge_relates_reverse(role.into_vertex(), relation.into_vertex());
@@ -1032,8 +1030,8 @@ impl<'a> ReadableType for RoleType<'a> {
     }
 }
 
-pub trait KindAPI<'a> : TypeAPI<'a> {
-    type SelfStatic : KindAPI<'static> + 'static;
+pub trait KindAPI<'a>: TypeAPI<'a> {
+    type SelfStatic: KindAPI<'static> + 'static;
     type AnnotationType: Hash + Eq + From<Annotation>;
     const ROOT_KIND: Kind;
 }
