@@ -55,7 +55,7 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void mayStartMonitoring(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {}
+        public void mayStartMonitoringService(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {}
 
         @Override
         public void mayStartReporting() {}
@@ -144,16 +144,12 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void mayStartMonitoring(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
+        public void mayStartMonitoringService(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware) {
             if (monitoringServer != null) monitoringServer.startServing(sslContext, middleware);
         }
 
         @Override
         public void mayStartReporting() {
-            if (statisticReporter == null) {
-                LOG.error("Cannot start reporting because statistic reporter is not initialised yet.");
-                return;
-            }
             statisticReporter.startReporting();
         }
 
@@ -209,7 +205,7 @@ public abstract class Diagnostics {
         return diagnostics;
     }
 
-    public abstract void mayStartMonitoring(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware);
+    public abstract void mayStartMonitoringService(@Nullable SslContext sslContext, ChannelInboundHandlerAdapter... middleware);
 
     public abstract void mayStartReporting();
 
