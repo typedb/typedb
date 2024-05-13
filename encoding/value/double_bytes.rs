@@ -21,6 +21,7 @@ impl DoubleBytes {
     }
 
     pub fn build(double: f64) -> Self {
+        debug_assert!(double.is_finite(), "Unencodable double value: {double}");
         // IEEE 754 doubles can be interpreted as sign-magnitude integers with the ordering preserved
         // If sign bit is not set (the value is positive), all we need to do is set the sign bit
         // If sign bit is set (the value is negative), the sign bit needs to be unset and the
