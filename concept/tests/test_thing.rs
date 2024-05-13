@@ -33,7 +33,7 @@ use test_utils::{create_tmp_dir, init_logging};
 fn thing_create_iterate() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
     let mut snapshot: WriteSnapshot<WAL> = storage.clone().open_snapshot_write();
@@ -69,7 +69,7 @@ fn thing_create_iterate() {
 fn attribute_create() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
@@ -93,12 +93,12 @@ fn attribute_create() {
         name_type.set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent)).unwrap();
 
         let mut age_1 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
-        assert_eq!(age_1.get_value(&mut snapshot, &thing_manager).unwrap(), Value::Long(age_value));
+        assert_eq!(age_1.get_value(&snapshot, &thing_manager).unwrap(), Value::Long(age_value));
 
         let mut name_1 = thing_manager
             .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(name_value)))
             .unwrap();
-        assert_eq!(name_1.get_value(&mut snapshot, &thing_manager).unwrap(), Value::String(Cow::Borrowed(name_value)));
+        assert_eq!(name_1.get_value(&snapshot, &thing_manager).unwrap(), Value::String(Cow::Borrowed(name_value)));
 
         let finalise_result = thing_manager.finalise(&mut snapshot);
         assert!(finalise_result.is_ok());
@@ -124,7 +124,7 @@ fn attribute_create() {
 fn has() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
@@ -186,7 +186,7 @@ fn has() {
 fn attribute_cleanup_on_concurrent_detach() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
@@ -247,13 +247,13 @@ fn attribute_cleanup_on_concurrent_detach() {
         let age_type = type_manager.get_attribute_type(&snapshot_1, &age_label).unwrap().unwrap();
 
         let entities = thing_manager.get_entities(&snapshot_1).collect_cloned();
-        let bob = entities.iter().filter(|entity| {
+        let bob = entities.iter().find(|entity| {
             entity.has_attribute(&snapshot_1, &thing_manager, name_type.clone(), Value::String(Cow::Borrowed(name_bob_value)))
                 .unwrap()
-        }).next().unwrap();
+        }).unwrap();
 
         let mut ages = thing_manager.get_attributes_in(&snapshot_1, age_type.clone()).unwrap().collect_cloned();
-        let age = ages.iter_mut().filter_map(|mut attr| {
+        let age = ages.iter_mut().filter_map(|attr| {
             if attr.get_value(&snapshot_1, &thing_manager).unwrap().unwrap_long() == age_value {
                 Some(attr.as_reference())
             } else {
@@ -274,13 +274,13 @@ fn attribute_cleanup_on_concurrent_detach() {
         let age_type = type_manager.get_attribute_type(&snapshot_2, &age_label).unwrap().unwrap();
 
         let entities = thing_manager.get_entities(&snapshot_2).collect_cloned();
-        let alice = entities.iter().filter(|entity|
+        let alice = entities.iter().find(|entity|
             entity.has_attribute(&snapshot_2, &thing_manager, name_type.clone(), Value::String(Cow::Borrowed(name_bob_value)))
                 .unwrap()
-        ).next().unwrap();
+        ).unwrap();
 
         let mut ages = thing_manager.get_attributes_in(&snapshot_2, age_type.clone()).unwrap().collect_cloned();
-        let age = ages.iter_mut().filter_map(|mut attr| {
+        let age = ages.iter_mut().filter_map(|attr| {
             if attr.get_value(&snapshot_2, &thing_manager).unwrap().unwrap_long() == age_value {
                 Some(attr.as_reference())
             } else {
@@ -312,7 +312,7 @@ fn attribute_cleanup_on_concurrent_detach() {
 fn role_player_distinct() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
@@ -402,7 +402,7 @@ fn role_player_distinct() {
 fn role_player_duplicates() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
@@ -460,7 +460,7 @@ fn role_player_duplicates() {
         assert_eq!(resource_1_indexed_count, 2);
 
         let group_relations_count: u64 = group_1.get_relations(&snapshot, &thing_manager)
-            .collect_cloned_vec(|(rel, rol, count)| count)
+            .collect_cloned_vec(|(_, _, count)| count)
             .unwrap().into_iter().sum();
         assert_eq!(group_relations_count, 1);
 
@@ -478,7 +478,7 @@ fn role_player_duplicates() {
         let relations = thing_manager.get_relations(&snapshot).collect_cloned();
         assert_eq!(relations.len(), 1);
 
-        let list_1 = relations.get(0).unwrap();
+        let list_1 = relations.first().unwrap();
         let player_counts: u64 = list_1.get_players(&snapshot, &thing_manager)
             .collect_cloned_vec(|(_, count)| count).unwrap().into_iter().sum();
         assert_eq!(player_counts, 3);
@@ -492,7 +492,7 @@ fn role_player_duplicates() {
             .unwrap();
 
         let group_relations_count: u64 = group_1.get_relations(&snapshot, &thing_manager)
-            .collect_cloned_vec(|(rel, rol, count)| count)
+            .collect_cloned_vec(|(_, _, count)| count)
             .unwrap().into_iter().sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1.get_relations(&snapshot, &thing_manager)
