@@ -25,6 +25,7 @@ use encoding::{
     },
     Keyable,
 };
+use itertools::Itertools;
 use regex::Regex;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -419,13 +420,35 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     }
 
     fn cleanup_attributes(&self, snapshot: &mut Snapshot) -> Result<(), ConceptWriteError> {
+        for (key, _value) in snapshot
+            .iterate_writes_range(KeyRange::new_exclusive(
+                Bytes::inline(Prefix::ATTRIBUTE_MIN.prefix_id().bytes(), 1),
+                Bytes::inline(Prefix::ATTRIBUTE_MAX.prefix_id().bytes(), 1),
+            ))
+            .filter_map(|(key, write)| match write {
+                Write::Put { value, .. } => Some((key, value)),
+                _ => None,
+            })
+            .collect_vec()
+            .into_iter()
+        {
+            let attribute = Attribute::new(AttributeVertex::new(Bytes::reference(key.bytes())));
+            let is_independent = attribute
+                .type_()
+                .is_independent(snapshot, self.type_manager())
+                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+            if !is_independent && !attribute.has_owners(snapshot, self) {
+                self.unput_attribute(snapshot, attribute)?;
+            }
+        }
+
         for (key, _) in snapshot
             .iterate_writes_range(KeyRange::new_within(
                 ThingEdgeHas::prefix().into_byte_array_or_ref(),
                 ThingEdgeHas::FIXED_WIDTH_ENCODING,
             ))
             .filter(|(_, write)| matches!(write, Write::Delete))
-            .collect::<Vec<_>>()
+            .collect_vec()
             .into_iter()
         {
             let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
@@ -560,6 +583,12 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     pub fn delete_attribute(&self, snapshot: &mut Snapshot, attribute: Attribute<'_>) -> Result<(), ConceptWriteError> {
         let key = attribute.into_vertex().into_storage_key().into_owned_array();
         snapshot.delete(key);
+        Ok(())
+    }
+
+    pub fn unput_attribute(&self, snapshot: &mut Snapshot, attribute: Attribute<'_>) -> Result<(), ConceptWriteError> {
+        let key = attribute.into_vertex().into_storage_key().into_owned_array();
+        snapshot.unput(key);
         Ok(())
     }
 

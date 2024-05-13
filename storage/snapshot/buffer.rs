@@ -9,7 +9,7 @@ use std::{
     cmp::Ordering,
     collections::{BTreeMap, Bound},
     fmt,
-    sync::{atomic::AtomicBool, Arc, RwLock},
+    sync::{atomic::AtomicBool, Arc},
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::increment, Bytes};
@@ -59,7 +59,7 @@ impl OperationsBuffer {
         self.write_buffers.iter()
     }
 
-    pub(crate) fn write_buffers_mut(&mut self) -> impl Iterator<Item=&mut WriteBuffer> {
+    pub(crate) fn write_buffers_mut(&mut self) -> impl Iterator<Item = &mut WriteBuffer> {
         self.write_buffers.iter_mut()
     }
 
@@ -121,8 +121,20 @@ impl WriteBuffer {
     }
 
     pub(crate) fn put_existing(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        self.writes
-            .insert(key, Write::Put { value, reinsert: Arc::new(AtomicBool::new(false)), known_to_exist: true });
+        self.writes.insert(key, Write::Put { value, reinsert: Arc::new(AtomicBool::new(false)), known_to_exist: true });
+    }
+
+    pub(crate) fn unput(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, expected_value: ByteArray<BUFFER_VALUE_INLINE>) {
+        //TODO better messages
+        match self.writes.remove(&key) {
+            Some(Write::Put { value, .. }) => {
+                if value != expected_value {
+                    panic!("Unexpected value when trying to unput")
+                }
+            }
+            Some(_other_write) => panic!("Attempting to unput a key that was inserted or deleted"),
+            None => panic!("Attempting to unput a key that was not put"),
+        }
     }
 
     pub(crate) fn delete(&mut self, key: ByteArray<BUFFER_KEY_INLINE>) {
@@ -155,7 +167,7 @@ impl WriteBuffer {
             self.writes
                 .range::<[u8], _>((Bound::Included(range_start.bytes()), end))
                 .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
-                .collect::<Vec<_>>()
+                .collect::<Vec<_>>(),
         )
     }
 

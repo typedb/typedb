@@ -80,6 +80,16 @@ pub trait WritableSnapshot: ReadableSnapshot {
         self.operations_mut().writes_in_mut(keyspace_id).put(byte_array, value);
     }
 
+    fn unput(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
+        self.unput_val(key, ByteArray::empty())
+    }
+
+    fn unput_val(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
+        let keyspace_id = key.keyspace_id();
+        let byte_array = key.into_byte_array();
+        self.operations_mut().writes_in_mut(keyspace_id).unput(byte_array, value);
+    }
+
     /// Insert a delete marker for the key with a new version
     fn delete(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
         let keyspace_id = key.keyspace_id();

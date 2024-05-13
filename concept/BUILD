@@ -28,6 +28,7 @@ rust_library(
 
         "@crates//:bincode",
         "@crates//:chrono",
+        "@crates//:itertools",
         "@crates//:regex",
         "@crates//:serde",
     ],
