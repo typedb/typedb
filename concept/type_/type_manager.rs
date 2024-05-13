@@ -671,6 +671,10 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     pub(crate) fn delete_relation_type(&self, snapshot: &mut Snapshot, relation_type: RelationType<'_>) {
+        let declared_relates = self.get_relation_type_relates(snapshot, relation_type.clone().into_owned()).unwrap();
+        for relates in declared_relates.iter() {
+            self.delete_role_type(snapshot, relates.role().clone().into_owned());
+        }
         self.storage_may_delete_label(snapshot, relation_type.clone().into_owned());
         self.storage_may_delete_supertype(snapshot, relation_type.clone().into_owned());
     }
