@@ -25,7 +25,6 @@ import static java.lang.Math.abs;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class StatisticReporter {
-    // Modify calculateInitialDelay() if you change this value!
     protected static final int REPORT_INTERVAL_MINUTES = 60;
     public static final String DISABLED_REPORTING_FILE_NAME = "_reporting_disabled";
 
@@ -114,6 +113,7 @@ public class StatisticReporter {
     }
 
     private long calculateInitialDelay() {
+        assert(REPORT_INTERVAL_MINUTES == 60); // Modify the algorithm if you change this value!
         int currentMinute = LocalDateTime.now().getMinute();
         int scheduledMinute = abs(deploymentID.hashCode()) % REPORT_INTERVAL_MINUTES;
 

@@ -113,12 +113,12 @@ public class Metrics {
     }
 
     protected JsonObject asJSON(boolean reporting) {
-        boolean isNoUsageDiagnostics = reporting && !base.getReportingEnabled();
+        boolean addUsageDiagnostics = reporting && !base.getReportingEnabled();
 
         JsonObject metrics = base.asJSON();
-        metrics.add("server", serverProperties.asJSON(isNoUsageDiagnostics));
+        metrics.add("server", serverProperties.asJSON(!addUsageDiagnostics));
 
-        if (isNoUsageDiagnostics) {
+        if (!addUsageDiagnostics) {
             return metrics;
         }
 

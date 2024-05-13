@@ -39,8 +39,8 @@ public class ParametersTest {
         Path dataDir = null;
         TypeDBServer typeDBServer = null;
         try {
-            logDir = Files.createTempDirectory("log-file-tmp").toFile().toPath();
-            dataDir = Files.createTempDirectory("data-tmp").toFile().toPath();
+            logDir = Files.createTempDirectory("log-file-tmp");
+            dataDir = Files.createTempDirectory("data-tmp");
 
             Set<Option> testOptions = getGeneralTestOptions(dataDir, logDir);
             testOptions.addAll(set(
@@ -74,8 +74,8 @@ public class ParametersTest {
         Path dataDir = null;
         TypeDBServer typeDBServer = null;
         try {
-            logDir = Files.createTempDirectory("log-file-tmp").toFile().toPath();
-            dataDir = Files.createTempDirectory("data-tmp").toFile().toPath();
+            logDir = Files.createTempDirectory("log-file-tmp");
+            dataDir = Files.createTempDirectory("data-tmp");
 
             // Deployment ID: get from the config
             // Server ID: generate and save into a file
@@ -87,6 +87,7 @@ public class ParametersTest {
             typeDBServer.databaseMgr.create("test1");
 
             List<Path> serverIdFiles = getServerIdFiles(dataDir);
+
             assertEquals(1, serverIdFiles.size());
             String savedServerId1 = Files.readString(serverIdFiles.get(0));
 

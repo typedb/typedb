@@ -213,6 +213,6 @@ public class CoreConfigTest {
         Path configFile = Paths.get("./server/test/parameters/config/config-correct-optional-values.yml");
         CoreConfig config = CoreConfigFactory.config(configFile, new HashSet<>(), new CoreConfigParser());
         assertTrue(config.diagnostics().deploymentID().isPresent());
-        assertEquals("SERVERIDNUMBER123987<AND>MORE!", config.diagnostics().deploymentID().get());
+        assertEquals("SERVERIDNUMBER123987<'AND '> MORE\"\"!", config.diagnostics().deploymentID().get());
     }
 }
