@@ -136,9 +136,9 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 default:
                     executeRequest(request);
             }
-            Diagnostics.get().requestSuccess(getDatabaseName(), TRANSACTION_EXECUTE);
+            Diagnostics.get().requestSuccess(typeDBSvc.getDatabaseName(sessionSvc), TRANSACTION_EXECUTE);
         } catch (Throwable error) {
-            Diagnostics.get().requestFail(getDatabaseName(), TRANSACTION_EXECUTE);
+            Diagnostics.get().requestFail(typeDBSvc.getDatabaseName(sessionSvc), TRANSACTION_EXECUTE);
             close(error);
         } finally {
             if (accessLock != null) accessLock.unlock();
@@ -196,7 +196,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         isTransactionOpen.set(true);
         scheduledTimeout = scheduled().schedule(this::timeout, options.transactionTimeoutMillis(), MILLISECONDS);
         Diagnostics.get().incrementCurrentCount(
-                getDatabaseName(),
+                typeDBSvc.getDatabaseName(sessionSvc),
                 Metrics.ConnectionPeakCounts.Kind.getKind(sessionSvc.session().type(), transaction.type()));
     }
 
@@ -470,7 +470,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 transaction.close();
                 sessionSvc.closed(this);
                 Diagnostics.get().decrementCurrentCount(
-                        getDatabaseName(),
+                        typeDBSvc.getDatabaseName(sessionSvc),
                         Metrics.ConnectionPeakCounts.Kind.getKind(sessionSvc.session().type(), transaction.type()));
             }
             if (scheduledTimeout != null) scheduledTimeout.cancel(false);
@@ -484,7 +484,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 transaction.close();
                 sessionSvc.closed(this);
                 Diagnostics.get().decrementCurrentCount(
-                        getDatabaseName(),
+                        typeDBSvc.getDatabaseName(sessionSvc),
                         Metrics.ConnectionPeakCounts.Kind.getKind(sessionSvc.session().type(), transaction.type()));
             }
             if (scheduledTimeout != null) scheduledTimeout.cancel(false);
@@ -494,7 +494,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             if (isClientCancelled(error)) LOG.debug(error.getMessage(), error);
             else {
                 LOG.error(error.getMessage().trim());
-                Diagnostics.get().submitError(getDatabaseName(), error);
+                Diagnostics.get().submitError(typeDBSvc.getDatabaseName(sessionSvc), error);
             }
         }
     }
@@ -503,13 +503,6 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         return error instanceof StatusRuntimeException &&
                 ((StatusRuntimeException) error).getStatus().getCode().equals(Status.CANCELLED.getCode());
     }
-
-    public String getDatabaseName() {
-        return sessionSvc != null && sessionSvc.session() != null && sessionSvc.session().database() != null
-                ? sessionSvc.session().database().name()
-                : "";
-    }
-
     private class ResponseStream<T> {
 
         private final Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn;

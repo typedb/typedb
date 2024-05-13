@@ -28,6 +28,8 @@ import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_FILE_NAM
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_ARCHIVE_EXT;
 import static com.vaticle.typedb.core.test.integration.util.Util.deleteDirectory;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ParametersTest {
 
@@ -86,13 +88,13 @@ public class ParametersTest {
             typeDBServer = TypeDBServer.create(config, false);
             typeDBServer.databaseMgr.create("test1");
 
-            List<Path> serverIdFiles = getServerIdFiles(dataDir);
+            Path serverIdPath = getServerIdPath(dataDir);
+            assertTrue(serverIdPath.toFile().exists());
 
-            assertEquals(1, serverIdFiles.size());
-            String savedServerId1 = Files.readString(serverIdFiles.get(0));
+            String savedServerId1 = Files.readString(serverIdPath);
 
-            List<Path> deploymentIdFiles = getDeploymentIdFiles(dataDir);
-            assertEquals(0, deploymentIdFiles.size());
+            Path deploymentIdPath = getDeploymentIdPath(dataDir);
+            assertFalse(deploymentIdPath.toFile().exists());
 
             typeDBServer.close();
 
@@ -105,14 +107,14 @@ public class ParametersTest {
             typeDBServer = TypeDBServer.create(config, false);
             typeDBServer.databaseMgr.create("test2");
 
-            serverIdFiles = getServerIdFiles(dataDir);
-            assertEquals(1, serverIdFiles.size());
-            String savedServerId2 = Files.readString(serverIdFiles.get(0));
+            serverIdPath = getServerIdPath(dataDir);
+            assertTrue(serverIdPath.toFile().exists());
+            String savedServerId2 = Files.readString(serverIdPath);
             assertEquals(savedServerId1, savedServerId2);
 
-            deploymentIdFiles = getDeploymentIdFiles(dataDir);
-            assertEquals(1, deploymentIdFiles.size());
-            String savedDeploymentId = Files.readString(deploymentIdFiles.get(0));
+            deploymentIdPath = getDeploymentIdPath(dataDir);
+            assertTrue(deploymentIdPath.toFile().exists());
+            String savedDeploymentId = Files.readString(deploymentIdPath);
             assertEquals(savedServerId2, savedDeploymentId);
         } finally {
             if (typeDBServer != null) typeDBServer.close();
@@ -132,19 +134,18 @@ public class ParametersTest {
     }
 
     private List<Path> getLogArchives(Path logDir) throws IOException {
-        return getFiles(logDir, TYPEDB_LOG_ARCHIVE_EXT);
+        return getPaths(logDir, TYPEDB_LOG_ARCHIVE_EXT);
     }
 
-    private List<Path> getServerIdFiles(Path dataDir) throws IOException {
-        return getFiles(dataDir, SERVER_ID_FILE_NAME);
+    private Path getServerIdPath(Path dataDir) {
+        return dataDir.resolve(SERVER_ID_FILE_NAME);
     }
 
-    private List<Path> getDeploymentIdFiles(Path dataDir) throws IOException {
-        return getFiles(dataDir, DEPLOYMENT_ID_FILE_NAME);
+    private Path getDeploymentIdPath(Path dataDir) {
+        return dataDir.resolve(DEPLOYMENT_ID_FILE_NAME);
     }
 
-    private List<Path> getFiles(Path dir, String fileEnding) throws IOException {
+    private List<Path> getPaths(Path dir, String fileEnding) throws IOException {
         return Files.list(dir).filter(p -> p.toString().endsWith(fileEnding)).collect(Collectors.toList());
     }
 }
-

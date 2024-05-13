@@ -49,9 +49,10 @@ public class Metrics {
     }
 
     private String hashAndAddDatabaseIfAbsent(@Nullable String databaseName) {
-        String databaseHash = databaseName != null ? String.valueOf(databaseName.hashCode()) : "";
+        String databaseHash = "";
 
-        if (!databaseHash.isEmpty()) {
+        if (databaseName != null) {
+            databaseHash = String.valueOf(databaseName.hashCode());
             this.databaseLoad.computeIfAbsent(databaseHash, val -> new DatabaseLoadDiagnostics());
         }
 

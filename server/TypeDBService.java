@@ -29,6 +29,7 @@ import io.sentry.Sentry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.time.Instant;
@@ -403,7 +404,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             UUID sessionID = byteStringAsUUID(request.getSessionId());
             SessionService sessionSvc = sessionServices.get(sessionID);
             if (sessionSvc == null) throw TypeDBException.of(SESSION_NOT_FOUND, sessionID);
-            databaseName = sessionSvc.session().database().name();
+            databaseName = getDatabaseName(sessionSvc);
             sessionSvc.close();
             responder.onNext(closeRes());
             responder.onCompleted();
@@ -477,5 +478,12 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public void close() {
         sessionServices.values().parallelStream().forEach(s -> s.close(TypeDBException.of(SERVER_SHUTDOWN)));
         sessionServices.clear();
+    }
+
+    @Nullable
+    public String getDatabaseName(SessionService sessionSvc) {
+        return sessionSvc != null && sessionSvc.session() != null && sessionSvc.session().database() != null
+                ? sessionSvc.session().database().name()
+                : null;
     }
 }
