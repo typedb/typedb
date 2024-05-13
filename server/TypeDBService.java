@@ -404,7 +404,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             UUID sessionID = byteStringAsUUID(request.getSessionId());
             SessionService sessionSvc = sessionServices.get(sessionID);
             if (sessionSvc == null) throw TypeDBException.of(SESSION_NOT_FOUND, sessionID);
-            databaseName = getDatabaseName(sessionSvc);
+            databaseName = sessionSvc.databaseName();
             sessionSvc.close();
             responder.onNext(closeRes());
             responder.onCompleted();
@@ -478,12 +478,5 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public void close() {
         sessionServices.values().parallelStream().forEach(s -> s.close(TypeDBException.of(SERVER_SHUTDOWN)));
         sessionServices.clear();
-    }
-
-    @Nullable
-    public String getDatabaseName(SessionService sessionSvc) {
-        return sessionSvc != null && sessionSvc.session() != null && sessionSvc.session().database() != null
-                ? sessionSvc.session().database().name()
-                : null;
     }
 }

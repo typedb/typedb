@@ -114,7 +114,7 @@ public class MonitoringServer {
                 FullHttpResponse response = new DefaultFullHttpResponse(req.protocolVersion(), OK);
                 String query = Objects.requireNonNullElse(uri.getQuery(), "");
                 if (query.toLowerCase().contains("format=json")) {
-                    response.content().writeBytes(Unpooled.wrappedBuffer((metrics.formatJSON(false)).getBytes(StandardCharsets.UTF_8)));
+                    response.content().writeBytes(Unpooled.wrappedBuffer((metrics.formatMonitoringJSON()).getBytes(StandardCharsets.UTF_8)));
                     response.headers().set(CONTENT_TYPE, APPLICATION_JSON);
                 } else {
                     response.content().writeBytes(Unpooled.wrappedBuffer((metrics.formatPrometheus()).getBytes(StandardCharsets.UTF_8)));

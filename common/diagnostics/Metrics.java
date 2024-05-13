@@ -42,18 +42,19 @@ public class Metrics {
     }
 
     public void takeSnapshot() {
-        this.base.updateSinceTimestamp();
         this.databaseLoad.values().forEach(DatabaseLoadDiagnostics::takeSnapshot);
         this.requests.values().forEach(NetworkRequests::takeSnapshot);
         this.userErrors.values().forEach(UserErrorStatistics::takeSnapshot);
     }
 
     private String hashAndAddDatabaseIfAbsent(@Nullable String databaseName) {
-        String databaseHash = "";
+        String databaseHash;
 
         if (databaseName != null) {
             databaseHash = String.valueOf(databaseName.hashCode());
             this.databaseLoad.computeIfAbsent(databaseHash, val -> new DatabaseLoadDiagnostics());
+        } else {
+            databaseHash = "";
         }
 
         this.requests.computeIfAbsent(databaseHash, val -> new NetworkRequests());
@@ -113,30 +114,64 @@ public class Metrics {
         return dateTime.truncatedTo(ChronoUnit.SECONDS).toString();
     }
 
-    protected JsonObject asJSON(boolean reporting) {
-        boolean addUsageDiagnostics = reporting && !base.getReportingEnabled();
+    protected JsonObject asReportingJSON() {
+        return base.getReportingEnabled()
+                ? asFullReportingJSON()
+                : asMinimalReportingJSON();
+    }
 
-        JsonObject metrics = base.asJSON();
-        metrics.add("server", serverProperties.asJSON(!addUsageDiagnostics));
-
-        if (!addUsageDiagnostics) {
-            return metrics;
-        }
+    protected JsonObject asFullReportingJSON() {
+        JsonObject metrics = base.asReportingJSON();
+        metrics.add("server", serverProperties.asReportingFullJSON());
 
         JsonArray load = new JsonArray();
         databaseLoad.forEach((databaseHash, diagnostics) ->
-                diagnostics.asJSON(databaseHash, primaryDatabaseHashes.contains(databaseHash)).forEach(load::add));
+                diagnostics.asReportingJSON(databaseHash, primaryDatabaseHashes.contains(databaseHash)).forEach(load::add));
         metrics.add("load", load);
 
         JsonArray actions = new JsonArray();
-        requests.forEach((databaseHash, diagnostics) -> diagnostics.asJSON(databaseHash).forEach(actions::add));
+        requests.forEach((databaseHash, diagnostics) -> diagnostics.asReportingJSON(databaseHash).forEach(actions::add));
         metrics.add("actions", actions);
 
         JsonArray errors = new JsonArray();
-        userErrors.forEach((databaseHash, diagnostics) -> diagnostics.asJSON(databaseHash).forEach(errors::add));
+        userErrors.forEach((databaseHash, diagnostics) -> diagnostics.asReportingJSON(databaseHash).forEach(errors::add));
         metrics.add("errors", errors);
 
         return metrics;
+    }
+
+    protected JsonObject asMinimalReportingJSON() {
+        JsonObject metrics = base.asReportingJSON();
+        metrics.add("server", serverProperties.asReportingMinimalJSON());
+        return metrics;
+    }
+
+    protected JsonObject asMonitoringJSON() {
+        JsonObject metrics = base.asMonitoringJSON();
+        metrics.add("server", serverProperties.asMonitoringJSON());
+
+        JsonArray load = new JsonArray();
+        databaseLoad.forEach((databaseHash, diagnostics) ->
+                diagnostics.asMonitoringJSON(databaseHash, primaryDatabaseHashes.contains(databaseHash)).forEach(load::add));
+        metrics.add("load", load);
+
+        JsonArray actions = new JsonArray();
+        requests.forEach((databaseHash, diagnostics) -> diagnostics.asMonitoringJSON(databaseHash).forEach(actions::add));
+        metrics.add("actions", actions);
+
+        JsonArray errors = new JsonArray();
+        userErrors.forEach((databaseHash, diagnostics) -> diagnostics.asMonitoringJSON(databaseHash).forEach(errors::add));
+        metrics.add("errors", errors);
+
+        return metrics;
+    }
+
+    protected String formatReportingJSON() {
+        return asReportingJSON().toString();
+    }
+
+    protected String formatMonitoringJSON() {
+        return asMonitoringJSON().toString();
     }
 
     protected String formatPrometheus() {
@@ -169,10 +204,6 @@ public class Metrics {
                 requestsDataAttempted.length() > requestsDataAttemptedHeaderLength ? requestsDataAttempted.toString() : "",
                 requestsDataSuccessful.length() > requestsDataSuccessfulHeaderLength ? requestsDataSuccessful.toString() : "",
                 userErrorsData.length() > userErrorsDataHeaderLength ? userErrorsData.toString() : "");
-    }
-
-    protected String formatJSON(boolean reporting) {
-        return asJSON(reporting).toString();
     }
 
     public static class DatabaseDiagnostics {
@@ -212,7 +243,6 @@ public class Metrics {
         private final String deploymentID;
         private final String serverID;
         private final String distribution;
-        private LocalDateTime sinceTimestamp;
         private final boolean reportingEnabled;
 
         BaseProperties(
@@ -223,23 +253,27 @@ public class Metrics {
             this.serverID = serverID;
             this.distribution = distribution;
             this.reportingEnabled = reportingEnabled;
-            updateSinceTimestamp();
         }
 
-        void updateSinceTimestamp() {
-            this.sinceTimestamp = LocalDateTime.now(ZoneOffset.UTC);
-        }
-
-        JsonObject asJSON() {
+        JsonObject asReportingJSON() {
             JsonObject system = new JsonObject();
             system.add("version", jsonApiVersion);
             system.add("deploymentID", deploymentID);
             system.add("serverID", serverID);
             system.add("distribution", distribution);
             system.add("timestamp", formatDateTime(LocalDateTime.now(ZoneOffset.UTC)));
-            system.add("sinceTimestamp", formatDateTime(sinceTimestamp));
             system.add("periodInSeconds", REPORT_INTERVAL_MINUTES * 60);
             system.add("enabled", reportingEnabled);
+            return system;
+        }
+
+        JsonObject asMonitoringJSON() {
+            JsonObject system = new JsonObject();
+            system.add("version", jsonApiVersion);
+            system.add("deploymentID", deploymentID);
+            system.add("serverID", serverID);
+            system.add("distribution", distribution);
+            system.add("timestamp", formatDateTime(LocalDateTime.now(ZoneOffset.UTC)));
             return system;
         }
 
@@ -274,18 +308,42 @@ public class Metrics {
             return Duration.between(startTime, LocalDateTime.now(ZoneOffset.UTC)).getSeconds();
         }
 
-        JsonObject asJSON(boolean isNoUsageDiagnostics) {
+        JsonObject asReportingFullJSON() {
             var mxbean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
             long freePhysicalMemorySize = mxbean.getFreePhysicalMemorySize();
             long freeDiskSpace = dbRoot.getFreeSpace();
 
             JsonObject server = new JsonObject();
             server.add("version", version);
+            server.add("uptimeInSeconds", getUptimeInSeconds());
 
-            if (isNoUsageDiagnostics) {
-                return server;
-            }
+            JsonObject os = new JsonObject();
+            os.add("name", osName);
+            os.add("arch", osArch);
+            os.add("version", osVersion);
+            server.add("os", os);
 
+            server.add("memoryUsedInBytes", mxbean.getTotalPhysicalMemorySize() - freePhysicalMemorySize);
+            server.add("memoryAvailableInBytes", freePhysicalMemorySize);
+            server.add("diskUsedInBytes", dbRoot.getTotalSpace() - freeDiskSpace);
+            server.add("diskAvailableInBytes", freeDiskSpace);
+
+            return server;
+        }
+
+        JsonObject asReportingMinimalJSON() {
+            JsonObject server = new JsonObject();
+            server.add("version", version);
+            return server;
+        }
+
+        JsonObject asMonitoringJSON() {
+            var mxbean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+            long freePhysicalMemorySize = mxbean.getFreePhysicalMemorySize();
+            long freeDiskSpace = dbRoot.getFreeSpace();
+
+            JsonObject server = new JsonObject();
+            server.add("version", version);
             server.add("uptimeInSeconds", getUptimeInSeconds());
 
             JsonObject os = new JsonObject();
@@ -527,7 +585,7 @@ public class Metrics {
             connectionPeakCounts.takeSnapshot();
         }
 
-        JsonArray asJSON(String database, boolean isPrimaryServer) {
+        JsonArray asReportingJSON(String database, boolean isPrimaryServer) {
             JsonArray load = new JsonArray();
 
             if (!isDeleted || !connectionPeakCounts.isEmpty()) {
@@ -546,15 +604,31 @@ public class Metrics {
             return load;
         }
 
+        JsonArray asMonitoringJSON(String database, boolean isPrimaryServer) {
+            JsonArray load = new JsonArray();
+
+            if (isPrimaryServer && !isDeleted) {
+                JsonObject loadObject = new JsonObject();
+
+                loadObject.add("database", database);
+                loadObject.add("schema", schemaLoad.asJSON());
+                loadObject.add("data", dataLoad.asJSON());
+
+                load.add(loadObject);
+            }
+
+            return load;
+        }
+
         static String prometheusHeader() {
             return "# TYPE typedb_schema_data_count gauge";
         }
 
         String prometheusDiagnostics(String database, boolean isPrimaryServer) {
-            if (!isPrimaryServer || isDeleted) {
-                return "";
+            if (isPrimaryServer && !isDeleted) {
+                return schemaLoad.prometheusDiagnostics(database) + dataLoad.prometheusDiagnostics(database);
             }
-            return schemaLoad.prometheusDiagnostics(database) + dataLoad.prometheusDiagnostics(database);
+            return "";
         }
     }
 
@@ -647,7 +721,7 @@ public class Metrics {
                     requestInfosSnapshot.getOrDefault(kind, new RequestInfo()).getFailed();
         }
 
-        JsonArray asJSON(String database) {
+        JsonArray asReportingJSON(String database) {
             JsonArray requests = new JsonArray();
 
             for (var kind : requestInfos.keySet()) {
@@ -664,6 +738,26 @@ public class Metrics {
                 }
                 requestObject.add("successful", successfulValue);
                 requestObject.add("failed", failedValue);
+                requests.add(requestObject);
+            }
+
+            return requests;
+        }
+
+        JsonArray asMonitoringJSON(String database) {
+            JsonArray requests = new JsonArray();
+
+            for (var kind : requestInfos.keySet()) {
+                long attemptedValue = requestInfos.get(kind).getAttempted();
+                long successfulValue = requestInfos.get(kind).getSuccessful();
+
+                JsonObject requestObject = new JsonObject();
+                requestObject.add("name", kind.name());
+                if (!database.isEmpty()) {
+                    requestObject.add("database", database);
+                }
+                requestObject.add("attempted", attemptedValue);
+                requestObject.add("successful", successfulValue);
                 requests.add(requestObject);
             }
 
@@ -725,7 +819,7 @@ public class Metrics {
             errorCounts.computeIfAbsent(errorCode, count -> new AtomicLong(0)).incrementAndGet();
         }
 
-        JsonArray asJSON(String database) {
+        JsonArray asReportingJSON(String database) {
             JsonArray errors = new JsonArray();
 
             for (String code : errorCounts.keySet()) {
@@ -740,6 +834,24 @@ public class Metrics {
                     errorObject.add("database", database);
                 }
                 errorObject.add("count", countDelta);
+                errors.add(errorObject);
+            }
+
+            return errors;
+        }
+
+        JsonArray asMonitoringJSON(String database) {
+            JsonArray errors = new JsonArray();
+
+            for (String code : errorCounts.keySet()) {
+                long count = errorCounts.get(code).get();
+
+                JsonObject errorObject = new JsonObject();
+                errorObject.add("code", code);
+                if (!database.isEmpty()) {
+                    errorObject.add("database", database);
+                }
+                errorObject.add("count", count);
                 errors.add(errorObject);
             }
 

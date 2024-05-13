@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -57,7 +56,7 @@ public class StatisticReporter {
 
     private boolean report() {
         try {
-            String metricsJSON = metrics.formatJSON(true);
+            String metricsJSON = metrics.formatReportingJSON();
             metrics.takeSnapshot(); // Forget about this period for consistency even if the https write is not successful
 
             HttpsURLConnection conn = (HttpsURLConnection) (new URL(reportingURI)).openConnection();
