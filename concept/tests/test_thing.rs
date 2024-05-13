@@ -87,10 +87,10 @@ fn attribute_create() {
 
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long);
-        age_type.set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent::new())).unwrap();
+        age_type.set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent)).unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label, false).unwrap();
         name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String);
-        name_type.set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent::new())).unwrap();
+        name_type.set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent)).unwrap();
 
         let mut age_1 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
         assert_eq!(age_1.get_value(&mut snapshot, &thing_manager).unwrap(), Value::Long(age_value));
@@ -211,7 +211,7 @@ fn attribute_cleanup_on_concurrent_detach() {
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
         let owns_age = person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
-        owns_age.set_annotation(&mut snapshot, &type_manager, OwnsAnnotation::Distinct(AnnotationDistinct::new()));
+        owns_age.set_annotation(&mut snapshot, &type_manager, OwnsAnnotation::Distinct(AnnotationDistinct));
         let _ = person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered);
 
         let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
@@ -331,10 +331,10 @@ fn role_player_distinct() {
         let employment_type = type_manager.create_relation_type(&mut snapshot, &employment_label, false).unwrap();
         employment_type.create_relates(&mut snapshot, &type_manager, employee_role, Ordering::Unordered).unwrap();
         let employee_type = employment_type.get_relates_role(&snapshot, &type_manager, employee_role).unwrap().unwrap().role();
-        employee_type.set_annotation(&mut snapshot, &type_manager, RoleTypeAnnotation::Distinct(AnnotationDistinct::new())).unwrap();
+        employee_type.set_annotation(&mut snapshot, &type_manager, RoleTypeAnnotation::Distinct(AnnotationDistinct)).unwrap();
         employment_type.create_relates(&mut snapshot, &type_manager, employer_role, Ordering::Unordered).unwrap();
         let employer_type = employment_type.get_relates_role(&snapshot, &type_manager, employer_role).unwrap().unwrap().role();
-        employer_type.set_annotation(&mut snapshot, &type_manager, RoleTypeAnnotation::Distinct(AnnotationDistinct::new())).unwrap();
+        employer_type.set_annotation(&mut snapshot, &type_manager, RoleTypeAnnotation::Distinct(AnnotationDistinct)).unwrap();
         employer_type.set_annotation(
             &mut snapshot, &type_manager, RoleTypeAnnotation::Cardinality(AnnotationCardinality::new(1, Some(2))),
         ).unwrap();
