@@ -784,9 +784,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         debug_assert_eq!(&rp_count, &rp_reverse_count);
 
         let count = rp_count.unwrap() - decrement_count;
-        debug_assert!(count >= 0);
         let reverse_count = rp_reverse_count.unwrap() - decrement_count;
-        debug_assert!(reverse_count >= 0);
         if count == 0 {
             snapshot.delete(role_player.as_storage_key().into_owned_array());
             snapshot.delete(role_player_reverse.as_storage_key().into_owned_array());
