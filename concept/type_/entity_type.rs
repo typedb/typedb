@@ -307,8 +307,10 @@ impl From<Annotation> for EntityTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Abstract(annotation) => EntityTypeAnnotation::Abstract(annotation),
+
             Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Entity type."),
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Entity type."),
+            Annotation::Key(_) => unreachable!("Key annotation not available for Entity type."),
             Annotation::Cardinality(_) => unreachable!("Cardinality annotation not available for Entity type."),
             Annotation::Regex(_) => unreachable!("Regex annotation not available for Entity type."),
         }

@@ -239,6 +239,7 @@ impl FromStr for Annotation {
         let typedb_annotation = match s {
             "@abstract" => TypeDBAnnotation::Abstract(annotation::AnnotationAbstract),
             "@independent" => TypeDBAnnotation::Independent(annotation::AnnotationIndependent),
+            "@key" => TypeDBAnnotation::Key(annotation::AnnotationKey),
             regex if regex.starts_with("@regex") => {
                 assert!(
                     regex.starts_with(r#"@regex(""#) && regex.ends_with(r#"")"#),

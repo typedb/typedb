@@ -13,7 +13,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     error::ConceptReadError,
     type_::{
-        annotation::{Annotation, AnnotationCardinality, AnnotationDistinct},
+        annotation::{Annotation, AnnotationCardinality, AnnotationDistinct, AnnotationKey},
         attribute_type::AttributeType,
         object_type::ObjectType,
         type_manager::TypeManager,
@@ -89,6 +89,7 @@ impl<'a> Owns<'a> {
     ) {
         match annotation {
             OwnsAnnotation::Distinct(_) => type_manager.storage_set_edge_annotation_distinct(snapshot, self.clone()),
+            OwnsAnnotation::Key(_) => type_manager.storage_set_edge_annotation_key(snapshot, self.clone()),
             OwnsAnnotation::Cardinality(cardinality) => {
                 type_manager.storage_set_edge_annotation_cardinality(snapshot, self.clone(), cardinality)
             }
@@ -103,6 +104,7 @@ impl<'a> Owns<'a> {
     ) {
         match annotation {
             OwnsAnnotation::Distinct(_) => type_manager.storage_delete_edge_annotation_distinct(snapshot, self.clone()),
+            OwnsAnnotation::Key(_) => type_manager.storage_delete_edge_annotation_key(snapshot, self.clone()),
             OwnsAnnotation::Cardinality(_) => {
                 type_manager.storage_delete_edge_annotation_cardinality(snapshot, self.clone())
             }
@@ -144,6 +146,7 @@ impl<'a> IntoCanonicalTypeEdge<'a> for Owns<'a> {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum OwnsAnnotation {
     Distinct(AnnotationDistinct),
+    Key(AnnotationKey),
     Cardinality(AnnotationCardinality),
 }
 
@@ -151,7 +154,9 @@ impl From<Annotation> for OwnsAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Distinct(annotation) => OwnsAnnotation::Distinct(annotation),
+            Annotation::Key(annotation) => OwnsAnnotation::Key(annotation),
             Annotation::Cardinality(annotation) => OwnsAnnotation::Cardinality(annotation),
+
             Annotation::Abstract(_) => unreachable!("Independent annotation not available for Owns."),
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Owns."),
             Annotation::Regex(_) => unreachable!("Regex annotation not available for Owns."),

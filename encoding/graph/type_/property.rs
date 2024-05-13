@@ -223,13 +223,6 @@ macro_rules! type_edge_property_constructors {
 }
 
 type_edge_property_constructors!(
-    new_property_type_edge_annotation_abstract,
-    build_property_type_edge_annotation_abstract,
-    is_property_type_edge_annotation_abstract,
-    InfixType::PropertyAnnotationAbstract
-);
-
-type_edge_property_constructors!(
     new_property_type_edge_annotation_distinct,
     build_property_type_edge_annotation_distinct,
     is_property_type_edge_annotation_distinct,
@@ -237,10 +230,10 @@ type_edge_property_constructors!(
 );
 
 type_edge_property_constructors!(
-    new_property_type_edge_annotation_independent,
-    build_property_type_edge_annotation_independent,
-    is_property_type_edge_annotation_independent,
-    InfixType::PropertyAnnotationIndependent
+    new_property_type_edge_annotation_key,
+    build_property_type_edge_annotation_key,
+    is_property_type_edge_annotation_key,
+    InfixType::PropertyAnnotationKey
 );
 
 type_edge_property_constructors!(

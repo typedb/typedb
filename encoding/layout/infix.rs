@@ -33,6 +33,7 @@ pub enum Infix {
     PropertyAnnotationAbstract,
     PropertyAnnotationDistinct,
     PropertyAnnotationIndependent,
+    PropertyAnnotationKey,
     PropertyAnnotationCardinality,
     PropertyAnnotationRegex,
     _PropertyAnnotationLast, // marker to indicate end of reserved range for annotations
@@ -81,8 +82,9 @@ impl Infix {
         PropertyAnnotationAbstract => [50];
         PropertyAnnotationDistinct => [51];
         PropertyAnnotationIndependent => [52];
-        PropertyAnnotationCardinality => [53];
-        PropertyAnnotationRegex => [54];
+        PropertyAnnotationKey => [53];
+        PropertyAnnotationCardinality => [54];
+        PropertyAnnotationRegex => [55];
         _PropertyAnnotationLast => [99];
 
         PropertyHasOrder => [100];

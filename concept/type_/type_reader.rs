@@ -41,7 +41,7 @@ use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 use crate::{
     error::ConceptReadError,
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent},
+        annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent, AnnotationKey},
         attribute_type::AttributeType,
         deserialise_annotation_cardinality, deserialise_annotation_regex, deserialise_ordering,
         object_type::ObjectType,
@@ -369,7 +369,8 @@ impl TypeReader {
                         Annotation::Cardinality(deserialise_annotation_cardinality(value))
                     }
                     Infix::PropertyAnnotationRegex => Annotation::Regex(deserialise_annotation_regex(value)),
-                    Infix::_PropertyAnnotationLast
+                    | Infix::_PropertyAnnotationLast
+                    | Infix::PropertyAnnotationKey
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
                     | Infix::PropertyOrdering
@@ -415,14 +416,15 @@ impl TypeReader {
             .collect_cloned_hashset(|key, value| {
                 let annotation_key = TypeEdgeProperty::new(Bytes::Reference(key.byte_ref()));
                 match annotation_key.infix() {
-                    Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract),
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
                     Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
+                    Infix::PropertyAnnotationKey => Annotation::Key(AnnotationKey),
                     Infix::PropertyAnnotationCardinality => {
                         Annotation::Cardinality(deserialise_annotation_cardinality(value))
                     }
                     Infix::PropertyAnnotationRegex => Annotation::Regex(deserialise_annotation_regex(value)),
                     | Infix::_PropertyAnnotationLast
+                    | Infix::PropertyAnnotationAbstract
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
                     | Infix::PropertyOrdering

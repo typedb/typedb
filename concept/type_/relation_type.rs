@@ -365,8 +365,10 @@ impl From<Annotation> for RelationTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Abstract(annotation) => RelationTypeAnnotation::Abstract(annotation),
+
             Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Relation type."),
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Relation type."),
+            Annotation::Key(_) => unreachable!("Key annotation not available for Relation type."),
             Annotation::Cardinality(_) => unreachable!("Cardinality annotation not available for Relation type."),
             Annotation::Regex(_) => unreachable!("Regex annotation not available for Relation type."),
         }
