@@ -6,6 +6,6 @@
 
 
 pub mod checkpoint;
-pub(crate) mod commit_replay;
+pub mod commit_replay;
 
 

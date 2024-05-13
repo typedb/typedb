@@ -101,8 +101,8 @@ impl<T: Prefix> KeyRange<T> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RangeEnd<T>
-where
-    T: Ord + Debug,
+    where
+        T: Ord + Debug,
 {
     SameAsStart,
     Inclusive(T),
@@ -111,8 +111,8 @@ where
 }
 
 impl<T> RangeEnd<T>
-where
-    T: Ord + Debug,
+    where
+        T: Ord + Debug,
 {
     pub fn new_same_as_start() -> Self {
         RangeEnd::SameAsStart
@@ -136,6 +136,13 @@ where
             RangeEnd::Inclusive(end) => RangeEnd::Inclusive(mapper(end)),
             RangeEnd::Exclusive(end) => RangeEnd::Exclusive(mapper(end)),
             RangeEnd::Unbounded => RangeEnd::Unbounded,
+        }
+    }
+
+    pub fn get_value(&self) -> Option<&T> {
+        match self {
+            RangeEnd::SameAsStart | RangeEnd::Unbounded => None,
+            RangeEnd::Inclusive(value) | RangeEnd::Exclusive(value) => Some(&value)
         }
     }
 }

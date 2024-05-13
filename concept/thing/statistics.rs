@@ -4,18 +4,35 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
-use std::ops::{Add, AddAssign};
+use std::ops::{Add, AddAssign, Bound};
+use std::sync::atomic::Ordering;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{Error, SeqAccess, Visitor};
 use serde::ser::SerializeStruct;
 
+use bytes::Bytes;
 use durability::SequenceNumber;
-use encoding::graph::type_::vertex::{build_vertex_attribute_type, build_vertex_entity_type, build_vertex_relation_type, build_vertex_role_type, TypeID, TypeIDUInt};
+use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeRelationIndex, ThingEdgeRolePlayer};
+use encoding::graph::thing::vertex_attribute::AttributeVertex;
+use encoding::graph::thing::vertex_object::ObjectVertex;
+use encoding::graph::type_::vertex::{build_vertex_attribute_type, build_vertex_entity_type, build_vertex_relation_type, build_vertex_role_type, is_vertex_attribute_type, is_vertex_entity_type, is_vertex_relation_type, is_vertex_role_type, new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type, TypeID, TypeIDUInt};
 use encoding::graph::Typed;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use storage::iterator::MVCCReadError;
+use storage::key_value::{StorageKeyArray, StorageKeyReference};
+use storage::MVCCStorage;
+use storage::recovery::checkpoint::CheckpointExtension;
+use storage::recovery::commit_replay::RecoveryCommitStatus;
+use storage::snapshot::ReadableSnapshot;
+use storage::snapshot::write::Write;
 
+use crate::thing::attribute::Attribute;
+use crate::thing::entity::Entity;
+use crate::thing::object::Object;
+use crate::thing::relation::Relation;
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::entity_type::EntityType;
 use crate::type_::object_type::ObjectType;
@@ -23,36 +40,40 @@ use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
 use crate::type_::TypeAPI;
 
-#[derive(Debug)]
+/// Thing statistics, reflecting a snapshot of statistics accurate as of a particular sequence number
+/// When types are undefined, we retain the last count of the instances of the type
+/// Invariant: all undefined types are
+#[derive(Debug, Clone)]
 pub struct Statistics {
-    open_sequence_number: SequenceNumber,
+    pub sequence_number: SequenceNumber,
 
-    total_thing_count: u64,
-    total_entity_count: u64,
-    total_relation_count: u64,
-    total_attribute_count: u64,
-    total_role_count: u64,
-    total_has_count: u64,
+    pub total_thing_count: u64,
+    pub total_entity_count: u64,
+    pub total_relation_count: u64,
+    pub total_attribute_count: u64,
+    pub total_role_count: u64,
+    pub total_has_count: u64,
 
-    entity_counts: HashMap<EntityType<'static>, u64>,
-    relation_counts: HashMap<RelationType<'static>, u64>,
-    attribute_counts: HashMap<AttributeType<'static>, u64>,
-    role_counts: HashMap<RoleType<'static>, u64>,
+    pub entity_counts: HashMap<EntityType<'static>, u64>,
+    pub relation_counts: HashMap<RelationType<'static>, u64>,
+    pub attribute_counts: HashMap<AttributeType<'static>, u64>,
+    pub role_counts: HashMap<RoleType<'static>, u64>,
 
-    has_attribute_counts: HashMap<ObjectType<'static>, HashMap<AttributeType<'static>, u64>>,
-    attribute_owner_counts: HashMap<AttributeType<'static>, HashMap<ObjectType<'static>, u64>>,
-    role_player_counts: HashMap<ObjectType<'static>, HashMap<RoleType<'static>, u64>>,
-    relation_role_counts: HashMap<RelationType<'static>, HashMap<RoleType<'static>, u64>>,
-    player_index_counts: HashMap<ObjectType<'static>, HashMap<ObjectType<'static>, u64>>,
+    pub has_attribute_counts: HashMap<ObjectType<'static>, HashMap<AttributeType<'static>, u64>>,
+    pub attribute_owner_counts: HashMap<AttributeType<'static>, HashMap<ObjectType<'static>, u64>>,
+    pub role_player_counts: HashMap<ObjectType<'static>, HashMap<RoleType<'static>, u64>>,
+    pub relation_role_counts: HashMap<RelationType<'static>, HashMap<RoleType<'static>, u64>>,
+
+    // TODO: adding role types is possible, but won't help with filtering before reading storage since roles are not in the prefix
+    pub player_index_counts: HashMap<ObjectType<'static>, HashMap<ObjectType<'static>, u64>>,
 
     // future: attribute value distributions, attribute value ownership distributions, etc.
 }
 
 impl Statistics {
-
     pub fn new(sequence_number: SequenceNumber) -> Self {
         Statistics {
-            open_sequence_number: sequence_number,
+            sequence_number: sequence_number,
             total_thing_count: 0,
             total_entity_count: 0,
             total_relation_count: 0,
@@ -71,35 +92,187 @@ impl Statistics {
         }
     }
 
-    fn update_entities(&mut self, entity_type: EntityType<'static>, delta: u64) {
-        self.entity_counts.entry(entity_type).or_insert(0).add_assign(delta);
-        self.total_entity_count += delta;
-        self.total_thing_count += delta;
+    pub fn update_writes<D, Snapshot: ReadableSnapshot>(
+        &mut self,
+        commits: &BTreeMap<SequenceNumber, Snapshot>,
+        storage: &MVCCStorage<D>
+    ) -> Result<(), MVCCReadError> {
+        if commits.is_empty() {
+            return Ok(())
+        }
+        for (sequence_number, snapshot) in commits.iter() {
+            self.update_write(*sequence_number, snapshot, commits, storage)?
+        }
+        let last_sequence_number = *commits.last_key_value().unwrap().0;
+        self.sequence_number = last_sequence_number;
+        Ok(())
     }
 
-    fn update_relations(&mut self, relation_type: RelationType<'static>, delta: u64) {
-        self.relation_counts.entry(relation_type).or_insert(0).add_assign(delta);
-        self.total_relation_count+= delta;
-        self.total_thing_count += delta;
+    fn update_write<D, Snapshot: ReadableSnapshot>(
+        &mut self,
+        snapshot_commit_sequence_number: SequenceNumber,
+        snapshot: &impl ReadableSnapshot,
+        commits: &BTreeMap<SequenceNumber, Snapshot>,
+        storage: &MVCCStorage<D>,
+    ) -> Result<(), MVCCReadError> {
+        let record_open_sequence_number = snapshot.open_sequence_number();
+        for (key, write) in snapshot.iterate_buffered_writes() {
+            let key_reference = StorageKeyReference::from(&key);
+            let delta = Self::write_to_delta(&key, &write, record_open_sequence_number, snapshot_commit_sequence_number, commits, storage)?;
+            if ObjectVertex::is_entity_vertex(key_reference) {
+                let type_ = Entity::new(ObjectVertex::new(Bytes::Reference(key_reference.byte_ref()))).type_();
+                self.update_entities(type_, delta);
+            } else if ObjectVertex::is_relation_vertex(key_reference) {
+                let type_ = Relation::new(ObjectVertex::new(Bytes::Reference(key_reference.byte_ref()))).type_();
+                self.update_relations(type_, delta);
+            } else if AttributeVertex::is_attribute_vertex(key_reference) {
+                let type_ = Attribute::new(AttributeVertex::new(Bytes::Reference(key_reference.byte_ref()))).type_();
+                self.update_attributes(type_, delta);
+            } else if ThingEdgeHas::is_has(key_reference) {
+                let edge = ThingEdgeHas::new(Bytes::Reference(key_reference.byte_ref()));
+                self.update_has(Object::new(edge.from()).type_(), Attribute::new(edge.to()).type_(), delta)
+            } else if ThingEdgeRolePlayer::is_role_player(key_reference) {
+                let edge = ThingEdgeRolePlayer::new(Bytes::Reference(key_reference.byte_ref()));
+                let role_type = RoleType::new(build_vertex_role_type(edge.role_id()));
+                self.update_role_player(Object::new(edge.from()).type_(), role_type, Relation::new(edge.to()).type_(), delta)
+            } else if ThingEdgeRelationIndex::is_index(key_reference) {
+                let edge = ThingEdgeRelationIndex::new(Bytes::Reference(key_reference.byte_ref()));
+                self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta)
+            } else if is_vertex_entity_type(key_reference) {
+                let type_ = EntityType::new(new_vertex_entity_type(Bytes::Reference(key_reference.byte_ref()).into_owned()));
+                if matches!(write, Write::Delete) {
+                    self.entity_counts.remove(&type_);
+                    self.clear_object_type(ObjectType::Entity(type_));
+                }
+            } else if is_vertex_relation_type(key_reference) {
+                let type_ = RelationType::new(new_vertex_relation_type(Bytes::Reference(key_reference.byte_ref()).into_owned()));
+                if matches!(write, Write::Delete) {
+                    self.relation_counts.remove(&type_);
+                    self.relation_role_counts.remove(&type_);
+                    let as_object_type = ObjectType::Relation(type_);
+                    self.clear_object_type(as_object_type.clone());
+                }
+            } else if is_vertex_attribute_type(key_reference) {
+                let type_ = AttributeType::new(new_vertex_attribute_type(Bytes::Reference(key_reference.byte_ref()).into_owned()));
+                if matches!(write, Write::Delete) {
+                    self.attribute_counts.remove(&type_);
+                    self.attribute_owner_counts.remove(&type_);
+                    self.has_attribute_counts.iter_mut().for_each(|(_, map)| {
+                        let _ = map.remove(&type_);
+                    });
+                    self.has_attribute_counts.retain(|_, map| !map.is_empty());
+                }
+            } else if is_vertex_role_type(key_reference) {
+                let type_ = RoleType::new(new_vertex_role_type(Bytes::Reference(key_reference.byte_ref()).into_owned()));
+                if matches!(write, Write::Delete) {
+                    self.role_counts.remove(&type_);
+                    self.role_player_counts.iter_mut().for_each(|(_, map)| {
+                        let _ = map.remove(&type_);
+                    });
+                    self.role_player_counts.retain(|_, map| !map.is_empty());
+                    self.relation_role_counts.iter_mut().for_each(|(_, map)| {
+                        let _ = map.remove(&type_);
+                    });
+                    self.relation_role_counts.retain(|_, map| !map.is_empty());
+                }
+            }
+        }
+        Ok(())
     }
 
-    fn update_attributes(&mut self, attribute_type: AttributeType<'static>, delta: u64) {
-        self.attribute_counts.entry(attribute_type).or_insert(0).add_assign(delta);
-        self.total_attribute_count+= delta;
-        self.total_thing_count += delta;
+    fn clear_object_type(&mut self, object_type: ObjectType<'static>) {
+        self.has_attribute_counts.remove(&object_type);
+        self.attribute_owner_counts.iter_mut().for_each(|(_, map)| {
+            let _ = map.remove(&object_type);
+        });
+        self.attribute_owner_counts.retain(|_, map| !map.is_empty());
+
+        self.role_player_counts.remove(&object_type);
+
+        self.player_index_counts.remove(&object_type);
+        self.player_index_counts.iter_mut().for_each(|(_, map)| {
+            let _ = map.remove(&object_type);
+        });
+        self.player_index_counts.retain(|_, map| !map.is_empty());
     }
 
-    fn update_roles(&mut self, role_type: RoleType<'static>, delta: u64) {
-        self.role_counts.entry(role_type).or_insert(0).add_assign(delta);
-        self.total_role_count+= delta;
+    fn write_to_delta<D, Snapshot: ReadableSnapshot>(
+        write_key: &StorageKeyArray<{ BUFFER_KEY_INLINE }>,
+        write: &Write,
+        write_open_sequence_number: SequenceNumber,
+        write_commit_sequence_number: SequenceNumber,
+        commits: &BTreeMap<SequenceNumber, Snapshot>,
+        storage: &MVCCStorage<D>,
+    ) -> Result<i64, MVCCReadError> {
+        match write {
+            Write::Insert { .. } => Ok(1),
+            Write::Put { reinsert, .. } => {
+                // PUT operation which we may have a concurrent commit and may or may not be inserted in the end
+                // The easiest way to check whether it was ultimately committed or not is to open the storage at
+                // CommitSequenceNumber - 1, and check if it exists. If it exists, we don't count. If it does, we do.
+                // However, this induces a read for every PUT, even though 99% of time there is no concurrent put.
+
+                // So, we only read from storage, if :
+                // 1. we can't tell from the current set of commits whether a predecessor could have written the same key (open < commits start)
+                // 2. any commit in the set of commits modifies the same key at all
+
+                let check_storage = write_open_sequence_number < *commits.first_key_value().unwrap().0 || (
+                    commits.range::<SequenceNumber, _>((Bound::Excluded(write_open_sequence_number), Bound::Excluded(write_commit_sequence_number)))
+                        .any(|(seq, snapshot)| {
+                            snapshot.get_buffered_write_mapped(StorageKeyReference::from(write_key), |v| true)
+                                .unwrap_or(false)
+                        })
+                );
+
+                if check_storage {
+                    if storage.get_mapped(
+                        StorageKeyReference::from(write_key),
+                        write_commit_sequence_number.previous(),
+                        |_| true,
+                    )?.unwrap_or(false) {
+                        // exists in storage before PUT is committed
+                        return Ok(0);
+                    } else {
+                        // does not exist in storage before PUT is committed
+                        return Ok(1);
+                    }
+                } else {
+                    // no concurrent commit could have occurred - fall back to the reinsert flag
+                    if reinsert.load(Ordering::Relaxed) {
+                        return Ok(1);
+                    } else {
+                        return Ok(0);
+                    }
+                }
+            }
+            Write::Delete => Ok(-1),
+        }
     }
 
-    fn update_has(&mut self, owner_type: ObjectType<'static>, attribute_type: AttributeType<'static>, delta: u64) {
+    fn update_entities(&mut self, entity_type: EntityType<'static>, delta: i64) {
+        self.entity_counts.entry(entity_type).or_insert(0).checked_add_signed(delta).unwrap();
+        self.total_entity_count.checked_add_signed(delta).unwrap();
+        self.total_thing_count.checked_add_signed(delta).unwrap();
+    }
+
+    fn update_relations(&mut self, relation_type: RelationType<'static>, delta: i64) {
+        self.relation_counts.entry(relation_type).or_insert(0).checked_add_signed(delta).unwrap();
+        self.total_relation_count.checked_add_signed(delta).unwrap();
+        self.total_thing_count.checked_add_signed(delta).unwrap();
+    }
+
+    fn update_attributes(&mut self, attribute_type: AttributeType<'static>, delta: i64) {
+        self.attribute_counts.entry(attribute_type).or_insert(0).checked_add_signed(delta).unwrap();
+        self.total_attribute_count.checked_add_signed(delta).unwrap();
+        self.total_thing_count.checked_add_signed(delta).unwrap();
+    }
+
+    fn update_has(&mut self, owner_type: ObjectType<'static>, attribute_type: AttributeType<'static>, delta: i64) {
         self.has_attribute_counts.entry(owner_type.clone()).or_insert_with(|| HashMap::new())
-            .entry(attribute_type.clone()).or_insert(0).add_assign(delta);
+            .entry(attribute_type.clone()).or_insert(0).checked_add_signed(delta).unwrap();
         self.attribute_owner_counts.entry(attribute_type).or_insert_with(|| HashMap::new())
-            .entry(owner_type).or_insert(0).add_assign(delta);
-        self.total_has_count += delta;
+            .entry(owner_type).or_insert(0).checked_add_signed(delta).unwrap();
+        self.total_has_count.checked_add_signed(delta).unwrap();
     }
 
     fn update_role_player(
@@ -107,20 +280,22 @@ impl Statistics {
         player_type: ObjectType<'static>,
         role_type: RoleType<'static>,
         relation_type: RelationType<'static>,
-        delta: u64
+        delta: i64,
     ) {
+        self.role_counts.entry(role_type.clone()).or_insert(0).checked_add_signed(delta).unwrap();
+        self.total_role_count.checked_add_signed(delta).unwrap();
         self.role_player_counts.entry(player_type).or_insert_with(|| HashMap::new())
-            .entry(role_type.clone()).or_insert(0).add_assign(delta);
+            .entry(role_type.clone()).or_insert(0).checked_add_signed(delta).unwrap();
         self.relation_role_counts.entry(relation_type).or_insert_with(|| HashMap::new())
-            .entry(role_type).or_insert(0).add_assign(delta);
+            .entry(role_type).or_insert(0).checked_add_signed(delta).unwrap();
     }
 
-    fn update_indexed_player(&mut self, player_1_type: ObjectType<'static>, player_2_type: ObjectType<'static>, delta: u64) {
+    fn update_indexed_player(&mut self, player_1_type: ObjectType<'static>, player_2_type: ObjectType<'static>, delta: i64) {
         self.player_index_counts.entry(player_1_type.clone()).or_insert_with(|| HashMap::new())
-            .entry(player_2_type.clone()).or_insert(0).add_assign(delta);
+            .entry(player_2_type.clone()).or_insert(0).checked_add_signed(delta).unwrap();
         if player_1_type != player_2_type {
             self.player_index_counts.entry(player_2_type).or_insert_with(|| HashMap::new())
-                .entry(player_1_type).or_insert(0).add_assign(delta);
+                .entry(player_1_type).or_insert(0).checked_add_signed(delta).unwrap();
         }
     }
 }
@@ -210,6 +385,18 @@ impl From<AttributeType<'static>> for SerialisableType {
 impl From<RoleType<'static>> for SerialisableType {
     fn from(role_type: RoleType<'static>) -> Self {
         Self::Role(role_type.vertex().type_id_().as_u16())
+    }
+}
+
+impl CheckpointExtension for Statistics {
+    const NAME: &'static str = "thing_statistics";
+
+    fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
+        bincode::serialize_into(writer, self)
+    }
+
+    fn deserialise_from(reader: &mut impl std::io::Read) -> bincode::Result<Self> {
+        bincode::deserialize_from(reader)
     }
 }
 
@@ -318,7 +505,7 @@ mod serialise {
         {
             let mut state = serializer.serialize_struct("Statistics", Field::NAMES.len())?;
 
-            state.serialize_field(Field::OpenSequenceNumber.name(), &self.open_sequence_number)?;
+            state.serialize_field(Field::OpenSequenceNumber.name(), &self.sequence_number)?;
 
             state.serialize_field(Field::TotalThingCount.name(), &self.total_thing_count)?;
             state.serialize_field(Field::TotalEntityCount.name(), &self.total_entity_count)?;
@@ -507,7 +694,7 @@ mod serialise {
                         .map(|(type_1, map)| (type_1.into_object_type(), into_object_map(map)))
                         .collect();
                     Ok(Statistics {
-                        open_sequence_number,
+                        sequence_number: open_sequence_number,
                         total_thing_count,
                         total_entity_count,
                         total_relation_count,
@@ -662,7 +849,7 @@ mod serialise {
                     }
 
                     Ok(Statistics {
-                        open_sequence_number: open_sequence_number
+                        sequence_number: open_sequence_number
                             .ok_or_else(|| de::Error::missing_field(Field::OpenSequenceNumber.name()))?,
                         total_thing_count: total_thing_count
                             .ok_or_else(|| de::Error::missing_field(Field::TotalThingCount.name()))?,

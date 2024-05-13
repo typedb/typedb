@@ -17,15 +17,17 @@ use crate::MVCCStorage;
 use crate::recovery::commit_replay::CommitRecoveryError::DurabilityRecordsMissing;
 use crate::write_batches::WriteBatches;
 
-pub(crate) fn load_commits_from(
-    recovery_start: SequenceNumber,
+
+/// Load commit data from the start onwards. Ignores any statuses that are not paired with commit data.
+pub fn load_commit_data_from(
+    start: SequenceNumber,
     durability_service: &impl DurabilityService,
 ) -> Result<BTreeMap<SequenceNumber, RecoveryCommitStatus>, CommitRecoveryError> {
     use CommitRecoveryError::{DurabilityRecordDeserialize, DurabilityServiceRead, DurabilityRecordsMissing};
 
     let mut recovered_commits = BTreeMap::new();
 
-    let mut records = durability_service.iter_from(recovery_start).map_err(|error| DurabilityServiceRead { source: error })?
+    let mut records = durability_service.iter_from(start).map_err(|error| DurabilityServiceRead { source: error })?
         .peekable();
     let mut first_record = true;
 
@@ -33,9 +35,9 @@ pub(crate) fn load_commits_from(
         let RawRecord { sequence_number, record_type, bytes } =
             record.map_err(|error| DurabilityServiceRead { source: error })?;
         if first_record {
-            if sequence_number != recovery_start {
+            if sequence_number != start {
                 return Err(DurabilityRecordsMissing {
-                    expected_sequence_number: recovery_start,
+                    expected_sequence_number: start,
                     first_record_sequence_number: sequence_number,
                 });
             }
@@ -51,13 +53,14 @@ pub(crate) fn load_commits_from(
             StatusRecord::RECORD_TYPE => {
                 let StatusRecord { commit_record_sequence_number, was_committed } = StatusRecord::deserialise_from(&mut &*bytes)
                     .map_err(|error| DurabilityRecordDeserialize { source: error })?;
+                if commit_record_sequence_number < start {
+                    continue;
+                }
                 if was_committed {
-                    let record = recovered_commits.remove(&commit_record_sequence_number).map(|status| {
-                        let RecoveryCommitStatus::Pending(record) = status else {
-                            unreachable!("found second commit status for a record")
-                        };
-                        record
-                    });
+                    let record = recovered_commits.remove(&commit_record_sequence_number).unwrap();
+                    let RecoveryCommitStatus::Pending(record) = record else {
+                        unreachable!("found second commit status for a record")
+                    };
                     recovered_commits.insert(commit_record_sequence_number, RecoveryCommitStatus::Validated(record));
                 } else {
                     recovered_commits.insert(commit_record_sequence_number, RecoveryCommitStatus::Rejected);
@@ -86,7 +89,6 @@ pub(crate) fn apply_commits(
     for (commit_sequence_number, commit) in recovered_commits {
         match commit {
             RecoveryCommitStatus::Validated(commit_record) => {
-                let commit_record = commit_record.unwrap();
                 pending_writes.push(WriteBatches::from_operations(commit_sequence_number, commit_record.operations()));
                 isolation_manager.load_validated(commit_sequence_number, commit_record);
             }
@@ -118,9 +120,9 @@ pub(crate) fn apply_commits(
     Ok(())
 }
 
-pub(crate) enum RecoveryCommitStatus {
+pub enum RecoveryCommitStatus {
     Pending(CommitRecord),
-    Validated(Option<CommitRecord>),
+    Validated(CommitRecord),
     Rejected,
 }
 

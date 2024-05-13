@@ -24,6 +24,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{ConceptStatus, edge_iterator, thing::{attribute::Attribute, entity::Entity, ObjectAPI, relation::Relation, thing_manager::ThingManager}};
 use crate::error::{ConceptReadError, ConceptWriteError};
 use crate::thing::ThingAPI;
+use crate::type_::object_type::ObjectType;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Object<'a> {
@@ -89,6 +90,13 @@ impl<'a> Object<'a> {
                 todo!()
                 // relation.delete_has_many(thing_manager, attribute, count)
             }
+        }
+    }
+
+    pub fn type_(&self) -> ObjectType<'static> {
+        match self {
+            Object::Entity(entity) => ObjectType::Entity(entity.type_()),
+            Object::Relation(relation) => ObjectType::Relation(relation.type_()),
         }
     }
 

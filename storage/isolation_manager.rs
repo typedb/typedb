@@ -202,7 +202,7 @@ impl IsolationManager {
         durability_service: &impl DurabilityService,
         start_sequence_number: SequenceNumber,
         stop_sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item = Result<(SequenceNumber, CommitStatus<'_>), DurabilityError>>, DurabilityError>
+    ) -> Result<impl Iterator<Item=Result<(SequenceNumber, CommitStatus<'_>), DurabilityError>>, DurabilityError>
     {
         let mut is_committed = HashMap::new();
         for record in durability_service.iter_unsequenced_type_from::<StatusRecord>(start_sequence_number)? {
@@ -381,14 +381,14 @@ impl Timeline {
                 });
                 if should_update
                     && self
-                        .watermark
-                        .compare_exchange(
-                            (candidate_watermark - 1).number(),
-                            candidate_watermark.number(),
-                            Ordering::SeqCst,
-                            Ordering::SeqCst,
-                        )
-                        .is_ok()
+                    .watermark
+                    .compare_exchange(
+                        (candidate_watermark - 1).number(),
+                        candidate_watermark.number(),
+                        Ordering::SeqCst,
+                        Ordering::SeqCst,
+                    )
+                    .is_ok()
                 {
                     candidate_watermark += 1;
                     if candidate_watermark >= window.as_ref().unwrap().end() {
@@ -637,11 +637,19 @@ impl SlotMarker {
     }
 }
 
+// TODO: move out of isolation manager
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct CommitRecord {
+pub struct CommitRecord {
     // TODO: this could read-through to the WAL if we have to save memory?
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
+    commit_type: CommitType,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+pub enum CommitType {
+    Data,
+    Schema,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -651,11 +659,15 @@ pub(crate) struct StatusRecord {
 }
 
 impl CommitRecord {
-    pub(crate) fn new(operations: OperationsBuffer, open_sequence_number: SequenceNumber) -> CommitRecord {
-        CommitRecord { operations, open_sequence_number }
+    pub(crate) fn new(
+        operations: OperationsBuffer,
+        open_sequence_number: SequenceNumber,
+        commit_type: CommitType
+    ) -> CommitRecord {
+        CommitRecord { operations, open_sequence_number, commit_type }
     }
 
-    pub(crate) fn operations(&self) -> &OperationsBuffer {
+    pub fn operations(&self) -> &OperationsBuffer {
         &self.operations
     }
 
@@ -663,13 +675,21 @@ impl CommitRecord {
         &mut self.operations
     }
 
-    pub(crate) fn open_sequence_number(&self) -> SequenceNumber {
+    pub fn into_operations(self) -> OperationsBuffer {
+        self.operations
+    }
+
+    pub fn commit_type(&self) -> CommitType {
+        self.commit_type
+    }
+
+    pub fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
     }
 
     fn deserialise_from(record_type: DurabilityRecordType, reader: impl Read)
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         assert_eq!(Self::RECORD_TYPE, record_type);
         // TODO: handle error with a better message
@@ -753,7 +773,7 @@ impl DurabilityRecord for CommitRecord {
             bincode::serialize(
                 &bincode::deserialize::<CommitRecord>(bincode::serialize(&self).as_ref().unwrap()).unwrap()
             )
-            .unwrap(),
+                .unwrap(),
             bincode::serialize(self).unwrap()
         );
         bincode::serialize_into(writer, &self)
@@ -783,8 +803,8 @@ impl StatusRecord {
     }
 
     fn deserialise_from(record_type: DurabilityRecordType, reader: impl Read)
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         assert_eq!(Self::RECORD_TYPE, record_type);
         // TODO: handle error with a better message
@@ -802,7 +822,7 @@ impl DurabilityRecord for StatusRecord {
             bincode::serialize(
                 &bincode::deserialize::<StatusRecord>(bincode::serialize(&self).as_ref().unwrap()).unwrap()
             )
-            .unwrap(),
+                .unwrap(),
             bincode::serialize(self).unwrap()
         );
         bincode::serialize_into(writer, &self)
@@ -857,6 +877,7 @@ mod tests {
         isolation_manager::{CommitRecord, CommitStatus, Timeline, TIMELINE_WINDOW_SIZE},
         snapshot::buffer::OperationsBuffer,
     };
+
     struct MockTransaction {
         read_sequence_number: SequenceNumber,
         commit_sequence_number: SequenceNumber,

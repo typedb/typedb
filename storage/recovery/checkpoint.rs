@@ -11,6 +11,7 @@ use std::{
     io::{self, Write},
     path::{Path, PathBuf},
 };
+use std::io::Read;
 
 use chrono::Utc;
 use itertools::Itertools;
@@ -18,18 +19,16 @@ use same_file::is_same_file;
 
 use durability::{DurabilityService, SequenceNumber};
 
+use crate::recovery::commit_replay::{apply_commits, CommitRecoveryError, load_commit_data_from};
+
 use crate::{
-    keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, Keyspaces, KeyspaceSet}
-    ,
+    keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, Keyspaces, KeyspaceSet},
     StorageCommitError,
 };
-use crate::recovery::commit_replay::{apply_commits, CommitRecoveryError, load_commits_from};
 
-///
 /// A checkpoint is a directory, which contains at least the storage checkpointing data: keyspaces + the watermark.
 /// The watermark represents a sequence number that is guaranteed to be in all the keyspaces, and after which we may
 /// have to reapply commits to the keyspaces from the WAL.
-///
 pub struct Checkpoint {
     pub directory: PathBuf,
 }
@@ -75,6 +74,23 @@ impl Checkpoint {
         Ok(())
     }
 
+    pub fn add_extension<T: CheckpointExtension>(&self, data: &T) -> Result<(), CheckpointCreateError> {
+        use CheckpointCreateError::{ExtensionDuplicate, ExtensionIO, ExtensionSerialise};
+        let file_name = T::NAME;
+        let path = self.directory.join(file_name);
+        if path.exists() {
+            return Err(ExtensionDuplicate { name: T::NAME.to_string() });
+        }
+
+        let mut file = File::create(path)
+            .map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: err })?;
+
+        data.serialise_into(&mut file)
+            .map_err(|err| ExtensionSerialise { name: T::NAME.to_string(), source: err })?;
+
+        Ok(())
+    }
+
     pub fn finish(&self) -> Result<(), CheckpointCreateError> {
         use CheckpointCreateError::{CheckpointDirRead, MissingStorageData, OldCheckpointRemove};
 
@@ -104,12 +120,29 @@ impl Checkpoint {
             .map(|path| path.map(|p| Checkpoint { directory: p }))
     }
 
+    pub fn get_extension<T: CheckpointExtension>(&self) -> Result<T, CheckpointLoadError> {
+        use CheckpointLoadError::{ExtensionDeserialise, ExtensionIO, ExtensionNotFound};
+
+        let file_name = T::NAME;
+        let path = self.directory.join(file_name);
+        if !path.exists() {
+            return Err(ExtensionNotFound { name: T::NAME.to_string() });
+        }
+
+        let mut file = File::open(path)
+            .map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: err })?;
+
+        let deserialised = T::deserialise_from(&mut file)
+            .map_err(|err| ExtensionDeserialise { name: T::NAME.to_string(), source: err })?;
+        Ok(deserialised)
+    }
+
     pub(crate) fn recover_storage<KS: KeyspaceSet, Durability: DurabilityService>(
         &self,
         keyspaces_dir: &Path,
         durability_service: &Durability,
     ) -> Result<(Keyspaces, SequenceNumber), CheckpointLoadError> {
-        use CheckpointLoadError::{CheckpointRestore, KeyspaceOpen, MetadataRead, CommitRecoveryFailed};
+        use CheckpointLoadError::{CheckpointRestore, CommitRecoveryFailed, KeyspaceOpen, MetadataRead};
 
         let checkpoint_sequence_number = {
             for keyspace in KS::iter() {
@@ -131,7 +164,7 @@ impl Checkpoint {
         })?;
 
         let recovery_start = checkpoint_sequence_number + 1;
-        let recovered_commits = load_commits_from(recovery_start, durability_service)
+        let recovered_commits = load_commit_data_from(recovery_start, durability_service)
             .map_err(|err| CommitRecoveryFailed { source: err })?;
         let next_sequence_number = recovered_commits.keys().max().copied().unwrap_or(recovery_start - 1) + 1;
         apply_commits(recovered_commits, durability_service, &keyspaces)
@@ -172,6 +205,12 @@ fn find_latest_checkpoint(checkpoint_dir: &Path) -> Result<Option<PathBuf>, Chec
         .map_err(|error| CheckpointLoadError::CheckpointRead { dir: checkpoint_dir.to_owned(), source: error })
 }
 
+pub trait CheckpointExtension: Sized {
+    const NAME: &'static str;
+    fn serialise_into(&self, writer: &mut impl Write) -> bincode::Result<()>;
+    fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self>;
+}
+
 #[derive(Debug)]
 pub enum CheckpointCreateError {
     CheckpointDirCreate { dir: PathBuf, source: io::Error },
@@ -183,6 +222,10 @@ pub enum CheckpointCreateError {
 
     MetadataFileCreate { file_path: PathBuf, source: io::Error },
     MetadataWrite { file_path: PathBuf, source: io::Error },
+
+    ExtensionDuplicate { name: String },
+    ExtensionIO { name: String, source: io::Error },
+    ExtensionSerialise { name: String, source: bincode::Error },
 
     OldCheckpointRemove { dir: PathBuf, source: io::Error },
 }
@@ -202,6 +245,9 @@ impl Error for CheckpointCreateError {
             Self::KeyspaceCheckpoint { source, .. } => Some(source),
             Self::MetadataFileCreate { source, .. } => Some(source),
             Self::MetadataWrite { source, .. } => Some(source),
+            Self::ExtensionDuplicate { .. } => None,
+            Self::ExtensionIO { source, .. } => Some(source),
+            Self::ExtensionSerialise { source, .. } => Some(source),
             Self::OldCheckpointRemove { source, .. } => Some(source),
         }
     }
@@ -216,6 +262,10 @@ pub enum CheckpointLoadError {
     CheckpointRestore { dir: PathBuf, source: io::Error },
     CommitPending { source: StorageCommitError },
     KeyspaceOpen { source: KeyspaceOpenError },
+
+    ExtensionNotFound { name: String },
+    ExtensionIO { name: String, source: io::Error },
+    ExtensionDeserialise { name: String, source: bincode::Error },
 }
 
 impl fmt::Display for CheckpointLoadError {
@@ -234,6 +284,10 @@ impl Error for CheckpointLoadError {
             Self::MetadataRead { source, .. } => Some(source),
             Self::CommitPending { source, .. } => Some(source),
             Self::KeyspaceOpen { source, .. } => Some(source),
+
+            Self::ExtensionNotFound { .. } => None,
+            Self::ExtensionIO { source, .. } => Some(source),
+            Self::ExtensionDeserialise { source, .. } => Some(source),
         }
     }
 }

@@ -21,19 +21,19 @@ use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use crate::{
     iterator::{MVCCRangeIterator, MVCCReadError},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    snapshot::{buffer::BufferedPrefixIterator, write::Write},
+    snapshot::{buffer::BufferRangeIterator, write::Write},
 };
 
 pub struct SnapshotRangeIterator<'a, const PS: usize> {
     storage_iterator: MVCCRangeIterator<'a, PS>,
-    buffered_iterator: Option<BufferedPrefixIterator>,
+    buffered_iterator: Option<BufferRangeIterator>,
     iterator_state: IteratorState,
 }
 
 impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
     pub(crate) fn new(
         mvcc_iterator: MVCCRangeIterator<'a, PS>,
-        buffered_iterator: Option<BufferedPrefixIterator>,
+        buffered_iterator: Option<BufferRangeIterator>,
     ) -> Self {
         SnapshotRangeIterator {
             storage_iterator: mvcc_iterator,
@@ -187,7 +187,7 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
     }
 
     fn buffered_peek(
-        buffered_iterator: &mut Option<BufferedPrefixIterator>,
+        buffered_iterator: &mut Option<BufferRangeIterator>,
     ) -> Option<Result<(StorageKeyReference<'_>, &Write), SnapshotIteratorError>> {
         if let Some(buffered_iterator) = buffered_iterator {
             let buffered_peek = buffered_iterator.peek();
@@ -230,15 +230,15 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
     }
 
     fn get_buffered_peek(
-        buffered_iterator: &mut BufferedPrefixIterator,
+        buffered_iterator: &mut BufferRangeIterator,
     ) -> (StorageKeyReference<'_>, ByteReference<'_>) {
         let (key, write) = buffered_iterator.peek().unwrap().unwrap();
         (StorageKeyReference::from(key), ByteReference::from(write.get_value()))
     }
 
     pub fn collect_cloned_vec<F, M>(mut self, mapper: F) -> Result<Vec<M>, Arc<SnapshotIteratorError>>
-    where
-        F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> M,
+        where
+            F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> M,
     {
         let mut vec = Vec::new();
         loop {
@@ -255,9 +255,9 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
     }
 
     pub fn collect_cloned_bmap<F, M, N>(mut self, mapper: F) -> Result<BTreeMap<M, N>, Arc<SnapshotIteratorError>>
-    where
-        F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> (M, N),
-        M: Ord + Eq + PartialEq,
+        where
+            F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> (M, N),
+            M: Ord + Eq + PartialEq,
     {
         let mut btree_map = BTreeMap::new();
         loop {
@@ -295,9 +295,9 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
     }
 
     pub fn collect_cloned_hashset<F, M>(mut self, mapper: F) -> Result<HashSet<M>, Arc<SnapshotIteratorError>>
-    where
-        F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> M,
-        M: Hash + Eq + PartialEq,
+        where
+            F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> M,
+            M: Hash + Eq + PartialEq,
     {
         let mut set = HashSet::new();
         loop {

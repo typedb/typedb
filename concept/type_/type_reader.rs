@@ -78,7 +78,7 @@ impl TypeReader {
             .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(subtype), TypeEdge::FIXED_WIDTH_ENCODING))
             .first_cloned()
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
-            .map(|(key, _)| new_edge_sub(key.into_byte_array_or_ref()).to().into_owned()))
+            .map(|(key, _)| new_edge_sub(key.into_bytes()).to().into_owned()))
     }
 
     pub(crate) fn get_supertype<T>(

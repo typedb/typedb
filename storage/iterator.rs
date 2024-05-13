@@ -39,7 +39,7 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
     ) -> Self {
         debug_assert!(!range.start().bytes().is_empty());
         let keyspace = storage.get_keyspace(range.start().keyspace_id());
-        let iterator = keyspace.iterate_range(range.map(|key| key.into_byte_array_or_ref(), |fixed_width| fixed_width));
+        let iterator = keyspace.iterate_range(range.map(|key| key.into_bytes(), |fixed_width| fixed_width));
         MVCCRangeIterator {
             storage_name: storage.name(),
             keyspace,
