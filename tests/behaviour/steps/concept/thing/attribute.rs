@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use concept::{error::ConceptWriteError, thing::attribute::Attribute};
 use macro_rules_attribute::apply;
 
 use crate::{
@@ -12,56 +13,59 @@ use crate::{
     Context,
 };
 
+fn attribute_put_instance_with_value_impl(
+    context: &mut Context,
+    type_label: params::Label,
+    value: params::Value,
+) -> Result<Attribute<'static>, ConceptWriteError> {
+    with_write_tx!(context, |tx| {
+        let attribute_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
+        let value = value.into_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
+        tx.thing_manager.create_attribute(&mut tx.snapshot, attribute_type, value)
+    })
+}
+
 #[apply(generic_step)]
 #[step(expr = r"attribute\({type_label}\) put instance with value: {value}(; ){may_error}")]
-pub async fn attribute_put_instance_with_value(
+async fn attribute_put_instance_with_value(
     context: &mut Context,
     type_label: params::Label,
     value: params::Value,
     may_error: params::MayError,
 ) {
-    with_write_tx!(context, |tx| {
-        let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
-        let value = value.into_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
-        may_error.check(&tx.thing_manager.create_attribute(&mut tx.snapshot, attribute_type, value));
-    });
+    may_error.check(&attribute_put_instance_with_value_impl(context, type_label, value));
 }
 
 #[apply(generic_step)]
 #[step(expr = r"{var} = attribute\({type_label}\) put instance with value: {value}")]
-pub async fn attribute_put_instance_with_value_var(
+async fn attribute_put_instance_with_value_var(
     context: &mut Context,
     var: params::Var,
     type_label: params::Label,
     value: params::Value,
 ) {
-    let att = with_write_tx!(context, |tx| {
-        let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
-        let value = value.into_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
-        tx.thing_manager.create_attribute(&mut tx.snapshot, attribute_type, value).unwrap()
-    });
+    let att = attribute_put_instance_with_value_impl(context, type_label, value).unwrap();
     context.attributes.insert(var.name, Some(att));
 }
 
 #[apply(generic_step)]
 #[step(expr = r"attribute {var} exists")]
-pub async fn attribute_exists(context: &mut Context, var: params::Var) {
+async fn attribute_exists(context: &mut Context, var: params::Var) {
     let attribute = context.attributes.get(&var.name).expect("no variable {} in context.");
     assert!(attribute.is_some(), "variable {} does not exist", var.name);
 }
 
 #[apply(generic_step)]
 #[step(expr = r"attribute {var} does not exist")]
-pub async fn attribute_does_not_exist(context: &mut Context, var: params::Var) {
+async fn attribute_does_not_exist(context: &mut Context, var: params::Var) {
     let attribute = context.attributes.get(&var.name).expect("no variable {} in context.");
     assert!(attribute.is_none(), "variable {} exists: {:?}", var.name, attribute);
 }
 
 #[apply(generic_step)]
 #[step(expr = r"attribute {var} has type: {type_label}")]
-pub async fn attribute_has_type(context: &mut Context, var: params::Var, type_label: params::Label) {
+async fn attribute_has_type(context: &mut Context, var: params::Var, type_label: params::Label) {
     let attribute_type = context.attributes[&var.name].as_ref().unwrap().type_();
     with_read_tx!(context, |tx| {
         assert_eq!(attribute_type.get_label(&tx.snapshot, &tx.type_manager).unwrap(), type_label.to_typedb())
@@ -70,7 +74,7 @@ pub async fn attribute_has_type(context: &mut Context, var: params::Var, type_la
 
 #[apply(generic_step)]
 #[step(expr = r"attribute {var} has value type: {value_type}")]
-pub async fn attribute_has_value_type(context: &mut Context, var: params::Var, value_type: params::ValueType) {
+async fn attribute_has_value_type(context: &mut Context, var: params::Var, value_type: params::ValueType) {
     let attribute_type = context.attributes[&var.name].as_ref().unwrap().type_();
     with_read_tx!(context, |tx| {
         assert_eq!(
@@ -82,7 +86,7 @@ pub async fn attribute_has_value_type(context: &mut Context, var: params::Var, v
 
 #[apply(generic_step)]
 #[step(expr = r"attribute {var} has value: {value}")]
-pub async fn attribute_has_value(context: &mut Context, var: params::Var, value: params::Value) {
+async fn attribute_has_value(context: &mut Context, var: params::Var, value: params::Value) {
     let attribute = context.attributes.get_mut(&var.name).unwrap().as_mut().unwrap();
     let attribute_type = attribute.type_();
     with_read_tx!(context, |tx| {
@@ -93,7 +97,7 @@ pub async fn attribute_has_value(context: &mut Context, var: params::Var, value:
 
 #[apply(generic_step)]
 #[step(expr = r"{var} = attribute\({type_label}\) get instance with value: {value}")]
-pub async fn attribute_get_instance_with_value(
+async fn attribute_get_instance_with_value(
     context: &mut Context,
     var: params::Var,
     type_label: params::Label,
@@ -110,7 +114,7 @@ pub async fn attribute_get_instance_with_value(
 
 #[apply(generic_step)]
 #[step(expr = r"delete attribute: {var}")]
-pub async fn delete_attribute(context: &mut Context, var: params::Var) {
+async fn delete_attribute(context: &mut Context, var: params::Var) {
     with_write_tx!(context, |tx| {
         tx.thing_manager.delete_attribute(&mut tx.snapshot, context.attributes[&var.name].clone().unwrap()).unwrap()
     })
@@ -118,7 +122,7 @@ pub async fn delete_attribute(context: &mut Context, var: params::Var) {
 
 #[apply(generic_step)]
 #[step(expr = r"attribute {var} is deleted: {boolean}")]
-pub async fn attribute_is_deleted(context: &mut Context, var: params::Var, is_deleted: params::Boolean) {
+async fn attribute_is_deleted(context: &mut Context, var: params::Var, is_deleted: params::Boolean) {
     let attribute = context.attributes.get_mut(&var.name).unwrap().as_mut().unwrap();
     let attribute_type = attribute.type_();
     let get = with_read_tx!(context, |tx| {
@@ -130,7 +134,7 @@ pub async fn attribute_is_deleted(context: &mut Context, var: params::Var, is_de
 
 #[apply(generic_step)]
 #[step(expr = r"attribute\({type_label}\) get instances {contains_or_doesnt}: {var}")]
-pub async fn attribute_instances_contain(
+async fn attribute_instances_contain(
     context: &mut Context,
     type_label: params::Label,
     containment: params::ContainsOrDoesnt,
