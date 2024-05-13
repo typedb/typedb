@@ -7,5 +7,5 @@
 package com.vaticle.typedb.core.common.diagnostics;
 
 public class Version {
-    static final int JSON_API_VERSION = 1;
+    static final int DIAGNOSTICS_JSON_SCHEMA_VERSION = 1;
 }

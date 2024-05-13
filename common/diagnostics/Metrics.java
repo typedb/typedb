@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.vaticle.typedb.core.common.diagnostics.StatisticReporter.REPORT_INTERVAL_MINUTES;
-import static com.vaticle.typedb.core.common.diagnostics.Version.JSON_API_VERSION;
+import static com.vaticle.typedb.core.common.diagnostics.Version.DIAGNOSTICS_JSON_SCHEMA_VERSION;
 
 public class Metrics {
     private final ConcurrentSet<String> primaryDatabaseHashes = new ConcurrentSet<>();
@@ -37,7 +37,7 @@ public class Metrics {
     private final ConcurrentMap<String, UserErrorStatistics> userErrors = new ConcurrentHashMap<>();
 
     public Metrics(String deploymentID, String serverID, String name, String version, boolean reportingEnabled, Path dataDirectory) {
-        this.base = new BaseProperties(JSON_API_VERSION, deploymentID, serverID, name, reportingEnabled);
+        this.base = new BaseProperties(DIAGNOSTICS_JSON_SCHEMA_VERSION, deploymentID, serverID, name, reportingEnabled);
         this.serverProperties = new ServerProperties(version, dataDirectory);
     }
 
