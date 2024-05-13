@@ -6,7 +6,7 @@
 
 use std::{borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
     graph::{
         thing::{
@@ -184,9 +184,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                         value.encode_string::<256>(),
                         snapshot,
                     ) {
-                        Ok(Some(id)) => {
-                            Attribute::new(AttributeVertex::new(Bytes::Array(ByteArray::copy(&id.bytes()))))
-                        }
+                        Ok(Some(id)) => Attribute::new(AttributeVertex::new(Bytes::copy(&id.bytes()))),
                         Ok(None) => return Ok(None),
                         Err(err) => return Err(ConceptReadError::SnapshotIterate { source: err }),
                     }
@@ -294,7 +292,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         let attributes = snapshot
             .get_mapped(key.as_storage_key().as_reference(), |bytes| {
                 decode_attribute_ids(value_type, bytes.bytes())
-                    .map(|id| Attribute::new(AttributeVertex::new(Bytes::Array(ByteArray::copy(id.bytes())))))
+                    .map(|id| Attribute::new(AttributeVertex::new(Bytes::copy(id.bytes()))))
                     .collect()
             })
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?
