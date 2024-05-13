@@ -164,29 +164,41 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<Option<Attribute<'static>>, ConceptReadError> {
-        match value.value_type() {
+        let attribute = match value.value_type() {
             ValueType::Boolean | ValueType::Long | ValueType::Double | ValueType::DateTime => {
                 debug_assert!(AttributeID::is_inlineable(value.as_reference()));
-                self.get_attribute_with_value_inline(snapshot, attribute_type, value)
+                match self.get_attribute_with_value_inline(snapshot, attribute_type, value) {
+                    Ok(Some(attribute)) => attribute,
+                    fail => return fail,
+                }
             }
             ValueType::String => {
                 if AttributeID::is_inlineable(value.as_reference()) {
-                    self.get_attribute_with_value_inline(snapshot, attribute_type, value)
+                    match self.get_attribute_with_value_inline(snapshot, attribute_type, value) {
+                        Ok(Some(attribute)) => attribute,
+                        fail => return fail,
+                    }
                 } else {
-                    self.vertex_generator
-                        .find_attribute_id_string_noinline(
-                            attribute_type.vertex().type_id_(),
-                            value.encode_string::<256>(),
-                            snapshot,
-                        )
-                        .map_err(|err| ConceptReadError::SnapshotIterate { source: err })
-                        .map(|id| {
-                            id.map(|id| {
-                                Attribute::new(AttributeVertex::new(Bytes::Array(ByteArray::copy(&id.bytes()))))
-                            })
-                        })
+                    match self.vertex_generator.find_attribute_id_string_noinline(
+                        attribute_type.vertex().type_id_(),
+                        value.encode_string::<256>(),
+                        snapshot,
+                    ) {
+                        Ok(Some(id)) => {
+                            Attribute::new(AttributeVertex::new(Bytes::Array(ByteArray::copy(&id.bytes()))))
+                        }
+                        Ok(None) => return Ok(None),
+                        Err(err) => return Err(ConceptReadError::SnapshotIterate { source: err }),
+                    }
                 }
             }
+        };
+
+        let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
+        if is_independent || attribute.has_owners(snapshot, self) {
+            Ok(Some(attribute))
+        } else {
+            Ok(None)
         }
     }
 
