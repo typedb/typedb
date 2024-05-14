@@ -649,7 +649,6 @@ mod test {
         assert!(read_records.is_empty());
     }
 
-
     #[test]
     fn test_wal_find_last() {
         let directory = TempDir::new("wal-test").unwrap();

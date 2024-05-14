@@ -43,6 +43,6 @@ pub fn checkpoint_storage(storage: &MVCCStorage<WAL>) -> Checkpoint {
 }
 
 pub fn load_storage<KS: KeyspaceSet>(path: &Path, wal: WAL, checkpoint: Option<Checkpoint>) -> Result<Arc<MVCCStorage<WAL>>, StorageOpenError> {
-    let storage = MVCCStorage::load::<KS>("storage", path, wal, checkpoint)?;
+    let storage = MVCCStorage::load::<KS>("storage", path, wal, &checkpoint)?;
     Ok(Arc::new(storage))
 }

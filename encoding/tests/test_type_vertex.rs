@@ -117,7 +117,7 @@ fn loading_storage_assigns_next_vertex() {
 
     for i in 0..create_till {
         let wal = WAL::load(&storage_path).unwrap();
-        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, None).unwrap());
+        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, &None).unwrap());
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
@@ -128,7 +128,7 @@ fn loading_storage_assigns_next_vertex() {
 
     for i in 0..create_till {
         let wal = WAL::load(&storage_path).unwrap();
-        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, None).unwrap());
+        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, &None).unwrap());
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
@@ -143,10 +143,10 @@ fn loading_storage_assigns_next_vertex() {
         let wal = WAL::load(&storage_path).unwrap();
         let storage = match checkpoint {
             None => {
-                Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, None).unwrap())
+                Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, &None).unwrap())
             }
             Some(checkpoint) => {
-                Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, Some(checkpoint)).unwrap())
+                Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, &Some(checkpoint)).unwrap())
             }
         };
 
@@ -165,7 +165,7 @@ fn loading_storage_assigns_next_vertex() {
 
     for i in 0..create_till {
         let wal = WAL::load(&storage_path).unwrap();
-        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, None).unwrap());
+        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, &None).unwrap());
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 

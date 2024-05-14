@@ -877,6 +877,7 @@ mod tests {
         isolation_manager::{CommitRecord, CommitStatus, Timeline, TIMELINE_WINDOW_SIZE},
         snapshot::buffer::OperationsBuffer,
     };
+    use crate::isolation_manager::CommitType;
 
     struct MockTransaction {
         read_sequence_number: SequenceNumber,
@@ -937,7 +938,7 @@ mod tests {
     }
 
     fn _record(read_sequence_number: SequenceNumber) -> CommitRecord {
-        CommitRecord::new(OperationsBuffer::new(), read_sequence_number)
+        CommitRecord::new(OperationsBuffer::new(), read_sequence_number, CommitType::Data)
     }
 
     #[test]

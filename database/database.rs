@@ -16,7 +16,7 @@ use std::ffi::OsString;
 
 use concept::{error::ConceptWriteError, type_::type_manager::TypeManager};
 use concept::thing::statistics::Statistics;
-use durability::{DurabilityError, DurabilityService};
+use durability::{DurabilityError, DurabilityService, SequenceNumber};
 use durability::wal::WAL;
 use encoding::{
     EncodingKeyspace,
@@ -28,11 +28,12 @@ use storage::{
     snapshot::WriteSnapshot, StorageOpenError,
 };
 use storage::isolation_manager::CommitType;
+use storage::iterator::MVCCReadError;
 use storage::recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError};
 use storage::recovery::commit_replay::{CommitRecoveryError, load_commit_data_from, RecoveryCommitStatus};
 
-use crate::database::StatisticsSyncError::CommitRecovery;
-use crate::DatabaseOpenError::{DirectoryCreate, Encoding, SchemaInitialise, StorageOpen};
+use crate::database::StatisticsInitialiseError::ReloadCommitData;
+use crate::DatabaseOpenError::{DirectoryCreate, DurabilityRead, Encoding, SchemaInitialise, StatisticsInitialise, StorageOpen};
 
 pub struct Database<D> {
     name: String,
@@ -40,7 +41,7 @@ pub struct Database<D> {
     pub(super) storage: Arc<MVCCStorage<D>>,
     pub(super) type_vertex_generator: Arc<TypeVertexGenerator>,
     pub(super) thing_vertex_generator: Arc<ThingVertexGenerator>,
-    // thing_statistics: Arc<Statistics>,
+    thing_statistics: Arc<Statistics>,
 }
 
 impl<D> fmt::Debug for Database<D> {
@@ -49,7 +50,7 @@ impl<D> fmt::Debug for Database<D> {
     }
 }
 
-impl<D> Database<D> {
+impl Database<WAL> {
     pub fn open(path: &Path) -> Result<Database<WAL>, DatabaseOpenError> {
         let file_name = path.file_name().unwrap();
         let name = file_name.to_str().ok_or_else(|| DatabaseOpenError::InvalidUnicodeName { name: file_name.to_owned() })?;
@@ -70,7 +71,7 @@ impl<D> Database<D> {
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage.clone())
             .map_err(|err| Encoding { source: err })?);
-        TypeManager::<WriteSnapshot<D>>::initialise_types(storage.clone(), type_vertex_generator.clone())
+        TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone())
             .map_err(|err| SchemaInitialise { source: err })?;
         let statistics = Arc::new(Statistics::new(storage.read_watermark()));
 
@@ -80,12 +81,15 @@ impl<D> Database<D> {
             storage,
             type_vertex_generator,
             thing_vertex_generator,
-            // thing_statistics: statistics,
+            thing_statistics: statistics,
         })
     }
 
     fn load(path: &Path, name: impl AsRef<str>) -> Result<Database<WAL>, DatabaseOpenError> {
-        use DatabaseOpenError::{CheckpointLoad, DurabilityOpen, Encoding, SchemaInitialise, StorageOpen};
+        use DatabaseOpenError::{
+            CheckpointLoad, DurabilityOpen, DurabilityRead, Encoding, SchemaInitialise,
+            StatisticsInitialise, StorageOpen
+        };
 
         let wal = WAL::load(&path).map_err(|err| DurabilityOpen { source: err })?;
         let checkpoint = Checkpoint::open_latest(&path)
@@ -95,11 +99,15 @@ impl<D> Database<D> {
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage.clone())
             .map_err(|err| Encoding { source: err })?);
-        TypeManager::<WriteSnapshot<D>>::initialise_types(storage.clone(), type_vertex_generator.clone())
+        TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone())
             .map_err(|err| SchemaInitialise { source: err })?;
 
-        // TODO: read the last WAL statistics entry
-        // let statistics = Self::may_synchronise_statistics(statistics, storage.clone()).map_err(|err| ...)?;
+        let statistics = storage.durability().find_last_unsequenced_type::<Statistics>()
+            .map_err(|err| DurabilityRead { source: err })?
+            .unwrap_or_else(|| Statistics::new(SequenceNumber::MIN));
+
+        let statistics = Database::<WAL>::may_synchronise_statistics(statistics, storage.clone())
+            .map_err(|err| StatisticsInitialise { source: err })?;
 
         Ok(Database::<WAL> {
             name: name.as_ref().to_owned(),
@@ -107,12 +115,8 @@ impl<D> Database<D> {
             storage,
             type_vertex_generator,
             thing_vertex_generator,
-            // thing_statistics: Arc::new(statistics),
+            thing_statistics: Arc::new(statistics),
         })
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
     }
 
     fn checkpoint(&self) -> Result<(), DatabaseCheckpointError> {
@@ -126,13 +130,20 @@ impl<D> Database<D> {
             .map_err(|err| DatabaseCheckpointError::CheckpointCreate { source: err })?;
         Ok(())
     }
+}
+
+impl<D> Database<D> {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
 
     fn may_synchronise_statistics(
         mut statistics: Statistics,
         storage: Arc<MVCCStorage<D>>,
-    ) -> Result<Statistics, StatisticsSyncError>
-        where D: DurabilityService {
-        use StatisticsSyncError::CommitRecovery;
+    ) -> Result<Statistics, StatisticsInitialiseError>
+        where D: DurabilityService
+    {
+        use StatisticsInitialiseError::{DataRead, DurablyWrite, ReloadCommitData};
 
         let storage_watermark = storage.read_watermark();
         debug_assert!(statistics.sequence_number <= storage_watermark);
@@ -142,7 +153,7 @@ impl<D> Database<D> {
 
         let mut data_commits = BTreeMap::new();
         for (seq, status) in load_commit_data_from(statistics.sequence_number.next(), storage.durability())
-            .map_err(|err| CommitRecovery { source: err })?
+            .map_err(|err| ReloadCommitData { source: err })?
             .into_iter()
         {
             if let RecoveryCommitStatus::Validated(record) = status {
@@ -152,22 +163,27 @@ impl<D> Database<D> {
                         data_commits.insert(seq, snapshot);
                     }
                     CommitType::Schema => {
-                        statistics.update_writes(&data_commits, &storage);
-                        data_commits.clear();
+                        statistics.update_writes(&data_commits, &storage)
+                            .map_err(|err| DataRead { source: err })?;
+                        storage.durability().unsequenced_write(&statistics)
+                            .map_err(|err| DurablyWrite { source: err })?;
 
-                        // TODO write durability record with statistics snapshot
+                        data_commits.clear();
 
                         let snapshot = WriteSnapshot::new_with_operations(storage.clone(), record.open_sequence_number(), record.into_operations());
                         let mut commits = BTreeMap::new();
                         commits.insert(seq, snapshot);
-                        statistics.update_writes(&commits, &storage);
+                        statistics.update_writes(&commits, &storage)
+                            .map_err(|err| DataRead { source: err })?;
                     }
                 }
             } else {
                 unreachable!("Only open validated records as snapshots.")
             }
         }
-        statistics.update_writes(&data_commits, &storage);
+
+        statistics.update_writes(&data_commits, &storage)
+            .map_err(|err| DataRead { source: err })?;
         Ok(statistics)
     }
 }
@@ -178,9 +194,11 @@ pub enum DatabaseOpenError {
     DirectoryCreate { path: PathBuf, source: io::Error },
     StorageOpen { source: StorageOpenError },
     DurabilityOpen { source: DurabilityError },
+    DurabilityRead { source: DurabilityError },
     CheckpointLoad { source: CheckpointLoadError },
     Encoding { source: EncodingError },
     SchemaInitialise { source: ConceptWriteError },
+    StatisticsInitialise { source: StatisticsInitialiseError },
 }
 
 impl fmt::Display for DatabaseOpenError {
@@ -196,8 +214,10 @@ impl Error for DatabaseOpenError {
             Self::DirectoryCreate { source, .. } => Some(source),
             Self::StorageOpen { source } => Some(source),
             Self::DurabilityOpen { source } => Some(source),
+            Self::DurabilityRead { source } => Some(source),
             Self::CheckpointLoad { source } => Some(source),
             Self::SchemaInitialise { source } => Some(source),
+            Self::StatisticsInitialise { source } => Some(source),
             Self::Encoding { source } => Some(source),
         }
     }
@@ -223,22 +243,24 @@ impl Error for DatabaseCheckpointError {
 }
 
 #[derive(Debug)]
-pub enum StatisticsSyncError {
-    Durability { source: DurabilityError },
-    CommitRecovery { source: CommitRecoveryError },
+pub enum StatisticsInitialiseError {
+    DurablyWrite { source: DurabilityError },
+    ReloadCommitData { source: CommitRecoveryError },
+    DataRead { source: MVCCReadError },
 }
 
-impl fmt::Display for StatisticsSyncError {
+impl fmt::Display for StatisticsInitialiseError {
     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }
 
-impl Error for StatisticsSyncError {
+impl Error for StatisticsInitialiseError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::Durability { source } => Some(source),
-            Self::CommitRecovery { source } => Some(source),
+            Self::DurablyWrite { source } => Some(source),
+            Self::ReloadCommitData { source } => Some(source),
+            Self::DataRead { source } => Some(source),
         }
     }
 }

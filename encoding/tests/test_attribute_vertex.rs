@@ -132,7 +132,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
 
     for i in 0..5 {
         let wal = WAL::load(&storage_path).unwrap();
-        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, None).unwrap());
+        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, &None).unwrap());
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
         let vertex = generator.create_entity(type_id, &mut snapshot);
@@ -143,7 +143,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
 
     for i in 0..5 {
         let wal = WAL::load(&storage_path).unwrap();
-        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, None).unwrap());
+        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, &None).unwrap());
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
         let vertex = generator.create_relation(type_id, &mut snapshot);

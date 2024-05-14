@@ -643,6 +643,7 @@ mod tests {
         write_batches::WriteBatches,
         MVCCStorage,
     };
+    use crate::isolation_manager::CommitType;
 
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
@@ -685,7 +686,7 @@ mod tests {
             let mut durability_service = WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap();
             durability_service.register_record_type::<CommitRecord>();
             let seq = durability_service
-                .sequenced_write(&CommitRecord::new(full_operations, durability_service.previous()))
+                .sequenced_write(&CommitRecord::new(full_operations, durability_service.previous(), CommitType::Data))
                 .unwrap();
 
             let partial_commit = WriteBatches::from_operations(seq, &partial_operations);

@@ -14,7 +14,7 @@ use serde::de::{Error, SeqAccess, Visitor};
 use serde::ser::SerializeStruct;
 
 use bytes::Bytes;
-use durability::SequenceNumber;
+use durability::{DurabilityRecord, DurabilityRecordType, SequenceNumber, UnsequencedDurabilityRecord};
 use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeRelationIndex, ThingEdgeRolePlayer};
 use encoding::graph::thing::vertex_attribute::AttributeVertex;
 use encoding::graph::thing::vertex_object::ObjectVertex;
@@ -40,11 +40,14 @@ use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
 use crate::type_::TypeAPI;
 
+type StatisticsVersion = u64;
+
 /// Thing statistics, reflecting a snapshot of statistics accurate as of a particular sequence number
 /// When types are undefined, we retain the last count of the instances of the type
 /// Invariant: all undefined types are
 #[derive(Debug, Clone)]
 pub struct Statistics {
+    statistics_version: StatisticsVersion,
     pub sequence_number: SequenceNumber,
 
     pub total_thing_count: u64,
@@ -71,8 +74,12 @@ pub struct Statistics {
 }
 
 impl Statistics {
+
+    const STATISTICS_VERSION: StatisticsVersion = 0;
+
     pub fn new(sequence_number: SequenceNumber) -> Self {
         Statistics {
+            statistics_version: Self::STATISTICS_VERSION,
             sequence_number: sequence_number,
             total_thing_count: 0,
             total_entity_count: 0,
@@ -388,8 +395,9 @@ impl From<RoleType<'static>> for SerialisableType {
     }
 }
 
-impl CheckpointExtension for Statistics {
-    const NAME: &'static str = "thing_statistics";
+impl DurabilityRecord for Statistics {
+    const RECORD_TYPE: DurabilityRecordType = 10;
+    const RECORD_NAME: &'static str = "thing_statistics";
 
     fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
         bincode::serialize_into(writer, self)
@@ -399,6 +407,8 @@ impl CheckpointExtension for Statistics {
         bincode::deserialize_from(reader)
     }
 }
+
+impl UnsequencedDurabilityRecord for Statistics {}
 
 mod serialise {
     use std::collections::HashMap;
@@ -416,6 +426,7 @@ mod serialise {
     use crate::type_::role_type::RoleType;
 
     enum Field {
+        StatisticsVersion,
         OpenSequenceNumber,
         TotalThingCount,
         TotalEntityCount,
@@ -435,7 +446,8 @@ mod serialise {
     }
 
     impl Field {
-        const NAMES: [&'static str; 16] = [
+        const NAMES: [&'static str; 17] = [
+            Self::StatisticsVersion.name(),
             Self::OpenSequenceNumber.name(),
             Self::TotalThingCount.name(),
             Self::TotalEntityCount.name(),
@@ -456,6 +468,7 @@ mod serialise {
 
         const fn name(&self) -> &str {
             match self {
+                Field::StatisticsVersion => "StatisticsVersion",
                 Field::OpenSequenceNumber => "OpenSequenceNumber",
                 Field::TotalThingCount => "TotalThingCount",
                 Field::TotalEntityCount => "TotalEntityCount",
@@ -477,6 +490,7 @@ mod serialise {
 
         fn from(string: &str) -> Option<Self> {
             match string {
+                "StatisticsVersion" => Some(Field::StatisticsVersion),
                 "OpenSequenceNumber" => Some(Field::OpenSequenceNumber),
                 "TotalThingCount" => Some(Field::TotalThingCount),
                 "TotalEntityCount" => Some(Field::TotalEntityCount),
@@ -637,63 +651,66 @@ mod serialise {
                     where
                         V: SeqAccess<'de>,
                 {
-                    let open_sequence_number = seq.next_element()?
+                    let statistics_version = seq.next_element()?
                         .ok_or_else(|| de::Error::invalid_length(0, &self))?;
-                    let total_thing_count = seq.next_element()?
+                    let open_sequence_number = seq.next_element()?
                         .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                    let total_entity_count = seq.next_element()?
+                    let total_thing_count = seq.next_element()?
                         .ok_or_else(|| de::Error::invalid_length(2, &self))?;
-                    let total_relation_count = seq.next_element()?
+                    let total_entity_count = seq.next_element()?
                         .ok_or_else(|| de::Error::invalid_length(3, &self))?;
-                    let total_attribute_count = seq.next_element()?
+                    let total_relation_count = seq.next_element()?
                         .ok_or_else(|| de::Error::invalid_length(4, &self))?;
-                    let total_role_count = seq.next_element()?
+                    let total_attribute_count = seq.next_element()?
                         .ok_or_else(|| de::Error::invalid_length(5, &self))?;
-                    let total_has_count = seq.next_element()?
+                    let total_role_count = seq.next_element()?
                         .ok_or_else(|| de::Error::invalid_length(6, &self))?;
-                    let encoded_entity_counts = seq.next_element()?
+                    let total_has_count = seq.next_element()?
                         .ok_or_else(|| de::Error::invalid_length(7, &self))?;
+                    let encoded_entity_counts = seq.next_element()?
+                        .ok_or_else(|| de::Error::invalid_length(8, &self))?;
                     let entity_counts = into_entity_map(encoded_entity_counts);
                     let encoded_relation_counts = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(8, &self))?;
+                        .ok_or_else(|| de::Error::invalid_length(9, &self))?;
                     let relation_counts = into_relation_map(encoded_relation_counts);
                     let encoded_attribute_counts = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(9, &self))?;
+                        .ok_or_else(|| de::Error::invalid_length(10, &self))?;
                     let attribute_counts = into_attribute_map(encoded_attribute_counts);
                     let encoded_role_counts = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(10, &self))?;
+                        .ok_or_else(|| de::Error::invalid_length(11, &self))?;
                     let role_counts = into_role_map(encoded_role_counts);
                     let encoded_has_attribute_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
                         seq.next_element()?
-                            .ok_or_else(|| de::Error::invalid_length(11, &self))?;
+                            .ok_or_else(|| de::Error::invalid_length(12, &self))?;
                     let has_attribute_counts = encoded_has_attribute_counts.into_iter()
                         .map(|(type_1, map)| (type_1.into_object_type(), into_attribute_map(map)))
                         .collect();
                     let encoded_attribute_owner_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
                         seq.next_element()?
-                            .ok_or_else(|| de::Error::invalid_length(12, &self))?;
+                            .ok_or_else(|| de::Error::invalid_length(13, &self))?;
                     let attribute_owner_counts = encoded_attribute_owner_counts.into_iter()
                         .map(|(type_1, map)| (type_1.into_attribute_type(), into_object_map(map)))
                         .collect();
                     let encoded_role_player_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
                         seq.next_element()?
-                            .ok_or_else(|| de::Error::invalid_length(13, &self))?;
+                            .ok_or_else(|| de::Error::invalid_length(14, &self))?;
                     let role_player_counts = encoded_role_player_counts.into_iter()
                         .map(|(type_1, map)| (type_1.into_object_type(), into_role_map(map)))
                         .collect();
                     let encoded_relation_role_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
                         seq.next_element()?
-                            .ok_or_else(|| de::Error::invalid_length(14, &self))?;
+                            .ok_or_else(|| de::Error::invalid_length(15, &self))?;
                     let relation_role_counts = encoded_relation_role_counts.into_iter()
                         .map(|(type_1, map)| (type_1.into_relation_type(), into_role_map(map)))
                         .collect();
                     let encoded_player_index_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
                         seq.next_element()?
-                            .ok_or_else(|| de::Error::invalid_length(15, &self))?;
+                            .ok_or_else(|| de::Error::invalid_length(16, &self))?;
                     let player_index_counts = encoded_player_index_counts.into_iter()
                         .map(|(type_1, map)| (type_1.into_object_type(), into_object_map(map)))
                         .collect();
                     Ok(Statistics {
+                        statistics_version: statistics_version,
                         sequence_number: open_sequence_number,
                         total_thing_count,
                         total_entity_count,
@@ -716,6 +733,7 @@ mod serialise {
                 fn visit_map<V>(self, mut map: V) -> Result<Statistics, V::Error>
                     where V: MapAccess<'de>,
                 {
+                    let mut statistics_version = None;
                     let mut open_sequence_number = None;
                     let mut total_thing_count = None;
                     let mut total_entity_count = None;
@@ -734,6 +752,12 @@ mod serialise {
                     let mut player_index_counts = None;
                     while let Some(key) = map.next_key()? {
                         match key {
+                            Field::StatisticsVersion => {
+                                if statistics_version.is_some() {
+                                    return Err(de::Error::duplicate_field(Field::StatisticsVersion.name()));
+                                }
+                                statistics_version = Some(map.next_value()?);
+                            }
                             Field::OpenSequenceNumber => {
                                 if open_sequence_number.is_some() {
                                     return Err(de::Error::duplicate_field(Field::OpenSequenceNumber.name()));
@@ -849,6 +873,8 @@ mod serialise {
                     }
 
                     Ok(Statistics {
+                        statistics_version: statistics_version
+                            .ok_or_else(|| de::Error::missing_field(Field::StatisticsVersion.name()))?,
                         sequence_number: open_sequence_number
                             .ok_or_else(|| de::Error::missing_field(Field::OpenSequenceNumber.name()))?,
                         total_thing_count: total_thing_count

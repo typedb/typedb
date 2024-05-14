@@ -17,10 +17,10 @@ fn main() {
     let streamer = std::env::var("TEST_WAL_STREAMER").unwrap();
     let recoverer = std::env::var("TEST_WAL_RECOVERER").unwrap();
 
-    for _ in 0..10 {
+    for i in 0..10 {
         let directory = TempDir::new("wal-test").unwrap();
 
-        let mut streamer_process = Command::new(&streamer).arg(directory.as_ref()).arg(message).spawn().unwrap();
+        let mut streamer_process = Command::new(&streamer).arg(directory.as_ref()).arg(message).stdout(std::io::stdout()).stderr(std::io::stderr()).spawn().unwrap();
         std::thread::sleep(std::time::Duration::from_millis(10));
         streamer_process.kill().unwrap();
 

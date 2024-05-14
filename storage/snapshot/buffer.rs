@@ -32,7 +32,7 @@ use crate::{
 use super::iterator::SnapshotIteratorError;
 
 #[derive(Debug)]
-pub(crate) struct OperationsBuffer {
+pub struct OperationsBuffer {
     write_buffers: [WriteBuffer; KEYSPACE_MAXIMUM_COUNT],
     locks: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, LockType>,
 }
@@ -81,7 +81,7 @@ impl OperationsBuffer {
         self.locks.is_empty()
     }
 
-    pub fn iterate_writes(&self) -> impl Iterator<Item=(StorageKeyArray<64>, Write)> + '_ {
+    pub(crate) fn iterate_writes(&self) -> impl Iterator<Item=(StorageKeyArray<64>, Write)> + '_ {
         self.write_buffers()
             .flat_map(|buffer| {
                 buffer
@@ -109,7 +109,7 @@ impl<'a> IntoIterator for &'a OperationsBuffer {
 //          take references to existing writes without having to Clone them out every time... This
 //          might lead us to a RocksDB-like Buffer+Index structure
 #[derive(Debug)]
-pub(crate) struct WriteBuffer {
+pub struct WriteBuffer {
     pub(crate) keyspace_id: KeyspaceId,
     writes: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>,
 }
