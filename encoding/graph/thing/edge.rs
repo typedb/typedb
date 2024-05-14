@@ -165,8 +165,10 @@ impl<'a> ThingEdgeHasReverse<'a> {
     pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
     pub const LENGTH_BOUND_PREFIX_FROM: usize =
         PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE + AttributeID::max_length();
-    const LENGTH_BOUND_PREFIX_FROM_TO_TYPE: usize =
-        PrefixID::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE + AttributeID::max_length();
+    pub const LENGTH_BOUND_PREFIX_FROM_TO_TYPE: usize = PrefixID::LENGTH
+        + AttributeVertex::LENGTH_PREFIX_TYPE
+        + AttributeID::max_length()
+        + ObjectVertex::LENGTH_PREFIX_TYPE;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ThingEdgeHasReverse<'a> {
         debug_assert_eq!(bytes.bytes()[Self::RANGE_PREFIX], Self::PREFIX.prefix_id().bytes());
@@ -206,31 +208,34 @@ impl<'a> ThingEdgeHasReverse<'a> {
         StorageKey::new_owned(Self::keyspace_for_from_prefix(from_prefix), bytes)
     }
 
+    // TODO cleanup
     pub fn prefix_from_attribute(
         from: AttributeVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_BOUND_PREFIX_FROM);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from_for_vertex(from.as_reference())].copy_from_slice(from.bytes().bytes());
-        bytes.truncate(Self::RANGE_PREFIX.end + from.length());
+        bytes.truncate(Self::range_from_for_vertex(from.as_reference()).end);
         StorageKey::new_owned(Self::keyspace_for_from(from), bytes)
     }
 
     pub fn prefix_from_attribute_to_type(
         from: AttributeVertex<'_>,
-        to_type: TypeVertex,
+        to_type: TypeVertex<'_>,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_BOUND_PREFIX_FROM_TO_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         let range_from = Self::range_from_for_vertex(from.as_reference());
         bytes.bytes_mut()[range_from.clone()].copy_from_slice(from.bytes().bytes());
         let to_type_range = range_from.end..range_from.end + TypeVertex::LENGTH;
-        bytes.bytes_mut()[to_type_range].copy_from_slice(to_type.bytes().bytes());
+        bytes.bytes_mut()[to_type_range].copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(to_type).bytes());
+        bytes.truncate(range_from.end + TypeVertex::LENGTH);
         StorageKey::new_owned(Self::keyspace_for_from(from), bytes)
     }
+    // end TODO
 
     pub fn is_has_reverse(key: StorageKeyReference<'_>) -> bool {
-        if key.bytes().len() > 0 && key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes() {
+        if !key.bytes().is_empty() && key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes() {
             let edge = ThingEdgeHasReverse::new(Bytes::Reference(key.byte_ref()));
             edge.keyspace().id() == key.keyspace_id()
         } else {

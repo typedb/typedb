@@ -5,3 +5,4 @@
  */
 
 mod attribute;
+mod entity;

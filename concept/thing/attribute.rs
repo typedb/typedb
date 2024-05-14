@@ -26,7 +26,7 @@ use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{object::Object, thing_manager::ThingManager, value::Value, ThingAPI},
-    type_::{attribute_type::AttributeType, type_manager::TypeManager},
+    type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 
@@ -86,6 +86,15 @@ impl<'a> Attribute<'a> {
         thing_manager: &'m ThingManager<Snapshot>,
     ) -> AttributeOwnerIterator<'m, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
         thing_manager.get_owners(snapshot, self.as_reference())
+    }
+
+    pub fn get_owners_by_type<'m, 'o, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &'m Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
+        owner_type: impl ObjectTypeAPI<'o>,
+    ) -> AttributeOwnerIterator<'m, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }> {
+        thing_manager.get_owners_by_type(snapshot, self.as_reference(), owner_type)
     }
 
     pub fn as_reference(&self) -> Attribute<'_> {

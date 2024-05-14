@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::{error::ConceptWriteError, thing::attribute::Attribute};
+use concept::{
+    error::{ConceptReadError, ConceptWriteError},
+    thing::attribute::Attribute,
+};
 use macro_rules_attribute::apply;
 
 use crate::{
@@ -13,7 +16,7 @@ use crate::{
     Context,
 };
 
-fn attribute_put_instance_with_value_impl(
+pub fn attribute_put_instance_with_value_impl(
     context: &mut Context,
     type_label: params::Label,
     value: params::Value,
@@ -95,6 +98,19 @@ async fn attribute_has_value(context: &mut Context, var: params::Var, value: par
     });
 }
 
+pub fn get_attribute_by_value(
+    context: &mut Context,
+    type_label: params::Label,
+    value: params::Value,
+) -> Result<Option<Attribute<'static>>, ConceptReadError> {
+    with_read_tx!(context, |tx| {
+        let attribute_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
+        let value = value.into_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
+        tx.thing_manager.get_attribute_with_value(&tx.snapshot, attribute_type, value)
+    })
+}
+
 #[apply(generic_step)]
 #[step(expr = r"{var} = attribute\({type_label}\) get instance with value: {value}")]
 async fn attribute_get_instance_with_value(
@@ -103,12 +119,7 @@ async fn attribute_get_instance_with_value(
     type_label: params::Label,
     value: params::Value,
 ) {
-    let att = with_read_tx!(context, |tx| {
-        let attribute_type =
-            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
-        let value = value.into_typedb(attribute_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap().unwrap());
-        tx.thing_manager.get_attribute_with_value(&tx.snapshot, attribute_type, value).unwrap()
-    });
+    let att = get_attribute_by_value(context, type_label, value).unwrap();
     context.attributes.insert(var.name, att);
 }
 

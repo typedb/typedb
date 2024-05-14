@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
+use std::{any::Any, borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
@@ -46,12 +46,7 @@ use crate::{
         ObjectAPI, ThingAPI,
     },
     type_::{
-        attribute_type::{AttributeType, AttributeTypeAnnotation},
-        entity_type::EntityType,
-        relation_type::RelationType,
-        role_type::RoleType,
-        type_manager::TypeManager,
-        TypeAPI,
+        attribute_type::{AttributeType, AttributeTypeAnnotation}, entity_type::EntityType, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI
     },
     ConceptStatus,
 };
@@ -78,8 +73,31 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         EntityIterator::new(snapshot_iterator)
     }
 
+    pub fn get_entities_in<'this>(
+        &'this self,
+        snapshot: &'this Snapshot,
+        entity_type: EntityType<'_>,
+    ) -> EntityIterator<'_, 3> {
+        let prefix = ObjectVertex::build_prefix_type(Prefix::VertexEntity.prefix_id(), entity_type.vertex().type_id_());
+        let snapshot_iterator =
+            snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexEntity.fixed_width_keys()));
+        EntityIterator::new(snapshot_iterator)
+    }
+
     pub fn get_relations<'this>(&'this self, snapshot: &'this Snapshot) -> RelationIterator<'_, 1> {
         let prefix = ObjectVertex::build_prefix_prefix(Prefix::VertexRelation.prefix_id());
+        let snapshot_iterator =
+            snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexRelation.fixed_width_keys()));
+        RelationIterator::new(snapshot_iterator)
+    }
+
+    pub fn get_relations_in<'this>(
+        &'this self,
+        snapshot: &'this Snapshot,
+        relation_type: RelationType<'_>,
+    ) -> RelationIterator<'_, 3> {
+        let prefix =
+            ObjectVertex::build_prefix_type(Prefix::VertexRelation.prefix_id(), relation_type.vertex().type_id_());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexRelation.fixed_width_keys()));
         RelationIterator::new(snapshot_iterator)
@@ -312,6 +330,18 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         )
     }
 
+    pub(crate) fn get_owners_by_type<'this, 'a>(
+        &'this self,
+        snapshot: &'this Snapshot,
+        attribute: Attribute<'_>,
+        owner_type: impl ObjectTypeAPI<'a>,
+    ) -> AttributeOwnerIterator<'this, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }> {
+        let prefix = ThingEdgeHasReverse::prefix_from_attribute_to_type(attribute.into_vertex(), owner_type.vertex());
+        AttributeOwnerIterator::new(
+            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING)),
+        )
+    }
+
     pub(crate) fn has_owners(&self, snapshot: &Snapshot, attribute: Attribute<'_>, buffered_only: bool) -> bool {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.into_vertex());
         snapshot.any_in_range(KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING), buffered_only)
@@ -481,19 +511,19 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         Ok(errors)
     }
 
-    pub fn create_entity(
+    pub fn create_entity<'a>(
         &self,
         snapshot: &mut Snapshot,
         entity_type: EntityType<'static>,
-    ) -> Result<Entity<'_>, ConceptWriteError> {
+    ) -> Result<Entity<'a>, ConceptWriteError> {
         Ok(Entity::new(self.vertex_generator.create_entity(entity_type.vertex().type_id_(), snapshot)))
     }
 
-    pub fn create_relation(
+    pub fn create_relation<'a>(
         &self,
         snapshot: &mut Snapshot,
         relation_type: RelationType<'static>,
-    ) -> Result<Relation<'_>, ConceptWriteError> {
+    ) -> Result<Relation<'a>, ConceptWriteError> {
         Ok(Relation::new(self.vertex_generator.create_relation(relation_type.vertex().type_id_(), snapshot)))
     }
 

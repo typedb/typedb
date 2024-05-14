@@ -14,7 +14,10 @@ use storage::{
 };
 
 use crate::{
-    graph::{type_::vertex::TypeID, Typed},
+    graph::{
+        type_::vertex::{TypeID, TypeVertex},
+        Typed,
+    },
     layout::prefix::{Prefix, PrefixID},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
@@ -28,8 +31,8 @@ impl<'a> ObjectVertex<'a> {
     pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
 
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectID::LENGTH;
-    const LENGTH_PREFIX_PREFIX: usize = PrefixID::LENGTH;
-    const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
+    pub(crate) const LENGTH_PREFIX_PREFIX: usize = PrefixID::LENGTH;
+    pub(crate) const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ObjectVertex<'a> {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
@@ -69,9 +72,24 @@ impl<'a> ObjectVertex<'a> {
         prefix: PrefixID,
         type_id: TypeID,
     ) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_TYPE }> {
+        debug_assert!(prefix == Prefix::VertexEntity.prefix_id() || prefix == Prefix::VertexRelation.prefix_id());
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
+        StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
+    }
+
+    pub fn build_prefix_from_type_vertex(
+        type_vertex: TypeVertex<'_>,
+    ) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_TYPE }> {
+        let prefix = match type_vertex.prefix() {
+            Prefix::VertexEntityType => Prefix::VertexEntity,
+            Prefix::VertexRelationType => Prefix::VertexRelation,
+            _ => unreachable!(),
+        };
+        let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE);
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_vertex.type_id_().bytes());
         StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
 

@@ -36,7 +36,7 @@ pub mod type_manager;
 mod type_reader;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
-    fn vertex<'this>(&'this self) -> TypeVertex<'this>;
+    fn vertex(&self) -> TypeVertex<'_>;
 
     fn into_vertex(self) -> TypeVertex<'a>;
 
