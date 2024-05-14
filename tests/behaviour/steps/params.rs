@@ -42,6 +42,13 @@ impl MayError {
             }
         };
     }
+
+    pub fn expects_error(&self) -> bool {
+        match self {
+            MayError::True => true,
+            MayError::False => false,
+        }
+    }
 }
 
 impl FromStr for MayError {
