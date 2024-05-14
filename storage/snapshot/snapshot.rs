@@ -136,7 +136,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
         self.operations_mut().lock_add(key, LockType::Exclusive)
     }
 
-    fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<64>, Write)> + '_ {
+    fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<BUFFER_KEY_INLINE>, Write)> + '_ {
         self.operations().write_buffers().flat_map(|buffer| {
             // note: this currently copies all the buffers
             buffer
@@ -149,7 +149,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
     fn iterate_writes_range<'this, const PS: usize>(
         &'this self,
         range: KeyRange<Bytes<'this, PS>>,
-    ) -> impl Iterator<Item = (StorageKeyArray<64>, Write)> + '_ {
+    ) -> impl Iterator<Item = (StorageKeyArray<BUFFER_KEY_INLINE>, Write)> + '_ {
         self.operations()
             .write_buffers()
             .flat_map(move |buffer| buffer.iterate_range(range.clone()).into_range().into_iter())

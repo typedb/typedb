@@ -129,61 +129,66 @@ impl<const INLINE_BYTES: usize> Hash for ByteArray<INLINE_BYTES> {
 #[derive(Clone)]
 pub struct ByteArrayInline<const BYTES: usize> {
     data: [u8; BYTES],
-    start: usize,
-    length: usize,
+    start: u8,
+    length: u8,
 }
 
 impl<const BYTES: usize> ByteArrayInline<BYTES> {
-    const fn empty() -> ByteArrayInline<BYTES> {
-        ByteArrayInline { data: [0; BYTES], start: 0, length: 0 }
+    const fn checked_build(data: [u8; BYTES], start: u8, length: u8) -> Self {
+        assert!(BYTES < u8::MAX as usize);
+        assert!(length <= BYTES as u8);
+        Self { data, start, length }
     }
 
-    const fn zeros(length: usize) -> ByteArrayInline<BYTES> {
-        assert!(length <= BYTES);
-        ByteArrayInline { data: [0; BYTES], start: 0, length }
+    const fn empty() -> Self {
+        Self::checked_build([0; BYTES], 0, 0)
     }
 
-    fn from(bytes: &[u8]) -> ByteArrayInline<BYTES> {
+    const fn zeros(length: usize) -> Self {
+        Self::checked_build([0; BYTES], 0, length as u8)
+    }
+
+    fn from(bytes: &[u8]) -> Self {
         let length = bytes.len();
         assert!(length <= BYTES);
         let mut data = [0; BYTES];
-        data[0..length].copy_from_slice(bytes);
-        ByteArrayInline { data, start: 0, length }
+        data[..length].copy_from_slice(bytes);
+        Self::checked_build(data, 0, length as u8)
     }
 
-    fn concat<const N: usize>(slices: [&[u8]; N]) -> ByteArrayInline<BYTES> {
-        let length: usize = slices.iter().map(|slice| slice.len()).sum();
-        assert!(length <= BYTES);
+    fn concat<const N: usize>(slices: [&[u8]; N]) -> Self {
+        let total_length: usize = slices.iter().map(|slice| slice.len()).sum();
+        assert!(total_length <= BYTES);
         let mut data = [0; BYTES];
         let mut end = 0;
         for slice in slices {
             data[end..][..slice.len()].copy_from_slice(slice);
             end += slice.len();
         }
-        ByteArrayInline { data, start: 0, length }
+        Self::checked_build(data, 0, total_length as u8)
     }
 
-    fn new(bytes: [u8; BYTES], length: usize) -> ByteArrayInline<BYTES> {
-        ByteArrayInline { data: bytes, start: 0, length }
+    fn new(bytes: [u8; BYTES], length: usize) -> Self {
+        Self::checked_build(bytes, 0, length as u8)
     }
 
     pub fn bytes(&self) -> &[u8] {
-        &self.data[self.start..self.start + self.length]
+        &self.data[self.start as usize..][..self.length as usize]
     }
 
     pub fn bytes_mut(&mut self) -> &mut [u8] {
-        &mut self.data[self.start..self.start + self.length]
+        &mut self.data[self.start as usize..][..self.length as usize]
     }
 
     pub fn truncate(&mut self, length: usize) {
-        assert!(length <= self.length);
-        self.length = length
+        assert!(length <= self.length as usize);
+        self.length = length as u8;
     }
 
     pub fn truncate_range(&mut self, range: Range<usize>) {
-        assert!(range.start >= self.start && range.end <= self.start + self.length && range.len() <= self.length);
-        self.start = range.start;
-        self.length = range.len();
+        assert!(range.end <= self.length as usize);
+        self.start += range.start as u8;
+        self.length = range.len() as u8;
     }
 }
 
