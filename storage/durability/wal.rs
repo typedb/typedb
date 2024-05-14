@@ -8,14 +8,14 @@ use std::{collections::HashMap, ffi::OsStr, fmt, fs::{self, File as StdFile, Ope
     atomic::{AtomicU64, Ordering},
     RwLock, RwLockReadGuard,
 }};
+use std::cmp::{max, min};
 use std::error::Error;
+use std::marker::PhantomData;
+use std::ops::Sub;
 
 use itertools::Itertools;
 
-use crate::{
-    DurabilityError, DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, RecordHeader,
-    SequenceNumber, Sequencer,
-};
+use crate::{DurabilityError, DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, RecordHeader, SequenceNumber, Sequencer, UnsequencedDurabilityRecord};
 
 const MAX_WAL_FILE_SIZE: u64 = 16 * 1024 * 1024;
 
@@ -132,6 +132,32 @@ impl DurabilityService for WAL {
         Ok(RecordIterator::new(self.files.read().unwrap(), sequence_number)?)
     }
 
+    fn find_last_unsequenced_type<Record>(&self) -> Result<Option<Record>, DurabilityError>
+        where
+            Record: DurabilityRecord
+    {
+        let files = self.files.read().unwrap();
+        let files_newest_first = files.iter().rev();
+        for file in files_newest_first {
+            let iterator = FileRecordIterator::new(file, SequenceNumber::MIN)
+                .map_err(|err| DurabilityError::IO { source: err })?;
+
+            let mut found_record = None;
+            for record_result in iterator {
+                let record = record_result?;
+                if record.record_type == Record::RECORD_TYPE {
+                    found_record = Some(record)
+                }
+            }
+
+            if let Some(record) = found_record {
+                return Ok(Some(Record::deserialise_from(&mut &*record.bytes)?));
+            }
+
+        }
+        Ok(None)
+    }
+
     fn delete_durability(self) -> Result<(), DurabilityError> {
         let files = self.files.into_inner().unwrap();
         files.delete().map_err(|err| DurabilityError::DeleteFailed { source: err })
@@ -227,7 +253,7 @@ impl Files {
         Ok(())
     }
 
-    fn iter(&self) -> impl Iterator<Item=&File> {
+    fn iter(&self) -> impl Iterator<Item=&File> + DoubleEndedIterator {
         self.files.iter()
     }
 
@@ -244,7 +270,7 @@ fn write_header(file: &mut BufWriter<StdFile>, header: RecordHeader) -> io::Resu
     Ok(())
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 struct File {
     start: SequenceNumber,
     len: u64,
@@ -391,15 +417,54 @@ impl<'a> Iterator for RecordIterator<'a> {
     }
 }
 
+#[derive(Debug)]
+struct FileRecordIterator<'a> {
+    reader: Option<FileReader>,
+    file_ref: PhantomData<&'a File>,
+}
+
+impl<'a> FileRecordIterator<'a> {
+    fn new(file: &'a File, start: SequenceNumber) -> io::Result<Self> {
+        let mut reader = FileReader::new(file.clone())?;
+
+        let mut current_start = file.start;
+        while current_start < start {
+            reader.read_one_record()?;
+            match reader.peek_sequence_number().transpose() {
+                None => {
+                    // sequence number is past the end of this file.
+                    break;
+                }
+                Some(Err(err)) => return Err(err),
+                Some(Ok(sequence_number)) => {
+                    current_start = sequence_number;
+                }
+            }
+        }
+        Ok(Self { reader: Some(reader), file_ref: PhantomData::default() })
+    }
+}
+
+impl<'a> Iterator for FileRecordIterator<'a> {
+    type Item = Result<RawRecord, DurabilityError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let reader = self.reader.as_mut()?;
+        match reader.read_one_record().transpose() {
+            Some(Ok(item)) => Some(Ok(item)),
+            Some(Err(error)) => Some(Err(DurabilityError::IO { source: error })),
+            None => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use itertools::Itertools;
     use tempdir::TempDir;
 
     use super::WAL;
-    use crate::{
-        DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, SequenceNumber, SequencedDurabilityRecord,
-    };
+    use crate::{DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, SequenceNumber, SequencedDurabilityRecord, UnsequencedDurabilityRecord};
 
     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
     struct TestRecord {
@@ -424,15 +489,42 @@ mod test {
 
     impl SequencedDurabilityRecord for TestRecord {}
 
+
+    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+    struct UnsequencedTestRecord {
+        bytes: [u8; 4],
+    }
+
+    impl DurabilityRecord for UnsequencedTestRecord {
+        const RECORD_TYPE: DurabilityRecordType = 1;
+        const RECORD_NAME: &'static str = "UNSEQUENCED_TEST";
+
+        fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
+            writer.write_all(&self.bytes).unwrap();
+            Ok(())
+        }
+
+        fn deserialise_from(reader: &mut impl std::io::Read) -> bincode::Result<Self> {
+            let mut bytes = [0; 4];
+            reader.read_exact(&mut bytes).unwrap();
+            Ok(Self { bytes })
+        }
+    }
+
+    impl UnsequencedDurabilityRecord for UnsequencedTestRecord {}
+
+
     fn create_wal(directory: &TempDir) -> WAL {
         let mut wal = WAL::create(directory).unwrap();
         wal.register_record_type::<TestRecord>();
+        wal.register_record_type::<UnsequencedTestRecord>();
         wal
     }
 
     fn load_wal(directory: &TempDir) -> WAL {
         let mut wal = WAL::load(directory).unwrap();
         wal.register_record_type::<TestRecord>();
+        wal.register_record_type::<UnsequencedTestRecord>();
         wal
     }
 
@@ -555,5 +647,32 @@ mod test {
         let wal = load_wal(&directory);
         let read_records = wal.iter_from(SequenceNumber::MAX).unwrap().map(|res| res.unwrap()).collect_vec();
         assert!(read_records.is_empty());
+    }
+
+
+    #[test]
+    fn test_wal_find_last() {
+        let directory = TempDir::new("wal-test").unwrap();
+
+        let sequenced_1 = TestRecord { bytes: *b"test" };
+        let sequenced_2 = TestRecord { bytes: *b"abcd" };
+        let unsequenced_1 = UnsequencedTestRecord { bytes: *b"unsq" };
+        let unsequenced_2 = UnsequencedTestRecord { bytes: *b"xyzp" };
+
+        let wal = create_wal(&directory);
+        wal.sequenced_write(&sequenced_1).unwrap();
+        wal.unsequenced_write(&unsequenced_1).unwrap();
+        wal.unsequenced_write(&unsequenced_2).unwrap();
+        wal.sequenced_write(&sequenced_2).unwrap();
+
+        let found = wal.find_last_unsequenced_type::<UnsequencedTestRecord>().unwrap();
+        assert_eq!(found, Some(unsequenced_2.clone()));
+
+        drop(wal);
+
+        let wal = load_wal(&directory);
+
+        let found = wal.find_last_unsequenced_type::<UnsequencedTestRecord>().unwrap();
+        assert_eq!(found, Some(unsequenced_2.clone()));
     }
 }

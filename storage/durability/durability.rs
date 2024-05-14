@@ -107,6 +107,10 @@ pub trait DurabilityService: Sequencer {
         self.iter_unsequenced_type_from(SequenceNumber::MIN)
     }
 
+    fn find_last_unsequenced_type<Record: UnsequencedDurabilityRecord>(
+        &self
+    ) -> Result<Option<Record>, DurabilityError>;
+
     fn delete_durability(self) -> Result<(), DurabilityError>;
 }
 
