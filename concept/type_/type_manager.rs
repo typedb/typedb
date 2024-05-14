@@ -406,6 +406,19 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         }
     }
 
+    pub(crate) fn get_plays_for_role_type(
+        &self,
+        snapshot: &Snapshot,
+        role_type: RoleType<'static>,
+    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_plays_for_role_type(role_type.clone())))
+        } else {
+            let plays = TypeReader::get_plays_for_role_type(snapshot, role_type.clone())?;
+            Ok(MaybeOwns::Owned(plays))
+        }
+    }
+
     pub(crate) fn get_entity_type_owns_transitive(
         &self,
         snapshot: &Snapshot,

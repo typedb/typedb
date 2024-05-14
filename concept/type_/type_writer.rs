@@ -78,6 +78,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
 
+    // TODO: Store just the overridden.to vertex as value
     pub(crate) fn storage_set_type_edge_overridden<E>(
         snapshot: &mut Snapshot,
         edge: E,

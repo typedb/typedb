@@ -229,6 +229,10 @@ impl TypeCache {
         &RelationType::get_cache(self, relation_type).relates_transitive
     }
 
+    pub(crate) fn get_plays_for_role_type<'a>(&self, role_type: RoleType<'a>) -> &HashSet<Plays<'static>> {
+        &RoleType::get_cache(self, role_type).plays
+    }
+
     pub(crate) fn get_plays<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Plays<'static>>
     where
         T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,

@@ -5,6 +5,7 @@
  */
 
 use ::concept::type_::Ordering;
+use concept::type_::object_type::ObjectType;
 use concept::type_::TypeAPI;
 use cucumber::gherkin::Step;
 use itertools::Itertools;
@@ -307,5 +308,33 @@ pub async fn relation_role_annotations_contain(
         let actual_contains =
             role.get_annotations(&tx.snapshot, &tx.type_manager).unwrap().contains(&annotation.into_typedb().into());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) get players {contains_or_doesnt}:")]
+pub async fn role_type_players_contain(
+    context: &mut Context,
+    relation_label: Label,
+    role_label: Label,
+    contains_or_doesnt: ContainsOrDoesnt,
+    step: &Step,
+) {
+    let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
+    with_read_tx!(context, |tx| {
+        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
+        let role = relation.get_relates_role(&tx.snapshot, &tx.type_manager, role_label.to_typedb().name().as_str()).unwrap().unwrap().role();
+        let actual_labels = role.get_plays(&tx.snapshot, &tx.type_manager).unwrap().iter()
+            .map(|plays| {
+                match plays.player() {
+                    ObjectType::Entity(entity_type) => {
+                        entity_type.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                    },
+                    ObjectType::Relation(relation_type) => {
+                        relation_type.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                    }
+                }
+            }).collect::<Vec<String>>();
+        contains_or_doesnt.check(expected_labels, actual_labels);
     });
 }

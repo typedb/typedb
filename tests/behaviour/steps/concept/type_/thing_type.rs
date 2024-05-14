@@ -406,14 +406,14 @@ pub async fn get_owns_overridden_exists(
     root_label: RootLabel,
     type_label: Label,
     attr_type_label: Label,
-    _exists: Boolean,
+    exists: Boolean,
 ) {
-    let _object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
+    let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_read_tx!(context, |tx| {
-        let _attr_type_opt = tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap();
-        todo!("Overridden owns");
-        // let overriden_type_opt = todo!();
-        // exists.check(overriden_type_opt.is_some());
+        let attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let overridden_owns_opt = owns.get_override(&tx.snapshot, &tx.type_manager).unwrap();
+        exists.check(overridden_owns_opt.is_some());
     });
 }
 

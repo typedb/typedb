@@ -58,7 +58,8 @@ pub(crate) struct RelationTypeCache {
 pub(crate) struct RoleTypeCache {
     pub(super) common_type_cache: CommonTypeCache<RoleType<'static>>,
     pub(super) ordering: Ordering,
-    pub(super) relates_declared: Relates<'static>,
+    pub(super) relates: Relates<'static>,
+    pub(super) plays: HashSet<Plays<'static>>,
 }
 
 #[derive(Debug)]
@@ -187,7 +188,8 @@ impl RoleTypeCache {
             let cache = RoleTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, role.clone()),
                 ordering,
-                relates_declared: TypeReader::get_relation(snapshot, role.clone()).unwrap(),
+                relates: TypeReader::get_relation(snapshot, role.clone()).unwrap(),
+                plays: TypeReader::get_plays_for_role_type(snapshot, role.clone()).unwrap(),
             };
             caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
         }

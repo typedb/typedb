@@ -223,12 +223,12 @@ impl<'a> RoleType<'a> {
 
 // --- Played API ---
 impl<'a> RoleType<'a> {
-    fn get_plays<'m, Snapshot: ReadableSnapshot>(
+    pub fn get_plays<'m, Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        _type_manager: &'m TypeManager<Snapshot>,
-    ) -> MaybeOwns<'m, HashSet<Plays<'static>>> {
-        todo!()
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
+        type_manager.get_plays_for_role_type(snapshot, self.clone().into_owned())
     }
 }
 

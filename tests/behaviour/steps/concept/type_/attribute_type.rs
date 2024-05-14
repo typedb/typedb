@@ -21,7 +21,7 @@ pub async fn attribute_type_set_value_type(
 ) {
     with_schema_tx!(context, |tx| {
         let attribute_type =
-            tx.type_manager.create_attribute_type(&mut tx.snapshot, &type_label.to_typedb(), false).unwrap();
+            tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
         attribute_type.set_value_type(&mut tx.snapshot, &tx.type_manager, value_type.to_typedb())
     });
 }

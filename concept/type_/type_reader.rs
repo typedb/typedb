@@ -30,6 +30,8 @@ use encoding::{
     },
     AsBytes, Keyable,
 };
+
+use encoding::graph::type_::edge::{build_edge_plays_reverse_prefix_from, new_edge_plays_reverse};
 use iterator::Collector;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
@@ -273,6 +275,20 @@ impl TypeReader {
                 )
             })
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
+    }
+
+    pub(crate) fn get_plays_for_role_type(
+        snapshot: &impl ReadableSnapshot,
+        role_type: RoleType<'static>,
+    ) -> Result<HashSet<Plays<'static>>, ConceptReadError> {
+        let plays_prefix = build_edge_plays_reverse_prefix_from(role_type.into_vertex());
+        snapshot
+            .iterate_range(KeyRange::new_within(plays_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
+            .collect_cloned_hashset(|key, _| {
+                let plays_edge = new_edge_plays_reverse(Bytes::Reference(key.byte_ref()));
+                Plays::new(ObjectType::new(plays_edge.to().into_owned()), RoleType::new(plays_edge.from().into_owned()))
+            })
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
     pub(crate) fn get_relates(
