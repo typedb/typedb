@@ -66,6 +66,17 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot.delete(sub_reverse.into_storage_key().into_owned_array());
     }
 
+    pub(crate) fn storage_put_relates(
+        snapshot: &mut Snapshot,
+        relation: RelationType<'static>,
+        role: RoleType<'static>,
+    ) {
+        let relates = build_edge_relates(relation.clone().into_vertex(), role.clone().into_vertex());
+        snapshot.put(relates.into_storage_key().into_owned_array());
+        let relates_reverse = build_edge_relates_reverse(role.into_vertex(), relation.into_vertex());
+        snapshot.put(relates_reverse.into_storage_key().into_owned_array());
+    }
+
     pub(crate) fn storage_delete_relates(
         snapshot: &mut Snapshot,
         relation: RelationType<'static>,

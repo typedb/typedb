@@ -664,7 +664,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let role = RoleType::new(type_vertex);
         TypeWriter::storage_put_label(snapshot, role.clone(), label);
-        self.storage_set_relates(snapshot, relation_type, role.clone());
+        TypeWriter::storage_put_relates(snapshot, relation_type, role.clone());
         self.storage_set_role_ordering(snapshot, role.clone(), ordering);
         if !is_root {
             TypeWriter::storage_put_supertype(
@@ -885,14 +885,6 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         TypeWriter::storage_set_type_edge_overridden(snapshot, plays, overridden);//.role());
         Ok(())
     }
-
-    fn storage_set_relates(&self, snapshot: &mut Snapshot, relation: RelationType<'static>, role: RoleType<'static>) {
-        let relates = build_edge_relates(relation.clone().into_vertex(), role.clone().into_vertex());
-        snapshot.put(relates.into_storage_key().into_owned_array());
-        let relates_reverse = build_edge_relates_reverse(role.into_vertex(), relation.into_vertex());
-        snapshot.put(relates_reverse.into_storage_key().into_owned_array());
-    }
-
 
     pub(crate) fn storage_set_value_type(
         &self,
