@@ -73,7 +73,7 @@ public class StatisticReporter {
             conn.getInputStream().readAllBytes();
             return true;
         } catch (Exception e) {
-            LOG.warn("Failed to push metrics to {}: {}", reportingURI, e.getMessage());
+            if (LOG.isTraceEnabled()) LOG.trace("Failed to push diagnostics to {}: {}", reportingURI, e.getMessage());
             // do nothing and try again after the standard delay
             return false;
         }
