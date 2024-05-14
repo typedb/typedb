@@ -25,6 +25,7 @@ use crate::{
     keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, Keyspaces, KeyspaceSet},
     StorageCommitError,
 };
+use crate::recovery::checkpoint::CheckpointLoadError::MetadataRead;
 
 /// A checkpoint is a directory, which contains at least the storage checkpointing data: keyspaces + the watermark.
 /// The watermark represents a sequence number that is guaranteed to be in all the keyspaces, and after which we may
@@ -142,34 +143,37 @@ impl Checkpoint {
         keyspaces_dir: &Path,
         durability_service: &Durability,
     ) -> Result<(Keyspaces, SequenceNumber), CheckpointLoadError> {
-        use CheckpointLoadError::{CheckpointRestore, CommitRecoveryFailed, KeyspaceOpen, MetadataRead};
+        use CheckpointLoadError::{CheckpointRestore, CommitRecoveryFailed, KeyspaceOpen};
 
-        let checkpoint_sequence_number = {
-            for keyspace in KS::iter() {
-                let keyspace_checkpoint_dir = self.directory.join(keyspace.name());
-                let keyspace_dir = keyspaces_dir.join(keyspace.name());
-                restore_storage_from_checkpoint(keyspace_dir, keyspace_checkpoint_dir)
-                    .map_err(|error| CheckpointRestore { dir: self.directory.clone(), source: error })?;
-            }
-            let metadata_file_path = self.directory.join(Self::STORAGE_METADATA_FILE_NAME);
-            let metadata = fs::read_to_string(metadata_file_path)
-                .map_err(|error| MetadataRead { dir: self.directory.clone(), source: error })?;
-            SequenceNumber::new(
-                metadata.parse().expect("corrupt METADATA file (should try to restore from prev checkpoint)"),
-            )
-        };
+        for keyspace in KS::iter() {
+            let keyspace_dir = keyspaces_dir.join(keyspace.name());
+            let keyspace_checkpoint_dir = self.directory.join(keyspace.name());
+            restore_storage_from_checkpoint(keyspace_dir, keyspace_checkpoint_dir)
+                .map_err(|error| CheckpointRestore { dir: self.directory.clone(), source: error })?;
+        }
 
         let keyspaces = Keyspaces::open::<KS>(&keyspaces_dir).map_err(|error| KeyspaceOpen {
             source: error
         })?;
 
-        let recovery_start = checkpoint_sequence_number + 1;
+        let recovery_start = self.read_sequence_number()? + 1;
         let recovered_commits = load_commit_data_from(recovery_start, durability_service)
             .map_err(|err| CommitRecoveryFailed { source: err })?;
         let next_sequence_number = recovered_commits.keys().max().copied().unwrap_or(recovery_start - 1) + 1;
         apply_commits(recovered_commits, durability_service, &keyspaces)
             .map_err(|err| CommitRecoveryFailed { source: err })?;
         Ok((keyspaces, next_sequence_number))
+    }
+
+    pub fn read_sequence_number(&self) -> Result<SequenceNumber, CheckpointLoadError> {
+        use CheckpointLoadError::{MetadataRead};
+
+        let metadata_file_path = self.directory.join(Self::STORAGE_METADATA_FILE_NAME);
+        let metadata = fs::read_to_string(metadata_file_path)
+            .map_err(|error| MetadataRead { dir: self.directory.clone(), source: error })?;
+        Ok(SequenceNumber::new(
+            metadata.parse().expect("Could not read METADATA file (could try to restore from previous checkpoint)"),
+        ))
     }
 }
 

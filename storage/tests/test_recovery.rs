@@ -46,7 +46,17 @@ fn wal_and_checkpoint_ok() {
     };
 }
 
-// TODO: test that having a WAL with missing records required to complete the checkpoint, fails
+#[test]
+fn wal_missing_records_for_checkpoint_replay_fails() {
+    // TODO: test that having a WAL with missing records required to complete the checkpoint, fails
+    todo!()
+}
+
+#[test]
+fn wal_missing_records_entire_replay_fails() {
+    // TODO: test that replaying a WAL from scratch fails if any records are missing from the start
+    todo!()
+}
 
 #[test]
 fn wal_and_no_checkpoint_ok() {
@@ -75,8 +85,6 @@ fn wal_and_no_checkpoint_ok() {
         assert!(snapshot.get_mapped(StorageKeyReference::from(&key_hello), |_| true).unwrap().is_some());
     }
 }
-
-// TODO: test that having an incomplete WAL fails
 
 #[test]
 fn no_wal_and_checkpoint_illegal() {

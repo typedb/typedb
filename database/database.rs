@@ -16,7 +16,7 @@ use std::ffi::OsString;
 
 use concept::{error::ConceptWriteError, type_::type_manager::TypeManager};
 use concept::thing::statistics::Statistics;
-use durability::{DurabilityError, DurabilityService, SequenceNumber};
+use durability::{DurabilityError, DurabilityService, SequenceNumber, Sequencer};
 use durability::wal::WAL;
 use encoding::{
     EncodingKeyspace,
@@ -33,7 +33,7 @@ use storage::recovery::checkpoint::{Checkpoint, CheckpointCreateError, Checkpoin
 use storage::recovery::commit_replay::{CommitRecoveryError, load_commit_data_from, RecoveryCommitStatus};
 
 use crate::database::StatisticsInitialiseError::ReloadCommitData;
-use crate::DatabaseOpenError::{DirectoryCreate, DurabilityRead, Encoding, SchemaInitialise, StatisticsInitialise, StorageOpen};
+use crate::DatabaseOpenError::{CheckpointCreate, DirectoryCreate, DurabilityRead, Encoding, SchemaInitialise, StatisticsInitialise, StorageOpen};
 
 pub struct Database<D> {
     name: String,
@@ -87,11 +87,12 @@ impl Database<WAL> {
 
     fn load(path: &Path, name: impl AsRef<str>) -> Result<Database<WAL>, DatabaseOpenError> {
         use DatabaseOpenError::{
-            CheckpointLoad, DurabilityOpen, DurabilityRead, Encoding, SchemaInitialise,
+            CheckpointLoad, CheckpointCreate, DurabilityOpen, DurabilityRead, Encoding, SchemaInitialise,
             StatisticsInitialise, StorageOpen
         };
 
         let wal = WAL::load(&path).map_err(|err| DurabilityOpen { source: err })?;
+        let wal_last_sequence_number = wal.previous();
         let checkpoint = Checkpoint::open_latest(&path)
             .map_err(|err| CheckpointLoad { source: err })?;
         let storage = Arc::new(MVCCStorage::load::<EncodingKeyspace>(&name, path, wal, &checkpoint)
@@ -105,18 +106,25 @@ impl Database<WAL> {
         let statistics = storage.durability().find_last_unsequenced_type::<Statistics>()
             .map_err(|err| DurabilityRead { source: err })?
             .unwrap_or_else(|| Statistics::new(SequenceNumber::MIN));
-
         let statistics = Database::<WAL>::may_synchronise_statistics(statistics, storage.clone())
             .map_err(|err| StatisticsInitialise { source: err })?;
 
-        Ok(Database::<WAL> {
+        let database = Database::<WAL> {
             name: name.as_ref().to_owned(),
             path: path.to_owned(),
             storage,
             type_vertex_generator,
             thing_vertex_generator,
             thing_statistics: Arc::new(statistics),
-        })
+        };
+
+        let checkpoint_sequence_number = checkpoint.as_ref().unwrap().read_sequence_number()
+            .map_err(|err| CheckpointLoad { source: err })?;
+        if checkpoint_sequence_number < wal_last_sequence_number {
+            database.checkpoint().map_err(|err| CheckpointCreate { source: err })?;
+        }
+
+        Ok(database)
     }
 
     fn checkpoint(&self) -> Result<(), DatabaseCheckpointError> {
@@ -196,6 +204,7 @@ pub enum DatabaseOpenError {
     DurabilityOpen { source: DurabilityError },
     DurabilityRead { source: DurabilityError },
     CheckpointLoad { source: CheckpointLoadError },
+    CheckpointCreate { source: CheckpointCreateError },
     Encoding { source: EncodingError },
     SchemaInitialise { source: ConceptWriteError },
     StatisticsInitialise { source: StatisticsInitialiseError },
@@ -216,6 +225,7 @@ impl Error for DatabaseOpenError {
             Self::DurabilityOpen { source } => Some(source),
             Self::DurabilityRead { source } => Some(source),
             Self::CheckpointLoad { source } => Some(source),
+            Self::CheckpointCreate{ source } => Some(source),
             Self::SchemaInitialise { source } => Some(source),
             Self::StatisticsInitialise { source } => Some(source),
             Self::Encoding { source } => Some(source),

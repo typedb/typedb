@@ -73,7 +73,7 @@ impl<Durability> MVCCStorage<Durability> {
         let storage_dir = path.join(Self::STORAGE_DIR_NAME);
 
         if storage_dir.exists() {
-            // TODO error
+            return Err(StorageOpenError::StorageDirectoryExists { name: name.as_ref().to_owned(), path: storage_dir});
         }
         fs::create_dir_all(&storage_dir)
             .map_err(|error| StorageOpenError::StorageDirectoryCreate { name: name.as_ref().to_owned(), source: error })?;
@@ -434,6 +434,7 @@ impl Error for WriteSnapshotOpenError {
 
 #[derive(Debug)]
 pub enum StorageOpenError {
+    StorageDirectoryExists { name: String, path: PathBuf },
     StorageDirectoryCreate { name: String, source: io::Error },
     StorageDirectoryRecreate { name: String, source: io::Error },
 

@@ -81,14 +81,28 @@ impl<D: DurabilityService> TransactionSchema<D> {
         let type_manager = Arc::new(TypeManager::new(database.type_vertex_generator.clone(), None));
         let thing_manager =
             ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
+
+        // TODO: take WRITE schema transaction lock (data write transactions take it as READ) - prevents data txn while schema txn running
+
         Self { database, snapshot, type_manager, thing_manager }
     }
 
     pub fn commit(mut self) -> Result<(), Vec<ConceptWriteError>> {
+
+        // TODO: 1. synchronise statistics
+        //       2. flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
+
         self.thing_manager.finalise(&mut self.snapshot)?;
         let type_manager_owned = Arc::try_unwrap(self.type_manager).unwrap_or_else(|_| { panic!("Failed to unwrap type_manager arc"); });
         type_manager_owned.finalise()?;
+
+        // TODO: take lock to prevent new read transactions from opening
+
         self.snapshot.commit().unwrap_or_else(|_| { panic!("Failed to commit snapshot"); });
+
+        // replace Schema cache
+        // replace statistics
+
         Ok(())
     }
 
