@@ -19,12 +19,13 @@ use self::{annotation::AnnotationRegex, object_type::ObjectType};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::AnnotationCardinality, attribute_type::AttributeType, owns::Owns, plays::Plays,
-        role_type::RoleType, type_manager::TypeManager,
+        annotation::AnnotationCardinality,
+        attribute_type::AttributeType, entity_type::EntityType, role_type::RoleType, relation_type::RelationType,
+        owns::Owns, plays::Plays,
+        type_manager::TypeManager,
     },
     ConceptAPI,
 };
-
 pub mod annotation;
 pub mod attribute_type;
 pub mod entity_type;
@@ -229,4 +230,13 @@ fn serialise_ordering(ordering: Ordering) -> Box<[u8]> {
 
 fn deserialise_ordering(value: ByteReference<'_>) -> Ordering {
     bincode::deserialize(value.bytes()).unwrap()
+}
+
+
+#[derive(Clone, Debug)]
+pub enum WrappedTypeForError {
+    EntityType(EntityType<'static>),
+    RelationType(RelationType<'static>),
+    AttributeType(AttributeType<'static>),
+    RoleType(RoleType<'static>),
 }

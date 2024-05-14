@@ -12,6 +12,7 @@ use crate::{
     error::ConceptReadError,
     type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, IntoCanonicalTypeEdge, TypeAPI},
 };
+use crate::error::ConceptWriteError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Plays<'a> {
@@ -45,9 +46,9 @@ impl<'a> Plays<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         overridden: Plays<'static>,
-    ) {
+    ) -> Result<(), ConceptWriteError>{
         // TODO: Validation
-        type_manager.storage_set_plays_overridden(snapshot, self.clone().into_owned(), overridden)
+        type_manager.set_plays_overridden(snapshot, self.clone().into_owned(), overridden)
     }
 
     fn into_owned(self) -> Plays<'static> {

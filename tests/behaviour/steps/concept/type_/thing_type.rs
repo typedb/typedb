@@ -499,8 +499,8 @@ pub async fn get_plays_set_override(
             tx.type_manager.get_role_type(&tx.snapshot, &overridden_role_label.to_typedb()).unwrap().unwrap();
         let overridden_plays_opt = player_supertype.get_plays_role_transitive(&tx.snapshot, &tx.type_manager, overridden_role_type).unwrap();
         if let Some(overridden_plays) = overridden_plays_opt.as_ref() {
-            plays.set_override(&mut tx.snapshot, &tx.type_manager, overridden_plays_opt.unwrap());
-            todo!("Check error");
+            let res = plays.set_override(&mut tx.snapshot, &tx.type_manager, overridden_plays_opt.unwrap());
+            may_error.check(&res);
         } else {
             assert!(may_error.expects_error());
         }

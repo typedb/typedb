@@ -78,14 +78,17 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
 
-    pub(crate) fn storage_set_type_edge_overridden(
+    pub(crate) fn storage_set_type_edge_overridden<E>(
         snapshot: &mut Snapshot,
-        edge: impl IntoCanonicalTypeEdge<'static>,
-        canonical_overridden_to: impl TypeAPI<'static>,
-    ) {
+        edge: E,
+        overridden: E
+        // canonical_overridden_to: impl TypeAPI<'static>,
+    )
+    where E: IntoCanonicalTypeEdge<'static>
+    {
         let property_key =
             build_property_type_edge_override(edge.into_type_edge()).into_storage_key().into_owned_array();
-        let overridden_to_vertex = ByteArray::copy(canonical_overridden_to.into_vertex().into_bytes().bytes());
+        let overridden_to_vertex = ByteArray::copy(overridden.into_type_edge().into_bytes().bytes());
         snapshot.put_val(property_key, overridden_to_vertex);
     }
 }

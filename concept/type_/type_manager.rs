@@ -68,9 +68,9 @@ use crate::{
         IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
-use crate::type_::object_type::ObjectType;
 use crate::type_::type_writer::TypeWriter;
 use crate::type_::validation::validation::TypeValidator;
+use crate::type_::WrappedTypeForError;
 
 // TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
 pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
@@ -795,9 +795,12 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         overridden: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: More validation - instances exist.
+        TypeValidator::validate_owns_is_inherited(snapshot, owns.owner(), overridden.attribute())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+        TypeValidator::validate_overridden_is_supertype(snapshot, owns.attribute(), overridden.attribute())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
-
-        TypeWriter::storage_set_type_edge_overridden(snapshot, owns.clone(), overridden.attribute().clone());
+        TypeWriter::storage_set_type_edge_overridden(snapshot, owns.clone(), overridden.clone()); // .attribute().clone());
         Ok(())
     }
 
@@ -855,16 +858,19 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.delete(plays_reverse.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_set_plays_overridden(
+    pub(crate) fn set_plays_overridden(
         &self,
         snapshot: &mut Snapshot,
         plays: Plays<'static>,
         overridden: Plays<'static>,
-    ) {
-        let property_key =
-            build_property_type_edge_override(plays.into_type_edge()).into_storage_key().into_owned_array();
-        let overridden_plays = ByteArray::copy(overridden.into_type_edge().into_bytes().bytes());
-        snapshot.put_val(property_key, overridden_plays);
+    ) -> Result<(), ConceptWriteError> {
+        TypeValidator::validate_plays_is_inherited(snapshot, plays.player(), overridden.role())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+        TypeValidator::validate_overridden_is_supertype(snapshot, plays.role(), overridden.role())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+
+        TypeWriter::storage_set_type_edge_overridden(snapshot, plays, overridden);//.role());
+        Ok(())
     }
 
     fn storage_set_relates(&self, snapshot: &mut Snapshot, relation: RelationType<'static>, role: RoleType<'static>) {
@@ -1081,28 +1087,46 @@ pub trait KindAPI<'a>: TypeAPI<'a> {
     type SelfStatic: KindAPI<'static> + 'static;
     type AnnotationType: Hash + Eq + From<Annotation> + 'static;
     const ROOT_KIND: Kind;
+
+    fn wrap_for_error(&self) -> WrappedTypeForError;
 }
 
 impl<'a> KindAPI<'a> for AttributeType<'a> {
     type SelfStatic = AttributeType<'static>;
     type AnnotationType = AttributeTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Attribute;
+
+    fn wrap_for_error(&self) -> WrappedTypeForError {
+        WrappedTypeForError::AttributeType(self.clone().into_owned())
+    }
 }
 
 impl<'a> KindAPI<'a> for EntityType<'a> {
     type SelfStatic = EntityType<'static>;
     type AnnotationType = EntityTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Entity;
+
+    fn wrap_for_error(&self) -> WrappedTypeForError {
+        WrappedTypeForError::EntityType(self.clone().into_owned())
+    }
 }
 
 impl<'a> KindAPI<'a> for RelationType<'a> {
     type SelfStatic = RelationType<'static>;
     type AnnotationType = RelationTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Relation;
+
+    fn wrap_for_error(&self) -> WrappedTypeForError {
+        WrappedTypeForError::RelationType(self.clone().into_owned())
+    }
 }
 
 impl<'a> KindAPI<'a> for RoleType<'a> {
     type SelfStatic = RoleType<'static>;
     type AnnotationType = RoleTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Role;
+
+    fn wrap_for_error(&self) -> WrappedTypeForError {
+        WrappedTypeForError::RoleType(self.clone().into_owned())
+    }
 }

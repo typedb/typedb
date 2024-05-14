@@ -10,6 +10,8 @@ use encoding::value::label::Label;
 use crate::error::ConceptReadError;
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::role_type::RoleType;
+use crate::type_::type_manager::KindAPI;
+use crate::type_::WrappedTypeForError;
 
 pub mod validation;
 
@@ -17,12 +19,13 @@ pub mod validation;
 #[derive(Debug, Clone)]
 pub enum SchemaValidationError {
     ConceptRead(ConceptReadError),
-    LabelUniqueness(Label<'static>),
-    CyclicTypeHierarchy, // TODO: Add details of what caused it
     RootModification,
+    LabelUniqueness(Label<'static>),
+    CyclicTypeHierarchy(WrappedTypeForError, WrappedTypeForError), // TODO: Add details of what caused it
     RelatesNotInherited(RoleType<'static>),
     OwnsNotInherited(AttributeType<'static>),
     PlaysNotInherited(RoleType<'static>),
+    OverriddenTypeNotSupertype(WrappedTypeForError, WrappedTypeForError),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -36,11 +39,12 @@ impl Error for SchemaValidationError {
         match self {
             Self::ConceptRead(source) => Some(source),
             Self::LabelUniqueness(_) => None,
-            SchemaValidationError::CyclicTypeHierarchy => None,
             SchemaValidationError::RootModification => None,
+            SchemaValidationError::CyclicTypeHierarchy(_,_) => None,
             SchemaValidationError::RelatesNotInherited(_) => None,
             SchemaValidationError::OwnsNotInherited(_) => None,
             SchemaValidationError::PlaysNotInherited(_) => None,
+            SchemaValidationError::OverriddenTypeNotSupertype(_, _) => None,
         }
     }
 }
