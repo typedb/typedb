@@ -43,7 +43,7 @@ impl AnnotationCardinality {
     }
 
     pub fn is_valid(&self, count: u64) -> bool {
-        self.start_inclusive <= count && (self.end_inclusive.is_none() || count <= self.end_inclusive.clone().unwrap())
+        self.start_inclusive <= count && (self.end_inclusive.is_none() || count <= self.end_inclusive.unwrap())
     }
 
     pub fn start(&self) -> u64 {
@@ -51,7 +51,7 @@ impl AnnotationCardinality {
     }
 
     pub fn end(&self) -> Option<u64> {
-        self.end_inclusive.clone()
+        self.end_inclusive
     }
 }
 
