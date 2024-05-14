@@ -20,7 +20,7 @@ use serde::{
 
 use crate::{
     byte_reference::ByteReference,
-    util::{increment, BytesError},
+    util::{increment, BytesError, HexBytesFormatter},
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -284,11 +284,14 @@ impl<'de, const SIZE: usize> Deserialize<'de> for ByteArrayInline<SIZE> {
 
 impl<const BYTES: usize> fmt::Debug for ByteArrayInline<BYTES> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[{:?}, allocated_size: {}]", self.bytes(), self.length)
+        f.debug_struct(&format!("ByteArrayInline<{BYTES}>"))
+            .field("length", &self.length)
+            .field("data", &HexBytesFormatter(self.bytes()))
+            .finish()
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ByteArrayBoxed {
     data: Box<[u8]>,
     start: usize,
@@ -364,3 +367,13 @@ impl<const INLINE_BYTES: usize> PartialEq<[u8]> for ByteArray<INLINE_BYTES> {
         self.bytes() == other
     }
 }
+
+impl fmt::Debug for ByteArrayBoxed {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ByteArrayBoxed")
+            .field("length", &self.length)
+            .field("data", &HexBytesFormatter(self.bytes()))
+            .finish()
+    }
+}
+

@@ -4,14 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::ops::Range;
-use crate::byte_array::ByteArray;
+use std::{fmt, ops::Range};
+
+use crate::{byte_array::ByteArray, util::HexBytesFormatter};
 
 /*
 TODO: if a ByteReference can be directly sliced (eg. byte_ref[0..10]) this would improve its ergonomics a fair amount
  */
 
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ByteReference<'bytes> {
     bytes: &'bytes [u8],
 }
@@ -47,5 +48,11 @@ impl<'bytes> ByteReference<'bytes> {
 impl<'bytes, const INLINE_SIZE: usize> From<&'bytes ByteArray<INLINE_SIZE>> for ByteReference<'bytes> {
     fn from(array: &'bytes ByteArray<INLINE_SIZE>) -> Self {
         array.as_ref()
+    }
+}
+
+impl fmt::Debug for ByteReference<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("ByteReference").field(&HexBytesFormatter(self.bytes())).finish()
     }
 }

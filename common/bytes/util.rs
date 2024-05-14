@@ -6,7 +6,6 @@
 
 use std::fmt;
 
-
 // TODO: this needs to be optimised using bigger strides than a single byte!
 ///
 /// Performs a big-endian +1 operation that errors on overflow
@@ -51,5 +50,16 @@ pub enum BytesErrorKind {
 impl fmt::Display for BytesError {
     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
+    }
+}
+
+pub(crate) struct HexBytesFormatter<'a>(pub(crate) &'a [u8]);
+
+impl fmt::Debug for HexBytesFormatter<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for byte in self.0 {
+            write!(f, "{:02X}", byte)?;
+        }
+        Ok(())
     }
 }
