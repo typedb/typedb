@@ -50,7 +50,7 @@ fn db_options() -> Options {
 }
 
 #[derive(Debug)]
-pub struct Keyspaces {
+pub(crate) struct Keyspaces {
     keyspaces: Vec<Keyspace>,
     index: [Option<KeyspaceId>; KEYSPACE_MAXIMUM_COUNT],
 }

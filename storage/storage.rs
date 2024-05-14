@@ -126,11 +126,6 @@ impl<Durability> MVCCStorage<Durability> {
         };
 
         let isolation_manager = IsolationManager::new(next_sequence_number);
-
-        // TODO only create new checkpoint if recovery happened
-        // Checkpoint::create(next_sequence_number - 1, path, &keyspaces)
-        //     .map_err(|error| CheckpointCreate { name: name.to_owned(), source: error })?;
-
         Ok(Self { name: name.to_owned(), path: storage_dir, durability_service, keyspaces, isolation_manager })
     }
 

@@ -8,7 +8,6 @@ use std::{collections::HashMap, ffi::OsStr, fmt, fs::{self, File as StdFile, Ope
     atomic::{AtomicU64, Ordering},
     RwLock, RwLockReadGuard,
 }};
-use std::cmp::{max, min};
 use std::error::Error;
 use std::marker::PhantomData;
 use std::ops::Sub;
@@ -463,8 +462,9 @@ mod test {
     use itertools::Itertools;
     use tempdir::TempDir;
 
+    use crate::{DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, SequencedDurabilityRecord, SequenceNumber, UnsequencedDurabilityRecord};
+
     use super::WAL;
-    use crate::{DurabilityRecord, DurabilityRecordType, DurabilityService, RawRecord, SequenceNumber, SequencedDurabilityRecord, UnsequencedDurabilityRecord};
 
     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
     struct TestRecord {
