@@ -79,8 +79,7 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
         // todo!("Validation");
-        type_manager.delete_entity_type(snapshot, self);
-        Ok(())
+        type_manager.delete_entity_type(snapshot, self)
     }
 
     fn get_label<'m, Snapshot: ReadableSnapshot>(
@@ -116,8 +115,7 @@ impl<'a> EntityType<'a> {
         if self.is_root(snapshot, type_manager)? {
             Err(ConceptWriteError::RootModification)
         } else {
-            type_manager.storage_set_label(snapshot, self.clone().into_owned(), label);
-            Ok(())
+            type_manager.set_label(snapshot, self.clone().into_owned(), label)
         }
     }
 
@@ -135,8 +133,7 @@ impl<'a> EntityType<'a> {
         type_manager: &TypeManager<Snapshot>,
         supertype: EntityType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.storage_set_supertype(snapshot, self.clone().into_owned(), supertype);
-        Ok(())
+        type_manager.set_supertype(snapshot, self.clone().into_owned(), supertype)
     }
 
     pub fn get_supertypes<'m, Snapshot: ReadableSnapshot>(

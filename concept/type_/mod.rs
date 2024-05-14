@@ -37,6 +37,8 @@ pub mod role_type;
 pub mod type_cache;
 pub mod type_manager;
 mod type_reader;
+mod type_writer;
+pub mod validation;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
     fn vertex(&self) -> TypeVertex<'_>;

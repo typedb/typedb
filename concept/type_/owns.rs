@@ -20,6 +20,7 @@ use crate::{
         IntoCanonicalTypeEdge, Ordering, TypeAPI,
     },
 };
+use crate::error::ConceptWriteError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<'a> {
@@ -103,9 +104,9 @@ impl<'a> Owns<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         overridden: Owns<'static>,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         // TODO: Validation
-        type_manager.storage_set_owns_overridden(snapshot, self.clone().into_owned(), overridden)
+        type_manager.set_owns_overridden(snapshot, self.clone().into_owned(), overridden)
     }
 
     pub fn get_annotations<'this, Snapshot: ReadableSnapshot>(

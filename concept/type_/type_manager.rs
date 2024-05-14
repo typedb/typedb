@@ -68,6 +68,9 @@ use crate::{
         IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::type_::object_type::ObjectType;
+use crate::type_::type_writer::TypeWriter;
+use crate::type_::validation::validation::TypeValidator;
 
 // TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
 pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
@@ -575,7 +578,11 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
     }
 }
 
-// TODO: Move this somewhere too?
+// TODO: Remove this set of comments
+// DO: Do all validation, and call TypeWriter methods.
+//  All validation must occur before any writes.  All writes must be done through TypeWriter
+//      (If this feels like unnecessary indirection, feel free to refactor. I just need structure)
+//  Avoid cross-calling methods if it violates the above.
 impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub fn create_entity_type(
         &self,
@@ -583,15 +590,17 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         label: &Label<'_>,
         is_root: bool,
     ) -> Result<EntityType<'static>, ConceptWriteError> {
-        // TODO: validate type doesn't exist already
+        TypeValidator::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation{ source })?;
         let type_vertex = self
             .vertex_generator
             .create_entity_type(snapshot)
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let entity = EntityType::new(type_vertex);
-        self.storage_set_label(snapshot, entity.clone(), label);
+
+        TypeWriter::storage_put_label(snapshot, entity.clone(), label);
         if !is_root {
-            self.storage_set_supertype(
+            TypeWriter::storage_put_supertype(
                 snapshot,
                 entity.clone(),
                 self.get_entity_type(snapshot, &Kind::Entity.root_label()).unwrap().unwrap(),
@@ -606,15 +615,17 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         label: &Label<'_>,
         is_root: bool,
     ) -> Result<RelationType<'static>, ConceptWriteError> {
-        // TODO: validate type doesn't exist already
+        TypeValidator::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation{ source })?;
         let type_vertex = self
             .vertex_generator
             .create_relation_type(snapshot)
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let relation = RelationType::new(type_vertex);
-        self.storage_set_label(snapshot, relation.clone(), label);
+
+        TypeWriter::storage_put_label(snapshot, relation.clone(), label);
         if !is_root {
-            self.storage_set_supertype(
+            TypeWriter::storage_put_supertype(
                 snapshot,
                 relation.clone(),
                 self.get_relation_type(snapshot, &Kind::Relation.root_label()).unwrap().unwrap(),
@@ -631,17 +642,19 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         is_root: bool,
         ordering: Ordering,
     ) -> Result<RoleType<'static>, ConceptWriteError> {
-        // TODO: validate type doesn't exist already
+        TypeValidator::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation{ source })?;
+
         let type_vertex = self
             .vertex_generator
             .create_role_type(snapshot)
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let role = RoleType::new(type_vertex);
-        self.storage_set_label(snapshot, role.clone(), label);
+        TypeWriter::storage_put_label(snapshot, role.clone(), label);
         self.storage_set_relates(snapshot, relation_type, role.clone());
         self.storage_set_role_ordering(snapshot, role.clone(), ordering);
         if !is_root {
-            self.storage_set_supertype(
+            TypeWriter::storage_put_supertype(
                 snapshot,
                 role.clone(),
                 self.get_role_type(snapshot, &Kind::Role.root_label()).unwrap().unwrap(),
@@ -656,15 +669,17 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         label: &Label<'_>,
         is_root: bool,
     ) -> Result<AttributeType<'static>, ConceptWriteError> {
-        // TODO: validate type doesn't exist already
+        TypeValidator::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation{ source })?;
+
         let type_vertex = self
             .vertex_generator
             .create_attribute_type(snapshot)
             .map_err(|err| ConceptWriteError::Encoding { source: err })?;
         let attribute_type = AttributeType::new(type_vertex);
-        self.storage_set_label(snapshot, attribute_type.clone(), label);
+        TypeWriter::storage_put_label(snapshot, attribute_type.clone(), label);
         if !is_root {
-            self.storage_set_supertype(
+            TypeWriter::storage_put_supertype(
                 snapshot,
                 attribute_type.clone(),
                 self.get_attribute_type(snapshot, &Kind::Attribute.root_label()).unwrap().unwrap(),
@@ -673,57 +688,70 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         Ok(attribute_type)
     }
 
-    pub(crate) fn delete_entity_type(&self, snapshot: &mut Snapshot, entity_type: EntityType<'_>) {
-        self.storage_may_delete_label(snapshot, entity_type.clone().into_owned());
-        self.storage_may_delete_supertype(snapshot, entity_type.clone().into_owned());
+    pub(crate) fn delete_entity_type(&self, snapshot: &mut Snapshot, entity_type: EntityType<'_>) -> Result<(), ConceptWriteError> {
+        TypeValidator::validate_no_instances(snapshot, entity_type.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+        TypeValidator::validate_no_subtypes(snapshot, entity_type.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+
+        TypeWriter::storage_delete_label(snapshot, entity_type.clone().into_owned());
+        TypeWriter::storage_delete_supertype(snapshot, entity_type.clone().into_owned());
+        Ok(())
     }
 
-    pub(crate) fn delete_relation_type(&self, snapshot: &mut Snapshot, relation_type: RelationType<'_>) {
-        let declared_relates = self.get_relation_type_relates(snapshot, relation_type.clone().into_owned()).unwrap();
-        for relates in declared_relates.iter() {
-            self.delete_role_type(snapshot, relates.role().clone().into_owned());
+    pub(crate) fn delete_relation_type(&self, snapshot: &mut Snapshot, relation_type: RelationType<'_>)  -> Result<(), ConceptWriteError> {
+        // Sufficient to guarantee the roles have no subtypes or instances either
+        TypeValidator::validate_no_instances(snapshot, relation_type.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+        TypeValidator::validate_no_subtypes(snapshot, relation_type.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+
+        let declared_relates = TypeReader::get_relates_transitive(snapshot, relation_type.clone().into_owned()).unwrap();
+        for (_role_type, relates) in declared_relates.iter() {
+            self.delete_role_type(snapshot, relates.role().clone())?; // TODO: Should we replace it with individual calls?
         }
-        self.storage_may_delete_label(snapshot, relation_type.clone().into_owned());
-        self.storage_may_delete_supertype(snapshot, relation_type.clone().into_owned());
+        TypeWriter::storage_delete_label(snapshot, relation_type.clone().into_owned());
+        TypeWriter::storage_delete_supertype(snapshot, relation_type.clone().into_owned());
+        Ok(())
     }
 
-    pub(crate) fn delete_attribute_type(&self, snapshot: &mut Snapshot, attribute_type: AttributeType<'_>) {
-        self.storage_may_delete_label(snapshot, attribute_type.clone().into_owned());
-        self.storage_may_delete_supertype(snapshot, attribute_type.clone().into_owned());
+    pub(crate) fn delete_attribute_type(&self, snapshot: &mut Snapshot, attribute_type: AttributeType<'_>) -> Result<(), ConceptWriteError> {
+        TypeValidator::validate_no_instances(snapshot, attribute_type.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+        TypeValidator::validate_no_subtypes(snapshot, attribute_type.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+
+        TypeWriter::storage_delete_label(snapshot, attribute_type.clone().into_owned());
+        TypeWriter::storage_delete_supertype(snapshot, attribute_type.clone().into_owned());
+        Ok(())
     }
 
-    pub(crate) fn delete_role_type(&self, snapshot: &mut Snapshot, role_type: RoleType<'_>) {
+    pub(crate) fn delete_role_type(&self, snapshot: &mut Snapshot, role_type: RoleType<'_>) -> Result<(), ConceptWriteError> {
+        // TODO: Validation
         let relates = TypeReader::get_relation(snapshot, role_type.clone().into_owned()).unwrap();
         let relation = relates.relation();
         let role = relates.role();
-        self.storage_delete_relates(snapshot, relation.clone(), role.clone());
-
-        self.storage_may_delete_label(snapshot, role.clone().into_owned());
-        self.storage_may_delete_supertype(snapshot, role.clone().into_owned());
+        TypeWriter::storage_delete_relates(snapshot, relation.clone(), role.clone());
+        TypeWriter::storage_delete_label(snapshot, role.clone().into_owned());
+        TypeWriter::storage_delete_supertype(snapshot, role.clone().into_owned());
+        Ok(())
     }
 
-    pub(crate) fn storage_set_label(&self, snapshot: &mut Snapshot, owner: impl KindAPI<'static>, label: &Label<'_>) {
-        self.storage_may_delete_label(snapshot, owner.clone());
-
-        let vertex_to_label_key = build_property_type_label(owner.clone().into_vertex());
-        let label_value = ByteArray::from(label.scoped_name().bytes());
-        snapshot.put_val(vertex_to_label_key.into_storage_key().into_owned_array(), label_value);
-
-        let label_to_vertex_key = LabelToTypeVertexIndex::build(label);
-        let vertex_value = ByteArray::from(owner.into_vertex().bytes());
-        snapshot.put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
-    }
-
-    fn storage_may_delete_label(&self, snapshot: &mut Snapshot, owner: impl KindAPI<'static>) {
-        let existing_label = TypeReader::get_label(snapshot, owner.clone()).unwrap();
-        if let Some(label) = existing_label {
-            let vertex_to_label_key = build_property_type_label(owner.into_vertex());
-            snapshot.delete(vertex_to_label_key.into_storage_key().into_owned_array());
-            let label_to_vertex_key = LabelToTypeVertexIndex::build(&label);
-            snapshot.delete(label_to_vertex_key.into_storage_key().into_owned_array());
+    pub(crate) fn set_label<T: KindAPI<'static>>(&self, snapshot: &mut Snapshot, type_: T, label: &Label<'_>) -> Result<(), ConceptWriteError>{
+        match T::ROOT_KIND {
+            Kind::Role => todo!("Validate uniqueness in ancestry"),
+            Kind::Entity | Kind::Attribute | Kind::Relation => {
+                TypeValidator::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+                    .map_err(|source| ConceptWriteError::SchemaValidation { source })
+                    .unwrap(); // TODO: Propagate error instead
+            }
         }
+        TypeWriter::storage_delete_label(snapshot, type_.clone());
+        TypeWriter::storage_put_label(snapshot, type_, &label);
+        Ok(())
     }
 
+    // TODO: TypeWriter Refactor
     fn storage_set_role_ordering(&self, snapshot: &mut Snapshot, role: RoleType<'_>, ordering: Ordering) {
         snapshot.put_val(
             build_property_type_ordering(role.into_vertex()).into_storage_key().into_owned_array(),
@@ -731,22 +759,16 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         )
     }
 
-    pub(crate) fn storage_set_supertype<K: TypeAPI<'static>>(&self, snapshot: &mut Snapshot, subtype: K, supertype: K) {
-        self.storage_may_delete_supertype(snapshot, subtype.clone());
-        let sub = build_edge_sub(subtype.clone().into_vertex(), supertype.clone().into_vertex());
-        snapshot.put(sub.into_storage_key().into_owned_array());
-        let sub_reverse = build_edge_sub_reverse(supertype.into_vertex(), subtype.into_vertex());
-        snapshot.put(sub_reverse.into_storage_key().into_owned_array());
-    }
+    pub(crate) fn set_supertype<K>(&self, snapshot: &mut Snapshot, subtype: K, supertype: K) -> Result<(), ConceptWriteError>
+    where K: KindAPI<'static> + ReadableType<ReadOutput<'static>=K>
+    {
+        // TODO: Validation. This may have to split per type.
+        TypeValidator::validate_sub_does_not_create_cycle(snapshot, subtype.clone(), supertype.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-    fn storage_may_delete_supertype(&self, snapshot: &mut Snapshot, subtype: impl TypeAPI<'static>) {
-        let supertype_vertex = TypeReader::get_supertype_vertex(snapshot, subtype.clone().into_vertex()).unwrap();
-        if let Some(supertype) = supertype_vertex {
-            let sub = build_edge_sub(subtype.clone().into_vertex(), supertype.clone());
-            snapshot.delete(sub.into_storage_key().into_owned_array());
-            let sub_reverse = build_edge_sub_reverse(supertype, subtype.into_vertex());
-            snapshot.delete(sub_reverse.into_storage_key().into_owned_array());
-        }
+        TypeWriter::storage_delete_supertype(snapshot, subtype.clone());
+        TypeWriter::storage_put_supertype(snapshot, subtype.clone(), supertype.clone());
+        Ok(())
     }
 
     pub(crate) fn storage_set_owns(
@@ -756,6 +778,9 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         attribute: AttributeType<'static>,
         ordering: Ordering,
     ) {
+        // TODO: Validation
+
+        // TODO: I would very much like to TypeWriter::storage_put_type_edge(Owns::new())
         let owns = build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex());
         snapshot.put(owns.clone().into_storage_key().into_owned_array());
         let owns_reverse = build_edge_owns_reverse(attribute.into_vertex(), owner.into_vertex());
@@ -763,16 +788,17 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         self.storage_set_owns_ordering(snapshot, owns, ordering);
     }
 
-    pub(crate) fn storage_set_owns_overridden(
+    pub(crate) fn set_owns_overridden(
         &self,
         snapshot: &mut Snapshot,
         owns: Owns<'static>,
         overridden: Owns<'static>,
-    ) {
-        let property_key =
-            build_property_type_edge_override(owns.into_type_edge()).into_storage_key().into_owned_array();
-        let overridden_owns = ByteArray::copy(overridden.into_type_edge().into_bytes().bytes());
-        snapshot.put_val(property_key, overridden_owns);
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: More validation - instances exist.
+
+
+        TypeWriter::storage_set_type_edge_overridden(snapshot, owns.clone(), overridden.attribute().clone());
+        Ok(())
     }
 
     pub(crate) fn storage_set_owns_ordering(
@@ -848,17 +874,6 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.put(relates_reverse.into_storage_key().into_owned_array());
     }
 
-    fn storage_delete_relates(
-        &self,
-        snapshot: &mut Snapshot,
-        relation: RelationType<'static>,
-        role: RoleType<'static>,
-    ) {
-        let relates = build_edge_relates(relation.clone().into_vertex(), role.clone().into_vertex());
-        snapshot.delete(relates.into_storage_key().into_owned_array());
-        let relates_reverse = build_edge_relates_reverse(role.into_vertex(), relation.into_vertex());
-        snapshot.delete(relates_reverse.into_storage_key().into_owned_array());
-    }
 
     pub(crate) fn storage_set_value_type(
         &self,

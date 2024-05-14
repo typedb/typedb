@@ -44,6 +44,7 @@ use crate::{
     ByteReference, ConceptAPI, ConceptStatus,
 };
 
+
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct Relation<'a> {
     vertex: ObjectVertex<'a>,
