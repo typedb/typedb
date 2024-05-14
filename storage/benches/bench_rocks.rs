@@ -7,7 +7,6 @@
 pub mod bench_rocks_impl;
 
 use std::collections::HashMap;
-use std::fmt::Pointer;
 use std::sync::RwLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;

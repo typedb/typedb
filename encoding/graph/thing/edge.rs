@@ -151,6 +151,7 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeHas<'a> {
 ///
 /// Note that these are represented here together, but should go to different keyspaces due to different prefix lengths
 ///
+#[derive(Debug)]
 pub struct ThingEdgeHasReverse<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
@@ -211,6 +212,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_BOUND_PREFIX_FROM);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from_for_vertex(from.as_reference())].copy_from_slice(from.bytes().bytes());
+        bytes.truncate(Self::RANGE_PREFIX.end + from.length());
         StorageKey::new_owned(Self::keyspace_for_from(from), bytes)
     }
 

@@ -150,8 +150,14 @@ fn has() {
 
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long);
+        age_type
+            .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label, false).unwrap();
         name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String);
+        name_type
+            .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
         person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
@@ -220,11 +226,12 @@ fn attribute_cleanup_on_concurrent_detach() {
         let owns_age =
             person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
         owns_age.set_annotation(&mut snapshot, &type_manager, OwnsAnnotation::Distinct(AnnotationDistinct));
-        let _ = person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered);
 
-        let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let person_2 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let age_1 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
+
+        let alice = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
+        let bob = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
+        let age = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
         let name_alice = thing_manager
             .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(name_alice_value)))
             .unwrap();
@@ -232,10 +239,10 @@ fn attribute_cleanup_on_concurrent_detach() {
             .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned(String::from(name_bob_value))))
             .unwrap();
 
-        person_1.set_has_unordered(&mut snapshot, &thing_manager, age_1.as_reference()).unwrap();
-        person_1.set_has_unordered(&mut snapshot, &thing_manager, name_alice.as_reference()).unwrap();
-        person_2.set_has_unordered(&mut snapshot, &thing_manager, age_1).unwrap();
-        person_2.set_has_unordered(&mut snapshot, &thing_manager, name_bob.as_reference()).unwrap();
+        alice.set_has_unordered(&mut snapshot, &thing_manager, age.as_reference()).unwrap();
+        alice.set_has_unordered(&mut snapshot, &thing_manager, name_alice).unwrap();
+        bob.set_has_unordered(&mut snapshot, &thing_manager, age).unwrap();
+        bob.set_has_unordered(&mut snapshot, &thing_manager, name_bob).unwrap();
         let finalise_result = thing_manager.finalise(&mut snapshot);
         assert!(finalise_result.is_ok());
     }
@@ -301,7 +308,7 @@ fn attribute_cleanup_on_concurrent_detach() {
                         &snapshot_2,
                         &thing_manager,
                         name_type.clone(),
-                        Value::String(Cow::Borrowed(name_bob_value)),
+                        Value::String(Cow::Borrowed(name_alice_value)),
                     )
                     .unwrap()
             })
