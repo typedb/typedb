@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::io::Read;
-
 use bytes::byte_array::ByteArray;
 use encoding::{
     graph::thing::{vertex_attribute::AttributeID, vertex_object::ObjectVertex},

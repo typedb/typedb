@@ -12,7 +12,6 @@
 use std::{
     error::Error,
     fmt, fs, io,
-    ops::Add,
     path::{Path, PathBuf},
     sync::{atomic::Ordering, Arc},
 };
@@ -641,8 +640,7 @@ impl StorageOperation {
 #[cfg(test)]
 mod tests {
     use bytes::byte_array::ByteArray;
-    use chrono::Local;
-    use durability::{wal::WAL, DurabilityService};
+    use durability::wal::WAL;
     use test_utils::{create_tmp_dir, init_logging};
 
     use crate::{
@@ -650,7 +648,7 @@ mod tests {
         isolation_manager::{CommitRecord, CommitType},
         key_value::StorageKeyArray,
         keyspace::{KeyspaceId, KeyspaceSet, Keyspaces},
-        snapshot::{buffer::OperationsBuffer, WritableSnapshot},
+        snapshot::buffer::OperationsBuffer,
         write_batches::WriteBatches,
         MVCCStorage,
     };

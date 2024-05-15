@@ -19,10 +19,7 @@ use same_file::is_same_file;
 use crate::{
     durability_client::DurabilityClient,
     keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces},
-    recovery::{
-        checkpoint::CheckpointLoadError::MetadataRead,
-        commit_replay::{apply_commits, load_commit_data_from, CommitRecoveryError},
-    },
+    recovery::commit_replay::{apply_commits, load_commit_data_from, CommitRecoveryError},
     sequence_number::SequenceNumber,
     StorageCommitError,
 };

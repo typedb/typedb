@@ -11,12 +11,8 @@ use std::{
     sync::Arc,
 };
 
-use encoding::{
-    graph::Typed,
-    value::{label::Label, value_type::ValueType},
-    Prefixed,
-};
-use storage::{sequence_number::SequenceNumber, snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
+use encoding::value::{label::Label, value_type::ValueType};
+use storage::{sequence_number::SequenceNumber, MVCCStorage, ReadSnapshotOpenError};
 
 use crate::type_::{
     attribute_type::AttributeType,
@@ -27,15 +23,12 @@ use crate::type_::{
     relation_type::RelationType,
     role_type::RoleType,
     type_cache::{
-        kind_cache::{
-            AttributeTypeCache, CommonTypeCache, EntityTypeCache, OwnerPlayerCache, OwnsCache, PlaysCache,
-            RelationTypeCache, RoleTypeCache,
-        },
+        kind_cache::{AttributeTypeCache, EntityTypeCache, OwnsCache, PlaysCache, RelationTypeCache, RoleTypeCache},
         selection,
         selection::{CacheGetter, HasCommonTypeCache, HasOwnerPlayerCache},
     },
     type_manager::KindAPI,
-    Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+    Ordering, OwnerAPI, PlayerAPI,
 };
 
 // TODO: could/should we slab allocate the schema cache?

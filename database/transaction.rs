@@ -4,10 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use concept::{error::ConceptWriteError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use speedb::Snapshot;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot},

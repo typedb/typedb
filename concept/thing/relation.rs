@@ -43,9 +43,9 @@ use crate::{
         relation_type::RelationType,
         role_type::{RoleType, RoleTypeAnnotation},
         type_manager::TypeManager,
-        Ordering, OwnerAPI, TypeAPI,
+        Ordering, OwnerAPI,
     },
-    ByteReference, ConceptAPI, ConceptStatus, GetStatus,
+    ByteReference, ConceptAPI, ConceptStatus,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]

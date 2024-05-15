@@ -25,7 +25,6 @@ This file should comprise a set of low-level tests relating to MVCC.
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::KeyspaceSet,
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
 use test_utils::{create_tmp_dir, init_logging};

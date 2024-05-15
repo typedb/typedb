@@ -33,7 +33,6 @@ use crate::type_::{
     relates::Relates,
     relation_type::RelationType,
     role_type::RoleType,
-    type_cache::selection::HasCommonTypeCache,
     type_manager::{KindAPI, ReadableType, TypeManager},
     type_reader::TypeReader,
     Ordering, OwnerAPI, PlayerAPI, TypeAPI,

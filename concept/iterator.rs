@@ -4,10 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt, sync::Arc};
-
-use storage::snapshot::iterator::SnapshotIteratorError;
-
 // FIXME: exported macros must provide their own use-declarations or use fully qualified paths
 //        As it stands, this macro requires imports at point of use.
 #[macro_export]

@@ -12,7 +12,6 @@ use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray},
-    keyspace::KeyspaceSet,
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
 use test_utils::{create_tmp_dir, init_logging};

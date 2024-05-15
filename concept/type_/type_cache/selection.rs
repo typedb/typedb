@@ -30,6 +30,8 @@ macro_rules! impl_cache_getter {
         impl<'a> CacheGetter for $inner_type<'a> {
             type CacheType = $cache_type;
             fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: $inner_type<'a>) -> &'cache Self::CacheType {
+                use ::encoding::graph::Typed;
+                use $crate::type_::TypeAPI;
                 let as_u16 = type_.vertex().type_id_().as_u16();
                 type_cache.$member_name[as_u16 as usize].as_ref().unwrap()
             }
@@ -41,7 +43,7 @@ pub(super) use impl_cache_getter;
 macro_rules! impl_has_common_type_cache {
     ($cache_type: ty, $inner_type: ty) => {
         impl HasCommonTypeCache<$inner_type> for $cache_type {
-            fn common_type_cache(&self) -> &CommonTypeCache<$inner_type> {
+            fn common_type_cache(&self) -> &$crate::type_::type_cache::kind_cache::CommonTypeCache<$inner_type> {
                 &self.common_type_cache
             }
         }
@@ -52,7 +54,7 @@ pub(super) use impl_has_common_type_cache;
 macro_rules! impl_has_owner_player_cache {
     ($cache_type: ty, $inner_type: ty) => {
         impl HasOwnerPlayerCache for $cache_type {
-            fn owner_player_cache(&self) -> &OwnerPlayerCache {
+            fn owner_player_cache(&self) -> &$crate::type_::type_cache::kind_cache::OwnerPlayerCache {
                 &self.owner_player_cache
             }
         }

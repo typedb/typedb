@@ -6,8 +6,7 @@
 
 use std::{
     collections::{BTreeMap, HashMap},
-    hash::Hash,
-    ops::{Add, AddAssign, Bound},
+    ops::Bound,
     sync::atomic::Ordering,
 };
 
@@ -28,11 +27,7 @@ use encoding::graph::{
     Typed,
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use serde::{
-    de::{Error, SeqAccess, Visitor},
-    ser::SerializeStruct,
-    Deserialize, Deserializer, Serialize, Serializer,
-};
+use serde::{Deserialize, Serialize};
 use storage::{
     durability_client::{DurabilityRecord, UnsequencedDurabilityRecord},
     iterator::MVCCReadError,

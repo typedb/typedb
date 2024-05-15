@@ -46,7 +46,6 @@ use storage::{
 use super::annotation::AnnotationRegex;
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::ObjectAPI,
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationCardinality},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
