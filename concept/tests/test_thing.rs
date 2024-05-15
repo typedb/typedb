@@ -100,12 +100,12 @@ fn attribute_create() {
         let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
 
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long);
+        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
         age_type
             .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
             .unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label, false).unwrap();
-        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String);
+        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
         name_type
             .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
             .unwrap();
@@ -164,12 +164,12 @@ fn has() {
         let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
 
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long);
+        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
         age_type
             .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
             .unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label, false).unwrap();
-        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String);
+        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
         name_type
             .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
             .unwrap();
@@ -236,9 +236,9 @@ fn attribute_cleanup_on_concurrent_detach() {
         let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
 
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long);
+        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label, false).unwrap();
-        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String);
+        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
         let owns_age =

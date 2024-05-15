@@ -8,16 +8,18 @@ use std::marker::PhantomData;
 use bytes::byte_array::ByteArray;
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
 use encoding::graph::type_::Kind;
-use encoding::graph::type_::property::{build_property_type_edge_override, build_property_type_label};
+use encoding::graph::type_::property::{build_property_type_edge_override, build_property_type_label, build_property_type_value_type};
 use encoding::{AsBytes, Keyable};
-use encoding::graph::type_::edge::{build_edge_relates, build_edge_relates_reverse, build_edge_sub, build_edge_sub_reverse};
+use encoding::graph::type_::edge::{build_edge_plays, build_edge_plays_reverse, build_edge_relates, build_edge_relates_reverse, build_edge_sub, build_edge_sub_reverse};
 use encoding::value::label::Label;
+use encoding::value::value_type::{ValueType, ValueTypeBytes};
 use storage::snapshot::WritableSnapshot;
 use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
 use crate::type_::type_manager::{KindAPI, ReadableType};
 use crate::type_::type_reader::TypeReader;
-use crate::type_::{IntoCanonicalTypeEdge, TypeAPI};
+use crate::type_::{IntoCanonicalTypeEdge, ObjectTypeAPI, TypeAPI};
+use crate::type_::attribute_type::AttributeType;
 
 pub struct TypeWriter<Snapshot: WritableSnapshot> {
     snapshot: PhantomData<Snapshot>,
@@ -66,6 +68,17 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot.delete(sub_reverse.into_storage_key().into_owned_array());
     }
 
+    pub(crate) fn storage_set_value_type(
+        snapshot: &mut Snapshot,
+        attribute: AttributeType<'static>,
+        value_type: ValueType,
+    ) {
+        let property_key =
+            build_property_type_value_type(attribute.into_vertex()).into_storage_key().into_owned_array();
+        let property_value = ByteArray::copy(ValueTypeBytes::build(&value_type).into_bytes());
+        snapshot.put_val(property_key, property_value);
+    }
+
     pub(crate) fn storage_put_relates(
         snapshot: &mut Snapshot,
         relation: RelationType<'static>,
@@ -86,6 +99,28 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot.delete(relates.into_storage_key().into_owned_array());
         let relates_reverse = build_edge_relates_reverse(role.into_vertex(), relation.into_vertex());
         snapshot.delete(relates_reverse.into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn storage_put_plays(
+        snapshot: &mut Snapshot,
+        player: impl ObjectTypeAPI<'static>,
+        role: RoleType<'static>,
+    ) {
+        let plays = build_edge_plays(player.clone().into_vertex(), role.clone().into_vertex());
+        snapshot.put(plays.into_storage_key().into_owned_array());
+        let plays_reverse = build_edge_plays_reverse(role.into_vertex(), player.into_vertex());
+        snapshot.put(plays_reverse.into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn storage_delete_plays(
+        snapshot: &mut Snapshot,
+        player: impl ObjectTypeAPI<'static>,
+        role: RoleType<'static>,
+    ) {
+        let plays = build_edge_plays(player.clone().into_vertex(), role.clone().into_vertex());
+        snapshot.delete(plays.into_storage_key().into_owned_array());
+        let plays_reverse = build_edge_plays_reverse(role.into_vertex(), player.into_vertex());
+        snapshot.delete(plays_reverse.into_storage_key().into_owned_array());
     }
 
 

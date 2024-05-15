@@ -54,7 +54,7 @@ fn entity_usage() {
         // --- age sub attribute ---
         let age_label = Label::build("age");
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long);
+        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
 
         assert!(!age_type.is_root(&snapshot, &type_manager).unwrap());
         assert!(age_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());

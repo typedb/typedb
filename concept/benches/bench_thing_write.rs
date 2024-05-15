@@ -75,9 +75,9 @@ fn create_schema(storage: &Arc<MVCCStorage<WALClient>>, type_vertex_generator: &
     {
         let type_manager = Rc::new(TypeManager::new(type_vertex_generator.clone(), None));
         let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap(), false).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long);
+        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap(), false).unwrap();
-        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String);
+        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
         let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap(), false).unwrap();
         person_type.set_owns(&mut snapshot, &type_manager, age_type, Ordering::Unordered).unwrap();
         person_type.set_owns(&mut snapshot, &type_manager, name_type, Ordering::Unordered).unwrap();

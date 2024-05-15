@@ -258,7 +258,7 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         role_type: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError> {
         // TODO: decide behaviour (ok or error) if already playing
-        type_manager.storage_set_plays(snapshot, self.clone().into_owned(), role_type.clone());
+        let plays = type_manager.set_plays(snapshot, self.clone().into_owned(), role_type.clone())?;
         Ok(Plays::new(ObjectType::Entity(self.clone().into_owned()), role_type))
     }
 
@@ -269,8 +269,7 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: error if not playing
-        type_manager.storage_delete_plays(snapshot, self.clone().into_owned(), role_type);
-        Ok(())
+        type_manager.delete_plays(snapshot, self.clone().into_owned(), role_type)
     }
 
     fn get_plays<'m, Snapshot: ReadableSnapshot>(

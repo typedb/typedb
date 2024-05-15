@@ -68,6 +68,7 @@ use crate::{
         IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::type_::object_type::ObjectType;
 use crate::type_::type_writer::TypeWriter;
 use crate::type_::validation::validation::TypeValidator;
 use crate::type_::WrappedTypeForError;
@@ -765,11 +766,16 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     // TODO: TypeWriter Refactor
-    fn storage_set_role_ordering(&self, snapshot: &mut Snapshot, role: RoleType<'_>, ordering: Ordering) {
-        snapshot.put_val(
-            build_property_type_ordering(role.into_vertex()).into_storage_key().into_owned_array(),
-            ByteArray::boxed(serialise_ordering(ordering)),
-        )
+    pub(crate) fn set_value_type(
+        &self,
+        snapshot: &mut Snapshot,
+        attribute: AttributeType<'static>,
+        value_type: ValueType,
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: Validation
+
+        TypeWriter::storage_set_value_type(snapshot, attribute, value_type);
+        Ok(())
     }
 
     pub(crate) fn set_supertype<K>(&self, snapshot: &mut Snapshot, subtype: K, supertype: K) -> Result<(), ConceptWriteError>
@@ -801,6 +807,19 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         self.storage_set_owns_ordering(snapshot, owns, ordering);
     }
 
+    pub(crate) fn storage_delete_owns(
+        &self,
+        snapshot: &mut Snapshot,
+        owner: impl ObjectTypeAPI<'static>,
+        attribute: AttributeType<'static>,
+    ) {
+        let owns_edge = build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex());
+        snapshot.delete(owns_edge.as_storage_key().into_owned_array());
+        let owns_reverse = build_edge_owns_reverse(attribute.into_vertex(), owner.into_vertex());
+        snapshot.delete(owns_reverse.into_storage_key().into_owned_array());
+        self.storage_delete_owns_ordering(snapshot, owns_edge);
+    }
+
     pub(crate) fn set_owns_overridden(
         &self,
         snapshot: &mut Snapshot,
@@ -817,58 +836,26 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         Ok(())
     }
 
-    pub(crate) fn storage_set_owns_ordering(
+    pub(crate) fn set_plays(
         &self,
         snapshot: &mut Snapshot,
-        owns_edge: TypeEdge<'_>,
-        ordering: Ordering,
-    ) {
-        debug_assert_eq!(owns_edge.prefix(), Prefix::EdgeOwns);
-        snapshot.put_val(
-            build_property_type_edge_ordering(owns_edge).into_storage_key().into_owned_array(),
-            ByteArray::boxed(serialise_ordering(ordering)),
-        )
+        player: impl KindAPI<'static> + ObjectTypeAPI<'static>,
+        role: RoleType<'static>,
+    )  -> Result<Plays<'static>, ConceptWriteError> {
+       // TODO: Validation
+        TypeWriter::storage_put_plays(snapshot, player.clone(), role.clone());
+        Ok(Plays::new(ObjectType::new(player.into_vertex()), role))
     }
 
-    pub(crate) fn storage_delete_owns(
-        &self,
-        snapshot: &mut Snapshot,
-        owner: impl ObjectTypeAPI<'static>,
-        attribute: AttributeType<'static>,
-    ) {
-        let owns_edge = build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex());
-        snapshot.delete(owns_edge.as_storage_key().into_owned_array());
-        let owns_reverse = build_edge_owns_reverse(attribute.into_vertex(), owner.into_vertex());
-        snapshot.delete(owns_reverse.into_storage_key().into_owned_array());
-        self.storage_delete_owns_ordering(snapshot, owns_edge);
-    }
-
-    pub(crate) fn storage_delete_owns_ordering(&self, snapshot: &mut Snapshot, owns_edge: TypeEdge<'_>) {
-        debug_assert_eq!(owns_edge.prefix(), Prefix::EdgeOwns);
-        snapshot.delete(build_property_type_edge_ordering(owns_edge).into_storage_key().into_owned_array())
-    }
-    pub(crate) fn storage_set_plays(
+    pub(crate) fn delete_plays(
         &self,
         snapshot: &mut Snapshot,
         player: impl ObjectTypeAPI<'static>,
         role: RoleType<'static>,
-    ) {
-        let plays = build_edge_plays(player.clone().into_vertex(), role.clone().into_vertex());
-        snapshot.put(plays.into_storage_key().into_owned_array());
-        let plays_reverse = build_edge_plays_reverse(role.into_vertex(), player.into_vertex());
-        snapshot.put(plays_reverse.into_storage_key().into_owned_array());
-    }
-
-    pub(crate) fn storage_delete_plays(
-        &self,
-        snapshot: &mut Snapshot,
-        player: impl ObjectTypeAPI<'static>,
-        role: RoleType<'static>,
-    ) {
-        let plays = build_edge_plays(player.clone().into_vertex(), role.clone().into_vertex());
-        snapshot.delete(plays.into_storage_key().into_owned_array());
-        let plays_reverse = build_edge_plays_reverse(role.into_vertex(), player.into_vertex());
-        snapshot.delete(plays_reverse.into_storage_key().into_owned_array());
+    )  -> Result<(), ConceptWriteError> {
+        // TODO: Validation
+        TypeWriter::storage_delete_plays(snapshot, player, role);
+        Ok(())
     }
 
     pub(crate) fn set_plays_overridden(
@@ -886,16 +873,29 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         Ok(())
     }
 
-    pub(crate) fn storage_set_value_type(
+    pub(crate) fn storage_set_owns_ordering(
         &self,
         snapshot: &mut Snapshot,
-        attribute: AttributeType<'static>,
-        value_type: ValueType,
+        owns_edge: TypeEdge<'_>,
+        ordering: Ordering,
     ) {
-        let property_key =
-            build_property_type_value_type(attribute.into_vertex()).into_storage_key().into_owned_array();
-        let property_value = ByteArray::copy(&ValueTypeBytes::build(&value_type).into_bytes());
-        snapshot.put_val(property_key, property_value);
+        debug_assert_eq!(owns_edge.prefix(), Prefix::EdgeOwns);
+        snapshot.put_val(
+            build_property_type_edge_ordering(owns_edge).into_storage_key().into_owned_array(),
+            ByteArray::boxed(serialise_ordering(ordering)),
+        )
+    }
+
+    pub(crate) fn storage_delete_owns_ordering(&self, snapshot: &mut Snapshot, owns_edge: TypeEdge<'_>) {
+        debug_assert_eq!(owns_edge.prefix(), Prefix::EdgeOwns);
+        snapshot.delete(build_property_type_edge_ordering(owns_edge).into_storage_key().into_owned_array())
+    }
+
+    fn storage_set_role_ordering(&self, snapshot: &mut Snapshot, role: RoleType<'_>, ordering: Ordering) {
+        snapshot.put_val(
+            build_property_type_ordering(role.into_vertex()).into_storage_key().into_owned_array(),
+            ByteArray::boxed(serialise_ordering(ordering)),
+        )
     }
 
     pub(crate) fn storage_set_annotation_abstract(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {

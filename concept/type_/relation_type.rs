@@ -316,8 +316,7 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         role_type: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError> {
         // TODO: decide behaviour (ok or error) if already playing
-        type_manager.storage_set_plays(snapshot, self.clone().into_owned(), role_type.clone());
-        Ok(Plays::new(ObjectType::Relation(self.clone().into_owned()), role_type))
+        type_manager.set_plays(snapshot, self.clone().into_owned(), role_type.clone())
     }
 
     fn delete_plays<Snapshot: WritableSnapshot>(
@@ -327,8 +326,7 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: error if not playing?
-        type_manager.storage_delete_plays(snapshot, self.clone().into_owned(), role_type);
-        Ok(())
+        type_manager.delete_plays(snapshot, self.clone().into_owned(), role_type)
     }
 
     fn get_plays<'m, Snapshot: ReadableSnapshot>(

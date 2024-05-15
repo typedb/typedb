@@ -97,8 +97,8 @@ impl<'a> AttributeType<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         value_type: ValueType,
-    ) {
-        type_manager.storage_set_value_type(snapshot, self.clone().into_owned(), value_type)
+    ) -> Result<(), ConceptWriteError> {
+        type_manager.set_value_type(snapshot, self.clone().into_owned(), value_type)
     }
 
     pub fn get_value_type<Snapshot: ReadableSnapshot>(
