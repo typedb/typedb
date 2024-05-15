@@ -16,6 +16,7 @@ use durability::wal::WAL;
 use server::typedb;
 use test_utils::TempDir;
 
+mod assert;
 mod concept;
 mod connection;
 mod params;
