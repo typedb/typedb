@@ -36,3 +36,12 @@ impl<'a, T: PartialEq> PartialEq for MaybeOwns<'a, T> {
 }
 
 impl<'a, T: Eq> Eq for MaybeOwns<'a, T> {}
+
+impl<'a, 'b, T> IntoIterator for &'b MaybeOwns<'a, T> where &'b T: IntoIterator {
+    type Item = <&'b T as IntoIterator>::Item;
+    type IntoIter = <&'b T as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        (&**self).into_iter()
+    }
+}

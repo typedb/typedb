@@ -35,7 +35,7 @@ impl<'bytes, const INLINE_SIZE: usize> Clone for Bytes<'bytes, INLINE_SIZE> {
     }
 }
 
-impl<'bytes, const ARRAY_INLINE_SIZE: usize> Bytes<'bytes, ARRAY_INLINE_SIZE> {
+impl<const ARRAY_INLINE_SIZE: usize> Bytes<'static, ARRAY_INLINE_SIZE> {
     pub fn copy(bytes: &[u8]) -> Self {
         Self::Array(ByteArray::copy(bytes))
     }
@@ -43,7 +43,9 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> Bytes<'bytes, ARRAY_INLINE_SIZE> {
     pub fn inline(bytes: [u8; ARRAY_INLINE_SIZE], length: usize) -> Self {
         Self::Array(ByteArray::inline(bytes, length))
     }
+}
 
+impl<'bytes, const ARRAY_INLINE_SIZE: usize> Bytes<'bytes, ARRAY_INLINE_SIZE> {
     pub fn reference(bytes: &'bytes [u8]) -> Self {
         Self::Reference(ByteReference::new(bytes))
     }
