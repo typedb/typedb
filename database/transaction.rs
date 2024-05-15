@@ -23,10 +23,16 @@ pub struct TransactionRead<D> {
 
 impl<D: DurabilityService> TransactionRead<D> {
     pub fn open(database: Arc<Database<D>>) -> Self {
+
+        // TODO: when we implement constructor `open_at`, to open a transaction in the past by time/sequence number, we need to check whether
+        //       the statistics that is available is "too far" ahead of the version we're opening (100-1000?)
+        //          note: this can also be the approximate frequency at which we persist statistics snapshots to the WAL!
+        //       this should be a constant defined in constants.rs
+        //       If it's too far in the future, we should find a more appropriate statistics snapshot from the WAL
+
         let snapshot: ReadSnapshot<D> = database.storage.clone().open_snapshot_read();
         let type_manager = Arc::new(TypeManager::new(database.type_vertex_generator.clone(), None)); // TODO pass cache
-        let thing_manager =
-            ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
+        let thing_manager = ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
         Self { database, snapshot, type_manager, thing_manager }
     }
 

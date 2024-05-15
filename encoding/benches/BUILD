@@ -17,7 +17,7 @@ rust_test(
         "//encoding",
         "//resource",
         "//storage",
-        "//storage/durability",
+        "//durability",
         "//util/test:test_utils",
 
         "@crates//:criterion",

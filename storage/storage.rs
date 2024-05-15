@@ -461,6 +461,7 @@ impl fmt::Display for StorageOpenError {
 impl Error for StorageOpenError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
+            Self::StorageDirectoryExists { .. } => None,
             Self::StorageDirectoryCreate { source, .. } => Some(source),
             Self::StorageDirectoryRecreate { source, .. } => Some(source),
             Self::DurabilityServiceOpen { source, .. } => Some(source),

@@ -180,9 +180,7 @@ impl<'a> Ord for Attribute<'a> {
     }
 }
 
-///
 /// Attribute iterators handle hiding dependent attributes that were not deleted yet
-///
 pub struct AttributeIterator<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> {
     snapshot: Option<&'a Snapshot>,
     type_manager: Option<&'a TypeManager<Snapshot>>,

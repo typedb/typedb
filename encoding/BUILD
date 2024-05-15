@@ -25,7 +25,7 @@ rust_library(
         "//common/primitive",
         "//resource",
         "//storage",
-        "//storage/durability",
+        "//durability",
 
         "@crates//:chrono",
         "@crates//:tracing",

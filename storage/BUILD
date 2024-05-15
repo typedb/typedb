@@ -22,11 +22,11 @@ rust_library(
         "recovery/*.rs",
     ]),
     deps = [
-        "//storage/durability",
         "//common/logger",
         "//common/primitive",
         "//common/bytes",
         "//common/iterator",
+        "//durability",
         "//resource",
         "//util/project",
 

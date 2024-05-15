@@ -15,7 +15,7 @@ rust_library(
         "//concept",
         "//encoding",
         "//storage",
-        "//storage/durability",
+        "//durability",
 
         "@crates//:itertools",
         "@crates//:speedb",

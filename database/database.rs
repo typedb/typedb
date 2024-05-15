@@ -87,8 +87,8 @@ impl Database<WAL> {
 
     fn load(path: &Path, name: impl AsRef<str>) -> Result<Database<WAL>, DatabaseOpenError> {
         use DatabaseOpenError::{
-            CheckpointLoad, CheckpointCreate, DurabilityOpen, DurabilityRead, Encoding, SchemaInitialise,
-            StatisticsInitialise, StorageOpen
+            CheckpointCreate, CheckpointLoad, DurabilityOpen, DurabilityRead, Encoding, SchemaInitialise,
+            StatisticsInitialise, StorageOpen,
         };
 
         let wal = WAL::load(&path).map_err(|err| DurabilityOpen { source: err })?;
@@ -204,7 +204,7 @@ pub enum DatabaseOpenError {
     DurabilityOpen { source: DurabilityError },
     DurabilityRead { source: DurabilityError },
     CheckpointLoad { source: CheckpointLoadError },
-    CheckpointCreate { source: CheckpointCreateError },
+    CheckpointCreate { source: DatabaseCheckpointError },
     Encoding { source: EncodingError },
     SchemaInitialise { source: ConceptWriteError },
     StatisticsInitialise { source: StatisticsInitialiseError },
@@ -225,7 +225,7 @@ impl Error for DatabaseOpenError {
             Self::DurabilityOpen { source } => Some(source),
             Self::DurabilityRead { source } => Some(source),
             Self::CheckpointLoad { source } => Some(source),
-            Self::CheckpointCreate{ source } => Some(source),
+            Self::CheckpointCreate { source } => Some(source),
             Self::SchemaInitialise { source } => Some(source),
             Self::StatisticsInitialise { source } => Some(source),
             Self::Encoding { source } => Some(source),
