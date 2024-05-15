@@ -48,7 +48,11 @@ impl Context {
                     context.unwrap().after_scenario().await.unwrap();
                 })
             })
-            .filter_run(glob, |_, _, sc| !sc.tags.iter().any(|tag| is_ignore(tag)))
+            .filter_run(glob, |_, _, sc| {
+                sc.name.contains(std::env::var("SCENARIO_FILTER").as_deref().unwrap_or("")) &&
+                !sc.tags.iter().any(|tag| is_ignore(tag))
+            })
+
             .await
             .execution_has_failed()
     }
@@ -74,8 +78,8 @@ impl Context {
         self.active_transaction = Some(txn);
     }
 
-    pub fn transaction(&mut self) -> Option<&ActiveTransaction> {
-        self.active_transaction.as_ref()
+    pub fn transaction(&mut self) -> Option<&mut ActiveTransaction> {
+        self.active_transaction.as_mut()
     }
 
     pub fn take_transaction(&mut self) -> Option<ActiveTransaction> {
@@ -90,12 +94,17 @@ fn is_ignore(tag: &str) -> bool {
 #[macro_export]
 macro_rules! generic_step {
     {$(#[step($pattern:expr)])+ $vis:vis $async:ident fn $fn_name:ident $args:tt $(-> $res:ty)? $body:block} => {
-        $(
-        #[::cucumber::given($pattern)]
-        #[::cucumber::when($pattern)]
-        #[::cucumber::then($pattern)]
-        )+
+        #[allow(unused)]
         $vis $async fn $fn_name $args $(-> $res)? $body
+
+        const _: () = {
+            #[allow(unused)]
+            $(
+            #[::cucumber::given($pattern)]
+            #[::cucumber::when($pattern)]
+            #[::cucumber::then($pattern)]
+            )+
+            $vis $async fn step $args $(-> $res)? $body
+        };
     };
 }
-

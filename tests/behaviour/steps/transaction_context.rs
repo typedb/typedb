@@ -4,7 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::Formatter;
+use std::fmt;
+
 use durability::wal::WAL;
 
 pub enum ActiveTransaction {
@@ -13,45 +14,45 @@ pub enum ActiveTransaction {
     Schema(database::transaction::TransactionSchema<WAL>),
 }
 
-impl std::fmt::Debug for ActiveTransaction {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
+impl fmt::Debug for ActiveTransaction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
             ActiveTransaction::Read(_) => "Read",
             ActiveTransaction::Write(_) => "Write",
-            ActiveTransaction::Schema(_) => "Schema"
+            ActiveTransaction::Schema(_) => "Schema",
         })
     }
 }
 
-#[macro_export]
-macro_rules! tx_as_read {
-    ($tx:ident, $block:block) => {
-        match $tx {
-            ActiveTransaction::Read($tx) => { $block },
-            ActiveTransaction::Write($tx) => { $block },
-            ActiveTransaction::Schema($tx) => { $block },
+macro_rules! with_read_tx {
+    ($context:ident, |$tx:ident| $expr:expr) => {
+        match $context.transaction().unwrap() {
+            $crate::transaction_context::ActiveTransaction::Read($tx) => $expr,
+            $crate::transaction_context::ActiveTransaction::Write($tx) => $expr,
+            $crate::transaction_context::ActiveTransaction::Schema($tx) => $expr,
         }
     };
 }
+pub(crate) use with_read_tx;
 
-#[macro_export]
-macro_rules! tx_as_write {
-    ($tx:ident, $block:block) => {
-        match $tx {
-            ActiveTransaction::Read(_) => panic!("Using Read transaction as Write"),
-            ActiveTransaction::Write($tx) => { $block },
-            ActiveTransaction::Schema($tx) => { $block },
-        }
-    }
-}
-
-#[macro_export]
-macro_rules! tx_as_schema {
-    ($tx:ident, $block:block) => {
-        match $tx {
-            ActiveTransaction::Read(_) => panic!("Using Read transaction as Schema"),
-            ActiveTransaction::Write(_) => panic!("Using Write transaction as Schema"),
-            ActiveTransaction::Schema($tx) => { $block },
+macro_rules! with_write_tx {
+    ($context:ident, |$tx:ident| $expr:expr) => {
+        match $context.transaction().unwrap() {
+            $crate::transaction_context::ActiveTransaction::Read(_) => panic!("Using Read transaction as Write"),
+            $crate::transaction_context::ActiveTransaction::Write($tx) => $expr,
+            $crate::transaction_context::ActiveTransaction::Schema($tx) => $expr,
         }
     };
 }
+pub(crate) use with_write_tx;
+
+macro_rules! with_schema_tx {
+    ($context:ident, |$tx:ident| $expr:expr) => {
+        match $context.transaction().unwrap() {
+            $crate::transaction_context::ActiveTransaction::Read(_) => panic!("Using Read transaction as Schema"),
+            $crate::transaction_context::ActiveTransaction::Write(_) => panic!("Using Write transaction as Schema"),
+            $crate::transaction_context::ActiveTransaction::Schema($tx) => $expr,
+        }
+    };
+}
+pub(crate) use with_schema_tx;

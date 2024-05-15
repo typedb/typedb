@@ -9,23 +9,22 @@ use std::collections::HashSet;
 use encoding::{
     graph::type_::vertex::TypeVertex,
     layout::prefix::Prefix,
-    Prefixed,
     value::{label::Label, value_type::ValueType},
+    Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    ConceptAPI,
-    error::ConceptReadError,
+    error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationIndependent},
         owns::Owns,
         type_manager::TypeManager,
         TypeAPI,
     },
+    ConceptAPI,
 };
-use crate::error::ConceptWriteError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
@@ -66,9 +65,13 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
     }
 
     fn delete<Snapshot: WritableSnapshot>(
-        self, snapshot: &mut Snapshot, type_manager: &TypeManager<Snapshot>,
+        self,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
-        todo!()
+        // TODO: Validation
+        type_manager.delete_attribute_type(snapshot, self);
+        Ok(())
     }
 }
 
@@ -166,11 +169,9 @@ impl<'a> AttributeType<'a> {
         snapshot: &Snapshot,
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
-        Ok(
-            self
-                .get_annotations(snapshot, type_manager)?
-                .contains(&AttributeTypeAnnotation::Independent(AnnotationIndependent::new()))
-        )
+        Ok(self
+            .get_annotations(snapshot, type_manager)?
+            .contains(&AttributeTypeAnnotation::Independent(AnnotationIndependent::new())))
     }
 
     pub fn get_annotations<'m, Snapshot: ReadableSnapshot>(

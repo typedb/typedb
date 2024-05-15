@@ -10,10 +10,16 @@ use encoding::graph::type_::edge::{build_edge_owns, TypeEdge};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::error::ConceptReadError;
-use crate::type_::{attribute_type::AttributeType, IntoCanonicalTypeEdge, object_type::ObjectType, Ordering, TypeAPI};
-use crate::type_::annotation::{Annotation, AnnotationCardinality, AnnotationDistinct};
-use crate::type_::type_manager::TypeManager;
+use crate::{
+    error::ConceptReadError,
+    type_::{
+        annotation::{Annotation, AnnotationCardinality, AnnotationDistinct},
+        attribute_type::AttributeType,
+        object_type::ObjectType,
+        type_manager::TypeManager,
+        IntoCanonicalTypeEdge, Ordering, TypeAPI,
+    },
+};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<'a> {
@@ -37,7 +43,7 @@ impl<'a> Owns<'a> {
     pub fn is_distinct<'this, Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        type_manager: &TypeManager<Snapshot>
+        type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         let is_ordered = false; // TODO
         if is_ordered {
@@ -46,6 +52,25 @@ impl<'a> Owns<'a> {
         } else {
             Ok(true)
         }
+    }
+
+    // TODO: Should it be 'this or just 'tm on type_manager?
+    pub fn get_override<'this, Snapshot: ReadableSnapshot>(
+        &'this self,
+        snapshot: &Snapshot,
+        type_manager: &'this TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'this, Option<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_overridden(snapshot, self.clone().into_owned())
+    }
+
+    pub fn set_override<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        overridden: Owns<'static>,
+    ) {
+        // TODO: Validation
+        type_manager.storage_set_owns_overridden(snapshot, self.clone().into_owned(), overridden)
     }
 
     pub(crate) fn get_annotations<'this, Snapshot: ReadableSnapshot>(
@@ -59,13 +84,11 @@ impl<'a> Owns<'a> {
     pub fn set_annotation<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
-        type_manager: &TypeManager<Snapshot>, annotation: OwnsAnnotation
+        type_manager: &TypeManager<Snapshot>,
+        annotation: OwnsAnnotation,
     ) {
         match annotation {
-            OwnsAnnotation::Distinct(_) => type_manager.storage_set_edge_annotation_distinct(
-                snapshot,
-                self.clone()
-            ),
+            OwnsAnnotation::Distinct(_) => type_manager.storage_set_edge_annotation_distinct(snapshot, self.clone()),
             OwnsAnnotation::Cardinality(cardinality) => {
                 type_manager.storage_set_edge_annotation_cardinality(snapshot, self.clone(), cardinality)
             }
@@ -76,7 +99,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
-        annotation: OwnsAnnotation
+        annotation: OwnsAnnotation,
     ) {
         match annotation {
             OwnsAnnotation::Distinct(_) => type_manager.storage_delete_edge_annotation_distinct(snapshot, self.clone()),
@@ -90,7 +113,7 @@ impl<'a> Owns<'a> {
         &self,
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
-        ordering: Ordering
+        ordering: Ordering,
     ) {
         type_manager.storage_set_owns_ordering(snapshot, self.clone().into_type_edge(), ordering)
     }
@@ -98,7 +121,7 @@ impl<'a> Owns<'a> {
     pub fn get_ordering<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        type_manager: &TypeManager<Snapshot>
+        type_manager: &TypeManager<Snapshot>,
     ) -> Result<Ordering, ConceptReadError> {
         type_manager.get_owns_ordering(snapshot, self.clone().into_owned())
     }

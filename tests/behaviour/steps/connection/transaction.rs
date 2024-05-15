@@ -4,11 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use database::transaction::{TransactionRead, TransactionSchema, TransactionWrite};
 use macro_rules_attribute::apply;
-use database::transaction::{TransactionRead, TransactionWrite, TransactionSchema};
 
-use crate::{generic_step, util, Context, ActiveTransaction};
-use crate::params::{Boolean, MayError};
+use crate::{
+    generic_step,
+    params::{Boolean, MayError},
+    ActiveTransaction, Context,
+};
 
 #[apply(generic_step)]
 #[step(expr = "connection opens {word} transaction for database: {word}")]
@@ -18,7 +21,7 @@ pub async fn connection_open_transaction(context: &mut Context, tx_type: String,
         "read" => ActiveTransaction::Read(TransactionRead::open(db.clone())),
         "write" => ActiveTransaction::Write(TransactionWrite::open(db.clone())),
         "schema" => ActiveTransaction::Schema(TransactionSchema::open(db.clone())),
-        _ => unreachable!("Unrecognised transaction type")
+        _ => unreachable!("Unrecognised transaction type"),
     };
     context.set_transaction(tx);
 }
@@ -37,15 +40,15 @@ pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
         "read" => assert!(matches!(context.transaction().unwrap(), ActiveTransaction::Read(_))),
         "write" => assert!(matches!(context.transaction().unwrap(), ActiveTransaction::Write(_))),
         "schema" => assert!(matches!(context.transaction().unwrap(), ActiveTransaction::Schema(_))),
-        _ => unreachable!("Unrecognised transaction type")
+        _ => unreachable!("Unrecognised transaction type"),
     };
 }
 
 #[apply(generic_step)]
 #[step(expr = "transaction commits(; ){may_error}")]
 pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
-    let res = match context.take_transaction().unwrap() {
-        ActiveTransaction::Read(_) => {},
+    match context.take_transaction().unwrap() {
+        ActiveTransaction::Read(_) => {}
         ActiveTransaction::Write(tx) => may_error.check(&tx.commit()),
         ActiveTransaction::Schema(tx) => may_error.check(&tx.commit()),
     };
@@ -60,7 +63,6 @@ pub async fn transaction_closes(context: &mut Context) {
         ActiveTransaction::Schema(tx) => tx.close(),
     };
 }
-
 
 #[apply(generic_step)]
 #[step(expr = "open transactions in parallel of type:")]

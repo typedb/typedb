@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use std::collections::{HashMap, HashSet};
 
 use bytes::Bytes;
@@ -53,6 +52,7 @@ pub(crate) struct EntityTypeCache {
 pub(crate) struct RelationTypeCache {
     pub(super) common_type_cache: CommonTypeCache<RelationType<'static>>,
     pub(super) relates_declared: HashSet<Relates<'static>>,
+    pub(super) relates_transitive: HashMap<RoleType<'static>, Relates<'static>>,
     pub(super) owner_player_cache: OwnerPlayerCache,
 }
 
@@ -73,7 +73,13 @@ pub(crate) struct AttributeTypeCache {
 #[derive(Debug)]
 pub(crate) struct OwnsCache {
     pub(super) ordering: Ordering,
+    pub(super) overrides: Option<Owns<'static>>,
     pub(super) annotations_declared: HashSet<OwnsAnnotation>,
+}
+
+#[derive(Debug)]
+pub(crate) struct PlaysCache {
+    pub(super) overrides: Option<Plays<'static>>
 }
 
 #[derive(Debug)]
@@ -92,7 +98,9 @@ pub(crate) struct CommonTypeCache<T: KindAPI<'static>> {
 #[derive(Debug)]
 pub struct OwnerPlayerCache {
     pub(super) owns_declared: HashSet<Owns<'static>>,
+    pub(super) owns_transitive: HashMap<AttributeType<'static>, Owns<'static>>,
     pub(super) plays_declared: HashSet<Plays<'static>>,
+    pub(super) plays_transitive: HashMap<RoleType<'static>, Plays<'static>>,
 }
 
 impl EntityTypeCache {
@@ -138,6 +146,7 @@ impl RelationTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, relation.clone()),
                 owner_player_cache: OwnerPlayerCache::create(snapshot, relation.clone()),
                 relates_declared: TypeReader::get_relates(snapshot, relation.clone()).unwrap(),
+                relates_transitive: TypeReader::get_relates_transitive(snapshot, relation.clone()).unwrap(),
             };
             caches[relation.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -180,7 +189,7 @@ impl RoleTypeCache {
             let cache = RoleTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, role.clone()),
                 ordering,
-                relates_declared: TypeReader::get_relations(snapshot, role.clone()).unwrap(),
+                relates_declared: TypeReader::get_relation(snapshot, role.clone()).unwrap(),
             };
             caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -204,6 +213,7 @@ impl OwnsCache {
                     owns.clone(),
                     OwnsCache {
                         ordering: TypeReader::get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
+                        overrides : TypeReader::get_owns_override(snapshot, owns.clone()).unwrap(),
                         annotations_declared: TypeReader::get_type_edge_annotations(snapshot, owns.clone())
                             .unwrap()
                             .into_iter()
@@ -216,7 +226,30 @@ impl OwnsCache {
     }
 }
 
-impl<T: KindAPI<'static> + ReadableType<Output<'static>=T>> CommonTypeCache<T> {
+impl PlaysCache {
+    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Plays<'static>, PlaysCache> {
+        snapshot
+            .iterate_range(KeyRange::new_within(
+                TypeEdge::build_prefix(Prefix::EdgePlays),
+                TypeEdge::FIXED_WIDTH_ENCODING,
+            ))
+            .collect_cloned_hashmap(|key, _| {
+                let edge = TypeEdge::new(Bytes::Reference(key.byte_ref()));
+                let player = ObjectType::new(edge.from().into_owned());
+                let role = RoleType::new(edge.to().into_owned());
+                let plays = Plays::new(player, role);
+                (
+                    plays.clone(),
+                    PlaysCache {
+                        overrides : TypeReader::get_plays_override(snapshot, plays.clone()).unwrap(),
+                    },
+                )
+            })
+            .unwrap()
+    }
+}
+
+impl<T: KindAPI<'static> + ReadableType<ReadOutput<'static>=T>> CommonTypeCache<T> {
     fn create< Snapshot>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
         where
             Snapshot: ReadableSnapshot
@@ -244,11 +277,13 @@ impl OwnerPlayerCache {
     fn create<'a, Snapshot, T>(snapshot: &Snapshot, type_: T) -> OwnerPlayerCache
         where
             Snapshot: ReadableSnapshot,
-            T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static> + ReadableType<Output<'static>=T>,
+            T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static> + ReadableType<ReadOutput<'static>=T>,
     {
         OwnerPlayerCache {
             owns_declared: TypeReader::get_owns(snapshot, type_.clone()).unwrap(),
+            owns_transitive: TypeReader::get_owns_transitive(snapshot, type_.clone()).unwrap(),
             plays_declared: TypeReader::get_plays(snapshot, type_.clone()).unwrap(),
+            plays_transitive: TypeReader::get_plays_transitive(snapshot, type_.clone()).unwrap(),
         }
     }
 }

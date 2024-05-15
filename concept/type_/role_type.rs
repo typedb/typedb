@@ -21,7 +21,7 @@ use storage::{
 
 use crate::{
     concept_iterator,
-    error::ConceptReadError,
+    error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationDistinct},
         plays::Plays,
@@ -31,7 +31,6 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::error::ConceptWriteError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -70,7 +69,9 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
-        todo!()
+        // TODO: validation
+        type_manager.delete_role_type(snapshot, self);
+        Ok(())
     }
 }
 
@@ -78,7 +79,8 @@ impl<'a> RoleType<'a> {
     pub fn is_root<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        type_manager: &TypeManager<Snapshot>) -> Result<bool, ConceptReadError> {
+        type_manager: &TypeManager<Snapshot>,
+    ) -> Result<bool, ConceptReadError> {
         type_manager.get_role_type_is_root(snapshot, self.clone().into_owned())
     }
 
@@ -90,7 +92,7 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_type_label(snapshot, self.clone().into_owned())
     }
 
-    fn set_name<Snapshot: WritableSnapshot>(
+    pub fn set_name<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
         _type_manager: &TypeManager<Snapshot>,
@@ -98,7 +100,6 @@ impl<'a> RoleType<'a> {
     ) {
         // // TODO: setLabel should fail is setting label on Root type
         // type_manager.set_storage_label(self.clone().into_owned(), label);
-
         todo!()
     }
 
@@ -113,7 +114,9 @@ impl<'a> RoleType<'a> {
     pub fn set_supertype<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
-        type_manager: &TypeManager<Snapshot>, supertype: RoleType<'static>) -> Result<(), ConceptWriteError> {
+        type_manager: &TypeManager<Snapshot>,
+        supertype: RoleType<'static>,
+    ) -> Result<(), ConceptWriteError> {
         type_manager.storage_set_supertype(snapshot, self.clone().into_owned(), supertype);
         Ok(())
     }
@@ -148,12 +151,14 @@ impl<'a> RoleType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
-        let card: AnnotationCardinality = annotations.iter().filter_map(|annotation|
-            match annotation {
+        let card: AnnotationCardinality = annotations
+            .iter()
+            .filter_map(|annotation| match annotation {
                 RoleTypeAnnotation::Cardinality(card) => Some(card.clone()),
-                _ => None
-            }
-        ).next().unwrap_or_else(|| type_manager.role_default_cardinality());
+                _ => None,
+            })
+            .next()
+            .unwrap_or_else(|| type_manager.role_default_cardinality());
         Ok(card)
     }
 

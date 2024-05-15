@@ -5,4 +5,5 @@
  */
 
 mod attribute_type;
+mod relation_type;
 mod thing_type;

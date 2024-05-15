@@ -4,22 +4,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
-use serde::{Deserialize, Serialize};
-use bytes::byte_reference::ByteReference;
-use encoding::graph::type_::edge::TypeEdge;
+use std::collections::{HashMap, HashSet};
 
-use encoding::graph::type_::vertex::TypeVertex;
+use bytes::byte_reference::ByteReference;
+use encoding::graph::type_::{edge::TypeEdge, vertex::TypeVertex};
 use primitive::maybe_owns::MaybeOwns;
+use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    error::ConceptReadError,
-    type_::{attribute_type::AttributeType, owns::Owns, plays::Plays, role_type::RoleType, type_manager::TypeManager},
+    error::{ConceptReadError, ConceptWriteError},
+    type_::{
+        annotation::AnnotationCardinality, attribute_type::AttributeType, owns::Owns, plays::Plays,
+        role_type::RoleType, type_manager::TypeManager,
+    },
     ConceptAPI,
 };
-use crate::error::ConceptWriteError;
-use crate::type_::annotation::AnnotationCardinality;
 
 pub mod annotation;
 pub mod attribute_type;
@@ -42,11 +42,13 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
     fn is_abstract<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        type_manager: &TypeManager<Snapshot>
+        type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError>;
 
     fn delete<Snapshot: WritableSnapshot>(
-        self, snapshot: &mut Snapshot, type_manager: &TypeManager<Snapshot>
+        self,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
     ) -> Result<(), ConceptWriteError>;
 }
 
@@ -59,14 +61,14 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         type_manager: &TypeManager<Snapshot>,
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
-    ) -> Owns<'static>;
+    ) -> Result<Owns<'static>, ConceptWriteError>;
 
     fn delete_owns<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
-        attribute_type: AttributeType<'static>
-    );
+        attribute_type: AttributeType<'static>,
+    ) -> Result<(), ConceptWriteError>;
 
     fn get_owns<'m, Snapshot: ReadableSnapshot>(
         &self,
@@ -89,6 +91,30 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_owns_attribute(snapshot, type_manager, attribute_type)?.is_some())
     }
+
+    fn get_owns_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError>;
+
+    fn get_owns_attribute_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
+        Ok(self.get_owns_transitive(snapshot, type_manager)?.get(&attribute_type).map(|owns| owns.clone()))
+    }
+
+    fn has_owns_attribute_transitive<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self.get_owns_attribute_transitive(snapshot, type_manager, attribute_type)?.is_some())
+    }
 }
 
 pub trait PlayerAPI<'a>: TypeAPI<'a> {
@@ -97,14 +123,14 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         role_type: RoleType<'static>,
-    ) -> Plays<'static>;
+    ) -> Result<Plays<'static>, ConceptWriteError>;
 
     fn delete_plays<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
-        role_type: RoleType<'static>
-    );
+        role_type: RoleType<'static>,
+    ) -> Result<(), ConceptWriteError>;
 
     fn get_plays<'m, Snapshot: ReadableSnapshot>(
         &self,
@@ -127,6 +153,30 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
     ) -> Result<bool, ConceptReadError> {
         Ok(self.get_plays_role(snapshot, type_manager, role_type)?.is_some())
     }
+
+    fn get_plays_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError>;
+
+    fn get_plays_role_transitive<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        role_type: RoleType<'static>,
+    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
+        Ok(self.get_plays_transitive(snapshot, type_manager)?.get(&role_type).map(|plays| plays.clone()))
+    }
+
+    fn has_plays_role_transitive<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        role_type: RoleType<'static>,
+    ) -> Result<bool, ConceptReadError> {
+        Ok(self.get_plays_role_transitive(snapshot, type_manager, role_type)?.is_some())
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -143,7 +193,6 @@ pub(crate) trait IntoCanonicalTypeEdge<'a> {
 
     fn into_type_edge(self) -> TypeEdge<'static>;
 }
-
 
 // TODO: where do these belong?
 fn serialise_annotation_cardinality(annotation: AnnotationCardinality) -> Box<[u8]> {

@@ -25,6 +25,16 @@ rust_test(
     data = ["@vaticle_typedb_behaviour//concept/type:entitytype.feature"],
 )
 
+rust_test(
+    name = "relationtype",
+    srcs = ["relation_type.rs"],
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = ["@vaticle_typedb_behaviour//concept/type:relationtype.feature"],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

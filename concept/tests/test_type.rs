@@ -80,7 +80,7 @@ fn entity_usage() {
         assert_eq!(supertypes.len(), 2);
 
         // --- child owns age ---
-        child_type.set_owns(&mut snapshot, &type_manager, age_type.clone().into_owned(), Ordering::Unordered);
+        child_type.set_owns(&mut snapshot, &type_manager, age_type.clone().into_owned(), Ordering::Unordered).unwrap();
         let owns = child_type.get_owns_attribute(&snapshot, &type_manager, age_type.clone().into_owned()).unwrap().unwrap();
         // TODO: test 'owns' structure directly
 
@@ -91,12 +91,26 @@ fn entity_usage() {
         assert!(child_type.has_owns_attribute(&snapshot, &type_manager, age_type.clone()).unwrap());
 
         // --- adult sub person ---
-        let adult = type_manager.create_entity_type(&mut snapshot, &Label::build("adult"), false).unwrap();
-        adult.set_supertype(&mut snapshot, &type_manager, person_type.clone()).unwrap();
+        let adult_type = type_manager.create_entity_type(&mut snapshot, &Label::build("adult"), false).unwrap();
+        adult_type.set_supertype(&mut snapshot, &type_manager, person_type.clone()).unwrap();
         assert_eq!(root_entity.get_subtypes(&snapshot, &type_manager).unwrap().len(), 1);
         assert_eq!(root_entity.get_subtypes_transitive(&snapshot, &type_manager).unwrap().len(), 3);
         assert_eq!(person_type.get_subtypes(&snapshot, &type_manager).unwrap().len(), 2);
         assert_eq!(person_type.get_subtypes_transitive(&snapshot, &type_manager).unwrap().len(), 2);
+
+        // --- owns inheritance ---
+        let height_label = Label::new_static("height");
+        let height_type = type_manager.create_attribute_type(&mut snapshot, &height_label, false).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, height_type.clone(), Ordering::Unordered).unwrap();
+
+        match child_type.get_owns_attribute_transitive(&snapshot, &type_manager, height_type.clone()).unwrap() {
+            None => assert!(false, "child should inherit ownership of height"),
+            Some(child_owns_height) => {
+                assert_eq!(height_type, child_owns_height.attribute());
+                assert_eq!(ObjectType::Entity(person_type.clone()), child_owns_height.owner());
+            },
+        }
+
     }
     snapshot.commit().unwrap();
 
@@ -157,6 +171,16 @@ fn entity_usage() {
         assert_eq!(root_entity.get_subtypes_transitive(&snapshot, &type_manager).unwrap().len(), 3);
         assert_eq!(person_type.get_subtypes(&snapshot, &type_manager).unwrap().len(), 2);
         assert_eq!(person_type.get_subtypes_transitive(&snapshot, &type_manager).unwrap().len(), 2);
+
+        // --- owns inheritance ---
+        let height_type = type_manager.get_attribute_type(&snapshot, &Label::new_static("height")).unwrap().unwrap();
+        match child_type.get_owns_attribute_transitive(&snapshot, &type_manager, height_type.clone()).unwrap() {
+            None => assert!(false, "child should inherit ownership of height"),
+            Some(child_owns_height) => {
+                assert_eq!(height_type, child_owns_height.attribute());
+                assert_eq!(ObjectType::Entity(person_type.clone()), child_owns_height.owner());
+            },
+        }
     }
 }
 
@@ -200,13 +224,13 @@ fn role_usage() {
         let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label, false).unwrap();
         friendship_type.create_relates(&mut snapshot, &type_manager, friend_name, Ordering::Unordered).unwrap();
         let relates = friendship_type.get_relates_role(&snapshot, &type_manager, friend_name).unwrap().unwrap();
-        let role_type = friendship_type.get_role(&snapshot, &type_manager, friend_name).unwrap().unwrap();
-        debug_assert_eq!(relates.relation(), friendship_type);
+        let role_type = type_manager.resolve_relates(&snapshot, friendship_type.clone(), friend_name).unwrap().unwrap().role();
+        debug_assert_eq!(relates.relation(), friendship_type.clone());
         debug_assert_eq!(relates.role(), role_type);
 
         // --- person plays friendship:friend ---
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
-        person_type.set_plays(&mut snapshot, &type_manager, role_type.clone().into_owned());
+        person_type.set_plays(&mut snapshot, &type_manager, role_type.clone().into_owned()).unwrap();
         let plays = person_type.get_plays_role(&snapshot, &type_manager, role_type.clone().into_owned()).unwrap().unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type.clone()));
         debug_assert_eq!(plays.role(), role_type);
@@ -224,8 +248,8 @@ fn role_usage() {
         let relates = friendship_type.get_relates_role(&snapshot, &type_manager, friend_name).unwrap();
         debug_assert!(relates.is_some());
         let relates = relates.unwrap();
-        let role_type = friendship_type.get_role(&snapshot, &type_manager, friend_name).unwrap().unwrap();
-        debug_assert_eq!(relates.relation(), friendship_type);
+        let role_type = type_manager.resolve_relates(&snapshot, friendship_type.clone(), friend_name).unwrap().unwrap().role();
+        debug_assert_eq!(relates.relation(), friendship_type.clone());
         debug_assert_eq!(relates.role(), role_type);
 
         // --- person plays friendship:friend ---

@@ -4,13 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::type_::relation_type::RelationType;
-use crate::type_::role_type::RoleType;
+use crate::type_::{relation_type::RelationType, role_type::RoleType};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Relates<'a> {
     relation: RelationType<'a>,
-    role: RoleType<'a>
+    role: RoleType<'a>,
 }
 
 impl<'a> Relates<'a> {
