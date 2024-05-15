@@ -40,12 +40,8 @@ def vaticle_typedb_protocol():
     )
 
 def vaticle_typedb_behaviour():
-    native.local_repository(
+    git_repository(
         name = "vaticle_typedb_behaviour",
-        path = "../typedb-behaviour",
+        remote = "https://github.com/vaticle/typedb-behaviour",
+        commit = "747cd627c7bedbf53b3982240826208ac24c99e4" # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_behaviour
     )
-#    git_repository(
-#        name = "vaticle_typedb_behaviour",
-#        remote = "https://github.com/vaticle/typedb-behaviour",
-#        commit = "96a8bb5b49f809ff17952c079219363f663787f4" # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_behaviour
-#    )
