@@ -112,7 +112,9 @@ impl<'a> Relation<'a> {
             .get_ordering(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         match ordering {
-            Ordering::Unordered => thing_manager.set_has(snapshot, self.as_reference(), attribute.as_reference()),
+            Ordering::Unordered => {
+                thing_manager.set_has_unordered(snapshot, self.as_reference(), attribute.as_reference())
+            }
             Ordering::Ordered => {
                 todo!("throw a good error")
             }

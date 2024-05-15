@@ -409,6 +409,13 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                 ConceptStatus::Persisted
             })
     }
+
+    fn object_exists<'a>(&self, snapshot: &Snapshot, owner: &impl ObjectAPI<'a>) -> Result<bool, ConceptReadError> {
+        match snapshot.get::<0>(owner.vertex().as_storage_key().as_reference()) {
+            Ok(value) => Ok(value.is_some()),
+            Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
+        }
+    }
 }
 
 impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
@@ -658,18 +665,26 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         Ok(())
     }
 
-    pub fn unput_attribute(&self, snapshot: &mut Snapshot, attribute: Attribute<'_>) -> Result<(), ConceptWriteError> {
+    pub(crate) fn unput_attribute(
+        &self,
+        snapshot: &mut Snapshot,
+        attribute: Attribute<'_>,
+    ) -> Result<(), ConceptWriteError> {
         let key = attribute.into_vertex().into_storage_key().into_owned_array();
         snapshot.unput(key);
         Ok(())
     }
 
-    pub(crate) fn set_has<'a>(
+    pub(crate) fn set_has_unordered<'a>(
         &self,
         snapshot: &mut Snapshot,
         owner: impl ObjectAPI<'a>,
         attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
+        if !self.object_exists(snapshot, &owner)? {
+            return Err(ConceptWriteError::SetHasOnDeleted {});
+        }
+
         // TODO: handle duplicates
         // note: we always re-put the attribute. TODO: optimise knowing when the attribute pre-exists.
         snapshot.put(attribute.vertex().as_storage_key().into_owned_array());
