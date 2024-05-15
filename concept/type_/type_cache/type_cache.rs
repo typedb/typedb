@@ -10,18 +10,33 @@ use std::{
     fmt,
     sync::Arc,
 };
-use durability::SequenceNumber;
+
 use encoding::{
-    graph::Typed, value::{label::Label, value_type::ValueType}, Prefixed
+    graph::Typed,
+    value::{label::Label, value_type::ValueType},
+    Prefixed,
 };
-use storage::{snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
+use storage::{sequence_number::SequenceNumber, snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
 
-use crate::type_::{attribute_type::AttributeType, entity_type::EntityType, owns::{Owns, OwnsAnnotation}, plays::Plays, relates::Relates, relation_type::RelationType, role_type::RoleType, Ordering, TypeAPI, OwnerAPI, PlayerAPI};
-use crate::type_::type_cache::kind_cache::{AttributeTypeCache, EntityTypeCache, RelationTypeCache, RoleTypeCache, OwnsCache, PlaysCache, CommonTypeCache, OwnerPlayerCache};
-use crate::type_::type_cache::selection;
-use crate::type_::type_cache::selection::{HasOwnerPlayerCache, HasCommonTypeCache, CacheGetter};
-use crate::type_::type_manager::KindAPI;
-
+use crate::type_::{
+    attribute_type::AttributeType,
+    entity_type::EntityType,
+    owns::{Owns, OwnsAnnotation},
+    plays::Plays,
+    relates::Relates,
+    relation_type::RelationType,
+    role_type::RoleType,
+    type_cache::{
+        kind_cache::{
+            AttributeTypeCache, CommonTypeCache, EntityTypeCache, OwnerPlayerCache, OwnsCache, PlaysCache,
+            RelationTypeCache, RoleTypeCache,
+        },
+        selection,
+        selection::{CacheGetter, HasCommonTypeCache, HasOwnerPlayerCache},
+    },
+    type_manager::KindAPI,
+    Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+};
 
 // TODO: could/should we slab allocate the schema cache?
 pub struct TypeCache {
@@ -41,7 +56,6 @@ pub struct TypeCache {
     role_types_index_label: HashMap<Label<'static>, RoleType<'static>>,
     attribute_types_index_label: HashMap<Label<'static>, AttributeType<'static>>,
 }
-
 
 selection::impl_cache_getter!(EntityTypeCache, EntityType, entity_types);
 selection::impl_cache_getter!(AttributeTypeCache, AttributeType, attribute_types);
@@ -126,63 +140,78 @@ impl TypeCache {
     }
 
     pub(crate) fn get_supertype<'a, 'this, T, CACHE>(&'this self, type_: T) -> Option<T::SelfStatic>
-        where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-              CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         Some(T::get_cache(self, type_).common_type_cache().supertype.as_ref()?.clone())
     }
 
     pub(crate) fn get_supertypes<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T::SelfStatic>
-        where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-              CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().supertypes
     }
     pub(crate) fn get_subtypes<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T::SelfStatic>
-        where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-              CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().subtypes_declared
     }
 
     pub(crate) fn get_subtypes_transitive<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Vec<T::SelfStatic>
-        where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-              CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().subtypes_transitive
     }
 
     pub(crate) fn get_label<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this Label<'static>
-        where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-              CACHE : HasCommonTypeCache<T::SelfStatic> + 'this
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().label
     }
 
     pub(crate) fn is_root<'a, 'this, T, CACHE>(&'this self, type_: T) -> bool
-        where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-              CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         T::get_cache(self, type_).common_type_cache().is_root
     }
 
-    pub(crate) fn get_annotations<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<<<T as KindAPI<'a>>::SelfStatic as KindAPI<'static>>::AnnotationType>
-        where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
-              CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
+    pub(crate) fn get_annotations<'a, 'this, T, CACHE>(
+        &'this self,
+        type_: T,
+    ) -> &HashSet<<<T as KindAPI<'a>>::SelfStatic as KindAPI<'static>>::AnnotationType>
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().annotations_declared
     }
 
     pub(crate) fn get_owns<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns<'static>>
-        where T:  OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
-              CACHE: HasOwnerPlayerCache + 'this
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasOwnerPlayerCache + 'this,
     {
         &T::get_cache(self, type_).owner_player_cache().owns_declared
     }
 
-    pub(crate) fn get_owns_transitive<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashMap<AttributeType<'static>, Owns<'static>>
-        where T:  OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
-              CACHE: HasOwnerPlayerCache + 'this
+    pub(crate) fn get_owns_transitive<'a, 'this, T, CACHE>(
+        &'this self,
+        type_: T,
+    ) -> &HashMap<AttributeType<'static>, Owns<'static>>
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasOwnerPlayerCache + 'this,
     {
         &T::get_cache(self, type_).owner_player_cache().owns_transitive
     }
@@ -195,20 +224,28 @@ impl TypeCache {
         &RelationType::get_cache(self, relation_type).relates_declared
     }
 
-    pub(crate) fn get_relation_type_relates_transitive<'a>(&self, relation_type: RelationType<'a>) -> &HashMap<RoleType<'static>, Relates<'static>> {
+    pub(crate) fn get_relation_type_relates_transitive<'a>(
+        &self,
+        relation_type: RelationType<'a>,
+    ) -> &HashMap<RoleType<'static>, Relates<'static>> {
         &RelationType::get_cache(self, relation_type).relates_transitive
     }
 
     pub(crate) fn get_plays<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Plays<'static>>
-        where T:  OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
-              CACHE: HasOwnerPlayerCache + 'this
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasOwnerPlayerCache + 'this,
     {
         &T::get_cache(self, type_).owner_player_cache().plays_declared
     }
 
-    pub(crate) fn get_plays_transitive<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this HashMap<RoleType<'static>, Plays<'static>>
-        where T:  OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
-        CACHE: HasOwnerPlayerCache + 'this
+    pub(crate) fn get_plays_transitive<'a, 'this, T, CACHE>(
+        &'this self,
+        type_: T,
+    ) -> &'this HashMap<RoleType<'static>, Plays<'static>>
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasOwnerPlayerCache + 'this,
     {
         &T::get_cache(self, type_).owner_player_cache().plays_transitive
     }

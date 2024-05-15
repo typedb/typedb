@@ -376,4 +376,3 @@ impl fmt::Debug for ByteArrayBoxed {
             .finish()
     }
 }
-

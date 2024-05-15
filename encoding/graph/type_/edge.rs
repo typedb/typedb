@@ -10,8 +10,11 @@ use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
-use crate::{AsBytes, EncodingKeyspace, graph::type_::vertex::TypeVertex, Keyable, layout::prefix::Prefix, Prefixed};
-use crate::layout::prefix::PrefixID;
+use crate::{
+    graph::type_::vertex::TypeVertex,
+    layout::prefix::{Prefix, PrefixID},
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TypeEdge<'a> {
@@ -34,7 +37,9 @@ macro_rules! type_edge_constructors {
             TypeEdge::build_prefix_from(Prefix::$prefix, from)
         }
 
-        pub fn $build_prefix_prefix(from_prefix: Prefix) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
+        pub fn $build_prefix_prefix(
+            from_prefix: Prefix,
+        ) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
             TypeEdge::build_prefix_prefix(Prefix::$prefix, from_prefix)
         }
 
@@ -137,7 +142,10 @@ impl<'a> TypeEdge<'a> {
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
-    fn build_prefix_prefix(prefix: Prefix, from_prefix: Prefix) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
+    fn build_prefix_prefix(
+        prefix: Prefix,
+        from_prefix: Prefix,
+    ) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_PREFIX);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeVertex::LENGTH_PREFIX]
@@ -145,7 +153,10 @@ impl<'a> TypeEdge<'a> {
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
-    fn build_prefix_from(prefix: Prefix, from: TypeVertex<'_>) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM }> {
+    fn build_prefix_from(
+        prefix: Prefix,
+        from: TypeVertex<'_>,
+    ) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());

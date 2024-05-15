@@ -41,7 +41,7 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
         }
     }
 
-    pub fn into_byte_array_or_ref(self) -> Bytes<'bytes, S> {
+    pub fn into_bytes(self) -> Bytes<'bytes, S> {
         match self {
             StorageKey::Array(array) => Bytes::Array(array.into_byte_array()),
             StorageKey::Reference(reference) => Bytes::Reference(reference.into_byte_ref()),

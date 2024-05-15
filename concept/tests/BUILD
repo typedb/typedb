@@ -18,7 +18,7 @@ rust_test(
         "//concept",
         "//encoding",
         "//storage",
-        "//storage/durability",
+        "//durability",
         "//util/test:test_utils",
 
         "@crates//:rand",
@@ -38,7 +38,7 @@ rust_test(
         "//concept",
         "//encoding",
         "//storage",
-        "//storage/durability",
+        "//durability",
         "//util/test:test_utils",
 
         "@crates//:rand",

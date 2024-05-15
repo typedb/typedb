@@ -138,4 +138,11 @@ where
             RangeEnd::Unbounded => RangeEnd::Unbounded,
         }
     }
+
+    pub fn get_value(&self) -> Option<&T> {
+        match self {
+            RangeEnd::SameAsStart | RangeEnd::Unbounded => None,
+            RangeEnd::Inclusive(value) | RangeEnd::Exclusive(value) => Some(&value),
+        }
+    }
 }

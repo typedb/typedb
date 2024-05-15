@@ -23,7 +23,7 @@ rust_library(
         "//common/primitive",
         "//encoding",
         "//storage",
-        "//storage/durability",
+        "//durability",
         "//resource",
 
         "@crates//:bincode",

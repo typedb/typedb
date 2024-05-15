@@ -10,12 +10,12 @@ use std::{
     sync::atomic::Ordering,
 };
 
-use durability::SequenceNumber;
 use speedb::WriteBatch;
 
 use super::{MVCCKey, StorageOperation};
 use crate::{
     keyspace::KEYSPACE_MAXIMUM_COUNT,
+    sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
 };
 

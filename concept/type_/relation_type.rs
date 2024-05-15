@@ -220,7 +220,8 @@ impl<'a> RelationType<'a> {
         name: &str,
     ) -> Result<Option<Relates<'static>>, ConceptReadError> {
         let label = Label::build_scoped(name, self.get_label(snapshot, type_manager)?.name().as_str());
-        Ok(type_manager.get_role_type(snapshot, &label)?
+        Ok(type_manager
+            .get_role_type(snapshot, &label)?
             .map(|role_type| Relates::new(self.clone().into_owned(), role_type)))
     }
 

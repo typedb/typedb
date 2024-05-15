@@ -7,21 +7,21 @@
 #![deny(unused_must_use)]
 
 use std::{
+    borrow::Cow,
     ffi::c_int,
     fs::File,
     path::Path,
     rc::Rc,
     sync::{Arc, OnceLock},
+    time::Duration,
 };
-use std::borrow::Cow;
-use std::time::Duration;
 
 use concept::{
     thing::{thing_manager::ThingManager, value::Value},
-    type_::{type_cache::TypeCache, type_manager::TypeManager, OwnerAPI},
+    type_::{type_cache::TypeCache, type_manager::TypeManager, Ordering, OwnerAPI},
 };
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
-use durability::wal::WAL;
+use durability::{wal::WAL, DurabilityService};
 use encoding::{
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
     value::{label::Label, value_type::ValueType},
@@ -29,9 +29,11 @@ use encoding::{
 };
 use pprof::ProfilerGuard;
 use rand::distributions::{Alphanumeric, DistString};
-use concept::type_::Ordering;
-use storage::{MVCCStorage};
-use storage::snapshot::{CommittableSnapshot, WriteSnapshot};
+use storage::{
+    durability_client::WALClient,
+    snapshot::{CommittableSnapshot, WriteSnapshot},
+    MVCCStorage,
+};
 use test_utils::{create_tmp_dir, init_logging};
 
 static AGE_LABEL: OnceLock<Label> = OnceLock::new();
@@ -39,7 +41,7 @@ static NAME_LABEL: OnceLock<Label> = OnceLock::new();
 static PERSON_LABEL: OnceLock<Label> = OnceLock::new();
 
 fn write_entity_attributes(
-    storage: Arc<MVCCStorage<WAL>>,
+    storage: Arc<MVCCStorage<WALClient>>,
     type_vertex_generator: Arc<TypeVertexGenerator>,
     thing_vertex_generator: Arc<ThingVertexGenerator>,
     schema_cache: Arc<TypeCache>,
@@ -59,7 +61,9 @@ fn write_entity_attributes(
         let random_string: String = Alphanumeric.sample_string(&mut rand::thread_rng(), length as usize);
 
         let age = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(random_long)).unwrap();
-        let name = thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(&random_string))).unwrap();
+        let name = thing_manager
+            .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(&random_string)))
+            .unwrap();
         person.set_has_unordered(&mut snapshot, &thing_manager, age).unwrap();
         person.set_has_unordered(&mut snapshot, &thing_manager, name).unwrap();
     }
@@ -67,8 +71,8 @@ fn write_entity_attributes(
     snapshot.commit().unwrap();
 }
 
-fn create_schema(storage: &Arc<MVCCStorage<WAL>>, type_vertex_generator: &Arc<TypeVertexGenerator>) {
-    let mut snapshot: WriteSnapshot<WAL> = storage.clone().open_snapshot_write();
+fn create_schema(storage: &Arc<MVCCStorage<WALClient>>, type_vertex_generator: &Arc<TypeVertexGenerator>) {
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
         let type_manager = Rc::new(TypeManager::new(type_vertex_generator.clone(), None));
         let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap(), false).unwrap();
@@ -94,14 +98,24 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.sampling_mode(SamplingMode::Linear);
     group.bench_function("thing_write", |b| {
         let storage_path = create_tmp_dir();
-        let mut storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let wal = WAL::create(&storage_path).unwrap();
+        let mut storage = Arc::new(
+            MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
+                .unwrap(),
+        );
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-        TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
+        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone())
+            .unwrap();
         create_schema(&storage, &type_vertex_generator);
         let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
         b.iter(|| {
-            write_entity_attributes(storage.clone(), type_vertex_generator.clone(), thing_vertex_generator.clone(), schema_cache.clone())
+            write_entity_attributes(
+                storage.clone(),
+                type_vertex_generator.clone(),
+                thing_vertex_generator.clone(),
+                schema_cache.clone(),
+            )
         });
     });
 }

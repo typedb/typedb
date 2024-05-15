@@ -6,13 +6,12 @@
 
 use std::{
     cmp::Ordering,
-    collections::{BTreeMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     error::Error,
     fmt,
     hash::Hash,
     sync::Arc,
 };
-use std::collections::HashMap;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use iterator::State;
@@ -21,19 +20,19 @@ use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use crate::{
     iterator::{MVCCRangeIterator, MVCCReadError},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    snapshot::{buffer::BufferedPrefixIterator, write::Write},
+    snapshot::{buffer::BufferRangeIterator, write::Write},
 };
 
 pub struct SnapshotRangeIterator<'a, const PS: usize> {
     storage_iterator: MVCCRangeIterator<'a, PS>,
-    buffered_iterator: Option<BufferedPrefixIterator>,
+    buffered_iterator: Option<BufferRangeIterator>,
     iterator_state: IteratorState,
 }
 
 impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
     pub(crate) fn new(
         mvcc_iterator: MVCCRangeIterator<'a, PS>,
-        buffered_iterator: Option<BufferedPrefixIterator>,
+        buffered_iterator: Option<BufferRangeIterator>,
     ) -> Self {
         SnapshotRangeIterator {
             storage_iterator: mvcc_iterator,
@@ -133,9 +132,7 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
                     self.iterator_state.state = State::Done;
                 }
                 (None, Ok(Some(_))) => self.iterator_state.set_item_ready(ReadyItemSource::Storage),
-                (Some(Err(error)), _) | (_, Err(error)) => {
-                    self.iterator_state.state = State::Error(Arc::new(error))
-                }
+                (Some(Err(error)), _) | (_, Err(error)) => self.iterator_state.state = State::Error(Arc::new(error)),
                 (Some(Ok((buffered_key, buffered_write))), Ok(storage_peek)) => {
                     (advance_storage, advance_buffered) =
                         Self::merge_buffered(&mut self.iterator_state, (buffered_key, buffered_write), storage_peek);
@@ -187,7 +184,7 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
     }
 
     fn buffered_peek(
-        buffered_iterator: &mut Option<BufferedPrefixIterator>,
+        buffered_iterator: &mut Option<BufferRangeIterator>,
     ) -> Option<Result<(StorageKeyReference<'_>, &Write), SnapshotIteratorError>> {
         if let Some(buffered_iterator) = buffered_iterator {
             let buffered_peek = buffered_iterator.peek();
@@ -229,9 +226,7 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
         self.find_next_state();
     }
 
-    fn get_buffered_peek(
-        buffered_iterator: &mut BufferedPrefixIterator,
-    ) -> (StorageKeyReference<'_>, ByteReference<'_>) {
+    fn get_buffered_peek(buffered_iterator: &mut BufferRangeIterator) -> (StorageKeyReference<'_>, ByteReference<'_>) {
         let (key, write) = buffered_iterator.peek().unwrap().unwrap();
         (StorageKeyReference::from(key), ByteReference::from(write.get_value()))
     }
@@ -275,9 +270,9 @@ impl<'a, const PS: usize> SnapshotRangeIterator<'a, PS> {
     }
 
     pub fn collect_cloned_hashmap<F, M, N>(mut self, mapper: F) -> Result<HashMap<M, N>, Arc<SnapshotIteratorError>>
-        where
-            F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> (M, N),
-            M: Hash + Eq + PartialEq,
+    where
+        F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> (M, N),
+        M: Hash + Eq + PartialEq,
     {
         let mut map = HashMap::new();
         loop {

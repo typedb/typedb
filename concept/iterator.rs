@@ -37,7 +37,7 @@ macro_rules! concept_iterator {
 
             // a lending iterator trait is infeasible with the current borrow checker
             #[allow(clippy::should_implement_trait)]
-            pub fn next(&mut self) -> Option<Result<$concept_type<'_>,  $crate::error::ConceptReadError>> {
+            pub fn next(&mut self) -> Option<Result<$concept_type<'_>, $crate::error::ConceptReadError>> {
                 use $crate::error::ConceptReadError::SnapshotIterate;
                 self.iter_next().map(|result| {
                     result
@@ -95,7 +95,6 @@ macro_rules! concept_iterator {
         }
     };
 }
-
 
 #[macro_export]
 macro_rules! edge_iterator {

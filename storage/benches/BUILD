@@ -19,7 +19,7 @@ rust_test(
         "//common/primitive",
         "//resource",
         "//storage",
-        "//storage/durability",
+        "//durability",
         "//util/test:test_utils",
 
         "@crates//:rand",
@@ -31,7 +31,7 @@ rust_test(
 )
 
 # Usage:
-#  bazel test //storage/benches:bench_rocks --test_output=streamed --cache_test_results=no --test_arg=threads=1--test_arg=batch_size=64 --test_arg=batches=10000 --test_arg=database=rocks [rocks_disable_wal=true|rocks_set_sync=true]
+#  bazel test //storage/benches:bench_rocks --test_output=streamed --cache_test_results=no --test_arg=threads=1 --test_arg=batch_size=64 --test_arg=batches=10000 --test_arg=database=rocks [rocks_disable_wal=true|rocks_set_sync=true]
 #  cargo test --release  --bench bench_rocks --package storage -- threads=1 batches=10000 batch_size=64 database=typedb
 rust_test(
     name = "bench_rocks",
@@ -48,7 +48,7 @@ rust_test(
 
         "//common/bytes",
         "//database:database",
-        "//storage/durability:durability",
+        "//durability",
         "//storage:storage",
         "//util/test:test_utils",
     ],

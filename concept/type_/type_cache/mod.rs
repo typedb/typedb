@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod type_cache;
 mod kind_cache;
 mod selection;
+mod type_cache;
 
 pub use type_cache::TypeCache;

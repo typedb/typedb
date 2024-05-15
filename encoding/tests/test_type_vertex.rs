@@ -19,7 +19,9 @@ use encoding::{
     AsBytes, EncodingKeyspace, Keyable,
 };
 use storage::{
+    durability_client::WALClient,
     key_value::StorageKeyReference,
+    recovery::checkpoint::Checkpoint,
     snapshot::{CommittableSnapshot, WritableSnapshot},
     MVCCStorage,
 };
@@ -30,7 +32,10 @@ use test_utils::{create_tmp_dir, init_logging};
 fn entity_type_vertexes_are_reused() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
+    );
     // If we don't commit, it doesn't move.
     {
         for _ in 0..5 {
@@ -58,7 +63,8 @@ fn entity_type_vertexes_are_reused() {
         for i in 0..=create_till {
             if i % 2 == 0 {
                 let vertex = build_vertex_entity_type(TypeID::build(i));
-                snapshot.delete(StorageKeyReference::new(vertex.keyspace(), vertex.bytes()).into()); // TODO: replace with type api call.
+                snapshot.delete(StorageKeyReference::new(vertex.keyspace(), vertex.bytes()).into());
+                // TODO: replace with type api call.
             }
         }
         snapshot.commit().unwrap();
@@ -80,7 +86,10 @@ fn entity_type_vertexes_are_reused() {
 fn max_entity_type_vertexes() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
+    );
     let create_till = u16::MAX;
     {
         let mut snapshot = storage.clone().open_snapshot_write();
@@ -105,10 +114,21 @@ fn max_entity_type_vertexes() {
 fn loading_storage_assigns_next_vertex() {
     init_logging();
     let storage_path = create_tmp_dir();
+    {
+        let wal = WAL::create(&storage_path).unwrap();
+        let _ = Arc::new(
+            MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
+                .unwrap(),
+        );
+    }
     let create_till = 5;
 
     for i in 0..create_till {
-        let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let wal = WAL::load(&storage_path).unwrap();
+        let storage = Arc::new(
+            MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
+                .unwrap(),
+        );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
@@ -118,7 +138,11 @@ fn loading_storage_assigns_next_vertex() {
     }
 
     for i in 0..create_till {
-        let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let wal = WAL::load(&storage_path).unwrap();
+        let storage = Arc::new(
+            MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
+                .unwrap(),
+        );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
@@ -127,18 +151,50 @@ fn loading_storage_assigns_next_vertex() {
         snapshot.commit().unwrap();
     }
 
+    // try with checkpoints
+    let mut checkpoint = None;
     for i in 0..create_till {
-        let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let wal = WAL::load(&storage_path).unwrap();
+        let storage = match checkpoint {
+            None => Arc::new(
+                MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
+                    "storage",
+                    &storage_path,
+                    WALClient::new(wal),
+                    &None,
+                )
+                .unwrap(),
+            ),
+            Some(checkpoint) => Arc::new(
+                MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
+                    "storage",
+                    &storage_path,
+                    WALClient::new(wal),
+                    &Some(checkpoint),
+                )
+                .unwrap(),
+            ),
+        };
+
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
         let vertex = generator.create_relation_type(&mut snapshot).unwrap();
         assert_eq!(i, vertex.type_id_().as_u16());
         snapshot.commit().unwrap();
+
+        let check = Checkpoint::new(&storage_path).unwrap();
+        storage.checkpoint(&check).unwrap();
+        check.finish().unwrap();
+        checkpoint = Some(check);
     }
 
     for i in 0..create_till {
-        let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let wal = WAL::load(&storage_path).unwrap();
+        let storage = Arc::new(
+            MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
+                .unwrap(),
+        );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 

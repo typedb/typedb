@@ -8,8 +8,8 @@
 #![deny(elided_lifetimes_in_paths)]
 
 use logger::initialise_logging;
-use server::typedb;
 use resource::constants::server::ASCII_LOGO;
+use server::typedb;
 
 fn main() {
     print_ascii_logo(); // very important
@@ -22,4 +22,3 @@ fn main() {
 fn print_ascii_logo() {
     println!("{ASCII_LOGO}");
 }
-

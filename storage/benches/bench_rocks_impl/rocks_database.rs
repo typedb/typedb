@@ -4,11 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use speedb::{Options, WriteOptions};
 use non_transactional_rocks::NonTransactionalRocks;
+use speedb::{Options, WriteOptions};
 use storage::StorageOpenError;
-use crate::bench_rocks_impl::rocks_database::typedb_database::TypeDBDatabase;
-use crate::CLIArgs;
+
+use crate::{bench_rocks_impl::rocks_database::typedb_database::TypeDBDatabase, CLIArgs};
 
 fn database_options(args: &CLIArgs) -> Options {
     let mut opts = Options::default();
@@ -38,13 +38,13 @@ pub fn create_typedb<const N_DATABASES: usize>() -> Result<TypeDBDatabase<N_DATA
     TypeDBDatabase::<N_DATABASES>::setup()
 }
 
-
 mod non_transactional_rocks {
-    use test_utils::{create_tmp_dir, TempDir};
-    use speedb::{Options, DB, WriteBatch, WriteOptions};
     use std::iter::zip;
-    use crate::{RocksDatabase, RocksWriteBatch};
 
+    use speedb::{Options, WriteBatch, WriteOptions, DB};
+    use test_utils::{create_tmp_dir, TempDir};
+
+    use crate::{RocksDatabase, RocksWriteBatch};
 
     pub struct NonTransactionalRocks<const N_DATABASES: usize> {
         databases: [DB; crate::N_DATABASES],
@@ -55,9 +55,7 @@ mod non_transactional_rocks {
     impl<const N_DATABASES: usize> NonTransactionalRocks<N_DATABASES> {
         pub(super) fn setup(options: Options, write_options: WriteOptions) -> Result<Self, speedb::Error> {
             let path = create_tmp_dir();
-            let databases = core::array::from_fn(|i| {
-                DB::open(&options, path.join(format!("db_{i}"))).unwrap()
-            });
+            let databases = core::array::from_fn(|i| DB::open(&options, path.join(format!("db_{i}"))).unwrap());
 
             Ok(Self { path, databases, write_options })
         }
@@ -65,7 +63,7 @@ mod non_transactional_rocks {
 
     impl<const N_DATABASES: usize> RocksDatabase for NonTransactionalRocks<N_DATABASES> {
         fn open_batch(&self) -> impl RocksWriteBatch {
-            let write_batches = core::array::from_fn(|_| { WriteBatch::default() });
+            let write_batches = core::array::from_fn(|_| WriteBatch::default());
             NonTransactionalWriteBatch { database: self, write_batches }
         }
     }
@@ -93,47 +91,54 @@ mod non_transactional_rocks {
 
 mod typedb_database {
     use std::sync::Arc;
+
     use bytes::byte_array::ByteArray;
     use durability::wal::WAL;
-    use storage::key_value::StorageKeyArray;
-    use storage::{MVCCStorage, keyspace::KeyspaceSet, StorageOpenError};
-    use storage::keyspace::KeyspaceId;
-    use storage::snapshot::{CommittableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot};
+    use storage::{
+        durability_client::WALClient,
+        key_value::StorageKeyArray,
+        keyspace::{KeyspaceId, KeyspaceSet},
+        snapshot::{CommittableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
+        MVCCStorage, StorageOpenError,
+    };
     use test_utils::{create_tmp_dir, TempDir};
-    use crate::{KEY_SIZE, RocksDatabase, RocksWriteBatch};
+
+    use crate::{RocksDatabase, RocksWriteBatch, KEY_SIZE};
 
     pub struct TypeDBDatabase<const N_DATABASES: usize> {
-        storage : Arc<MVCCStorage<WAL>>,
+        storage: Arc<MVCCStorage<WALClient>>,
         pub path: TempDir,
     }
 
-    impl<const N_DATABASES:usize> TypeDBDatabase<N_DATABASES> {
+    impl<const N_DATABASES: usize> TypeDBDatabase<N_DATABASES> {
         pub(super) fn setup() -> Result<Self, StorageOpenError> {
             let name = "bench_rocks__typedb";
             let path = create_tmp_dir();
-            let storage = Arc::new(MVCCStorage::<WAL>::open::<BenchKeySpace>(name, &path)?);
+            let wal = WAL::create(&path).unwrap();
+            let storage =
+                Arc::new(MVCCStorage::<WALClient>::create::<BenchKeySpace>(name, &path, WALClient::new(wal))?);
             Ok(Self { path, storage })
         }
     }
 
-    impl<const N_DATABASES:usize> RocksDatabase for TypeDBDatabase<N_DATABASES> {
+    impl<const N_DATABASES: usize> RocksDatabase for TypeDBDatabase<N_DATABASES> {
         fn open_batch(&self) -> impl RocksWriteBatch {
             TypeDBSnapshot { snapshot: self.storage.clone().open_snapshot_write() }
         }
     }
 
     pub struct TypeDBSnapshot {
-        snapshot: WriteSnapshot<WAL>,
+        snapshot: WriteSnapshot<WALClient>,
     }
 
     impl TypeDBSnapshot {
-        const KEYSPACES: [BenchKeySpace; 1]  = [BenchKeySpace { id: 0 }];
-        const KEYSPACE_NAMES: [&'static str; 1]  = ["BenchKeySpace[1]"];
+        const KEYSPACES: [BenchKeySpace; 1] = [BenchKeySpace { id: 0 }];
+        const KEYSPACE_NAMES: [&'static str; 1] = ["BenchKeySpace[1]"];
     }
     impl RocksWriteBatch for TypeDBSnapshot {
         type CommitError = SnapshotError;
         fn put(&mut self, database_index: usize, key: [u8; KEY_SIZE]) {
-            debug_assert_eq!(0,database_index, "Not implemented for multiple databases");
+            debug_assert_eq!(0, database_index, "Not implemented for multiple databases");
             self.snapshot.put(StorageKeyArray::new(Self::KEYSPACES[0], ByteArray::inline(key, KEY_SIZE)))
         }
 
@@ -148,7 +153,7 @@ mod typedb_database {
     }
 
     impl KeyspaceSet for BenchKeySpace {
-        fn iter() -> impl Iterator<Item=Self> {
+        fn iter() -> impl Iterator<Item = Self> {
             TypeDBSnapshot::KEYSPACES.into_iter()
         }
 

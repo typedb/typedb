@@ -6,11 +6,11 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
 use crate::{
-    layout::prefix::{PrefixID, Prefix},
+    layout::prefix::{Prefix, PrefixID},
     value::{label::Label, string_bytes::StringBytes},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };

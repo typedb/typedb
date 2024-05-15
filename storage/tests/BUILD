@@ -17,7 +17,7 @@ rust_test(
         "//common/logger",
         "//common/primitive",
         "//storage",
-        "//storage/durability",
+        "//durability",
         "//resource",
         "//util/test:test_utils",
 
@@ -38,13 +38,35 @@ rust_test(
         "//common/logger",
         "//common/primitive",
         "//storage",
-        "//storage/durability",
+        "//durability",
         "//resource",
         "//util/test:test_utils",
         "@crates//:rand",
         "@crates//:tracing",
     ]
 )
+
+rust_test(
+    name = "test_recovery",
+    srcs = glob([
+        "test_recovery.rs",
+        "test_common/*.rs",
+    ]),
+    deps = [
+        "//common/bytes",
+        "//common/logger",
+        "//common/primitive",
+        "//storage",
+        "//durability",
+        "//resource",
+        "//util/test:test_utils",
+
+        "@crates//:itertools",
+        "@crates//:rand",
+        "@crates//:tracing",
+    ]
+)
+
 
 rust_test(
     name = "test_mvcc",
@@ -57,7 +79,7 @@ rust_test(
         "//common/logger",
         "//common/primitive",
         "//storage",
-        "//storage/durability",
+        "//durability",
         "//resource",
         "//util/test:test_utils",
         "@crates//:rand",
@@ -76,7 +98,7 @@ rust_test(
         "//common/logger",
         "//common/primitive",
         "//storage",
-        "//storage/durability",
+        "//durability",
         "//resource",
         "//util/test:test_utils",
 

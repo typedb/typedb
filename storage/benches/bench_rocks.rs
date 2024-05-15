@@ -6,15 +6,21 @@
 
 pub mod bench_rocks_impl;
 
-use std::collections::HashMap;
-use std::sync::RwLock;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::thread;
-use std::time::{Duration, Instant};
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        RwLock,
+    },
+    thread,
+    time::{Duration, Instant},
+};
+
 use itertools::Itertools;
 use rand::random;
 use rand_core::RngCore;
 use xoshiro::Xoshiro256Plus;
+
 use crate::bench_rocks_impl::rocks_database::{create_typedb, rocks};
 
 const N_DATABASES: usize = 1;
@@ -22,7 +28,7 @@ const N_DATABASES: usize = 1;
 const KEY_SIZE: usize = 40;
 const VALUE_SIZE: usize = 0;
 
-pub trait RocksDatabase : Sync + Send {
+pub trait RocksDatabase: Sync + Send {
     fn open_batch(&self) -> impl RocksWriteBatch;
 }
 
@@ -48,11 +54,15 @@ impl BenchmarkResult {
         //     println!("{:8}: {:12}", batch_id, time.as_nanos());
         // });
         let n_keys: usize = runner.n_batches * runner.batch_size;
-        let data_size_mb : f64 = ((n_keys * (KEY_SIZE + VALUE_SIZE)) as f64) / ((1024 * 1024) as f64) ;
+        let data_size_mb: f64 = ((n_keys * (KEY_SIZE + VALUE_SIZE)) as f64) / ((1024 * 1024) as f64);
         println!("Summary:");
-        println!("Total time: {:12} ms; total_keys: {:10}; data_size: {:8} MB\nrate: {:.2} keys/s = {:.2} MB/s ",
-                 self.total_time.as_secs_f64() * 1000.0, n_keys, data_size_mb,
-                 n_keys as f64 / self.total_time.as_secs_f64(), data_size_mb / self.total_time.as_secs_f64(),
+        println!(
+            "Total time: {:12} ms; total_keys: {:10}; data_size: {:8} MB\nrate: {:.2} keys/s = {:.2} MB/s ",
+            self.total_time.as_secs_f64() * 1000.0,
+            n_keys,
+            data_size_mb,
+            n_keys as f64 / self.total_time.as_secs_f64(),
+            data_size_mb / self.total_time.as_secs_f64(),
         );
     }
 }
@@ -64,10 +74,11 @@ pub struct BenchmarkRunner {
 }
 
 impl BenchmarkRunner {
-    const VALUE_EMPTY :[u8;0] = [];
+    const VALUE_EMPTY: [u8; 0] = [];
     fn run(&self, database_arc: &impl RocksDatabase) -> BenchmarkResult {
         debug_assert_eq!(1, N_DATABASES, "I've not bothered implementing multiple databases");
-        let batch_timings: Vec<RwLock<Duration>> = (0..self.n_batches).map(|_| RwLock::new(Duration::from_secs(0))).collect();
+        let batch_timings: Vec<RwLock<Duration>> =
+            (0..self.n_batches).map(|_| RwLock::new(Duration::from_secs(0))).collect();
         let batch_counter = AtomicUsize::new(0);
         let benchmark_start_instant = Instant::now();
         thread::scope(|s| {
@@ -76,34 +87,32 @@ impl BenchmarkRunner {
                     let mut in_rng = Xoshiro256Plus::from_seed_u64(random());
                     loop {
                         let batch_number = batch_counter.fetch_add(1, Ordering::Relaxed);
-                        if batch_number >= self.n_batches { break; }
+                        if batch_number >= self.n_batches {
+                            break;
+                        }
                         let mut write_batch = database_arc.open_batch();
                         let batch_start_instant = Instant::now();
                         for _ in 0..self.batch_size {
-                            let (k,_) = Self::generate_key_value(&mut in_rng);
+                            let (k, _) = Self::generate_key_value(&mut in_rng);
                             write_batch.put(0, k);
                         }
                         write_batch.commit().unwrap();
-                        let batch_stop =  batch_start_instant.elapsed();
+                        let batch_stop = batch_start_instant.elapsed();
                         let mut duration_for_batch = batch_timings.get(batch_number).unwrap().write().unwrap();
                         *duration_for_batch = batch_stop;
                     }
                 });
             }
-
         });
         assert!(batch_counter.load(Ordering::Relaxed) >= self.n_batches);
         let total_time = benchmark_start_instant.elapsed();
-        BenchmarkResult {
-            batch_timings : batch_timings.iter().map(|x| *x.read().unwrap()).collect(),
-            total_time
-        }
+        BenchmarkResult { batch_timings: batch_timings.iter().map(|x| *x.read().unwrap()).collect(), total_time }
     }
 
     fn generate_key_value(rng: &mut Xoshiro256Plus) -> ([u8; KEY_SIZE], [u8; VALUE_SIZE]) {
         // Rust's inbuilt ThreadRng is secure and slow. Xoshiro is significantly faster.
         // This ~(50 GB/s) is faster than generating 64 random bytes (~6 GB/s) or loading pre-generated (~18 GB/s).
-        let mut key : [u8; KEY_SIZE] = [0; KEY_SIZE];
+        let mut key: [u8; KEY_SIZE] = [0; KEY_SIZE];
         let mut z = rng.next_u64();
         key[0..8].copy_from_slice(&z.to_le_bytes());
         z = u64::rotate_left(z, 1); // Rotation beats the compression.
@@ -114,7 +123,7 @@ impl BenchmarkRunner {
         key[24..32].copy_from_slice(&z.to_le_bytes());
         z = u64::rotate_left(z, 1);
         key[32..40].copy_from_slice(&z.to_le_bytes());
-        (key , Self::VALUE_EMPTY)
+        (key, Self::VALUE_EMPTY)
     }
 }
 
@@ -127,19 +136,34 @@ struct CLIArgs {
     batch_size: usize,
 
     rocks_disable_wal: Option<bool>,
-    rocks_set_sync: Option<bool>,   // Needs WAL, fsync on write.
+    rocks_set_sync: Option<bool>,         // Needs WAL, fsync on write.
     rocks_write_buffer_mb: Option<usize>, // Size of memtable per column family. Useful for getting a no-op timing.
 }
 
 impl CLIArgs {
-    const VALID_ARGS : [&'static str; 7] = [
-        "database", "threads", "batches", "batch_size",
-        "rocks_disable_wal", "rocks_set_sync", "rocks_write_buffer_mb"
+    const VALID_ARGS: [&'static str; 7] = [
+        "database",
+        "threads",
+        "batches",
+        "batch_size",
+        "rocks_disable_wal",
+        "rocks_set_sync",
+        "rocks_write_buffer_mb",
     ];
-    fn get_arg_as<T: std::str::FromStr>(args:&HashMap<String, String>, key: &str, required: bool) -> Result<Option<T>, String> {
+    fn get_arg_as<T: std::str::FromStr>(
+        args: &HashMap<String, String>,
+        key: &str,
+        required: bool,
+    ) -> Result<Option<T>, String> {
         match args.get(&key.to_owned()) {
-            None => { if required { Err(format!("Pass {key} as arg")) } else { Ok(None) } },
-            Some(value) => Ok(Some(value.parse().map_err(|_| format!("Error parsing value for {key}"))?))
+            None => {
+                if required {
+                    Err(format!("Pass {key} as arg"))
+                } else {
+                    Ok(None)
+                }
+            }
+            Some(value) => Ok(Some(value.parse().map_err(|_| format!("Error parsing value for {key}"))?)),
         }
     }
     fn parse_args() -> Result<CLIArgs, String> {
@@ -147,7 +171,7 @@ impl CLIArgs {
             .filter_map(|arg| arg.split_once('=').map(|(s1, s2)| (s1.to_string(), s2.to_string())))
             .collect();
         let invalid_keys = arg_map.keys().filter(|key| !Self::VALID_ARGS.contains(&key.as_str())).join(",");
-        if ! invalid_keys.is_empty() {
+        if !invalid_keys.is_empty() {
             return Err(format!("Invalid keys: {invalid_keys}"));
         }
 
@@ -166,30 +190,32 @@ impl CLIArgs {
 
     fn for_report(&self) -> String {
         let mut s = "".to_string();
-        if let Some(val) = self.rocks_disable_wal { s.push_str(format!("rocks_disable_wal={val}").as_str()); }
-        if let Some(val) = self.rocks_set_sync { s.push_str(format!("rocks_set_sync={val}").as_str()); }
-        if let Some(val) = self.rocks_write_buffer_mb { s.push_str(format!("rocks_write_buffer_mb={val}").as_str()); }
+        if let Some(val) = self.rocks_disable_wal {
+            s.push_str(format!("rocks_disable_wal={val}").as_str());
+        }
+        if let Some(val) = self.rocks_set_sync {
+            s.push_str(format!("rocks_set_sync={val}").as_str());
+        }
+        if let Some(val) = self.rocks_write_buffer_mb {
+            s.push_str(format!("rocks_write_buffer_mb={val}").as_str());
+        }
         s
     }
 }
 
 fn run_for(args: &CLIArgs, database: &impl RocksDatabase) {
-    let benchmarker = BenchmarkRunner {
-        n_threads: args.n_threads,
-        n_batches: args.n_batches,
-        batch_size: args.batch_size,
-    };
+    let benchmarker =
+        BenchmarkRunner { n_threads: args.n_threads, n_batches: args.n_batches, batch_size: args.batch_size };
 
     let report = benchmarker.run(database);
     report.print_report(args, &benchmarker);
 }
-
 
 fn main() {
     let args = CLIArgs::parse_args().unwrap();
     match args.database.as_str() {
         "rocks" => run_for(&args, &rocks::<N_DATABASES>(&args).unwrap()),
         "typedb" => run_for(&args, &create_typedb::<N_DATABASES>().unwrap()),
-        _ => panic!("Unrecognised argument for database. Supported: rocks, typedb")
+        _ => panic!("Unrecognised argument for database. Supported: rocks, typedb"),
     }
 }

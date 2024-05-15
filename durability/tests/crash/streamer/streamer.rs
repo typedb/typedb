@@ -8,14 +8,14 @@
 #![deny(rust_2018_idioms)]
 
 use durability::DurabilityService;
-use durability_test_common::{open_wal, TestRecord};
+use durability_test_common::{create_wal, TestRecord};
 use itertools::Itertools;
 
 fn main() {
-    let wal = open_wal(std::env::args().nth(1).unwrap());
+    let wal = create_wal(std::env::args().nth(1).unwrap());
     let message = std::env::args().nth(2).unwrap().bytes().collect_vec();
     for i in 1.. {
-        let record = TestRecord { bytes: message.iter().copied().chain(format!(" {i}").bytes()).collect_vec() };
-        wal.sequenced_write(&record).unwrap();
+        let record = TestRecord::new(message.iter().copied().chain(format!(" {i}").bytes()).collect_vec());
+        wal.sequenced_write(TestRecord::RECORD_TYPE, record.bytes()).unwrap();
     }
 }

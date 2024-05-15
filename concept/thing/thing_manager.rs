@@ -74,7 +74,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     }
 
     pub fn get_entities<'this>(&'this self, snapshot: &'this Snapshot) -> EntityIterator<'_, 1> {
-        let prefix = ObjectVertex::build_prefix_prefix(Prefix::VertexEntity.prefix_id());
+        let prefix = ObjectVertex::build_prefix_prefix(Prefix::VertexEntity);
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexEntity.fixed_width_keys()));
         EntityIterator::new(snapshot_iterator)
@@ -92,7 +92,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     }
 
     pub fn get_relations<'this>(&'this self, snapshot: &'this Snapshot) -> RelationIterator<'_, 1> {
-        let prefix = ObjectVertex::build_prefix_prefix(Prefix::VertexRelation.prefix_id());
+        let prefix = ObjectVertex::build_prefix_prefix(Prefix::VertexRelation);
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexRelation.fixed_width_keys()));
         RelationIterator::new(snapshot_iterator)
@@ -436,20 +436,21 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         let mut any_deleted = true;
         while any_deleted {
             any_deleted = false;
-            for (key, _) in snapshot
-                .iterate_writes_range(KeyRange::new_within(
-                    ThingEdgeRolePlayer::prefix().into_byte_array_or_ref(),
+            for (key, write) in snapshot
+                .iterate_buffered_writes_range(KeyRange::new_within(
+                    ThingEdgeRolePlayer::prefix(),
                     ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
                 ))
-                .filter(|(_, write)| matches!(write, Write::Delete))
-                .collect::<Vec<_>>()
+                .into_range()
                 .into_iter()
             {
-                let edge = ThingEdgeRolePlayer::new(Bytes::Reference(key.byte_array().as_ref()));
-                let relation = Relation::new(edge.to());
-                if !relation.has_players(snapshot, self) {
-                    relation.delete(snapshot, self)?;
-                    any_deleted = true;
+                if matches!(write, Write::Delete) {
+                    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(key.byte_array().as_ref()));
+                    let relation = Relation::new(edge.to());
+                    if !relation.has_players(snapshot, self) {
+                        relation.delete(snapshot, self)?;
+                        any_deleted = true;
+                    }
                 }
             }
         }
@@ -479,23 +480,26 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             }
         }
 
-        for (key, _) in snapshot
-            .iterate_writes_range(KeyRange::new_within(
-                ThingEdgeHas::prefix().into_byte_array_or_ref(),
+        for (key, write) in snapshot
+            .iterate_buffered_writes_range(KeyRange::new_within(
+                ThingEdgeHas::prefix(),
                 ThingEdgeHas::FIXED_WIDTH_ENCODING,
             ))
+            .into_range()
+            .into_iter()
             .filter(|(_, write)| matches!(write, Write::Delete))
-            .collect_vec()
             .into_iter()
         {
-            let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
-            let attribute = Attribute::new(edge.to());
-            let is_independent = attribute
-                .type_()
-                .is_independent(snapshot, self.type_manager())
-                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-            if !is_independent && !attribute.has_owners(snapshot, self) {
-                attribute.delete(snapshot, self)?;
+            if matches!(write, Write::Delete) {
+                let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
+                let attribute = Attribute::new(edge.to());
+                let is_independent = attribute
+                    .type_()
+                    .is_independent(snapshot, self.type_manager())
+                    .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+                if !is_independent && !attribute.has_owners(snapshot, self) {
+                    attribute.delete(snapshot, self)?;
+                }
             }
         }
         Ok(())
@@ -506,7 +510,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
         for key in snapshot
             .iterate_writes_range(KeyRange::new_within(
-                Bytes::<0>::reference(ObjectVertex::build_prefix_prefix(Prefix::VertexEntity.prefix_id()).bytes()),
+                Bytes::<0>::reference(ObjectVertex::build_prefix_prefix(Prefix::VertexEntity).bytes()),
                 Prefix::VertexEntity.fixed_width_keys(),
             ))
             .filter_map(|(key, write)| match write {
@@ -527,10 +531,13 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         }
 
         let mut relations_validated = HashSet::new();
-        for (key, _) in snapshot.iterate_writes_range(KeyRange::new_within(
-            ThingEdgeRolePlayer::prefix().into_byte_array_or_ref(),
-            ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
-        )) {
+        for (key, _) in snapshot
+            .iterate_buffered_writes_range(KeyRange::new_within(
+                ThingEdgeRolePlayer::prefix(),
+                ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
+            ))
+            .into_range()
+        {
             let edge = ThingEdgeRolePlayer::new(Bytes::reference(key.bytes()));
             let relation = Relation::new(edge.from());
             if !relations_validated.contains(&relation) {

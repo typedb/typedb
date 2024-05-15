@@ -4,13 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
+use std::hash::Hash;
+
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKey;
+use storage::{
+    key_value::{StorageKey, StorageKeyReference},
+    keyspace::KeyspaceSet,
+};
 
 use crate::{
     graph::Typed,
-    layout::prefix::{PrefixID, Prefix},
+    layout::prefix::{Prefix, PrefixID},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
@@ -42,8 +47,10 @@ macro_rules! type_vertex_constructors {
             StorageKey::new_ref(TypeVertex::KEYSPACE, ByteReference::new(&BYTES))
         }
 
-        pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-            bytes.length() == TypeVertex::LENGTH && TypeVertex::new(bytes).prefix() == Prefix::$prefix
+        pub fn $is_name(key: StorageKeyReference<'_>) -> bool {
+            key.keyspace_id() == crate::EncodingKeyspace::Schema.id()
+                && key.length() == TypeVertex::LENGTH
+                && TypeVertex::new(Bytes::Reference(key.byte_ref())).prefix() == Prefix::$prefix
         }
     };
 }

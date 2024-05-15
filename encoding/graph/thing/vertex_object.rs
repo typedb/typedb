@@ -29,6 +29,7 @@ pub struct ObjectVertex<'a> {
 
 impl<'a> ObjectVertex<'a> {
     pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
+    pub const FIXED_WIDTH_ENCODING: bool = true;
 
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectID::LENGTH;
     pub(crate) const LENGTH_PREFIX_PREFIX: usize = PrefixID::LENGTH;
@@ -55,17 +56,22 @@ impl<'a> ObjectVertex<'a> {
         ObjectVertex { bytes: Bytes::Array(array) }
     }
 
-    pub fn build_prefix_prefix(prefix: PrefixID) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_PREFIX }> {
+    pub fn build_prefix_prefix(prefix: Prefix) -> StorageKey<'static, { ObjectVertex::LENGTH_PREFIX_PREFIX }> {
         let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_PREFIX);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
 
-    pub fn is_object_vertex(storage_key: StorageKeyReference<'_>) -> bool {
+    pub fn is_entity_vertex(storage_key: StorageKeyReference<'_>) -> bool {
         storage_key.keyspace_id() == Self::KEYSPACE.id()
             && storage_key.bytes().len() == Self::LENGTH
-            && (storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexEntity.prefix_id().bytes
-                || storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexRelation.prefix_id().bytes)
+            && storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexEntity.prefix_id().bytes
+    }
+
+    pub fn is_relation_vertex(storage_key: StorageKeyReference<'_>) -> bool {
+        storage_key.keyspace_id() == Self::KEYSPACE.id()
+            && storage_key.bytes().len() == Self::LENGTH
+            && storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexRelation.prefix_id().bytes
     }
 
     pub fn build_prefix_type(

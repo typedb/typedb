@@ -5,7 +5,7 @@
  */
 
 pub mod edge;
+pub mod property;
 pub mod vertex_attribute;
 pub mod vertex_generator;
 pub mod vertex_object;
-pub mod property;

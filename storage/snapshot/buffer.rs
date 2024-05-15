@@ -30,7 +30,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub(crate) struct OperationsBuffer {
+pub struct OperationsBuffer {
     write_buffers: [WriteBuffer; KEYSPACE_MAXIMUM_COUNT],
     locks: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, LockType>,
 }
@@ -78,6 +78,15 @@ impl OperationsBuffer {
     pub(crate) fn locks_empty(&self) -> bool {
         self.locks.is_empty()
     }
+
+    pub(crate) fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<{ BUFFER_KEY_INLINE }>, Write)> + '_ {
+        self.write_buffers().flat_map(|buffer| {
+            buffer
+                .iterate_range(KeyRange::new_unbounded(Bytes::Array(ByteArray::<BUFFER_KEY_INLINE>::empty())))
+                .into_range()
+                .into_iter()
+        })
+    }
 }
 
 impl<'a> IntoIterator for &'a OperationsBuffer {
@@ -97,7 +106,7 @@ impl<'a> IntoIterator for &'a OperationsBuffer {
 //          take references to existing writes without having to Clone them out every time... This
 //          might lead us to a RocksDB-like Buffer+Index structure
 #[derive(Debug)]
-pub(crate) struct WriteBuffer {
+pub struct WriteBuffer {
     pub(crate) keyspace_id: KeyspaceId,
     writes: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write>,
 }
@@ -152,10 +161,7 @@ impl WriteBuffer {
         self.writes.get(key)
     }
 
-    pub(crate) fn iterate_range<const INLINE: usize>(
-        &self,
-        range: KeyRange<Bytes<'_, INLINE>>,
-    ) -> BufferedPrefixIterator {
+    pub(crate) fn iterate_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> BufferRangeIterator {
         let (range_start, range_end, _) = range.into_raw();
         let exclusive_end_bytes = Self::compute_exclusive_end(range_start.as_reference(), &range_end);
         let end = if matches!(range_end, RangeEnd::Unbounded) {
@@ -163,7 +169,8 @@ impl WriteBuffer {
         } else {
             Bound::Excluded(exclusive_end_bytes.bytes())
         };
-        BufferedPrefixIterator::new(
+        // TODO: we shouldn't have to copy now that we use single-writer semantics
+        BufferRangeIterator::new(
             self.writes
                 .range::<[u8], _>((Bound::Included(range_start.bytes()), end))
                 .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
@@ -171,6 +178,7 @@ impl WriteBuffer {
         )
     }
 
+    // TODO: if the iterate_range becomes zero-copy, then we can eliminate this method
     pub(crate) fn any_in_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> bool {
         let (range_start, range_end, _) = range.into_raw();
         let exclusive_end_bytes = Self::compute_exclusive_end(range_start.as_reference(), &range_end);
@@ -220,15 +228,19 @@ impl WriteBuffer {
 }
 
 // TODO: this iterator takes a 'snapshot' of the time it was opened at - we could have it read without clones and have it 'live' if the buffers are immutable
-pub(crate) struct BufferedPrefixIterator {
+pub struct BufferRangeIterator {
     state: State<SnapshotError>,
     index: usize,
     range: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)>,
 }
 
-impl BufferedPrefixIterator {
+impl BufferRangeIterator {
     fn new(range: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)>) -> Self {
         Self { state: State::Init, index: 0, range }
+    }
+
+    pub(crate) fn empty() -> Self {
+        Self { state: State::Done, index: 0, range: Vec::new() }
     }
 
     pub fn into_range(self) -> Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)> {

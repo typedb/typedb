@@ -24,6 +24,7 @@ pub mod attribute;
 pub mod entity;
 pub mod object;
 pub mod relation;
+pub mod statistics;
 pub mod thing_manager;
 pub mod value;
 

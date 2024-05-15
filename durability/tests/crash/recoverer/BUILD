@@ -6,15 +6,15 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test")
 package(default_visibility = ["//visibility:public",])
 
+
 rust_binary(
-    name = "streamer",
-    crate_root = "streamer.rs",
-    srcs = ["streamer.rs"],
+    name = "recoverer",
+    crate_root = "recoverer.rs",
+    srcs = ["recoverer.rs"],
     deps = [
-        "//storage/durability:durability",
-        "//storage/durability/tests/common:durability_test_common",
+        "//durability:durability",
+        "//durability/tests/common:durability_test_common",
         "@crates//:bincode",
-        "@crates//:itertools",
     ],
 )
 

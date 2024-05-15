@@ -12,7 +12,6 @@ use std::{
 };
 
 use bytes::{byte_array::ByteArray, Bytes};
-use durability::DurabilityService;
 use encoding::{
     graph::type_::{
         edge::{
@@ -39,6 +38,7 @@ use encoding::{
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
+    durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
 };
@@ -73,7 +73,7 @@ pub struct TypeManager<Snapshot> {
 }
 
 impl<Snapshot> TypeManager<Snapshot> {
-    pub fn initialise_types<D: DurabilityService>(
+    pub fn initialise_types<D: DurabilityClient>(
         storage: Arc<MVCCStorage<D>>,
         vertex_generator: Arc<TypeVertexGenerator>,
     ) -> Result<(), ConceptWriteError> {

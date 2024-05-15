@@ -36,7 +36,6 @@ pub enum ValueType {
     /*
     Duration, // Naming: 'interval'?
      */
-
     String,
 }
 

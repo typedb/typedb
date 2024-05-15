@@ -5,6 +5,7 @@
  */
 
 use std::fmt::Formatter;
+
 use crate::value::label::Label;
 
 pub mod edge;

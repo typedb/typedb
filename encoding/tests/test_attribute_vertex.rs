@@ -19,14 +19,18 @@ use encoding::{
     AsBytes, EncodingKeyspace,
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, init_logging};
 
 #[test]
 fn generate_string_attribute_vertex() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>(Rc::from("storage"), &storage_path).unwrap());
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>(Rc::from("storage"), &storage_path, WALClient::new(wal))
+            .unwrap(),
+    );
 
     let mut snapshot = storage.clone().open_snapshot_write();
     let type_id = TypeID::build(0);
@@ -50,8 +54,9 @@ fn generate_string_attribute_vertex() {
     {
         let string = "Hello world, this is a long attribute string to be encoded.";
         let string_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
-        let vertex =
-            thing_vertex_generator.create_attribute_string(type_id, string_bytes.as_reference(), &mut snapshot).unwrap();
+        let vertex = thing_vertex_generator
+            .create_attribute_string(type_id, string_bytes.as_reference(), &mut snapshot)
+            .unwrap();
         let vertex_id = vertex.attribute_id().unwrap_string();
         assert!(!vertex_id.is_inline());
         assert_eq!(
@@ -73,8 +78,9 @@ fn generate_string_attribute_vertex() {
     {
         let string = "Hello world, this is a long attribute string to be encoded with a constant hash.";
         let string_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
-        let vertex =
-            thing_vertex_generator.create_attribute_string(type_id, string_bytes.as_reference(), &mut snapshot).unwrap();
+        let vertex = thing_vertex_generator
+            .create_attribute_string(type_id, string_bytes.as_reference(), &mut snapshot)
+            .unwrap();
 
         let vertex_id = vertex.attribute_id().unwrap_string();
         assert!(!vertex_id.is_inline());
@@ -114,7 +120,11 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     let storage_path = create_tmp_dir();
     let type_id = TypeID::build(0);
     {
-        let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let wal = WAL::create(&storage_path).unwrap();
+        let storage = Arc::new(
+            MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
+                .unwrap(),
+        );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
@@ -128,7 +138,11 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     }
 
     for i in 0..5 {
-        let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let wal = WAL::load(&storage_path).unwrap();
+        let storage = Arc::new(
+            MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
+                .unwrap(),
+        );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
         let vertex = generator.create_entity(type_id, &mut snapshot);
@@ -138,7 +152,11 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     }
 
     for i in 0..5 {
-        let storage = Arc::new(MVCCStorage::<WAL>::open::<EncodingKeyspace>("storage", &storage_path).unwrap());
+        let wal = WAL::load(&storage_path).unwrap();
+        let storage = Arc::new(
+            MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
+                .unwrap(),
+        );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
         let vertex = generator.create_relation(type_id, &mut snapshot);

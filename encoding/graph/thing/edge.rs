@@ -94,7 +94,7 @@ impl<'a> ThingEdgeHas<'a> {
             && key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes()
     }
 
-    fn from(&'a self) -> ObjectVertex<'a> {
+    pub fn from(&'a self) -> ObjectVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[Self::range_from()]);
         ObjectVertex::new(Bytes::Reference(reference))
     }
@@ -398,8 +398,13 @@ impl<'a> ThingEdgeRolePlayer<'a> {
     pub fn is_role_player(key: StorageKeyReference<'_>) -> bool {
         key.keyspace_id() == Self::KEYSPACE.id()
             && key.bytes().len() == Self::LENGTH
-            && (key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes()
-                || key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX_REVERSE.prefix_id().bytes())
+            && key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes()
+    }
+
+    pub fn is_role_player_reverse(key: StorageKeyReference<'_>) -> bool {
+        key.keyspace_id() == Self::KEYSPACE.id()
+            && key.bytes().len() == Self::LENGTH
+            && key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX_REVERSE.prefix_id().bytes()
     }
 
     pub fn from(&self) -> ObjectVertex<'_> {
@@ -497,7 +502,7 @@ impl<'a> ThingEdgeRelationIndex<'a> {
             && key.bytes()[Self::RANGE_PREFIX] == Self::PREFIX.prefix_id().bytes()
     }
 
-    pub(crate) fn from(&self) -> ObjectVertex<'_> {
+    pub fn from(&self) -> ObjectVertex<'_> {
         Self::read_from(self.bytes())
     }
 
@@ -506,7 +511,7 @@ impl<'a> ThingEdgeRelationIndex<'a> {
         ObjectVertex::new(Bytes::Reference(ByteReference::new(&reference.bytes()[Self::RANGE_FROM])))
     }
 
-    pub(crate) fn to(&self) -> ObjectVertex<'_> {
+    pub fn to(&self) -> ObjectVertex<'_> {
         // TODO: copy?
         Self::read_to(self.bytes())
     }
@@ -515,7 +520,7 @@ impl<'a> ThingEdgeRelationIndex<'a> {
         ObjectVertex::new(Bytes::Reference(ByteReference::new(&reference.bytes()[Self::RANGE_TO])))
     }
 
-    pub(crate) fn relation(&self) -> ObjectVertex<'_> {
+    pub fn relation(&self) -> ObjectVertex<'_> {
         Self::read_relation(self.bytes())
     }
 
@@ -523,7 +528,7 @@ impl<'a> ThingEdgeRelationIndex<'a> {
         ObjectVertex::new(Bytes::Reference(ByteReference::new(&reference.bytes()[Self::RANGE_RELATION])))
     }
 
-    pub(crate) fn from_role_id(&self) -> TypeID {
+    pub fn from_role_id(&self) -> TypeID {
         Self::read_from_role_id(self.bytes())
     }
 
@@ -531,7 +536,7 @@ impl<'a> ThingEdgeRelationIndex<'a> {
         TypeID::new(reference.bytes()[Self::RANGE_FROM_ROLE_TYPE_ID].try_into().unwrap())
     }
 
-    pub(crate) fn to_role_id(&self) -> TypeID {
+    pub fn to_role_id(&self) -> TypeID {
         Self::read_to_role_id(self.bytes())
     }
 

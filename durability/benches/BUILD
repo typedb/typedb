@@ -3,24 +3,27 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_test", "rust_binary")
 package(default_visibility = ["//visibility:public",])
 
-
-rust_binary(
-    name = "recoverer",
-    crate_root = "recoverer.rs",
-    srcs = ["recoverer.rs"],
+# bazel test --compilation_mode=opt //durability/benches:throughput --test_arg=--bench --test_output=streamed
+rust_test(
+    name = "throughput",
+    srcs = ["throughput.rs"],
     deps = [
-        "//storage/durability:durability",
-        "//storage/durability/tests/common:durability_test_common",
+        "//durability:durability",
+
         "@crates//:bincode",
+        "@crates//:criterion",
+        "@crates//:itertools",
+        "@crates//:tempdir",
     ],
+    use_libtest_harness = False,
 )
 
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
-    exclude = glob(["Cargo.*"]),
     license_type = "mpl-header",
 )
+

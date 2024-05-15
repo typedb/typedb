@@ -15,7 +15,7 @@ rust_test(
         "//common/logger",
         "//database",
         "//encoding",
-        "//storage/durability",
+        "//storage",
         "//util/test:test_utils",
 
         "@crates//:speedb",

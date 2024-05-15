@@ -19,10 +19,7 @@ use std::{
     },
 };
 
-use durability::{
-    DurabilityError, DurabilityRecord, DurabilityRecordType, DurabilityService, SequenceNumber,
-    SequencedDurabilityRecord, UnsequencedDurabilityRecord,
-};
+use durability::DurabilityRecordType;
 use logger::result::ResultExt;
 use primitive::maybe_owns::MaybeOwns;
 use project::{read_guard_project, ReadGuard, RwLockReadGuardProject};
@@ -30,6 +27,11 @@ use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    durability_client::{
+        DurabilityClient, DurabilityClientError, DurabilityRecord, SequencedDurabilityRecord,
+        UnsequencedDurabilityRecord,
+    },
+    sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, lock::LockType, write::Write},
     write_batches::WriteBatches,
 };
@@ -92,12 +94,12 @@ impl IsolationManager {
         &self,
         sequence_number: SequenceNumber,
         commit_record: CommitRecord,
-        durability_service: &impl DurabilityService,
-    ) -> Result<ValidatedCommit, DurabilityError> {
+        durability_client: &impl DurabilityClient,
+    ) -> Result<ValidatedCommit, DurabilityClientError> {
         let window = self.timeline.get_or_create_window(sequence_number);
         window.insert_pending(sequence_number, commit_record);
         let CommitStatus::Pending(commit_record) = window.get_status(sequence_number) else { unreachable!() };
-        let isolation_conflict = self.validate_all_concurrent(sequence_number, &commit_record, durability_service)?;
+        let isolation_conflict = self.validate_all_concurrent(sequence_number, &commit_record, durability_client)?;
         if isolation_conflict.is_none() {
             window.set_validated(sequence_number);
             // We can't increment watermark here till the status is "applied"
@@ -119,8 +121,8 @@ impl IsolationManager {
         &self,
         commit_sequence_number: SequenceNumber,
         commit_record: &CommitRecord,
-        durability_service: &impl DurabilityService,
-    ) -> Result<Option<IsolationConflict>, DurabilityError> {
+        durability_client: &impl DurabilityClient,
+    ) -> Result<Option<IsolationConflict>, DurabilityClientError> {
         // TODO: decide if we should block until all predecessors finish, allow out of order (non-Calvin model/traditional model)
         //       We could also validate against all predecessors even if they are validating and fail eagerly.
         // TODO: Should we validate from the timeline before going to disk?
@@ -130,7 +132,7 @@ impl IsolationManager {
             self.timeline.collect_concurrent_windows(commit_record.open_sequence_number, commit_sequence_number);
         if commit_record.open_sequence_number().next() <= first_sequence_number_in_memory {
             if let Some(conflict) =
-                self.validate_concurrent_from_disk(commit_record, first_sequence_number_in_memory, durability_service)?
+                self.validate_concurrent_from_disk(commit_record, first_sequence_number_in_memory, durability_client)?
             {
                 return Ok(Some(conflict));
             }
@@ -148,10 +150,10 @@ impl IsolationManager {
         &self,
         commit_record: &CommitRecord,
         stop_sequence_number: SequenceNumber,
-        durability_service: &impl DurabilityService,
-    ) -> Result<Option<IsolationConflict>, DurabilityError> {
+        durability_client: &impl DurabilityClient,
+    ) -> Result<Option<IsolationConflict>, DurabilityClientError> {
         for commit_status_result in Self::iterate_commit_status_from_disk(
-            durability_service,
+            durability_client,
             commit_record.open_sequence_number.next(),
             stop_sequence_number,
         )? {
@@ -199,19 +201,21 @@ impl IsolationManager {
     }
 
     pub(crate) fn iterate_commit_status_from_disk(
-        durability_service: &impl DurabilityService,
+        durability_client: &impl DurabilityClient,
         start_sequence_number: SequenceNumber,
         stop_sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item = Result<(SequenceNumber, CommitStatus<'_>), DurabilityError>>, DurabilityError>
-    {
+    ) -> Result<
+        impl Iterator<Item = Result<(SequenceNumber, CommitStatus<'_>), DurabilityClientError>>,
+        DurabilityClientError,
+    > {
         let mut is_committed = HashMap::new();
-        for record in durability_service.iter_unsequenced_type_from::<StatusRecord>(start_sequence_number)? {
+        for record in durability_client.iter_unsequenced_type_from::<StatusRecord>(start_sequence_number)? {
             let record = record?;
             // We can't stop early because status records may be out-of-order
             is_committed.insert(record.commit_record_sequence_number(), record.was_committed());
         }
 
-        Ok(durability_service.iter_sequenced_type_from::<CommitRecord>(start_sequence_number)?.map_while(
+        Ok(durability_client.iter_sequenced_type_from::<CommitRecord>(start_sequence_number)?.map_while(
             move |result| match result {
                 Ok((commit_sequence_number, commit_record)) => {
                     if commit_sequence_number >= stop_sequence_number {
@@ -435,7 +439,8 @@ impl Timeline {
     ) -> (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, SequenceNumber) {
         let windows = &*self.windows.read().unwrap_or_log();
         let first_concurrent_window_index = Self::resolve_window(windows, open_sequence_number.next()).unwrap_or(0);
-        let last_concurrent_window_index = Self::resolve_window(windows, commit_sequence_number.previous()).unwrap_or(0);
+        let last_concurrent_window_index =
+            Self::resolve_window(windows, commit_sequence_number.previous()).unwrap_or(0);
         let mut concurrent_windows: Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> = Vec::new();
         (first_concurrent_window_index..=last_concurrent_window_index).for_each(|window_index| {
             concurrent_windows.push(windows.get(window_index).unwrap().clone());
@@ -637,11 +642,19 @@ impl SlotMarker {
     }
 }
 
+// TODO: move out of isolation manager
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct CommitRecord {
+pub struct CommitRecord {
     // TODO: this could read-through to the WAL if we have to save memory?
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
+    commit_type: CommitType,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+pub enum CommitType {
+    Data,
+    Schema,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -651,11 +664,15 @@ pub(crate) struct StatusRecord {
 }
 
 impl CommitRecord {
-    pub(crate) fn new(operations: OperationsBuffer, open_sequence_number: SequenceNumber) -> CommitRecord {
-        CommitRecord { operations, open_sequence_number }
+    pub(crate) fn new(
+        operations: OperationsBuffer,
+        open_sequence_number: SequenceNumber,
+        commit_type: CommitType,
+    ) -> CommitRecord {
+        CommitRecord { operations, open_sequence_number, commit_type }
     }
 
-    pub(crate) fn operations(&self) -> &OperationsBuffer {
+    pub fn operations(&self) -> &OperationsBuffer {
         &self.operations
     }
 
@@ -663,7 +680,15 @@ impl CommitRecord {
         &mut self.operations
     }
 
-    pub(crate) fn open_sequence_number(&self) -> SequenceNumber {
+    pub fn into_operations(self) -> OperationsBuffer {
+        self.operations
+    }
+
+    pub fn commit_type(&self) -> CommitType {
+        self.commit_type
+    }
+
+    pub fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
     }
 
@@ -794,7 +819,6 @@ impl StatusRecord {
 
 impl DurabilityRecord for StatusRecord {
     const RECORD_TYPE: DurabilityRecordType = 1;
-
     const RECORD_NAME: &'static str = "status_record";
 
     fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
@@ -829,8 +853,6 @@ mod tests {
         thread::{self, JoinHandle},
     };
 
-    use durability::SequenceNumber;
-
     use crate::keyspace::{KeyspaceId, KeyspaceSet};
 
     macro_rules! test_keyspace_set {
@@ -854,9 +876,11 @@ mod tests {
     }
 
     use crate::{
-        isolation_manager::{CommitRecord, CommitStatus, Timeline, TIMELINE_WINDOW_SIZE},
+        isolation_manager::{CommitRecord, CommitStatus, CommitType, Timeline, TIMELINE_WINDOW_SIZE},
+        sequence_number::SequenceNumber,
         snapshot::buffer::OperationsBuffer,
     };
+
     struct MockTransaction {
         read_sequence_number: SequenceNumber,
         commit_sequence_number: SequenceNumber,
@@ -916,7 +940,7 @@ mod tests {
     }
 
     fn _record(read_sequence_number: SequenceNumber) -> CommitRecord {
-        CommitRecord::new(OperationsBuffer::new(), read_sequence_number)
+        CommitRecord::new(OperationsBuffer::new(), read_sequence_number, CommitType::Data)
     }
 
     #[test]

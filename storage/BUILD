@@ -8,8 +8,10 @@ package(default_visibility = [
     "//concept:__subpackages__",
     "//database:__subpackages__",
     "//encoding:__subpackages__",
+    "//server:__subpackages__",
     "//storage/tests:__subpackages__",
     "//storage/benches:__subpackages__",
+    "//tests:__subpackages__",
 ])
 
 rust_library(
@@ -19,17 +21,19 @@ rust_library(
         "*.rs",
         "keyspace/*.rs",
         "snapshot/*.rs",
+        "recovery/*.rs",
     ]),
     deps = [
-        "//storage/durability",
         "//common/logger",
         "//common/primitive",
         "//common/bytes",
         "//common/iterator",
+        "//durability",
         "//resource",
         "//util/project",
 
         "@crates//:bincode",
+        "@crates//:lz4",
         "@crates//:chrono",
         "@crates//:itertools",
         "@crates//:same-file",

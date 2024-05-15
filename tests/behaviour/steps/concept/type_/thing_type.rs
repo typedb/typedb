@@ -161,8 +161,10 @@ pub async fn type_annotations_contain(
 ) {
     with_read_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
-            let actual_contains =
-                type_.get_annotations(&tx.snapshot, &tx.type_manager).unwrap().contains(&annotation.into_typedb().into());
+            let actual_contains = type_
+                .get_annotations(&tx.snapshot, &tx.type_manager)
+                .unwrap()
+                .contains(&annotation.into_typedb().into());
             assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
         });
     });

@@ -11,8 +11,8 @@ rust_test(
     crate_root = "basic.rs",
     srcs =  ["basic.rs"],
     deps = [
-        "//storage/durability:durability",
-        "//storage/durability/tests/common:durability_test_common",
+        "//durability:durability",
+        "//durability/tests/common:durability_test_common",
 
         "@crates//:bincode",
         "@crates//:tempdir",
@@ -24,15 +24,15 @@ rust_test(
     crate_root = "crash.rs",
     srcs = ["crash.rs"],
     env = {
-        "TEST_WAL_STREAMER": "$(rootpath //storage/durability/tests/crash/streamer:streamer)",
-        "TEST_WAL_RECOVERER": "$(rootpath //storage/durability/tests/crash/recoverer:recoverer)",
+        "TEST_WAL_STREAMER": "$(rootpath //durability/tests/crash/streamer:streamer)",
+        "TEST_WAL_RECOVERER": "$(rootpath //durability/tests/crash/recoverer:recoverer)",
     },
     data = [
-        "//storage/durability/tests/crash/streamer:streamer",
-        "//storage/durability/tests/crash/recoverer:recoverer"
+        "//durability/tests/crash/streamer:streamer",
+        "//durability/tests/crash/recoverer:recoverer"
     ],
     deps = [
-        "//storage/durability/tests/common:durability_test_common",
+        "//durability/tests/common:durability_test_common",
         "@crates//:tempdir"
     ],
     use_libtest_harness = False,
