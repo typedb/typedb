@@ -8,6 +8,7 @@ use database::transaction::{TransactionRead, TransactionSchema, TransactionWrite
 use macro_rules_attribute::apply;
 
 use crate::{
+    assert::assert_matches,
     generic_step,
     params::{Boolean, MayError},
     ActiveTransaction, Context,
@@ -37,9 +38,9 @@ pub async fn transaction_is_open(context: &mut Context, is_open: Boolean) {
 #[step(expr = "transaction has type: {word}")]
 pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
     match tx_type.as_str() {
-        "read" => assert!(matches!(context.transaction().unwrap(), ActiveTransaction::Read(_))),
-        "write" => assert!(matches!(context.transaction().unwrap(), ActiveTransaction::Write(_))),
-        "schema" => assert!(matches!(context.transaction().unwrap(), ActiveTransaction::Schema(_))),
+        "read" => assert_matches!(context.transaction().unwrap(), ActiveTransaction::Read(_)),
+        "write" => assert_matches!(context.transaction().unwrap(), ActiveTransaction::Write(_)),
+        "schema" => assert_matches!(context.transaction().unwrap(), ActiveTransaction::Schema(_)),
         _ => unreachable!("Unrecognised transaction type"),
     };
 }
