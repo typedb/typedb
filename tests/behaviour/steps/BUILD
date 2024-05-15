@@ -16,6 +16,7 @@ rust_library(
         "//database:database",
         "//encoding:encoding",
         "//server:server",
+        "//storage:storage",
         "//durability:durability",
         "//util/test:test_utils",
 

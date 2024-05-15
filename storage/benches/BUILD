@@ -48,7 +48,7 @@ rust_test(
 
         "//common/bytes",
         "//database:database",
-        "//storage/durability:durability",
+        "//durability",
         "//storage:storage",
         "//util/test:test_utils",
     ],

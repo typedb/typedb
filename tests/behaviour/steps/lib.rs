@@ -12,7 +12,7 @@ use std::{collections::HashMap, sync::Arc};
 use ::concept::thing::attribute::Attribute;
 use cucumber::{StatsWriter, World};
 use database::Database;
-use durability::wal::WAL;
+use storage::durability_client::WALClient;
 use server::typedb;
 use test_utils::TempDir;
 
@@ -92,7 +92,7 @@ impl Context {
         self.server.as_mut()
     }
 
-    pub fn databases(&self) -> &HashMap<String, Arc<Database<LocalDurabilityClient>>> {
+    pub fn databases(&self) -> &HashMap<String, Arc<Database<WALClient>>> {
         self.server().unwrap().databases()
     }
 

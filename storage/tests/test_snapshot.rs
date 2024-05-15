@@ -9,15 +9,12 @@
 use bytes::byte_array::ByteArray;
 use logger::result::ResultExt;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
-use storage::{
-    key_value::{StorageKey, StorageKeyArray},
-    keyspace::KeyspaceSet,
-    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot}
-    ,
-};
+use storage::{key_value::{StorageKey, StorageKeyArray}, keyspace::KeyspaceSet, snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot}};
 use storage::key_range::KeyRange;
 use test_utils::{create_tmp_dir, init_logging};
+
 use crate::test_common::create_storage;
+
 use self::TestKeyspaceSet::Keyspace;
 
 mod test_common;
@@ -158,7 +155,7 @@ fn snapshot_read_through() {
 fn snapshot_read_buffered_delete_of_persisted_key() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let storage = Arc::new(MVCCStorage::<WAL>::open::<TestKeyspaceSet>("storage", &storage_path).unwrap());
+    let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0]));
     let key_2 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x1]));

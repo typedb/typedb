@@ -97,13 +97,14 @@ mod typedb_database {
     use durability::wal::WAL;
     use storage::key_value::StorageKeyArray;
     use storage::{MVCCStorage, keyspace::KeyspaceSet, StorageOpenError};
+    use storage::durability_client::WALClient;
     use storage::keyspace::KeyspaceId;
     use storage::snapshot::{CommittableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot};
     use test_utils::{create_tmp_dir, TempDir};
     use crate::{KEY_SIZE, RocksDatabase, RocksWriteBatch};
 
     pub struct TypeDBDatabase<const N_DATABASES: usize> {
-        storage : Arc<MVCCStorage<WAL>>,
+        storage : Arc<MVCCStorage<WALClient>>,
         pub path: TempDir,
     }
 
@@ -111,7 +112,8 @@ mod typedb_database {
         pub(super) fn setup() -> Result<Self, StorageOpenError> {
             let name = "bench_rocks__typedb";
             let path = create_tmp_dir();
-            let storage = Arc::new(MVCCStorage::<WAL>::open::<BenchKeySpace>(name, &path)?);
+            let wal = WAL::create(&path).unwrap();
+            let storage = Arc::new(MVCCStorage::<WALClient>::create::<BenchKeySpace>(name, &path, WALClient::new(wal))?);
             Ok(Self { path, storage })
         }
     }
@@ -123,7 +125,7 @@ mod typedb_database {
     }
 
     pub struct TypeDBSnapshot {
-        snapshot: WriteSnapshot<WAL>,
+        snapshot: WriteSnapshot<WALClient>,
     }
 
     impl TypeDBSnapshot {

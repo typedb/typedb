@@ -42,7 +42,6 @@ use storage::{
     MVCCStorage,
 };
 use storage::durability_client::DurabilityClient;
-use storage::snapshot::WriteSnapshot;
 
 use super::annotation::AnnotationRegex;
 use crate::{
@@ -58,11 +57,11 @@ use crate::{
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
         serialise_annotation_cardinality, serialise_ordering,
-        type_cache::TypeCache,
         type_reader::TypeReader,
         IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::type_::type_cache::TypeCache;
 
 // TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
 pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;

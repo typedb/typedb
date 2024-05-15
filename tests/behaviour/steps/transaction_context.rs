@@ -6,12 +6,12 @@
 
 use std::fmt;
 
-use durability::wal::WAL;
+use storage::durability_client::WALClient;
 
 pub enum ActiveTransaction {
-    Read(database::transaction::TransactionRead<LocalDurabilityClient>),
-    Write(database::transaction::TransactionWrite<LocalDurabilityClient>),
-    Schema(database::transaction::TransactionSchema<LocalDurabilityClient>),
+    Read(database::transaction::TransactionRead<WALClient>),
+    Write(database::transaction::TransactionWrite<WALClient>),
+    Schema(database::transaction::TransactionSchema<WALClient>),
 }
 
 impl fmt::Debug for ActiveTransaction {

@@ -10,11 +10,11 @@ use std::{
     fmt,
     sync::Arc,
 };
-use durability::SequenceNumber;
 use encoding::{
     graph::Typed, value::{label::Label, value_type::ValueType}, Prefixed
 };
 use storage::{snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
+use storage::sequence_number::SequenceNumber;
 
 use crate::type_::{attribute_type::AttributeType, entity_type::EntityType, owns::{Owns, OwnsAnnotation}, plays::Plays, relates::Relates, relation_type::RelationType, role_type::RoleType, Ordering, TypeAPI, OwnerAPI, PlayerAPI};
 use crate::type_::type_cache::kind_cache::{AttributeTypeCache, EntityTypeCache, RelationTypeCache, RoleTypeCache, OwnsCache, PlaysCache, CommonTypeCache, OwnerPlayerCache};
