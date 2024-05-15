@@ -4,9 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{any::Any, borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
+use std::{borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{
@@ -46,7 +46,14 @@ use crate::{
         ObjectAPI, ThingAPI,
     },
     type_::{
-        attribute_type::{AttributeType, AttributeTypeAnnotation}, entity_type::EntityType, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI
+        annotation::AnnotationKey,
+        attribute_type::{AttributeType, AttributeTypeAnnotation},
+        entity_type::EntityType,
+        owns::OwnsAnnotation,
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::TypeManager,
+        ObjectTypeAPI, OwnerAPI, TypeAPI,
     },
     ConceptStatus,
 };
@@ -496,18 +503,42 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     fn thing_errors(&self, snapshot: &mut Snapshot) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
         let mut errors = Vec::new();
+
+        for key in snapshot
+            .iterate_writes_range(KeyRange::new_within(
+                Bytes::<0>::reference(ObjectVertex::build_prefix_prefix(Prefix::VertexEntity.prefix_id()).bytes()),
+                Prefix::VertexEntity.fixed_width_keys(),
+            ))
+            .filter_map(|(key, write)| match write {
+                Write::Insert { .. } => Some(key),
+                Write::Delete => None,
+                Write::Put { .. } => unreachable!("Encountered a Put for an entity"),
+            })
+        {
+            let entity = Entity::new(ObjectVertex::new(Bytes::reference(key.bytes())));
+            let entity_type = entity.type_();
+            for owns in &entity_type.get_owns(snapshot, self.type_manager())? {
+                if owns.get_annotations(snapshot, self.type_manager())?.contains(&OwnsAnnotation::Key(AnnotationKey))
+                    && entity.get_has_type(snapshot, self, owns.attribute())?.next().is_none()
+                {
+                    errors.push(ConceptWriteError::EntityKeyMissing {})
+                }
+            }
+        }
+
         let mut relations_validated = HashSet::new();
         for (key, _) in snapshot.iterate_writes_range(KeyRange::new_within(
             ThingEdgeRolePlayer::prefix().into_byte_array_or_ref(),
             ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
         )) {
-            let edge = ThingEdgeRolePlayer::new(Bytes::Reference(key.byte_array().as_ref()));
+            let edge = ThingEdgeRolePlayer::new(Bytes::reference(key.bytes()));
             let relation = Relation::new(edge.from());
             if !relations_validated.contains(&relation) {
                 errors.extend(relation.errors(snapshot, self)?);
                 relations_validated.insert(relation.into_owned());
             }
         }
+
         Ok(errors)
     }
 
@@ -610,7 +641,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         snapshot.delete(key)
     }
 
-    pub(crate) fn delete_attribute(&self, snapshot: &mut Snapshot, attribute: Attribute<'_>) -> Result<(), ConceptWriteError> {
+    pub(crate) fn delete_attribute(
+        &self,
+        snapshot: &mut Snapshot,
+        attribute: Attribute<'_>,
+    ) -> Result<(), ConceptWriteError> {
         let key = attribute.into_vertex().into_storage_key().into_owned_array();
         snapshot.delete(key);
         Ok(())
@@ -622,7 +657,12 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         Ok(())
     }
 
-    pub(crate) fn set_has<'a>(&self, snapshot: &mut Snapshot, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
+    pub(crate) fn set_has<'a>(
+        &self,
+        snapshot: &mut Snapshot,
+        owner: impl ObjectAPI<'a>,
+        attribute: Attribute<'_>,
+    ) -> Result<(), ConceptWriteError> {
         // TODO: handle duplicates
         // note: we always re-put the attribute. TODO: optimise knowing when the attribute pre-exists.
         snapshot.put(attribute.vertex().as_storage_key().into_owned_array());
@@ -631,9 +671,10 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         snapshot.put_val(has.into_storage_key().into_owned_array(), encode_value_u64(1));
         let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.into_vertex());
         snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), encode_value_u64(1));
+        Ok(())
     }
 
-    pub(crate) fn delete_has<'a>(&self, snapshot: &mut Snapshot, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
+    pub(crate) fn unset_has<'a>(&self, snapshot: &mut Snapshot, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
         owner.set_modified(snapshot, self);
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
         snapshot.delete(has.into_storage_key().into_owned_array());

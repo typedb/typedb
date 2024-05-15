@@ -26,10 +26,14 @@ pub(crate) enum MayError {
 }
 
 impl MayError {
-    pub fn check<T, E>(&self, res: &Result<T, E>) {
+    pub fn check<T: fmt::Debug, E: fmt::Debug>(&self, res: &Result<T, E>) {
         match self {
-            MayError::False => assert!(res.is_ok()),
-            MayError::True => assert!(res.is_err()),
+            MayError::False => {
+                res.as_ref().unwrap();
+            }
+            MayError::True => {
+                res.as_ref().unwrap_err();
+            }
         };
     }
 }

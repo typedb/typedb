@@ -100,8 +100,7 @@ impl<'a> Relation<'a> {
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         match ordering {
             Ordering::Unordered => {
-                thing_manager.set_has(snapshot, self.as_reference(), attribute.as_reference());
-                Ok(())
+                thing_manager.set_has(snapshot, self.as_reference(), attribute.as_reference())
             }
             Ordering::Ordered => {
                 todo!("throw a good error")
@@ -121,7 +120,7 @@ impl<'a> Relation<'a> {
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         match ordering {
             Ordering::Unordered => {
-                thing_manager.delete_has(snapshot, self.as_reference(), attribute);
+                thing_manager.unset_has(snapshot, self.as_reference(), attribute);
                 Ok(())
             }
             Ordering::Ordered => {
@@ -359,7 +358,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         let mut has_attr_type_deleted = HashSet::new();
         for attr in has {
             has_attr_type_deleted.add(attr.type_());
-            thing_manager.delete_has(snapshot, self.as_reference(), attr);
+            thing_manager.unset_has(snapshot, self.as_reference(), attr);
         }
 
         for owns in self.type_().get_owns(snapshot, thing_manager.type_manager())

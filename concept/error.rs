@@ -68,6 +68,7 @@ pub enum ConceptWriteError {
         regex: String,
         value: String,
     },
+    EntityKeyMissing {},
 }
 
 impl fmt::Display for ConceptWriteError {
@@ -87,6 +88,7 @@ impl Error for ConceptWriteError {
             Self::RelationRoleCardinality { .. } => None,
             Self::RootModification { .. } => None,
             Self::StringAttributeRegex { .. } => None,
+            Self::EntityKeyMissing { .. } => None,
         }
     }
 }
