@@ -114,7 +114,7 @@ pub async fn get_role_exists(
 ) {
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
-        let role_opt = relation.get_role(&tx.snapshot, &tx.type_manager, &role_label.to_typedb().name.as_str()).unwrap();
+        let role_opt = tx.type_manager.resolve_relates(&tx.snapshot, relation.clone(), &role_label.to_typedb().name.as_str()).unwrap();
         exists.check(role_opt.is_some());
     });
 }
@@ -129,7 +129,7 @@ pub async fn get_role_label(
 ) {
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
-        let role = relation.get_role(&tx.snapshot, &tx.type_manager, &role_label.to_typedb().name.as_str()).unwrap().unwrap();
+        let role = tx.type_manager.resolve_relates(&tx.snapshot, relation.clone(), &role_label.to_typedb().name.as_str()).unwrap().unwrap().role();
         assert_eq!(expected_label.to_typedb().scoped_name.as_str(), role.get_label(&tx.snapshot, &tx.type_manager).unwrap().name.as_str());
     });
 }
@@ -145,7 +145,7 @@ pub async fn delete_role(
 ) {
     with_schema_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
-        let role = relation.get_role(&tx.snapshot, &tx.type_manager, &role_label.to_typedb().name.as_str()).unwrap().unwrap();
+        let role = tx.type_manager.resolve_relates(&tx.snapshot, relation.clone(), &role_label.to_typedb().name.as_str()).unwrap().unwrap().role();
         let res = role.delete(&mut tx.snapshot, &tx.type_manager);
         may_error.check(&res);
     });

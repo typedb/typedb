@@ -224,8 +224,8 @@ fn role_usage() {
         let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label, false).unwrap();
         friendship_type.create_relates(&mut snapshot, &type_manager, friend_name, Ordering::Unordered).unwrap();
         let relates = friendship_type.get_relates_role(&snapshot, &type_manager, friend_name).unwrap().unwrap();
-        let role_type = friendship_type.get_role(&snapshot, &type_manager, friend_name).unwrap().unwrap();
-        debug_assert_eq!(relates.relation(), friendship_type);
+        let role_type = type_manager.resolve_relates(&snapshot, friendship_type.clone(), friend_name).unwrap().unwrap().role();
+        debug_assert_eq!(relates.relation(), friendship_type.clone());
         debug_assert_eq!(relates.role(), role_type);
 
         // --- person plays friendship:friend ---
@@ -248,8 +248,8 @@ fn role_usage() {
         let relates = friendship_type.get_relates_role(&snapshot, &type_manager, friend_name).unwrap();
         debug_assert!(relates.is_some());
         let relates = relates.unwrap();
-        let role_type = friendship_type.get_role(&snapshot, &type_manager, friend_name).unwrap().unwrap();
-        debug_assert_eq!(relates.relation(), friendship_type);
+        let role_type = type_manager.resolve_relates(&snapshot, friendship_type.clone(), friend_name).unwrap().unwrap().role();
+        debug_assert_eq!(relates.relation(), friendship_type.clone());
         debug_assert_eq!(relates.role(), role_type);
 
         // --- person plays friendship:friend ---
