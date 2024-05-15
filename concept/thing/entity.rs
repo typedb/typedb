@@ -117,7 +117,7 @@ impl<'a> Entity<'a> {
         }
     }
 
-    pub fn delete_has_unordered<Snapshot: WritableSnapshot>(
+    pub fn unset_has_unordered<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager<Snapshot>,
@@ -173,7 +173,7 @@ impl<'a> Entity<'a> {
         }
     }
 
-    pub fn delete_has_ordered<Snapshot: WritableSnapshot>(
+    pub fn unset_has_ordered<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager<Snapshot>,

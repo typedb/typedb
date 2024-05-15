@@ -286,7 +286,7 @@ fn attribute_cleanup_on_concurrent_detach() {
             })
             .next()
             .unwrap();
-        bob.delete_has_unordered(&mut snapshot_1, &thing_manager, age).unwrap();
+        bob.unset_has_unordered(&mut snapshot_1, &thing_manager, age).unwrap();
 
         let finalise_result = thing_manager.finalise(&mut snapshot_1);
         assert!(finalise_result.is_ok());
@@ -326,7 +326,7 @@ fn attribute_cleanup_on_concurrent_detach() {
             })
             .next()
             .unwrap();
-        alice.delete_has_unordered(&mut snapshot_2, &thing_manager, age).unwrap();
+        alice.unset_has_unordered(&mut snapshot_2, &thing_manager, age).unwrap();
 
         let finalise_result = thing_manager.finalise(&mut snapshot_2);
         assert!(finalise_result.is_ok());

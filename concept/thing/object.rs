@@ -99,7 +99,7 @@ impl<'a> Object<'a> {
         }
     }
 
-    pub(crate) fn into_owned(self) -> Object<'static> {
+    pub fn into_owned(self) -> Object<'static> {
         match self {
             Object::Entity(entity) => Object::Entity(entity.into_owned()),
             Object::Relation(relation) => Object::Relation(relation.into_owned()),

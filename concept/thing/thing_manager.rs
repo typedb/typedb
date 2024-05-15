@@ -610,7 +610,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         snapshot.delete(key)
     }
 
-    pub fn delete_attribute(&self, snapshot: &mut Snapshot, attribute: Attribute<'_>) -> Result<(), ConceptWriteError> {
+    pub(crate) fn delete_attribute(&self, snapshot: &mut Snapshot, attribute: Attribute<'_>) -> Result<(), ConceptWriteError> {
         let key = attribute.into_vertex().into_storage_key().into_owned_array();
         snapshot.delete(key);
         Ok(())

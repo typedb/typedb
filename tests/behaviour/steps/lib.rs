@@ -36,8 +36,12 @@ mod thing_util {
     }
 
     impl EntityWithKey {
-        pub fn new(entity: Entity<'static>, key: Attribute<'static>) -> Self {
+        pub fn new_with_key(entity: Entity<'static>, key: Attribute<'static>) -> Self {
             Self { entity, key: Some(key) }
+        }
+
+        pub fn new(entity: Entity<'static>) -> Self {
+            Self { entity, key: None }
         }
     }
 }

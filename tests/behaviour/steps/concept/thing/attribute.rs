@@ -6,7 +6,7 @@
 
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::attribute::Attribute,
+    thing::{attribute::Attribute, ThingAPI},
 };
 use macro_rules_attribute::apply;
 
@@ -127,7 +127,7 @@ async fn attribute_get_instance_with_value(
 #[step(expr = r"delete attribute: {var}")]
 async fn delete_attribute(context: &mut Context, var: params::Var) {
     with_write_tx!(context, |tx| {
-        tx.thing_manager.delete_attribute(&mut tx.snapshot, context.attributes[&var.name].clone().unwrap()).unwrap()
+        context.attributes[&var.name].clone().unwrap().delete(&mut tx.snapshot, &tx.thing_manager).unwrap()
     })
 }
 
@@ -152,10 +152,10 @@ async fn attribute_instances_contain(
     var: params::Var,
 ) {
     let attribute = context.attributes.get(&var.name).expect("no variable {} in context.").as_ref().unwrap();
-    with_read_tx!(context, |tx| {
+    let actuals = with_read_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
-        let actuals = tx.thing_manager.get_attributes_in(&tx.snapshot, attribute_type).unwrap().collect_cloned();
-        containment.check(std::slice::from_ref(attribute), &actuals);
+        tx.thing_manager.get_attributes_in(&tx.snapshot, attribute_type).unwrap().collect_cloned()
     });
+    containment.check(std::slice::from_ref(attribute), &actuals);
 }
