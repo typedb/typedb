@@ -20,18 +20,16 @@ use encoding::{
         Typed,
     },
     layout::prefix::Prefix,
-    value::label::Label,
-    value::value_type::ValueType
+    value::{label::Label, value_type::ValueType},
 };
-
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::type_::{
     attribute_type::AttributeType,
     entity_type::EntityType,
     object_type::ObjectType,
-    plays::Plays,
     owns::{Owns, OwnsAnnotation},
+    plays::Plays,
     relates::Relates,
     relation_type::RelationType,
     role_type::RoleType,
@@ -79,7 +77,7 @@ pub(crate) struct OwnsCache {
 
 #[derive(Debug)]
 pub(crate) struct PlaysCache {
-    pub(super) overrides: Option<Plays<'static>>
+    pub(super) overrides: Option<Plays<'static>>,
 }
 
 #[derive(Debug)]
@@ -213,7 +211,7 @@ impl OwnsCache {
                     owns.clone(),
                     OwnsCache {
                         ordering: TypeReader::get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
-                        overrides : TypeReader::get_owns_override(snapshot, owns.clone()).unwrap(),
+                        overrides: TypeReader::get_owns_override(snapshot, owns.clone()).unwrap(),
                         annotations_declared: TypeReader::get_type_edge_annotations(snapshot, owns.clone())
                             .unwrap()
                             .into_iter()
@@ -240,19 +238,17 @@ impl PlaysCache {
                 let plays = Plays::new(player, role);
                 (
                     plays.clone(),
-                    PlaysCache {
-                        overrides : TypeReader::get_plays_override(snapshot, plays.clone()).unwrap(),
-                    },
+                    PlaysCache { overrides: TypeReader::get_plays_override(snapshot, plays.clone()).unwrap() },
                 )
             })
             .unwrap()
     }
 }
 
-impl<T: KindAPI<'static> + ReadableType<ReadOutput<'static>=T>> CommonTypeCache<T> {
-    fn create< Snapshot>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
-        where
-            Snapshot: ReadableSnapshot
+impl<T: KindAPI<'static> + ReadableType<ReadOutput<'static> = T>> CommonTypeCache<T> {
+    fn create<Snapshot>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
+    where
+        Snapshot: ReadableSnapshot,
     {
         let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
         let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
@@ -275,9 +271,9 @@ impl<T: KindAPI<'static> + ReadableType<ReadOutput<'static>=T>> CommonTypeCache<
 }
 impl OwnerPlayerCache {
     fn create<'a, Snapshot, T>(snapshot: &Snapshot, type_: T) -> OwnerPlayerCache
-        where
-            Snapshot: ReadableSnapshot,
-            T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static> + ReadableType<ReadOutput<'static>=T>,
+    where
+        Snapshot: ReadableSnapshot,
+        T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static> + ReadableType<ReadOutput<'static> = T>,
     {
         OwnerPlayerCache {
             owns_declared: TypeReader::get_owns(snapshot, type_.clone()).unwrap(),

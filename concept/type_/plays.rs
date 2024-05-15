@@ -10,10 +10,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::ConceptReadError,
-    type_::{
-        object_type::ObjectType, role_type::RoleType, type_manager::TypeManager,
-        IntoCanonicalTypeEdge, TypeAPI,
-    },
+    type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, IntoCanonicalTypeEdge, TypeAPI},
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

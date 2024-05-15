@@ -8,10 +8,12 @@ use std::fs;
 
 use durability::wal::WAL;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::durability_client::WALClient;
-use storage::key_value::{StorageKeyArray, StorageKeyReference};
-use storage::MVCCStorage;
-use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot};
+use storage::{
+    durability_client::WALClient,
+    key_value::{StorageKeyArray, StorageKeyReference},
+    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
+    MVCCStorage,
+};
 use test_utils::{create_tmp_dir, init_logging};
 
 use crate::test_common::{checkpoint_storage, create_storage, load_storage};
@@ -39,7 +41,9 @@ fn wal_and_checkpoint_ok() {
     };
 
     {
-        let storage = load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), Some(checkpoint)).unwrap();
+        let storage =
+            load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), Some(checkpoint))
+                .unwrap();
         assert_eq!(watermark, storage.read_watermark());
         let snapshot = storage.open_snapshot_read();
         assert!(snapshot.get_mapped(StorageKeyReference::from(&key_hello), |_| true).unwrap().is_some());

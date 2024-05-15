@@ -485,8 +485,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 ThingEdgeHas::prefix(),
                 ThingEdgeHas::FIXED_WIDTH_ENCODING,
             ))
+            .into_range()
+            .into_iter()
             .filter(|(_, write)| matches!(write, Write::Delete))
-            .collect_vec()
             .into_iter()
         {
             if matches!(write, Write::Delete) {
@@ -509,7 +510,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
         for key in snapshot
             .iterate_writes_range(KeyRange::new_within(
-                Bytes::<0>::reference(ObjectVertex::build_prefix_prefix(Prefix::VertexEntity.prefix_id()).bytes()),
+                Bytes::<0>::reference(ObjectVertex::build_prefix_prefix(Prefix::VertexEntity).bytes()),
                 Prefix::VertexEntity.fixed_width_keys(),
             ))
             .filter_map(|(key, write)| match write {
@@ -530,10 +531,13 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         }
 
         let mut relations_validated = HashSet::new();
-        for (key, _) in snapshot.iterate_buffered_writes_range(KeyRange::new_within(
-            ThingEdgeRolePlayer::prefix(),
-            ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
-        )).into_range() {
+        for (key, _) in snapshot
+            .iterate_buffered_writes_range(KeyRange::new_within(
+                ThingEdgeRolePlayer::prefix(),
+                ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
+            ))
+            .into_range()
+        {
             let edge = ThingEdgeRolePlayer::new(Bytes::reference(key.bytes()));
             let relation = Relation::new(edge.from());
             if !relations_validated.contains(&relation) {

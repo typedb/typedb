@@ -12,9 +12,9 @@ use storage::key_value::StorageKeyReference;
 
 pub mod error;
 pub mod iterator;
+mod messages;
 pub mod thing;
 pub mod type_;
-mod messages;
 
 pub trait ConceptAPI<'a>: Eq + PartialEq {}
 

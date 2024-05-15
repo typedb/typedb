@@ -8,17 +8,22 @@
 
 use std::{rc::Rc, sync::Arc};
 
-use concept::type_::{annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, owns::Owns, relation_type::RelationTypeAnnotation, role_type::RoleTypeAnnotation, type_cache::TypeCache, type_manager::TypeManager, OwnerAPI, PlayerAPI, Ordering};
-use durability::DurabilityService;
-use durability::wal::WAL;
+use concept::type_::{
+    annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, owns::Owns,
+    relation_type::RelationTypeAnnotation, role_type::RoleTypeAnnotation, type_cache::TypeCache,
+    type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
+};
+use durability::{wal::WAL, DurabilityService};
 use encoding::{
     graph::type_::{vertex_generator::TypeVertexGenerator, Kind},
     value::{label::Label, value_type::ValueType},
     EncodingKeyspace,
 };
-use storage::{MVCCStorage};
-use storage::durability_client::WALClient;
-use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, ReadSnapshot, WriteSnapshot};
+use storage::{
+    durability_client::WALClient,
+    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, WriteSnapshot},
+    MVCCStorage,
+};
 use test_utils::{create_tmp_dir, init_logging};
 
 /*
@@ -31,7 +36,9 @@ fn entity_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
     let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap());
+    let storage = Arc::new(
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
+    );
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
@@ -57,7 +64,9 @@ fn entity_usage() {
         // --- person sub entity @abstract ---
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
-        person_type.set_annotation(&mut snapshot, &type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract)).unwrap();
+        person_type
+            .set_annotation(&mut snapshot, &type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract))
+            .unwrap();
 
         assert!(!person_type.is_root(&snapshot, &type_manager).unwrap());
         assert!(person_type
@@ -84,7 +93,8 @@ fn entity_usage() {
 
         // --- child owns age ---
         child_type.set_owns(&mut snapshot, &type_manager, age_type.clone().into_owned(), Ordering::Unordered).unwrap();
-        let owns = child_type.get_owns_attribute(&snapshot, &type_manager, age_type.clone().into_owned()).unwrap().unwrap();
+        let owns =
+            child_type.get_owns_attribute(&snapshot, &type_manager, age_type.clone().into_owned()).unwrap().unwrap();
         // TODO: test 'owns' structure directly
 
         let all_owns = child_type.get_owns(&snapshot, &type_manager).unwrap();
@@ -111,9 +121,8 @@ fn entity_usage() {
             Some(child_owns_height) => {
                 assert_eq!(height_type, child_owns_height.attribute());
                 assert_eq!(ObjectType::Entity(person_type.clone()), child_owns_height.owner());
-            },
+            }
         }
-
     }
     snapshot.commit().unwrap();
 
@@ -166,7 +175,10 @@ fn entity_usage() {
         assert_eq!(all_owns.len(), 1);
         let expected_owns = Owns::new(ObjectType::Entity(child_type.clone()), age_type.clone());
         assert!(all_owns.contains(&expected_owns));
-        assert_eq!(child_type.get_owns_attribute(&snapshot, &type_manager, age_type.clone()).unwrap(), Some(expected_owns));
+        assert_eq!(
+            child_type.get_owns_attribute(&snapshot, &type_manager, age_type.clone()).unwrap(),
+            Some(expected_owns)
+        );
         assert!(child_type.has_owns_attribute(&snapshot, &type_manager, age_type.clone()).unwrap());
 
         // --- adult sub person ---
@@ -182,7 +194,7 @@ fn entity_usage() {
             Some(child_owns_height) => {
                 assert_eq!(height_type, child_owns_height.attribute());
                 assert_eq!(ObjectType::Entity(person_type.clone()), child_owns_height.owner());
-            },
+            }
         }
     }
 }
@@ -192,7 +204,9 @@ fn role_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
     let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap());
+    let storage = Arc::new(
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
+    );
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
@@ -228,14 +242,16 @@ fn role_usage() {
         let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label, false).unwrap();
         friendship_type.create_relates(&mut snapshot, &type_manager, friend_name, Ordering::Unordered).unwrap();
         let relates = friendship_type.get_relates_role(&snapshot, &type_manager, friend_name).unwrap().unwrap();
-        let role_type = type_manager.resolve_relates(&snapshot, friendship_type.clone(), friend_name).unwrap().unwrap().role();
+        let role_type =
+            type_manager.resolve_relates(&snapshot, friendship_type.clone(), friend_name).unwrap().unwrap().role();
         debug_assert_eq!(relates.relation(), friendship_type.clone());
         debug_assert_eq!(relates.role(), role_type);
 
         // --- person plays friendship:friend ---
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
         person_type.set_plays(&mut snapshot, &type_manager, role_type.clone().into_owned()).unwrap();
-        let plays = person_type.get_plays_role(&snapshot, &type_manager, role_type.clone().into_owned()).unwrap().unwrap();
+        let plays =
+            person_type.get_plays_role(&snapshot, &type_manager, role_type.clone().into_owned()).unwrap().unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type.clone()));
         debug_assert_eq!(plays.role(), role_type);
     }
@@ -252,13 +268,15 @@ fn role_usage() {
         let relates = friendship_type.get_relates_role(&snapshot, &type_manager, friend_name).unwrap();
         debug_assert!(relates.is_some());
         let relates = relates.unwrap();
-        let role_type = type_manager.resolve_relates(&snapshot, friendship_type.clone(), friend_name).unwrap().unwrap().role();
+        let role_type =
+            type_manager.resolve_relates(&snapshot, friendship_type.clone(), friend_name).unwrap().unwrap().role();
         debug_assert_eq!(relates.relation(), friendship_type.clone());
         debug_assert_eq!(relates.role(), role_type);
 
         // --- person plays friendship:friend ---
         let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
-        let plays = person_type.get_plays_role(&snapshot, &type_manager, role_type.clone().into_owned()).unwrap().unwrap();
+        let plays =
+            person_type.get_plays_role(&snapshot, &type_manager, role_type.clone().into_owned()).unwrap().unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type.clone()));
         debug_assert_eq!(plays.role(), role_type);
     }

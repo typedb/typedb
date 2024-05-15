@@ -7,10 +7,9 @@
 #![deny(unused_must_use)]
 #![deny(rust_2018_idioms)]
 
-use tempdir::TempDir;
-
 use durability::DurabilityService;
 use durability_test_common::{create_wal, load_wal, TestRecord};
+use tempdir::TempDir;
 
 #[test]
 fn basic() {

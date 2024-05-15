@@ -4,33 +4,31 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{collections::BTreeMap, error::Error, fmt};
 
-use std::collections::BTreeMap;
-use std::error::Error;
-use std::fmt;
+use durability::RawRecord;
 
-use durability::{RawRecord};
-use crate::durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord};
-
-use crate::isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit};
-use crate::keyspace::{KeyspaceError, Keyspaces};
-use crate::MVCCStorage;
-use crate::recovery::commit_replay::CommitRecoveryError::DurabilityRecordsMissing;
-use crate::sequence_number::SequenceNumber;
-use crate::write_batches::WriteBatches;
-
+use crate::{
+    durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
+    isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
+    keyspace::{KeyspaceError, Keyspaces},
+    recovery::commit_replay::CommitRecoveryError::DurabilityRecordsMissing,
+    sequence_number::SequenceNumber,
+    write_batches::WriteBatches,
+    MVCCStorage,
+};
 
 /// Load commit data from the start onwards. Ignores any statuses that are not paired with commit data.
 pub fn load_commit_data_from(
     start: SequenceNumber,
     durability_client: &impl DurabilityClient,
 ) -> Result<BTreeMap<SequenceNumber, RecoveryCommitStatus>, CommitRecoveryError> {
-    use CommitRecoveryError::{DurabilityRecordDeserialize, DurabilityClientRead, DurabilityRecordsMissing};
+    use CommitRecoveryError::{DurabilityClientRead, DurabilityRecordDeserialize, DurabilityRecordsMissing};
 
     let mut recovered_commits = BTreeMap::new();
 
-    let mut records = durability_client.iter_from(start).map_err(|error| DurabilityClientRead { source: error })?
-        .peekable();
+    let mut records =
+        durability_client.iter_from(start).map_err(|error| DurabilityClientRead { source: error })?.peekable();
     let mut first_record = true;
 
     for record in records {
@@ -53,8 +51,9 @@ pub fn load_commit_data_from(
                 recovered_commits.insert(sequence_number, RecoveryCommitStatus::Pending(commit_record));
             }
             StatusRecord::RECORD_TYPE => {
-                let StatusRecord { commit_record_sequence_number, was_committed } = StatusRecord::deserialise_from(&mut &*bytes)
-                    .map_err(|error| DurabilityRecordDeserialize { source: error })?;
+                let StatusRecord { commit_record_sequence_number, was_committed } =
+                    StatusRecord::deserialise_from(&mut &*bytes)
+                        .map_err(|error| DurabilityRecordDeserialize { source: error })?;
                 if commit_record_sequence_number < start {
                     continue;
                 }
@@ -149,7 +148,7 @@ impl Error for CommitRecoveryError {
             Self::DurabilityRecordDeserialize { source, .. } => Some(source),
             Self::DurabilityClientRead { source, .. } => Some(source),
             Self::DurabilityClientWrite { source, .. } => Some(source),
-            Self::DurabilityRecordsMissing{ .. } => None,
+            Self::DurabilityRecordsMissing { .. } => None,
             Self::KeyspaceWrite { source, .. } => Some(source),
         }
     }

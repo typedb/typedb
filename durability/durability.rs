@@ -8,12 +8,13 @@
 #![deny(rust_2018_idioms)]
 
 use std::{
+    borrow::Cow,
     error::Error,
     fmt,
     io::{self, Read, Write},
     ops::{Add, AddAssign, Sub},
 };
-use std::borrow::Cow;
+
 use serde::{Deserialize, Serialize};
 
 use crate::wal::WALError;
@@ -24,12 +25,12 @@ pub trait DurabilityService {
     fn register_record_type(&mut self, record_type: DurabilityRecordType, record_name: &str);
 
     fn sequenced_write(
-        &self, record_type: DurabilityRecordType, bytes: &[u8],
+        &self,
+        record_type: DurabilityRecordType,
+        bytes: &[u8],
     ) -> Result<DurabilitySequenceNumber, DurabilityServiceError>;
 
-    fn unsequenced_write(
-        &self, record_type: DurabilityRecordType, bytes: &[u8]
-    ) -> Result<(), DurabilityServiceError>;
+    fn unsequenced_write(&self, record_type: DurabilityRecordType, bytes: &[u8]) -> Result<(), DurabilityServiceError>;
 
     fn iter_any_from(
         &self,
@@ -39,12 +40,12 @@ pub trait DurabilityService {
     fn iter_type_from(
         &self,
         sequence_number: DurabilitySequenceNumber,
-        record_type: DurabilityRecordType
+        record_type: DurabilityRecordType,
     ) -> Result<impl Iterator<Item = Result<RawRecord<'static>, DurabilityServiceError>>, DurabilityServiceError>;
 
     fn find_last_type(
         &self,
-        record_type: DurabilityRecordType
+        record_type: DurabilityRecordType,
     ) -> Result<Option<RawRecord<'static>>, DurabilityServiceError>;
 
     fn delete_durability(self) -> Result<(), DurabilityServiceError>;
@@ -155,12 +156,17 @@ impl Sub<DurabilitySequenceNumber> for DurabilitySequenceNumber {
 pub enum DurabilityServiceError {
     // #[non_exhaustive]
     // BincodeSerialize { source: bincode::Error },
-
     #[non_exhaustive]
-    IO { source: io::Error },
-    WAL { source: WALError },
+    IO {
+        source: io::Error,
+    },
+    WAL {
+        source: WALError,
+    },
 
-    DeleteFailed { source: io::Error },
+    DeleteFailed {
+        source: io::Error,
+    },
 }
 
 impl fmt::Display for DurabilityServiceError {

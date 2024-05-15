@@ -13,4 +13,3 @@ async fn test() {
     // the working directory.
     assert!(Context::test("tests/behaviour/debug/debug.feature").await);
 }
-

@@ -12,8 +12,8 @@ use std::{collections::HashMap, sync::Arc};
 use ::concept::thing::attribute::Attribute;
 use cucumber::{StatsWriter, World};
 use database::Database;
-use storage::durability_client::WALClient;
 use server::typedb;
+use storage::durability_client::WALClient;
 use test_utils::TempDir;
 
 mod assert;

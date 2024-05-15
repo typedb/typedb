@@ -24,9 +24,7 @@ pub struct Server {
 
 impl Server {
     pub fn open(data_directory: impl AsRef<Path>) -> Result<Self, ServerOpenError> {
-        use ServerOpenError::{
-            CouldNotCreateDataDirectory, CouldNotReadDataDirectory, DatabaseOpen, NotADirectory,
-        };
+        use ServerOpenError::{CouldNotCreateDataDirectory, CouldNotReadDataDirectory, DatabaseOpen, NotADirectory};
         let data_directory = data_directory.as_ref();
 
         if !data_directory.exists() {
@@ -41,7 +39,8 @@ impl Server {
             .map(|entry| {
                 let entry = entry
                     .map_err(|error| CouldNotReadDataDirectory { path: data_directory.to_owned(), source: error })?;
-                let database = Database::<WALClient>::open(&entry.path()).map_err(|error| DatabaseOpen { source: error })?;
+                let database =
+                    Database::<WALClient>::open(&entry.path()).map_err(|error| DatabaseOpen { source: error })?;
                 Ok((database.name().to_owned(), Arc::new(database)))
             })
             .try_collect()?;

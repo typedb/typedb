@@ -14,8 +14,6 @@ use storage::{
 };
 
 use crate::{
-    AsBytes,
-    EncodingKeyspace,
     graph::{
         thing::{
             vertex_attribute::{AttributeID, AttributeVertex},
@@ -24,7 +22,9 @@ use crate::{
         type_::vertex::{TypeID, TypeVertex},
         Typed,
     },
-    Keyable, layout::prefix::{Prefix, PrefixID}, Prefixed, value::value_type::ValueType,
+    layout::prefix::{Prefix, PrefixID},
+    value::value_type::ValueType,
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 ///

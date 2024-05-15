@@ -5,16 +5,16 @@
  */
 
 use std::sync::Arc;
-use itertools::Itertools;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;
+use itertools::Itertools;
 use storage::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
+    keyspace::{KeyspaceOpenError, KeyspaceValidationError},
     StorageOpenError,
 };
-use storage::keyspace::{KeyspaceOpenError, KeyspaceValidationError};
 use test_utils::{create_tmp_dir, init_logging};
 
 use crate::test_common::{checkpoint_storage, create_storage, load_storage};
@@ -64,10 +64,17 @@ fn create_keyspaces_duplicate_name_error() {
     init_logging();
     let storage_path = create_tmp_dir();
     let storage_result = create_storage::<TestKeyspaceSet>(&storage_path);
-    assert!(matches!(
-        storage_result,
-        Err(StorageOpenError::KeyspaceOpen { source: KeyspaceOpenError::Validation { source: KeyspaceValidationError::NameExists {..}, .. }, .. })
-    ), "{}", storage_result.unwrap_err());
+    assert!(
+        matches!(
+            storage_result,
+            Err(StorageOpenError::KeyspaceOpen {
+                source: KeyspaceOpenError::Validation { source: KeyspaceValidationError::NameExists { .. }, .. },
+                ..
+            })
+        ),
+        "{}",
+        storage_result.unwrap_err()
+    );
 }
 
 #[test]
@@ -80,10 +87,17 @@ fn create_keyspaces_duplicate_id_error() {
     init_logging();
     let storage_path = create_tmp_dir();
     let storage_result = create_storage::<TestKeyspaceSet>(&storage_path);
-    assert!(matches!(
-        storage_result,
-        Err(StorageOpenError::KeyspaceOpen { source: KeyspaceOpenError::Validation { source: KeyspaceValidationError::IdExists {..}, .. }, .. })
-    ), "{}", storage_result.unwrap_err());
+    assert!(
+        matches!(
+            storage_result,
+            Err(StorageOpenError::KeyspaceOpen {
+                source: KeyspaceOpenError::Validation { source: KeyspaceValidationError::IdExists { .. }, .. },
+                ..
+            })
+        ),
+        "{}",
+        storage_result.unwrap_err()
+    );
 }
 
 fn empty_value<const SZ: usize>() -> Bytes<'static, SZ> {
@@ -113,8 +127,11 @@ fn create_reopen() {
 
     {
         let storage = load_storage::<TestKeyspaceSet>(
-            &storage_path, WAL::load(&storage_path).unwrap(), Some(checkpoint.unwrap()),
-        ).unwrap();
+            &storage_path,
+            WAL::load(&storage_path).unwrap(),
+            Some(checkpoint.unwrap()),
+        )
+        .unwrap();
         let items = storage
             .iterate_keyspace_range(KeyRange::new_unbounded(StorageKey::<64>::Reference(StorageKeyReference::from(
                 &StorageKeyArray::<64>::from((Keyspace, [0x0])),

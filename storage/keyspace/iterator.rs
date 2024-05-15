@@ -10,9 +10,9 @@ use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use iterator::State;
 use logger::result::ResultExt;
 use speedb::{self, DBRawIterator, DBRawIteratorWithThreadMode, DB};
-use crate::key_range::KeyRange;
 
 use super::keyspace::{Keyspace, KeyspaceError};
+use crate::key_range::KeyRange;
 
 pub struct KeyspaceRangeIterator<'a, const INLINE_BYTES: usize> {
     keyspace_name: &'static str,

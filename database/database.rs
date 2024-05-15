@@ -6,35 +6,41 @@
 
 use core::fmt;
 use std::{
+    collections::BTreeMap,
     error::Error,
+    ffi::OsString,
     fs, io,
     path::{Path, PathBuf},
     sync::Arc,
 };
-use std::collections::BTreeMap;
-use std::ffi::OsString;
 
-use concept::{error::ConceptWriteError, type_::type_manager::TypeManager};
-use concept::thing::statistics::Statistics;
-use durability::wal::{WAL, WALError};
+use concept::{error::ConceptWriteError, thing::statistics::Statistics, type_::type_manager::TypeManager};
+use durability::wal::{WALError, WAL};
 use encoding::{
-    EncodingKeyspace,
     error::EncodingError,
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
+    EncodingKeyspace,
 };
 use storage::{
-    MVCCStorage,
-    snapshot::WriteSnapshot, StorageOpenError,
+    durability_client::{DurabilityClient, DurabilityClientError, WALClient},
+    isolation_manager::CommitType,
+    iterator::MVCCReadError,
+    recovery::{
+        checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
+        commit_replay::{load_commit_data_from, CommitRecoveryError, RecoveryCommitStatus},
+    },
+    sequence_number::SequenceNumber,
+    snapshot::WriteSnapshot,
+    MVCCStorage, StorageOpenError,
 };
-use storage::durability_client::{DurabilityClient, DurabilityClientError, WALClient};
-use storage::isolation_manager::CommitType;
-use storage::iterator::MVCCReadError;
-use storage::recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError};
-use storage::recovery::commit_replay::{CommitRecoveryError, load_commit_data_from, RecoveryCommitStatus};
-use storage::sequence_number::SequenceNumber;
 
-use crate::database::StatisticsInitialiseError::ReloadCommitData;
-use crate::DatabaseOpenError::{CheckpointCreate, DirectoryCreate, DurabilityRead, Encoding, SchemaInitialise, StatisticsInitialise, StorageOpen};
+use crate::{
+    database::StatisticsInitialiseError::ReloadCommitData,
+    DatabaseOpenError::{
+        CheckpointCreate, DirectoryCreate, DurabilityRead, Encoding, SchemaInitialise, StatisticsInitialise,
+        StorageOpen,
+    },
+};
 
 pub struct Database<D> {
     name: String,
@@ -54,7 +60,8 @@ impl<D> fmt::Debug for Database<D> {
 impl Database<WALClient> {
     pub fn open(path: &Path) -> Result<Database<WALClient>, DatabaseOpenError> {
         let file_name = path.file_name().unwrap();
-        let name = file_name.to_str().ok_or_else(|| DatabaseOpenError::InvalidUnicodeName { name: file_name.to_owned() })?;
+        let name =
+            file_name.to_str().ok_or_else(|| DatabaseOpenError::InvalidUnicodeName { name: file_name.to_owned() })?;
 
         if !path.exists() {
             Self::create(path, name)
@@ -64,14 +71,16 @@ impl Database<WALClient> {
     }
 
     fn create(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
-        use DatabaseOpenError::{DirectoryCreate, WALOpen, Encoding, SchemaInitialise, StorageOpen};
+        use DatabaseOpenError::{DirectoryCreate, Encoding, SchemaInitialise, StorageOpen, WALOpen};
         fs::create_dir(path).map_err(|error| DirectoryCreate { path: path.to_owned(), source: error })?;
         let wal = WAL::create(&path).map_err(|err| WALOpen { source: err })?;
-        let storage = Arc::new(MVCCStorage::create::<EncodingKeyspace>(&name, path, WALClient::new(wal))
-            .map_err(|error| StorageOpen { source: error })?);
+        let storage = Arc::new(
+            MVCCStorage::create::<EncodingKeyspace>(&name, path, WALClient::new(wal))
+                .map_err(|error| StorageOpen { source: error })?,
+        );
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-        let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage.clone())
-            .map_err(|err| Encoding { source: err })?);
+        let thing_vertex_generator =
+            Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
         TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone())
             .map_err(|err| SchemaInitialise { source: err })?;
         let statistics = Arc::new(Statistics::new(storage.read_watermark()));
@@ -88,23 +97,26 @@ impl Database<WALClient> {
 
     fn load(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
-            CheckpointCreate, CheckpointLoad, WALOpen, DurabilityRead, Encoding, SchemaInitialise,
-            StatisticsInitialise, StorageOpen,
+            CheckpointCreate, CheckpointLoad, DurabilityRead, Encoding, SchemaInitialise, StatisticsInitialise,
+            StorageOpen, WALOpen,
         };
 
         let wal = WAL::load(&path).map_err(|err| WALOpen { source: err })?;
         let wal_last_sequence_number = wal.previous();
-        let checkpoint = Checkpoint::open_latest(&path)
-            .map_err(|err| CheckpointLoad { source: err })?;
-        let storage = Arc::new(MVCCStorage::load::<EncodingKeyspace>(&name, path, WALClient::new(wal), &checkpoint)
-            .map_err(|error| StorageOpen { source: error })?);
+        let checkpoint = Checkpoint::open_latest(&path).map_err(|err| CheckpointLoad { source: err })?;
+        let storage = Arc::new(
+            MVCCStorage::load::<EncodingKeyspace>(&name, path, WALClient::new(wal), &checkpoint)
+                .map_err(|error| StorageOpen { source: error })?,
+        );
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-        let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage.clone())
-            .map_err(|err| Encoding { source: err })?);
+        let thing_vertex_generator =
+            Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
         TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone())
             .map_err(|err| SchemaInitialise { source: err })?;
 
-        let statistics = storage.durability().find_last_unsequenced_type::<Statistics>()
+        let statistics = storage
+            .durability()
+            .find_last_unsequenced_type::<Statistics>()
             .map_err(|err| DurabilityRead { source: err })?
             .unwrap_or_else(|| Statistics::new(SequenceNumber::MIN));
         let statistics = Database::<WALClient>::may_synchronise_statistics(statistics, storage.clone())
@@ -119,8 +131,8 @@ impl Database<WALClient> {
             thing_statistics: Arc::new(statistics),
         };
 
-        let checkpoint_sequence_number = checkpoint.as_ref().unwrap().read_sequence_number()
-            .map_err(|err| CheckpointLoad { source: err })?;
+        let checkpoint_sequence_number =
+            checkpoint.as_ref().unwrap().read_sequence_number().map_err(|err| CheckpointLoad { source: err })?;
         if checkpoint_sequence_number < wal_last_sequence_number {
             database.checkpoint().map_err(|err| CheckpointCreate { source: err })?;
         }
@@ -129,14 +141,14 @@ impl Database<WALClient> {
     }
 
     fn checkpoint(&self) -> Result<(), DatabaseCheckpointError> {
-        let checkpoint = Checkpoint::new(&self.path)
+        let checkpoint =
+            Checkpoint::new(&self.path).map_err(|err| DatabaseCheckpointError::CheckpointCreate { source: err })?;
+
+        self.storage
+            .checkpoint(&checkpoint)
             .map_err(|err| DatabaseCheckpointError::CheckpointCreate { source: err })?;
 
-        self.storage.checkpoint(&checkpoint)
-            .map_err(|err| DatabaseCheckpointError::CheckpointCreate { source: err })?;
-
-        checkpoint.finish()
-            .map_err(|err| DatabaseCheckpointError::CheckpointCreate { source: err })?;
+        checkpoint.finish().map_err(|err| DatabaseCheckpointError::CheckpointCreate { source: err })?;
         Ok(())
     }
 }
@@ -150,7 +162,8 @@ impl<D> Database<D> {
         mut statistics: Statistics,
         storage: Arc<MVCCStorage<D>>,
     ) -> Result<Statistics, StatisticsInitialiseError>
-        where D: DurabilityClient
+    where
+        D: DurabilityClient,
     {
         use StatisticsInitialiseError::{DataRead, DurablyWrite, ReloadCommitData};
 
@@ -168,22 +181,30 @@ impl<D> Database<D> {
             if let RecoveryCommitStatus::Validated(record) = status {
                 match record.commit_type() {
                     CommitType::Data => {
-                        let snapshot = WriteSnapshot::new_with_operations(storage.clone(), record.open_sequence_number(), record.into_operations());
+                        let snapshot = WriteSnapshot::new_with_operations(
+                            storage.clone(),
+                            record.open_sequence_number(),
+                            record.into_operations(),
+                        );
                         data_commits.insert(seq, snapshot);
                     }
                     CommitType::Schema => {
-                        statistics.update_writes(&data_commits, &storage)
-                            .map_err(|err| DataRead { source: err })?;
-                        storage.durability().unsequenced_write(&statistics)
+                        statistics.update_writes(&data_commits, &storage).map_err(|err| DataRead { source: err })?;
+                        storage
+                            .durability()
+                            .unsequenced_write(&statistics)
                             .map_err(|err| DurablyWrite { source: err })?;
 
                         data_commits.clear();
 
-                        let snapshot = WriteSnapshot::new_with_operations(storage.clone(), record.open_sequence_number(), record.into_operations());
+                        let snapshot = WriteSnapshot::new_with_operations(
+                            storage.clone(),
+                            record.open_sequence_number(),
+                            record.into_operations(),
+                        );
                         let mut commits = BTreeMap::new();
                         commits.insert(seq, snapshot);
-                        statistics.update_writes(&commits, &storage)
-                            .map_err(|err| DataRead { source: err })?;
+                        statistics.update_writes(&commits, &storage).map_err(|err| DataRead { source: err })?;
                     }
                 }
             } else {
@@ -191,8 +212,7 @@ impl<D> Database<D> {
             }
         }
 
-        statistics.update_writes(&data_commits, &storage)
-            .map_err(|err| DataRead { source: err })?;
+        statistics.update_writes(&data_commits, &storage).map_err(|err| DataRead { source: err })?;
         Ok(statistics)
     }
 }

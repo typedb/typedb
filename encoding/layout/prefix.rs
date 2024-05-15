@@ -74,7 +74,7 @@ pub enum Prefix {
     VertexAttributeDouble,
     VertexAttributeDateTime,
     VertexAttributeString,
-    _VertexAttributeLast,   // marker to indicate reserved range for attribute types
+    _VertexAttributeLast, // marker to indicate reserved range for attribute types
 
     EdgeSub,
     EdgeSubReverse,

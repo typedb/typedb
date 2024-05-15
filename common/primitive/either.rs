@@ -6,5 +6,5 @@
 
 pub enum Either<F, S> {
     First(F),
-    Second(S)
+    Second(S),
 }

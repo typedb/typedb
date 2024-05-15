@@ -11,5 +11,5 @@ pub enum LockType {
     // Lock an existing key that ensures it cannot be deleted concurrently
     Unmodifiable,
     // Lock a new key to be written exclusively by one snapshot
-    Exclusive
+    Exclusive,
 }

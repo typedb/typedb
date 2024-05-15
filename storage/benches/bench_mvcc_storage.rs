@@ -10,18 +10,17 @@ use std::{fs::File, os::raw::c_int, path::Path, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
-use durability::wal::WAL;
+use durability::{wal::WAL, DurabilityService};
 use pprof::ProfilerGuard;
-use durability::DurabilityService;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
+    durability_client::WALClient,
+    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{KeyspaceId, KeyspaceSet},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
     MVCCStorage,
 };
-use storage::durability_client::WALClient;
-use storage::key_range::KeyRange;
 use test_utils::{create_tmp_dir, init_logging};
 
 macro_rules! test_keyspace_set {
@@ -111,11 +110,14 @@ fn bench_snapshot_write_put(storage: Arc<MVCCStorage<WALClient>>, keyspace: Test
 }
 
 fn setup_storage(storage_path: &Path, key_count: usize) -> Arc<MVCCStorage<WALClient>> {
-    let storage = Arc::new(MVCCStorage::create::<TestKeyspaceSet>(
-        "storage_bench",
-        storage_path,
-        WALClient::new(WAL::create(storage_path).unwrap())
-    ).unwrap());
+    let storage = Arc::new(
+        MVCCStorage::create::<TestKeyspaceSet>(
+            "storage_bench",
+            storage_path,
+            WALClient::new(WAL::create(storage_path).unwrap()),
+        )
+        .unwrap(),
+    );
     let keys = populate_storage(storage.clone(), Keyspace, key_count);
     println!("Initialised storage with '{}' keys", keys);
     storage

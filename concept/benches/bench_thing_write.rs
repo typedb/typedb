@@ -7,21 +7,21 @@
 #![deny(unused_must_use)]
 
 use std::{
+    borrow::Cow,
     ffi::c_int,
     fs::File,
     path::Path,
     rc::Rc,
     sync::{Arc, OnceLock},
+    time::Duration,
 };
-use std::borrow::Cow;
-use std::time::Duration;
 
 use concept::{
     thing::{thing_manager::ThingManager, value::Value},
-    type_::{type_cache::TypeCache, type_manager::TypeManager, OwnerAPI},
+    type_::{type_cache::TypeCache, type_manager::TypeManager, Ordering, OwnerAPI},
 };
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
-use durability::wal::WAL;
+use durability::{wal::WAL, DurabilityService};
 use encoding::{
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
     value::{label::Label, value_type::ValueType},
@@ -29,11 +29,11 @@ use encoding::{
 };
 use pprof::ProfilerGuard;
 use rand::distributions::{Alphanumeric, DistString};
-use concept::type_::Ordering;
-use durability::DurabilityService;
-use storage::{MVCCStorage};
-use storage::durability_client::WALClient;
-use storage::snapshot::{CommittableSnapshot, WriteSnapshot};
+use storage::{
+    durability_client::WALClient,
+    snapshot::{CommittableSnapshot, WriteSnapshot},
+    MVCCStorage,
+};
 use test_utils::{create_tmp_dir, init_logging};
 
 static AGE_LABEL: OnceLock<Label> = OnceLock::new();
@@ -61,7 +61,9 @@ fn write_entity_attributes(
         let random_string: String = Alphanumeric.sample_string(&mut rand::thread_rng(), length as usize);
 
         let age = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(random_long)).unwrap();
-        let name = thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(&random_string))).unwrap();
+        let name = thing_manager
+            .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(&random_string)))
+            .unwrap();
         person.set_has_unordered(&mut snapshot, &thing_manager, age).unwrap();
         person.set_has_unordered(&mut snapshot, &thing_manager, name).unwrap();
     }
@@ -97,14 +99,23 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.bench_function("thing_write", |b| {
         let storage_path = create_tmp_dir();
         let wal = WAL::create(&storage_path).unwrap();
-        let mut storage = Arc::new(MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap());
+        let mut storage = Arc::new(
+            MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
+                .unwrap(),
+        );
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
+        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone())
+            .unwrap();
         create_schema(&storage, &type_vertex_generator);
         let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
         b.iter(|| {
-            write_entity_attributes(storage.clone(), type_vertex_generator.clone(), thing_vertex_generator.clone(), schema_cache.clone())
+            write_entity_attributes(
+                storage.clone(),
+                type_vertex_generator.clone(),
+                thing_vertex_generator.clone(),
+                schema_cache.clone(),
+            )
         });
     });
 }

@@ -4,15 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::hash::{Hash};
-use bytes::{byte_array::ByteArray, Bytes, byte_reference::ByteReference};
+use std::hash::Hash;
+
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::{StorageKey, StorageKeyReference};
-use storage::keyspace::KeyspaceSet;
+use storage::{
+    key_value::{StorageKey, StorageKeyReference},
+    keyspace::KeyspaceSet,
+};
 
 use crate::{
     graph::Typed,
-    layout::prefix::{PrefixID, Prefix},
+    layout::prefix::{Prefix, PrefixID},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 

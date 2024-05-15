@@ -25,12 +25,13 @@ This file should comprise a set of low-level tests relating to MVCC.
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::{ KeyspaceSet},
-    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot}
+    keyspace::KeyspaceSet,
+    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
 use test_utils::{create_tmp_dir, init_logging};
-use crate::test_common::create_storage;
+
 use self::TestKeyspaceSet::Keyspace;
+use crate::test_common::create_storage;
 
 mod test_common;
 
@@ -43,7 +44,6 @@ const KEY_2: [u8; 4] = [0x0, 0x0, 0x0, 0x2];
 const VALUE_0: [u8; 1] = [0x0];
 const VALUE_1: [u8; 1] = [0x1];
 const VALUE_2: [u8; 1] = [0x2];
-
 
 #[test]
 fn test_commit_increments_watermark() {

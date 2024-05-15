@@ -6,18 +6,18 @@
 
 use std::ops::Range;
 
-use bytes::byte_array::ByteArray;
-use bytes::byte_reference::ByteReference;
-use bytes::Bytes;
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
-use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
-use crate::graph::thing::vertex_object::ObjectVertex;
-use crate::graph::type_::vertex::TypeVertex;
-use crate::graph::Typed;
-use crate::layout::infix::{Infix, InfixID};
-use crate::layout::prefix::{Prefix, PrefixID};
+use crate::{
+    graph::{thing::vertex_object::ObjectVertex, type_::vertex::TypeVertex, Typed},
+    layout::{
+        infix::{Infix, InfixID},
+        prefix::{Prefix, PrefixID},
+    },
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+};
 
 trait ObjectVertexPropertyFactory {
     fn infix(&self) -> Infix;
@@ -37,9 +37,7 @@ trait ObjectVertexPropertyFactory {
 pub struct HasOrderPropertyFactory {}
 
 impl HasOrderPropertyFactory {
-    pub fn build(
-        &self, object_vertex: ObjectVertex, attribute_type: TypeVertex,
-    ) -> ObjectVertexProperty<'static> {
+    pub fn build(&self, object_vertex: ObjectVertex, attribute_type: TypeVertex) -> ObjectVertexProperty<'static> {
         debug_assert_eq!(attribute_type.prefix(), Prefix::VertexAttributeType);
         let suffix: Bytes<'_, BUFFER_KEY_INLINE> = Bytes::Array(ByteArray::copy(&attribute_type.type_id_().bytes()));
         ObjectVertexProperty::build_suffixed(object_vertex, self.infix(), suffix)
@@ -57,9 +55,7 @@ pub const HAS_ORDER_PROPERTY_FACTORY: HasOrderPropertyFactory = HasOrderProperty
 pub struct RolePlayerOrderPropertyFactory {}
 
 impl RolePlayerOrderPropertyFactory {
-    pub fn build(
-        &self, object_vertex: ObjectVertex, role_type: TypeVertex,
-    ) -> ObjectVertexProperty<'static> {
+    pub fn build(&self, object_vertex: ObjectVertex, role_type: TypeVertex) -> ObjectVertexProperty<'static> {
         debug_assert_eq!(role_type.prefix(), Prefix::VertexRoleType);
         let suffix: Bytes<'_, BUFFER_KEY_INLINE> = Bytes::Array(ByteArray::copy(&role_type.type_id_().bytes()));
         ObjectVertexProperty::build_suffixed(object_vertex, self.infix(), suffix)

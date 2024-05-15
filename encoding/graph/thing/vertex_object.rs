@@ -14,12 +14,12 @@ use storage::{
 };
 
 use crate::{
-    AsBytes,
-    EncodingKeyspace,
     graph::{
         type_::vertex::{TypeID, TypeVertex},
         Typed,
-    }, Keyable, layout::prefix::{Prefix, PrefixID}, Prefixed,
+    },
+    layout::prefix::{Prefix, PrefixID},
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]

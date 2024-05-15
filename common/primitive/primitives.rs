@@ -4,6 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub mod either;
 pub mod maybe_owns;
 pub mod prefix;
-pub mod either;

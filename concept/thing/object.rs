@@ -6,25 +6,25 @@
 
 use bytes::{byte_reference::ByteReference, Bytes};
 use encoding::{
-    graph::thing::{
-        edge::ThingEdgeHas
-        ,
-        vertex_object::ObjectVertex,
-    },
+    graph::thing::{edge::ThingEdgeHas, vertex_object::ObjectVertex},
     layout::prefix::Prefix,
-    Prefixed,
     value::decode_value_u64,
+    Prefixed,
 };
 use storage::{
     key_value::StorageKeyReference,
-    snapshot::WritableSnapshot,
+    snapshot::{ReadableSnapshot, WritableSnapshot},
 };
-use storage::snapshot::ReadableSnapshot;
 
-use crate::{ConceptStatus, edge_iterator, thing::{attribute::Attribute, entity::Entity, ObjectAPI, relation::Relation, thing_manager::ThingManager}};
-use crate::error::{ConceptReadError, ConceptWriteError};
-use crate::thing::ThingAPI;
-use crate::type_::object_type::ObjectType;
+use crate::{
+    edge_iterator,
+    error::{ConceptReadError, ConceptWriteError},
+    thing::{
+        attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, ObjectAPI, ThingAPI,
+    },
+    type_::object_type::ObjectType,
+    ConceptStatus,
+};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Object<'a> {
@@ -119,7 +119,7 @@ impl<'a> ThingAPI<'a> for Object<'a> {
     fn set_modified<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
-        thing_manager: &ThingManager<Snapshot>
+        thing_manager: &ThingManager<Snapshot>,
     ) {
         match self {
             Object::Entity(entity) => entity.set_modified(snapshot, thing_manager),
@@ -130,7 +130,7 @@ impl<'a> ThingAPI<'a> for Object<'a> {
     fn get_status<'m, Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>
+        thing_manager: &'m ThingManager<Snapshot>,
     ) -> ConceptStatus {
         match self {
             Object::Entity(entity) => entity.get_status(snapshot, thing_manager),
@@ -141,7 +141,7 @@ impl<'a> ThingAPI<'a> for Object<'a> {
     fn errors<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>
+        thing_manager: &ThingManager<Snapshot>,
     ) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
         match self {
             Object::Entity(entity) => entity.errors(snapshot, thing_manager),
@@ -152,7 +152,7 @@ impl<'a> ThingAPI<'a> for Object<'a> {
     fn delete<Snapshot: WritableSnapshot>(
         self,
         snapshot: &mut Snapshot,
-        thing_manager: &ThingManager<Snapshot>
+        thing_manager: &ThingManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
         match self {
             Object::Entity(entity) => entity.delete(snapshot, thing_manager),

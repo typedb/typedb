@@ -19,19 +19,22 @@ use std::{
     },
 };
 
+use durability::DurabilityRecordType;
 use logger::result::ResultExt;
 use primitive::maybe_owns::MaybeOwns;
+use project::{read_guard_project, ReadGuard, RwLockReadGuardProject};
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 use serde::{Deserialize, Serialize};
-use durability::DurabilityRecordType;
-use project::{read_guard_project, ReadGuard, RwLockReadGuardProject};
 
 use crate::{
+    durability_client::{
+        DurabilityClient, DurabilityClientError, DurabilityRecord, SequencedDurabilityRecord,
+        UnsequencedDurabilityRecord,
+    },
+    sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, lock::LockType, write::Write},
     write_batches::WriteBatches,
 };
-use crate::durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, SequencedDurabilityRecord, UnsequencedDurabilityRecord};
-use crate::sequence_number::SequenceNumber;
 
 #[derive(Debug)]
 pub(crate) struct IsolationManager {
@@ -91,7 +94,7 @@ impl IsolationManager {
         &self,
         sequence_number: SequenceNumber,
         commit_record: CommitRecord,
-        durability_client  : &impl DurabilityClient,
+        durability_client: &impl DurabilityClient,
     ) -> Result<ValidatedCommit, DurabilityClientError> {
         let window = self.timeline.get_or_create_window(sequence_number);
         window.insert_pending(sequence_number, commit_record);
@@ -201,8 +204,10 @@ impl IsolationManager {
         durability_client: &impl DurabilityClient,
         start_sequence_number: SequenceNumber,
         stop_sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item=Result<(SequenceNumber, CommitStatus<'_>), DurabilityClientError>>, DurabilityClientError>
-    {
+    ) -> Result<
+        impl Iterator<Item = Result<(SequenceNumber, CommitStatus<'_>), DurabilityClientError>>,
+        DurabilityClientError,
+    > {
         let mut is_committed = HashMap::new();
         for record in durability_client.iter_unsequenced_type_from::<StatusRecord>(start_sequence_number)? {
             let record = record?;
@@ -380,14 +385,14 @@ impl Timeline {
                 });
                 if should_update
                     && self
-                    .watermark
-                    .compare_exchange(
-                        (candidate_watermark - 1).number(),
-                        candidate_watermark.number(),
-                        Ordering::SeqCst,
-                        Ordering::SeqCst,
-                    )
-                    .is_ok()
+                        .watermark
+                        .compare_exchange(
+                            (candidate_watermark - 1).number(),
+                            candidate_watermark.number(),
+                            Ordering::SeqCst,
+                            Ordering::SeqCst,
+                        )
+                        .is_ok()
                 {
                     candidate_watermark += 1;
                     if candidate_watermark >= window.as_ref().unwrap().end() {
@@ -434,7 +439,8 @@ impl Timeline {
     ) -> (Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>, SequenceNumber) {
         let windows = &*self.windows.read().unwrap_or_log();
         let first_concurrent_window_index = Self::resolve_window(windows, open_sequence_number.next()).unwrap_or(0);
-        let last_concurrent_window_index = Self::resolve_window(windows, commit_sequence_number.previous()).unwrap_or(0);
+        let last_concurrent_window_index =
+            Self::resolve_window(windows, commit_sequence_number.previous()).unwrap_or(0);
         let mut concurrent_windows: Vec<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>> = Vec::new();
         (first_concurrent_window_index..=last_concurrent_window_index).for_each(|window_index| {
             concurrent_windows.push(windows.get(window_index).unwrap().clone());
@@ -661,7 +667,7 @@ impl CommitRecord {
     pub(crate) fn new(
         operations: OperationsBuffer,
         open_sequence_number: SequenceNumber,
-        commit_type: CommitType
+        commit_type: CommitType,
     ) -> CommitRecord {
         CommitRecord { operations, open_sequence_number, commit_type }
     }
@@ -687,8 +693,8 @@ impl CommitRecord {
     }
 
     fn deserialise_from(record_type: DurabilityRecordType, reader: impl Read)
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         assert_eq!(Self::RECORD_TYPE, record_type);
         // TODO: handle error with a better message
@@ -772,7 +778,7 @@ impl DurabilityRecord for CommitRecord {
             bincode::serialize(
                 &bincode::deserialize::<CommitRecord>(bincode::serialize(&self).as_ref().unwrap()).unwrap()
             )
-                .unwrap(),
+            .unwrap(),
             bincode::serialize(self).unwrap()
         );
         bincode::serialize_into(writer, &self)
@@ -802,8 +808,8 @@ impl StatusRecord {
     }
 
     fn deserialise_from(record_type: DurabilityRecordType, reader: impl Read)
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         assert_eq!(Self::RECORD_TYPE, record_type);
         // TODO: handle error with a better message
@@ -820,7 +826,7 @@ impl DurabilityRecord for StatusRecord {
             bincode::serialize(
                 &bincode::deserialize::<StatusRecord>(bincode::serialize(&self).as_ref().unwrap()).unwrap()
             )
-                .unwrap(),
+            .unwrap(),
             bincode::serialize(self).unwrap()
         );
         bincode::serialize_into(writer, &self)
@@ -847,7 +853,6 @@ mod tests {
         thread::{self, JoinHandle},
     };
 
-
     use crate::keyspace::{KeyspaceId, KeyspaceSet};
 
     macro_rules! test_keyspace_set {
@@ -871,11 +876,10 @@ mod tests {
     }
 
     use crate::{
-        isolation_manager::{CommitRecord, CommitStatus, Timeline, TIMELINE_WINDOW_SIZE},
+        isolation_manager::{CommitRecord, CommitStatus, CommitType, Timeline, TIMELINE_WINDOW_SIZE},
+        sequence_number::SequenceNumber,
         snapshot::buffer::OperationsBuffer,
     };
-    use crate::isolation_manager::CommitType;
-    use crate::sequence_number::SequenceNumber;
 
     struct MockTransaction {
         read_sequence_number: SequenceNumber,

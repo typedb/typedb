@@ -8,24 +8,24 @@ use std::{
     error::Error,
     fmt,
     fs::{self, File},
-    io::{self, Write},
+    io::{self, Read, Write},
     path::{Path, PathBuf},
 };
-use std::io::Read;
 
 use chrono::Utc;
 use itertools::Itertools;
 use same_file::is_same_file;
 
-use crate::recovery::commit_replay::{apply_commits, CommitRecoveryError, load_commit_data_from};
-
 use crate::{
-    keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, Keyspaces, KeyspaceSet},
+    durability_client::DurabilityClient,
+    keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces},
+    recovery::{
+        checkpoint::CheckpointLoadError::MetadataRead,
+        commit_replay::{apply_commits, load_commit_data_from, CommitRecoveryError},
+    },
+    sequence_number::SequenceNumber,
     StorageCommitError,
 };
-use crate::durability_client::DurabilityClient;
-use crate::recovery::checkpoint::CheckpointLoadError::MetadataRead;
-use crate::sequence_number::SequenceNumber;
 
 /// A checkpoint is a directory, which contains at least the storage checkpointing data: keyspaces + the watermark.
 /// The watermark represents a sequence number that is guaranteed to be in all the keyspaces, and after which we may
@@ -55,15 +55,10 @@ impl Checkpoint {
     }
 
     pub fn add_storage(&self, keyspaces: &Keyspaces, watermark: SequenceNumber) -> Result<(), CheckpointCreateError> {
-        use CheckpointCreateError::{
-            KeyspaceCheckpoint, MetadataFileCreate, MetadataWrite,
-        };
+        use CheckpointCreateError::{KeyspaceCheckpoint, MetadataFileCreate, MetadataWrite};
         keyspaces
             .checkpoint(&self.directory)
-            .map_err(|error| KeyspaceCheckpoint {
-                dir: self.directory.clone(),
-                source: error,
-            })?;
+            .map_err(|error| KeyspaceCheckpoint { dir: self.directory.clone(), source: error })?;
 
         let metadata_file_path = self.directory.join(Self::STORAGE_METADATA_FILE_NAME);
         let mut metadata_file = File::create(&metadata_file_path)
@@ -83,11 +78,9 @@ impl Checkpoint {
             return Err(ExtensionDuplicate { name: T::NAME.to_string() });
         }
 
-        let mut file = File::create(path)
-            .map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: err })?;
+        let mut file = File::create(path).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: err })?;
 
-        data.serialise_into(&mut file)
-            .map_err(|err| ExtensionSerialise { name: T::NAME.to_string(), source: err })?;
+        data.serialise_into(&mut file).map_err(|err| ExtensionSerialise { name: T::NAME.to_string(), source: err })?;
 
         Ok(())
     }
@@ -100,11 +93,12 @@ impl Checkpoint {
         }
 
         let previous_checkpoints: Vec<_> = fs::read_dir(self.directory.parent().unwrap())
-            .and_then(|entries| entries
-                .map_ok(|entry| entry.path())
-                .filter(|path| path.is_ok() && path.as_ref().unwrap() != &self.directory)
-                .try_collect()
-            )
+            .and_then(|entries| {
+                entries
+                    .map_ok(|entry| entry.path())
+                    .filter(|path| path.is_ok() && path.as_ref().unwrap() != &self.directory)
+                    .try_collect()
+            })
             .map_err(|error| CheckpointDirRead { dir: self.directory.clone(), source: error })?;
 
         for previous_checkpoint in previous_checkpoints {
@@ -117,8 +111,7 @@ impl Checkpoint {
 
     pub fn open_latest(storage_path: &Path) -> Result<Option<Self>, CheckpointLoadError> {
         let checkpoint_dir = storage_path.join(Self::CHECKPOINT_DIR_NAME);
-        find_latest_checkpoint(&checkpoint_dir)
-            .map(|path| path.map(|p| Checkpoint { directory: p }))
+        find_latest_checkpoint(&checkpoint_dir).map(|path| path.map(|p| Checkpoint { directory: p }))
     }
 
     pub fn get_extension<T: CheckpointExtension>(&self) -> Result<T, CheckpointLoadError> {
@@ -130,8 +123,7 @@ impl Checkpoint {
             return Err(ExtensionNotFound { name: T::NAME.to_string() });
         }
 
-        let mut file = File::open(path)
-            .map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: err })?;
+        let mut file = File::open(path).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: err })?;
 
         let deserialised = T::deserialise_from(&mut file)
             .map_err(|err| ExtensionDeserialise { name: T::NAME.to_string(), source: err })?;
@@ -152,9 +144,7 @@ impl Checkpoint {
                 .map_err(|error| CheckpointRestore { dir: self.directory.clone(), source: error })?;
         }
 
-        let keyspaces = Keyspaces::open::<KS>(&keyspaces_dir).map_err(|error| KeyspaceOpen {
-            source: error
-        })?;
+        let keyspaces = Keyspaces::open::<KS>(&keyspaces_dir).map_err(|error| KeyspaceOpen { source: error })?;
 
         let recovery_start = self.read_sequence_number()? + 1;
         let recovered_commits = load_commit_data_from(recovery_start, durability_client)
@@ -166,7 +156,7 @@ impl Checkpoint {
     }
 
     pub fn read_sequence_number(&self) -> Result<SequenceNumber, CheckpointLoadError> {
-        use CheckpointLoadError::{MetadataRead};
+        use CheckpointLoadError::MetadataRead;
 
         let metadata_file_path = self.directory.join(Self::STORAGE_METADATA_FILE_NAME);
         let metadata = fs::read_to_string(metadata_file_path)

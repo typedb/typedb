@@ -4,15 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, io};
-use std::borrow::Cow;
-use std::error::Error;
-use std::io::{Read, Write};
+use std::{
+    borrow::Cow,
+    error::Error,
+    fmt, io,
+    io::{Read, Write},
+};
 
+use durability::{wal::WAL, DurabilityRecordType, DurabilityService, DurabilityServiceError, RawRecord};
 use itertools::Itertools;
-
-use durability::{DurabilityRecordType, DurabilityService, DurabilityServiceError, RawRecord};
-use durability::wal::WAL;
 
 use crate::sequence_number::SequenceNumber;
 
@@ -38,55 +38,59 @@ pub trait DurabilityClient {
     fn previous(&self) -> SequenceNumber;
 
     fn sequenced_write<Record>(&self, record: &Record) -> Result<SequenceNumber, DurabilityClientError>
-        where
-            Record: SequencedDurabilityRecord;
+    where
+        Record: SequencedDurabilityRecord;
 
     fn unsequenced_write<Record>(&self, record: &Record) -> Result<(), DurabilityClientError>
-        where
-            Record: UnsequencedDurabilityRecord;
+    where
+        Record: UnsequencedDurabilityRecord;
 
     fn iter_from(
         &self,
         sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item=Result<RawRecord<'static>, DurabilityClientError>>, DurabilityClientError>;
+    ) -> Result<impl Iterator<Item = Result<RawRecord<'static>, DurabilityClientError>>, DurabilityClientError>;
 
-    fn iter_from_start(&self) -> Result<impl Iterator<Item=Result<RawRecord<'static>, DurabilityClientError>>, DurabilityClientError> {
+    fn iter_from_start(
+        &self,
+    ) -> Result<impl Iterator<Item = Result<RawRecord<'static>, DurabilityClientError>>, DurabilityClientError> {
         self.iter_from(SequenceNumber::MIN)
     }
 
     fn iter_type_from<Record: DurabilityRecord>(
         &self,
         sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item=Result<(SequenceNumber, Record), DurabilityClientError>>, DurabilityClientError>;
+    ) -> Result<impl Iterator<Item = Result<(SequenceNumber, Record), DurabilityClientError>>, DurabilityClientError>;
 
     fn iter_sequenced_type_from<Record: SequencedDurabilityRecord>(
         &self,
         sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item=Result<(SequenceNumber, Record), DurabilityClientError>>, DurabilityClientError> {
+    ) -> Result<impl Iterator<Item = Result<(SequenceNumber, Record), DurabilityClientError>>, DurabilityClientError>
+    {
         self.iter_type_from::<Record>(sequence_number)
     }
 
     fn iter_sequenced_type_from_start<Record: SequencedDurabilityRecord>(
         &self,
-    ) -> Result<impl Iterator<Item=Result<(SequenceNumber, Record), DurabilityClientError>>, DurabilityClientError> {
+    ) -> Result<impl Iterator<Item = Result<(SequenceNumber, Record), DurabilityClientError>>, DurabilityClientError>
+    {
         self.iter_sequenced_type_from::<Record>(SequenceNumber::MIN)
     }
 
     fn iter_unsequenced_type_from<Record: UnsequencedDurabilityRecord>(
         &self,
         sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item=Result<Record, DurabilityClientError>>, DurabilityClientError> {
+    ) -> Result<impl Iterator<Item = Result<Record, DurabilityClientError>>, DurabilityClientError> {
         Ok(self.iter_type_from::<Record>(sequence_number)?.map_ok(|(_, record)| record))
     }
 
     fn iter_unsequenced_type_from_start<Record: UnsequencedDurabilityRecord>(
         &self,
-    ) -> Result<impl Iterator<Item=Result<Record, DurabilityClientError>>, DurabilityClientError> {
+    ) -> Result<impl Iterator<Item = Result<Record, DurabilityClientError>>, DurabilityClientError> {
         self.iter_unsequenced_type_from(SequenceNumber::MIN)
     }
 
     fn find_last_unsequenced_type<Record: UnsequencedDurabilityRecord>(
-        &self
+        &self,
     ) -> Result<Option<Record>, DurabilityClientError>;
 
     fn delete_durability(self) -> Result<(), DurabilityClientError>;
@@ -104,7 +108,8 @@ impl WALClient {
 
     fn serialise_record(record: &impl DurabilityRecord) -> Result<Vec<u8>, DurabilityClientError> {
         let mut buf = Vec::new();
-        let mut encoder = lz4::EncoderBuilder::new().build(&mut buf)
+        let mut encoder = lz4::EncoderBuilder::new()
+            .build(&mut buf)
             .map_err(|err| DurabilityClientError::CompressionError { source: err })?;
         record.serialise_into(&mut encoder)?;
         encoder.finish().1.map_err(|err| DurabilityClientError::CompressionError { source: err })?;
@@ -113,8 +118,8 @@ impl WALClient {
 
     fn deserialise_record<Record: DurabilityRecord>(raw_bytes: &[u8]) -> Result<Record, DurabilityClientError> {
         let ptr = &mut &*raw_bytes;
-        let mut decoder = lz4::Decoder::new(ptr)
-            .map_err(|err| DurabilityClientError::CompressionError { source: err })?;
+        let mut decoder =
+            lz4::Decoder::new(ptr).map_err(|err| DurabilityClientError::CompressionError { source: err })?;
         let record = Record::deserialise_from(&mut decoder)
             .map_err(|err| DurabilityClientError::SerializeError { source: err })?;
         Ok(record)
@@ -143,86 +148,101 @@ impl DurabilityClient for WALClient {
         self.wal.previous()
     }
 
-    fn sequenced_write<Record>(
-        &self, record: &Record,
-    ) -> Result<SequenceNumber, DurabilityClientError> where Record: SequencedDurabilityRecord {
+    fn sequenced_write<Record>(&self, record: &Record) -> Result<SequenceNumber, DurabilityClientError>
+    where
+        Record: SequencedDurabilityRecord,
+    {
         let serialised = Self::serialise_record(record)?;
-        self.wal.sequenced_write(Record::RECORD_TYPE, &serialised)
+        self.wal
+            .sequenced_write(Record::RECORD_TYPE, &serialised)
             .map_err(|err| DurabilityClientError::ServiceError { source: err })
     }
 
-    fn unsequenced_write<Record>(
-        &self, record: &Record,
-    ) -> Result<(), DurabilityClientError> where Record: UnsequencedDurabilityRecord {
+    fn unsequenced_write<Record>(&self, record: &Record) -> Result<(), DurabilityClientError>
+    where
+        Record: UnsequencedDurabilityRecord,
+    {
         let serialised = Self::serialise_record(record)?;
-        self.wal.unsequenced_write(Record::RECORD_TYPE, &serialised)
+        self.wal
+            .unsequenced_write(Record::RECORD_TYPE, &serialised)
             .map_err(|err| DurabilityClientError::ServiceError { source: err })
     }
 
     fn iter_from(
-        &self, sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item=Result<RawRecord<'static>, DurabilityClientError>>, DurabilityClientError> {
-        self.wal.iter_any_from(sequence_number)
-            .map_err(|err| DurabilityClientError::ServiceError { source: err })
-            .map(|iter| iter.map(|item| {
-                item
-                    .map_err(|err| DurabilityClientError::ServiceError { source: err })
-                    .and_then(|raw_record| {
+        &self,
+        sequence_number: SequenceNumber,
+    ) -> Result<impl Iterator<Item = Result<RawRecord<'static>, DurabilityClientError>>, DurabilityClientError> {
+        self.wal.iter_any_from(sequence_number).map_err(|err| DurabilityClientError::ServiceError { source: err }).map(
+            |iter| {
+                iter.map(|item| {
+                    item.map_err(|err| DurabilityClientError::ServiceError { source: err }).and_then(|raw_record| {
                         Ok(RawRecord {
                             record_type: raw_record.record_type,
                             sequence_number: raw_record.sequence_number,
-                            bytes: Cow::Owned(Self::decompress(&raw_record.bytes)?)
+                            bytes: Cow::Owned(Self::decompress(&raw_record.bytes)?),
                         })
                     })
-            }))
+                })
+            },
+        )
     }
 
     fn iter_type_from<Record>(
-        &self, sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item=Result<(SequenceNumber, Record), DurabilityClientError>>, DurabilityClientError>
-        where
-            Record: DurabilityRecord {
-        self.wal.iter_type_from(sequence_number, Record::RECORD_TYPE)
+        &self,
+        sequence_number: SequenceNumber,
+    ) -> Result<impl Iterator<Item = Result<(SequenceNumber, Record), DurabilityClientError>>, DurabilityClientError>
+    where
+        Record: DurabilityRecord,
+    {
+        self.wal
+            .iter_type_from(sequence_number, Record::RECORD_TYPE)
             .map_err(|err| DurabilityClientError::ServiceError { source: err })
-            .map(|iter| iter.map(|raw_item| {
-                match raw_item {
+            .map(|iter| {
+                iter.map(|raw_item| match raw_item {
                     Ok(raw_record) => {
-                        let record = (raw_record.sequence_number, Self::deserialise_record::<Record>(&raw_record.bytes)?);
+                        let record =
+                            (raw_record.sequence_number, Self::deserialise_record::<Record>(&raw_record.bytes)?);
                         Ok(record)
                     }
-                    Err(err) => Err(DurabilityClientError::ServiceError { source: err })
-                }
-            }))
+                    Err(err) => Err(DurabilityClientError::ServiceError { source: err }),
+                })
+            })
     }
 
-    fn find_last_unsequenced_type<Record: UnsequencedDurabilityRecord>(&self) -> Result<Option<Record>, DurabilityClientError> {
+    fn find_last_unsequenced_type<Record: UnsequencedDurabilityRecord>(
+        &self,
+    ) -> Result<Option<Record>, DurabilityClientError> {
         match self.wal.find_last_type(Record::RECORD_TYPE) {
-            Ok(Some(raw_record)) => {
-                match Record::deserialise_from(&mut &*raw_record.bytes) {
-                    Ok(record) => Ok(Some(record)),
-                    Err(err) => Err(DurabilityClientError::SerializeError { source: err })
-                }
-            }
+            Ok(Some(raw_record)) => match Record::deserialise_from(&mut &*raw_record.bytes) {
+                Ok(record) => Ok(Some(record)),
+                Err(err) => Err(DurabilityClientError::SerializeError { source: err }),
+            },
             Ok(None) => Ok(None),
-            Err(err) => Err(DurabilityClientError::ServiceError { source: err })
+            Err(err) => Err(DurabilityClientError::ServiceError { source: err }),
         }
     }
 
     fn delete_durability(self) -> Result<(), DurabilityClientError> {
-        self.wal.delete_durability()
-            .map_err(|err| DurabilityClientError::ServiceError { source: err })
+        self.wal.delete_durability().map_err(|err| DurabilityClientError::ServiceError { source: err })
     }
 }
-
 
 #[derive(Debug)]
 pub enum DurabilityClientError {
     #[non_exhaustive]
-    SerializeError { source: bincode::Error },
-    ServiceError { source: DurabilityServiceError },
-    CompressionError { source: io::Error },
+    SerializeError {
+        source: bincode::Error,
+    },
+    ServiceError {
+        source: DurabilityServiceError,
+    },
+    CompressionError {
+        source: io::Error,
+    },
 
-    DeleteFailed { source: io::Error },
+    DeleteFailed {
+        source: io::Error,
+    },
 }
 
 impl fmt::Display for DurabilityClientError {

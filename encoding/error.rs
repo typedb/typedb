@@ -5,14 +5,15 @@
  */
 
 use std::{error::Error, fmt, str::Utf8Error};
+
 use storage::snapshot::iterator::SnapshotIteratorError;
 
 #[derive(Debug)]
 pub enum EncodingError {
     UFT8Decode { bytes: Box<[u8]>, source: Utf8Error },
-    TypeIDAllocate {source:  std::sync::Arc<SnapshotIteratorError> },
+    TypeIDAllocate { source: std::sync::Arc<SnapshotIteratorError> },
     ExistingTypesRead { source: std::sync::Arc<SnapshotIteratorError> },
-    TypeIDsExhausted { kind: crate::graph::type_::Kind }
+    TypeIDsExhausted { kind: crate::graph::type_::Kind },
 }
 
 impl fmt::Display for EncodingError {
@@ -27,7 +28,7 @@ impl Error for EncodingError {
             Self::UFT8Decode { source, .. } => Some(source),
             Self::TypeIDAllocate { source, .. } => Some(source),
             Self::ExistingTypesRead { source, .. } => Some(source),
-            Self::TypeIDsExhausted {..} => None,
+            Self::TypeIDsExhausted { .. } => None,
         }
     }
 }

@@ -6,8 +6,7 @@
 
 use std::sync::Arc;
 
-use database::Database;
-use database::transaction::TransactionRead;
+use database::{transaction::TransactionRead, Database};
 use encoding::graph::type_::Kind;
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_dir, init_logging};

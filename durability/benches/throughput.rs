@@ -44,7 +44,9 @@ fn throughput_small(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("throughput");
     group.throughput(Throughput::Bytes(serialized_len as u64));
-    group.bench_function("write_small", |b| b.iter(|| wal.sequenced_write(TestRecord::RECORD_TYPE, message.bytes()).unwrap()));
+    group.bench_function("write_small", |b| {
+        b.iter(|| wal.sequenced_write(TestRecord::RECORD_TYPE, message.bytes()).unwrap())
+    });
     group.finish();
 }
 
@@ -57,7 +59,9 @@ fn throughput_large(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("throughput");
     group.throughput(Throughput::Bytes(serialized_len as u64));
-    group.bench_function("write_large", |b| b.iter(|| wal.sequenced_write(TestRecord::RECORD_TYPE, message.bytes()).unwrap()));
+    group.bench_function("write_large", |b| {
+        b.iter(|| wal.sequenced_write(TestRecord::RECORD_TYPE, message.bytes()).unwrap())
+    });
     group.finish();
 }
 

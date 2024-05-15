@@ -14,8 +14,8 @@ use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError},
+    sequence_number::SequenceNumber,
 };
-use crate::sequence_number::SequenceNumber;
 
 pub(crate) struct MVCCRangeIterator<'storage, const PS: usize> {
     storage_name: &'storage str,

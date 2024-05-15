@@ -5,8 +5,10 @@
  */
 
 use crate::type_::{
-    type_cache::TypeCache,
-    type_cache::kind_cache::{CommonTypeCache, OwnerPlayerCache},
+    type_cache::{
+        kind_cache::{CommonTypeCache, OwnerPlayerCache},
+        TypeCache,
+    },
     type_manager::KindAPI,
 };
 

@@ -6,11 +6,11 @@
 
 pub mod buffer;
 pub mod iterator;
+pub mod lock;
 mod snapshot;
 pub mod write;
-pub mod lock;
 
 pub use snapshot::{
-    ReadableSnapshot, WritableSnapshot, ReadSnapshot, SchemaSnapshot, CommittableSnapshot,
-    SnapshotError, SnapshotGetError, WriteSnapshot,
+    CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, SnapshotGetError,
+    WritableSnapshot, WriteSnapshot,
 };

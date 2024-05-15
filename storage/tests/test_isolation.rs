@@ -4,24 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::path::Path;
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
-use durability::{wal::WAL};
+use durability::wal::WAL;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
+    durability_client::{DurabilityClient, WALClient},
     isolation_manager::IsolationConflict,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::KeyspaceSet,
-    MVCCStorage,
-    snapshot::{CommittableSnapshot, ReadableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot}, StorageCommitError,
+    snapshot::{CommittableSnapshot, ReadableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
+    MVCCStorage, StorageCommitError,
 };
-use storage::durability_client::{DurabilityClient, WALClient};
 use test_utils::{create_tmp_dir, init_logging};
-use crate::test_common::{create_storage, load_storage};
+
 use self::TestKeyspaceSet::Keyspace;
+use crate::test_common::{create_storage, load_storage};
 
 mod test_common;
 
@@ -523,8 +523,8 @@ fn imp_setup(path: &Path) -> Arc<MVCCStorage<WALClient>> {
 }
 
 fn imp_ops<D>(snapshot_update: &mut WriteSnapshot<D>, snapshot_delete: &mut WriteSnapshot<D>)
-    where
-        D: DurabilityClient,
+where
+    D: DurabilityClient,
 {
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let key_2 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
@@ -548,8 +548,8 @@ fn imp_ops<D>(snapshot_update: &mut WriteSnapshot<D>, snapshot_delete: &mut Writ
 }
 
 fn imp_validate_serializable<D>(storage: Arc<MVCCStorage<D>>) -> bool
-    where
-        D: DurabilityClient,
+where
+    D: DurabilityClient,
 {
     let key_1: StorageKeyArray<BUFFER_KEY_INLINE> = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let key_2: StorageKeyArray<BUFFER_KEY_INLINE> = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));

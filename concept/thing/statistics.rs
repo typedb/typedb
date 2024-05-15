@@ -4,41 +4,51 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{BTreeMap, HashMap};
-use std::hash::Hash;
-use std::ops::{Add, AddAssign, Bound};
-use std::sync::atomic::Ordering;
-
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde::de::{Error, SeqAccess, Visitor};
-use serde::ser::SerializeStruct;
+use std::{
+    collections::{BTreeMap, HashMap},
+    hash::Hash,
+    ops::{Add, AddAssign, Bound},
+    sync::atomic::Ordering,
+};
 
 use bytes::Bytes;
 use durability::DurabilityRecordType;
-use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeRelationIndex, ThingEdgeRolePlayer};
-use encoding::graph::thing::vertex_attribute::AttributeVertex;
-use encoding::graph::thing::vertex_object::ObjectVertex;
-use encoding::graph::type_::vertex::{build_vertex_attribute_type, build_vertex_entity_type, build_vertex_relation_type, build_vertex_role_type, is_vertex_attribute_type, is_vertex_entity_type, is_vertex_relation_type, is_vertex_role_type, new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type, TypeID, TypeIDUInt};
-use encoding::graph::Typed;
+use encoding::graph::{
+    thing::{
+        edge::{ThingEdgeHas, ThingEdgeRelationIndex, ThingEdgeRolePlayer},
+        vertex_attribute::AttributeVertex,
+        vertex_object::ObjectVertex,
+    },
+    type_::vertex::{
+        build_vertex_attribute_type, build_vertex_entity_type, build_vertex_relation_type, build_vertex_role_type,
+        is_vertex_attribute_type, is_vertex_entity_type, is_vertex_relation_type, is_vertex_role_type,
+        new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type, TypeID,
+        TypeIDUInt,
+    },
+    Typed,
+};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::durability_client::{DurabilityRecord, UnsequencedDurabilityRecord};
-use storage::iterator::MVCCReadError;
-use storage::key_value::{StorageKeyArray, StorageKeyReference};
-use storage::MVCCStorage;
-use storage::sequence_number::SequenceNumber;
-use storage::snapshot::ReadableSnapshot;
-use storage::snapshot::write::Write;
+use serde::{
+    de::{Error, SeqAccess, Visitor},
+    ser::SerializeStruct,
+    Deserialize, Deserializer, Serialize, Serializer,
+};
+use storage::{
+    durability_client::{DurabilityRecord, UnsequencedDurabilityRecord},
+    iterator::MVCCReadError,
+    key_value::{StorageKeyArray, StorageKeyReference},
+    sequence_number::SequenceNumber,
+    snapshot::{write::Write, ReadableSnapshot},
+    MVCCStorage,
+};
 
-use crate::thing::attribute::Attribute;
-use crate::thing::entity::Entity;
-use crate::thing::object::Object;
-use crate::thing::relation::Relation;
-use crate::type_::attribute_type::AttributeType;
-use crate::type_::entity_type::EntityType;
-use crate::type_::object_type::ObjectType;
-use crate::type_::relation_type::RelationType;
-use crate::type_::role_type::RoleType;
-use crate::type_::TypeAPI;
+use crate::{
+    thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation},
+    type_::{
+        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
+        role_type::RoleType, TypeAPI,
+    },
+};
 
 type StatisticsVersion = u64;
 
@@ -69,7 +79,6 @@ pub struct Statistics {
 
     // TODO: adding role types is possible, but won't help with filtering before reading storage since roles are not in the prefix
     pub player_index_counts: HashMap<ObjectType<'static>, HashMap<ObjectType<'static>, u64>>,
-
     // future: attribute value distributions, attribute value ownership distributions, etc.
 }
 
@@ -124,7 +133,14 @@ impl Statistics {
         let record_open_sequence_number = snapshot.open_sequence_number();
         for (key, write) in snapshot.iterate_buffered_writes() {
             let key_reference = StorageKeyReference::from(&key);
-            let delta = Self::write_to_delta(&key, &write, record_open_sequence_number, snapshot_commit_sequence_number, commits, storage)?;
+            let delta = Self::write_to_delta(
+                &key,
+                &write,
+                record_open_sequence_number,
+                snapshot_commit_sequence_number,
+                commits,
+                storage,
+            )?;
             if ObjectVertex::is_entity_vertex(key_reference) {
                 let type_ = Entity::new(ObjectVertex::new(Bytes::Reference(key_reference.byte_ref()))).type_();
                 self.update_entities(type_, delta);
@@ -140,18 +156,26 @@ impl Statistics {
             } else if ThingEdgeRolePlayer::is_role_player(key_reference) {
                 let edge = ThingEdgeRolePlayer::new(Bytes::Reference(key_reference.byte_ref()));
                 let role_type = RoleType::new(build_vertex_role_type(edge.role_id()));
-                self.update_role_player(Object::new(edge.from()).type_(), role_type, Relation::new(edge.to()).type_(), delta)
+                self.update_role_player(
+                    Object::new(edge.from()).type_(),
+                    role_type,
+                    Relation::new(edge.to()).type_(),
+                    delta,
+                )
             } else if ThingEdgeRelationIndex::is_index(key_reference) {
                 let edge = ThingEdgeRelationIndex::new(Bytes::Reference(key_reference.byte_ref()));
                 self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta)
             } else if is_vertex_entity_type(key_reference) {
-                let type_ = EntityType::new(new_vertex_entity_type(Bytes::Reference(key_reference.byte_ref()).into_owned()));
+                let type_ =
+                    EntityType::new(new_vertex_entity_type(Bytes::Reference(key_reference.byte_ref()).into_owned()));
                 if matches!(write, Write::Delete) {
                     self.entity_counts.remove(&type_);
                     self.clear_object_type(ObjectType::Entity(type_));
                 }
             } else if is_vertex_relation_type(key_reference) {
-                let type_ = RelationType::new(new_vertex_relation_type(Bytes::Reference(key_reference.byte_ref()).into_owned()));
+                let type_ = RelationType::new(new_vertex_relation_type(
+                    Bytes::Reference(key_reference.byte_ref()).into_owned(),
+                ));
                 if matches!(write, Write::Delete) {
                     self.relation_counts.remove(&type_);
                     self.relation_role_counts.remove(&type_);
@@ -159,7 +183,9 @@ impl Statistics {
                     self.clear_object_type(as_object_type.clone());
                 }
             } else if is_vertex_attribute_type(key_reference) {
-                let type_ = AttributeType::new(new_vertex_attribute_type(Bytes::Reference(key_reference.byte_ref()).into_owned()));
+                let type_ = AttributeType::new(new_vertex_attribute_type(
+                    Bytes::Reference(key_reference.byte_ref()).into_owned(),
+                ));
                 if matches!(write, Write::Delete) {
                     self.attribute_counts.remove(&type_);
                     self.attribute_owner_counts.remove(&type_);
@@ -169,7 +195,8 @@ impl Statistics {
                     self.has_attribute_counts.retain(|_, map| !map.is_empty());
                 }
             } else if is_vertex_role_type(key_reference) {
-                let type_ = RoleType::new(new_vertex_role_type(Bytes::Reference(key_reference.byte_ref()).into_owned()));
+                let type_ =
+                    RoleType::new(new_vertex_role_type(Bytes::Reference(key_reference.byte_ref()).into_owned()));
                 if matches!(write, Write::Delete) {
                     self.role_counts.remove(&type_);
                     self.role_player_counts.iter_mut().for_each(|(_, map)| {
@@ -222,20 +249,27 @@ impl Statistics {
                 // 1. we can't tell from the current set of commits whether a predecessor could have written the same key (open < commits start)
                 // 2. any commit in the set of commits modifies the same key at all
 
-                let check_storage = write_open_sequence_number < *commits.first_key_value().unwrap().0 || (
-                    commits.range::<SequenceNumber, _>((Bound::Excluded(write_open_sequence_number), Bound::Excluded(write_commit_sequence_number)))
+                let check_storage = write_open_sequence_number < *commits.first_key_value().unwrap().0
+                    || (commits
+                        .range::<SequenceNumber, _>((
+                            Bound::Excluded(write_open_sequence_number),
+                            Bound::Excluded(write_commit_sequence_number),
+                        ))
                         .any(|(seq, snapshot)| {
-                            snapshot.get_buffered_write_mapped(StorageKeyReference::from(write_key), |v| true)
+                            snapshot
+                                .get_buffered_write_mapped(StorageKeyReference::from(write_key), |v| true)
                                 .unwrap_or(false)
-                        })
-                );
+                        }));
 
                 if check_storage {
-                    if storage.get_mapped(
-                        StorageKeyReference::from(write_key),
-                        write_commit_sequence_number.previous(),
-                        |_| true,
-                    )?.unwrap_or(false) {
+                    if storage
+                        .get_mapped(
+                            StorageKeyReference::from(write_key),
+                            write_commit_sequence_number.previous(),
+                            |_| true,
+                        )?
+                        .unwrap_or(false)
+                    {
                         // exists in storage before PUT is committed
                         return Ok(0);
                     } else {
@@ -274,10 +308,20 @@ impl Statistics {
     }
 
     fn update_has(&mut self, owner_type: ObjectType<'static>, attribute_type: AttributeType<'static>, delta: i64) {
-        self.has_attribute_counts.entry(owner_type.clone()).or_insert_with(|| HashMap::new())
-            .entry(attribute_type.clone()).or_insert(0).checked_add_signed(delta).unwrap();
-        self.attribute_owner_counts.entry(attribute_type).or_insert_with(|| HashMap::new())
-            .entry(owner_type).or_insert(0).checked_add_signed(delta).unwrap();
+        self.has_attribute_counts
+            .entry(owner_type.clone())
+            .or_insert_with(|| HashMap::new())
+            .entry(attribute_type.clone())
+            .or_insert(0)
+            .checked_add_signed(delta)
+            .unwrap();
+        self.attribute_owner_counts
+            .entry(attribute_type)
+            .or_insert_with(|| HashMap::new())
+            .entry(owner_type)
+            .or_insert(0)
+            .checked_add_signed(delta)
+            .unwrap();
         self.total_has_count.checked_add_signed(delta).unwrap();
     }
 
@@ -290,18 +334,43 @@ impl Statistics {
     ) {
         self.role_counts.entry(role_type.clone()).or_insert(0).checked_add_signed(delta).unwrap();
         self.total_role_count.checked_add_signed(delta).unwrap();
-        self.role_player_counts.entry(player_type).or_insert_with(|| HashMap::new())
-            .entry(role_type.clone()).or_insert(0).checked_add_signed(delta).unwrap();
-        self.relation_role_counts.entry(relation_type).or_insert_with(|| HashMap::new())
-            .entry(role_type).or_insert(0).checked_add_signed(delta).unwrap();
+        self.role_player_counts
+            .entry(player_type)
+            .or_insert_with(|| HashMap::new())
+            .entry(role_type.clone())
+            .or_insert(0)
+            .checked_add_signed(delta)
+            .unwrap();
+        self.relation_role_counts
+            .entry(relation_type)
+            .or_insert_with(|| HashMap::new())
+            .entry(role_type)
+            .or_insert(0)
+            .checked_add_signed(delta)
+            .unwrap();
     }
 
-    fn update_indexed_player(&mut self, player_1_type: ObjectType<'static>, player_2_type: ObjectType<'static>, delta: i64) {
-        self.player_index_counts.entry(player_1_type.clone()).or_insert_with(|| HashMap::new())
-            .entry(player_2_type.clone()).or_insert(0).checked_add_signed(delta).unwrap();
+    fn update_indexed_player(
+        &mut self,
+        player_1_type: ObjectType<'static>,
+        player_2_type: ObjectType<'static>,
+        delta: i64,
+    ) {
+        self.player_index_counts
+            .entry(player_1_type.clone())
+            .or_insert_with(|| HashMap::new())
+            .entry(player_2_type.clone())
+            .or_insert(0)
+            .checked_add_signed(delta)
+            .unwrap();
         if player_1_type != player_2_type {
-            self.player_index_counts.entry(player_2_type).or_insert_with(|| HashMap::new())
-                .entry(player_1_type).or_insert(0).checked_add_signed(delta).unwrap();
+            self.player_index_counts
+                .entry(player_2_type)
+                .or_insert_with(|| HashMap::new())
+                .entry(player_1_type)
+                .or_insert(0)
+                .checked_add_signed(delta)
+                .unwrap();
         }
     }
 }
@@ -341,7 +410,9 @@ impl SerialisableType {
     pub(crate) fn into_object_type(self) -> ObjectType<'static> {
         match self {
             Self::Entity(id) => ObjectType::Entity(EntityType::new(build_vertex_entity_type(TypeID::build(id)))),
-            Self::Relation(id) => ObjectType::Relation(RelationType::new(build_vertex_relation_type(TypeID::build(id)))),
+            Self::Relation(id) => {
+                ObjectType::Relation(RelationType::new(build_vertex_relation_type(TypeID::build(id))))
+            }
             _ => panic!("Incompatible conversion."),
         }
     }
@@ -410,19 +481,22 @@ impl DurabilityRecord for Statistics {
 impl UnsequencedDurabilityRecord for Statistics {}
 
 mod serialise {
-    use std::collections::HashMap;
-    use std::fmt;
+    use std::{collections::HashMap, fmt};
 
-    use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-    use serde::de::{MapAccess, SeqAccess, Visitor};
-    use serde::ser::SerializeStruct;
+    use serde::{
+        de,
+        de::{MapAccess, SeqAccess, Visitor},
+        ser::SerializeStruct,
+        Deserialize, Deserializer, Serialize, Serializer,
+    };
 
-    use crate::thing::statistics::{SerialisableType, Statistics};
-    use crate::type_::attribute_type::AttributeType;
-    use crate::type_::entity_type::EntityType;
-    use crate::type_::object_type::ObjectType;
-    use crate::type_::relation_type::RelationType;
-    use crate::type_::role_type::RoleType;
+    use crate::{
+        thing::statistics::{SerialisableType, Statistics},
+        type_::{
+            attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType,
+            relation_type::RelationType, role_type::RoleType,
+        },
+    };
 
     enum Field {
         StatisticsVersion,
@@ -513,8 +587,8 @@ mod serialise {
 
     impl Serialize for Statistics {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: Serializer,
+        where
+            S: Serializer,
         {
             let mut state = serializer.serialize_struct("Statistics", Field::NAMES.len())?;
 
@@ -532,29 +606,24 @@ mod serialise {
             state.serialize_field(Field::AttributeCounts.name(), &to_serialisable_map(&self.attribute_counts))?;
             state.serialize_field(Field::RoleCounts.name(), &to_serialisable_map(&self.role_counts))?;
 
-            let has_attribute_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> = to_serialisable_map_map(
-                &self.has_attribute_counts
-            );
+            let has_attribute_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
+                to_serialisable_map_map(&self.has_attribute_counts);
             state.serialize_field(Field::HasAttributeCounts.name(), &has_attribute_counts)?;
 
-            let attribute_owner_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> = to_serialisable_map_map(
-                &self.attribute_owner_counts
-            );
+            let attribute_owner_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
+                to_serialisable_map_map(&self.attribute_owner_counts);
             state.serialize_field(Field::AttributeOwnerCounts.name(), &attribute_owner_counts)?;
 
-            let role_player_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> = to_serialisable_map_map(
-                &self.role_player_counts
-            );
+            let role_player_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
+                to_serialisable_map_map(&self.role_player_counts);
             state.serialize_field(Field::RolePlayerCounts.name(), &role_player_counts)?;
 
-            let relation_role_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> = to_serialisable_map_map(
-                &self.relation_role_counts
-            );
+            let relation_role_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
+                to_serialisable_map_map(&self.relation_role_counts);
             state.serialize_field(Field::RelationRoleCounts.name(), &relation_role_counts)?;
 
-            let player_index_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> = to_serialisable_map_map(
-                &self.player_index_counts
-            );
+            let player_index_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
+                to_serialisable_map_map(&self.player_index_counts);
             state.serialize_field(Field::PlayerIndexCounts.name(), &player_index_counts)?;
 
             state.end()
@@ -562,58 +631,46 @@ mod serialise {
     }
 
     fn to_serialisable_map_map<Type1: Into<SerialisableType> + Clone, Type2: Into<SerialisableType> + Clone>(
-        map: &HashMap<Type1, HashMap<Type2, u64>>
+        map: &HashMap<Type1, HashMap<Type2, u64>>,
     ) -> HashMap<SerialisableType, HashMap<SerialisableType, u64>> {
-        map.iter()
-            .map(|(type_, value)| (type_.clone().into(), to_serialisable_map(value)))
-            .collect()
+        map.iter().map(|(type_, value)| (type_.clone().into(), to_serialisable_map(value))).collect()
     }
 
-    fn to_serialisable_map<Type_: Into<SerialisableType> + Clone>(map: &HashMap<Type_, u64>) -> HashMap<SerialisableType, u64> {
-        map.iter()
-            .map(|(type_, value)| (type_.clone().into(), *value))
-            .collect()
+    fn to_serialisable_map<Type_: Into<SerialisableType> + Clone>(
+        map: &HashMap<Type_, u64>,
+    ) -> HashMap<SerialisableType, u64> {
+        map.iter().map(|(type_, value)| (type_.clone().into(), *value)).collect()
     }
 
     fn into_entity_map(map: HashMap<SerialisableType, u64>) -> HashMap<EntityType<'static>, u64> {
-        map.into_iter()
-            .map(|(type_, value)| (type_.into_entity_type(), value))
-            .collect()
+        map.into_iter().map(|(type_, value)| (type_.into_entity_type(), value)).collect()
     }
 
     fn into_relation_map(map: HashMap<SerialisableType, u64>) -> HashMap<RelationType<'static>, u64> {
-        map.into_iter()
-            .map(|(type_, value)| (type_.into_relation_type(), value))
-            .collect()
+        map.into_iter().map(|(type_, value)| (type_.into_relation_type(), value)).collect()
     }
 
     fn into_attribute_map(map: HashMap<SerialisableType, u64>) -> HashMap<AttributeType<'static>, u64> {
-        map.into_iter()
-            .map(|(type_, value)| (type_.into_attribute_type(), value))
-            .collect()
+        map.into_iter().map(|(type_, value)| (type_.into_attribute_type(), value)).collect()
     }
 
     fn into_role_map(map: HashMap<SerialisableType, u64>) -> HashMap<RoleType<'static>, u64> {
-        map.into_iter()
-            .map(|(type_, value)| (type_.into_role_type(), value))
-            .collect()
+        map.into_iter().map(|(type_, value)| (type_.into_role_type(), value)).collect()
     }
 
     fn into_object_map(map: HashMap<SerialisableType, u64>) -> HashMap<ObjectType<'static>, u64> {
-        map.into_iter()
-            .map(|(type_, value)| (type_.into_object_type(), value))
-            .collect()
+        map.into_iter().map(|(type_, value)| (type_.into_object_type(), value)).collect()
     }
 
     impl<'de> Deserialize<'de> for Statistics {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where
-                D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
         {
             impl<'de> Deserialize<'de> for Field {
                 fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
-                    where
-                        D: Deserializer<'de>,
+                where
+                    D: Deserializer<'de>,
                 {
                     struct FieldVisitor;
 
@@ -625,11 +682,10 @@ mod serialise {
                         }
 
                         fn visit_str<E>(self, value: &str) -> Result<Field, E>
-                            where E: de::Error,
+                        where
+                            E: de::Error,
                         {
-                            Field::from(value).ok_or_else(|| {
-                                de::Error::unknown_field(value, &Field::NAMES)
-                            })
+                            Field::from(value).ok_or_else(|| de::Error::unknown_field(value, &Field::NAMES))
                         }
                     }
 
@@ -647,65 +703,60 @@ mod serialise {
                 }
 
                 fn visit_seq<V>(self, mut seq: V) -> Result<Statistics, V::Error>
-                    where
-                        V: SeqAccess<'de>,
+                where
+                    V: SeqAccess<'de>,
                 {
-                    let statistics_version = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(0, &self))?;
-                    let open_sequence_number = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                    let total_thing_count = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(2, &self))?;
-                    let total_entity_count = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(3, &self))?;
-                    let total_relation_count = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(4, &self))?;
-                    let total_attribute_count = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(5, &self))?;
-                    let total_role_count = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(6, &self))?;
-                    let total_has_count = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(7, &self))?;
-                    let encoded_entity_counts = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(8, &self))?;
+                    let statistics_version = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                    let open_sequence_number =
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                    let total_thing_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(2, &self))?;
+                    let total_entity_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(3, &self))?;
+                    let total_relation_count =
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(4, &self))?;
+                    let total_attribute_count =
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(5, &self))?;
+                    let total_role_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(6, &self))?;
+                    let total_has_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(7, &self))?;
+                    let encoded_entity_counts =
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(8, &self))?;
                     let entity_counts = into_entity_map(encoded_entity_counts);
-                    let encoded_relation_counts = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(9, &self))?;
+                    let encoded_relation_counts =
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(9, &self))?;
                     let relation_counts = into_relation_map(encoded_relation_counts);
-                    let encoded_attribute_counts = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(10, &self))?;
+                    let encoded_attribute_counts =
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(10, &self))?;
                     let attribute_counts = into_attribute_map(encoded_attribute_counts);
-                    let encoded_role_counts = seq.next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(11, &self))?;
+                    let encoded_role_counts =
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(11, &self))?;
                     let role_counts = into_role_map(encoded_role_counts);
                     let encoded_has_attribute_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                        seq.next_element()?
-                            .ok_or_else(|| de::Error::invalid_length(12, &self))?;
-                    let has_attribute_counts = encoded_has_attribute_counts.into_iter()
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(12, &self))?;
+                    let has_attribute_counts = encoded_has_attribute_counts
+                        .into_iter()
                         .map(|(type_1, map)| (type_1.into_object_type(), into_attribute_map(map)))
                         .collect();
                     let encoded_attribute_owner_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                        seq.next_element()?
-                            .ok_or_else(|| de::Error::invalid_length(13, &self))?;
-                    let attribute_owner_counts = encoded_attribute_owner_counts.into_iter()
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(13, &self))?;
+                    let attribute_owner_counts = encoded_attribute_owner_counts
+                        .into_iter()
                         .map(|(type_1, map)| (type_1.into_attribute_type(), into_object_map(map)))
                         .collect();
                     let encoded_role_player_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                        seq.next_element()?
-                            .ok_or_else(|| de::Error::invalid_length(14, &self))?;
-                    let role_player_counts = encoded_role_player_counts.into_iter()
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(14, &self))?;
+                    let role_player_counts = encoded_role_player_counts
+                        .into_iter()
                         .map(|(type_1, map)| (type_1.into_object_type(), into_role_map(map)))
                         .collect();
                     let encoded_relation_role_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                        seq.next_element()?
-                            .ok_or_else(|| de::Error::invalid_length(15, &self))?;
-                    let relation_role_counts = encoded_relation_role_counts.into_iter()
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(15, &self))?;
+                    let relation_role_counts = encoded_relation_role_counts
+                        .into_iter()
                         .map(|(type_1, map)| (type_1.into_relation_type(), into_role_map(map)))
                         .collect();
                     let encoded_player_index_counts: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
-                        seq.next_element()?
-                            .ok_or_else(|| de::Error::invalid_length(16, &self))?;
-                    let player_index_counts = encoded_player_index_counts.into_iter()
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(16, &self))?;
+                    let player_index_counts = encoded_player_index_counts
+                        .into_iter()
                         .map(|(type_1, map)| (type_1.into_object_type(), into_object_map(map)))
                         .collect();
                     Ok(Statistics {
@@ -730,7 +781,8 @@ mod serialise {
                 }
 
                 fn visit_map<V>(self, mut map: V) -> Result<Statistics, V::Error>
-                    where V: MapAccess<'de>,
+                where
+                    V: MapAccess<'de>,
                 {
                     let mut statistics_version = None;
                     let mut open_sequence_number = None;
@@ -827,46 +879,66 @@ mod serialise {
                                 if has_attribute_counts.is_some() {
                                     return Err(de::Error::duplicate_field(Field::HasAttributeCounts.name()));
                                 }
-                                let encoded: HashMap<SerialisableType, HashMap<SerialisableType, u64>> = map.next_value()?;
-                                has_attribute_counts = Some(encoded.into_iter()
-                                    .map(|(type_1, map)| (type_1.into_object_type(), into_attribute_map(map)))
-                                    .collect());
+                                let encoded: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
+                                    map.next_value()?;
+                                has_attribute_counts = Some(
+                                    encoded
+                                        .into_iter()
+                                        .map(|(type_1, map)| (type_1.into_object_type(), into_attribute_map(map)))
+                                        .collect(),
+                                );
                             }
                             Field::AttributeOwnerCounts => {
                                 if attribute_owner_counts.is_some() {
                                     return Err(de::Error::duplicate_field(Field::AttributeOwnerCounts.name()));
                                 }
-                                let encoded: HashMap<SerialisableType, HashMap<SerialisableType, u64>> = map.next_value()?;
-                                attribute_owner_counts = Some(encoded.into_iter()
-                                    .map(|(type_1, map)| (type_1.into_attribute_type(), into_object_map(map)))
-                                    .collect());
+                                let encoded: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
+                                    map.next_value()?;
+                                attribute_owner_counts = Some(
+                                    encoded
+                                        .into_iter()
+                                        .map(|(type_1, map)| (type_1.into_attribute_type(), into_object_map(map)))
+                                        .collect(),
+                                );
                             }
                             Field::RolePlayerCounts => {
                                 if role_player_counts.is_some() {
                                     return Err(de::Error::duplicate_field(Field::RolePlayerCounts.name()));
                                 }
-                                let encoded: HashMap<SerialisableType, HashMap<SerialisableType, u64>> = map.next_value()?;
-                                role_player_counts = Some(encoded.into_iter()
-                                    .map(|(type_1, map)| (type_1.into_object_type(), into_role_map(map)))
-                                    .collect());
+                                let encoded: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
+                                    map.next_value()?;
+                                role_player_counts = Some(
+                                    encoded
+                                        .into_iter()
+                                        .map(|(type_1, map)| (type_1.into_object_type(), into_role_map(map)))
+                                        .collect(),
+                                );
                             }
                             Field::RelationRoleCounts => {
                                 if relation_role_counts.is_some() {
                                     return Err(de::Error::duplicate_field(Field::RelationRoleCounts.name()));
                                 }
-                                let encoded: HashMap<SerialisableType, HashMap<SerialisableType, u64>> = map.next_value()?;
-                                relation_role_counts = Some(encoded.into_iter()
-                                    .map(|(type_1, map)| (type_1.into_relation_type(), into_role_map(map)))
-                                    .collect());
+                                let encoded: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
+                                    map.next_value()?;
+                                relation_role_counts = Some(
+                                    encoded
+                                        .into_iter()
+                                        .map(|(type_1, map)| (type_1.into_relation_type(), into_role_map(map)))
+                                        .collect(),
+                                );
                             }
                             Field::PlayerIndexCounts => {
                                 if player_index_counts.is_some() {
                                     return Err(de::Error::duplicate_field(Field::PlayerIndexCounts.name()));
                                 }
-                                let encoded: HashMap<SerialisableType, HashMap<SerialisableType, u64>> = map.next_value()?;
-                                player_index_counts = Some(encoded.into_iter()
-                                    .map(|(type_1, map)| (type_1.into_object_type(), into_object_map(map)))
-                                    .collect());
+                                let encoded: HashMap<SerialisableType, HashMap<SerialisableType, u64>> =
+                                    map.next_value()?;
+                                player_index_counts = Some(
+                                    encoded
+                                        .into_iter()
+                                        .map(|(type_1, map)| (type_1.into_object_type(), into_object_map(map)))
+                                        .collect(),
+                                );
                             }
                         }
                     }
@@ -894,8 +966,7 @@ mod serialise {
                             .ok_or_else(|| de::Error::missing_field(Field::RelationCounts.name()))?,
                         attribute_counts: attribute_counts
                             .ok_or_else(|| de::Error::missing_field(Field::AttributeCounts.name()))?,
-                        role_counts: role_counts
-                            .ok_or_else(|| de::Error::missing_field(Field::RoleCounts.name()))?,
+                        role_counts: role_counts.ok_or_else(|| de::Error::missing_field(Field::RoleCounts.name()))?,
                         has_attribute_counts: has_attribute_counts
                             .ok_or_else(|| de::Error::missing_field(Field::HasAttributeCounts.name()))?,
                         attribute_owner_counts: attribute_owner_counts
