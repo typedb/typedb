@@ -40,10 +40,24 @@ impl<'a> Object<'a> {
         }
     }
 
-    pub(crate) fn as_reference<'this>(&'this self) -> Object<'this> {
+    pub(crate) fn as_reference(&self) -> Object<'_> {
         match self {
             Object::Entity(entity) => Object::Entity(entity.as_reference()),
             Object::Relation(relation) => Object::Relation(relation.as_reference()),
+        }
+    }
+
+    pub fn unwrap_entity(self) -> Entity<'a> {
+        match self {
+            Self::Entity(entity) => entity,
+            Self::Relation(relation) => panic!("called `Object::unwrap_entity()` on a `Relation` value: {relation:?}"),
+        }
+    }
+
+    pub fn unwrap_relation(self) -> Relation<'a> {
+        match self {
+            Self::Relation(relation) => relation,
+            Self::Entity(entity) => panic!("called `Object::unwrap_relation()` on an `Entity` value: {entity:?}"),
         }
     }
 
@@ -85,7 +99,7 @@ impl<'a> Object<'a> {
         }
     }
 
-    pub(crate) fn into_owned(self) -> Object<'static> {
+    pub fn into_owned(self) -> Object<'static> {
         match self {
             Object::Entity(entity) => Object::Entity(entity.into_owned()),
             Object::Relation(relation) => Object::Relation(relation.into_owned()),

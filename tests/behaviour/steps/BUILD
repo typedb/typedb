@@ -19,7 +19,9 @@ rust_library(
         "//storage/durability:durability",
         "//util/test:test_utils",
 
+        "@crates//:chrono",
         "@crates//:cucumber",
+        "@crates//:itertools",
         "@crates//:macro_rules_attribute",
     ],
 )

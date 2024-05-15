@@ -10,7 +10,6 @@ pub(crate) struct InfixID {
 }
 
 impl InfixID {
-
     pub(crate) const LENGTH: usize = 1;
 
     pub(crate) const fn new(bytes: [u8; InfixID::LENGTH]) -> Self {
@@ -33,7 +32,9 @@ pub enum Infix {
     PropertyAnnotationAbstract,
     PropertyAnnotationDistinct,
     PropertyAnnotationIndependent,
+    PropertyAnnotationKey,
     PropertyAnnotationCardinality,
+    PropertyAnnotationRegex,
     _PropertyAnnotationLast, // marker to indicate end of reserved range for annotations
 
     // Data properties
@@ -55,6 +56,7 @@ macro_rules! infix_functions {
         }
 
         pub(crate) fn from_infix_id(infix_id: InfixID) -> Self {
+            #[deny(unreachable_patterns)] // fail to compile if any infixes are the same
             match infix_id.bytes() {
                 $(
                     $bytes => {Self::$name}
@@ -79,7 +81,9 @@ impl Infix {
         PropertyAnnotationAbstract => [50];
         PropertyAnnotationDistinct => [51];
         PropertyAnnotationIndependent => [52];
-        PropertyAnnotationCardinality => [53];
+        PropertyAnnotationKey => [53];
+        PropertyAnnotationCardinality => [54];
+        PropertyAnnotationRegex => [55];
         _PropertyAnnotationLast => [99];
 
         PropertyHasOrder => [100];

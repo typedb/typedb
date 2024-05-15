@@ -4,8 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt;
-
+use std::{
+    fmt::{self, Write},
+    usize,
+};
 
 // TODO: this needs to be optimised using bigger strides than a single byte!
 ///
@@ -51,5 +53,25 @@ pub enum BytesErrorKind {
 impl fmt::Display for BytesError {
     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
+    }
+}
+
+pub(crate) struct HexBytesFormatter<'a>(pub(crate) &'a [u8]);
+
+impl fmt::Debug for HexBytesFormatter<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        const GROUP: usize = 2;
+        const BREAK: usize = 16;
+        for (i, byte) in self.0.iter().enumerate() {
+            write!(f, "{:02X}", byte)?;
+            if i + 1 < self.0.len() {
+                if f.alternate() && (i + 1) % BREAK == 0 {
+                    f.write_char('\n')?;
+                } else if (i + 1) % GROUP == 0 {
+                    f.write_char(' ')?;
+                }
+            }
+        }
+        Ok(())
     }
 }

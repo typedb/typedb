@@ -80,6 +80,16 @@ pub trait WritableSnapshot: ReadableSnapshot {
         self.operations_mut().writes_in_mut(keyspace_id).put(byte_array, value);
     }
 
+    fn unput(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
+        self.unput_val(key, ByteArray::empty())
+    }
+
+    fn unput_val(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
+        let keyspace_id = key.keyspace_id();
+        let byte_array = key.into_byte_array();
+        self.operations_mut().writes_in_mut(keyspace_id).unput(byte_array, value);
+    }
+
     /// Insert a delete marker for the key with a new version
     fn delete(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
         let keyspace_id = key.keyspace_id();
@@ -126,7 +136,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
         self.operations_mut().lock_add(key, LockType::Exclusive)
     }
 
-    fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<64>, Write)> + '_ {
+    fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<BUFFER_KEY_INLINE>, Write)> + '_ {
         self.operations().write_buffers().flat_map(|buffer| {
             // note: this currently copies all the buffers
             buffer
@@ -139,7 +149,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
     fn iterate_writes_range<'this, const PS: usize>(
         &'this self,
         range: KeyRange<Bytes<'this, PS>>,
-    ) -> impl Iterator<Item = (StorageKeyArray<64>, Write)> + '_ {
+    ) -> impl Iterator<Item = (StorageKeyArray<BUFFER_KEY_INLINE>, Write)> + '_ {
         self.operations()
             .write_buffers()
             .flat_map(move |buffer| buffer.iterate_range(range.clone()).into_range().into_iter())

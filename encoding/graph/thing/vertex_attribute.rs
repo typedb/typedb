@@ -19,7 +19,10 @@ use storage::{
 use crate::{
     graph::{type_::vertex::TypeID, Typed},
     layout::prefix::{Prefix, PrefixID},
-    value::{long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType, ValueEncodable},
+    value::{
+        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, double_bytes::DoubleBytes, long_bytes::LongBytes,
+        string_bytes::StringBytes, value_type::ValueType, ValueEncodable,
+    },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
@@ -84,6 +87,7 @@ impl<'a> AttributeVertex<'a> {
             ValueType::Long => Prefix::VertexAttributeLong,
             ValueType::Double => Prefix::VertexAttributeDouble,
             ValueType::String => Prefix::VertexAttributeString,
+            ValueType::DateTime => Prefix::VertexAttributeDateTime,
         }
     }
 
@@ -93,6 +97,7 @@ impl<'a> AttributeVertex<'a> {
             Prefix::VertexAttributeLong => ValueType::Long,
             Prefix::VertexAttributeDouble => ValueType::Double,
             Prefix::VertexAttributeString => ValueType::String,
+            Prefix::VertexAttributeDateTime => ValueType::DateTime,
             _ => unreachable!("Unrecognised attribute vertex prefix type"),
         }
     }
@@ -105,7 +110,10 @@ impl<'a> AttributeVertex<'a> {
 
     pub fn value_type(&self) -> ValueType {
         match self.prefix() {
+            Prefix::VertexAttributeBoolean => ValueType::Boolean,
             Prefix::VertexAttributeLong => ValueType::Long,
+            Prefix::VertexAttributeDouble => ValueType::Double,
+            Prefix::VertexAttributeDateTime => ValueType::DateTime,
             Prefix::VertexAttributeString => ValueType::String,
             _ => unreachable!("Unexpected prefix."),
         }
@@ -156,7 +164,7 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for AttributeVertex<'a> {
     }
 }
 
-enum AttributeIDLength {
+pub(crate) enum AttributeIDLength {
     Short,
     Long,
 }
@@ -165,7 +173,7 @@ impl AttributeIDLength {
     const SHORT_LENGTH: usize = 8;
     const LONG_LENGTH: usize = 17;
 
-    const fn length(&self) -> usize {
+    pub(crate) const fn length(&self) -> usize {
         match self {
             AttributeIDLength::Short => Self::SHORT_LENGTH,
             AttributeIDLength::Long => Self::LONG_LENGTH,
@@ -180,16 +188,20 @@ impl AttributeIDLength {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum AttributeID {
+    Boolean(BooleanAttributeID),
     Long(LongAttributeID),
+    Double(DoubleAttributeID),
+    DateTime(DateTimeAttributeID),
     String(StringAttributeID),
 }
 
 impl AttributeID {
     pub fn new(value_type: ValueType, bytes: &[u8]) -> Self {
         match value_type {
-            ValueType::Boolean => todo!(),
+            ValueType::Boolean => Self::Boolean(BooleanAttributeID::new(bytes.try_into().unwrap())),
             ValueType::Long => Self::Long(LongAttributeID::new(bytes.try_into().unwrap())),
-            ValueType::Double => todo!(),
+            ValueType::Double => Self::Double(DoubleAttributeID::new(bytes.try_into().unwrap())),
+            ValueType::DateTime => Self::DateTime(DateTimeAttributeID::new(bytes.try_into().unwrap())),
             ValueType::String => Self::String(StringAttributeID::new(bytes.try_into().unwrap())),
         }
     }
@@ -197,18 +209,20 @@ impl AttributeID {
     pub fn build_inline(value: impl ValueEncodable) -> Self {
         debug_assert!(Self::is_inlineable(value.clone()));
         match value.value_type() {
-            ValueType::Boolean => todo!(),
+            ValueType::Boolean => Self::Boolean(BooleanAttributeID::build(value.encode_boolean())),
             ValueType::Long => Self::Long(LongAttributeID::build(value.encode_long())),
-            ValueType::Double => todo!(),
+            ValueType::Double => Self::Double(DoubleAttributeID::build(value.encode_double())),
+            ValueType::DateTime => Self::DateTime(DateTimeAttributeID::build(value.encode_date_time())),
             ValueType::String => Self::String(StringAttributeID::build_inline_id(value.encode_string::<256>())),
         }
     }
 
     pub fn value_type_encoding_length(value_type: ValueType) -> usize {
         match value_type {
-            ValueType::Boolean => todo!(),
+            ValueType::Boolean => BooleanAttributeID::LENGTH,
             ValueType::Long => LongAttributeID::LENGTH,
-            ValueType::Double => todo!(),
+            ValueType::Double => DoubleAttributeID::LENGTH,
+            ValueType::DateTime => DateTimeAttributeID::LENGTH,
             ValueType::String => StringAttributeID::LENGTH,
         }
     }
@@ -219,29 +233,43 @@ impl AttributeID {
     ///
     pub fn is_inlineable(value: impl ValueEncodable) -> bool {
         match value.value_type() {
-            ValueType::Boolean => todo!(),
+            ValueType::Boolean => BooleanAttributeID::is_inlineable(),
             ValueType::Long => LongAttributeID::is_inlineable(),
-            ValueType::Double => todo!(),
+            ValueType::Double => DoubleAttributeID::is_inlineable(),
+            ValueType::DateTime => DateTimeAttributeID::is_inlineable(),
             ValueType::String => StringAttributeID::is_inlineable(value.encode_string::<256>()),
         }
     }
 
     pub fn bytes(&self) -> &[u8] {
         match self {
+            AttributeID::Boolean(boolean_id) => boolean_id.bytes_ref(),
             AttributeID::Long(long_id) => long_id.bytes_ref(),
+            AttributeID::Double(double_id) => double_id.bytes_ref(),
+            AttributeID::DateTime(date_time_id) => date_time_id.bytes_ref(),
             AttributeID::String(string_id) => string_id.bytes_ref(),
         }
     }
 
     pub(crate) const fn length(&self) -> usize {
         match self {
+            AttributeID::Boolean(_) => BooleanAttributeID::LENGTH,
             AttributeID::Long(_) => LongAttributeID::LENGTH,
+            AttributeID::Double(_) => DoubleAttributeID::LENGTH,
+            AttributeID::DateTime(_) => DateTimeAttributeID::LENGTH,
             AttributeID::String(_) => StringAttributeID::LENGTH,
         }
     }
 
     pub(crate) const fn max_length() -> usize {
         AttributeIDLength::max_length()
+    }
+
+    pub fn unwrap_boolean(self) -> BooleanAttributeID {
+        match self {
+            AttributeID::Boolean(boolean_id) => boolean_id,
+            _ => panic!("Cannot unwrap Boolean ID from non-boolean attribute ID."),
+        }
     }
 
     pub fn unwrap_long(self) -> LongAttributeID {
@@ -251,11 +279,54 @@ impl AttributeID {
         }
     }
 
+    pub fn unwrap_double(self) -> DoubleAttributeID {
+        match self {
+            AttributeID::Double(double_id) => double_id,
+            _ => panic!("Cannot unwrap Double ID from non-double attribute ID."),
+        }
+    }
+
+    pub fn unwrap_date_time(self) -> DateTimeAttributeID {
+        match self {
+            AttributeID::DateTime(date_time_id) => date_time_id,
+            _ => panic!("Cannot unwrap DateTime ID from non-datetime attribute ID."),
+        }
+    }
+
     pub fn unwrap_string(self) -> StringAttributeID {
         match self {
             AttributeID::String(string_id) => string_id,
             _ => panic!("Cannot unwrap String ID from non-long attribute ID."),
         }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct BooleanAttributeID {
+    bytes: [u8; Self::LENGTH],
+}
+
+impl BooleanAttributeID {
+    const LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
+
+    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
+        Self { bytes }
+    }
+
+    pub(crate) fn build(value: BooleanBytes) -> Self {
+        Self { bytes: value.bytes() }
+    }
+
+    pub(crate) const fn is_inlineable() -> bool {
+        true
+    }
+
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+        self.bytes
+    }
+
+    pub fn bytes_ref(&self) -> &[u8] {
+        &self.bytes
     }
 }
 
@@ -277,7 +348,65 @@ impl LongAttributeID {
     }
 
     pub(crate) const fn is_inlineable() -> bool {
-        false
+        true
+    }
+
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+        self.bytes
+    }
+
+    pub fn bytes_ref(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct DoubleAttributeID {
+    bytes: [u8; Self::LENGTH],
+}
+
+impl DoubleAttributeID {
+    const LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
+
+    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
+        Self { bytes }
+    }
+
+    pub(crate) fn build(value: DoubleBytes) -> Self {
+        Self { bytes: value.bytes() }
+    }
+
+    pub(crate) const fn is_inlineable() -> bool {
+        true
+    }
+
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+        self.bytes
+    }
+
+    pub fn bytes_ref(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct DateTimeAttributeID {
+    bytes: [u8; Self::LENGTH],
+}
+
+impl DateTimeAttributeID {
+    const LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+
+    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
+        Self { bytes }
+    }
+
+    pub(crate) fn build(value: DateTimeBytes) -> Self {
+        Self { bytes: value.bytes() }
+    }
+
+    pub(crate) const fn is_inlineable() -> bool {
+        true
     }
 
     pub fn bytes(&self) -> [u8; Self::LENGTH] {

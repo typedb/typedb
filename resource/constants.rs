@@ -9,7 +9,7 @@ pub mod server {
 }
 
 pub mod snapshot {
-    pub const BUFFER_KEY_INLINE: usize = 64;
+    pub const BUFFER_KEY_INLINE: usize = 40;
     pub const BUFFER_VALUE_INLINE: usize = 64;
 }
 

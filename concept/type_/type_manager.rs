@@ -23,7 +23,8 @@ use encoding::{
         property::{
             build_property_type_annotation_abstract, build_property_type_annotation_cardinality,
             build_property_type_annotation_distinct, build_property_type_annotation_independent,
-            build_property_type_edge_annotation_cardinality, build_property_type_edge_annotation_distinct,
+            build_property_type_annotation_regex, build_property_type_edge_annotation_cardinality,
+            build_property_type_edge_annotation_distinct, build_property_type_edge_annotation_key,
             build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label,
             build_property_type_ordering, build_property_type_value_type,
         },
@@ -42,6 +43,7 @@ use storage::{
     MVCCStorage,
 };
 
+use super::annotation::AnnotationRegex;
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::ObjectAPI,
@@ -82,13 +84,13 @@ impl<Snapshot> TypeManager<Snapshot> {
             root_entity.set_annotation(
                 &mut snapshot,
                 &type_manager,
-                EntityTypeAnnotation::Abstract(AnnotationAbstract::new()),
+                EntityTypeAnnotation::Abstract(AnnotationAbstract),
             )?;
             let root_relation = type_manager.create_relation_type(&mut snapshot, &Kind::Relation.root_label(), true)?;
             root_relation.set_annotation(
                 &mut snapshot,
                 &type_manager,
-                RelationTypeAnnotation::Abstract(AnnotationAbstract::new()),
+                RelationTypeAnnotation::Abstract(AnnotationAbstract),
             )?;
             let root_role = type_manager.create_role_type(
                 &mut snapshot,
@@ -97,17 +99,13 @@ impl<Snapshot> TypeManager<Snapshot> {
                 true,
                 Ordering::Unordered,
             )?;
-            root_role.set_annotation(
-                &mut snapshot,
-                &type_manager,
-                RoleTypeAnnotation::Abstract(AnnotationAbstract::new()),
-            )?;
+            root_role.set_annotation(&mut snapshot, &type_manager, RoleTypeAnnotation::Abstract(AnnotationAbstract))?;
             let root_attribute =
                 type_manager.create_attribute_type(&mut snapshot, &Kind::Attribute.root_label(), true)?;
             root_attribute.set_annotation(
                 &mut snapshot,
                 &type_manager,
-                AttributeTypeAnnotation::Abstract(AnnotationAbstract::new()),
+                AttributeTypeAnnotation::Abstract(AnnotationAbstract),
             )?;
         }
         // TODO: pass error up
@@ -274,24 +272,27 @@ macro_rules! get_type_annotations {
 
 impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
     pub fn new(vertex_generator: Arc<TypeVertexGenerator>, schema_cache: Option<Arc<TypeCache>>) -> Self {
-        TypeManager { vertex_generator, type_cache: schema_cache, snapshot: PhantomData::default() }
+        TypeManager { vertex_generator, type_cache: schema_cache, snapshot: PhantomData }
     }
 
     pub(crate) fn check_type_is_root(type_label: &Label<'_>, kind: Kind) -> bool {
         type_label == &kind.root_label()
     }
 
-    pub fn resolve_relates(&self, snapshot: &Snapshot, relation: RelationType<'static>, role_name : &str) -> Result<Option<Relates<'static>>, ConceptReadError> {
+    pub fn resolve_relates(
+        &self,
+        snapshot: &Snapshot,
+        relation: RelationType<'static>,
+        role_name: &str,
+    ) -> Result<Option<Relates<'static>>, ConceptReadError> {
         // TODO: Efficiency. We could build an index in TypeCache.
-        Ok(self.get_relation_type_relates_transitive(snapshot, relation)?.iter()
-            .find_map(|(_role, relates)| {
-                if self.get_role_type_label(snapshot, relates.role()).unwrap().name.as_str() == role_name {
-                    Some(relates.clone())
-                } else {
-                    None
-                }
-            })
-        )
+        Ok(self.get_relation_type_relates_transitive(snapshot, relation)?.iter().find_map(|(_role, relates)| {
+            if self.get_role_type_label(snapshot, relates.role()).unwrap().name.as_str() == role_name {
+                Some(relates.clone())
+            } else {
+                None
+            }
+        }))
     }
 
     get_type_methods! {
@@ -833,12 +834,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.put_val(property_key, overridden_plays);
     }
 
-    fn storage_set_relates(
-        &self,
-        snapshot: &mut Snapshot,
-        relation: RelationType<'static>,
-        role: RoleType<'static>,
-    ) {
+    fn storage_set_relates(&self, snapshot: &mut Snapshot, relation: RelationType<'static>, role: RoleType<'static>) {
         let relates = build_edge_relates(relation.clone().into_vertex(), role.clone().into_vertex());
         snapshot.put(relates.into_storage_key().into_owned_array());
         let relates_reverse = build_edge_relates_reverse(role.into_vertex(), relation.into_vertex());
@@ -907,12 +903,30 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
 
+    pub(crate) fn storage_set_edge_annotation_key<'b>(
+        &self,
+        snapshot: &mut Snapshot,
+        edge: impl IntoCanonicalTypeEdge<'b>,
+    ) {
+        let annotation_property = build_property_type_edge_annotation_key(edge.into_type_edge());
+        snapshot.put(annotation_property.into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn storage_delete_edge_annotation_key<'b>(
+        &self,
+        snapshot: &mut Snapshot,
+        edge: impl IntoCanonicalTypeEdge<'b>,
+    ) {
+        let annotation_property = build_property_type_edge_annotation_key(edge.into_type_edge());
+        snapshot.delete(annotation_property.into_storage_key().into_owned_array());
+    }
+
     pub(crate) fn storage_set_annotation_independent(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_independent(type_.into_vertex());
         snapshot.put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_storage_annotation_independent(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
+    pub(crate) fn storage_delete_annotation_independent(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_independent(type_.into_vertex());
         snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
@@ -956,6 +970,30 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         let annotation_property = build_property_type_edge_annotation_cardinality(edge.into_type_edge());
         snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
+
+    pub(crate) fn storage_set_annotation_regex(
+        &self,
+        snapshot: &mut Snapshot,
+        type_: impl TypeAPI<'static>,
+        regex: AnnotationRegex,
+    ) {
+        let annotation_property = build_property_type_annotation_regex(type_.into_vertex());
+        snapshot.put_val(
+            annotation_property.into_storage_key().into_owned_array(),
+            ByteArray::copy(regex.regex().as_bytes()),
+        );
+    }
+
+    pub(crate) fn storage_delete_annotation_regex(
+        &self,
+        snapshot: &mut Snapshot,
+        type_: impl TypeAPI<'static>,
+        regex: AnnotationRegex,
+    ) {
+        // TODO debug assert that stored regex matches
+        let annotation_property = build_property_type_annotation_regex(type_.into_vertex());
+        snapshot.delete(annotation_property.into_storage_key().into_owned_array());
+    }
 }
 
 pub trait ReadableType {
@@ -992,8 +1030,8 @@ impl<'a> ReadableType for RoleType<'a> {
     }
 }
 
-pub trait KindAPI<'a> : TypeAPI<'a> {
-    type SelfStatic : KindAPI<'static> + 'static;
+pub trait KindAPI<'a>: TypeAPI<'a> {
+    type SelfStatic: KindAPI<'static> + 'static;
     type AnnotationType: Hash + Eq + From<Annotation>;
     const ROOT_KIND: Kind;
 }

@@ -54,13 +54,13 @@ fn entity_usage() {
         // --- person sub entity @abstract ---
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
-        person_type.set_annotation(&mut snapshot, &type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract::new())).unwrap();
+        person_type.set_annotation(&mut snapshot, &type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract)).unwrap();
 
         assert!(!person_type.is_root(&snapshot, &type_manager).unwrap());
         assert!(person_type
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
-            .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract::new())));
+            .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract)));
         assert_eq!(*person_type.get_label(&snapshot, &type_manager).unwrap(), person_label);
 
         let supertype = person_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
@@ -140,7 +140,7 @@ fn entity_usage() {
         assert!(person_type
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
-            .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract::new())));
+            .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract)));
         assert_eq!(*person_type.get_label(&snapshot, &type_manager).unwrap(), person_label);
 
         let supertype = person_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
@@ -208,7 +208,7 @@ fn role_usage() {
         assert!(root_relation
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
-            .contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract::new())));
+            .contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract)));
 
         let root_role = type_manager.get_role_type(&snapshot, &Kind::Role.root_label()).unwrap().unwrap();
         assert_eq!(*root_role.get_label(&snapshot, &type_manager).unwrap(), Kind::Role.root_label());
@@ -218,7 +218,7 @@ fn role_usage() {
         assert!(root_role
             .get_annotations(&snapshot, &type_manager)
             .unwrap()
-            .contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract::new())));
+            .contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract)));
 
         // --- friendship sub relation, relates friend ---
         let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label, false).unwrap();

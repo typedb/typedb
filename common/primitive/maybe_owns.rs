@@ -23,10 +23,25 @@ impl<T> Deref for MaybeOwns<'_, T> {
     }
 }
 
-impl<'a, T: Eq> PartialEq<Self> for MaybeOwns<'a, T> {
+impl<'a, T: PartialEq> PartialEq<T> for MaybeOwns<'a, T> {
+    fn eq(&self, other: &T) -> bool {
+        self.deref().eq(other)
+    }
+}
+
+impl<'a, T: PartialEq> PartialEq for MaybeOwns<'a, T> {
     fn eq(&self, other: &Self) -> bool {
         self.deref().eq(other.deref())
     }
 }
 
 impl<'a, T: Eq> Eq for MaybeOwns<'a, T> {}
+
+impl<'a, 'b, T> IntoIterator for &'b MaybeOwns<'a, T> where &'b T: IntoIterator {
+    type Item = <&'b T as IntoIterator>::Item;
+    type IntoIter = <&'b T as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        (&**self).into_iter()
+    }
+}

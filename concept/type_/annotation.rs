@@ -6,58 +6,27 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
     Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),
     Independent(AnnotationIndependent),
+    Key(AnnotationKey),
     Cardinality(AnnotationCardinality),
+    Regex(AnnotationRegex),
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct AnnotationAbstract {}
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationAbstract;
 
-impl Default for AnnotationAbstract {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationDistinct;
 
-impl AnnotationAbstract {
-    pub fn new() -> Self {
-        AnnotationAbstract {}
-    }
-}
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationKey;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct AnnotationDistinct {}
-
-impl Default for AnnotationDistinct {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl AnnotationDistinct {
-    pub fn new() -> Self {
-        AnnotationDistinct {}
-    }
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct AnnotationIndependent {}
-
-impl Default for AnnotationIndependent {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl AnnotationIndependent {
-    pub fn new() -> Self {
-        AnnotationIndependent {}
-    }
-}
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationIndependent;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationCardinality {
@@ -70,11 +39,11 @@ pub struct AnnotationCardinality {
 
 impl AnnotationCardinality {
     pub const fn new(start_inclusive: u64, end_inclusive: Option<u64>) -> Self {
-        AnnotationCardinality { start_inclusive, end_inclusive }
+        Self { start_inclusive, end_inclusive }
     }
 
     pub fn is_valid(&self, count: u64) -> bool {
-        self.start_inclusive <= count && (self.end_inclusive.is_none() || count <= self.end_inclusive.clone().unwrap())
+        self.start_inclusive <= count && (self.end_inclusive.is_none() || count <= self.end_inclusive.unwrap())
     }
 
     pub fn start(&self) -> u64 {
@@ -82,6 +51,21 @@ impl AnnotationCardinality {
     }
 
     pub fn end(&self) -> Option<u64> {
-        self.end_inclusive.clone()
+        self.end_inclusive
+    }
+}
+
+#[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationRegex {
+    regex: String,
+}
+
+impl AnnotationRegex {
+    pub const fn new(regex: String) -> Self {
+        Self { regex }
+    }
+
+    pub fn regex(&self) -> &str {
+        &self.regex
     }
 }

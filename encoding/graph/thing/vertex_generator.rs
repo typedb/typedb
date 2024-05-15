@@ -9,7 +9,7 @@ use std::sync::{
     Arc,
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use storage::{
     key_range::KeyRange,
     key_value::StorageKey,
@@ -17,6 +17,7 @@ use storage::{
     MVCCKey, MVCCStorage,
 };
 
+use super::vertex_attribute::{BooleanAttributeID, DateTimeAttributeID, DoubleAttributeID};
 use crate::{
     error::EncodingError,
     graph::{
@@ -30,7 +31,10 @@ use crate::{
         Typed,
     },
     layout::prefix::Prefix,
-    value::{long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType},
+    value::{
+        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, double_bytes::DoubleBytes, long_bytes::LongBytes,
+        string_bytes::StringBytes, value_type::ValueType,
+    },
     AsBytes, Keyable, Prefixed,
 };
 
@@ -143,6 +147,21 @@ impl ThingVertexGenerator {
         vertex
     }
 
+    pub fn create_attribute_boolean<Snapshot>(
+        &self,
+        type_id: TypeID,
+        value: BooleanBytes,
+        snapshot: &mut Snapshot,
+    ) -> AttributeVertex<'static>
+    where
+        Snapshot: WritableSnapshot,
+    {
+        let boolean_attribute_id = self.create_attribute_id_boolean(value);
+        let vertex = AttributeVertex::build(ValueType::Boolean, type_id, AttributeID::Boolean(boolean_attribute_id));
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        vertex
+    }
+
     pub fn create_attribute_long<Snapshot>(
         &self,
         type_id: TypeID,
@@ -158,8 +177,51 @@ impl ThingVertexGenerator {
         vertex
     }
 
+    pub fn create_attribute_double<Snapshot>(
+        &self,
+        type_id: TypeID,
+        value: DoubleBytes,
+        snapshot: &mut Snapshot,
+    ) -> AttributeVertex<'static>
+    where
+        Snapshot: WritableSnapshot,
+    {
+        let double_attribute_id = self.create_attribute_id_double(value);
+        let vertex = AttributeVertex::build(ValueType::Double, type_id, AttributeID::Double(double_attribute_id));
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        vertex
+    }
+
+    pub fn create_attribute_date_time<Snapshot>(
+        &self,
+        type_id: TypeID,
+        value: DateTimeBytes,
+        snapshot: &mut Snapshot,
+    ) -> AttributeVertex<'static>
+    where
+        Snapshot: WritableSnapshot,
+    {
+        let date_time_attribute_id = self.create_attribute_id_date_time(value);
+        let vertex =
+            AttributeVertex::build(ValueType::DateTime, type_id, AttributeID::DateTime(date_time_attribute_id));
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        vertex
+    }
+
+    pub fn create_attribute_id_boolean(&self, value: BooleanBytes) -> BooleanAttributeID {
+        BooleanAttributeID::build(value)
+    }
+
     pub fn create_attribute_id_long(&self, value: LongBytes) -> LongAttributeID {
         LongAttributeID::build(value)
+    }
+
+    pub fn create_attribute_id_double(&self, value: DoubleBytes) -> DoubleAttributeID {
+        DoubleAttributeID::build(value)
+    }
+
+    pub fn create_attribute_id_date_time(&self, value: DateTimeBytes) -> DateTimeAttributeID {
+        DateTimeAttributeID::build(value)
     }
 
     ///

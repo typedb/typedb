@@ -5,13 +5,14 @@
  */
 
 use std::{error::Error, fmt, sync::Arc};
-use encoding::error::EncodingError;
 
-use encoding::value::value_type::ValueType;
+use encoding::{error::EncodingError, value::value_type::ValueType};
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
-use crate::thing::relation::Relation;
-use crate::type_::annotation::AnnotationCardinality;
-use crate::type_::role_type::RoleType;
+
+use crate::{
+    thing::relation::Relation,
+    type_::{annotation::AnnotationCardinality, role_type::RoleType},
+};
 
 #[derive(Debug)]
 pub struct ConceptError {
@@ -40,18 +41,34 @@ impl Error for ConceptError {
 #[derive(Debug)]
 pub enum ConceptWriteError {
     RootModification,
-    SnapshotGet { source: SnapshotGetError },
-    SnapshotIterate { source: Arc<SnapshotIteratorError> },
-    ConceptRead { source: ConceptReadError },
-    Encoding { source: EncodingError },
+    SnapshotGet {
+        source: SnapshotGetError,
+    },
+    SnapshotIterate {
+        source: Arc<SnapshotIteratorError>,
+    },
+    ConceptRead {
+        source: ConceptReadError,
+    },
+    Encoding {
+        source: EncodingError,
+    },
 
-    ValueTypeMismatch { expected: Option<ValueType>, provided: ValueType },
+    ValueTypeMismatch {
+        expected: Option<ValueType>,
+        provided: ValueType,
+    },
     RelationRoleCardinality {
         relation: Relation<'static>,
         role_type: RoleType<'static>,
         cardinality: AnnotationCardinality,
-        actual_cardinality: u64
-    }
+        actual_cardinality: u64,
+    },
+    StringAttributeRegex {
+        regex: String,
+        value: String,
+    },
+    EntityKeyMissing {},
 }
 
 impl fmt::Display for ConceptWriteError {
@@ -69,7 +86,9 @@ impl Error for ConceptWriteError {
             Self::Encoding { source, .. } => Some(source),
             Self::ValueTypeMismatch { .. } => None,
             Self::RelationRoleCardinality { .. } => None,
-            Self::RootModification {..} => None,
+            Self::RootModification { .. } => None,
+            Self::StringAttributeRegex { .. } => None,
+            Self::EntityKeyMissing { .. } => None,
         }
     }
 }

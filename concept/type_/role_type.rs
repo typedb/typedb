@@ -61,7 +61,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract::new())))
+        Ok(annotations.contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
     fn delete<Snapshot: WritableSnapshot>(
@@ -242,7 +242,10 @@ impl From<Annotation> for RoleTypeAnnotation {
             Annotation::Abstract(annotation) => RoleTypeAnnotation::Abstract(annotation),
             Annotation::Distinct(annotation) => RoleTypeAnnotation::Distinct(annotation),
             Annotation::Cardinality(annotation) => RoleTypeAnnotation::Cardinality(annotation),
+
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Role type."),
+            Annotation::Key(_) => unreachable!("Key annotation not available for Role type."),
+            Annotation::Regex(_) => unreachable!("Regex annotation not available for Role type."),
         }
     }
 }

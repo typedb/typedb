@@ -5,9 +5,9 @@
  */
 
 use std::collections::HashSet;
+
 use bytes::Bytes;
 use encoding::{
-    AsBytes,
     graph::{
         thing::{
             edge::{ThingEdgeHas, ThingEdgeRelationIndex, ThingEdgeRolePlayer},
@@ -16,7 +16,8 @@ use encoding::{
         type_::vertex::build_vertex_entity_type,
         Typed,
     },
-    Keyable, layout::prefix::Prefix, Prefixed,
+    layout::prefix::Prefix,
+    AsBytes, Keyable, Prefixed,
 };
 use iterator::Collector;
 use storage::{
@@ -25,24 +26,22 @@ use storage::{
 };
 
 use crate::{
-    ByteReference,
     concept_iterator,
-    ConceptAPI,
-    ConceptStatus,
-    error::ConceptWriteError, thing::{
+    error::{ConceptReadError, ConceptWriteError},
+    thing::{
         attribute::Attribute,
         object::{HasAttributeIterator, Object},
-        ObjectAPI,
         relation::{IndexedPlayersIterator, RelationRoleIterator},
-        thing_manager::ThingManager, ThingAPI,
-    }, type_::entity_type::EntityType,
+        thing_manager::ThingManager,
+        value::Value,
+        ObjectAPI, ThingAPI,
+    },
+    type_::{
+        attribute_type::AttributeType, entity_type::EntityType, owns::Owns, type_manager::TypeManager, Ordering,
+        OwnerAPI,
+    },
+    ByteReference, ConceptAPI, ConceptStatus,
 };
-use crate::error::ConceptReadError;
-use crate::thing::value::Value;
-use crate::type_::attribute_type::AttributeType;
-use crate::type_::{Ordering, OwnerAPI};
-use crate::type_::owns::Owns;
-use crate::type_::type_manager::TypeManager;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Entity<'a> {
@@ -101,14 +100,15 @@ impl<'a> Entity<'a> {
         attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: validate schema
-        let owns = self.get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())
+        let owns = self
+            .get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())
+        let ordering = owns
+            .get_ordering(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         match ordering {
             Ordering::Unordered => {
-                thing_manager.set_has(snapshot, self.as_reference(), attribute.as_reference());
-                Ok(())
+                thing_manager.set_has(snapshot, self.as_reference(), attribute.as_reference())
             }
             Ordering::Ordered => {
                 todo!("throw a good error")
@@ -116,18 +116,21 @@ impl<'a> Entity<'a> {
         }
     }
 
-    pub fn delete_has_unordered<Snapshot: WritableSnapshot>(
+    pub fn unset_has_unordered<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
-        thing_manager: &ThingManager<Snapshot>, attribute: Attribute<'_>,
+        thing_manager: &ThingManager<Snapshot>,
+        attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
-        let owns = self.get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())
+        let owns = self
+            .get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())
+        let ordering = owns
+            .get_ordering(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         match ordering {
             Ordering::Unordered => {
-                thing_manager.delete_has(snapshot, self.as_reference(), attribute);
+                thing_manager.unset_has(snapshot, self.as_reference(), attribute);
                 Ok(())
             }
             Ordering::Ordered => {
@@ -143,9 +146,11 @@ impl<'a> Entity<'a> {
         attribute_type: AttributeType<'static>,
         attributes: Vec<Attribute<'_>>,
     ) -> Result<(), ConceptWriteError> {
-        let owns = self.get_type_owns(snapshot, thing_manager.type_manager(), attribute_type.clone())
+        let owns = self
+            .get_type_owns(snapshot, thing_manager.type_manager(), attribute_type.clone())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())
+        let ordering = owns
+            .get_ordering(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         match ordering {
             Ordering::Unordered => {
@@ -153,7 +158,8 @@ impl<'a> Entity<'a> {
             }
             Ordering::Ordered => {
                 // 1. get owned list
-                let attributes = thing_manager.get_has_type_ordered(snapshot, self.as_reference(), attribute_type.clone())
+                let attributes = thing_manager
+                    .get_has_type_ordered(snapshot, self.as_reference(), attribute_type.clone())
                     .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
 
                 // 2. Delete existing but no-longer necessary has, and add new ones, with the correct counts (!)
@@ -166,15 +172,17 @@ impl<'a> Entity<'a> {
         }
     }
 
-    pub fn delete_has_ordered<Snapshot: WritableSnapshot>(
+    pub fn unset_has_ordered<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager<Snapshot>,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        let owns = self.get_type_owns(snapshot, thing_manager.type_manager(), attribute_type)
+        let owns = self
+            .get_type_owns(snapshot, thing_manager.type_manager(), attribute_type)
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())
+        let ordering = owns
+            .get_ordering(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         match ordering {
             Ordering::Unordered => {
@@ -198,9 +206,7 @@ impl<'a> Entity<'a> {
             None => {
                 todo!("throw useful schema error")
             }
-            Some(owns) => {
-                Ok(owns)
-            }
+            Some(owns) => Ok(owns),
         }
     }
 
@@ -220,7 +226,7 @@ impl<'a> Entity<'a> {
         thing_manager.get_indexed_players(snapshot, Object::Entity(self.as_reference()))
     }
 
-    pub(crate) fn into_owned(self) -> Entity<'static> {
+    pub fn into_owned(self) -> Entity<'static> {
         Entity { vertex: self.vertex.into_owned() }
     }
 }
@@ -249,36 +255,43 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
     fn errors<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
+        thing_manager: &ThingManager<Snapshot>,
+    ) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
         todo!()
     }
 
     fn delete<'m, Snapshot: WritableSnapshot>(
         self,
         snapshot: &mut Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>
+        thing_manager: &'m ThingManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
-        let has = self.get_has(snapshot, thing_manager)
+        let has = self
+            .get_has(snapshot, thing_manager)
             .collect_cloned_vec(|(k, v)| k.into_owned())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         let mut has_attr_type_deleted = HashSet::new();
         for attr in has {
             has_attr_type_deleted.add(attr.type_());
-            thing_manager.delete_has(snapshot, self.as_reference(), attr);
+            thing_manager.unset_has(snapshot, self.as_reference(), attr);
         }
 
-        for owns in self.type_().get_owns(snapshot, thing_manager.type_manager())
+        for owns in self
+            .type_()
+            .get_owns(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
-            .iter() {
-            let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())
+            .iter()
+        {
+            let ordering = owns
+                .get_ordering(snapshot, thing_manager.type_manager())
                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
             if matches!(ordering, Ordering::Ordered) {
                 thing_manager.delete_has_ordered(snapshot, self.as_reference(), owns.attribute());
             }
         }
 
-        let relations_roles = self.get_relations(snapshot, thing_manager)
-            .collect_cloned_vec(|(relation, role, count)| (relation.into_owned(), role.into_owned()))
+        let relations_roles = self
+            .get_relations(snapshot, thing_manager)
+            .collect_cloned_vec(|(relation, role, _count)| (relation.into_owned(), role.into_owned()))
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for (relation, role) in relations_roles {
             thing_manager.delete_role_player(snapshot, relation, self.as_reference(), role)?;
@@ -290,7 +303,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
 }
 
 impl<'a> ObjectAPI<'a> for Entity<'a> {
-    fn vertex<'this>(&'this self) -> ObjectVertex<'this> {
+    fn vertex(&self) -> ObjectVertex<'_> {
         self.vertex.as_reference()
     }
 

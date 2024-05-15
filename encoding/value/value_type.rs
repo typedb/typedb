@@ -30,22 +30,25 @@ pub enum ValueType {
     Boolean,
     Long,
     Double,
-    String,
+
+    // TODO: consider splitting with/without timezone
+    DateTime,
     /*
-    Datetime, // TODO: consider splitting with/without timezone
     Duration, // Naming: 'interval'?
      */
+
+    String,
 }
 
 macro_rules! value_type_functions {
     ($(
         $name:ident => $bytes:tt
-    ),*) => {
+    ),+ $(,)?) => {
         pub const fn value_type_id(&self) -> ValueTypeID {
             let bytes = match self {
                 $(
-                    Self::$name => {&$bytes}
-                )*
+                    Self::$name => &$bytes,
+                )+
             };
             ValueTypeID::new(*bytes)
         }
@@ -53,8 +56,8 @@ macro_rules! value_type_functions {
         pub fn from_value_type_id(value_type_id: ValueTypeID) -> Self {
             match value_type_id.bytes() {
                 $(
-                    $bytes => {Self::$name}
-                )*
+                    $bytes => Self::$name,
+                )+
                 _ => unreachable!(),
             }
        }
@@ -66,6 +69,7 @@ impl ValueType {
         Boolean => [0],
         Long => [1],
         Double => [2],
-        String => [3]
+        String => [3],
+        DateTime => [4],
     );
 }

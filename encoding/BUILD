@@ -27,6 +27,7 @@ rust_library(
         "//storage",
         "//storage/durability",
 
+        "@crates//:chrono",
         "@crates//:tracing",
         "@crates//:seahash",
     ],

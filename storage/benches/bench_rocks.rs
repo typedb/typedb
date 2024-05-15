@@ -7,7 +7,6 @@
 pub mod bench_rocks_impl;
 
 use std::collections::HashMap;
-use std::fmt::Pointer;
 use std::sync::RwLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
@@ -20,9 +19,8 @@ use crate::bench_rocks_impl::rocks_database::{create_typedb, rocks};
 
 const N_DATABASES: usize = 1;
 
-const KEY_SIZE: usize = 64;
+const KEY_SIZE: usize = 40;
 const VALUE_SIZE: usize = 0;
-
 
 pub trait RocksDatabase : Sync + Send {
     fn open_batch(&self) -> impl RocksWriteBatch;
@@ -69,7 +67,7 @@ impl BenchmarkRunner {
     const VALUE_EMPTY :[u8;0] = [];
     fn run(&self, database_arc: &impl RocksDatabase) -> BenchmarkResult {
         debug_assert_eq!(1, N_DATABASES, "I've not bothered implementing multiple databases");
-        let batch_timings: Vec<RwLock<Duration>> = (0..self.n_batches).into_iter().map(|_| RwLock::new(Duration::from_secs(0))).collect();
+        let batch_timings: Vec<RwLock<Duration>> = (0..self.n_batches).map(|_| RwLock::new(Duration::from_secs(0))).collect();
         let batch_counter = AtomicUsize::new(0);
         let benchmark_start_instant = Instant::now();
         thread::scope(|s| {
@@ -83,7 +81,7 @@ impl BenchmarkRunner {
                         let batch_start_instant = Instant::now();
                         for _ in 0..self.batch_size {
                             let (k,_) = Self::generate_key_value(&mut in_rng);
-                            write_batch.put(0, k.clone());
+                            write_batch.put(0, k);
                         }
                         write_batch.commit().unwrap();
                         let batch_stop =  batch_start_instant.elapsed();
@@ -97,7 +95,7 @@ impl BenchmarkRunner {
         assert!(batch_counter.load(Ordering::Relaxed) >= self.n_batches);
         let total_time = benchmark_start_instant.elapsed();
         BenchmarkResult {
-            batch_timings : batch_timings.iter().map(|x| x.read().unwrap().clone()).collect(),
+            batch_timings : batch_timings.iter().map(|x| *x.read().unwrap()).collect(),
             total_time
         }
     }
@@ -116,12 +114,6 @@ impl BenchmarkRunner {
         key[24..32].copy_from_slice(&z.to_le_bytes());
         z = u64::rotate_left(z, 1);
         key[32..40].copy_from_slice(&z.to_le_bytes());
-        z = u64::rotate_left(z, 1);
-        key[40..48].copy_from_slice(&z.to_le_bytes());
-        z = u64::rotate_left(z, 1);
-        key[48..56].copy_from_slice(&z.to_le_bytes());
-        z = u64::rotate_left(z, 1);
-        key[56..64].copy_from_slice(&z.to_le_bytes());
         (key , Self::VALUE_EMPTY)
     }
 }
@@ -152,7 +144,7 @@ impl CLIArgs {
     }
     fn parse_args() -> Result<CLIArgs, String> {
         let arg_map: HashMap<String, String> = std::env::args()
-            .filter_map(|arg| arg.split_once("=").map(|(s1, s2)| (s1.to_string(), s2.to_string())))
+            .filter_map(|arg| arg.split_once('=').map(|(s1, s2)| (s1.to_string(), s2.to_string())))
             .collect();
         let invalid_keys = arg_map.keys().filter(|key| !Self::VALID_ARGS.contains(&key.as_str())).join(",");
         if ! invalid_keys.is_empty() {
@@ -189,7 +181,7 @@ fn run_for(args: &CLIArgs, database: &impl RocksDatabase) {
     };
 
     let report = benchmarker.run(database);
-    report.print_report(&args, &benchmarker);
+    report.print_report(args, &benchmarker);
 }
 
 

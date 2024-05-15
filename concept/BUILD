@@ -27,6 +27,9 @@ rust_library(
         "//resource",
 
         "@crates//:bincode",
+        "@crates//:chrono",
+        "@crates//:itertools",
+        "@crates//:regex",
         "@crates//:serde",
     ],
 )
@@ -37,6 +40,7 @@ checkstyle_test(
         "*",
         "thing/*",
         "type_/*",
+        "type_/type_cache/*",
     ]),
     exclude = glob([
         "Cargo.*",

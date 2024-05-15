@@ -12,6 +12,7 @@ use primitive::maybe_owns::MaybeOwns;
 use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
+use self::annotation::AnnotationRegex;
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
@@ -35,7 +36,7 @@ pub mod type_manager;
 mod type_reader;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
-    fn vertex<'this>(&'this self) -> TypeVertex<'this>;
+    fn vertex(&self) -> TypeVertex<'_>;
 
     fn into_vertex(self) -> TypeVertex<'a>;
 
@@ -201,6 +202,12 @@ fn serialise_annotation_cardinality(annotation: AnnotationCardinality) -> Box<[u
 
 fn deserialise_annotation_cardinality(value: ByteReference<'_>) -> AnnotationCardinality {
     bincode::deserialize(value.bytes()).unwrap()
+}
+
+fn deserialise_annotation_regex(value: ByteReference<'_>) -> AnnotationRegex {
+    // TODO this .unwrap() should be handled as an error
+    // although it does indicate data corruption
+    AnnotationRegex::new(std::str::from_utf8(value.bytes()).unwrap().to_owned())
 }
 
 fn serialise_ordering(ordering: Ordering) -> Box<[u8]> {

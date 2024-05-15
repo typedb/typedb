@@ -71,7 +71,7 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract::new())))
+        Ok(annotations.contains(&RelationTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
     fn delete<Snapshot: WritableSnapshot>(
@@ -238,8 +238,7 @@ impl<'a> RelationType<'a> {
         type_manager: &TypeManager<Snapshot>,
         role_type: RoleType<'b>,
     ) -> Result<Option<Relates<'static>>, ConceptReadError> {
-        Ok(self.get_relates_transitive(snapshot, type_manager)?.get(&role_type)
-            .map(|relates| relates.clone()))
+        Ok(self.get_relates_transitive(snapshot, type_manager)?.get(&role_type).cloned())
     }
 
     fn has_relates_role<Snapshot: ReadableSnapshot>(
@@ -365,9 +364,12 @@ impl From<Annotation> for RelationTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Abstract(annotation) => RelationTypeAnnotation::Abstract(annotation),
+
             Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Relation type."),
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Relation type."),
+            Annotation::Key(_) => unreachable!("Key annotation not available for Relation type."),
             Annotation::Cardinality(_) => unreachable!("Cardinality annotation not available for Relation type."),
+            Annotation::Regex(_) => unreachable!("Regex annotation not available for Relation type."),
         }
     }
 }

@@ -70,7 +70,7 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract::new())))
+        Ok(annotations.contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
     fn delete<Snapshot: WritableSnapshot>(
@@ -307,9 +307,12 @@ impl From<Annotation> for EntityTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Abstract(annotation) => EntityTypeAnnotation::Abstract(annotation),
+
             Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Entity type."),
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Entity type."),
+            Annotation::Key(_) => unreachable!("Key annotation not available for Entity type."),
             Annotation::Cardinality(_) => unreachable!("Cardinality annotation not available for Entity type."),
+            Annotation::Regex(_) => unreachable!("Regex annotation not available for Entity type."),
         }
     }
 }

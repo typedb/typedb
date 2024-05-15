@@ -18,8 +18,7 @@ use encoding::{
         index::LabelToTypeVertexIndex,
         property::{
             build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label,
-            build_property_type_ordering, build_property_type_value_type,
-            TypeEdgeProperty, TypeVertexProperty,
+            build_property_type_ordering, build_property_type_value_type, TypeEdgeProperty, TypeVertexProperty,
         },
         vertex::TypeVertex,
     },
@@ -32,16 +31,15 @@ use encoding::{
     AsBytes, Keyable,
 };
 use iterator::Collector;
-use primitive::maybe_owns::MaybeOwns;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
     error::ConceptReadError,
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent},
+        annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent, AnnotationKey},
         attribute_type::AttributeType,
-        deserialise_annotation_cardinality, deserialise_ordering,
+        deserialise_annotation_cardinality, deserialise_annotation_regex, deserialise_ordering,
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
@@ -149,8 +147,7 @@ impl TypeReader {
         // ^ To fix, Just start with `let mut stack = vec!(subtype.clone());`
         let mut subtypes = Vec::new();
         let mut stack = TypeReader::get_subtypes_vertex(snapshot, subtype.clone().into_vertex())?;
-        while !stack.is_empty() {
-            let subvertex = stack.pop().unwrap();
+        while let Some(subvertex) = stack.pop() {
             subtypes.push(T::read_from(subvertex.clone().into_bytes()));
             stack.append(&mut TypeReader::get_subtypes_vertex(snapshot, subvertex.clone())?);
             // TODO: Should we pass an accumulator instead?
@@ -260,9 +257,9 @@ impl TypeReader {
         Ok(transitive_plays)
     }
 
-    pub(crate) fn get_plays_override<'a>(
+    pub(crate) fn get_plays_override(
         snapshot: &impl ReadableSnapshot,
-        plays: Plays<'a>,
+        plays: Plays<'_>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError> {
         let override_property_key = build_property_type_edge_override(plays.into_type_edge());
         snapshot
@@ -336,9 +333,9 @@ impl TypeReader {
             .map(|v| v.first().unwrap().clone())
     }
 
-    pub(crate) fn get_value_type<'a>(
+    pub(crate) fn get_value_type(
         snapshot: &impl ReadableSnapshot,
-        type_: AttributeType<'a>,
+        type_: AttributeType<'_>,
     ) -> Result<Option<ValueType>, ConceptReadError> {
         snapshot
             .get_mapped(
@@ -360,13 +357,15 @@ impl TypeReader {
             .collect_cloned_hashset(|key, value| {
                 let annotation_key = TypeVertexProperty::new(Bytes::Reference(key.byte_ref()));
                 let annotation = match annotation_key.infix() {
-                    Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract::new()),
-                    Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct::new()),
-                    Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent::new()),
+                    Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract),
+                    Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
+                    Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
                     Infix::PropertyAnnotationCardinality => {
                         Annotation::Cardinality(deserialise_annotation_cardinality(value))
                     }
-                    Infix::_PropertyAnnotationLast
+                    Infix::PropertyAnnotationRegex => Annotation::Regex(deserialise_annotation_regex(value)),
+                    | Infix::_PropertyAnnotationLast
+                    | Infix::PropertyAnnotationKey
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
                     | Infix::PropertyOrdering
@@ -412,13 +411,15 @@ impl TypeReader {
             .collect_cloned_hashset(|key, value| {
                 let annotation_key = TypeEdgeProperty::new(Bytes::Reference(key.byte_ref()));
                 match annotation_key.infix() {
-                    Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract::new()),
-                    Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct::new()),
-                    Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent::new()),
+                    Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
+                    Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
+                    Infix::PropertyAnnotationKey => Annotation::Key(AnnotationKey),
                     Infix::PropertyAnnotationCardinality => {
                         Annotation::Cardinality(deserialise_annotation_cardinality(value))
                     }
-                    Infix::_PropertyAnnotationLast
+                    Infix::PropertyAnnotationRegex => Annotation::Regex(deserialise_annotation_regex(value)),
+                    | Infix::_PropertyAnnotationLast
+                    | Infix::PropertyAnnotationAbstract
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
                     | Infix::PropertyOrdering
@@ -432,9 +433,9 @@ impl TypeReader {
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
 
-    pub(crate) fn get_type_ordering<'a>(
+    pub(crate) fn get_type_ordering(
         snapshot: &impl ReadableSnapshot,
-        role_type: RoleType<'a>,
+        role_type: RoleType<'_>,
     ) -> Result<Ordering, ConceptReadError> {
         let ordering = snapshot
             .get_mapped(build_property_type_ordering(role_type.vertex()).into_storage_key().as_reference(), |bytes| {
@@ -444,14 +445,14 @@ impl TypeReader {
         Ok(ordering.unwrap())
     }
 
-    pub(crate) fn get_type_edge_ordering<'a>(
+    pub(crate) fn get_type_edge_ordering(
         snapshot: &impl ReadableSnapshot,
-        owns: Owns<'a>,
+        owns: Owns<'_>,
     ) -> Result<Ordering, ConceptReadError> {
         let ordering = snapshot
             .get_mapped(
                 build_property_type_edge_ordering(owns.into_type_edge()).into_storage_key().as_reference(),
-                |bytes| deserialise_ordering(bytes),
+                deserialise_ordering,
             )
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
         Ok(ordering.unwrap())

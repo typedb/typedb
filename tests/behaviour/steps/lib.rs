@@ -7,28 +7,52 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
+use ::concept::thing::attribute::Attribute;
 use cucumber::{StatsWriter, World};
 use database::Database;
 use durability::wal::WAL;
 use server::typedb;
 use test_utils::TempDir;
 
-mod connection;
+mod assert;
 mod concept;
+mod connection;
 mod params;
 mod transaction_context;
 mod util;
 
+use thing_util::EntityWithKey;
 use transaction_context::ActiveTransaction;
+
+mod thing_util {
+    use ::concept::thing::{attribute::Attribute, entity::Entity};
+
+    #[derive(Debug)]
+    pub struct EntityWithKey {
+        pub entity: Entity<'static>,
+        pub key: Option<Attribute<'static>>,
+    }
+
+    impl EntityWithKey {
+        pub fn new_with_key(entity: Entity<'static>, key: Attribute<'static>) -> Self {
+            Self { entity, key: Some(key) }
+        }
+
+        pub fn new(entity: Entity<'static>) -> Self {
+            Self { entity, key: None }
+        }
+    }
+}
 
 #[derive(Debug, Default, World)]
 pub struct Context {
     server_dir: Option<TempDir>,
     server: Option<typedb::Server>,
     active_transaction: Option<ActiveTransaction>,
+    attributes: HashMap<String, Option<Attribute<'static>>>,
+    entities: HashMap<String, Option<EntityWithKey>>,
 }
 
 impl Context {
@@ -49,10 +73,9 @@ impl Context {
                 })
             })
             .filter_run(glob, |_, _, sc| {
-                sc.name.contains(std::env::var("SCENARIO_FILTER").as_deref().unwrap_or("")) &&
-                !sc.tags.iter().any(|tag| is_ignore(tag))
+                sc.name.contains(std::env::var("SCENARIO_FILTER").as_deref().unwrap_or(""))
+                    && !sc.tags.iter().any(|tag| is_ignore(tag))
             })
-
             .await
             .execution_has_failed()
     }
@@ -98,7 +121,6 @@ macro_rules! generic_step {
         $vis $async fn $fn_name $args $(-> $res)? $body
 
         const _: () = {
-            #[allow(unused)]
             $(
             #[::cucumber::given($pattern)]
             #[::cucumber::when($pattern)]

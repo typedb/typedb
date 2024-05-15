@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, sync::Arc};
+use std::cmp::Ordering;
 
 use bytes::Bytes;
 use encoding::{
@@ -19,17 +19,14 @@ use encoding::{
 use iterator::State;
 use storage::{
     key_value::StorageKeyReference,
-    snapshot::{
-        iterator::{SnapshotIteratorError, SnapshotRangeIterator},
-        ReadableSnapshot, WritableSnapshot,
-    },
+    snapshot::{iterator::SnapshotRangeIterator, ReadableSnapshot, WritableSnapshot},
 };
 
 use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{object::Object, thing_manager::ThingManager, value::Value, ThingAPI},
-    type_::{attribute_type::AttributeType, type_manager::TypeManager},
+    type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 
@@ -68,13 +65,15 @@ impl<'a> Attribute<'a> {
         Ok(self.value.as_ref().unwrap().as_reference())
     }
 
-    pub fn has_owners<'m, Snapshot: ReadableSnapshot>(
+    pub fn has_owners<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>,
+        thing_manager: &ThingManager<Snapshot>,
     ) -> bool {
         match self.get_status(snapshot, thing_manager) {
-            ConceptStatus::Put | ConceptStatus::Persisted => thing_manager.has_owners(snapshot, self.as_reference(), false),
+            ConceptStatus::Put | ConceptStatus::Persisted => {
+                thing_manager.has_owners(snapshot, self.as_reference(), false)
+            }
             ConceptStatus::Inserted | ConceptStatus::Deleted => {
                 unreachable!("Attributes are expected to always have a PUT status.")
             }
@@ -87,6 +86,15 @@ impl<'a> Attribute<'a> {
         thing_manager: &'m ThingManager<Snapshot>,
     ) -> AttributeOwnerIterator<'m, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
         thing_manager.get_owners(snapshot, self.as_reference())
+    }
+
+    pub fn get_owners_by_type<'m, 'o, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &'m Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
+        owner_type: impl ObjectTypeAPI<'o>,
+    ) -> AttributeOwnerIterator<'m, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }> {
+        thing_manager.get_owners_by_type(snapshot, self.as_reference(), owner_type)
     }
 
     pub fn as_reference(&self) -> Attribute<'_> {
@@ -118,35 +126,36 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         // Attributes are always PUT, so we don't have to record a lock on modification
     }
 
-    fn get_status<'m, Snapshot: ReadableSnapshot>(
+    fn get_status<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>,
+        thing_manager: &ThingManager<Snapshot>,
     ) -> ConceptStatus {
         thing_manager.get_status(snapshot, self.vertex().as_storage_key())
     }
 
     fn errors<Snapshot: WritableSnapshot>(
         &self,
-        snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        _snapshot: &Snapshot,
+        _thing_manager: &ThingManager<Snapshot>,
     ) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
         Ok(Vec::new())
     }
 
-    fn delete<'m, Snapshot: WritableSnapshot>(
+    fn delete<Snapshot: WritableSnapshot>(
         self,
-        snapshot: &'m mut Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
-        let mut owners = self.get_owners(snapshot, thing_manager)
-            .collect_cloned_vec(|(key, value)| key.into_owned())
+        let owners = self
+            .get_owners(snapshot, thing_manager)
+            .collect_cloned_vec(|(key, _)| key.into_owned())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for object in owners {
-            thing_manager.delete_has(snapshot, object, self.as_reference());
+            thing_manager.unset_has(snapshot, object, self.as_reference());
         }
+        thing_manager.delete_attribute(snapshot, self)?;
 
-        thing_manager.delete_attribute(snapshot, self);
         Ok(())
     }
 }
@@ -199,10 +208,16 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
     }
 
     pub(crate) fn new_empty() -> Self {
-        Self { snapshot: None, type_manager: None, attributes_iterator: None, has_reverse_iterator: None, state: State::Done }
+        Self {
+            snapshot: None,
+            type_manager: None,
+            attributes_iterator: None,
+            has_reverse_iterator: None,
+            state: State::Done,
+        }
     }
 
-    fn storage_key_to_attribute_vertex<'b>(storage_key_ref: StorageKeyReference<'b>) -> AttributeVertex<'b> {
+    fn storage_key_to_attribute_vertex(storage_key_ref: StorageKeyReference<'_>) -> AttributeVertex<'_> {
         AttributeVertex::new(Bytes::Reference(storage_key_ref.byte_ref()))
     }
 
@@ -276,7 +291,7 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
                     let attribute_vertex = Self::storage_key_to_attribute_vertex(key);
                     let independent = Attribute::new(attribute_vertex.as_reference())
                         .type_()
-                        .is_independent(self.snapshot.clone().unwrap(), self.type_manager.clone().unwrap());
+                        .is_independent(self.snapshot.unwrap(), self.type_manager.unwrap());
                     match independent {
                         Ok(true) => self.state = State::ItemReady,
                         Ok(false) => {
@@ -297,7 +312,7 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
                 Some(Err(err)) => self.state = State::Error(ConceptReadError::SnapshotIterate { source: err.clone() }),
             }
             if advance_attribute {
-                let _ = self.attributes_iterator.as_mut().unwrap();
+                self.attributes_iterator.as_mut().unwrap().next();
             }
         }
     }
