@@ -129,7 +129,6 @@ impl TypeCache {
         where T: KindAPI<'a> + CacheGetter<CacheType=CACHE>,
               CACHE: HasCommonTypeCache<T::SelfStatic> + 'this
     {
-        // TODO: Why does this not return &Option<EntityType<'static>> ?
         Some(T::get_cache(self, type_).common_type_cache().supertype.as_ref()?.clone())
     }
 
@@ -200,7 +199,6 @@ impl TypeCache {
         &RelationType::get_cache(self, relation_type).relates_transitive
     }
 
-    // TODO: Look for unused <'a> and use them
     pub(crate) fn get_plays<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Plays<'static>>
         where T:  OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType=CACHE>,
               CACHE: HasOwnerPlayerCache + 'this
@@ -227,7 +225,6 @@ impl TypeCache {
         self.owns.get(&owns).unwrap().ordering
     }
 
-    // TODO: Why does map.get() uses the same lifetime for key as the map?
     pub(crate) fn get_owns_override<'c>(&'c self, owns: Owns<'c>) -> &'c Option<Owns<'static>> {
         &self.owns.get(&owns).unwrap().overrides
     }

@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use std::collections::{HashMap, HashSet};
 
 use bytes::Bytes;
@@ -82,7 +81,6 @@ pub(crate) struct OwnsCache {
 pub(crate) struct PlaysCache {
     pub(super) overrides: Option<Plays<'static>>
 }
-
 
 #[derive(Debug)]
 pub(crate) struct CommonTypeCache<T: KindAPI<'static>> {
