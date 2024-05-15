@@ -5,7 +5,6 @@
  */
 
 use std::sync::Arc;
-use durability::DurabilityService;
 
 use durability::wal::WAL;
 use encoding::{
@@ -24,6 +23,7 @@ use storage::{
     snapshot::{CommittableSnapshot, WritableSnapshot},
     MVCCStorage,
 };
+use storage::durability_client::WALClient;
 use storage::recovery::checkpoint::Checkpoint;
 use test_utils::{create_tmp_dir, init_logging};
 
@@ -33,7 +33,7 @@ fn entity_type_vertexes_are_reused() {
     init_logging();
     let storage_path = create_tmp_dir();
     let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
+    let storage = Arc::new(MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap());
     // If we don't commit, it doesn't move.
     {
         for _ in 0..5 {
@@ -84,7 +84,7 @@ fn max_entity_type_vertexes() {
     init_logging();
     let storage_path = create_tmp_dir();
     let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
+    let storage = Arc::new(MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap());
     let create_till = u16::MAX;
     {
         let mut snapshot = storage.clone().open_snapshot_write();
@@ -111,13 +111,13 @@ fn loading_storage_assigns_next_vertex() {
     let storage_path = create_tmp_dir();
     {
         let wal = WAL::create(&storage_path).unwrap();
-        let _ = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
+        let _ = Arc::new(MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap());
     }
     let create_till = 5;
 
     for i in 0..create_till {
         let wal = WAL::load(&storage_path).unwrap();
-        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, &None).unwrap());
+        let storage = Arc::new(MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None).unwrap());
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
@@ -128,7 +128,7 @@ fn loading_storage_assigns_next_vertex() {
 
     for i in 0..create_till {
         let wal = WAL::load(&storage_path).unwrap();
-        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, &None).unwrap());
+        let storage = Arc::new(MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None).unwrap());
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
@@ -143,10 +143,10 @@ fn loading_storage_assigns_next_vertex() {
         let wal = WAL::load(&storage_path).unwrap();
         let storage = match checkpoint {
             None => {
-                Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, &None).unwrap())
+                Arc::new(MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None).unwrap())
             }
             Some(checkpoint) => {
-                Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, &Some(checkpoint)).unwrap())
+                Arc::new(MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &Some(checkpoint)).unwrap())
             }
         };
 
@@ -165,7 +165,7 @@ fn loading_storage_assigns_next_vertex() {
 
     for i in 0..create_till {
         let wal = WAL::load(&storage_path).unwrap();
-        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, &None).unwrap());
+        let storage = Arc::new(MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None).unwrap());
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 

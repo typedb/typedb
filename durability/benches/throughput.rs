@@ -7,7 +7,7 @@
 use std::path::Path;
 
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
-use durability::{wal::WAL, DurabilityRecord, DurabilityRecordType, DurabilityService, SequencedDurabilityRecord};
+use durability::{wal::WAL, DurabilityRecordType, DurabilityService};
 use itertools::Itertools;
 use tempdir::TempDir;
 
@@ -16,27 +16,22 @@ pub struct TestRecord {
     pub bytes: Vec<u8>,
 }
 
-impl DurabilityRecord for TestRecord {
-    const RECORD_TYPE: DurabilityRecordType = 0;
+impl TestRecord {
+    pub const RECORD_TYPE: DurabilityRecordType = 0;
     const RECORD_NAME: &'static str = "TEST";
 
-    fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
-        writer.write_all(&self.bytes)?;
-        Ok(())
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self { bytes: bytes }
     }
 
-    fn deserialise_from(reader: &mut impl std::io::Read) -> bincode::Result<Self> {
-        let mut bytes = Vec::new();
-        reader.read_to_end(&mut bytes)?;
-        Ok(Self { bytes })
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
     }
 }
 
-impl SequencedDurabilityRecord for TestRecord {}
-
 pub fn create_wal(directory: impl AsRef<Path>) -> WAL {
     let mut wal = WAL::create(directory).unwrap();
-    wal.register_record_type::<TestRecord>();
+    wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
     wal
 }
 
@@ -45,15 +40,11 @@ fn throughput_small(c: &mut Criterion) {
     let wal = create_wal(&directory);
 
     let message = TestRecord { bytes: b"hello world".to_vec() };
-    let serialized_len = {
-        let mut buf = Vec::new();
-        message.serialise_into(&mut buf).unwrap();
-        buf.len()
-    };
+    let serialized_len = message.bytes().len();
 
     let mut group = c.benchmark_group("throughput");
     group.throughput(Throughput::Bytes(serialized_len as u64));
-    group.bench_function("write_small", |b| b.iter(|| wal.sequenced_write(&message).unwrap()));
+    group.bench_function("write_small", |b| b.iter(|| wal.sequenced_write(TestRecord::RECORD_TYPE, message.bytes()).unwrap()));
     group.finish();
 }
 
@@ -62,15 +53,11 @@ fn throughput_large(c: &mut Criterion) {
     let wal = create_wal(&directory);
 
     let message = TestRecord { bytes: std::iter::repeat(*b"hello world").take(100).flatten().collect_vec() };
-    let serialized_len = {
-        let mut buf = Vec::new();
-        message.serialise_into(&mut buf).unwrap();
-        buf.len()
-    };
+    let serialized_len = message.bytes().len();
 
     let mut group = c.benchmark_group("throughput");
     group.throughput(Throughput::Bytes(serialized_len as u64));
-    group.bench_function("write_large", |b| b.iter(|| wal.sequenced_write(&message).unwrap()));
+    group.bench_function("write_large", |b| b.iter(|| wal.sequenced_write(TestRecord::RECORD_TYPE, message.bytes()).unwrap()));
     group.finish();
 }
 

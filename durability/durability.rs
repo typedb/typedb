@@ -12,133 +12,65 @@ use std::{
     fmt,
     io::{self, Read, Write},
     ops::{Add, AddAssign, Sub},
-    path::Path,
 };
-
-use itertools::Itertools;
+use std::borrow::Cow;
 use serde::{Deserialize, Serialize};
+
 use crate::wal::WALError;
 
 pub mod wal;
 
-#[derive(Debug)]
-struct RecordHeader {
-    sequence_number: SequenceNumber,
-    len: u64,
-    record_type: DurabilityRecordType,
-}
+pub trait DurabilityService {
+    fn register_record_type(&mut self, record_type: DurabilityRecordType, record_name: &str);
 
-#[derive(Debug)]
-pub struct RawRecord {
-    pub sequence_number: SequenceNumber,
-    pub record_type: DurabilityRecordType,
-    pub bytes: Box<[u8]>,
-}
+    fn sequenced_write(
+        &self, record_type: DurabilityRecordType, bytes: &[u8],
+    ) -> Result<DurabilitySequenceNumber, DurabilityServiceError>;
 
-pub trait DurabilityService: Sequencer {
-    fn create(directory: impl AsRef<Path>) -> Result<Self, DurabilityError>
-    where
-        Self: Sized;
+    fn unsequenced_write(
+        &self, record_type: DurabilityRecordType, bytes: &[u8]
+    ) -> Result<(), DurabilityServiceError>;
 
-    fn load(directory: impl AsRef<Path>) -> Result<Self, DurabilityError>
-        where
-            Self: Sized;
-
-    fn register_record_type<Record: DurabilityRecord>(&mut self);
-
-    fn unsequenced_write<Record>(&self, record: &Record) -> Result<(), DurabilityError>
-    where
-        Record: UnsequencedDurabilityRecord;
-
-    fn sequenced_write<Record>(&self, record: &Record) -> Result<SequenceNumber, DurabilityError>
-    where
-        Record: SequencedDurabilityRecord;
-
-    fn iter_from(
+    fn iter_any_from(
         &self,
-        sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item = Result<RawRecord, DurabilityError>>, DurabilityError>;
+        sequence_number: DurabilitySequenceNumber,
+    ) -> Result<impl Iterator<Item = Result<RawRecord<'static>, DurabilityServiceError>>, DurabilityServiceError>;
 
-    fn iter_from_start(&self) -> Result<impl Iterator<Item = Result<RawRecord, DurabilityError>>, DurabilityError> {
-        self.iter_from(SequenceNumber::MIN)
-    }
-
-    fn iter_type_from<Record: DurabilityRecord>(
+    fn iter_type_from(
         &self,
-        sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item = Result<(SequenceNumber, Record), DurabilityError>>, DurabilityError> {
-        Ok(self
-            .iter_from(sequence_number)?
-            .filter(|res| {
-                match res {
-                    Ok(raw) => raw.record_type == Record::RECORD_TYPE,
-                    Err(_) => true, // Let the error filter through
-                }
-            })
-            .map(|res| {
-                let raw = res?;
-                Ok((raw.sequence_number, Record::deserialise_from(&mut &*raw.bytes)?))
-            }))
-    }
+        sequence_number: DurabilitySequenceNumber,
+        record_type: DurabilityRecordType
+    ) -> Result<impl Iterator<Item = Result<RawRecord<'static>, DurabilityServiceError>>, DurabilityServiceError>;
 
-    fn iter_sequenced_type_from<Record: SequencedDurabilityRecord>(
+    fn find_last_type(
         &self,
-        sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item = Result<(SequenceNumber, Record), DurabilityError>>, DurabilityError> {
-        self.iter_type_from::<Record>(sequence_number)
-    }
+        record_type: DurabilityRecordType
+    ) -> Result<Option<RawRecord<'static>>, DurabilityServiceError>;
 
-    fn iter_sequenced_type_from_start<Record: SequencedDurabilityRecord>(
-        &self,
-    ) -> Result<impl Iterator<Item = Result<(SequenceNumber, Record), DurabilityError>>, DurabilityError> {
-        self.iter_sequenced_type_from::<Record>(SequenceNumber::MIN)
-    }
-
-    fn iter_unsequenced_type_from<Record: UnsequencedDurabilityRecord>(
-        &self,
-        sequence_number: SequenceNumber,
-    ) -> Result<impl Iterator<Item = Result<Record, DurabilityError>>, DurabilityError> {
-        Ok(self.iter_type_from::<Record>(sequence_number)?.map_ok(|(_, record)| record))
-    }
-
-    fn iter_unsequenced_type_from_start<Record: UnsequencedDurabilityRecord>(
-        &self,
-    ) -> Result<impl Iterator<Item = Result<Record, DurabilityError>>, DurabilityError> {
-        self.iter_unsequenced_type_from(SequenceNumber::MIN)
-    }
-
-    fn find_last_unsequenced_type<Record: UnsequencedDurabilityRecord>(
-        &self
-    ) -> Result<Option<Record>, DurabilityError>;
-
-    fn delete_durability(self) -> Result<(), DurabilityError>;
+    fn delete_durability(self) -> Result<(), DurabilityServiceError>;
 }
 
 pub type DurabilityRecordType = u8;
 
-pub trait DurabilityRecord: Sized {
-    const RECORD_TYPE: DurabilityRecordType;
-    const RECORD_NAME: &'static str;
-    fn serialise_into(&self, writer: &mut impl Write) -> bincode::Result<()>;
-    fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self>;
+#[derive(Debug)]
+pub struct RawRecord<'a> {
+    pub sequence_number: DurabilitySequenceNumber,
+    pub record_type: DurabilityRecordType,
+    pub bytes: Cow<'a, [u8]>,
 }
 
-pub trait SequencedDurabilityRecord: DurabilityRecord {}
-
-pub trait UnsequencedDurabilityRecord: DurabilityRecord {}
-
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-pub struct SequenceNumber {
+pub struct DurabilitySequenceNumber {
     number: u64,
 }
 
-impl fmt::Display for SequenceNumber {
+impl fmt::Display for DurabilitySequenceNumber {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "SeqNr[{}]", self.number)
     }
 }
 
-impl SequenceNumber {
+impl DurabilitySequenceNumber {
     pub const MIN: Self = Self { number: u64::MIN };
     pub const MAX: Self = Self { number: u64::MAX };
 
@@ -183,84 +115,76 @@ impl SequenceNumber {
     }
 }
 
-impl From<u64> for SequenceNumber {
+impl From<u64> for DurabilitySequenceNumber {
     fn from(value: u64) -> Self {
         Self::new(value)
     }
 }
 
-impl Add<usize> for SequenceNumber {
-    type Output = SequenceNumber;
+impl Add<usize> for DurabilitySequenceNumber {
+    type Output = DurabilitySequenceNumber;
 
     fn add(self, rhs: usize) -> Self::Output {
-        SequenceNumber::from(self.number + rhs as u64)
+        DurabilitySequenceNumber::from(self.number + rhs as u64)
     }
 }
 
-impl Sub<usize> for SequenceNumber {
-    type Output = SequenceNumber;
+impl Sub<usize> for DurabilitySequenceNumber {
+    type Output = DurabilitySequenceNumber;
 
     fn sub(self, rhs: usize) -> Self::Output {
-        SequenceNumber::from(self.number - rhs as u64)
+        DurabilitySequenceNumber::from(self.number - rhs as u64)
     }
 }
 
-impl AddAssign<usize> for SequenceNumber {
+impl AddAssign<usize> for DurabilitySequenceNumber {
     fn add_assign(&mut self, rhs: usize) {
         self.number = self.number + rhs as u64
     }
 }
 
-impl Sub<SequenceNumber> for SequenceNumber {
+impl Sub<DurabilitySequenceNumber> for DurabilitySequenceNumber {
     type Output = usize;
 
-    fn sub(self, rhs: SequenceNumber) -> Self::Output {
+    fn sub(self, rhs: DurabilitySequenceNumber) -> Self::Output {
         (self.number - rhs.number) as usize
     }
 }
 
-pub trait Sequencer {
-    fn increment(&self) -> SequenceNumber;
-
-    fn current(&self) -> SequenceNumber;
-
-    fn previous(&self) -> SequenceNumber;
-}
-
 #[derive(Debug)]
-pub enum DurabilityError {
-    #[non_exhaustive]
-    BincodeSerialize { source: bincode::Error },
+pub enum DurabilityServiceError {
+    // #[non_exhaustive]
+    // BincodeSerialize { source: bincode::Error },
 
     #[non_exhaustive]
     IO { source: io::Error },
     WAL { source: WALError },
 
-    DeleteFailed { source: io:: Error },
+    DeleteFailed { source: io::Error },
 }
 
-impl fmt::Display for DurabilityError {
+impl fmt::Display for DurabilityServiceError {
     fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }
+//
+// impl From<bincode::Error> for DurabilityError {
+//     fn from(source: bincode::Error) -> Self {
+//         Self::BincodeSerialize { source }
+//     }
+// }
 
-impl From<bincode::Error> for DurabilityError {
-    fn from(source: bincode::Error) -> Self {
-        Self::BincodeSerialize { source }
-    }
-}
-
-impl From<io::Error> for DurabilityError {
+impl From<io::Error> for DurabilityServiceError {
     fn from(source: io::Error) -> Self {
         Self::IO { source }
     }
 }
 
-impl Error for DurabilityError {
+impl Error for DurabilityServiceError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::BincodeSerialize { source, .. } => Some(source),
+            // Self::BincodeSerialize { source, .. } => Some(source),
             Self::IO { source, .. } => Some(source),
             Self::WAL { source, .. } => Some(source),
             Self::DeleteFailed { source, .. } => Some(source),

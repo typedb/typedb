@@ -9,31 +9,33 @@ use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt;
 
-use durability::{DurabilityError, DurabilityRecord, DurabilityService, RawRecord, SequenceNumber};
+use durability::{RawRecord};
+use crate::durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord};
 
 use crate::isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit};
 use crate::keyspace::{KeyspaceError, Keyspaces};
 use crate::MVCCStorage;
 use crate::recovery::commit_replay::CommitRecoveryError::DurabilityRecordsMissing;
+use crate::sequence_number::SequenceNumber;
 use crate::write_batches::WriteBatches;
 
 
 /// Load commit data from the start onwards. Ignores any statuses that are not paired with commit data.
 pub fn load_commit_data_from(
     start: SequenceNumber,
-    durability_service: &impl DurabilityService,
+    durability_client: &impl DurabilityClient,
 ) -> Result<BTreeMap<SequenceNumber, RecoveryCommitStatus>, CommitRecoveryError> {
-    use CommitRecoveryError::{DurabilityRecordDeserialize, DurabilityServiceRead, DurabilityRecordsMissing};
+    use CommitRecoveryError::{DurabilityRecordDeserialize, DurabilityClientRead, DurabilityRecordsMissing};
 
     let mut recovered_commits = BTreeMap::new();
 
-    let mut records = durability_service.iter_from(start).map_err(|error| DurabilityServiceRead { source: error })?
+    let mut records = durability_client.iter_from(start).map_err(|error| DurabilityClientRead { source: error })?
         .peekable();
     let mut first_record = true;
 
     for record in records {
         let RawRecord { sequence_number, record_type, bytes } =
-            record.map_err(|error| DurabilityServiceRead { source: error })?;
+            record.map_err(|error| DurabilityClientRead { source: error })?;
         if first_record {
             if sequence_number != start {
                 return Err(DurabilityRecordsMissing {
@@ -74,10 +76,10 @@ pub fn load_commit_data_from(
 
 pub(crate) fn apply_commits(
     recovered_commits: BTreeMap<SequenceNumber, RecoveryCommitStatus>,
-    durability_service: &impl DurabilityService,
+    durability_client: &impl DurabilityClient,
     keyspaces: &Keyspaces,
 ) -> Result<(), CommitRecoveryError> {
-    use CommitRecoveryError::{DurabilityServiceRead, DurabilityServiceWrite, KeyspaceWrite};
+    use CommitRecoveryError::{DurabilityClientRead, DurabilityClientWrite, KeyspaceWrite};
 
     if recovered_commits.is_empty() {
         return Ok(());
@@ -96,17 +98,17 @@ pub(crate) fn apply_commits(
             RecoveryCommitStatus::Pending(commit_record) => {
                 isolation_manager.opened_for_read(commit_record.open_sequence_number());
                 let validated_commit = isolation_manager
-                    .validate_commit(commit_sequence_number, commit_record, durability_service)
-                    .map_err(|error| DurabilityServiceRead { source: error })?;
+                    .validate_commit(commit_sequence_number, commit_record, durability_client)
+                    .map_err(|error| DurabilityClientRead { source: error })?;
                 match validated_commit {
                     ValidatedCommit::Write(write_batches) => {
-                        MVCCStorage::persist_commit_status(true, commit_sequence_number, durability_service)
-                            .map_err(|error| DurabilityServiceWrite { source: error })?;
+                        MVCCStorage::persist_commit_status(true, commit_sequence_number, durability_client)
+                            .map_err(|error| DurabilityClientWrite { source: error })?;
                         pending_writes.push(write_batches);
                     }
                     ValidatedCommit::Conflict(_) => {
-                        MVCCStorage::persist_commit_status(false, commit_sequence_number, durability_service)
-                            .map_err(|error| DurabilityServiceWrite { source: error })?;
+                        MVCCStorage::persist_commit_status(false, commit_sequence_number, durability_client)
+                            .map_err(|error| DurabilityClientWrite { source: error })?;
                     }
                 }
             }
@@ -129,8 +131,8 @@ pub enum RecoveryCommitStatus {
 #[derive(Debug)]
 pub enum CommitRecoveryError {
     DurabilityRecordDeserialize { source: bincode::Error },
-    DurabilityServiceRead { source: DurabilityError },
-    DurabilityServiceWrite { source: DurabilityError },
+    DurabilityClientRead { source: DurabilityClientError },
+    DurabilityClientWrite { source: DurabilityClientError },
     DurabilityRecordsMissing { expected_sequence_number: SequenceNumber, first_record_sequence_number: SequenceNumber },
     KeyspaceWrite { source: KeyspaceError },
 }
@@ -145,8 +147,8 @@ impl Error for CommitRecoveryError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::DurabilityRecordDeserialize { source, .. } => Some(source),
-            Self::DurabilityServiceRead { source, .. } => Some(source),
-            Self::DurabilityServiceWrite { source, .. } => Some(source),
+            Self::DurabilityClientRead { source, .. } => Some(source),
+            Self::DurabilityClientWrite { source, .. } => Some(source),
             Self::DurabilityRecordsMissing{ .. } => None,
             Self::KeyspaceWrite { source, .. } => Some(source),
         }

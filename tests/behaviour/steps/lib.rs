@@ -92,7 +92,7 @@ impl Context {
         self.server.as_mut()
     }
 
-    pub fn databases(&self) -> &HashMap<String, Arc<Database<WAL>>> {
+    pub fn databases(&self) -> &HashMap<String, Arc<Database<LocalDurabilityClient>>> {
         self.server().unwrap().databases()
     }
 

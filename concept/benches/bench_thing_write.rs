@@ -32,6 +32,7 @@ use rand::distributions::{Alphanumeric, DistString};
 use concept::type_::Ordering;
 use durability::DurabilityService;
 use storage::{MVCCStorage};
+use storage::durability_client::WALClient;
 use storage::snapshot::{CommittableSnapshot, WriteSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
@@ -40,7 +41,7 @@ static NAME_LABEL: OnceLock<Label> = OnceLock::new();
 static PERSON_LABEL: OnceLock<Label> = OnceLock::new();
 
 fn write_entity_attributes(
-    storage: Arc<MVCCStorage<WAL>>,
+    storage: Arc<MVCCStorage<WALClient>>,
     type_vertex_generator: Arc<TypeVertexGenerator>,
     thing_vertex_generator: Arc<ThingVertexGenerator>,
     schema_cache: Arc<TypeCache>,
@@ -68,8 +69,8 @@ fn write_entity_attributes(
     snapshot.commit().unwrap();
 }
 
-fn create_schema(storage: &Arc<MVCCStorage<WAL>>, type_vertex_generator: &Arc<TypeVertexGenerator>) {
-    let mut snapshot: WriteSnapshot<WAL> = storage.clone().open_snapshot_write();
+fn create_schema(storage: &Arc<MVCCStorage<WALClient>>, type_vertex_generator: &Arc<TypeVertexGenerator>) {
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
         let type_manager = Rc::new(TypeManager::new(type_vertex_generator.clone(), None));
         let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap(), false).unwrap();
@@ -96,10 +97,10 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.bench_function("thing_write", |b| {
         let storage_path = create_tmp_dir();
         let wal = WAL::create(&storage_path).unwrap();
-        let mut storage = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
+        let mut storage = Arc::new(MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-        TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
+        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
         create_schema(&storage, &type_vertex_generator);
         let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
         b.iter(|| {

@@ -16,8 +16,7 @@ use std::ffi::OsString;
 
 use concept::{error::ConceptWriteError, type_::type_manager::TypeManager};
 use concept::thing::statistics::Statistics;
-use durability::{DurabilityError, DurabilityService, SequenceNumber, Sequencer};
-use durability::wal::WAL;
+use durability::wal::{WAL, WALError};
 use encoding::{
     EncodingKeyspace,
     error::EncodingError,
@@ -27,10 +26,12 @@ use storage::{
     MVCCStorage,
     snapshot::WriteSnapshot, StorageOpenError,
 };
+use storage::durability_client::{DurabilityClient, DurabilityClientError, WALClient};
 use storage::isolation_manager::CommitType;
 use storage::iterator::MVCCReadError;
 use storage::recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError};
 use storage::recovery::commit_replay::{CommitRecoveryError, load_commit_data_from, RecoveryCommitStatus};
+use storage::sequence_number::SequenceNumber;
 
 use crate::database::StatisticsInitialiseError::ReloadCommitData;
 use crate::DatabaseOpenError::{CheckpointCreate, DirectoryCreate, DurabilityRead, Encoding, SchemaInitialise, StatisticsInitialise, StorageOpen};
@@ -50,8 +51,8 @@ impl<D> fmt::Debug for Database<D> {
     }
 }
 
-impl Database<WAL> {
-    pub fn open(path: &Path) -> Result<Database<WAL>, DatabaseOpenError> {
+impl Database<WALClient> {
+    pub fn open(path: &Path) -> Result<Database<WALClient>, DatabaseOpenError> {
         let file_name = path.file_name().unwrap();
         let name = file_name.to_str().ok_or_else(|| DatabaseOpenError::InvalidUnicodeName { name: file_name.to_owned() })?;
 
@@ -62,20 +63,20 @@ impl Database<WAL> {
         }
     }
 
-    fn create(path: &Path, name: impl AsRef<str>) -> Result<Database<WAL>, DatabaseOpenError> {
-        use DatabaseOpenError::{DirectoryCreate, DurabilityOpen, Encoding, SchemaInitialise, StorageOpen};
+    fn create(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
+        use DatabaseOpenError::{DirectoryCreate, WALOpen, Encoding, SchemaInitialise, StorageOpen};
         fs::create_dir(path).map_err(|error| DirectoryCreate { path: path.to_owned(), source: error })?;
-        let wal = WAL::create(&path).map_err(|err| DurabilityOpen { source: err })?;
-        let storage = Arc::new(MVCCStorage::create::<EncodingKeyspace>(&name, path, wal)
+        let wal = WAL::create(&path).map_err(|err| WALOpen { source: err })?;
+        let storage = Arc::new(MVCCStorage::create::<EncodingKeyspace>(&name, path, WALClient::new(wal))
             .map_err(|error| StorageOpen { source: error })?);
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage.clone())
             .map_err(|err| Encoding { source: err })?);
-        TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone())
+        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone())
             .map_err(|err| SchemaInitialise { source: err })?;
         let statistics = Arc::new(Statistics::new(storage.read_watermark()));
 
-        Ok(Database::<WAL> {
+        Ok(Database::<WALClient> {
             name: name.as_ref().to_owned(),
             path: path.to_owned(),
             storage,
@@ -85,31 +86,31 @@ impl Database<WAL> {
         })
     }
 
-    fn load(path: &Path, name: impl AsRef<str>) -> Result<Database<WAL>, DatabaseOpenError> {
+    fn load(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
-            CheckpointCreate, CheckpointLoad, DurabilityOpen, DurabilityRead, Encoding, SchemaInitialise,
+            CheckpointCreate, CheckpointLoad, WALOpen, DurabilityRead, Encoding, SchemaInitialise,
             StatisticsInitialise, StorageOpen,
         };
 
-        let wal = WAL::load(&path).map_err(|err| DurabilityOpen { source: err })?;
+        let wal = WAL::load(&path).map_err(|err| WALOpen { source: err })?;
         let wal_last_sequence_number = wal.previous();
         let checkpoint = Checkpoint::open_latest(&path)
             .map_err(|err| CheckpointLoad { source: err })?;
-        let storage = Arc::new(MVCCStorage::load::<EncodingKeyspace>(&name, path, wal, &checkpoint)
+        let storage = Arc::new(MVCCStorage::load::<EncodingKeyspace>(&name, path, WALClient::new(wal), &checkpoint)
             .map_err(|error| StorageOpen { source: error })?);
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage.clone())
             .map_err(|err| Encoding { source: err })?);
-        TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone())
+        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone())
             .map_err(|err| SchemaInitialise { source: err })?;
 
         let statistics = storage.durability().find_last_unsequenced_type::<Statistics>()
             .map_err(|err| DurabilityRead { source: err })?
             .unwrap_or_else(|| Statistics::new(SequenceNumber::MIN));
-        let statistics = Database::<WAL>::may_synchronise_statistics(statistics, storage.clone())
+        let statistics = Database::<WALClient>::may_synchronise_statistics(statistics, storage.clone())
             .map_err(|err| StatisticsInitialise { source: err })?;
 
-        let database = Database::<WAL> {
+        let database = Database::<WALClient> {
             name: name.as_ref().to_owned(),
             path: path.to_owned(),
             storage,
@@ -149,7 +150,7 @@ impl<D> Database<D> {
         mut statistics: Statistics,
         storage: Arc<MVCCStorage<D>>,
     ) -> Result<Statistics, StatisticsInitialiseError>
-        where D: DurabilityService
+        where D: DurabilityClient
     {
         use StatisticsInitialiseError::{DataRead, DurablyWrite, ReloadCommitData};
 
@@ -201,8 +202,9 @@ pub enum DatabaseOpenError {
     InvalidUnicodeName { name: OsString },
     DirectoryCreate { path: PathBuf, source: io::Error },
     StorageOpen { source: StorageOpenError },
-    DurabilityOpen { source: DurabilityError },
-    DurabilityRead { source: DurabilityError },
+    WALOpen { source: WALError },
+    DurabilityOpen { source: DurabilityClientError },
+    DurabilityRead { source: DurabilityClientError },
     CheckpointLoad { source: CheckpointLoadError },
     CheckpointCreate { source: DatabaseCheckpointError },
     Encoding { source: EncodingError },
@@ -222,6 +224,7 @@ impl Error for DatabaseOpenError {
             Self::InvalidUnicodeName { .. } => None,
             Self::DirectoryCreate { source, .. } => Some(source),
             Self::StorageOpen { source } => Some(source),
+            Self::WALOpen { source } => Some(source),
             Self::DurabilityOpen { source } => Some(source),
             Self::DurabilityRead { source } => Some(source),
             Self::CheckpointLoad { source } => Some(source),
@@ -254,7 +257,7 @@ impl Error for DatabaseCheckpointError {
 
 #[derive(Debug)]
 pub enum StatisticsInitialiseError {
-    DurablyWrite { source: DurabilityError },
+    DurablyWrite { source: DurabilityClientError },
     ReloadCommitData { source: CommitRecoveryError },
     DataRead { source: MVCCReadError },
 }

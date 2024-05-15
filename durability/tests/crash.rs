@@ -7,7 +7,6 @@
 #![deny(unused_must_use)]
 #![deny(rust_2018_idioms)]
 
-use std::fs;
 use std::process::Command;
 
 use tempdir::TempDir;

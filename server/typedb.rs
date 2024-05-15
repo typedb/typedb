@@ -7,20 +7,19 @@
 use std::{
     collections::HashMap,
     error::Error,
-    ffi::OsString,
     fmt, fs, io,
     path::{Path, PathBuf},
     sync::Arc,
 };
 
 use database::{Database, DatabaseOpenError};
-use durability::wal::WAL;
 use itertools::Itertools;
+use storage::durability_client::WALClient;
 
 #[derive(Debug)]
 pub struct Server {
     data_directory: PathBuf,
-    databases: HashMap<String, Arc<Database<WAL>>>,
+    databases: HashMap<String, Arc<Database<WALClient>>>,
 }
 
 impl Server {
@@ -42,7 +41,7 @@ impl Server {
             .map(|entry| {
                 let entry = entry
                     .map_err(|error| CouldNotReadDataDirectory { path: data_directory.to_owned(), source: error })?;
-                let database = Database::<WAL>::open(&entry.path()).map_err(|error| DatabaseOpen { source: error })?;
+                let database = Database::<WALClient>::open(&entry.path()).map_err(|error| DatabaseOpen { source: error })?;
                 Ok((database.name().to_owned(), Arc::new(database)))
             })
             .try_collect()?;
@@ -54,14 +53,14 @@ impl Server {
         let name = name.as_ref();
         self.databases
             .entry(name.to_owned())
-            .or_insert_with(|| Arc::new(Database::<WAL>::open(&self.data_directory.join(name)).unwrap()));
+            .or_insert_with(|| Arc::new(Database::<WALClient>::open(&self.data_directory.join(name)).unwrap()));
     }
 
-    pub fn database(&self, name: &str) -> Option<&Database<WAL>> {
+    pub fn database(&self, name: &str) -> Option<&Database<WALClient>> {
         self.databases.get(name).map(|arc| &**arc)
     }
 
-    pub fn databases(&self) -> &HashMap<String, Arc<Database<WAL>>> {
+    pub fn databases(&self) -> &HashMap<String, Arc<Database<WALClient>>> {
         &self.databases
     }
 

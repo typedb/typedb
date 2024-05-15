@@ -8,13 +8,11 @@ use std::sync::Arc;
 use itertools::Itertools;
 
 use bytes::{byte_array::ByteArray, Bytes};
-use durability::DurabilityService;
 use durability::wal::WAL;
 use storage::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::KeyspaceSet
-    , StorageOpenError,
+    StorageOpenError,
 };
 use storage::keyspace::{KeyspaceOpenError, KeyspaceValidationError};
 use test_utils::{create_tmp_dir, init_logging};

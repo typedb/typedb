@@ -13,7 +13,7 @@ rust_library(
     ]),
     deps = [
         "//database",
-        "//durability",
+        "//storage",
 
         "@crates//:itertools",
     ]

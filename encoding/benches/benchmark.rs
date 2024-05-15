@@ -20,6 +20,7 @@ use encoding::{
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{key_value::StorageKey, snapshot::WriteSnapshot, MVCCStorage};
+use storage::durability_client::WALClient;
 use test_utils::{create_tmp_dir, init_logging};
 
 fn vertex_generation<D>(
@@ -42,7 +43,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     init_logging();
     let storage_path = create_tmp_dir();
     let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
+    let storage = Arc::new(MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap());
 
     let type_id = TypeID::build(0);
     let vertex_generator = Arc::new(ThingVertexGenerator::new());

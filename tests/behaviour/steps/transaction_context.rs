@@ -9,9 +9,9 @@ use std::fmt;
 use durability::wal::WAL;
 
 pub enum ActiveTransaction {
-    Read(database::transaction::TransactionRead<WAL>),
-    Write(database::transaction::TransactionWrite<WAL>),
-    Schema(database::transaction::TransactionSchema<WAL>),
+    Read(database::transaction::TransactionRead<LocalDurabilityClient>),
+    Write(database::transaction::TransactionWrite<LocalDurabilityClient>),
+    Schema(database::transaction::TransactionSchema<LocalDurabilityClient>),
 }
 
 impl fmt::Debug for ActiveTransaction {

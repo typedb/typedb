@@ -8,7 +8,6 @@ use std::{error::Error, fmt, sync::Arc};
 use std::iter::empty;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
-use durability::{DurabilityService, SequenceNumber};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use super::{buffer::OperationsBuffer, iterator::SnapshotRangeIterator};
@@ -20,7 +19,9 @@ use crate::{
     snapshot::{lock::LockType, write::Write},
     MVCCStorage, StorageCommitError,
 };
+use crate::durability_client::DurabilityClient;
 use crate::isolation_manager::CommitType;
+use crate::sequence_number::SequenceNumber;
 use crate::snapshot::buffer::BufferRangeIterator;
 
 pub trait ReadableSnapshot {
@@ -170,7 +171,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
 
 pub trait CommittableSnapshot<D>: WritableSnapshot
 where
-    D: DurabilityService,
+    D: DurabilityClient,
 {
     fn commit(self) -> Result<(), SnapshotError>;
 
@@ -340,7 +341,7 @@ impl<D> WritableSnapshot for WriteSnapshot<D> {
     }
 }
 
-impl<D: DurabilityService> CommittableSnapshot<D> for WriteSnapshot<D> {
+impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
     fn commit(self) -> Result<(), SnapshotError> {
         if self.operations.is_writes_empty() && self.operations.locks_empty() {
             Ok(())
@@ -458,7 +459,7 @@ impl<D> WritableSnapshot for SchemaSnapshot<D> {
     }
 }
 
-impl<D: DurabilityService> CommittableSnapshot<D> for SchemaSnapshot<D> {
+impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
     // TODO: extract these two methods into separate trait
     fn commit(self) -> Result<(), SnapshotError> {
         if self.operations.is_writes_empty() {

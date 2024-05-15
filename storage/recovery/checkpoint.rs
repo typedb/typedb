@@ -17,15 +17,15 @@ use chrono::Utc;
 use itertools::Itertools;
 use same_file::is_same_file;
 
-use durability::{DurabilityService, SequenceNumber};
-
 use crate::recovery::commit_replay::{apply_commits, CommitRecoveryError, load_commit_data_from};
 
 use crate::{
     keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, Keyspaces, KeyspaceSet},
     StorageCommitError,
 };
+use crate::durability_client::DurabilityClient;
 use crate::recovery::checkpoint::CheckpointLoadError::MetadataRead;
+use crate::sequence_number::SequenceNumber;
 
 /// A checkpoint is a directory, which contains at least the storage checkpointing data: keyspaces + the watermark.
 /// The watermark represents a sequence number that is guaranteed to be in all the keyspaces, and after which we may
@@ -138,10 +138,10 @@ impl Checkpoint {
         Ok(deserialised)
     }
 
-    pub(crate) fn recover_storage<KS: KeyspaceSet, Durability: DurabilityService>(
+    pub(crate) fn recover_storage<KS: KeyspaceSet, Durability: DurabilityClient>(
         &self,
         keyspaces_dir: &Path,
-        durability_service: &Durability,
+        durability_client: &Durability,
     ) -> Result<(Keyspaces, SequenceNumber), CheckpointLoadError> {
         use CheckpointLoadError::{CheckpointRestore, CommitRecoveryFailed, KeyspaceOpen};
 
@@ -157,10 +157,10 @@ impl Checkpoint {
         })?;
 
         let recovery_start = self.read_sequence_number()? + 1;
-        let recovered_commits = load_commit_data_from(recovery_start, durability_service)
+        let recovered_commits = load_commit_data_from(recovery_start, durability_client)
             .map_err(|err| CommitRecoveryFailed { source: err })?;
         let next_sequence_number = recovered_commits.keys().max().copied().unwrap_or(recovery_start - 1) + 1;
-        apply_commits(recovered_commits, durability_service, &keyspaces)
+        apply_commits(recovered_commits, durability_client, &keyspaces)
             .map_err(|err| CommitRecoveryFailed { source: err })?;
         Ok((keyspaces, next_sequence_number))
     }

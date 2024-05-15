@@ -10,7 +10,6 @@ use std::{
     sync::atomic::Ordering,
 };
 
-use durability::SequenceNumber;
 use speedb::WriteBatch;
 
 use super::{MVCCKey, StorageOperation};
@@ -18,6 +17,7 @@ use crate::{
     keyspace::KEYSPACE_MAXIMUM_COUNT,
     snapshot::{buffer::OperationsBuffer, write::Write},
 };
+use crate::sequence_number::SequenceNumber;
 
 pub(crate) struct WriteBatches {
     pub(crate) batches: [Option<WriteBatch>; KEYSPACE_MAXIMUM_COUNT],

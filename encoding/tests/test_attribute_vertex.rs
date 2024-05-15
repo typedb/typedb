@@ -7,7 +7,6 @@
 #![deny(unused_must_use)]
 
 use std::{rc::Rc, sync::Arc};
-use durability::DurabilityService;
 
 use durability::wal::WAL;
 use encoding::{
@@ -21,6 +20,7 @@ use encoding::{
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{snapshot::CommittableSnapshot, MVCCStorage};
+use storage::durability_client::WALClient;
 use test_utils::{create_tmp_dir, init_logging};
 
 #[test]
@@ -28,7 +28,7 @@ fn generate_string_attribute_vertex() {
     init_logging();
     let storage_path = create_tmp_dir();
     let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>(Rc::from("storage"), &storage_path, wal).unwrap());
+    let storage = Arc::new(MVCCStorage::<WALClient>::create::<EncodingKeyspace>(Rc::from("storage"), &storage_path, WALClient::new(wal)).unwrap());
 
     let mut snapshot = storage.clone().open_snapshot_write();
     let type_id = TypeID::build(0);
@@ -117,7 +117,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     let type_id = TypeID::build(0);
     {
         let wal = WAL::create(&storage_path).unwrap();
-        let storage = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
+        let storage = Arc::new(MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap());
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
 
@@ -132,7 +132,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
 
     for i in 0..5 {
         let wal = WAL::load(&storage_path).unwrap();
-        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, &None).unwrap());
+        let storage = Arc::new(MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None).unwrap());
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
         let vertex = generator.create_entity(type_id, &mut snapshot);
@@ -143,7 +143,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
 
     for i in 0..5 {
         let wal = WAL::load(&storage_path).unwrap();
-        let storage = Arc::new(MVCCStorage::<WAL>::load::<EncodingKeyspace>("storage", &storage_path, wal, &None).unwrap());
+        let storage = Arc::new(MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None).unwrap());
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
         let vertex = generator.create_relation(type_id, &mut snapshot);

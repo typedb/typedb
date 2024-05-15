@@ -6,39 +6,34 @@
 
 use std::path::Path;
 
-use durability::{wal::WAL, DurabilityRecord, DurabilityRecordType, DurabilityService, SequencedDurabilityRecord};
+use durability::{wal::WAL, DurabilityRecordType, DurabilityService};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TestRecord {
     pub bytes: Vec<u8>,
 }
 
-impl DurabilityRecord for TestRecord {
-    const RECORD_TYPE: DurabilityRecordType = 0;
+impl TestRecord {
+    pub const RECORD_TYPE: DurabilityRecordType = 0;
     const RECORD_NAME: &'static str = "TEST";
 
-    fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
-        writer.write_all(&self.bytes)?;
-        Ok(())
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self { bytes: bytes }
     }
 
-    fn deserialise_from(reader: &mut impl std::io::Read) -> bincode::Result<Self> {
-        let mut bytes = Vec::new();
-        reader.read_to_end(&mut bytes)?;
-        Ok(Self { bytes })
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
     }
 }
 
-impl SequencedDurabilityRecord for TestRecord {}
-
 pub fn create_wal(directory: impl AsRef<Path>) -> WAL {
     let mut wal = WAL::create(directory).unwrap();
-    wal.register_record_type::<TestRecord>();
+    wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
     wal
 }
 
 pub fn load_wal(directory: impl AsRef<Path>) -> WAL {
     let mut wal = WAL::load(directory).unwrap();
-    wal.register_record_type::<TestRecord>();
+    wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
     wal
 }

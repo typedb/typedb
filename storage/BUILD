@@ -8,6 +8,7 @@ package(default_visibility = [
     "//concept:__subpackages__",
     "//database:__subpackages__",
     "//encoding:__subpackages__",
+    "//server:__subpackages__",
     "//storage/tests:__subpackages__",
     "//storage/benches:__subpackages__",
 ])
@@ -31,6 +32,7 @@ rust_library(
         "//util/project",
 
         "@crates//:bincode",
+        "@crates//:lz4",
         "@crates//:chrono",
         "@crates//:itertools",
         "@crates//:same-file",

@@ -14,18 +14,18 @@ use serde::de::{Error, SeqAccess, Visitor};
 use serde::ser::SerializeStruct;
 
 use bytes::Bytes;
-use durability::{DurabilityRecord, DurabilityRecordType, SequenceNumber, UnsequencedDurabilityRecord};
+use durability::DurabilityRecordType;
 use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeRelationIndex, ThingEdgeRolePlayer};
 use encoding::graph::thing::vertex_attribute::AttributeVertex;
 use encoding::graph::thing::vertex_object::ObjectVertex;
 use encoding::graph::type_::vertex::{build_vertex_attribute_type, build_vertex_entity_type, build_vertex_relation_type, build_vertex_role_type, is_vertex_attribute_type, is_vertex_entity_type, is_vertex_relation_type, is_vertex_role_type, new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type, TypeID, TypeIDUInt};
 use encoding::graph::Typed;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use storage::durability_client::{DurabilityRecord, UnsequencedDurabilityRecord};
 use storage::iterator::MVCCReadError;
 use storage::key_value::{StorageKeyArray, StorageKeyReference};
 use storage::MVCCStorage;
-use storage::recovery::checkpoint::CheckpointExtension;
-use storage::recovery::commit_replay::RecoveryCommitStatus;
+use storage::sequence_number::SequenceNumber;
 use storage::snapshot::ReadableSnapshot;
 use storage::snapshot::write::Write;
 
@@ -74,7 +74,6 @@ pub struct Statistics {
 }
 
 impl Statistics {
-
     const STATISTICS_VERSION: StatisticsVersion = 0;
 
     pub fn new(sequence_number: SequenceNumber) -> Self {
@@ -102,10 +101,10 @@ impl Statistics {
     pub fn update_writes<D, Snapshot: ReadableSnapshot>(
         &mut self,
         commits: &BTreeMap<SequenceNumber, Snapshot>,
-        storage: &MVCCStorage<D>
+        storage: &MVCCStorage<D>,
     ) -> Result<(), MVCCReadError> {
         if commits.is_empty() {
-            return Ok(())
+            return Ok(());
         }
         for (sequence_number, snapshot) in commits.iter() {
             self.update_write(*sequence_number, snapshot, commits, storage)?

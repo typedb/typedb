@@ -8,7 +8,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
-use durability::{DurabilityService, wal::WAL};
+use durability::{wal::WAL};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     isolation_manager::IsolationConflict,
@@ -18,6 +18,7 @@ use storage::{
     MVCCStorage,
     snapshot::{CommittableSnapshot, ReadableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot}, StorageCommitError,
 };
+use storage::durability_client::{DurabilityClient, WALClient};
 use test_utils::{create_tmp_dir, init_logging};
 use crate::test_common::{create_storage, load_storage};
 use self::TestKeyspaceSet::Keyspace;
@@ -40,7 +41,7 @@ const VALUE_1: [u8; 1] = [0x0];
 const VALUE_2: [u8; 1] = [0x1];
 const VALUE_3: [u8; 1] = [0x88];
 
-fn setup_storage(path: &Path) -> Arc<MVCCStorage<WAL>> {
+fn setup_storage(path: &Path) -> Arc<MVCCStorage<WALClient>> {
     let storage = create_storage::<TestKeyspaceSet>(&path).unwrap();
     let mut snapshot = storage.clone().open_snapshot_write();
     snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
@@ -505,7 +506,7 @@ fn otv() {
     assert_eq!(value_2_0.bytes(), read_2_3.unwrap().unwrap().bytes());
 }
 
-fn imp_setup(path: &Path) -> Arc<MVCCStorage<WAL>> {
+fn imp_setup(path: &Path) -> Arc<MVCCStorage<WALClient>> {
     init_logging();
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let key_2 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
@@ -523,7 +524,7 @@ fn imp_setup(path: &Path) -> Arc<MVCCStorage<WAL>> {
 
 fn imp_ops<D>(snapshot_update: &mut WriteSnapshot<D>, snapshot_delete: &mut WriteSnapshot<D>)
     where
-        D: DurabilityService,
+        D: DurabilityClient,
 {
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let key_2 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
@@ -548,7 +549,7 @@ fn imp_ops<D>(snapshot_update: &mut WriteSnapshot<D>, snapshot_delete: &mut Writ
 
 fn imp_validate_serializable<D>(storage: Arc<MVCCStorage<D>>) -> bool
     where
-        D: DurabilityService,
+        D: DurabilityClient,
 {
     let key_1: StorageKeyArray<BUFFER_KEY_INLINE> = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let key_2: StorageKeyArray<BUFFER_KEY_INLINE> = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));

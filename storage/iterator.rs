@@ -7,7 +7,6 @@
 use std::{error::Error, fmt, marker::PhantomData, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
-use durability::SequenceNumber;
 use iterator::State;
 
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
@@ -16,6 +15,7 @@ use crate::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError},
 };
+use crate::sequence_number::SequenceNumber;
 
 pub(crate) struct MVCCRangeIterator<'storage, const PS: usize> {
     storage_name: &'storage str,

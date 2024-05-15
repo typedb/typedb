@@ -23,12 +23,10 @@ This file should comprise a set of low-level tests relating to MVCC.
 
  */
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
-use durability::DurabilityService;
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::{KeyspaceId, KeyspaceSet},
+    keyspace::{ KeyspaceSet},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot}
-    ,
 };
 use test_utils::{create_tmp_dir, init_logging};
 use crate::test_common::create_storage;

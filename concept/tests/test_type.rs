@@ -17,6 +17,7 @@ use encoding::{
     EncodingKeyspace,
 };
 use storage::{MVCCStorage};
+use storage::durability_client::WALClient;
 use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, ReadSnapshot, WriteSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
@@ -30,9 +31,9 @@ fn entity_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
     let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
+    let storage = Arc::new(MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
+    TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
     let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
     {
@@ -191,9 +192,9 @@ fn role_usage() {
     init_logging();
     let storage_path = create_tmp_dir();
     let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(MVCCStorage::<WAL>::create::<EncodingKeyspace>("storage", &storage_path, wal).unwrap());
+    let storage = Arc::new(MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WAL>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
+    TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
 
     let friendship_label = Label::build("friendship");
     let friend_name = "friend";

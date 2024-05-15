@@ -9,7 +9,7 @@ use speedb::Snapshot;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use concept::error::ConceptWriteError;
-use durability::DurabilityService;
+use storage::durability_client::DurabilityClient;
 use storage::snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot};
 
 use super::Database;
@@ -21,7 +21,7 @@ pub struct TransactionRead<D> {
     pub thing_manager: ThingManager<ReadSnapshot<D>>,
 }
 
-impl<D: DurabilityService> TransactionRead<D> {
+impl<D: DurabilityClient> TransactionRead<D> {
     pub fn open(database: Arc<Database<D>>) -> Self {
 
         // TODO: when we implement constructor `open_at`, to open a transaction in the past by time/sequence number, we need to check whether
@@ -50,7 +50,7 @@ pub struct TransactionWrite<D> {
     pub thing_manager: ThingManager<WriteSnapshot<D>>,
 }
 
-impl<D: DurabilityService> TransactionWrite<D> {
+impl<D: DurabilityClient> TransactionWrite<D> {
     pub fn open(database: Arc<Database<D>>) -> Self {
         let snapshot: WriteSnapshot<D> = database.storage.clone().open_snapshot_write();
         let type_manager = Arc::new(TypeManager::new(database.type_vertex_generator.clone(), None)); // TODO pass cache
@@ -81,7 +81,7 @@ pub struct TransactionSchema<D> {
     pub thing_manager: ThingManager<SchemaSnapshot<D>>,
 }
 
-impl<D: DurabilityService> TransactionSchema<D> {
+impl<D: DurabilityClient> TransactionSchema<D> {
     pub fn open(database: Arc<Database<D>>) -> Self {
         let snapshot: SchemaSnapshot<D> = database.storage.clone().open_snapshot_schema();
         let type_manager = Arc::new(TypeManager::new(database.type_vertex_generator.clone(), None));

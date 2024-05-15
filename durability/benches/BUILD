@@ -6,7 +6,7 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test", "rust_binary")
 package(default_visibility = ["//visibility:public",])
 
-# bazel test --compilation_mode=opt //durability/benches:throughput --test_arg=--bench
+# bazel test --compilation_mode=opt //durability/benches:throughput --test_arg=--bench --test_output=streamed
 rust_test(
     name = "throughput",
     srcs = ["throughput.rs"],
