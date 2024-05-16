@@ -180,7 +180,8 @@ impl TypeReader {
         owner: impl OwnerAPI<'static> + PlayerAPI<'static>,
     ) -> Result<HashSet<IMPL>, ConceptReadError>
     where
-    IMPL : InterfaceEdge<'static> + Hash + Eq {
+    IMPL : InterfaceEdge<'static> + Hash + Eq
+    {
         let owns_prefix = IMPL::Encoder::forward_seek_prefix(IMPL::ObjectType::new(owner.into_vertex()));
         snapshot
             .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
@@ -188,6 +189,52 @@ impl TypeReader {
                 IMPL::Encoder::read_from(Bytes::Reference(key.byte_ref()))
             })
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
+    }
+
+
+    pub(crate) fn get_implemented_interfaces_transitive<IMPL, T>(
+        snapshot: &impl ReadableSnapshot,
+        object_type: T,
+    ) -> Result<HashMap<IMPL::InterfaceType, IMPL>, ConceptReadError>
+        where
+            T: OwnerAPI<'static> + PlayerAPI<'static> + KindAPI<'static, SelfStatic=T>,
+            IMPL : InterfaceEdge<'static> + Hash + Eq {
+        // TODO: Should the owner of a transitive owns be the declaring owner or the inheriting owner?
+        let mut transitive_implementations: HashMap<IMPL::InterfaceType, IMPL> = HashMap::new();
+        let mut overridden_interfaces: HashSet<IMPL::InterfaceType> = HashSet::new(); // TODO: Should this store the owns? This feels more fool-proof if it's correct.
+        let mut current_type = Some(object_type);
+        while current_type.is_some() {
+            let declared_implementations = Self::get_implemented_interfaces::<IMPL>(snapshot, current_type.as_ref().unwrap().clone())?;
+            for implementation in declared_implementations.into_iter() {
+                let interface = implementation.interface();
+                if !overridden_interfaces.contains(&interface) {
+                    debug_assert!(!transitive_implementations.contains_key(&interface));
+                    transitive_implementations.insert(implementation.interface(), implementation.clone());
+                }
+                // Has to be outside so we ignore transitively overridden ones too
+                if let Some(overridden) = Self::get_implementation_override(snapshot, implementation.clone())? {
+                    overridden_interfaces.add(overridden.interface());
+                }
+            }
+            current_type = Self::get_supertype(snapshot, current_type.unwrap())?;
+        }
+        Ok(transitive_implementations)
+    }
+
+
+    pub(crate) fn get_implementation_override<IMPL>(
+        snapshot: &impl ReadableSnapshot,
+        plays: IMPL,
+    ) -> Result<Option<IMPL>, ConceptReadError>
+    where
+        IMPL : InterfaceEdge<'static> + Hash + Eq
+    {
+        let override_property_key = build_property_type_edge_override(plays.into_type_edge());
+        snapshot
+            .get_mapped(override_property_key.into_storage_key().as_reference(), |overridden_edge_bytes| {
+                IMPL::Encoder::read_from(Bytes::Reference(overridden_edge_bytes))
+            })
+            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
     pub(crate) fn get_owns(

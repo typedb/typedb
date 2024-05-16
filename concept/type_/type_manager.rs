@@ -14,11 +14,7 @@ use std::{
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::type_::{
-        edge::{
-            build_edge_owns, build_edge_owns_reverse, build_edge_plays, build_edge_plays_reverse, build_edge_relates,
-            build_edge_relates_reverse, build_edge_sub, build_edge_sub_reverse, TypeEdge,
-        },
-        index::LabelToTypeVertexIndex,
+        edge::TypeEdge,
         property::{
             build_property_type_annotation_abstract, build_property_type_annotation_cardinality,
             build_property_type_annotation_distinct, build_property_type_annotation_independent,

@@ -5,6 +5,7 @@
  */
 
 use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
 
 use bytes::byte_reference::ByteReference;
 use encoding::{
@@ -47,7 +48,7 @@ mod type_writer;
 pub mod validation;
 mod encoding_helper;
 
-pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
+pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone + Hash + Eq {
     type SelfStatic: KindAPI<'static> + 'static;
     fn new(vertex : TypeVertex<'a>) -> Self ;
 
