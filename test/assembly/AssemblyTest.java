@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import static com.vaticle.typedb.common.collection.Collections.map;
@@ -19,12 +20,15 @@ import static com.vaticle.typedb.common.collection.Collections.pair;
 
 public class AssemblyTest {
 
+    private static final Map<String, String> TYPEDB_OPTIONS = map(
+            pair("--diagnostics.reporting.errors", "false"),
+            pair("--diagnostics.reporting.statistics", "false"),
+            pair("--diagnostics.monitoring.enable", "false")
+    );
+
     @Test
     public void bootup() throws InterruptedException, TimeoutException, IOException {
-        TypeDBCoreRunner server = new TypeDBCoreRunner(map(
-            pair("--diagnostics.reporting.errors", "false"),
-            pair("--diagnostics.monitoring.enable", "false")
-        ));
+        TypeDBCoreRunner server = new TypeDBCoreRunner(TYPEDB_OPTIONS);
         try {
             server.start();
         } finally {
@@ -34,10 +38,7 @@ public class AssemblyTest {
 
     @Test
     public void console() throws InterruptedException, TimeoutException, IOException {
-        TypeDBCoreRunner server = new TypeDBCoreRunner(map(
-            pair("--diagnostics.reporting.errors", "false"),
-            pair("--diagnostics.monitoring.enable", "false")
-        ));
+        TypeDBCoreRunner server = new TypeDBCoreRunner(TYPEDB_OPTIONS);
         try {
             server.start();
             TypeDBConsoleRunner console = new TypeDBConsoleRunner();
