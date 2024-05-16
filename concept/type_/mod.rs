@@ -215,19 +215,18 @@ pub(crate) trait IntoCanonicalTypeEdge<'a> {
 
     fn into_type_edge(self) -> TypeEdge<'static>;
 }
-pub(crate) trait InterfaceEdge<'a, OBJ, ITF> : IntoCanonicalTypeEdge<'a> + Sized + Clone
-    where
-        OBJ: TypeAPI<'a> + ReadableType,
-        ITF: KindAPI<'a>  + ReadableType
+pub(crate) trait InterfaceEdge<'a> : IntoCanonicalTypeEdge<'a> + Sized + Clone
 {
     type AnnotationType;
-    type Encoder: EdgeEncoder<'a, OBJ, ITF, Self>;
+    type ObjectType: TypeAPI<'a> + ReadableType;
+    type InterfaceType: KindAPI<'a>  + ReadableType;
+    type Encoder: EdgeEncoder<'a, Self>;
 
-    fn new(implementor: OBJ, interface: ITF) -> Self;
+    fn new(implementor: Self::ObjectType, interface: Self::InterfaceType) -> Self;
 
-    fn object(&self) -> OBJ;
+    fn object(&self) -> Self::ObjectType;
 
-    fn interface(&self) -> ITF;
+    fn interface(&self) -> Self::InterfaceType;
 }
 
 // TODO: where do these belong?

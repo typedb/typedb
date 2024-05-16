@@ -12,11 +12,9 @@ use crate::type_::plays::Plays;
 use crate::type_::role_type::RoleType;
 use crate::type_::type_manager::{KindAPI, ReadableType};
 
-pub trait EdgeEncoder<'a, OBJ, ITF, E>
+pub trait EdgeEncoder<'a, E>
 where
-    OBJ: TypeAPI<'a> + ReadableType,
-    ITF: KindAPI<'a> + ReadableType,
-    E: InterfaceEdge<'a, OBJ, ITF>,
+    E: InterfaceEdge<'a>,
 {
     type ForwardFactory: TypeEdgeConstructor;
     type ReverseFactory: TypeEdgeConstructor;
@@ -25,13 +23,15 @@ where
     {
         let edge = TypeEdge::new(bytes);
         let ret = if edge.prefix() == Self::ForwardFactory::PREFIX {
-            let obj = OBJ::new(edge.from().into_owned());
-            let itf = ITF::new(edge.to().into_owned());
-            E::new(obj, itf)
+            E::new(
+                E::ObjectType::new(edge.from().into_owned()),
+                E::InterfaceType::new(edge.to().into_owned())
+            )
         } else if edge.prefix() == Self::ReverseFactory::PREFIX {
-            let obj = OBJ::new(edge.to().into_owned());
-            let itf = ITF::new(edge.from().into_owned());
-            E::new(obj, itf)
+            E::new(
+                E::ObjectType::new(edge.to().into_owned()),
+                E::InterfaceType::new(edge.from().into_owned())
+            )
         } else {
             panic!("Unrecognised prefix for type_edge: {:?}. Expected {:?} or {:?}",
                     edge.prefix(),
@@ -50,23 +50,23 @@ where
         Self::ReverseFactory::build_edge(edge.clone().interface().into_vertex(), edge.clone().object().into_vertex())
     }
 
-    fn forward_seek_prefix(from: OBJ) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
+    fn forward_seek_prefix(from: E::ObjectType) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
         Self::ForwardFactory::build_edge_prefix_from(from.into_vertex())
     }
 
-    fn reverse_seek_prefix(from: ITF) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
+    fn reverse_seek_prefix(from: E::InterfaceType) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
         Self::ReverseFactory::build_edge_prefix_from(from.into_vertex())
     }
 }
 
 pub struct PlaysEncoder { }
-impl<'a> EdgeEncoder<'a, ObjectType<'a>, RoleType<'a>, Plays<'a>> for PlaysEncoder {
+impl<'a> EdgeEncoder<'a, Plays<'a>> for PlaysEncoder {
     type ForwardFactory = edge_constructors::EdgePlays;
     type ReverseFactory = edge_constructors::EdgePlaysReverse;
 }
 
 pub struct OwnsEncoder { }
-impl<'a> EdgeEncoder<'a, ObjectType<'a>, AttributeType<'a>, Owns<'a>> for OwnsEncoder {
+impl<'a> EdgeEncoder<'a, Owns<'a>> for OwnsEncoder {
     type ForwardFactory = edge_constructors::EdgeOwns;
     type ReverseFactory = edge_constructors::EdgeOwnsReverse;
 }

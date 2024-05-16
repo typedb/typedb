@@ -71,8 +71,10 @@ impl<'a> IntoCanonicalTypeEdge<'a> for Plays<'a> {
 // Can plays not be annotated?
 pub struct __PlaceholderPlaysAnnotation {}
 
-impl<'a> InterfaceEdge<'a, ObjectType<'a>, RoleType<'a>> for Plays<'a> {
+impl<'a> InterfaceEdge<'a> for Plays<'a> {
     type AnnotationType = __PlaceholderPlaysAnnotation;
+    type ObjectType = ObjectType<'a>;
+    type InterfaceType = RoleType<'a>;
     type Encoder = PlaysEncoder;
 
     fn new(player: ObjectType<'a>, role: RoleType<'a>) -> Self {

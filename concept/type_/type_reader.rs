@@ -175,14 +175,13 @@ impl TypeReader {
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
-    pub(crate) fn get_implemented_interfaces<IMPL,ITF>(
+    pub(crate) fn get_implemented_interfaces<IMPL>(
         snapshot: &impl ReadableSnapshot,
         owner: impl OwnerAPI<'static> + PlayerAPI<'static>,
     ) -> Result<HashSet<IMPL>, ConceptReadError>
     where
-    ITF: KindAPI<'static>  + ReadableType + Hash + Eq,
-    IMPL : InterfaceEdge<'static, ObjectType<'static>, ITF> + Hash + Eq {
-        let owns_prefix = IMPL::Encoder::forward_seek_prefix(ObjectType::new(owner.into_vertex()));
+    IMPL : InterfaceEdge<'static> + Hash + Eq {
+        let owns_prefix = IMPL::Encoder::forward_seek_prefix(IMPL::ObjectType::new(owner.into_vertex()));
         snapshot
             .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {

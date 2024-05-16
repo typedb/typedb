@@ -183,8 +183,10 @@ impl<'a> IntoCanonicalTypeEdge<'a> for Owns<'a> {
     }
 }
 
-impl<'a> InterfaceEdge<'a, ObjectType<'a>, AttributeType<'a>> for Owns<'a> {
+impl<'a> InterfaceEdge<'a> for Owns<'a> {
     type AnnotationType = OwnsAnnotation;
+    type ObjectType = ObjectType<'a>;
+    type InterfaceType = AttributeType<'a>;
     type Encoder = OwnsEncoder;
 
     fn new(owner: ObjectType<'a>, attribute: AttributeType<'a>) -> Self {

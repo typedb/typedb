@@ -362,7 +362,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(entity_type)))
         } else {
-            let owns = TypeReader::get_implemented_interfaces::<Owns<'static>, AttributeType<'static>>(snapshot, entity_type.clone())?;
+            let owns = TypeReader::get_implemented_interfaces::<Owns<'static>>(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -375,7 +375,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(relation_type)))
         } else {
-            let owns = TypeReader::get_implemented_interfaces::<Owns<'static>, AttributeType<'static>>(snapshot, relation_type.clone())?;
+            let owns = TypeReader::get_implemented_interfaces::<Owns<'static>>(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
         }
     }

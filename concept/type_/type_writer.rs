@@ -106,25 +106,22 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         let relates_reverse = build_edge_relates_reverse(role.into_vertex(), relation.into_vertex());
         snapshot.delete(relates_reverse.into_storage_key().into_owned_array());
     }
-    pub(crate) fn storage_put_interface_impl<ITF, IMPL>(
+    pub(crate) fn storage_put_interface_impl<IMPL>(
         snapshot: &mut Snapshot,
         implementation: IMPL,
     )
     where
-        ITF: KindAPI<'static>,
-        IMPL: InterfaceEdge<'static, ObjectType<'static>, ITF>,
+        IMPL: InterfaceEdge<'static>,
     {
         snapshot.put(IMPL::Encoder::forward_edge(implementation.clone()).into_storage_key().into_owned_array());
         snapshot.put(IMPL::Encoder::reverse_edge(implementation.clone()).into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_interface_impl<ITF, IMPL>(
+    pub(crate) fn storage_delete_interface_impl<IMPL>(
         snapshot: &mut Snapshot,
         implementation: IMPL,
     )
-        where
-            ITF: KindAPI<'static>,
-            IMPL: InterfaceEdge<'static, ObjectType<'static>, ITF>
+        where IMPL: InterfaceEdge<'static>
     {
         snapshot.delete(IMPL::Encoder::forward_edge(implementation.clone()).into_storage_key().into_owned_array());
         snapshot.delete(IMPL::Encoder::reverse_edge(implementation.clone()).into_storage_key().into_owned_array());
