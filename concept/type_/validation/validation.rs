@@ -8,8 +8,9 @@ use encoding::value::label::Label;
 use storage::snapshot::ReadableSnapshot;
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::entity_type::EntityType;
-use crate::type_::{OwnerAPI, PlayerAPI};
+use crate::type_::{OwnerAPI, PlayerAPI, TypeAPI};
 use crate::type_::object_type::ObjectType;
+use crate::type_::plays::Plays;
 use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
 use crate::type_::type_manager::{KindAPI, ReadableType};
@@ -19,7 +20,7 @@ use crate::type_::validation::SchemaValidationError;
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
-        match $obj_var {
+        match &$obj_var {
             ObjectType::Entity($obj_var) => {
                 $block
             },
@@ -114,7 +115,7 @@ impl TypeValidator {
             Snapshot: ReadableSnapshot,
     {
         let res = object_type_match!(owner, {
-            let super_owner = TypeReader::get_supertype(snapshot, owner)
+            let super_owner = TypeReader::get_supertype(snapshot, owner.clone())
                 .map_err(SchemaValidationError::ConceptRead)?;
             if super_owner.is_none() {
                 return Err(SchemaValidationError::RootModification);
@@ -153,17 +154,30 @@ impl TypeValidator {
     ) -> Result<(), SchemaValidationError>
         where Snapshot: ReadableSnapshot,
     {
-        let res = object_type_match!(player, {
-            let super_player = TypeReader::get_supertype(snapshot, player)
+        let is_inherited = object_type_match!(player, {
+            let super_player = TypeReader::get_supertype(snapshot, player.clone())
                 .map_err(SchemaValidationError::ConceptRead)?;
             if super_player.is_none() {
                 return Err(SchemaValidationError::RootModification);
             }
-            let is_inherited = TypeReader::get_plays_transitive(snapshot, super_player.unwrap())
+            TypeReader::get_plays_transitive(snapshot, super_player.unwrap())
                 .map_err(SchemaValidationError::ConceptRead)?
-                .contains_key(&role_type);
-            if is_inherited { Ok(()) } else { Err(SchemaValidationError::PlaysNotInherited(role_type)) }
+                .contains_key(&role_type)
         });
-        res
+        if is_inherited { Ok(()) } else { Err(SchemaValidationError::PlaysNotInherited(player.into_owned(), role_type)) }
+    }
+
+    pub(crate) fn validate_plays_is_declared<Snapshot>(
+        snapshot: &Snapshot,
+        player: ObjectType<'static>,
+        role_type: RoleType<'static>,
+    ) -> Result<(), SchemaValidationError>
+        where Snapshot: ReadableSnapshot,
+    {
+        let plays = Plays::new(ObjectType::new(player.clone().into_vertex()), role_type.clone());
+        let is_declared = TypeReader::get_plays(snapshot, player.clone())
+                .map_err(SchemaValidationError::ConceptRead)?
+                .contains(&plays);
+        if is_declared { Ok(()) } else { Err(SchemaValidationError::PlaysNotDeclared(player.into_owned(), role_type)) }
     }
 }

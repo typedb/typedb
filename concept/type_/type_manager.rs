@@ -71,7 +71,7 @@ use crate::{
 use crate::type_::object_type::ObjectType;
 use crate::type_::type_writer::TypeWriter;
 use crate::type_::validation::validation::TypeValidator;
-use crate::type_::WrappedTypeForError;
+use crate::type_::{InterfaceImplementation, OwnerAPI, PlayerAPI, WrappedTypeForError};
 
 // TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
 pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
@@ -793,15 +793,16 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn set_owns(
         &self,
         snapshot: &mut Snapshot,
-        owner: impl ObjectTypeAPI<'static>,
+        owner: impl OwnerAPI<'static>,
         attribute: AttributeType<'static>,
         ordering: Ordering,
     ) {
         // TODO: Validation
 
         // TODO: I would very much like to TypeWriter::storage_put_type_edge(Owns::new())
-        TypeWriter::storage_put_owns(snapshot, owner.clone(), attribute.clone());
-        TypeWriter::storage_set_owns_ordering(snapshot, build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex()), ordering);
+        let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
+        TypeWriter::storage_put_interface_impl(snapshot, owns.clone());
+        TypeWriter::storage_set_owns_ordering(snapshot, owns.into_type_edge(), ordering);
     }
 
     pub(crate) fn delete_owns(
@@ -811,9 +812,10 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         attribute: AttributeType<'static>,
     ) {
         // TODO: Validation
-        // TODO: Refactor
-        TypeWriter::storage_delete_owns_ordering(snapshot, build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex()));
-        TypeWriter::storage_delete_owns(snapshot, owner.clone(), attribute.clone());
+
+        let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
+        TypeWriter::storage_delete_owns_ordering(snapshot, owns.clone().into_type_edge());
+        TypeWriter::storage_delete_interface_impl(snapshot, owns.clone());
     }
 
     pub(crate) fn set_owns_overridden(
@@ -835,22 +837,28 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn set_plays(
         &self,
         snapshot: &mut Snapshot,
-        player: impl KindAPI<'static> + ObjectTypeAPI<'static>,
+        player: impl KindAPI<'static> + ObjectTypeAPI<'static>  + PlayerAPI<'static>,
         role: RoleType<'static>,
     )  -> Result<Plays<'static>, ConceptWriteError> {
        // TODO: Validation
-        TypeWriter::storage_put_plays(snapshot, player.clone(), role.clone());
-        Ok(Plays::new(ObjectType::new(player.into_vertex()), role))
+        let plays = Plays::new(ObjectType::new(player.into_vertex()), role);
+        TypeWriter::storage_put_interface_impl(snapshot, plays.clone());
+        Ok(plays)
     }
 
     pub(crate) fn delete_plays(
         &self,
         snapshot: &mut Snapshot,
-        player: impl ObjectTypeAPI<'static>,
+        player: impl ObjectTypeAPI<'static> + PlayerAPI<'static>,
         role: RoleType<'static>,
     )  -> Result<(), ConceptWriteError> {
-        // TODO: Validation
-        TypeWriter::storage_delete_plays(snapshot, player, role);
+        // TODO: Validation.
+        // TODO: This could really return the plays
+        TypeValidator::validate_plays_is_declared(snapshot, ObjectType::new(player.clone().into_vertex()), role.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+
+        let plays = Plays::new(ObjectType::new(player.into_vertex()), role);
+        TypeWriter::storage_delete_interface_impl(snapshot, plays);
         Ok(())
     }
 

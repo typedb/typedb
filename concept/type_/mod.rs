@@ -26,6 +26,9 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::object_type::ObjectType;
+use crate::type_::type_manager::KindAPI;
+
 pub mod annotation;
 pub mod attribute_type;
 pub mod entity_type;
@@ -207,6 +210,23 @@ pub(crate) trait IntoCanonicalTypeEdge<'a> {
     fn as_type_edge(&self) -> TypeEdge<'static>;
 
     fn into_type_edge(self) -> TypeEdge<'static>;
+}
+pub(crate) trait InterfaceImplementation<'a, OBJ, ITF> : IntoCanonicalTypeEdge<'a>
+    where
+        // OBJ: ObjectTypeAPI<'a>,
+        ITF: KindAPI<'a>
+{
+    type AnnotationType;
+
+    fn new(implementor: OBJ, interface: ITF) -> Self;
+
+    fn object(self) -> OBJ;
+
+    fn interface(&self) -> ITF;
+
+    fn forward_edge(&self) -> TypeEdge<'static>;
+
+    fn reverse_edge(&self) -> TypeEdge<'static>;
 }
 
 // TODO: where do these belong?

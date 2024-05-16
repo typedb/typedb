@@ -6,7 +6,7 @@
 
 use std::collections::HashSet;
 
-use encoding::graph::type_::edge::{build_edge_owns, TypeEdge};
+use encoding::graph::type_::edge::{build_edge_owns, build_edge_owns_reverse, TypeEdge};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -21,6 +21,7 @@ use crate::{
     },
 };
 use crate::error::ConceptWriteError;
+use crate::type_::InterfaceImplementation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<'a> {
@@ -178,6 +179,30 @@ impl<'a> IntoCanonicalTypeEdge<'a> for Owns<'a> {
 
     fn into_type_edge(self) -> TypeEdge<'static> {
         build_edge_owns(self.owner.vertex().clone().into_owned(), self.attribute.vertex().clone().into_owned())
+    }
+}
+
+impl<'a> InterfaceImplementation<'a, ObjectType<'a>, AttributeType<'a>> for Owns<'a> {
+    type AnnotationType = OwnsAnnotation;
+
+    fn new(owner: ObjectType<'a>, attribute: AttributeType<'a>) -> Self {
+        Owns::new(owner, attribute)
+    }
+
+    fn object(self) -> ObjectType<'a> {
+        self.owner.clone()
+    }
+
+    fn interface(&self) -> AttributeType<'a> {
+        self.attribute.clone()
+    }
+
+    fn forward_edge(&self) -> TypeEdge<'static> {
+        build_edge_owns(self.owner.vertex().into_owned(), self.attribute.vertex().into_owned())
+    }
+
+    fn reverse_edge(&self) -> TypeEdge<'static> {
+        build_edge_owns_reverse(self.attribute.vertex().into_owned(), self.owner.vertex().into_owned())
     }
 }
 

@@ -35,6 +35,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::object_type::ObjectType::Entity;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {

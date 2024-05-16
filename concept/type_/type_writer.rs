@@ -19,8 +19,9 @@ use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
 use crate::type_::type_manager::{KindAPI, ReadableType};
 use crate::type_::type_reader::TypeReader;
-use crate::type_::{IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, serialise_ordering, TypeAPI};
+use crate::type_::{InterfaceImplementation, IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, serialise_ordering, TypeAPI};
 use crate::type_::attribute_type::AttributeType;
+use crate::type_::object_type::ObjectType;
 
 pub struct TypeWriter<Snapshot: WritableSnapshot> {
     snapshot: PhantomData<Snapshot>,
@@ -104,52 +105,28 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         let relates_reverse = build_edge_relates_reverse(role.into_vertex(), relation.into_vertex());
         snapshot.delete(relates_reverse.into_storage_key().into_owned_array());
     }
-
-    pub(crate) fn storage_put_plays(
+    pub(crate) fn storage_put_interface_impl<ITF, IMPL>(
         snapshot: &mut Snapshot,
-        player: impl ObjectTypeAPI<'static>,
-        role: RoleType<'static>,
-    ) {
-        let plays = build_edge_plays(player.clone().into_vertex(), role.clone().into_vertex());
-        snapshot.put(plays.into_storage_key().into_owned_array());
-        let plays_reverse = build_edge_plays_reverse(role.into_vertex(), player.into_vertex());
-        snapshot.put(plays_reverse.into_storage_key().into_owned_array());
+        implementation: IMPL,
+    )
+    where
+        ITF: KindAPI<'static>,
+        IMPL: InterfaceImplementation<'static, ObjectType<'static>, ITF>
+    {
+        snapshot.put(implementation.forward_edge().into_storage_key().into_owned_array());
+        snapshot.put(implementation.reverse_edge().into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_plays(
+    pub(crate) fn storage_delete_interface_impl<ITF, IMPL>(
         snapshot: &mut Snapshot,
-        player: impl ObjectTypeAPI<'static>,
-        role: RoleType<'static>,
-    ) {
-        let plays = build_edge_plays(player.clone().into_vertex(), role.clone().into_vertex());
-        snapshot.delete(plays.into_storage_key().into_owned_array());
-        let plays_reverse = build_edge_plays_reverse(role.into_vertex(), player.into_vertex());
-        snapshot.delete(plays_reverse.into_storage_key().into_owned_array());
-    }
-
-    pub(crate) fn storage_put_owns(
-        snapshot: &mut Snapshot,
-        owner: impl ObjectTypeAPI<'static>,
-        attribute: AttributeType<'static>,
-    ) {
-        // TODO: Validation
-        // TODO: I would very much like to TypeWriter::storage_put_type_edge(Owns::new())
-        let owns = build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex());
-        snapshot.put(owns.clone().into_storage_key().into_owned_array());
-        let owns_reverse = build_edge_owns_reverse(attribute.into_vertex(), owner.into_vertex());
-        snapshot.put(owns_reverse.into_storage_key().into_owned_array())
-    }
-
-    pub(crate) fn storage_delete_owns(
-        snapshot: &mut Snapshot,
-        owner: impl ObjectTypeAPI<'static>,
-        attribute: AttributeType<'static>,
-    ) {
-        let owns_edge = build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex());
-        snapshot.delete(owns_edge.as_storage_key().into_owned_array());
-        let owns_reverse = build_edge_owns_reverse(attribute.into_vertex(), owner.into_vertex());
-        snapshot.delete(owns_reverse.into_storage_key().into_owned_array());
-        TypeWriter::storage_delete_owns_ordering(snapshot, owns_edge);
+        implementation: IMPL,
+    )
+        where
+            ITF: KindAPI<'static>,
+            IMPL: InterfaceImplementation<'static, ObjectType<'static>, ITF>
+    {
+        snapshot.delete(implementation.forward_edge().into_storage_key().into_owned_array());
+        snapshot.delete(implementation.reverse_edge().into_storage_key().into_owned_array());
     }
 
     // TODO: Store just the overridden.to vertex as value
@@ -168,6 +145,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
     // Modifiers
+    // TODO: Should this just accept owns: Owns<'_> ?
     pub(crate) fn storage_set_owns_ordering(
         snapshot: &mut Snapshot,
         owns_edge: TypeEdge<'_>,

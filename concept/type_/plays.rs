@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::{build_edge_plays, TypeEdge};
+use encoding::graph::type_::edge::{build_edge_plays, build_edge_plays_reverse, TypeEdge};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -13,6 +13,7 @@ use crate::{
     type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, IntoCanonicalTypeEdge, TypeAPI},
 };
 use crate::error::ConceptWriteError;
+use crate::type_::InterfaceImplementation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Plays<'a> {
@@ -63,5 +64,32 @@ impl<'a> IntoCanonicalTypeEdge<'a> for Plays<'a> {
 
     fn into_type_edge(self) -> TypeEdge<'static> {
         build_edge_plays(self.player.vertex().clone().into_owned(), self.role.vertex().clone().into_owned())
+    }
+}
+
+// Can plays not be annotated?
+pub struct __PlaceholderPlaysAnnotation {}
+
+impl<'a> InterfaceImplementation<'a, ObjectType<'a>, RoleType<'a>> for Plays<'a> {
+    type AnnotationType = __PlaceholderPlaysAnnotation;
+
+    fn new(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
+        Plays::new(player, role)
+    }
+
+    fn object(self) -> ObjectType<'a> {
+        self.player.clone()
+    }
+
+    fn interface(&self) -> RoleType<'a> {
+        self.role.clone()
+    }
+
+    fn forward_edge(&self) -> TypeEdge<'static> {
+        build_edge_plays(self.player().vertex().into_owned(), self.role.vertex().into_owned())
+    }
+
+    fn reverse_edge(&self) -> TypeEdge<'static> {
+        build_edge_plays_reverse(self.role.vertex().into_owned(), self.player().vertex().into_owned())
     }
 }

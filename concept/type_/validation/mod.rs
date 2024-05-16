@@ -9,6 +9,7 @@ use std::fmt;
 use encoding::value::label::Label;
 use crate::error::ConceptReadError;
 use crate::type_::attribute_type::AttributeType;
+use crate::type_::object_type::ObjectType;
 use crate::type_::role_type::RoleType;
 use crate::type_::type_manager::KindAPI;
 use crate::type_::WrappedTypeForError;
@@ -24,8 +25,9 @@ pub enum SchemaValidationError {
     CyclicTypeHierarchy(WrappedTypeForError, WrappedTypeForError), // TODO: Add details of what caused it
     RelatesNotInherited(RoleType<'static>),
     OwnsNotInherited(AttributeType<'static>),
-    PlaysNotInherited(RoleType<'static>),
+    PlaysNotInherited(ObjectType<'static>, RoleType<'static>),
     OverriddenTypeNotSupertype(WrappedTypeForError, WrappedTypeForError),
+    PlaysNotDeclared(ObjectType<'static>, RoleType<'static>),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -43,8 +45,9 @@ impl Error for SchemaValidationError {
             SchemaValidationError::CyclicTypeHierarchy(_,_) => None,
             SchemaValidationError::RelatesNotInherited(_) => None,
             SchemaValidationError::OwnsNotInherited(_) => None,
-            SchemaValidationError::PlaysNotInherited(_) => None,
+            SchemaValidationError::PlaysNotInherited(_, _) => None,
             SchemaValidationError::OverriddenTypeNotSupertype(_, _) => None,
+            SchemaValidationError::PlaysNotDeclared(_, _) => None
         }
     }
 }
