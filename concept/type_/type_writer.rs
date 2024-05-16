@@ -8,9 +8,10 @@ use std::marker::PhantomData;
 use bytes::byte_array::ByteArray;
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
 use encoding::graph::type_::Kind;
-use encoding::graph::type_::property::{build_property_type_edge_override, build_property_type_label, build_property_type_value_type};
+use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label, build_property_type_value_type};
 use encoding::{AsBytes, Keyable};
-use encoding::graph::type_::edge::{build_edge_plays, build_edge_plays_reverse, build_edge_relates, build_edge_relates_reverse, build_edge_sub, build_edge_sub_reverse};
+use encoding::graph::type_::edge::{build_edge_owns, build_edge_owns_reverse, build_edge_plays, build_edge_plays_reverse, build_edge_relates, build_edge_relates_reverse, build_edge_sub, build_edge_sub_reverse, TypeEdge};
+use encoding::layout::prefix::Prefix;
 use encoding::value::label::Label;
 use encoding::value::value_type::{ValueType, ValueTypeBytes};
 use storage::snapshot::WritableSnapshot;
@@ -18,7 +19,7 @@ use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
 use crate::type_::type_manager::{KindAPI, ReadableType};
 use crate::type_::type_reader::TypeReader;
-use crate::type_::{IntoCanonicalTypeEdge, ObjectTypeAPI, TypeAPI};
+use crate::type_::{IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, serialise_ordering, TypeAPI};
 use crate::type_::attribute_type::AttributeType;
 
 pub struct TypeWriter<Snapshot: WritableSnapshot> {
@@ -27,6 +28,8 @@ pub struct TypeWriter<Snapshot: WritableSnapshot> {
 
 // TODO: Make everything pub(super) and make this submodule of type_manager.
 impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
+
+    // Basic vertex type operations
     pub(crate) fn storage_put_label<T: KindAPI<'static>>(snapshot: &mut Snapshot, type_: T, label: &Label<'_>) {
         debug_assert!(TypeReader::get_label(snapshot, type_.clone()).unwrap().is_none());
         let vertex_to_label_key = build_property_type_label(type_.clone().into_vertex());
@@ -79,6 +82,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot.put_val(property_key, property_value);
     }
 
+    // Type edges
     pub(crate) fn storage_put_relates(
         snapshot: &mut Snapshot,
         relation: RelationType<'static>,
@@ -123,6 +127,30 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot.delete(plays_reverse.into_storage_key().into_owned_array());
     }
 
+    pub(crate) fn storage_put_owns(
+        snapshot: &mut Snapshot,
+        owner: impl ObjectTypeAPI<'static>,
+        attribute: AttributeType<'static>,
+    ) {
+        // TODO: Validation
+        // TODO: I would very much like to TypeWriter::storage_put_type_edge(Owns::new())
+        let owns = build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex());
+        snapshot.put(owns.clone().into_storage_key().into_owned_array());
+        let owns_reverse = build_edge_owns_reverse(attribute.into_vertex(), owner.into_vertex());
+        snapshot.put(owns_reverse.into_storage_key().into_owned_array())
+    }
+
+    pub(crate) fn storage_delete_owns(
+        snapshot: &mut Snapshot,
+        owner: impl ObjectTypeAPI<'static>,
+        attribute: AttributeType<'static>,
+    ) {
+        let owns_edge = build_edge_owns(owner.clone().into_vertex(), attribute.clone().into_vertex());
+        snapshot.delete(owns_edge.as_storage_key().into_owned_array());
+        let owns_reverse = build_edge_owns_reverse(attribute.into_vertex(), owner.into_vertex());
+        snapshot.delete(owns_reverse.into_storage_key().into_owned_array());
+        TypeWriter::storage_delete_owns_ordering(snapshot, owns_edge);
+    }
 
     // TODO: Store just the overridden.to vertex as value
     pub(crate) fn storage_set_type_edge_overridden<E>(
@@ -138,4 +166,23 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         let overridden_to_vertex = ByteArray::copy(overridden.into_type_edge().into_bytes().bytes());
         snapshot.put_val(property_key, overridden_to_vertex);
     }
+
+    // Modifiers
+    pub(crate) fn storage_set_owns_ordering(
+        snapshot: &mut Snapshot,
+        owns_edge: TypeEdge<'_>,
+        ordering: Ordering,
+    ) {
+        debug_assert_eq!(owns_edge.prefix(), Prefix::EdgeOwns);
+        snapshot.put_val(
+            build_property_type_edge_ordering(owns_edge).into_storage_key().into_owned_array(),
+            ByteArray::boxed(serialise_ordering(ordering)),
+        )
+    }
+
+    pub(crate) fn storage_delete_owns_ordering(snapshot: &mut Snapshot, owns_edge: TypeEdge<'_>) {
+        debug_assert_eq!(owns_edge.prefix(), Prefix::EdgeOwns);
+        snapshot.delete(build_property_type_edge_ordering(owns_edge).into_storage_key().into_owned_array())
+    }
+
 }

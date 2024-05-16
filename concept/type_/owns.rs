@@ -155,7 +155,7 @@ impl<'a> Owns<'a> {
         type_manager: &TypeManager<Snapshot>,
         ordering: Ordering,
     ) {
-        type_manager.storage_set_owns_ordering(snapshot, self.clone().into_type_edge(), ordering)
+        type_manager.set_owns_ordering(snapshot, self.clone().into_type_edge(), ordering)
     }
 
     pub fn get_ordering<Snapshot: ReadableSnapshot>(

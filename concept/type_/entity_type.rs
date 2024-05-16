@@ -208,7 +208,7 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError> {
-        type_manager.storage_set_owns(snapshot, self.clone().into_owned(), attribute_type.clone(), ordering);
+        type_manager.set_owns(snapshot, self.clone().into_owned(), attribute_type.clone(), ordering);
         Ok(Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type))
     }
 
@@ -219,7 +219,7 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: error if not owned?
-        type_manager.storage_delete_owns(snapshot, self.clone().into_owned(), attribute_type);
+        type_manager.delete_owns(snapshot, self.clone().into_owned(), attribute_type);
         Ok(())
     }
 
