@@ -5,6 +5,7 @@
  */
 
 use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
 
 use bytes::Bytes;
 use encoding::{
@@ -54,6 +55,8 @@ use crate::{
         IntoCanonicalTypeEdge, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
+use crate::type_::encoding_helper::EdgeEncoder;
+use crate::type_::InterfaceEdge;
 
 pub struct TypeReader {}
 
@@ -170,6 +173,22 @@ impl TypeReader {
                 Label::parse_from(value)
             })
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
+    }
+
+    pub(crate) fn get_implemented_interfaces<IMPL,ITF>(
+        snapshot: &impl ReadableSnapshot,
+        owner: impl OwnerAPI<'static> + PlayerAPI<'static>,
+    ) -> Result<HashSet<IMPL>, ConceptReadError>
+    where
+    ITF: KindAPI<'static>  + ReadableType + Hash + Eq,
+    IMPL : InterfaceEdge<'static, ObjectType<'static>, ITF> + Hash + Eq {
+        let owns_prefix = IMPL::Encoder::forward_seek_prefix(ObjectType::new(owner.into_vertex()));
+        snapshot
+            .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
+            .collect_cloned_hashset(|key, _| {
+                IMPL::Encoder::read_from(Bytes::Reference(key.byte_ref()))
+            })
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
     pub(crate) fn get_owns(

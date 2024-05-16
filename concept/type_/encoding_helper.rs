@@ -22,7 +22,6 @@ where
     type ReverseFactory: TypeEdgeConstructor;
 
     fn read_from<'b>(bytes: Bytes<'b, BUFFER_KEY_INLINE>) -> E
-    where 'b : 'a
     {
         let edge = TypeEdge::new(bytes);
         let ret = if edge.prefix() == Self::ForwardFactory::PREFIX {
