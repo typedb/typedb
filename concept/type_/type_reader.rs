@@ -76,27 +76,18 @@ impl TypeReader {
         }
     }
 
-    // Used in type_manager to set supertype
-    pub(crate) fn get_supertype_vertex(
-        snapshot: &impl ReadableSnapshot,
-        subtype: TypeVertex<'static>,
-    ) -> Result<Option<TypeVertex<'static>>, ConceptReadError> {
-        Ok(snapshot
-            .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(subtype), TypeEdge::FIXED_WIDTH_ENCODING))
-            .first_cloned()
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
-            .map(|(key, _)| new_edge_sub(Bytes::Array(key.into_byte_array())).to().into_owned()))
-    }
-
     pub(crate) fn get_supertype<T>(
         snapshot: &impl ReadableSnapshot,
         subtype: T,
     ) -> Result<Option<T::SelfStatic>, ConceptReadError>
     where
-        T: KindAPI<'static>,
+        T: TypeAPI<'static>,
     {
-        Ok(Self::get_supertype_vertex(snapshot, subtype.into_vertex())?
-            .map(|supertype_vertex| T::SelfStatic::read_from(supertype_vertex.into_bytes())))
+        Ok(snapshot
+            .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(subtype.into_vertex()), TypeEdge::FIXED_WIDTH_ENCODING))
+            .first_cloned()
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
+            .map(|(key, _)| T::SelfStatic::new(new_edge_sub(Bytes::Array(key.into_byte_array())).to().into_owned())))
     }
 
     pub fn get_supertypes_transitive<T>(
@@ -104,30 +95,19 @@ impl TypeReader {
         subtype: T,
     ) -> Result<Vec<T::SelfStatic>, ConceptReadError>
     where
-        T: KindAPI<'static>,
+        T: KindAPI<'static, SelfStatic=T>,
     {
+        // If the T::SelfStatic = T ever becomes a problem, Introduce public methods without this constraint, and private methods with the constraint.
+        // The public then converts T into T::SelfStatic and calls the private.
         // WARN: supertypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut supertype = Some(type_)`
         let mut supertypes: Vec<T::SelfStatic> = Vec::new();
-        let mut supervertex_opt = TypeReader::get_supertype_vertex(snapshot, subtype.clone().into_vertex())?;
-        while let Some(supervertex) = supervertex_opt {
-            supertypes.push(T::SelfStatic::read_from(supervertex.clone().into_bytes()));
-            supervertex_opt = TypeReader::get_supertype_vertex(snapshot, supervertex.clone())?;
+        let mut supertype_opt = TypeReader::get_supertype(snapshot, subtype.clone())?;
+        while let Some(supertype) = supertype_opt {
+            supertypes.push(supertype.clone());
+            supertype_opt = TypeReader::get_supertype(snapshot, supertype.clone())?;
         }
         Ok(supertypes)
-    }
-
-    fn get_subtypes_vertex(
-        snapshot: &impl ReadableSnapshot,
-        supertype: TypeVertex<'static>,
-    ) -> Result<Vec<TypeVertex<'static>>, ConceptReadError> {
-        snapshot
-            .iterate_range(KeyRange::new_within(
-                build_edge_sub_reverse_prefix_from(supertype),
-                TypeEdge::FIXED_WIDTH_ENCODING,
-            ))
-            .collect_cloned_vec(|key, _| new_edge_sub_reverse(Bytes::Reference(key.byte_ref())).to().into_owned())
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
     pub(crate) fn get_subtypes<T>(
@@ -135,12 +115,16 @@ impl TypeReader {
         supertype: T,
     ) -> Result<Vec<T::SelfStatic>, ConceptReadError>
     where
-        T: KindAPI<'static>,
+        T: KindAPI<'static, SelfStatic=T>,
     {
-        Ok(Self::get_subtypes_vertex(snapshot, supertype.into_vertex())?
-            .into_iter()
-            .map(|subtype_vertex| T::SelfStatic::read_from(subtype_vertex.into_bytes()))
-            .collect::<Vec<T::SelfStatic>>())
+        Ok(snapshot
+            .iterate_range(KeyRange::new_within(
+                build_edge_sub_reverse_prefix_from(supertype.into_vertex()),
+                TypeEdge::FIXED_WIDTH_ENCODING,
+            ))
+            .collect_cloned_vec(|key, _| T::SelfStatic::new(new_edge_sub_reverse(Bytes::Reference(key.byte_ref())).to().into_owned()))
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
+        )
     }
 
     pub fn get_subtypes_transitive<T>(
@@ -148,15 +132,15 @@ impl TypeReader {
         subtype: T,
     ) -> Result<Vec<T::SelfStatic>, ConceptReadError>
     where
-        T: KindAPI<'static>,
+        T: KindAPI<'static, SelfStatic=T>,
     {
         // WARN: subtypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut stack = vec!(subtype.clone());`
         let mut subtypes : Vec<T::SelfStatic> = Vec::new();
-        let mut stack = TypeReader::get_subtypes_vertex(snapshot, subtype.clone().into_vertex())?;
-        while let Some(subvertex) = stack.pop() {
-            subtypes.push(T::SelfStatic::read_from(subvertex.clone().into_bytes()));
-            stack.append(&mut TypeReader::get_subtypes_vertex(snapshot, subvertex.clone())?);
+        let mut stack = TypeReader::get_subtypes(snapshot, subtype.clone())?;
+        while let Some(subtype) = stack.pop() {
+            subtypes.push(subtype.clone());
+            stack.append(&mut TypeReader::get_subtypes(snapshot, subtype)?);
             // TODO: Should we pass an accumulator instead?
         }
         Ok(subtypes)
@@ -177,7 +161,7 @@ impl TypeReader {
 
     pub(crate) fn get_implemented_interfaces<IMPL>(
         snapshot: &impl ReadableSnapshot,
-        owner: impl OwnerAPI<'static> + PlayerAPI<'static>,
+        owner: impl TypeAPI<'static>,
     ) -> Result<HashSet<IMPL>, ConceptReadError>
     where
     IMPL : InterfaceEdge<'static> + Hash + Eq
@@ -197,7 +181,7 @@ impl TypeReader {
         object_type: T,
     ) -> Result<HashMap<IMPL::InterfaceType, IMPL>, ConceptReadError>
         where
-            T: OwnerAPI<'static> + PlayerAPI<'static> + KindAPI<'static, SelfStatic=T>,
+            T: TypeAPI<'static, SelfStatic=T>,
             IMPL : InterfaceEdge<'static> + Hash + Eq {
         // TODO: Should the owner of a transitive owns be the declaring owner or the inheriting owner?
         let mut transitive_implementations: HashMap<IMPL::InterfaceType, IMPL> = HashMap::new();
@@ -224,120 +208,15 @@ impl TypeReader {
 
     pub(crate) fn get_implementation_override<IMPL>(
         snapshot: &impl ReadableSnapshot,
-        plays: IMPL,
+        implementation: IMPL,
     ) -> Result<Option<IMPL>, ConceptReadError>
     where
         IMPL : InterfaceEdge<'static> + Hash + Eq
     {
-        let override_property_key = build_property_type_edge_override(plays.into_type_edge());
+        let override_property_key = build_property_type_edge_override(implementation.into_type_edge());
         snapshot
             .get_mapped(override_property_key.into_storage_key().as_reference(), |overridden_edge_bytes| {
                 IMPL::Encoder::read_from(Bytes::Reference(overridden_edge_bytes))
-            })
-            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
-    }
-
-    pub(crate) fn get_owns(
-        snapshot: &impl ReadableSnapshot,
-        owner: impl OwnerAPI<'static>,
-    ) -> Result<HashSet<Owns<'static>>, ConceptReadError> {
-        let owns_prefix = build_edge_owns_prefix_from(owner.into_vertex());
-        snapshot
-            .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| {
-                let owns_edge = new_edge_owns(Bytes::Reference(key.byte_ref()));
-                Owns::new(
-                    ObjectType::new(owns_edge.from().into_owned()),
-                    AttributeType::new(owns_edge.to().into_owned()),
-                ) // TODO: Should we make this more type safe.
-            })
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
-    }
-
-    pub(crate) fn get_owns_transitive<T>(
-        snapshot: &impl ReadableSnapshot,
-        owner: T,
-    ) -> Result<HashMap<AttributeType<'static>, Owns<'static>>, ConceptReadError>
-    where
-        T: OwnerAPI<'static> + KindAPI<'static, SelfStatic = T>, // ReadOutput=T is needed for supertype transitivity
-    {
-        // TODO: Should the owner of a transitive owns be the declaring owner or the inheriting owner?
-        let mut transitive_owns: HashMap<AttributeType<'static>, Owns<'static>> = HashMap::new();
-        let mut overridden_owns: HashSet<AttributeType<'static>> = HashSet::new(); // TODO: Should this store the owns? This feels more fool-proof if it's correct.
-        let mut current_type = Some(owner);
-        while current_type.is_some() {
-            let declared_owns = Self::get_owns(snapshot, current_type.as_ref().unwrap().clone())?;
-            for owns in declared_owns.into_iter() {
-                let attribute = owns.attribute();
-                if !overridden_owns.contains(&attribute) {
-                    debug_assert!(!transitive_owns.contains_key(&attribute));
-                    transitive_owns.insert(owns.attribute(), owns.clone());
-                }
-                // Has to be outside so we ignore transitively overridden ones too
-                if let Some(overridden) = Self::get_owns_override(snapshot, owns.clone())? {
-                    overridden_owns.add(overridden.attribute());
-                }
-            }
-            current_type = Self::get_supertype(snapshot, current_type.unwrap())?;
-        }
-        Ok(transitive_owns)
-    }
-
-    pub(crate) fn get_plays(
-        snapshot: &impl ReadableSnapshot,
-        player: impl PlayerAPI<'static>,
-    ) -> Result<HashSet<Plays<'static>>, ConceptReadError> {
-        let plays_prefix = build_edge_plays_prefix_from(player.into_vertex());
-        snapshot
-            .iterate_range(KeyRange::new_within(plays_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| {
-                let plays_edge = new_edge_plays(Bytes::Reference(key.byte_ref()));
-                Plays::new(ObjectType::new(plays_edge.from().into_owned()), RoleType::new(plays_edge.to().into_owned()))
-            })
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
-    }
-
-    pub(crate) fn get_plays_transitive<T>(
-        snapshot: &impl ReadableSnapshot,
-        player: T,
-    ) -> Result<HashMap<RoleType<'static>, Plays<'static>>, ConceptReadError>
-    where
-        T: PlayerAPI<'static> + KindAPI<'static, SelfStatic = T>, // ReadOutput=T is needed for supertype transitivity
-    {
-        // TODO: Should the player of a transitive plays be the declaring player or the inheriting player?
-        let mut transitive_plays: HashMap<RoleType<'static>, Plays<'static>> = HashMap::new();
-        let mut overridden_roles: HashSet<RoleType<'static>> = HashSet::new(); // TODO: Should this store the plays? This feels more fool-proof if it's correct.
-        let mut current_type = Some(player);
-        while current_type.is_some() {
-            let declared_plays = Self::get_plays(snapshot, current_type.as_ref().unwrap().clone())?;
-            for plays in declared_plays.into_iter() {
-                let role = plays.role();
-                if !overridden_roles.contains(&role) {
-                    debug_assert!(!transitive_plays.contains_key(&role));
-                    transitive_plays.insert(plays.role(), plays.clone());
-                }
-                // Has to be outside so we ignore transitively overridden ones too
-                if let Some(overridden) = Self::get_plays_override(snapshot, plays.clone())? {
-                    overridden_roles.add(overridden.role());
-                }
-            }
-            current_type = Self::get_supertype(snapshot, current_type.unwrap())?;
-        }
-        Ok(transitive_plays)
-    }
-
-    pub(crate) fn get_plays_override(
-        snapshot: &impl ReadableSnapshot,
-        plays: Plays<'_>,
-    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
-        let override_property_key = build_property_type_edge_override(plays.into_type_edge());
-        snapshot
-            .get_mapped(override_property_key.into_storage_key().as_reference(), |overridden_edge_bytes| {
-                let overridden_edge = new_edge_plays(Bytes::Reference(overridden_edge_bytes));
-                Plays::new(
-                    ObjectType::new(overridden_edge.from().into_owned()),
-                    RoleType::new(overridden_edge.to().into_owned()),
-                )
             })
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
@@ -462,23 +341,6 @@ impl TypeReader {
                 T::AnnotationType::from(annotation)
             })
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
-    }
-
-    // TODO: Merge with plays_override when we get there.
-    pub(crate) fn get_owns_override(
-        snapshot: &impl ReadableSnapshot,
-        owns: Owns<'static>,
-    ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        let override_property_key = build_property_type_edge_override(owns.into_type_edge());
-        snapshot
-            .get_mapped(override_property_key.into_storage_key().as_reference(), |overridden_edge_bytes| {
-                let overridden_edge = new_edge_owns(Bytes::Reference(overridden_edge_bytes));
-                Owns::new(
-                    ObjectType::new(overridden_edge.from().into_owned()),
-                    AttributeType::new(overridden_edge.to().into_owned()),
-                )
-            })
-            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
 
     // TODO: this is currently breaking our architectural pattern that none of the Manager methods should operate graphs

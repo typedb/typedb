@@ -357,7 +357,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(entity_type)))
         } else {
-            let owns = TypeReader::get_implemented_interfaces::<Owns<'static>>(snapshot, entity_type.clone())?;
+            let owns = TypeReader::get_implemented_interfaces(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -370,7 +370,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(relation_type)))
         } else {
-            let owns = TypeReader::get_implemented_interfaces::<Owns<'static>>(snapshot, relation_type.clone())?;
+            let owns = TypeReader::get_implemented_interfaces(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -422,7 +422,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_transitive(entity_type)))
         } else {
-            let owns = TypeReader::get_owns_transitive(snapshot, entity_type.clone())?;
+            let owns = TypeReader::get_implemented_interfaces_transitive::<Owns<'static>, EntityType<'static>>(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -435,7 +435,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_transitive(relation_type)))
         } else {
-            let owns = TypeReader::get_owns_transitive(snapshot, relation_type.clone())?;
+            let owns = TypeReader::get_implemented_interfaces_transitive::<Owns<'static>, RelationType<'static>>(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -466,7 +466,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays(entity_type)))
         } else {
-            let plays = TypeReader::get_plays(snapshot, entity_type.clone())?;
+            let plays = TypeReader::get_implemented_interfaces(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -478,7 +478,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_transitive(entity_type)))
         } else {
-            let plays = TypeReader::get_plays_transitive(snapshot, entity_type.clone())?;
+            let plays = TypeReader::get_implemented_interfaces_transitive::<Plays<'static>, EntityType<'static>>(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -491,7 +491,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays(relation_type)))
         } else {
-            let plays = TypeReader::get_plays(snapshot, relation_type.clone())?;
+            let plays = TypeReader::get_implemented_interfaces(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -504,7 +504,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_transitive(relation_type)))
         } else {
-            let plays = TypeReader::get_plays_transitive(snapshot, relation_type.clone())?;
+            let plays = TypeReader::get_implemented_interfaces_transitive::<Plays<'static>, RelationType<'static>>(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -517,7 +517,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_override(plays)))
         } else {
-            Ok(MaybeOwns::Owned(TypeReader::get_plays_override(snapshot, plays)?))
+            Ok(MaybeOwns::Owned(TypeReader::get_implementation_override(snapshot, plays)?))
         }
     }
 
@@ -548,7 +548,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_override(owns)))
         } else {
-            Ok(MaybeOwns::Owned(TypeReader::get_owns_override(snapshot, owns)?))
+            Ok(MaybeOwns::Owned(TypeReader::get_implementation_override(snapshot, owns)?))
         }
     }
 

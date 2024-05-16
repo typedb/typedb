@@ -277,10 +277,10 @@ impl OwnerPlayerCache {
         T: KindAPI<'static, SelfStatic = T> + OwnerAPI<'static> + PlayerAPI<'static> + ,
     {
         OwnerPlayerCache {
-            owns_declared: TypeReader::get_owns(snapshot, type_.clone()).unwrap(),
-            owns_transitive: TypeReader::get_owns_transitive(snapshot, type_.clone()).unwrap(),
-            plays_declared: TypeReader::get_plays(snapshot, type_.clone()).unwrap(),
-            plays_transitive: TypeReader::get_plays_transitive(snapshot, type_.clone()).unwrap(),
+            owns_declared: TypeReader::get_implemented_interfaces::<Owns<'static>>(snapshot, type_.clone()).unwrap(),
+            owns_transitive: TypeReader::get_implemented_interfaces_transitive::<Owns<'static>, T>(snapshot, type_.clone()).unwrap(),
+            plays_declared: TypeReader::get_implemented_interfaces::<Plays<'static>>(snapshot, type_.clone()).unwrap(),
+            plays_transitive: TypeReader::get_implemented_interfaces_transitive::<Plays<'static>, T>(snapshot, type_.clone()).unwrap(),
         }
     }
 }

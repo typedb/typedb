@@ -4,12 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashMap;
 use encoding::value::label::Label;
 use storage::snapshot::ReadableSnapshot;
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::entity_type::EntityType;
 use crate::type_::{OwnerAPI, PlayerAPI, TypeAPI};
 use crate::type_::object_type::ObjectType;
+use crate::type_::owns::Owns;
 use crate::type_::plays::Plays;
 use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
@@ -37,7 +39,7 @@ pub struct TypeValidator { }
 impl TypeValidator {
     pub(crate) fn validate_no_subtypes<Snapshot, T>(snapshot: &Snapshot, type_: T) -> Result<(), SchemaValidationError>
     where Snapshot: ReadableSnapshot,
-          T: KindAPI<'static>
+          T: KindAPI<'static, SelfStatic=T>
     {
         TypeReader::get_subtypes(snapshot, type_)
             .map_err(SchemaValidationError::ConceptRead)?;
@@ -120,9 +122,9 @@ impl TypeValidator {
             if super_owner.is_none() {
                 return Err(SchemaValidationError::RootModification);
             }
-            let is_inherited = TypeReader::get_owns_transitive(snapshot, super_owner.unwrap())
-                .map_err(SchemaValidationError::ConceptRead)?
-                .contains_key(&attribute);
+            let owns_transitive : HashMap<AttributeType<'static>, Owns<'static>> = TypeReader::get_implemented_interfaces_transitive(snapshot, super_owner.unwrap())
+                .map_err(SchemaValidationError::ConceptRead)?;
+            let is_inherited = owns_transitive.contains_key(&attribute);
             if is_inherited { Ok(()) } else { Err(SchemaValidationError::OwnsNotInherited(attribute)) }
         });
         res
@@ -160,9 +162,9 @@ impl TypeValidator {
             if super_player.is_none() {
                 return Err(SchemaValidationError::RootModification);
             }
-            TypeReader::get_plays_transitive(snapshot, super_player.unwrap())
-                .map_err(SchemaValidationError::ConceptRead)?
-                .contains_key(&role_type)
+            let plays_transitive : HashMap<RoleType<'static>, Plays<'static>> = TypeReader::get_implemented_interfaces_transitive(snapshot, super_player.unwrap())
+                .map_err(SchemaValidationError::ConceptRead)?;
+            plays_transitive.contains_key(&role_type)
         });
         if is_inherited { Ok(()) } else { Err(SchemaValidationError::PlaysNotInherited(player.into_owned(), role_type)) }
     }
@@ -175,7 +177,7 @@ impl TypeValidator {
         where Snapshot: ReadableSnapshot,
     {
         let plays = Plays::new(ObjectType::new(player.clone().into_vertex()), role_type.clone());
-        let is_declared = TypeReader::get_plays(snapshot, player.clone())
+        let is_declared = TypeReader::get_implemented_interfaces::<Plays<'static>>(snapshot, player.clone())
                 .map_err(SchemaValidationError::ConceptRead)?
                 .contains(&plays);
         if is_declared { Ok(()) } else { Err(SchemaValidationError::PlaysNotDeclared(player.into_owned(), role_type)) }
