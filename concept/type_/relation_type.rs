@@ -47,6 +47,8 @@ impl<'a> RelationType<'a> {}
 impl<'a> ConceptAPI<'a> for RelationType<'a> {}
 
 impl<'a> TypeAPI<'a> for RelationType<'a> {
+    type SelfStatic = RelationType<'static>;
+
     fn new(vertex: TypeVertex<'a>) -> RelationType<'_> {
         if vertex.prefix() != Prefix::VertexRelationType {
             panic!(

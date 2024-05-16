@@ -187,7 +187,7 @@ impl TypeCache {
     pub(crate) fn get_annotations<'a, 'this, T, CACHE>(
         &'this self,
         type_: T,
-    ) -> &HashSet<<<T as KindAPI<'a>>::SelfStatic as KindAPI<'static>>::AnnotationType>
+    ) -> &HashSet<<<T as TypeAPI<'a>>::SelfStatic as KindAPI<'static>>::AnnotationType>
     where
         T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
         CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,

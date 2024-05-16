@@ -34,7 +34,7 @@ use crate::type_::{
     relates::Relates,
     relation_type::RelationType,
     role_type::RoleType,
-    type_manager::{KindAPI, ReadableType, TypeManager},
+    type_manager::{KindAPI, TypeManager},
     type_reader::TypeReader,
     Ordering, OwnerAPI, PlayerAPI, TypeAPI,
 };
@@ -246,7 +246,7 @@ impl PlaysCache {
     }
 }
 
-impl<T: KindAPI<'static> + ReadableType<ReadOutput<'static> = T>> CommonTypeCache<T> {
+impl<T: KindAPI<'static, SelfStatic=T>> CommonTypeCache<T> {
     fn create<Snapshot>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
     where
         Snapshot: ReadableSnapshot,
@@ -274,7 +274,7 @@ impl OwnerPlayerCache {
     fn create<'a, Snapshot, T>(snapshot: &Snapshot, type_: T) -> OwnerPlayerCache
     where
         Snapshot: ReadableSnapshot,
-        T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static> + ReadableType<ReadOutput<'static> = T>,
+        T: KindAPI<'static, SelfStatic = T> + OwnerAPI<'static> + PlayerAPI<'static> + ,
     {
         OwnerPlayerCache {
             owns_declared: TypeReader::get_owns(snapshot, type_.clone()).unwrap(),

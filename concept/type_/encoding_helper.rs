@@ -10,7 +10,7 @@ use crate::type_::object_type::ObjectType;
 use crate::type_::owns::Owns;
 use crate::type_::plays::Plays;
 use crate::type_::role_type::RoleType;
-use crate::type_::type_manager::{KindAPI, ReadableType};
+use crate::type_::type_manager::KindAPI;
 
 pub trait EdgeEncoder<'a, E>
 where

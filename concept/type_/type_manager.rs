@@ -43,7 +43,6 @@ use encoding::{
     AsBytes, Keyable,
 };
 use primitive::maybe_owns::MaybeOwns;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
@@ -778,7 +777,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     pub(crate) fn set_supertype<K>(&self, snapshot: &mut Snapshot, subtype: K, supertype: K) -> Result<(), ConceptWriteError>
-    where K: KindAPI<'static> + ReadableType<ReadOutput<'static>=K>
+    where K: KindAPI<'static, SelfStatic = K>
     {
         // TODO: Validation. This may have to split per type.
         TypeValidator::validate_sub_does_not_create_cycle(snapshot, subtype.clone(), supertype.clone())
@@ -1047,64 +1046,15 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 }
 
-pub trait ReadableType {
-    // Consider replacing 'bytes with 'static
-    type ReadOutput<'bytes>: 'bytes;
-    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::ReadOutput<'bytes>;
-}
 
-impl<'a> ReadableType for AttributeType<'a> {
-    type ReadOutput<'bytes> = AttributeType<'bytes>;
-    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::ReadOutput<'bytes> {
-        AttributeType::new(new_vertex_attribute_type(b))
-    }
-}
-
-impl<'a> ReadableType for ObjectType<'a> {
-    type ReadOutput<'bytes> = ObjectType<'bytes>;
-    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::ReadOutput<'bytes> {
-        ObjectType::new(TypeVertex::new(b))
-    }
-}
-
-impl<'a> ReadableType for EntityType<'a> {
-    type ReadOutput<'bytes> = EntityType<'bytes>;
-    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::ReadOutput<'bytes> {
-        EntityType::new(new_vertex_entity_type(b))
-    }
-}
-
-impl<'a> ReadableType for RelationType<'a> {
-    type ReadOutput<'bytes> = RelationType<'bytes>;
-    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::ReadOutput<'bytes> {
-        RelationType::new(new_vertex_relation_type(b))
-    }
-}
-
-impl<'a> ReadableType for RoleType<'a> {
-    type ReadOutput<'bytes> = RoleType<'bytes>;
-    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::ReadOutput<'bytes> {
-        RoleType::new(new_vertex_role_type(b))
-    }
-}
-
-impl<'a> ReadableType for ObjectType<'a> {
-    type ReadOutput<'bytes> = ObjectType<'bytes>;
-    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::ReadOutput<'bytes> {
-        ObjectType::new(TypeVertex::new(b))
-    }
-}
-
-pub trait KindAPI<'a>: TypeAPI<'a> + ReadableType {
-    type SelfStatic: KindAPI<'static> + 'static;
-    type AnnotationType: Hash + Eq + From<Annotation> + 'static;
+pub trait KindAPI<'a>: TypeAPI<'a> {
+    type AnnotationType: Hash + Eq + From<Annotation>;
     const ROOT_KIND: Kind;
 
     fn wrap_for_error(&self) -> WrappedTypeForError;
 }
 
 impl<'a> KindAPI<'a> for AttributeType<'a> {
-    type SelfStatic = AttributeType<'static>;
     type AnnotationType = AttributeTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Attribute;
 
@@ -1114,7 +1064,6 @@ impl<'a> KindAPI<'a> for AttributeType<'a> {
 }
 
 impl<'a> KindAPI<'a> for EntityType<'a> {
-    type SelfStatic = EntityType<'static>;
     type AnnotationType = EntityTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Entity;
 
@@ -1124,7 +1073,6 @@ impl<'a> KindAPI<'a> for EntityType<'a> {
 }
 
 impl<'a> KindAPI<'a> for RelationType<'a> {
-    type SelfStatic = RelationType<'static>;
     type AnnotationType = RelationTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Relation;
 
@@ -1134,7 +1082,6 @@ impl<'a> KindAPI<'a> for RelationType<'a> {
 }
 
 impl<'a> KindAPI<'a> for RoleType<'a> {
-    type SelfStatic = RoleType<'static>;
     type AnnotationType = RoleTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Role;
 

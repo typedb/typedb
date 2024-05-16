@@ -110,6 +110,8 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
 impl<'a> ConceptAPI<'a> for ObjectType<'a> {}
 
 impl<'a> TypeAPI<'a> for ObjectType<'a> {
+    type SelfStatic = RelationType<'static>;
+
     fn new(vertex: TypeVertex<'a>) -> Self {
         match vertex.prefix() {
             Prefix::VertexEntityType => ObjectType::Entity(EntityType::new(vertex)),

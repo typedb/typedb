@@ -45,6 +45,7 @@ impl<'a> EntityType<'a> { }
 impl<'a> ConceptAPI<'a> for EntityType<'a> {}
 
 impl<'a> TypeAPI<'a> for EntityType<'a> {
+    type SelfStatic = EntityType<'static>;
     fn new(vertex: TypeVertex<'a>) -> EntityType<'a> {
         if vertex.prefix() != Prefix::VertexEntityType {
             panic!(

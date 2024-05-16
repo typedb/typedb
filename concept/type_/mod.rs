@@ -13,6 +13,7 @@ use encoding::{
 };
 use primitive::maybe_owns::MaybeOwns;
 use serde::{Deserialize, Serialize};
+use bytes::Bytes;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use self::{annotation::AnnotationRegex, object_type::ObjectType};
@@ -27,8 +28,8 @@ use crate::{
     ConceptAPI,
 };
 use crate::type_::encoding_helper::EdgeEncoder;
-use crate::type_::object_type::ObjectType;
-use crate::type_::type_manager::{KindAPI, ReadableType};
+use crate::type_::type_manager::KindAPI;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
 pub mod annotation;
 pub mod attribute_type;
@@ -47,7 +48,12 @@ pub mod validation;
 mod encoding_helper;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
+    type SelfStatic: KindAPI<'static> + 'static;
     fn new(vertex : TypeVertex<'a>) -> Self ;
+
+    fn read_from(b: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+        Self::new(TypeVertex::new(b))
+    }
 
     fn vertex(&self) -> TypeVertex<'_>;
 
@@ -218,8 +224,8 @@ pub(crate) trait IntoCanonicalTypeEdge<'a> {
 pub(crate) trait InterfaceEdge<'a> : IntoCanonicalTypeEdge<'a> + Sized + Clone
 {
     type AnnotationType;
-    type ObjectType: TypeAPI<'a> + ReadableType;
-    type InterfaceType: KindAPI<'a>  + ReadableType;
+    type ObjectType: TypeAPI<'a>;
+    type InterfaceType: KindAPI<'a>;
     type Encoder: EdgeEncoder<'a, Self>;
 
     fn new(implementor: Self::ObjectType, interface: Self::InterfaceType) -> Self;

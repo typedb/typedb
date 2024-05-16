@@ -13,7 +13,7 @@ use crate::type_::object_type::ObjectType;
 use crate::type_::plays::Plays;
 use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
-use crate::type_::type_manager::{KindAPI, ReadableType};
+use crate::type_::type_manager::KindAPI;
 use crate::type_::type_reader::TypeReader;
 use crate::type_::validation::SchemaValidationError;
 
@@ -37,7 +37,7 @@ pub struct TypeValidator { }
 impl TypeValidator {
     pub(crate) fn validate_no_subtypes<Snapshot, T>(snapshot: &Snapshot, type_: T) -> Result<(), SchemaValidationError>
     where Snapshot: ReadableSnapshot,
-          T: KindAPI<'static> + ReadableType
+          T: KindAPI<'static>
     {
         TypeReader::get_subtypes(snapshot, type_)
             .map_err(SchemaValidationError::ConceptRead)?;
@@ -45,7 +45,7 @@ impl TypeValidator {
     }
 
     pub(crate) fn validate_no_instances<Snapshot, T>(snapshot: &Snapshot, type_: T) -> Result<(), SchemaValidationError>
-    where Snapshot: ReadableSnapshot, T: KindAPI<'static>  + ReadableType
+    where Snapshot: ReadableSnapshot, T: KindAPI<'static>
     {
         // todo!();
         Ok(())
@@ -76,7 +76,7 @@ impl TypeValidator {
         supertype: T,
     ) -> Result<(), SchemaValidationError>
         where
-            T: KindAPI<'static> + ReadableType<ReadOutput<'static>=T>,
+            T: KindAPI<'static, SelfStatic=T>,
             Snapshot: ReadableSnapshot,
     {
         let existing_supertypes = TypeReader::get_supertypes_transitive(snapshot, supertype.clone())
@@ -135,7 +135,7 @@ impl TypeValidator {
     ) -> Result<(), SchemaValidationError>
         where
             Snapshot: ReadableSnapshot,
-            T: KindAPI<'static> + ReadableType<ReadOutput<'static>=T>
+            T: KindAPI<'static, SelfStatic=T>
     {
         let supertypes = TypeReader::get_supertypes_transitive(snapshot, type_.clone())
             .map_err(SchemaValidationError::ConceptRead)?;

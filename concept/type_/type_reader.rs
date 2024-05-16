@@ -51,7 +51,7 @@ use crate::{
         relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::{KindAPI, ReadableType},
+        type_manager::KindAPI,
         IntoCanonicalTypeEdge, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
@@ -61,17 +61,17 @@ use crate::type_::InterfaceEdge;
 pub struct TypeReader {}
 
 impl TypeReader {
-    pub(crate) fn get_labelled_type<T>(
+    pub(crate) fn get_labelled_type<'a, T>(
         snapshot: &impl ReadableSnapshot,
         label: &Label<'_>,
-    ) -> Result<Option<T::ReadOutput<'static>>, ConceptReadError>
+    ) -> Result<Option<T::SelfStatic>, ConceptReadError>
     where
-        T: ReadableType,
+        T: TypeAPI<'a>,
     {
         let key = LabelToTypeVertexIndex::build(label).into_storage_key();
         match snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {
             Ok(None) => Ok(None),
-            Ok(Some(value)) => Ok(Some(T::read_from(Bytes::Array(value)))),
+            Ok(Some(value)) => Ok(Some(T::SelfStatic::read_from(Bytes::Array(value)))),
             Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
         }
     }
@@ -91,27 +91,27 @@ impl TypeReader {
     pub(crate) fn get_supertype<T>(
         snapshot: &impl ReadableSnapshot,
         subtype: T,
-    ) -> Result<Option<T::ReadOutput<'static>>, ConceptReadError>
+    ) -> Result<Option<T::SelfStatic>, ConceptReadError>
     where
-        T: ReadableType + KindAPI<'static>,
+        T: KindAPI<'static>,
     {
         Ok(Self::get_supertype_vertex(snapshot, subtype.into_vertex())?
-            .map(|supertype_vertex| T::read_from(supertype_vertex.into_bytes())))
+            .map(|supertype_vertex| T::SelfStatic::read_from(supertype_vertex.into_bytes())))
     }
 
     pub fn get_supertypes_transitive<T>(
         snapshot: &impl ReadableSnapshot,
         subtype: T,
-    ) -> Result<Vec<T::ReadOutput<'static>>, ConceptReadError>
+    ) -> Result<Vec<T::SelfStatic>, ConceptReadError>
     where
-        T: ReadableType + KindAPI<'static>,
+        T: KindAPI<'static>,
     {
         // WARN: supertypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut supertype = Some(type_)`
-        let mut supertypes = Vec::new();
+        let mut supertypes: Vec<T::SelfStatic> = Vec::new();
         let mut supervertex_opt = TypeReader::get_supertype_vertex(snapshot, subtype.clone().into_vertex())?;
         while let Some(supervertex) = supervertex_opt {
-            supertypes.push(T::read_from(supervertex.clone().into_bytes()));
+            supertypes.push(T::SelfStatic::read_from(supervertex.clone().into_bytes()));
             supervertex_opt = TypeReader::get_supertype_vertex(snapshot, supervertex.clone())?;
         }
         Ok(supertypes)
@@ -133,29 +133,29 @@ impl TypeReader {
     pub(crate) fn get_subtypes<T>(
         snapshot: &impl ReadableSnapshot,
         supertype: T,
-    ) -> Result<Vec<T::ReadOutput<'static>>, ConceptReadError>
+    ) -> Result<Vec<T::SelfStatic>, ConceptReadError>
     where
-        T: ReadableType + KindAPI<'static>,
+        T: KindAPI<'static>,
     {
         Ok(Self::get_subtypes_vertex(snapshot, supertype.into_vertex())?
             .into_iter()
-            .map(|subtype_vertex| T::read_from(subtype_vertex.into_bytes()))
-            .collect::<Vec<T::ReadOutput<'static>>>())
+            .map(|subtype_vertex| T::SelfStatic::read_from(subtype_vertex.into_bytes()))
+            .collect::<Vec<T::SelfStatic>>())
     }
 
     pub fn get_subtypes_transitive<T>(
         snapshot: &impl ReadableSnapshot,
         subtype: T,
-    ) -> Result<Vec<T::ReadOutput<'static>>, ConceptReadError>
+    ) -> Result<Vec<T::SelfStatic>, ConceptReadError>
     where
-        T: ReadableType + KindAPI<'static>,
+        T: KindAPI<'static>,
     {
         // WARN: subtypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut stack = vec!(subtype.clone());`
-        let mut subtypes = Vec::new();
+        let mut subtypes : Vec<T::SelfStatic> = Vec::new();
         let mut stack = TypeReader::get_subtypes_vertex(snapshot, subtype.clone().into_vertex())?;
         while let Some(subvertex) = stack.pop() {
-            subtypes.push(T::read_from(subvertex.clone().into_bytes()));
+            subtypes.push(T::SelfStatic::read_from(subvertex.clone().into_bytes()));
             stack.append(&mut TypeReader::get_subtypes_vertex(snapshot, subvertex.clone())?);
             // TODO: Should we pass an accumulator instead?
         }
@@ -212,7 +212,7 @@ impl TypeReader {
         owner: T,
     ) -> Result<HashMap<AttributeType<'static>, Owns<'static>>, ConceptReadError>
     where
-        T: OwnerAPI<'static> + KindAPI<'static> + ReadableType<ReadOutput<'static> = T>, // ReadOutput=T is needed for supertype transitivity
+        T: OwnerAPI<'static> + KindAPI<'static, SelfStatic = T>, // ReadOutput=T is needed for supertype transitivity
     {
         // TODO: Should the owner of a transitive owns be the declaring owner or the inheriting owner?
         let mut transitive_owns: HashMap<AttributeType<'static>, Owns<'static>> = HashMap::new();
@@ -255,7 +255,7 @@ impl TypeReader {
         player: T,
     ) -> Result<HashMap<RoleType<'static>, Plays<'static>>, ConceptReadError>
     where
-        T: PlayerAPI<'static> + KindAPI<'static> + ReadableType<ReadOutput<'static> = T>, // ReadOutput=T is needed for supertype transitivity
+        T: PlayerAPI<'static> + KindAPI<'static, SelfStatic = T>, // ReadOutput=T is needed for supertype transitivity
     {
         // TODO: Should the player of a transitive plays be the declaring player or the inheriting player?
         let mut transitive_plays: HashMap<RoleType<'static>, Plays<'static>> = HashMap::new();

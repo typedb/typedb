@@ -37,6 +37,7 @@ impl<'a> AttributeType<'a> { }
 impl<'a> ConceptAPI<'a> for AttributeType<'a> {}
 
 impl<'a> TypeAPI<'a> for AttributeType<'a> {
+    type SelfStatic = AttributeType<'static>;
 
     fn new(vertex: TypeVertex<'a>) -> AttributeType<'a> {
         if vertex.prefix() != Prefix::VertexAttributeType {
