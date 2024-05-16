@@ -7,10 +7,9 @@
 use std::marker::PhantomData;
 use bytes::byte_array::ByteArray;
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
-use encoding::graph::type_::Kind;
 use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label, build_property_type_value_type};
 use encoding::{AsBytes, Keyable};
-use encoding::graph::type_::edge::{build_edge_owns, build_edge_owns_reverse, build_edge_plays, build_edge_plays_reverse, build_edge_relates, build_edge_relates_reverse, build_edge_sub, build_edge_sub_reverse, TypeEdge};
+use encoding::graph::type_::edge::{build_edge_relates, build_edge_relates_reverse, build_edge_sub, build_edge_sub_reverse, TypeEdge};
 use encoding::layout::prefix::Prefix;
 use encoding::value::label::Label;
 use encoding::value::value_type::{ValueType, ValueTypeBytes};
@@ -19,10 +18,9 @@ use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
 use crate::type_::type_manager::KindAPI;
 use crate::type_::type_reader::TypeReader;
-use crate::type_::{InterfaceEdge, IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, serialise_ordering, TypeAPI};
+use crate::type_::{InterfaceEdge, IntoCanonicalTypeEdge, Ordering, serialise_ordering, TypeAPI};
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::encoding_helper::EdgeEncoder;
-use crate::type_::object_type::ObjectType;
 
 pub struct TypeWriter<Snapshot: WritableSnapshot> {
     snapshot: PhantomData<Snapshot>,

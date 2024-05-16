@@ -11,9 +11,9 @@ use bytes::Bytes;
 use encoding::{
     graph::type_::{
         edge::{
-            build_edge_owns_prefix_from, build_edge_plays_prefix_from, build_edge_relates_prefix_from,
+            build_edge_relates_prefix_from,
             build_edge_relates_reverse_prefix_from, build_edge_sub_prefix_from, build_edge_sub_reverse_prefix_from,
-            new_edge_owns, new_edge_plays, new_edge_relates, new_edge_relates_reverse, new_edge_sub,
+            new_edge_relates, new_edge_relates_reverse, new_edge_sub,
             new_edge_sub_reverse, TypeEdge,
         },
         index::LabelToTypeVertexIndex,
@@ -21,7 +21,6 @@ use encoding::{
             build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label,
             build_property_type_ordering, build_property_type_value_type, TypeEdgeProperty, TypeVertexProperty,
         },
-        vertex::TypeVertex,
     },
     layout::infix::Infix,
     value::{
