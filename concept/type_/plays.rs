@@ -13,7 +13,8 @@ use crate::{
     type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, IntoCanonicalTypeEdge, TypeAPI},
 };
 use crate::error::ConceptWriteError;
-use crate::type_::InterfaceImplementation;
+use crate::type_::encoding_helper::PlaysEncoder;
+use crate::type_::InterfaceEdge;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Plays<'a> {
@@ -70,26 +71,19 @@ impl<'a> IntoCanonicalTypeEdge<'a> for Plays<'a> {
 // Can plays not be annotated?
 pub struct __PlaceholderPlaysAnnotation {}
 
-impl<'a> InterfaceImplementation<'a, ObjectType<'a>, RoleType<'a>> for Plays<'a> {
+impl<'a> InterfaceEdge<'a, ObjectType<'a>, RoleType<'a>> for Plays<'a> {
     type AnnotationType = __PlaceholderPlaysAnnotation;
+    type Encoder = PlaysEncoder;
 
     fn new(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
         Plays::new(player, role)
     }
 
-    fn object(self) -> ObjectType<'a> {
+    fn object(&self) -> ObjectType<'a> {
         self.player.clone()
     }
 
     fn interface(&self) -> RoleType<'a> {
         self.role.clone()
-    }
-
-    fn forward_edge(&self) -> TypeEdge<'static> {
-        build_edge_plays(self.player().vertex().into_owned(), self.role.vertex().into_owned())
-    }
-
-    fn reverse_edge(&self) -> TypeEdge<'static> {
-        build_edge_plays_reverse(self.role.vertex().into_owned(), self.player().vertex().into_owned())
     }
 }

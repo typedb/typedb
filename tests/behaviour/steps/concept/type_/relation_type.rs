@@ -335,6 +335,6 @@ pub async fn role_type_players_contain(
                     }
                 }
             }).collect::<Vec<String>>();
-        contains_or_doesnt.check(expected_labels, actual_labels);
+        contains_or_doesnt.check(expected_labels.as_slice(), actual_labels.as_slice());
     });
 }

@@ -26,8 +26,9 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::encoding_helper::EdgeEncoder;
 use crate::type_::object_type::ObjectType;
-use crate::type_::type_manager::KindAPI;
+use crate::type_::type_manager::{KindAPI, ReadableType};
 
 pub mod annotation;
 pub mod attribute_type;
@@ -43,8 +44,11 @@ pub mod type_manager;
 mod type_reader;
 mod type_writer;
 pub mod validation;
+mod encoding_helper;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
+    fn new(vertex : TypeVertex<'a>) -> Self ;
+
     fn vertex(&self) -> TypeVertex<'_>;
 
     fn into_vertex(self) -> TypeVertex<'a>;
@@ -211,22 +215,19 @@ pub(crate) trait IntoCanonicalTypeEdge<'a> {
 
     fn into_type_edge(self) -> TypeEdge<'static>;
 }
-pub(crate) trait InterfaceImplementation<'a, OBJ, ITF> : IntoCanonicalTypeEdge<'a>
+pub(crate) trait InterfaceEdge<'a, OBJ, ITF> : IntoCanonicalTypeEdge<'a> + Sized + Clone
     where
-        // OBJ: ObjectTypeAPI<'a>,
-        ITF: KindAPI<'a>
+        OBJ: TypeAPI<'a> + ReadableType,
+        ITF: KindAPI<'a>  + ReadableType
 {
     type AnnotationType;
+    type Encoder: EdgeEncoder<'a, OBJ, ITF, Self>;
 
     fn new(implementor: OBJ, interface: ITF) -> Self;
 
-    fn object(self) -> OBJ;
+    fn object(&self) -> OBJ;
 
     fn interface(&self) -> ITF;
-
-    fn forward_edge(&self) -> TypeEdge<'static>;
-
-    fn reverse_edge(&self) -> TypeEdge<'static>;
 }
 
 // TODO: where do these belong?

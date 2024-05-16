@@ -40,8 +40,12 @@ pub struct EntityType<'a> {
     vertex: TypeVertex<'a>,
 }
 
-impl<'a> EntityType<'a> {
-    pub fn new(vertex: TypeVertex<'a>) -> EntityType<'_> {
+impl<'a> EntityType<'a> { }
+
+impl<'a> ConceptAPI<'a> for EntityType<'a> {}
+
+impl<'a> TypeAPI<'a> for EntityType<'a> {
+    fn new(vertex: TypeVertex<'a>) -> EntityType<'a> {
         if vertex.prefix() != Prefix::VertexEntityType {
             panic!(
                 "Type IID prefix was expected to be Prefix::EntityType ({:?}) but was {:?}",
@@ -51,11 +55,7 @@ impl<'a> EntityType<'a> {
         }
         EntityType { vertex }
     }
-}
 
-impl<'a> ConceptAPI<'a> for EntityType<'a> {}
-
-impl<'a> TypeAPI<'a> for EntityType<'a> {
     fn vertex<'this>(&'this self) -> TypeVertex<'this> {
         self.vertex.as_reference()
     }

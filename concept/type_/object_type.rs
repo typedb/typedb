@@ -26,14 +26,6 @@ pub enum ObjectType<'a> {
 }
 
 impl<'a> ObjectType<'a> {
-    pub(crate) fn new(vertex: TypeVertex<'a>) -> Self {
-        match vertex.prefix() {
-            Prefix::VertexEntityType => ObjectType::Entity(EntityType::new(vertex)),
-            Prefix::VertexRelationType => ObjectType::Relation(RelationType::new(vertex)),
-            _ => unreachable!("Object type creation requires either entity type or relation type vertex."),
-        }
-    }
-
     pub fn get_supertype<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
@@ -118,6 +110,14 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
 impl<'a> ConceptAPI<'a> for ObjectType<'a> {}
 
 impl<'a> TypeAPI<'a> for ObjectType<'a> {
+    fn new(vertex: TypeVertex<'a>) -> Self {
+        match vertex.prefix() {
+            Prefix::VertexEntityType => ObjectType::Entity(EntityType::new(vertex)),
+            Prefix::VertexRelationType => ObjectType::Relation(RelationType::new(vertex)),
+            _ => unreachable!("Object type creation requires either entity type or relation type vertex."),
+        }
+    }
+
     fn vertex<'this>(&'this self) -> TypeVertex<'this> {
         match self {
             ObjectType::Entity(entity) => entity.vertex(),

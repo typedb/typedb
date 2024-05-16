@@ -19,8 +19,9 @@ use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
 use crate::type_::type_manager::{KindAPI, ReadableType};
 use crate::type_::type_reader::TypeReader;
-use crate::type_::{InterfaceImplementation, IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, serialise_ordering, TypeAPI};
+use crate::type_::{InterfaceEdge, IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, serialise_ordering, TypeAPI};
 use crate::type_::attribute_type::AttributeType;
+use crate::type_::encoding_helper::EdgeEncoder;
 use crate::type_::object_type::ObjectType;
 
 pub struct TypeWriter<Snapshot: WritableSnapshot> {
@@ -111,10 +112,10 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     )
     where
         ITF: KindAPI<'static>,
-        IMPL: InterfaceImplementation<'static, ObjectType<'static>, ITF>
+        IMPL: InterfaceEdge<'static, ObjectType<'static>, ITF>,
     {
-        snapshot.put(implementation.forward_edge().into_storage_key().into_owned_array());
-        snapshot.put(implementation.reverse_edge().into_storage_key().into_owned_array());
+        snapshot.put(IMPL::Encoder::forward_edge(implementation.clone()).into_storage_key().into_owned_array());
+        snapshot.put(IMPL::Encoder::reverse_edge(implementation.clone()).into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_delete_interface_impl<ITF, IMPL>(
@@ -123,10 +124,10 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     )
         where
             ITF: KindAPI<'static>,
-            IMPL: InterfaceImplementation<'static, ObjectType<'static>, ITF>
+            IMPL: InterfaceEdge<'static, ObjectType<'static>, ITF>
     {
-        snapshot.delete(implementation.forward_edge().into_storage_key().into_owned_array());
-        snapshot.delete(implementation.reverse_edge().into_storage_key().into_owned_array());
+        snapshot.delete(IMPL::Encoder::forward_edge(implementation.clone()).into_storage_key().into_owned_array());
+        snapshot.delete(IMPL::Encoder::reverse_edge(implementation.clone()).into_storage_key().into_owned_array());
     }
 
     // TODO: Store just the overridden.to vertex as value

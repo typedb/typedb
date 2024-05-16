@@ -25,7 +25,12 @@ use crate::{
         object::{Object, ObjectAPI},
         relation::{IndexedPlayersIterator, RelationRoleIterator},
         thing_manager::ThingManager,
-        ThingAPI,
+        value::Value,
+        ObjectAPI, ThingAPI,
+    },
+    type_::{
+        attribute_type::AttributeType, entity_type::EntityType, owns::Owns, type_manager::TypeManager, Ordering,
+        OwnerAPI, TypeAPI,
     },
     type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
     ByteReference, ConceptAPI, ConceptStatus,

@@ -329,7 +329,7 @@ pub async fn get_owns_set_override(
             .get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, overridden_attr_type)
             .unwrap()
             .unwrap();
-        owns.set_override(&mut tx.snapshot, &tx.type_manager, overridden_owns);
+        owns.set_override(&mut tx.snapshot, &tx.type_manager, overridden_owns).unwrap();
     });
 }
 

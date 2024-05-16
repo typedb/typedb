@@ -32,8 +32,13 @@ pub struct AttributeType<'a> {
     vertex: TypeVertex<'a>,
 }
 
-impl<'a> AttributeType<'a> {
-    pub fn new(vertex: TypeVertex<'a>) -> AttributeType<'_> {
+impl<'a> AttributeType<'a> { }
+
+impl<'a> ConceptAPI<'a> for AttributeType<'a> {}
+
+impl<'a> TypeAPI<'a> for AttributeType<'a> {
+
+    fn new(vertex: TypeVertex<'a>) -> AttributeType<'a> {
         if vertex.prefix() != Prefix::VertexAttributeType {
             panic!(
                 "Type IID prefix was expected to be Prefix::AttributeType ({:?}) but was {:?}",
@@ -43,11 +48,7 @@ impl<'a> AttributeType<'a> {
         }
         AttributeType { vertex }
     }
-}
 
-impl<'a> ConceptAPI<'a> for AttributeType<'a> {}
-
-impl<'a> TypeAPI<'a> for AttributeType<'a> {
     fn vertex<'this>(&'this self) -> TypeVertex<'this> {
         self.vertex.as_reference()
     }

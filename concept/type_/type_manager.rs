@@ -68,10 +68,9 @@ use crate::{
         IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
-use crate::type_::object_type::ObjectType;
 use crate::type_::type_writer::TypeWriter;
 use crate::type_::validation::validation::TypeValidator;
-use crate::type_::{InterfaceImplementation, OwnerAPI, PlayerAPI, WrappedTypeForError};
+use crate::type_::{InterfaceEdge, OwnerAPI, PlayerAPI, WrappedTypeForError};
 
 // TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
 pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
@@ -1089,7 +1088,14 @@ impl<'a> ReadableType for RoleType<'a> {
     }
 }
 
-pub trait KindAPI<'a>: TypeAPI<'a> {
+impl<'a> ReadableType for ObjectType<'a> {
+    type ReadOutput<'bytes> = ObjectType<'bytes>;
+    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::ReadOutput<'bytes> {
+        ObjectType::new(TypeVertex::new(b))
+    }
+}
+
+pub trait KindAPI<'a>: TypeAPI<'a> + ReadableType {
     type SelfStatic: KindAPI<'static> + 'static;
     type AnnotationType: Hash + Eq + From<Annotation> + 'static;
     const ROOT_KIND: Kind;

@@ -28,7 +28,7 @@ use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{object::Object, thing_manager::ThingManager, value::Value, ThingAPI},
-    type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI},
+    type_::{attribute_type::AttributeType, type_manager::TypeManager, TypeAPI, ObjectTypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 

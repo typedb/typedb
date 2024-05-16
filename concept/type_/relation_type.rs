@@ -42,8 +42,12 @@ pub struct RelationType<'a> {
     vertex: TypeVertex<'a>,
 }
 
-impl<'a> RelationType<'a> {
-    pub fn new(vertex: TypeVertex<'a>) -> RelationType<'_> {
+impl<'a> RelationType<'a> {}
+
+impl<'a> ConceptAPI<'a> for RelationType<'a> {}
+
+impl<'a> TypeAPI<'a> for RelationType<'a> {
+    fn new(vertex: TypeVertex<'a>) -> RelationType<'_> {
         if vertex.prefix() != Prefix::VertexRelationType {
             panic!(
                 "Type IID prefix was expected to be Prefix::RelationType ({:?}) but was {:?}",
@@ -53,11 +57,7 @@ impl<'a> RelationType<'a> {
         }
         RelationType { vertex }
     }
-}
-
-impl<'a> ConceptAPI<'a> for RelationType<'a> {}
-
-impl<'a> TypeAPI<'a> for RelationType<'a> {
+    
     fn vertex<'this>(&'this self) -> TypeVertex<'this> {
         self.vertex.as_reference()
     }

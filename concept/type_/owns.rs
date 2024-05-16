@@ -21,7 +21,8 @@ use crate::{
     },
 };
 use crate::error::ConceptWriteError;
-use crate::type_::InterfaceImplementation;
+use crate::type_::encoding_helper::OwnsEncoder;
+use crate::type_::InterfaceEdge;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<'a> {
@@ -182,27 +183,20 @@ impl<'a> IntoCanonicalTypeEdge<'a> for Owns<'a> {
     }
 }
 
-impl<'a> InterfaceImplementation<'a, ObjectType<'a>, AttributeType<'a>> for Owns<'a> {
+impl<'a> InterfaceEdge<'a, ObjectType<'a>, AttributeType<'a>> for Owns<'a> {
     type AnnotationType = OwnsAnnotation;
+    type Encoder = OwnsEncoder;
 
     fn new(owner: ObjectType<'a>, attribute: AttributeType<'a>) -> Self {
         Owns::new(owner, attribute)
     }
 
-    fn object(self) -> ObjectType<'a> {
+    fn object(&self) -> ObjectType<'a> {
         self.owner.clone()
     }
 
     fn interface(&self) -> AttributeType<'a> {
         self.attribute.clone()
-    }
-
-    fn forward_edge(&self) -> TypeEdge<'static> {
-        build_edge_owns(self.owner.vertex().into_owned(), self.attribute.vertex().into_owned())
-    }
-
-    fn reverse_edge(&self) -> TypeEdge<'static> {
-        build_edge_owns_reverse(self.attribute.vertex().into_owned(), self.owner.vertex().into_owned())
     }
 }
 
