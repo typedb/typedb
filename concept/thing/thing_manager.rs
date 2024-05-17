@@ -40,7 +40,7 @@ use crate::{
         attribute::{Attribute, AttributeIterator, AttributeOwnerIterator},
         decode_attribute_ids, encode_attribute_ids,
         entity::{Entity, EntityIterator},
-        object::{HasAttributeIterator, Object, ObjectAPI},
+        object::{HasAttributeIterator, Object, ObjectAPI, ObjectIterator},
         relation::{IndexedPlayersIterator, Relation, RelationIterator, RelationRoleIterator, RolePlayerIterator},
         value::Value,
         ThingAPI,
@@ -49,6 +49,7 @@ use crate::{
         annotation::AnnotationKey,
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::EntityType,
+        object_type::ObjectType,
         owns::OwnsAnnotation,
         relation_type::RelationType,
         role_type::RoleType,
@@ -78,6 +79,20 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexEntity.fixed_width_keys()));
         EntityIterator::new(snapshot_iterator)
+    }
+
+    pub fn get_objects_in<'this>(
+        &'this self,
+        snapshot: &'this Snapshot,
+        object_type: ObjectType<'_>,
+    ) -> ObjectIterator<'_, 3> {
+        let vertex_prefix = match object_type {
+            ObjectType::Entity(_) => Prefix::VertexEntity,
+            ObjectType::Relation(_) => Prefix::VertexRelation,
+        };
+        let prefix = ObjectVertex::build_prefix_type(vertex_prefix.prefix_id(), object_type.vertex().type_id_());
+        let snapshot_iterator = snapshot.iterate_range(KeyRange::new_within(prefix, vertex_prefix.fixed_width_keys()));
+        ObjectIterator::new(snapshot_iterator)
     }
 
     pub fn get_entities_in<'this>(

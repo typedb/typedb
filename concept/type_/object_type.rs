@@ -6,7 +6,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use encoding::{graph::type_::vertex::TypeVertex, layout::prefix::Prefix, Prefixed};
+use encoding::{graph::type_::vertex::TypeVertex, layout::prefix::Prefix, value::label::Label, Prefixed};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -148,6 +148,17 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         match self {
             ObjectType::Entity(entity) => entity.delete(snapshot, type_manager),
             ObjectType::Relation(relation) => relation.delete(snapshot, type_manager),
+        }
+    }
+
+    fn get_label<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
+        match self {
+            Self::Entity(entity_type) => entity_type.get_label(snapshot, type_manager),
+            Self::Relation(relation_type) => relation_type.get_label(snapshot, type_manager),
         }
     }
 }

@@ -16,7 +16,7 @@ use crate::value::string_bytes::StringBytes;
 pub struct Label<'a> {
     pub name: StringBytes<'a, LABEL_NAME_STRING_INLINE>,
     pub scope: Option<StringBytes<'a, LABEL_SCOPE_STRING_INLINE>>,
-    pub scoped_name: StringBytes<'a, { LABEL_SCOPED_NAME_STRING_INLINE }>,
+    pub scoped_name: StringBytes<'a, LABEL_SCOPED_NAME_STRING_INLINE>,
 }
 
 impl<'a> Label<'a> {

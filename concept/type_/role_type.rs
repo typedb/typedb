@@ -73,6 +73,14 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         type_manager.delete_role_type(snapshot, self);
         Ok(())
     }
+
+    fn get_label<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
+        type_manager.get_role_type_label(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> RoleType<'a> {
@@ -82,14 +90,6 @@ impl<'a> RoleType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         type_manager.get_role_type_is_root(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_label<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        type_manager: &'m TypeManager<Snapshot>,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
-        type_manager.get_role_type_label(snapshot, self.clone().into_owned())
     }
 
     pub fn set_name<Snapshot: WritableSnapshot>(

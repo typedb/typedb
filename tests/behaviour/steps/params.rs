@@ -163,6 +163,30 @@ impl FromStr for RootLabel {
 }
 
 #[derive(Debug, Parameter)]
+#[param(name = "object_root_label", regex = r"(entity|relation)")]
+pub(crate) struct ObjectRootLabel {
+    kind: TypeDBTypeKind,
+}
+
+impl ObjectRootLabel {
+    pub fn to_typedb(&self) -> TypeDBTypeKind {
+        self.kind
+    }
+}
+
+impl FromStr for ObjectRootLabel {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let kind = match s {
+            "entity" => TypeDBTypeKind::Entity,
+            "relation" => TypeDBTypeKind::Relation,
+            _ => unreachable!(),
+        };
+        Ok(Self { kind })
+    }
+}
+
+#[derive(Debug, Parameter)]
 #[param(name = "value_type", regex = "(boolean|long|double|string|datetime)")]
 pub(crate) enum ValueType {
     Boolean,

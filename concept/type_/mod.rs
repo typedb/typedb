@@ -7,7 +7,10 @@
 use std::collections::{HashMap, HashSet};
 
 use bytes::byte_reference::ByteReference;
-use encoding::graph::type_::{edge::TypeEdge, vertex::TypeVertex};
+use encoding::{
+    graph::type_::{edge::TypeEdge, vertex::TypeVertex},
+    value::label::Label,
+};
 use primitive::maybe_owns::MaybeOwns;
 use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -51,6 +54,12 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<(), ConceptWriteError>;
+
+    fn get_label<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError>;
 }
 
 pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> {}

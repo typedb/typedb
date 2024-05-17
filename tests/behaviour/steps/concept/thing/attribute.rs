@@ -7,6 +7,7 @@
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{attribute::Attribute, ThingAPI},
+    type_::TypeAPI,
 };
 use macro_rules_attribute::apply;
 

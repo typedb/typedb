@@ -83,6 +83,14 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
         type_manager.delete_relation_type(snapshot, self);
         Ok(())
     }
+
+    fn get_label<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
+        type_manager.get_relation_type_label(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> ObjectTypeAPI<'a> for RelationType<'a> {}
@@ -94,14 +102,6 @@ impl<'a> RelationType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         type_manager.get_relation_type_is_root(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_label<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        type_manager: &'m TypeManager<Snapshot>,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
-        type_manager.get_relation_type_label(snapshot, self.clone().into_owned())
     }
 
     pub fn set_label<Snapshot: WritableSnapshot>(

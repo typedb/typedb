@@ -17,17 +17,14 @@ use storage::{
 };
 
 use crate::{
-    edge_iterator,
+    concept_iterator, edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, value::Value, ThingAPI,
     },
     type_::{
-        attribute_type::AttributeType,
-        object_type::ObjectType,
-        owns::{Owns, OwnsAnnotation},
-        type_manager::TypeManager,
-        ObjectTypeAPI, Ordering, OwnerAPI,
+        attribute_type::AttributeType, object_type::ObjectType, owns::Owns, type_manager::TypeManager, ObjectTypeAPI,
+        Ordering, OwnerAPI,
     },
     ConceptStatus,
 };
@@ -102,10 +99,10 @@ impl<'a> ThingAPI<'a> for Object<'a> {
         }
     }
 
-    fn get_status<'m, Snapshot: ReadableSnapshot>(
+    fn get_status<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>,
+        thing_manager: &ThingManager<Snapshot>,
     ) -> ConceptStatus {
         match self {
             Object::Entity(entity) => entity.get_status(snapshot, thing_manager),
@@ -305,7 +302,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
     }
 }
 impl<'a> ObjectAPI<'a> for Object<'a> {
-    fn vertex<'this>(&'this self) -> ObjectVertex<'this> {
+    fn vertex(&self) -> ObjectVertex<'_> {
         match self {
             Object::Entity(entity) => entity.vertex(),
             Object::Relation(relation) => relation.vertex(),
@@ -323,6 +320,12 @@ impl<'a> ObjectAPI<'a> for Object<'a> {
         self.type_()
     }
 }
+
+fn storage_key_to_object(storage_key_ref: StorageKeyReference<'_>) -> Object<'_> {
+    Object::new(ObjectVertex::new(Bytes::Reference(storage_key_ref.byte_ref())))
+}
+
+concept_iterator!(ObjectIterator, Object, storage_key_to_object);
 
 fn storage_key_to_has_attribute<'a>(
     storage_key_ref: StorageKeyReference<'a>,

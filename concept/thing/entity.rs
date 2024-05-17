@@ -170,4 +170,5 @@ impl<'a> ObjectAPI<'a> for Entity<'a> {
 fn storage_key_to_entity(storage_key_ref: StorageKeyReference<'_>) -> Entity<'_> {
     Entity::new(ObjectVertex::new(Bytes::Reference(storage_key_ref.byte_ref())))
 }
+
 concept_iterator!(EntityIterator, Entity, storage_key_to_entity);

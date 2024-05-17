@@ -17,6 +17,7 @@ use storage::{sequence_number::SequenceNumber, MVCCStorage, ReadSnapshotOpenErro
 use crate::type_::{
     attribute_type::AttributeType,
     entity_type::EntityType,
+    object_type::ObjectType,
     owns::{Owns, OwnsAnnotation},
     plays::Plays,
     relates::Relates,
@@ -24,8 +25,7 @@ use crate::type_::{
     role_type::RoleType,
     type_cache::{
         kind_cache::{AttributeTypeCache, EntityTypeCache, OwnsCache, PlaysCache, RelationTypeCache, RoleTypeCache},
-        selection,
-        selection::{CacheGetter, HasCommonTypeCache, HasOwnerPlayerCache},
+        selection::{self, CacheGetter, HasCommonTypeCache, HasOwnerPlayerCache},
     },
     type_manager::KindAPI,
     Ordering, OwnerAPI, PlayerAPI,
@@ -103,8 +103,8 @@ impl TypeCache {
         })
     }
 
-    fn build_label_to_type_index<T: KindAPI<'static>, CACHE: HasCommonTypeCache<T>>(
-        type_cache_array: &Box<[Option<CACHE>]>,
+    fn build_label_to_type_index<T: KindAPI<'static>, Cache: HasCommonTypeCache<T>>(
+        type_cache_array: &[Option<Cache>],
     ) -> HashMap<Label<'static>, T> {
         type_cache_array
             .iter()
@@ -114,6 +114,11 @@ impl TypeCache {
                     .map(|cache| (cache.common_type_cache().label.clone(), cache.common_type_cache().type_.clone()))
             })
             .collect()
+    }
+
+    pub(crate) fn get_object_type(&self, label: &Label<'_>) -> Option<ObjectType<'static>> {
+        (self.get_entity_type(label).map(ObjectType::Entity))
+            .or_else(|| self.get_relation_type(label).map(ObjectType::Relation))
     }
 
     pub(crate) fn get_entity_type(&self, label: &Label<'_>) -> Option<EntityType<'static>> {

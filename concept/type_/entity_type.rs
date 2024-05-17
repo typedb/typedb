@@ -82,6 +82,14 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
         type_manager.delete_entity_type(snapshot, self);
         Ok(())
     }
+
+    fn get_label<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
+        type_manager.get_entity_type_label(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> ObjectTypeAPI<'a> for EntityType<'a> {}
@@ -93,14 +101,6 @@ impl<'a> EntityType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         type_manager.get_entity_type_is_root(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_label<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        type_manager: &'m TypeManager<Snapshot>,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
-        type_manager.get_entity_type_label(snapshot, self.clone().into_owned())
     }
 
     pub fn set_label<Snapshot: WritableSnapshot>(

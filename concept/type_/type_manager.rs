@@ -28,7 +28,7 @@ use encoding::{
             build_property_type_edge_override, build_property_type_label, build_property_type_ordering,
             build_property_type_value_type,
         },
-        vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type},
+        vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type, TypeVertex},
         vertex_generator::TypeVertexGenerator,
         Kind,
     },
@@ -44,7 +44,7 @@ use storage::{
     MVCCStorage,
 };
 
-use super::annotation::AnnotationRegex;
+use super::{annotation::AnnotationRegex, object_type::ObjectType};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
@@ -296,6 +296,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
     }
 
     get_type_methods! {
+        fn get_object_type() -> ObjectType = get_object_type;
         fn get_entity_type() -> EntityType = get_entity_type;
         fn get_relation_type() -> RelationType = get_relation_type;
         fn get_role_type() -> RoleType = get_role_type;
@@ -1024,6 +1025,13 @@ impl<'a> ReadableType for AttributeType<'a> {
     type ReadOutput<'bytes> = AttributeType<'bytes>;
     fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::ReadOutput<'bytes> {
         AttributeType::new(new_vertex_attribute_type(b))
+    }
+}
+
+impl<'a> ReadableType for ObjectType<'a> {
+    type ReadOutput<'bytes> = ObjectType<'bytes>;
+    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::ReadOutput<'bytes> {
+        ObjectType::new(TypeVertex::new(b))
     }
 }
 

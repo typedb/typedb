@@ -74,6 +74,14 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         type_manager.delete_attribute_type(snapshot, self);
         Ok(())
     }
+
+    fn get_label<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
+        type_manager.get_attribute_type_label(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> AttributeType<'a> {
@@ -100,14 +108,6 @@ impl<'a> AttributeType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<Option<ValueType>, ConceptReadError> {
         type_manager.get_attribute_type_value_type(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_label<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        type_manager: &'m TypeManager<Snapshot>,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
-        type_manager.get_attribute_type_label(snapshot, self.clone().into_owned())
     }
 
     pub fn set_label<Snapshot: WritableSnapshot>(
