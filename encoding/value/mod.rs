@@ -19,6 +19,8 @@ pub mod label;
 pub mod long_bytes;
 pub mod string_bytes;
 pub mod value_type;
+mod struct_bytes;
+mod struct_value;
 
 pub fn encode_value_u64(count: u64) -> ByteArray<BUFFER_VALUE_INLINE> {
     // LE is normally platform-native
@@ -41,5 +43,7 @@ pub trait ValueEncodable: Clone {
 
     fn encode_date_time(&self) -> DateTimeBytes;
 
-    fn encode_string<const INLINE_LENGTH: usize>(&self) -> StringBytes<INLINE_LENGTH>;
+    fn encode_string<const INLINE_LENGTH: usize>(&self) -> StringBytes<INLINE_LENGTH>; // TODO: this can't have a const parameter if we want object safety
+
+    fn encode_struct(&self, definition: &StructDefinition) -> StructBytes<64>; // TODO: this can't have a const parameter if we want object safety
 }

@@ -91,12 +91,19 @@ pub enum Prefix {
     EdgeRolePlayerReverse,
     EdgeRolePlayerIndex,
 
+    DefinitionStruct,
+    // DefinitionFunction
+
     PropertyTypeVertex,
     PropertyTypeEdge,
+    PropertyDefinitionStruct,
+    // PropertyDefinitionFunction,
 
     PropertyObjectVertex,
 
     IndexLabelToType,
+    IndexLabelToDefinitionStruct
+    // IndexLabelToDefinitionFunction
 }
 
 macro_rules! prefix_functions {

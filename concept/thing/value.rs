@@ -21,6 +21,7 @@ pub enum Value<'a> {
     Double(f64),
     DateTime(NaiveDateTime),
     String(Cow<'a, str>),
+    Struct(Cow<'a, StructValue>),
 }
 
 impl<'a> Value<'a> {
@@ -113,6 +114,13 @@ impl<'a> ValueEncodable for Value<'a> {
         match self {
             Value::String(str) => StringBytes::build_ref(str),
             _ => panic!("Cannot encoded non-String as StringBytes"),
+        }
+    }
+
+    fn encode_struct(&self, definition: &StructDefinition) -> StructBytes<64> {
+        match self {
+            Value::Struct(struct_) => StructBytes::build(struct_.as_ref(), &definition),
+            _ => panic!("Cannot encoded non-Struct as StructBytes"),
         }
     }
 }
