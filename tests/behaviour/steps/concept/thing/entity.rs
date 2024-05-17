@@ -6,7 +6,12 @@
 
 use concept::{
     error::ConceptWriteError,
-    thing::{attribute::Attribute, entity::Entity, object::Object, ObjectAPI, ThingAPI},
+    thing::{
+        attribute::Attribute,
+        entity::Entity,
+        object::{Object, ObjectAPI},
+        ThingAPI,
+    },
     type_::OwnerAPI,
 };
 use itertools::Itertools;
@@ -78,16 +83,16 @@ async fn entity_set_has(
     attribute_var: params::Var,
     may_error: params::MayError,
 ) {
-    let entity = context.entities.get(&entity_var.name).unwrap().as_ref().unwrap().entity.to_owned();
-    let attribute = context.attributes.get(&attribute_var.name).unwrap().as_ref().unwrap().to_owned();
+    let entity = context.entities[&entity_var.name].as_ref().unwrap().entity.to_owned();
+    let attribute = context.attributes[&attribute_var.name].as_ref().unwrap().to_owned();
     may_error.check(&entity_set_has_impl(context, &entity, &attribute));
 }
 
 #[apply(generic_step)]
 #[step(expr = r"entity {var} unset has: {var}")]
 async fn entity_unset_has(context: &mut Context, entity_var: params::Var, attribute_var: params::Var) {
-    let entity = context.entities.get(&entity_var.name).unwrap().as_ref().unwrap().entity.to_owned();
-    let attribute = context.attributes.get(&attribute_var.name).unwrap().as_ref().unwrap().to_owned();
+    let entity = context.entities[&entity_var.name].as_ref().unwrap().entity.to_owned();
+    let attribute = context.attributes[&attribute_var.name].as_ref().unwrap().to_owned();
     entity_unset_has_impl(context, &entity, &attribute).unwrap();
 }
 
@@ -99,8 +104,8 @@ async fn entity_get_has(
     contains_or_doesnt: params::ContainsOrDoesnt,
     attribute_var: params::Var,
 ) {
-    let entity = context.entities.get(&entity_var.name).unwrap().as_ref().unwrap().entity.to_owned();
-    let attribute = context.attributes.get(&attribute_var.name).unwrap().as_ref().unwrap();
+    let entity = context.entities[&entity_var.name].as_ref().unwrap().entity.to_owned();
+    let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
     let actuals = with_read_tx!(context, |tx| {
         entity
             .get_has(&tx.snapshot, &tx.thing_manager)
@@ -262,8 +267,8 @@ async fn attribute_owners_contains(
     owner_var: params::Var,
 ) {
     // FIXME Object owner could be relation
-    let entity = context.entities.get(&owner_var.name).unwrap().as_ref().unwrap().entity.to_owned();
-    let attribute = context.attributes.get(&attribute_var.name).unwrap().as_ref().unwrap();
+    let entity = context.entities[&owner_var.name].as_ref().unwrap().entity.to_owned();
+    let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
     let actuals = with_read_tx!(context, |tx| {
         attribute
             .get_owners(&tx.snapshot, &tx.thing_manager)

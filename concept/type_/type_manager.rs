@@ -894,7 +894,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_edge_annotation_distinct<'b>(
+    pub(crate) fn storage_unset_edge_annotation_distinct<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl IntoCanonicalTypeEdge<'b>,
@@ -912,7 +912,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_edge_annotation_unique<'b>(
+    pub(crate) fn storage_unset_edge_annotation_unique<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl IntoCanonicalTypeEdge<'b>,
@@ -930,7 +930,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_edge_annotation_key<'b>(
+    pub(crate) fn storage_unset_edge_annotation_key<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl IntoCanonicalTypeEdge<'b>,
@@ -980,7 +980,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         );
     }
 
-    pub(crate) fn storage_delete_edge_annotation_cardinality<'b>(
+    pub(crate) fn storage_unset_edge_annotation_cardinality<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl IntoCanonicalTypeEdge<'b>,

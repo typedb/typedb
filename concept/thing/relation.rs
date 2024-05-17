@@ -30,14 +30,15 @@ use crate::{
     concept_iterator, edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        attribute::Attribute,
-        object::{HasAttributeIterator, Object},
+        object::{Object, ObjectAPI},
         thing_manager::ThingManager,
-        value::Value,
-        ObjectAPI, ThingAPI,
+        ThingAPI,
     },
     type_::{
-        annotation::AnnotationDistinct, attribute_type::AttributeType, owns::{Owns, OwnsAnnotation}, relation_type::RelationType, role_type::{RoleType, RoleTypeAnnotation}, type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI
+        annotation::AnnotationDistinct,
+        relation_type::RelationType,
+        role_type::{RoleType, RoleTypeAnnotation},
+        ObjectTypeAPI, Ordering, OwnerAPI,
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
@@ -200,7 +201,7 @@ impl<'a> Relation<'a> {
         let distinct = role_annotations.contains(&RoleTypeAnnotation::Distinct(AnnotationDistinct));
         if distinct {
             debug_assert_eq!(delete_count, 1);
-            thing_manager.delete_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
+            thing_manager.unset_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
         } else {
             thing_manager.decrement_role_player(
                 snapshot,
@@ -290,7 +291,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
                 .get_ordering(snapshot, thing_manager.type_manager())
                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
             if matches!(ordering, Ordering::Ordered) {
-                thing_manager.delete_has_ordered(snapshot, self.as_reference(), owns.attribute());
+                thing_manager.unset_has_ordered(snapshot, self.as_reference(), owns.attribute());
             }
         }
 
@@ -299,7 +300,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
             .collect_cloned_vec(|(relation, role, count)| (relation.into_owned(), role.into_owned()))
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for (relation, role) in relations {
-            thing_manager.delete_role_player(snapshot, relation, self.as_reference(), role)?;
+            thing_manager.unset_role_player(snapshot, relation, self.as_reference(), role)?;
         }
 
         let players = self
@@ -309,7 +310,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         for (role, player) in players {
             // TODO: Deleting one player at a time, each of which will delete parts of the relation index, isn't optimal
             //       Instead, we could delete the players, then delete the entire index at once, if there is one
-            thing_manager.delete_role_player(snapshot, self.as_reference(), player, role)?;
+            thing_manager.unset_role_player(snapshot, self.as_reference(), player, role)?;
         }
 
         debug_assert_eq!(self.get_indexed_players(snapshot, thing_manager).count(), 0);

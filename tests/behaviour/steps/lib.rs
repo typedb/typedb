@@ -97,7 +97,6 @@ impl Context {
     }
 
     pub fn set_transaction(&mut self, txn: ActiveTransaction) {
-        debug_assert!(self.active_transaction.is_none());
         self.active_transaction = Some(txn);
     }
 

@@ -123,18 +123,18 @@ impl<'a> Owns<'a> {
         }
     }
 
-    pub fn delete_annotation<Snapshot: WritableSnapshot>(
+    pub fn unset_annotation<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         annotation: OwnsAnnotation,
     ) {
         match annotation {
-            OwnsAnnotation::Distinct(_) => type_manager.storage_delete_edge_annotation_distinct(snapshot, self.clone()),
-            OwnsAnnotation::Unique(_) => type_manager.storage_delete_edge_annotation_unique(snapshot, self.clone()),
-            OwnsAnnotation::Key(_) => type_manager.storage_delete_edge_annotation_key(snapshot, self.clone()),
+            OwnsAnnotation::Distinct(_) => type_manager.storage_unset_edge_annotation_distinct(snapshot, self.clone()),
+            OwnsAnnotation::Unique(_) => type_manager.storage_unset_edge_annotation_unique(snapshot, self.clone()),
+            OwnsAnnotation::Key(_) => type_manager.storage_unset_edge_annotation_key(snapshot, self.clone()),
             OwnsAnnotation::Cardinality(_) => {
-                type_manager.storage_delete_edge_annotation_cardinality(snapshot, self.clone())
+                type_manager.storage_unset_edge_annotation_cardinality(snapshot, self.clone())
             }
         }
     }
@@ -193,3 +193,26 @@ impl From<Annotation> for OwnsAnnotation {
         }
     }
 }
+
+impl PartialEq<Annotation> for OwnsAnnotation {
+    fn eq(&self, annotation: &Annotation) -> bool {
+        match annotation {
+            Annotation::Distinct(_) => matches!(self, Self::Distinct(_)),
+            Annotation::Unique(_) => matches!(self, Self::Unique(_)),
+            Annotation::Key(_) => matches!(self, Self::Key(_)),
+            Annotation::Cardinality(other_cardinality) => {
+                if let Self::Cardinality(cardinality) = self {
+                    cardinality == other_cardinality
+                } else {
+                    false
+                }
+            }
+
+            Annotation::Abstract(_) => false,
+            Annotation::Independent(_) => false,
+            Annotation::Regex(_) => false,
+        }
+    }
+}
+
+

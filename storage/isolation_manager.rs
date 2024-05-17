@@ -716,14 +716,7 @@ impl CommitRecord {
         let predecessor_locks = predecessor.operations().locks();
         for (write_buffer, pred_write_buffer) in self.operations().write_buffers().zip(predecessor.operations()) {
             let writes = write_buffer.writes();
-            // if writes.is_empty() && locks.is_empty() {
-            //     continue;
-            // }
-
             let predecessor_writes = pred_write_buffer.writes();
-            // if predecessor_writes.is_empty() && predecessor_locks.is_empty() {
-            //     continue;
-            // }
 
             for (key, write) in writes.iter() {
                 if let Some(predecessor_write) = predecessor_writes.get(key.bytes()) {

@@ -29,10 +29,10 @@ use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        object::Object,
+        object::{Object, ObjectAPI},
         relation::{IndexedPlayersIterator, RelationRoleIterator},
         thing_manager::ThingManager,
-        ObjectAPI, ThingAPI,
+        ThingAPI,
     },
     type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
     ByteReference, ConceptAPI, ConceptStatus,
@@ -136,7 +136,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
                 .get_ordering(snapshot, thing_manager.type_manager())
                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
             if matches!(ordering, Ordering::Ordered) {
-                thing_manager.delete_has_ordered(snapshot, self.as_reference(), owns.attribute());
+                thing_manager.unset_has_ordered(snapshot, self.as_reference(), owns.attribute());
             }
         }
 
@@ -145,7 +145,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
             .collect_cloned_vec(|(relation, role, _count)| (relation.into_owned(), role.into_owned()))
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for (relation, role) in relations_roles {
-            thing_manager.delete_role_player(snapshot, relation, self.as_reference(), role)?;
+            thing_manager.unset_role_player(snapshot, relation, self.as_reference(), role)?;
         }
 
         thing_manager.delete_entity(snapshot, self);

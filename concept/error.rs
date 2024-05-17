@@ -68,7 +68,8 @@ pub enum ConceptWriteError {
         regex: String,
         value: String,
     },
-    EntityKeyMissing {},
+    KeyMissing {},
+    KeyTaken {},
     SetHasOnDeleted {},
     SetHasMultipleKeys {},
 }
@@ -90,7 +91,8 @@ impl Error for ConceptWriteError {
             Self::RelationRoleCardinality { .. } => None,
             Self::RootModification { .. } => None,
             Self::StringAttributeRegex { .. } => None,
-            Self::EntityKeyMissing { .. } => None,
+            Self::KeyMissing { .. } => None,
+            Self::KeyTaken { .. } => None,
             Self::SetHasOnDeleted { .. } => None,
             Self::SetHasMultipleKeys { .. } => None,
         }

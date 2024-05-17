@@ -40,10 +40,10 @@ use crate::{
         attribute::{Attribute, AttributeIterator, AttributeOwnerIterator},
         decode_attribute_ids, encode_attribute_ids,
         entity::{Entity, EntityIterator},
-        object::{HasAttributeIterator, Object},
+        object::{HasAttributeIterator, Object, ObjectAPI},
         relation::{IndexedPlayersIterator, Relation, RelationIterator, RelationRoleIterator, RolePlayerIterator},
         value::Value,
-        ObjectAPI, ThingAPI,
+        ThingAPI,
     },
     type_::{
         annotation::AnnotationKey,
@@ -534,7 +534,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 if owns.get_annotations(snapshot, self.type_manager())?.contains(&OwnsAnnotation::Key(AnnotationKey))
                     && entity.get_has_type(snapshot, self, owns.attribute())?.next().is_none()
                 {
-                    errors.push(ConceptWriteError::EntityKeyMissing {})
+                    errors.push(ConceptWriteError::KeyMissing {})
                 }
             }
         }
@@ -596,7 +596,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             if let Some(cardinality) = owns.get_cardinality(snapshot, self.type_manager())? {
                 let count = owner.get_has_type(snapshot, self, attribute_type.clone())?.count();
                 if !cardinality.is_valid(count as u64) {
-                    errors.push(ConceptWriteError::EntityKeyMissing {}) // FIXME
+                    errors.push(ConceptWriteError::KeyMissing {}) // FIXME
                 }
             }
         }
@@ -785,7 +785,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         todo!()
     }
 
-    pub(crate) fn delete_has_ordered<'a>(
+    pub(crate) fn unset_has_ordered<'a>(
         &self,
         snapshot: &mut Snapshot,
         owner: impl ObjectAPI<'a>,
@@ -828,7 +828,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     ///
     /// Delete all counts of the specific role player in a given relation, and update indexes if required
     ///
-    pub fn delete_role_player<'a>(
+    pub fn unset_role_player<'a>(
         &self,
         snapshot: &mut Snapshot,
         relation: Relation<'_>,
