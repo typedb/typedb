@@ -27,6 +27,17 @@ rust_test(
     crate_features = ["bazel"],
 )
 
+rust_test(
+    name = "relation",
+    srcs = ["relation.rs"],
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = ["@vaticle_typedb_behaviour//concept/thing:relation.feature"],
+    crate_features = ["bazel"],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
