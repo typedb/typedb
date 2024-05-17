@@ -515,6 +515,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     fn thing_errors(&self, snapshot: &mut Snapshot) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
         let mut errors = Vec::new();
 
+        self.validate_ownerships(&mut errors, snapshot)?;
+
         for key in snapshot
             .iterate_writes_range(KeyRange::new_within(
                 Bytes::<0>::reference(ObjectVertex::build_prefix_prefix(Prefix::VertexEntity).bytes()),
@@ -554,6 +556,51 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         }
 
         Ok(errors)
+    }
+
+    fn validate_ownerships(
+        &self,
+        errors: &mut Vec<ConceptWriteError>,
+        snapshot: &Snapshot,
+    ) -> Result<(), ConceptReadError> {
+        for (key, write) in snapshot
+            .iterate_buffered_writes_range(KeyRange::new_within(
+                ThingEdgeHas::prefix(),
+                ThingEdgeHas::FIXED_WIDTH_ENCODING,
+            ))
+            .into_range()
+            .into_iter()
+        {
+            let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
+
+            let owner = Object::new(edge.from());
+            if !self.object_exists(snapshot, &owner)? {
+                continue;
+            }
+            let owner_type = owner.type_();
+
+            let attribute = Attribute::new(edge.to());
+            let attribute_type = attribute.type_();
+
+            let owns = owner_type
+                .get_owns_attribute(snapshot, self.type_manager(), attribute_type.clone())?
+                .expect("encountered a has edge without a corresponding owns in the schema");
+
+            if owns.is_unique(snapshot, self.type_manager())? {
+                match write {
+                    Write::Insert { .. } | Write::Put { .. } => (),
+                    Write::Delete => (),
+                }
+            }
+
+            if let Some(cardinality) = owns.get_cardinality(snapshot, self.type_manager())? {
+                let count = owner.get_has_type(snapshot, self, attribute_type.clone())?.count();
+                if !cardinality.is_valid(count as u64) {
+                    errors.push(ConceptWriteError::EntityKeyMissing {}) // FIXME
+                }
+            }
+        }
+        Ok(())
     }
 
     pub fn create_entity<'a>(
@@ -668,10 +715,17 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     pub(crate) fn unput_attribute(
         &self,
         snapshot: &mut Snapshot,
-        attribute: Attribute<'_>,
+        mut attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
+        let value = match attribute
+            .get_value(snapshot, self)
+            .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
+        {
+            Value::String(string) => ByteArray::copy(string.as_bytes()),
+            _ => ByteArray::empty(),
+        };
         let key = attribute.into_vertex().into_storage_key().into_owned_array();
-        snapshot.unput(key);
+        snapshot.unput_val(key, value);
         Ok(())
     }
 
