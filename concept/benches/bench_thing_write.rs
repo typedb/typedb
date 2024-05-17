@@ -13,15 +13,14 @@ use std::{
     path::Path,
     rc::Rc,
     sync::{Arc, OnceLock},
-    time::Duration,
 };
 
 use concept::{
-    thing::{thing_manager::ThingManager, value::Value, ObjectAPI},
+    thing::{object::ObjectAPI, thing_manager::ThingManager, value::Value},
     type_::{type_cache::TypeCache, type_manager::TypeManager, Ordering, OwnerAPI},
 };
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
-use durability::{wal::WAL, DurabilityService};
+use durability::wal::WAL;
 use encoding::{
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
     value::{label::Label, value_type::ValueType},
@@ -99,7 +98,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.bench_function("thing_write", |b| {
         let storage_path = create_tmp_dir();
         let wal = WAL::create(&storage_path).unwrap();
-        let mut storage = Arc::new(
+        let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
                 .unwrap(),
         );
@@ -140,7 +139,7 @@ impl<'a> Profiler for FlamegraphProfiler<'a> {
     fn stop_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
         std::fs::create_dir_all(benchmark_dir).unwrap();
         let flamegraph_path = benchmark_dir.join("flamegraph.svg");
-        let flamegraph_file = File::create(&flamegraph_path).expect("File system error while creating flamegraph.svg");
+        let flamegraph_file = File::create(flamegraph_path).expect("File system error while creating flamegraph.svg");
         if let Some(profiler) = self.active_profiler.take() {
             profiler.report().build().unwrap().flamegraph(flamegraph_file).expect("Error writing flamegraph");
         }
