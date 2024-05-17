@@ -228,6 +228,13 @@ type_edge_property_constructors!(
 );
 
 type_edge_property_constructors!(
+    new_property_type_edge_annotation_unique,
+    build_property_type_edge_annotation_unique,
+    is_property_type_edge_annotation_unique,
+    InfixType::PropertyAnnotationUnique
+);
+
+type_edge_property_constructors!(
     new_property_type_edge_annotation_key,
     build_property_type_edge_annotation_key,
     is_property_type_edge_annotation_key,

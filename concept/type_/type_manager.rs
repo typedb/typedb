@@ -24,8 +24,9 @@ use encoding::{
             build_property_type_annotation_distinct, build_property_type_annotation_independent,
             build_property_type_annotation_regex, build_property_type_edge_annotation_cardinality,
             build_property_type_edge_annotation_distinct, build_property_type_edge_annotation_key,
-            build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label,
-            build_property_type_ordering, build_property_type_value_type,
+            build_property_type_edge_annotation_unique, build_property_type_edge_ordering,
+            build_property_type_edge_override, build_property_type_label, build_property_type_ordering,
+            build_property_type_value_type,
         },
         vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type},
         vertex_generator::TypeVertexGenerator,
@@ -899,6 +900,24 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         edge: impl IntoCanonicalTypeEdge<'b>,
     ) {
         let annotation_property = build_property_type_edge_annotation_distinct(edge.into_type_edge());
+        snapshot.delete(annotation_property.into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn storage_set_edge_annotation_unique<'b>(
+        &self,
+        snapshot: &mut Snapshot,
+        edge: impl IntoCanonicalTypeEdge<'b>,
+    ) {
+        let annotation_property = build_property_type_edge_annotation_unique(edge.into_type_edge());
+        snapshot.put(annotation_property.into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn storage_delete_edge_annotation_unique<'b>(
+        &self,
+        snapshot: &mut Snapshot,
+        edge: impl IntoCanonicalTypeEdge<'b>,
+    ) {
+        let annotation_property = build_property_type_edge_annotation_unique(edge.into_type_edge());
         snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
 

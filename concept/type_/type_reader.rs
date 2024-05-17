@@ -37,7 +37,7 @@ use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 use crate::{
     error::ConceptReadError,
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent, AnnotationKey},
+        annotation::{Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent, AnnotationKey, AnnotationUnique},
         attribute_type::AttributeType,
         deserialise_annotation_cardinality, deserialise_annotation_regex, deserialise_ordering,
         object_type::ObjectType,
@@ -365,6 +365,7 @@ impl TypeReader {
                     }
                     Infix::PropertyAnnotationRegex => Annotation::Regex(deserialise_annotation_regex(value)),
                     | Infix::_PropertyAnnotationLast
+                    | Infix::PropertyAnnotationUnique
                     | Infix::PropertyAnnotationKey
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
@@ -413,6 +414,7 @@ impl TypeReader {
                 match annotation_key.infix() {
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
                     Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
+                    Infix::PropertyAnnotationUnique => Annotation::Unique(AnnotationUnique),
                     Infix::PropertyAnnotationKey => Annotation::Key(AnnotationKey),
                     Infix::PropertyAnnotationCardinality => {
                         Annotation::Cardinality(deserialise_annotation_cardinality(value))

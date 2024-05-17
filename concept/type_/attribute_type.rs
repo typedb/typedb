@@ -257,6 +257,7 @@ impl From<Annotation> for AttributeTypeAnnotation {
             Annotation::Regex(annotation) => AttributeTypeAnnotation::Regex(annotation),
 
             Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Attribute type."),
+            Annotation::Unique(_) => unreachable!("Unique annotation not available for Attribute type."),
             Annotation::Key(_) => unreachable!("Key annotation not available for Attribute type."),
             Annotation::Cardinality(_) => unreachable!("Cardinality annotation not available for Attribute type."),
         }
