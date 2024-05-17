@@ -62,16 +62,24 @@ impl fmt::Debug for HexBytesFormatter<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         const GROUP: usize = 2;
         const BREAK: usize = 16;
+        f.write_char('[')?;
+        if f.alternate() {
+            f.write_str("\n    ")?;
+        }
         for (i, byte) in self.0.iter().enumerate() {
             write!(f, "{:02X}", byte)?;
             if i + 1 < self.0.len() {
                 if f.alternate() && (i + 1) % BREAK == 0 {
-                    f.write_char('\n')?;
+                    f.write_str("\n    ")?;
                 } else if (i + 1) % GROUP == 0 {
                     f.write_char(' ')?;
                 }
             }
         }
+        if f.alternate() {
+            f.write_char('\n')?;
+        }
+        f.write_char(']')?;
         Ok(())
     }
 }
