@@ -13,6 +13,7 @@ macro_rules! concept_iterator {
             snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator<'a, S>>,
         }
 
+        #[allow(unused)]
         impl<'a, const S: usize> $name<'a, S> {
             pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator<'a, S>) -> Self {
                 $name { snapshot_iterator: Some(snapshot_iterator) }

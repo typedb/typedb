@@ -53,7 +53,7 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
     ) -> Result<(), ConceptWriteError>;
 }
 
-pub trait ObjectTypeAPI<'a>: TypeAPI<'a> {}
+pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> {}
 
 pub trait OwnerAPI<'a>: TypeAPI<'a> {
     fn set_owns<Snapshot: WritableSnapshot>(

@@ -20,9 +20,10 @@ use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, ObjectAPI, ThingAPI,
+        attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, value::Value, ObjectAPI,
+        ThingAPI,
     },
-    type_::object_type::ObjectType,
+    type_::{attribute_type::AttributeType, object_type::ObjectType, owns::Owns, type_manager::TypeManager, ObjectTypeAPI},
     ConceptStatus,
 };
 
@@ -59,37 +60,6 @@ impl<'a> Object<'a> {
         match self {
             Self::Relation(relation) => relation,
             Self::Entity(entity) => panic!("called `Object::unwrap_relation()` on an `Entity` value: {entity:?}"),
-        }
-    }
-
-    fn set_has<Snapshot: WritableSnapshot>(
-        &self,
-        snapshot: &mut Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
-        attribute: Attribute<'_>,
-    ) -> Result<(), ConceptWriteError> {
-        match self {
-            Object::Entity(entity) => entity.set_has_unordered(snapshot, thing_manager, attribute),
-            Object::Relation(relation) => relation.set_has_unordered(snapshot, thing_manager, attribute),
-        }
-    }
-
-    pub(crate) fn delete_has_many<Snapshot: WritableSnapshot>(
-        &self,
-        snapshot: &mut Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
-        attribute: Attribute<'_>,
-        count: u64,
-    ) -> Result<(), ConceptWriteError> {
-        match self {
-            Object::Entity(entity) => {
-                todo!()
-                // entity.delete_has_many(thing_manager, attribute, count)
-            }
-            Object::Relation(relation) => {
-                todo!()
-                // relation.delete_has_many(thing_manager, attribute, count)
-            }
         }
     }
 
@@ -174,6 +144,10 @@ impl<'a> ObjectAPI<'a> for Object<'a> {
             Object::Entity(entity) => entity.into_vertex(),
             Object::Relation(relation) => relation.into_vertex(),
         }
+    }
+
+    fn type_(&self) -> impl ObjectTypeAPI<'static> {
+        self.type_()
     }
 }
 

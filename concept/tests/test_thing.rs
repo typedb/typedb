@@ -9,7 +9,7 @@
 use std::{borrow::Cow, sync::Arc};
 
 use concept::{
-    thing::{object::Object, thing_manager::ThingManager, value::Value},
+    thing::{object::Object, thing_manager::ThingManager, value::Value, ObjectAPI},
     type_::{
         annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent},
         attribute_type::AttributeTypeAnnotation,

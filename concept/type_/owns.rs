@@ -36,8 +36,8 @@ impl<'a> Owns<'a> {
         self.owner.clone()
     }
 
-    pub fn attribute(&self) -> AttributeType<'a> {
-        self.attribute.clone()
+    pub fn attribute(&self) -> AttributeType<'static> {
+        self.attribute.clone().into_owned()
     }
 
     pub fn is_distinct<'this, Snapshot: ReadableSnapshot>(
@@ -73,7 +73,7 @@ impl<'a> Owns<'a> {
         type_manager.storage_set_owns_overridden(snapshot, self.clone().into_owned(), overridden)
     }
 
-    pub(crate) fn get_annotations<'this, Snapshot: ReadableSnapshot>(
+    pub fn get_annotations<'this, Snapshot: ReadableSnapshot>(
         &'this self,
         snapshot: &Snapshot,
         type_manager: &'this TypeManager<Snapshot>,

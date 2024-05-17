@@ -70,6 +70,7 @@ pub enum ConceptWriteError {
     },
     EntityKeyMissing {},
     SetHasOnDeleted {},
+    SetHasMultipleKeys {},
 }
 
 impl fmt::Display for ConceptWriteError {
@@ -91,6 +92,7 @@ impl Error for ConceptWriteError {
             Self::StringAttributeRegex { .. } => None,
             Self::EntityKeyMissing { .. } => None,
             Self::SetHasOnDeleted { .. } => None,
+            Self::SetHasMultipleKeys { .. } => None,
         }
     }
 }

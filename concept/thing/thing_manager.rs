@@ -6,7 +6,7 @@
 
 use std::{borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
 
-use bytes::Bytes;
+use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::{
         thing::{
@@ -246,7 +246,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     pub(crate) fn has_attribute<'a>(
         &self,
         snapshot: &Snapshot,
-        owner: impl ObjectAPI<'a>,
+        owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<bool, ConceptReadError> {
@@ -274,9 +274,9 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     pub(crate) fn get_has_unordered<'this, 'a>(
         &'this self,
         snapshot: &'this Snapshot,
-        owner: impl ObjectAPI<'a>,
+        owner: &impl ObjectAPI<'a>,
     ) -> HasAttributeIterator<'this, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
-        let prefix = ThingEdgeHas::prefix_from_object(owner.into_vertex());
+        let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
         HasAttributeIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
         )
@@ -285,7 +285,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     pub(crate) fn get_has_type_unordered<'this, 'a>(
         &'this self,
         snapshot: &'this Snapshot,
-        owner: impl ObjectAPI<'a>,
+        owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
     ) -> Result<HasAttributeIterator<'this, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }>, ConceptReadError>
     {
@@ -295,8 +295,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
             }
             Some(value_type) => value_type,
         };
-        let prefix =
-            ThingEdgeHas::prefix_from_object_to_type(owner.into_vertex(), value_type, attribute_type.into_vertex());
+        let prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), value_type, attribute_type.into_vertex());
         Ok(HasAttributeIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
         ))
@@ -305,10 +304,10 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     pub(crate) fn get_has_type_ordered<'this, 'a>(
         &'this self,
         snapshot: &Snapshot,
-        owner: impl ObjectAPI<'a>,
+        owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
     ) -> Result<Vec<Attribute<'static>>, ConceptReadError> {
-        let key = HAS_ORDER_PROPERTY_FACTORY.build(owner.into_vertex(), attribute_type.vertex());
+        let key = HAS_ORDER_PROPERTY_FACTORY.build(owner.vertex(), attribute_type.vertex());
         let value_type = match attribute_type.get_value_type(snapshot, self.type_manager())? {
             None => {
                 todo!("Handle missing value type - for abstract attributes. Or assume this will never happen")
@@ -410,7 +409,11 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
             })
     }
 
-    fn object_exists<'a>(&self, snapshot: &Snapshot, owner: &impl ObjectAPI<'a>) -> Result<bool, ConceptReadError> {
+    pub(crate) fn object_exists<'a>(
+        &self,
+        snapshot: &Snapshot,
+        owner: &impl ObjectAPI<'a>,
+    ) -> Result<bool, ConceptReadError> {
         match snapshot.get::<0>(owner.vertex().as_storage_key().as_reference()) {
             Ok(value) => Ok(value.is_some()),
             Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
@@ -424,8 +427,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     }
 
     pub fn finalise(self, snapshot: &mut Snapshot) -> Result<(), Vec<ConceptWriteError>> {
-        self.cleanup_relations(snapshot).map_err(|err| Vec::from([err]))?;
-        self.cleanup_attributes(snapshot).map_err(|err| Vec::from([err]))?;
+        self.cleanup_relations(snapshot).map_err(|err| vec![err])?;
+        self.cleanup_attributes(snapshot).map_err(|err| vec![err])?;
         let thing_errors = self.thing_errors(snapshot);
         match thing_errors {
             Ok(errors) => {
@@ -487,7 +490,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             }
         }
 
-        for (key, write) in snapshot
+        for (key, _write) in snapshot
             .iterate_buffered_writes_range(KeyRange::new_within(
                 ThingEdgeHas::prefix(),
                 ThingEdgeHas::FIXED_WIDTH_ENCODING,
@@ -495,18 +498,15 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             .into_range()
             .into_iter()
             .filter(|(_, write)| matches!(write, Write::Delete))
-            .into_iter()
         {
-            if matches!(write, Write::Delete) {
-                let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
-                let attribute = Attribute::new(edge.to());
-                let is_independent = attribute
-                    .type_()
-                    .is_independent(snapshot, self.type_manager())
-                    .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-                if !is_independent && !attribute.has_owners(snapshot, self) {
-                    attribute.delete(snapshot, self)?;
-                }
+            let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
+            let attribute = Attribute::new(edge.to());
+            let is_independent = attribute
+                .type_()
+                .is_independent(snapshot, self.type_manager())
+                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+            if !is_independent && !attribute.has_owners(snapshot, self) {
+                attribute.delete(snapshot, self)?;
             }
         }
         Ok(())
@@ -678,29 +678,24 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     pub(crate) fn set_has_unordered<'a>(
         &self,
         snapshot: &mut Snapshot,
-        owner: impl ObjectAPI<'a>,
+        owner: &impl ObjectAPI<'a>,
         attribute: Attribute<'_>,
-    ) -> Result<(), ConceptWriteError> {
-        if !self.object_exists(snapshot, &owner)? {
-            return Err(ConceptWriteError::SetHasOnDeleted {});
-        }
-
+    ) {
         // TODO: handle duplicates
         // note: we always re-put the attribute. TODO: optimise knowing when the attribute pre-exists.
         snapshot.put(attribute.vertex().as_storage_key().into_owned_array());
         owner.set_modified(snapshot, self);
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
         snapshot.put_val(has.into_storage_key().into_owned_array(), encode_value_u64(1));
-        let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.into_vertex());
+        let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.vertex());
         snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), encode_value_u64(1));
-        Ok(())
     }
 
-    pub(crate) fn unset_has<'a>(&self, snapshot: &mut Snapshot, owner: impl ObjectAPI<'a>, attribute: Attribute<'_>) {
+    pub(crate) fn unset_has<'a>(&self, snapshot: &mut Snapshot, owner: &impl ObjectAPI<'a>, attribute: Attribute<'_>) {
         owner.set_modified(snapshot, self);
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
         snapshot.delete(has.into_storage_key().into_owned_array());
-        let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.into_vertex());
+        let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.vertex());
         snapshot.delete(has_reverse.into_storage_key().into_owned_array());
     }
 
@@ -714,7 +709,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         owner.set_modified(snapshot, self);
         let key = HAS_ORDER_PROPERTY_FACTORY.build(owner.into_vertex(), attribute_type.into_vertex());
         let value = encode_attribute_ids(attributes.into_iter().map(|attr| attr.into_vertex().attribute_id()));
-        snapshot.put_val(key.into_storage_key().into_owned_array(), value)
+        snapshot.put_val(key.into_storage_key().into_owned_array(), value);
     }
 
     pub(crate) fn increment_has<'a>(
@@ -825,15 +820,12 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             role_type.clone().into_vertex(),
         );
 
-        let mut count = 0;
-        let rp_count =
-            snapshot.get_mapped(role_player.as_storage_key().as_reference(), |val| decode_value_u64(val)).unwrap();
-        let rp_reverse_count = snapshot
-            .get_mapped(role_player_reverse.as_storage_key().as_reference(), |val| decode_value_u64(val))
-            .unwrap();
-        debug_assert_eq!(&rp_count, &rp_reverse_count);
+        let rp_count = snapshot.get_mapped(role_player.as_storage_key().as_reference(), decode_value_u64).unwrap();
+        let rp_reverse_count =
+            snapshot.get_mapped(role_player_reverse.as_storage_key().as_reference(), decode_value_u64).unwrap();
+        debug_assert_eq!(&rp_count, &rp_reverse_count, "roleplayer count mismatch!");
 
-        count = rp_count.unwrap_or(0) + 1;
+        let count = rp_count.unwrap_or(0) + 1;
         let reverse_count = rp_reverse_count.unwrap_or(0) + 1;
         snapshot.put_val(role_player.as_storage_key().into_owned_array(), encode_value_u64(count));
         snapshot.put_val(role_player_reverse.as_storage_key().into_owned_array(), encode_value_u64(reverse_count));
@@ -874,7 +866,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         let rp_count = snapshot.get_mapped(role_player.as_storage_key().as_reference(), decode_value_u64).unwrap();
         let rp_reverse_count =
             snapshot.get_mapped(role_player_reverse.as_storage_key().as_reference(), decode_value_u64).unwrap();
-        debug_assert_eq!(&rp_count, &rp_reverse_count);
+        debug_assert_eq!(&rp_count, &rp_reverse_count, "roleplayer count mismatch!");
 
         let count = rp_count.unwrap() - decrement_count;
         let reverse_count = rp_reverse_count.unwrap() - decrement_count;
@@ -912,7 +904,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     ) -> Result<(), ConceptWriteError> {
         let players = relation
             .get_players(snapshot, self)
-            .collect_cloned_vec(|(roleplayer, count)| (roleplayer.player().into_owned(), roleplayer.role_type()))
+            .collect_cloned_vec(|(roleplayer, _count)| (roleplayer.player().into_owned(), roleplayer.role_type()))
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for (rp_player, rp_role_type) in players {
             debug_assert!(!(rp_player == Object::new(rp_player.vertex()) && role_type == rp_role_type));

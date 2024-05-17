@@ -37,13 +37,7 @@ use crate::{
         ObjectAPI, ThingAPI,
     },
     type_::{
-        annotation::AnnotationDistinct,
-        attribute_type::AttributeType,
-        owns::Owns,
-        relation_type::RelationType,
-        role_type::{RoleType, RoleTypeAnnotation},
-        type_manager::TypeManager,
-        Ordering, OwnerAPI,
+        annotation::AnnotationDistinct, attribute_type::AttributeType, owns::{Owns, OwnsAnnotation}, relation_type::RelationType, role_type::{RoleType, RoleTypeAnnotation}, type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
@@ -55,7 +49,11 @@ pub struct Relation<'a> {
 
 impl<'a> Relation<'a> {
     pub fn new(vertex: ObjectVertex<'a>) -> Self {
-        debug_assert_eq!(vertex.prefix(), Prefix::VertexRelation);
+        debug_assert_eq!(
+            vertex.prefix(),
+            Prefix::VertexRelation,
+            "non-relation prefix when constructing from a vertex"
+        );
         Relation { vertex }
     }
 
@@ -71,95 +69,6 @@ impl<'a> Relation<'a> {
         self.vertex.bytes()
     }
 
-    pub fn has_attribute<Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
-        attribute_type: AttributeType<'static>,
-        value: Value<'_>,
-    ) -> Result<bool, ConceptReadError> {
-        thing_manager.has_attribute(snapshot, self.as_reference(), attribute_type, value)
-    }
-
-    pub fn get_has<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &'m Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>,
-    ) -> HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
-        thing_manager.get_has_unordered(snapshot, self.as_reference())
-    }
-
-    pub fn get_has_type<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &'m Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }>, ConceptReadError> {
-        thing_manager.get_has_type_unordered(snapshot, self.as_reference(), attribute_type)
-    }
-
-    pub fn set_has_unordered<Snapshot: WritableSnapshot>(
-        &self,
-        snapshot: &mut Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
-        attribute: Attribute<'_>,
-    ) -> Result<(), ConceptWriteError> {
-        // TODO: validate schema
-        let owns = self
-            .get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        let ordering = owns
-            .get_ordering(snapshot, thing_manager.type_manager())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        match ordering {
-            Ordering::Unordered => {
-                thing_manager.set_has_unordered(snapshot, self.as_reference(), attribute.as_reference())
-            }
-            Ordering::Ordered => {
-                todo!("throw a good error")
-            }
-        }
-    }
-
-    pub fn delete_has_unordered<Snapshot: WritableSnapshot>(
-        &self,
-        snapshot: &mut Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
-        attribute: Attribute<'static>,
-    ) -> Result<(), ConceptWriteError> {
-        let owns = self
-            .get_type_owns(snapshot, thing_manager.type_manager(), attribute.type_())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        let ordering = owns
-            .get_ordering(snapshot, thing_manager.type_manager())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        match ordering {
-            Ordering::Unordered => {
-                thing_manager.unset_has(snapshot, self.as_reference(), attribute);
-                Ok(())
-            }
-            Ordering::Ordered => {
-                todo!("throw good error")
-            }
-        }
-    }
-
-    fn get_type_owns<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        type_manager: &'m TypeManager<Snapshot>,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<Owns<'m>, ConceptReadError> {
-        let owns = self.type_().get_owns_attribute(snapshot, type_manager, attribute_type)?;
-        match owns {
-            None => {
-                todo!("throw useful schema error")
-            }
-            Some(owns) => Ok(owns),
-        }
-    }
-    //
-    //
     // pub fn delete_has_single(
     //     &self, thing_manager: &ThingManager<Snapshot>, attribute: Attribute<'_>,
     // ) -> Result<(), ConceptWriteError> {
@@ -368,7 +277,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         let mut has_attr_type_deleted = HashSet::new();
         for attr in has {
             has_attr_type_deleted.add(attr.type_());
-            thing_manager.unset_has(snapshot, self.as_reference(), attr);
+            thing_manager.unset_has(snapshot, &self, attr);
         }
 
         for owns in self
@@ -417,6 +326,10 @@ impl<'a> ObjectAPI<'a> for Relation<'a> {
 
     fn into_vertex(self) -> ObjectVertex<'a> {
         self.vertex
+    }
+
+    fn type_(&self) -> impl ObjectTypeAPI<'static> {
+        self.type_()
     }
 }
 

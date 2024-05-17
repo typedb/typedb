@@ -17,7 +17,7 @@ use std::{
 };
 
 use concept::{
-    thing::{thing_manager::ThingManager, value::Value},
+    thing::{thing_manager::ThingManager, value::Value, ObjectAPI},
     type_::{type_cache::TypeCache, type_manager::TypeManager, Ordering, OwnerAPI},
 };
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};

@@ -112,7 +112,8 @@ impl<'a> EntityType<'a> {
         if self.is_root(snapshot, type_manager)? {
             Err(ConceptWriteError::RootModification)
         } else {
-            Ok(type_manager.storage_set_label(snapshot, self.clone().into_owned(), label))
+            type_manager.storage_set_label(snapshot, self.clone().into_owned(), label);
+            Ok(())
         }
     }
 

@@ -52,7 +52,7 @@ pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
         ActiveTransaction::Read(_) => {}
         ActiveTransaction::Write(tx) => may_error.check(&tx.commit()),
         ActiveTransaction::Schema(tx) => may_error.check(&tx.commit()),
-    };
+    }
 }
 
 #[apply(generic_step)]
@@ -62,7 +62,7 @@ pub async fn transaction_closes(context: &mut Context) {
         ActiveTransaction::Read(tx) => tx.close(),
         ActiveTransaction::Write(tx) => tx.close(),
         ActiveTransaction::Schema(tx) => tx.close(),
-    };
+    }
 }
 
 #[apply(generic_step)]

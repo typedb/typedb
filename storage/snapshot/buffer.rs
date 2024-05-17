@@ -138,7 +138,7 @@ impl WriteBuffer {
         match self.writes.remove(&key) {
             Some(Write::Put { value, .. }) => {
                 if value != expected_value {
-                    panic!("Unexpected value when trying to unput")
+                    panic!("Unexpected value `{:?}` when trying to unput; expected `{:?}`", value, expected_value)
                 }
             }
             Some(_other_write) => panic!("Attempting to unput a key that was inserted or deleted"),

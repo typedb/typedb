@@ -61,9 +61,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         self.thing_manager.finalise(&mut self.snapshot)?;
         drop(self.type_manager);
         // TODO: pass error up
-        self.snapshot.commit().unwrap_or_else(|_| {
-            panic!("Failed to commit snapshot");
-        });
+        self.snapshot.commit().unwrap_or_else(|_| panic!("Failed to commit snapshot"));
         Ok(())
     }
 

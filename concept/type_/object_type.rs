@@ -14,7 +14,7 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays, relation_type::RelationType,
-        role_type::RoleType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
     ConceptAPI,
 };
@@ -151,6 +151,8 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         }
     }
 }
+
+impl<'a> ObjectTypeAPI<'a> for ObjectType<'a> {}
 
 impl<'a> PlayerAPI<'a> for ObjectType<'a> {
     fn set_plays<Snapshot: WritableSnapshot>(
