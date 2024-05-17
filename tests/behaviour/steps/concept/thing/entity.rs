@@ -6,8 +6,10 @@
 
 use concept::{
     error::ConceptWriteError,
-    thing::{attribute::Attribute, entity::Entity, object::Object, ThingAPI},
+    thing::{attribute::Attribute, entity::Entity, object::Object, ObjectAPI, ThingAPI},
+    type_::OwnerAPI,
 };
+use itertools::Itertools;
 use macro_rules_attribute::apply;
 
 use crate::{
@@ -127,6 +129,45 @@ async fn entity_get_has_type(
             .unwrap()
             .collect_cloned_vec(|(attribute, _count)| attribute.into_owned())
             .unwrap()
+    });
+    contains_or_doesnt.check(std::slice::from_ref(attribute), &actuals);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"entity {var} get has with annotations: {annotations}; {contains_or_doesnt}: {var}")]
+async fn entity_get_has_with_annotations(
+    context: &mut Context,
+    entity_var: params::Var,
+    annotations: params::Annotations,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    attribute_var: params::Var,
+) {
+    let entity = context.entities[&entity_var.name].as_ref().unwrap().entity.to_owned();
+    let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
+    let annotations = annotations.into_typedb().into_iter().map(|anno| anno.into()).collect_vec();
+    let actuals = with_read_tx!(context, |tx| {
+        let attribute_types = entity
+            .type_()
+            .get_owns(&tx.snapshot, &tx.type_manager)
+            .unwrap()
+            .into_iter()
+            .filter(|owns| {
+                annotations
+                    .iter()
+                    .all(|anno| owns.get_annotations(&tx.snapshot, &tx.type_manager).unwrap().contains(anno))
+            })
+            .map(|owns| owns.attribute())
+            .collect_vec();
+        attribute_types
+            .into_iter()
+            .flat_map(|attribute_type| {
+                entity
+                    .get_has_type(&tx.snapshot, &tx.thing_manager, attribute_type)
+                    .unwrap()
+                    .collect_cloned_vec(|(attribute, _count)| attribute.into_owned())
+                    .unwrap()
+            })
+            .collect_vec()
     });
     contains_or_doesnt.check(std::slice::from_ref(attribute), &actuals);
 }

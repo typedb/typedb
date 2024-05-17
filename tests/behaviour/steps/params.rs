@@ -16,6 +16,7 @@ use encoding::{
     graph::type_::Kind as TypeDBTypeKind,
     value::{label::Label as TypeDBLabel, value_type::ValueType as TypeDBValueType},
 };
+use itertools::Itertools;
 
 #[derive(Debug, Default, Parameter)]
 #[param(name = "may_error", regex = "(fails|)")]
@@ -225,7 +226,7 @@ impl FromStr for Value {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "annotation", regex = r"(@[a-z]+\([^\)]+\)|@[a-z]+)")]
+#[param(name = "annotation", regex = r"@[a-z]+(?:\([^)]+\))?")]
 pub(crate) struct Annotation {
     typedb_annotation: TypeDBAnnotation,
 }
@@ -255,6 +256,39 @@ impl FromStr for Annotation {
             _ => panic!("Unrecognised (or unimplemented) annotation: {s}"),
         };
         Ok(Self { typedb_annotation })
+    }
+}
+
+#[derive(Debug, Parameter)]
+#[param(name = "annotations", regex = r"@[a-z]+(?:\([^)]+\))?(?: +@[a-z]+(?:\([^)]+\))?)?")]
+pub(crate) struct Annotations {
+    typedb_annotations: Vec<TypeDBAnnotation>,
+}
+
+impl Annotations {
+    pub fn into_typedb(self) -> Vec<TypeDBAnnotation> {
+        self.typedb_annotations
+    }
+}
+
+impl FromStr for Annotations {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut cursor = 0;
+
+        let typedb_annotations = std::iter::from_fn(|| {
+            if s.len() >= cursor {
+                None
+            } else {
+                let next_at = if let Some(index) = s[cursor..].find('@') { cursor + index } else { s.len() };
+                let anno = s[cursor..next_at].trim();
+                cursor = next_at;
+                Some(anno.parse::<Annotation>().map(|anno| anno.typedb_annotation))
+            }
+        })
+        .try_collect()?;
+
+        Ok(Self { typedb_annotations })
     }
 }
 
