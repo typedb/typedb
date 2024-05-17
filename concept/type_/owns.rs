@@ -21,7 +21,7 @@ use crate::{
     },
 };
 use crate::error::ConceptWriteError;
-use crate::type_::encoding_helper::OwnsEncoder;
+use crate::type_::type_manager::encoding_helper::OwnsEncoder;
 use crate::type_::InterfaceEdge;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

@@ -15,6 +15,7 @@ use crate::{
         annotation::AnnotationCardinality, attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType,
     },
 };
+use crate::type_::type_manager::validation::SchemaValidationError;
 
 #[derive(Debug)]
 pub struct ConceptError {

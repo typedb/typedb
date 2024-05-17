@@ -17,10 +17,10 @@ use storage::snapshot::WritableSnapshot;
 use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
 use crate::type_::type_manager::KindAPI;
-use crate::type_::type_reader::TypeReader;
+use crate::type_::type_manager::type_reader::TypeReader;
 use crate::type_::{InterfaceEdge, IntoCanonicalTypeEdge, Ordering, serialise_ordering, TypeAPI};
 use crate::type_::attribute_type::AttributeType;
-use crate::type_::encoding_helper::EdgeEncoder;
+use crate::type_::type_manager::encoding_helper::EdgeEncoder;
 
 pub struct TypeWriter<Snapshot: WritableSnapshot> {
     snapshot: PhantomData<Snapshot>,
@@ -53,7 +53,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
     pub(crate) fn storage_put_supertype<K>(snapshot: &mut Snapshot, subtype: K, supertype: K)
-        where K: KindAPI<'static, SelfStatic=K>
+        where K: KindAPI<'static>
     {
         let sub = build_edge_sub(subtype.clone().into_vertex(), supertype.clone().into_vertex());
         snapshot.put(sub.into_storage_key().into_owned_array());
@@ -62,7 +62,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
     pub(crate) fn storage_delete_supertype<T>(snapshot: &mut Snapshot, subtype: T)
-    where T: KindAPI<'static, SelfStatic=T>
+    where T: KindAPI<'static>
     {
         let supertype = TypeReader::get_supertype(snapshot, subtype.clone()).unwrap().unwrap();
         let sub = build_edge_sub(subtype.clone().into_vertex(), supertype.clone().into_vertex());

@@ -11,25 +11,21 @@ use std::{
     sync::Arc,
 };
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::byte_array::ByteArray;
 use encoding::{
+    AsBytes,
     graph::type_::{
         edge::TypeEdge,
+        Kind,
         property::{
             build_property_type_annotation_abstract, build_property_type_annotation_cardinality,
             build_property_type_annotation_distinct, build_property_type_annotation_independent,
             build_property_type_annotation_regex, build_property_type_edge_annotation_cardinality,
-            build_property_type_edge_annotation_distinct, build_property_type_edge_annotation_key,
-            build_property_type_edge_annotation_unique, build_property_type_edge_ordering,
-            build_property_type_edge_override, build_property_type_label, build_property_type_ordering,
-            build_property_type_value_type,
-        },
-        vertex::{
-            new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type,
-            TypeVertex,
+            build_property_type_edge_annotation_distinct, build_property_type_edge_annotation_key
+            ,
+            build_property_type_ordering,
         },
         vertex_generator::TypeVertexGenerator,
-        Kind,
     },
     layout::prefix::Prefix,
     value::{
@@ -41,9 +37,10 @@ use encoding::{
 use primitive::maybe_owns::MaybeOwns;
 use storage::{
     durability_client::DurabilityClient,
-    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
 };
+use type_cache::TypeCache;
 
 use super::{annotation::AnnotationRegex, object_type::ObjectType};
 use crate::{
@@ -52,20 +49,32 @@ use crate::{
         annotation::{Annotation, AnnotationAbstract, AnnotationCardinality},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::{EntityType, EntityTypeAnnotation},
+        IntoCanonicalTypeEdge,
+        ObjectTypeAPI,
+        Ordering,
         owns::{Owns, OwnsAnnotation},
         plays::Plays,
-        relates::Relates,
-        relation_type::{RelationType, RelationTypeAnnotation},
+        relates::Relates, relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
-        serialise_annotation_cardinality, serialise_ordering,
-        type_cache::TypeCache,
-        type_reader::TypeReader,
-        IntoCanonicalTypeEdge, ObjectTypeAPI, Ordering, TypeAPI,
+        serialise_annotation_cardinality,
+        serialise_ordering, type_manager::type_reader::TypeReader, TypeAPI,
     },
 };
+<<<<<<< HEAD
 use crate::type_::type_writer::TypeWriter;
 use crate::type_::validation::validation::TypeValidator;
+=======
+use crate::type_::object_type::ObjectType;
+use type_writer::TypeWriter;
+use validation::validation::TypeValidator;
+>>>>>>> 45e92fb6b (Letting TypeReader not return SelfStatic simplifies things a lot)
 use crate::type_::{InterfaceEdge, OwnerAPI, PlayerAPI, WrappedTypeForError};
+
+pub mod validation;
+pub mod type_cache;
+pub mod encoding_helper;
+pub mod type_reader;
+mod type_writer;
 
 // TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
 pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
@@ -773,7 +782,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     pub(crate) fn set_supertype<K>(&self, snapshot: &mut Snapshot, subtype: K, supertype: K) -> Result<(), ConceptWriteError>
-    where K: KindAPI<'static, SelfStatic = K>
+    where K: KindAPI<'static>
     {
         // TODO: Validation. This may have to split per type.
         TypeValidator::validate_sub_does_not_create_cycle(snapshot, subtype.clone(), supertype.clone())

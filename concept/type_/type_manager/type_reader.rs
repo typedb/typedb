@@ -54,23 +54,23 @@ use crate::{
         IntoCanonicalTypeEdge, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
-use crate::type_::encoding_helper::EdgeEncoder;
+use crate::type_::type_manager::encoding_helper::EdgeEncoder;
 use crate::type_::InterfaceEdge;
 
 pub struct TypeReader {}
 
 impl TypeReader {
-    pub(crate) fn get_labelled_type<'a, T>(
+    pub(crate) fn get_labelled_type<T>(
         snapshot: &impl ReadableSnapshot,
         label: &Label<'_>,
-    ) -> Result<Option<T::SelfStatic>, ConceptReadError>
+    ) -> Result<Option<T>, ConceptReadError>
     where
-        T: TypeAPI<'a>,
+        T: TypeAPI<'static>,
     {
         let key = LabelToTypeVertexIndex::build(label).into_storage_key();
         match snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {
             Ok(None) => Ok(None),
-            Ok(Some(value)) => Ok(Some(T::SelfStatic::read_from(Bytes::Array(value)))),
+            Ok(Some(value)) => Ok(Some(T::read_from(Bytes::Array(value)))),
             Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
         }
     }
@@ -78,7 +78,7 @@ impl TypeReader {
     pub(crate) fn get_supertype<T>(
         snapshot: &impl ReadableSnapshot,
         subtype: T,
-    ) -> Result<Option<T::SelfStatic>, ConceptReadError>
+    ) -> Result<Option<T>, ConceptReadError>
     where
         T: TypeAPI<'static>,
     {
@@ -92,15 +92,13 @@ impl TypeReader {
     pub fn get_supertypes_transitive<T>(
         snapshot: &impl ReadableSnapshot,
         subtype: T,
-    ) -> Result<Vec<T::SelfStatic>, ConceptReadError>
+    ) -> Result<Vec<T>, ConceptReadError>
     where
-        T: KindAPI<'static, SelfStatic=T>,
+        T: KindAPI<'static>,
     {
-        // If the T::SelfStatic = T ever becomes a problem, Introduce public methods without this constraint, and private methods with the constraint.
-        // The public then converts T into T::SelfStatic and calls the private.
         // WARN: supertypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut supertype = Some(type_)`
-        let mut supertypes: Vec<T::SelfStatic> = Vec::new();
+        let mut supertypes: Vec<T> = Vec::new();
         let mut supertype_opt = TypeReader::get_supertype(snapshot, subtype.clone())?;
         while let Some(supertype) = supertype_opt {
             supertypes.push(supertype.clone());
@@ -112,16 +110,16 @@ impl TypeReader {
     pub(crate) fn get_subtypes<T>(
         snapshot: &impl ReadableSnapshot,
         supertype: T,
-    ) -> Result<Vec<T::SelfStatic>, ConceptReadError>
+    ) -> Result<Vec<T>, ConceptReadError>
     where
-        T: KindAPI<'static, SelfStatic=T>,
+        T: KindAPI<'static>,
     {
         Ok(snapshot
             .iterate_range(KeyRange::new_within(
                 build_edge_sub_reverse_prefix_from(supertype.into_vertex()),
                 TypeEdge::FIXED_WIDTH_ENCODING,
             ))
-            .collect_cloned_vec(|key, _| T::SelfStatic::new(new_edge_sub_reverse(Bytes::Reference(key.byte_ref())).to().into_owned()))
+            .collect_cloned_vec(|key, _| T::new(new_edge_sub_reverse(Bytes::Reference(key.byte_ref())).to().into_owned()))
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
         )
     }
@@ -129,13 +127,13 @@ impl TypeReader {
     pub fn get_subtypes_transitive<T>(
         snapshot: &impl ReadableSnapshot,
         subtype: T,
-    ) -> Result<Vec<T::SelfStatic>, ConceptReadError>
+    ) -> Result<Vec<T>, ConceptReadError>
     where
-        T: KindAPI<'static, SelfStatic=T>,
+        T: KindAPI<'static>,
     {
         // WARN: subtypes currently do NOT include themselves
         // ^ To fix, Just start with `let mut stack = vec!(subtype.clone());`
-        let mut subtypes : Vec<T::SelfStatic> = Vec::new();
+        let mut subtypes : Vec<T> = Vec::new();
         let mut stack = TypeReader::get_subtypes(snapshot, subtype.clone())?;
         while let Some(subtype) = stack.pop() {
             subtypes.push(subtype.clone());
@@ -180,7 +178,7 @@ impl TypeReader {
         object_type: T,
     ) -> Result<HashMap<IMPL::InterfaceType, IMPL>, ConceptReadError>
         where
-            T: TypeAPI<'static, SelfStatic=T>,
+            T: TypeAPI<'static>,
             IMPL : InterfaceEdge<'static> + Hash + Eq {
         // TODO: Should the owner of a transitive owns be the declaring owner or the inheriting owner?
         let mut transitive_implementations: HashMap<IMPL::InterfaceType, IMPL> = HashMap::new();

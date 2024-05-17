@@ -13,7 +13,7 @@ use crate::{
     type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, IntoCanonicalTypeEdge, TypeAPI},
 };
 use crate::error::ConceptWriteError;
-use crate::type_::encoding_helper::PlaysEncoder;
+use crate::type_::type_manager::encoding_helper::PlaysEncoder;
 use crate::type_::InterfaceEdge;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

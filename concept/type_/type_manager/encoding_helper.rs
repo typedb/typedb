@@ -1,16 +1,10 @@
 use bytes::Bytes;
 use encoding::graph::type_::edge::{TypeEdge, edge_constructors::TypeEdgeConstructor, edge_constructors};
-use encoding::graph::type_::vertex::TypeVertex;
-use encoding::layout::prefix::Prefix;
 use storage::key_value::StorageKey;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use crate::type_::{InterfaceEdge, TypeAPI};
-use crate::type_::attribute_type::AttributeType;
-use crate::type_::object_type::ObjectType;
 use crate::type_::owns::Owns;
 use crate::type_::plays::Plays;
-use crate::type_::role_type::RoleType;
-use crate::type_::type_manager::KindAPI;
 
 pub trait EdgeEncoder<'a, E>
 where

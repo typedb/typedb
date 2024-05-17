@@ -4,13 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::type_::{
-    type_cache::{
-        kind_cache::{CommonTypeCache, OwnerPlayerCache},
-        TypeCache,
-    },
-    type_manager::KindAPI,
-};
+use crate::type_::type_manager::KindAPI;
 
 pub(super) trait HasCommonTypeCache<T: KindAPI<'static>> {
     fn common_type_cache(&self) -> &CommonTypeCache<T>;
@@ -61,3 +55,7 @@ macro_rules! impl_has_owner_player_cache {
     };
 }
 pub(super) use impl_has_owner_player_cache;
+use crate::type_::type_manager::type_cache::{
+    kind_cache::{CommonTypeCache, OwnerPlayerCache},
+    TypeCache,
+};

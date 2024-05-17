@@ -19,16 +19,16 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use self::{annotation::AnnotationRegex, object_type::ObjectType};
 use crate::{
+    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::AnnotationCardinality,
-        attribute_type::AttributeType, entity_type::EntityType, role_type::RoleType, relation_type::RelationType,
-        owns::Owns, plays::Plays,
+        attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays,
+        relation_type::RelationType, role_type::RoleType,
         type_manager::TypeManager,
     },
-    ConceptAPI,
 };
-use crate::type_::encoding_helper::EdgeEncoder;
+use crate::type_::type_manager::encoding_helper::EdgeEncoder;
 use crate::type_::type_manager::KindAPI;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
@@ -41,12 +41,7 @@ mod plays;
 mod relates;
 pub mod relation_type;
 pub mod role_type;
-pub mod type_cache;
 pub mod type_manager;
-mod type_reader;
-mod type_writer;
-pub mod validation;
-mod encoding_helper;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone + Hash + Eq {
     type SelfStatic: KindAPI<'static> + 'static;
