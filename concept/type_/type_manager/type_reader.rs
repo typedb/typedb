@@ -75,6 +75,8 @@ impl TypeReader {
         }
     }
 
+    // TODO: Should get_{super/sub}type[s_transitive] return T or T::SelfStatic.
+    // T::SelfStatic is the more consistent, more honest interface, but T is convenient.
     pub(crate) fn get_supertype<T>(
         snapshot: &impl ReadableSnapshot,
         subtype: T,
