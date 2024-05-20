@@ -50,7 +50,7 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
 
     protected static final String RESERVED_NAME_PREFIX = "_";
 
-    protected static final int DIAGNOSTICS_SEND_PERIOD_MINUTES = 1;
+    protected static final int DIAGNOSTICS_SYNC_PERIOD_MINUTES = 1;
 
     private final Options.Database databaseOptions;
     protected final ConcurrentMap<String, CoreDatabase> databases;
@@ -78,11 +78,11 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
         loadAll();
 
         // Send first portion in the same thread to have a guarantee of it being sent before the end of the initialization.
-        submitDatabaseDiagnostics();
+        synchronizeDatabaseDiagnostics();
         Executors.scheduled().scheduleAtFixedRate(
-                this::submitDatabaseDiagnostics,
-                DIAGNOSTICS_SEND_PERIOD_MINUTES,
-                DIAGNOSTICS_SEND_PERIOD_MINUTES,
+                this::synchronizeDatabaseDiagnostics,
+                DIAGNOSTICS_SYNC_PERIOD_MINUTES,
+                DIAGNOSTICS_SYNC_PERIOD_MINUTES,
                 TimeUnit.MINUTES);
     }
 
@@ -186,7 +186,7 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
         return new Metrics.DatabaseDiagnostics(database.name(), schemaLoad, dataLoad, true);
     }
 
-    private void submitDatabaseDiagnostics() {
+    private void synchronizeDatabaseDiagnostics() {
         Set<Metrics.DatabaseDiagnostics> diagnostics = new HashSet<>();
 
         for (CoreDatabase database : all()) {
@@ -203,6 +203,6 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
             diagnostics.add(databaseDiagnostics(database, schemaLoad, dataLoad));
         }
 
-        Diagnostics.get().submitDatabaseDiagnostics(diagnostics);
+        Diagnostics.get().synchronizeDatabaseDiagnostics(diagnostics);
     }
 }

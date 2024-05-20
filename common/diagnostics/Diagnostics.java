@@ -76,7 +76,7 @@ public abstract class Diagnostics {
         public void decrementCurrentCount(@Nullable String databaseName, Metrics.ConnectionPeakCounts.Kind kind) {}
 
         @Override
-        public void submitDatabaseDiagnostics(Set<Metrics.DatabaseDiagnostics> databaseDiagnostics) {}
+        public void synchronizeDatabaseDiagnostics(Set<Metrics.DatabaseDiagnostics> databaseDiagnostics) {}
     }
 
     public static class Core extends Diagnostics {
@@ -190,7 +190,7 @@ public abstract class Diagnostics {
         }
 
         @Override
-        public void submitDatabaseDiagnostics(Set<Metrics.DatabaseDiagnostics> databaseDiagnostics
+        public void synchronizeDatabaseDiagnostics(Set<Metrics.DatabaseDiagnostics> databaseDiagnostics
         ) {
             metrics.submitDatabaseDiagnostics(databaseDiagnostics);
         }
@@ -219,5 +219,5 @@ public abstract class Diagnostics {
 
     public abstract void decrementCurrentCount(@Nullable String databaseName, Metrics.ConnectionPeakCounts.Kind kind);
 
-    public abstract void submitDatabaseDiagnostics(Set<Metrics.DatabaseDiagnostics> databaseDiagnostics);
+    public abstract void synchronizeDatabaseDiagnostics(Set<Metrics.DatabaseDiagnostics> databaseDiagnostics);
 }
