@@ -7,6 +7,7 @@
 use std::error::Error;
 use std::fmt;
 use encoding::value::label::Label;
+use encoding::value::value_type::ValueType;
 use crate::error::ConceptReadError;
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::object_type::ObjectType;
@@ -28,6 +29,8 @@ pub enum SchemaValidationError {
     PlaysNotInherited(ObjectType<'static>, RoleType<'static>),
     OverriddenTypeNotSupertype(WrappedTypeForError, WrappedTypeForError),
     PlaysNotDeclared(ObjectType<'static>, RoleType<'static>),
+    TypeIsNotAbstract(WrappedTypeForError),
+    IncompatibleValueTypes(Option<ValueType>, Option<ValueType>),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -47,7 +50,9 @@ impl Error for SchemaValidationError {
             SchemaValidationError::OwnsNotInherited(_) => None,
             SchemaValidationError::PlaysNotInherited(_, _) => None,
             SchemaValidationError::OverriddenTypeNotSupertype(_, _) => None,
-            SchemaValidationError::PlaysNotDeclared(_, _) => None
+            SchemaValidationError::PlaysNotDeclared(_, _) => None,
+            SchemaValidationError::TypeIsNotAbstract(_) => None,
+            SchemaValidationError::IncompatibleValueTypes(_, _) => None,
         }
     }
 }

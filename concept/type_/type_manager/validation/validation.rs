@@ -6,10 +6,12 @@
 
 use std::collections::HashMap;
 use encoding::value::label::Label;
+use encoding::value::value_type::ValueType;
 use storage::snapshot::ReadableSnapshot;
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::entity_type::EntityType;
 use crate::type_::{OwnerAPI, PlayerAPI, TypeAPI};
+use crate::type_::annotation::{Annotation, AnnotationAbstract};
 use crate::type_::object_type::ObjectType;
 use crate::type_::owns::Owns;
 use crate::type_::plays::Plays;
@@ -34,9 +36,17 @@ macro_rules! object_type_match {
 }
 
 
-pub struct TypeValidator { }
+pub struct OperationTimeValidation { }
 
-impl TypeValidator {
+impl OperationTimeValidation {
+    pub(crate) fn validate_type_exists<Snapshot, T>(snapshot: &Snapshot, type_: T) -> Result<(), SchemaValidationError>
+        where Snapshot: ReadableSnapshot,
+              T: KindAPI<'static>
+    {
+        TypeReader::get_label(snapshot, type_).map_err(|err| SchemaValidationError::ConceptRead(err))?;
+        Ok(())
+    }
+
     pub(crate) fn validate_no_subtypes<Snapshot, T>(snapshot: &Snapshot, type_: T) -> Result<(), SchemaValidationError>
     where Snapshot: ReadableSnapshot,
           T: KindAPI<'static>
@@ -46,7 +56,7 @@ impl TypeValidator {
         Ok(())
     }
 
-    pub(crate) fn validate_no_instances<Snapshot, T>(snapshot: &Snapshot, type_: T) -> Result<(), SchemaValidationError>
+    pub(crate) fn validate_exact_type_no_instances<Snapshot, T>(snapshot: &Snapshot, type_: T) -> Result<(), SchemaValidationError>
     where Snapshot: ReadableSnapshot, T: KindAPI<'static>
     {
         // todo!();
@@ -69,6 +79,40 @@ impl TypeValidator {
             Err(SchemaValidationError::LabelUniqueness(new_label.clone()))
         } else {
             Ok(())
+        }
+    }
+
+    pub(crate) fn validate_value_types_compatible(
+        subtype_value_type: Option<ValueType>,
+        supertype_value_type: Option<ValueType>
+    ) -> Result<(), SchemaValidationError>
+    {
+        let is_compatible = match (subtype_value_type, supertype_value_type) {
+            (None, None) => true,
+            (Some(_), None) | (None, Some(_)) => false,
+            (Some(sub), Some(sup)) => sup == sub,
+        };
+        if is_compatible {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::IncompatibleValueTypes(subtype_value_type, supertype_value_type) )
+        }
+
+    }
+    pub(crate) fn validate_type_is_abstract<T, Snapshot>(
+        snapshot: &Snapshot,
+        type_: T
+    ) -> Result<(), SchemaValidationError>
+        where
+            Snapshot: ReadableSnapshot,
+            T: KindAPI<'static>,
+    {
+        let is_abstract = TypeReader::get_type_annotations(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?
+            .contains( &T::AnnotationType::from(Annotation::Abstract(AnnotationAbstract)));
+        if is_abstract {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::TypeIsNotAbstract(type_.clone().wrap_for_error()))
         }
     }
 

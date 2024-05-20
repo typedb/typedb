@@ -29,6 +29,7 @@ use crate::type_::{
     relates::Relates,
     relation_type::RelationType, role_type::RoleType, type_manager::KindAPI, TypeAPI,
 };
+use crate::type_::object_type::ObjectType;
 use crate::type_::type_manager::type_cache::{
     kind_cache::{
         AttributeTypeCache, CommonTypeCache, EntityTypeCache, OwnerPlayerCache, OwnsCache, PlaysCache,
@@ -202,6 +203,14 @@ impl TypeCache {
         &T::get_cache(self, type_).common_type_cache().annotations_declared
     }
 
+    pub(crate) fn get_owns_for_attribute_type<'a>(&self, attribute_type: AttributeType<'a>) -> &HashSet<Owns<'static>> {
+        &AttributeType::get_cache(self, attribute_type).owns
+    }
+
+    pub(crate) fn get_owns_for_attribute_type_transitive<'a>(&self, attribute_type: AttributeType<'a>) -> &HashMap<Owns<'static>, Vec<ObjectType<'static>>> {
+        &AttributeType::get_cache(self, attribute_type).owns_transitive
+    }
+
     pub(crate) fn get_owns<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns<'static>>
     where
         T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
@@ -238,6 +247,10 @@ impl TypeCache {
 
     pub(crate) fn get_plays_for_role_type<'a>(&self, role_type: RoleType<'a>) -> &HashSet<Plays<'static>> {
         &RoleType::get_cache(self, role_type).plays
+    }
+
+    pub(crate) fn get_plays_for_role_type_transitive<'a>(&self, role_type: RoleType<'a>) -> &HashMap<Plays<'static>, Vec<ObjectType<'static>>> {
+        &RoleType::get_cache(self, role_type).plays_transitive
     }
 
     pub(crate) fn get_plays<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Plays<'static>>

@@ -57,17 +57,12 @@ use crate::{
         relates::Relates, relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
         serialise_annotation_cardinality,
-        serialise_ordering, type_manager::type_reader::TypeReader, TypeAPI,
+        serialise_ordering, TypeAPI,
     },
 };
-<<<<<<< HEAD
-use crate::type_::type_writer::TypeWriter;
-use crate::type_::validation::validation::TypeValidator;
-=======
-use crate::type_::object_type::ObjectType;
+use type_reader::TypeReader;
 use type_writer::TypeWriter;
-use validation::validation::TypeValidator;
->>>>>>> 45e92fb6b (Letting TypeReader not return SelfStatic simplifies things a lot)
+use validation::validation::OperationTimeValidation;
 use crate::type_::{InterfaceEdge, OwnerAPI, PlayerAPI, WrappedTypeForError};
 
 pub mod validation;
@@ -384,6 +379,32 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         }
     }
 
+    pub(crate) fn get_owns_for_attribute(
+        &self,
+        snapshot: &Snapshot,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_owns_for_attribute_type(attribute_type.clone())))
+        } else {
+            let plays = TypeReader::get_owns_for_attribute_type(snapshot, attribute_type.clone())?;
+            Ok(MaybeOwns::Owned(plays))
+        }
+    }
+
+    pub(crate) fn get_owners_for_attribute_transitive(
+        &self,
+        snapshot: &Snapshot,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<MaybeOwns<'_, HashMap<Owns<'static>, Vec<ObjectType<'static>>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_owns_for_attribute_type_transitive(attribute_type.clone())))
+        } else {
+            let plays = TypeReader::get_owns_for_attribute_type_transitive(snapshot, attribute_type.clone())?;
+            Ok(MaybeOwns::Owned(plays))
+        }
+    }
+
     pub(crate) fn get_relation_type_relates(
         &self,
         snapshot: &Snapshot,
@@ -419,6 +440,19 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
             Ok(MaybeOwns::Borrowed(cache.get_plays_for_role_type(role_type.clone())))
         } else {
             let plays = TypeReader::get_plays_for_role_type(snapshot, role_type.clone())?;
+            Ok(MaybeOwns::Owned(plays))
+        }
+    }
+
+    pub(crate) fn get_plays_for_role_type_transitive(
+        &self,
+        snapshot: &Snapshot,
+        role_type: RoleType<'static>,
+    ) -> Result<MaybeOwns<'_, HashMap<Plays<'static>, Vec<ObjectType<'static>>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_plays_for_role_type_transitive(role_type.clone())))
+        } else {
+            let plays = TypeReader::get_plays_for_role_type_transitive(snapshot, role_type.clone())?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -607,7 +641,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         label: &Label<'_>,
         is_root: bool,
     ) -> Result<EntityType<'static>, ConceptWriteError> {
-        TypeValidator::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation{ source })?;
         let type_vertex = self
             .vertex_generator
@@ -632,7 +666,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         label: &Label<'_>,
         is_root: bool,
     ) -> Result<RelationType<'static>, ConceptWriteError> {
-        TypeValidator::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation{ source })?;
         let type_vertex = self
             .vertex_generator
@@ -659,7 +693,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         is_root: bool,
         ordering: Ordering,
     ) -> Result<RoleType<'static>, ConceptWriteError> {
-        TypeValidator::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation{ source })?;
 
         let type_vertex = self
@@ -686,7 +720,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         label: &Label<'_>,
         is_root: bool,
     ) -> Result<AttributeType<'static>, ConceptWriteError> {
-        TypeValidator::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation{ source })?;
 
         let type_vertex = self
@@ -706,9 +740,9 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     pub(crate) fn delete_entity_type(&self, snapshot: &mut Snapshot, entity_type: EntityType<'_>) -> Result<(), ConceptWriteError> {
-        TypeValidator::validate_no_instances(snapshot, entity_type.clone().into_owned())
+        OperationTimeValidation::validate_no_subtypes(snapshot, entity_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
-        TypeValidator::validate_no_subtypes(snapshot, entity_type.clone().into_owned())
+        OperationTimeValidation::validate_exact_type_no_instances(snapshot, entity_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         TypeWriter::storage_delete_label(snapshot, entity_type.clone().into_owned());
@@ -718,9 +752,9 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
 
     pub(crate) fn delete_relation_type(&self, snapshot: &mut Snapshot, relation_type: RelationType<'_>)  -> Result<(), ConceptWriteError> {
         // Sufficient to guarantee the roles have no subtypes or instances either
-        TypeValidator::validate_no_instances(snapshot, relation_type.clone().into_owned())
+        OperationTimeValidation::validate_no_subtypes(snapshot, relation_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
-        TypeValidator::validate_no_subtypes(snapshot, relation_type.clone().into_owned())
+        OperationTimeValidation::validate_exact_type_no_instances(snapshot, relation_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         let declared_relates = TypeReader::get_relates_transitive(snapshot, relation_type.clone().into_owned()).unwrap();
@@ -733,9 +767,9 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     pub(crate) fn delete_attribute_type(&self, snapshot: &mut Snapshot, attribute_type: AttributeType<'_>) -> Result<(), ConceptWriteError> {
-        TypeValidator::validate_no_instances(snapshot, attribute_type.clone().into_owned())
+        OperationTimeValidation::validate_no_subtypes(snapshot, attribute_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
-        TypeValidator::validate_no_subtypes(snapshot, attribute_type.clone().into_owned())
+        OperationTimeValidation::validate_exact_type_no_instances(snapshot, attribute_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         TypeWriter::storage_delete_label(snapshot, attribute_type.clone().into_owned());
@@ -755,10 +789,11 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     pub(crate) fn set_label<T: KindAPI<'static>>(&self, snapshot: &mut Snapshot, type_: T, label: &Label<'_>) -> Result<(), ConceptWriteError>{
+        debug_assert!( OperationTimeValidation::validate_type_exists(snapshot, type_.clone()).is_ok() );
         match T::ROOT_KIND {
             Kind::Role => todo!("Validate uniqueness in ancestry"),
             Kind::Entity | Kind::Attribute | Kind::Relation => {
-                TypeValidator::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+                OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
                     .map_err(|source| ConceptWriteError::SchemaValidation { source })
                     .unwrap(); // TODO: Propagate error instead
             }
@@ -776,21 +811,61 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         value_type: ValueType,
     ) -> Result<(), ConceptWriteError> {
         // TODO: Validation
+        debug_assert!( OperationTimeValidation::validate_type_exists(snapshot, attribute.clone()).is_ok() );
+        // Check no instances
+        if let Some(existing_value_type) = TypeReader::get_value_type(snapshot, attribute.clone())
+            .map_err(|source| ConceptWriteError::ConceptRead {source})? {
+            if value_type != existing_value_type {
+                OperationTimeValidation::validate_exact_type_no_instances(snapshot, attribute.clone())
+                    .map_err(|source| ConceptWriteError::SchemaValidation {  source } )?;
+            }
+        }
+        // Compatibility with supertype value-type must be done at commit time.
 
         TypeWriter::storage_set_value_type(snapshot, attribute, value_type);
         Ok(())
     }
 
-    pub(crate) fn set_supertype<K>(&self, snapshot: &mut Snapshot, subtype: K, supertype: K) -> Result<(), ConceptWriteError>
+    fn set_supertype<K>(&self, snapshot: &mut Snapshot, subtype: K, supertype: K) -> Result<(), ConceptWriteError>
     where K: KindAPI<'static>
     {
+        debug_assert! {
+            OperationTimeValidation::validate_type_exists(snapshot, subtype.clone()).is_ok()  &&
+            OperationTimeValidation::validate_type_exists(snapshot, supertype.clone()).is_ok()
+        };
         // TODO: Validation. This may have to split per type.
-        TypeValidator::validate_sub_does_not_create_cycle(snapshot, subtype.clone(), supertype.clone())
+        OperationTimeValidation::validate_sub_does_not_create_cycle(snapshot, subtype.clone(), supertype.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         TypeWriter::storage_delete_supertype(snapshot, subtype.clone());
         TypeWriter::storage_put_supertype(snapshot, subtype.clone(), supertype.clone());
         Ok(())
+    }
+
+    pub(crate) fn set_attribute_type_supertype(&self, snapshot: &mut Snapshot, subtype: AttributeType<'static>, supertype: AttributeType<'static>) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_value_types_compatible(
+            TypeReader::get_value_type(snapshot, subtype.clone())?,
+            TypeReader::get_value_type(snapshot, supertype.clone())?
+        ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_type_is_abstract(snapshot, supertype.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        Self::set_supertype(self, snapshot, subtype, supertype)
+    }
+
+    pub(crate) fn set_entity_type_supertype(&self, snapshot: &mut Snapshot, subtype: EntityType<'static>, supertype: EntityType<'static>) -> Result<(), ConceptWriteError> {
+        // TODO: EntityType specific validation (probably nothing)
+        Self::set_supertype(self, snapshot, subtype, supertype)
+    }
+
+    pub(crate) fn set_relation_type_supertype(&self, snapshot: &mut Snapshot, subtype: RelationType<'static>, supertype: RelationType<'static>) -> Result<(), ConceptWriteError> {
+        // TODO: RelationType specific validation
+        Self::set_supertype(self, snapshot, subtype, supertype)
+    }
+
+    pub(crate) fn set_role_type_supertype(&self, snapshot: &mut Snapshot, subtype: RoleType<'static>, supertype: RoleType<'static>) -> Result<(), ConceptWriteError> {
+        // TODO: RoleType specific validation
+        Self::set_supertype(self, snapshot, subtype, supertype)
     }
 
     pub(crate) fn set_owns(
@@ -802,7 +877,6 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     ) {
         // TODO: Validation
 
-        // TODO: I would very much like to TypeWriter::storage_put_type_edge(Owns::new())
         let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
         TypeWriter::storage_put_interface_impl(snapshot, owns.clone());
         TypeWriter::storage_set_owns_ordering(snapshot, owns.into_type_edge(), ordering);
@@ -828,9 +902,9 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         overridden: Owns<'static>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: More validation - instances exist.
-        TypeValidator::validate_owns_is_inherited(snapshot, owns.owner(), overridden.attribute())
+        OperationTimeValidation::validate_owns_is_inherited(snapshot, owns.player(), overridden.attribute())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
-        TypeValidator::validate_overridden_is_supertype(snapshot, owns.attribute(), overridden.attribute())
+        OperationTimeValidation::validate_overridden_is_supertype(snapshot, owns.attribute(), overridden.attribute())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         TypeWriter::storage_set_type_edge_overridden(snapshot, owns.clone(), overridden.clone()); // .attribute().clone());
@@ -857,7 +931,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     )  -> Result<(), ConceptWriteError> {
         // TODO: Validation.
         // TODO: This could really return the plays
-        TypeValidator::validate_plays_is_declared(snapshot, ObjectType::new(player.clone().into_vertex()), role.clone())
+        OperationTimeValidation::validate_plays_is_declared(snapshot, ObjectType::new(player.clone().into_vertex()), role.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         let plays = Plays::new(ObjectType::new(player.into_vertex()), role);
@@ -871,9 +945,9 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         plays: Plays<'static>,
         overridden: Plays<'static>,
     ) -> Result<(), ConceptWriteError> {
-        TypeValidator::validate_plays_is_inherited(snapshot, plays.player(), overridden.role())
+        OperationTimeValidation::validate_plays_is_inherited(snapshot, plays.player(), overridden.role())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
-        TypeValidator::validate_overridden_is_supertype(snapshot, plays.role(), overridden.role())
+        OperationTimeValidation::validate_overridden_is_supertype(snapshot, plays.role(), overridden.role())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         TypeWriter::storage_set_type_edge_overridden(snapshot, plays, overridden);//.role());

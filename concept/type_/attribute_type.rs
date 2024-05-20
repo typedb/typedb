@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use encoding::{
     graph::type_::vertex::TypeVertex,
@@ -26,6 +26,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::object_type::ObjectType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
@@ -138,7 +139,7 @@ impl<'a> AttributeType<'a> {
         type_manager: &TypeManager<Snapshot>,
         supertype: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.set_supertype(snapshot, self.clone().into_owned(), supertype)
+        type_manager.set_attribute_type_supertype(snapshot, self.clone().into_owned(), supertype)
     }
 
     pub fn get_supertypes<'m, Snapshot: ReadableSnapshot>(
@@ -229,15 +230,25 @@ impl<'a> AttributeType<'a> {
 
 // --- Owned API ---
 impl<'a> AttributeType<'a> {
-    fn get_owns<'m, Snapshot: ReadableSnapshot>(
+    pub fn get_owns<'m, Snapshot: ReadableSnapshot>(
         &self,
-        snapshot: Snapshot,
-        _type_manager: &'m TypeManager<Snapshot>,
-    ) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
-        todo!()
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_for_attribute(snapshot, self.clone().into_owned())
     }
 
-    fn get_owns_owners<Snapshot: ReadableSnapshot>(&self) {
+    pub fn get_owners_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashMap<Owns<'static>, Vec<ObjectType<'static>>>>, ConceptReadError> {
+        type_manager.get_owners_for_attribute_transitive(snapshot, self.clone().into_owned())
+    }
+
+    fn get_owns_owners<Snapshot: ReadableSnapshot>(&self)
+    {
+        // TODO: Why not just have owns?
         todo!()
     }
 }

@@ -60,13 +60,15 @@ pub(crate) struct RoleTypeCache {
     pub(super) ordering: Ordering,
     pub(super) relates: Relates<'static>,
     pub(super) plays: HashSet<Plays<'static>>,
+    pub(super) plays_transitive: HashMap<Plays<'static>, Vec<ObjectType<'static>>>
 }
 
 #[derive(Debug)]
 pub(crate) struct AttributeTypeCache {
     pub(super) common_type_cache: CommonTypeCache<AttributeType<'static>>,
     pub(super) value_type: Option<ValueType>,
-    // owners: HashSet<Owns<'static>>
+    pub(super) owns: HashSet<Owns<'static>>,
+    pub(super) owns_transitive: HashMap<Owns<'static>, Vec<ObjectType<'static>>>
 }
 
 #[derive(Debug)]
@@ -167,6 +169,8 @@ impl AttributeTypeCache {
             let cache = AttributeTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, attribute.clone()),
                 value_type: TypeReader::get_value_type(snapshot, attribute.clone()).unwrap(),
+                owns: TypeReader::get_owns_for_attribute_type(snapshot, attribute.clone()).unwrap(),
+                owns_transitive: TypeReader::get_owns_for_attribute_type_transitive(snapshot, attribute.clone()).unwrap()
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -190,6 +194,7 @@ impl RoleTypeCache {
                 ordering,
                 relates: TypeReader::get_relation(snapshot, role.clone()).unwrap(),
                 plays: TypeReader::get_plays_for_role_type(snapshot, role.clone()).unwrap(),
+                plays_transitive: TypeReader::get_plays_for_role_type_transitive(snapshot, role.clone()).unwrap(),
             };
             caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
         }

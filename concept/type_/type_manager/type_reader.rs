@@ -31,7 +31,8 @@ use encoding::{
     AsBytes, Keyable,
 };
 
-use encoding::graph::type_::edge::{build_edge_plays_reverse_prefix_from, new_edge_plays_reverse};
+use encoding::value::value_type::ValueTypeBytes;
+use encoding::graph::type_::edge::{build_edge_owns_reverse_prefix_from, build_edge_plays_reverse_prefix_from, new_edge_owns_reverse, new_edge_plays_reverse};
 use iterator::Collector;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
@@ -232,6 +233,90 @@ impl TypeReader {
                 Plays::new(ObjectType::new(plays_edge.to().into_owned()), RoleType::new(plays_edge.from().into_owned()))
             })
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
+    }
+
+    pub(crate) fn get_owns_for_attribute_type(
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<HashSet<Owns<'static>>, ConceptReadError> {
+        let owns_prefix = build_edge_owns_reverse_prefix_from(attribute_type.into_vertex());
+        snapshot
+            .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
+            .collect_cloned_hashset(|key, _| {
+                let owns_edge = new_edge_owns_reverse(Bytes::Reference(key.byte_ref()));
+                Owns::new(ObjectType::new(owns_edge.to().into_owned()), AttributeType::new(owns_edge.from().into_owned()))
+            })
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
+    }
+
+
+    pub(crate) fn get_owns_for_attribute_type_transitive(
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<HashMap<Owns<'static>, Vec<ObjectType<'static>>>, ConceptReadError> {
+
+        let mut owns_transitive : HashMap<Owns<'static>, Vec<ObjectType<'static>>> = HashMap::new();
+        let declared_owns_set = Self::get_owns_for_attribute_type(snapshot, attribute_type.clone())?;
+
+        for declared_owns in declared_owns_set {
+            let mut stack = Vec::new();
+            stack.push(declared_owns.player());
+            let mut owners : Vec<ObjectType<'static>> = Vec::new();
+            while let(Some(sub_owner)) = stack.pop() {
+                let mut overrides_owns = false;
+                for sub_owner_owns in Self::get_implemented_interfaces::<Owns<'static>>(snapshot, sub_owner.clone())? {
+                    overrides_owns = overrides_owns && Self::get_implementation_override(snapshot, sub_owner_owns.clone())?.unwrap().attribute() == attribute_type;
+                }
+                if !overrides_owns {
+                    owners.add(sub_owner.clone());
+                    match sub_owner.clone() {
+                        ObjectType::Entity(owner) => {
+                            Self::get_subtypes(snapshot, owner)?.into_iter().for_each(|t| stack.push(ObjectType::new(t.into_vertex())))
+                        }
+                        ObjectType::Relation(owner) => {
+                            Self::get_subtypes(snapshot, owner)?.into_iter().for_each(|t| stack.push(ObjectType::new(t.into_vertex())))
+                        }
+                    };
+                }
+            }
+            owns_transitive.insert(declared_owns, owners);
+        }
+        Ok(owns_transitive)
+    }
+
+
+    pub(crate) fn get_plays_for_role_type_transitive(
+        snapshot: &impl ReadableSnapshot,
+        role_type: RoleType<'static>,
+    ) -> Result<HashMap<Plays<'static>, Vec<ObjectType<'static>>>, ConceptReadError> {
+
+        let mut owns_transitive : HashMap<Plays<'static>, Vec<ObjectType<'static>>> = HashMap::new();
+        let declared_plays_set = Self::get_plays_for_role_type(snapshot, role_type.clone())?;
+
+        for declared_plays in declared_plays_set {
+            let mut stack = Vec::new();
+            stack.push(declared_plays.player());
+            let mut players: Vec<ObjectType<'static>> = Vec::new();
+            while let(Some(sub_player)) = stack.pop() {
+                let mut overrides_plays = false;
+                for sub_owner_owns in Self::get_implemented_interfaces::<Plays<'static>>(snapshot, sub_player.clone())? {
+                    overrides_plays = overrides_plays && Self::get_implementation_override(snapshot, sub_owner_owns.clone())?.unwrap().role() == role_type;
+                }
+                if !overrides_plays {
+                    players.add(sub_player.clone());
+                    match sub_player.clone() {
+                        ObjectType::Entity(player) => {
+                            Self::get_subtypes(snapshot, player)?.into_iter().for_each(|t| stack.push(ObjectType::new(t.into_vertex())))
+                        },
+                        ObjectType::Relation(player) => {
+                            Self::get_subtypes(snapshot, player)?.into_iter().for_each(|t| stack.push(ObjectType::new(t.into_vertex())))
+                        },
+                    };
+                }
+            }
+            owns_transitive.insert(declared_plays, players);
+        }
+        Ok(owns_transitive)
     }
 
     pub(crate) fn get_relates(
