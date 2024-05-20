@@ -10,7 +10,7 @@ use encoding::{
     layout::prefix::Prefix,
     value::{label::Label, value_type::ValueType},
 };
-use encoding::graph::thing::edge::ThingEdgeHasReverse;
+use encoding::graph::thing::edge::{ThingEdgeHasReverse, ThingEdgeRolePlayer};
 use encoding::graph::thing::vertex_attribute::AttributeVertex;
 use encoding::graph::Typed;
 use storage::snapshot::ReadableSnapshot;
@@ -30,7 +30,8 @@ use crate::type_::type_manager::validation::SchemaValidationError;
 use storage::key_range::KeyRange;
 use crate::thing::attribute::AttributeIterator;
 use crate::thing::entity::EntityIterator;
-use crate::thing::relation::RelationIterator;
+use crate::thing::ObjectAPI;
+use crate::thing::relation::{RelationIterator, RolePlayerIterator};
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
         match &$obj_var {
@@ -237,7 +238,7 @@ impl OperationTimeValidation {
         if is_declared { Ok(()) } else { Err(SchemaValidationError::PlaysNotDeclared(player.into_owned(), role_type)) }
     }
 
-
+    // TODO: Refactor
     pub(crate) fn validate_exact_type_no_instances_entity<Snapshot: ReadableSnapshot>(
         snapshot: &Snapshot,
         entity_type: EntityType<'_>,
@@ -298,5 +299,37 @@ impl OperationTimeValidation {
                 Err(SchemaValidationError::ConceptRead(ConceptReadError::SnapshotIterate { source: snapshot_iterator_error.clone() }))
             },
         }
+    }
+
+    pub(crate) fn validate_exact_type_no_instances_roles<Snapshot: ReadableSnapshot>(
+        snapshot: &Snapshot,
+        role_type: RoleType<'_>,
+    ) -> Result<(), SchemaValidationError> {
+
+        let relation_type = TypeReader::get_relation(snapshot, role_type.clone().into_owned())
+            .map_err(SchemaValidationError::ConceptRead)?.relation();
+        let prefix =
+            ObjectVertex::build_prefix_type(Prefix::VertexRelation.prefix_id(), relation_type.vertex().type_id_());
+        let snapshot_iterator =
+            snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexRelation.fixed_width_keys()));
+        let mut relation_iterator = RelationIterator::new(snapshot_iterator);
+        while let Some(result) = relation_iterator.next() {
+            let relation_instance = result.map_err(SchemaValidationError::ConceptRead)?;
+            let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation_instance.into_vertex());
+            let mut role_player_iterator = RolePlayerIterator::new(
+                snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING)),
+            );
+            match role_player_iterator.next() {
+                None => {},
+                Some(Ok(_)) => {
+                    Err(SchemaValidationError::DeletingTypeWithInstances(role_type.wrap_for_error()))?;
+                },
+                Some(Err(concept_read_error)) => {
+                    Err(SchemaValidationError::ConceptRead(concept_read_error))?;
+                },
+            }
+        }
+
+        Ok(())
     }
 }
