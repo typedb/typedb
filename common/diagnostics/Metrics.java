@@ -122,7 +122,7 @@ public class Metrics {
 
     protected JsonObject asFullReportingJSON() {
         JsonObject metrics = base.asReportingJSON();
-        metrics.add("server", serverProperties.asReportingFullJSON());
+        metrics.add("server", serverProperties.asFullReportingJSON());
 
         JsonArray load = new JsonArray();
         databaseLoad.forEach((databaseHash, diagnostics) ->
@@ -308,7 +308,7 @@ public class Metrics {
             return Duration.between(startTime, LocalDateTime.now(ZoneOffset.UTC)).getSeconds();
         }
 
-        JsonObject asReportingFullJSON() {
+        JsonObject asFullReportingJSON() {
             var mxbean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
             long freePhysicalMemorySize = mxbean.getFreePhysicalMemorySize();
             long freeDiskSpace = dbRoot.getFreeSpace();
@@ -627,8 +627,9 @@ public class Metrics {
         String prometheusDiagnostics(String database, boolean isPrimaryServer) {
             if (isPrimaryServer && !isDeleted) {
                 return schemaLoad.prometheusDiagnostics(database) + dataLoad.prometheusDiagnostics(database);
+            } else {
+                return "";
             }
-            return "";
         }
     }
 
