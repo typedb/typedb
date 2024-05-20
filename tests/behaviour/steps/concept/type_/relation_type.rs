@@ -174,6 +174,34 @@ pub async fn type_get_supertype(
 }
 
 #[apply(generic_step)]
+#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) get supertypes {contains_or_doesnt}:")]
+pub async fn get_supertypes_contain(
+    context: &mut Context,
+    relation_label: Label,
+    role_label: Label,
+    contains: ContainsOrDoesnt,
+    step: &Step,
+) {
+    let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
+    with_read_tx!(context, |tx| {
+        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
+        let role = tx
+            .type_manager
+            .resolve_relates(&tx.snapshot, relation, role_label.to_typedb().name().as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        let supertype_labels = role
+            .get_supertypes(&tx.snapshot, &tx.type_manager)
+            .unwrap()
+            .iter()
+            .map(|supertype| supertype.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
+            .collect_vec();
+        contains.check(&expected_labels, &supertype_labels);
+    });
+}
+
+#[apply(generic_step)]
 #[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) get subtypes {contains_or_doesnt}:")]
 pub async fn get_subtypes_contain(
     context: &mut Context,
@@ -198,6 +226,31 @@ pub async fn get_subtypes_contain(
             .map(|subtype| subtype.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
             .collect_vec();
         contains.check(&expected_labels, &subtype_labels);
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) get subtypes is empty")]
+pub async fn get_subtypes_is_empty(
+    context: &mut Context,
+    relation_label: Label,
+    role_label: Label,
+) {
+    with_read_tx!(context, |tx| {
+        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
+        let role = tx
+            .type_manager
+            .resolve_relates(&tx.snapshot, relation, role_label.to_typedb().name().as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        let subtype_labels = role
+            .get_subtypes_transitive(&tx.snapshot, &tx.type_manager)
+            .unwrap()
+            .iter()
+            .map(|subtype| subtype.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
+            .collect_vec();
+        assert!(subtype_labels.is_empty(), "{:?} is not empty", subtype_labels);
     });
 }
 

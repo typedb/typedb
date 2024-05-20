@@ -28,7 +28,7 @@ impl Kind {
             Kind::Entity => Label::new_static("entity"),
             Kind::Attribute => Label::new_static("attribute"),
             Kind::Relation => Label::new_static("relation"),
-            Kind::Role => Label::new_static_scoped("role", "y", "y:role"),
+            Kind::Role => Label::new_static_scoped("role", "relation", "relation:role"),
         }
     }
 }
