@@ -31,6 +31,7 @@ pub enum SchemaValidationError {
     PlaysNotDeclared(ObjectType<'static>, RoleType<'static>),
     TypeIsNotAbstract(WrappedTypeForError),
     IncompatibleValueTypes(Option<ValueType>, Option<ValueType>),
+    DeletingTypeWithSubtypes(WrappedTypeForError),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -53,6 +54,7 @@ impl Error for SchemaValidationError {
             SchemaValidationError::PlaysNotDeclared(_, _) => None,
             SchemaValidationError::TypeIsNotAbstract(_) => None,
             SchemaValidationError::IncompatibleValueTypes(_, _) => None,
+            SchemaValidationError::DeletingTypeWithSubtypes(_) => None,
         }
     }
 }

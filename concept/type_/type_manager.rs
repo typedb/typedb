@@ -234,7 +234,7 @@ macro_rules! get_type_is_root_methods {
                     Ok(cache.$cache_method(type_))
                 } else {
                     let type_label = TypeReader::get_label(snapshot, type_)?.unwrap();
-                    Ok(Self::check_type_is_root(&type_label, $type_::ROOT_KIND))
+                    Ok(TypeReader::check_type_is_root(&type_label, $type_::ROOT_KIND))
                 }
             }
         )*
@@ -281,10 +281,6 @@ macro_rules! get_type_annotations {
 impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
     pub fn new(vertex_generator: Arc<TypeVertexGenerator>, schema_cache: Option<Arc<TypeCache>>) -> Self {
         TypeManager { vertex_generator, type_cache: schema_cache, snapshot: PhantomData }
-    }
-
-    pub(crate) fn check_type_is_root(type_label: &Label<'_>, kind: Kind) -> bool {
-        type_label == &kind.root_label()
     }
 
     pub fn resolve_relates(

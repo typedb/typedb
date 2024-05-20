@@ -35,10 +35,10 @@ impl MayError {
     pub fn check<T: fmt::Debug, E: fmt::Debug>(&self, res: &Result<T, E>) {
         match self {
             MayError::False => {
-                res.as_ref().unwrap();
+                assert!(res.as_ref().is_ok());
             }
             MayError::True => {
-                res.as_ref().unwrap_err();
+                assert!(res.as_ref().is_err());
             }
         };
     }
@@ -86,6 +86,34 @@ impl FromStr for Boolean {
             "true" => Self::True,
             "false" => Self::False,
             invalid => return Err(format!("Invalid `Boolean`: {invalid}")),
+        })
+    }
+}
+
+
+#[derive(Debug, Parameter)]
+#[param(name = "exists_or_doesnt", regex = "(exists|does not exist)")]
+pub(crate) enum ExistsOrDoesnt {
+    Exists,
+    DoesNotExist,
+}
+
+impl ExistsOrDoesnt {
+    pub fn check(&self, actual_exists: bool) {
+        match self {
+            ExistsOrDoesnt::Exists => assert_eq!(true, actual_exists),
+            ExistsOrDoesnt::DoesNotExist => assert_eq!(false, actual_exists),
+        }
+    }
+}
+
+impl FromStr for ExistsOrDoesnt {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "exists" => Self::Exists,
+            "does not exist" => Self::DoesNotExist,
+            invalid => return Err(format!("Invalid `ExistsOrDoesnt`: {invalid}")),
         })
     }
 }

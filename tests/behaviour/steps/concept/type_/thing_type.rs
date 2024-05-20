@@ -12,7 +12,7 @@ use macro_rules_attribute::apply;
 
 use crate::{
     generic_step,
-    params::{Annotation, Boolean, ContainsOrDoesnt, Label, MayError, RootLabel},
+    params::{Annotation, Boolean, ContainsOrDoesnt, ExistsOrDoesnt, Label, MayError, RootLabel},
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
     util, with_type, Context,
 };
@@ -88,8 +88,8 @@ pub async fn type_delete(context: &mut Context, root_label: RootLabel, type_labe
 }
 //
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) exists: {boolean}")]
-pub async fn type_exists(context: &mut Context, root_label: RootLabel, type_label: Label, exists: Boolean) {
+#[step(expr = "{root_label}\\({type_label}\\) {exists_or_doesnt}")]
+pub async fn type_exists(context: &mut Context, root_label: RootLabel, type_label: Label, exists: ExistsOrDoesnt) {
     with_read_tx!(context, |tx| {
         match root_label.to_typedb() {
             Kind::Attribute => {
@@ -431,13 +431,13 @@ pub async fn get_declared_owns_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns overridden\\({type_label}\\) exists: {boolean}")]
+#[step(expr = "{root_label}\\({type_label}\\) get owns overridden\\({type_label}\\) {exists_or_doesnt}")]
 pub async fn get_owns_overridden_exists(
     context: &mut Context,
     root_label: RootLabel,
     type_label: Label,
     attr_type_label: Label,
-    exists: Boolean,
+    exists: ExistsOrDoesnt,
 ) {
     let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_read_tx!(context, |tx| {
@@ -587,48 +587,3 @@ pub async fn get_declared_plays_roles_contain(
         contains.check(&expected_labels, &actual_labels);
     });
 }
-
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) get owns explicit attribute types contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) get owns explicit attribute types do not contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) get playing roles contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) get playing roles do not contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) get playing roles explicit contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "{root_label}\\({type_label}\\) get playing roles explicit do not contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-//
-//
-// // TODO: thing type root - Deprecated?
-//
-// // #[apply(generic_step)]
-// // #[step(expr = "thing type root get supertypes contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "thing type root get supertypes do not contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "thing type root get subtypes contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }
-// //
-// //
-// // #[apply(generic_step)]
-// // #[step(expr = "thing type root get subtypes do not contain:")]
-// // pub async fn TODO(context: &mut Context, root_label: RootLabel, type_label: Label, ...) { todo!(); }

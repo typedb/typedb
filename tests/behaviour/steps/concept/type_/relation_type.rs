@@ -17,6 +17,7 @@ use crate::{
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
+use crate::params::ExistsOrDoesnt;
 
 #[apply(generic_step)]
 #[step(expr = "relation\\({type_label}\\) create role: {type_label}(; ){may_error}")]
@@ -107,8 +108,8 @@ pub async fn get_declared_roles_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) exists: {boolean}")]
-pub async fn get_role_exists(context: &mut Context, type_label: Label, role_label: Label, exists: Boolean) {
+#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) {exists_or_doesnt}")]
+pub async fn get_role_exists(context: &mut Context, type_label: Label, role_label: Label, exists: ExistsOrDoesnt) {
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
         let role_opt =
@@ -270,12 +271,12 @@ pub async fn type_set_label(context: &mut Context, relation_label: Label, role_l
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get overridden role\\({type_label}\\) exists: {boolean}")]
+#[step(expr = "relation\\({type_label}\\) get overridden role\\({type_label}\\) {exists_or_doesnt}")]
 pub async fn get_overridden_role_exists(
     context: &mut Context,
     relation_label: Label,
     role_label: Label,
-    exists: Boolean,
+    exists: ExistsOrDoesnt,
 ) {
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();

@@ -258,7 +258,7 @@ impl<T: KindAPI<'static, SelfStatic=T>> CommonTypeCache<T> {
         Snapshot: ReadableSnapshot,
     {
         let label = TypeReader::get_label(snapshot, type_.clone()).unwrap().unwrap();
-        let is_root = TypeManager::<Snapshot>::check_type_is_root(&label, T::ROOT_KIND);
+        let is_root = TypeReader::check_type_is_root(&label, T::ROOT_KIND);
         let annotations_declared = TypeReader::get_type_annotations(snapshot, type_.clone()).unwrap();
         let supertype = TypeReader::get_supertype(snapshot, type_.clone()).unwrap();
         let supertypes = TypeReader::get_supertypes_transitive(snapshot, type_.clone()).unwrap();

@@ -17,7 +17,7 @@ use crate::type_::owns::Owns;
 use crate::type_::plays::Plays;
 use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
-use crate::type_::type_manager::KindAPI;
+use crate::type_::type_manager::{KindAPI, TypeManager};
 use crate::type_::type_manager::type_reader::TypeReader;
 use crate::type_::type_manager::validation::SchemaValidationError;
 
@@ -47,13 +47,22 @@ impl OperationTimeValidation {
         Ok(())
     }
 
+    pub(crate) fn validate_type_is_not_root<Snapshot, T>(snapshot: &Snapshot, type_: T) -> Result<(), SchemaValidationError>
+        where Snapshot: ReadableSnapshot,
+              T: KindAPI<'static>
+    {
+        let label = TypeReader::get_label(snapshot, type_).map_err(SchemaValidationError::ConceptRead)?.unwrap();
+        let is_root = TypeReader::check_type_is_root(&label, T::ROOT_KIND);
+        if is_root { Err(SchemaValidationError::RootModification) } else { Ok(()) }
+    }
+
     pub(crate) fn validate_no_subtypes<Snapshot, T>(snapshot: &Snapshot, type_: T) -> Result<(), SchemaValidationError>
     where Snapshot: ReadableSnapshot,
           T: KindAPI<'static>
     {
-        TypeReader::get_subtypes(snapshot, type_)
-            .map_err(SchemaValidationError::ConceptRead)?;
-        Ok(())
+        let no_subtypes = TypeReader::get_subtypes(snapshot, type_.clone())
+            .map_err(SchemaValidationError::ConceptRead)?.is_empty();
+        if no_subtypes { Ok(()) } else { Err(SchemaValidationError::DeletingTypeWithSubtypes(type_.wrap_for_error()) ) }
     }
 
     pub(crate) fn validate_exact_type_no_instances<Snapshot, T>(snapshot: &Snapshot, type_: T) -> Result<(), SchemaValidationError>

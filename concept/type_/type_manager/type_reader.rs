@@ -31,8 +31,7 @@ use encoding::{
     AsBytes, Keyable,
 };
 
-use encoding::value::value_type::ValueTypeBytes;
-use encoding::graph::type_::edge::{build_edge_owns_reverse_prefix_from, build_edge_plays_reverse_prefix_from, new_edge_owns_reverse, new_edge_plays_reverse};
+use encoding::graph::type_::Kind;
 use iterator::Collector;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
@@ -61,6 +60,10 @@ use crate::type_::InterfaceEdge;
 pub struct TypeReader {}
 
 impl TypeReader {
+    pub(crate) fn check_type_is_root(type_label: &Label<'_>, kind: Kind) -> bool {
+        type_label == &kind.root_label()
+    }
+
     pub(crate) fn get_labelled_type<T>(
         snapshot: &impl ReadableSnapshot,
         label: &Label<'_>,
