@@ -99,8 +99,7 @@ impl TypeReader {
     where
         T: KindAPI<'static>,
     {
-        // WARN: supertypes currently do NOT include themselves
-        // ^ To fix, Just start with `let mut supertype = Some(type_)`
+        // supertypes do NOT include themselves by design
         let mut supertypes: Vec<T> = Vec::new();
         let mut supertype_opt = TypeReader::get_supertype(snapshot, subtype.clone())?;
         while let Some(supertype) = supertype_opt {
@@ -134,8 +133,7 @@ impl TypeReader {
     where
         T: KindAPI<'static>,
     {
-        // WARN: subtypes currently do NOT include themselves
-        // ^ To fix, Just start with `let mut stack = vec!(subtype.clone());`
+        //subtypes DO NOT include themselves by design
         let mut subtypes : Vec<T> = Vec::new();
         let mut stack = TypeReader::get_subtypes(snapshot, subtype.clone())?;
         while let Some(subtype) = stack.pop() {
