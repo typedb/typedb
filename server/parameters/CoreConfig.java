@@ -391,12 +391,18 @@ public class CoreConfig {
 
     public static class Diagnostics {
 
+        private final java.util.Optional<String> deploymentID;
         private final Reporting reporting;
         private final Monitoring monitoring;
 
-        public Diagnostics(Reporting reporting, Monitoring monitoring) {
+        public Diagnostics(java.util.Optional<String> deploymentID, Reporting reporting, Monitoring monitoring) {
+            this.deploymentID = deploymentID;
             this.reporting = reporting;
             this.monitoring = monitoring;
+        }
+
+        public Optional<String> deploymentID() {
+            return deploymentID;
         }
 
         public Reporting reporting() {

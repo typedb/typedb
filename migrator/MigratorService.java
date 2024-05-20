@@ -46,7 +46,7 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
             responseObserver.onCompleted();
         } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().submitError(e);
+            Diagnostics.get().submitError(request.getDatabase(), e);
             responseObserver.onError(exception(e));
         }
     }
@@ -68,7 +68,7 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
             responseObserver.onCompleted();
         } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.get().submitError(e);
+            Diagnostics.get().submitError(request.getDatabase(), e);
             responseObserver.onError(exception(e));
         } finally {
             if (importer != null) importer.close();

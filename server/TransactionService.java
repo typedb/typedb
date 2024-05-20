@@ -8,6 +8,7 @@ package com.vaticle.typedb.core.server;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
+import com.vaticle.typedb.core.common.diagnostics.Metrics;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -28,6 +29,7 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -44,7 +46,7 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.TRANSACTION;
+import static com.vaticle.typedb.core.common.diagnostics.Metrics.NetworkRequests.Kind.TRANSACTION_EXECUTE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.EMPTY_TRANSACTION_REQUEST;
@@ -125,7 +127,6 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private void execute(TransactionProto.Transaction.Req request) {
         Lock accessLock = null;
         try {
-            Diagnostics.get().requestAttempt(TRANSACTION);
             accessLock = acquireRequestLock(request);
             switch (request.getReqCase()) {
                 case REQ_NOT_SET:
@@ -136,12 +137,12 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 default:
                     executeRequest(request);
             }
-            Diagnostics.get().requestSuccess(TRANSACTION);
+            Diagnostics.get().requestSuccess(databaseName(), TRANSACTION_EXECUTE);
         } catch (Throwable error) {
+            Diagnostics.get().requestFail(databaseName(), TRANSACTION_EXECUTE);
             close(error);
         } finally {
             if (accessLock != null) accessLock.unlock();
-            this.typeDBSvc.updateTransactionCount();
         }
     }
 
@@ -195,6 +196,9 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         respond(ResponseBuilder.Transaction.open(byteStringAsUUID(request.getReqId())));
         isTransactionOpen.set(true);
         scheduledTimeout = scheduled().schedule(this::timeout, options.transactionTimeoutMillis(), MILLISECONDS);
+        Diagnostics.get().incrementCurrentCount(
+                databaseName(),
+                Metrics.ConnectionPeakCounts.Kind.getKind(sessionSvc.session().type(), transaction.type()));
     }
 
     protected SessionService sessionService(TransactionProto.Transaction.Open.Req req) {
@@ -466,6 +470,9 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             if (isTransactionOpen.compareAndSet(true, false)) {
                 transaction.close();
                 sessionSvc.closed(this);
+                Diagnostics.get().decrementCurrentCount(
+                        databaseName(),
+                        Metrics.ConnectionPeakCounts.Kind.getKind(sessionSvc.session().type(), transaction.type()));
             }
             if (scheduledTimeout != null) scheduledTimeout.cancel(false);
             responder.onCompleted();
@@ -477,6 +484,9 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             if (isTransactionOpen.compareAndSet(true, false)) {
                 transaction.close();
                 sessionSvc.closed(this);
+                Diagnostics.get().decrementCurrentCount(
+                        databaseName(),
+                        Metrics.ConnectionPeakCounts.Kind.getKind(sessionSvc.session().type(), transaction.type()));
             }
             if (scheduledTimeout != null) scheduledTimeout.cancel(false);
             responder.onError(ResponseBuilder.exception(error));
@@ -485,16 +495,22 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             if (isClientCancelled(error)) LOG.debug(error.getMessage(), error);
             else {
                 LOG.error(error.getMessage().trim());
-                Diagnostics.get().submitError(error);
+                Diagnostics.get().submitError(databaseName(), error);
             }
         }
+    }
+
+    @Nullable
+    public String databaseName() {
+        return sessionSvc != null
+                ? sessionSvc.databaseName()
+                : null;
     }
 
     private boolean isClientCancelled(Throwable error) {
         return error instanceof StatusRuntimeException &&
                 ((StatusRuntimeException) error).getStatus().getCode().equals(Status.CANCELLED.getCode());
     }
-
     private class ResponseStream<T> {
 
         private final Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn;

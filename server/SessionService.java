@@ -13,6 +13,7 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
@@ -153,5 +154,12 @@ public class SessionService implements AutoCloseable {
         } finally {
             accessLock.writeLock().unlock();
         }
+    }
+
+    @Nullable
+    public String databaseName() {
+        return session != null && session.database() != null
+                ? session.database().name()
+                : null;
     }
 }

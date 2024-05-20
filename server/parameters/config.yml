@@ -50,6 +50,7 @@ log:
       type: reasoner-perf-counters
 
 diagnostics:
+  deployment-id: # $DEPLOYMENT_ID
   reporting:
     errors: true
     statistics: true
