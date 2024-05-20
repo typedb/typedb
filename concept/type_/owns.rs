@@ -35,7 +35,7 @@ impl<'a> Owns<'a> {
         Owns { owner: owner_type, attribute: attribute_type }
     }
 
-    pub fn player(&self) -> ObjectType<'a> {
+    pub fn owner(&self) -> ObjectType<'a> {
         self.owner.clone()
     }
 

@@ -230,7 +230,7 @@ impl<'a> AttributeType<'a> {
 
 // --- Owned API ---
 impl<'a> AttributeType<'a> {
-    pub fn get_owns<'m, Snapshot: ReadableSnapshot>(
+    pub fn get_owner_owns<'m, Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
         type_manager: &'m TypeManager<Snapshot>,

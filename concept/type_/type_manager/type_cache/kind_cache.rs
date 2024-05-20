@@ -169,14 +169,15 @@ impl AttributeTypeCache {
             let cache = AttributeTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, attribute.clone()),
                 value_type: TypeReader::get_value_type(snapshot, attribute.clone()).unwrap(),
-                owns: TypeReader::get_owns_for_attribute_type(snapshot, attribute.clone()).unwrap(),
-                owns_transitive: TypeReader::get_owns_for_attribute_type_transitive(snapshot, attribute.clone()).unwrap()
+                owns: TypeReader::get_implementations_for_interface::<Owns<'static>>(snapshot, attribute.clone()).unwrap(),
+                owns_transitive: TypeReader::get_implementations_for_interface_transitive::<Owns<'static>>(snapshot, attribute.clone()).unwrap()
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
         caches
     }
 }
+
 impl RoleTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<RoleTypeCache>]> {
         let roles = snapshot
@@ -193,8 +194,8 @@ impl RoleTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, role.clone()),
                 ordering,
                 relates: TypeReader::get_relation(snapshot, role.clone()).unwrap(),
-                plays: TypeReader::get_plays_for_role_type(snapshot, role.clone()).unwrap(),
-                plays_transitive: TypeReader::get_plays_for_role_type_transitive(snapshot, role.clone()).unwrap(),
+                plays: TypeReader::get_implementations_for_interface::<Plays<'static>>(snapshot, role.clone()).unwrap(),
+                plays_transitive: TypeReader::get_implementations_for_interface_transitive::<Plays<'static>>(snapshot, role.clone()).unwrap(),
             };
             caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
