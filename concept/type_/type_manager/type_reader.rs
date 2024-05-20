@@ -252,8 +252,9 @@ impl TypeReader {
             while let(Some(sub_object)) = stack.pop() {
                 let mut declared_impl_was_overridden = false;
                 for sub_owner_owns in Self::get_implemented_interfaces::<IMPL>(snapshot, sub_object.clone())? {
-                    declared_impl_was_overridden = declared_impl_was_overridden &&
-                        Self::get_implementation_override(snapshot, sub_owner_owns.clone())?.unwrap().interface() == interface_type;
+                    if let Some(overridden_impl) = Self::get_implementation_override(snapshot, sub_owner_owns.clone())? {
+                        declared_impl_was_overridden = declared_impl_was_overridden || overridden_impl.interface() == interface_type;
+                    }
                 }
                 if !declared_impl_was_overridden {
                     object_types.add(sub_object.clone());
