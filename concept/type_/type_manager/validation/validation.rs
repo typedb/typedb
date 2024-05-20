@@ -5,12 +5,19 @@
  */
 
 use std::collections::HashMap;
-use encoding::value::label::Label;
-use encoding::value::value_type::ValueType;
+use encoding::{
+    graph::thing::vertex_object::ObjectVertex,
+    layout::prefix::Prefix,
+    value::{label::Label, value_type::ValueType},
+};
+use encoding::graph::thing::edge::ThingEdgeHasReverse;
+use encoding::graph::thing::vertex_attribute::AttributeVertex;
+use encoding::graph::Typed;
 use storage::snapshot::ReadableSnapshot;
+use crate::error::ConceptReadError;
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::entity_type::EntityType;
-use crate::type_::{OwnerAPI, PlayerAPI, TypeAPI};
+use crate::type_::TypeAPI;
 use crate::type_::annotation::{Annotation, AnnotationAbstract};
 use crate::type_::object_type::ObjectType;
 use crate::type_::owns::Owns;
@@ -20,8 +27,10 @@ use crate::type_::role_type::RoleType;
 use crate::type_::type_manager::{KindAPI, TypeManager};
 use crate::type_::type_manager::type_reader::TypeReader;
 use crate::type_::type_manager::validation::SchemaValidationError;
-
-
+use storage::key_range::KeyRange;
+use crate::thing::attribute::AttributeIterator;
+use crate::thing::entity::EntityIterator;
+use crate::thing::relation::RelationIterator;
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
         match &$obj_var {
@@ -57,19 +66,12 @@ impl OperationTimeValidation {
     }
 
     pub(crate) fn validate_no_subtypes<Snapshot, T>(snapshot: &Snapshot, type_: T) -> Result<(), SchemaValidationError>
-    where Snapshot: ReadableSnapshot,
-          T: KindAPI<'static>
+        where Snapshot: ReadableSnapshot,
+              T: KindAPI<'static>
     {
         let no_subtypes = TypeReader::get_subtypes(snapshot, type_.clone())
             .map_err(SchemaValidationError::ConceptRead)?.is_empty();
-        if no_subtypes { Ok(()) } else { Err(SchemaValidationError::DeletingTypeWithSubtypes(type_.wrap_for_error()) ) }
-    }
-
-    pub(crate) fn validate_exact_type_no_instances<Snapshot, T>(snapshot: &Snapshot, type_: T) -> Result<(), SchemaValidationError>
-    where Snapshot: ReadableSnapshot, T: KindAPI<'static>
-    {
-        // todo!();
-        Ok(())
+        if no_subtypes { Ok(()) } else { Err(SchemaValidationError::DeletingTypeWithSubtypes(type_.wrap_for_error())) }
     }
 
     pub(crate) fn validate_label_uniqueness<'a, Snapshot: ReadableSnapshot>(
@@ -104,9 +106,8 @@ impl OperationTimeValidation {
         if is_compatible {
             Ok(())
         } else {
-            Err(SchemaValidationError::IncompatibleValueTypes(subtype_value_type, supertype_value_type) )
+            Err(SchemaValidationError::IncompatibleValueTypes(subtype_value_type, supertype_value_type))
         }
-
     }
     pub(crate) fn validate_type_is_abstract<T, Snapshot>(
         snapshot: &Snapshot,
@@ -117,7 +118,7 @@ impl OperationTimeValidation {
             T: KindAPI<'static>,
     {
         let is_abstract = TypeReader::get_type_annotations(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?
-            .contains( &T::AnnotationType::from(Annotation::Abstract(AnnotationAbstract)));
+            .contains(&T::AnnotationType::from(Annotation::Abstract(AnnotationAbstract)));
         if is_abstract {
             Ok(())
         } else {
@@ -152,7 +153,7 @@ impl OperationTimeValidation {
     {
         let super_relation = TypeReader::get_supertype(snapshot, relation_type)
             .map_err(SchemaValidationError::ConceptRead)?;
-        if super_relation.is_none() {
+        if super_relation.is_none() { // TODO: Handle better. This could be misleading.
             return Err(SchemaValidationError::RootModification);
         }
         let is_inherited = TypeReader::get_relates_transitive(snapshot, super_relation.unwrap())
@@ -231,8 +232,71 @@ impl OperationTimeValidation {
     {
         let plays = Plays::new(ObjectType::new(player.clone().into_vertex()), role_type.clone());
         let is_declared = TypeReader::get_implemented_interfaces::<Plays<'static>>(snapshot, player.clone())
-                .map_err(SchemaValidationError::ConceptRead)?
-                .contains(&plays);
+            .map_err(SchemaValidationError::ConceptRead)?
+            .contains(&plays);
         if is_declared { Ok(()) } else { Err(SchemaValidationError::PlaysNotDeclared(player.into_owned(), role_type)) }
+    }
+
+
+    pub(crate) fn validate_exact_type_no_instances_entity<Snapshot: ReadableSnapshot>(
+        snapshot: &Snapshot,
+        entity_type: EntityType<'_>,
+    ) -> Result<(), SchemaValidationError> {
+        let prefix = ObjectVertex::build_prefix_type(Prefix::VertexEntity.prefix_id(), entity_type.vertex().type_id_());
+        let mut snapshot_iterator =
+            snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexEntity.fixed_width_keys()));
+        match snapshot_iterator.next() {
+            None => Ok(()),
+            Some(Ok(_)) => {
+                Err(SchemaValidationError::DeletingTypeWithInstances(entity_type.wrap_for_error()))
+            },
+            Some(Err(snapshot_iterator_error)) => {
+                Err(SchemaValidationError::ConceptRead(ConceptReadError::SnapshotIterate { source: snapshot_iterator_error.clone() }))
+            },
+        }
+    }
+    pub(crate) fn validate_exact_type_no_instances_relation<Snapshot: ReadableSnapshot>(
+        snapshot: &Snapshot,
+        relation_type: RelationType<'_>,
+    ) -> Result<(), SchemaValidationError> {
+        let prefix =
+            ObjectVertex::build_prefix_type(Prefix::VertexRelation.prefix_id(), relation_type.vertex().type_id_());
+        let mut snapshot_iterator =
+            snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexRelation.fixed_width_keys()));
+        match snapshot_iterator.next() {
+            None => Ok(()),
+            Some(Ok(_)) => {
+                Err(SchemaValidationError::DeletingTypeWithInstances(relation_type.wrap_for_error()))
+            },
+            Some(Err(snapshot_iterator_error)) => {
+                Err(SchemaValidationError::ConceptRead(ConceptReadError::SnapshotIterate { source: snapshot_iterator_error.clone() }))
+            },
+        }
+    }
+
+    pub(crate) fn validate_exact_type_no_instances_attribute<Snapshot: ReadableSnapshot>(
+        snapshot: &Snapshot,
+        attribute_type: AttributeType<'_>,
+        type_manager: &TypeManager<Snapshot>
+    ) -> Result<(), SchemaValidationError> {
+        let value_type_opt = attribute_type.get_value_type(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
+        let Some(value_type) = value_type_opt else {
+            return Ok(()); // No value type, no instances
+        };
+
+        let attribute_value_type_prefix = AttributeVertex::value_type_to_prefix_type(value_type);
+        let prefix =
+            AttributeVertex::build_prefix_type(attribute_value_type_prefix, attribute_type.vertex().type_id_());
+        let mut snapshot_iterator =
+            snapshot.iterate_range(KeyRange::new_within(prefix, attribute_value_type_prefix.fixed_width_keys()));
+        match snapshot_iterator.next() {
+            None => Ok(()),
+            Some(Ok(_)) => {
+                Err(SchemaValidationError::DeletingTypeWithInstances(attribute_type.wrap_for_error()))
+            },
+            Some(Err(snapshot_iterator_error)) => {
+                Err(SchemaValidationError::ConceptRead(ConceptReadError::SnapshotIterate { source: snapshot_iterator_error.clone() }))
+            },
+        }
     }
 }

@@ -738,7 +738,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn delete_entity_type(&self, snapshot: &mut Snapshot, entity_type: EntityType<'_>) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_no_subtypes(snapshot, entity_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
-        OperationTimeValidation::validate_exact_type_no_instances(snapshot, entity_type.clone().into_owned())
+        OperationTimeValidation::validate_exact_type_no_instances_entity(snapshot, entity_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         TypeWriter::storage_delete_label(snapshot, entity_type.clone().into_owned());
@@ -750,7 +750,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         // Sufficient to guarantee the roles have no subtypes or instances either
         OperationTimeValidation::validate_no_subtypes(snapshot, relation_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
-        OperationTimeValidation::validate_exact_type_no_instances(snapshot, relation_type.clone().into_owned())
+        OperationTimeValidation::validate_exact_type_no_instances_relation(snapshot, relation_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         let declared_relates = TypeReader::get_relates_transitive(snapshot, relation_type.clone().into_owned()).unwrap();
@@ -765,7 +765,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn delete_attribute_type(&self, snapshot: &mut Snapshot, attribute_type: AttributeType<'_>) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_no_subtypes(snapshot, attribute_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
-        OperationTimeValidation::validate_exact_type_no_instances(snapshot, attribute_type.clone().into_owned())
+        OperationTimeValidation::validate_exact_type_no_instances_attribute(snapshot, attribute_type.clone().into_owned(), self)
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         TypeWriter::storage_delete_label(snapshot, attribute_type.clone().into_owned());
@@ -775,6 +775,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
 
     pub(crate) fn delete_role_type(&self, snapshot: &mut Snapshot, role_type: RoleType<'_>) -> Result<(), ConceptWriteError> {
         // TODO: Validation
+
         let relates = TypeReader::get_relation(snapshot, role_type.clone().into_owned()).unwrap();
         let relation = relates.relation();
         let role = relates.role();
@@ -812,7 +813,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         if let Some(existing_value_type) = TypeReader::get_value_type(snapshot, attribute.clone())
             .map_err(|source| ConceptWriteError::ConceptRead {source})? {
             if value_type != existing_value_type {
-                OperationTimeValidation::validate_exact_type_no_instances(snapshot, attribute.clone())
+                OperationTimeValidation::validate_exact_type_no_instances_attribute(snapshot, attribute.clone(), self)
                     .map_err(|source| ConceptWriteError::SchemaValidation {  source } )?;
             }
         }
