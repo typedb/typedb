@@ -64,10 +64,11 @@ fn object_unset_has_impl(
 async fn object_create_instance_var(
     context: &mut Context,
     var: params::Var,
-    _object_root: params::ObjectRootLabel,
+    object_root: params::ObjectRootLabel,
     object_type_label: params::Label,
 ) {
     let object = object_create_instance_impl(context, object_type_label).unwrap();
+    object_root.assert(&object.type_());
     context.objects.insert(var.name, Some(ObjectWithKey::new(object)));
 }
 
@@ -76,12 +77,13 @@ async fn object_create_instance_var(
 async fn object_create_instance_with_key_var(
     context: &mut Context,
     var: params::Var,
-    _object_root: params::ObjectRootLabel,
+    object_root: params::ObjectRootLabel,
     object_type_label: params::Label,
     key_type_label: params::Label,
     value: params::Value,
 ) {
     let object = object_create_instance_impl(context, object_type_label).unwrap();
+    object_root.assert(&object.type_());
     let key = attribute_put_instance_with_value_impl(context, key_type_label, value).unwrap();
     object_set_has_impl(context, &object, &key).unwrap();
     context.objects.insert(var.name, Some(ObjectWithKey::new_with_key(object, key)));
@@ -91,12 +93,13 @@ async fn object_create_instance_with_key_var(
 #[step(expr = r"{object_root_label} {var} set has: {var}(; ){may_error}")]
 async fn object_set_has(
     context: &mut Context,
-    _object_root: params::ObjectRootLabel,
+    object_root: params::ObjectRootLabel,
     object_var: params::Var,
     attribute_var: params::Var,
     may_error: params::MayError,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
+    object_root.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap().to_owned();
     may_error.check(&object_set_has_impl(context, &object, &attribute));
 }
@@ -105,11 +108,12 @@ async fn object_set_has(
 #[step(expr = r"{object_root_label} {var} unset has: {var}")]
 async fn object_unset_has(
     context: &mut Context,
-    _object_root: params::ObjectRootLabel,
+    object_root: params::ObjectRootLabel,
     object_var: params::Var,
     attribute_var: params::Var,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
+    object_root.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap().to_owned();
     object_unset_has_impl(context, &object, &attribute).unwrap();
 }
@@ -118,12 +122,13 @@ async fn object_unset_has(
 #[step(expr = r"{object_root_label} {var} get has {contains_or_doesnt}: {var}")]
 async fn object_get_has(
     context: &mut Context,
-    _object_root: params::ObjectRootLabel,
+    object_root: params::ObjectRootLabel,
     object_var: params::Var,
     contains_or_doesnt: params::ContainsOrDoesnt,
     attribute_var: params::Var,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
+    object_root.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
     let actuals = with_read_tx!(context, |tx| {
         object
@@ -138,13 +143,14 @@ async fn object_get_has(
 #[step(expr = r"{object_root_label} {var} get has\({type_label}\) {contains_or_doesnt}: {var}")]
 async fn object_get_has_type(
     context: &mut Context,
-    _object_root: params::ObjectRootLabel,
+    object_root: params::ObjectRootLabel,
     object_var: params::Var,
     attribute_type_label: params::Label,
     contains_or_doesnt: params::ContainsOrDoesnt,
     attribute_var: params::Var,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
+    object_root.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
     let actuals = with_read_tx!(context, |tx| {
         let attribute_type =
@@ -162,13 +168,14 @@ async fn object_get_has_type(
 #[step(expr = r"{object_root_label} {var} get has with annotations: {annotations}; {contains_or_doesnt}: {var}")]
 async fn object_get_has_with_annotations(
     context: &mut Context,
-    _object_root: params::ObjectRootLabel,
+    object_root: params::ObjectRootLabel,
     object_var: params::Var,
     annotations: params::Annotations,
     contains_or_doesnt: params::ContainsOrDoesnt,
     attribute_var: params::Var,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
+    object_root.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
     let annotations = annotations.into_typedb().into_iter().map(|anno| anno.into()).collect_vec();
     let actuals = with_read_tx!(context, |tx| {
@@ -199,16 +206,10 @@ async fn object_get_has_with_annotations(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} exists")]
-async fn object_exists(context: &mut Context, _object_root: params::ObjectRootLabel, var: params::Var) {
-    let object = context.objects.get(&var.name).expect("no variable {} in context.");
-    assert!(object.is_some(), "variable {} does not exist", var.name);
-}
-
-#[apply(generic_step)]
 #[step(expr = r"delete {object_root_label}: {var}")]
-async fn delete_object(context: &mut Context, _object_root: params::ObjectRootLabel, var: params::Var) {
+async fn delete_object(context: &mut Context, object_root: params::ObjectRootLabel, var: params::Var) {
     let object = context.objects[&var.name].as_ref().unwrap().object.clone();
+    object_root.assert(&object.type_());
     with_write_tx!(context, |tx| { object.delete(&mut tx.snapshot, &tx.thing_manager).unwrap() })
 }
 
@@ -216,11 +217,12 @@ async fn delete_object(context: &mut Context, _object_root: params::ObjectRootLa
 #[step(expr = r"{object_root_label} {var} is deleted: {boolean}")]
 async fn object_is_deleted(
     context: &mut Context,
-    _object_root: params::ObjectRootLabel,
+    object_root: params::ObjectRootLabel,
     var: params::Var,
     is_deleted: params::Boolean,
 ) {
     let object = &context.objects[&var.name].as_ref().unwrap().object;
+    object_root.assert(&object.type_());
     let object_type = object.type_();
     let objects =
         with_read_tx!(context, |tx| { tx.thing_manager.get_objects_in(&tx.snapshot, object_type).collect_cloned() });
@@ -231,11 +233,12 @@ async fn object_is_deleted(
 #[step(expr = r"{object_root_label} {var} has type: {type_label}")]
 async fn object_has_type(
     context: &mut Context,
-    _object_root: params::ObjectRootLabel,
+    object_root: params::ObjectRootLabel,
     var: params::Var,
     type_label: params::Label,
 ) {
     let object_type = context.objects[&var.name].as_ref().unwrap().object.type_();
+    object_root.assert(&object_type);
     with_read_tx!(context, |tx| {
         assert_eq!(object_type.get_label(&tx.snapshot, &tx.type_manager).unwrap(), type_label.to_typedb())
     });
@@ -246,7 +249,7 @@ async fn object_has_type(
 async fn object_get_instance_with_value(
     context: &mut Context,
     var: params::Var,
-    _object_root: params::ObjectRootLabel,
+    object_root: params::ObjectRootLabel,
     object_type_label: params::Label,
     key_type_label: params::Label,
     value: params::Value,
@@ -255,6 +258,7 @@ async fn object_get_instance_with_value(
     let owner = with_read_tx!(context, |tx| {
         let object_type =
             tx.type_manager.get_object_type(&tx.snapshot, &object_type_label.to_typedb()).unwrap().unwrap();
+        object_root.assert(&object_type);
         let mut owners = key.get_owners_by_type(&tx.snapshot, &tx.thing_manager, object_type);
         let (owner, count) = owners.next().unwrap().unwrap();
         let owner = owner.into_owned();
@@ -269,11 +273,12 @@ async fn object_get_instance_with_value(
 #[step(expr = r"{object_root_label}\({type_label}\) get instances is empty")]
 async fn object_instances_is_empty(
     context: &mut Context,
-    _object_root: params::ObjectRootLabel,
+    object_root: params::ObjectRootLabel,
     type_label: params::Label,
 ) {
     with_read_tx!(context, |tx| {
         let object_type = tx.type_manager.get_object_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
+        object_root.assert(&object_type);
         assert_matches!(tx.thing_manager.get_objects_in(&tx.snapshot, object_type).next(), None);
     });
 }
@@ -282,12 +287,13 @@ async fn object_instances_is_empty(
 #[step(expr = r"{object_root_label}\({type_label}\) get instances {contains_or_doesnt}: {var}")]
 async fn object_instances_contain(
     context: &mut Context,
-    _object_root: params::ObjectRootLabel,
+    object_root: params::ObjectRootLabel,
     type_label: params::Label,
     containment: params::ContainsOrDoesnt,
     var: params::Var,
 ) {
     let object = &context.objects.get(&var.name).expect("no variable {} in context.").as_ref().unwrap().object;
+    object_root.assert(&object.type_());
     with_read_tx!(context, |tx| {
         let object_type = tx.type_manager.get_object_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
         let actuals = tx.thing_manager.get_objects_in(&tx.snapshot, object_type).collect_cloned();

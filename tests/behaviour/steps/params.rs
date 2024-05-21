@@ -8,8 +8,8 @@ use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr};
 
 use chrono::NaiveDateTime;
 use concept::{
-    thing::value::Value as TypeDBValue,
-    type_::{annotation, annotation::Annotation as TypeDBAnnotation},
+    thing::{object::Object, value::Value as TypeDBValue},
+    type_::{annotation::{self, Annotation as TypeDBAnnotation}, object_type::ObjectType},
 };
 use cucumber::Parameter;
 use encoding::{
@@ -17,6 +17,8 @@ use encoding::{
     value::{label::Label as TypeDBLabel, value_type::ValueType as TypeDBValueType},
 };
 use itertools::Itertools;
+
+use crate::assert::assert_matches;
 
 #[derive(Debug, Default, Parameter)]
 #[param(name = "may_error", regex = "(fails|)")]
@@ -74,6 +76,34 @@ impl FromStr for Boolean {
             "true" => Self::True,
             "false" => Self::False,
             invalid => return Err(format!("Invalid `Boolean`: {invalid}")),
+        })
+    }
+}
+
+#[derive(Debug, Parameter)]
+#[param(name = "exists_or_doesnt", regex = "(exists|does not exist)")]
+pub(crate) enum ExistsOrDoesnt {
+    Exists,
+    DoesNotExist,
+}
+
+impl ExistsOrDoesnt {
+    pub fn check<T: fmt::Debug>(&self, scrutinee: &Option<T>, message: &str) {
+        match (self, scrutinee) {
+            (Self::Exists, Some(_)) | (Self::DoesNotExist, None) => (),
+            (Self::Exists, None) => panic!("{message} does not exist"),
+            (Self::DoesNotExist, Some(value)) => panic!("{message} exists: {value:?}"),
+        }
+    }
+}
+
+impl FromStr for ExistsOrDoesnt {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "exists" => Self::Exists,
+            "does not exist" => Self::DoesNotExist,
+            invalid => return Err(format!("Invalid `ExistsOrDoesnt`: {invalid}")),
         })
     }
 }
@@ -171,6 +201,14 @@ pub(crate) struct ObjectRootLabel {
 impl ObjectRootLabel {
     pub fn to_typedb(&self) -> TypeDBTypeKind {
         self.kind
+    }
+
+    pub fn assert(&self, object: &ObjectType<'_>) {
+        match self.kind {
+            TypeDBTypeKind::Entity => assert_matches!(object, ObjectType::Entity(_)),
+            TypeDBTypeKind::Relation => assert_matches!(object, ObjectType::Relation(_)),
+            _ => unreachable!("an ObjectRootLabel contains a non-object kind: {:?}", self.kind),
+        }
     }
 }
 

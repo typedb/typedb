@@ -213,7 +213,7 @@ impl<'a> Relation<'a> {
         }
     }
 
-    pub(crate) fn into_owned(self) -> Relation<'static> {
+    pub fn into_owned(self) -> Relation<'static> {
         Relation { vertex: self.vertex.into_owned() }
     }
 }
@@ -347,12 +347,16 @@ pub struct RolePlayer<'a> {
 }
 
 impl<'a> RolePlayer<'a> {
-    pub(crate) fn player(&self) -> Object<'_> {
+    pub fn player(&self) -> Object<'_> {
         self.player.as_reference()
     }
 
-    pub(crate) fn role_type(&self) -> RoleType<'static> {
+    pub fn role_type(&self) -> RoleType<'static> {
         self.role_type.clone()
+    }
+
+    pub fn into_owned(self) -> RolePlayer<'static> {
+        RolePlayer { player: self.player.into_owned(), role_type: self.role_type }
     }
 }
 

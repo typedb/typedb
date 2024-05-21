@@ -47,7 +47,7 @@ impl<'a> RoleType<'a> {
 impl<'a> ConceptAPI<'a> for RoleType<'a> {}
 
 impl<'a> TypeAPI<'a> for RoleType<'a> {
-    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+    fn vertex(&self) -> TypeVertex<'_> {
         self.vertex.as_reference()
     }
 

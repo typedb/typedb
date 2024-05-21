@@ -471,7 +471,10 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             {
                 if matches!(write, Write::Delete) {
                     let edge = ThingEdgeRolePlayer::new(Bytes::Reference(key.byte_array().as_ref()));
-                    let relation = Relation::new(edge.to());
+                    let relation = Relation::new(edge.from());
+                    if relation.get_status(snapshot, self) == ConceptStatus::Deleted {
+                        continue;
+                    }
                     if !relation.has_players(snapshot, self) {
                         relation.delete(snapshot, self)?;
                         any_deleted = true;

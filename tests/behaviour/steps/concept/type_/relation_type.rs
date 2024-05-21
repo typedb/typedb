@@ -49,7 +49,7 @@ pub async fn relation_type_override_role(
     with_schema_tx!(context, |tx| {
         let relation_type = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
         let relates = relation_type
-            .get_relates_role(&mut tx.snapshot, &tx.type_manager, role_label.to_typedb().name().as_str())
+            .get_relates_role(&tx.snapshot, &tx.type_manager, role_label.to_typedb().name().as_str())
             .unwrap()
             .unwrap();
         let relation_supertype = relation_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
