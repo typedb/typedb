@@ -1,8 +1,9 @@
 use bytes::Bytes;
 use encoding::graph::type_::edge::{TypeEdge, edge_constructors::TypeEdgeConstructor, edge_constructors};
+use encoding::graph::type_::property::TypeEdgeProperty;
 use storage::key_value::StorageKey;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use crate::type_::{InterfaceEdge, TypeAPI};
+use crate::type_::{InterfaceEdge, IntoCanonicalTypeEdge, TypeAPI};
 use crate::type_::owns::Owns;
 use crate::type_::plays::Plays;
 
@@ -63,4 +64,12 @@ pub struct OwnsEncoder { }
 impl<'a> EdgeEncoder<'a, Owns<'a>> for OwnsEncoder {
     type ForwardFactory = edge_constructors::EdgeOwns;
     type ReverseFactory = edge_constructors::EdgeOwnsReverse;
+}
+
+pub trait EdgeAnnotationEncoder<'a, E> where
+    E: InterfaceEdge<'a>
+{
+    fn to_type_edge_property_key(edge: E, annotation: E::AnnotationType) -> TypeEdgeProperty<'static> {
+        TypeEdgeProperty::build(edge.clone().into_type_edge(), annotation)
+    }
 }

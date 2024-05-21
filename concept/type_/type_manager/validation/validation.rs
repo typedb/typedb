@@ -10,7 +10,7 @@ use encoding::{
     layout::prefix::Prefix,
     value::{label::Label, value_type::ValueType},
 };
-use encoding::graph::thing::edge::{ThingEdgeHasReverse, ThingEdgeRolePlayer};
+use encoding::graph::thing::edge::ThingEdgeRolePlayer;
 use encoding::graph::thing::vertex_attribute::AttributeVertex;
 use encoding::graph::Typed;
 use storage::snapshot::ReadableSnapshot;
@@ -28,8 +28,6 @@ use crate::type_::type_manager::{KindAPI, TypeManager};
 use crate::type_::type_manager::type_reader::TypeReader;
 use crate::type_::type_manager::validation::SchemaValidationError;
 use storage::key_range::KeyRange;
-use crate::thing::attribute::AttributeIterator;
-use crate::thing::entity::EntityIterator;
 use crate::thing::ObjectAPI;
 use crate::thing::relation::{RelationIterator, RolePlayerIterator};
 macro_rules! object_type_match {
@@ -301,7 +299,7 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_exact_type_no_instances_roles<Snapshot: ReadableSnapshot>(
+    pub(crate) fn validate_exact_type_no_instances_role<Snapshot: ReadableSnapshot>(
         snapshot: &Snapshot,
         role_type: RoleType<'_>,
     ) -> Result<(), SchemaValidationError> {

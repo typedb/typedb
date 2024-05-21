@@ -15,6 +15,7 @@ use encoding::{
 use primitive::maybe_owns::MaybeOwns;
 use serde::{Deserialize, Serialize};
 use bytes::Bytes;
+use encoding::layout::infix::Infix;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use self::{annotation::AnnotationRegex, object_type::ObjectType};
@@ -31,6 +32,8 @@ use crate::{
 use crate::type_::type_manager::encoding_helper::EdgeEncoder;
 use crate::type_::type_manager::KindAPI;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use storage::key_value::StorageKey;
+use crate::type_::annotation::Annotation;
 
 pub mod annotation;
 pub mod attribute_type;
@@ -217,6 +220,12 @@ pub(crate) trait IntoCanonicalTypeEdge<'a> {
 
     fn into_type_edge(self) -> TypeEdge<'static>;
 }
+
+pub trait EdgeAnnotation {
+    fn annotation(&self) -> Annotation {
+    }
+}
+
 pub(crate) trait InterfaceEdge<'a> : IntoCanonicalTypeEdge<'a> + Sized + Clone
 {
     type AnnotationType;

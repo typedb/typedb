@@ -124,15 +124,16 @@ impl<'a> Owns<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         annotation: OwnsAnnotation,
-    ) {
-        match annotation {
-            OwnsAnnotation::Distinct(_) => type_manager.storage_set_edge_annotation_distinct(snapshot, self.clone()),
-            OwnsAnnotation::Unique(_) => type_manager.storage_set_edge_annotation_unique(snapshot, self.clone()),
-            OwnsAnnotation::Key(_) => type_manager.storage_set_edge_annotation_key(snapshot, self.clone()),
-            OwnsAnnotation::Cardinality(cardinality) => {
-                type_manager.storage_set_edge_annotation_cardinality(snapshot, self.clone(), cardinality)
-            }
-        }
+    ) -> Result<(), ConceptWriteError> {
+        type_manager.set_edge_annotation(snapshot, self.clone(), annotation)
+        // match annotation {
+        //     OwnsAnnotation::Distinct(_) => type_manager.storage_set_edge_annotation_distinct(snapshot, self.clone()),
+        //     OwnsAnnotation::Key(_) => type_manager.storage_set_edge_annotation_key(snapshot, self.clone()),
+        //     OwnsAnnotation::Cardinality(cardinality) => {
+        //         type_manager.storage_set_edge_annotation_cardinality(snapshot, self.clone(), cardinality)
+        //     }
+        // }
+        // Ok(()) // TODO
     }
 
     pub fn unset_annotation<Snapshot: WritableSnapshot>(

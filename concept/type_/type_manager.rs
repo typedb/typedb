@@ -736,6 +736,8 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     pub(crate) fn delete_entity_type(&self, snapshot: &mut Snapshot, entity_type: EntityType<'_>) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_type_is_not_root(snapshot, entity_type.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
         OperationTimeValidation::validate_no_subtypes(snapshot, entity_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
         OperationTimeValidation::validate_exact_type_no_instances_entity(snapshot, entity_type.clone().into_owned())
@@ -748,6 +750,8 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
 
     pub(crate) fn delete_relation_type(&self, snapshot: &mut Snapshot, relation_type: RelationType<'_>)  -> Result<(), ConceptWriteError> {
         // Sufficient to guarantee the roles have no subtypes or instances either
+        OperationTimeValidation::validate_type_is_not_root(snapshot, relation_type.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
         OperationTimeValidation::validate_no_subtypes(snapshot, relation_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
         OperationTimeValidation::validate_exact_type_no_instances_relation(snapshot, relation_type.clone().into_owned())
@@ -763,6 +767,8 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     pub(crate) fn delete_attribute_type(&self, snapshot: &mut Snapshot, attribute_type: AttributeType<'_>) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_type_is_not_root(snapshot, attribute_type.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
         OperationTimeValidation::validate_no_subtypes(snapshot, attribute_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
         OperationTimeValidation::validate_exact_type_no_instances_attribute(snapshot, attribute_type.clone().into_owned(), self)
@@ -774,7 +780,12 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     }
 
     pub(crate) fn delete_role_type(&self, snapshot: &mut Snapshot, role_type: RoleType<'_>) -> Result<(), ConceptWriteError> {
-        // TODO: Validation
+        OperationTimeValidation::validate_type_is_not_root(snapshot, role_type.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+        // TODO: More validation
+        OperationTimeValidation::validate_exact_type_no_instances_role(snapshot, role_type.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+
 
         let relates = TypeReader::get_relation(snapshot, role_type.clone().into_owned()).unwrap();
         let relation = relates.relation();
@@ -991,6 +1002,15 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn storage_delete_annotation_distinct(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         let annotation_property = build_property_type_annotation_distinct(type_.into_vertex());
         snapshot.delete(annotation_property.into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn set_edge_annotation<'b, IMPL: InterfaceEdge<'b>>(
+        &self,
+        snapshot: &mut Snapshot,
+        edge: IMPL,
+        annotation: IMPL::AnnotationType
+    ) -> Result<(), ConceptWriteError> {
+
     }
 
     pub(crate) fn storage_set_edge_annotation_distinct<'b>(
