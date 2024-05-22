@@ -18,14 +18,6 @@ pub enum State<E> {
     Done,
 }
 
-impl<E> PartialEq for State<E> {
-    fn eq(&self, other: &Self) -> bool {
-        std::mem::discriminant(self) == std::mem::discriminant(other)
-    }
-}
-
-impl<E> Eq for State<E> {}
-
 pub trait Collector<T> {
     fn add(&mut self, element: T);
 }
