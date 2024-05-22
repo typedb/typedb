@@ -290,7 +290,7 @@ impl BufferRangeIterator {
     }
 
     fn advance_and_update_state(&mut self) {
-        assert_eq!(self.state, State::ItemUsed);
+        assert!(matches!(self.state, State::ItemUsed));
         self.index += 1;
         self.update_state();
     }

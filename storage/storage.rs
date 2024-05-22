@@ -21,6 +21,7 @@ use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
 use itertools::Itertools;
 use keyspace::KeyspaceDeleteError;
+use lending_iterator::LendingIterator;
 use logger::{error, result::ResultExt};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
@@ -407,7 +408,7 @@ impl<Durability> MVCCStorage<Durability> {
     pub fn iterate_keyspace_range<'this, const PREFIX_INLINE: usize>(
         &'this self,
         range: KeyRange<StorageKey<'this, PREFIX_INLINE>>,
-    ) -> KeyspaceRangeIterator<'this, PREFIX_INLINE> {
+    ) -> KeyspaceRangeIterator {
         debug_assert!(!range.start().bytes().is_empty());
         self.keyspaces.get(range.start().keyspace_id()).iterate_range(range.map(|k| k.into_bytes(), |fixed| fixed))
     }

@@ -4,120 +4,76 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::cmp::Ordering;
-
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
-use iterator::State;
+use lending_iterator::{
+    combinators::{Map, TakeWhile},
+    LendingIterator,
+};
 use logger::result::ResultExt;
-use speedb::{self, DBRawIterator, DBRawIteratorWithThreadMode, DB};
+use speedb::DB;
 
 use super::keyspace::{Keyspace, KeyspaceError};
-use crate::key_range::KeyRange;
+use crate::key_range::{KeyRange, RangeEnd};
 
-pub struct KeyspaceRangeIterator<'a, const INLINE_BYTES: usize> {
-    keyspace_name: &'static str,
-    range: KeyRange<Bytes<'a, { INLINE_BYTES }>>,
-    iterator: DBRawIterator<'a>,
-    state: State<speedb::Error>,
-}
+mod raw {
+    use std::cmp::Ordering;
 
-impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
-    pub(crate) fn new(keyspace: &'a Keyspace, range: KeyRange<Bytes<'a, INLINE_BYTES>>) -> Self {
-        // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
-        // read_opts.set_prefix_same_as_start(true);
-        let read_opts = keyspace.new_read_options();
-        let raw_iterator: DBRawIteratorWithThreadMode<'a, DB> = keyspace.kv_storage.raw_iterator_opt(read_opts);
+    use lending_iterator::LendingIterator;
+    use speedb::DBRawIterator;
 
-        KeyspaceRangeIterator { keyspace_name: keyspace.name(), range, iterator: raw_iterator, state: State::Init }
+    pub(super) struct DBIterator {
+        iterator: DBRawIterator<'static>,
+        item: Option<Result<(&'static [u8], &'static [u8]), speedb::Error>>,
     }
 
-    pub(crate) fn peek(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
-        match self.state.clone() {
-            State::Init => {
-                self.iterator.seek(self.range.start().bytes());
-                self.update_state();
-                self.peek()
-            }
-            State::ItemUsed => {
-                self.iterator.next();
-                self.update_state();
-                self.peek()
-            }
-            State::ItemReady => {
-                let key = self.iterator.key().unwrap();
-                let value = self.iterator.value().unwrap();
-                Some(Ok((key, value)))
-            }
-            State::Error(error) => {
-                Some(Err(KeyspaceError::Iterate { name: self.keyspace_name, source: error.clone() }))
-            }
-            State::Done => None,
+    impl DBIterator {
+        pub(super) fn new_from(mut iterator: DBRawIterator<'static>, start: &[u8]) -> Self {
+            iterator.seek(start);
+            Self { item: Ok(unsafe { std::mem::transmute(iterator.item()) }).transpose(), iterator }
         }
     }
 
-    pub(crate) fn next(&mut self) -> Option<Result<(&[u8], &[u8]), KeyspaceError>> {
-        match self.state.clone() {
-            State::Init => {
-                self.iterator.seek(self.range.start().bytes());
-                self.update_state();
-                self.next()
-            }
-            State::ItemUsed => {
-                self.iterator.next();
-                self.update_state();
-                self.next()
-            }
-            State::ItemReady => {
-                self.state = State::ItemUsed;
-                let key = self.iterator.key().unwrap();
-                let value = self.iterator.value().unwrap();
-                Some(Ok((key, value)))
-            }
-            State::Error(error) => {
-                Some(Err(KeyspaceError::Iterate { name: self.keyspace_name, source: error.clone() }))
-            }
-            State::Done => None,
-        }
-    }
+    impl LendingIterator for DBIterator {
+        type Item<'a> = Result<(&'a [u8], &'a [u8]), speedb::Error>
+        where
+            Self: 'a;
 
-    pub(crate) fn seek(&mut self, key: &[u8]) {
-        match self.state {
-            State::Done | State::Error(_) => {}
-            State::Init => {
-                if self.is_in_range(key) {
-                    // TODO is this right?
-                    self.iterator.seek(key);
-                    self.update_state();
-                } else {
-                    self.state = State::Done;
-                }
+        fn next(&mut self) -> Option<Self::Item<'_>> {
+            if self.item.is_some() {
+                self.item.take()
+            } else if self.iterator.valid() {
+                self.iterator.next();
+                self.iterator.item().map(Ok)
+            } else if self.iterator.status().is_err() {
+                Some(Err(self.iterator.status().err().unwrap().clone()))
+            } else {
+                None
             }
-            State::ItemReady => {
-                if self.is_in_range(key) {
-                    let (peek, _) = self.peek().unwrap().unwrap();
-                    match peek.cmp(key) {
-                        Ordering::Less => {
-                            self.state = State::ItemUsed;
-                            self.iterator.seek(key);
-                            self.update_state();
-                        }
-                        Ordering::Equal => {}
-                        Ordering::Greater => {
-                            // TODO: seeking backward could be a no-op or an error or illegal state??
-                        }
-                    }
-                } else {
-                    self.state = State::Done;
+        }
+
+        fn peek(&mut self) -> Option<&Self::Item<'_>> {
+            match self.next() {
+                Some(Ok(item)) => {
+                    self.item = Some(unsafe { std::mem::transmute(item) });
+                    self.item.as_ref()
                 }
+                Some(Err(error)) => {
+                    self.item = Some(Err(error));
+                    self.item.as_ref()
+                }
+                None => None,
             }
-            State::ItemUsed => {
-                let prev = self.iterator.key().unwrap();
-                match prev.cmp(key) {
+        }
+
+        fn seek(&mut self, key: &[u8]) {
+            if let Some(Ok(item)) = self.peek() {
+                let (peek, _) = item;
+                match peek.cmp(&key) {
                     Ordering::Less => {
+                        self.item.take();
                         self.iterator.seek(key);
-                        self.update_state();
                     }
-                    Ordering::Equal => {}
+                    Ordering::Equal => (),
                     Ordering::Greater => {
                         // TODO: seeking backward could be a no-op or an error or illegal state??
                     }
@@ -125,27 +81,72 @@ impl<'a, const INLINE_BYTES: usize> KeyspaceRangeIterator<'a, INLINE_BYTES> {
             }
         }
     }
+}
 
-    fn update_state(&mut self) {
-        if self.iterator.valid() {
-            if self.is_in_range(self.iterator.key().unwrap()) {
-                self.state = State::ItemReady;
-            } else {
-                self.state = State::Done;
-            }
-        } else if self.iterator.status().is_err() {
-            self.state = State::Error(self.iterator.status().err().unwrap().clone());
-        } else {
-            self.state = State::Done;
-        }
+pub struct KeyspaceRangeIterator {
+    iterator: Map<
+        TakeWhile<raw::DBIterator, Box<dyn FnMut(&Result<(&[u8], &[u8]), speedb::Error>) -> bool>>,
+        Box<dyn for<'a> Fn(Result<(&'a [u8], &'a [u8]), speedb::Error>) -> Result<(&'a [u8], &'a [u8]), KeyspaceError>>,
+        Result<(&'static [u8], &'static [u8]), KeyspaceError>,
+    >,
+}
+
+impl KeyspaceRangeIterator {
+    pub(crate) fn new<'a, const INLINE_BYTES: usize>(
+        keyspace: &'a Keyspace,
+        range: KeyRange<Bytes<'a, INLINE_BYTES>>,
+    ) -> Self {
+        // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
+        // read_opts.set_prefix_same_as_start(true);
+        let read_opts = keyspace.new_read_options();
+        let kv_storage: &'static DB = unsafe { std::mem::transmute(&keyspace.kv_storage) };
+        let iterator = raw::DBIterator::new_from(kv_storage.raw_iterator_opt(read_opts), range.start().bytes());
+        let start = range.start().to_array();
+        let range = match range.end() {
+            RangeEnd::SameAsStart => KeyRange::new_within(start, range.fixed_width()),
+            RangeEnd::Inclusive(end) => KeyRange::new_inclusive(start, end.to_array()),
+            RangeEnd::Exclusive(end) => KeyRange::new_exclusive(start, end.to_array()),
+            RangeEnd::Unbounded => KeyRange::new_unbounded(start),
+        };
+
+        let keyspace_name = keyspace.name();
+
+        let range_iterator = iterator
+            .take_while(Box::new(move |res: &Result<(&[u8], &[u8]), speedb::Error>| match res {
+                Ok((key, _)) => range.within_end(&Bytes::<0>::Reference(ByteReference::new(key))),
+                Err(_) => true,
+            }) as Box<_>)
+            .map(mapper(keyspace_name));
+
+        KeyspaceRangeIterator { iterator: range_iterator }
+    }
+}
+
+fn mapper(
+    name: &'static str,
+) -> Box<dyn for<'a> Fn(Result<(&'a [u8], &'a [u8]), speedb::Error>) -> Result<(&'a [u8], &'a [u8]), KeyspaceError>> {
+    Box::new(move |res| res.map_err(|error| KeyspaceError::Iterate { name, source: error }))
+}
+
+impl LendingIterator for KeyspaceRangeIterator {
+    type Item<'a> = Result<(&'a[u8], &'a[u8]), KeyspaceError>
+    where
+        Self: 'a;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        self.iterator.next()
     }
 
-    /// Optimise range-check. We only need to do a single comparison, to the end
-    /// of the range, since we can guarantee that we always start within the range and move forward.
-    fn is_in_range(&self, key: &[u8]) -> bool {
-        self.range.within_end(&Bytes::Reference(ByteReference::new(key)))
+    fn peek(&mut self) -> Option<&Self::Item<'_>> {
+        self.iterator.peek()
     }
 
+    fn seek(&mut self, key: &[u8]) {
+        self.iterator.seek(key);
+    }
+}
+
+impl KeyspaceRangeIterator {
     pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(
         mut self,
     ) -> Vec<(ByteArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)> {

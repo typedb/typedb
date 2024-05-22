@@ -80,11 +80,11 @@ impl<T: Prefix> KeyRange<T> {
         *value >= *self.start().borrow()
     }
 
-    pub fn within_end(&self, value: &T) -> bool {
+    pub fn within_end(&self, value: &impl Prefix) -> bool {
         match &self.end {
-            RangeEnd::SameAsStart => value.starts_with(self.start()),
-            RangeEnd::Inclusive(e) => value.cmp(e) == Ordering::Less || value.starts_with(e),
-            RangeEnd::Exclusive(e) => value.cmp(e) == Ordering::Less,
+            RangeEnd::SameAsStart => value.starts_with(self.start().bytes()),
+            RangeEnd::Inclusive(e) => value.bytes().cmp(e.bytes()) == Ordering::Less || value.starts_with(e.bytes()),
+            RangeEnd::Exclusive(e) => value.bytes().cmp(e.bytes()) == Ordering::Less,
             RangeEnd::Unbounded => true,
         }
     }

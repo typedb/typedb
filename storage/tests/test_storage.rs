@@ -116,22 +116,18 @@ fn create_reopen() {
 
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut checkpoint = None;
-    {
+    let checkpoint = {
         let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
         for key in &keys {
             storage.put_raw(StorageKeyReference::from(key), &empty_value());
         }
-        checkpoint = Some(checkpoint_storage(&storage));
-    }
+        checkpoint_storage(&storage)
+    };
 
     {
-        let storage = load_storage::<TestKeyspaceSet>(
-            &storage_path,
-            WAL::load(&storage_path).unwrap(),
-            Some(checkpoint.unwrap()),
-        )
-        .unwrap();
+        let storage =
+            load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), Some(checkpoint))
+                .unwrap();
         let items = storage
             .iterate_keyspace_range(KeyRange::new_unbounded(StorageKey::<64>::Reference(StorageKeyReference::from(
                 &StorageKeyArray::<64>::from((Keyspace, [0x0])),

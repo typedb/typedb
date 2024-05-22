@@ -15,6 +15,7 @@ use std::{
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use iterator::State;
+use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use crate::{

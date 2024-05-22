@@ -30,6 +30,7 @@ rust_library(
         "//common/iterator",
         "//durability",
         "//resource",
+        "//util/lending_iterator",
         "//util/project",
 
         "@crates//:bincode",

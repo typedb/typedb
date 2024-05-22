@@ -8,6 +8,7 @@ use std::{error::Error, fmt, marker::PhantomData, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use iterator::State;
+use lending_iterator::LendingIterator;
 
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
@@ -20,7 +21,7 @@ use crate::{
 pub(crate) struct MVCCRangeIterator<'storage, const PS: usize> {
     storage_name: &'storage str,
     keyspace: &'storage Keyspace,
-    iterator: KeyspaceRangeIterator<'storage, PS>,
+    iterator: KeyspaceRangeIterator,
     open_sequence_number: SequenceNumber,
     last_visible_key: Option<ByteArray<MVCC_KEY_INLINE_SIZE>>,
     state: State<Arc<KeyspaceError>>,
@@ -68,7 +69,7 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
                     Err(error) => {
                         return Some(Err(MVCCReadError::Keyspace {
                             storage_name: self.storage_name.to_owned(),
-                            source: Arc::new(error),
+                            source: Arc::new(error.clone()),
                         }))
                     }
                 };
@@ -102,7 +103,7 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
                     Err(error) => {
                         return Some(Err(MVCCReadError::Keyspace {
                             storage_name: self.storage_name.to_owned(),
-                            source: Arc::new(error),
+                            source: Arc::new(error.clone()),
                         }))
                     }
                 };
@@ -140,7 +141,7 @@ impl<'storage, const P: usize> MVCCRangeIterator<'storage, P> {
                         self.advance()
                     }
                 }
-                Some(Err(error)) => self.state = State::Error(Arc::new(error)),
+                Some(Err(error)) => self.state = State::Error(Arc::new(error.clone())),
             }
         }
     }

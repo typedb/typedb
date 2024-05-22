@@ -247,7 +247,7 @@ impl Keyspace {
     pub(crate) fn iterate_range<'s, const PREFIX_INLINE_SIZE: usize>(
         &'s self,
         range: KeyRange<Bytes<'s, PREFIX_INLINE_SIZE>>,
-    ) -> iterator::KeyspaceRangeIterator<'s, PREFIX_INLINE_SIZE> {
+    ) -> iterator::KeyspaceRangeIterator {
         iterator::KeyspaceRangeIterator::new(self, range)
     }
 
@@ -346,7 +346,7 @@ impl Error for KeyspaceDeleteError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum KeyspaceError {
     Get { name: &'static str, source: speedb::Error },
     Put { name: &'static str, source: speedb::Error },
