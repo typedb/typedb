@@ -58,8 +58,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOM
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PORT_IN_USE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
+import static com.vaticle.typedb.core.server.common.Constants.DEPLOYMENT_ID_FILE_NAME;
 import static com.vaticle.typedb.core.server.common.Constants.DIAGNOSTICS_REPORTING_URI;
-import static com.vaticle.typedb.core.server.common.Constants.USAGE_STATISTICS_REPORTING_URI;
+import static com.vaticle.typedb.core.server.common.Constants.ERROR_REPORTING_URI;
 import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_ALPHABET;
 import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_FILE_NAME;
 import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_LENGTH;
@@ -114,6 +115,8 @@ public class TypeDBServer implements AutoCloseable {
         this.factory = factory;
         databaseMgr = factory.databaseManager(options);
         server = rpcServer();
+
+        Diagnostics.get().mayStartReporting();
 
         Thread.setDefaultUncaughtExceptionHandler(
                 (t, e) -> {
@@ -183,10 +186,11 @@ public class TypeDBServer implements AutoCloseable {
     protected void configureDiagnostics() {
         try {
             Diagnostics.Core.initialise(
-                    serverID(), name(), Version.VERSION,
-                    config.diagnostics().reporting().errors(), DIAGNOSTICS_REPORTING_URI,
-                    config.diagnostics().reporting().statistics(), USAGE_STATISTICS_REPORTING_URI,
-                    config.diagnostics().monitoring().enable(), config.diagnostics().monitoring().port()
+                    deploymentID(), serverID(), name(), Version.VERSION,
+                    config.diagnostics().reporting().errors(), ERROR_REPORTING_URI,
+                    config.diagnostics().reporting().statistics(), DIAGNOSTICS_REPORTING_URI,
+                    config.diagnostics().monitoring().enable(), config.diagnostics().monitoring().port(),
+                    config.storage().dataDir()
             );
         } catch (Throwable e) {
             LOG.debug("Failed to initialise diagnostics: ", e);
@@ -195,23 +199,73 @@ public class TypeDBServer implements AutoCloseable {
 
     protected String serverID() {
         try {
+            String serverID = "";
+
             Path serverIDFile = config().storage().dataDir().resolve(SERVER_ID_FILE_NAME);
             if (serverIDFile.toFile().exists()) {
-                return Files.readString(serverIDFile);
+                serverID = Files.readString(serverIDFile);
+                if (serverID.isEmpty()) {
+                    throw new Exception("The stored server ID value is empty");
+                }
             } else {
-                Random random = new Random();
-                String serverID = IntStream.range(0, SERVER_ID_LENGTH).boxed()
-                        .map(i -> SERVER_ID_ALPHABET.charAt(random.nextInt(SERVER_ID_ALPHABET.length())))
-                        .map(String::valueOf)
-                        .collect(Collectors.joining());
+                serverID = generateServerID();
+                if (serverID.isEmpty()) {
+                    throw new Exception("The generated server ID value is empty");
+                }
+
                 Files.writeString(serverIDFile, serverID);
-                return serverID;
             }
+
+            return serverID;
         } catch (Exception e) {
             LOG.debug("Failed to create, persist, or read stored server ID: ", e);
         }
         // fallback
         return "_0";
+    }
+
+    protected String generateServerID() {
+        Random random = new Random();
+        return IntStream.range(0, SERVER_ID_LENGTH).boxed()
+                .map(i -> SERVER_ID_ALPHABET.charAt(random.nextInt(SERVER_ID_ALPHABET.length())))
+                .map(String::valueOf)
+                .collect(Collectors.joining());
+    }
+
+    protected String deploymentID() {
+        try {
+            Optional<String> configDeploymentID = config().diagnostics().deploymentID();
+            if (configDeploymentID.isPresent()) {
+                return configDeploymentID.get();
+            }
+
+            String deploymentID = "";
+
+            Path deploymentIDFile = config().storage().dataDir().resolve(DEPLOYMENT_ID_FILE_NAME);
+            if (deploymentIDFile.toFile().exists()) {
+                deploymentID = Files.readString(deploymentIDFile);
+                if (deploymentID.isEmpty()) {
+                    throw new Exception("The stored deployment ID value is empty");
+                }
+            } else {
+                deploymentID = generateDeploymentID();
+                if (deploymentID.isEmpty()) {
+                    throw new Exception("The generated deployment ID value is empty");
+                }
+
+                Files.writeString(deploymentIDFile, deploymentID);
+            }
+
+            return deploymentID;
+        } catch (Exception e) {
+            LOG.debug("Failed to create, persist, or read stored deployment ID: ", e);
+        }
+        // fallback
+        return "_0";
+    }
+
+    protected String generateDeploymentID() {
+        return serverID();
     }
 
     protected io.grpc.Server rpcServer() {
@@ -343,7 +397,7 @@ public class TypeDBServer implements AutoCloseable {
         TypeDBServer server = TypeDBServer.create(subcmdServer.config(), subcmdServer.isDebug());
         try {
             server.start();
-            Diagnostics.get().mayStartServing(null);
+            Diagnostics.get().mayStartMonitoringService(null);
         } catch (TypeDBCheckedException e) {
             server.logger().error(e.getMessage());
             System.exit(1);

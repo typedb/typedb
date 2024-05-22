@@ -34,7 +34,7 @@
 @maven//:com_googlecode_java_diff_utils_diffutils_1_3_0
 @maven//:com_squareup_okhttp_okhttp_2_7_5
 @maven//:com_squareup_okio_okio_1_17_5
-@maven//:com_vaticle_typedb_typedb_console_runner_2_28_0
+@maven//:com_vaticle_typedb_typedb_console_runner_2_28_2_rc1
 @maven//:com_vdurmont_semver4j_3_1_0
 @maven//:commons_codec_commons_codec_1_13
 @maven//:commons_io_commons_io_2_3
@@ -123,5 +123,5 @@
 @maven//:org_jsoup_jsoup_1_16_1
 @maven//:org_kohsuke_github_api_1_101
 @maven//:org_slf4j_slf4j_api_2_0_0
-@maven//:org_yaml_snakeyaml_1_25
+@maven//:org_yaml_snakeyaml_2_2
 @maven//:org_zeroturnaround_zt_exec_1_10
