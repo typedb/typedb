@@ -124,7 +124,6 @@ async fn relation_get_players_for_role_contains(
     contains_or_doesnt.check(slice::from_ref(player), &players);
 }
 
-/*
 #[apply(generic_step)]
 #[step(expr = r"{object_root_label} {var} get relations {contains_or_doesnt}: {var}")]
 async fn object_get_relations_contain(
@@ -139,9 +138,8 @@ async fn object_get_relations_contain(
     let relations = with_read_tx!(context, |tx| {
         player
             .get_relations(&tx.snapshot, &tx.thing_manager)
-            .unwrap()
-            .collect_cloned_vec(|(rel, _, _)| rel.into_owned())
-            .unwrap()
+            .map_static(|rel| rel.unwrap().into_owned())
+            .collect::<Vec<_>>()
     });
     let Object::Relation(relation) = &context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object else {
         panic!()
@@ -149,6 +147,7 @@ async fn object_get_relations_contain(
     contains_or_doesnt.check(slice::from_ref(relation), &relations);
 }
 
+/*
 #[apply(generic_step)]
 #[step(
     expr = r"{object_root_label} {var} get relations\({type_label}\) with role\({type_label}\) {contains_or_doesnt}: {var}"

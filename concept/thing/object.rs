@@ -301,6 +301,14 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
             Some(owns) => Ok(owns),
         }
     }
+
+    fn get_relations<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
+        thing_manager.get_relations_player(snapshot, self)
+    }
 }
 impl<'a> ObjectAPI<'a> for Object<'a> {
     fn vertex(&self) -> ObjectVertex<'_> {

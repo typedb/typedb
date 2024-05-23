@@ -21,7 +21,7 @@ use encoding::{
     AsBytes, Keyable, Prefixed,
 };
 use iterator::Collector;
-use lending_iterator::LendingIterator;
+use lending_iterator::{higher_order::Hkt, LendingIterator};
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
     snapshot::{ReadableSnapshot, WritableSnapshot},
@@ -145,11 +145,9 @@ impl<'a> Relation<'a> {
         thing_manager: &'m ThingManager<Snapshot>,
         role_type: RoleType<'static>,
     ) -> impl for<'x> LendingIterator<Item<'x> = Result<Object<'x>, ConceptReadError>> {
-        self.get_players(snapshot, thing_manager).filter_map::<Result<Object<'static>, _>, _>(move |res| {
-            match res {
-                Ok((roleplayer, _count)) => (roleplayer.role_type() == role_type).then_some(Ok(roleplayer.player)),
-                Err(error) => Some(Err(error)),
-            }
+        self.get_players(snapshot, thing_manager).filter_map::<Result<Object<'_>, _>, _>(move |res| match res {
+            Ok((roleplayer, _count)) => (roleplayer.role_type() == role_type).then_some(Ok(roleplayer.player)),
+            Err(error) => Some(Err(error)),
         })
     }
 
@@ -351,6 +349,10 @@ impl<'a> ObjectAPI<'a> for Relation<'a> {
     fn type_(&self) -> impl ObjectTypeAPI<'static> {
         self.type_()
     }
+}
+
+impl Hkt for Relation<'static> {
+    type HktSelf<'a> = Relation<'a>;
 }
 
 // TODO: can we inline this into the macro invocation?
