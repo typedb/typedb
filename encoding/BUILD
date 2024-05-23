@@ -20,13 +20,13 @@ rust_library(
         "*/*/*.rs",
     ]),
     deps = [
-        "//common/logger",
         "//common/bytes",
+        "//common/lending_iterator",
+        "//common/logger",
         "//common/primitive",
+        "//durability",
         "//resource",
         "//storage",
-        "//durability",
-        "//util/lending_iterator",
 
         "@crates//:chrono",
         "@crates//:tracing",

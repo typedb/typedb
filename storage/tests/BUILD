@@ -35,13 +35,13 @@ rust_test(
     ]),
     deps = [
         "//common/bytes",
+        "//common/lending_iterator",
         "//common/logger",
         "//common/primitive",
-        "//storage",
         "//durability",
         "//resource",
+        "//storage",
         "//util/test:test_utils",
-        "//util/lending_iterator",
         "@crates//:rand",
         "@crates//:tracing",
     ]
@@ -96,12 +96,12 @@ rust_test(
     ]),
     deps = [
         "//common/bytes",
+        "//common/lending_iterator",
         "//common/logger",
         "//common/primitive",
-        "//storage",
         "//durability",
         "//resource",
-        "//util/lending_iterator",
+        "//storage",
         "//util/test:test_utils",
 
         "@crates//:rand",

@@ -24,13 +24,13 @@ rust_library(
         "recovery/*.rs",
     ]),
     deps = [
-        "//common/logger",
-        "//common/primitive",
         "//common/bytes",
         "//common/iterator",
+        "//common/lending_iterator",
+        "//common/logger",
+        "//common/primitive",
         "//durability",
         "//resource",
-        "//util/lending_iterator",
         "//util/project",
 
         "@crates//:bincode",
