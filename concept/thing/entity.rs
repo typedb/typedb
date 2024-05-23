@@ -7,14 +7,7 @@
 use std::collections::HashSet;
 
 use encoding::{
-    graph::{
-        thing::{
-            edge::{ThingEdgeRelationIndex, ThingEdgeRolePlayer},
-            vertex_object::ObjectVertex,
-        },
-        type_::vertex::build_vertex_entity_type,
-        Typed,
-    },
+    graph::{thing::vertex_object::ObjectVertex, type_::vertex::build_vertex_entity_type, Typed},
     layout::prefix::Prefix,
     AsBytes, Keyable, Prefixed,
 };
@@ -64,7 +57,7 @@ impl<'a> Entity<'a> {
         &self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-    ) -> RelationRoleIterator<{ ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
+    ) -> RelationRoleIterator {
         thing_manager.get_relations_roles(snapshot, self.as_reference())
     }
 
@@ -72,7 +65,7 @@ impl<'a> Entity<'a> {
         &'m self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-    ) -> IndexedPlayersIterator<{ ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
+    ) -> IndexedPlayersIterator {
         thing_manager.get_indexed_players(snapshot, Object::Entity(self.as_reference()))
     }
 

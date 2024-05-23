@@ -12,6 +12,7 @@ rust_library(
     srcs = glob(["**/*.rs"]),
     crate_root = "lib.rs",
     deps = [
+        "//common/lending_iterator",
         "//concept:concept",
         "//database:database",
         "//encoding:encoding",

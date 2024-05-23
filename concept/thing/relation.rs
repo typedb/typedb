@@ -10,7 +10,7 @@ use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{
-            edge::{ThingEdgeHas, ThingEdgeRelationIndex, ThingEdgeRolePlayer},
+            edge::{ThingEdgeRelationIndex, ThingEdgeRolePlayer},
             vertex_object::ObjectVertex,
         },
         type_::vertex::{build_vertex_relation_type, build_vertex_role_type},
@@ -21,6 +21,7 @@ use encoding::{
     AsBytes, Keyable, Prefixed,
 };
 use iterator::Collector;
+use lending_iterator::LendingIterator;
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
     snapshot::{ReadableSnapshot, WritableSnapshot},
@@ -30,7 +31,7 @@ use crate::{
     concept_iterator, edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        object::{Object, ObjectAPI},
+        object::{Object, ObjectAPI, ObjectIterator},
         thing_manager::ThingManager,
         ThingAPI,
     },
@@ -104,7 +105,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-    ) -> RelationRoleIterator<{ ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
+    ) -> RelationRoleIterator {
         thing_manager.get_relations_roles(snapshot, self.as_reference())
     }
 
@@ -112,7 +113,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-    ) -> IndexedPlayersIterator<{ ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
+    ) -> IndexedPlayersIterator {
         thing_manager.get_indexed_players(snapshot, Object::Relation(self.as_reference()))
     }
 
@@ -134,8 +135,17 @@ impl<'a> Relation<'a> {
         &'m self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-    ) -> RolePlayerIterator<{ ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+    ) -> RolePlayerIterator {
         thing_manager.get_role_players(snapshot, self.as_reference())
+    }
+
+    pub fn get_players_role_type<'m, Snapshot: ReadableSnapshot>(
+        &'m self,
+        snapshot: &'m Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
+        role_type: RoleType<'static>,
+    ) -> ObjectIterator {
+        todo!()
     }
 
     fn get_player_counts<Snapshot: ReadableSnapshot>(
@@ -306,7 +316,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         let players = self
             .get_players(snapshot, thing_manager)
             .collect_cloned_vec(|(roleplayer, count)| (roleplayer.role_type, roleplayer.player.into_owned()))
-            .map_err(|err| ConceptWriteError::ConceptRead { source: ConceptReadError::from(err) })?;
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for (role, player) in players {
             // TODO: Deleting one player at a time, each of which will delete parts of the relation index, isn't optimal
             //       Instead, we could delete the players, then delete the entire index at once, if there is one
@@ -371,7 +381,7 @@ fn storage_key_to_role_player<'a>(storage_key: StorageKey<'a, 40>, value: Bytes<
 
 edge_iterator!(
     RolePlayerIterator;
-    (RolePlayer<'_>, u64);
+    'a -> (RolePlayer<'a>, u64);
     storage_key_to_role_player
 );
 
@@ -386,7 +396,7 @@ fn storage_key_to_relation_role<'a>(
 
 edge_iterator!(
     RelationRoleIterator;
-    (Relation<'_>, RoleType<'static>, u64);
+    'a -> (Relation<'a>, RoleType<'static>, u64);
     storage_key_to_relation_role
 );
 
@@ -416,6 +426,6 @@ fn storage_key_to_indexed_players<'a>(
 
 edge_iterator!(
     IndexedPlayersIterator;
-    (RolePlayer<'_>, RolePlayer<'_>, Relation<'_>, u64);
+    'a -> (RolePlayer<'a>, RolePlayer<'a>, Relation<'a>, u64);
     storage_key_to_indexed_players
 );

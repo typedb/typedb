@@ -14,6 +14,7 @@ use concept::{
     type_::{object_type::ObjectType, OwnerAPI, TypeAPI},
 };
 use itertools::Itertools;
+use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 
 use crate::{

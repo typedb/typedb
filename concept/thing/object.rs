@@ -11,6 +11,7 @@ use encoding::{
     value::decode_value_u64,
     Prefixed,
 };
+use lending_iterator::LendingIterator;
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
     snapshot::{ReadableSnapshot, WritableSnapshot},
@@ -154,7 +155,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
         &self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-    ) -> HasAttributeIterator<{ ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+    ) -> HasAttributeIterator {
         thing_manager.get_has_unordered(snapshot, self)
     }
 
@@ -163,7 +164,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HasAttributeIterator<{ ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }>, ConceptReadError> {
+    ) -> Result<HasAttributeIterator, ConceptReadError> {
         thing_manager.get_has_type_unordered(snapshot, self, attribute_type)
     }
 
@@ -334,6 +335,6 @@ fn storage_key_to_has_attribute<'a>(storage_key: StorageKey<'a, 40>, value: Byte
 
 edge_iterator!(
     HasAttributeIterator;
-    (Attribute<'_>, u64);
+    'a -> (Attribute<'a>, u64);
     storage_key_to_has_attribute
 );

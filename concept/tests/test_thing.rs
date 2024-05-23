@@ -29,6 +29,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     EncodingKeyspace,
 };
+use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},

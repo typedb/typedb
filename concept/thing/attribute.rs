@@ -85,7 +85,7 @@ impl<'a> Attribute<'a> {
         &self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-    ) -> AttributeOwnerIterator<{ ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
+    ) -> AttributeOwnerIterator {
         thing_manager.get_owners(snapshot, self.as_reference())
     }
 
@@ -94,7 +94,7 @@ impl<'a> Attribute<'a> {
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
         owner_type: impl ObjectTypeAPI<'o>,
-    ) -> AttributeOwnerIterator<{ ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }> {
+    ) -> AttributeOwnerIterator {
         thing_manager.get_owners_by_type(snapshot, self.as_reference(), owner_type)
     }
 
@@ -362,6 +362,6 @@ fn storage_key_to_owner<'a>(storage_key: StorageKey<'a, 40>, value: Bytes<'a, 64
 
 edge_iterator!(
     AttributeOwnerIterator;
-    (Object<'_>, u64);
+    'a -> (Object<'a>, u64);
     storage_key_to_owner
 );
