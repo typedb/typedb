@@ -64,17 +64,24 @@ pub trait LendingIterator: 'static {
         Filter::new(Map::new(self, mapper), |opt| opt.is_some())
     }
 
-    fn collect<B>(mut self) -> B
+    fn into_iter(mut self) -> impl Iterator<Item = Self::Item<'static>>
     where
         Self: Sized,
         for<'a> Self::Item<'a>: 'static,
-        B: FromIterator<Self::Item<'static>>,
     {
         iter::from_fn(move || unsafe {
             // SAFETY: `Self::Item<'a>: 'static` implies that the item is independent from the iterator.
             transmute::<Option<Self::Item<'_>>, Option<Self::Item<'static>>>(self.next())
         })
-        .collect()
+    }
+
+    fn collect<B>(self) -> B
+    where
+        Self: Sized,
+        for<'a> Self::Item<'a>: 'static,
+        B: FromIterator<Self::Item<'static>>,
+    {
+        self.into_iter().collect()
     }
 
     fn count(mut self) -> usize

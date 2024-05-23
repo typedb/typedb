@@ -135,7 +135,7 @@ impl<'a> Relation<'a> {
         &'m self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-    ) -> RolePlayerIterator {
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), ConceptReadError>> {
         thing_manager.get_role_players(snapshot, self.as_reference())
     }
 
@@ -315,7 +315,11 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
 
         let players = self
             .get_players(snapshot, thing_manager)
-            .collect_cloned_vec(|(roleplayer, count)| (roleplayer.role_type, roleplayer.player.into_owned()))
+            .map_static(|item| {
+                let (roleplayer, _count) = item?;
+                Ok((roleplayer.role_type, roleplayer.player.into_owned()))
+            })
+            .collect::<Result<Vec<_>, _>>()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for (role, player) in players {
             // TODO: Deleting one player at a time, each of which will delete parts of the relation index, isn't optimal

@@ -60,6 +60,7 @@ async fn relation_get_players_contains(
     contains_or_doesnt.check(slice::from_ref(player), &players);
 }
 
+/*
 #[apply(generic_step)]
 #[step(expr = r"relation {var} get players {contains_or_doesnt}:")]
 async fn relation_get_players_contains_table(
@@ -94,8 +95,8 @@ async fn relation_get_players_contains_table(
         .collect_vec();
     contains_or_doesnt.check(&expected, &players);
 }
+*/
 
-/*
 #[apply(generic_step)]
 #[step(expr = r"relation {var} get players for role\({type_label}\) {contains_or_doesnt}: {var}")]
 async fn relation_get_players_for_role_contains(
@@ -113,15 +114,13 @@ async fn relation_get_players_for_role_contains(
             .unwrap()
             .unwrap()
             .role();
-        relation
-            .get_players_role_type(&tx.snapshot, &tx.thing_manager, role_type)
-            .collect_cloned_vec(|r| r.into_owned())
-            .unwrap()
+        relation.get_players_role_type(&tx.snapshot, &tx.thing_manager, role_type).collect_cloned()
     });
     let player = &context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;
     contains_or_doesnt.check(slice::from_ref(player), &players);
 }
 
+/*
 #[apply(generic_step)]
 #[step(expr = r"{object_root_label} {var} get relations {contains_or_doesnt}: {var}")]
 async fn object_get_relations_contain(

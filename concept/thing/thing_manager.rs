@@ -963,7 +963,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     ) -> Result<(), ConceptWriteError> {
         let players = relation
             .get_players(snapshot, self)
-            .collect_cloned_vec(|(roleplayer, _count)| (roleplayer.player().into_owned(), roleplayer.role_type()))
+            .map_static(|item| {
+                let (roleplayer, _count) = item?;
+                Ok((roleplayer.player().into_owned(), roleplayer.role_type()))
+            })
+            .collect::<Result<Vec<_>, _>>()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for (rp_player, rp_role_type) in players {
             debug_assert!(!(rp_player == Object::new(rp_player.vertex()) && role_type == rp_role_type));
@@ -1002,7 +1006,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         debug_assert_ne!(total_player_count, 0);
         let players = relation
             .get_players(snapshot, self)
-            .collect_cloned_vec(|(roleplayer, count)| (roleplayer.player().into_owned(), roleplayer.role_type(), count))
+            .map_static(|item| {
+                let (roleplayer, count) = item?;
+                Ok((roleplayer.player().into_owned(), roleplayer.role_type(), count))
+            })
+            .collect::<Result<Vec<_>, _>>()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for (rp_player, rp_role_type, rp_count) in players {
             let is_same_rp = rp_player == player && rp_role_type == role_type;
