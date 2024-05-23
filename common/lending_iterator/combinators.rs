@@ -121,6 +121,46 @@ where
     }
 }
 
+pub struct FilterMap<I, F, B> {
+    iter: I,
+    mapper: F,
+    _pd: PhantomData<B>,
+}
+
+impl<I, F, B> FilterMap<I, F, B> {
+    pub(crate) fn new(iter: I, mapper: F) -> Self {
+        Self { iter, mapper, _pd: PhantomData }
+    }
+}
+
+impl<I, F, B> LendingIterator for FilterMap<I, F, B>
+where
+    B: Hkt,
+    I: LendingIterator,
+    F: for<'a> FnMutHktHelper<I::Item<'a>, Option<B::HktSelf<'a>>>,
+{
+    type Item<'a> = B::HktSelf<'a>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        loop {
+            match self.iter.next() {
+                None => return None,
+                Some(item) => {
+                    if let Some(mapped) = (self.mapper)(item) {
+                        return Some(unsafe {
+                            // SAFETY: this transmutes from Item to Item to extend the lifetime
+                            // to the borrow of `self` and immediately return.
+                            // The underlying lending iterator cannot be advanced before self.next() is called again,
+                            // which will force this borrow to be released.
+                            transmute::<Self::Item<'_>, Self::Item<'_>>(mapped)
+                        });
+                    }
+                }
+            }
+        }
+    }
+}
+
 pub struct TakeWhile<I, F> {
     iter: I,
     pred: F,

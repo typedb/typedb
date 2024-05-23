@@ -11,7 +11,7 @@ use encoding::{
     value::decode_value_u64,
     Prefixed,
 };
-use lending_iterator::LendingIterator;
+use lending_iterator::{higher_order::Hkt, LendingIterator};
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
     snapshot::{ReadableSnapshot, WritableSnapshot},
@@ -320,6 +320,10 @@ impl<'a> ObjectAPI<'a> for Object<'a> {
     fn type_(&self) -> impl ObjectTypeAPI<'static> {
         self.type_()
     }
+}
+
+impl Hkt for Object<'static> {
+    type HktSelf<'a> = Object<'a>;
 }
 
 fn storage_key_to_object(storage_key: StorageKey<'_, 40>) -> Object<'_> {

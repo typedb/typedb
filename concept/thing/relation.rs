@@ -144,8 +144,13 @@ impl<'a> Relation<'a> {
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
         role_type: RoleType<'static>,
-    ) -> ObjectIterator {
-        todo!()
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Object<'x>, ConceptReadError>> {
+        self.get_players(snapshot, thing_manager).filter_map::<Result<Object<'static>, _>, _>(move |res| {
+            match res {
+                Ok((roleplayer, _count)) => (roleplayer.role_type() == role_type).then_some(Ok(roleplayer.player)),
+                Err(error) => Some(Err(error)),
+            }
+        })
     }
 
     fn get_player_counts<Snapshot: ReadableSnapshot>(

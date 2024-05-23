@@ -9,6 +9,7 @@ pub mod higher_order;
 
 use std::{iter, mem::transmute};
 
+use combinators::FilterMap;
 use higher_order::AdHocHkt;
 
 use crate::{
@@ -55,13 +56,13 @@ pub trait LendingIterator: 'static {
         Map::new(self, mapper)
     }
 
-    fn filter_map<B, F>(self, mapper: F) -> Filter<Map<Self, F, B>, for<'a> fn(&'a Option<B::HktSelf<'_>>) -> bool>
+    fn filter_map<B, F>(self, mapper: F) -> FilterMap<Self, F, B>
     where
         Self: Sized,
         B: Hkt + 'static,
         F: for<'a> FnMutHktHelper<Self::Item<'a>, Option<B::HktSelf<'a>>>,
     {
-        Filter::new(Map::new(self, mapper), |opt| opt.is_some())
+        FilterMap::new(self, mapper)
     }
 
     fn into_iter(mut self) -> impl Iterator<Item = Self::Item<'static>>

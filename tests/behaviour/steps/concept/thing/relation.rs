@@ -12,6 +12,7 @@ use concept::{
 };
 use cucumber::gherkin::Step;
 use itertools::Itertools;
+use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 
 use crate::{
@@ -53,14 +54,13 @@ async fn relation_get_players_contains(
     let players = with_read_tx!(context, |tx| {
         relation
             .get_players(&tx.snapshot, &tx.thing_manager)
-            .collect_cloned_vec(|(rp, _count)| rp.player().into_owned())
-            .unwrap()
+            .map_static(|result| (result.unwrap().0.player().into_owned()))
+            .collect::<Vec<_>>()
     });
     let player = &context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;
     contains_or_doesnt.check(slice::from_ref(player), &players);
 }
 
-/*
 #[apply(generic_step)]
 #[step(expr = r"relation {var} get players {contains_or_doesnt}:")]
 async fn relation_get_players_contains_table(
@@ -71,15 +71,17 @@ async fn relation_get_players_contains_table(
 ) {
     let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
     let players = with_read_tx!(context, |tx| {
-        relation
-            .get_players(&tx.snapshot, &tx.thing_manager)
-            .collect_cloned_vec(|(rp, _count)| {
-                (
-                    rp.role_type().get_label(&tx.snapshot, &tx.type_manager).unwrap().name().as_str().to_owned(),
-                    rp.player().into_owned(),
-                )
-            })
-            .unwrap()
+        let mut iter = relation.get_players(&tx.snapshot, &tx.thing_manager);
+
+        let mut vec = Vec::new();
+        while let Some(res) = iter.next() {
+            let (rp, _count) = res.unwrap();
+            vec.push((
+                rp.role_type().get_label(&tx.snapshot, &tx.type_manager).unwrap().name().as_str().to_owned(),
+                rp.player().into_owned(),
+            ));
+        }
+        vec
     });
     let expected = step
         .table()
@@ -95,7 +97,6 @@ async fn relation_get_players_contains_table(
         .collect_vec();
     contains_or_doesnt.check(&expected, &players);
 }
-*/
 
 #[apply(generic_step)]
 #[step(expr = r"relation {var} get players for role\({type_label}\) {contains_or_doesnt}: {var}")]
@@ -114,7 +115,10 @@ async fn relation_get_players_for_role_contains(
             .unwrap()
             .unwrap()
             .role();
-        relation.get_players_role_type(&tx.snapshot, &tx.thing_manager, role_type).collect_cloned()
+        relation
+            .get_players_role_type(&tx.snapshot, &tx.thing_manager, role_type)
+            .map_static(|res| res.unwrap().into_owned())
+            .collect::<Vec<_>>()
     });
     let player = &context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;
     contains_or_doesnt.check(slice::from_ref(player), &players);
