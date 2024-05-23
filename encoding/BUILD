@@ -26,6 +26,7 @@ rust_library(
         "//resource",
         "//storage",
         "//durability",
+        "//util/lending_iterator",
 
         "@crates//:chrono",
         "@crates//:tracing",

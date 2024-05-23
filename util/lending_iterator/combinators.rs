@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::marker::PhantomData;
+
 use crate::{
     higher_order::{FnMutHktHelper, Hkt},
     LendingIterator,
@@ -12,34 +14,23 @@ use crate::{
 pub struct Map<I, F, B: Hkt> {
     iter: I,
     mapper: F,
-    item: Option<B::HktSelf<'static>>,
+    _pd: PhantomData<B>,
 }
 
 impl<I, F, B: Hkt> Map<I, F, B> {
     pub(crate) fn new(iter: I, mapper: F) -> Self {
-        Self { iter, mapper, item: None }
+        Self { iter, mapper, _pd: PhantomData }
     }
 }
 
-impl<B: Hkt, I: LendingIterator, F> LendingIterator for Map<I, F, B>
+impl<B: Hkt, I: LendingIterator, F: 'static> LendingIterator for Map<I, F, B>
 where
     F: for<'a> FnMutHktHelper<I::Item<'a>, B::HktSelf<'a>>,
 {
-    type Item<'a> = B::HktSelf<'a> where B: 'a, I: 'a, F:'a;
+    type Item<'a> = B::HktSelf<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        if let Some(item) = self.item.take() {
-            Some(unsafe { std::mem::transmute(item) })
-        } else {
-            self.iter.next().map(&mut self.mapper)
-        }
-    }
-
-    fn peek(&mut self) -> Option<&Self::Item<'_>> {
-        if self.item.is_none() {
-            self.item = unsafe { std::mem::transmute(self.iter.next().map(&mut self.mapper)) };
-        }
-        unsafe { std::mem::transmute(self.item.as_ref()) }
+        self.iter.next().map(&mut self.mapper)
     }
 
     fn seek(&mut self, _: &[u8]) {
@@ -58,11 +49,11 @@ impl<I, F> Filter<I, F> {
     }
 }
 
-impl<I: LendingIterator, F> LendingIterator for Filter<I, F>
+impl<I: LendingIterator, F: 'static> LendingIterator for Filter<I, F>
 where
     F: for<'a, 'b> FnMutHktHelper<&'b I::Item<'a>, bool>,
 {
-    type Item<'a> = I::Item<'a> where I: 'a, F: 'a;
+    type Item<'a> = I::Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         loop {
@@ -83,10 +74,6 @@ where
         }
     }
 
-    fn peek(&mut self) -> Option<&Self::Item<'_>> {
-        todo!()
-    }
-
     fn seek(&mut self, _: &[u8]) {
         todo!()
     }
@@ -104,11 +91,11 @@ impl<I, F> TakeWhile<I, F> {
     }
 }
 
-impl<I: LendingIterator, F> LendingIterator for TakeWhile<I, F>
+impl<I: LendingIterator, F: 'static> LendingIterator for TakeWhile<I, F>
 where
     F: for<'a, 'b> FnMutHktHelper<&'b I::Item<'a>, bool>,
 {
-    type Item<'a> = I::Item<'a> where I: 'a, F: 'a;
+    type Item<'a> = I::Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if self.done {
@@ -125,16 +112,6 @@ where
                     std::mem::transmute::<Self::Item<'_>, Self::Item<'_>>(item)
                 })
             }
-            _ => {
-                self.done = true;
-                None
-            }
-        }
-    }
-
-    fn peek(&mut self) -> Option<&Self::Item<'_>> {
-        match self.iter.peek() {
-            Some(item) if (self.pred)(item) => Some(item),
             _ => {
                 self.done = true;
                 None

@@ -39,10 +39,10 @@ pub trait ReadableSnapshot {
         Ok(value.map(|bytes| mapper(bytes.as_ref())))
     }
 
-    fn iterate_range<'this, const PS: usize>(
-        &'this self,
-        range: KeyRange<StorageKey<'this, PS>>,
-    ) -> SnapshotRangeIterator<'this, PS>;
+    fn iterate_range<const PS: usize>(
+        &self,
+        range: KeyRange<StorageKey<'_, PS>>,
+    ) -> SnapshotRangeIterator<PS>;
 
     fn any_in_range<'this, const PS: usize>(
         &'this self,
@@ -148,7 +148,6 @@ pub trait WritableSnapshot: ReadableSnapshot {
             // note: this currently copies all the buffers
             buffer
                 .iterate_range(KeyRange::new_unbounded(Bytes::Array(ByteArray::<BUFFER_KEY_INLINE>::empty())))
-                .into_range()
                 .into_iter()
         })
     }
@@ -157,9 +156,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
         &'this self,
         range: KeyRange<Bytes<'this, PS>>,
     ) -> impl Iterator<Item = (StorageKeyArray<BUFFER_KEY_INLINE>, Write)> + '_ {
-        self.operations()
-            .write_buffers()
-            .flat_map(move |buffer| buffer.iterate_range(range.clone()).into_range().into_iter())
+        self.operations().write_buffers().flat_map(move |buffer| buffer.iterate_range(range.clone()).into_iter())
     }
 
     fn close_resources(&self);
@@ -204,9 +201,9 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
     fn iterate_range<'this, const PS: usize>(
         &'this self,
         range: KeyRange<StorageKey<'this, PS>>,
-    ) -> SnapshotRangeIterator<'this, PS> {
+    ) -> SnapshotRangeIterator<PS> {
         let mvcc_iterator = self.storage.iterate_range(range, self.open_sequence_number);
-        SnapshotRangeIterator::new(mvcc_iterator, None)
+        SnapshotRangeIterator::new(mvcc_iterator, BufferRangeIterator::empty())
     }
 
     fn any_in_range<'this, const PS: usize>(
@@ -281,13 +278,13 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     fn iterate_range<'this, const PS: usize>(
         &'this self,
         range: KeyRange<StorageKey<'this, PS>>,
-    ) -> SnapshotRangeIterator<'this, PS> {
+    ) -> SnapshotRangeIterator<PS> {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().keyspace_id())
             .iterate_range(range.clone().map(|k| k.into_bytes(), |fixed| fixed));
         let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number);
-        SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
+        SnapshotRangeIterator::new(storage_iterator, buffered_iterator)
     }
 
     fn any_in_range<'this, const PS: usize>(
@@ -401,13 +398,13 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     fn iterate_range<'this, const PS: usize>(
         &'this self,
         range: KeyRange<StorageKey<'this, PS>>,
-    ) -> SnapshotRangeIterator<'this, PS> {
+    ) -> SnapshotRangeIterator<PS> {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().keyspace_id())
             .iterate_range(range.clone().map(|k| k.into_bytes(), |fixed| fixed));
         let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number);
-        SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
+        SnapshotRangeIterator::new(storage_iterator, buffered_iterator)
     }
 
     fn any_in_range<'this, const PS: usize>(

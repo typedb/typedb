@@ -9,13 +9,13 @@
 #[macro_export]
 macro_rules! concept_iterator {
     ($name:ident, $concept_type:ident, $map_fn: expr) => {
-        pub struct $name<'a, const S: usize> {
-            snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator<'a, S>>,
+        pub struct $name<const S: usize> {
+            snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator<S>>,
         }
 
         #[allow(unused)]
-        impl<'a, const S: usize> $name<'a, S> {
-            pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator<'a, S>) -> Self {
+        impl<const S: usize> $name<S> {
+            pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator<S>) -> Self {
                 $name { snapshot_iterator: Some(snapshot_iterator) }
             }
 
@@ -70,6 +70,7 @@ macro_rules! concept_iterator {
                     std::sync::Arc<storage::snapshot::iterator::SnapshotIteratorError>,
                 >,
             > {
+                use ::lending_iterator::LendingIterator;
                 if let Some(iter) = self.snapshot_iterator.as_mut() {
                     iter.next()
                 } else {
@@ -96,12 +97,13 @@ macro_rules! concept_iterator {
 #[macro_export]
 macro_rules! edge_iterator {
     ($name:ident; $mapped_type:ty; $map_fn: expr) => {
-        pub struct $name<'a, const S: usize> {
-            snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator<'a, S>>,
+        pub struct $name<const S: usize> {
+            snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator<S>>,
         }
 
-        impl<'a, const S: usize> $name<'a, S> {
-            pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator<'a, S>) -> Self {
+        #[allow(unused)]
+        impl<const S: usize> $name<S> {
+            pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator<S>) -> Self {
                 $name { snapshot_iterator: Some(snapshot_iterator) }
             }
 
@@ -156,6 +158,7 @@ macro_rules! edge_iterator {
                     std::sync::Arc<storage::snapshot::iterator::SnapshotIteratorError>,
                 >,
             > {
+                use ::lending_iterator::LendingIterator;
                 if let Some(iter) = self.snapshot_iterator.as_mut() {
                     iter.next()
                 } else {

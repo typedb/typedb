@@ -7,7 +7,7 @@
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use lending_iterator::{
     combinators::{Map, TakeWhile},
-    LendingIterator,
+    LendingIterator, Peekable,
 };
 use logger::result::ResultExt;
 use speedb::DB;
@@ -29,7 +29,22 @@ mod raw {
     impl DBIterator {
         pub(super) fn new_from(mut iterator: DBRawIterator<'static>, start: &[u8]) -> Self {
             iterator.seek(start);
-            Self { item: Ok(unsafe { std::mem::transmute(iterator.item()) }).transpose(), iterator }
+            let item = iterator.valid().then(|| unsafe { std::mem::transmute(iterator.item()) });
+            Self { item: Ok(item).transpose(), iterator }
+        }
+
+        fn peek(&mut self) -> Option<&<Self as LendingIterator>::Item<'_>> {
+            match self.next() {
+                Some(Ok(item)) => {
+                    self.item = Some(unsafe { std::mem::transmute(item) });
+                    self.item.as_ref()
+                }
+                Some(Err(error)) => {
+                    self.item = Some(Err(error));
+                    self.item.as_ref()
+                }
+                None => None,
+            }
         }
     }
 
@@ -48,20 +63,6 @@ mod raw {
                 Some(Err(self.iterator.status().err().unwrap().clone()))
             } else {
                 None
-            }
-        }
-
-        fn peek(&mut self) -> Option<&Self::Item<'_>> {
-            match self.next() {
-                Some(Ok(item)) => {
-                    self.item = Some(unsafe { std::mem::transmute(item) });
-                    self.item.as_ref()
-                }
-                Some(Err(error)) => {
-                    self.item = Some(Err(error));
-                    self.item.as_ref()
-                }
-                None => None,
             }
         }
 
@@ -84,10 +85,16 @@ mod raw {
 }
 
 pub struct KeyspaceRangeIterator {
-    iterator: Map<
-        TakeWhile<raw::DBIterator, Box<dyn FnMut(&Result<(&[u8], &[u8]), speedb::Error>) -> bool>>,
-        Box<dyn for<'a> Fn(Result<(&'a [u8], &'a [u8]), speedb::Error>) -> Result<(&'a [u8], &'a [u8]), KeyspaceError>>,
-        Result<(&'static [u8], &'static [u8]), KeyspaceError>,
+    iterator: Peekable<
+        Map<
+            TakeWhile<raw::DBIterator, Box<dyn FnMut(&Result<(&[u8], &[u8]), speedb::Error>) -> bool>>,
+            Box<
+                dyn for<'a> Fn(
+                    Result<(&'a [u8], &'a [u8]), speedb::Error>,
+                ) -> Result<(&'a [u8], &'a [u8]), KeyspaceError>,
+            >,
+            Result<(&'static [u8], &'static [u8]), KeyspaceError>,
+        >,
     >,
 }
 
@@ -116,16 +123,20 @@ impl KeyspaceRangeIterator {
                 Ok((key, _)) => range.within_end(&Bytes::<0>::Reference(ByteReference::new(key))),
                 Err(_) => true,
             }) as Box<_>)
-            .map(mapper(keyspace_name));
+            .map(error_mapper(keyspace_name));
 
-        KeyspaceRangeIterator { iterator: range_iterator }
+        KeyspaceRangeIterator { iterator: Peekable::new(range_iterator) }
+    }
+
+    pub(crate) fn peek(&mut self) -> Option<&<Self as LendingIterator>::Item<'_>> {
+        self.iterator.peek()
     }
 }
 
-fn mapper(
-    name: &'static str,
+fn error_mapper(
+    keyspace_name: &'static str,
 ) -> Box<dyn for<'a> Fn(Result<(&'a [u8], &'a [u8]), speedb::Error>) -> Result<(&'a [u8], &'a [u8]), KeyspaceError>> {
-    Box::new(move |res| res.map_err(|error| KeyspaceError::Iterate { name, source: error }))
+    Box::new(move |res| res.map_err(|error| KeyspaceError::Iterate { name: keyspace_name, source: error }))
 }
 
 impl LendingIterator for KeyspaceRangeIterator {
@@ -137,10 +148,6 @@ impl LendingIterator for KeyspaceRangeIterator {
         self.iterator.next()
     }
 
-    fn peek(&mut self) -> Option<&Self::Item<'_>> {
-        self.iterator.peek()
-    }
-
     fn seek(&mut self, key: &[u8]) {
         self.iterator.seek(key);
     }
@@ -148,17 +155,13 @@ impl LendingIterator for KeyspaceRangeIterator {
 
 impl KeyspaceRangeIterator {
     pub fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(
-        mut self,
+        self,
     ) -> Vec<(ByteArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)> {
-        let mut vec = Vec::new();
-        loop {
-            let item = self.next();
-            if item.is_none() {
-                break;
-            }
-            let (key, value) = item.unwrap().unwrap_or_log();
-            vec.push((ByteArray::<INLINE_KEY>::copy(key), ByteArray::<INLINE_VALUE>::copy(value)));
-        }
-        vec
+        self.iterator
+            .map_static::<(ByteArray<INLINE_KEY>, ByteArray<INLINE_VALUE>), _>(|res: Result<(&[u8], &[u8]), KeyspaceError>| {
+                let (key, value) = res.unwrap_or_log();
+                (ByteArray::<INLINE_KEY>::copy(key), ByteArray::<INLINE_VALUE>::copy(value))
+            })
+            .collect()
     }
 }

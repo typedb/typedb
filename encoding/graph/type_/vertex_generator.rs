@@ -7,6 +7,7 @@
 use std::sync::atomic::{AtomicU16, Ordering::Relaxed};
 
 use bytes::Bytes;
+use lending_iterator::LendingIterator;
 use storage::{key_range::KeyRange, snapshot::WritableSnapshot};
 
 use crate::{

@@ -12,6 +12,7 @@ use std::{
     ops::Range,
 };
 
+use primitive::prefix::Prefix;
 use serde::{
     de::{self, MapAccess, SeqAccess, Visitor},
     ser::SerializeStruct,
@@ -374,5 +375,14 @@ impl fmt::Debug for ByteArrayBoxed {
             .field("length", &self.length)
             .field("data", &HexBytesFormatter(self.bytes()))
             .finish()
+    }
+}
+
+impl<const ARRAY_INLINE_SIZE: usize> Prefix for ByteArray<ARRAY_INLINE_SIZE> {
+    fn starts_with(&self, other: &[u8]) -> bool {
+        self.bytes().starts_with(other)
+    }
+    fn bytes(&self) -> &[u8] {
+        self.bytes()
     }
 }

@@ -18,7 +18,7 @@ use encoding::{
         },
         Typed,
     },
-    layout::prefix::Prefix,
+    layout::prefix::{Prefix, PrefixID},
     value::{
         boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, decode_value_u64, double_bytes::DoubleBytes,
         encode_value_u64, long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType, ValueEncodable,
@@ -74,7 +74,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &self.type_manager
     }
 
-    pub fn get_entities<'this>(&'this self, snapshot: &'this Snapshot) -> EntityIterator<'_, 1> {
+    pub fn get_entities(&self, snapshot: &Snapshot) -> EntityIterator<{ PrefixID::LENGTH }> {
         let prefix = ObjectVertex::build_prefix_prefix(Prefix::VertexEntity);
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexEntity.fixed_width_keys()));
@@ -85,7 +85,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &'this self,
         snapshot: &'this Snapshot,
         object_type: ObjectType<'_>,
-    ) -> ObjectIterator<'_, 3> {
+    ) -> ObjectIterator<3> {
         let vertex_prefix = match object_type {
             ObjectType::Entity(_) => Prefix::VertexEntity,
             ObjectType::Relation(_) => Prefix::VertexRelation,
@@ -99,14 +99,14 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &'this self,
         snapshot: &'this Snapshot,
         entity_type: EntityType<'_>,
-    ) -> EntityIterator<'_, 3> {
+    ) -> EntityIterator<3> {
         let prefix = ObjectVertex::build_prefix_type(Prefix::VertexEntity.prefix_id(), entity_type.vertex().type_id_());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexEntity.fixed_width_keys()));
         EntityIterator::new(snapshot_iterator)
     }
 
-    pub fn get_relations<'this>(&'this self, snapshot: &'this Snapshot) -> RelationIterator<'_, 1> {
+    pub fn get_relations<'this>(&'this self, snapshot: &'this Snapshot) -> RelationIterator<1> {
         let prefix = ObjectVertex::build_prefix_prefix(Prefix::VertexRelation);
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexRelation.fixed_width_keys()));
@@ -117,7 +117,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &'this self,
         snapshot: &'this Snapshot,
         relation_type: RelationType<'_>,
-    ) -> RelationIterator<'_, 3> {
+    ) -> RelationIterator<3> {
         let prefix =
             ObjectVertex::build_prefix_type(Prefix::VertexRelation.prefix_id(), relation_type.vertex().type_id_());
         let snapshot_iterator =
@@ -290,7 +290,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &'this self,
         snapshot: &'this Snapshot,
         owner: &impl ObjectAPI<'a>,
-    ) -> HasAttributeIterator<'this, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+    ) -> HasAttributeIterator<{ ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
         HasAttributeIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
@@ -302,8 +302,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         snapshot: &'this Snapshot,
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HasAttributeIterator<'this, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }>, ConceptReadError>
-    {
+    ) -> Result<HasAttributeIterator<{ ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }>, ConceptReadError> {
         let value_type = match attribute_type.get_value_type(snapshot, self.type_manager())? {
             None => {
                 todo!("Handle missing value type - for abstract attributes. Or assume this will never happen")
@@ -344,7 +343,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &'this self,
         snapshot: &'this Snapshot,
         attribute: Attribute<'_>,
-    ) -> AttributeOwnerIterator<'this, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
+    ) -> AttributeOwnerIterator<{ ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.into_vertex());
         AttributeOwnerIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING)),
@@ -356,7 +355,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         snapshot: &'this Snapshot,
         attribute: Attribute<'_>,
         owner_type: impl ObjectTypeAPI<'a>,
-    ) -> AttributeOwnerIterator<'this, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }> {
+    ) -> AttributeOwnerIterator<{ ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }> {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute_to_type(attribute.into_vertex(), owner_type.vertex());
         AttributeOwnerIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING)),
@@ -372,7 +371,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &'this self,
         snapshot: &'this Snapshot,
         player: impl ObjectAPI<'a>,
-    ) -> RelationRoleIterator<'this, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
+    ) -> RelationRoleIterator<{ ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
         let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.into_vertex());
         RelationRoleIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING)),
@@ -393,7 +392,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &'a self,
         snapshot: &'a Snapshot,
         relation: impl ObjectAPI<'a>,
-    ) -> RolePlayerIterator<'_, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+    ) -> RolePlayerIterator<{ ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation.into_vertex());
         RolePlayerIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING)),
@@ -404,7 +403,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &'a self,
         snapshot: &'a Snapshot,
         from: Object<'_>,
-    ) -> IndexedPlayersIterator<'_, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
+    ) -> IndexedPlayersIterator<{ ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
         let prefix = ThingEdgeRelationIndex::prefix_from(from.vertex());
         IndexedPlayersIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRelationIndex::FIXED_WIDTH_ENCODING)),
@@ -461,14 +460,10 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         let mut any_deleted = true;
         while any_deleted {
             any_deleted = false;
-            for (key, write) in snapshot
-                .iterate_buffered_writes_range(KeyRange::new_within(
-                    ThingEdgeRolePlayer::prefix(),
-                    ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
-                ))
-                .into_range()
-                .into_iter()
-            {
+            for (key, write) in snapshot.iterate_buffered_writes_range(KeyRange::new_within(
+                ThingEdgeRolePlayer::prefix(),
+                ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
+            )) {
                 if matches!(write, Write::Delete) {
                     let edge = ThingEdgeRolePlayer::new(Bytes::Reference(key.byte_array().as_ref()));
                     let relation = Relation::new(edge.from());
@@ -513,8 +508,6 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 ThingEdgeHas::prefix(),
                 ThingEdgeHas::FIXED_WIDTH_ENCODING,
             ))
-            .into_range()
-            .into_iter()
             .filter(|(_, write)| matches!(write, Write::Delete))
         {
             let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
@@ -558,13 +551,10 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         }
 
         let mut relations_validated = HashSet::new();
-        for (key, _) in snapshot
-            .iterate_buffered_writes_range(KeyRange::new_within(
-                ThingEdgeRolePlayer::prefix(),
-                ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
-            ))
-            .into_range()
-        {
+        for (key, _) in snapshot.iterate_buffered_writes_range(KeyRange::new_within(
+            ThingEdgeRolePlayer::prefix(),
+            ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING,
+        )) {
             let edge = ThingEdgeRolePlayer::new(Bytes::reference(key.bytes()));
             let relation = Relation::new(edge.from());
             if !relations_validated.contains(&relation) {
@@ -581,14 +571,10 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         errors: &mut Vec<ConceptWriteError>,
         snapshot: &Snapshot,
     ) -> Result<(), ConceptReadError> {
-        for (key, write) in snapshot
-            .iterate_buffered_writes_range(KeyRange::new_within(
-                ThingEdgeHas::prefix(),
-                ThingEdgeHas::FIXED_WIDTH_ENCODING,
-            ))
-            .into_range()
-            .into_iter()
-        {
+        for (key, write) in snapshot.iterate_buffered_writes_range(KeyRange::new_within(
+            ThingEdgeHas::prefix(),
+            ThingEdgeHas::FIXED_WIDTH_ENCODING,
+        )) {
             let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
 
             let owner = Object::new(edge.from());

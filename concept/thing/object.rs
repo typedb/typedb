@@ -154,7 +154,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
         &self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-    ) -> HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+    ) -> HasAttributeIterator<{ ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         thing_manager.get_has_unordered(snapshot, self)
     }
 
@@ -163,7 +163,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
         attribute_type: AttributeType<'static>,
-    ) -> Result<HasAttributeIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }>, ConceptReadError> {
+    ) -> Result<HasAttributeIterator<{ ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }>, ConceptReadError> {
         thing_manager.get_has_type_unordered(snapshot, self, attribute_type)
     }
 

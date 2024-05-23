@@ -41,6 +41,7 @@ rust_test(
         "//durability",
         "//resource",
         "//util/test:test_utils",
+        "//util/lending_iterator",
         "@crates//:rand",
         "@crates//:tracing",
     ]
@@ -100,6 +101,7 @@ rust_test(
         "//storage",
         "//durability",
         "//resource",
+        "//util/lending_iterator",
         "//util/test:test_utils",
 
         "@crates//:rand",

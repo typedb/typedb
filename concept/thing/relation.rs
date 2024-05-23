@@ -104,7 +104,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-    ) -> RelationRoleIterator<'m, { ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
+    ) -> RelationRoleIterator<{ ThingEdgeRolePlayer::LENGTH_PREFIX_FROM }> {
         thing_manager.get_relations_roles(snapshot, self.as_reference())
     }
 
@@ -112,7 +112,7 @@ impl<'a> Relation<'a> {
         &self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-    ) -> IndexedPlayersIterator<'m, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
+    ) -> IndexedPlayersIterator<{ ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
         thing_manager.get_indexed_players(snapshot, Object::Relation(self.as_reference()))
     }
 
@@ -134,7 +134,7 @@ impl<'a> Relation<'a> {
         &'m self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-    ) -> RolePlayerIterator<'m, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
+    ) -> RolePlayerIterator<{ ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT }> {
         thing_manager.get_role_players(snapshot, self.as_reference())
     }
 

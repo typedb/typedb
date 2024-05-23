@@ -7,5 +7,7 @@
 use std::fmt::Debug;
 
 pub trait Prefix: Ord + Clone + Debug {
-    fn starts_with(&self, other: &Self) -> bool;
+    fn starts_with(&self, other: &[u8]) -> bool;
+
+    fn bytes(&self) -> &[u8];
 }

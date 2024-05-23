@@ -17,6 +17,7 @@ use encoding::{
     AsBytes, Keyable,
 };
 use iterator::State;
+use lending_iterator::LendingIterator;
 use storage::{
     key_value::StorageKeyReference,
     snapshot::{iterator::SnapshotRangeIterator, ReadableSnapshot, WritableSnapshot},
@@ -84,7 +85,7 @@ impl<'a> Attribute<'a> {
         &self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-    ) -> AttributeOwnerIterator<'m, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
+    ) -> AttributeOwnerIterator<{ ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
         thing_manager.get_owners(snapshot, self.as_reference())
     }
 
@@ -93,7 +94,7 @@ impl<'a> Attribute<'a> {
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
         owner_type: impl ObjectTypeAPI<'o>,
-    ) -> AttributeOwnerIterator<'m, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }> {
+    ) -> AttributeOwnerIterator<{ ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }> {
         thing_manager.get_owners_by_type(snapshot, self.as_reference(), owner_type)
     }
 
@@ -184,15 +185,15 @@ impl<'a> Ord for Attribute<'a> {
 pub struct AttributeIterator<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> {
     snapshot: Option<&'a Snapshot>,
     type_manager: Option<&'a TypeManager<Snapshot>>,
-    attributes_iterator: Option<SnapshotRangeIterator<'a, A_PS>>,
-    has_reverse_iterator: Option<SnapshotRangeIterator<'a, H_PS>>,
+    attributes_iterator: Option<SnapshotRangeIterator<A_PS>>,
+    has_reverse_iterator: Option<SnapshotRangeIterator<H_PS>>,
     state: State<ConceptReadError>,
 }
 
 impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> AttributeIterator<'a, Snapshot, A_PS, H_PS> {
     pub(crate) fn new(
-        attributes_iterator: SnapshotRangeIterator<'a, A_PS>,
-        has_reverse_iterator: SnapshotRangeIterator<'a, H_PS>,
+        attributes_iterator: SnapshotRangeIterator<A_PS>,
+        has_reverse_iterator: SnapshotRangeIterator<H_PS>,
         snapshot: &'a Snapshot,
         type_manager: &'a TypeManager<Snapshot>,
     ) -> Self {
@@ -316,7 +317,7 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
     }
 
     fn has_owner(
-        has_reverse_iterator: &mut SnapshotRangeIterator<'a, H_PS>,
+        has_reverse_iterator: &mut SnapshotRangeIterator<H_PS>,
         attribute_vertex: AttributeVertex<'_>,
     ) -> Result<bool, ConceptReadError> {
         let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex.as_reference());

@@ -7,6 +7,7 @@
 #![deny(unused_must_use)]
 
 use bytes::byte_array::ByteArray;
+use lending_iterator::LendingIterator;
 use logger::result::ResultExt;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{

@@ -28,7 +28,10 @@ use encoding::{
             build_property_type_edge_override, build_property_type_label, build_property_type_ordering,
             build_property_type_value_type,
         },
-        vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type, TypeVertex},
+        vertex::{
+            new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type,
+            TypeVertex,
+        },
         vertex_generator::TypeVertexGenerator,
         Kind,
     },
@@ -1058,7 +1061,7 @@ impl<'a> ReadableType for RoleType<'a> {
 
 pub trait KindAPI<'a>: TypeAPI<'a> {
     type SelfStatic: KindAPI<'static> + 'static;
-    type AnnotationType: Hash + Eq + From<Annotation>;
+    type AnnotationType: Hash + Eq + From<Annotation> + 'static;
     const ROOT_KIND: Kind;
 }
 
