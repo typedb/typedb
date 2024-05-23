@@ -17,6 +17,7 @@ pub enum Annotation {
     Regex(AnnotationRegex),
 }
 
+
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationAbstract;
 

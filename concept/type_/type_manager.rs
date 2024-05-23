@@ -63,7 +63,7 @@ use crate::{
 use type_reader::TypeReader;
 use type_writer::TypeWriter;
 use validation::validation::OperationTimeValidation;
-use crate::type_::{InterfaceEdge, OwnerAPI, PlayerAPI, WrappedTypeForError};
+use crate::type_::{InterfaceImplementation, OwnerAPI, PlayerAPI, WrappedTypeForError};
 
 pub mod validation;
 pub mod type_cache;
@@ -1004,13 +1004,13 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn set_edge_annotation<'b, IMPL: InterfaceEdge<'b>>(
+    pub(crate) fn set_edge_annotation<'b, IMPL: InterfaceImplementation<'b>>(
         &self,
         snapshot: &mut Snapshot,
         edge: IMPL,
         annotation: IMPL::AnnotationType
     ) -> Result<(), ConceptWriteError> {
-
+        todo!()
     }
 
     pub(crate) fn storage_set_edge_annotation_distinct<'b>(

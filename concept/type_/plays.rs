@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::{build_edge_plays, build_edge_plays_reverse, TypeEdge};
+use encoding::graph::type_::edge::{EdgePlaysEncoder, EdgePlaysReverseEncoder, TypeEdge, TypeEdgeEncoder};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -14,7 +14,7 @@ use crate::{
 };
 use crate::error::ConceptWriteError;
 use crate::type_::type_manager::encoding_helper::PlaysEncoder;
-use crate::type_::InterfaceEdge;
+use crate::type_::InterfaceImplementation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Plays<'a> {
@@ -60,18 +60,18 @@ impl<'a> Plays<'a> {
 
 impl<'a> IntoCanonicalTypeEdge<'a> for Plays<'a> {
     fn as_type_edge(&self) -> TypeEdge<'static> {
-        build_edge_plays(self.player.vertex().clone().into_owned(), self.role.vertex().clone().into_owned())
+        EdgePlaysEncoder::build_edge(self.player.vertex().clone().into_owned(), self.role.vertex().clone().into_owned())
     }
 
     fn into_type_edge(self) -> TypeEdge<'static> {
-        build_edge_plays(self.player.vertex().clone().into_owned(), self.role.vertex().clone().into_owned())
+        EdgePlaysEncoder::build_edge(self.player.vertex().clone().into_owned(), self.role.vertex().clone().into_owned())
     }
 }
 
 // Can plays not be annotated?
 pub struct __PlaceholderPlaysAnnotation {}
 
-impl<'a> InterfaceEdge<'a> for Plays<'a> {
+impl<'a> InterfaceImplementation<'a> for Plays<'a> {
     type AnnotationType = __PlaceholderPlaysAnnotation;
     type ObjectType = ObjectType<'a>;
     type InterfaceType = RoleType<'a>;

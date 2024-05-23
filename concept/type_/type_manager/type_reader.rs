@@ -10,12 +10,7 @@ use std::hash::Hash;
 use bytes::Bytes;
 use encoding::{
     graph::type_::{
-        edge::{
-            build_edge_relates_prefix_from,
-            build_edge_relates_reverse_prefix_from, build_edge_sub_prefix_from, build_edge_sub_reverse_prefix_from,
-            new_edge_relates, new_edge_relates_reverse, new_edge_sub,
-            new_edge_sub_reverse, TypeEdge,
-        },
+        edge::TypeEdge,
         index::LabelToTypeVertexIndex,
         property::{
             build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label,
@@ -35,6 +30,8 @@ use encoding::graph::type_::Kind;
 use iterator::Collector;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
+use encoding::graph::type_::edge::TypeEdgeEncoder;
+use encoding::graph::type_::edge::{EdgeRelatesEncoder, EdgeRelatesReverseEncoder, EdgeSubEncoder, EdgeSubReverseEncoder};
 
 use crate::{
     error::ConceptReadError,
@@ -55,7 +52,7 @@ use crate::{
     },
 };
 use crate::type_::type_manager::encoding_helper::EdgeEncoder;
-use crate::type_::InterfaceEdge;
+use crate::type_::InterfaceImplementation;
 
 pub struct TypeReader {}
 
@@ -89,10 +86,10 @@ impl TypeReader {
         T: TypeAPI<'static>,
     {
         Ok(snapshot
-            .iterate_range(KeyRange::new_within(build_edge_sub_prefix_from(subtype.into_vertex()), TypeEdge::FIXED_WIDTH_ENCODING))
+            .iterate_range(KeyRange::new_within(EdgeSubEncoder::build_edge_prefix_from(subtype.into_vertex()), TypeEdge::FIXED_WIDTH_ENCODING))
             .first_cloned()
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
-            .map(|(key, _)| T::SelfStatic::new(new_edge_sub(Bytes::Array(key.into_byte_array())).to().into_owned())))
+            .map(|(key, _)| T::new(EdgeSubEncoder::new_edge(Bytes::Array(key.into_byte_array())).to().into_owned())))
     }
 
     pub fn get_supertypes_transitive<T>(
@@ -121,10 +118,10 @@ impl TypeReader {
     {
         Ok(snapshot
             .iterate_range(KeyRange::new_within(
-                build_edge_sub_reverse_prefix_from(supertype.into_vertex()),
+                EdgeSubReverseEncoder::build_edge_prefix_from(supertype.into_vertex()),
                 TypeEdge::FIXED_WIDTH_ENCODING,
             ))
-            .collect_cloned_vec(|key, _| T::new(new_edge_sub_reverse(Bytes::Reference(key.byte_ref())).to().into_owned()))
+            .collect_cloned_vec(|key, _| T::new(EdgeSubReverseEncoder::new_edge(Bytes::Reference(key.byte_ref())).to().into_owned()))
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
         )
     }
@@ -165,7 +162,7 @@ impl TypeReader {
         owner: impl TypeAPI<'static>,
     ) -> Result<HashSet<IMPL>, ConceptReadError>
     where
-    IMPL : InterfaceEdge<'static> + Hash + Eq
+    IMPL : InterfaceImplementation<'static> + Hash + Eq
     {
         let owns_prefix = IMPL::Encoder::forward_seek_prefix(IMPL::ObjectType::new(owner.into_vertex()));
         snapshot
@@ -183,7 +180,7 @@ impl TypeReader {
     ) -> Result<HashMap<IMPL::InterfaceType, IMPL>, ConceptReadError>
         where
             T: TypeAPI<'static>,
-            IMPL : InterfaceEdge<'static> + Hash + Eq {
+            IMPL : InterfaceImplementation<'static> + Hash + Eq {
         // TODO: Should the owner of a transitive owns be the declaring owner or the inheriting owner?
         let mut transitive_implementations: HashMap<IMPL::InterfaceType, IMPL> = HashMap::new();
         let mut overridden_interfaces: HashSet<IMPL::InterfaceType> = HashSet::new(); // TODO: Should this store the owns? This feels more fool-proof if it's correct.
@@ -212,7 +209,7 @@ impl TypeReader {
         implementation: IMPL,
     ) -> Result<Option<IMPL>, ConceptReadError>
     where
-        IMPL : InterfaceEdge<'static> + Hash + Eq
+        IMPL : InterfaceImplementation<'static> + Hash + Eq
     {
         let override_property_key = build_property_type_edge_override(implementation.into_type_edge());
         snapshot
@@ -226,7 +223,7 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         interface_type: IMPL::InterfaceType,
     ) -> Result<HashSet<IMPL>, ConceptReadError>
-    where IMPL : InterfaceEdge<'static> + Hash + Eq
+    where IMPL : InterfaceImplementation<'static> + Hash + Eq
     {
         let owns_prefix = IMPL::Encoder::reverse_seek_prefix(interface_type);
         snapshot
@@ -241,7 +238,7 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         interface_type: IMPL::InterfaceType,
     ) -> Result<HashMap<IMPL, Vec<ObjectType<'static>>>, ConceptReadError>
-    where IMPL: InterfaceEdge<'static, ObjectType=ObjectType<'static>> + Hash + Eq
+    where IMPL: InterfaceImplementation<'static, ObjectType=ObjectType<'static>> + Hash + Eq
     {
         let mut impl_transitive : HashMap<IMPL, Vec<ObjectType<'static>>> = HashMap::new();
         let declared_impl_set: HashSet<IMPL> = Self::get_implementations_for_interface(snapshot, interface_type.clone())?;
@@ -278,11 +275,11 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         relation: RelationType<'static>,
     ) -> Result<HashSet<Relates<'static>>, ConceptReadError> {
-        let relates_prefix = build_edge_relates_prefix_from(relation.into_vertex());
+        let relates_prefix = EdgeRelatesEncoder::build_edge_prefix_from(relation.into_vertex());
         snapshot
             .iterate_range(KeyRange::new_within(relates_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
-                let relates_edge = new_edge_relates(Bytes::Reference(key.byte_ref()));
+                let relates_edge = EdgeRelatesEncoder::new_edge(Bytes::Reference(key.byte_ref()));
                 Relates::new(
                     RelationType::new(relates_edge.from().into_owned()),
                     RoleType::new(relates_edge.to().into_owned()),
@@ -320,11 +317,11 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         role: RoleType<'static>,
     ) -> Result<Relates<'static>, ConceptReadError> {
-        let relates_prefix = build_edge_relates_reverse_prefix_from(role.into_vertex());
+        let relates_prefix = EdgeRelatesReverseEncoder::build_edge_prefix_from(role.into_vertex());
         snapshot
             .iterate_range(KeyRange::new_within(relates_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_vec(|key, _| {
-                let relates_edge_reverse = new_edge_relates_reverse(Bytes::Reference(key.byte_ref()));
+                let relates_edge_reverse = EdgeRelatesReverseEncoder::new_edge(Bytes::Reference(key.byte_ref()));
                 Relates::new(
                     RelationType::new(relates_edge_reverse.to().into_owned()),
                     RoleType::new(relates_edge_reverse.from().into_owned()),

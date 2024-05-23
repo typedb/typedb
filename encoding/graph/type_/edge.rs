@@ -16,158 +16,58 @@ use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TypeEdge<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
-pub mod edge_constructors {
-    use bytes::Bytes;
-    use storage::key_value::StorageKey;
-    use crate::graph::type_::edge::TypeEdge;
-    use crate::graph::type_::vertex::TypeVertex;
-    use crate::layout::prefix::Prefix;
-    use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
-    pub trait TypeEdgeConstructor {
-        const PREFIX: Prefix;
-        fn new_edge<'a>(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> TypeEdge<'a> {
-            let edge = TypeEdge::new(bytes);
-            debug_assert_eq!(edge.prefix(), Self::PREFIX);
-            edge
-        }
-        fn build_edge<'a>(from: TypeVertex<'a>, to: TypeVertex<'a>) -> TypeEdge<'a> {
-            TypeEdge::build(Self::PREFIX, from, to)
-        }
-
-        fn build_edge_prefix_from<'a>(from: TypeVertex<'a>) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
-            TypeEdge::build_prefix_from(Self::PREFIX, from)
-        }
-        fn build_edge_prefix_prefix(
-            from_prefix: Prefix,
-        ) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
-            TypeEdge::build_prefix_prefix(Self::PREFIX, from_prefix)
-        }
-        fn is_edge
-        (bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-            bytes.length() == TypeEdge::LENGTH && TypeEdge::new(bytes).prefix() == Self::PREFIX
-        }
+pub trait TypeEdgeEncoder {
+    const PREFIX: Prefix;
+    fn new_edge<'a>(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> TypeEdge<'a> {
+        let edge = TypeEdge::new(bytes);
+        debug_assert_eq!(edge.prefix(), Self::PREFIX);
+        edge
+    }
+    fn build_edge<'a>(from: TypeVertex<'a>, to: TypeVertex<'a>) -> TypeEdge<'a> {
+        TypeEdge::build(Self::PREFIX, from, to)
     }
 
-    macro_rules! type_edge_constructor_trait_impl {
-        ($prefix_name:ident) => {
-            pub struct $prefix_name { }
-            impl TypeEdgeConstructor for $prefix_name {
-                const PREFIX : Prefix = Prefix::$prefix_name;
-            }
-        };
+    fn build_edge_prefix_from<'a>(from: TypeVertex<'a>) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
+        TypeEdge::build_prefix_from(Self::PREFIX, from)
     }
-
-    type_edge_constructor_trait_impl!(EdgeSub);
-    type_edge_constructor_trait_impl!(EdgeSubReverse);
-
-    type_edge_constructor_trait_impl!(EdgeOwns);
-    type_edge_constructor_trait_impl!(EdgeOwnsReverse);
-
-    type_edge_constructor_trait_impl!(EdgePlays);
-    type_edge_constructor_trait_impl!(EdgePlaysReverse);
-
-    type_edge_constructor_trait_impl!(EdgeRelates);
-    type_edge_constructor_trait_impl!(EdgeRelatesReverse);
+    fn build_edge_prefix_prefix(
+        from_prefix: Prefix,
+    ) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
+        TypeEdge::build_prefix_prefix(Self::PREFIX, from_prefix)
+    }
+    fn is_edge
+    (bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+        bytes.length() == TypeEdge::LENGTH && TypeEdge::new(bytes).prefix() == Self::PREFIX
+    }
 }
 
-macro_rules! type_edge_constructors {
-    (Prefix::$prefix:ident, $new_name:ident, $build_name:ident, $build_prefix_from:ident, $build_prefix_prefix:ident, $is_name:ident) => {
-        pub fn $new_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> TypeEdge<'_> {
-            let edge = TypeEdge::new(bytes);
-            debug_assert_eq!(edge.prefix(), Prefix::$prefix);
-            edge
-        }
-
-        pub fn $build_name(from: TypeVertex<'static>, to: TypeVertex<'static>) -> TypeEdge<'static> {
-            TypeEdge::build(Prefix::$prefix, from, to)
-        }
-
-        pub fn $build_prefix_from(from: TypeVertex<'static>) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM }> {
-            TypeEdge::build_prefix_from(Prefix::$prefix, from)
-        }
-
-        pub fn $build_prefix_prefix(
-            from_prefix: Prefix,
-        ) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
-            TypeEdge::build_prefix_prefix(Prefix::$prefix, from_prefix)
-        }
-
-        pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-            bytes.length() == TypeEdge::LENGTH && TypeEdge::new(bytes).prefix() == Prefix::$prefix
+macro_rules! type_edge_constructor_trait_impl {
+    ($encoder_name:ident, $prefix:ident) => {
+        pub struct $encoder_name { }
+        impl TypeEdgeEncoder for $encoder_name {
+            const PREFIX : Prefix = Prefix::$prefix;
         }
     };
 }
 
-type_edge_constructors!(
-    Prefix::EdgeSub,
-    new_edge_sub,
-    build_edge_sub,
-    build_edge_sub_prefix_from,
-    build_edge_sub_prefix_prefix,
-    is_edge_sub
-);
-type_edge_constructors!(
-    Prefix::EdgeSubReverse,
-    new_edge_sub_reverse,
-    build_edge_sub_reverse,
-    build_edge_sub_reverse_prefix_from,
-    build_edge_sub_reverse_prefix_prefix,
-    is_edge_sub_reverse
-);
-type_edge_constructors!(
-    Prefix::EdgeOwns,
-    new_edge_owns,
-    build_edge_owns,
-    build_edge_owns_prefix_from,
-    build_edge_owns_prefix_prefix,
-    is_edge_owns
-);
-type_edge_constructors!(
-    Prefix::EdgeOwnsReverse,
-    new_edge_owns_reverse,
-    build_edge_owns_reverse,
-    build_edge_owns_reverse_prefix_from,
-    build_edge_owns_reverse_prefix_prefix,
-    is_edge_owns_reverse
-);
-type_edge_constructors!(
-    Prefix::EdgePlays,
-    new_edge_plays,
-    build_edge_plays,
-    build_edge_plays_prefix_from,
-    build_edge_plays_prefix_prefix,
-    is_edge_plays
-);
-type_edge_constructors!(
-    Prefix::EdgePlaysReverse,
-    new_edge_plays_reverse,
-    build_edge_plays_reverse,
-    build_edge_plays_reverse_prefix_from,
-    build_edge_plays_reverse_prefix_prefix,
-    is_edge_plays_reverse
-);
-type_edge_constructors!(
-    Prefix::EdgeRelates,
-    new_edge_relates,
-    build_edge_relates,
-    build_edge_relates_prefix_from,
-    build_edge_relates_prefix_prefix,
-    is_edge_relates
-);
-type_edge_constructors!(
-    Prefix::EdgeRelatesReverse,
-    new_edge_relates_reverse,
-    build_edge_relates_reverse,
-    build_edge_relates_reverse_prefix_from,
-    build_edge_relates_reverse_prefix_prefix,
-    is_edge_relates_reverse
-);
+type_edge_constructor_trait_impl!(EdgeSubEncoder, EdgeSub);
+type_edge_constructor_trait_impl!(EdgeSubReverseEncoder, EdgeSubReverse);
+
+type_edge_constructor_trait_impl!(EdgeOwnsEncoder,EdgeOwns);
+type_edge_constructor_trait_impl!(EdgeOwnsReverseEncoder,EdgeOwnsReverse);
+
+type_edge_constructor_trait_impl!(EdgePlaysEncoder, EdgePlays);
+type_edge_constructor_trait_impl!(EdgePlaysReverseEncoder, EdgePlaysReverse);
+
+type_edge_constructor_trait_impl!(EdgeRelatesEncoder, EdgeRelates);
+type_edge_constructor_trait_impl!(EdgeRelatesReverseEncoder, EdgeRelatesReverse);
 
 impl<'a> TypeEdge<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
