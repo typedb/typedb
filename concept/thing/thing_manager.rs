@@ -125,7 +125,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         RelationIterator::new(snapshot_iterator)
     }
 
-    pub fn get_attributes<'this>(&'this self, snapshot: &'this Snapshot) -> AttributeIterator<'_, Snapshot, 1, 2> {
+    pub fn get_attributes<'this>(&'this self, snapshot: &'this Snapshot) -> AttributeIterator<'_, Snapshot> {
         let start = AttributeVertex::build_prefix_prefix(Prefix::ATTRIBUTE_MIN);
         let end = AttributeVertex::build_prefix_prefix(Prefix::ATTRIBUTE_MAX);
         let attribute_iterator = snapshot.iterate_range(KeyRange::new_inclusive(start, end));
@@ -140,7 +140,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &'this self,
         snapshot: &'this Snapshot,
         attribute_type: AttributeType<'_>,
-    ) -> Result<AttributeIterator<'this, Snapshot, 3, 4>, ConceptReadError> {
+    ) -> Result<AttributeIterator<'this, Snapshot>, ConceptReadError> {
         let Some(value_type) = attribute_type.get_value_type(snapshot, self.type_manager.as_ref())? else {
             return Ok(AttributeIterator::new_empty());
         };

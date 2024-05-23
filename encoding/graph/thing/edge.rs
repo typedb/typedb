@@ -507,9 +507,9 @@ impl<'a> ThingEdgeRelationIndex<'a> {
         Self::read_from(self.bytes())
     }
 
-    pub fn read_from(reference: ByteReference<'_>) -> ObjectVertex<'_> {
+    pub fn read_from(reference: ByteReference<'_>) -> ObjectVertex<'static> {
         // TODO: copy?
-        ObjectVertex::new(Bytes::Reference(ByteReference::new(&reference.bytes()[Self::RANGE_FROM])))
+        ObjectVertex::new(Bytes::copy(&reference.bytes()[Self::RANGE_FROM]))
     }
 
     pub fn to(&self) -> ObjectVertex<'_> {
@@ -517,16 +517,16 @@ impl<'a> ThingEdgeRelationIndex<'a> {
         Self::read_to(self.bytes())
     }
 
-    pub fn read_to(reference: ByteReference<'_>) -> ObjectVertex<'_> {
-        ObjectVertex::new(Bytes::Reference(ByteReference::new(&reference.bytes()[Self::RANGE_TO])))
+    pub fn read_to(reference: ByteReference<'_>) -> ObjectVertex<'static> {
+        ObjectVertex::new(Bytes::copy(&reference.bytes()[Self::RANGE_TO]))
     }
 
     pub fn relation(&self) -> ObjectVertex<'_> {
         Self::read_relation(self.bytes())
     }
 
-    pub fn read_relation(reference: ByteReference) -> ObjectVertex<'_> {
-        ObjectVertex::new(Bytes::Reference(ByteReference::new(&reference.bytes()[Self::RANGE_RELATION])))
+    pub fn read_relation(reference: ByteReference) -> ObjectVertex<'static> {
+        ObjectVertex::new(Bytes::copy(&reference.bytes()[Self::RANGE_RELATION]))
     }
 
     pub fn from_role_id(&self) -> TypeID {

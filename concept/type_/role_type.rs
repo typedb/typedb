@@ -6,7 +6,6 @@
 
 use std::collections::HashSet;
 
-use bytes::Bytes;
 use encoding::{
     graph::type_::vertex::{new_vertex_role_type, TypeVertex},
     layout::prefix::Prefix,
@@ -15,7 +14,7 @@ use encoding::{
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::{
-    key_value::StorageKeyReference,
+    key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
@@ -258,8 +257,8 @@ impl From<Annotation> for RoleTypeAnnotation {
 // }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_role_type(storage_key_ref: StorageKeyReference<'_>) -> RoleType<'_> {
-    RoleType::new(new_vertex_role_type(Bytes::Reference(storage_key_ref.byte_ref())))
+fn storage_key_to_role_type(storage_key: StorageKey<'_, 40>) -> RoleType<'_> {
+    RoleType::new(new_vertex_role_type(storage_key.into_bytes()))
 }
 
 concept_iterator!(RoleTypeIterator, RoleType, storage_key_to_role_type);

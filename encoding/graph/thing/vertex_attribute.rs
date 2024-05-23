@@ -569,9 +569,9 @@ impl StringAttributeID {
         let mut next = iter.next().transpose()?;
         let mut tail: u8 = 0;
         while let Some((key, value)) = next {
-            let existing_attribute_id = AttributeVertex::new(Bytes::Reference(key.byte_ref())).attribute_id();
+            let existing_attribute_id = AttributeVertex::new(Bytes::reference(key.bytes())).attribute_id();
             let existing_string_id = Self::new(existing_attribute_id.bytes().try_into().unwrap());
-            if StringBytes::new(Bytes::Reference(value)) == string {
+            if StringBytes::new(value) == string {
                 return Ok(Either::First(existing_string_id));
             } else if tail != existing_string_id.get_hash_disambiguator() {
                 // found unused tail ID

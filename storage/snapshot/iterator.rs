@@ -13,7 +13,7 @@ use std::{
     sync::Arc,
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use lending_iterator::{LendingIterator, Seekable};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
@@ -23,14 +23,14 @@ use crate::{
     snapshot::{buffer::BufferRangeIterator, write::Write},
 };
 
-pub struct SnapshotRangeIterator<const PS: usize> {
-    storage_iterator: MVCCRangeIterator<PS>,
+pub struct SnapshotRangeIterator {
+    storage_iterator: MVCCRangeIterator,
     buffered_iterator: BufferRangeIterator,
     ready_item_source: Option<ReadyItemSource>,
 }
 
-impl<const PS: usize> SnapshotRangeIterator<PS> {
-    pub(crate) fn new(mvcc_iterator: MVCCRangeIterator<PS>, buffered_iterator: BufferRangeIterator) -> Self {
+impl SnapshotRangeIterator {
+    pub(crate) fn new(mvcc_iterator: MVCCRangeIterator, buffered_iterator: BufferRangeIterator) -> Self {
         SnapshotRangeIterator { storage_iterator: mvcc_iterator, buffered_iterator, ready_item_source: None }
     }
 
@@ -131,7 +131,8 @@ impl<const PS: usize> SnapshotRangeIterator<PS> {
         F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> M + 'static,
         M: 'static,
     {
-        self.map_static::<Result<M, _>, _>(move |res| res.map(|(a, b)| mapper(a, b))).collect()
+        self.map_static::<Result<M, _>, _>(move |res| res.map(|(a, b)| mapper(a.as_reference(), b.as_reference())))
+            .collect()
     }
 
     pub fn collect_cloned_bmap<F, M, N>(self, mapper: F) -> Result<BTreeMap<M, N>, Arc<SnapshotIteratorError>>
@@ -140,7 +141,8 @@ impl<const PS: usize> SnapshotRangeIterator<PS> {
         M: Ord + 'static,
         N: 'static,
     {
-        self.map_static::<Result<(M, N), _>, _>(move |res| res.map(|(a, b)| mapper(a, b))).collect()
+        self.map_static::<Result<(M, N), _>, _>(move |res| res.map(|(a, b)| mapper(a.as_reference(), b.as_reference())))
+            .collect()
     }
 
     pub fn collect_cloned_hashmap<F, M, N>(self, mapper: F) -> Result<HashMap<M, N>, Arc<SnapshotIteratorError>>
@@ -149,7 +151,8 @@ impl<const PS: usize> SnapshotRangeIterator<PS> {
         M: Hash + Eq + 'static,
         N: 'static,
     {
-        self.map_static::<Result<(M, N), _>, _>(move |res| res.map(|(a, b)| mapper(a, b))).collect()
+        self.map_static::<Result<(M, N), _>, _>(move |res| res.map(|(a, b)| mapper(a.as_reference(), b.as_reference())))
+            .collect()
     }
 
     pub fn collect_cloned_hashset<F, M>(self, mapper: F) -> Result<HashSet<M>, Arc<SnapshotIteratorError>>
@@ -157,29 +160,26 @@ impl<const PS: usize> SnapshotRangeIterator<PS> {
         F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> M + 'static,
         M: Hash + Eq + 'static,
     {
-        self.map_static::<Result<M, _>, _>(move |res| res.map(|(a, b)| mapper(a, b))).collect()
+        self.map_static::<Result<M, _>, _>(move |res| res.map(|(a, b)| mapper(a.as_reference(), b.as_reference())))
+            .collect()
     }
 
     pub fn first_cloned(
         mut self,
-    ) -> Result<
-        Option<(StorageKey<'static, BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>,
-        Arc<SnapshotIteratorError>,
-    > {
+    ) -> Result<Option<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)>, Arc<SnapshotIteratorError>>
+    {
         let item = self.next();
-        item.transpose().map(|option| {
-            option.map(|(key, value)| (StorageKey::Array(StorageKeyArray::from(key)), ByteArray::from(value)))
-        })
+        item.transpose().map(|option| option.map(|(key, value)| (key.into_owned_array(), value.into_array())))
     }
 
     fn storage_next(
         &mut self,
-    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
-        Some(
-            self.storage_iterator
-                .next()?
-                .map_err(|error| Arc::new(SnapshotIteratorError::MVCCRead { source: error.clone() })),
-        )
+    ) -> Option<Result<(StorageKey<'_, BUFFER_KEY_INLINE>, Bytes<'_, BUFFER_VALUE_INLINE>), Arc<SnapshotIteratorError>>>
+    {
+        match self.storage_iterator.next()? {
+            Ok((key, value)) => Some(Ok((StorageKey::Reference(key), Bytes::Reference(value)))),
+            Err(error) => Some(Err(Arc::new(SnapshotIteratorError::MVCCRead { source: error.clone() }))),
+        }
     }
 
     fn storage_peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), SnapshotIteratorError>> {
@@ -191,16 +191,11 @@ impl<const PS: usize> SnapshotRangeIterator<PS> {
 
     fn buffered_next(
         &mut self,
-    ) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), Arc<SnapshotIteratorError>>> {
+    ) -> Option<Result<(StorageKey<'_, BUFFER_KEY_INLINE>, Bytes<'_, BUFFER_VALUE_INLINE>), Arc<SnapshotIteratorError>>>
+    {
         self.buffered_iterator.next().map(|(key, write)| {
-            Ok((
-                StorageKeyReference::from(
-                    &*Box::leak(Box::new(key)), // FIXME wee woo wee woo
-                ),
-                ByteReference::from(
-                    &*Box::leak(Box::new(write.get_value().clone())), // FIXME wee woo wee woo
-                ),
-            ))
+            assert!(!write.is_delete());
+            Ok((StorageKey::Array(key), Bytes::Array(write.into_value())))
         })
     }
 
@@ -213,8 +208,9 @@ impl<const PS: usize> SnapshotRangeIterator<PS> {
     }
 }
 
-impl<const PS: usize> LendingIterator for SnapshotRangeIterator<PS> {
-    type Item<'a> = Result<(StorageKeyReference<'a>, ByteReference<'a>), Arc<SnapshotIteratorError>>;
+impl LendingIterator for SnapshotRangeIterator {
+    type Item<'a> =
+        Result<(StorageKey<'a, BUFFER_KEY_INLINE>, Bytes<'a, BUFFER_VALUE_INLINE>), Arc<SnapshotIteratorError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if self.ready_item_source.is_none() {

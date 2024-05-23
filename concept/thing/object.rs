@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use bytes::{byte_reference::ByteReference, Bytes};
+use bytes::Bytes;
 use encoding::{
     graph::thing::{edge::ThingEdgeHas, vertex_object::ObjectVertex},
     layout::prefix::Prefix,
@@ -12,7 +12,7 @@ use encoding::{
     Prefixed,
 };
 use storage::{
-    key_value::StorageKeyReference,
+    key_value::{StorageKey, StorageKeyReference},
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
@@ -321,18 +321,15 @@ impl<'a> ObjectAPI<'a> for Object<'a> {
     }
 }
 
-fn storage_key_to_object(storage_key_ref: StorageKeyReference<'_>) -> Object<'_> {
-    Object::new(ObjectVertex::new(Bytes::Reference(storage_key_ref.byte_ref())))
+fn storage_key_to_object(storage_key: StorageKey<'_, 40>) -> Object<'_> {
+    Object::new(ObjectVertex::new(storage_key.into_bytes()))
 }
 
 concept_iterator!(ObjectIterator, Object, storage_key_to_object);
 
-fn storage_key_to_has_attribute<'a>(
-    storage_key_ref: StorageKeyReference<'a>,
-    value: ByteReference<'a>,
-) -> (Attribute<'a>, u64) {
-    let edge = ThingEdgeHas::new(Bytes::Reference(storage_key_ref.byte_ref()));
-    (Attribute::new(edge.into_to()), decode_value_u64(value))
+fn storage_key_to_has_attribute<'a>(storage_key: StorageKey<'a, 40>, value: Bytes<'a, 64>) -> (Attribute<'a>, u64) {
+    let edge = ThingEdgeHas::new(storage_key.into_bytes());
+    (Attribute::new(edge.into_to()), decode_value_u64(value.as_reference()))
 }
 
 edge_iterator!(

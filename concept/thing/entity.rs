@@ -6,7 +6,6 @@
 
 use std::collections::HashSet;
 
-use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{
@@ -21,7 +20,7 @@ use encoding::{
 };
 use iterator::Collector;
 use storage::{
-    key_value::StorageKeyReference,
+    key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
@@ -167,8 +166,8 @@ impl<'a> ObjectAPI<'a> for Entity<'a> {
     }
 }
 
-fn storage_key_to_entity(storage_key_ref: StorageKeyReference<'_>) -> Entity<'_> {
-    Entity::new(ObjectVertex::new(Bytes::Reference(storage_key_ref.byte_ref())))
+fn storage_key_to_entity(storage_key: StorageKey<'_, 40>) -> Entity<'_> {
+    Entity::new(ObjectVertex::new(storage_key.into_bytes()))
 }
 
 concept_iterator!(EntityIterator, Entity, storage_key_to_entity);

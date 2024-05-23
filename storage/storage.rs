@@ -354,7 +354,7 @@ impl<Durability> MVCCStorage<Durability> {
         &'this self,
         range: KeyRange<StorageKey<'this, PS>>,
         open_sequence_number: SequenceNumber,
-    ) -> MVCCRangeIterator<PS> {
+    ) -> MVCCRangeIterator {
         MVCCRangeIterator::new(self, range, open_sequence_number)
     }
 

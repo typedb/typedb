@@ -10,12 +10,12 @@
 macro_rules! concept_iterator {
     ($name:ident, $concept_type:ident, $map_fn: expr) => {
         pub struct $name<const S: usize> {
-            snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator<S>>,
+            snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator>,
         }
 
         #[allow(unused)]
         impl<const S: usize> $name<S> {
-            pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator<S>) -> Self {
+            pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator) -> Self {
                 $name { snapshot_iterator: Some(snapshot_iterator) }
             }
 
@@ -27,7 +27,9 @@ macro_rules! concept_iterator {
                 use $crate::error::ConceptReadError::SnapshotIterate;
                 self.iter_peek().map(|result| {
                     result
-                        .map(|(storage_key, _value_bytes)| $map_fn(storage_key))
+                        .map(|(storage_key, _value_bytes)| {
+                            $map_fn(::storage::key_value::StorageKey::Reference(storage_key))
+                        })
                         .map_err(|error| SnapshotIterate { source: error })
                 })
             }
@@ -51,7 +53,7 @@ macro_rules! concept_iterator {
                 &mut self,
             ) -> Option<
                 Result<
-                    (StorageKeyReference<'_>, bytes::byte_reference::ByteReference<'_>),
+                    (::storage::key_value::StorageKeyReference<'_>, bytes::byte_reference::ByteReference<'_>),
                     std::sync::Arc<storage::snapshot::iterator::SnapshotIteratorError>,
                 >,
             > {
@@ -66,7 +68,7 @@ macro_rules! concept_iterator {
                 &mut self,
             ) -> Option<
                 Result<
-                    (StorageKeyReference<'_>, bytes::byte_reference::ByteReference<'_>),
+                    (::storage::key_value::StorageKey<'_, 40>, bytes::Bytes<'_, 64>),
                     std::sync::Arc<storage::snapshot::iterator::SnapshotIteratorError>,
                 >,
             > {
@@ -98,12 +100,12 @@ macro_rules! concept_iterator {
 macro_rules! edge_iterator {
     ($name:ident; $mapped_type:ty; $map_fn: expr) => {
         pub struct $name<const S: usize> {
-            snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator<S>>,
+            snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator>,
         }
 
         #[allow(unused)]
         impl<const S: usize> $name<S> {
-            pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator<S>) -> Self {
+            pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator) -> Self {
                 $name { snapshot_iterator: Some(snapshot_iterator) }
             }
 
@@ -115,7 +117,12 @@ macro_rules! edge_iterator {
                 use $crate::error::ConceptReadError::SnapshotIterate;
                 self.iter_peek().map(|result| {
                     result
-                        .map(|(storage_key, value_bytes)| $map_fn(storage_key, value_bytes))
+                        .map(|(storage_key, value_bytes)| {
+                            $map_fn(
+                                ::storage::key_value::StorageKey::Reference(storage_key),
+                                ::bytes::Bytes::Reference(value_bytes),
+                            )
+                        })
                         .map_err(|error| SnapshotIterate { source: error })
                 })
             }
@@ -154,7 +161,7 @@ macro_rules! edge_iterator {
                 &mut self,
             ) -> Option<
                 Result<
-                    (StorageKeyReference<'_>, bytes::byte_reference::ByteReference<'_>),
+                    (::storage::key_value::StorageKey<'_, 40>, bytes::Bytes<'_, 64>),
                     std::sync::Arc<storage::snapshot::iterator::SnapshotIteratorError>,
                 >,
             > {

@@ -53,8 +53,7 @@ impl TypeVertexAllocator {
                     return Err(EncodingError::TypeIDAllocate { source: err.clone() });
                 }
                 Some(Ok((actual_next_key, _))) => {
-                    let actual_type_id =
-                        TypeVertex::new(Bytes::Reference(actual_next_key.byte_ref())).type_id_().as_u16();
+                    let actual_type_id = TypeVertex::new(Bytes::reference(actual_next_key.bytes())).type_id_().as_u16();
                     if actual_type_id != expected_next {
                         return Ok(Some(expected_next));
                     }

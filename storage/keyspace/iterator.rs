@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use lending_iterator::{
     combinators::{SeekableMap, TakeWhile},
     LendingIterator, Peekable, Seekable,

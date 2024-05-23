@@ -203,7 +203,7 @@ impl OwnsCache {
             TypeEdge::FIXED_WIDTH_ENCODING,
         ));
         while let Some((key, _)) = it.next().transpose().unwrap() {
-            let edge = TypeEdge::new(Bytes::Reference(key.byte_ref()));
+            let edge = TypeEdge::new(Bytes::reference(key.bytes()));
             let attribute = AttributeType::new(edge.from().into_owned());
             let owner = ObjectType::new(edge.to().into_owned());
             let owns = Owns::new(owner, attribute);
@@ -231,7 +231,7 @@ impl PlaysCache {
         ));
 
         while let Some((key, _)) = it.next().transpose().unwrap() {
-            let edge = TypeEdge::new(Bytes::Reference(key.byte_ref()));
+            let edge = TypeEdge::new(Bytes::reference(key.bytes()));
             let player = ObjectType::new(edge.from().into_owned());
             let role = RoleType::new(edge.to().into_owned());
             let plays = Plays::new(player, role);

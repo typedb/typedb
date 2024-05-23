@@ -6,7 +6,6 @@
 
 use std::collections::{HashMap, HashSet};
 
-use bytes::Bytes;
 use encoding::{
     graph::type_::vertex::{new_vertex_relation_type, TypeVertex},
     layout::prefix::Prefix,
@@ -15,7 +14,7 @@ use encoding::{
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::{
-    key_value::StorageKeyReference,
+    key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
@@ -377,8 +376,8 @@ impl From<Annotation> for RelationTypeAnnotation {
 }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_relation_type(storage_key_ref: StorageKeyReference<'_>) -> RelationType<'_> {
-    RelationType::new(new_vertex_relation_type(Bytes::Reference(storage_key_ref.byte_ref())))
+fn storage_key_to_relation_type(storage_key: StorageKey<'_, 40>) -> RelationType<'_> {
+    RelationType::new(new_vertex_relation_type(storage_key.into_bytes()))
 }
 
 concept_iterator!(RelationTypeIterator, RelationType, storage_key_to_relation_type);

@@ -22,7 +22,7 @@ use encoding::{
 };
 use iterator::Collector;
 use storage::{
-    key_value::StorageKeyReference,
+    key_value::{StorageKey, StorageKeyReference},
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
@@ -116,10 +116,10 @@ impl<'a> Relation<'a> {
         thing_manager.get_indexed_players(snapshot, Object::Relation(self.as_reference()))
     }
 
-    pub fn has_players<'m, Snapshot: ReadableSnapshot>(
+    pub fn has_players<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>,
+        thing_manager: &ThingManager<Snapshot>,
     ) -> bool {
         match self.get_status(snapshot, thing_manager) {
             ConceptStatus::Inserted => thing_manager.has_role_players(snapshot, self.as_reference(), true),
@@ -147,7 +147,7 @@ impl<'a> Relation<'a> {
         let mut rp_iter = self.get_players(snapshot, thing_manager);
         let mut rp = rp_iter.next().transpose()?;
         while let Some((role_player, count)) = rp {
-            let mut value = map.entry(role_player.role_type.clone()).or_insert(0);
+            let value = map.entry(role_player.role_type.clone()).or_insert(0);
             *value += count;
             rp = rp_iter.next().transpose()?;
         }
@@ -231,10 +231,10 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         }
     }
 
-    fn get_status<'m, Snapshot: ReadableSnapshot>(
+    fn get_status<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>,
+        thing_manager: &ThingManager<Snapshot>,
     ) -> ConceptStatus {
         thing_manager.get_status(snapshot, self.vertex().as_storage_key())
     }
@@ -258,7 +258,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
                 errors.push(ConceptWriteError::RelationRoleCardinality {
                     relation: self.clone().into_owned(),
                     role_type: role_type.clone(),
-                    cardinality: cardinality.clone(),
+                    cardinality,
                     actual_cardinality: player_count,
                 });
             }
@@ -271,9 +271,9 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
-        let mut has = self
+        let has = self
             .get_has(snapshot, thing_manager)
-            .collect_cloned_vec(|(key, value)| key.into_owned())
+            .collect_cloned_vec(|(key, _value)| key.into_owned())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         let mut has_attr_type_deleted = HashSet::new();
         for attr in has {
@@ -335,10 +335,10 @@ impl<'a> ObjectAPI<'a> for Relation<'a> {
 }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_ref_to_entity(storage_key_ref: StorageKeyReference<'_>) -> Relation<'_> {
-    Relation::new(ObjectVertex::new(Bytes::Reference(storage_key_ref.byte_ref())))
+fn storage_key_to_entity(storage_key: StorageKey<'_, 40>) -> Relation<'_> {
+    Relation::new(ObjectVertex::new(storage_key.into_bytes()))
 }
-concept_iterator!(RelationIterator, Relation, storage_key_ref_to_entity);
+concept_iterator!(RelationIterator, Relation, storage_key_to_entity);
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct RolePlayer<'a> {
@@ -360,13 +360,13 @@ impl<'a> RolePlayer<'a> {
     }
 }
 
-fn storage_key_to_role_player<'a>(
-    storage_key_ref: StorageKeyReference<'a>,
-    value: ByteReference<'a>,
-) -> (RolePlayer<'a>, u64) {
-    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key_ref.byte_ref()));
+fn storage_key_to_role_player<'a>(storage_key: StorageKey<'a, 40>, value: Bytes<'a, 64>) -> (RolePlayer<'a>, u64) {
+    let edge = ThingEdgeRolePlayer::new(storage_key.into_bytes());
     let role_type = build_vertex_role_type(edge.role_id());
-    (RolePlayer { player: Object::new(edge.into_to()), role_type: RoleType::new(role_type) }, decode_value_u64(value))
+    (
+        RolePlayer { player: Object::new(edge.into_to()), role_type: RoleType::new(role_type) },
+        decode_value_u64(value.as_reference()),
+    )
 }
 
 edge_iterator!(
@@ -376,12 +376,12 @@ edge_iterator!(
 );
 
 fn storage_key_to_relation_role<'a>(
-    storage_key_ref: StorageKeyReference<'a>,
-    value: ByteReference<'a>,
+    storage_key: StorageKey<'a, 40>,
+    value: Bytes<'a, 64>,
 ) -> (Relation<'a>, RoleType<'static>, u64) {
-    let edge = ThingEdgeRolePlayer::new(Bytes::Reference(storage_key_ref.byte_ref()));
+    let edge = ThingEdgeRolePlayer::new(storage_key.into_bytes());
     let role_type = build_vertex_role_type(edge.role_id());
-    (Relation::new(edge.into_to()), RoleType::new(role_type), decode_value_u64(value))
+    (Relation::new(edge.into_to()), RoleType::new(role_type), decode_value_u64(value.as_reference()))
 }
 
 edge_iterator!(
@@ -391,26 +391,26 @@ edge_iterator!(
 );
 
 fn storage_key_to_indexed_players<'a>(
-    storage_key_ref: StorageKeyReference<'a>,
-    value: ByteReference<'a>,
+    storage_key: StorageKey<'a, 40>,
+    value: Bytes<'a, 64>,
 ) -> (RolePlayer<'a>, RolePlayer<'a>, Relation<'a>, u64) {
     let from_role_player = RolePlayer {
-        player: Object::new(ThingEdgeRelationIndex::read_from(storage_key_ref.byte_ref())),
+        player: Object::new(ThingEdgeRelationIndex::read_from(storage_key.as_reference().byte_ref())),
         role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_from_role_id(
-            storage_key_ref.byte_ref(),
+            storage_key.as_reference().byte_ref(),
         ))),
     };
     let to_role_player = RolePlayer {
-        player: Object::new(ThingEdgeRelationIndex::read_to(storage_key_ref.byte_ref())),
+        player: Object::new(ThingEdgeRelationIndex::read_to(storage_key.as_reference().byte_ref())),
         role_type: RoleType::new(build_vertex_role_type(ThingEdgeRelationIndex::read_to_role_id(
-            storage_key_ref.byte_ref(),
+            storage_key.as_reference().byte_ref(),
         ))),
     };
     (
         from_role_player,
         to_role_player,
-        Relation::new(ThingEdgeRelationIndex::read_relation(storage_key_ref.byte_ref())),
-        decode_value_u64(value),
+        Relation::new(ThingEdgeRelationIndex::read_relation(storage_key.as_reference().byte_ref())),
+        decode_value_u64(value.as_reference()),
     )
 }
 

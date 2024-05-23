@@ -6,7 +6,6 @@
 
 use std::collections::{HashMap, HashSet};
 
-use bytes::Bytes;
 use encoding::{
     graph::type_::vertex::{new_vertex_entity_type, TypeVertex},
     layout::prefix::Prefix,
@@ -15,7 +14,7 @@ use encoding::{
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::{
-    key_value::StorageKeyReference,
+    key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
@@ -326,8 +325,8 @@ impl From<Annotation> for EntityTypeAnnotation {
 // }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_ref_to_entity_type(storage_key_ref: StorageKeyReference<'_>) -> EntityType<'_> {
-    EntityType::new(new_vertex_entity_type(Bytes::Reference(storage_key_ref.byte_ref())))
+fn storage_key_to_entity_type(storage_key: StorageKey<'_, 40>) -> EntityType<'_> {
+    EntityType::new(new_vertex_entity_type(storage_key.into_bytes()))
 }
 
-concept_iterator!(EntityTypeIterator, EntityType, storage_key_ref_to_entity_type);
+concept_iterator!(EntityTypeIterator, EntityType, storage_key_to_entity_type);

@@ -17,7 +17,7 @@ use crate::{
     sequence_number::SequenceNumber,
 };
 
-pub(crate) struct MVCCRangeIterator<const PS: usize> {
+pub(crate) struct MVCCRangeIterator {
     storage_name: String,
     keyspace_id: KeyspaceId,
     iterator: KeyspaceRangeIterator,
@@ -27,14 +27,14 @@ pub(crate) struct MVCCRangeIterator<const PS: usize> {
     item: Option<Result<(StorageKeyReference<'static>, ByteReference<'static>), MVCCReadError>>,
 }
 
-impl<const P: usize> MVCCRangeIterator<P> {
+impl MVCCRangeIterator {
     //
     // TODO: optimisation for fixed-width keyspaces: we can skip to key[len(key) - 1] = key[len(key) - 1] + 1
     // once we find a successful key, to skip all 'older' versions of the key
     //
-    pub(crate) fn new<D>(
+    pub(crate) fn new<D, const PS: usize>(
         storage: &MVCCStorage<D>,
-        range: KeyRange<StorageKey<'_, P>>,
+        range: KeyRange<StorageKey<'_, PS>>,
         open_sequence_number: SequenceNumber,
     ) -> Self {
         debug_assert!(!range.start().bytes().is_empty());
@@ -90,7 +90,7 @@ impl<const P: usize> MVCCRangeIterator<P> {
     }
 }
 
-impl<const PS: usize> LendingIterator for MVCCRangeIterator<PS> {
+impl LendingIterator for MVCCRangeIterator {
     type Item<'a> = Result<(StorageKeyReference<'a>, ByteReference<'a>), MVCCReadError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
@@ -115,7 +115,7 @@ impl<const PS: usize> LendingIterator for MVCCRangeIterator<PS> {
     }
 }
 
-impl<const PS: usize> Seekable<[u8]> for MVCCRangeIterator<PS> {
+impl Seekable<[u8]> for MVCCRangeIterator {
     fn seek(&mut self, key: &[u8]) {
         if let Some(Ok((peek, _))) = self.peek() {
             if peek.bytes() < key {

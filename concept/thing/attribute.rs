@@ -19,7 +19,7 @@ use encoding::{
 use iterator::State;
 use lending_iterator::LendingIterator;
 use storage::{
-    key_value::StorageKeyReference,
+    key_value::{StorageKey, StorageKeyReference},
     snapshot::{iterator::SnapshotRangeIterator, ReadableSnapshot, WritableSnapshot},
 };
 
@@ -182,18 +182,18 @@ impl<'a> Ord for Attribute<'a> {
 }
 
 /// Attribute iterators handle hiding dependent attributes that were not deleted yet
-pub struct AttributeIterator<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> {
+pub struct AttributeIterator<'a, Snapshot: ReadableSnapshot> {
     snapshot: Option<&'a Snapshot>,
     type_manager: Option<&'a TypeManager<Snapshot>>,
-    attributes_iterator: Option<SnapshotRangeIterator<A_PS>>,
-    has_reverse_iterator: Option<SnapshotRangeIterator<H_PS>>,
+    attributes_iterator: Option<SnapshotRangeIterator>,
+    has_reverse_iterator: Option<SnapshotRangeIterator>,
     state: State<ConceptReadError>,
 }
 
-impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> AttributeIterator<'a, Snapshot, A_PS, H_PS> {
+impl<'a, Snapshot: ReadableSnapshot> AttributeIterator<'a, Snapshot> {
     pub(crate) fn new(
-        attributes_iterator: SnapshotRangeIterator<A_PS>,
-        has_reverse_iterator: SnapshotRangeIterator<H_PS>,
+        attributes_iterator: SnapshotRangeIterator,
+        has_reverse_iterator: SnapshotRangeIterator,
         snapshot: &'a Snapshot,
         type_manager: &'a TypeManager<Snapshot>,
     ) -> Self {
@@ -216,13 +216,15 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
         }
     }
 
-    fn storage_key_to_attribute_vertex(storage_key_ref: StorageKeyReference<'_>) -> AttributeVertex<'_> {
-        AttributeVertex::new(Bytes::Reference(storage_key_ref.byte_ref()))
+    fn storage_key_to_attribute_vertex(storage_key: StorageKey<'_, 40>) -> AttributeVertex<'_> {
+        AttributeVertex::new(storage_key.into_bytes())
     }
 
     pub fn peek(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
         self.iter_peek().map(|result| {
-            result.map(|(storage_key, _value_bytes)| Attribute::new(Self::storage_key_to_attribute_vertex(storage_key)))
+            result.map(|(storage_key, _value_bytes)| {
+                Attribute::new(Self::storage_key_to_attribute_vertex(StorageKey::Reference(storage_key)))
+            })
         })
     }
 
@@ -256,7 +258,7 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
         }
     }
 
-    fn iter_next(&mut self) -> Option<Result<(StorageKeyReference<'_>, ByteReference<'_>), ConceptReadError>> {
+    fn iter_next(&mut self) -> Option<Result<(StorageKey<'_, 40>, Bytes<'_, 64>), ConceptReadError>> {
         match &self.state {
             State::Init | State::ItemUsed => {
                 self.find_next_state();
@@ -287,7 +289,7 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
             match self.attributes_iterator.as_mut().unwrap().peek() {
                 None => self.state = State::Done,
                 Some(Ok((key, _))) => {
-                    let attribute_vertex = Self::storage_key_to_attribute_vertex(key);
+                    let attribute_vertex = Self::storage_key_to_attribute_vertex(StorageKey::Reference(key));
                     let independent = Attribute::new(attribute_vertex.as_reference())
                         .type_()
                         .is_independent(self.snapshot.unwrap(), self.type_manager.unwrap());
@@ -317,7 +319,7 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
     }
 
     fn has_owner(
-        has_reverse_iterator: &mut SnapshotRangeIterator<H_PS>,
+        has_reverse_iterator: &mut SnapshotRangeIterator,
         attribute_vertex: AttributeVertex<'_>,
     ) -> Result<bool, ConceptReadError> {
         let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex.as_reference());
@@ -353,12 +355,9 @@ impl<'a, Snapshot: ReadableSnapshot, const A_PS: usize, const H_PS: usize> Attri
     }
 }
 
-fn storage_key_to_owner<'a>(
-    storage_key_reference: StorageKeyReference<'a>,
-    value: ByteReference<'a>,
-) -> (Object<'a>, u64) {
-    let edge = ThingEdgeHasReverse::new(Bytes::Reference(storage_key_reference.byte_ref()));
-    (Object::new(edge.into_to()), decode_value_u64(value))
+fn storage_key_to_owner<'a>(storage_key: StorageKey<'a, 40>, value: Bytes<'a, 64>) -> (Object<'a>, u64) {
+    let edge = ThingEdgeHasReverse::new(storage_key.into_bytes());
+    (Object::new(edge.into_to()), decode_value_u64(value.as_reference()))
 }
 
 edge_iterator!(

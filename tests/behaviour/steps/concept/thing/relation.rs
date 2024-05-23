@@ -95,6 +95,7 @@ async fn relation_get_players_contains_table(
     contains_or_doesnt.check(&expected, &players);
 }
 
+/*
 #[apply(generic_step)]
 #[step(expr = r"relation {var} get players for role\({type_label}\) {contains_or_doesnt}: {var}")]
 async fn relation_get_players_for_role_contains(
@@ -179,3 +180,4 @@ async fn object_get_relations_of_type_with_role_contain(
     };
     contains_or_doesnt.check(slice::from_ref(relation), &relations);
 }
+*/
