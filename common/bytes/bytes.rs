@@ -163,10 +163,7 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> Borrow<[u8]> for Bytes<'bytes, ARRA
 }
 
 impl<'bytes, const ARRAY_INLINE_SIZE: usize> Prefix for Bytes<'bytes, ARRAY_INLINE_SIZE> {
-    fn starts_with(&self, other: &[u8]) -> bool {
-        self.bytes().starts_with(other)
-    }
-    fn bytes(&self) -> &[u8] {
-        self.bytes()
+    fn starts_with(&self, other: &Self) -> bool {
+        self.bytes().starts_with(other.bytes())
     }
 }

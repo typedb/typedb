@@ -7,8 +7,8 @@
 use std::marker::PhantomData;
 
 // https://github.com/rust-lang/rust/issues/49601 workaround
-pub trait FnMutHktHelper<T, U>: FnMut(T) -> U {}
-impl<F, T, U> FnMutHktHelper<T, U> for F where F: FnMut(T) -> U {}
+pub trait FnMutHktHelper<T, U>: FnMut(T) -> U  + 'static {}
+impl<F, T, U> FnMutHktHelper<T, U> for F where F: FnMut(T) -> U + 'static {}
 
 pub trait Hkt: 'static {
     type HktSelf<'a>;

@@ -379,10 +379,7 @@ impl fmt::Debug for ByteArrayBoxed {
 }
 
 impl<const ARRAY_INLINE_SIZE: usize> Prefix for ByteArray<ARRAY_INLINE_SIZE> {
-    fn starts_with(&self, other: &[u8]) -> bool {
-        self.bytes().starts_with(other)
-    }
-    fn bytes(&self) -> &[u8] {
-        self.bytes()
+    fn starts_with(&self, other: &Self) -> bool {
+        self.bytes().starts_with(other.bytes())
     }
 }

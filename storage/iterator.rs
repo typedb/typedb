@@ -7,7 +7,7 @@
 use std::{error::Error, fmt, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
-use lending_iterator::LendingIterator;
+use lending_iterator::{LendingIterator, Seekable};
 
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
@@ -113,7 +113,9 @@ impl<const PS: usize> LendingIterator for MVCCRangeIterator<PS> {
             )))
         }
     }
+}
 
+impl<const PS: usize> Seekable<[u8]> for MVCCRangeIterator<PS> {
     fn seek(&mut self, key: &[u8]) {
         if let Some(Ok((peek, _))) = self.peek() {
             if peek.bytes() < key {

@@ -6,8 +6,8 @@
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use lending_iterator::{
-    combinators::{Map, TakeWhile},
-    LendingIterator, Peekable,
+    combinators::{SeekableMap, TakeWhile},
+    LendingIterator, Peekable, Seekable,
 };
 use logger::result::ResultExt;
 use speedb::DB;
@@ -18,7 +18,7 @@ use crate::key_range::{KeyRange, RangeEnd};
 mod raw {
     use std::cmp::Ordering;
 
-    use lending_iterator::LendingIterator;
+    use lending_iterator::{LendingIterator, Seekable};
     use speedb::DBRawIterator;
 
     pub(super) struct DBIterator {
@@ -65,7 +65,9 @@ mod raw {
                 None
             }
         }
+    }
 
+    impl Seekable<[u8]> for DBIterator {
         fn seek(&mut self, key: &[u8]) {
             if let Some(Ok(item)) = self.peek() {
                 let (peek, _) = item;
@@ -86,13 +88,14 @@ mod raw {
 
 pub struct KeyspaceRangeIterator {
     iterator: Peekable<
-        Map<
+        SeekableMap<
             TakeWhile<raw::DBIterator, Box<dyn FnMut(&Result<(&[u8], &[u8]), speedb::Error>) -> bool>>,
             Box<
                 dyn for<'a> Fn(
                     Result<(&'a [u8], &'a [u8]), speedb::Error>,
                 ) -> Result<(&'a [u8], &'a [u8]), KeyspaceError>,
             >,
+            fn(&[u8]) -> &[u8],
             Result<(&'static [u8], &'static [u8]), KeyspaceError>,
         >,
     >,
@@ -120,10 +123,11 @@ impl KeyspaceRangeIterator {
 
         let range_iterator = iterator
             .take_while(Box::new(move |res: &Result<(&[u8], &[u8]), speedb::Error>| match res {
-                Ok((key, _)) => range.within_end(&Bytes::<0>::Reference(ByteReference::new(key))),
+                Ok((key, _)) => range.within_end(&ByteArray::copy(key)),
                 Err(_) => true,
             }) as Box<_>)
-            .map(error_mapper(keyspace_name));
+            .map(error_mapper(keyspace_name))
+            .into_seekable(identity as fn(&[u8]) -> &[u8]);
 
         KeyspaceRangeIterator { iterator: Peekable::new(range_iterator) }
     }
@@ -131,6 +135,10 @@ impl KeyspaceRangeIterator {
     pub(crate) fn peek(&mut self) -> Option<&<Self as LendingIterator>::Item<'_>> {
         self.iterator.peek()
     }
+}
+
+fn identity(input: &[u8]) -> &[u8] {
+    input
 }
 
 fn error_mapper(
@@ -147,7 +155,9 @@ impl LendingIterator for KeyspaceRangeIterator {
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.iterator.next()
     }
+}
 
+impl Seekable<[u8]> for KeyspaceRangeIterator {
     fn seek(&mut self, key: &[u8]) {
         self.iterator.seek(key);
     }
@@ -158,10 +168,12 @@ impl KeyspaceRangeIterator {
         self,
     ) -> Vec<(ByteArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)> {
         self.iterator
-            .map_static::<(ByteArray<INLINE_KEY>, ByteArray<INLINE_VALUE>), _>(|res: Result<(&[u8], &[u8]), KeyspaceError>| {
-                let (key, value) = res.unwrap_or_log();
-                (ByteArray::<INLINE_KEY>::copy(key), ByteArray::<INLINE_VALUE>::copy(value))
-            })
+            .map_static::<(ByteArray<INLINE_KEY>, ByteArray<INLINE_VALUE>), _>(
+                |res: Result<(&[u8], &[u8]), KeyspaceError>| {
+                    let (key, value) = res.unwrap_or_log();
+                    (ByteArray::<INLINE_KEY>::copy(key), ByteArray::<INLINE_VALUE>::copy(value))
+                },
+            )
             .collect()
     }
 }

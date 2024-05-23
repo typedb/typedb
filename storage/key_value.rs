@@ -101,12 +101,8 @@ impl<'bytes, const SZ: usize> Ord for StorageKey<'bytes, SZ> {
 }
 
 impl<'bytes, const SZ: usize> Prefix for StorageKey<'bytes, SZ> {
-    fn starts_with(&self, other: &[u8]) -> bool {
-        self.bytes().starts_with(other)
-    }
-
-    fn bytes(&self) -> &[u8] {
-        self.bytes()
+    fn starts_with(&self, other: &Self) -> bool {
+        self.bytes().starts_with(other.bytes())
     }
 }
 

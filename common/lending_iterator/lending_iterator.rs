@@ -7,7 +7,7 @@
 pub mod combinators;
 pub mod higher_order;
 
-use std::mem::transmute;
+use std::{iter, mem::transmute};
 
 use higher_order::AdHocHkt;
 
@@ -20,7 +20,6 @@ pub trait LendingIterator: 'static {
     type Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>>;
-    fn seek(&mut self, key: &[u8]);
 
     fn filter<P>(self, pred: P) -> Filter<Self, P>
     where
@@ -71,7 +70,11 @@ pub trait LendingIterator: 'static {
         for<'a> Self::Item<'a>: 'static,
         B: FromIterator<Self::Item<'static>>,
     {
-        std::iter::from_fn(move || unsafe { transmute(self.next()) }).collect()
+        iter::from_fn(move || unsafe {
+            // SAFETY: `Self::Item<'a>: 'static` implies that the item is independent from the iterator.
+            transmute::<Option<Self::Item<'_>>, Option<Self::Item<'static>>>(self.next())
+        })
+        .collect()
     }
 
     fn count(mut self) -> usize
@@ -86,6 +89,10 @@ pub trait LendingIterator: 'static {
     }
 }
 
+pub trait Seekable<K: ?Sized>: LendingIterator {
+    fn seek(&mut self, key: &K);
+}
+
 pub struct Peekable<LI: LendingIterator> {
     iter: LI,
     item: Option<LI::Item<'static>>,
@@ -98,9 +105,16 @@ impl<LI: LendingIterator> Peekable<LI> {
 
     pub fn peek(&mut self) -> Option<&LI::Item<'_>> {
         if self.item.is_none() {
-            self.item = unsafe { std::mem::transmute(self.iter.next()) };
+            self.item = unsafe {
+                // SAFETY: the stored item is only accessible while mutably borrowing this iterator.
+                // When the underlying iterator is advanced, the stored item is discarded.
+                transmute::<Option<LI::Item<'_>>, Option<LI::Item<'static>>>(self.iter.next())
+            };
         }
-        unsafe { std::mem::transmute(self.item.as_ref()) }
+        unsafe {
+            // SAFETY: the item reference borrows this iterator mutably. This iterator cannot be advanced while it exists.
+            transmute::<Option<&LI::Item<'static>>, Option<&LI::Item<'_>>>(self.item.as_ref())
+        }
     }
 }
 
@@ -108,14 +122,25 @@ impl<LI: LendingIterator> LendingIterator for Peekable<LI> {
     type Item<'a> = LI::Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        if let Some(item) = self.item.take() {
-            Some(unsafe { std::mem::transmute(item) })
-        } else {
-            self.iter.next()
+        match self.item.take() {
+            Some(item) => Some(unsafe {
+                // SAFETY: the item borrows this iterator mutably. This iterator cannot be advanced while it exists.
+                transmute(item)
+            }),
+            None => self.iter.next(),
         }
     }
+}
 
-    fn seek(&mut self, key: &[u8]) {
-        todo!()
+impl<K: ?Sized, LI> Seekable<K> for Peekable<LI>
+where
+    LI: Seekable<K>,
+{
+    fn seek(&mut self, key: &K) {
+        if self.item.is_some() {
+            todo!()
+        }
+        self.item = None;
+        self.iter.seek(key)
     }
 }

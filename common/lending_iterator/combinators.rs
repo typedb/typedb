@@ -4,27 +4,34 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::marker::PhantomData;
+use std::{marker::PhantomData, mem::transmute};
 
 use crate::{
     higher_order::{FnMutHktHelper, Hkt},
-    LendingIterator,
+    LendingIterator, Seekable,
 };
 
-pub struct Map<I, F, B: Hkt> {
+pub struct Map<I, F, B> {
     iter: I,
     mapper: F,
     _pd: PhantomData<B>,
 }
 
-impl<I, F, B: Hkt> Map<I, F, B> {
+impl<I, F, B> Map<I, F, B> {
     pub(crate) fn new(iter: I, mapper: F) -> Self {
         Self { iter, mapper, _pd: PhantomData }
     }
+
+    pub fn into_seekable<G>(self, unmapper: G) -> SeekableMap<I, F, G, B> {
+        let Self { iter, mapper, _pd } = self;
+        SeekableMap { iter, mapper, unmapper, _pd }
+    }
 }
 
-impl<B: Hkt, I: LendingIterator, F: 'static> LendingIterator for Map<I, F, B>
+impl<I, F, B> LendingIterator for Map<I, F, B>
 where
+    B: Hkt,
+    I: LendingIterator,
     F: for<'a> FnMutHktHelper<I::Item<'a>, B::HktSelf<'a>>,
 {
     type Item<'a> = B::HktSelf<'a>;
@@ -32,9 +39,37 @@ where
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.iter.next().map(&mut self.mapper)
     }
+}
 
-    fn seek(&mut self, _: &[u8]) {
-        todo!()
+pub struct SeekableMap<I, F, G, B> {
+    iter: I,
+    mapper: F,
+    unmapper: G,
+    _pd: PhantomData<B>,
+}
+
+impl<I, F, G, B> LendingIterator for SeekableMap<I, F, G, B>
+where
+    B: Hkt,
+    I: LendingIterator,
+    F: for<'a> FnMutHktHelper<I::Item<'a>, B::HktSelf<'a>>,
+    G: 'static,
+{
+    type Item<'a> = B::HktSelf<'a>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        self.iter.next().map(&mut self.mapper)
+    }
+}
+
+impl<I, F, G, B, M: ?Sized, K: ?Sized> Seekable<M> for SeekableMap<I, F, G, B>
+where
+    Self: LendingIterator,
+    I: Seekable<K>,
+    G: FnMut(&M) -> &K,
+{
+    fn seek(&mut self, key: &M) {
+        self.iter.seek((self.unmapper)(key))
     }
 }
 
@@ -49,8 +84,9 @@ impl<I, F> Filter<I, F> {
     }
 }
 
-impl<I: LendingIterator, F: 'static> LendingIterator for Filter<I, F>
+impl<I, F> LendingIterator for Filter<I, F>
 where
+    I: LendingIterator,
     F: for<'a, 'b> FnMutHktHelper<&'b I::Item<'a>, bool>,
 {
     type Item<'a> = I::Item<'a>;
@@ -66,16 +102,22 @@ where
                             // to the borrow of `self` and immediately return.
                             // The underlying lending iterator cannot be advanced before self.next() is called again,
                             // which will force this borrow to be released.
-                            std::mem::transmute::<Self::Item<'_>, Self::Item<'_>>(item)
+                            transmute::<Self::Item<'_>, Self::Item<'_>>(item)
                         });
                     }
                 }
             }
         }
     }
+}
 
-    fn seek(&mut self, _: &[u8]) {
-        todo!()
+impl<I, F, K> Seekable<K> for Filter<I, F>
+where
+    I: Seekable<K>,
+    F: for<'a, 'b> FnMutHktHelper<&'b I::Item<'a>, bool>,
+{
+    fn seek(&mut self, key: &K) {
+        self.iter.seek(key)
     }
 }
 
@@ -91,9 +133,10 @@ impl<I, F> TakeWhile<I, F> {
     }
 }
 
-impl<I: LendingIterator, F: 'static> LendingIterator for TakeWhile<I, F>
+impl<I, F> LendingIterator for TakeWhile<I, F>
 where
     F: for<'a, 'b> FnMutHktHelper<&'b I::Item<'a>, bool>,
+    I: LendingIterator,
 {
     type Item<'a> = I::Item<'a>;
 
@@ -109,7 +152,7 @@ where
                     // to the borrow of `self` and immediately return.
                     // The underlying lending iterator cannot be advanced before self.next() is called again,
                     // which will force this borrow to be released.
-                    std::mem::transmute::<Self::Item<'_>, Self::Item<'_>>(item)
+                    transmute::<Self::Item<'_>, Self::Item<'_>>(item)
                 })
             }
             _ => {
@@ -118,8 +161,15 @@ where
             }
         }
     }
+}
 
-    fn seek(&mut self, key: &[u8]) {
+impl<I, F, K: ?Sized> Seekable<K> for TakeWhile<I, F>
+where
+    F: for<'a, 'b> FnMutHktHelper<&'b I::Item<'a>, bool>,
+    I: Seekable<K>,
+{
+    /// Seeks the underlying iterator to next matching item, ignoring the predicate for the intermediate items.
+    fn seek(&mut self, key: &K) {
         self.iter.seek(key)
     }
 }

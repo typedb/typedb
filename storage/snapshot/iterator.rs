@@ -14,7 +14,7 @@ use std::{
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
-use lending_iterator::LendingIterator;
+use lending_iterator::{LendingIterator, Seekable};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use crate::{
@@ -229,10 +229,6 @@ impl<const PS: usize> LendingIterator for SnapshotRangeIterator<PS> {
             Some(ReadyItemSource::Buffered) => self.buffered_next(),
             None => None,
         }
-    }
-
-    fn seek(&mut self, key: &[u8]) {
-        todo!()
     }
 }
 
