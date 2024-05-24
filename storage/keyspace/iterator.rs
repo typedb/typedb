@@ -18,31 +18,35 @@ use super::keyspace::{Keyspace, KeyspaceError};
 use crate::key_range::{KeyRange, RangeEnd};
 
 mod raw {
-    use std::cmp::Ordering;
+    use std::{cmp::Ordering, mem::transmute};
 
     use lending_iterator::{LendingIterator, Seekable};
     use speedb::DBRawIterator;
 
+    type KeyValue<'a> = Result<(&'a [u8], &'a [u8]), speedb::Error>;
+
+    /// SAFETY NOTE: `'static` here represents that the `DBIterator` owns the data.
+    /// The item's lifetime is in fact invalidated when `iterator` is advanced.
     pub(super) struct DBIterator {
         iterator: DBRawIterator<'static>,
-        item: Option<Result<(&'static [u8], &'static [u8]), speedb::Error>>,
+        item: Option<KeyValue<'static>>,
     }
 
     impl DBIterator {
         pub(super) fn new_from(mut iterator: DBRawIterator<'static>, start: &[u8]) -> Self {
             iterator.seek(start);
-            let item = iterator.valid().then(|| unsafe { std::mem::transmute(iterator.item()) });
+            let item = iterator.valid().then(|| unsafe { transmute(iterator.item()) });
             Self { item: Ok(item).transpose(), iterator }
         }
 
         fn peek(&mut self) -> Option<&<Self as LendingIterator>::Item<'_>> {
             match self.next() {
-                Some(Ok(item)) => {
-                    self.item = Some(unsafe { std::mem::transmute(item) });
-                    self.item.as_ref()
-                }
-                Some(Err(error)) => {
-                    self.item = Some(Err(error));
+                Some(item) => {
+                    self.item = Some(unsafe { 
+                        // SAFETY: the stored item is only accessible while mutably borrowing this iterator.
+                        // When the underlying iterator is advanced, the stored item is discarded.
+                        transmute::<KeyValue<'_>, KeyValue<'static>>(item)
+                    });
                     self.item.as_ref()
                 }
                 None => None,
