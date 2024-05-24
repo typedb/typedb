@@ -12,6 +12,7 @@ use encoding::{
     AsBytes, Keyable, Prefixed,
 };
 use iterator::Collector;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
@@ -159,7 +160,7 @@ impl<'a> ObjectAPI<'a> for Entity<'a> {
     }
 }
 
-fn storage_key_to_entity(storage_key: StorageKey<'_, 40>) -> Entity<'_> {
+fn storage_key_to_entity(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> Entity<'_> {
     Entity::new(ObjectVertex::new(storage_key.into_bytes()))
 }
 

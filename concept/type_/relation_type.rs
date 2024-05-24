@@ -13,6 +13,7 @@ use encoding::{
     Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
@@ -376,7 +377,7 @@ impl From<Annotation> for RelationTypeAnnotation {
 }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_relation_type(storage_key: StorageKey<'_, 40>) -> RelationType<'_> {
+fn storage_key_to_relation_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> RelationType<'_> {
     RelationType::new(new_vertex_relation_type(storage_key.into_bytes()))
 }
 

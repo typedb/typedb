@@ -13,6 +13,7 @@ use encoding::{
     Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
@@ -325,7 +326,7 @@ impl From<Annotation> for EntityTypeAnnotation {
 // }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_entity_type(storage_key: StorageKey<'_, 40>) -> EntityType<'_> {
+fn storage_key_to_entity_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> EntityType<'_> {
     EntityType::new(new_vertex_entity_type(storage_key.into_bytes()))
 }
 

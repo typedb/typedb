@@ -22,6 +22,7 @@ use encoding::{
 };
 use iterator::Collector;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
     snapshot::{ReadableSnapshot, WritableSnapshot},
@@ -356,7 +357,7 @@ impl Hkt for Relation<'static> {
 }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_entity(storage_key: StorageKey<'_, 40>) -> Relation<'_> {
+fn storage_key_to_entity(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> Relation<'_> {
     Relation::new(ObjectVertex::new(storage_key.into_bytes()))
 }
 concept_iterator!(RelationIterator, Relation, storage_key_to_entity);
@@ -381,7 +382,10 @@ impl<'a> RolePlayer<'a> {
     }
 }
 
-fn storage_key_to_role_player<'a>(storage_key: StorageKey<'a, 40>, value: Bytes<'a, 64>) -> (RolePlayer<'a>, u64) {
+fn storage_key_to_role_player<'a>(
+    storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
+    value: Bytes<'a, BUFFER_VALUE_INLINE>,
+) -> (RolePlayer<'a>, u64) {
     let edge = ThingEdgeRolePlayer::new(storage_key.into_bytes());
     let role_type = build_vertex_role_type(edge.role_id());
     (
@@ -397,8 +401,8 @@ edge_iterator!(
 );
 
 fn storage_key_to_relation_role<'a>(
-    storage_key: StorageKey<'a, 40>,
-    value: Bytes<'a, 64>,
+    storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
+    value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Relation<'a>, RoleType<'static>, u64) {
     let edge = ThingEdgeRolePlayer::new(storage_key.into_bytes());
     let role_type = build_vertex_role_type(edge.role_id());
@@ -412,8 +416,8 @@ edge_iterator!(
 );
 
 fn storage_key_to_indexed_players<'a>(
-    storage_key: StorageKey<'a, 40>,
-    value: Bytes<'a, 64>,
+    storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
+    value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (RolePlayer<'a>, RolePlayer<'a>, Relation<'a>, u64) {
     let from_role_player = RolePlayer {
         player: Object::new(ThingEdgeRelationIndex::read_from(storage_key.as_reference().byte_ref())),

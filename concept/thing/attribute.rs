@@ -18,6 +18,7 @@ use encoding::{
 };
 use iterator::State;
 use lending_iterator::LendingIterator;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
     snapshot::{iterator::SnapshotRangeIterator, ReadableSnapshot, WritableSnapshot},
@@ -216,7 +217,7 @@ impl<'a, Snapshot: ReadableSnapshot> AttributeIterator<'a, Snapshot> {
         }
     }
 
-    fn storage_key_to_attribute_vertex(storage_key: StorageKey<'_, 40>) -> AttributeVertex<'_> {
+    fn storage_key_to_attribute_vertex(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> AttributeVertex<'_> {
         AttributeVertex::new(storage_key.into_bytes())
     }
 
@@ -258,7 +259,7 @@ impl<'a, Snapshot: ReadableSnapshot> AttributeIterator<'a, Snapshot> {
         }
     }
 
-    fn iter_next(&mut self) -> Option<Result<(StorageKey<'_, 40>, Bytes<'_, 64>), ConceptReadError>> {
+    fn iter_next(&mut self) -> Option<Result<(StorageKey<'_, BUFFER_KEY_INLINE>, Bytes<'_, BUFFER_VALUE_INLINE>), ConceptReadError>> {
         match &self.state {
             State::Init | State::ItemUsed => {
                 self.find_next_state();
@@ -355,7 +356,10 @@ impl<'a, Snapshot: ReadableSnapshot> AttributeIterator<'a, Snapshot> {
     }
 }
 
-fn storage_key_to_owner<'a>(storage_key: StorageKey<'a, 40>, value: Bytes<'a, 64>) -> (Object<'a>, u64) {
+fn storage_key_to_owner<'a>(
+    storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
+    value: Bytes<'a, BUFFER_VALUE_INLINE>,
+) -> (Object<'a>, u64) {
     let edge = ThingEdgeHasReverse::new(storage_key.into_bytes());
     (Object::new(edge.into_to()), decode_value_u64(value.as_reference()))
 }

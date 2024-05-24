@@ -114,15 +114,10 @@ impl BenchmarkRunner {
         // This ~(50 GB/s) is faster than generating 64 random bytes (~6 GB/s) or loading pre-generated (~18 GB/s).
         let mut key: [u8; KEY_SIZE] = [0; KEY_SIZE];
         let mut z = rng.next_u64();
-        key[0..8].copy_from_slice(&z.to_le_bytes());
-        z = u64::rotate_left(z, 1); // Rotation beats the compression.
-        key[8..16].copy_from_slice(&z.to_le_bytes());
-        z = u64::rotate_left(z, 1);
-        key[16..24].copy_from_slice(&z.to_le_bytes());
-        z = u64::rotate_left(z, 1);
-        key[24..32].copy_from_slice(&z.to_le_bytes());
-        z = u64::rotate_left(z, 1);
-        key[32..40].copy_from_slice(&z.to_le_bytes());
+        for start in (0..KEY_SIZE).step_by(8) {
+            key[start..][..8].copy_from_slice(&z.to_le_bytes());
+            z = u64::rotate_left(z, 1); // Rotation beats the compression.
+        }
         (key, Self::VALUE_EMPTY)
     }
 }

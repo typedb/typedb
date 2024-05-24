@@ -12,6 +12,7 @@ use encoding::{
     Prefixed,
 };
 use lending_iterator::{higher_order::Hkt, LendingIterator};
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
     snapshot::{ReadableSnapshot, WritableSnapshot},
@@ -344,13 +345,16 @@ impl Hkt for Object<'static> {
     type HktSelf<'a> = Object<'a>;
 }
 
-fn storage_key_to_object(storage_key: StorageKey<'_, 40>) -> Object<'_> {
+fn storage_key_to_object(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> Object<'_> {
     Object::new(ObjectVertex::new(storage_key.into_bytes()))
 }
 
 concept_iterator!(ObjectIterator, Object, storage_key_to_object);
 
-fn storage_key_to_has_attribute<'a>(storage_key: StorageKey<'a, 40>, value: Bytes<'a, 64>) -> (Attribute<'a>, u64) {
+fn storage_key_to_has_attribute<'a>(
+    storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
+    value: Bytes<'a, BUFFER_VALUE_INLINE>,
+) -> (Attribute<'a>, u64) {
     let edge = ThingEdgeHas::new(storage_key.into_bytes());
     (Attribute::new(edge.into_to()), decode_value_u64(value.as_reference()))
 }
