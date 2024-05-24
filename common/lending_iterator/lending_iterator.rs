@@ -99,6 +99,7 @@ pub trait LendingIterator: 'static {
 
 pub trait Seekable<K: ?Sized>: LendingIterator {
     fn seek(&mut self, key: &K);
+    fn compare_key(&self, item: &Self::Item<'_>, key: &K) -> Ordering;
 }
 
 pub struct Peekable<LI: LendingIterator> {
@@ -143,20 +144,23 @@ impl<LI: LendingIterator> LendingIterator for Peekable<LI> {
 impl<K: ?Sized, LI> Seekable<K> for Peekable<LI>
 where
     LI: Seekable<K>,
-    K: for<'a> PartialOrd<LI::Item<'a>>,
 {
     fn seek(&mut self, key: &K) {
         if self.item.is_some() {
             let item = self.item.as_ref().unwrap();
-            match key.partial_cmp(item) {
-                None | Some(Ordering::Less) => {
-                    unreachable!("Key behind or not comparable to stored item in a Peekable iterator")
+            match self.compare_key(item, key) {
+                Ordering::Less => {
+                    unreachable!("Key behind the stored item in a Peekable iterator")
                 }
-                Some(Ordering::Equal) => return,
-                Some(Ordering::Greater) => (), // fallthrough
+                Ordering::Equal => return,
+                Ordering::Greater => (), // fallthrough
             }
         }
         self.item = None;
         self.iter.seek(key)
+    }
+
+    fn compare_key(&self, item: &Self::Item<'_>, key: &K) -> Ordering {
+        self.iter.compare_key(item, key)
     }
 }

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{marker::PhantomData, mem::transmute};
+use std::{cmp::Ordering, marker::PhantomData, mem::transmute};
 
 use crate::{
     higher_order::{FnMutHktHelper, Hkt},
@@ -22,9 +22,9 @@ impl<I, F, B> Map<I, F, B> {
         Self { iter, mapper, _pd: PhantomData }
     }
 
-    pub fn into_seekable<G>(self, unmapper: G) -> SeekableMap<I, F, G, B> {
+    pub fn into_seekable<G, Cmp>(self, unmapper: G, comparator: Cmp) -> SeekableMap<I, F, G, B, Cmp> {
         let Self { iter, mapper, _pd } = self;
-        SeekableMap { iter, mapper, unmapper, _pd }
+        SeekableMap { iter, mapper, unmapper, comparator, _pd }
     }
 }
 
@@ -41,19 +41,21 @@ where
     }
 }
 
-pub struct SeekableMap<I, F, G, B> {
+pub struct SeekableMap<I, F, G, B, Cmp> {
     iter: I,
     mapper: F,
     unmapper: G,
+    comparator: Cmp,
     _pd: PhantomData<B>,
 }
 
-impl<I, F, G, B> LendingIterator for SeekableMap<I, F, G, B>
+impl<I, F, G, B, Cmp> LendingIterator for SeekableMap<I, F, G, B, Cmp>
 where
     B: Hkt,
     I: LendingIterator,
     F: for<'a> FnMutHktHelper<I::Item<'a>, B::HktSelf<'a>>,
     G: 'static,
+    Cmp: 'static,
 {
     type Item<'a> = B::HktSelf<'a>;
 
@@ -62,14 +64,19 @@ where
     }
 }
 
-impl<I, F, G, B, M: ?Sized, K: ?Sized> Seekable<M> for SeekableMap<I, F, G, B>
+impl<I, F, G, Cmp, B, M: ?Sized, K: ?Sized> Seekable<M> for SeekableMap<I, F, G, B, Cmp>
 where
     Self: LendingIterator,
     I: Seekable<K>,
     G: FnMut(&M) -> &K,
+    Cmp: Fn(&Self::Item<'_>, &M) -> Ordering,
 {
     fn seek(&mut self, key: &M) {
         self.iter.seek((self.unmapper)(key))
+    }
+
+    fn compare_key(&self, item: &Self::Item<'_>, key: &M) -> Ordering {
+        (self.comparator)(item, key)
     }
 }
 
@@ -118,6 +125,10 @@ where
 {
     fn seek(&mut self, key: &K) {
         self.iter.seek(key)
+    }
+
+    fn compare_key(&self, item: &Self::Item<'_>, key: &K) -> Ordering {
+        self.iter.compare_key(item, key)
     }
 }
 
@@ -211,5 +222,9 @@ where
     /// Seeks the underlying iterator to next matching item, ignoring the predicate for the intermediate items.
     fn seek(&mut self, key: &K) {
         self.iter.seek(key)
+    }
+
+    fn compare_key(&self, item: &Self::Item<'_>, key: &K) -> Ordering {
+        self.iter.compare_key(item, key)
     }
 }

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt, sync::Arc};
+use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use lending_iterator::{LendingIterator, Seekable};
@@ -122,6 +122,14 @@ impl Seekable<[u8]> for MVCCRangeIterator {
                 self.iterator.seek(key);
                 self.find_next_state()
             }
+        }
+    }
+
+    fn compare_key(&self, item: &Self::Item<'_>, key: &[u8]) -> Ordering {
+        if let Ok((peek, _)) = item {
+            peek.bytes().cmp(key)
+        } else {
+            Ordering::Equal
         }
     }
 }
