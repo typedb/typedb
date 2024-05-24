@@ -7,7 +7,7 @@
 pub mod combinators;
 pub mod higher_order;
 
-use std::{iter, mem::transmute};
+use std::{cmp::Ordering, iter, mem::transmute};
 
 use combinators::FilterMap;
 use higher_order::AdHocHkt;
@@ -133,7 +133,7 @@ impl<LI: LendingIterator> LendingIterator for Peekable<LI> {
         match self.item.take() {
             Some(item) => Some(unsafe {
                 // SAFETY: the item borrows this iterator mutably. This iterator cannot be advanced while it exists.
-                transmute(item)
+                transmute::<LI::Item<'static>, LI::Item<'_>>(item)
             }),
             None => self.iter.next(),
         }
@@ -143,10 +143,18 @@ impl<LI: LendingIterator> LendingIterator for Peekable<LI> {
 impl<K: ?Sized, LI> Seekable<K> for Peekable<LI>
 where
     LI: Seekable<K>,
+    K: for<'a> PartialOrd<LI::Item<'a>>,
 {
     fn seek(&mut self, key: &K) {
         if self.item.is_some() {
-            todo!()
+            let item = self.item.as_ref().unwrap();
+            match key.partial_cmp(item) {
+                None | Some(Ordering::Less) => {
+                    unreachable!("Key behind or not comparable to stored item in a Peekable iterator")
+                }
+                Some(Ordering::Equal) => return,
+                Some(Ordering::Greater) => (), // fallthrough
+            }
         }
         self.item = None;
         self.iter.seek(key)
