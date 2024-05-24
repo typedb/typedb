@@ -55,6 +55,7 @@ checkstyle_test(
     include = glob([
         "*",
         "keyspace/*",
+        "recovery/*",
         "snapshot/*",
     ]),
     exclude = glob([
