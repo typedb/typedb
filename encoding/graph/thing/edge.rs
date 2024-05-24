@@ -262,9 +262,10 @@ impl<'a> ThingEdgeHasReverse<'a> {
         Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + self.from_length()
     }
 
+    #[allow(clippy::wrong_self_convention)] // `from` refers to the edge's source vertex
     fn from_length(&self) -> usize {
-        let byte = &self.bytes.bytes()[Self::INDEX_FROM_PREFIX];
-        let prefix = PrefixID::new([byte.clone()]);
+        let byte = self.bytes.bytes()[Self::INDEX_FROM_PREFIX];
+        let prefix = PrefixID::new([byte]);
         let value_type = AttributeVertex::prefix_type_to_value_type(Prefix::from_prefix_id(prefix));
         let id_encoding_length = AttributeID::value_type_encoding_length(value_type);
         AttributeVertex::LENGTH_PREFIX_TYPE + id_encoding_length
@@ -483,7 +484,7 @@ impl<'a> ThingEdgeRelationIndex<'a> {
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(from.bytes().bytes());
         bytes.bytes_mut()[Self::RANGE_TO].copy_from_slice(to.bytes().bytes());
-        bytes.bytes_mut()[Self::RANGE_RELATION].copy_from_slice(&relation.bytes().bytes());
+        bytes.bytes_mut()[Self::RANGE_RELATION].copy_from_slice(relation.bytes().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM_ROLE_TYPE_ID].copy_from_slice(&from_role_type_id.bytes());
         bytes.bytes_mut()[Self::RANGE_TO_ROLE_TYPE_ID].copy_from_slice(&to_role_type_id.bytes());
         ThingEdgeRelationIndex { bytes: Bytes::Array(bytes) }
@@ -506,9 +507,9 @@ impl<'a> ThingEdgeRelationIndex<'a> {
         Self::read_from(self.bytes())
     }
 
-    pub fn read_from(reference: ByteReference<'_>) -> ObjectVertex<'_> {
+    pub fn read_from(reference: ByteReference<'_>) -> ObjectVertex<'static> {
         // TODO: copy?
-        ObjectVertex::new(Bytes::Reference(ByteReference::new(&reference.bytes()[Self::RANGE_FROM])))
+        ObjectVertex::new(Bytes::copy(&reference.bytes()[Self::RANGE_FROM]))
     }
 
     pub fn to(&self) -> ObjectVertex<'_> {
@@ -516,16 +517,16 @@ impl<'a> ThingEdgeRelationIndex<'a> {
         Self::read_to(self.bytes())
     }
 
-    pub fn read_to(reference: ByteReference<'_>) -> ObjectVertex<'_> {
-        ObjectVertex::new(Bytes::Reference(ByteReference::new(&reference.bytes()[Self::RANGE_TO])))
+    pub fn read_to(reference: ByteReference<'_>) -> ObjectVertex<'static> {
+        ObjectVertex::new(Bytes::copy(&reference.bytes()[Self::RANGE_TO]))
     }
 
     pub fn relation(&self) -> ObjectVertex<'_> {
         Self::read_relation(self.bytes())
     }
 
-    pub fn read_relation(reference: ByteReference) -> ObjectVertex<'_> {
-        ObjectVertex::new(Bytes::Reference(ByteReference::new(&reference.bytes()[Self::RANGE_RELATION])))
+    pub fn read_relation(reference: ByteReference) -> ObjectVertex<'static> {
+        ObjectVertex::new(Bytes::copy(&reference.bytes()[Self::RANGE_RELATION]))
     }
 
     pub fn from_role_id(&self) -> TypeID {

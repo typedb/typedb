@@ -4,12 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use core::fmt;
 use std::{
     collections::BTreeMap,
     error::Error,
     ffi::OsString,
-    fs, io,
+    fmt, fs, io,
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -32,14 +31,6 @@ use storage::{
     sequence_number::SequenceNumber,
     snapshot::WriteSnapshot,
     MVCCStorage, StorageOpenError,
-};
-
-use crate::{
-    database::StatisticsInitialiseError::ReloadCommitData,
-    DatabaseOpenError::{
-        CheckpointCreate, DirectoryCreate, DurabilityRead, Encoding, SchemaInitialise, StatisticsInitialise,
-        StorageOpen,
-    },
 };
 
 pub struct Database<D> {

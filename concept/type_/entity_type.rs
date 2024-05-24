@@ -6,7 +6,6 @@
 
 use std::collections::{HashMap, HashSet};
 
-use bytes::Bytes;
 use encoding::{
     graph::type_::vertex::{new_vertex_entity_type, TypeVertex},
     layout::prefix::Prefix,
@@ -14,8 +13,9 @@ use encoding::{
     Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
-    key_value::StorageKeyReference,
+    key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
@@ -82,6 +82,14 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
         type_manager.delete_entity_type(snapshot, self);
         Ok(())
     }
+
+    fn get_label<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
+        type_manager.get_entity_type_label(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> ObjectTypeAPI<'a> for EntityType<'a> {}
@@ -95,14 +103,6 @@ impl<'a> EntityType<'a> {
         type_manager.get_entity_type_is_root(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_label<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        type_manager: &'m TypeManager<Snapshot>,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
-        type_manager.get_entity_type_label(snapshot, self.clone().into_owned())
-    }
-
     pub fn set_label<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
@@ -112,7 +112,8 @@ impl<'a> EntityType<'a> {
         if self.is_root(snapshot, type_manager)? {
             Err(ConceptWriteError::RootModification)
         } else {
-            Ok(type_manager.storage_set_label(snapshot, self.clone().into_owned(), label))
+            type_manager.storage_set_label(snapshot, self.clone().into_owned(), label);
+            Ok(())
         }
     }
 
@@ -310,6 +311,7 @@ impl From<Annotation> for EntityTypeAnnotation {
 
             Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Entity type."),
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Entity type."),
+            Annotation::Unique(_) => unreachable!("Unique annotation not available for Entity type."),
             Annotation::Key(_) => unreachable!("Key annotation not available for Entity type."),
             Annotation::Cardinality(_) => unreachable!("Cardinality annotation not available for Entity type."),
             Annotation::Regex(_) => unreachable!("Regex annotation not available for Entity type."),
@@ -324,8 +326,8 @@ impl From<Annotation> for EntityTypeAnnotation {
 // }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_ref_to_entity_type(storage_key_ref: StorageKeyReference<'_>) -> EntityType<'_> {
-    EntityType::new(new_vertex_entity_type(Bytes::Reference(storage_key_ref.byte_ref())))
+fn storage_key_to_entity_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> EntityType<'_> {
+    EntityType::new(new_vertex_entity_type(storage_key.into_bytes()))
 }
 
-concept_iterator!(EntityTypeIterator, EntityType, storage_key_ref_to_entity_type);
+concept_iterator!(EntityTypeIterator, EntityType, storage_key_to_entity_type);

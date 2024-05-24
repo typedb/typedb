@@ -9,6 +9,7 @@ use std::sync::Arc;
 use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;
 use itertools::Itertools;
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
@@ -111,32 +112,28 @@ fn create_reopen() {
 
     let keys = [[0x0, 0x0, 0x1], [0x1, 0x0, 0x10], [0x1, 0x0, 0xff], [0x2, 0x0, 0xff]]
         .into_iter()
-        .map(|bytes| StorageKeyArray::<64>::from((Keyspace, bytes)))
+        .map(|bytes| StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace, bytes)))
         .collect_vec();
 
     init_logging();
     let storage_path = create_tmp_dir();
-    let mut checkpoint = None;
-    {
+    let checkpoint = {
         let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
         for key in &keys {
             storage.put_raw(StorageKeyReference::from(key), &empty_value());
         }
-        checkpoint = Some(checkpoint_storage(&storage));
-    }
+        checkpoint_storage(&storage)
+    };
 
     {
-        let storage = load_storage::<TestKeyspaceSet>(
-            &storage_path,
-            WAL::load(&storage_path).unwrap(),
-            Some(checkpoint.unwrap()),
-        )
-        .unwrap();
+        let storage =
+            load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), Some(checkpoint))
+                .unwrap();
         let items = storage
-            .iterate_keyspace_range(KeyRange::new_unbounded(StorageKey::<64>::Reference(StorageKeyReference::from(
-                &StorageKeyArray::<64>::from((Keyspace, [0x0])),
+            .iterate_keyspace_range(KeyRange::new_unbounded(StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(
+                &StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace, [0x0])),
             ))))
-            .collect_cloned::<64, 128>();
+            .collect_cloned::<BUFFER_VALUE_INLINE, 128>();
         let items = items.into_iter().map(|(key, _)| key).collect_vec();
         assert_eq!(items, keys.into_iter().map(StorageKeyArray::into_byte_array).collect_vec());
     }
@@ -154,19 +151,19 @@ fn get_put_iterate() {
     let storage_path = create_tmp_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
-    let keyspace_1_key_1 = StorageKeyArray::<64>::from((Keyspace1, [0x0, 0x0, 0x1]));
-    let keyspace_1_key_2 = StorageKeyArray::<64>::from((Keyspace1, [0x1, 0x0, 0x10]));
-    let keyspace_1_key_3 = StorageKeyArray::<64>::from((Keyspace1, [0x1, 0x0, 0xff]));
-    let keyspace_1_key_4 = StorageKeyArray::<64>::from((Keyspace1, [0x2, 0x0, 0xff]));
+    let keyspace_1_key_1 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace1, [0x0, 0x0, 0x1]));
+    let keyspace_1_key_2 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace1, [0x1, 0x0, 0x10]));
+    let keyspace_1_key_3 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace1, [0x1, 0x0, 0xff]));
+    let keyspace_1_key_4 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace1, [0x2, 0x0, 0xff]));
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_1), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_2), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_3), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_1_key_4), &empty_value());
 
-    let keyspace_2_key_1 = StorageKeyArray::<64>::from((Keyspace2, [0x1, 0x0, 0x1]));
-    let keyspace_2_key_2 = StorageKeyArray::<64>::from((Keyspace2, [0xb, 0x0, 0x10]));
-    let keyspace_2_key_3 = StorageKeyArray::<64>::from((Keyspace2, [0x5, 0x0, 0xff]));
-    let keyspace_2_key_4 = StorageKeyArray::<64>::from((Keyspace2, [0x2, 0x0, 0xff]));
+    let keyspace_2_key_1 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace2, [0x1, 0x0, 0x1]));
+    let keyspace_2_key_2 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace2, [0xb, 0x0, 0x10]));
+    let keyspace_2_key_3 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace2, [0x5, 0x0, 0xff]));
+    let keyspace_2_key_4 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace2, [0x2, 0x0, 0xff]));
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_1), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_2), &empty_value());
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_3), &empty_value());
@@ -180,13 +177,13 @@ fn get_put_iterate() {
         storage.get_raw_mapped(StorageKeyReference::from(&keyspace_2_key_1), ByteArray::copy);
     assert_eq!(second_value, Some(ByteArray::empty()));
 
-    let prefix = StorageKeyArray::<64>::from((Keyspace1, [0x1]));
-    let items: Vec<(ByteArray<64>, ByteArray<128>)> = storage
+    let prefix = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace1, [0x1]));
+    let items: Vec<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>)> = storage
         .iterate_keyspace_range(KeyRange::new_within(
-            StorageKey::<64>::Reference(StorageKeyReference::from(&prefix)),
+            StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(&prefix)),
             false,
         ))
-        .collect_cloned::<64, 128>();
+        .collect_cloned::<BUFFER_VALUE_INLINE, 128>();
     assert_eq!(
         items,
         vec![

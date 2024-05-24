@@ -12,7 +12,6 @@ use crate::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
     isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
     keyspace::{KeyspaceError, Keyspaces},
-    recovery::commit_replay::CommitRecoveryError::DurabilityRecordsMissing,
     sequence_number::SequenceNumber,
     write_batches::WriteBatches,
     MVCCStorage,

@@ -8,14 +8,17 @@ use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr};
 
 use chrono::NaiveDateTime;
 use concept::{
-    thing::value::Value as TypeDBValue,
-    type_::{annotation, annotation::Annotation as TypeDBAnnotation},
+    thing::{object::Object, value::Value as TypeDBValue},
+    type_::{annotation::{self, Annotation as TypeDBAnnotation}, object_type::ObjectType},
 };
 use cucumber::Parameter;
 use encoding::{
     graph::type_::Kind as TypeDBTypeKind,
     value::{label::Label as TypeDBLabel, value_type::ValueType as TypeDBValueType},
 };
+use itertools::Itertools;
+
+use crate::assert::assert_matches;
 
 #[derive(Debug, Default, Parameter)]
 #[param(name = "may_error", regex = "(fails|)")]
@@ -73,6 +76,34 @@ impl FromStr for Boolean {
             "true" => Self::True,
             "false" => Self::False,
             invalid => return Err(format!("Invalid `Boolean`: {invalid}")),
+        })
+    }
+}
+
+#[derive(Debug, Parameter)]
+#[param(name = "exists_or_doesnt", regex = "(exists|does not exist)")]
+pub(crate) enum ExistsOrDoesnt {
+    Exists,
+    DoesNotExist,
+}
+
+impl ExistsOrDoesnt {
+    pub fn check<T: fmt::Debug>(&self, scrutinee: &Option<T>, message: &str) {
+        match (self, scrutinee) {
+            (Self::Exists, Some(_)) | (Self::DoesNotExist, None) => (),
+            (Self::Exists, None) => panic!("{message} does not exist"),
+            (Self::DoesNotExist, Some(value)) => panic!("{message} exists: {value:?}"),
+        }
+    }
+}
+
+impl FromStr for ExistsOrDoesnt {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "exists" => Self::Exists,
+            "does not exist" => Self::DoesNotExist,
+            invalid => return Err(format!("Invalid `ExistsOrDoesnt`: {invalid}")),
         })
     }
 }
@@ -162,6 +193,38 @@ impl FromStr for RootLabel {
 }
 
 #[derive(Debug, Parameter)]
+#[param(name = "object_root_label", regex = r"(entity|relation)")]
+pub(crate) struct ObjectRootLabel {
+    kind: TypeDBTypeKind,
+}
+
+impl ObjectRootLabel {
+    pub fn to_typedb(&self) -> TypeDBTypeKind {
+        self.kind
+    }
+
+    pub fn assert(&self, object: &ObjectType<'_>) {
+        match self.kind {
+            TypeDBTypeKind::Entity => assert_matches!(object, ObjectType::Entity(_)),
+            TypeDBTypeKind::Relation => assert_matches!(object, ObjectType::Relation(_)),
+            _ => unreachable!("an ObjectRootLabel contains a non-object kind: {:?}", self.kind),
+        }
+    }
+}
+
+impl FromStr for ObjectRootLabel {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let kind = match s {
+            "entity" => TypeDBTypeKind::Entity,
+            "relation" => TypeDBTypeKind::Relation,
+            _ => unreachable!(),
+        };
+        Ok(Self { kind })
+    }
+}
+
+#[derive(Debug, Parameter)]
 #[param(name = "value_type", regex = "(boolean|long|double|string|datetime)")]
 pub(crate) enum ValueType {
     Boolean,
@@ -225,7 +288,7 @@ impl FromStr for Value {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "annotation", regex = r"(@[a-z]+\([^\)]+\)|@[a-z]+)")]
+#[param(name = "annotation", regex = r"@[a-z]+(?:\([^)]+\))?")]
 pub(crate) struct Annotation {
     typedb_annotation: TypeDBAnnotation,
 }
@@ -255,6 +318,39 @@ impl FromStr for Annotation {
             _ => panic!("Unrecognised (or unimplemented) annotation: {s}"),
         };
         Ok(Self { typedb_annotation })
+    }
+}
+
+#[derive(Debug, Parameter)]
+#[param(name = "annotations", regex = r"@[a-z]+(?:\([^)]+\))?(?: +@[a-z]+(?:\([^)]+\))?)?")]
+pub(crate) struct Annotations {
+    typedb_annotations: Vec<TypeDBAnnotation>,
+}
+
+impl Annotations {
+    pub fn into_typedb(self) -> Vec<TypeDBAnnotation> {
+        self.typedb_annotations
+    }
+}
+
+impl FromStr for Annotations {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut cursor = 0;
+
+        let typedb_annotations = std::iter::from_fn(|| {
+            if s.len() >= cursor {
+                None
+            } else {
+                let next_at = if let Some(index) = s[cursor..].find('@') { cursor + index } else { s.len() };
+                let anno = s[cursor..next_at].trim();
+                cursor = next_at;
+                Some(anno.parse::<Annotation>().map(|anno| anno.typedb_annotation))
+            }
+        })
+        .try_collect()?;
+
+        Ok(Self { typedb_annotations })
     }
 }
 

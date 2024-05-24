@@ -14,7 +14,6 @@ use std::{
     io::{self, BufReader, BufWriter, Read, Seek, Write},
     marker::PhantomData,
     mem,
-    ops::Sub,
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicU64, Ordering},

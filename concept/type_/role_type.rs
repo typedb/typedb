@@ -6,7 +6,6 @@
 
 use std::collections::HashSet;
 
-use bytes::Bytes;
 use encoding::{
     graph::type_::vertex::{new_vertex_role_type, TypeVertex},
     layout::prefix::Prefix,
@@ -14,8 +13,9 @@ use encoding::{
     Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
-    key_value::StorageKeyReference,
+    key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
@@ -47,7 +47,7 @@ impl<'a> RoleType<'a> {
 impl<'a> ConceptAPI<'a> for RoleType<'a> {}
 
 impl<'a> TypeAPI<'a> for RoleType<'a> {
-    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+    fn vertex(&self) -> TypeVertex<'_> {
         self.vertex.as_reference()
     }
 
@@ -73,6 +73,14 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         type_manager.delete_role_type(snapshot, self);
         Ok(())
     }
+
+    fn get_label<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
+        type_manager.get_role_type_label(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> RoleType<'a> {
@@ -82,14 +90,6 @@ impl<'a> RoleType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         type_manager.get_role_type_is_root(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_label<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        type_manager: &'m TypeManager<Snapshot>,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
-        type_manager.get_role_type_label(snapshot, self.clone().into_owned())
     }
 
     pub fn set_name<Snapshot: WritableSnapshot>(
@@ -244,6 +244,7 @@ impl From<Annotation> for RoleTypeAnnotation {
             Annotation::Cardinality(annotation) => RoleTypeAnnotation::Cardinality(annotation),
 
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Role type."),
+            Annotation::Unique(_) => unreachable!("Unique annotation not available for Role type."),
             Annotation::Key(_) => unreachable!("Key annotation not available for Role type."),
             Annotation::Regex(_) => unreachable!("Regex annotation not available for Role type."),
         }
@@ -257,8 +258,8 @@ impl From<Annotation> for RoleTypeAnnotation {
 // }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_role_type(storage_key_ref: StorageKeyReference<'_>) -> RoleType<'_> {
-    RoleType::new(new_vertex_role_type(Bytes::Reference(storage_key_ref.byte_ref())))
+fn storage_key_to_role_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> RoleType<'_> {
+    RoleType::new(new_vertex_role_type(storage_key.into_bytes()))
 }
 
 concept_iterator!(RoleTypeIterator, RoleType, storage_key_to_role_type);

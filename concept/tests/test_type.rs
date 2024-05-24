@@ -6,14 +6,14 @@
 
 #![deny(unused_must_use)]
 
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 
 use concept::type_::{
     annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, owns::Owns,
     relation_type::RelationTypeAnnotation, role_type::RoleTypeAnnotation, type_cache::TypeCache,
-    type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
+    type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
 };
-use durability::{wal::WAL, DurabilityService};
+use durability::wal::WAL;
 use encoding::{
     graph::type_::{vertex_generator::TypeVertexGenerator, Kind},
     value::{label::Label, value_type::ValueType},
@@ -117,7 +117,7 @@ fn entity_usage() {
         person_type.set_owns(&mut snapshot, &type_manager, height_type.clone(), Ordering::Unordered).unwrap();
 
         match child_type.get_owns_attribute_transitive(&snapshot, &type_manager, height_type.clone()).unwrap() {
-            None => assert!(false, "child should inherit ownership of height"),
+            None => panic!("child should inherit ownership of height"),
             Some(child_owns_height) => {
                 assert_eq!(height_type, child_owns_height.attribute());
                 assert_eq!(ObjectType::Entity(person_type.clone()), child_owns_height.owner());
@@ -190,7 +190,7 @@ fn entity_usage() {
         // --- owns inheritance ---
         let height_type = type_manager.get_attribute_type(&snapshot, &Label::new_static("height")).unwrap().unwrap();
         match child_type.get_owns_attribute_transitive(&snapshot, &type_manager, height_type.clone()).unwrap() {
-            None => assert!(false, "child should inherit ownership of height"),
+            None => panic!("child should inherit ownership of height"),
             Some(child_owns_height) => {
                 assert_eq!(height_type, child_owns_height.attribute());
                 assert_eq!(ObjectType::Entity(person_type.clone()), child_owns_height.owner());

@@ -24,10 +24,11 @@ rust_library(
         "recovery/*.rs",
     ]),
     deps = [
-        "//common/logger",
-        "//common/primitive",
         "//common/bytes",
         "//common/iterator",
+        "//common/lending_iterator",
+        "//common/logger",
+        "//common/primitive",
         "//durability",
         "//resource",
         "//util/project",
@@ -54,6 +55,7 @@ checkstyle_test(
     include = glob([
         "*",
         "keyspace/*",
+        "recovery/*",
         "snapshot/*",
     ]),
     exclude = glob([

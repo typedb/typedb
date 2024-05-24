@@ -6,7 +6,6 @@
 
 use std::collections::{HashMap, HashSet};
 
-use bytes::Bytes;
 use encoding::{
     graph::type_::vertex::{new_vertex_relation_type, TypeVertex},
     layout::prefix::Prefix,
@@ -14,8 +13,9 @@ use encoding::{
     Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
-    key_value::StorageKeyReference,
+    key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
@@ -83,6 +83,14 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
         type_manager.delete_relation_type(snapshot, self);
         Ok(())
     }
+
+    fn get_label<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
+        type_manager.get_relation_type_label(snapshot, self.clone().into_owned())
+    }
 }
 
 impl<'a> ObjectTypeAPI<'a> for RelationType<'a> {}
@@ -94,14 +102,6 @@ impl<'a> RelationType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
         type_manager.get_relation_type_is_root(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_label<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        type_manager: &'m TypeManager<Snapshot>,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
-        type_manager.get_relation_type_label(snapshot, self.clone().into_owned())
     }
 
     pub fn set_label<Snapshot: WritableSnapshot>(
@@ -368,6 +368,7 @@ impl From<Annotation> for RelationTypeAnnotation {
 
             Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Relation type."),
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Relation type."),
+            Annotation::Unique(_) => unreachable!("Unique annotation not available for Relation type."),
             Annotation::Key(_) => unreachable!("Key annotation not available for Relation type."),
             Annotation::Cardinality(_) => unreachable!("Cardinality annotation not available for Relation type."),
             Annotation::Regex(_) => unreachable!("Regex annotation not available for Relation type."),
@@ -376,8 +377,8 @@ impl From<Annotation> for RelationTypeAnnotation {
 }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_relation_type(storage_key_ref: StorageKeyReference<'_>) -> RelationType<'_> {
-    RelationType::new(new_vertex_relation_type(Bytes::Reference(storage_key_ref.byte_ref())))
+fn storage_key_to_relation_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> RelationType<'_> {
+    RelationType::new(new_vertex_relation_type(storage_key.into_bytes()))
 }
 
 concept_iterator!(RelationTypeIterator, RelationType, storage_key_to_relation_type);

@@ -55,6 +55,13 @@ impl Write {
         matches!(self, Write::Delete)
     }
 
+    pub(crate) fn into_value(self) -> ByteArray<BUFFER_VALUE_INLINE> {
+        match self {
+            Write::Insert { value } | Write::Put { value, .. } => value,
+            Write::Delete => panic!("Buffered delete does not have a value."),
+        }
+    }
+
     pub(crate) fn get_value(&self) -> &ByteArray<BUFFER_VALUE_INLINE> {
         match self {
             Write::Insert { value } | Write::Put { value, .. } => value,

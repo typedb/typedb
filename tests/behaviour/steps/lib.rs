@@ -23,25 +23,25 @@ mod params;
 mod transaction_context;
 mod util;
 
-use thing_util::EntityWithKey;
+use thing_util::ObjectWithKey;
 use transaction_context::ActiveTransaction;
 
 mod thing_util {
-    use ::concept::thing::{attribute::Attribute, entity::Entity};
+    use concept::thing::{attribute::Attribute, object::Object};
 
     #[derive(Debug)]
-    pub struct EntityWithKey {
-        pub entity: Entity<'static>,
+    pub struct ObjectWithKey {
+        pub object: Object<'static>,
         pub key: Option<Attribute<'static>>,
     }
 
-    impl EntityWithKey {
-        pub fn new_with_key(entity: Entity<'static>, key: Attribute<'static>) -> Self {
-            Self { entity, key: Some(key) }
+    impl ObjectWithKey {
+        pub fn new_with_key(object: Object<'static>, key: Attribute<'static>) -> Self {
+            Self { object, key: Some(key) }
         }
 
-        pub fn new(entity: Entity<'static>) -> Self {
-            Self { entity, key: None }
+        pub fn new(object: Object<'static>) -> Self {
+            Self { object, key: None }
         }
     }
 }
@@ -51,8 +51,9 @@ pub struct Context {
     server_dir: Option<TempDir>,
     server: Option<typedb::Server>,
     active_transaction: Option<ActiveTransaction>,
+
+    objects: HashMap<String, Option<ObjectWithKey>>,
     attributes: HashMap<String, Option<Attribute<'static>>>,
-    entities: HashMap<String, Option<EntityWithKey>>,
 }
 
 impl Context {
@@ -97,7 +98,6 @@ impl Context {
     }
 
     pub fn set_transaction(&mut self, txn: ActiveTransaction) {
-        debug_assert!(self.active_transaction.is_none());
         self.active_transaction = Some(txn);
     }
 

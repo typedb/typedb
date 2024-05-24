@@ -22,6 +22,7 @@ use encoding::{
     layout::prefix::Prefix,
     value::{label::Label, value_type::ValueType},
 };
+use lending_iterator::LendingIterator;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::type_::{
@@ -33,7 +34,6 @@ use crate::type_::{
     relates::Relates,
     relation_type::RelationType,
     role_type::RoleType,
-    type_cache::selection::HasCommonTypeCache,
     type_manager::{KindAPI, ReadableType, TypeManager},
     type_reader::TypeReader,
     Ordering, OwnerAPI, PlayerAPI, TypeAPI,
@@ -197,51 +197,50 @@ impl RoleTypeCache {
 
 impl OwnsCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Owns<'static>, OwnsCache> {
-        snapshot
-            .iterate_range(KeyRange::new_within(
-                TypeEdge::build_prefix(Prefix::EdgeOwnsReverse),
-                TypeEdge::FIXED_WIDTH_ENCODING,
-            ))
-            .collect_cloned_hashmap(|key, _| {
-                let edge = TypeEdge::new(Bytes::Reference(key.byte_ref()));
-                let attribute = AttributeType::new(edge.from().into_owned());
-                let owner = ObjectType::new(edge.to().into_owned());
-                let owns = Owns::new(owner, attribute);
-                (
-                    owns.clone(),
-                    OwnsCache {
-                        ordering: TypeReader::get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
-                        overrides: TypeReader::get_owns_override(snapshot, owns.clone()).unwrap(),
-                        annotations_declared: TypeReader::get_type_edge_annotations(snapshot, owns.clone())
-                            .unwrap()
-                            .into_iter()
-                            .map(|annotation| OwnsAnnotation::from(annotation))
-                            .collect(),
-                    },
-                )
-            })
-            .unwrap()
+        let mut map = HashMap::new();
+        let mut it = snapshot.iterate_range(KeyRange::new_within(
+            TypeEdge::build_prefix(Prefix::EdgeOwnsReverse),
+            TypeEdge::FIXED_WIDTH_ENCODING,
+        ));
+        while let Some((key, _)) = it.next().transpose().unwrap() {
+            let edge = TypeEdge::new(Bytes::reference(key.bytes()));
+            let attribute = AttributeType::new(edge.from().into_owned());
+            let owner = ObjectType::new(edge.to().into_owned());
+            let owns = Owns::new(owner, attribute);
+            let cache = OwnsCache {
+                ordering: TypeReader::get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
+                overrides: TypeReader::get_owns_override(snapshot, owns.clone()).unwrap(),
+                annotations_declared: TypeReader::get_type_edge_annotations(snapshot, owns.clone())
+                    .unwrap()
+                    .into_iter()
+                    .map(OwnsAnnotation::from)
+                    .collect(),
+            };
+            map.insert(owns.clone(), cache);
+        }
+        map
     }
 }
 
 impl PlaysCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Plays<'static>, PlaysCache> {
-        snapshot
-            .iterate_range(KeyRange::new_within(
-                TypeEdge::build_prefix(Prefix::EdgePlays),
-                TypeEdge::FIXED_WIDTH_ENCODING,
-            ))
-            .collect_cloned_hashmap(|key, _| {
-                let edge = TypeEdge::new(Bytes::Reference(key.byte_ref()));
-                let player = ObjectType::new(edge.from().into_owned());
-                let role = RoleType::new(edge.to().into_owned());
-                let plays = Plays::new(player, role);
-                (
-                    plays.clone(),
-                    PlaysCache { overrides: TypeReader::get_plays_override(snapshot, plays.clone()).unwrap() },
-                )
-            })
-            .unwrap()
+        let mut map = HashMap::new();
+        let mut it = snapshot.iterate_range(KeyRange::new_within(
+            TypeEdge::build_prefix(Prefix::EdgePlays),
+            TypeEdge::FIXED_WIDTH_ENCODING,
+        ));
+
+        while let Some((key, _)) = it.next().transpose().unwrap() {
+            let edge = TypeEdge::new(Bytes::reference(key.bytes()));
+            let player = ObjectType::new(edge.from().into_owned());
+            let role = RoleType::new(edge.to().into_owned());
+            let plays = Plays::new(player, role);
+            map.insert(
+                plays.clone(),
+                PlaysCache { overrides: TypeReader::get_plays_override(snapshot, plays.clone()).unwrap() },
+            );
+        }
+        map
     }
 }
 

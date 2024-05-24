@@ -7,6 +7,7 @@
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{attribute::Attribute, ThingAPI},
+    type_::TypeAPI,
 };
 use macro_rules_attribute::apply;
 
@@ -48,22 +49,8 @@ async fn attribute_put_instance_with_value_var(
     type_label: params::Label,
     value: params::Value,
 ) {
-    let att = attribute_put_instance_with_value_impl(context, type_label, value).unwrap();
-    context.attributes.insert(var.name, Some(att));
-}
-
-#[apply(generic_step)]
-#[step(expr = r"attribute {var} exists")]
-async fn attribute_exists(context: &mut Context, var: params::Var) {
-    let attribute = context.attributes.get(&var.name).expect("no variable {} in context.");
-    assert!(attribute.is_some(), "variable {} does not exist", var.name);
-}
-
-#[apply(generic_step)]
-#[step(expr = r"attribute {var} does not exist")]
-async fn attribute_does_not_exist(context: &mut Context, var: params::Var) {
-    let attribute = context.attributes.get(&var.name).expect("no variable {} in context.");
-    assert!(attribute.is_none(), "variable {} exists: {:?}", var.name, attribute);
+    let attribute = attribute_put_instance_with_value_impl(context, type_label, value).unwrap();
+    context.attributes.insert(var.name, Some(attribute));
 }
 
 #[apply(generic_step)]

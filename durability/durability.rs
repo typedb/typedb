@@ -10,8 +10,7 @@
 use std::{
     borrow::Cow,
     error::Error,
-    fmt,
-    io::{self, Read, Write},
+    fmt, io,
     ops::{Add, AddAssign, Sub},
 };
 

@@ -9,11 +9,11 @@ use std::{
     cmp::Ordering,
     collections::{BTreeMap, Bound},
     fmt,
+    iter::{IntoIterator, Peekable},
     sync::{atomic::AtomicBool, Arc},
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::increment, Bytes};
-use iterator::State;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use serde::{
     de::{self, MapAccess, SeqAccess, Visitor},
@@ -21,12 +21,11 @@ use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
 };
 
-use super::iterator::SnapshotIteratorError;
 use crate::{
     key_range::{KeyRange, RangeEnd},
     key_value::StorageKeyArray,
     keyspace::{KeyspaceId, KEYSPACE_MAXIMUM_COUNT},
-    snapshot::{lock::LockType, snapshot::SnapshotError, write::Write},
+    snapshot::{lock::LockType, write::Write},
 };
 
 #[derive(Debug)]
@@ -81,10 +80,7 @@ impl OperationsBuffer {
 
     pub(crate) fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<{ BUFFER_KEY_INLINE }>, Write)> + '_ {
         self.write_buffers().flat_map(|buffer| {
-            buffer
-                .iterate_range(KeyRange::new_unbounded(Bytes::Array(ByteArray::<BUFFER_KEY_INLINE>::empty())))
-                .into_range()
-                .into_iter()
+            buffer.iterate_range(KeyRange::new_unbounded(Bytes::Array(ByteArray::<BUFFER_KEY_INLINE>::empty())))
         })
     }
 }
@@ -138,7 +134,7 @@ impl WriteBuffer {
         match self.writes.remove(&key) {
             Some(Write::Put { value, .. }) => {
                 if value != expected_value {
-                    panic!("Unexpected value when trying to unput")
+                    panic!("Unexpected value `{:?}` when trying to unput; expected `{:?}`", value, expected_value)
                 }
             }
             Some(_other_write) => panic!("Attempting to unput a key that was inserted or deleted"),
@@ -229,113 +225,43 @@ impl WriteBuffer {
 
 // TODO: this iterator takes a 'snapshot' of the time it was opened at - we could have it read without clones and have it 'live' if the buffers are immutable
 pub struct BufferRangeIterator {
-    state: State<SnapshotError>,
-    index: usize,
-    range: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)>,
+    inner: Peekable<<Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)> as IntoIterator>::IntoIter>,
 }
 
 impl BufferRangeIterator {
     fn new(range: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)>) -> Self {
-        Self { state: State::Init, index: 0, range }
+        Self { inner: range.into_iter().peekable() }
     }
 
     pub(crate) fn empty() -> Self {
-        Self { state: State::Done, index: 0, range: Vec::new() }
-    }
-
-    pub fn into_range(self) -> Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)> {
-        self.range
+        Self { inner: Vec::new().into_iter().peekable() }
     }
 
     pub(crate) fn peek(
         &mut self,
-    ) -> Option<Result<(&StorageKeyArray<BUFFER_KEY_INLINE>, &Write), SnapshotIteratorError>> {
-        match &self.state {
-            State::Done => None,
-            State::Init => {
-                self.update_state();
-                self.peek()
-            }
-            State::ItemReady => {
-                let (key, value) = &self.range[self.index];
-                Some(Ok((key, value)))
-            }
-            State::ItemUsed => {
-                self.advance_and_update_state();
-                self.peek()
-            }
-            State::Error(_) => unreachable!("Unused state."),
-        }
+    ) -> Option<&(StorageKeyArray<BUFFER_KEY_INLINE>, Write)> {
+        self.inner.peek()
     }
 
-    pub(crate) fn next(&mut self) -> Option<Result<(&StorageKeyArray<BUFFER_KEY_INLINE>, &Write), SnapshotError>> {
-        match &self.state {
-            State::Done => None,
-            State::Init => {
-                self.update_state();
-                self.next()
-            }
-            State::ItemReady => {
-                let (key, value) = &self.range[self.index];
-                let value = Some(Ok((key, value)));
-                self.state = State::ItemUsed;
-                value
-            }
-            State::ItemUsed => {
-                self.advance_and_update_state();
-                self.next()
-            }
-            State::Error(_) => unreachable!("Unused state."),
-        }
-    }
-
-    fn advance_and_update_state(&mut self) {
-        assert_eq!(self.state, State::ItemUsed);
-        self.index += 1;
-        self.update_state();
-    }
-
-    fn update_state(&mut self) {
-        assert!(matches!(self.state, State::ItemUsed) || matches!(self.state, State::Init));
-        if self.index < self.range.len() {
-            self.state = State::ItemReady;
-        } else {
-            self.state = State::Done;
-        }
-    }
-
-    ///
-    /// TODO: This is a 'dumb' seek, in that it simply consumes values until the criteria is no longer matched
-    ///       When buffers are not too large, this is likely to be fast.
-    ///       This can be improved by opening a new range over the buffer directly.
-    ///         --> perhaps when the buffer is "large" and the distance to the next key is "large"?
-    ///
+    // TODO: This is a 'dumb' seek, in that it simply consumes values until the criteria is no longer matched
+    //       When buffers are not too large, this is likely to be fast.
+    //       This can be improved by opening a new range over the buffer directly.
+    //         --> perhaps when the buffer is "large" and the distance to the next key is "large"?
     pub(crate) fn seek(&mut self, target: impl Borrow<[u8]>) {
-        match &self.state {
-            State::Done => {}
-            State::Init => {
-                self.update_state();
-                self.seek(target);
+        while let Some((key, _)) = self.peek() {
+            if key.bytes().cmp(target.borrow()) == Ordering::Less {
+                self.next();
+            } else {
+                return;
             }
-            State::ItemReady => loop {
-                let peek = self.peek();
-                if let Some(Ok((key, _))) = peek {
-                    if key.bytes().cmp(target.borrow()) == Ordering::Less {
-                        let _ = self.next();
-                        self.update_state();
-                    } else {
-                        return;
-                    }
-                } else {
-                    return;
-                }
-            },
-            State::ItemUsed => {
-                self.update_state();
-                self.seek(target);
-            }
-            State::Error(_) => unreachable!("Unused state."),
         }
+    }
+}
+
+impl Iterator for BufferRangeIterator {
+    type Item = (StorageKeyArray<BUFFER_KEY_INLINE>, Write);
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next()
     }
 }
 
@@ -407,7 +333,7 @@ impl<'de> Deserialize<'de> for OperationsBuffer {
                 let write_buffers = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                 let locks: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, LockType> =
                     seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                Ok(OperationsBuffer { write_buffers, locks: locks })
+                Ok(OperationsBuffer { write_buffers, locks })
             }
         }
 

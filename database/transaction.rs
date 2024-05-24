@@ -4,10 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use concept::{error::ConceptWriteError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use speedb::Snapshot;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot},
@@ -62,9 +61,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         self.thing_manager.finalise(&mut self.snapshot)?;
         drop(self.type_manager);
         // TODO: pass error up
-        self.snapshot.commit().unwrap_or_else(|_| {
-            panic!("Failed to commit snapshot");
-        });
+        self.snapshot.commit().unwrap_or_else(|_| panic!("Failed to commit snapshot"));
         Ok(())
     }
 

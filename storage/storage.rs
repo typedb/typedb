@@ -12,7 +12,6 @@
 use std::{
     error::Error,
     fmt, fs, io,
-    ops::Add,
     path::{Path, PathBuf},
     sync::{atomic::Ordering, Arc},
 };
@@ -22,6 +21,7 @@ use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
 use itertools::Itertools;
 use keyspace::KeyspaceDeleteError;
+use lending_iterator::LendingIterator;
 use logger::{error, result::ResultExt};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
@@ -354,7 +354,7 @@ impl<Durability> MVCCStorage<Durability> {
         &'this self,
         range: KeyRange<StorageKey<'this, PS>>,
         open_sequence_number: SequenceNumber,
-    ) -> MVCCRangeIterator<'this, PS> {
+    ) -> MVCCRangeIterator {
         MVCCRangeIterator::new(self, range, open_sequence_number)
     }
 
@@ -408,7 +408,7 @@ impl<Durability> MVCCStorage<Durability> {
     pub fn iterate_keyspace_range<'this, const PREFIX_INLINE: usize>(
         &'this self,
         range: KeyRange<StorageKey<'this, PREFIX_INLINE>>,
-    ) -> KeyspaceRangeIterator<'this, PREFIX_INLINE> {
+    ) -> KeyspaceRangeIterator {
         debug_assert!(!range.start().bytes().is_empty());
         self.keyspaces.get(range.start().keyspace_id()).iterate_range(range.map(|k| k.into_bytes(), |fixed| fixed))
     }
@@ -641,8 +641,7 @@ impl StorageOperation {
 #[cfg(test)]
 mod tests {
     use bytes::byte_array::ByteArray;
-    use chrono::Local;
-    use durability::{wal::WAL, DurabilityService};
+    use durability::wal::WAL;
     use test_utils::{create_tmp_dir, init_logging};
 
     use crate::{
@@ -650,7 +649,7 @@ mod tests {
         isolation_manager::{CommitRecord, CommitType},
         key_value::StorageKeyArray,
         keyspace::{KeyspaceId, KeyspaceSet, Keyspaces},
-        snapshot::{buffer::OperationsBuffer, WritableSnapshot},
+        snapshot::buffer::OperationsBuffer,
         write_batches::WriteBatches,
         MVCCStorage,
     };

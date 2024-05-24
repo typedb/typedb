@@ -9,7 +9,11 @@
 use std::{borrow::Cow, sync::Arc};
 
 use concept::{
-    thing::{object::Object, thing_manager::ThingManager, value::Value},
+    thing::{
+        object::{Object, ObjectAPI},
+        thing_manager::ThingManager,
+        value::Value,
+    },
     type_::{
         annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent},
         attribute_type::AttributeTypeAnnotation,
@@ -25,6 +29,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     EncodingKeyspace,
 };
+use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
@@ -530,12 +535,8 @@ fn role_player_duplicates() {
             .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
             .unwrap();
 
-        let player_counts: u64 = list_1
-            .get_players(&snapshot, &thing_manager)
-            .collect_cloned_vec(|(_, count)| count)
-            .unwrap()
-            .into_iter()
-            .sum();
+        let player_counts: u64 =
+            list_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
         assert_eq!(player_counts, 3);
 
         let group_relations_count: u64 = group_1
@@ -591,12 +592,8 @@ fn role_player_duplicates() {
         assert_eq!(relations.len(), 1);
 
         let list_1 = relations.first().unwrap();
-        let player_counts: u64 = list_1
-            .get_players(&snapshot, &thing_manager)
-            .collect_cloned_vec(|(_, count)| count)
-            .unwrap()
-            .into_iter()
-            .sum();
+        let player_counts: u64 =
+            list_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
         assert_eq!(player_counts, 3);
 
         let group_1 = entities

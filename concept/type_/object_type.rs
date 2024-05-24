@@ -6,7 +6,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use encoding::{graph::type_::vertex::TypeVertex, layout::prefix::Prefix, Prefixed};
+use encoding::{graph::type_::vertex::TypeVertex, layout::prefix::Prefix, value::label::Label, Prefixed};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -14,7 +14,7 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays, relation_type::RelationType,
-        role_type::RoleType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
     ConceptAPI,
 };
@@ -150,7 +150,20 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
             ObjectType::Relation(relation) => relation.delete(snapshot, type_manager),
         }
     }
+
+    fn get_label<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
+        match self {
+            Self::Entity(entity_type) => entity_type.get_label(snapshot, type_manager),
+            Self::Relation(relation_type) => relation_type.get_label(snapshot, type_manager),
+        }
+    }
 }
+
+impl<'a> ObjectTypeAPI<'a> for ObjectType<'a> {}
 
 impl<'a> PlayerAPI<'a> for ObjectType<'a> {
     fn set_plays<Snapshot: WritableSnapshot>(

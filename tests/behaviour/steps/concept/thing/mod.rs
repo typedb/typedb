@@ -5,4 +5,6 @@
  */
 
 mod attribute;
-mod entity;
+mod common;
+mod object;
+mod relation;

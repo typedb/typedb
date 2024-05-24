@@ -24,10 +24,14 @@ use encoding::{
             build_property_type_annotation_distinct, build_property_type_annotation_independent,
             build_property_type_annotation_regex, build_property_type_edge_annotation_cardinality,
             build_property_type_edge_annotation_distinct, build_property_type_edge_annotation_key,
-            build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label,
-            build_property_type_ordering, build_property_type_value_type,
+            build_property_type_edge_annotation_unique, build_property_type_edge_ordering,
+            build_property_type_edge_override, build_property_type_label, build_property_type_ordering,
+            build_property_type_value_type,
         },
-        vertex::{new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type},
+        vertex::{
+            new_vertex_attribute_type, new_vertex_entity_type, new_vertex_relation_type, new_vertex_role_type,
+            TypeVertex,
+        },
         vertex_generator::TypeVertexGenerator,
         Kind,
     },
@@ -43,10 +47,9 @@ use storage::{
     MVCCStorage,
 };
 
-use super::annotation::AnnotationRegex;
+use super::{annotation::AnnotationRegex, object_type::ObjectType};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::ObjectAPI,
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationCardinality},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
@@ -296,6 +299,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
     }
 
     get_type_methods! {
+        fn get_object_type() -> ObjectType = get_object_type;
         fn get_entity_type() -> EntityType = get_entity_type;
         fn get_relation_type() -> RelationType = get_relation_type;
         fn get_role_type() -> RoleType = get_role_type;
@@ -894,12 +898,30 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_edge_annotation_distinct<'b>(
+    pub(crate) fn storage_unset_edge_annotation_distinct<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl IntoCanonicalTypeEdge<'b>,
     ) {
         let annotation_property = build_property_type_edge_annotation_distinct(edge.into_type_edge());
+        snapshot.delete(annotation_property.into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn storage_set_edge_annotation_unique<'b>(
+        &self,
+        snapshot: &mut Snapshot,
+        edge: impl IntoCanonicalTypeEdge<'b>,
+    ) {
+        let annotation_property = build_property_type_edge_annotation_unique(edge.into_type_edge());
+        snapshot.put(annotation_property.into_storage_key().into_owned_array());
+    }
+
+    pub(crate) fn storage_unset_edge_annotation_unique<'b>(
+        &self,
+        snapshot: &mut Snapshot,
+        edge: impl IntoCanonicalTypeEdge<'b>,
+    ) {
+        let annotation_property = build_property_type_edge_annotation_unique(edge.into_type_edge());
         snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
 
@@ -912,7 +934,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_delete_edge_annotation_key<'b>(
+    pub(crate) fn storage_unset_edge_annotation_key<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl IntoCanonicalTypeEdge<'b>,
@@ -962,7 +984,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         );
     }
 
-    pub(crate) fn storage_delete_edge_annotation_cardinality<'b>(
+    pub(crate) fn storage_unset_edge_annotation_cardinality<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl IntoCanonicalTypeEdge<'b>,
@@ -1009,6 +1031,13 @@ impl<'a> ReadableType for AttributeType<'a> {
     }
 }
 
+impl<'a> ReadableType for ObjectType<'a> {
+    type ReadOutput<'bytes> = ObjectType<'bytes>;
+    fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::ReadOutput<'bytes> {
+        ObjectType::new(TypeVertex::new(b))
+    }
+}
+
 impl<'a> ReadableType for EntityType<'a> {
     type ReadOutput<'bytes> = EntityType<'bytes>;
     fn read_from<'bytes>(b: Bytes<'bytes, BUFFER_KEY_INLINE>) -> Self::ReadOutput<'bytes> {
@@ -1032,7 +1061,7 @@ impl<'a> ReadableType for RoleType<'a> {
 
 pub trait KindAPI<'a>: TypeAPI<'a> {
     type SelfStatic: KindAPI<'static> + 'static;
-    type AnnotationType: Hash + Eq + From<Annotation>;
+    type AnnotationType: Hash + Eq + From<Annotation> + 'static;
     const ROOT_KIND: Kind;
 }
 

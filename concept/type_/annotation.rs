@@ -11,6 +11,7 @@ pub enum Annotation {
     Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),
     Independent(AnnotationIndependent),
+    Unique(AnnotationUnique),
     Key(AnnotationKey),
     Cardinality(AnnotationCardinality),
     Regex(AnnotationRegex),
@@ -21,6 +22,9 @@ pub struct AnnotationAbstract;
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationDistinct;
+
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationUnique;
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationKey;

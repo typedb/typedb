@@ -4,13 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::io::Read;
-
 use bytes::byte_array::ByteArray;
-use encoding::{
-    graph::thing::{vertex_attribute::AttributeID, vertex_object::ObjectVertex},
-    value::value_type::ValueType,
-};
+use encoding::{graph::thing::vertex_attribute::AttributeID, value::value_type::ValueType};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -49,12 +44,6 @@ pub trait ThingAPI<'a> {
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager<Snapshot>,
     ) -> Result<(), ConceptWriteError>;
-}
-
-pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
-    fn vertex(&self) -> ObjectVertex<'_>;
-
-    fn into_vertex(self) -> ObjectVertex<'a>;
 }
 
 // TODO: where do these belong? They're encodings of values we store for keys

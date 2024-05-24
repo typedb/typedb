@@ -20,11 +20,12 @@ rust_library(
     deps = [
         "//common/bytes",
         "//common/iterator",
+        "//common/lending_iterator",
         "//common/primitive",
-        "//encoding",
-        "//storage",
         "//durability",
+        "//encoding",
         "//resource",
+        "//storage",
 
         "@crates//:bincode",
         "@crates//:chrono",

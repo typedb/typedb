@@ -14,7 +14,7 @@ pub struct Relates<'a> {
 
 impl<'a> Relates<'a> {
     pub(crate) fn new(relation: RelationType<'a>, role: RoleType<'a>) -> Self {
-        Relates { relation: relation, role: role }
+        Relates { relation, role }
     }
 
     pub fn relation(&self) -> RelationType<'a> {
