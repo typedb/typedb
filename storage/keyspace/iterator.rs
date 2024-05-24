@@ -142,10 +142,7 @@ impl KeyspaceRangeIterator {
                 Err(_) => true,
             }) as Box<_>)
             .map(error_mapper(keyspace_name))
-            .into_seekable(
-                identity as fn(&[u8]) -> &[u8],
-                raw::compare_key::<KeyspaceError> as fn(&Result<(&[u8], &[u8]), KeyspaceError>, &[u8]) -> Ordering,
-            );
+            .into_seekable(identity as _, raw::compare_key as _);
 
         KeyspaceRangeIterator { iterator: Peekable::new(range_iterator) }
     }
