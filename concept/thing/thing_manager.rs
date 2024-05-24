@@ -140,6 +140,23 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         })
     }
 
+    pub(crate) fn get_relations_player_role<'this, 'o>(
+        &'this self,
+        snapshot: &'this Snapshot,
+        player: &impl ObjectAPI<'o>,
+        role_type: RoleType<'static>,
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
+        let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.vertex());
+        let snapshot_iterator =
+            snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::EdgeRolePlayer.fixed_width_keys()));
+        RelationRoleIterator::new(snapshot_iterator).filter_map::<Result<Relation<'_>, _>, _>(move |item| {
+            match item {
+                Ok((rel, role, _)) => (role == role_type).then_some(Ok(rel)),
+                Err(error) => Some(Err(error)),
+            }
+        })
+    }
+
     pub fn get_attributes<'this>(&'this self, snapshot: &'this Snapshot) -> AttributeIterator<'_, Snapshot> {
         let start = AttributeVertex::build_prefix_prefix(Prefix::ATTRIBUTE_MIN);
         let end = AttributeVertex::build_prefix_prefix(Prefix::ATTRIBUTE_MAX);

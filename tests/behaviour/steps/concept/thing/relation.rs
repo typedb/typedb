@@ -22,8 +22,31 @@ use crate::{
 };
 
 #[apply(generic_step)]
-#[step(expr = r"relation {var} add player for role\({type_label}\): {var}")]
+#[step(expr = r"relation {var} add player for role\({type_label}\): {var}(; ){may_error}")]
 async fn relation_add_player_for_role(
+    context: &mut Context,
+    relation_var: params::Var,
+    role_label: params::Label,
+    player_var: params::Var,
+    may_error: params::MayError
+) {
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let player = context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object.clone();
+    let res = with_write_tx!(context, |tx| {
+        let role_type = relation
+            .type_()
+            .get_relates_role(&tx.snapshot, &tx.type_manager, role_label.to_typedb().name().as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        relation.add_player(&mut tx.snapshot, &tx.thing_manager, role_type, player)
+    });
+    may_error.check(&res);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"relation {var} remove player for role\({type_label}\): {var}")]
+async fn relation_remove_player_for_role(
     context: &mut Context,
     relation_var: params::Var,
     role_label: params::Label,
@@ -38,7 +61,7 @@ async fn relation_add_player_for_role(
             .unwrap()
             .unwrap()
             .role();
-        relation.add_player(&mut tx.snapshot, &tx.thing_manager, role_type, player).unwrap();
+        relation.remove_player_single(&mut tx.snapshot, &tx.thing_manager, role_type, player).unwrap();
     });
 }
 
@@ -147,7 +170,6 @@ async fn object_get_relations_contain(
     contains_or_doesnt.check(slice::from_ref(relation), &relations);
 }
 
-/*
 #[apply(generic_step)]
 #[step(
     expr = r"{object_root_label} {var} get relations\({type_label}\) with role\({type_label}\) {contains_or_doesnt}: {var}"
@@ -172,14 +194,12 @@ async fn object_get_relations_of_type_with_role_contain(
             .unwrap()
             .role();
         player
-            .get_relations_role_type(&tx.snapshot, &tx.thing_manager, role_type)
-            .unwrap()
-            .collect_cloned_vec(|rel| rel)
-            .unwrap()
+            .get_relations_by_role(&tx.snapshot, &tx.thing_manager, role_type)
+            .map_static(|res| res.unwrap().into_owned())
+            .collect::<Vec<_>>()
     });
     let Object::Relation(relation) = &context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object else {
         panic!()
     };
     contains_or_doesnt.check(slice::from_ref(relation), &relations);
 }
-*/

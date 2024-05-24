@@ -192,17 +192,17 @@ impl<'a> Relation<'a> {
         }
     }
 
-    pub fn delete_player_single<Snapshot: WritableSnapshot>(
+    pub fn remove_player_single<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager<Snapshot>,
         role_type: RoleType<'static>,
         player: Object<'_>,
     ) -> Result<(), ConceptWriteError> {
-        self.delete_player_many(snapshot, thing_manager, role_type, player, 1)
+        self.remove_player_many(snapshot, thing_manager, role_type, player, 1)
     }
 
-    pub fn delete_player_many<Snapshot: WritableSnapshot>(
+    pub fn remove_player_many<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager<Snapshot>,

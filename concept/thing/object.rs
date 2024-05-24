@@ -24,8 +24,8 @@ use crate::{
         attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, value::Value, ThingAPI,
     },
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, owns::Owns, type_manager::TypeManager, ObjectTypeAPI,
-        Ordering, OwnerAPI,
+        attribute_type::AttributeType, object_type::ObjectType, owns::Owns, role_type::RoleType,
+        type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI,
     },
     ConceptStatus,
 };
@@ -309,7 +309,17 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
     ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
         thing_manager.get_relations_player(snapshot, self)
     }
+
+    fn get_relations_by_role<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
+        role_type: RoleType<'static>,
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
+        thing_manager.get_relations_player_role(snapshot, self, role_type)
+    }
 }
+
 impl<'a> ObjectAPI<'a> for Object<'a> {
     fn vertex(&self) -> ObjectVertex<'_> {
         match self {
