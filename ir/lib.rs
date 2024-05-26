@@ -7,8 +7,9 @@
 use std::error::Error;
 use std::fmt;
 use std::fmt::{Display, Formatter};
+use crate::constraint::Constraint;
 
-use crate::variable::Variable;
+use crate::variable::{Variable, VariableCategory};
 
 pub mod variable;
 pub mod optional;
@@ -54,6 +55,12 @@ impl Display for ScopeId {
 #[derive(Debug)]
 pub enum PatternDefinitionError {
     DisjointVariableReuse { variable_name: String },
+    VariableCategoryMismatch {
+        variable: Variable,
+        variable_name: Option<String>,
+        category_1: VariableCategory,
+        category_2: VariableCategory,
+    },
 }
 
 impl fmt::Display for PatternDefinitionError {
@@ -66,6 +73,7 @@ impl Error for PatternDefinitionError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::DisjointVariableReuse { .. } => None,
+            PatternDefinitionError::VariableCategoryMismatch { .. } => None,
         }
     }
 }

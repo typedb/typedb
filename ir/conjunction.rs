@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::sync::{Arc, Mutex};
 
@@ -111,7 +112,8 @@ impl Display for Conjunction {
         writeln!(f, "{}{{", self.scope_id)?;
         write!(f, "{: >width$}", &self.constraints, width=current_width)?;
         write!(f, "{: >width$}", &self.patterns, width=current_width)?;
-        write!(f, "}}")?;
+        writeln!(f, "}}")?;
+        write!(f, "{}", self.context.lock().unwrap())?;
         Ok(())
     }
 }

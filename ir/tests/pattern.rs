@@ -5,6 +5,8 @@
  */
 
 use ir::conjunction::Conjunction;
+use ir::PatternDefinitionError;
+use ir::variable::VariableCategory;
 
 #[test]
 fn build_conjunction_constraints() {
@@ -15,11 +17,43 @@ fn build_conjunction_constraints() {
     let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
     let var_name_type = conjunction.get_or_declare_variable(&"name_type").unwrap();
 
-    conjunction.constraints().add_isa(var_person, var_person_type);
-    conjunction.constraints().add_has(var_person, var_name);
-    conjunction.constraints().add_isa(var_name, var_name_type);
-    conjunction.constraints().add_type(var_person_type, "person");
-    conjunction.constraints().add_type(var_name_type, "name");
+    conjunction.constraints().add_isa(var_person, var_person_type).unwrap();
+    conjunction.constraints().add_has(var_person, var_name).unwrap();
+    conjunction.constraints().add_isa(var_name, var_name_type).unwrap();
+    conjunction.constraints().add_type(var_person_type, "person").unwrap();
+    conjunction.constraints().add_type(var_name_type, "name").unwrap();
+}
 
-    println!("{}", &conjunction);
+#[test]
+fn variable_category_mismatch() {
+    let mut conjunction = Conjunction::new_root();
+
+    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
+    let var_name = conjunction.get_or_declare_variable(&"name").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
+    let var_name_type = conjunction.get_or_declare_variable(&"name_type").unwrap();
+
+    let result = conjunction.constraints().add_isa(var_person, var_person_type);
+    assert!(result.is_ok());
+    let result = conjunction.constraints().add_isa(var_person_type, var_person);
+    assert!(matches!(result, Err(PatternDefinitionError::VariableCategoryMismatch {
+        variable: var_person_type, category_1: VariableCategory::Thing, category_2: VariableCategory::Type, ..
+    })));
+}
+
+#[test]
+fn variable_category_narrowing() {
+    let mut conjunction = Conjunction::new_root();
+
+    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
+    let var_name = conjunction.get_or_declare_variable(&"name").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
+    let var_name_type = conjunction.get_or_declare_variable(&"name_type").unwrap();
+
+    conjunction.constraints().add_isa(var_person, var_person_type).unwrap();
+    conjunction.constraints().add_isa(var_name, var_name_type).unwrap();
+    // narrow name from Isa Thing to Attribute and person from Isa thing to Object owner
+    conjunction.constraints().add_has(var_person, var_name).unwrap();
+
+    println!("{}", conjunction)
 }

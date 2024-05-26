@@ -4,9 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::fmt::{Display, Formatter};
+use itertools::Itertools;
+
 use crate::{PatternDefinitionError, Scope, ScopeId};
-use crate::variable::{Variable, VariableType};
+use crate::variable::{Variable, VariableCategory};
 
 #[derive(Debug)]
 pub struct PatternContext {
@@ -18,7 +21,7 @@ pub struct PatternContext {
     scope_id_allocator: u16,
     scope_parents: HashMap<ScopeId, ScopeId>,
 
-    variable_types: HashMap<Variable, VariableType>,
+    variable_categories: HashMap<Variable, VariableCategory>,
 }
 
 impl PatternContext {
@@ -30,7 +33,7 @@ impl PatternContext {
             variable_id_allocator: 0,
             scope_id_allocator: 0,
             scope_parents: HashMap::new(),
-            variable_types: HashMap::new(),
+            variable_categories: HashMap::new(),
         }
     }
 
@@ -87,6 +90,37 @@ impl PatternContext {
         scope
     }
 
+    pub(crate) fn set_variable_category(
+        &mut self,
+        variable: Variable,
+        category: VariableCategory,
+    ) -> Result<(), PatternDefinitionError> {
+        let mut existing_type = self.variable_categories.get_mut(&variable);
+        match existing_type {
+            None => {
+                self.variable_categories.insert(variable, category);
+                Ok(())
+            }
+            Some(existing) => {
+                let narrowest = existing.narrowest(category);
+                match narrowest {
+                    None => {
+                        Err(PatternDefinitionError::VariableCategoryMismatch {
+                            variable,
+                            variable_name: self.variable_names.get(&variable).cloned(),
+                            category_1: category,
+                            category_2: *existing,
+                        })
+                    }
+                    Some(narrowed) => {
+                        *existing =  narrowed;
+                        Ok(())
+                    }
+                }
+            }
+        }
+    }
+
     fn is_equal_or_parent_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_parent: ScopeId) -> bool {
         scope == maybe_parent || Self::get_scope_parent(parents, scope).map(|p| Self::is_equal_or_parent_scope(parents, p, maybe_parent)).unwrap_or(false)
     }
@@ -97,6 +131,20 @@ impl PatternContext {
 
     fn get_scope_parent(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId) -> Option<ScopeId> {
         parents.get(&scope).cloned()
+    }
+}
+
+impl Display for PatternContext {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Named variables:")?;
+        for entry in self.variable_names.iter().sorted_by_key(|e| e.0) {
+            writeln!(f, "  {} -> $\"{}\"", entry.0, entry.1)?;
+        }
+        writeln!(f, "Variable categories:")?;
+        for entry in self.variable_categories.iter().sorted_by_key(|e| e.0) {
+            writeln!(f, "  {}: {}", entry.0, entry.1)?;
+        }
+        Ok(())
     }
 }
 

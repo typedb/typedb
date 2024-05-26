@@ -9,8 +9,8 @@ use std::sync::{Arc, Mutex};
 use crate::context::PatternContext;
 use crate::expression::Expression;
 use crate::function::FunctionCall;
-use crate::ScopeId;
-use crate::variable::Variable;
+use crate::{PatternDefinitionError, ScopeId};
+use crate::variable::{Variable, VariableCategory};
 
 #[derive(Debug)]
 pub struct Constraints {
@@ -28,31 +28,36 @@ impl Constraints {
         }
     }
 
-    pub fn add_type(&mut self, variable: Variable, type_: &str) -> &Type {
+    pub fn add_type(&mut self, variable: Variable, type_: &str) -> Result<&Type, PatternDefinitionError> {
         debug_assert!(self.context.lock().unwrap().is_variable_available(self.scope, variable));
+        self.context.lock().unwrap().set_variable_category(variable, VariableCategory::Type)?;
         let type_ = Type::new(variable, type_.to_string());
         self.constraints.push(type_.into());
-        self.constraints.last().unwrap().as_type().unwrap()
+        Ok(self.constraints.last().unwrap().as_type().unwrap())
     }
 
-    pub fn add_isa(&mut self, thing: Variable, type_: Variable) -> &Isa {
+    pub fn add_isa(&mut self, thing: Variable, type_: Variable) -> Result<&Isa, PatternDefinitionError> {
         debug_assert!(
             self.context.lock().unwrap().is_variable_available(self.scope, thing) &&
             self.context.lock().unwrap().is_variable_available(self.scope, type_)
         );
+        self.context.lock().unwrap().set_variable_category(thing, VariableCategory::Thing)?;
+        self.context.lock().unwrap().set_variable_category(type_, VariableCategory::Type)?;
         let isa = Isa::new(thing, type_);
         self.constraints.push(isa.into());
-        self.constraints.last().unwrap().as_isa().unwrap()
+        Ok(self.constraints.last().unwrap().as_isa().unwrap())
     }
 
-    pub fn add_has(&mut self, owner: Variable, attribute: Variable) -> &Has {
+    pub fn add_has(&mut self, owner: Variable, attribute: Variable) -> Result<&Has, PatternDefinitionError> {
         debug_assert!(
             self.context.lock().unwrap().is_variable_available(self.scope, owner) &&
                 self.context.lock().unwrap().is_variable_available(self.scope, attribute)
         );
+        self.context.lock().unwrap().set_variable_category(owner, VariableCategory::Object)?;
+        self.context.lock().unwrap().set_variable_category(attribute, VariableCategory::Attribute)?;
         let has = Has::new(owner, attribute);
         self.constraints.push(has.into());
-        self.constraints.last().unwrap().as_has().unwrap()
+        Ok(self.constraints.last().unwrap().as_has().unwrap())
     }
 }
 
