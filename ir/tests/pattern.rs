@@ -21,5 +21,5 @@ fn build_conjunction_constraints() {
     conjunction.constraints().add_type(var_person_type, "person");
     conjunction.constraints().add_type(var_name_type, "name");
 
-    dbg!(&conjunction);
+    println!("{}", &conjunction);
 }

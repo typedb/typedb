@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fmt::{Display, Formatter};
 use std::sync::{Arc, Mutex};
 use crate::{Scope, ScopeId};
 use crate::context::PatternContext;
@@ -31,4 +32,10 @@ impl Scope for Disjunction {
         todo!()
     }
 
+}
+
+impl Display for Disjunction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
 }

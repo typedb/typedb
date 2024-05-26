@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fmt::{Display, Formatter};
+
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct Variable {
     id: VariableId,
@@ -15,6 +17,12 @@ impl Variable {
     }
 }
 
+impl Display for Variable {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "${}", self.id)
+    }
+}
+
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub(crate) struct VariableId {
     id: u16,
@@ -23,6 +31,12 @@ pub(crate) struct VariableId {
 
 impl VariableId {
     const MAX: usize = u16::MAX as usize;
+}
+
+impl Display for VariableId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.id)
+    }
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

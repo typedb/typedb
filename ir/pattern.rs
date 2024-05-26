@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fmt::{Debug, Display, Formatter};
 use std::sync::{Arc, Mutex};
 use crate::conjunction::Conjunction;
 use crate::context::PatternContext;
@@ -20,7 +21,6 @@ pub(crate) struct Patterns {
 }
 
 impl Patterns {
-
     pub(crate) fn new(scope: ScopeId, context: Arc<Mutex<PatternContext>>) -> Self {
         Self { scope, context, patterns: Vec::new() }
     }
@@ -35,6 +35,15 @@ impl Patterns {
         let disjunction = Disjunction::new_child(self.scope, self.context.clone());
         self.patterns.push(Pattern::Disjunction(disjunction));
         self.patterns.last_mut().unwrap().as_disjunction_mut().unwrap()
+    }
+}
+
+impl Display for Patterns {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for pattern in &self.patterns {
+            write!(f, "{}", pattern)?;
+        }
+        Ok(())
     }
 }
 
@@ -89,7 +98,7 @@ impl Pattern {
             _ => None
         }
     }
-    
+
     fn as_optional(&self) -> Option<&Optional> {
         match self {
             Pattern::Optional(optional) => Some(optional),
@@ -101,6 +110,17 @@ impl Pattern {
         match self {
             Pattern::Optional(optional) => Some(optional),
             _ => None
+        }
+    }
+}
+
+impl Display for Pattern {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Pattern::Conjunction(pattern) => Display::fmt(pattern, f),
+            Pattern::Disjunction(pattern) => Display::fmt(pattern, f),
+            Pattern::Negation(pattern) => Display::fmt(pattern, f),
+            Pattern::Optional(pattern) => Display::fmt(pattern, f),
         }
     }
 }

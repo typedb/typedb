@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fmt::{Debug, Display, Formatter};
 use std::sync::{Arc, Mutex};
 use crate::context::PatternContext;
 use crate::expression::Expression;
@@ -12,7 +13,7 @@ use crate::ScopeId;
 use crate::variable::Variable;
 
 #[derive(Debug)]
-pub(crate) struct Constraints {
+pub struct Constraints {
     scope: ScopeId,
     context: Arc<Mutex<PatternContext>>,
     constraints: Vec<Constraint>,
@@ -52,6 +53,15 @@ impl Constraints {
         let has = Has::new(owner, attribute);
         self.constraints.push(has.into());
         self.constraints.last().unwrap().as_has().unwrap()
+    }
+}
+
+impl Display for Constraints {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for constraint in &self.constraints {
+            writeln!(f, "{:>width$};", constraint, width=f.width().unwrap_or(0))?;
+        }
+        Ok(())
     }
 }
 
@@ -116,6 +126,20 @@ impl Constraint {
     }
 }
 
+impl Display for Constraint {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Constraint::Type(constraint) => Display::fmt(constraint, f),
+            Constraint::Isa(constraint) =>Display::fmt(constraint, f),
+            Constraint::RolePlayer(constraint) =>Display::fmt(constraint, f),
+            Constraint::Has(constraint) => Display::fmt(constraint, f),
+            Constraint::ExpressionAssignment(constraint) =>Display::fmt(constraint, f),
+            Constraint::InAssignment(constraint) => Display::fmt(constraint, f),
+            Constraint::Comparison(constraint) => Display::fmt(constraint, f),
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub struct Type {
     var: Variable,
@@ -135,6 +159,14 @@ impl Type {
 impl Into<Constraint> for Type {
     fn into(self) -> Constraint {
         Constraint::Type(self)
+    }
+}
+
+impl Display for Type {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // TODO: implement indentation without rewriting it everywhere
+        // write!(f, "{: >width$} {} type {}", "", self.var, self.type_, width=f.width().unwrap_or(0))
+        write!(f, "{} type {}", self.var, self.type_)
     }
 }
 
@@ -160,6 +192,12 @@ impl Into<Constraint> for Isa {
     }
 }
 
+impl Display for Isa {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} isa {}", self.thing, self.type_)
+    }
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub struct RolePlayer {
     relation: Variable,
@@ -179,6 +217,19 @@ impl RolePlayer {
 impl Into<Constraint> for RolePlayer {
     fn into(self) -> Constraint {
         Constraint::RolePlayer(self)
+    }
+}
+
+impl Display for RolePlayer {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self.role_type {
+            None => {
+                write!(f, "{} rp {} (role: )", self.relation, self.player)
+            }
+            Some(role) => {
+                write!(f, "{} rp {} (role: {})", self.relation, self.player, role)
+            }
+        }
     }
 }
 
@@ -204,10 +255,23 @@ impl Into<Constraint> for Has {
     }
 }
 
+impl Display for Has {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} has {}", self.owner, self.attribute)
+    }
+}
+
+
 #[derive(Debug, Eq, PartialEq)]
 pub struct ExpressionAssignment {
     variables: Vec<Variable>,
     expression: Expression,
+}
+
+impl Display for ExpressionAssignment {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -216,9 +280,21 @@ pub struct InAssignment {
     function: Arc<FunctionCall>,
 }
 
+impl Display for InAssignment {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub struct Comparison {
     lhs: Variable,
     rhs: Variable,
     // comparator: Comparator,
+}
+
+impl Display for Comparison {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
 }

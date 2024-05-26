@@ -107,27 +107,11 @@ impl Scope for Conjunction {
 
 impl Display for Conjunction {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let current_width = f.width().unwrap_or(0);
-        write!(f, "{{")?;
-
-        write!(f, "{}{{", self.scope_id)?;
-
-        // for optional in &self.optionals {
-        //     write!(f, "{{")?;
-        //     write!(f, "{:width$}", optional, width = current_width + 2)?;
-        //     write!(f, "}}")?
-        // }
-
+        let current_width = 10; //f.width().unwrap_or(0);
+        writeln!(f, "{}{{", self.scope_id)?;
+        write!(f, "{: >width$}", &self.constraints, width=current_width)?;
+        write!(f, "{: >width$}", &self.patterns, width=current_width)?;
         write!(f, "}}")?;
-
-        /*
-        Constraint
-        Constarint
-        Constraint
-        {
-          optional.
-        }
-         */
         Ok(())
     }
 }

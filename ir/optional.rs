@@ -12,16 +12,12 @@ use crate::variable::Variable;
 
 #[derive(Debug)]
 pub struct Optional {
-    conjunction: Conjunction,
 }
 
 impl Optional {
 }
 
 impl Optional {
-
-
-
     pub(crate) fn variables(&self) -> Box<dyn Iterator<Item=Variable>> {
         todo!()
     }
@@ -36,8 +32,6 @@ impl Scope for Optional {
 
 impl Display for Optional {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{{")?;
-        writeln!(f, "$x has name $a;")?;
-        writeln!(f, "}}")
+        todo!()
     }
 }

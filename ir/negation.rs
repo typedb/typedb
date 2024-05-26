@@ -4,8 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fmt::{Display, Formatter};
+
 use crate::{Scope, ScopeId};
-use crate::variable::Variable;
 
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) struct Negation {
@@ -20,4 +21,10 @@ impl Scope for Negation {
         todo!()
     }
 
+}
+
+impl Display for Negation {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
 }
