@@ -33,6 +33,7 @@ use iterator::Collector;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
+use encoding::graph::type_::property::EncodableTypeEdgeProperty;
 
 use crate::{
     error::ConceptReadError,
@@ -41,7 +42,6 @@ use crate::{
             Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent, AnnotationKey, AnnotationUnique,
         },
         attribute_type::AttributeType,
-        deserialise_annotation_cardinality, deserialise_annotation_regex, deserialise_ordering,
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
@@ -52,6 +52,7 @@ use crate::{
         Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
+use crate::type_::annotation::{AnnotationCardinality, AnnotationRegex};
 use crate::type_::InterfaceImplementation;
 use crate::type_::type_manager::encoding_helper::EdgeSub;
 // use crate::type_::InterfaceImplementation;
@@ -353,9 +354,9 @@ impl TypeReader {
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
                     Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
                     Infix::PropertyAnnotationCardinality => {
-                        Annotation::Cardinality(deserialise_annotation_cardinality(value))
+                        Annotation::Cardinality(AnnotationCardinality::decode_value(value).into())
                     }
-                    Infix::PropertyAnnotationRegex => Annotation::Regex(deserialise_annotation_regex(value)),
+                    Infix::PropertyAnnotationRegex => Annotation::Regex(AnnotationRegex::decode_value(value)),
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationUnique
                     | Infix::PropertyAnnotationKey
@@ -392,9 +393,9 @@ impl TypeReader {
                     Infix::PropertyAnnotationUnique => Annotation::Unique(AnnotationUnique),
                     Infix::PropertyAnnotationKey => Annotation::Key(AnnotationKey),
                     Infix::PropertyAnnotationCardinality => {
-                        Annotation::Cardinality(deserialise_annotation_cardinality(value))
+                        Annotation::Cardinality(AnnotationCardinality::decode_value(value))
                     }
-                    Infix::PropertyAnnotationRegex => Annotation::Regex(deserialise_annotation_regex(value)),
+                    Infix::PropertyAnnotationRegex => Annotation::Regex(AnnotationRegex::decode_value(value)),
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationAbstract
                     | Infix::PropertyLabel
@@ -416,7 +417,7 @@ impl TypeReader {
     ) -> Result<Ordering, ConceptReadError> {
         let ordering = snapshot
             .get_mapped(build_property_type_ordering(role_type.vertex()).into_storage_key().as_reference(), |bytes| {
-                deserialise_ordering(bytes)
+                Ordering::decode_value(bytes)
             })
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
         Ok(ordering.unwrap())
@@ -429,9 +430,24 @@ impl TypeReader {
         let ordering = snapshot
             .get_mapped(
                 build_property_type_edge_ordering(owns.to_canonical_type_edge()).into_storage_key().as_reference(),
-                deserialise_ordering,
+                |value| Ordering::decode_value(value),
             )
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
         Ok(ordering.unwrap())
+    }
+
+    pub(crate) fn get_type_edge_property<PROPERTY>(
+        snapshot: &impl ReadableSnapshot,
+        edge: impl EncodableParametrisedTypeEdge<'static>
+    ) -> Result<Option<PROPERTY>, ConceptReadError>
+    where PROPERTY: EncodableTypeEdgeProperty<'static>
+    {
+        let property = snapshot
+            .get_mapped(
+                PROPERTY::build_key(edge).into_storage_key().as_reference(),
+                |value| PROPERTY::decode_value(value.clone()),
+            )
+            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
+        Ok(property)
     }
 }

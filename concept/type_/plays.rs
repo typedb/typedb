@@ -14,6 +14,7 @@ use crate::{
     type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, TypeAPI},
 };
 use crate::error::ConceptWriteError;
+use crate::type_::annotation::Annotation;
 use crate::type_::InterfaceImplementation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -92,5 +93,9 @@ impl<'a> InterfaceImplementation<'a> for Plays<'a> {
 
     fn interface(&self) -> RoleType<'a> {
         self.role.clone()
+    }
+
+    fn unwrap_annotation(annotation: __PlaceholderPlaysAnnotation) -> Annotation {
+        unreachable!();
     }
 }

@@ -17,7 +17,9 @@ use serde::{Deserialize, Serialize};
 use bytes::byte_array::ByteArray;
 use bytes::Bytes;
 use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
+use encoding::graph::type_::property::EncodableTypeEdgeProperty;
 use encoding::graph::type_::vertex::EncodableTypeVertex;
+use encoding::layout::infix::Infix;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -216,6 +218,19 @@ pub enum Ordering {
     Ordered,
 }
 
+impl<'a> EncodableTypeEdgeProperty<'a> for Ordering {
+    const INFIX: Infix = Infix::PropertyHasOrder;
+
+    fn decode_value<'b>(value: ByteReference<'b>) -> Ordering {
+        bincode::deserialize(value.bytes()).unwrap()
+    }
+
+    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    }
+}
+// TODO: where do these belong?
+
 pub(crate) trait InterfaceImplementation<'a> : EncodableParametrisedTypeEdge<'a, From=Self::ObjectType, To=Self::InterfaceType> + Sized + Clone
 {
     type AnnotationType;
@@ -225,29 +240,8 @@ pub(crate) trait InterfaceImplementation<'a> : EncodableParametrisedTypeEdge<'a,
     fn object(&self) -> Self::ObjectType;
 
     fn interface(&self) -> Self::InterfaceType;
-}
 
-// TODO: where do these belong?
-fn serialise_annotation_cardinality(annotation: AnnotationCardinality) -> Box<[u8]> {
-    bincode::serialize(&annotation).unwrap().into_boxed_slice()
-}
-
-fn deserialise_annotation_cardinality(value: ByteReference<'_>) -> AnnotationCardinality {
-    bincode::deserialize(value.bytes()).unwrap()
-}
-
-fn deserialise_annotation_regex(value: ByteReference<'_>) -> AnnotationRegex {
-    // TODO this .unwrap() should be handled as an error
-    // although it does indicate data corruption
-    AnnotationRegex::new(std::str::from_utf8(value.bytes()).unwrap().to_owned())
-}
-
-fn serialise_ordering(ordering: Ordering) -> Box<[u8]> {
-    bincode::serialize(&ordering).unwrap().into_boxed_slice()
-}
-
-fn deserialise_ordering(value: ByteReference<'_>) -> Ordering {
-    bincode::deserialize(value.bytes()).unwrap()
+    fn unwrap_annotation(annotation: Self::AnnotationType) -> Annotation;
 }
 
 

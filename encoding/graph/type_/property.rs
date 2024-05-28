@@ -7,7 +7,7 @@
 use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::key_value::StorageKey;
 
 use crate::{
@@ -18,6 +18,7 @@ use crate::{
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::graph::type_::edge::EncodableParametrisedTypeEdge;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct TypeVertexProperty<'a> {
@@ -199,6 +200,25 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {}
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct TypeEdgeProperty<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
+}
+
+
+// TODO: Split into two? Property & Value?
+pub trait EncodableTypeEdgeProperty<'a> : Sized {
+
+    const INFIX: Infix;
+
+    fn decode_value<'b>(value: ByteReference<'b>) -> Self;
+
+    fn build_key(edge: impl EncodableParametrisedTypeEdge<'a>) -> TypeEdgeProperty<'a> {
+        TypeEdgeProperty::build(edge.to_canonical_type_edge(), Self::INFIX)
+    }
+
+    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>;
+    fn is_property(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+        key_bytes.length() == TypeEdgeProperty::LENGTH_NO_SUFFIX
+            && TypeEdgeProperty::new(key_bytes).infix() == Self::INFIX
+    }
 }
 
 macro_rules! type_edge_property_constructors {

@@ -5,6 +5,17 @@
  */
 
 use serde::{Deserialize, Serialize};
+use bytes::byte_array::ByteArray;
+use bytes::byte_reference::ByteReference;
+use bytes::Bytes;
+use encoding::AsBytes;
+use encoding::graph::type_::property::{EncodableTypeEdgeProperty, TypeEdgeProperty};
+use encoding::layout::infix::Infix;
+use encoding::layout::infix::Infix::{PropertyAnnotationAbstract, PropertyAnnotationDistinct, PropertyAnnotationIndependent};
+use encoding::value::string_bytes::StringBytes;
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use crate::type_::annotation::Annotation::{Cardinality, Regex};
+use crate::type_::Ordering;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
@@ -72,5 +83,55 @@ impl AnnotationRegex {
 
     pub fn regex(&self) -> &str {
         &self.regex
+    }
+}
+
+macro_rules! valueless_annotation_encoder {
+    ($annotation:ident, $infix:ident) => {
+        impl<'a> EncodableTypeEdgeProperty<'a> for $annotation {
+            const INFIX: Infix = $infix;
+
+            fn decode_value<'b>(value: ByteReference<'b>) -> $annotation {
+                debug_assert!(value.bytes().is_empty());
+                $annotation
+            }
+
+            fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+                None
+            }
+        }
+    };
+}
+
+valueless_annotation_encoder!(AnnotationAbstract, PropertyAnnotationAbstract);
+valueless_annotation_encoder!(AnnotationDistinct, PropertyAnnotationDistinct);
+valueless_annotation_encoder!(AnnotationIndependent, PropertyAnnotationIndependent);
+valueless_annotation_encoder!(AnnotationKey, PropertyAnnotationIndependent);
+
+impl<'a> EncodableTypeEdgeProperty<'a> for AnnotationRegex {
+    const INFIX: Infix = Infix::PropertyAnnotationRegex;
+
+    fn decode_value<'b>(value: ByteReference<'b>) -> AnnotationRegex {
+        // TODO this .unwrap() should be handled as an error
+        // although it does indicate data corruption
+        AnnotationRegex::new(std::str::from_utf8(value.bytes()).unwrap().to_owned())
+    }
+
+    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::Reference(StringBytes::<BUFFER_VALUE_INLINE>::build_owned(self.regex()).bytes()).into_owned())
+    }
+}
+
+
+impl<'a> EncodableTypeEdgeProperty<'a> for AnnotationCardinality {
+    const INFIX: Infix = Infix::PropertyAnnotationCardinality;
+    fn decode_value<'b>(value: ByteReference<'b>) -> Self {
+        // TODO this .unwrap() should be handled as an error
+        // although it does indicate data corruption
+        bincode::deserialize(value.bytes()).unwrap()
+    }
+
+    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
     }
 }

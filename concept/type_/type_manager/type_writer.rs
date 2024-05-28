@@ -7,7 +7,7 @@
 use std::marker::PhantomData;
 use bytes::byte_array::ByteArray;
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
-use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label, build_property_type_value_type};
+use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label, build_property_type_value_type, EncodableTypeEdgeProperty};
 use encoding::{AsBytes, Keyable};
 use encoding::graph::type_::edge::{EncodableParametrisedTypeEdge, TypeEdge};
 use encoding::graph::type_::vertex::EncodableTypeVertex;
@@ -19,7 +19,8 @@ use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
 use crate::type_::type_manager::KindAPI;
 use crate::type_::type_manager::type_reader::TypeReader;
-use crate::type_::{Ordering, serialise_ordering, TypeAPI};
+use crate::type_::{InterfaceImplementation, Ordering, TypeAPI};
+use crate::type_::annotation::{Annotation, AnnotationCardinality, AnnotationKey, AnnotationRegex};
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::relates::Relates;
 use crate::type_::type_manager::encoding_helper::EdgeSub;
@@ -149,7 +150,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         debug_assert_eq!(owns_edge.prefix(), Prefix::EdgeOwns);
         snapshot.put_val(
             build_property_type_edge_ordering(owns_edge).into_storage_key().into_owned_array(),
-            ByteArray::boxed(serialise_ordering(ordering)),
+            ordering.build_value().unwrap().into_array(),
         )
     }
 
@@ -158,4 +159,25 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot.delete(build_property_type_edge_ordering(owns_edge).into_storage_key().into_owned_array())
     }
 
+    pub(crate) fn storage_put_type_edge_property<'a, E, P>(snapshot: &mut Snapshot, edge: E, property: P)
+    where
+        E: EncodableParametrisedTypeEdge<'a>,
+        P: EncodableTypeEdgeProperty<'a>,
+    {
+        let key = P::build_key(edge).into_storage_key();
+        let value_opt =  property.build_value();
+        if let(Some(value)) = value_opt {
+            snapshot.put_val(key.into_owned_array(), value.into_array())
+        } else {
+            snapshot.put(key.into_owned_array())
+        }
+    }
+
+    pub(crate) fn storage_delete_type_edge_property<'a, E, P>(snapshot: &mut Snapshot, edge: E)
+        where
+            E: EncodableParametrisedTypeEdge<'a>,
+            P: EncodableTypeEdgeProperty<'a>,
+    {
+        snapshot.delete(P::build_key(edge).into_storage_key().into_owned_array());
+    }
 }
