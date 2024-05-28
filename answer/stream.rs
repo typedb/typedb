@@ -4,4 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod category_inference;
+
+use crate::concept_map::ConceptMapPrototype;
+
+struct MapStream {}
+
+struct MapStreamPrototype {
+    map: ConceptMapPrototype,
+}

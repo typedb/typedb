@@ -49,7 +49,7 @@ impl Display for Patterns {
 
 
 #[derive(Debug)]
-enum Pattern {
+pub enum Pattern {
     Conjunction(Conjunction),
     Disjunction(Disjunction),
     Negation(Negation),

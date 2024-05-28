@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::pattern::context::PatternContext;
 use crate::pattern::expression::Expression;
-use crate::pattern::function::FunctionCall;
+use crate::pattern::function_call::FunctionCall;
 use crate::pattern::ScopeId;
 use crate::pattern::variable::{Variable, VariableCategory};
 use crate::PatternDefinitionError;
@@ -78,8 +78,8 @@ pub enum Constraint {
     Isa(Isa),
     RolePlayer(RolePlayer),
     Has(Has),
-    ExpressionAssignment(ExpressionAssignment),
-    InAssignment(InAssignment),
+    ExpressionBinding(ExpressionAssignment),
+    InBinding(InAssignment),
     Comparison(Comparison),
 }
 
@@ -98,8 +98,8 @@ impl Constraint {
             Constraint::Has(has) => {
                 Box::new(has.variables())
             }
-            Constraint::ExpressionAssignment(assign) => todo!(),
-            Constraint::InAssignment(assign) => todo!(),
+            Constraint::ExpressionBinding(assign) => todo!(),
+            Constraint::InBinding(assign) => todo!(),
             Constraint::Comparison(comparison) => todo!(),
         }
     }
@@ -140,8 +140,8 @@ impl Display for Constraint {
             Constraint::Isa(constraint) => Display::fmt(constraint, f),
             Constraint::RolePlayer(constraint) => Display::fmt(constraint, f),
             Constraint::Has(constraint) => Display::fmt(constraint, f),
-            Constraint::ExpressionAssignment(constraint) => Display::fmt(constraint, f),
-            Constraint::InAssignment(constraint) => Display::fmt(constraint, f),
+            Constraint::ExpressionBinding(constraint) => Display::fmt(constraint, f),
+            Constraint::InBinding(constraint) => Display::fmt(constraint, f),
             Constraint::Comparison(constraint) => Display::fmt(constraint, f),
         }
     }

@@ -6,6 +6,5 @@
 
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) struct FunctionCall {
-
+    function_id: FunctionId,
 }
-

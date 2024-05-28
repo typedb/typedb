@@ -4,4 +4,5 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod category_inference;
+pub mod program;
+pub mod function;

@@ -13,6 +13,7 @@ use crate::pattern::variable::{Variable, VariableCategory};
 
 pub mod pattern;
 mod inference;
+pub mod program;
 
 
 #[derive(Debug)]
