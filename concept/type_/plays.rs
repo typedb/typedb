@@ -14,7 +14,6 @@ use crate::{
     type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, IntoCanonicalTypeEdge, TypeAPI},
 };
 use crate::error::ConceptWriteError;
-use crate::type_::type_manager::encoding_helper::PlaysEncoder;
 use crate::type_::InterfaceImplementation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -69,12 +68,22 @@ impl<'a> IntoCanonicalTypeEdge<'a> for Plays<'a> {
     }
 }
 
-impl<'a> EncodableParametrisedTypeEdge<'a, ObjectType<'a>, RoleType<'a>> for Plays<'a> {
+impl<'a> EncodableParametrisedTypeEdge<'a> for Plays<'a> {
     const CANONICAL_PREFIX: Prefix = Prefix::EdgePlays;
     const REVERSE_PREFIX: Prefix = Prefix::EdgePlaysReverse;
+    type From = ObjectType<'a>;
+    type To = RoleType<'a>;
 
-    fn new(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
+    fn from_vertices(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
         Plays { player, role }
+    }
+
+    fn from(&self) -> Self::From {
+        self.player()
+    }
+
+    fn to(&self) -> Self::To {
+        self.role()
     }
 }
 
@@ -86,11 +95,6 @@ impl<'a> InterfaceImplementation<'a> for Plays<'a> {
     type AnnotationType = __PlaceholderPlaysAnnotation;
     type ObjectType = ObjectType<'a>;
     type InterfaceType = RoleType<'a>;
-    type Encoder = PlaysEncoder;
-
-    fn new(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
-        Plays::new(player, role)
-    }
 
     fn object(&self) -> ObjectType<'a> {
         self.player.clone()

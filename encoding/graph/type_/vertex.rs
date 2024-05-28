@@ -30,17 +30,21 @@ pub struct TypeVertex<'a> {
 // TODO: Refactor into factories: https://github.com/vaticle/typedb/pull/7040#discussion_r1567373838
 
 pub trait EncodableTypeVertex<'a> : Sized {
-    const PREFIX: Prefix;
-    fn new(type_vertex: TypeVertex<'a>) -> Self;
 
-    fn to_vertex(self) -> TypeVertex<'a>;
+    fn from_vertex(vertex: TypeVertex<'a>) -> Self;
 
-    fn build(type_id: TypeID) -> Self {
-        Self::new(TypeVertex::build(Self::PREFIX.prefix_id(), type_id))
-    }
+    fn into_vertex(self) -> TypeVertex<'a>;
 
     fn decode(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
-        Self::new(TypeVertex::new(bytes))
+        Self::from_vertex(TypeVertex::new(bytes))
+    }
+}
+
+pub trait PrefixedEncodableTypeVertex<'a> : EncodableTypeVertex<'a>{
+    const PREFIX: Prefix;
+
+    fn build(type_id: TypeID) -> Self {
+        Self::from_vertex(TypeVertex::build(Self::PREFIX.prefix_id(), type_id))
     }
 
     fn prefix_for_kind() -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {

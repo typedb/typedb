@@ -12,6 +12,8 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
+use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
+use encoding::layout::prefix::Prefix::{VertexEntityType, VertexRelationType};
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -35,6 +37,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::entity_type::EntityType;
 use crate::type_::object_type::ObjectType::Entity;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -46,10 +49,9 @@ impl<'a> RelationType<'a> {}
 
 impl<'a> ConceptAPI<'a> for RelationType<'a> {}
 
-impl<'a> TypeAPI<'a> for RelationType<'a> {
-    type SelfStatic = RelationType<'static>;
-
-    fn new(vertex: TypeVertex<'a>) -> RelationType<'_> {
+impl<'a> EncodableTypeVertex<'a> for RelationType<'a> {
+    fn from_vertex(vertex: TypeVertex<'a>) -> Self {
+        debug_assert!(Self::PREFIX == VertexRelationType);
         if vertex.prefix() != Prefix::VertexRelationType {
             panic!(
                 "Type IID prefix was expected to be Prefix::RelationType ({:?}) but was {:?}",
@@ -59,13 +61,25 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
         }
         RelationType { vertex }
     }
-    
-    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
-        self.vertex.as_reference()
-    }
 
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
+    }
+}
+
+impl<'a> PrefixedEncodableTypeVertex<'a> for RelationType<'a> {
+    const PREFIX: Prefix = VertexRelationType;
+}
+
+impl<'a> TypeAPI<'a> for RelationType<'a> {
+    type SelfStatic = RelationType<'static>;
+
+    fn new(vertex: TypeVertex<'a>) -> RelationType<'_> {
+        Self::from_vertex(vertex)
+    }
+
+    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+        self.vertex.as_reference()
     }
 
     fn is_abstract<Snapshot: ReadableSnapshot>(

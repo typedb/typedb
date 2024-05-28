@@ -12,6 +12,8 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
+use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
+use encoding::layout::prefix::Prefix::VertexEntityType;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -44,9 +46,12 @@ impl<'a> EntityType<'a> { }
 
 impl<'a> ConceptAPI<'a> for EntityType<'a> {}
 
-impl<'a> TypeAPI<'a> for EntityType<'a> {
-    type SelfStatic = EntityType<'static>;
-    fn new(vertex: TypeVertex<'a>) -> EntityType<'a> {
+impl <'a> PrefixedEncodableTypeVertex<'a> for EntityType<'a> {
+    const PREFIX: Prefix = VertexEntityType;
+}
+impl<'a> EncodableTypeVertex<'a> for EntityType<'a> {
+    fn from_vertex(vertex: TypeVertex<'a>) -> Self {
+        debug_assert!(Self::PREFIX == VertexEntityType);
         if vertex.prefix() != Prefix::VertexEntityType {
             panic!(
                 "Type IID prefix was expected to be Prefix::EntityType ({:?}) but was {:?}",
@@ -57,12 +62,19 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
         EntityType { vertex }
     }
 
-    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
-        self.vertex.as_reference()
-    }
-
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
+    }
+}
+
+impl<'a> TypeAPI<'a> for EntityType<'a> {
+    type SelfStatic = EntityType<'static>;
+    fn new(vertex: TypeVertex<'a>) -> EntityType<'a> {
+        Self::from_vertex(vertex)
+    }
+
+    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+        self.vertex.as_reference()
     }
 
     fn is_abstract<Snapshot: ReadableSnapshot>(

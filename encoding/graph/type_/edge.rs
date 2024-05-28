@@ -23,32 +23,44 @@ pub struct TypeEdge<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
-pub trait EncodableParametrisedTypeEdge<'a, FROM: EncodableTypeVertex<'a>, TO: EncodableTypeVertex<'a>> : Sized {
+pub trait EncodableParametrisedTypeEdge<'a> : Sized {
     const CANONICAL_PREFIX: Prefix;
     const REVERSE_PREFIX: Prefix;
 
-    fn new(from: FROM, to: TO) -> Self;
+    type From: EncodableTypeVertex<'a>;
+    type To: EncodableTypeVertex<'a>;
+
+    fn from_vertices(from: Self::From, to: Self::To) -> Self;
+
+    fn from(&self) -> Self::From;
+    fn to(&self) -> Self::To;
 
     fn decode_canonical_edge(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         let type_edge = TypeEdge::new(bytes);
         debug_assert_eq!(type_edge.prefix(), Self::CANONICAL_PREFIX);
-        Self::new(FROM::new(type_edge.from().into_owned()), TO::new(type_edge.to().into_owned()))
+        Self::from_vertices(Self::From::from_vertex(type_edge.from().into_owned()), Self::To::from_vertex(type_edge.to().into_owned()))
     }
+
     fn decode_reverse_edge(bytes: Bytes<'static, BUFFER_KEY_INLINE>) -> Self {
         let type_edge = TypeEdge::new(bytes);
         debug_assert_eq!(type_edge.prefix(), Self::REVERSE_PREFIX);
-        Self::new(FROM::new(type_edge.to().into_owned()), TO::new(type_edge.from().into_owned()))
+        Self::from_vertices(Self::From::from_vertex(type_edge.to().into_owned()), Self::To::from_vertex(type_edge.from().into_owned()))
     }
 
-    fn to_canonical_type_edge(self) -> TypeEdge<'a> { todo!() }
-    fn to_reverse_type_edge(self) -> TypeEdge<'a> { todo!() }
-
-    fn prefix_for_canonical_edges_from(from: FROM) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
-        TypeEdge::build_prefix_from(Self::CANONICAL_PREFIX, from.to_vertex())
+    fn to_canonical_type_edge(self) -> TypeEdge<'a> {
+        TypeEdge::build(Self::CANONICAL_PREFIX, self.from().into_vertex(), self.to().into_vertex())
     }
 
-    fn prefix_for_reverse_edges_from(from: TO) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
-        TypeEdge::build_prefix_from(Self::REVERSE_PREFIX, from.to_vertex())
+    fn to_reverse_type_edge(self) -> TypeEdge<'a> {
+        TypeEdge::build(Self::REVERSE_PREFIX, self.to().into_vertex(), self.from().into_vertex())
+    }
+
+    fn prefix_for_canonical_edges_from(from: Self::From) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
+        TypeEdge::build_prefix_from(Self::CANONICAL_PREFIX, from.into_vertex())
+    }
+
+    fn prefix_for_reverse_edges_from(from: Self::To) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
+        TypeEdge::build_prefix_from(Self::REVERSE_PREFIX, from.into_vertex())
     }
     fn prefix_for_canonical_edges(
         from_prefix: Prefix,

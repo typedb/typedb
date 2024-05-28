@@ -4,7 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::{EdgeOwnsEncoder, TypeEdge, TypeEdgeEncoder};
+use encoding::graph::type_::edge::{EdgeOwnsEncoder, EncodableParametrisedTypeEdge, TypeEdge, TypeEdgeEncoder};
+use encoding::layout::prefix::Prefix;
 use std::collections::HashSet;
 
 
@@ -22,7 +23,6 @@ use crate::{
     },
 };
 use crate::error::ConceptWriteError;
-use crate::type_::type_manager::encoding_helper::OwnsEncoder;
 use crate::type_::InterfaceImplementation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -126,15 +126,15 @@ impl<'a> Owns<'a> {
         type_manager: &TypeManager<Snapshot>,
         annotation: OwnsAnnotation,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.set_edge_annotation(snapshot, self.clone(), annotation)
-        // match annotation {
-        //     OwnsAnnotation::Distinct(_) => type_manager.storage_set_edge_annotation_distinct(snapshot, self.clone()),
-        //     OwnsAnnotation::Key(_) => type_manager.storage_set_edge_annotation_key(snapshot, self.clone()),
-        //     OwnsAnnotation::Cardinality(cardinality) => {
-        //         type_manager.storage_set_edge_annotation_cardinality(snapshot, self.clone(), cardinality)
-        //     }
-        // }
-        // Ok(()) // TODO
+        // type_manager.set_edge_annotation(snapshot, self.clone(), annotation)
+        match annotation {
+            OwnsAnnotation::Distinct(_) => type_manager.storage_set_edge_annotation_distinct(snapshot, self.clone()),
+            OwnsAnnotation::Key(_) => type_manager.storage_set_edge_annotation_key(snapshot, self.clone()),
+            OwnsAnnotation::Cardinality(cardinality) => {
+                type_manager.storage_set_edge_annotation_cardinality(snapshot, self.clone(), cardinality)
+            }
+        }
+        Ok(()) // TODO
     }
 
     pub fn unset_annotation<Snapshot: WritableSnapshot>(
@@ -185,15 +185,30 @@ impl<'a> IntoCanonicalTypeEdge<'a> for Owns<'a> {
     }
 }
 
+impl<'a> EncodableParametrisedTypeEdge<'a> for Owns<'a> {
+    const CANONICAL_PREFIX: Prefix = Prefix::EdgeOwns;
+    const REVERSE_PREFIX: Prefix = Prefix::EdgeOwnsReverse;
+    type From = ObjectType<'a>;
+    type To = AttributeType<'a>;
+
+    fn from_vertices(from: ObjectType<'a>, to: AttributeType<'a>) -> Self {
+        Owns::new(from, to)
+    }
+
+    fn from(&self) -> Self::From {
+        self.owner()
+    }
+
+    fn to(&self) -> Self::To {
+        self.attribute()
+    }
+}
+
 impl<'a> InterfaceImplementation<'a> for Owns<'a> {
     type AnnotationType = OwnsAnnotation;
     type ObjectType = ObjectType<'a>;
     type InterfaceType = AttributeType<'a>;
-    type Encoder = OwnsEncoder;
 
-    fn new(owner: ObjectType<'a>, attribute: AttributeType<'a>) -> Self {
-        Owns::new(owner, attribute)
-    }
 
     fn object(&self) -> ObjectType<'a> {
         self.owner.clone()

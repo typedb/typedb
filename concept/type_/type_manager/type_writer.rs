@@ -9,7 +9,8 @@ use bytes::byte_array::ByteArray;
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
 use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label, build_property_type_value_type};
 use encoding::{AsBytes, Keyable};
-use encoding::graph::type_::edge::{EdgeRelatesEncoder, EdgeRelatesReverseEncoder, EdgeSubEncoder, EdgeSubReverseEncoder, TypeEdge, TypeEdgeEncoder};
+use encoding::graph::type_::edge::{EdgeRelatesEncoder, EdgeRelatesReverseEncoder, EdgeSubEncoder, EdgeSubReverseEncoder, EncodableParametrisedTypeEdge, TypeEdge, TypeEdgeEncoder};
+use encoding::graph::type_::vertex::EncodableTypeVertex;
 use encoding::layout::prefix::Prefix;
 use encoding::value::label::Label;
 use encoding::value::value_type::{ValueType, ValueTypeBytes};
@@ -18,10 +19,9 @@ use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
 use crate::type_::type_manager::KindAPI;
 use crate::type_::type_manager::type_reader::TypeReader;
-use crate::type_::{InterfaceImplementation, IntoCanonicalTypeEdge, Ordering, serialise_ordering, TypeAPI};
+use crate::type_::{IntoCanonicalTypeEdge, Ordering, serialise_ordering, TypeAPI};
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::relates::Relates;
-use crate::type_::type_manager::encoding_helper::EdgeEncoder;
 
 pub struct TypeWriter<Snapshot: WritableSnapshot> {
     snapshot: PhantomData<Snapshot>,
@@ -110,20 +110,20 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         implementation: IMPL,
     )
     where
-        IMPL: InterfaceImplementation<'static>,
+        IMPL: EncodableParametrisedTypeEdge<'static> + Clone,
     {
-        snapshot.put(IMPL::Encoder::forward_edge(implementation.clone()).into_storage_key().into_owned_array());
-        snapshot.put(IMPL::Encoder::reverse_edge(implementation.clone()).into_storage_key().into_owned_array());
+        snapshot.put(implementation.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
+        snapshot.put(implementation.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_delete_interface_impl<IMPL>(
         snapshot: &mut Snapshot,
         implementation: IMPL,
     )
-        where IMPL: InterfaceImplementation<'static>
+        where IMPL: EncodableParametrisedTypeEdge<'static> + Clone
     {
-        snapshot.delete(IMPL::Encoder::forward_edge(implementation.clone()).into_storage_key().into_owned_array());
-        snapshot.delete(IMPL::Encoder::reverse_edge(implementation.clone()).into_storage_key().into_owned_array());
+        snapshot.delete(implementation.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
+        snapshot.delete(implementation.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
     // TODO: Store just the overridden.to vertex as value

@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use bytes::byte_array::ByteArray;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
@@ -16,6 +17,7 @@ use encoding::{
             build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label,
             build_property_type_ordering, build_property_type_value_type, TypeEdgeProperty, TypeVertexProperty,
         },
+        vertex::EncodableTypeVertex,
     },
     layout::infix::Infix,
     value::{
@@ -30,8 +32,9 @@ use encoding::graph::type_::Kind;
 use iterator::Collector;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
-use encoding::graph::type_::edge::TypeEdgeEncoder;
+use encoding::graph::type_::edge::{EncodableParametrisedTypeEdge, TypeEdgeEncoder};
 use encoding::graph::type_::edge::{EdgeRelatesEncoder, EdgeRelatesReverseEncoder, EdgeSubEncoder, EdgeSubReverseEncoder};
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
 use crate::{
     error::ConceptReadError,
@@ -51,8 +54,8 @@ use crate::{
         IntoCanonicalTypeEdge, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
-use crate::type_::type_manager::encoding_helper::EdgeEncoder;
 use crate::type_::InterfaceImplementation;
+// use crate::type_::InterfaceImplementation;
 
 pub struct TypeReader {}
 
@@ -164,11 +167,11 @@ impl TypeReader {
     where
     IMPL : InterfaceImplementation<'static> + Hash + Eq
     {
-        let owns_prefix = IMPL::Encoder::forward_seek_prefix(IMPL::ObjectType::new(owner.into_vertex()));
+        let owns_prefix = IMPL::prefix_for_canonical_edges_from(IMPL::ObjectType::new(owner.into_vertex()));
         snapshot
             .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
-                IMPL::Encoder::read_from(Bytes::Reference(key.byte_ref()))
+                IMPL::decode_canonical_edge(Bytes::Reference(key.byte_ref()).into_owned())
             })
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
@@ -209,12 +212,12 @@ impl TypeReader {
         implementation: IMPL,
     ) -> Result<Option<IMPL>, ConceptReadError>
     where
-        IMPL : InterfaceImplementation<'static> + Hash + Eq
+        IMPL : EncodableParametrisedTypeEdge<'static> + Hash + Eq
     {
-        let override_property_key = build_property_type_edge_override(implementation.into_type_edge());
+        let override_property_key = build_property_type_edge_override(implementation.to_canonical_type_edge());
         snapshot
             .get_mapped(override_property_key.into_storage_key().as_reference(), |overridden_edge_bytes| {
-                IMPL::Encoder::read_from(Bytes::Reference(overridden_edge_bytes))
+                IMPL::decode_canonical_edge(Bytes::Array(overridden_edge_bytes.into()))
             })
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
@@ -225,11 +228,11 @@ impl TypeReader {
     ) -> Result<HashSet<IMPL>, ConceptReadError>
     where IMPL : InterfaceImplementation<'static> + Hash + Eq
     {
-        let owns_prefix = IMPL::Encoder::reverse_seek_prefix(interface_type);
+        let owns_prefix = IMPL::prefix_for_reverse_edges_from(interface_type);
         snapshot
             .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
-                IMPL::Encoder::read_from(Bytes::Reference(key.byte_ref()))
+                IMPL::decode_reverse_edge(Bytes::Array(key.byte_ref().into()))
             })
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }

@@ -12,6 +12,7 @@ use encoding::{
 };
 use encoding::graph::thing::edge::ThingEdgeRolePlayer;
 use encoding::graph::thing::vertex_attribute::AttributeVertex;
+use encoding::graph::type_::vertex::EncodableTypeVertex;
 use encoding::graph::Typed;
 use storage::snapshot::ReadableSnapshot;
 use crate::error::ConceptReadError;

@@ -12,6 +12,8 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     Prefixed,
 };
+use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
+use encoding::layout::prefix::Prefix::{VertexAttributeType, VertexEntityType};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -26,6 +28,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::entity_type::EntityType;
 use crate::type_::object_type::ObjectType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -37,10 +40,13 @@ impl<'a> AttributeType<'a> { }
 
 impl<'a> ConceptAPI<'a> for AttributeType<'a> {}
 
-impl<'a> TypeAPI<'a> for AttributeType<'a> {
-    type SelfStatic = AttributeType<'static>;
 
-    fn new(vertex: TypeVertex<'a>) -> AttributeType<'a> {
+impl<'a> PrefixedEncodableTypeVertex<'a> for AttributeType<'a> {
+    const PREFIX: Prefix = VertexAttributeType;
+}
+impl<'a> EncodableTypeVertex<'a> for AttributeType<'a> {
+    fn from_vertex(vertex: TypeVertex<'a>) -> Self {
+        debug_assert!(Self::PREFIX == VertexAttributeType);
         if vertex.prefix() != Prefix::VertexAttributeType {
             panic!(
                 "Type IID prefix was expected to be Prefix::AttributeType ({:?}) but was {:?}",
@@ -51,12 +57,20 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         AttributeType { vertex }
     }
 
-    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
-        self.vertex.as_reference()
-    }
-
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
+    }
+}
+
+impl<'a> TypeAPI<'a> for AttributeType<'a> {
+    type SelfStatic = AttributeType<'static>;
+
+    fn new(vertex: TypeVertex<'a>) -> AttributeType<'a> {
+        Self::from_vertex(vertex)
+    }
+
+    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+        self.vertex.as_reference()
     }
 
     fn is_abstract<Snapshot: ReadableSnapshot>(

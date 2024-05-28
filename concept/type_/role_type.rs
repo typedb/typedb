@@ -13,6 +13,7 @@ use encoding::{
     Prefixed,
 };
 use lending_iterator::higher_order::Hkt;
+use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -63,21 +64,30 @@ impl Hkt for RoleType<'static> {
 
 impl<'a> ConceptAPI<'a> for RoleType<'a> {}
 
-impl<'a> TypeAPI<'a> for RoleType<'a> {
-    type SelfStatic = RoleType<'static>;
+impl<'a> PrefixedEncodableTypeVertex<'a> for RoleType<'a> {
+    const PREFIX: Prefix = Prefix::VertexRoleType;
+}
 
-    fn new(vertex: TypeVertex<'a>) -> RoleType<'_> {
+impl<'a> EncodableTypeVertex<'a> for RoleType<'a> {
+    fn from_vertex(vertex: TypeVertex<'a>) -> Self {
         debug_assert_eq!(vertex.prefix(), Prefix::VertexRoleType);
         RoleType { vertex }
-    }
-    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
-        self.vertex.as_reference()
     }
 
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
     }
+}
 
+impl<'a> TypeAPI<'a> for RoleType<'a> {
+    type SelfStatic = RoleType<'static>;
+
+    fn new(vertex: TypeVertex<'a>) -> RoleType<'_> {
+        Self::from_vertex(vertex)
+    }
+    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+        self.vertex.as_reference()
+    }
     fn is_abstract<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
