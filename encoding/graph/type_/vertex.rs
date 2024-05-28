@@ -28,6 +28,36 @@ pub struct TypeVertex<'a> {
 }
 
 // TODO: Refactor into factories: https://github.com/vaticle/typedb/pull/7040#discussion_r1567373838
+
+pub trait EncodableTypeVertex<'a> : Sized {
+    const PREFIX: Prefix;
+    fn new(type_vertex: TypeVertex<'a>) -> Self;
+
+    fn to_vertex(self) -> TypeVertex<'a>;
+
+    fn build(type_id: TypeID) -> Self {
+        Self::new(TypeVertex::build(Self::PREFIX.prefix_id(), type_id))
+    }
+
+    fn decode(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+        Self::new(TypeVertex::new(bytes))
+    }
+
+    fn prefix_for_kind() -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
+        StorageKey::new(
+            TypeVertex::KEYSPACE,
+            // TODO: Can we revert this to being a static const byte reference
+            Bytes::Array(ByteArray::inline(Self::PREFIX.prefix_id().bytes(), TypeVertex::LENGTH_PREFIX))
+        )
+    }
+
+    fn is_of_kind(key: StorageKeyReference<'_>) -> bool {
+        key.keyspace_id() == EncodingKeyspace::Schema.id()
+            && key.length() == TypeVertex::LENGTH
+            && TypeVertex::new(Bytes::Reference(key.byte_ref())).prefix() == Self::PREFIX
+    }
+}
+
 macro_rules! type_vertex_constructors {
     ($new_name:ident, $build_name:ident, $build_name_prefix:ident, $is_name:ident, Prefix::$prefix:ident) => {
         pub fn $new_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> TypeVertex<'_> {

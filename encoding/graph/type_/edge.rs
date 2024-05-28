@@ -15,6 +15,7 @@ use crate::{
     layout::prefix::{Prefix, PrefixID},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::graph::type_::vertex::EncodableTypeVertex;
 
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -22,8 +23,62 @@ pub struct TypeEdge<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
+pub trait EncodableParametrisedTypeEdge<'a, FROM: EncodableTypeVertex<'a>, TO: EncodableTypeVertex<'a>> : Sized {
+    const CANONICAL_PREFIX: Prefix;
+    const REVERSE_PREFIX: Prefix;
 
-// TODO: If we parametrise this with <FROM, TO>, we could implement it for Owns, Plays, Relates instead
+    fn new(from: FROM, to: TO) -> Self;
+
+    fn decode_canonical_edge(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+        let type_edge = TypeEdge::new(bytes);
+        debug_assert_eq!(type_edge.prefix(), Self::CANONICAL_PREFIX);
+        Self::new(FROM::new(type_edge.from().into_owned()), TO::new(type_edge.to().into_owned()))
+    }
+    fn decode_reverse_edge(bytes: Bytes<'static, BUFFER_KEY_INLINE>) -> Self {
+        let type_edge = TypeEdge::new(bytes);
+        debug_assert_eq!(type_edge.prefix(), Self::REVERSE_PREFIX);
+        Self::new(FROM::new(type_edge.to().into_owned()), TO::new(type_edge.from().into_owned()))
+    }
+
+    fn to_canonical_type_edge(self) -> TypeEdge<'a> { todo!() }
+    fn to_reverse_type_edge(self) -> TypeEdge<'a> { todo!() }
+
+    fn prefix_for_canonical_edges_from(from: FROM) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
+        TypeEdge::build_prefix_from(Self::CANONICAL_PREFIX, from.to_vertex())
+    }
+
+    fn prefix_for_reverse_edges_from(from: TO) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
+        TypeEdge::build_prefix_from(Self::REVERSE_PREFIX, from.to_vertex())
+    }
+    fn prefix_for_canonical_edges(
+        from_prefix: Prefix,
+    ) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
+        TypeEdge::build_prefix_prefix(Self::CANONICAL_PREFIX, from_prefix)
+    }
+    fn prefix_for_reverse_edges(
+        from_prefix: Prefix,
+    ) -> StorageKey<'static, { TypeEdge::LENGTH_PREFIX_FROM_PREFIX }> {
+        TypeEdge::build_prefix_prefix(Self::REVERSE_PREFIX, from_prefix)
+    }
+    fn is_canonical_edge
+    (bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+        bytes.length() == TypeEdge::LENGTH && TypeEdge::new(bytes).prefix() == Self::CANONICAL_PREFIX
+    }
+    fn is_reverse_edge
+    (bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+        bytes.length() == TypeEdge::LENGTH && TypeEdge::new(bytes).prefix() == Self::REVERSE_PREFIX
+    }
+}
+
+macro_rules! type_edge_constructor_trait_impl {
+    ($encoder_name:ident, $prefix:ident) => {
+        pub struct $encoder_name { }
+        impl TypeEdgeEncoder for $encoder_name {
+            const PREFIX : Prefix = Prefix::$prefix;
+        }
+    };
+}
+
 pub trait TypeEdgeEncoder {
     const PREFIX: Prefix;
     fn new_edge<'a>(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> TypeEdge<'a> {
@@ -47,15 +102,6 @@ pub trait TypeEdgeEncoder {
     (bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
         bytes.length() == TypeEdge::LENGTH && TypeEdge::new(bytes).prefix() == Self::PREFIX
     }
-}
-
-macro_rules! type_edge_constructor_trait_impl {
-    ($encoder_name:ident, $prefix:ident) => {
-        pub struct $encoder_name { }
-        impl TypeEdgeEncoder for $encoder_name {
-            const PREFIX : Prefix = Prefix::$prefix;
-        }
-    };
 }
 
 type_edge_constructor_trait_impl!(EdgeSubEncoder, EdgeSub);

@@ -4,7 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::{EdgePlaysEncoder, EdgePlaysReverseEncoder, TypeEdge, TypeEdgeEncoder};
+use encoding::graph::type_::edge::{EdgePlaysEncoder, EdgePlaysReverseEncoder, EncodableParametrisedTypeEdge, TypeEdge, TypeEdgeEncoder};
+use encoding::layout::prefix::Prefix;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -67,6 +68,16 @@ impl<'a> IntoCanonicalTypeEdge<'a> for Plays<'a> {
         EdgePlaysEncoder::build_edge(self.player.vertex().clone().into_owned(), self.role.vertex().clone().into_owned())
     }
 }
+
+impl<'a> EncodableParametrisedTypeEdge<'a, ObjectType<'a>, RoleType<'a>> for Plays<'a> {
+    const CANONICAL_PREFIX: Prefix = Prefix::EdgePlays;
+    const REVERSE_PREFIX: Prefix = Prefix::EdgePlaysReverse;
+
+    fn new(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
+        Plays { player, role }
+    }
+}
+
 
 // Can plays not be annotated?
 pub struct __PlaceholderPlaysAnnotation {}
