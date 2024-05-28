@@ -10,12 +10,12 @@ use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
-        type_::vertex::build_vertex_attribute_type,
         Typed,
     },
     value::decode_value_u64,
     AsBytes, Keyable,
 };
+use encoding::graph::type_::vertex::PrefixedEncodableTypeVertex;
 use iterator::State;
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -44,7 +44,7 @@ impl<'a> Attribute<'a> {
     }
 
     pub fn type_(&self) -> AttributeType<'static> {
-        AttributeType::new(build_vertex_attribute_type(self.vertex.type_id_()))
+        AttributeType::from_type_id(self.vertex.type_id_())
     }
 
     pub fn iid(&self) -> ByteReference<'_> {

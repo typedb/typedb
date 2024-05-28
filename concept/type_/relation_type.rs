@@ -7,7 +7,7 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{
-    graph::type_::vertex::{new_vertex_relation_type, TypeVertex},
+    graph::type_::vertex::TypeVertex,
     layout::prefix::Prefix,
     value::label::Label,
     Prefixed,
@@ -395,7 +395,7 @@ impl From<Annotation> for RelationTypeAnnotation {
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_to_relation_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> RelationType<'_> {
-    RelationType::new(new_vertex_relation_type(storage_key.into_bytes()))
+    RelationType::decode(storage_key.into_bytes())
 }
 
 concept_iterator!(RelationTypeIterator, RelationType, storage_key_to_relation_type);

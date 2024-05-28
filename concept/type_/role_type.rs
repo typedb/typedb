@@ -7,7 +7,7 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{
-    graph::type_::vertex::{new_vertex_role_type, TypeVertex},
+    graph::type_::vertex::TypeVertex,
     layout::prefix::Prefix,
     value::label::Label,
     Prefixed,
@@ -290,7 +290,7 @@ impl From<Annotation> for RoleTypeAnnotation {
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_to_role_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> RoleType<'_> {
-    RoleType::new(new_vertex_role_type(storage_key.into_bytes()))
+    RoleType::decode(storage_key.into_bytes())
 }
 
 concept_iterator!(RoleTypeIterator, RoleType, storage_key_to_role_type);

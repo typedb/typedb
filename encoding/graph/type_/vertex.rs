@@ -51,7 +51,7 @@ pub trait EncodableTypeVertex<'a> : Sized {
 pub trait PrefixedEncodableTypeVertex<'a> : EncodableTypeVertex<'a>{
     const PREFIX: Prefix;
 
-    fn build(type_id: TypeID) -> Self {
+    fn from_type_id(type_id: TypeID) -> Self {
         Self::from_vertex(TypeVertex::build(Self::PREFIX.prefix_id(), type_id))
     }
 
@@ -92,35 +92,35 @@ macro_rules! type_vertex_constructors {
         }
     };
 }
-
-type_vertex_constructors!(
-    new_vertex_entity_type,
-    build_vertex_entity_type,
-    build_vertex_entity_type_prefix,
-    is_vertex_entity_type,
-    Prefix::VertexEntityType
-);
-type_vertex_constructors!(
-    new_vertex_relation_type,
-    build_vertex_relation_type,
-    build_vertex_relation_type_prefix,
-    is_vertex_relation_type,
-    Prefix::VertexRelationType
-);
-type_vertex_constructors!(
-    new_vertex_role_type,
-    build_vertex_role_type,
-    build_vertex_role_type_prefix,
-    is_vertex_role_type,
-    Prefix::VertexRoleType
-);
-type_vertex_constructors!(
-    new_vertex_attribute_type,
-    build_vertex_attribute_type,
-    build_vertex_attribute_type_prefix,
-    is_vertex_attribute_type,
-    Prefix::VertexAttributeType
-);
+//
+// type_vertex_constructors!(
+//     new_vertex_entity_type,
+//     build_vertex_entity_type,
+//     build_vertex_entity_type_prefix,
+//     is_vertex_entity_type,
+//     Prefix::VertexEntityType
+// );
+// type_vertex_constructors!(
+//     new_vertex_relation_type,
+//     build_vertex_relation_type,
+//     build_vertex_relation_type_prefix,
+//     is_vertex_relation_type,
+//     Prefix::VertexRelationType
+// );
+// type_vertex_constructors!(
+//     new_vertex_role_type,
+//     build_vertex_role_type,
+//     build_vertex_role_type_prefix,
+//     is_vertex_role_type,
+//     Prefix::VertexRoleType
+// );
+// type_vertex_constructors!(
+//     new_vertex_attribute_type,
+//     build_vertex_attribute_type,
+//     build_vertex_attribute_type_prefix,
+//     is_vertex_attribute_type,
+//     Prefix::VertexAttributeType
+// );
 
 impl<'a> TypeVertex<'a> {
     pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;

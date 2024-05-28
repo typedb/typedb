@@ -11,11 +11,7 @@ use encoding::{
     graph::{
         type_::{
             edge::TypeEdge,
-            vertex::{
-                build_vertex_attribute_type_prefix, build_vertex_entity_type_prefix, build_vertex_relation_type_prefix,
-                build_vertex_role_type_prefix, new_vertex_attribute_type, new_vertex_entity_type,
-                new_vertex_relation_type, new_vertex_role_type, TypeVertex,
-            },
+            vertex::TypeVertex,
         },
         Typed,
     },
@@ -23,7 +19,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use lending_iterator::LendingIterator;
-use encoding::graph::type_::vertex::PrefixedEncodableTypeVertex;
+use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::type_::{
@@ -113,7 +109,7 @@ impl EntityTypeCache {
                 EntityType::PREFIX.fixed_width_keys(),
             ))
             .collect_cloned_hashset(|key, _| {
-                EntityType::new(new_vertex_entity_type(Bytes::Reference(key.byte_ref())).into_owned())
+                EntityType::decode(Bytes::Reference(key.byte_ref()).into_owned())
             })
             .unwrap();
         let max_entity_id = entities.iter().map(|e| e.vertex().type_id_().as_u16()).max().unwrap();
@@ -134,11 +130,11 @@ impl RelationTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<RelationTypeCache>]> {
         let relations = snapshot
             .iterate_range(KeyRange::new_within(
-                build_vertex_relation_type_prefix(),
+                RelationType::prefix_for_kind(),
                 Prefix::VertexRelationType.fixed_width_keys(),
             ))
             .collect_cloned_hashset(|key, _| {
-                RelationType::new(new_vertex_relation_type(Bytes::Reference(key.byte_ref())).into_owned())
+                RelationType::decode(Bytes::Reference(key.byte_ref()).into_owned())
             })
             .unwrap();
         let max_relation_id = relations.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
@@ -159,9 +155,9 @@ impl RelationTypeCache {
 impl AttributeTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<AttributeTypeCache>]> {
         let attributes = snapshot
-            .iterate_range(KeyRange::new_within(build_vertex_attribute_type_prefix(), TypeVertex::FIXED_WIDTH_ENCODING))
+            .iterate_range(KeyRange::new_within(AttributeType::prefix_for_kind(), TypeVertex::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
-                AttributeType::new(new_vertex_attribute_type(Bytes::Reference(key.byte_ref())).into_owned())
+                AttributeType::decode(Bytes::Reference(key.byte_ref()).into_owned())
             })
             .unwrap();
         let max_attribute_id = attributes.iter().map(|a| a.vertex().type_id_().as_u16()).max().unwrap();
@@ -182,9 +178,9 @@ impl AttributeTypeCache {
 impl RoleTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<RoleTypeCache>]> {
         let roles = snapshot
-            .iterate_range(KeyRange::new_within(build_vertex_role_type_prefix(), TypeVertex::FIXED_WIDTH_ENCODING))
+            .iterate_range(KeyRange::new_within(RoleType::prefix_for_kind(), TypeVertex::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
-                RoleType::new(new_vertex_role_type(Bytes::Reference(key.byte_ref())).into_owned())
+                RoleType::decode(Bytes::Reference(key.byte_ref()).into_owned())
             })
             .unwrap();
         let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();

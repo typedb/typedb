@@ -7,10 +7,17 @@
 use std::collections::HashSet;
 
 use encoding::{
-    graph::{thing::vertex_object::ObjectVertex, type_::vertex::build_vertex_entity_type, Typed},
+    graph::{
+        thing::{
+            edge::{ThingEdgeHas, ThingEdgeRelationIndex, ThingEdgeRolePlayer},
+            vertex_object::ObjectVertex,
+        },
+        Typed,
+    },
     layout::prefix::Prefix,
     AsBytes, Keyable, Prefixed,
 };
+use encoding::graph::type_::vertex::PrefixedEncodableTypeVertex;
 use iterator::Collector;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -48,7 +55,7 @@ impl<'a> Entity<'a> {
     }
 
     pub fn type_(&self) -> EntityType<'static> {
-        EntityType::new(build_vertex_entity_type(self.vertex.type_id_()))
+        EntityType::from_type_id(self.vertex.type_id_())
     }
 
     pub fn as_reference(&self) -> Entity<'_> {
