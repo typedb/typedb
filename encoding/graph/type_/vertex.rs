@@ -29,6 +29,14 @@ pub struct TypeVertex<'a> {
 
 // TODO: Refactor into factories: https://github.com/vaticle/typedb/pull/7040#discussion_r1567373838
 
+pub(crate) fn build_type_vertex_prefix_key(prefix: Prefix) -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
+    StorageKey::new(
+        TypeVertex::KEYSPACE,
+        // TODO: Can we revert this to being a static const byte reference
+        Bytes::Array(ByteArray::inline(prefix.prefix_id().bytes(), TypeVertex::LENGTH_PREFIX))
+    )
+}
+
 pub trait EncodableTypeVertex<'a> : Sized {
 
     fn from_vertex(vertex: TypeVertex<'a>) -> Self;
@@ -48,11 +56,7 @@ pub trait PrefixedEncodableTypeVertex<'a> : EncodableTypeVertex<'a>{
     }
 
     fn prefix_for_kind() -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
-        StorageKey::new(
-            TypeVertex::KEYSPACE,
-            // TODO: Can we revert this to being a static const byte reference
-            Bytes::Array(ByteArray::inline(Self::PREFIX.prefix_id().bytes(), TypeVertex::LENGTH_PREFIX))
-        )
+        build_type_vertex_prefix_key(Self::PREFIX)
     }
 
     fn is_of_kind(key: StorageKeyReference<'_>) -> bool {
@@ -130,7 +134,7 @@ impl<'a> TypeVertex<'a> {
         TypeVertex { bytes }
     }
 
-    fn build(prefix: PrefixID, type_id: TypeID) -> Self {
+    pub(crate) fn build(prefix: PrefixID, type_id: TypeID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());

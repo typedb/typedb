@@ -23,6 +23,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use lending_iterator::LendingIterator;
+use encoding::graph::type_::vertex::PrefixedEncodableTypeVertex;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::type_::{
@@ -34,7 +35,7 @@ use crate::type_::{
     relates::Relates,
     relation_type::RelationType,
     role_type::RoleType,
-    type_manager::{KindAPI, TypeManager},
+    type_manager::KindAPI,
     type_manager::type_reader::TypeReader,
     Ordering, OwnerAPI, PlayerAPI, TypeAPI,
 };
@@ -108,8 +109,8 @@ impl EntityTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<EntityTypeCache>]> {
         let entities = snapshot
             .iterate_range(KeyRange::new_within(
-                build_vertex_entity_type_prefix(),
-                Prefix::VertexEntityType.fixed_width_keys(),
+                EntityType::prefix_for_kind(),
+                EntityType::PREFIX.fixed_width_keys(),
             ))
             .collect_cloned_hashset(|key, _| {
                 EntityType::new(new_vertex_entity_type(Bytes::Reference(key.byte_ref())).into_owned())

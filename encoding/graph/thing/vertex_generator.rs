@@ -28,7 +28,7 @@ use crate::{
             vertex_object::{ObjectID, ObjectVertex},
         },
         type_::vertex::{
-            build_vertex_entity_type_prefix, build_vertex_relation_type_prefix, TypeID, TypeIDUInt, TypeVertex,
+            TypeID, TypeIDUInt, TypeVertex, build_type_vertex_prefix_key,
         },
         Typed,
     },
@@ -81,14 +81,14 @@ impl ThingVertexGenerator {
         let read_snapshot = storage.clone().open_snapshot_read();
         let entity_types = read_snapshot
             .iterate_range(KeyRange::new_within(
-                build_vertex_entity_type_prefix(),
+                build_type_vertex_prefix_key(Prefix::VertexEntityType),
                 Prefix::VertexEntityType.fixed_width_keys(),
             ))
             .collect_cloned_vec(|k, _v| TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16())
             .map_err(|err| EncodingError::ExistingTypesRead { source: err })?;
         let relation_types = read_snapshot
             .iterate_range(KeyRange::new_within(
-                build_vertex_relation_type_prefix(),
+                build_type_vertex_prefix_key(Prefix::VertexRelationType),
                 Prefix::VertexRelationType.fixed_width_keys(),
             ))
             .collect_cloned_vec(|k, _v| TypeVertex::new(Bytes::Reference(k.byte_ref())).type_id_().as_u16())
