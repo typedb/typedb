@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::{EncodableParametrisedTypeEdge, TypeEdge, TypeEdgeEncoder};
+use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
 use encoding::layout::prefix::Prefix;
 use std::collections::HashSet;
 

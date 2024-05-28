@@ -32,7 +32,7 @@ use encoding::graph::type_::Kind;
 use iterator::Collector;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
-use encoding::graph::type_::edge::{EncodableParametrisedTypeEdge, TypeEdgeEncoder};
+use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
 
 use crate::{
     error::ConceptReadError,

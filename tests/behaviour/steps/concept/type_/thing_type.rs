@@ -339,13 +339,14 @@ pub async fn unset_owns(context: &mut Context, root_label: RootLabel, type_label
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns: {type_label}; set override: {type_label}")]
+#[step(expr = "{root_label}\\({type_label}\\) get owns: {type_label}; set override: {type_label}(; ){may_error}")]
 pub async fn get_owns_set_override(
     context: &mut Context,
     root_label: RootLabel,
     type_label: Label,
     attr_type_label: Label,
     overridden_type_label: Label,
+    may_error: MayError
 ) {
     let owner = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
@@ -360,7 +361,8 @@ pub async fn get_owns_set_override(
             .get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, overridden_attr_type)
             .unwrap()
             .unwrap();
-        owns.set_override(&mut tx.snapshot, &tx.type_manager, overridden_owns).unwrap();
+        let res = owns.set_override(&mut tx.snapshot, &tx.type_manager, overridden_owns);
+        may_error.check(&res);
     });
 }
 

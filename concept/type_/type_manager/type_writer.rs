@@ -9,7 +9,7 @@ use bytes::byte_array::ByteArray;
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
 use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label, build_property_type_value_type};
 use encoding::{AsBytes, Keyable};
-use encoding::graph::type_::edge::{EncodableParametrisedTypeEdge, TypeEdge, TypeEdgeEncoder};
+use encoding::graph::type_::edge::{EncodableParametrisedTypeEdge, TypeEdge};
 use encoding::graph::type_::vertex::EncodableTypeVertex;
 use encoding::layout::prefix::Prefix;
 use encoding::value::label::Label;
