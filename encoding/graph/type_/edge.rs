@@ -23,6 +23,7 @@ pub struct TypeEdge<'a> {
 }
 
 
+// TODO: If we parametrise this with <FROM, TO>, we could implement it for Owns, Plays, Relates instead
 pub trait TypeEdgeEncoder {
     const PREFIX: Prefix;
     fn new_edge<'a>(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> TypeEdge<'a> {

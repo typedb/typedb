@@ -365,7 +365,7 @@ pub async fn get_owns_set_override(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns: {type_label}, set annotation: {annotation}; fails")]
+#[step(expr = "{root_label}\\({type_label}\\) get owns: {type_label}, set annotation: {annotation}(; ){may_error}")]
 pub async fn get_owns_set_annotation(
     context: &mut Context,
     root_label: RootLabel,
