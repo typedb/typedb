@@ -6,12 +6,12 @@
 
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::{Arc, Mutex};
-use crate::conjunction::Conjunction;
-use crate::context::PatternContext;
-use crate::disjunction::Disjunction;
-use crate::negation::Negation;
-use crate::optional::Optional;
-use crate::ScopeId;
+use crate::pattern::conjunction::Conjunction;
+use crate::pattern::context::PatternContext;
+use crate::pattern::disjunction::Disjunction;
+use crate::pattern::negation::Negation;
+use crate::pattern::optional::Optional;
+use crate::pattern::ScopeId;
 
 #[derive(Debug)]
 pub(crate) struct Patterns {

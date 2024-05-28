@@ -7,9 +7,10 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use itertools::Itertools;
-
-use crate::{PatternDefinitionError, Scope, ScopeId};
-use crate::variable::{Variable, VariableCategory};
+use crate::pattern::{Scope, ScopeId};
+use crate::pattern::constraint::Constraint;
+use crate::pattern::variable::{Variable, VariableCategory};
+use crate::PatternDefinitionError;
 
 #[derive(Debug)]
 pub struct PatternContext {
@@ -21,7 +22,7 @@ pub struct PatternContext {
     scope_id_allocator: u16,
     scope_parents: HashMap<ScopeId, ScopeId>,
 
-    variable_categories: HashMap<Variable, VariableCategory>,
+    variable_categories: HashMap<Variable, (VariableCategory, Constraint)>,
 }
 
 impl PatternContext {
@@ -94,27 +95,35 @@ impl PatternContext {
         &mut self,
         variable: Variable,
         category: VariableCategory,
+        source: Constraint,
     ) -> Result<(), PatternDefinitionError> {
-        let mut existing_type = self.variable_categories.get_mut(&variable);
-        match existing_type {
+        let mut existing_category = self.variable_categories.get_mut(&variable);
+        match existing_category {
             None => {
-                self.variable_categories.insert(variable, category);
+                self.variable_categories.insert(variable, (category, source));
                 Ok(())
             }
-            Some(existing) => {
-                let narrowest = existing.narrowest(category);
+            Some((existing_category, existing_source)) => {
+                let narrowest = existing_category.narrowest(category);
                 match narrowest {
                     None => {
                         Err(PatternDefinitionError::VariableCategoryMismatch {
                             variable,
                             variable_name: self.variable_names.get(&variable).cloned(),
                             category_1: category,
-                            category_2: *existing,
+                            category_1_source: source,
+                            category_2: *existing_category,
+                            category_2_source: existing_source.clone(),
                         })
                     }
                     Some(narrowed) => {
-                        *existing =  narrowed;
-                        Ok(())
+                        if narrowed == *existing_category {
+                            Ok(())
+                        } else {
+                            *existing_category = narrowed;
+                            *existing_source = source;
+                            Ok(())
+                        }
                     }
                 }
             }
@@ -142,7 +151,7 @@ impl Display for PatternContext {
         }
         writeln!(f, "Variable categories:")?;
         for entry in self.variable_categories.iter().sorted_by_key(|e| e.0) {
-            writeln!(f, "  {}: {}", entry.0, entry.1)?;
+            writeln!(f, "  {}: {}", entry.0, entry.1.0)?;
         }
         Ok(())
     }

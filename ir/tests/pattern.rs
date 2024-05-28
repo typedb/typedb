@@ -4,9 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use ir::conjunction::Conjunction;
+use ir::pattern::conjunction::Conjunction;
+use ir::pattern::variable::VariableCategory;
 use ir::PatternDefinitionError;
-use ir::variable::VariableCategory;
 
 #[test]
 fn build_conjunction_constraints() {
@@ -29,9 +29,7 @@ fn variable_category_mismatch() {
     let mut conjunction = Conjunction::new_root();
 
     let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
-    let var_name = conjunction.get_or_declare_variable(&"name").unwrap();
     let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
-    let var_name_type = conjunction.get_or_declare_variable(&"name_type").unwrap();
 
     let result = conjunction.constraints().add_isa(var_person, var_person_type);
     assert!(result.is_ok());

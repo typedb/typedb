@@ -6,11 +6,13 @@
 
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::{Arc, Mutex};
-use crate::context::PatternContext;
-use crate::expression::Expression;
-use crate::function::FunctionCall;
-use crate::{PatternDefinitionError, ScopeId};
-use crate::variable::{Variable, VariableCategory};
+
+use crate::pattern::context::PatternContext;
+use crate::pattern::expression::Expression;
+use crate::pattern::function::FunctionCall;
+use crate::pattern::ScopeId;
+use crate::pattern::variable::{Variable, VariableCategory};
+use crate::PatternDefinitionError;
 
 #[derive(Debug)]
 pub struct Constraints {
@@ -30,8 +32,8 @@ impl Constraints {
 
     pub fn add_type(&mut self, variable: Variable, type_: &str) -> Result<&Type, PatternDefinitionError> {
         debug_assert!(self.context.lock().unwrap().is_variable_available(self.scope, variable));
-        self.context.lock().unwrap().set_variable_category(variable, VariableCategory::Type)?;
         let type_ = Type::new(variable, type_.to_string());
+        self.context.lock().unwrap().set_variable_category(variable, VariableCategory::Type, type_.clone().into())?;
         self.constraints.push(type_.into());
         Ok(self.constraints.last().unwrap().as_type().unwrap())
     }
@@ -39,11 +41,11 @@ impl Constraints {
     pub fn add_isa(&mut self, thing: Variable, type_: Variable) -> Result<&Isa, PatternDefinitionError> {
         debug_assert!(
             self.context.lock().unwrap().is_variable_available(self.scope, thing) &&
-            self.context.lock().unwrap().is_variable_available(self.scope, type_)
+                self.context.lock().unwrap().is_variable_available(self.scope, type_)
         );
-        self.context.lock().unwrap().set_variable_category(thing, VariableCategory::Thing)?;
-        self.context.lock().unwrap().set_variable_category(type_, VariableCategory::Type)?;
         let isa = Isa::new(thing, type_);
+        self.context.lock().unwrap().set_variable_category(thing, VariableCategory::Thing, isa.clone().into())?;
+        self.context.lock().unwrap().set_variable_category(type_, VariableCategory::Type, isa.clone().into())?;
         self.constraints.push(isa.into());
         Ok(self.constraints.last().unwrap().as_isa().unwrap())
     }
@@ -53,9 +55,9 @@ impl Constraints {
             self.context.lock().unwrap().is_variable_available(self.scope, owner) &&
                 self.context.lock().unwrap().is_variable_available(self.scope, attribute)
         );
-        self.context.lock().unwrap().set_variable_category(owner, VariableCategory::Object)?;
-        self.context.lock().unwrap().set_variable_category(attribute, VariableCategory::Attribute)?;
         let has = Has::new(owner, attribute);
+        self.context.lock().unwrap().set_variable_category(owner, VariableCategory::Object, has.clone().into())?;
+        self.context.lock().unwrap().set_variable_category(attribute, VariableCategory::Attribute, has.clone().into())?;
         self.constraints.push(has.into());
         Ok(self.constraints.last().unwrap().as_has().unwrap())
     }
@@ -64,13 +66,13 @@ impl Constraints {
 impl Display for Constraints {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for constraint in &self.constraints {
-            writeln!(f, "{:>width$};", constraint, width=f.width().unwrap_or(0))?;
+            writeln!(f, "{:>width$};", constraint, width = f.width().unwrap_or(0))?;
         }
         Ok(())
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Constraint {
     Type(Type),
     Isa(Isa),
@@ -135,20 +137,20 @@ impl Display for Constraint {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Constraint::Type(constraint) => Display::fmt(constraint, f),
-            Constraint::Isa(constraint) =>Display::fmt(constraint, f),
-            Constraint::RolePlayer(constraint) =>Display::fmt(constraint, f),
+            Constraint::Isa(constraint) => Display::fmt(constraint, f),
+            Constraint::RolePlayer(constraint) => Display::fmt(constraint, f),
             Constraint::Has(constraint) => Display::fmt(constraint, f),
-            Constraint::ExpressionAssignment(constraint) =>Display::fmt(constraint, f),
+            Constraint::ExpressionAssignment(constraint) => Display::fmt(constraint, f),
             Constraint::InAssignment(constraint) => Display::fmt(constraint, f),
             Constraint::Comparison(constraint) => Display::fmt(constraint, f),
         }
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Type {
     var: Variable,
-    type_: String
+    type_: String,
 }
 
 impl Type {
@@ -175,7 +177,7 @@ impl Display for Type {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Isa {
     thing: Variable,
     type_: Variable,
@@ -203,11 +205,11 @@ impl Display for Isa {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct RolePlayer {
     relation: Variable,
     player: Variable,
-    role_type: Option<Variable>
+    role_type: Option<Variable>,
 }
 
 impl RolePlayer {
@@ -238,15 +240,15 @@ impl Display for RolePlayer {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Has {
     owner: Variable,
-    attribute: Variable
+    attribute: Variable,
 }
 
 impl Has {
     fn new(owner: Variable, attribute: Variable) -> Self {
-        Has { owner , attribute }
+        Has { owner, attribute }
     }
 
     pub fn variables(&self) -> impl Iterator<Item=Variable> {
@@ -267,7 +269,7 @@ impl Display for Has {
 }
 
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ExpressionAssignment {
     variables: Vec<Variable>,
     expression: Expression,
@@ -279,7 +281,7 @@ impl Display for ExpressionAssignment {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct InAssignment {
     variables: Vec<Variable>,
     function: Arc<FunctionCall>,
@@ -291,7 +293,7 @@ impl Display for InAssignment {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Comparison {
     lhs: Variable,
     rhs: Variable,

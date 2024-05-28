@@ -6,50 +6,13 @@
 
 use std::error::Error;
 use std::fmt;
-use std::fmt::{Display, Formatter};
-use crate::constraint::Constraint;
+use std::fmt::Display;
+use crate::pattern::constraint::Constraint;
 
-use crate::variable::{Variable, VariableCategory};
+use crate::pattern::variable::{Variable, VariableCategory};
 
-pub mod variable;
-pub mod optional;
-pub mod negation;
-pub mod constraint;
-pub mod conjunction;
-
-pub mod disjunction;
-mod expression;
-mod function;
-pub mod context;
-mod pattern;
-
-
-trait Scope {
-    fn scope_id(&self) -> ScopeId;
-
-    // fn add_parent_variable(&mut self, variable: Variable);
-}
-
-
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
-pub struct ScopeId {
-    id: u16,
-    // TODO: retain line/character from original query at which point this scope started
-}
-
-impl ScopeId {
-    pub const ROOT: ScopeId = ScopeId { id: 0 };
-
-    fn new(id: u16) -> Self {
-        ScopeId { id }
-    }
-}
-
-impl Display for ScopeId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "[{}]", self.id)
-    }
-}
+pub mod pattern;
+mod inference;
 
 
 #[derive(Debug)]
@@ -59,7 +22,9 @@ pub enum PatternDefinitionError {
         variable: Variable,
         variable_name: Option<String>,
         category_1: VariableCategory,
+        category_1_source: Constraint,
         category_2: VariableCategory,
+        category_2_source: Constraint,
     },
 }
 
@@ -73,7 +38,7 @@ impl Error for PatternDefinitionError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::DisjointVariableReuse { .. } => None,
-            PatternDefinitionError::VariableCategoryMismatch { .. } => None,
+            Self::VariableCategoryMismatch { .. } => None,
         }
     }
 }

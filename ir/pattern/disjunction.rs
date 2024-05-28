@@ -6,9 +6,9 @@
 
 use std::fmt::{Display, Formatter};
 use std::sync::{Arc, Mutex};
-use crate::{Scope, ScopeId};
-use crate::context::PatternContext;
-use crate::variable::Variable;
+use crate::pattern::context::PatternContext;
+use crate::pattern::{Scope, ScopeId};
+use crate::pattern::variable::Variable;
 
 #[derive(Debug)]
 pub(crate) struct Disjunction {

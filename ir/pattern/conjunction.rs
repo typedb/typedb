@@ -4,15 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::sync::{Arc, Mutex};
+use crate::pattern::constraint::Constraints;
+use crate::pattern::context::PatternContext;
+use crate::pattern::pattern::Patterns;
+use crate::pattern::{Scope, ScopeId};
+use crate::pattern::variable::Variable;
+use crate::PatternDefinitionError;
 
-use crate::{PatternDefinitionError, Scope, ScopeId};
-use crate::constraint::Constraints;
-use crate::context::PatternContext;
-use crate::pattern::Patterns;
-use crate::variable::Variable;
 
 #[derive(Debug)]
 pub struct Conjunction {

@@ -5,32 +5,25 @@
  */
 
 use std::fmt::{Display, Formatter};
-use crate::conjunction::Conjunction;
-use crate::negation::Negation;
-use crate::{Scope, ScopeId};
-use crate::variable::Variable;
+use crate::pattern::{Scope, ScopeId};
 
-#[derive(Debug)]
-pub struct Optional {
+
+#[derive(Debug, Eq, PartialEq)]
+pub(crate) struct Negation {
+
 }
 
-impl Optional {
-}
+impl Negation {
 
-impl Optional {
-    pub(crate) fn variables(&self) -> Box<dyn Iterator<Item=Variable>> {
-        todo!()
-    }
 }
-
-impl Scope for Optional {
+impl Scope for Negation {
     fn scope_id(&self) -> ScopeId {
         todo!()
     }
 
 }
 
-impl Display for Optional {
+impl Display for Negation {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }
