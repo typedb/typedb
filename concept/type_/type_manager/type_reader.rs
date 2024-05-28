@@ -51,7 +51,7 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::KindAPI,
-        IntoCanonicalTypeEdge, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 use crate::type_::InterfaceImplementation;
@@ -385,9 +385,9 @@ impl TypeReader {
     // TODO: this is currently breaking our architectural pattern that none of the Manager methods should operate graphs
     pub(crate) fn get_type_edge_annotations<'a>(
         snapshot: &impl ReadableSnapshot,
-        into_type_edge: impl IntoCanonicalTypeEdge<'a>,
+        into_type_edge: impl EncodableParametrisedTypeEdge<'a>,
     ) -> Result<HashSet<Annotation>, ConceptReadError> {
-        let type_edge = into_type_edge.into_type_edge();
+        let type_edge = into_type_edge.to_canonical_type_edge();
         snapshot
             .iterate_range(KeyRange::new_inclusive(
                 TypeEdgeProperty::build(type_edge.clone(), Infix::ANNOTATION_MIN).into_storage_key(),
@@ -437,7 +437,7 @@ impl TypeReader {
     ) -> Result<Ordering, ConceptReadError> {
         let ordering = snapshot
             .get_mapped(
-                build_property_type_edge_ordering(owns.into_type_edge()).into_storage_key().as_reference(),
+                build_property_type_edge_ordering(owns.to_canonical_type_edge()).into_storage_key().as_reference(),
                 deserialise_ordering,
             )
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;

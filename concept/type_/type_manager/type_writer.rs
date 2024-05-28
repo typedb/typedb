@@ -19,7 +19,7 @@ use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
 use crate::type_::type_manager::KindAPI;
 use crate::type_::type_manager::type_reader::TypeReader;
-use crate::type_::{IntoCanonicalTypeEdge, Ordering, serialise_ordering, TypeAPI};
+use crate::type_::{Ordering, serialise_ordering, TypeAPI};
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::relates::Relates;
 
@@ -133,11 +133,11 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         overridden: E
         // canonical_overridden_to: impl TypeAPI<'static>,
     )
-    where E: IntoCanonicalTypeEdge<'static>
+    where E: EncodableParametrisedTypeEdge<'static>
     {
         let property_key =
-            build_property_type_edge_override(edge.into_type_edge()).into_storage_key().into_owned_array();
-        let overridden_to_vertex = ByteArray::copy(overridden.into_type_edge().into_bytes().bytes());
+            build_property_type_edge_override(edge.to_canonical_type_edge()).into_storage_key().into_owned_array();
+        let overridden_to_vertex = ByteArray::copy(overridden.to_canonical_type_edge().into_bytes().bytes());
         snapshot.put_val(property_key, overridden_to_vertex);
     }
 

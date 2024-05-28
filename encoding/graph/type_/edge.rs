@@ -119,11 +119,11 @@ pub trait TypeEdgeEncoder {
 type_edge_constructor_trait_impl!(EdgeSubEncoder, EdgeSub);
 type_edge_constructor_trait_impl!(EdgeSubReverseEncoder, EdgeSubReverse);
 
-type_edge_constructor_trait_impl!(EdgeOwnsEncoder,EdgeOwns);
-type_edge_constructor_trait_impl!(EdgeOwnsReverseEncoder,EdgeOwnsReverse);
-
-type_edge_constructor_trait_impl!(EdgePlaysEncoder, EdgePlays);
-type_edge_constructor_trait_impl!(EdgePlaysReverseEncoder, EdgePlaysReverse);
+// type_edge_constructor_trait_impl!(EdgeOwnsEncoder,EdgeOwns);
+// type_edge_constructor_trait_impl!(EdgeOwnsReverseEncoder,EdgeOwnsReverse);
+//
+// type_edge_constructor_trait_impl!(EdgePlaysEncoder, EdgePlays);
+// type_edge_constructor_trait_impl!(EdgePlaysReverseEncoder, EdgePlaysReverse);
 
 type_edge_constructor_trait_impl!(EdgeRelatesEncoder, EdgeRelates);
 type_edge_constructor_trait_impl!(EdgeRelatesReverseEncoder, EdgeRelatesReverse);

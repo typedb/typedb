@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::{EdgeOwnsEncoder, EncodableParametrisedTypeEdge, TypeEdge, TypeEdgeEncoder};
+use encoding::graph::type_::edge::{EncodableParametrisedTypeEdge, TypeEdge, TypeEdgeEncoder};
 use encoding::layout::prefix::Prefix;
 use std::collections::HashSet;
 
@@ -19,7 +19,7 @@ use crate::{
         attribute_type::AttributeType,
         object_type::ObjectType,
         type_manager::TypeManager,
-        IntoCanonicalTypeEdge, Ordering, TypeAPI,
+        Ordering, TypeAPI,
     },
 };
 use crate::error::ConceptWriteError;
@@ -159,7 +159,7 @@ impl<'a> Owns<'a> {
         type_manager: &TypeManager<Snapshot>,
         ordering: Ordering,
     ) {
-        type_manager.set_owns_ordering(snapshot, self.clone().into_type_edge(), ordering)
+        type_manager.set_owns_ordering(snapshot, self.clone().to_canonical_type_edge(), ordering)
     }
 
     pub fn get_ordering<Snapshot: ReadableSnapshot>(
@@ -172,16 +172,6 @@ impl<'a> Owns<'a> {
 
     fn into_owned(self) -> Owns<'static> {
         Owns { owner: ObjectType::new(self.owner.vertex().into_owned()), attribute: self.attribute.into_owned() }
-    }
-}
-
-impl<'a> IntoCanonicalTypeEdge<'a> for Owns<'a> {
-    fn as_type_edge(&self) -> TypeEdge<'static> {
-        EdgeOwnsEncoder::build_edge(self.owner.vertex().clone().into_owned(), self.attribute.vertex().clone().into_owned())
-    }
-
-    fn into_type_edge(self) -> TypeEdge<'static> {
-        EdgeOwnsEncoder::build_edge(self.owner.vertex().clone().into_owned(), self.attribute.vertex().clone().into_owned())
     }
 }
 

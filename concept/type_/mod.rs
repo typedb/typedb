@@ -216,17 +216,7 @@ pub enum Ordering {
     Ordered,
 }
 
-pub(crate) trait IntoCanonicalTypeEdge<'a> {
-    fn as_type_edge(&self) -> TypeEdge<'static>;
-
-    fn into_type_edge(self) -> TypeEdge<'static>;
-}
-
-// pub(crate) trait InterfaceDefinition {
-//
-// }
-
-pub(crate) trait InterfaceImplementation<'a> : IntoCanonicalTypeEdge<'a>+ Sized + Clone  + EncodableParametrisedTypeEdge<'a, From=Self::ObjectType, To=Self::InterfaceType>
+pub(crate) trait InterfaceImplementation<'a> : EncodableParametrisedTypeEdge<'a, From=Self::ObjectType, To=Self::InterfaceType> + Sized + Clone
 {
     type AnnotationType;
     type ObjectType: TypeAPI<'a>;

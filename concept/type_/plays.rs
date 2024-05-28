@@ -4,14 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::{EdgePlaysEncoder, EdgePlaysReverseEncoder, EncodableParametrisedTypeEdge, TypeEdge, TypeEdgeEncoder};
+use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
 use encoding::layout::prefix::Prefix;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::ConceptReadError,
-    type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, IntoCanonicalTypeEdge, TypeAPI},
+    type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, TypeAPI},
 };
 use crate::error::ConceptWriteError;
 use crate::type_::InterfaceImplementation;
@@ -55,16 +55,6 @@ impl<'a> Plays<'a> {
 
     fn into_owned(self) -> Plays<'static> {
         Plays { player: ObjectType::new(self.player.vertex().into_owned()), role: self.role.into_owned() }
-    }
-}
-
-impl<'a> IntoCanonicalTypeEdge<'a> for Plays<'a> {
-    fn as_type_edge(&self) -> TypeEdge<'static> {
-        EdgePlaysEncoder::build_edge(self.player.vertex().clone().into_owned(), self.role.vertex().clone().into_owned())
-    }
-
-    fn into_type_edge(self) -> TypeEdge<'static> {
-        EdgePlaysEncoder::build_edge(self.player.vertex().clone().into_owned(), self.role.vertex().clone().into_owned())
     }
 }
 
