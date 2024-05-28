@@ -4,7 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::type_::{relation_type::RelationType, role_type::RoleType};
+use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
+use encoding::layout::prefix::Prefix;
+use crate::type_::{relation_type::RelationType, role_type::RoleType, TypeAPI};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Relates<'a> {
@@ -23,5 +25,24 @@ impl<'a> Relates<'a> {
 
     pub fn role(&self) -> RoleType<'a> {
         self.role.clone()
+    }
+}
+
+impl<'a> EncodableParametrisedTypeEdge<'a> for Relates<'a> {
+    const CANONICAL_PREFIX: Prefix = Prefix::EdgeRelates;
+    const REVERSE_PREFIX: Prefix = Prefix::EdgeRelatesReverse;
+    type From = RelationType<'a>;
+    type To = RoleType<'a>;
+
+    fn from_vertices(from: RelationType<'a>, to: RoleType<'a>) -> Self {
+        Self::new(from, to)
+    }
+
+    fn canonical_from(&self) -> Self::From {
+        self.relation()
+    }
+
+    fn canonical_to(&self) -> Self::To {
+        self.role()
     }
 }

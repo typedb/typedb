@@ -68,11 +68,11 @@ impl<'a> EncodableParametrisedTypeEdge<'a> for Plays<'a> {
         Plays { player, role }
     }
 
-    fn from(&self) -> Self::From {
+    fn canonical_from(&self) -> Self::From {
         self.player()
     }
 
-    fn to(&self) -> Self::To {
+    fn canonical_to(&self) -> Self::To {
         self.role()
     }
 }

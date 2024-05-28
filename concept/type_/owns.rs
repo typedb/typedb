@@ -185,11 +185,11 @@ impl<'a> EncodableParametrisedTypeEdge<'a> for Owns<'a> {
         Owns::new(from, to)
     }
 
-    fn from(&self) -> Self::From {
+    fn canonical_from(&self) -> Self::From {
         self.owner()
     }
 
-    fn to(&self) -> Self::To {
+    fn canonical_to(&self) -> Self::To {
         self.attribute()
     }
 }

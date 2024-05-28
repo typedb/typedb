@@ -4,30 +4,43 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::marker::PhantomData;
 use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
 use encoding::layout::prefix::Prefix;
-use crate::type_::type_manager::KindAPI;
+use crate::type_::TypeAPI;
 
-//
-// pub struct EdgeSub<'a, T: KindAPI<'a>> {
-//     t: PhantomData<T>,
-// }
-// impl<'a, T: KindAPI<'static>> EncodableParametrisedTypeEdge<'a> for EdgeSub<T> {
-//     const CANONICAL_PREFIX: Prefix = Prefix::EdgeSub;
-//     const REVERSE_PREFIX: Prefix = Prefix::EdgeSubReverse;
-//     type From = T;
-//     type To = T;
-//
-//     fn from_vertices(from: T, to: T) -> Self {
-//         todo!()
-//     }
-//
-//     fn from(&self) -> Self::From {
-//         todo!()
-//     }
-//
-//     fn to(&self) -> Self::To {
-//         todo!()
-//     }
-// }
+
+#[derive(Clone)]
+pub struct EdgeSub<T> {
+    subtype: T,
+    supertype: T,
+}
+
+impl<'a, T: TypeAPI<'a>> EdgeSub<T> {
+
+    pub(crate) fn subtype(&self) -> T {
+        self.subtype.clone()
+    }
+
+    pub(crate) fn supertype(&self) -> T {
+        self.supertype.clone()
+    }
+}
+
+impl<'a, T: TypeAPI<'a>> EncodableParametrisedTypeEdge<'a> for EdgeSub<T> {
+    const CANONICAL_PREFIX: Prefix = Prefix::EdgeSub;
+    const REVERSE_PREFIX: Prefix = Prefix::EdgeSubReverse;
+    type From = T;
+    type To = T;
+
+    fn from_vertices(from: T, to: T) -> Self {
+        EdgeSub { subtype: from, supertype: to,  }
+    }
+
+    fn canonical_from(&self) -> Self::From {
+        self.subtype()
+    }
+
+    fn canonical_to(&self) -> Self::To {
+        self.supertype()
+    }
+}

@@ -32,8 +32,8 @@ pub trait EncodableParametrisedTypeEdge<'a> : Sized {
 
     fn from_vertices(from: Self::From, to: Self::To) -> Self;
 
-    fn from(&self) -> Self::From;
-    fn to(&self) -> Self::To;
+    fn canonical_from(&self) -> Self::From;
+    fn canonical_to(&self) -> Self::To;
 
     fn decode_canonical_edge(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         let type_edge = TypeEdge::new(bytes);
@@ -48,11 +48,11 @@ pub trait EncodableParametrisedTypeEdge<'a> : Sized {
     }
 
     fn to_canonical_type_edge(self) -> TypeEdge<'a> {
-        TypeEdge::build(Self::CANONICAL_PREFIX, self.from().into_vertex(), self.to().into_vertex())
+        TypeEdge::build(Self::CANONICAL_PREFIX, self.canonical_from().into_vertex(), self.canonical_to().into_vertex())
     }
 
     fn to_reverse_type_edge(self) -> TypeEdge<'a> {
-        TypeEdge::build(Self::REVERSE_PREFIX, self.to().into_vertex(), self.from().into_vertex())
+        TypeEdge::build(Self::REVERSE_PREFIX, self.canonical_to().into_vertex(), self.canonical_from().into_vertex())
     }
 
     fn prefix_for_canonical_edges_from(from: Self::From) -> StorageKey<'a, { TypeEdge::LENGTH_PREFIX_FROM }> {
@@ -116,8 +116,8 @@ pub trait TypeEdgeEncoder {
     }
 }
 
-type_edge_constructor_trait_impl!(EdgeSubEncoder, EdgeSub);
-type_edge_constructor_trait_impl!(EdgeSubReverseEncoder, EdgeSubReverse);
+// type_edge_constructor_trait_impl!(EdgeSubEncoder, EdgeSub);
+// type_edge_constructor_trait_impl!(EdgeSubReverseEncoder, EdgeSubReverse);
 
 // type_edge_constructor_trait_impl!(EdgeOwnsEncoder,EdgeOwns);
 // type_edge_constructor_trait_impl!(EdgeOwnsReverseEncoder,EdgeOwnsReverse);
@@ -125,8 +125,8 @@ type_edge_constructor_trait_impl!(EdgeSubReverseEncoder, EdgeSubReverse);
 // type_edge_constructor_trait_impl!(EdgePlaysEncoder, EdgePlays);
 // type_edge_constructor_trait_impl!(EdgePlaysReverseEncoder, EdgePlaysReverse);
 
-type_edge_constructor_trait_impl!(EdgeRelatesEncoder, EdgeRelates);
-type_edge_constructor_trait_impl!(EdgeRelatesReverseEncoder, EdgeRelatesReverse);
+// type_edge_constructor_trait_impl!(EdgeRelatesEncoder, EdgeRelates);
+// type_edge_constructor_trait_impl!(EdgeRelatesReverseEncoder, EdgeRelatesReverse);
 
 impl<'a> TypeEdge<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;

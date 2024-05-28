@@ -9,7 +9,7 @@ use bytes::byte_array::ByteArray;
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
 use encoding::graph::type_::property::{build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label, build_property_type_value_type};
 use encoding::{AsBytes, Keyable};
-use encoding::graph::type_::edge::{EdgeRelatesEncoder, EdgeRelatesReverseEncoder, EdgeSubEncoder, EdgeSubReverseEncoder, EncodableParametrisedTypeEdge, TypeEdge, TypeEdgeEncoder};
+use encoding::graph::type_::edge::{EncodableParametrisedTypeEdge, TypeEdge, TypeEdgeEncoder};
 use encoding::graph::type_::vertex::EncodableTypeVertex;
 use encoding::layout::prefix::Prefix;
 use encoding::value::label::Label;
@@ -22,6 +22,7 @@ use crate::type_::type_manager::type_reader::TypeReader;
 use crate::type_::{Ordering, serialise_ordering, TypeAPI};
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::relates::Relates;
+use crate::type_::type_manager::encoding_helper::EdgeSub;
 
 pub struct TypeWriter<Snapshot: WritableSnapshot> {
     snapshot: PhantomData<Snapshot>,
@@ -56,20 +57,18 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     pub(crate) fn storage_put_supertype<K>(snapshot: &mut Snapshot, subtype: K, supertype: K)
         where K: KindAPI<'static>
     {
-        let sub = EdgeSubEncoder::build_edge(subtype.clone().into_vertex(), supertype.clone().into_vertex());
-        snapshot.put(sub.into_storage_key().into_owned_array());
-        let sub_reverse = EdgeSubReverseEncoder::build_edge(supertype.into_vertex(), subtype.into_vertex());
-        snapshot.put(sub_reverse.into_storage_key().into_owned_array());
+        let sub_edge = EdgeSub::from_vertices(subtype.clone(), supertype.clone());
+        snapshot.put(sub_edge.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
+        snapshot.put(sub_edge.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_delete_supertype<T>(snapshot: &mut Snapshot, subtype: T)
     where T: KindAPI<'static>
     {
         let supertype = TypeReader::get_supertype(snapshot, subtype.clone()).unwrap().unwrap();
-        let sub = EdgeSubEncoder::build_edge(subtype.clone().into_vertex(), supertype.clone().into_vertex());
-        snapshot.delete(sub.into_storage_key().into_owned_array());
-        let sub_reverse = EdgeSubReverseEncoder::build_edge(supertype.clone().into_vertex(), subtype.into_vertex());
-        snapshot.delete(sub_reverse.into_storage_key().into_owned_array());
+        let sub_edge = EdgeSub::from_vertices(subtype.clone(), supertype.clone());
+        snapshot.delete(sub_edge.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
+        snapshot.delete(sub_edge.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_set_value_type(
@@ -89,10 +88,9 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         relation: RelationType<'static>,
         role: RoleType<'static>,
     ) {
-        let relates = EdgeRelatesEncoder::build_edge(relation.clone().into_vertex(), role.clone().into_vertex());
-        snapshot.put(relates.into_storage_key().into_owned_array());
-        let relates_reverse = EdgeRelatesReverseEncoder::build_edge(role.into_vertex(), relation.into_vertex());
-        snapshot.put(relates_reverse.into_storage_key().into_owned_array());
+        let relates = Relates::from_vertices(relation, role);
+        snapshot.put(relates.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
+        snapshot.put(relates.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
     pub(crate) fn storage_delete_relates(
@@ -100,11 +98,11 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         relation: RelationType<'static>,
         role: RoleType<'static>,
     ) {
-        let relates = EdgeRelatesEncoder::build_edge(relation.clone().into_vertex(), role.clone().into_vertex());
-        snapshot.delete(relates.into_storage_key().into_owned_array());
-        let relates_reverse = EdgeRelatesReverseEncoder::build_edge(role.into_vertex(), relation.into_vertex());
-        snapshot.delete(relates_reverse.into_storage_key().into_owned_array());
+        let relates = Relates::from_vertices(relation, role);
+        snapshot.delete(relates.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
+        snapshot.delete(relates.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
+
     pub(crate) fn storage_put_interface_impl<IMPL>(
         snapshot: &mut Snapshot,
         implementation: IMPL,

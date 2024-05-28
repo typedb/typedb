@@ -33,8 +33,6 @@ use iterator::Collector;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 use encoding::graph::type_::edge::{EncodableParametrisedTypeEdge, TypeEdgeEncoder};
-use encoding::graph::type_::edge::{EdgeRelatesEncoder, EdgeRelatesReverseEncoder, EdgeSubEncoder, EdgeSubReverseEncoder};
-use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
 use crate::{
     error::ConceptReadError,
@@ -55,6 +53,7 @@ use crate::{
     },
 };
 use crate::type_::InterfaceImplementation;
+use crate::type_::type_manager::encoding_helper::EdgeSub;
 // use crate::type_::InterfaceImplementation;
 
 pub struct TypeReader {}
@@ -89,10 +88,10 @@ impl TypeReader {
         T: TypeAPI<'static>,
     {
         Ok(snapshot
-            .iterate_range(KeyRange::new_within(EdgeSubEncoder::build_edge_prefix_from(subtype.into_vertex()), TypeEdge::FIXED_WIDTH_ENCODING))
+            .iterate_range(KeyRange::new_within(EdgeSub::prefix_for_canonical_edges_from(subtype), TypeEdge::FIXED_WIDTH_ENCODING))
             .first_cloned()
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
-            .map(|(key, _)| T::new(EdgeSubEncoder::new_edge(Bytes::Array(key.into_byte_array())).to().into_owned())))
+            .map(|(key, _)| EdgeSub::<T>::decode_canonical_edge(key.into_bytes()).supertype()))
     }
 
     pub fn get_supertypes_transitive<T>(
@@ -121,10 +120,10 @@ impl TypeReader {
     {
         Ok(snapshot
             .iterate_range(KeyRange::new_within(
-                EdgeSubReverseEncoder::build_edge_prefix_from(supertype.into_vertex()),
+                EdgeSub::prefix_for_reverse_edges_from(supertype),
                 TypeEdge::FIXED_WIDTH_ENCODING,
             ))
-            .collect_cloned_vec(|key, _| T::new(EdgeSubReverseEncoder::new_edge(Bytes::Reference(key.byte_ref())).to().into_owned()))
+            .collect_cloned_vec(|key, _| EdgeSub::<T>::decode_reverse_edge(Bytes::Reference(key.byte_ref()).into_owned()).subtype())
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
         )
     }
@@ -278,15 +277,11 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         relation: RelationType<'static>,
     ) -> Result<HashSet<Relates<'static>>, ConceptReadError> {
-        let relates_prefix = EdgeRelatesEncoder::build_edge_prefix_from(relation.into_vertex());
+        let relates_prefix = Relates::prefix_for_canonical_edges_from(relation);
         snapshot
             .iterate_range(KeyRange::new_within(relates_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
-                let relates_edge = EdgeRelatesEncoder::new_edge(Bytes::Reference(key.byte_ref()));
-                Relates::new(
-                    RelationType::new(relates_edge.from().into_owned()),
-                    RoleType::new(relates_edge.to().into_owned()),
-                )
+                Relates::decode_canonical_edge(Bytes::Reference(key.byte_ref()).into_owned())
             })
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
@@ -320,15 +315,11 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         role: RoleType<'static>,
     ) -> Result<Relates<'static>, ConceptReadError> {
-        let relates_prefix = EdgeRelatesReverseEncoder::build_edge_prefix_from(role.into_vertex());
+        let relates_prefix = Relates::prefix_for_reverse_edges_from(role);
         snapshot
             .iterate_range(KeyRange::new_within(relates_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
             .collect_cloned_vec(|key, _| {
-                let relates_edge_reverse = EdgeRelatesReverseEncoder::new_edge(Bytes::Reference(key.byte_ref()));
-                Relates::new(
-                    RelationType::new(relates_edge_reverse.to().into_owned()),
-                    RoleType::new(relates_edge_reverse.from().into_owned()),
-                )
+                Relates::decode_reverse_edge(Bytes::Reference(key.byte_ref()).into_owned())
             })
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
             .map(|v| v.first().unwrap().clone())
