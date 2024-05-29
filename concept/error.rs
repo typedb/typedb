@@ -136,6 +136,7 @@ impl From<ConceptReadError> for ConceptWriteError {
         match error {
             ConceptReadError::SnapshotGet { source } => Self::SnapshotGet { source },
             ConceptReadError::SnapshotIterate { source } => Self::SnapshotIterate { source },
+            ConceptReadError::Encoding { source, .. } => Self::Encoding { source }
         }
     }
 }
@@ -144,6 +145,7 @@ impl From<ConceptReadError> for ConceptWriteError {
 pub enum ConceptReadError {
     SnapshotGet { source: SnapshotGetError },
     SnapshotIterate { source: Arc<SnapshotIteratorError> },
+    Encoding { source: EncodingError },
 }
 
 impl fmt::Display for ConceptReadError {
@@ -157,6 +159,7 @@ impl Error for ConceptReadError {
         match self {
             Self::SnapshotGet { source, .. } => Some(source),
             Self::SnapshotIterate { source, .. } => Some(source),
+            ConceptReadError::Encoding { source, .. } => Some(source)
         }
     }
 }

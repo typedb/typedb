@@ -109,7 +109,7 @@ impl EntityTypeCache {
                 EntityType::PREFIX.fixed_width_keys(),
             ))
             .collect_cloned_hashset(|key, _| {
-                EntityType::decode(Bytes::Reference(key.byte_ref()).into_owned())
+                EntityType::read_from(Bytes::Reference(key.byte_ref()).into_owned())
             })
             .unwrap();
         let max_entity_id = entities.iter().map(|e| e.vertex().type_id_().as_u16()).max().unwrap();
@@ -134,7 +134,7 @@ impl RelationTypeCache {
                 Prefix::VertexRelationType.fixed_width_keys(),
             ))
             .collect_cloned_hashset(|key, _| {
-                RelationType::decode(Bytes::Reference(key.byte_ref()).into_owned())
+                RelationType::read_from(Bytes::Reference(key.byte_ref()).into_owned())
             })
             .unwrap();
         let max_relation_id = relations.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
@@ -157,7 +157,7 @@ impl AttributeTypeCache {
         let attributes = snapshot
             .iterate_range(KeyRange::new_within(AttributeType::prefix_for_kind(), TypeVertex::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
-                AttributeType::decode(Bytes::Reference(key.byte_ref()).into_owned())
+                AttributeType::read_from(Bytes::Reference(key.byte_ref()).into_owned())
             })
             .unwrap();
         let max_attribute_id = attributes.iter().map(|a| a.vertex().type_id_().as_u16()).max().unwrap();
@@ -180,7 +180,7 @@ impl RoleTypeCache {
         let roles = snapshot
             .iterate_range(KeyRange::new_within(RoleType::prefix_for_kind(), TypeVertex::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| {
-                RoleType::decode(Bytes::Reference(key.byte_ref()).into_owned())
+                RoleType::read_from(Bytes::Reference(key.byte_ref()).into_owned())
             })
             .unwrap();
         let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();

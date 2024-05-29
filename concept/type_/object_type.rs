@@ -7,6 +7,8 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{graph::type_::vertex::TypeVertex, layout::prefix::Prefix, value::label::Label, Prefixed};
+use encoding::error::EncodingError;
+use encoding::error::EncodingError::UnexpectedPrefix;
 use encoding::graph::type_::vertex::EncodableTypeVertex;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -47,11 +49,11 @@ impl<'a> ObjectType<'a> {
 }
 
 impl<'a> EncodableTypeVertex<'a> for ObjectType<'a> {
-    fn from_vertex(vertex: TypeVertex<'a>) -> Self {
+    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
         match vertex.prefix() {
-            Prefix::VertexEntityType => ObjectType::Entity(EntityType::new(vertex)),
-            Prefix::VertexRelationType => ObjectType::Relation(RelationType::new(vertex)),
-            _ => unreachable!("Object type creation requires either entity type or relation type vertex."),
+            Prefix::VertexEntityType => Ok(ObjectType::Entity(EntityType::new(vertex))),
+            Prefix::VertexRelationType => Ok(ObjectType::Relation(RelationType::new(vertex))),
+            _ => Err(UnexpectedPrefix { actual_prefix: vertex.prefix(), expected_prefix: Prefix::VertexEntityType}), // TODO: That's not right. It can also be VertexRelationType
         }
     }
 
@@ -131,7 +133,7 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
     type SelfStatic = RelationType<'static>;
 
     fn new(vertex: TypeVertex<'a>) -> Self {
-        Self::from_vertex(vertex)
+        Self::from_vertex(vertex).unwrap()
     }
 
     fn vertex<'this>(&'this self) -> TypeVertex<'this> {

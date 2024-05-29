@@ -128,13 +128,13 @@ pub trait EncodableParametrisedTypeEdge<'a> : Sized {
     fn decode_canonical_edge(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         let type_edge = TypeEdge::new(bytes);
         debug_assert_eq!(type_edge.prefix(), Self::CANONICAL_PREFIX);
-        Self::from_vertices(Self::From::from_vertex(type_edge.from().into_owned()), Self::To::from_vertex(type_edge.to().into_owned()))
+        Self::from_vertices(Self::From::from_vertex(type_edge.from().into_owned()).unwrap(), Self::To::from_vertex(type_edge.to().into_owned()).unwrap())
     }
 
     fn decode_reverse_edge(bytes: Bytes<'static, BUFFER_KEY_INLINE>) -> Self {
         let type_edge = TypeEdge::new(bytes);
         debug_assert_eq!(type_edge.prefix(), Self::REVERSE_PREFIX);
-        Self::from_vertices(Self::From::from_vertex(type_edge.to().into_owned()), Self::To::from_vertex(type_edge.from().into_owned()))
+        Self::from_vertices(Self::From::from_vertex(type_edge.to().into_owned()).unwrap(), Self::To::from_vertex(type_edge.from().into_owned()).unwrap())
     }
 
     fn to_canonical_type_edge(self) -> TypeEdge<'a> {

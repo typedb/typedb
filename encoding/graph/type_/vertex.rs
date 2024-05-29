@@ -18,6 +18,7 @@ use crate::{
     layout::prefix::{Prefix, PrefixID},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::error::EncodingError;
 
 // TODO: we could make all Type constructs contain plain byte arrays, since they will always be 64 bytes (BUFFER_KEY_INLINE), then make Types all Copy
 //       However, we should benchmark this first, since 64 bytes may be better off referenced
@@ -115,11 +116,11 @@ pub(crate) fn build_type_vertex_prefix_key(prefix: Prefix) -> StorageKey<'static
 
 pub trait EncodableTypeVertex<'a> : Sized {
 
-    fn from_vertex(vertex: TypeVertex<'a>) -> Self;
+    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError>;
 
     fn into_vertex(self) -> TypeVertex<'a>;
 
-    fn decode(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+    fn decode(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Result<Self, EncodingError> {
         Self::from_vertex(TypeVertex::new(bytes))
     }
 }
@@ -128,16 +129,20 @@ pub trait PrefixedEncodableTypeVertex<'a> : EncodableTypeVertex<'a>{
     const PREFIX: Prefix;
 
     fn from_type_id(type_id: TypeID) -> Self {
-        Self::from_vertex(TypeVertex::build(Self::PREFIX.prefix_id(), type_id))
+        Self::from_vertex(TypeVertex::build(Self::PREFIX.prefix_id(), type_id)).unwrap()
     }
 
     fn prefix_for_kind() -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
         build_type_vertex_prefix_key(Self::PREFIX)
     }
 
-    fn is_of_kind(key: StorageKeyReference<'_>) -> bool {
-        key.keyspace_id() == EncodingKeyspace::Schema.id()
-            && key.length() == TypeVertex::LENGTH
-            && TypeVertex::new(Bytes::Reference(key.byte_ref())).prefix() == Self::PREFIX
+    fn is_key_of_kind(key: StorageKeyReference<'_>) -> bool {
+        key.keyspace_id() == EncodingKeyspace::Schema.id() &&
+            Self::is_of_kind(Bytes::Reference(key.byte_ref()))
+    }
+
+    fn is_of_kind(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+        bytes.length() == TypeVertex::LENGTH
+            && TypeVertex::new(bytes).prefix() == Self::PREFIX
     }
 }

@@ -13,6 +13,8 @@ use encoding::{
     Prefixed,
 };
 use lending_iterator::higher_order::Hkt;
+use encoding::error::EncodingError;
+use encoding::error::EncodingError::UnexpectedPrefix;
 use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -69,9 +71,13 @@ impl<'a> PrefixedEncodableTypeVertex<'a> for RoleType<'a> {
 }
 
 impl<'a> EncodableTypeVertex<'a> for RoleType<'a> {
-    fn from_vertex(vertex: TypeVertex<'a>) -> Self {
+    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
         debug_assert_eq!(vertex.prefix(), Prefix::VertexRoleType);
-        RoleType { vertex }
+        if vertex.prefix() != Prefix::VertexRoleType {
+            Err(UnexpectedPrefix { expected_prefix: Prefix::VertexRoleType, actual_prefix: vertex.prefix() })
+        } else {
+            Ok(RoleType { vertex })
+        }
     }
 
     fn into_vertex(self) -> TypeVertex<'a> {
@@ -83,7 +89,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
     type SelfStatic = RoleType<'static>;
 
     fn new(vertex: TypeVertex<'a>) -> RoleType<'_> {
-        Self::from_vertex(vertex)
+        Self::from_vertex(vertex).unwrap()
     }
     fn vertex<'this>(&'this self) -> TypeVertex<'this> {
         self.vertex.as_reference()
@@ -290,7 +296,7 @@ impl From<Annotation> for RoleTypeAnnotation {
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_to_role_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> RoleType<'_> {
-    RoleType::decode(storage_key.into_bytes())
+    RoleType::read_from(storage_key.into_bytes())
 }
 
 concept_iterator!(RoleTypeIterator, RoleType, storage_key_to_role_type);

@@ -12,6 +12,8 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
+use encoding::error::EncodingError;
+use encoding::error::EncodingError::UnexpectedPrefix;
 use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
 use encoding::layout::prefix::Prefix::VertexEntityType;
 use primitive::maybe_owns::MaybeOwns;
@@ -50,16 +52,13 @@ impl <'a> PrefixedEncodableTypeVertex<'a> for EntityType<'a> {
     const PREFIX: Prefix = VertexEntityType;
 }
 impl<'a> EncodableTypeVertex<'a> for EntityType<'a> {
-    fn from_vertex(vertex: TypeVertex<'a>) -> Self {
+    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
         debug_assert!(Self::PREFIX == VertexEntityType);
         if vertex.prefix() != Prefix::VertexEntityType {
-            panic!(
-                "Type IID prefix was expected to be Prefix::EntityType ({:?}) but was {:?}",
-                Prefix::VertexEntityType,
-                vertex.prefix()
-            )
+            Err(UnexpectedPrefix { expected_prefix: Prefix::VertexEntityType, actual_prefix: vertex.prefix() })
+        } else {
+            Ok(EntityType { vertex })
         }
-        EntityType { vertex }
     }
 
     fn into_vertex(self) -> TypeVertex<'a> {
@@ -70,7 +69,7 @@ impl<'a> EncodableTypeVertex<'a> for EntityType<'a> {
 impl<'a> TypeAPI<'a> for EntityType<'a> {
     type SelfStatic = EntityType<'static>;
     fn new(vertex: TypeVertex<'a>) -> EntityType<'a> {
-        Self::from_vertex(vertex)
+        Self::from_vertex(vertex).unwrap()
     }
 
     fn vertex<'this>(&'this self) -> TypeVertex<'this> {
@@ -340,7 +339,7 @@ impl From<Annotation> for EntityTypeAnnotation {
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_to_entity_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> EntityType<'_> {
-    EntityType::decode(storage_key.into_bytes())
+    EntityType::read_from(storage_key.into_bytes())
 }
 
 concept_iterator!(EntityTypeIterator, EntityType, storage_key_to_entity_type);

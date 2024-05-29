@@ -58,7 +58,7 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + EncodableTypeVertex<'a> + Sized + Clone 
     fn new(vertex : TypeVertex<'a>) -> Self ;
 
     fn read_from(b: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
-        Self::new(TypeVertex::new(b))
+        Self::decode(b).unwrap()
     }
 
     fn vertex(&self) -> TypeVertex<'_>;

@@ -24,6 +24,7 @@ use encoding::{
     },
     AsBytes, Keyable,
 };
+use encoding::error::EncodingError;
 
 use encoding::graph::type_::Kind;
 use iterator::Collector;
@@ -68,9 +69,19 @@ impl TypeReader {
     {
         let key = LabelToTypeVertexIndex::build(label).into_storage_key();
         match snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {
-            Ok(None) => Ok(None),
-            Ok(Some(value)) => Ok(Some(T::read_from(Bytes::Array(value)))),
             Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
+            Ok(None) => Ok(None),
+            Ok(Some(value)) => {
+                match T::decode(Bytes::Array(value)) {
+                    Ok(type_) => Ok(Some(type_)),
+                    Err(err) => {
+                        match err {
+                            EncodingError::UnexpectedPrefix { .. } => Ok(None),
+                            _ => Err(ConceptReadError::Encoding{ source: err })
+                        }
+                    }
+                }
+            },
         }
     }
 

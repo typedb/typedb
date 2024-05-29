@@ -12,6 +12,8 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
+use encoding::error::EncodingError;
+use encoding::error::EncodingError::UnexpectedPrefix;
 use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
 use encoding::layout::prefix::Prefix::{VertexEntityType, VertexRelationType};
 use primitive::maybe_owns::MaybeOwns;
@@ -50,16 +52,13 @@ impl<'a> RelationType<'a> {}
 impl<'a> ConceptAPI<'a> for RelationType<'a> {}
 
 impl<'a> EncodableTypeVertex<'a> for RelationType<'a> {
-    fn from_vertex(vertex: TypeVertex<'a>) -> Self {
+    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
         debug_assert!(Self::PREFIX == VertexRelationType);
         if vertex.prefix() != Prefix::VertexRelationType {
-            panic!(
-                "Type IID prefix was expected to be Prefix::RelationType ({:?}) but was {:?}",
-                Prefix::VertexRelationType,
-                vertex.prefix()
-            )
+            Err(UnexpectedPrefix { expected_prefix: Prefix::VertexRelationType, actual_prefix: vertex.prefix() })
+        } else {
+            Ok(RelationType { vertex })
         }
-        RelationType { vertex }
     }
 
     fn into_vertex(self) -> TypeVertex<'a> {
@@ -75,7 +74,7 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
     type SelfStatic = RelationType<'static>;
 
     fn new(vertex: TypeVertex<'a>) -> RelationType<'_> {
-        Self::from_vertex(vertex)
+        Self::from_vertex(vertex).unwrap()
     }
 
     fn vertex<'this>(&'this self) -> TypeVertex<'this> {
@@ -395,7 +394,7 @@ impl From<Annotation> for RelationTypeAnnotation {
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_to_relation_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> RelationType<'_> {
-    RelationType::decode(storage_key.into_bytes())
+    RelationType::read_from(storage_key.into_bytes())
 }
 
 concept_iterator!(RelationTypeIterator, RelationType, storage_key_to_relation_type);

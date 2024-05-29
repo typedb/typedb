@@ -12,6 +12,8 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     Prefixed,
 };
+use encoding::error::EncodingError;
+use encoding::error::EncodingError::UnexpectedPrefix;
 use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
 use encoding::layout::prefix::Prefix::{VertexAttributeType};
 use primitive::maybe_owns::MaybeOwns;
@@ -44,16 +46,13 @@ impl<'a> PrefixedEncodableTypeVertex<'a> for AttributeType<'a> {
     const PREFIX: Prefix = VertexAttributeType;
 }
 impl<'a> EncodableTypeVertex<'a> for AttributeType<'a> {
-    fn from_vertex(vertex: TypeVertex<'a>) -> Self {
+    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
         debug_assert!(Self::PREFIX == VertexAttributeType);
         if vertex.prefix() != Prefix::VertexAttributeType {
-            panic!(
-                "Type IID prefix was expected to be Prefix::AttributeType ({:?}) but was {:?}",
-                Prefix::VertexAttributeType,
-                vertex.prefix()
-            )
+            Err(UnexpectedPrefix { expected_prefix: Prefix::VertexAttributeType, actual_prefix: vertex.prefix() })
+        } else {
+            Ok(AttributeType { vertex })
         }
-        AttributeType { vertex }
     }
 
     fn into_vertex(self) -> TypeVertex<'a> {
@@ -65,7 +64,7 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
     type SelfStatic = AttributeType<'static>;
 
     fn new(vertex: TypeVertex<'a>) -> AttributeType<'a> {
-        Self::from_vertex(vertex)
+        Self::from_vertex(vertex).unwrap()
     }
 
     fn vertex<'this>(&'this self) -> TypeVertex<'this> {

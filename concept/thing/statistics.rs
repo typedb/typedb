@@ -156,23 +156,23 @@ impl Statistics {
             } else if ThingEdgeRelationIndex::is_index(key_reference) {
                 let edge = ThingEdgeRelationIndex::new(Bytes::Reference(key_reference.byte_ref()));
                 self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta)
-            } else if EntityType::is_of_kind(key_reference) {
+            } else if EntityType::is_key_of_kind(key_reference) {
                 let type_ =
-                    EntityType::decode(Bytes::Reference(key_reference.byte_ref()).into_owned());
+                    EntityType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.entity_counts.remove(&type_);
                     self.clear_object_type(ObjectType::Entity(type_));
                 }
-            } else if RelationType::is_of_kind(key_reference) {
-                let type_ = RelationType::decode(Bytes::Reference(key_reference.byte_ref()).into_owned());
+            } else if RelationType::is_key_of_kind(key_reference) {
+                let type_ = RelationType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.relation_counts.remove(&type_);
                     self.relation_role_counts.remove(&type_);
                     let as_object_type = ObjectType::Relation(type_);
                     self.clear_object_type(as_object_type.clone());
                 }
-            } else if AttributeType::is_of_kind(key_reference) {
-                let type_ = AttributeType::decode(
+            } else if AttributeType::is_key_of_kind(key_reference) {
+                let type_ = AttributeType::read_from(
                     Bytes::Reference(key_reference.byte_ref()).into_owned()
                 );
                 if matches!(write, Write::Delete) {
@@ -183,9 +183,9 @@ impl Statistics {
                     });
                     self.has_attribute_counts.retain(|_, map| !map.is_empty());
                 }
-            } else if RoleType::is_of_kind(key_reference) {
+            } else if RoleType::is_key_of_kind(key_reference) {
                 let type_ =
-                    RoleType::decode(Bytes::Reference(key_reference.byte_ref()).into_owned());
+                    RoleType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.role_counts.remove(&type_);
                     self.role_player_counts.iter_mut().for_each(|(_, map)| {
