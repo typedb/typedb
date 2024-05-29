@@ -243,7 +243,7 @@ fn attribute_cleanup_on_concurrent_detach() {
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
         let owns_age =
             person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Unordered).unwrap();
-        owns_age.set_annotation(&mut snapshot, &type_manager, OwnsAnnotation::Distinct(AnnotationDistinct));
+        owns_age.set_annotation(&mut snapshot, &type_manager, OwnsAnnotation::Distinct(AnnotationDistinct)).unwrap(); // TODO: Panics: Distinct annotation not available for Attribute type.
 
         person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
 

@@ -53,7 +53,7 @@ pub mod relation_type;
 pub mod role_type;
 pub mod type_manager;
 
-pub trait TypeAPI<'a>: ConceptAPI<'a> + EncodableTypeVertex<'a> + Sized + Clone + Hash + Eq {
+pub trait TypeAPI<'a>: ConceptAPI<'a> + EncodableTypeVertex<'a> + Sized + Clone + Hash + Eq + 'a {
     type SelfStatic: KindAPI<'static> + 'static;
     fn new(vertex : TypeVertex<'a>) -> Self ;
 
@@ -244,7 +244,7 @@ impl<'a> EncodableTypeEdgeProperty<'a> for Ordering {
     }
 }
 
-pub(crate) trait InterfaceImplementation<'a> : EncodableParametrisedTypeEdge<'a, From=Self::ObjectType, To=Self::InterfaceType> + Sized + Clone + Hash + Eq
+pub(crate) trait InterfaceImplementation<'a> : EncodableParametrisedTypeEdge<'a, From=Self::ObjectType, To=Self::InterfaceType> + Sized + Clone + Hash + Eq + 'a
 {
     type AnnotationType;
     type ObjectType: TypeAPI<'a>;

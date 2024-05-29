@@ -17,7 +17,7 @@ use std::{
 
 use concept::{
     thing::{object::ObjectAPI, thing_manager::ThingManager, value::Value},
-    type_::{type_cache::TypeCache, type_manager::TypeManager, Ordering, OwnerAPI},
+    type_::{type_manager::TypeManager, Ordering, OwnerAPI},
 };
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use durability::wal::WAL;

@@ -114,7 +114,7 @@ pub async fn get_role_exists(context: &mut Context, type_label: Label, role_labe
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
         let role_opt =
             relation.get_relates_role(&tx.snapshot, &tx.type_manager, role_label.to_typedb().name.as_str()).unwrap();
-        exists.check(role_opt.is_some());
+        exists.check(&role_opt, &format!("role {}:{}", type_label.to_typedb(), role_label.to_typedb()));
     });
 }
 
@@ -287,7 +287,7 @@ pub async fn get_overridden_role_exists(
             .unwrap()
             .role();
         let superrole_opt = role.get_supertype(&tx.snapshot, &tx.type_manager).unwrap();
-        exists.check(superrole_opt.is_some());
+        exists.check(&superrole_opt, &format!("overridden role for {}:{}", relation_label.to_typedb(), role_label.to_typedb()));
     });
 }
 

@@ -94,19 +94,19 @@ pub async fn type_exists(context: &mut Context, root_label: RootLabel, type_labe
         match root_label.to_typedb() {
             Kind::Attribute => {
                 let type_ = tx.type_manager.get_attribute_type(&tx.snapshot, &type_label.to_typedb()).unwrap();
-                exists.check(type_.is_some());
+                exists.check(&type_, &format!("type {}", type_label.to_typedb()));
             }
             Kind::Entity => {
                 let type_ = tx.type_manager.get_entity_type(&tx.snapshot, &type_label.to_typedb()).unwrap();
-                exists.check(type_.is_some());
+                exists.check(&type_, &format!("type {}", type_label.to_typedb()));
             }
             Kind::Relation => {
                 let type_ = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap();
-                exists.check(type_.is_some());
+                exists.check(&type_, &format!("type {}", type_label.to_typedb()));
             }
             Kind::Role => {
                 let type_ = tx.type_manager.get_role_type(&tx.snapshot, &type_label.to_typedb()).unwrap();
-                exists.check(type_.is_some());
+                exists.check(&type_, &format!("type {}", type_label.to_typedb()));
             }
         };
     });
@@ -468,7 +468,7 @@ pub async fn get_owns_overridden_exists(
         let attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         let overridden_owns_opt = owns.get_override(&tx.snapshot, &tx.type_manager).unwrap();
-        exists.check(overridden_owns_opt.is_some());
+        exists.check(&overridden_owns_opt, &format!("override for {} owns {}", type_label.to_typedb(), attr_type_label.to_typedb()));
     });
 }
 

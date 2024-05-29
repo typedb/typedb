@@ -87,7 +87,7 @@ impl TypeReader {
             .iterate_range(KeyRange::new_within(EdgeSub::prefix_for_canonical_edges_from(subtype), TypeEdge::FIXED_WIDTH_ENCODING))
             .first_cloned()
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
-            .map(|(key, _)| EdgeSub::<T>::decode_canonical_edge(key.into_bytes()).supertype()))
+            .map(|(key, _)| EdgeSub::<T>::decode_canonical_edge(Bytes::Array(key.into_byte_array())).supertype()))
     }
 
     pub fn get_supertypes_transitive<T>(
@@ -239,7 +239,7 @@ impl TypeReader {
             let mut stack = Vec::new();
             stack.push(declared_impl.object());
             let mut object_types: Vec<ObjectType<'static>> = Vec::new();
-            while let(Some(sub_object)) = stack.pop() {
+            while let Some(sub_object) = stack.pop() {
                 let mut declared_impl_was_overridden = false;
                 for sub_owner_owns in Self::get_implemented_interfaces::<IMPL>(snapshot, sub_object.clone())? {
                     if let Some(overridden_impl) = Self::get_implementation_override(snapshot, sub_owner_owns.clone())? {
@@ -344,7 +344,7 @@ impl TypeReader {
         Ok(Self::get_type_property(snapshot, role_type)?.unwrap())
     }
 
-    pub(crate) fn get_type_annotations<'a, T: KindAPI<'a>>(
+    pub(crate) fn get_type_annotations<T: KindAPI<'static>>(
         snapshot: &impl ReadableSnapshot,
         type_: T,
     ) -> Result<HashSet<T::AnnotationType>, ConceptReadError> {

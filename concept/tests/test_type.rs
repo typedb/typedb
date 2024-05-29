@@ -8,11 +8,7 @@
 
 use std::sync::Arc;
 
-use concept::type_::{
-    annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, Ordering,
-    OwnerAPI, owns::Owns,
-    PlayerAPI, relation_type::RelationTypeAnnotation, role_type::RoleTypeAnnotation, type_manager::TypeManager,
-};
+use concept::type_::{annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, Ordering, OwnerAPI, owns::Owns, PlayerAPI, relation_type::RelationTypeAnnotation, role_type::RoleTypeAnnotation, type_manager::TypeManager, TypeAPI};
 use concept::type_::type_manager::type_cache::TypeCache;
 
 use durability::wal::WAL;

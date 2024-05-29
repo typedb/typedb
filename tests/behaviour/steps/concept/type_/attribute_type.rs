@@ -8,6 +8,7 @@ use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 use concept::type_::object_type::ObjectType;
+use concept::type_::TypeAPI;
 
 use crate::{generic_step, params, transaction_context::{with_read_tx, with_schema_tx}, Context, util};
 use crate::params::ContainsOrDoesnt;

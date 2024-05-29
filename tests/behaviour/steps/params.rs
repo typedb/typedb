@@ -90,34 +90,6 @@ impl FromStr for Boolean {
     }
 }
 
-
-#[derive(Debug, Parameter)]
-#[param(name = "exists_or_doesnt", regex = "(exists|does not exist)")]
-pub(crate) enum ExistsOrDoesnt {
-    Exists,
-    DoesNotExist,
-}
-
-impl ExistsOrDoesnt {
-    pub fn check(&self, actual_exists: bool) {
-        match self {
-            ExistsOrDoesnt::Exists => assert_eq!(true, actual_exists),
-            ExistsOrDoesnt::DoesNotExist => assert_eq!(false, actual_exists),
-        }
-    }
-}
-
-impl FromStr for ExistsOrDoesnt {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "exists" => Self::Exists,
-            "does not exist" => Self::DoesNotExist,
-            invalid => return Err(format!("Invalid `ExistsOrDoesnt`: {invalid}")),
-        })
-    }
-}
-
 #[derive(Debug, Parameter)]
 #[param(name = "exists_or_doesnt", regex = "(exists|does not exist)")]
 pub(crate) enum ExistsOrDoesnt {
