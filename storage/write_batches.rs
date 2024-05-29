@@ -10,7 +10,7 @@ use std::{
     sync::atomic::Ordering,
 };
 
-use speedb::WriteBatch;
+use rocksdb::WriteBatch;
 
 use super::{MVCCKey, StorageOperation};
 use crate::{

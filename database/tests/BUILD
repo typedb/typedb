@@ -18,7 +18,7 @@ rust_test(
         "//storage",
         "//util/test:test_utils",
 
-        "@crates//:speedb",
+        "@crates//:rocksdb",
         "@crates//:tracing",
     ]
 )

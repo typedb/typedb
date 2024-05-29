@@ -7,9 +7,9 @@
 use std::{cmp::Ordering, mem::transmute};
 
 use lending_iterator::{LendingIterator, Seekable};
-use speedb::DBRawIterator;
+use rocksdb::DBRawIterator;
 
-type KeyValue<'a> = Result<(&'a [u8], &'a [u8]), speedb::Error>;
+type KeyValue<'a> = Result<(&'a [u8], &'a [u8]), rocksdb::Error>;
 
 /// SAFETY NOTE: `'static` here represents that the `DBIterator` owns the data.
 /// The item's lifetime is in fact invalidated when `iterator` is advanced.
@@ -41,7 +41,7 @@ impl DBIterator {
 }
 
 impl LendingIterator for DBIterator {
-    type Item<'a> = Result<(&'a [u8], &'a [u8]), speedb::Error>
+    type Item<'a> = Result<(&'a [u8], &'a [u8]), rocksdb::Error>
     where
         Self: 'a;
 

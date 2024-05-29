@@ -13,7 +13,7 @@ use std::{
 use bytes::Bytes;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use speedb::{checkpoint::Checkpoint, Options, ReadOptions, WriteBatch, WriteOptions, DB};
+use rocksdb::{checkpoint::Checkpoint, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 
 use super::iterator;
 use crate::{key_range::KeyRange, write_batches::WriteBatches};
@@ -287,7 +287,7 @@ impl fmt::Debug for Keyspace {
 
 #[derive(Debug)]
 pub enum KeyspaceOpenError {
-    SpeeDB { name: &'static str, source: speedb::Error },
+    SpeeDB { name: &'static str, source: rocksdb::Error },
     Validation { source: KeyspaceValidationError },
 }
 
@@ -309,7 +309,7 @@ impl Error for KeyspaceOpenError {
 #[derive(Debug)]
 pub enum KeyspaceCheckpointError {
     CheckpointExists { name: &'static str, dir: PathBuf },
-    CreateSpeeDBCheckpoint { name: &'static str, source: speedb::Error },
+    CreateSpeeDBCheckpoint { name: &'static str, source: rocksdb::Error },
 }
 
 impl fmt::Display for KeyspaceCheckpointError {
@@ -348,10 +348,10 @@ impl Error for KeyspaceDeleteError {
 
 #[derive(Clone, Debug)]
 pub enum KeyspaceError {
-    Get { name: &'static str, source: speedb::Error },
-    Put { name: &'static str, source: speedb::Error },
-    BatchWrite { name: &'static str, source: speedb::Error },
-    Iterate { name: &'static str, source: speedb::Error },
+    Get { name: &'static str, source: rocksdb::Error },
+    Put { name: &'static str, source: rocksdb::Error },
+    BatchWrite { name: &'static str, source: rocksdb::Error },
+    Iterate { name: &'static str, source: rocksdb::Error },
 }
 
 impl fmt::Display for KeyspaceError {

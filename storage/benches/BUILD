@@ -41,7 +41,7 @@ rust_test(
     ]),
     deps = [
         "@crates//:rand",
-        "@crates//:speedb",
+        "@crates//:rocksdb",
         "@crates//:rand_core",
         "@crates//:xoshiro",
         "@crates//:itertools",

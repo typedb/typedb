@@ -18,7 +18,7 @@ rust_library(
         "//durability",
 
         "@crates//:itertools",
-        "@crates//:speedb",
+        "@crates//:rocksdb",
         "@crates//:tracing",
     ],
     visibility = ["//visibility:public"],

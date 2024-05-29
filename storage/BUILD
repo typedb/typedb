@@ -39,7 +39,7 @@ rust_library(
         "@crates//:itertools",
         "@crates//:same-file",
         "@crates//:serde",
-        "@crates//:speedb",
+        "@crates//:rocksdb",
         "@crates//:tracing",
     ]
 )
