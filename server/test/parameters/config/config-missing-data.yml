@@ -52,3 +52,6 @@ vaticle-factory:
 #  uri: "https://tracing.factory.vaticle.com:7979"
 #  username: $FACTORY_USERNAME
 #  token: $FACTORY_TOKEN
+
+development-mode:
+  enable: true

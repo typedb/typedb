@@ -2,14 +2,17 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+
 server:
-  address: 0.0.0.0:1730
+  address: 0.0.0.0:1729
 
 storage:
-  data: /absolute/path/to/data/dir
+  data: server/data
   database-cache:
-    data: 200mb
-    index: 700mb
+    # configure storage-layer data and index cache per database
+    # for large datasets, it is more important to have a large index cache than a large data cache
+    data: 500mb
+    index: 500mb
 
 log:
   output:
@@ -19,15 +22,24 @@ log:
     file:
       type: file
       enable: true
-      base-dir: /absolute/path/to/logs/dir
+      base-dir: server/logs
       file-size-limit: 50mb
       archive-grouping: month
       archive-age-limit: 1 year
       archives-size-limit: 1gb
+
   logger:
     default:
       level: warn
-      output: [ stdout ]
+      output: [ stdout, file ]
+    typedb:
+      filter: com.vaticle.typedb.core
+      level: info
+      output: [ stdout, file ]
+    storage:
+      filter: com.vaticle.typedb.core.database
+      level: info # on 'debug' the server will periodically log database storage properties
+      output: [ stdout, file ]
   debugger:
     reasoner-tracer:
       enable: false
@@ -47,9 +59,9 @@ diagnostics:
 
 vaticle-factory:
   enable: false
-#  uri: "https://tracing.factory.vaticle.com:7979"
-#  username: $FACTORY_USERNAME
-#  token: $FACTORY_TOKEN
+  #  uri: "https://tracing.factory.vaticle.com:7979"
+  #  username: $FACTORY_USERNAME
+  #  token: $FACTORY_TOKEN
 
 development-mode:
-  enable: true
+  enable: false

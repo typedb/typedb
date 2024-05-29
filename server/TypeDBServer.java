@@ -109,7 +109,7 @@ public class TypeDBServer implements AutoCloseable {
                 .storageDataCacheSize(config.storage().databaseCache().dataSize())
                 .storageIndexCacheSize(config.storage().databaseCache().indexSize())
                 .reasonerDebuggerDir(config.log().debugger().reasonerTracer().output().baseDirectory())
-                .reasonerPerfCounters(config.log().debugger().reasonerPerfCounters().isEnabled());
+                .reasonerPerfCounters(config.log().debugger().reasonerPerfCounters().enabled());
 
         this.factory = factory;
         databaseMgr = factory.databaseManager(options);
@@ -188,7 +188,7 @@ public class TypeDBServer implements AutoCloseable {
                     deploymentID(), serverID(), name(), Version.VERSION,
                     config.diagnostics().reporting().errors(), ERROR_REPORTING_URI,
                     config.diagnostics().reporting().statistics(), DIAGNOSTICS_REPORTING_URI,
-                    config.diagnostics().monitoring().enable(), config.diagnostics().monitoring().port(),
+                    config.diagnostics().monitoring().enabled(), config.diagnostics().monitoring().port(),
                     config.storage().dataDir()
             );
         } catch (Throwable e) {
