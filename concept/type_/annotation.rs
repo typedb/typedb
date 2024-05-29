@@ -5,24 +5,21 @@
  */
 
 use serde::{Deserialize, Serialize};
-use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
 use bytes::Bytes;
 use encoding::AsBytes;
-use encoding::graph::type_::property::{EncodableTypeEdgeProperty, TypeEdgeProperty};
+use encoding::graph::type_::property::EncodableTypeEdgeProperty;
 use encoding::layout::infix::Infix;
 use encoding::layout::infix::Infix::{PropertyAnnotationAbstract, PropertyAnnotationDistinct, PropertyAnnotationIndependent};
 use encoding::value::string_bytes::StringBytes;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
-use crate::type_::annotation::Annotation::{Cardinality, Regex};
-use crate::type_::Ordering;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
     Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),
     Independent(AnnotationIndependent),
-    Unique(AnnotationUnique),
+    Unique(AnnotationUnique), TODO: Needs annotation Unique
     Key(AnnotationKey),
     Cardinality(AnnotationCardinality),
     Regex(AnnotationRegex),

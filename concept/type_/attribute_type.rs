@@ -13,7 +13,7 @@ use encoding::{
     Prefixed,
 };
 use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
-use encoding::layout::prefix::Prefix::{VertexAttributeType, VertexEntityType};
+use encoding::layout::prefix::Prefix::{VertexAttributeType};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -28,7 +28,6 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::type_::entity_type::EntityType;
 use crate::type_::object_type::ObjectType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -231,8 +230,8 @@ impl<'a> AttributeType<'a> {
             AttributeTypeAnnotation::Independent(_) => {
                 type_manager.storage_delete_annotation_independent(snapshot, self.clone().into_owned())
             }
-            AttributeTypeAnnotation::Regex(regex) => {
-                type_manager.storage_delete_annotation_regex(snapshot, self.clone().into_owned(), regex)
+            AttributeTypeAnnotation::Regex(_) => {
+                type_manager.storage_delete_annotation_regex(snapshot, self.clone().into_owned())
             }
         }
     }

@@ -202,80 +202,6 @@ pub struct TypeEdgeProperty<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
-
-// TODO: Split into two? Property & Value?
-pub trait EncodableTypeEdgeProperty<'a> : Sized {
-
-    const INFIX: Infix;
-
-    fn decode_value<'b>(value: ByteReference<'b>) -> Self;
-
-    fn build_key<'b>(edge: impl EncodableParametrisedTypeEdge<'b>) -> TypeEdgeProperty<'b> {
-        TypeEdgeProperty::build(edge.to_canonical_type_edge(), Self::INFIX)
-    }
-
-    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
-    fn is_property(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-        key_bytes.length() == TypeEdgeProperty::LENGTH_NO_SUFFIX
-            && TypeEdgeProperty::new(key_bytes).infix() == Self::INFIX
-    }
-}
-
-// macro_rules! type_edge_property_constructors {
-//     ($new_name:ident, $build_name:ident, $is_name:ident, InfixType::$infix:ident) => {
-//         pub fn $new_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> TypeEdgeProperty<'_> {
-//             let edge = TypeEdgeProperty::new(bytes);
-//             debug_assert_eq!(edge.infix(), Infix::$infix);
-//             edge
-//         }
-//
-//         pub fn $build_name(type_edge: TypeEdge<'_>) -> TypeEdgeProperty<'static> {
-//             TypeEdgeProperty::build(type_edge, Infix::$infix)
-//         }
-//
-//         pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-//             bytes.length() == TypeEdgeProperty::LENGTH_NO_SUFFIX
-//                 && TypeEdgeProperty::new(bytes).infix() == Infix::$infix
-//         }
-//     };
-// }
-//
-// type_edge_property_constructors!(
-//     new_property_type_edge_annotation_distinct,
-//     build_property_type_edge_annotation_distinct,
-//     is_property_type_edge_annotation_distinct,
-//     InfixType::PropertyAnnotationDistinct
-// );
-//
-// type_edge_property_constructors!(
-//     new_property_type_edge_annotation_key,
-//     build_property_type_edge_annotation_key,
-//     is_property_type_edge_annotation_key,
-//     InfixType::PropertyAnnotationKey
-// );
-//
-// type_edge_property_constructors!(
-//     new_property_type_edge_annotation_cardinality,
-//     build_property_type_edge_annotation_cardinality,
-//     is_property_type_edge_annotation_cardinality,
-//     InfixType::PropertyAnnotationCardinality
-// );
-//
-// type_edge_property_constructors!(
-//     new_property_type_edge_override,
-//     build_property_type_edge_override,
-//     is_property_type_edge_override,
-//     InfixType::PropertyOverride
-// );
-//
-// type_edge_property_constructors!(
-//     new_property_type_edge_ordering,
-//     build_property_type_edge_ordering,
-//     is_property_type_edge_ordering,
-//     InfixType::PropertyOrdering
-// );
-TODO: Needs annotation Unique
-
 impl<'a> TypeEdgeProperty<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
     const PREFIX: Prefix = Prefix::PropertyTypeEdge;
@@ -372,3 +298,20 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {
 }
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {}
+
+pub trait EncodableTypeEdgeProperty<'a> : Sized {
+
+    const INFIX: Infix;
+
+    fn decode_value<'b>(value: ByteReference<'b>) -> Self;
+
+    fn build_key<'b>(edge: impl EncodableParametrisedTypeEdge<'b>) -> TypeEdgeProperty<'b> {
+        TypeEdgeProperty::build(edge.to_canonical_type_edge(), Self::INFIX)
+    }
+
+    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
+    fn is_property(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+        key_bytes.length() == TypeEdgeProperty::LENGTH_NO_SUFFIX
+            && TypeEdgeProperty::new(key_bytes).infix() == Self::INFIX
+    }
+}

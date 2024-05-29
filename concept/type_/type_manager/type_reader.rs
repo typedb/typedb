@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use bytes::byte_array::ByteArray;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
@@ -14,7 +13,7 @@ use encoding::{
         edge::TypeEdge,
         index::LabelToTypeVertexIndex,
         property::{
-            build_property_type_edge_override, build_property_type_label, build_property_type_ordering, build_property_type_value_type, TypeEdgeProperty, TypeVertexProperty,
+            build_property_type_label, build_property_type_ordering, build_property_type_value_type, TypeEdgeProperty, TypeVertexProperty,
         },
         vertex::EncodableTypeVertex,
     },
@@ -43,18 +42,16 @@ use crate::{
         attribute_type::AttributeType,
         object_type::ObjectType,
         owns::Owns,
-        plays::Plays,
         relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::KindAPI,
-        Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        Ordering, TypeAPI,
     },
 };
 use crate::type_::annotation::{AnnotationCardinality, AnnotationRegex};
-use crate::type_::InterfaceImplementation;
+use crate::type_::{EdgeOverride, InterfaceImplementation};
 use crate::type_::type_manager::encoding_helper::EdgeSub;
-// use crate::type_::InterfaceImplementation;
 
 pub struct TypeReader {}
 
@@ -213,7 +210,7 @@ impl TypeReader {
     where
         IMPL : EncodableParametrisedTypeEdge<'static> + Hash + Eq
     {
-        let override_property_key = build_property_type_edge_override(implementation.to_canonical_type_edge());
+        let override_property_key = EdgeOverride::<'static, IMPL>::build_key(implementation);
         snapshot
             .get_mapped(override_property_key.into_storage_key().as_reference(), |overridden_edge_bytes| {
                 IMPL::decode_canonical_edge(Bytes::Array(overridden_edge_bytes.into()))
