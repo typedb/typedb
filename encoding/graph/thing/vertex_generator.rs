@@ -17,7 +17,7 @@ use storage::{
     MVCCKey, MVCCStorage,
 };
 
-use super::vertex_attribute::{BooleanAttributeID, DateTimeAttributeID, DoubleAttributeID};
+use super::vertex_attribute::{BooleanAttributeID, DateTimeAttributeID, DoubleAttributeID, DurationAttributeID};
 use crate::{
     error::EncodingError,
     graph::{
@@ -32,8 +32,8 @@ use crate::{
     },
     layout::prefix::Prefix,
     value::{
-        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, double_bytes::DoubleBytes, long_bytes::LongBytes,
-        string_bytes::StringBytes, value_type::ValueType,
+        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, double_bytes::DoubleBytes,
+        duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType,
     },
     AsBytes, Keyable, Prefixed,
 };
@@ -209,6 +209,21 @@ impl ThingVertexGenerator {
         vertex
     }
 
+    pub fn create_attribute_duration<Snapshot>(
+        &self,
+        type_id: TypeID,
+        value: DurationBytes,
+        snapshot: &mut Snapshot,
+    ) -> AttributeVertex<'static>
+    where
+        Snapshot: WritableSnapshot,
+    {
+        let duration_attribute_id = self.create_attribute_id_duration(value);
+        let vertex = AttributeVertex::build(ValueType::Duration, type_id, AttributeID::Duration(duration_attribute_id));
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        vertex
+    }
+
     pub fn create_attribute_id_boolean(&self, value: BooleanBytes) -> BooleanAttributeID {
         BooleanAttributeID::build(value)
     }
@@ -223,6 +238,10 @@ impl ThingVertexGenerator {
 
     pub fn create_attribute_id_date_time(&self, value: DateTimeBytes) -> DateTimeAttributeID {
         DateTimeAttributeID::build(value)
+    }
+
+    pub fn create_attribute_id_duration(&self, value: DurationBytes) -> DurationAttributeID {
+        DurationAttributeID::build(value)
     }
 
     ///

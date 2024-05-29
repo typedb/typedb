@@ -8,7 +8,7 @@ use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr};
 
 use chrono::NaiveDateTime;
 use concept::{
-    thing::{object::Object, value::Value as TypeDBValue},
+    thing::value::Value as TypeDBValue,
     type_::{
         annotation::{self, Annotation as TypeDBAnnotation, AnnotationCardinality},
         object_type::ObjectType,
@@ -278,6 +278,7 @@ impl Value {
             TypeDBValueType::DateTime => {
                 TypeDBValue::DateTime(NaiveDateTime::parse_from_str(&self.raw_value, "%Y-%m-%d %H:%M:%S").unwrap())
             }
+            TypeDBValueType::Duration => todo!(),
             TypeDBValueType::String => TypeDBValue::String(Cow::Owned(self.raw_value)),
         }
     }

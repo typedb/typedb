@@ -11,15 +11,18 @@ use crate::graph::definition::r#struct::StructDefinition;
 use crate::value::struct_bytes::StructBytes;
 
 use self::{
-    boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, double_bytes::DoubleBytes, long_bytes::LongBytes,
-    string_bytes::StringBytes, value_type::ValueType,
+    boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, double_bytes::DoubleBytes,
+    duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType,
 };
 
 pub mod boolean_bytes;
 pub mod date_time_bytes;
 pub mod double_bytes;
+pub mod duration_bytes;
+pub mod duration_value;
 pub mod label;
 pub mod long_bytes;
+mod primitive_encoding;
 pub mod string_bytes;
 pub mod value_type;
 pub mod struct_bytes;
@@ -44,6 +47,8 @@ pub trait ValueEncodable: Clone {
     fn encode_double(&self) -> DoubleBytes;
 
     fn encode_date_time(&self) -> DateTimeBytes;
+
+    fn encode_duration(&self) -> DurationBytes;
 
     fn encode_string<const INLINE_LENGTH: usize>(&self) -> StringBytes<INLINE_LENGTH>;
 

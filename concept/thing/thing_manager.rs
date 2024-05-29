@@ -21,7 +21,8 @@ use encoding::{
     layout::prefix::Prefix,
     value::{
         boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, decode_value_u64, double_bytes::DoubleBytes,
-        encode_value_u64, long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType, ValueEncodable,
+        duration_bytes::DurationBytes, encode_value_u64, long_bytes::LongBytes, string_bytes::StringBytes,
+        value_type::ValueType, ValueEncodable,
     },
     Keyable,
 };
@@ -214,6 +215,10 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_date_time();
                 Ok(Value::DateTime(DateTimeBytes::new(attribute_id.bytes()).as_naive_date_time()))
             }
+            ValueType::Duration => {
+                let attribute_id = attribute.vertex().attribute_id().unwrap_duration();
+                Ok(Value::Duration(DurationBytes::new(attribute_id.bytes()).as_duration()))
+            }
             ValueType::String => {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_string();
                 if attribute_id.is_inline() {
@@ -248,7 +253,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         }
 
         let attribute = match value_type {
-            ValueType::Boolean | ValueType::Long | ValueType::Double | ValueType::DateTime => {
+            ValueType::Boolean | ValueType::Long | ValueType::Double | ValueType::DateTime | ValueType::Duration => {
                 debug_assert!(AttributeID::is_inlineable(value.as_reference()));
                 match self.get_attribute_with_value_inline(snapshot, attribute_type, value) {
                     Ok(Some(attribute)) => attribute,
@@ -774,6 +779,14 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                     self.vertex_generator.create_attribute_date_time(
                         attribute_type.vertex().type_id_(),
                         encoded_date_time,
+                        snapshot,
+                    )
+                }
+                Value::Duration(duration) => {
+                    let encoded_duration = DurationBytes::build(duration);
+                    self.vertex_generator.create_attribute_duration(
+                        attribute_type.vertex().type_id_(),
+                        encoded_duration,
                         snapshot,
                     )
                 }

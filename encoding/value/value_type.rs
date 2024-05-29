@@ -12,8 +12,8 @@ use bytes::Bytes;
 use crate::AsBytes;
 use crate::graph::definition::definition_key::DefinitionKey;
 
-/// We can support Prefix::ATTRIBUTE_MAX - Prefix::ATTRIBUTE_MIN different built-in value types
-#[derive(Debug, Clone, Eq, PartialEq)]
+// We can support Prefix::ATTRIBUTE_MAX - Prefix::ATTRIBUTE_MIN different built-in value types
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ValueType {
     Boolean,
     Long,
@@ -21,9 +21,8 @@ pub enum ValueType {
 
     // TODO: consider splitting with/without timezone
     DateTime,
-    /*
-    Duration, // Naming: 'interval'?
-     */
+    Duration,
+
     String,
 
     Struct(DefinitionKey<'static>),
@@ -36,6 +35,7 @@ impl ValueType {
             ValueType::Long => ValueTypeCategory::Long,
             ValueType::Double => ValueTypeCategory::Double,
             ValueType::DateTime => ValueTypeCategory::DateTime,
+            ValueType::Duration => ValueTypeCategory::Duration,
             ValueType::String => ValueTypeCategory::String,
             ValueType::Struct(_) => ValueTypeCategory::Struct,
         }
@@ -47,6 +47,7 @@ impl ValueType {
             ValueTypeCategory::Long => Self::Long,
             ValueTypeCategory::Double => Self::Double,
             ValueTypeCategory::DateTime => Self::DateTime,
+            ValueTypeCategory::Duration => Self::Duration,
             ValueTypeCategory::String => Self::String,
             ValueTypeCategory::Struct => {
                 let definition_key = DefinitionKey::new(Bytes::Array(ByteArray::copy(&tail)));
@@ -62,6 +63,7 @@ pub enum ValueTypeCategory {
     Long,
     Double,
     DateTime,
+    Duration,
     String,
     Struct,
 }
@@ -74,7 +76,8 @@ impl ValueTypeCategory {
             Self::Long => [1],
             Self::Double => [2],
             Self::DateTime => [3],
-            Self::String => [4],
+            Self::Duration => [4],
+            Self::String => [5],
             Self::Struct => [40]
         }
     }
@@ -85,7 +88,8 @@ impl ValueTypeCategory {
             [1] => ValueTypeCategory::Long,
             [2] => ValueTypeCategory::Double,
             [3] => ValueTypeCategory::DateTime,
-            [4] => ValueTypeCategory::String,
+            [4] => ValueTypeCategory::Duration,
+            [5] => ValueTypeCategory::String,
             [40] => ValueTypeCategory::Struct,
             _ => panic!("Unrecognised value type category byte: {:?}", bytes),
         };

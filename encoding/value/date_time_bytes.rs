@@ -6,6 +6,7 @@
 
 use chrono::{DateTime, NaiveDateTime};
 
+use super::primitive_encoding::{decode_i64, encode_i64};
 use crate::graph::thing::vertex_attribute::AttributeIDLength;
 
 #[derive(Debug, Copy, Clone)]
@@ -26,14 +27,14 @@ impl DateTimeBytes {
     pub fn build(date_time: NaiveDateTime) -> Self {
         let date_time = date_time.and_utc();
         let mut bytes = [0; Self::LENGTH];
-        bytes[..Self::TIMESTAMP_LENGTH].copy_from_slice(&(date_time.timestamp() ^ i64::MIN).to_be_bytes());
+        bytes[..Self::TIMESTAMP_LENGTH].copy_from_slice(&encode_i64(date_time.timestamp()));
         bytes[Self::TIMESTAMP_LENGTH..][..Self::NANOS_LENGTH]
             .copy_from_slice(&date_time.timestamp_subsec_nanos().to_be_bytes());
         Self { bytes }
     }
 
     pub fn as_naive_date_time(&self) -> NaiveDateTime {
-        let secs = i64::from_be_bytes(self.bytes[..Self::TIMESTAMP_LENGTH].try_into().unwrap()) ^ i64::MIN;
+        let secs = decode_i64(self.bytes[..Self::TIMESTAMP_LENGTH].try_into().unwrap());
         let nsecs = u32::from_be_bytes(self.bytes[Self::TIMESTAMP_LENGTH..][..Self::NANOS_LENGTH].try_into().unwrap());
         DateTime::from_timestamp(secs, nsecs).unwrap().naive_utc()
     }
