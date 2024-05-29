@@ -357,12 +357,16 @@ pub async fn get_owns_set_override(
         let owner_supertype = owner.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
         let overridden_attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &overridden_type_label.to_typedb()).unwrap().unwrap();
-        let overridden_owns = owner_supertype
+
+        let overridden_owns_opt = owner_supertype
             .get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, overridden_attr_type)
-            .unwrap()
-            .unwrap();
-        let res = owns.set_override(&mut tx.snapshot, &tx.type_manager, overridden_owns);
-        may_error.check(&res);
+            .unwrap(); // This may also error
+        if let Some(overridden_owns) = overridden_owns_opt {
+            let res = owns.set_override(&mut tx.snapshot, &tx.type_manager, overridden_owns);
+            may_error.check(&res);
+        } else {
+            assert!(may_error.expects_error()); // We error by not finding the type to override
+        }
     });
 }
 
