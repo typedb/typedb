@@ -7,7 +7,7 @@
 use std::marker::PhantomData;
 
 // https://github.com/rust-lang/rust/issues/49601 workaround
-pub trait FnMutHktHelper<T, U>: FnMut(T) -> U  + 'static {}
+pub trait FnMutHktHelper<T, U>: FnMut(T) -> U + 'static {}
 impl<F, T, U> FnMutHktHelper<T, U> for F where F: FnMut(T) -> U + 'static {}
 
 pub trait Hkt: 'static {
@@ -20,6 +20,10 @@ impl<T: ?Sized> Hkt for &'static T {
 
 impl<T: Hkt, U: Hkt> Hkt for (T, U) {
     type HktSelf<'a> = (T::HktSelf<'a>, U::HktSelf<'a>);
+}
+
+impl<T: Hkt, U: Hkt, V: Hkt> Hkt for (T, U, V) {
+    type HktSelf<'a> = (T::HktSelf<'a>, U::HktSelf<'a>, V::HktSelf<'a>);
 }
 
 macro_rules! trivial_hkt {
@@ -49,4 +53,12 @@ pub struct AdHocHkt<B: 'static> {
 
 impl<B> Hkt for AdHocHkt<B> {
     type HktSelf<'a> = B;
+}
+
+#[macro_export]
+macro_rules! AsHkt {
+    {$($path_element:ident)::+ <'_> } => { $($path_element)::+<'static> };
+    {$($path_element:ident)::+ <'_ $(, $generic_param:tt)*> } => { $($path_element)::+<'static$(, $generic_param)*> };
+    {& mut $ty:ty  } => {&'static mut $ty};
+    {& $ty:ty  } => {&'static $ty};
 }

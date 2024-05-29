@@ -79,6 +79,17 @@ impl<'a> Value<'a> {
             _ => panic!("Cannot unwrap Struct if not a struct value.")
         }
     }
+
+    pub(crate) fn into_owned(self) -> Value<'static> {
+        match self {
+            Self::Boolean(bool) => Value::Boolean(bool),
+            Self::Long(long) => Value::Long(long),
+            Self::Double(double) => Value::Double(double),
+            Self::DateTime(date_time) => Value::DateTime(date_time),
+            Self::String(string) => Value::String(Cow::Owned(string.into_owned())),
+            Self::Struct(struct_) => Value::Struct(Cow::Owned(struct_.into_owned())),
+        }
+    }
 }
 
 impl<'a> ValueEncodable for Value<'a> {

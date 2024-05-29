@@ -40,13 +40,16 @@ impl<'a> ObjectType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<Option<ObjectType<'_>>, ConceptReadError> {
         Ok(match self {
-            ObjectType::Entity(entity) => {
-                entity.get_supertype(snapshot, type_manager)?.map(|supertype| ObjectType::Entity(supertype))
-            }
-            ObjectType::Relation(relation) => {
-                relation.get_supertype(snapshot, type_manager)?.map(|supertype| ObjectType::Relation(supertype))
-            }
+            ObjectType::Entity(entity) => entity.get_supertype(snapshot, type_manager)?.map(ObjectType::Entity),
+            ObjectType::Relation(relation) => relation.get_supertype(snapshot, type_manager)?.map(ObjectType::Relation),
         })
+    }
+
+    pub(crate) fn into_owned(self) -> ObjectType<'static> {
+        match self {
+            Self::Entity(entity_type) => ObjectType::Entity(entity_type.into_owned()),
+            Self::Relation(relation_type) => ObjectType::Relation(relation_type.into_owned()),
+        }
     }
 }
 
@@ -163,7 +166,11 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
     }
 }
 
-impl<'a> ObjectTypeAPI<'a> for ObjectType<'a> {}
+impl<'a> ObjectTypeAPI<'a> for ObjectType<'a> {
+    fn into_owned_object_type(self) -> ObjectType<'static> {
+        self.into_owned()
+    }
+}
 
 impl<'a> PlayerAPI<'a> for ObjectType<'a> {
     fn set_plays<Snapshot: WritableSnapshot>(

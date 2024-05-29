@@ -10,8 +10,10 @@ use encoding::{error::EncodingError, value::value_type::ValueType};
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 
 use crate::{
-    thing::relation::Relation,
-    type_::{annotation::AnnotationCardinality, role_type::RoleType},
+    thing::{object::Object, relation::Relation, value::Value},
+    type_::{
+        annotation::AnnotationCardinality, attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType,
+    },
 };
 
 #[derive(Debug)]
@@ -68,10 +70,28 @@ pub enum ConceptWriteError {
         regex: String,
         value: String,
     },
-    KeyMissing {},
-    KeyTaken {},
-    SetHasOnDeleted {},
-    SetHasMultipleKeys {},
+
+    MultipleKeys {
+        owner: Object<'static>,
+        key_type: AttributeType<'static>,
+    },
+    KeyMissing {
+        owner: Object<'static>,
+        key_type: AttributeType<'static>,
+    },
+    KeyTaken {
+        owner: Object<'static>,
+        key_type: AttributeType<'static>,
+        value: Value<'static>,
+        owner_type: ObjectType<'static>,
+    },
+
+    SetHasOnDeleted {
+        owner: Object<'static>,
+    },
+    AddPlayerOnDeleted {
+        relation: Relation<'static>
+    },
 }
 
 impl fmt::Display for ConceptWriteError {
@@ -94,7 +114,8 @@ impl Error for ConceptWriteError {
             Self::KeyMissing { .. } => None,
             Self::KeyTaken { .. } => None,
             Self::SetHasOnDeleted { .. } => None,
-            Self::SetHasMultipleKeys { .. } => None,
+            Self::MultipleKeys { .. } => None,
+            Self::AddPlayerOnDeleted { .. } => None,
         }
     }
 }

@@ -29,10 +29,10 @@ pub trait ThingAPI<'a> {
     fn set_modified<Snapshot: WritableSnapshot>(&self, snapshot: &mut Snapshot, thing_manager: &ThingManager<Snapshot>);
 
     // TODO: implementers could cache the status in a OnceCell if we do many operations on the same Thing at once
-    fn get_status<'m, Snapshot: ReadableSnapshot>(
+    fn get_status<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>,
+        thing_manager: &ThingManager<Snapshot>,
     ) -> ConceptStatus;
 
     fn errors<Snapshot: WritableSnapshot>(

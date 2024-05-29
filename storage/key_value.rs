@@ -7,6 +7,7 @@
 use std::{borrow::Borrow, cmp::Ordering};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use lending_iterator::higher_order::Hkt;
 use primitive::prefix::Prefix;
 use serde::{Deserialize, Serialize};
 
@@ -104,6 +105,10 @@ impl<'bytes, const SZ: usize> Prefix for StorageKey<'bytes, SZ> {
     fn starts_with(&self, other: &Self) -> bool {
         self.bytes().starts_with(other.bytes())
     }
+}
+
+impl<const SZ: usize> Hkt for StorageKey<'static, SZ> {
+    type HktSelf<'a> = StorageKey<'a, SZ>;
 }
 
 // TODO: we may want to fix the SZ for all storage keys here
@@ -233,6 +238,10 @@ impl<'bytes> StorageKeyReference<'bytes> {
     pub(crate) fn into_byte_ref(self) -> ByteReference<'bytes> {
         self.reference
     }
+}
+
+impl Hkt for StorageKeyReference<'static> {
+    type HktSelf<'a> = StorageKeyReference<'a>;
 }
 
 impl<'bytes, const SZ: usize> From<&'bytes StorageKeyArray<SZ>> for StorageKeyReference<'bytes> {

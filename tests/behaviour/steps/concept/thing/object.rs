@@ -133,7 +133,7 @@ async fn object_get_has(
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
     let actuals = with_read_tx!(context, |tx| {
         object
-            .get_has(&tx.snapshot, &tx.thing_manager)
+            .get_has_unordered(&tx.snapshot, &tx.thing_manager)
             .collect_cloned_vec(|(attribute, _count)| attribute.into_owned())
             .unwrap()
     });
@@ -255,19 +255,25 @@ async fn object_get_instance_with_value(
     key_type_label: params::Label,
     value: params::Value,
 ) {
-    let key = get_attribute_by_value(context, key_type_label, value).unwrap().unwrap();
+    let Some(key) = get_attribute_by_value(context, key_type_label, value).unwrap() else {
+        // no key - no object
+        context.objects.insert(var.name, None);
+        return;
+    };
+
     let owner = with_read_tx!(context, |tx| {
         let object_type =
             tx.type_manager.get_object_type(&tx.snapshot, &object_type_label.to_typedb()).unwrap().unwrap();
         object_root.assert(&object_type);
         let mut owners = key.get_owners_by_type(&tx.snapshot, &tx.thing_manager, object_type);
-        let (owner, count) = owners.next().unwrap().unwrap();
-        let owner = owner.into_owned();
-        assert_eq!(count, 1, "found {count} keys owned by the same object, expected 1");
+        let owner = owners.next().transpose().unwrap().map(|(owner, count)| {
+            assert_eq!(count, 1, "found {count} keys owned by the same object, expected 1");
+            owner.into_owned()
+        });
         assert!(owners.next().is_none(), "multiple objects found with key {:?}", key);
         owner
     });
-    context.objects.insert(var.name, Some(ObjectWithKey::new_with_key(owner, key)));
+    context.objects.insert(var.name, owner.map(|owner| ObjectWithKey::new_with_key(owner, key)));
 }
 
 #[apply(generic_step)]

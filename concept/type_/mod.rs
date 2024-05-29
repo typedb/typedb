@@ -15,7 +15,7 @@ use primitive::maybe_owns::MaybeOwns;
 use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use self::annotation::AnnotationRegex;
+use self::{annotation::AnnotationRegex, object_type::ObjectType};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
@@ -62,7 +62,9 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError>;
 }
 
-pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> {}
+pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> {
+    fn into_owned_object_type(self) -> ObjectType<'static>;
+}
 
 pub trait OwnerAPI<'a>: TypeAPI<'a> {
     fn set_owns<Snapshot: WritableSnapshot>(

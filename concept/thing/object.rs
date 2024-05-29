@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fmt::Debug;
+
 use bytes::Bytes;
 use encoding::{
     graph::thing::{edge::ThingEdgeHas, vertex_object::ObjectVertex},
@@ -135,12 +137,12 @@ impl<'a> ThingAPI<'a> for Object<'a> {
     }
 }
 
-pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
+pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
     fn vertex(&self) -> ObjectVertex<'_>;
-
     fn into_vertex(self) -> ObjectVertex<'a>;
 
     fn type_(&self) -> impl ObjectTypeAPI<'static>;
+    fn into_owned_object(self) -> Object<'static>;
 
     fn has_attribute<Snapshot: ReadableSnapshot>(
         &self,
@@ -152,12 +154,20 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
         thing_manager.has_attribute(snapshot, self, attribute_type, value)
     }
 
-    fn get_has<'m, Snapshot: ReadableSnapshot>(
+    fn get_has_unordered<'m, Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
     ) -> HasAttributeIterator {
         thing_manager.get_has_unordered(snapshot, self)
+    }
+
+    fn get_has_ordered<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &'m Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
+    ) -> HasAttributeIterator {
+        thing_manager.get_has_ordered(snapshot, self)
     }
 
     fn get_has_type<'m, Snapshot: ReadableSnapshot>(
@@ -173,10 +183,10 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
         &self,
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager<Snapshot>,
-        attribute: Attribute<'_>,
+        mut attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
         if !thing_manager.object_exists(snapshot, self)? {
-            return Err(ConceptWriteError::SetHasOnDeleted {});
+            return Err(ConceptWriteError::SetHasOnDeleted { owner: self.clone().into_owned_object() });
         }
 
         let owns = self
@@ -193,7 +203,16 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
         if owns.is_unique(snapshot, thing_manager.type_manager())?
             && attribute.get_owners_by_type(snapshot, thing_manager, self.type_()).count() > 0
         {
-            return Err(ConceptWriteError::KeyTaken {});
+            if owns.is_key(snapshot, thing_manager.type_manager())? {
+                return Err(ConceptWriteError::KeyTaken {
+                    owner: self.clone().into_owned_object(),
+                    key_type: attribute.type_(),
+                    value: attribute.get_value(snapshot, thing_manager)?.into_owned(),
+                    owner_type: self.type_().into_owned_object_type(),
+                });
+            } else {
+                todo!()
+            }
         }
 
         if let Some(cardinality) = owns.get_cardinality(snapshot, thing_manager.type_manager())? {
@@ -202,7 +221,10 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
                 .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
                 .count();
             if !cardinality.is_valid(count as u64 + 1) {
-                return Err(ConceptWriteError::SetHasMultipleKeys {});
+                return Err(ConceptWriteError::MultipleKeys {
+                    owner: self.clone().into_owned_object(),
+                    key_type: owns.attribute(),
+                });
             }
         }
 
@@ -226,7 +248,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
             Ordering::Unordered => (),
             Ordering::Ordered => todo!("throw good error"),
         }
-        thing_manager.unset_has(snapshot, self, attribute);
+        thing_manager.unset_has_unordered(snapshot, self, attribute);
         Ok(())
     }
 
@@ -238,7 +260,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone {
         attributes: Vec<Attribute<'_>>,
     ) -> Result<(), ConceptWriteError> {
         if !thing_manager.object_exists(snapshot, self)? {
-            return Err(ConceptWriteError::SetHasOnDeleted {});
+            return Err(ConceptWriteError::SetHasOnDeleted { owner: self.clone().into_owned_object() });
         }
 
         let owns = self
@@ -338,6 +360,10 @@ impl<'a> ObjectAPI<'a> for Object<'a> {
 
     fn type_(&self) -> impl ObjectTypeAPI<'static> {
         self.type_()
+    }
+
+    fn into_owned_object(self) -> Object<'static> {
+        self.into_owned()
     }
 }
 

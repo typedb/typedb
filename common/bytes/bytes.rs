@@ -12,6 +12,7 @@ use std::{
     ops::Range,
 };
 
+use lending_iterator::higher_order::Hkt;
 use primitive::prefix::Prefix;
 
 use crate::{byte_array::ByteArray, byte_reference::ByteReference};
@@ -166,4 +167,8 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> Prefix for Bytes<'bytes, ARRAY_INLI
     fn starts_with(&self, other: &Self) -> bool {
         self.bytes().starts_with(other.bytes())
     }
+}
+
+impl<const ARRAY_INLINE_SIZE: usize> Hkt for Bytes<'static, ARRAY_INLINE_SIZE> {
+    type HktSelf<'a> = Bytes<'a, ARRAY_INLINE_SIZE>;
 }

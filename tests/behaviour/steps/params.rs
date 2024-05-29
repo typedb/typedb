@@ -9,7 +9,10 @@ use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr};
 use chrono::NaiveDateTime;
 use concept::{
     thing::{object::Object, value::Value as TypeDBValue},
-    type_::{annotation::{self, Annotation as TypeDBAnnotation}, object_type::ObjectType},
+    type_::{
+        annotation::{self, Annotation as TypeDBAnnotation, AnnotationCardinality},
+        object_type::ObjectType,
+    },
 };
 use cucumber::Parameter;
 use encoding::{
@@ -314,6 +317,19 @@ impl FromStr for Annotation {
                 );
                 let regex = &regex[r#"@regex(""#.len()..regex.len() - r#"")"#.len()];
                 TypeDBAnnotation::Regex(annotation::AnnotationRegex::new(regex.to_owned()))
+            }
+            card if card.starts_with("@card") => {
+                assert!(
+                    card.starts_with("@card(") && card.ends_with(')'),
+                    r#"Invalid @card format: {card:?}. Expected "@card(min, max)""#
+                );
+                let card = card["@card(".len()..card.len() - ")".len()].trim();
+                let (min, max) =
+                    card.split_once(',').map(|(min, max)| (min.trim(), Some(max.trim()))).unwrap_or((card, None));
+                TypeDBAnnotation::Cardinality(AnnotationCardinality::new(
+                    min.parse().unwrap(),
+                    max.map(str::parse).transpose().unwrap(),
+                ))
             }
             _ => panic!("Unrecognised (or unimplemented) annotation: {s}"),
         };

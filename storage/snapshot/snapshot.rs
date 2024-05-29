@@ -74,6 +74,17 @@ pub trait WritableSnapshot: ReadableSnapshot {
         self.operations_mut().writes_in_mut(keyspace_id).insert(byte_array, value);
     }
 
+    /// Insert a key with a new version
+    fn uninsert(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
+        self.uninsert_val(key, ByteArray::empty())
+    }
+
+    fn uninsert_val(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
+        let keyspace_id = key.keyspace_id();
+        let byte_array = key.into_byte_array();
+        self.operations_mut().writes_in_mut(keyspace_id).uninsert(byte_array, value);
+    }
+
     /// Insert a key with a new version if it does not already exist.
     /// If the key exists, mark it as a preexisting insertion to escalate to Insert if there is a concurrent Delete.
     fn put(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {

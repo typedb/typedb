@@ -15,6 +15,7 @@ rust_library(
     ]),
     deps = [
         "//common/primitive",
+        "//common/lending_iterator",
         "@crates//:serde",
     ]
 )

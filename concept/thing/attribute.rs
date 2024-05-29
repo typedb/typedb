@@ -110,6 +110,20 @@ impl<'a> Attribute<'a> {
     pub fn into_owned(self) -> Attribute<'static> {
         Attribute::new(self.vertex.into_owned())
     }
+
+    pub(crate) fn unput<Snapshot: WritableSnapshot>(
+        self,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
+    ) -> Result<(), ConceptWriteError> {
+        debug_assert_eq!(
+            self.get_owners(snapshot, thing_manager).count(),
+            0,
+            "attempting to unput an attribute that still has owners (logic error)"
+        );
+        thing_manager.unput_attribute(snapshot, self)?;
+        Ok(())
+    }
 }
 
 impl<'a> ConceptAPI<'a> for Attribute<'a> {}
@@ -150,7 +164,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
             .collect_cloned_vec(|(key, _)| key.into_owned())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for object in owners {
-            thing_manager.unset_has(snapshot, &object, self.as_reference());
+            thing_manager.unset_has_unordered(snapshot, &object, self.as_reference());
         }
         thing_manager.delete_attribute(snapshot, self)?;
 
@@ -255,7 +269,9 @@ impl<'a, Snapshot: ReadableSnapshot> AttributeIterator<'a, Snapshot> {
         }
     }
 
-    fn iter_next(&mut self) -> Option<Result<(StorageKey<'_, BUFFER_KEY_INLINE>, Bytes<'_, BUFFER_VALUE_INLINE>), ConceptReadError>> {
+    fn iter_next(
+        &mut self,
+    ) -> Option<Result<(StorageKey<'_, BUFFER_KEY_INLINE>, Bytes<'_, BUFFER_VALUE_INLINE>), ConceptReadError>> {
         match &self.state {
             State::Init | State::ItemUsed => {
                 self.find_next_state();

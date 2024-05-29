@@ -12,6 +12,7 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
+use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -42,6 +43,10 @@ impl<'a> RoleType<'a> {
         debug_assert_eq!(vertex.prefix(), Prefix::VertexRoleType);
         RoleType { vertex }
     }
+}
+
+impl Hkt for RoleType<'static> {
+    type HktSelf<'a> = Self;
 }
 
 impl<'a> ConceptAPI<'a> for RoleType<'a> {}

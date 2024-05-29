@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use bytes::Bytes;
 use encoding::{
@@ -20,7 +20,6 @@ use encoding::{
     value::decode_value_u64,
     AsBytes, Keyable, Prefixed,
 };
-use iterator::Collector;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
@@ -32,7 +31,7 @@ use crate::{
     concept_iterator, edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        object::{Object, ObjectAPI, ObjectIterator},
+        object::{Object, ObjectAPI},
         thing_manager::ThingManager,
         ThingAPI,
     },
@@ -40,7 +39,7 @@ use crate::{
         annotation::AnnotationDistinct,
         relation_type::RelationType,
         role_type::{RoleType, RoleTypeAnnotation},
-        ObjectTypeAPI, Ordering, OwnerAPI,
+        ObjectTypeAPI,
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
@@ -125,25 +124,24 @@ impl<'a> Relation<'a> {
     ) -> bool {
         match self.get_status(snapshot, thing_manager) {
             ConceptStatus::Inserted => thing_manager.has_role_players(snapshot, self.as_reference(), true),
-            ConceptStatus::Put | ConceptStatus::Persisted => {
-                thing_manager.has_role_players(snapshot, self.as_reference(), false)
-            }
+            ConceptStatus::Persisted => thing_manager.has_role_players(snapshot, self.as_reference(), false),
+            ConceptStatus::Put => unreachable!("Encountered a `put` relation"),
             ConceptStatus::Deleted => unreachable!("Cannot operate on a deleted concept."),
         }
     }
 
-    pub fn get_players<'m, Snapshot: ReadableSnapshot>(
-        &'m self,
-        snapshot: &'m Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>,
+    pub fn get_players<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
     ) -> impl for<'x> LendingIterator<Item<'x> = Result<(RolePlayer<'x>, u64), ConceptReadError>> {
         thing_manager.get_role_players(snapshot, self.as_reference())
     }
 
-    pub fn get_players_role_type<'m, Snapshot: ReadableSnapshot>(
-        &'m self,
-        snapshot: &'m Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>,
+    pub fn get_players_role_type<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
         role_type: RoleType<'static>,
     ) -> impl for<'x> LendingIterator<Item<'x> = Result<Object<'x>, ConceptReadError>> {
         self.get_players(snapshot, thing_manager).filter_map::<Result<Object<'_>, _>, _>(move |res| match res {
@@ -168,14 +166,12 @@ impl<'a> Relation<'a> {
         Ok(map)
     }
 
-    ///
     /// Semantics:
     ///   When duplicates are not allowed, we use set semantics and put the edge idempotently, which cannot fail other txn's
     ///   When duplicates are allowed, we increment the count of the role player edge and fail other txn's doing the same
     ///
     /// TODO: to optimise the common case of creating a full relation, we could introduce a RelationBuilder, which can accumulate role players,
     ///   Then write all players + indexes in one go
-    ///
     pub fn add_player<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
@@ -184,10 +180,22 @@ impl<'a> Relation<'a> {
         player: Object<'_>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: validate schema
+        if !thing_manager
+            .object_exists(snapshot, self)
+            .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
+        {
+            return Err(ConceptWriteError::AddPlayerOnDeleted { relation: self.clone().into_owned() });
+        }
+
         let role_annotations = role_type.get_annotations(snapshot, thing_manager.type_manager()).unwrap();
         let distinct = role_annotations.contains(&RoleTypeAnnotation::Distinct(AnnotationDistinct));
         if distinct {
-            thing_manager.set_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
+            thing_manager.put_role_player_unordered(
+                snapshot,
+                self.as_reference(),
+                player.as_reference(),
+                role_type.clone(),
+            )
         } else {
             thing_manager.increment_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
         }
@@ -285,35 +293,31 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
-        let has = self
-            .get_has(snapshot, thing_manager)
+        for attr in self
+            .get_has_unordered(snapshot, thing_manager)
             .collect_cloned_vec(|(key, _value)| key.into_owned())
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        let mut has_attr_type_deleted = HashSet::new();
-        for attr in has {
-            has_attr_type_deleted.add(attr.type_());
-            thing_manager.unset_has(snapshot, &self, attr);
-        }
-
-        for owns in self
-            .type_()
-            .get_owns(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
-            .iter()
         {
-            let ordering = owns
-                .get_ordering(snapshot, thing_manager.type_manager())
-                .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-            if matches!(ordering, Ordering::Ordered) {
-                thing_manager.unset_has_ordered(snapshot, self.as_reference(), owns.attribute());
-            }
+            thing_manager.unset_has_unordered(snapshot, &self, attr);
         }
 
-        let relations = self
+        // TODO
+        /*
+        for attr in self
+            .get_has_ordered(snapshot, thing_manager)
+            .collect_cloned_vec(|(key, _value)| key.into_owned())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
+        {
+            // TODO huh?
+            thing_manager.unset_has_ordered(snapshot, &self, attr.type_());
+        }
+        */
+
+        for (relation, role) in self
             .get_relations(snapshot, thing_manager)
-            .collect_cloned_vec(|(relation, role, count)| (relation.into_owned(), role.into_owned()))
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
-        for (relation, role) in relations {
+            .collect_cloned_vec(|(relation, role, _count)| (relation.into_owned(), role.into_owned()))
+            .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
+        {
             thing_manager.unset_role_player(snapshot, relation, self.as_reference(), role)?;
         }
 
@@ -323,8 +327,8 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
                 let (roleplayer, _count) = item?;
                 Ok((roleplayer.role_type, roleplayer.player.into_owned()))
             })
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+            .try_collect::<Vec<_>, _>()
+            .map_err(|error| ConceptWriteError::ConceptRead { source: error })?;
         for (role, player) in players {
             // TODO: Deleting one player at a time, each of which will delete parts of the relation index, isn't optimal
             //       Instead, we could delete the players, then delete the entire index at once, if there is one
@@ -333,7 +337,11 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
 
         debug_assert_eq!(self.get_indexed_players(snapshot, thing_manager).count(), 0);
 
-        thing_manager.delete_relation(snapshot, self);
+        if self.get_status(snapshot, thing_manager) == ConceptStatus::Inserted {
+            thing_manager.uninsert_relation(snapshot, self);
+        } else {
+            thing_manager.delete_relation(snapshot, self);
+        }
         Ok(())
     }
 }
@@ -349,6 +357,10 @@ impl<'a> ObjectAPI<'a> for Relation<'a> {
 
     fn type_(&self) -> impl ObjectTypeAPI<'static> {
         self.type_()
+    }
+
+    fn into_owned_object(self) -> Object<'static> {
+        Object::Relation(self.into_owned())
     }
 }
 
@@ -392,6 +404,10 @@ fn storage_key_to_role_player<'a>(
         RolePlayer { player: Object::new(edge.into_to()), role_type: RoleType::new(role_type) },
         decode_value_u64(value.as_reference()),
     )
+}
+
+impl Hkt for RolePlayer<'static> {
+    type HktSelf<'a> = RolePlayer<'a>;
 }
 
 edge_iterator!(

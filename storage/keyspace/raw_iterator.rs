@@ -28,7 +28,7 @@ impl DBIterator {
     fn peek(&mut self) -> Option<&<Self as LendingIterator>::Item<'_>> {
         match self.next() {
             Some(item) => {
-                self.item = Some(unsafe { 
+                self.item = Some(unsafe {
                     // SAFETY: the stored item is only accessible while mutably borrowing this iterator.
                     // When the underlying iterator is advanced, the stored item is discarded.
                     transmute::<KeyValue<'_>, KeyValue<'static>>(item)
@@ -88,4 +88,3 @@ pub(super) fn compare_key<E>(item: &Result<(&[u8], &[u8]), E>, key: &[u8]) -> Or
         Ordering::Equal
     }
 }
-

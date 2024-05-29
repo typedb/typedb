@@ -131,8 +131,7 @@ impl SnapshotRangeIterator {
         F: for<'b> Fn(StorageKeyReference<'b>, ByteReference<'b>) -> M + 'static,
         M: 'static,
     {
-        self.map_static::<Result<M, _>, _>(move |res| res.map(|(a, b)| mapper(a.as_reference(), b.as_reference())))
-            .collect()
+        self.map_static(move |res| res.map(|(a, b)| mapper(a.as_reference(), b.as_reference()))).collect()
     }
 
     pub fn collect_cloned_bmap<F, M, N>(self, mapper: F) -> Result<BTreeMap<M, N>, Arc<SnapshotIteratorError>>
