@@ -12,7 +12,7 @@ use lending_iterator::{
     LendingIterator, Peekable, Seekable,
 };
 use logger::result::ResultExt;
-use speedb::DB;
+use rocksdb::DB;
 
 use super::{
     keyspace::{Keyspace, KeyspaceError},
@@ -23,10 +23,10 @@ use crate::key_range::{KeyRange, RangeEnd};
 pub struct KeyspaceRangeIterator {
     iterator: Peekable<
         SeekableMap<
-            TakeWhile<raw_iterator::DBIterator, Box<dyn FnMut(&Result<(&[u8], &[u8]), speedb::Error>) -> bool>>,
+            TakeWhile<raw_iterator::DBIterator, Box<dyn FnMut(&Result<(&[u8], &[u8]), rocksdb::Error>) -> bool>>,
             Box<
                 dyn for<'a> Fn(
-                    Result<(&'a [u8], &'a [u8]), speedb::Error>,
+                    Result<(&'a [u8], &'a [u8]), rocksdb::Error>,
                 ) -> Result<(&'a [u8], &'a [u8]), KeyspaceError>,
             >,
             fn(&[u8]) -> &[u8],
@@ -58,7 +58,7 @@ impl KeyspaceRangeIterator {
         let keyspace_name = keyspace.name();
 
         let range_iterator = iterator
-            .take_while(Box::new(move |res: &Result<(&[u8], &[u8]), speedb::Error>| match res {
+            .take_while(Box::new(move |res: &Result<(&[u8], &[u8]), rocksdb::Error>| match res {
                 Ok((key, _)) => range.within_end(&ByteArray::copy(key)),
                 Err(_) => true,
             }) as Box<_>)
@@ -79,7 +79,7 @@ fn identity(input: &[u8]) -> &[u8] {
 
 fn error_mapper(
     keyspace_name: &'static str,
-) -> Box<dyn for<'a> Fn(Result<(&'a [u8], &'a [u8]), speedb::Error>) -> Result<(&'a [u8], &'a [u8]), KeyspaceError>> {
+) -> Box<dyn for<'a> Fn(Result<(&'a [u8], &'a [u8]), rocksdb::Error>) -> Result<(&'a [u8], &'a [u8]), KeyspaceError>> {
     Box::new(move |res| res.map_err(|error| KeyspaceError::Iterate { name: keyspace_name, source: error }))
 }
 

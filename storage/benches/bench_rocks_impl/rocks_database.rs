@@ -5,7 +5,7 @@
  */
 
 use non_transactional_rocks::NonTransactionalRocks;
-use speedb::{Options, WriteOptions};
+use rocksdb::{Options, WriteOptions};
 use storage::StorageOpenError;
 
 use crate::{bench_rocks_impl::rocks_database::typedb_database::TypeDBDatabase, CLIArgs};
@@ -30,7 +30,7 @@ fn write_options(args: &CLIArgs) -> WriteOptions {
     write_options
 }
 
-pub fn rocks<const N_DATABASES: usize>(args: &CLIArgs) -> Result<NonTransactionalRocks<N_DATABASES>, speedb::Error> {
+pub fn rocks<const N_DATABASES: usize>(args: &CLIArgs) -> Result<NonTransactionalRocks<N_DATABASES>, rocksdb::Error> {
     NonTransactionalRocks::<N_DATABASES>::setup(database_options(args), write_options(args))
 }
 
@@ -41,7 +41,7 @@ pub fn create_typedb<const N_DATABASES: usize>() -> Result<TypeDBDatabase<N_DATA
 mod non_transactional_rocks {
     use std::iter::zip;
 
-    use speedb::{Options, WriteBatch, WriteOptions, DB};
+    use rocksdb::{Options, WriteBatch, WriteOptions, DB};
     use test_utils::{create_tmp_dir, TempDir};
 
     use crate::{RocksDatabase, RocksWriteBatch};
@@ -53,7 +53,7 @@ mod non_transactional_rocks {
     }
 
     impl<const N_DATABASES: usize> NonTransactionalRocks<N_DATABASES> {
-        pub(super) fn setup(options: Options, write_options: WriteOptions) -> Result<Self, speedb::Error> {
+        pub(super) fn setup(options: Options, write_options: WriteOptions) -> Result<Self, rocksdb::Error> {
             let path = create_tmp_dir();
             let databases = core::array::from_fn(|i| DB::open(&options, path.join(format!("db_{i}"))).unwrap());
 
@@ -74,12 +74,12 @@ mod non_transactional_rocks {
     }
 
     impl<'this, const N_DATABASES: usize> RocksWriteBatch for NonTransactionalWriteBatch<'this, N_DATABASES> {
-        type CommitError = speedb::Error;
+        type CommitError = rocksdb::Error;
         fn put(&mut self, database_index: usize, key: [u8; crate::KEY_SIZE]) {
             self.write_batches[database_index].put(key, [])
         }
 
-        fn commit(self) -> Result<(), speedb::Error> {
+        fn commit(self) -> Result<(), rocksdb::Error> {
             let write_options = &self.database.write_options;
             for (db, write_batch) in zip(&self.database.databases, self.write_batches) {
                 db.write_opt(write_batch, write_options)?
