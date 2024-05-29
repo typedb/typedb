@@ -17,7 +17,7 @@ use concept::{
 use cucumber::Parameter;
 use encoding::{
     graph::type_::Kind as TypeDBTypeKind,
-    value::{label::Label as TypeDBLabel, value_type::ValueType as TypeDBValueType},
+    value::{duration_value::Duration, label::Label as TypeDBLabel, value_type::ValueType as TypeDBValueType},
 };
 use itertools::Itertools;
 
@@ -228,13 +228,14 @@ impl FromStr for ObjectRootLabel {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "value_type", regex = "(boolean|long|double|string|datetime)")]
+#[param(name = "value_type", regex = "(boolean|long|double|datetime|duration|string)")]
 pub(crate) enum ValueType {
     Boolean,
     Long,
     Double,
-    String,
     DateTime,
+    Duration,
+    String,
 }
 
 impl ValueType {
@@ -243,8 +244,9 @@ impl ValueType {
             ValueType::Boolean => TypeDBValueType::Boolean,
             ValueType::Long => TypeDBValueType::Long,
             ValueType::Double => TypeDBValueType::Double,
-            ValueType::String => TypeDBValueType::String,
             ValueType::DateTime => TypeDBValueType::DateTime,
+            ValueType::Duration => TypeDBValueType::Duration,
+            ValueType::String => TypeDBValueType::String,
         }
     }
 }
@@ -258,6 +260,7 @@ impl FromStr for ValueType {
             "boolean" => Self::Boolean,
             "double" => Self::Double,
             "datetime" => Self::DateTime,
+            "duration" => Self::Duration,
             _ => panic!("Unrecognised value type"),
         })
     }
@@ -278,7 +281,7 @@ impl Value {
             TypeDBValueType::DateTime => {
                 TypeDBValue::DateTime(NaiveDateTime::parse_from_str(&self.raw_value, "%Y-%m-%d %H:%M:%S").unwrap())
             }
-            TypeDBValueType::Duration => todo!(),
+            TypeDBValueType::Duration => TypeDBValue::Duration(self.raw_value.parse().unwrap()),
             TypeDBValueType::String => TypeDBValue::String(Cow::Owned(self.raw_value)),
         }
     }
