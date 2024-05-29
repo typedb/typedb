@@ -13,7 +13,7 @@ rust_library(
         "*.rs",
     ]),
     deps = [
-        "@crates//:itertools"
+        "//ir",
     ],
 )
 
