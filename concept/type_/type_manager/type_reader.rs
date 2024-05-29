@@ -173,16 +173,16 @@ impl TypeReader {
         where
             T: TypeAPI<'static>,
             IMPL : InterfaceImplementation<'static> + Hash + Eq {
-        // TODO: Should the owner of a transitive owns be the declaring owner or the inheriting owner?
+        // TODO: Should the owner of a transitive owns be the declaring owner or the inheriting owner? Running with the declaring owner for now.
         let mut transitive_implementations: HashMap<IMPL::InterfaceType, IMPL> = HashMap::new();
-        let mut overridden_interfaces: HashSet<IMPL::InterfaceType> = HashSet::new(); // TODO: Should this store the owns? This feels more fool-proof if it's correct.
+        let mut overridden_interfaces: HashSet<IMPL::InterfaceType> = HashSet::new();
         let mut current_type = Some(object_type);
         while current_type.is_some() {
             let declared_implementations = Self::get_implemented_interfaces::<IMPL>(snapshot, current_type.as_ref().unwrap().clone())?;
             for implementation in declared_implementations.into_iter() {
                 let interface = implementation.interface();
                 if !overridden_interfaces.contains(&interface) {
-                    debug_assert!(!transitive_implementations.contains_key(&interface));
+                    debug_assert!(!transitive_implementations.contains_key(&interface)); // TODO: This fails in the case of implicit overrides, such as redeclaring an ownership with a stronger annotation.
                     transitive_implementations.insert(implementation.interface(), implementation.clone());
                 }
                 // Has to be outside so we ignore transitively overridden ones too
