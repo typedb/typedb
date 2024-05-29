@@ -42,7 +42,6 @@ log:
       type: reasoner-perf-counters
 
 diagnostics:
-  deployment-id:
   reporting:
     errors: true
     statistics: true

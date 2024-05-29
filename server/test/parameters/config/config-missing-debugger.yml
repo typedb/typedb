@@ -35,7 +35,6 @@ log:
       output: [ stdout, file ]
 
 diagnostics:
-  deployment-id:
   reporting:
     errors: true
     statistics: true

@@ -58,7 +58,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOM
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PORT_IN_USE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
-import static com.vaticle.typedb.core.server.common.Constants.DEPLOYMENT_ID_FILE_NAME;
 import static com.vaticle.typedb.core.server.common.Constants.DIAGNOSTICS_REPORTING_URI;
 import static com.vaticle.typedb.core.server.common.Constants.ERROR_REPORTING_URI;
 import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_ALPHABET;
@@ -199,7 +198,7 @@ public class TypeDBServer implements AutoCloseable {
 
     protected String serverID() {
         try {
-            String serverID = "";
+            String serverID;
 
             Path serverIDFile = config().storage().dataDir().resolve(SERVER_ID_FILE_NAME);
             if (serverIDFile.toFile().exists()) {
@@ -233,35 +232,7 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     protected String deploymentID() {
-        try {
-            Optional<String> configDeploymentID = config().diagnostics().deploymentID();
-            if (configDeploymentID.isPresent()) {
-                return configDeploymentID.get();
-            }
-
-            String deploymentID = "";
-
-            Path deploymentIDFile = config().storage().dataDir().resolve(DEPLOYMENT_ID_FILE_NAME);
-            if (deploymentIDFile.toFile().exists()) {
-                deploymentID = Files.readString(deploymentIDFile);
-                if (deploymentID.isEmpty()) {
-                    throw new Exception("The stored deployment ID value is empty");
-                }
-            } else {
-                deploymentID = generateDeploymentID();
-                if (deploymentID.isEmpty()) {
-                    throw new Exception("The generated deployment ID value is empty");
-                }
-
-                Files.writeString(deploymentIDFile, deploymentID);
-            }
-
-            return deploymentID;
-        } catch (Exception e) {
-            LOG.debug("Failed to create, persist, or read stored deployment ID: ", e);
-        }
-        // fallback
-        return "_0";
+        return generateDeploymentID();
     }
 
     protected String generateDeploymentID() {
