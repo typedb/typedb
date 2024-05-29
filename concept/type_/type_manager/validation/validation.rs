@@ -14,6 +14,7 @@ use encoding::graph::thing::edge::ThingEdgeRolePlayer;
 use encoding::graph::thing::vertex_attribute::AttributeVertex;
 use encoding::graph::type_::vertex::EncodableTypeVertex;
 use encoding::graph::Typed;
+use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 use crate::error::ConceptReadError;
 use crate::type_::attribute_type::AttributeType;
@@ -29,7 +30,7 @@ use crate::type_::type_manager::{KindAPI, TypeManager};
 use crate::type_::type_manager::type_reader::TypeReader;
 use crate::type_::type_manager::validation::SchemaValidationError;
 use storage::key_range::KeyRange;
-use crate::thing::ObjectAPI;
+use crate::thing::object::ObjectAPI;
 use crate::thing::relation::{RelationIterator, RolePlayerIterator};
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {

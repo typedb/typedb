@@ -16,6 +16,7 @@ pub(crate) fn are_annotations_compatible(subtype_annotation: Annotation, superty
         Annotation::Key(key) => validate_key_is_compatible_with(key, supertype_annotations),
         Annotation::Cardinality(cardinality) => validate_cardinalty_is_compatible_with(cardinality, supertype_annotations),
         Annotation::Regex(_) => todo!(), // TODO: https://cs.stackexchange.com/a/9131 yikes. Can we just return Ok(())?
+        Annotation::Unique(_) => todo!(),
     }
 }
 

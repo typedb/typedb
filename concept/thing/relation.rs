@@ -401,8 +401,9 @@ fn storage_key_to_role_player<'a>(
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (RolePlayer<'a>, u64) {
     let edge = ThingEdgeRolePlayer::new(storage_key.into_bytes());
+    let role_type = RoleType::from_type_id(edge.role_id());
     (
-        RolePlayer { player: Object::new(edge.into_to()), role_type: RoleType::from_type_id(edge.role_id()) },
+        RolePlayer { player: Object::new(edge.into_to()), role_type },
         decode_value_u64(value.as_reference()),
     )
 }

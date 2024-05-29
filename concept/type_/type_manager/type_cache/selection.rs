@@ -37,7 +37,7 @@ pub(super) use impl_cache_getter;
 macro_rules! impl_has_common_type_cache {
     ($cache_type: ty, $inner_type: ty) => {
         impl HasCommonTypeCache<$inner_type> for $cache_type {
-            fn common_type_cache(&self) -> &$crate::type_::type_cache::kind_cache::CommonTypeCache<$inner_type> {
+            fn common_type_cache(&self) -> &CommonTypeCache<$inner_type> {
                 &self.common_type_cache
             }
         }
@@ -48,7 +48,7 @@ pub(super) use impl_has_common_type_cache;
 macro_rules! impl_has_owner_player_cache {
     ($cache_type: ty, $inner_type: ty) => {
         impl HasOwnerPlayerCache for $cache_type {
-            fn owner_player_cache(&self) -> &$crate::type_::type_cache::kind_cache::OwnerPlayerCache {
+            fn owner_player_cache(&self) -> &OwnerPlayerCache {
                 &self.owner_player_cache
             }
         }

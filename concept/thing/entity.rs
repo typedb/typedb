@@ -7,13 +7,7 @@
 use std::collections::HashSet;
 
 use encoding::{
-    graph::{
-        thing::{
-            edge::{ThingEdgeHas, ThingEdgeRelationIndex, ThingEdgeRolePlayer},
-            vertex_object::ObjectVertex,
-        },
-        Typed,
-    },
+    graph::{thing::vertex_object::ObjectVertex, Typed},
     layout::prefix::Prefix,
     AsBytes, Keyable, Prefixed,
 };
@@ -32,17 +26,11 @@ use crate::{
         object::{Object, ObjectAPI},
         relation::{IndexedPlayersIterator, RelationRoleIterator},
         thing_manager::ThingManager,
-        value::Value,
-        ObjectAPI, ThingAPI,
-    },
-    type_::{
-        attribute_type::AttributeType, entity_type::EntityType, owns::Owns, type_manager::TypeManager, Ordering,
-        OwnerAPI, TypeAPI,
+        ThingAPI,
     },
     type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
-
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Entity<'a> {
     vertex: ObjectVertex<'a>,

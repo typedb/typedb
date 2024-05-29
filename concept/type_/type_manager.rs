@@ -36,7 +36,7 @@ use storage::{
 };
 use type_cache::TypeCache;
 
-use super::annotation::{AnnotationDistinct, AnnotationIndependent, AnnotationKey, AnnotationRegex};
+use super::annotation::{AnnotationDistinct, AnnotationIndependent, AnnotationKey, AnnotationRegex, AnnotationUnique};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
@@ -1077,19 +1077,19 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn set_edge_annotation_unique<'b>(
         &self,
         snapshot: &mut Snapshot,
-        edge: impl IntoCanonicalTypeEdge<'b>,
+        edge: impl EncodableParametrisedTypeEdge<'b>,
     ) {
-        let annotation_property = build_property_type_edge_annotation_unique(edge.into_type_edge());
-        snapshot.put(annotation_property.into_storage_key().into_owned_array());
+        // TODO: Validation
+        TypeWriter::storage_put_type_edge_property::<AnnotationUnique>(snapshot, edge, None)
     }
 
     pub(crate) fn delete_edge_annotation_unique<'b>(
         &self,
         snapshot: &mut Snapshot,
-        edge: impl IntoCanonicalTypeEdge<'b>,
+        edge: impl EncodableParametrisedTypeEdge<'b>,
     ) {
-        let annotation_property = build_property_type_edge_annotation_unique(edge.into_type_edge());
-        snapshot.delete(annotation_property.into_storage_key().into_owned_array());
+        // TODO: Validation
+        TypeWriter::storage_delete_type_edge_property::<AnnotationUnique>(snapshot, edge)
     }
 
     pub(crate) fn set_edge_annotation_key<'b>(

@@ -83,7 +83,7 @@ impl<'a> Owns<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<Option<AnnotationCardinality>, ConceptReadError> {
         let annotations = self.get_effective_annotations(snapshot, type_manager)?;
-        for annotation in &annotations {
+        for annotation in annotations.keys() {
             match annotation {
                 OwnsAnnotation::Cardinality(cardinality) => return Ok(Some(*cardinality)),
                 OwnsAnnotation::Key(_) => return Ok(Some(AnnotationCardinality::new(1, Some(1)))),

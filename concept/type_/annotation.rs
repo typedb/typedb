@@ -11,7 +11,7 @@ use bytes::Bytes;
 use encoding::AsBytes;
 use encoding::graph::type_::property::{EncodableTypeEdgeProperty, EncodableTypeVertexProperty};
 use encoding::layout::infix::Infix;
-use encoding::layout::infix::Infix::{PropertyAnnotationAbstract, PropertyAnnotationDistinct, PropertyAnnotationIndependent, PropertyAnnotationKey};
+use encoding::layout::infix::Infix::{PropertyAnnotationAbstract, PropertyAnnotationDistinct, PropertyAnnotationIndependent, PropertyAnnotationKey, PropertyAnnotationUnique};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -23,7 +23,6 @@ pub enum Annotation {
     Key(AnnotationKey),
     Cardinality(AnnotationCardinality),
     Regex(AnnotationRegex),
-    TODO: Needs annotation Unique
 }
 
 
@@ -151,6 +150,7 @@ macro_rules! trivial_type_edge_annotation_encoder {
 
 trivial_type_edge_annotation_encoder!(AnnotationDistinct, PropertyAnnotationDistinct);
 trivial_type_edge_annotation_encoder!(AnnotationKey, PropertyAnnotationKey);
+trivial_type_edge_annotation_encoder!(AnnotationUnique, PropertyAnnotationUnique);
 
 impl<'a> EncodableTypeEdgeProperty<'a> for AnnotationCardinality {
     const INFIX: Infix = Infix::PropertyAnnotationCardinality;
@@ -172,6 +172,7 @@ impl Annotation {
             Annotation::Distinct(_) => <AnnotationDistinct as EncodableTypeVertexProperty>::INFIX,
             Annotation::Independent(_) => AnnotationIndependent::INFIX,
             Annotation::Key(_) => AnnotationKey::INFIX,
+            Annotation::Unique(_) => AnnotationUnique::INFIX,
             Annotation::Cardinality(_) => <AnnotationCardinality as EncodableTypeEdgeProperty>::INFIX,
             Annotation::Regex(_) => AnnotationRegex::INFIX,
         }

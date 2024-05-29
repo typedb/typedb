@@ -214,7 +214,7 @@ impl OwnsCache {
             let owns = Owns::new(owner, attribute);
             let cache = OwnsCache {
                 ordering: TypeReader::get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
-                overrides: TypeReader::get_owns_override(snapshot, owns.clone()).unwrap(),
+                overrides: TypeReader::get_implementation_override(snapshot, owns.clone()).unwrap(),
                 effective_annotations: TypeReader::get_effective_type_edge_annotations(snapshot, owns.clone())
                     .unwrap()
                     .into_iter()
@@ -242,7 +242,7 @@ impl PlaysCache {
             let plays = Plays::new(player, role);
             map.insert(
                 plays.clone(),
-                PlaysCache { overrides: TypeReader::get_plays_override(snapshot, plays.clone()).unwrap() },
+                PlaysCache { overrides: TypeReader::get_implementation_override(snapshot, plays.clone()).unwrap() },
             );
         }
         map
