@@ -208,10 +208,10 @@ impl<'a> AttributeType<'a> {
                 type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.storage_set_annotation_independent(snapshot, self.clone().into_owned())
+                type_manager.set_annotation_independent(snapshot, self.clone().into_owned())
             }
             AttributeTypeAnnotation::Regex(regex) => {
-                type_manager.storage_set_annotation_regex(snapshot, self.clone().into_owned(), regex)
+                type_manager.set_annotation_regex(snapshot, self.clone().into_owned(), regex)
             }
         };
         Ok(())
@@ -225,13 +225,13 @@ impl<'a> AttributeType<'a> {
     ) {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.storage_delete_annotation_abstract(snapshot, self.clone().into_owned())
+                type_manager.delete_annotation_abstract(snapshot, self.clone().into_owned())
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.storage_delete_annotation_independent(snapshot, self.clone().into_owned())
+                type_manager.delete_annotation_independent(snapshot, self.clone().into_owned())
             }
             AttributeTypeAnnotation::Regex(_) => {
-                type_manager.storage_delete_annotation_regex(snapshot, self.clone().into_owned())
+                type_manager.delete_annotation_regex(snapshot, self.clone().into_owned())
             }
         }
     }

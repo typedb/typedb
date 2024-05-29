@@ -208,7 +208,7 @@ impl<'a> RelationType<'a> {
     ) {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
-                type_manager.storage_delete_annotation_abstract(snapshot, self.clone().into_owned())
+                type_manager.delete_annotation_abstract(snapshot, self.clone().into_owned())
             }
         }
     }

@@ -212,10 +212,10 @@ impl<'a> RoleType<'a> {
                 type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())
             }
             RoleTypeAnnotation::Distinct(_) => {
-                type_manager.storage_set_annotation_distinct(snapshot, self.clone().into_owned())
+                type_manager.set_annotation_distinct(snapshot, self.clone().into_owned())
             }
             RoleTypeAnnotation::Cardinality(cardinality) => {
-                type_manager.storage_set_annotation_cardinality(snapshot, self.clone().into_owned(), cardinality)
+                type_manager.set_annotation_cardinality(snapshot, self.clone().into_owned(), cardinality)
             }
         };
         Ok(())
@@ -229,13 +229,13 @@ impl<'a> RoleType<'a> {
     ) {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
-                type_manager.storage_delete_annotation_abstract(snapshot, self.clone().into_owned())
+                type_manager.delete_annotation_abstract(snapshot, self.clone().into_owned())
             }
             RoleTypeAnnotation::Distinct(_) => {
-                type_manager.storage_delete_annotation_distinct(snapshot, self.clone().into_owned())
+                type_manager.delete_annotation_distinct(snapshot, self.clone().into_owned())
             }
             RoleTypeAnnotation::Cardinality(_) => {
-                type_manager.storage_delete_annotation_cardinality(snapshot, self.clone().into_owned())
+                type_manager.delete_annotation_cardinality(snapshot, self.clone().into_owned())
             }
         }
     }

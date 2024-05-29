@@ -691,7 +691,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         let role = RoleType::new(type_vertex);
         TypeWriter::storage_put_label(snapshot, role.clone(), label);
         TypeWriter::storage_put_relates(snapshot, relation_type, role.clone());
-        self.storage_set_role_ordering(snapshot, role.clone(), ordering);
+        self.set_role_ordering(snapshot, role.clone(), ordering);
         if !is_root {
             TypeWriter::storage_put_supertype(
                 snapshot,
@@ -868,6 +868,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         Self::set_supertype(self, snapshot, subtype, supertype)
     }
 
+    // TODO: If the validation for owns and plays can be made generic, we should see if we can make these functions generic as well.
     pub(crate) fn set_owns(
         &self,
         snapshot: &mut Snapshot,
@@ -988,7 +989,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         TypeWriter::storage_delete_owns_ordering(snapshot, owns)
     }
 
-    fn storage_set_role_ordering(&self, snapshot: &mut Snapshot, role: RoleType<'_>, ordering: Ordering) {
+    fn set_role_ordering(&self, snapshot: &mut Snapshot, role: RoleType<'_>, ordering: Ordering) {
         TypeWriter::storage_put_type_vertex_property(snapshot, role, Some(ordering))
     }
 
@@ -997,42 +998,46 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         TypeWriter::storage_put_type_vertex_property::<AnnotationAbstract>(snapshot, type_, None)
     }
 
-    pub(crate) fn storage_delete_annotation_abstract(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
+    pub(crate) fn delete_annotation_abstract(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         // TODO: Validation
         TypeWriter::storage_delete_type_vertex_property::<AnnotationAbstract>(snapshot, type_)
     }
 
-    pub(crate) fn storage_set_annotation_distinct(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
+    pub(crate) fn set_annotation_distinct(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         // TODO: Validation
         TypeWriter::storage_put_type_vertex_property::<AnnotationDistinct>(snapshot, type_, None)
     }
 
-    pub(crate) fn storage_delete_annotation_distinct(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
+    pub(crate) fn delete_annotation_distinct(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
+        // TODO: Validation
         TypeWriter::storage_delete_type_vertex_property::<AnnotationDistinct>(snapshot, type_)
     }
 
-    pub(crate) fn storage_set_annotation_independent(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
+    pub(crate) fn set_annotation_independent(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
+        // TODO: Validation
         TypeWriter::storage_put_type_vertex_property::<AnnotationDistinct>(snapshot, type_, None)
     }
 
-    pub(crate) fn storage_delete_annotation_independent(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
+    pub(crate) fn delete_annotation_independent(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
+        // TODO: Validation
         TypeWriter::storage_delete_type_vertex_property::<AnnotationIndependent>(snapshot, type_)
     }
 
-    pub(crate) fn storage_set_annotation_cardinality(
+    pub(crate) fn set_annotation_cardinality(
         &self,
         snapshot: &mut Snapshot,
         type_: impl TypeAPI<'static>,
         annotation: AnnotationCardinality,
     ) {
+        // TODO: Validation
         TypeWriter::storage_put_type_vertex_property::<AnnotationCardinality>(snapshot, type_, Some(annotation))
     }
 
-    pub(crate) fn storage_delete_annotation_cardinality(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
+    pub(crate) fn delete_annotation_cardinality(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         TypeWriter::storage_delete_type_vertex_property::<AnnotationCardinality>(snapshot, type_)
     }
 
-    pub(crate) fn storage_set_annotation_regex(
+    pub(crate) fn set_annotation_regex(
         &self,
         snapshot: &mut Snapshot,
         type_: impl TypeAPI<'static>,
@@ -1041,7 +1046,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         TypeWriter::storage_put_type_vertex_property::<AnnotationRegex>(snapshot, type_, Some(regex))
     }
 
-    pub(crate) fn storage_delete_annotation_regex(
+    pub(crate) fn delete_annotation_regex(
         &self,
         snapshot: &mut Snapshot,
         type_: impl TypeAPI<'static>
@@ -1051,7 +1056,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         TypeWriter::storage_delete_type_vertex_property::<AnnotationRegex>(snapshot, type_)
     }
 
-    pub(crate) fn storage_set_edge_annotation_distinct<'b>(
+    pub(crate) fn set_edge_annotation_distinct<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl EncodableParametrisedTypeEdge<'b>,
@@ -1060,7 +1065,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         TypeWriter::storage_put_type_edge_property::<AnnotationDistinct>(snapshot, edge, None)
     }
 
-    pub(crate) fn storage_unset_edge_annotation_distinct<'b>(
+    pub(crate) fn delete_edge_annotation_distinct<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl EncodableParametrisedTypeEdge<'b>,
@@ -1069,7 +1074,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         TypeWriter::storage_delete_type_edge_property::<AnnotationDistinct>(snapshot, edge)
     }
 
-    pub(crate) fn storage_set_edge_annotation_unique<'b>(
+    pub(crate) fn set_edge_annotation_unique<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl IntoCanonicalTypeEdge<'b>,
@@ -1078,7 +1083,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.put(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_unset_edge_annotation_unique<'b>(
+    pub(crate) fn delete_edge_annotation_unique<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl IntoCanonicalTypeEdge<'b>,
@@ -1087,7 +1092,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         snapshot.delete(annotation_property.into_storage_key().into_owned_array());
     }
 
-    pub(crate) fn storage_set_edge_annotation_key<'b>(
+    pub(crate) fn set_edge_annotation_key<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl EncodableParametrisedTypeEdge<'b>,
@@ -1095,7 +1100,8 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         TypeWriter::storage_put_type_edge_property::<AnnotationKey>(snapshot, edge, None)
     }
 
-    pub(crate) fn storage_unset_edge_annotation_key<'b>(
+
+    pub(crate) fn delete_edge_annotation_key<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl EncodableParametrisedTypeEdge<'b>,
@@ -1103,7 +1109,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         TypeWriter::storage_delete_type_edge_property::<AnnotationKey>(snapshot, edge)
     }
 
-    pub(crate) fn storage_set_edge_annotation_cardinality<'b>(
+    pub(crate) fn set_edge_annotation_cardinality<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl EncodableParametrisedTypeEdge<'b>,
@@ -1112,7 +1118,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         TypeWriter::storage_put_type_edge_property::<AnnotationCardinality>(snapshot, edge, Some(annotation))
     }
 
-    pub(crate) fn storage_unset_edge_annotation_cardinality<'b>(
+    pub(crate) fn delete_edge_annotation_cardinality<'b>(
         &self,
         snapshot: &mut Snapshot,
         edge: impl EncodableParametrisedTypeEdge<'b>,
