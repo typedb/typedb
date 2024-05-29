@@ -31,6 +31,7 @@ rust_library(
         "@crates//:chrono",
         "@crates//:tracing",
         "@crates//:seahash",
+        "@crates//:serde",
     ],
 )
 

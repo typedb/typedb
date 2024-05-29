@@ -43,10 +43,6 @@ impl<'a> Attribute<'a> {
         Attribute { vertex, value: None }
     }
 
-    pub(crate) fn value_type(&self) -> ValueType {
-        self.vertex.value_type()
-    }
-
     pub fn type_(&self) -> AttributeType<'static> {
         AttributeType::new(build_vertex_attribute_type(self.vertex.type_id_()))
     }
@@ -133,6 +129,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>,
     ) -> ConceptStatus {
+        let x = self.vertex();
         thing_manager.get_status(snapshot, self.vertex().as_storage_key())
     }
 

@@ -5,4 +5,5 @@
  */
 
 pub mod r#struct;
-pub(crate) mod definition_key;
+pub mod definition_key;
+pub mod definition_key_generator;

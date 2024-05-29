@@ -6,10 +6,13 @@
 
 
 use std::ops::Range;
+
 use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
 use bytes::Bytes;
+use resource::constants::encoding::DefinitionIDUInt;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
+
 use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
 use crate::layout::prefix::{Prefix, PrefixID};
 
@@ -31,11 +34,19 @@ impl<'a> DefinitionKey<'a> {
         Self { bytes }
     }
 
-    fn build(prefix: Prefix, definition_id: DefinitionID) -> Self {
+    pub(crate) fn build(prefix: Prefix, definition_id: DefinitionID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         array.bytes_mut()[Self::RANGE_DEFINITION_ID].copy_from_slice(&definition_id.bytes());
         Self { bytes: Bytes::Array(array) }
+    }
+
+    pub fn as_reference<'this: 'a>(&'this self) -> DefinitionKey<'this> {
+        Self::new(Bytes::Reference(self.bytes.as_reference()))
+    }
+
+    pub fn into_owned(self) -> DefinitionKey<'static> {
+        DefinitionKey { bytes: self.bytes.into_owned() }
     }
 }
 
@@ -62,8 +73,6 @@ pub struct DefinitionID {
     bytes: [u8; DefinitionID::LENGTH],
 }
 
-pub type DefinitionIDUInt = u16;
-
 impl DefinitionID {
     pub(crate) const LENGTH: usize = std::mem::size_of::<DefinitionIDUInt>();
 
@@ -76,8 +85,8 @@ impl DefinitionID {
         DefinitionID { bytes: id.to_be_bytes() }
     }
 
-    pub fn as_u16(&self) -> u16 {
-        u16::from_be_bytes(self.bytes)
+    pub fn as_uint(&self) -> DefinitionIDUInt {
+        DefinitionIDUInt::from_be_bytes(self.bytes)
     }
 
     pub fn bytes(&self) -> [u8; DefinitionID::LENGTH] {

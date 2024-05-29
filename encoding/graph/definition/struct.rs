@@ -4,26 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+use resource::constants::encoding::StructFieldIDUInt;
+
 use crate::value::value_type::ValueType;
 
-/// Restrictions: maximum number fields is StructFieldNumber::MAX
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct StructDefinition {
     name: String,
     fields: Vec<StructDefinitionField>,
-    field_names: HashMap<String, StructFieldNumber>,
+    field_names: HashMap<String, StructFieldIDUInt>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct StructDefinitionField {
     optional: bool,
-    value_type: ValueType,
-    index: StructFieldNumber,
+    // value_type: ValueType, // TODO
+    index: StructFieldIDUInt,
 }
-
-pub(crate) type StructFieldNumber = u16;

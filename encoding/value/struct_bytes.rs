@@ -4,7 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fmt;
+
+use bytes::byte_reference::ByteReference;
 use bytes::Bytes;
+
+use crate::AsBytes;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct StructBytes<'a, const INLINE_LENGTH: usize> {
@@ -14,18 +19,6 @@ pub struct StructBytes<'a, const INLINE_LENGTH: usize> {
 impl<'a, const INLINE_LENGTH: usize> StructBytes<'a, INLINE_LENGTH> {
     pub fn new(value: Bytes<'a, INLINE_LENGTH>) -> Self {
         StructBytes { bytes: value }
-    }
-
-    pub fn build(value: &StructValue, struct_definition: &StructDefinition) -> Self {
-        // TODO: encode according to value type definition?
-
-        todo!()
-    }
-
-    pub fn decode(&self) -> StructValue {
-        // TODO: decode
-
-        todo!()
     }
 
     pub fn length(&self) -> usize {
@@ -53,6 +46,6 @@ impl<'a, const INLINE_LENGTH: usize> AsBytes<'a, INLINE_LENGTH> for StructBytes<
 
 impl<'a, const INLINE_LENGTH: usize> fmt::Display for StructBytes<'a, INLINE_LENGTH> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "bytes(len={}), map={:?}", self.length(), self.decode())
+        write!(f, "bytes(len={})={:?}", self.length(), self.bytes())
     }
 }

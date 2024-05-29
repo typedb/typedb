@@ -7,12 +7,14 @@
 use std::borrow::Cow;
 
 use chrono::NaiveDateTime;
+
 use encoding::value::{
     boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, double_bytes::DoubleBytes, long_bytes::LongBytes,
     string_bytes::StringBytes, value_type::ValueType, ValueEncodable,
 };
+use encoding::value::struct_bytes::StructBytes;
 
-// TODO: how do we handle user-created compound structs?
+use crate::thing::value_struct::StructValue;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value<'a> {
@@ -21,7 +23,7 @@ pub enum Value<'a> {
     Double(f64),
     DateTime(NaiveDateTime),
     String(Cow<'a, str>),
-    Struct(Cow<'a, StructValue>),
+    Struct(Cow<'a, StructValue<'static>>),
 }
 
 impl<'a> Value<'a> {
@@ -32,6 +34,7 @@ impl<'a> Value<'a> {
             Value::Double(double) => Value::Double(*double),
             Value::DateTime(date_time) => Value::DateTime(*date_time),
             Value::String(string) => Value::String(Cow::Borrowed(string.as_ref())),
+            Value::Struct(struct_) => Value::Struct(Cow::Borrowed(struct_.as_ref()))
         }
     }
 
@@ -69,6 +72,13 @@ impl<'a> Value<'a> {
             _ => panic!("Cannot unwrap String if not a string value."),
         }
     }
+
+    pub fn unwrap_struct(self) -> Cow<'a, StructValue<'static>> {
+        match self {
+            Value::Struct(struct_) => struct_,
+            _ => panic!("Cannot unwrap Struct if not a struct value.")
+        }
+    }
 }
 
 impl<'a> ValueEncodable for Value<'a> {
@@ -79,48 +89,51 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::Double(_) => ValueType::Double,
             Value::DateTime(_) => ValueType::DateTime,
             Value::String(_) => ValueType::String,
+            Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().into_owned())
         }
     }
 
     fn encode_boolean(&self) -> BooleanBytes {
         match self {
             Self::Boolean(boolean) => BooleanBytes::build(*boolean),
-            _ => panic!("Cannot encoded non-boolean as BooleanBytes"),
+            _ => panic!("Cannot encode non-boolean as BooleanBytes"),
         }
     }
 
     fn encode_long(&self) -> LongBytes {
         match self {
             Self::Long(long) => LongBytes::build(*long),
-            _ => panic!("Cannot encoded non-long as LongBytes"),
+            _ => panic!("Cannot encode non-long as LongBytes"),
         }
     }
 
     fn encode_double(&self) -> DoubleBytes {
         match self {
             Self::Double(double) => DoubleBytes::build(*double),
-            _ => panic!("Cannot encoded non-double as DoubleBytes"),
+            _ => panic!("Cannot encode non-double as DoubleBytes"),
         }
     }
 
     fn encode_date_time(&self) -> DateTimeBytes {
         match self {
             Self::DateTime(date_time) => DateTimeBytes::build(*date_time),
-            _ => panic!("Cannot encoded non-datetime as DateTimeBytes"),
+            _ => panic!("Cannot encode non-datetime as DateTimeBytes"),
         }
     }
 
     fn encode_string<const INLINE_LENGTH: usize>(&self) -> StringBytes<'_, INLINE_LENGTH> {
         match self {
             Value::String(str) => StringBytes::build_ref(str),
-            _ => panic!("Cannot encoded non-String as StringBytes"),
+            _ => panic!("Cannot encode non-String as StringBytes"),
         }
     }
 
-    fn encode_struct(&self, definition: &StructDefinition) -> StructBytes<64> {
+    fn encode_struct<const INLINE_LENGTH: usize>(&self) -> StructBytes<'static, INLINE_LENGTH> {
         match self {
-            Value::Struct(struct_) => StructBytes::build(struct_.as_ref(), &definition),
-            _ => panic!("Cannot encoded non-Struct as StructBytes"),
+            Value::Struct(struct_) => {
+                todo!()
+            },
+            _ => panic!("Cannot encode non-Struct as StructBytes"),
         }
     }
 }

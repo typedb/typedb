@@ -40,7 +40,9 @@ impl PrefixID {
             | Prefix::EdgeRelatesReverse
             | Prefix::PropertyTypeVertex
             | Prefix::IndexLabelToType
-            | Prefix::PropertyTypeEdge => EncodingKeyspace::Schema,
+            | Prefix::PropertyTypeEdge
+            | Prefix::DefinitionStruct
+            | Prefix::IndexLabelToDefinitionStruct =>  EncodingKeyspace::Schema,
             Prefix::VertexEntity => todo!(),
             Prefix::VertexRelation => todo!(),
             Prefix::VertexAttributeBoolean => todo!(),
@@ -48,6 +50,7 @@ impl PrefixID {
             Prefix::VertexAttributeDouble => todo!(),
             Prefix::VertexAttributeString => todo!(),
             Prefix::VertexAttributeDateTime => todo!(),
+            Prefix::VertexAttributeStruct => todo!(),
             Prefix::EdgeHas => todo!(),
             Prefix::EdgeHasReverse => todo!(),
             Prefix::EdgeRolePlayer => todo!(),
@@ -74,6 +77,7 @@ pub enum Prefix {
     VertexAttributeDouble,
     VertexAttributeDateTime,
     VertexAttributeString,
+    VertexAttributeStruct,
     _VertexAttributeLast, // marker to indicate reserved range for attribute types
 
     EdgeSub,
@@ -96,7 +100,6 @@ pub enum Prefix {
 
     PropertyTypeVertex,
     PropertyTypeEdge,
-    PropertyDefinitionStruct,
     // PropertyDefinitionFunction,
 
     PropertyObjectVertex,
@@ -160,11 +163,11 @@ impl Prefix {
 
     prefix_functions!(
            // Reserved: 0-9
-
            VertexEntityType => [10], true;
            VertexRelationType => [11], true;
            VertexAttributeType => [12], true;
            VertexRoleType => [15], true;
+           DefinitionStruct => [20], true;
 
            VertexEntity => [30], true;
            VertexRelation => [31], true;
@@ -175,6 +178,7 @@ impl Prefix {
            VertexAttributeDouble => [52], true;
            VertexAttributeString => [53], true;
            VertexAttributeDateTime => [54], true;
+           VertexAttributeStruct => [90], true;
            _VertexAttributeLast => [99], true;
 
            EdgeSub => [100], true;
@@ -196,8 +200,8 @@ impl Prefix {
            PropertyTypeEdge => [162], false;
            PropertyObjectVertex => [163], false;
 
-           IndexLabelToType => [182], false
-
+           IndexLabelToType => [182], false;
+           IndexLabelToDefinitionStruct => [183], false
            // Reserved: 200-255
     );
 }
