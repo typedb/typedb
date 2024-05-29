@@ -13,14 +13,14 @@ use crate::value::value_type::ValueType;
 
 /// Restrictions: maximum number fields is StructFieldNumber::MAX
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct StructValueType {
+pub struct StructDefinition {
     name: String,
-    fields: Vec<StructField>,
+    fields: Vec<StructDefinitionField>,
     field_names: HashMap<String, StructFieldNumber>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct StructField {
+pub struct StructDefinitionField {
     optional: bool,
     value_type: ValueType,
     index: StructFieldNumber,

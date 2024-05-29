@@ -6,14 +6,14 @@
 
 
 use std::collections::HashMap;
-use crate::graph::definition::definition::Definition;
+use crate::graph::definition::definition_key::DefinitionKey;
 
 use crate::graph::definition::r#struct::StructFieldNumber;
 use crate::value::ValueEncodable;
 
 #[derive(Debug)]
 pub struct StructValue {
-    definition: Definition<'static>,
+    definition: DefinitionKey<'static>,
 
     // a map allows empty fields to not be recorded at all
     fields: HashMap<StructFieldNumber, Box<dyn ValueEncodable>>

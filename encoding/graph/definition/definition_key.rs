@@ -14,11 +14,11 @@ use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
 use crate::layout::prefix::{Prefix, PrefixID};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
-pub struct Definition<'a> {
+pub struct DefinitionKey<'a> {
     bytes: Bytes<'a, { BUFFER_KEY_INLINE }>,
 }
 
-impl<'a> Definition<'a> {
+impl<'a> DefinitionKey<'a> {
     pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
     pub const FIXED_WIDTH_ENCODING: bool = true;
 
@@ -39,7 +39,7 @@ impl<'a> Definition<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for Definition<'a> {
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for DefinitionKey<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
@@ -49,13 +49,13 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for Definition<'a> {
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for Definition<'a> {
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for DefinitionKey<'a> {
     fn keyspace(&self) -> EncodingKeyspace {
         Self::KEYSPACE
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for Definition<'a> {}
+impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for DefinitionKey<'a> {}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct DefinitionID {
