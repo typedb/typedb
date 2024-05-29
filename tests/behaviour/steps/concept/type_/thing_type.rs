@@ -387,6 +387,26 @@ pub async fn get_owns_set_annotation(
 }
 
 #[apply(generic_step)]
+#[step(expr = "{root_label}\\({type_label}\\) get owns: {type_label}; get annotations {contains_or_doesnt}: {annotation}")]
+pub async fn get_owns_get_annotations_contains(
+    context: &mut Context,
+    root_label: RootLabel,
+    type_label: Label,
+    attr_type_label: Label,
+    contains_or_doesnt: ContainsOrDoesnt,
+    annotation: Annotation
+) {
+    let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
+    with_read_tx!(context, |tx| {
+        let attr_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
+        let owns = object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let actual_contains = owns.get_effective_annotations(&tx.snapshot, &tx.type_manager).unwrap().contains_key(&annotation.into_typedb().into());
+        assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);;
+    });
+}
+
+#[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) get owns {contains_or_doesnt}:")]
 pub async fn get_owns_contain(
     context: &mut Context,
@@ -411,7 +431,7 @@ pub async fn get_owns_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns explicit {contains_or_doesnt}:")]
+#[step(expr = "{root_label}\\({type_label}\\) get declared owns {contains_or_doesnt}:")]
 pub async fn get_declared_owns_contain(
     context: &mut Context,
     root_label: RootLabel,

@@ -6,6 +6,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
+use std::marker::PhantomData;
 
 use bytes::byte_reference::ByteReference;
 use encoding::{
@@ -243,7 +244,7 @@ impl<'a> EncodableTypeEdgeProperty<'a> for Ordering {
     }
 }
 
-pub(crate) trait InterfaceImplementation<'a> : EncodableParametrisedTypeEdge<'a, From=Self::ObjectType, To=Self::InterfaceType> + Sized + Clone
+pub(crate) trait InterfaceImplementation<'a> : EncodableParametrisedTypeEdge<'a, From=Self::ObjectType, To=Self::InterfaceType> + Sized + Clone + Hash + Eq
 {
     type AnnotationType;
     type ObjectType: TypeAPI<'a>;
@@ -256,20 +257,19 @@ pub(crate) trait InterfaceImplementation<'a> : EncodableParametrisedTypeEdge<'a,
     fn unwrap_annotation(annotation: Self::AnnotationType) -> Annotation;
 }
 
-pub struct EdgeOverride<'a, EDGE: EncodableParametrisedTypeEdge<'a>> {
-    overridden: EDGE::To
+pub struct EdgeOverride<EDGE: EncodableParametrisedTypeEdge<'static>> {
+    overridden: EDGE, // TODO: Consider storing EDGE::To instead
 }
 
-impl<'a, EDGE: EncodableParametrisedTypeEdge<'a>> EncodableTypeEdgeProperty<'a> for EdgeOverride<'a, EDGE> {
+impl<'a, EDGE: EncodableParametrisedTypeEdge<'static>> EncodableTypeEdgeProperty<'a> for EdgeOverride<EDGE> {
     const INFIX: Infix = Infix::PropertyOverride;
 
     fn decode_value<'b>(value: ByteReference<'b>) -> Self {
-        Self { overridden: EDGE::To::decode(Bytes::Reference(value).into_owned()) }
+        Self { overridden: EDGE::decode_canonical_edge(Bytes::Reference(value).into_owned()) }
     }
 
     fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
-        let overridden_vertex_bytes:[u8; BUFFER_VALUE_INLINE] = [0;BUFFER_VALUE_INLINE];
-        Some(Bytes::inline(overridden_vertex_bytes, BUFFER_VALUE_INLINE))
+        Some(Bytes::Reference(self.overridden.to_canonical_type_edge().bytes()).into_owned())
     }
 }
 

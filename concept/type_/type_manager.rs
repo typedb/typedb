@@ -583,17 +583,17 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         }
     }
 
-    pub(crate) fn get_owns_annotations<'this>(
+    pub(crate) fn get_owns_effective_annotations<'this>(
         &'this self,
         snapshot: &Snapshot,
-        owns: Owns<'this>,
-    ) -> Result<MaybeOwns<'this, HashSet<OwnsAnnotation>>, ConceptReadError> {
+        owns: Owns<'static>,
+    ) -> Result<MaybeOwns<'this, HashMap<OwnsAnnotation, Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_owns_annotations(owns)))
+            Ok(MaybeOwns::Borrowed(cache.get_owns_effective_annotations(owns)))
         } else {
-            let annotations: HashSet<OwnsAnnotation> = TypeReader::get_type_edge_annotations(snapshot, owns)?
+            let annotations: HashMap<OwnsAnnotation, Owns<'static>> = TypeReader::get_effective_type_edge_annotations(snapshot, owns)?
                 .into_iter()
-                .map(|annotation| OwnsAnnotation::from(annotation))
+                .map(|(annotation, owns)| (OwnsAnnotation::from(annotation), owns))
                 .collect();
             Ok(MaybeOwns::Owned(annotations))
         }

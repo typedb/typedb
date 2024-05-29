@@ -19,10 +19,11 @@ pub enum Annotation {
     Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),
     Independent(AnnotationIndependent),
-    Unique(AnnotationUnique), TODO: Needs annotation Unique
+    Unique(AnnotationUnique),
     Key(AnnotationKey),
     Cardinality(AnnotationCardinality),
     Regex(AnnotationRegex),
+    TODO: Needs annotation Unique
 }
 
 
@@ -161,5 +162,18 @@ impl<'a> EncodableTypeEdgeProperty<'a> for AnnotationCardinality {
 
     fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    }
+}
+
+impl Annotation {
+    pub(crate) fn infix(&self) -> Infix {
+        match self {
+            Annotation::Abstract(_) => AnnotationAbstract::INFIX,
+            Annotation::Distinct(_) => <AnnotationDistinct as EncodableTypeVertexProperty>::INFIX,
+            Annotation::Independent(_) => AnnotationIndependent::INFIX,
+            Annotation::Key(_) => AnnotationKey::INFIX,
+            Annotation::Cardinality(_) => <AnnotationCardinality as EncodableTypeEdgeProperty>::INFIX,
+            Annotation::Regex(_) => AnnotationRegex::INFIX,
+        }
     }
 }

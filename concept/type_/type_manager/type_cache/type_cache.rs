@@ -276,8 +276,8 @@ impl TypeCache {
         &AttributeType::get_cache(&self, attribute_type).value_type
     }
 
-    pub(crate) fn get_owns_annotations<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<OwnsAnnotation> {
-        &self.owns.get(&owns).unwrap().annotations_declared
+    pub(crate) fn get_owns_effective_annotations<'c>(&'c self, owns: Owns<'c>) -> &'c HashMap<OwnsAnnotation, Owns<'static>> {
+        &self.owns.get(&owns).unwrap().effective_annotations
     }
 
     pub(crate) fn get_owns_ordering<'c>(&'c self, owns: Owns<'c>) -> Ordering {

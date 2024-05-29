@@ -6,7 +6,7 @@
 
 use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
 use encoding::layout::prefix::Prefix;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 
 use primitive::maybe_owns::MaybeOwns;
@@ -49,8 +49,8 @@ impl<'a> Owns<'a> {
         snapshot: &Snapshot,
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
-        let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains(&OwnsAnnotation::Key(AnnotationKey)))
+        let annotations = self.get_effective_annotations(snapshot, type_manager)?;
+        Ok(annotations.contains_key(&OwnsAnnotation::Key(AnnotationKey)))
     }
 
     pub fn is_unique<Snapshot: ReadableSnapshot>(
@@ -58,9 +58,9 @@ impl<'a> Owns<'a> {
         snapshot: &Snapshot,
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
-        let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains(&OwnsAnnotation::Unique(AnnotationUnique))
-            || annotations.contains(&OwnsAnnotation::Key(AnnotationKey)))
+        let annotations = self.get_effective_annotations(snapshot, type_manager)?;
+        Ok(annotations.contains_key(&OwnsAnnotation::Unique(AnnotationUnique))
+            || annotations.contains_key(&OwnsAnnotation::Key(AnnotationKey)))
     }
 
     pub fn is_distinct<Snapshot: ReadableSnapshot>(
@@ -70,8 +70,8 @@ impl<'a> Owns<'a> {
     ) -> Result<bool, ConceptReadError> {
         let is_ordered = false; // TODO
         if is_ordered {
-            let annotations = self.get_annotations(snapshot, type_manager)?;
-            Ok(annotations.contains(&OwnsAnnotation::Distinct(AnnotationDistinct)))
+            let annotations = self.get_effective_annotations(snapshot, type_manager)?;
+            Ok(annotations.contains_key(&OwnsAnnotation::Distinct(AnnotationDistinct)))
         } else {
             Ok(true)
         }
@@ -82,7 +82,7 @@ impl<'a> Owns<'a> {
         snapshot: &Snapshot,
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<Option<AnnotationCardinality>, ConceptReadError> {
-        let annotations = self.get_annotations(snapshot, type_manager)?;
+        let annotations = self.get_effective_annotations(snapshot, type_manager)?;
         for annotation in &annotations {
             match annotation {
                 OwnsAnnotation::Cardinality(cardinality) => return Ok(Some(*cardinality)),
@@ -112,12 +112,12 @@ impl<'a> Owns<'a> {
         type_manager.set_owns_overridden(snapshot, self.clone().into_owned(), overridden)
     }
 
-    pub fn get_annotations<'this, Snapshot: ReadableSnapshot>(
+    pub fn get_effective_annotations<'this, Snapshot: ReadableSnapshot>(
         &'this self,
         snapshot: &Snapshot,
         type_manager: &'this TypeManager<Snapshot>,
-    ) -> Result<MaybeOwns<'this, HashSet<OwnsAnnotation>>, ConceptReadError> {
-        type_manager.get_owns_annotations(snapshot, self.clone())
+    ) -> Result<MaybeOwns<'this, HashMap<OwnsAnnotation, Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_effective_annotations(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation<Snapshot: WritableSnapshot>(
@@ -133,6 +133,7 @@ impl<'a> Owns<'a> {
             OwnsAnnotation::Cardinality(cardinality) => {
                 type_manager.set_edge_annotation_cardinality(snapshot, self.clone(), cardinality)
             }
+            OwnsAnnotation::Unique(_) => type_manager.set_edge_annotation_unique(snapshot, self.clone())
         }
         Ok(()) // TODO
     }
@@ -213,7 +214,8 @@ impl<'a> InterfaceImplementation<'a> for Owns<'a> {
         match annotation {
             OwnsAnnotation::Distinct(distinct) => Annotation::Distinct(distinct),
             OwnsAnnotation::Key(key) => Annotation::Key(key),
-            OwnsAnnotation::Cardinality(cardinality) => Annotation::Cardinality(cardinality)
+            OwnsAnnotation::Cardinality(cardinality) => Annotation::Cardinality(cardinality),
+            OwnsAnnotation::Unique(unique) => Annotation::Unique(unique)
         }
     }
 }

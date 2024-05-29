@@ -20,15 +20,14 @@ use encoding::{
     layout::infix::Infix,
     value::{
         label::Label,
-        string_bytes::StringBytes,
-        value_type::{ValueType, ValueTypeBytes},
+        value_type::ValueType,
     },
     AsBytes, Keyable,
 };
 
 use encoding::graph::type_::Kind;
 use iterator::Collector;
-use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
 use encoding::graph::type_::property::{EncodableTypeEdgeProperty, EncodableTypeVertexProperty};
@@ -204,10 +203,10 @@ impl TypeReader {
     where
         IMPL : EncodableParametrisedTypeEdge<'static> + Hash + Eq
     {
-        let override_property_key = EdgeOverride::<'static, IMPL>::build_key(implementation);
+        let override_property_key = EdgeOverride::<IMPL>::build_key(implementation);
         snapshot
             .get_mapped(override_property_key.into_storage_key().as_reference(), |overridden_edge_bytes| {
-                IMPL::decode_canonical_edge(Bytes::Array(overridden_edge_bytes.into()))
+                EdgeOverride::<IMPL>::decode_value(overridden_edge_bytes).overridden
             })
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
@@ -382,11 +381,13 @@ impl TypeReader {
     }
 
     // TODO: this is currently breaking our architectural pattern that none of the Manager methods should operate graphs
-    pub(crate) fn get_type_edge_annotations<'a>(
+    pub(crate) fn get_type_edge_annotations<EDGE>(
         snapshot: &impl ReadableSnapshot,
-        into_type_edge: impl EncodableParametrisedTypeEdge<'a>,
-    ) -> Result<HashSet<Annotation>, ConceptReadError> {
-        let type_edge = into_type_edge.to_canonical_type_edge();
+        edge: EDGE,
+    ) -> Result<HashSet<Annotation>, ConceptReadError>
+        where EDGE: EncodableParametrisedTypeEdge<'static> + InterfaceImplementation<'static>
+    {
+        let type_edge = edge.to_canonical_type_edge();
         snapshot
             .iterate_range(KeyRange::new_inclusive(
                 TypeEdgeProperty::build(type_edge.clone(), Infix::ANNOTATION_MIN).into_storage_key(),
@@ -417,6 +418,33 @@ impl TypeReader {
             })
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
+
+    // TODO: Annotations may not follow the simple override rule.
+    // If they don't, The vec contains method not work.
+    // If they do: Replace the Vec with a HashSet
+    pub(crate) fn get_effective_type_edge_annotations<EDGE>(
+        snapshot: &impl ReadableSnapshot,
+        edge: EDGE,
+    ) -> Result<HashMap<Annotation, EDGE>, ConceptReadError>
+    where EDGE: EncodableParametrisedTypeEdge<'static> + InterfaceImplementation<'static>
+    {
+        let mut effective_annotations: HashMap<Annotation, EDGE> = HashMap::new();
+        let mut overridden_annotations : Vec<Infix> = Vec::new();
+        let mut edge_opt = Some(edge);
+        while let Some(edge) = edge_opt {
+            let declared_edge_annotations = Self::get_type_edge_annotations(snapshot, edge.clone())?;
+            for annotation in declared_edge_annotations {
+                if !overridden_annotations.contains(&annotation.infix()) {
+                    debug_assert!(!effective_annotations.iter().any(|(key, _)| {  key.infix() == annotation.infix() }));
+                    overridden_annotations.add(annotation.infix());
+                    effective_annotations.insert(annotation, edge.clone());
+                }
+            }
+            edge_opt = Self::get_implementation_override(snapshot, edge.clone())?;
+        }
+        Ok(effective_annotations)
+    }
+
 
     pub(crate) fn get_type_edge_ordering(
         snapshot: &impl ReadableSnapshot,

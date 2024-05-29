@@ -145,7 +145,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     )
     where E: EncodableParametrisedTypeEdge<'static>
     {
-        let overridden_to = EdgeOverride::<E> { overridden : overridden.canonical_to() };
+        let overridden_to = EdgeOverride::<E> { overridden : overridden };
         Self::storage_put_type_edge_property(snapshot, edge, Some(overridden_to))
     }
 
@@ -155,7 +155,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     )
         where E: EncodableParametrisedTypeEdge<'static>
     {
-        Self::storage_delete_type_edge_property::<EdgeOverride<'_, E>>(snapshot, edge)
+        Self::storage_delete_type_edge_property::<EdgeOverride<E>>(snapshot, edge)
     }
 
     // Modifiers

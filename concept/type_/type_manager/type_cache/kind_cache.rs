@@ -72,7 +72,7 @@ pub(crate) struct AttributeTypeCache {
 pub(crate) struct OwnsCache {
     pub(super) ordering: Ordering,
     pub(super) overrides: Option<Owns<'static>>,
-    pub(super) annotations_declared: HashSet<OwnsAnnotation>,
+    pub(super) effective_annotations: HashMap<OwnsAnnotation, Owns<'static>>,
 }
 
 #[derive(Debug)]
@@ -215,10 +215,10 @@ impl OwnsCache {
             let cache = OwnsCache {
                 ordering: TypeReader::get_type_edge_ordering(snapshot, owns.clone()).unwrap(),
                 overrides: TypeReader::get_owns_override(snapshot, owns.clone()).unwrap(),
-                annotations_declared: TypeReader::get_type_edge_annotations(snapshot, owns.clone())
+                effective_annotations: TypeReader::get_effective_type_edge_annotations(snapshot, owns.clone())
                     .unwrap()
                     .into_iter()
-                    .map(OwnsAnnotation::from)
+                    .map(|(annotation, owns)| (OwnsAnnotation::from(annotation), owns))
                     .collect(),
             };
             map.insert(owns.clone(), cache);
