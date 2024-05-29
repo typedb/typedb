@@ -6,7 +6,14 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::byte_array::ByteArray;
+use bytes::byte_reference::ByteReference;
+use bytes::Bytes;
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use crate::graph::type_::property::EncodableTypeVertexProperty;
+use crate::layout::infix::{Infix, InfixID};
+use bytes::byte_array::ByteArray;
+use bytes::Bytes;
 
 use crate::{graph::definition::definition_key::DefinitionKey, AsBytes};
 
@@ -134,5 +141,17 @@ impl ValueTypeBytes {
 
     pub fn into_bytes(self) -> [u8; Self::LENGTH] {
         self.bytes
+    }
+}
+
+impl EncodableTypeVertexProperty<'static> for ValueType {
+    const INFIX: Infix = Infix::PropertyValueType;
+
+    fn decode_value<'b>(value: ByteReference<'b>) -> Self {
+        ValueType::from_value_type_id(ValueTypeID::new(value.bytes().try_into().unwrap()))
+    }
+
+    fn build_value(self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::Array(ByteArray::copy(ValueTypeBytes::build(&self).into_bytes())))
     }
 }

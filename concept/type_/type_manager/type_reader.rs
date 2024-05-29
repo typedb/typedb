@@ -13,7 +13,7 @@ use encoding::{
         edge::TypeEdge,
         index::LabelToTypeVertexIndex,
         property::{
-            build_property_type_label, build_property_type_ordering, build_property_type_value_type, TypeEdgeProperty, TypeVertexProperty,
+            TypeEdgeProperty, TypeVertexProperty,
         },
         vertex::EncodableTypeVertex,
     },
@@ -31,7 +31,7 @@ use iterator::Collector;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
-use encoding::graph::type_::property::EncodableTypeEdgeProperty;
+use encoding::graph::type_::property::{EncodableTypeEdgeProperty, EncodableTypeVertexProperty};
 
 use crate::{
     error::ConceptReadError,
@@ -147,13 +147,7 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         type_: impl KindAPI<'static>,
     ) -> Result<Option<Label<'static>>, ConceptReadError> {
-        let key = build_property_type_label(type_.into_vertex());
-        snapshot
-            .get_mapped(key.into_storage_key().as_reference(), |reference| {
-                let value = StringBytes::new(Bytes::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(reference));
-                Label::parse_from(value)
-            })
-            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
+        Self::get_type_property::<Label<'static>>(snapshot, type_)
     }
 
     pub(crate) fn get_implemented_interfaces<IMPL>(
@@ -326,12 +320,29 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         type_: AttributeType<'_>,
     ) -> Result<Option<ValueType>, ConceptReadError> {
-        snapshot
+        Self::get_type_property::<ValueType>(snapshot, type_)
+    }
+
+    pub(crate) fn get_type_property<'a, PROPERTY>(
+        snapshot: &impl ReadableSnapshot,
+        type_: impl EncodableTypeVertex<'a>
+    ) -> Result<Option<PROPERTY>, ConceptReadError>
+        where PROPERTY: EncodableTypeVertexProperty<'static>
+    {
+        let property = snapshot
             .get_mapped(
-                build_property_type_value_type(type_.into_vertex()).into_storage_key().as_reference(),
-                |bytes| ValueTypeBytes::new(bytes.bytes().try_into().unwrap()).to_value_type(),
+                PROPERTY::build_key(type_).into_storage_key().as_reference(),
+                |value| PROPERTY::decode_value(value.clone()),
             )
-            .map_err(|error| ConceptReadError::SnapshotGet { source: error })
+            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
+        Ok(property)
+    }
+
+    pub(crate) fn get_type_ordering(
+        snapshot: &impl ReadableSnapshot,
+        role_type: RoleType<'_>,
+    ) -> Result<Ordering, ConceptReadError> {
+        Ok(Self::get_type_property(snapshot, role_type)?.unwrap())
     }
 
     pub(crate) fn get_type_annotations<'a, T: KindAPI<'a>>(
@@ -350,7 +361,7 @@ impl TypeReader {
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
                     Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
                     Infix::PropertyAnnotationCardinality => {
-                        Annotation::Cardinality(AnnotationCardinality::decode_value(value).into())
+                        Annotation::Cardinality(<AnnotationCardinality as EncodableTypeVertexProperty>::decode_value(value).into())
                     }
                     Infix::PropertyAnnotationRegex => Annotation::Regex(AnnotationRegex::decode_value(value)),
                     | Infix::_PropertyAnnotationLast
@@ -389,7 +400,7 @@ impl TypeReader {
                     Infix::PropertyAnnotationUnique => Annotation::Unique(AnnotationUnique),
                     Infix::PropertyAnnotationKey => Annotation::Key(AnnotationKey),
                     Infix::PropertyAnnotationCardinality => {
-                        Annotation::Cardinality(AnnotationCardinality::decode_value(value))
+                        Annotation::Cardinality(<AnnotationCardinality as EncodableTypeEdgeProperty>::decode_value(value))
                     }
                     Infix::PropertyAnnotationRegex => Annotation::Regex(AnnotationRegex::decode_value(value)),
                     | Infix::_PropertyAnnotationLast
@@ -405,18 +416,6 @@ impl TypeReader {
                 }
             })
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
-    }
-
-    pub(crate) fn get_type_ordering(
-        snapshot: &impl ReadableSnapshot,
-        role_type: RoleType<'_>,
-    ) -> Result<Ordering, ConceptReadError> {
-        let ordering = snapshot
-            .get_mapped(build_property_type_ordering(role_type.vertex()).into_storage_key().as_reference(), |bytes| {
-                Ordering::decode_value(bytes)
-            })
-            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
-        Ok(ordering.unwrap())
     }
 
     pub(crate) fn get_type_edge_ordering(

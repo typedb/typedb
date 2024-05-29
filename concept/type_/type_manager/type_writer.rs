@@ -7,7 +7,7 @@
 use std::marker::PhantomData;
 use bytes::byte_array::ByteArray;
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
-use encoding::graph::type_::property::{build_property_type_label, build_property_type_value_type, EncodableTypeEdgeProperty};
+use encoding::graph::type_::property::{EncodableTypeEdgeProperty, EncodableTypeVertexProperty};
 use encoding::{AsBytes, Keyable};
 use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
 use encoding::graph::type_::vertex::EncodableTypeVertex;
@@ -34,9 +34,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     // Basic vertex type operations
     pub(crate) fn storage_put_label<T: KindAPI<'static>>(snapshot: &mut Snapshot, type_: T, label: &Label<'_>) {
         debug_assert!(TypeReader::get_label(snapshot, type_.clone()).unwrap().is_none());
-        let vertex_to_label_key = build_property_type_label(type_.clone().into_vertex());
-        let label_value = ByteArray::from(label.scoped_name().bytes());
-        snapshot.put_val(vertex_to_label_key.into_storage_key().into_owned_array(), label_value);
+        Self::storage_put_type_vertex_property(snapshot, type_.clone(), Some(label.clone().into_owned()));
 
         let label_to_vertex_key = LabelToTypeVertexIndex::build(label);
         let vertex_value = ByteArray::from(type_.into_vertex().bytes());
@@ -47,8 +45,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     pub(crate) fn storage_delete_label(snapshot: &mut Snapshot, type_: impl KindAPI<'static>) {
         let existing_label = TypeReader::get_label(snapshot, type_.clone()).unwrap();
         if let Some(label) = existing_label {
-            let vertex_to_label_key = build_property_type_label(type_.into_vertex());
-            snapshot.delete(vertex_to_label_key.into_storage_key().into_owned_array());
+            Self::storage_delete_type_vertex_property::<Label<'_>>(snapshot, type_);
             let label_to_vertex_key = LabelToTypeVertexIndex::build(&label);
             snapshot.delete(label_to_vertex_key.into_storage_key().into_owned_array());
         }
@@ -76,10 +73,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         attribute: AttributeType<'static>,
         value_type: ValueType,
     ) {
-        let property_key =
-            build_property_type_value_type(attribute.into_vertex()).into_storage_key().into_owned_array();
-        let property_value = ByteArray::copy(ValueTypeBytes::build(&value_type).into_bytes());
-        snapshot.put_val(property_key, property_value);
+        TypeWriter::storage_put_type_vertex_property(snapshot, attribute, Some(value_type));
     }
 
     // Type edges
@@ -124,7 +118,26 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot.delete(implementation.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
-    // TODO: Store just the overridden.to vertex as value
+
+    pub(crate) fn storage_put_type_vertex_property<'a, P>(snapshot: &mut Snapshot, vertex: impl EncodableTypeVertex<'a>, property_opt: Option<P>)
+        where
+            P: EncodableTypeVertexProperty<'a>,
+    {
+        let key = P::build_key(vertex).into_storage_key();
+        if let(Some(property)) = property_opt {
+            let value =  property.build_value().unwrap();
+            snapshot.put_val(key.into_owned_array(), value.into_array())
+        } else {
+            snapshot.put(key.into_owned_array())
+        }
+    }
+
+    pub(crate) fn storage_delete_type_vertex_property<'a, P>(snapshot: &mut Snapshot, edge: impl EncodableTypeVertex<'a>)
+        where P: EncodableTypeVertexProperty<'a>,
+    {
+        snapshot.delete(P::build_key(edge).into_storage_key().into_owned_array());
+    }
+
     pub(crate) fn storage_set_type_edge_overridden<E>(
         snapshot: &mut Snapshot,
         edge: E,

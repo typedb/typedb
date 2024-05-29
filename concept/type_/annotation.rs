@@ -5,13 +5,13 @@
  */
 
 use serde::{Deserialize, Serialize};
+use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
 use bytes::Bytes;
 use encoding::AsBytes;
-use encoding::graph::type_::property::EncodableTypeEdgeProperty;
+use encoding::graph::type_::property::{EncodableTypeEdgeProperty, EncodableTypeVertexProperty};
 use encoding::layout::infix::Infix;
-use encoding::layout::infix::Infix::{PropertyAnnotationAbstract, PropertyAnnotationDistinct, PropertyAnnotationIndependent};
-use encoding::value::string_bytes::StringBytes;
+use encoding::layout::infix::Infix::{PropertyAnnotationAbstract, PropertyAnnotationDistinct, PropertyAnnotationIndependent, PropertyAnnotationKey};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -83,7 +83,55 @@ impl AnnotationRegex {
     }
 }
 
-macro_rules! valueless_annotation_encoder {
+macro_rules! trivial_type_vertex_annotation_encoder {
+    ($annotation:ident, $infix:ident) => {
+        impl<'a> EncodableTypeVertexProperty<'a> for $annotation {
+            const INFIX: Infix = $infix;
+
+            fn decode_value<'b>(value: ByteReference<'b>) -> $annotation {
+                debug_assert!(value.bytes().is_empty());
+                $annotation
+            }
+
+            fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+                None
+            }
+        }
+    };
+}
+
+trivial_type_vertex_annotation_encoder!(AnnotationAbstract, PropertyAnnotationAbstract);
+trivial_type_vertex_annotation_encoder!(AnnotationIndependent, PropertyAnnotationIndependent);
+trivial_type_vertex_annotation_encoder!(AnnotationDistinct, PropertyAnnotationDistinct);
+
+impl<'a> EncodableTypeVertexProperty<'a> for AnnotationRegex {
+    const INFIX: Infix = Infix::PropertyAnnotationRegex;
+
+    fn decode_value<'b>(value: ByteReference<'b>) -> AnnotationRegex {
+        // TODO this .unwrap() should be handled as an error
+        // although it does indicate data corruption
+        AnnotationRegex::new(std::str::from_utf8(value.bytes()).unwrap().to_owned())
+    }
+
+    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::Array(ByteArray::copy(self.regex().as_bytes())))
+    }
+}
+
+impl<'a> EncodableTypeVertexProperty<'a> for AnnotationCardinality {
+    const INFIX: Infix = Infix::PropertyAnnotationCardinality;
+    fn decode_value<'b>(value: ByteReference<'b>) -> Self {
+        // TODO this .unwrap() should be handled as an error
+        // although it does indicate data corruption
+        bincode::deserialize(value.bytes()).unwrap()
+    }
+
+    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    }
+}
+
+macro_rules! trivial_type_edge_annotation_encoder {
     ($annotation:ident, $infix:ident) => {
         impl<'a> EncodableTypeEdgeProperty<'a> for $annotation {
             const INFIX: Infix = $infix;
@@ -100,25 +148,8 @@ macro_rules! valueless_annotation_encoder {
     };
 }
 
-valueless_annotation_encoder!(AnnotationAbstract, PropertyAnnotationAbstract);
-valueless_annotation_encoder!(AnnotationDistinct, PropertyAnnotationDistinct);
-valueless_annotation_encoder!(AnnotationIndependent, PropertyAnnotationIndependent);
-valueless_annotation_encoder!(AnnotationKey, PropertyAnnotationIndependent);
-
-impl<'a> EncodableTypeEdgeProperty<'a> for AnnotationRegex {
-    const INFIX: Infix = Infix::PropertyAnnotationRegex;
-
-    fn decode_value<'b>(value: ByteReference<'b>) -> AnnotationRegex {
-        // TODO this .unwrap() should be handled as an error
-        // although it does indicate data corruption
-        AnnotationRegex::new(std::str::from_utf8(value.bytes()).unwrap().to_owned())
-    }
-
-    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
-        Some(Bytes::Reference(StringBytes::<BUFFER_VALUE_INLINE>::build_owned(self.regex()).bytes()).into_owned())
-    }
-}
-
+trivial_type_edge_annotation_encoder!(AnnotationDistinct, PropertyAnnotationDistinct);
+trivial_type_edge_annotation_encoder!(AnnotationKey, PropertyAnnotationKey);
 
 impl<'a> EncodableTypeEdgeProperty<'a> for AnnotationCardinality {
     const INFIX: Infix = Infix::PropertyAnnotationCardinality;

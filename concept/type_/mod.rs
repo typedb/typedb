@@ -18,7 +18,7 @@ use bytes::Bytes;
 use bytes::Bytes::Array;
 use encoding::AsBytes;
 use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
-use encoding::graph::type_::property::EncodableTypeEdgeProperty;
+use encoding::graph::type_::property::{EncodableTypeEdgeProperty, EncodableTypeVertexProperty};
 use encoding::graph::type_::vertex::EncodableTypeVertex;
 use encoding::layout::infix::Infix;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
@@ -219,6 +219,18 @@ pub enum Ordering {
     Ordered,
 }
 
+impl<'a> EncodableTypeVertexProperty<'a> for Ordering {
+    const INFIX: Infix = Infix::PropertyOrdering;
+
+    fn decode_value<'b>(value: ByteReference<'b>) -> Ordering {
+        bincode::deserialize(value.bytes()).unwrap()
+    }
+
+    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    }
+}
+
 impl<'a> EncodableTypeEdgeProperty<'a> for Ordering {
     const INFIX: Infix = Infix::PropertyOrdering;
 
@@ -230,7 +242,6 @@ impl<'a> EncodableTypeEdgeProperty<'a> for Ordering {
         Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
     }
 }
-// TODO: where do these belong?
 
 pub(crate) trait InterfaceImplementation<'a> : EncodableParametrisedTypeEdge<'a, From=Self::ObjectType, To=Self::InterfaceType> + Sized + Clone
 {

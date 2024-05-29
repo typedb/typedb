@@ -5,10 +5,17 @@
  */
 
 use std::fmt;
+use bytes::byte_array::ByteArray;
+use bytes::byte_reference::ByteReference;
+use bytes::Bytes;
 
 use resource::constants::encoding::{
     LABEL_NAME_STRING_INLINE, LABEL_SCOPED_NAME_STRING_INLINE, LABEL_SCOPE_STRING_INLINE,
 };
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use crate::AsBytes;
+use crate::graph::type_::property::EncodableTypeVertexProperty;
+use crate::layout::infix::Infix;
 
 use crate::value::string_bytes::StringBytes;
 
@@ -81,6 +88,19 @@ impl<'a> Label<'a> {
             scope: self.scope.map(|string_bytes| string_bytes.into_owned()),
             scoped_name: self.scoped_name.into_owned(),
         }
+    }
+}
+
+impl<'a> EncodableTypeVertexProperty<'a> for Label<'a> {
+    const INFIX: Infix = Infix::PropertyLabel;
+
+    fn decode_value<'b>(value: ByteReference<'b>) -> Self {
+        let string_bytes = StringBytes::new(Bytes::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(value));
+        Label::parse_from(string_bytes)
+    }
+
+    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::Array(ByteArray::from(self.scoped_name().bytes())))
     }
 }
 
