@@ -30,3 +30,4 @@ enum FunctionReturn {
     Stream(Vec<VariableValuePrototype>),
     Single(VariableValuePrototype),
 }
+
