@@ -116,7 +116,8 @@ public class ParametersTest {
                 new Option("log.logger.default.level", "trace"),
                 new Option("log.logger.storage.level", "trace"),
                 new Option("diagnostics.reporting.errors", "false"),
-                new Option("diagnostics.reporting.statistics", "false")));
+                new Option("diagnostics.reporting.statistics", "false"),
+                new Option("development-mode.enable", "true")));
     }
 
     private List<Path> getLogArchives(Path logDir) throws IOException {

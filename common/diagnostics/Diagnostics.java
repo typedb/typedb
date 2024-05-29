@@ -107,7 +107,6 @@ public abstract class Diagnostics {
 
             Metrics metrics =
                     new Metrics(deploymentID, serverID, distributionName, version, statisticsReportingEnabled, dataDirectory);
-
             MonitoringServer monitoringServer = initMonitoringServer(monitoringEnabled, monitoringPort, metrics);
             StatisticReporter statisticReporter = initStatisticReporter(
                     developmentModeEnabled, deploymentID, statisticsReportingEnabled, statisticsReportingURI, metrics, dataDirectory);
