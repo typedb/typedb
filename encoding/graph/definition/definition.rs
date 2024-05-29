@@ -4,3 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub struct DefinitionKey {}
+
+pub struct DefinitionID {}
+
+impl DefinitionID {
+    fn as_u32(&self) -> u32 {
+        0
+    }
+}

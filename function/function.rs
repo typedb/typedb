@@ -5,19 +5,20 @@
  */
 
 use answer::variable_value::VariableValuePrototype;
+use encoding::graph::definition::definition::DefinitionKey;
 use ir::program::function::FunctionIR;
 
 /// Function represents the user-defined structure:
 /// fun <name>(<args>) -> <return type> { <body> }
 struct Function {
-    // definition: ... // serialisable representation, which contains the function ID
+    definition_key: DefinitionKey,
 
     // parsed representation
     name: String,
     arguments: Vec<FunctionArgument>,
     return_type: FunctionReturn,
 
-    // compiled body
+    // pre-compiled body
     body_ir: FunctionIR,
 }
 

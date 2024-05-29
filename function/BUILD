@@ -14,6 +14,7 @@ rust_library(
     ]),
     deps = [
         "//answer",
+        "//encoding",
         "//ir",
     ],
 )
