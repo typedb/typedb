@@ -90,7 +90,13 @@ pub enum ConceptWriteError {
         owner: Object<'static>,
     },
     AddPlayerOnDeleted {
-        relation: Relation<'static>
+        relation: Relation<'static>,
+    },
+
+    CardinalityViolation {
+        owner: Object<'static>,
+        attribute_type: AttributeType<'static>,
+        cardinality: AnnotationCardinality,
     },
 }
 
@@ -116,6 +122,7 @@ impl Error for ConceptWriteError {
             Self::SetHasOnDeleted { .. } => None,
             Self::MultipleKeys { .. } => None,
             Self::AddPlayerOnDeleted { .. } => None,
+            Self::CardinalityViolation { .. } => None,
         }
     }
 }

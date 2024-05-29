@@ -47,7 +47,7 @@ use crate::{
         ThingAPI,
     },
     type_::{
-        annotation::AnnotationKey,
+        annotation::{AnnotationCardinality, AnnotationKey},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::EntityType,
         object_type::ObjectType,
@@ -638,19 +638,16 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         errors: &mut Vec<ConceptWriteError>,
         snapshot: &Snapshot,
     ) -> Result<(), ConceptReadError> {
-        for (key, write) in snapshot.iterate_buffered_writes_range(KeyRange::new_within(
+        for (key, _) in snapshot.iterate_buffered_writes_range(KeyRange::new_within(
             ThingEdgeHas::prefix(),
             ThingEdgeHas::FIXED_WIDTH_ENCODING,
         )) {
             let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array().as_ref()));
-
             let owner = Object::new(edge.from());
             if !self.object_exists(snapshot, &owner)? {
                 continue;
             }
-
             let attribute = Attribute::new(edge.to());
-
             self.validate_owner(owner, attribute.type_(), snapshot, errors)?;
         }
 
@@ -688,9 +685,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         let owns = owner_type
             .get_owns_attribute(snapshot, self.type_manager(), attribute_type.clone())?
             .expect("encountered a has edge without a corresponding owns in the schema");
-        if owns.is_unique(snapshot, self.type_manager())? {
-            // TODO
-        }
+
         if let Some(cardinality) = owns.get_cardinality(snapshot, self.type_manager())? {
             let count = owner.get_has_type(snapshot, self, attribute_type.clone())?.count();
             if !cardinality.is_valid(count as u64) {
@@ -705,7 +700,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                         })
                     }
                 } else {
-                    todo!()
+                    errors.push(ConceptWriteError::CardinalityViolation {
+                        owner: owner.into_owned(),
+                        attribute_type,
+                        cardinality,
+                    })
                 }
             }
         };
