@@ -44,13 +44,17 @@ public abstract class Diagnostics {
         this.monitoringServer = monitoringServer;
     }
 
+    protected static void initDisabledSentry() {
+        Sentry.init(options -> options.setEnabled(false));
+    }
+
     public static class Noop extends Diagnostics {
         private Noop() {
             super(null, null, null);
         }
 
         public static synchronized void initialise() {
-            Sentry.init(options -> options.setEnabled(false));
+            initDisabledSentry();
             diagnostics = new Diagnostics.Noop();
         }
 
@@ -88,40 +92,57 @@ public abstract class Diagnostics {
 
         public static synchronized void initialise(
                 String deploymentID, String serverID, String distributionName, String version,
-                boolean errorReportingEnable, String errorReportingURI,
-                boolean statisticsReportingEnable, String statisticsReportingURI,
-                boolean monitoringEnable, int monitoringPort,
-                Path dataDirectory
+                boolean errorReportingEnabled, String errorReportingURI,
+                boolean statisticsReportingEnabled, String statisticsReportingURI,
+                boolean monitoringEnabled, int monitoringPort,
+                Path dataDirectory,
+                boolean developmentModeEnabled
         ) {
             if (diagnostics != null) {
                 LOG.debug("Skipping re-initialising diagnostics");
                 return;
             }
 
-            initSentry(serverID, distributionName, version, errorReportingEnable, errorReportingURI);
+            initSentry(developmentModeEnabled, serverID, distributionName, version, errorReportingEnabled, errorReportingURI);
 
-            Metrics metrics = new Metrics(deploymentID, serverID, distributionName, version, statisticsReportingEnable, dataDirectory);
-            StatisticReporter statisticReporter = initStatisticReporter(deploymentID, statisticsReportingEnable, statisticsReportingURI, metrics, dataDirectory);
-            MonitoringServer monitoringServer = initMonitoringServer(monitoringEnable, monitoringPort, metrics);
+            Metrics metrics =
+                    new Metrics(deploymentID, serverID, distributionName, version, statisticsReportingEnabled, dataDirectory);
+
+            MonitoringServer monitoringServer = initMonitoringServer(monitoringEnabled, monitoringPort, metrics);
+            StatisticReporter statisticReporter = initStatisticReporter(
+                    developmentModeEnabled, deploymentID, statisticsReportingEnabled, statisticsReportingURI, metrics, dataDirectory);
 
             diagnostics = new Core(metrics, statisticReporter, monitoringServer);
         }
 
         @Nullable
-        protected static MonitoringServer initMonitoringServer(boolean monitoringEnable, int monitoringPort, Metrics metrics) {
-            if (monitoringEnable) return new MonitoringServer(metrics, monitoringPort);
+        protected static MonitoringServer initMonitoringServer(boolean monitoringEnabled, int monitoringPort, Metrics metrics) {
+            if (monitoringEnabled) return new MonitoringServer(metrics, monitoringPort);
             else return null;
         }
 
+        @Nullable
         protected static StatisticReporter initStatisticReporter(
-                String deploymentID, boolean statisticsReportingEnable, String statisticsReportingURI, Metrics metrics, Path dataDirectory
+                boolean developmentModeEnabled,
+                String deploymentID,
+                boolean statisticsReportingEnabled,
+                String statisticsReportingURI,
+                Metrics metrics,
+                Path dataDirectory
         ) {
-            return new StatisticReporter(deploymentID, metrics, statisticsReportingEnable, statisticsReportingURI, dataDirectory);
+            if (!developmentModeEnabled) return new StatisticReporter(
+                    deploymentID, metrics, statisticsReportingEnabled, statisticsReportingURI, dataDirectory);
+            else return null;
         }
 
-        protected static void initSentry(String serverID, String distributionName, String version, boolean errorReportingEnable, String errorReportingURI) {
+        protected static void initSentry(boolean developmentModeEnabled, String serverID, String distributionName, String version, boolean errorReportingEnabled, String errorReportingURI) {
+            if (developmentModeEnabled) {
+                initDisabledSentry();
+                return;
+            }
+
             Sentry.init(options -> {
-                options.setEnabled(errorReportingEnable);
+                options.setEnabled(errorReportingEnabled);
                 options.setDsn(errorReportingURI);
                 options.setEnableTracing(true);
                 options.setSendDefaultPii(false);
@@ -133,7 +154,7 @@ public abstract class Diagnostics {
             Sentry.setUser(user);
 
             // FIXME temporary heartbeat every 24 hours (https://github.com/vaticle/typedb/pull/7045)
-            if (errorReportingEnable) {
+            if (errorReportingEnabled) {
                 scheduled.schedule(() -> {
                     Sentry.startTransaction(new TransactionContext("server", "bootup")).finish(SpanStatus.OK);
                 }, 1, TimeUnit.HOURS);
@@ -150,7 +171,7 @@ public abstract class Diagnostics {
 
         @Override
         public void mayStartReporting() {
-            statisticReporter.startReporting();
+            if (statisticReporter != null) statisticReporter.startReporting();
         }
 
         @Override

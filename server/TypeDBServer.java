@@ -102,6 +102,7 @@ public class TypeDBServer implements AutoCloseable {
         configureDiagnostics();
 
         if (debug) logger().info("Running {} in debug mode.", name());
+        if (config.developmentMode().enabled()) logger().info("Running {} in development mode.", name());
 
         Options.Database options = new Options.Database()
                 .typeDBDir(getTypedbDir())
@@ -189,7 +190,8 @@ public class TypeDBServer implements AutoCloseable {
                     config.diagnostics().reporting().errors(), ERROR_REPORTING_URI,
                     config.diagnostics().reporting().statistics(), DIAGNOSTICS_REPORTING_URI,
                     config.diagnostics().monitoring().enabled(), config.diagnostics().monitoring().port(),
-                    config.storage().dataDir()
+                    config.storage().dataDir(),
+                    config.developmentMode().enabled()
             );
         } catch (Throwable e) {
             LOG.debug("Failed to initialise diagnostics: ", e);

@@ -5,7 +5,6 @@
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
-
 host_compatible_java_test(
     name = "test-parameters",
     size = "large",
