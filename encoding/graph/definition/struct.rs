@@ -5,18 +5,25 @@
  */
 
 
+use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
+
+use crate::value::value_type::ValueType;
+
 /// Restrictions: maximum number fields is StructFieldNumber::MAX
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct StructDefinition {
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+pub struct StructValueType {
     name: String,
-    fields: Vec<StructFieldDefinition>,
+    fields: Vec<StructField>,
     field_names: HashMap<String, StructFieldNumber>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct StructFieldDefinition {
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+pub struct StructField {
     optional: bool,
     value_type: ValueType,
+    index: StructFieldNumber,
 }
 
 pub(crate) type StructFieldNumber = u16;

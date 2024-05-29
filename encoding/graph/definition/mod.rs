@@ -4,4 +4,5 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod struct_definition;
+pub mod r#struct;
+pub(crate) mod definition;

@@ -1,0 +1,86 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+
+use std::ops::Range;
+use bytes::byte_array::ByteArray;
+use bytes::byte_reference::ByteReference;
+use bytes::Bytes;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
+use crate::layout::prefix::{Prefix, PrefixID};
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
+pub struct Definition<'a> {
+    bytes: Bytes<'a, { BUFFER_KEY_INLINE }>,
+}
+
+impl<'a> Definition<'a> {
+    pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+    pub const FIXED_WIDTH_ENCODING: bool = true;
+
+    pub(crate) const LENGTH: usize = PrefixID::LENGTH + DefinitionID::LENGTH;
+    pub(crate) const LENGTH_PREFIX: usize = PrefixID::LENGTH;
+    pub(crate) const RANGE_DEFINITION_ID: Range<usize> = Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + DefinitionID::LENGTH;
+
+    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+        debug_assert_eq!(bytes.length(), Self::LENGTH);
+        Self { bytes }
+    }
+
+    fn build(prefix: Prefix, definition_id: DefinitionID) -> Self {
+        let mut array = ByteArray::zeros(Self::LENGTH);
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        array.bytes_mut()[Self::RANGE_DEFINITION_ID].copy_from_slice(&definition_id.bytes());
+        Self { bytes: Bytes::Array(array) }
+    }
+}
+
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for Definition<'a> {
+    fn bytes(&'a self) -> ByteReference<'a> {
+        self.bytes.as_reference()
+    }
+
+    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
+        self.bytes
+    }
+}
+
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for Definition<'a> {
+    fn keyspace(&self) -> EncodingKeyspace {
+        Self::KEYSPACE
+    }
+}
+
+impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for Definition<'a> {}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct DefinitionID {
+    bytes: [u8; DefinitionID::LENGTH],
+}
+
+pub type DefinitionIDUInt = u16;
+
+impl DefinitionID {
+    pub(crate) const LENGTH: usize = std::mem::size_of::<DefinitionIDUInt>();
+
+    pub fn new(bytes: [u8; DefinitionID::LENGTH]) -> DefinitionID {
+        DefinitionID { bytes }
+    }
+
+    pub fn build(id: DefinitionIDUInt) -> Self {
+        debug_assert_eq!(std::mem::size_of_val(&id), DefinitionID::LENGTH);
+        DefinitionID { bytes: id.to_be_bytes() }
+    }
+
+    pub fn as_u16(&self) -> u16 {
+        u16::from_be_bytes(self.bytes)
+    }
+
+    pub fn bytes(&self) -> [u8; DefinitionID::LENGTH] {
+        self.bytes
+    }
+}

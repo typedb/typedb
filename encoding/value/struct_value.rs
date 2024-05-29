@@ -6,11 +6,13 @@
 
 
 use std::collections::HashMap;
+use crate::graph::definition::r#struct::StructFieldNumber;
 use crate::value::ValueEncodable;
 
 #[derive(Debug)]
 pub struct StructValue {
-    fields: HashMap<String, Box<dyn ValueEncodable>>
+    // a map allows empty fields to not be recorded at all
+    fields: HashMap<StructFieldNumber, Box<dyn ValueEncodable>>
 }
 
 // TODO: implement serialise/deserialise for the StructValue
