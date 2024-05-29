@@ -103,44 +103,42 @@ struct Segment {
     number_len: usize,
 }
 
-fn read_u32(bytes: &[u8]) -> Result<(Segment, &[u8]), DurationParseError> {
+fn read_u32(str: &str) -> Result<(Segment, &str), DurationParseError> {
     let mut i = 0;
-    while i + 1 < bytes.len() && bytes[i].is_ascii_digit() {
+    while i + 1 < str.len() && str.as_bytes()[i].is_ascii_digit() {
         i += 1;
     }
     if i == 0 {
         return Err(DurationParseError);
     }
-    let value = unsafe { std::str::from_utf8_unchecked(&bytes[..i]) }.parse().map_err(|_| DurationParseError)?;
-    Ok((Segment { number: value, symbol: bytes[i], number_len: i }, &bytes[i + 1..]))
+    let value = str[..i].parse().map_err(|_| DurationParseError)?;
+    Ok((Segment { number: value, symbol: str.as_bytes()[i], number_len: i }, &str[i + 1..]))
 }
 
 impl FromStr for Duration {
     type Err = DurationParseError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut bytes: &[u8] = s.as_bytes();
-
+    fn from_str(mut str: &str) -> Result<Self, Self::Err> {
         let mut months = 0;
         let mut days = 0;
         let mut seconds = 0;
         let mut nanos = 0;
 
-        if bytes[0] != b'P' {
+        if str.as_bytes()[0] != b'P' {
             return Err(DurationParseError);
         }
-        bytes = &bytes[1..];
+        str = &str[1..];
 
         let mut parsing_time = false;
         let mut previous_symbol = None;
-        while !bytes.is_empty() {
-            if bytes[0] == b'T' {
+        while !str.is_empty() {
+            if str.as_bytes()[0] == b'T' {
                 parsing_time = true;
-                bytes = &bytes[1..];
+                str = &str[1..];
             }
 
-            let (Segment { number, symbol, number_len }, tail) = read_u32(bytes)?;
-            bytes = tail;
+            let (Segment { number, symbol, number_len }, tail) = read_u32(str)?;
+            str = tail;
             match symbol {
                 b'Y' => months += number * MONTHS_PER_YEAR,
                 b'M' if !parsing_time => months += number,
