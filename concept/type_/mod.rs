@@ -14,8 +14,9 @@ use encoding::{
 };
 use primitive::maybe_owns::MaybeOwns;
 use serde::{Deserialize, Serialize};
-use bytes::byte_array::ByteArray;
 use bytes::Bytes;
+use bytes::Bytes::Array;
+use encoding::AsBytes;
 use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
 use encoding::graph::type_::property::EncodableTypeEdgeProperty;
 use encoding::graph::type_::vertex::EncodableTypeVertex;
@@ -219,7 +220,7 @@ pub enum Ordering {
 }
 
 impl<'a> EncodableTypeEdgeProperty<'a> for Ordering {
-    const INFIX: Infix = Infix::PropertyHasOrder;
+    const INFIX: Infix = Infix::PropertyOrdering;
 
     fn decode_value<'b>(value: ByteReference<'b>) -> Ordering {
         bincode::deserialize(value.bytes()).unwrap()
@@ -244,6 +245,22 @@ pub(crate) trait InterfaceImplementation<'a> : EncodableParametrisedTypeEdge<'a,
     fn unwrap_annotation(annotation: Self::AnnotationType) -> Annotation;
 }
 
+pub struct EdgeOverride<'a, EDGE: EncodableParametrisedTypeEdge<'a>> {
+    overridden: EDGE::To
+}
+
+impl<'a, EDGE: EncodableParametrisedTypeEdge<'a>> EncodableTypeEdgeProperty<'a> for EdgeOverride<'a, EDGE> {
+    const INFIX: Infix = Infix::PropertyOverride;
+
+    fn decode_value<'b>(value: ByteReference<'b>) -> Self {
+        Self { overridden: EDGE::To::decode(Bytes::Reference(value).into_owned()) }
+    }
+
+    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        let overridden_vertex_bytes:[u8; BUFFER_VALUE_INLINE] = [0;BUFFER_VALUE_INLINE];
+        Some(Bytes::inline(overridden_vertex_bytes, BUFFER_VALUE_INLINE))
+    }
+}
 
 #[derive(Clone, Debug)]
 pub enum WrappedTypeForError {

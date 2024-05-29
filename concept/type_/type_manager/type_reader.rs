@@ -14,8 +14,7 @@ use encoding::{
         edge::TypeEdge,
         index::LabelToTypeVertexIndex,
         property::{
-            build_property_type_edge_ordering, build_property_type_edge_override, build_property_type_label,
-            build_property_type_ordering, build_property_type_value_type, TypeEdgeProperty, TypeVertexProperty,
+            build_property_type_edge_override, build_property_type_label, build_property_type_ordering, build_property_type_value_type, TypeEdgeProperty, TypeVertexProperty,
         },
         vertex::EncodableTypeVertex,
     },
@@ -427,18 +426,12 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         owns: Owns<'_>,
     ) -> Result<Ordering, ConceptReadError> {
-        let ordering = snapshot
-            .get_mapped(
-                build_property_type_edge_ordering(owns.to_canonical_type_edge()).into_storage_key().as_reference(),
-                |value| Ordering::decode_value(value),
-            )
-            .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
-        Ok(ordering.unwrap())
+        Ok(Self::get_type_edge_property::<Ordering>(snapshot, owns)?.unwrap())
     }
 
-    pub(crate) fn get_type_edge_property<PROPERTY>(
+    pub(crate) fn get_type_edge_property<'a, PROPERTY>(
         snapshot: &impl ReadableSnapshot,
-        edge: impl EncodableParametrisedTypeEdge<'static>
+        edge: impl EncodableParametrisedTypeEdge<'a>
     ) -> Result<Option<PROPERTY>, ConceptReadError>
     where PROPERTY: EncodableTypeEdgeProperty<'static>
     {
