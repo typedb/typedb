@@ -26,97 +26,6 @@ pub struct TypeVertexProperty<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
-pub trait EncodableTypeVertexProperty<'a> {
-    const INFIX: Infix;
-
-    fn decode_value<'b>(value: ByteReference<'b>) -> Self;
-
-    fn build_key<'b>(vertex: impl EncodableTypeVertex<'b>) -> TypeVertexProperty<'b> {
-        TypeVertexProperty::build(vertex.into_vertex(), Self::INFIX)
-    }
-
-    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
-    fn is_property(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-        key_bytes.length() == TypeVertexProperty::LENGTH_NO_SUFFIX
-            && TypeVertexProperty::new(key_bytes).infix() == Self::INFIX
-    }
-}
-
-// macro_rules! type_vertex_property_constructors {
-//     ($new_name:ident, $build_name:ident, $is_name:ident, InfixType::$infix:ident) => {
-//         pub fn $new_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> TypeVertexProperty<'_> {
-//             let vertex = TypeVertexProperty::new(bytes);
-//             debug_assert_eq!(vertex.infix(), Infix::$infix);
-//             vertex
-//         }
-//
-//         pub fn $build_name(type_vertex: TypeVertex<'_>) -> TypeVertexProperty<'static> {
-//             TypeVertexProperty::build(type_vertex, Infix::$infix)
-//         }
-//
-//         pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-//             Prefix::from_prefix_id(PrefixID::new([bytes.bytes()[0]])) == TypeVertexProperty::PREFIX
-//                 && $new_name(bytes).infix() == Infix::$infix
-//         }
-//     };
-// }
-//
-// type_vertex_property_constructors!(
-//     new_property_type_label,
-//     build_property_type_label,
-//     is_property_type_label_prefix,
-//     InfixType::PropertyLabel
-// );
-
-// type_vertex_property_constructors!(
-//     new_property_type_value_type,
-//     build_property_type_value_type,
-//     is_property_type_value_type,
-//     InfixType::PropertyValueType
-// );
-
-// type_vertex_property_constructors!(
-//     new_property_type_annotation_abstract,
-//     build_property_type_annotation_abstract,
-//     is_property_type_annotation_abstract,
-//     InfixType::PropertyAnnotationAbstract
-// );
-
-// type_vertex_property_constructors!(
-//     new_property_type_annotation_distinct,
-//     build_property_type_annotation_distinct,
-//     is_property_type_annotation_distinct,
-//     InfixType::PropertyAnnotationDistinct
-// );
-
-// type_vertex_property_constructors!(
-//     new_property_type_annotation_independent,
-//     build_property_type_annotation_independent,
-//     is_property_type_annotation_independent,
-//     InfixType::PropertyAnnotationIndependent
-// );
-
-// type_vertex_property_constructors!(
-//     new_property_type_annotation_cardinality,
-//     build_property_type_annotation_cardinality,
-//     is_property_type_annotation_cardinality,
-//     InfixType::PropertyAnnotationCardinality
-// );
-//
-// type_vertex_property_constructors!(
-//     new_property_type_annotation_regex,
-//     build_property_type_annotation_regex,
-//     is_property_type_annotation_regex,
-//     InfixType::PropertyAnnotationRegex
-// );
-
-// type_vertex_property_constructors!(
-//     new_property_type_ordering,
-//     build_property_type_ordering,
-//     is_property_type_ordering,
-//     InfixType::PropertyOrdering
-// );
-
 impl<'a> TypeVertexProperty<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
     const PREFIX: Prefix = Prefix::PropertyTypeVertex;
@@ -213,6 +122,23 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {
 }
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {}
+
+pub trait EncodableTypeVertexProperty<'a> {
+    const INFIX: Infix;
+
+    fn decode_value<'b>(value: ByteReference<'b>) -> Self;
+
+    fn build_key<'b>(vertex: impl EncodableTypeVertex<'b>) -> TypeVertexProperty<'b> {
+        TypeVertexProperty::build(vertex.into_vertex(), Self::INFIX)
+    }
+
+    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
+    fn is_property(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+        key_bytes.length() == TypeVertexProperty::LENGTH_NO_SUFFIX
+            && TypeVertexProperty::new(key_bytes).infix() == Self::INFIX
+    }
+}
+
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct TypeEdgeProperty<'a> {
