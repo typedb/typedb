@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, NaiveDateTime};
 use chrono_tz::Tz;
 
 use super::date_time_bytes::DateTimeBytes;
@@ -25,17 +25,17 @@ impl DateTimeTZBytes {
         Self { bytes }
     }
 
-    pub fn build(date_time: NaiveDateTime, tz: Tz) -> Self {
-        let mut bytes = DateTimeBytes::build(date_time).bytes();
-        bytes[Self::DATE_TIME_LENGTH..][..Self::TZ_LENGTH].copy_from_slice(&encode_tz(tz).to_be_bytes());
+    pub fn build(date_time: DateTime<Tz>) -> Self {
+        let mut bytes = DateTimeBytes::build(date_time.naive_utc()).bytes();
+        bytes[Self::DATE_TIME_LENGTH..][..Self::TZ_LENGTH].copy_from_slice(&encode_tz(date_time.timezone()).to_be_bytes());
         Self { bytes }
     }
 
-    pub fn as_naive_date_time_and_tz(&self) -> (NaiveDateTime, Tz) {
+    pub fn as_date_time(&self) -> DateTime<Tz> {
         let date_time = DateTimeBytes::new(self.bytes).as_naive_date_time();
         let tz =
             decode_tz(u16::from_be_bytes(self.bytes[Self::DATE_TIME_LENGTH..][..Self::TZ_LENGTH].try_into().unwrap()));
-        (date_time, tz)
+        date_time.and_local_timezone(tz).unwrap()
     }
 
     pub(crate) fn bytes(&self) -> [u8; Self::LENGTH] {

@@ -6,7 +6,7 @@
 
 use std::borrow::Cow;
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, NaiveDateTime};
 use chrono_tz::Tz;
 use encoding::value::{
     boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
@@ -22,7 +22,7 @@ pub enum Value<'a> {
     Long(i64),
     Double(f64),
     DateTime(NaiveDateTime),
-    DateTimeTZ(NaiveDateTime, Tz),
+    DateTimeTZ(DateTime<Tz>),
     Duration(Duration),
     String(Cow<'a, str>),
     Struct(Cow<'a, StructValue<'static>>),
@@ -35,7 +35,7 @@ impl<'a> Value<'a> {
             Value::Long(long) => Value::Long(long),
             Value::Double(double) => Value::Double(double),
             Value::DateTime(date_time) => Value::DateTime(date_time),
-            Value::DateTimeTZ(date_time, tz) => Value::DateTimeTZ(date_time, tz),
+            Value::DateTimeTZ(date_time_tz) => Value::DateTimeTZ(date_time_tz),
             Value::Duration(duration) => Value::Duration(duration),
             Value::String(ref string) => Value::String(Cow::Borrowed(string.as_ref())),
             Value::Struct(ref struct_) => Value::Struct(Cow::Borrowed(struct_.as_ref())),
@@ -90,7 +90,7 @@ impl<'a> Value<'a> {
             Self::Long(long) => Value::Long(long),
             Self::Double(double) => Value::Double(double),
             Self::DateTime(date_time) => Value::DateTime(date_time),
-            Self::DateTimeTZ(date_time, tz) => Value::DateTimeTZ(date_time, tz),
+            Self::DateTimeTZ(date_time_tz) => Value::DateTimeTZ(date_time_tz),
             Self::Duration(duration) => Value::Duration(duration),
             Self::String(string) => Value::String(Cow::Owned(string.into_owned())),
             Self::Struct(struct_) => Value::Struct(Cow::Owned(struct_.into_owned())),
@@ -105,7 +105,7 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::Long(_) => ValueType::Long,
             Value::Double(_) => ValueType::Double,
             Value::DateTime(_) => ValueType::DateTime,
-            Value::DateTimeTZ(_, _) => ValueType::DateTimeTZ,
+            Value::DateTimeTZ(_) => ValueType::DateTimeTZ,
             Value::Duration(_) => ValueType::Duration,
             Value::String(_) => ValueType::String,
             Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().into_owned()),
@@ -142,7 +142,7 @@ impl<'a> ValueEncodable for Value<'a> {
 
     fn encode_date_time_tz(&self) -> DateTimeTZBytes {
         match self {
-            &Self::DateTimeTZ(date_time, tz) => DateTimeTZBytes::build(date_time, tz),
+            &Self::DateTimeTZ(date_time_tz) => DateTimeTZBytes::build(date_time_tz),
             _ => panic!("Cannot encoded non-datetime as DateTimeBytes"),
         }
     }

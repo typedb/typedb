@@ -48,11 +48,9 @@ use crate::{
         ThingAPI,
     },
     type_::{
-        annotation::{AnnotationCardinality, AnnotationKey},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::EntityType,
         object_type::ObjectType,
-        owns::OwnsAnnotation,
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
@@ -217,8 +215,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
             }
             ValueType::DateTimeTZ => {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_date_time_tz();
-                let (date_time, tz) = DateTimeTZBytes::new(attribute_id.bytes()).as_naive_date_time_and_tz();
-                Ok(Value::DateTimeTZ(date_time, tz))
+                Ok(Value::DateTimeTZ(DateTimeTZBytes::new(attribute_id.bytes()).as_date_time()))
             }
             ValueType::Duration => {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_duration();
@@ -800,8 +797,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                         snapshot,
                     )
                 }
-                Value::DateTimeTZ(date_time, tz) => {
-                    let encoded_date_time_tz = DateTimeTZBytes::build(date_time, tz);
+                Value::DateTimeTZ(date_time_tz) => {
+                    let encoded_date_time_tz = DateTimeTZBytes::build(date_time_tz);
                     self.vertex_generator.create_attribute_date_time_tz(
                         attribute_type.vertex().type_id_(),
                         encoded_date_time_tz,
