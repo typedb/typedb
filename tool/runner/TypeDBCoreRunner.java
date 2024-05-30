@@ -95,12 +95,14 @@ public class TypeDBCoreRunner implements TypeDBRunner {
                 pair("--server.address", address()),
                 pair("--storage.data", dataDir.toAbsolutePath().toString())
         );
+        Map<String, String> staticOptionsWithoutOverrides = new HashMap<>(STATIC_OPTIONS);
+        userOptions.keySet().forEach(staticOptionsWithoutOverrides::remove);
 
         List<String> cmd = new ArrayList<>();
         cmd.add("server");
-        addOptions(STATIC_OPTIONS, cmd);
-        addOptions(dynamicOptions, cmd);
+        addOptions(staticOptionsWithoutOverrides, cmd);
         addOptions(userOptions, cmd);
+        addOptions(dynamicOptions, cmd);
         return typeDBCommand(cmd);
     }
 

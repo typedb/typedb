@@ -12,6 +12,7 @@ typedb_java_test(
     deps = [
         "//tool/runner:typedb-runner",
         "@maven//:com_vaticle_typedb_typedb_console_runner",
+        "@vaticle_typeql//common/java:common",
     ],
     server_artifacts = {
         "@vaticle_bazel_distribution//platform:is_linux_arm64": "//server:assemble-linux-arm64-targz",
