@@ -3,6 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("//:deployment.bzl", deployment_docker = "deployment", deployment_github = "deployment")
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("@vaticle_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@vaticle_bazel_distribution//brew:rules.bzl", "deploy_brew")
@@ -16,12 +17,10 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
 load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
-load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 
 string_flag(
     name = "is_release",
     build_setting_default = "false",
-    visibility = ["//visibility:public"],
 )
 
 config_setting(
@@ -29,6 +28,7 @@ config_setting(
     flag_values = {
         "//:is_release": "true",
     },
+    visibility = ["//visibility:public"],
 )
 
 config_setting(
@@ -36,6 +36,7 @@ config_setting(
     flag_values = {
         "//:is_release": "false",
     },
+    visibility = ["//visibility:public"],
 )
 
 exports_files(
