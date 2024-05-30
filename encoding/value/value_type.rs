@@ -13,7 +13,7 @@ use crate::AsBytes;
 use crate::graph::definition::definition_key::DefinitionKey;
 
 // We can support Prefix::ATTRIBUTE_MAX - Prefix::ATTRIBUTE_MIN different built-in value types
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ValueType {
     Boolean,
     Long,

@@ -36,11 +36,10 @@ use crate::{
     value::{
         boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
         double_bytes::DoubleBytes, duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes,
-        value_type::ValueType,
+        value_type::ValueTypeCategory,
     },
     AsBytes, Keyable, Prefixed,
 };
-use crate::value::value_type::ValueTypeCategory;
 
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,
@@ -161,7 +160,8 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let boolean_attribute_id = self.create_attribute_id_boolean(value);
-        let vertex = AttributeVertex::build(ValueTypeCategory::Boolean, type_id, AttributeID::Boolean(boolean_attribute_id));
+        let vertex =
+            AttributeVertex::build(ValueTypeCategory::Boolean, type_id, AttributeID::Boolean(boolean_attribute_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
@@ -191,7 +191,8 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let double_attribute_id = self.create_attribute_id_double(value);
-        let vertex = AttributeVertex::build(ValueTypeCategory::Double, type_id, AttributeID::Double(double_attribute_id));
+        let vertex =
+            AttributeVertex::build(ValueTypeCategory::Double, type_id, AttributeID::Double(double_attribute_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
@@ -222,8 +223,11 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let date_time_tz_attribute_id = self.create_attribute_id_date_time_tz(value);
-        let vertex =
-            AttributeVertex::build(ValueType::DateTimeTZ, type_id, AttributeID::DateTimeTZ(date_time_tz_attribute_id));
+        let vertex = AttributeVertex::build(
+            ValueTypeCategory::DateTimeTZ,
+            type_id,
+            AttributeID::DateTimeTZ(date_time_tz_attribute_id),
+        );
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
@@ -238,7 +242,8 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let duration_attribute_id = self.create_attribute_id_duration(value);
-        let vertex = AttributeVertex::build(ValueType::Duration, type_id, AttributeID::Duration(duration_attribute_id));
+        let vertex =
+            AttributeVertex::build(ValueTypeCategory::Duration, type_id, AttributeID::Duration(duration_attribute_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
@@ -287,7 +292,8 @@ impl ThingVertexGenerator {
         Snapshot: WritableSnapshot,
     {
         let string_attribute_id = self.create_attribute_id_string(type_id, value.as_reference(), snapshot)?;
-        let vertex = AttributeVertex::build(ValueTypeCategory::String, type_id, AttributeID::String(string_attribute_id));
+        let vertex =
+            AttributeVertex::build(ValueTypeCategory::String, type_id, AttributeID::String(string_attribute_id));
         snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
         Ok(vertex)
     }

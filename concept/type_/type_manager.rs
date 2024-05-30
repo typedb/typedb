@@ -512,11 +512,11 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         &self,
         snapshot: &Snapshot,
         attribute_type: AttributeType<'static>,
-    ) -> Result<MaybeOwns<'_, Option<ValueType>>, ConceptReadError> {
+    ) -> Result<Option<ValueType>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_attribute_type_value_type(attribute_type)))
+            Ok(cache.get_attribute_type_value_type(attribute_type).clone())
         } else {
-            Ok(MaybeOwns::Owned(TypeReader::get_value_type(snapshot, attribute_type)?))
+            Ok(TypeReader::get_value_type(snapshot, attribute_type)?)
         }
     }
 

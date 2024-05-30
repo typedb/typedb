@@ -284,6 +284,7 @@ impl Value {
             TypeDBValueType::DateTimeTZ => todo!(),
             TypeDBValueType::Duration => TypeDBValue::Duration(self.raw_value.parse().unwrap()),
             TypeDBValueType::String => TypeDBValue::String(Cow::Owned(self.raw_value)),
+            TypeDBValueType::Struct(_) => todo!(),
         }
     }
 }

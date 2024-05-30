@@ -102,11 +102,11 @@ impl<'a> AttributeType<'a> {
         type_manager.storage_set_value_type(snapshot, self.clone().into_owned(), value_type)
     }
 
-    pub fn get_value_type<'m, Snapshot: ReadableSnapshot>(
+    pub fn get_value_type<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        type_manager: &'m TypeManager<Snapshot>,
-    ) -> Result<MaybeOwns<'m, Option<ValueType>>, ConceptReadError> {
+        type_manager: &TypeManager<Snapshot>,
+    ) -> Result<Option<ValueType>, ConceptReadError> {
         type_manager.get_attribute_type_value_type(snapshot, self.clone().into_owned())
     }
 
