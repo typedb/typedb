@@ -19,8 +19,8 @@ pub enum ValueType {
     Long,
     Double,
 
-    // TODO: consider splitting with/without timezone
     DateTime,
+    DateTimeTZ,
     Duration,
 
     String,
@@ -35,6 +35,7 @@ impl ValueType {
             ValueType::Long => ValueTypeCategory::Long,
             ValueType::Double => ValueTypeCategory::Double,
             ValueType::DateTime => ValueTypeCategory::DateTime,
+            ValueType::DateTimeTZ => ValueTypeCategory::DateTimeTZ,
             ValueType::Duration => ValueTypeCategory::Duration,
             ValueType::String => ValueTypeCategory::String,
             ValueType::Struct(_) => ValueTypeCategory::Struct,
@@ -47,6 +48,7 @@ impl ValueType {
             ValueTypeCategory::Long => Self::Long,
             ValueTypeCategory::Double => Self::Double,
             ValueTypeCategory::DateTime => Self::DateTime,
+            ValueTypeCategory::DateTimeTZ => Self::DateTimeTZ,
             ValueTypeCategory::Duration => Self::Duration,
             ValueTypeCategory::String => Self::String,
             ValueTypeCategory::Struct => {
@@ -63,6 +65,7 @@ pub enum ValueTypeCategory {
     Long,
     Double,
     DateTime,
+    DateTimeTZ,
     Duration,
     String,
     Struct,
@@ -76,8 +79,9 @@ impl ValueTypeCategory {
             Self::Long => [1],
             Self::Double => [2],
             Self::DateTime => [3],
-            Self::Duration => [4],
-            Self::String => [5],
+            Self::DateTimeTZ => [4],
+            Self::Duration => [5],
+            Self::String => [6],
             Self::Struct => [40]
         }
     }
@@ -88,8 +92,9 @@ impl ValueTypeCategory {
             [1] => ValueTypeCategory::Long,
             [2] => ValueTypeCategory::Double,
             [3] => ValueTypeCategory::DateTime,
-            [4] => ValueTypeCategory::Duration,
-            [5] => ValueTypeCategory::String,
+            [4] => ValueTypeCategory::DateTimeTZ,
+            [5] => ValueTypeCategory::Duration,
+            [6] => ValueTypeCategory::String,
             [40] => ValueTypeCategory::Struct,
             _ => panic!("Unrecognised value type category byte: {:?}", bytes),
         };

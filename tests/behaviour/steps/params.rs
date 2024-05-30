@@ -17,7 +17,7 @@ use concept::{
 use cucumber::Parameter;
 use encoding::{
     graph::type_::Kind as TypeDBTypeKind,
-    value::{duration_value::Duration, label::Label as TypeDBLabel, value_type::ValueType as TypeDBValueType},
+    value::{label::Label as TypeDBLabel, value_type::ValueType as TypeDBValueType},
 };
 use itertools::Itertools;
 
@@ -281,6 +281,7 @@ impl Value {
             TypeDBValueType::DateTime => {
                 TypeDBValue::DateTime(NaiveDateTime::parse_from_str(&self.raw_value, "%Y-%m-%d %H:%M:%S").unwrap())
             }
+            TypeDBValueType::DateTimeTZ => todo!(),
             TypeDBValueType::Duration => TypeDBValue::Duration(self.raw_value.parse().unwrap()),
             TypeDBValueType::String => TypeDBValue::String(Cow::Owned(self.raw_value)),
         }

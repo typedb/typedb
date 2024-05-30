@@ -17,7 +17,9 @@ use storage::{
     MVCCKey, MVCCStorage,
 };
 
-use super::vertex_attribute::{BooleanAttributeID, DateTimeAttributeID, DoubleAttributeID, DurationAttributeID};
+use super::vertex_attribute::{
+    BooleanAttributeID, DateTimeAttributeID, DateTimeTZAttributeID, DoubleAttributeID, DurationAttributeID,
+};
 use crate::{
     error::EncodingError,
     graph::{
@@ -32,8 +34,9 @@ use crate::{
     },
     layout::prefix::Prefix,
     value::{
-        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType,
+        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
+        double_bytes::DoubleBytes, duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes,
+        value_type::ValueType,
     },
     AsBytes, Keyable, Prefixed,
 };
@@ -209,6 +212,22 @@ impl ThingVertexGenerator {
         vertex
     }
 
+    pub fn create_attribute_date_time_tz<Snapshot>(
+        &self,
+        type_id: TypeID,
+        value: DateTimeTZBytes,
+        snapshot: &mut Snapshot,
+    ) -> AttributeVertex<'static>
+    where
+        Snapshot: WritableSnapshot,
+    {
+        let date_time_tz_attribute_id = self.create_attribute_id_date_time_tz(value);
+        let vertex =
+            AttributeVertex::build(ValueType::DateTimeTZ, type_id, AttributeID::DateTimeTZ(date_time_tz_attribute_id));
+        snapshot.put(vertex.as_storage_key().into_owned_array());
+        vertex
+    }
+
     pub fn create_attribute_duration<Snapshot>(
         &self,
         type_id: TypeID,
@@ -238,6 +257,10 @@ impl ThingVertexGenerator {
 
     pub fn create_attribute_id_date_time(&self, value: DateTimeBytes) -> DateTimeAttributeID {
         DateTimeAttributeID::build(value)
+    }
+
+    pub fn create_attribute_id_date_time_tz(&self, value: DateTimeTZBytes) -> DateTimeTZAttributeID {
+        DateTimeTZAttributeID::build(value)
     }
 
     pub fn create_attribute_id_duration(&self, value: DurationBytes) -> DurationAttributeID {

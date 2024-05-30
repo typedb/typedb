@@ -29,6 +29,7 @@ rust_library(
         "//storage",
 
         "@crates//:chrono",
+        "@crates//:chrono-tz",
         "@crates//:tracing",
         "@crates//:seahash",
         "@crates//:serde",

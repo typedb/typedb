@@ -21,9 +21,9 @@ use crate::{
     graph::{type_::vertex::TypeID, Typed},
     layout::prefix::{Prefix, PrefixID},
     value::{
-        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType,
-        ValueEncodable,
+        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
+        double_bytes::DoubleBytes, duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes,
+        value_type::ValueType, ValueEncodable,
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
@@ -90,6 +90,7 @@ impl<'a> AttributeVertex<'a> {
             ValueTypeCategory::Long => Prefix::VertexAttributeLong,
             ValueTypeCategory::Double => Prefix::VertexAttributeDouble,
             ValueTypeCategory::DateTime => Prefix::VertexAttributeDateTime,
+            ValueTypeCategory::DateTimeTZ => Prefix::VertexAttributeDateTimeTZ,
             ValueTypeCategory::Duration => Prefix::VertexAttributeDuration,
             ValueTypeCategory::String => Prefix::VertexAttributeString,
             ValueTypeCategory::Struct => Prefix::VertexAttributeStruct,
@@ -201,6 +202,7 @@ pub enum AttributeID {
     Long(LongAttributeID),
     Double(DoubleAttributeID),
     DateTime(DateTimeAttributeID),
+    DateTimeTZ(DateTimeTZAttributeID),
     Duration(DurationAttributeID),
     String(StringAttributeID),
     Struct(StructAttributeID),
@@ -213,6 +215,7 @@ impl AttributeID {
             ValueTypeCategory::Long => Self::Long(LongAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::Double => Self::Double(DoubleAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::DateTime => Self::DateTime(DateTimeAttributeID::new(bytes.try_into().unwrap())),
+            ValueTypeCategory::DateTimeTZ => Self::DateTimeTZ(DateTimeTZAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::Duration => Self::Duration(DurationAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::String => Self::String(StringAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::Struct => Self::Struct(StructAttributeID::new(bytes.try_into().unwrap()))
@@ -226,6 +229,7 @@ impl AttributeID {
             ValueType::Long => Self::Long(LongAttributeID::build(value.encode_long())),
             ValueType::Double => Self::Double(DoubleAttributeID::build(value.encode_double())),
             ValueType::DateTime => Self::DateTime(DateTimeAttributeID::build(value.encode_date_time())),
+            ValueType::DateTimeTZ => Self::DateTimeTZ(DateTimeTZAttributeID::build(value.encode_date_time_tz())),
             ValueType::Duration => Self::Duration(DurationAttributeID::build(value.encode_duration())),
             ValueType::String => Self::String(StringAttributeID::build_inline_id(value.encode_string::<256>())),
             ValueType::Struct(_) => {
@@ -240,6 +244,7 @@ impl AttributeID {
             ValueTypeCategory::Long => LongAttributeID::LENGTH,
             ValueTypeCategory::Double => DoubleAttributeID::LENGTH,
             ValueTypeCategory::DateTime => DateTimeAttributeID::LENGTH,
+            ValueTypeCategory::DateTimeTZ => DateTimeTZAttributeID::LENGTH,
             ValueTypeCategory::Duration => DurationAttributeID::LENGTH,
             ValueTypeCategory::String => StringAttributeID::LENGTH,
             ValueTypeCategory::Struct => StructAttributeID::LENGTH,
@@ -256,6 +261,7 @@ impl AttributeID {
             ValueType::Long => LongAttributeID::is_inlineable(),
             ValueType::Double => DoubleAttributeID::is_inlineable(),
             ValueType::DateTime => DateTimeAttributeID::is_inlineable(),
+            ValueType::DateTimeTZ => DateTimeTZAttributeID::is_inlineable(),
             ValueType::Duration => DurationAttributeID::is_inlineable(),
             ValueType::String => StringAttributeID::is_inlineable(value.encode_string::<256>()),
             ValueType::Struct(definition_key) => {
@@ -271,6 +277,7 @@ impl AttributeID {
             AttributeID::Long(long_id) => long_id.bytes_ref(),
             AttributeID::Double(double_id) => double_id.bytes_ref(),
             AttributeID::DateTime(date_time_id) => date_time_id.bytes_ref(),
+            AttributeID::DateTimeTZ(date_time_tz_id) => date_time_tz_id.bytes_ref(),
             AttributeID::Duration(duration_id) => duration_id.bytes_ref(),
             AttributeID::String(string_id) => string_id.bytes_ref(),
             AttributeID::Struct(struct_id) => struct_id.bytes_ref(),
@@ -283,6 +290,7 @@ impl AttributeID {
             AttributeID::Long(_) => LongAttributeID::LENGTH,
             AttributeID::Double(_) => DoubleAttributeID::LENGTH,
             AttributeID::DateTime(_) => DateTimeAttributeID::LENGTH,
+            AttributeID::DateTimeTZ(_) => DateTimeTZAttributeID::LENGTH,
             AttributeID::Duration(_) => DurationAttributeID::LENGTH,
             AttributeID::String(_) => StringAttributeID::LENGTH,
             AttributeID::Struct(_) => StructAttributeID::LENGTH,
@@ -317,6 +325,13 @@ impl AttributeID {
     pub fn unwrap_date_time(self) -> DateTimeAttributeID {
         match self {
             AttributeID::DateTime(date_time_id) => date_time_id,
+            _ => panic!("Cannot unwrap DateTime ID from non-datetime attribute ID."),
+        }
+    }
+
+    pub fn unwrap_date_time_tz(self) -> DateTimeTZAttributeID {
+        match self {
+            AttributeID::DateTimeTZ(date_time_tz_id) => date_time_tz_id,
             _ => panic!("Cannot unwrap DateTime ID from non-datetime attribute ID."),
         }
     }
@@ -437,6 +452,35 @@ impl DateTimeAttributeID {
     }
 
     pub(crate) fn build(value: DateTimeBytes) -> Self {
+        Self { bytes: value.bytes() }
+    }
+
+    pub(crate) const fn is_inlineable() -> bool {
+        true
+    }
+
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+        self.bytes
+    }
+
+    pub fn bytes_ref(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct DateTimeTZAttributeID {
+    bytes: [u8; Self::LENGTH],
+}
+
+impl DateTimeTZAttributeID {
+    const LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+
+    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
+        Self { bytes }
+    }
+
+    pub(crate) fn build(value: DateTimeTZBytes) -> Self {
         Self { bytes: value.bytes() }
     }
 

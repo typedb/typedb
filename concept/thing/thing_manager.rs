@@ -20,9 +20,9 @@ use encoding::{
     },
     layout::prefix::Prefix,
     value::{
-        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, decode_value_u64, double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes, encode_value_u64, long_bytes::LongBytes, string_bytes::StringBytes,
-        value_type::ValueType, ValueEncodable,
+        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
+        decode_value_u64, double_bytes::DoubleBytes, duration_bytes::DurationBytes, encode_value_u64,
+        long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType, ValueEncodable,
     },
     Keyable,
 };
@@ -215,6 +215,11 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_date_time();
                 Ok(Value::DateTime(DateTimeBytes::new(attribute_id.bytes()).as_naive_date_time()))
             }
+            ValueType::DateTimeTZ => {
+                let attribute_id = attribute.vertex().attribute_id().unwrap_date_time_tz();
+                let (date_time, tz) = DateTimeTZBytes::new(attribute_id.bytes()).as_naive_date_time_and_tz();
+                Ok(Value::DateTimeTZ(date_time, tz))
+            }
             ValueType::Duration => {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_duration();
                 Ok(Value::Duration(DurationBytes::new(attribute_id.bytes()).as_duration()))
@@ -253,7 +258,12 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         }
 
         let attribute = match value_type {
-            ValueType::Boolean | ValueType::Long | ValueType::Double | ValueType::DateTime | ValueType::Duration => {
+            | ValueType::Boolean
+            | ValueType::Long
+            | ValueType::Double
+            | ValueType::DateTime
+            | ValueType::DateTimeTZ
+            | ValueType::Duration => {
                 debug_assert!(AttributeID::is_inlineable(value.as_reference()));
                 match self.get_attribute_with_value_inline(snapshot, attribute_type, value) {
                     Ok(Some(attribute)) => attribute,
@@ -779,6 +789,14 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                     self.vertex_generator.create_attribute_date_time(
                         attribute_type.vertex().type_id_(),
                         encoded_date_time,
+                        snapshot,
+                    )
+                }
+                Value::DateTimeTZ(date_time, tz) => {
+                    let encoded_date_time_tz = DateTimeTZBytes::build(date_time, tz);
+                    self.vertex_generator.create_attribute_date_time_tz(
+                        attribute_type.vertex().type_id_(),
+                        encoded_date_time_tz,
                         snapshot,
                     )
                 }
