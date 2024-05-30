@@ -23,7 +23,8 @@ use encoding::{
     value::{
         boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
         decode_value_u64, double_bytes::DoubleBytes, duration_bytes::DurationBytes, encode_value_u64,
-        long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType, ValueEncodable,
+        fixed_point_bytes::FixedPointBytes, long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType,
+        ValueEncodable,
     },
     Keyable,
 };
@@ -198,6 +199,10 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_double();
                 Ok(Value::Double(DoubleBytes::new(attribute_id.bytes()).as_f64()))
             }
+            ValueType::FixedPoint => {
+                let attribute_id = attribute.vertex().attribute_id().unwrap_fixed_point();
+                Ok(Value::FixedPoint(FixedPointBytes::new(attribute_id.bytes()).as_fixed_point()))
+            }
             ValueType::DateTime => {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_date_time();
                 Ok(Value::DateTime(DateTimeBytes::new(attribute_id.bytes()).as_naive_date_time()))
@@ -247,6 +252,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
             | ValueType::Boolean
             | ValueType::Long
             | ValueType::Double
+            | ValueType::FixedPoint
             | ValueType::DateTime
             | ValueType::DateTimeTZ
             | ValueType::Duration => {
@@ -775,6 +781,14 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                     self.vertex_generator.create_attribute_double(
                         attribute_type.vertex().type_id_(),
                         encoded_double,
+                        snapshot,
+                    )
+                }
+                Value::FixedPoint(fixed_point) => {
+                    let encoded_fixed_point = FixedPointBytes::build(fixed_point);
+                    self.vertex_generator.create_attribute_fixed_point(
+                        attribute_type.vertex().type_id_(),
+                        encoded_fixed_point,
                         snapshot,
                     )
                 }

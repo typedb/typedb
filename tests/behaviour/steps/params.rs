@@ -248,6 +248,7 @@ pub(crate) enum ValueType {
     Boolean,
     Long,
     Double,
+    FixedPoint,
     DateTime,
     DateTimeTZ,
     Duration,
@@ -260,6 +261,7 @@ impl ValueType {
             ValueType::Boolean => TypeDBValueType::Boolean,
             ValueType::Long => TypeDBValueType::Long,
             ValueType::Double => TypeDBValueType::Double,
+            ValueType::FixedPoint => TypeDBValueType::FixedPoint,
             ValueType::DateTime => TypeDBValueType::DateTime,
             ValueType::DateTimeTZ => TypeDBValueType::DateTimeTZ,
             ValueType::Duration => TypeDBValueType::Duration,
@@ -272,13 +274,14 @@ impl FromStr for ValueType {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
-            "long" => Self::Long,
-            "string" => Self::String,
             "boolean" => Self::Boolean,
+            "long" => Self::Long,
             "double" => Self::Double,
+            "fixed" => Self::FixedPoint,
             "datetime" => Self::DateTime,
             "datetimetz" => Self::DateTimeTZ,
             "duration" => Self::Duration,
+            "string" => Self::String,
             _ => panic!("Unrecognised value type"),
         })
     }
@@ -296,6 +299,7 @@ impl Value {
             TypeDBValueType::Boolean => TypeDBValue::Boolean(self.raw_value.parse().unwrap()),
             TypeDBValueType::Long => TypeDBValue::Long(self.raw_value.parse().unwrap()),
             TypeDBValueType::Double => TypeDBValue::Double(self.raw_value.parse().unwrap()),
+            TypeDBValueType::FixedPoint => todo!(),
             TypeDBValueType::DateTime => {
                 TypeDBValue::DateTime(NaiveDateTime::parse_from_str(&self.raw_value, "%Y-%m-%d %H:%M:%S").unwrap())
             }

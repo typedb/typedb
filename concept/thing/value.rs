@@ -10,7 +10,8 @@ use chrono::{DateTime, NaiveDateTime};
 use chrono_tz::Tz;
 use encoding::value::{
     boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
-    double_bytes::DoubleBytes, duration_bytes::DurationBytes, duration_value::Duration, long_bytes::LongBytes,
+    double_bytes::DoubleBytes, duration_bytes::DurationBytes, duration_value::Duration,
+    fixed_point_bytes::FixedPointBytes, fixed_point_value::FixedPoint, long_bytes::LongBytes,
     string_bytes::StringBytes, struct_bytes::StructBytes, value_type::ValueType, ValueEncodable,
 };
 
@@ -21,6 +22,7 @@ pub enum Value<'a> {
     Boolean(bool),
     Long(i64),
     Double(f64),
+    FixedPoint(FixedPoint),
     DateTime(NaiveDateTime),
     DateTimeTZ(DateTime<Tz>),
     Duration(Duration),
@@ -34,6 +36,7 @@ impl<'a> Value<'a> {
             Value::Boolean(boolean) => Value::Boolean(boolean),
             Value::Long(long) => Value::Long(long),
             Value::Double(double) => Value::Double(double),
+            Value::FixedPoint(fixed_point) => Value::FixedPoint(fixed_point),
             Value::DateTime(date_time) => Value::DateTime(date_time),
             Value::DateTimeTZ(date_time_tz) => Value::DateTimeTZ(date_time_tz),
             Value::Duration(duration) => Value::Duration(duration),
@@ -89,6 +92,7 @@ impl<'a> Value<'a> {
             Self::Boolean(bool) => Value::Boolean(bool),
             Self::Long(long) => Value::Long(long),
             Self::Double(double) => Value::Double(double),
+            Self::FixedPoint(fixed_point) => Value::FixedPoint(fixed_point),
             Self::DateTime(date_time) => Value::DateTime(date_time),
             Self::DateTimeTZ(date_time_tz) => Value::DateTimeTZ(date_time_tz),
             Self::Duration(duration) => Value::Duration(duration),
@@ -104,6 +108,7 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::Boolean(_) => ValueType::Boolean,
             Value::Long(_) => ValueType::Long,
             Value::Double(_) => ValueType::Double,
+            Value::FixedPoint(_) => ValueType::FixedPoint,
             Value::DateTime(_) => ValueType::DateTime,
             Value::DateTimeTZ(_) => ValueType::DateTimeTZ,
             Value::Duration(_) => ValueType::Duration,
@@ -130,6 +135,13 @@ impl<'a> ValueEncodable for Value<'a> {
         match self {
             Self::Double(double) => DoubleBytes::build(*double),
             _ => panic!("Cannot encode non-double as DoubleBytes"),
+        }
+    }
+
+    fn encode_fixed_point(&self) -> FixedPointBytes {
+        match self {
+            Self::FixedPoint(fixed_point) => FixedPointBytes::build(*fixed_point),
+            _ => panic!("Cannot encode non-fixed_point as FixedPointBytes"),
         }
     }
 

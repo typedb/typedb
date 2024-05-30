@@ -26,6 +26,7 @@ use crate::{
         date_time_tz_bytes::DateTimeTZBytes,
         double_bytes::DoubleBytes,
         duration_bytes::DurationBytes,
+        fixed_point_bytes::FixedPointBytes,
         long_bytes::LongBytes,
         string_bytes::StringBytes,
         value_type::{ValueType, ValueTypeCategory},
@@ -94,6 +95,7 @@ impl<'a> AttributeVertex<'a> {
             ValueTypeCategory::Boolean => Prefix::VertexAttributeBoolean,
             ValueTypeCategory::Long => Prefix::VertexAttributeLong,
             ValueTypeCategory::Double => Prefix::VertexAttributeDouble,
+            ValueTypeCategory::FixedPoint => Prefix::VertexAttributeFixedPoint,
             ValueTypeCategory::DateTime => Prefix::VertexAttributeDateTime,
             ValueTypeCategory::DateTimeTZ => Prefix::VertexAttributeDateTimeTZ,
             ValueTypeCategory::Duration => Prefix::VertexAttributeDuration,
@@ -107,6 +109,7 @@ impl<'a> AttributeVertex<'a> {
             Prefix::VertexAttributeBoolean => BooleanAttributeID::LENGTH,
             Prefix::VertexAttributeLong => LongAttributeID::LENGTH,
             Prefix::VertexAttributeDouble => DoubleAttributeID::LENGTH,
+            Prefix::VertexAttributeFixedPoint => FixedPointAttributeID::LENGTH,
             Prefix::VertexAttributeDateTime => DateTimeAttributeID::LENGTH,
             Prefix::VertexAttributeDateTimeTZ => DateTimeTZAttributeID::LENGTH,
             Prefix::VertexAttributeDuration => DurationAttributeID::LENGTH,
@@ -127,6 +130,7 @@ impl<'a> AttributeVertex<'a> {
             Prefix::VertexAttributeBoolean => ValueTypeCategory::Boolean,
             Prefix::VertexAttributeLong => ValueTypeCategory::Long,
             Prefix::VertexAttributeDouble => ValueTypeCategory::Double,
+            Prefix::VertexAttributeFixedPoint => ValueTypeCategory::FixedPoint,
             Prefix::VertexAttributeDateTime => ValueTypeCategory::DateTime,
             Prefix::VertexAttributeDateTimeTZ => ValueTypeCategory::DateTimeTZ,
             Prefix::VertexAttributeDuration => ValueTypeCategory::Duration,
@@ -208,6 +212,7 @@ pub enum AttributeID {
     Boolean(BooleanAttributeID),
     Long(LongAttributeID),
     Double(DoubleAttributeID),
+    FixedPoint(FixedPointAttributeID),
     DateTime(DateTimeAttributeID),
     DateTimeTZ(DateTimeTZAttributeID),
     Duration(DurationAttributeID),
@@ -221,6 +226,7 @@ impl AttributeID {
             ValueTypeCategory::Boolean => Self::Boolean(BooleanAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::Long => Self::Long(LongAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::Double => Self::Double(DoubleAttributeID::new(bytes.try_into().unwrap())),
+            ValueTypeCategory::FixedPoint => Self::FixedPoint(FixedPointAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::DateTime => Self::DateTime(DateTimeAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::DateTimeTZ => Self::DateTimeTZ(DateTimeTZAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::Duration => Self::Duration(DurationAttributeID::new(bytes.try_into().unwrap())),
@@ -235,6 +241,7 @@ impl AttributeID {
             ValueType::Boolean => Self::Boolean(BooleanAttributeID::build(value.encode_boolean())),
             ValueType::Long => Self::Long(LongAttributeID::build(value.encode_long())),
             ValueType::Double => Self::Double(DoubleAttributeID::build(value.encode_double())),
+            ValueType::FixedPoint => Self::FixedPoint(FixedPointAttributeID::build(value.encode_fixed_point())),
             ValueType::DateTime => Self::DateTime(DateTimeAttributeID::build(value.encode_date_time())),
             ValueType::DateTimeTZ => Self::DateTimeTZ(DateTimeTZAttributeID::build(value.encode_date_time_tz())),
             ValueType::Duration => Self::Duration(DurationAttributeID::build(value.encode_duration())),
@@ -250,6 +257,7 @@ impl AttributeID {
             ValueTypeCategory::Boolean => BooleanAttributeID::LENGTH,
             ValueTypeCategory::Long => LongAttributeID::LENGTH,
             ValueTypeCategory::Double => DoubleAttributeID::LENGTH,
+            ValueTypeCategory::FixedPoint => FixedPointAttributeID::LENGTH,
             ValueTypeCategory::DateTime => DateTimeAttributeID::LENGTH,
             ValueTypeCategory::DateTimeTZ => DateTimeTZAttributeID::LENGTH,
             ValueTypeCategory::Duration => DurationAttributeID::LENGTH,
@@ -267,6 +275,7 @@ impl AttributeID {
             ValueType::Boolean => BooleanAttributeID::is_inlineable(),
             ValueType::Long => LongAttributeID::is_inlineable(),
             ValueType::Double => DoubleAttributeID::is_inlineable(),
+            ValueType::FixedPoint => FixedPointAttributeID::is_inlineable(),
             ValueType::DateTime => DateTimeAttributeID::is_inlineable(),
             ValueType::DateTimeTZ => DateTimeTZAttributeID::is_inlineable(),
             ValueType::Duration => DurationAttributeID::is_inlineable(),
@@ -283,6 +292,7 @@ impl AttributeID {
             AttributeID::Boolean(boolean_id) => boolean_id.bytes_ref(),
             AttributeID::Long(long_id) => long_id.bytes_ref(),
             AttributeID::Double(double_id) => double_id.bytes_ref(),
+            AttributeID::FixedPoint(fixed_point_id) => fixed_point_id.bytes_ref(),
             AttributeID::DateTime(date_time_id) => date_time_id.bytes_ref(),
             AttributeID::DateTimeTZ(date_time_tz_id) => date_time_tz_id.bytes_ref(),
             AttributeID::Duration(duration_id) => duration_id.bytes_ref(),
@@ -296,6 +306,7 @@ impl AttributeID {
             AttributeID::Boolean(_) => BooleanAttributeID::LENGTH,
             AttributeID::Long(_) => LongAttributeID::LENGTH,
             AttributeID::Double(_) => DoubleAttributeID::LENGTH,
+            AttributeID::FixedPoint(_) => FixedPointAttributeID::LENGTH,
             AttributeID::DateTime(_) => DateTimeAttributeID::LENGTH,
             AttributeID::DateTimeTZ(_) => DateTimeTZAttributeID::LENGTH,
             AttributeID::Duration(_) => DurationAttributeID::LENGTH,
@@ -326,6 +337,13 @@ impl AttributeID {
         match self {
             AttributeID::Double(double_id) => double_id,
             _ => panic!("Cannot unwrap Double ID from non-double attribute ID."),
+        }
+    }
+
+    pub fn unwrap_fixed_point(self) -> FixedPointAttributeID {
+        match self {
+            AttributeID::FixedPoint(fixed_point_id) => fixed_point_id,
+            _ => panic!("Cannot unwrap FixedPoint ID from non-fixed_point attribute ID."),
         }
     }
 
@@ -430,6 +448,35 @@ impl DoubleAttributeID {
     }
 
     pub(crate) fn build(value: DoubleBytes) -> Self {
+        Self { bytes: value.bytes() }
+    }
+
+    pub(crate) const fn is_inlineable() -> bool {
+        true
+    }
+
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+        self.bytes
+    }
+
+    pub fn bytes_ref(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct FixedPointAttributeID {
+    bytes: [u8; Self::LENGTH],
+}
+
+impl FixedPointAttributeID {
+    const LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+
+    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
+        Self { bytes }
+    }
+
+    pub(crate) fn build(value: FixedPointBytes) -> Self {
         Self { bytes: value.bytes() }
     }
 
