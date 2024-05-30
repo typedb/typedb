@@ -126,7 +126,6 @@ impl<'a> Owns<'a> {
         type_manager: &TypeManager<Snapshot>,
         annotation: OwnsAnnotation,
     ) -> Result<(), ConceptWriteError> {
-        // type_manager.set_edge_annotation(snapshot, self.clone(), annotation)
         match annotation {
             OwnsAnnotation::Distinct(_) => type_manager.set_edge_annotation_distinct(snapshot, self.clone()),
             OwnsAnnotation::Key(_) => type_manager.set_edge_annotation_key(snapshot, self.clone()),
