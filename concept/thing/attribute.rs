@@ -13,7 +13,7 @@ use encoding::{
         type_::vertex::build_vertex_attribute_type,
         Typed,
     },
-    value::{decode_value_u64, value_type::ValueType},
+    value::decode_value_u64,
     AsBytes, Keyable,
 };
 use iterator::State;
@@ -109,20 +109,6 @@ impl<'a> Attribute<'a> {
 
     pub fn into_owned(self) -> Attribute<'static> {
         Attribute::new(self.vertex.into_owned())
-    }
-
-    pub(crate) fn unput<Snapshot: WritableSnapshot>(
-        self,
-        snapshot: &mut Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
-    ) -> Result<(), ConceptWriteError> {
-        debug_assert_eq!(
-            self.get_owners(snapshot, thing_manager).count(),
-            0,
-            "attempting to unput an attribute that still has owners (logic error)"
-        );
-        thing_manager.unput_attribute(snapshot, self)?;
-        Ok(())
     }
 }
 

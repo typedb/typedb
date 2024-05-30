@@ -625,7 +625,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 .is_independent(snapshot, self.type_manager())
                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
             if !is_independent && !attribute.has_owners(snapshot, self) {
-                attribute.unput(snapshot, self)?;
+                self.unput_attribute(snapshot, attribute)?;
             }
         }
 
