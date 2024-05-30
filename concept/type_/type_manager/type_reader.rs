@@ -239,10 +239,10 @@ impl TypeReader {
     pub(crate) fn get_implementations_for_interface_transitive<IMPL>(
         snapshot: &impl ReadableSnapshot,
         interface_type: IMPL::InterfaceType,
-    ) -> Result<HashMap<IMPL, Vec<ObjectType<'static>>>, ConceptReadError>
+    ) -> Result<HashMap<ObjectType<'static>, IMPL>, ConceptReadError>
     where IMPL: InterfaceImplementation<'static, ObjectType=ObjectType<'static>> + Hash + Eq
     {
-        let mut impl_transitive : HashMap<IMPL, Vec<ObjectType<'static>>> = HashMap::new();
+        let mut impl_transitive : HashMap<ObjectType<'static>, IMPL> = HashMap::new();
         let declared_impl_set: HashSet<IMPL> = Self::get_implementations_for_interface(snapshot, interface_type.clone())?;
 
         for declared_impl in declared_impl_set {
@@ -257,8 +257,9 @@ impl TypeReader {
                     }
                 }
                 if !declared_impl_was_overridden {
-                    object_types.add(sub_object.clone());
-                    match sub_object.clone() {
+                    debug_assert!(!impl_transitive.contains_key(&sub_object));
+                    impl_transitive.insert(sub_object.clone(), declared_impl.clone());
+                    match sub_object {
                         ObjectType::Entity(owner) => {
                             Self::get_subtypes(snapshot, owner)?.into_iter().for_each(|t| stack.push(ObjectType::new(t.into_vertex())))
                         }
@@ -268,7 +269,6 @@ impl TypeReader {
                     };
                 }
             }
-            impl_transitive.insert(declared_impl, object_types);
         }
         Ok(impl_transitive)
     }

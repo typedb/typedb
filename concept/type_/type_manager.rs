@@ -376,7 +376,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         &self,
         snapshot: &Snapshot,
         attribute_type: AttributeType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<Owns<'static>, Vec<ObjectType<'static>>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashMap<ObjectType<'static>, Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_for_attribute_type_transitive(attribute_type.clone())))
         } else {
@@ -428,7 +428,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         &self,
         snapshot: &Snapshot,
         role_type: RoleType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<Plays<'static>, Vec<ObjectType<'static>>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashMap<ObjectType<'static>, Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_for_role_type_transitive(role_type.clone())))
         } else {

@@ -38,6 +38,7 @@ use crate::{
 };
 use crate::type_::object_type::ObjectType;
 use crate::type_::KindAPI;
+use crate::type_::owns::Owns;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -57,7 +58,7 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &Snapshot,
         type_manager: &'m TypeManager<Snapshot>,
-    ) -> Result<MaybeOwns<'m, HashMap<Plays<'static>, Vec<ObjectType<'static>>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Plays<'static>>>, ConceptReadError> {
         type_manager.get_plays_for_role_type_transitive(snapshot, self.clone().into_owned())
     }
 }

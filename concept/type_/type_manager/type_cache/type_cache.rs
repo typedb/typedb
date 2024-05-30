@@ -207,7 +207,7 @@ impl TypeCache {
         &AttributeType::get_cache(self, attribute_type).owns
     }
 
-    pub(crate) fn get_owns_for_attribute_type_transitive<'a>(&self, attribute_type: AttributeType<'a>) -> &HashMap<Owns<'static>, Vec<ObjectType<'static>>> {
+    pub(crate) fn get_owns_for_attribute_type_transitive<'a>(&self, attribute_type: AttributeType<'a>) -> &HashMap<ObjectType<'static>, Owns<'static>> {
         &AttributeType::get_cache(self, attribute_type).owns_transitive
     }
 
@@ -249,7 +249,7 @@ impl TypeCache {
         &RoleType::get_cache(self, role_type).plays
     }
 
-    pub(crate) fn get_plays_for_role_type_transitive<'a>(&self, role_type: RoleType<'a>) -> &HashMap<Plays<'static>, Vec<ObjectType<'static>>> {
+    pub(crate) fn get_plays_for_role_type_transitive<'a>(&self, role_type: RoleType<'a>) -> &HashMap<ObjectType<'static>, Plays<'static>> {
         &RoleType::get_cache(self, role_type).plays_transitive
     }
 

@@ -57,14 +57,12 @@ pub async fn get_owners_contain(context: &mut Context, type_label: params::Label
                 .get_owners_transitive(&tx.snapshot, &tx.type_manager)
                 .unwrap()
                 .iter()
-                .for_each(|(_owns, owner_vec)| {
-                    owner_vec.iter().for_each(|owner| {
-                        let owner_label = match owner {
-                            ObjectType::Entity(owner) => {owner.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()},
-                            ObjectType::Relation(owner) => {owner.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()},
-                        };
-                        actual_labels.push(owner_label);
-                    })
+                .for_each(|(owner, _owns)| {
+                    let owner_label = match owner {
+                        ObjectType::Entity(owner) => {owner.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()},
+                        ObjectType::Relation(owner) => {owner.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()},
+                    };
+                    actual_labels.push(owner_label);
                 });
             contains.check(&expected_labels, &actual_labels);
     });

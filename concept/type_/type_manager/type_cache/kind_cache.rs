@@ -56,7 +56,7 @@ pub(crate) struct RoleTypeCache {
     pub(super) ordering: Ordering,
     pub(super) relates: Relates<'static>,
     pub(super) plays: HashSet<Plays<'static>>,
-    pub(super) plays_transitive: HashMap<Plays<'static>, Vec<ObjectType<'static>>>
+    pub(super) plays_transitive: HashMap<ObjectType<'static>, Plays<'static>>
 }
 
 #[derive(Debug)]
@@ -64,7 +64,7 @@ pub(crate) struct AttributeTypeCache {
     pub(super) common_type_cache: CommonTypeCache<AttributeType<'static>>,
     pub(super) value_type: Option<ValueType>,
     pub(super) owns: HashSet<Owns<'static>>,
-    pub(super) owns_transitive: HashMap<Owns<'static>, Vec<ObjectType<'static>>>
+    pub(super) owns_transitive: HashMap<ObjectType<'static>, Owns<'static>>
 }
 
 #[derive(Debug)]

@@ -261,7 +261,7 @@ impl<'a> AttributeType<'a> {
         &self,
         snapshot: &Snapshot,
         type_manager: &'m TypeManager<Snapshot>,
-    ) -> Result<MaybeOwns<'m, HashMap<Owns<'static>, Vec<ObjectType<'static>>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Owns<'static>>>, ConceptReadError> {
         type_manager.get_owners_for_attribute_transitive(snapshot, self.clone().into_owned())
     }
 
