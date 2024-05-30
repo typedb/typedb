@@ -306,7 +306,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     ) -> Result<Option<Attribute<'static>>, ConceptReadError> {
         debug_assert!(AttributeID::is_inlineable(value.as_reference()));
         let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
-        if attribute_value_type.is_none() || attribute_value_type.as_ref().unwrap() == &value.value_type() {
+        if attribute_value_type.is_none() || attribute_value_type.as_ref().unwrap() != &value.value_type() {
             return Ok(None);
         }
         let vertex = AttributeVertex::build(
