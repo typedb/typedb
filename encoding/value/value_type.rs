@@ -6,11 +6,9 @@
 
 use std::ops::Range;
 
-use bytes::byte_array::ByteArray;
-use bytes::Bytes;
+use bytes::{byte_array::ByteArray, Bytes};
 
-use crate::AsBytes;
-use crate::graph::definition::definition_key::DefinitionKey;
+use crate::{graph::definition::definition_key::DefinitionKey, AsBytes};
 
 // We can support Prefix::ATTRIBUTE_MAX - Prefix::ATTRIBUTE_MIN different built-in value types
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -72,7 +70,6 @@ pub enum ValueTypeCategory {
 }
 
 impl ValueTypeCategory {
-
     fn to_bytes(&self) -> [u8; ValueTypeBytes::CATEGORY_LENGTH] {
         match self {
             Self::Boolean => [0],
@@ -82,7 +79,7 @@ impl ValueTypeCategory {
             Self::DateTimeTZ => [4],
             Self::Duration => [5],
             Self::String => [6],
-            Self::Struct => [40]
+            Self::Struct => [40],
         }
     }
 
@@ -122,20 +119,16 @@ impl ValueTypeBytes {
     pub fn build(value_type: &ValueType) -> Self {
         let mut array = [0; Self::LENGTH];
         array[Self::RANGE_CATEGORY].copy_from_slice(&value_type.category().to_bytes());
-        match value_type {
-            ValueType::Struct(definition_key) => {
-                array[Self::RANGE_TAIL].copy_from_slice(&definition_key.bytes().bytes());
-            }
-            _ => {}
+        if let ValueType::Struct(definition_key) = value_type {
+            array[Self::RANGE_TAIL].copy_from_slice(definition_key.bytes().bytes());
         }
-
         Self { bytes: array }
     }
 
     pub fn to_value_type(&self) -> ValueType {
         ValueType::from_category_and_tail(
             ValueTypeCategory::from_bytes(self.bytes[Self::RANGE_CATEGORY].try_into().unwrap()),
-            self.bytes[Self::RANGE_TAIL].try_into().unwrap()
+            self.bytes[Self::RANGE_TAIL].try_into().unwrap(),
         )
     }
 

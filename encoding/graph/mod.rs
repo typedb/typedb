@@ -8,9 +8,9 @@ use std::ops::Range;
 
 use crate::{graph::type_::vertex::TypeID, Prefixed};
 
+pub mod definition;
 pub mod thing;
 pub mod type_;
-pub mod definition;
 
 pub trait Typed<'a, const INLINE_SIZE: usize>: Prefixed<'a, INLINE_SIZE> {
     const RANGE_TYPE_ID: Range<usize> = Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeID::LENGTH;

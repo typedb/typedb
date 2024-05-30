@@ -4,17 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use std::ops::Range;
 
-use bytes::byte_array::ByteArray;
-use bytes::byte_reference::ByteReference;
-use bytes::Bytes;
-use resource::constants::encoding::DefinitionIDUInt;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use resource::constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE};
 
-use crate::{AsBytes, EncodingKeyspace, Keyable, Prefixed};
-use crate::layout::prefix::{Prefix, PrefixID};
+use crate::{
+    layout::prefix::{Prefix, PrefixID},
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct DefinitionKey<'a> {
@@ -27,7 +25,8 @@ impl<'a> DefinitionKey<'a> {
 
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + DefinitionID::LENGTH;
     pub(crate) const LENGTH_PREFIX: usize = PrefixID::LENGTH;
-    pub(crate) const RANGE_DEFINITION_ID: Range<usize> = Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + DefinitionID::LENGTH;
+    pub(crate) const RANGE_DEFINITION_ID: Range<usize> =
+        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + DefinitionID::LENGTH;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);

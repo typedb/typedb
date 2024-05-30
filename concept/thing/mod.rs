@@ -5,15 +5,17 @@
  */
 
 use bytes::byte_array::ByteArray;
-use encoding::{graph::thing::vertex_attribute::AttributeID, value::value_type::ValueType};
-use encoding::value::value_type::ValueTypeCategory;
+use encoding::{
+    graph::thing::vertex_attribute::AttributeID,
+    value::value_type::{ValueType, ValueTypeCategory},
+};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
+    ConceptStatus,
 };
 
 pub mod attribute;
@@ -49,7 +51,10 @@ pub trait ThingAPI<'a> {
 }
 
 // TODO: where do these belong? They're encodings of values we store for keys
-pub(crate) fn decode_attribute_ids(value_type_category: ValueTypeCategory, bytes: &[u8]) -> impl Iterator<Item = AttributeID> + '_ {
+pub(crate) fn decode_attribute_ids(
+    value_type_category: ValueTypeCategory,
+    bytes: &[u8],
+) -> impl Iterator<Item = AttributeID> + '_ {
     let chunk_size = AttributeID::value_type_encoding_length(value_type_category);
     let chunks_iter = bytes.chunks_exact(chunk_size);
     debug_assert!(chunks_iter.remainder().is_empty());

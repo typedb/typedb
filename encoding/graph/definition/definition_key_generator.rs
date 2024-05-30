@@ -6,10 +6,13 @@
 
 use resource::constants::encoding::DefinitionIDAtomicUInt;
 use storage::snapshot::WritableSnapshot;
-use crate::error::EncodingError;
-use crate::graph::definition::definition_key::{DefinitionID, DefinitionKey};
-use crate::Keyable;
-use crate::layout::prefix::Prefix;
+
+use crate::{
+    error::EncodingError,
+    graph::definition::definition_key::{DefinitionID, DefinitionKey},
+    layout::prefix::Prefix,
+    Keyable,
+};
 
 pub struct DefinitionKeyGenerator {
     // TODO: implement full allocator with recycling
@@ -17,12 +20,10 @@ pub struct DefinitionKeyGenerator {
 }
 
 impl DefinitionKeyGenerator {
-
     pub fn create_struct<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
     ) -> Result<DefinitionKey<'static>, EncodingError> {
-
         // TODO: implement
         let id = 0;
 
@@ -31,5 +32,3 @@ impl DefinitionKeyGenerator {
         Ok(definition_key)
     }
 }
-
-

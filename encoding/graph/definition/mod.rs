@@ -4,6 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod r#struct;
 pub mod definition_key;
 pub mod definition_key_generator;
+pub mod r#struct;

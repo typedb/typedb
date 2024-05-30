@@ -12,8 +12,8 @@ use std::{
 
 use bytes::Bytes;
 use itertools::Itertools;
-use serde::{Deserialize, Serialize};
 use rocksdb::{checkpoint::Checkpoint, Options, ReadOptions, WriteBatch, WriteOptions, DB};
+use serde::{Deserialize, Serialize};
 
 use super::iterator;
 use crate::{key_range::KeyRange, write_batches::WriteBatches};

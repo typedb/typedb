@@ -310,7 +310,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         debug_assert!(AttributeID::is_inlineable(value.as_reference()));
         let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
         if attribute_value_type.is_none() || attribute_value_type.as_ref().unwrap() == &value.value_type() {
-            return Ok(None)
+            return Ok(None);
         }
         let vertex = AttributeVertex::build(
             attribute_value_type.as_ref().unwrap().category(),
@@ -333,7 +333,11 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         let value_type = value.value_type();
         let vertex = if AttributeID::is_inlineable(value.as_reference()) {
             // don't need to do an extra lookup to get the attribute vertex - if it exists, it will have this ID
-            AttributeVertex::build(value_type.category(), attribute_type.vertex().type_id_(), AttributeID::build_inline(value))
+            AttributeVertex::build(
+                value_type.category(),
+                attribute_type.vertex().type_id_(),
+                AttributeID::build_inline(value),
+            )
         } else {
             // non-inline attributes require an extra lookup before checking for the has edge existence
             let attribute = self.get_attribute_with_value(snapshot, attribute_type, value)?;
@@ -386,7 +390,11 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
             }
             Some(value_type) => value_type,
         };
-        let prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), value_type.category(), attribute_type.into_vertex());
+        let prefix = ThingEdgeHas::prefix_from_object_to_type(
+            owner.vertex(),
+            value_type.category(),
+            attribute_type.into_vertex(),
+        );
         Ok(HasAttributeIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
         ))
@@ -837,7 +845,10 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             };
             Ok(Attribute::new(vertex))
         } else {
-            Err(ConceptWriteError::ValueTypeMismatch { expected: value_type.as_ref().cloned(), provided: value.value_type() })
+            Err(ConceptWriteError::ValueTypeMismatch {
+                expected: value_type.as_ref().cloned(),
+                provided: value.value_type(),
+            })
         }
     }
 

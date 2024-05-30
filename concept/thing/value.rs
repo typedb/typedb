@@ -11,9 +11,8 @@ use chrono_tz::Tz;
 use encoding::value::{
     boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
     double_bytes::DoubleBytes, duration_bytes::DurationBytes, duration_value::Duration, long_bytes::LongBytes,
-    string_bytes::StringBytes, value_type::ValueType, ValueEncodable,
+    string_bytes::StringBytes, struct_bytes::StructBytes, value_type::ValueType, ValueEncodable,
 };
-use encoding::value::struct_bytes::StructBytes;
 
 use crate::thing::value_struct::StructValue;
 
@@ -39,7 +38,7 @@ impl<'a> Value<'a> {
             Value::DateTimeTZ(date_time, tz) => Value::DateTimeTZ(date_time, tz),
             Value::Duration(duration) => Value::Duration(duration),
             Value::String(ref string) => Value::String(Cow::Borrowed(string.as_ref())),
-            Value::Struct(ref struct_) => Value::Struct(Cow::Borrowed(struct_.as_ref()))
+            Value::Struct(ref struct_) => Value::Struct(Cow::Borrowed(struct_.as_ref())),
         }
     }
 
@@ -81,7 +80,7 @@ impl<'a> Value<'a> {
     pub fn unwrap_struct(self) -> Cow<'a, StructValue<'static>> {
         match self {
             Value::Struct(struct_) => struct_,
-            _ => panic!("Cannot unwrap Struct if not a struct value.")
+            _ => panic!("Cannot unwrap Struct if not a struct value."),
         }
     }
 
@@ -109,7 +108,7 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::DateTimeTZ(_, _) => ValueType::DateTimeTZ,
             Value::Duration(_) => ValueType::Duration,
             Value::String(_) => ValueType::String,
-            Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().into_owned())
+            Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().into_owned()),
         }
     }
 
@@ -166,7 +165,7 @@ impl<'a> ValueEncodable for Value<'a> {
         match self {
             Value::Struct(struct_) => {
                 todo!()
-            },
+            }
             _ => panic!("Cannot encode non-Struct as StructBytes"),
         }
     }

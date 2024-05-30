@@ -28,7 +28,7 @@ async fn relation_add_player_for_role(
     relation_var: params::Var,
     role_label: params::Label,
     player_var: params::Var,
-    may_error: params::MayError
+    may_error: params::MayError,
 ) {
     let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
     let player = context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object.clone();

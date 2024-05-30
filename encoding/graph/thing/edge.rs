@@ -23,10 +23,9 @@ use crate::{
         Typed,
     },
     layout::prefix::{Prefix, PrefixID},
-    value::value_type::ValueType,
+    value::value_type::{ValueType, ValueTypeCategory},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::value::value_type::ValueTypeCategory;
 
 ///
 /// [has][object][Attribute8|Attribute17]
@@ -267,7 +266,8 @@ impl<'a> ThingEdgeHasReverse<'a> {
     fn from_length(&self) -> usize {
         let byte = self.bytes.bytes()[Self::INDEX_FROM_PREFIX];
         let prefix = PrefixID::new([byte]);
-        let id_encoding_length = AttributeVertex::prefix_type_to_value_id_encoding_length(Prefix::from_prefix_id(prefix));
+        let id_encoding_length =
+            AttributeVertex::prefix_type_to_value_id_encoding_length(Prefix::from_prefix_id(prefix));
         AttributeVertex::LENGTH_PREFIX_TYPE + id_encoding_length
     }
 

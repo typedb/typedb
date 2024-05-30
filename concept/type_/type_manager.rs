@@ -36,10 +36,12 @@ use encoding::{
         Kind,
     },
     layout::prefix::Prefix,
-    value::{label::Label, value_type::ValueType},
+    value::{
+        label::Label,
+        value_type::{ValueType, ValueTypeBytes},
+    },
     AsBytes, Keyable,
 };
-use encoding::value::value_type::ValueTypeBytes;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{

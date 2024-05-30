@@ -7,14 +7,13 @@
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::snapshot::ReadableSnapshot;
-use crate::graph::definition::r#struct::StructDefinition;
-use crate::value::struct_bytes::StructBytes;
 
 use self::{
     boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
     double_bytes::DoubleBytes, duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes,
     value_type::ValueType,
 };
+use crate::{graph::definition::r#struct::StructDefinition, value::struct_bytes::StructBytes};
 
 pub mod boolean_bytes;
 pub mod date_time_bytes;
@@ -26,8 +25,8 @@ pub mod label;
 pub mod long_bytes;
 mod primitive_encoding;
 pub mod string_bytes;
-pub mod value_type;
 pub mod struct_bytes;
+pub mod value_type;
 
 pub fn encode_value_u64(count: u64) -> ByteArray<BUFFER_VALUE_INLINE> {
     // LE is normally platform-native

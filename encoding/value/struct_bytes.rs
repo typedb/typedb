@@ -6,8 +6,7 @@
 
 use std::fmt;
 
-use bytes::byte_reference::ByteReference;
-use bytes::Bytes;
+use bytes::{byte_reference::ByteReference, Bytes};
 
 use crate::AsBytes;
 

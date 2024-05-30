@@ -21,13 +21,18 @@ use crate::{
     graph::{type_::vertex::TypeID, Typed},
     layout::prefix::{Prefix, PrefixID},
     value::{
-        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
-        double_bytes::DoubleBytes, duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes,
-        value_type::ValueType, ValueEncodable,
+        boolean_bytes::BooleanBytes,
+        date_time_bytes::DateTimeBytes,
+        date_time_tz_bytes::DateTimeTZBytes,
+        double_bytes::DoubleBytes,
+        duration_bytes::DurationBytes,
+        long_bytes::LongBytes,
+        string_bytes::StringBytes,
+        value_type::{ValueType, ValueTypeCategory},
+        ValueEncodable,
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::value::value_type::ValueTypeCategory;
 
 #[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub struct AttributeVertex<'a> {
@@ -218,7 +223,7 @@ impl AttributeID {
             ValueTypeCategory::DateTimeTZ => Self::DateTimeTZ(DateTimeTZAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::Duration => Self::Duration(DurationAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::String => Self::String(StringAttributeID::new(bytes.try_into().unwrap())),
-            ValueTypeCategory::Struct => Self::Struct(StructAttributeID::new(bytes.try_into().unwrap()))
+            ValueTypeCategory::Struct => Self::Struct(StructAttributeID::new(bytes.try_into().unwrap())),
         }
     }
 
