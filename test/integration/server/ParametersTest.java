@@ -114,9 +114,7 @@ public class ParametersTest {
                 new Option("storage.data", dataDir.toAbsolutePath().toString()),
                 new Option("log.output.file.base-dir", logDir.toAbsolutePath().toString()),
                 new Option("log.logger.default.level", "trace"),
-                new Option("log.logger.storage.level", "trace"),
-                new Option("diagnostics.reporting.errors", "false"),
-                new Option("diagnostics.reporting.statistics", "false")));
+                new Option("log.logger.storage.level", "trace")));
     }
 
     private List<Path> getLogArchives(Path logDir) throws IOException {

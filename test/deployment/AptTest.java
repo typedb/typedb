@@ -67,7 +67,7 @@ public class AptTest {
     }
 
     private void start() throws InterruptedException, IOException {
-        typeDBProcess = executor.command("typedb", "server", "--diagnostics.reporting.errors=false", "--diagnostics.reporting.statistics=false").start();
+        typeDBProcess = executor.command("typedb", "server", "--development-mode.enable=true").start();
 
         waitUntilReady();
         assertTrue("TypeDB failed to start", typeDBProcess.getProcess().isAlive());
