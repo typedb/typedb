@@ -12,9 +12,9 @@ use std::{
 
 use chrono::{Days, Months, NaiveDateTime, TimeDelta};
 
-const NANOS_PER_SEC: u32 = 1_000_000_000;
-const SECS_PER_HOUR: u32 = 60 * 60;
-const SECS_PER_MINUTE: u32 = 60;
+const NANOS_PER_SEC: u64 = 1_000_000_000;
+const NANOS_PER_MINUTE: u64 = 60 * NANOS_PER_SEC;
+const NANOS_PER_HOUR: u64 = 60 * 60 * NANOS_PER_SEC;
 
 const MAX_YEAR: i32 = (i32::MAX >> 13) - 1; // NaiveDate.year() is from a trait and not `const`
 const MIN_YEAR: i32 = (i32::MIN >> 13) + 1; // NaiveDate.year() is from a trait and not `const`
@@ -24,35 +24,28 @@ const MAX_MONTHS: u32 = (MAX_YEAR - MIN_YEAR + 1) as u32 * MONTHS_PER_YEAR;
 
 const DAYS_PER_WEEK: u32 = 7;
 
-const MAX_HOURS: u32 = 1_000_000;
-const MAX_SECONDS: u32 = MAX_HOURS * SECS_PER_HOUR;
-
 #[derive(Clone, Copy, Debug)]
 pub struct Duration {
     pub(super) months: u32,
     pub(super) days: u32,
-    pub(super) seconds: u32,
-    pub(super) nanos: u32,
+    pub(super) nanos: u64,
 }
 
 impl Duration {
-    fn new(months: u32, days: u32, seconds: u32, nanos: u32) -> Self {
+    fn new(months: u32, days: u32, nanos: u64) -> Self {
         assert!(months <= MAX_MONTHS);
-        // assert!(days <= TODO);
-        assert!(seconds <= MAX_SECONDS);
-        assert!(nanos <= NANOS_PER_SEC);
-        Self { months, days, seconds, nanos }
+        Self { months, days, nanos }
     }
 
     fn is_empty(&self) -> bool {
-        self.months == 0 && self.days == 0 && self.seconds == 0 && self.nanos == 0
+        self.months == 0 && self.days == 0 && self.nanos == 0
     }
 }
 
 // Equivalent to derive(PartialEq), but spelled out to be clear this is the intended behaviour
 impl PartialEq for Duration {
     fn eq(&self, other: &Self) -> bool {
-        (self.months, self.days, self.seconds, self.nanos) == (other.months, other.days, other.seconds, other.nanos)
+        (self.months, self.days, self.nanos) == (other.months, other.days, other.nanos)
     }
 }
 
@@ -61,7 +54,7 @@ impl Add for Duration {
 
     fn add(self, rhs: Self) -> Self::Output {
         let lhs = self;
-        Self::new(lhs.months + rhs.months, lhs.days + rhs.days, lhs.seconds + rhs.seconds, lhs.nanos + rhs.nanos)
+        Self::new(lhs.months + rhs.months, lhs.days + rhs.days, lhs.nanos + rhs.nanos)
     }
 }
 
@@ -71,7 +64,7 @@ impl Add<Duration> for NaiveDateTime {
     fn add(self, rhs: Duration) -> Self::Output {
         self + Months::new(rhs.months)
             + Days::new(rhs.days as u64)
-            + TimeDelta::new(rhs.seconds as i64, rhs.nanos).unwrap()
+            + TimeDelta::new((rhs.nanos / NANOS_PER_SEC) as i64, (rhs.nanos % NANOS_PER_SEC) as u32).unwrap()
     }
 }
 
@@ -80,7 +73,7 @@ impl Sub for Duration {
 
     fn sub(self, rhs: Self) -> Self::Output {
         let lhs = self;
-        Self::new(lhs.months - rhs.months, lhs.days - rhs.days, lhs.seconds - rhs.seconds, lhs.nanos - rhs.nanos)
+        Self::new(lhs.months - rhs.months, lhs.days - rhs.days, lhs.nanos - rhs.nanos)
     }
 }
 
@@ -90,7 +83,7 @@ impl Sub<Duration> for NaiveDateTime {
     fn sub(self, rhs: Duration) -> Self::Output {
         self - Months::new(rhs.months)
             - Days::new(rhs.days as u64)
-            - TimeDelta::new(rhs.seconds as i64, rhs.nanos).unwrap()
+            - TimeDelta::new((rhs.nanos / NANOS_PER_SEC) as i64, (rhs.nanos % NANOS_PER_SEC) as u32).unwrap()
     }
 }
 
@@ -98,7 +91,7 @@ impl Sub<Duration> for NaiveDateTime {
 pub struct DurationParseError;
 
 struct Segment {
-    number: u32,
+    number: u64,
     symbol: u8,
     number_len: usize,
 }
@@ -121,7 +114,6 @@ impl FromStr for Duration {
     fn from_str(mut str: &str) -> Result<Self, Self::Err> {
         let mut months = 0;
         let mut days = 0;
-        let mut seconds = 0;
         let mut nanos = 0;
 
         if str.as_bytes()[0] != b'P' {
@@ -139,24 +131,29 @@ impl FromStr for Duration {
 
             let (Segment { number, symbol, number_len }, tail) = read_u32(str)?;
             str = tail;
+
+            if previous_symbol == Some(b'.') && symbol != b'S' {
+                return Err(DurationParseError);
+            }
+
             match symbol {
-                b'Y' => months += number * MONTHS_PER_YEAR,
-                b'M' if !parsing_time => months += number,
+                b'Y' => months += number as u32 * MONTHS_PER_YEAR,
+                b'M' if !parsing_time => months += number as u32,
 
-                b'W' => days += number * DAYS_PER_WEEK,
-                b'D' => days += number,
+                b'W' => days += number as u32 * DAYS_PER_WEEK,
+                b'D' => days += number as u32,
 
-                b'H' => seconds += number * SECS_PER_HOUR,
-                b'M' if parsing_time => seconds += number * SECS_PER_MINUTE,
-                b'.' => seconds += number,
-                b'S' if previous_symbol != Some(b'.') => seconds += number,
-                b'S' if previous_symbol == Some(b'.') => nanos += number * 10u32.pow(9 - number_len as u32),
+                b'H' => nanos += number * NANOS_PER_HOUR,
+                b'M' if parsing_time => nanos += number * NANOS_PER_MINUTE,
+                b'.' => nanos += number * NANOS_PER_SEC,
+                b'S' if previous_symbol != Some(b'.') => nanos += number * NANOS_PER_SEC,
+                b'S' if previous_symbol == Some(b'.') => nanos += number * 10u64.pow(9 - number_len as u32),
                 _ => return Err(DurationParseError),
             }
             previous_symbol = Some(symbol);
         }
 
-        Ok(Self { months, days, seconds, nanos })
+        Ok(Self { months, days, nanos })
     }
 }
 
@@ -185,12 +182,14 @@ impl fmt::Display for Duration {
             }
         }
 
-        if self.seconds > 0 || self.nanos > 0 {
-            let hours = self.seconds / SECS_PER_HOUR;
-            let minutes = (self.seconds % SECS_PER_HOUR) / SECS_PER_MINUTE;
-            let seconds = self.seconds % SECS_PER_MINUTE;
-            let nanos = self.nanos;
+        if self.nanos > 0 {
             write!(f, "T")?;
+
+            let hours = self.nanos / NANOS_PER_HOUR;
+            let minutes = (self.nanos % NANOS_PER_HOUR) / NANOS_PER_MINUTE;
+            let seconds = (self.nanos % NANOS_PER_MINUTE) / NANOS_PER_SEC;
+            let nanos = self.nanos % NANOS_PER_SEC;
+
             if hours > 0 {
                 write!(f, "{hours}H")?;
             }
