@@ -41,6 +41,7 @@ checkstyle_test(
     include = glob([
         "*",
         "graph/*",
+        "graph/definition/*",
         "graph/thing/*",
         "graph/type_/*",
         "layout/*",
