@@ -6,14 +6,12 @@
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
-use storage::snapshot::ReadableSnapshot;
 
 use self::{
     boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
     double_bytes::DoubleBytes, duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes,
-    value_type::ValueType,
+    struct_bytes::StructBytes, value_type::ValueType,
 };
-use crate::{graph::definition::r#struct::StructDefinition, value::struct_bytes::StructBytes};
 
 pub mod boolean_bytes;
 pub mod date_time_bytes;
