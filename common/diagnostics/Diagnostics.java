@@ -44,17 +44,13 @@ public abstract class Diagnostics {
         this.monitoringServer = monitoringServer;
     }
 
-    protected static void initDisabledSentry() {
-        Sentry.init(options -> options.setEnabled(false));
-    }
-
     public static class Noop extends Diagnostics {
         private Noop() {
             super(null, null, null);
         }
 
         public static synchronized void initialise() {
-            initDisabledSentry();
+            Sentry.init(options -> options.setEnabled(false));
             diagnostics = new Diagnostics.Noop();
         }
 
@@ -134,14 +130,18 @@ public abstract class Diagnostics {
             else return null;
         }
 
-        protected static void initSentry(boolean developmentModeEnabled, String serverID, String distributionName, String version, boolean errorReportingEnabled, String errorReportingURI) {
-            if (developmentModeEnabled) {
-                initDisabledSentry();
-                return;
-            }
+        protected static void initSentry(
+                boolean developmentModeEnabled,
+                String serverID,
+                String distributionName,
+                String version,
+                boolean errorReportingEnabled,
+                String errorReportingURI
+        ) {
+            boolean sentryEnabled = !developmentModeEnabled && errorReportingEnabled;
 
             Sentry.init(options -> {
-                options.setEnabled(errorReportingEnabled);
+                options.setEnabled(sentryEnabled);
                 options.setDsn(errorReportingURI);
                 options.setEnableTracing(true);
                 options.setSendDefaultPii(false);
@@ -153,7 +153,7 @@ public abstract class Diagnostics {
             Sentry.setUser(user);
 
             // FIXME temporary heartbeat every 24 hours (https://github.com/vaticle/typedb/pull/7045)
-            if (errorReportingEnabled) {
+            if (sentryEnabled) {
                 scheduled.schedule(() -> {
                     Sentry.startTransaction(new TransactionContext("server", "bootup")).finish(SpanStatus.OK);
                 }, 1, TimeUnit.HOURS);
