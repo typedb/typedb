@@ -32,6 +32,7 @@ use crate::type_::type_manager::validation::SchemaValidationError;
 use storage::key_range::KeyRange;
 use crate::thing::object::ObjectAPI;
 use crate::thing::relation::{RelationIterator, RolePlayerIterator};
+use crate::thing::thing_manager::ThingManager;
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
         match &$obj_var {
@@ -241,71 +242,61 @@ impl OperationTimeValidation {
     // TODO: Refactor
     pub(crate) fn validate_exact_type_no_instances_entity<Snapshot: ReadableSnapshot>(
         snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
         entity_type: EntityType<'_>,
     ) -> Result<(), SchemaValidationError> {
-        let prefix = ObjectVertex::build_prefix_type(Prefix::VertexEntity.prefix_id(), entity_type.vertex().type_id_());
-        let mut snapshot_iterator =
-            snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexEntity.fixed_width_keys()));
-        match snapshot_iterator.next() {
+        let mut entity_iterator = thing_manager.get_entities_in(snapshot, entity_type.clone());
+        match entity_iterator.next() {
             None => Ok(()),
             Some(Ok(_)) => {
                 Err(SchemaValidationError::DeletingTypeWithInstances(entity_type.wrap_for_error()))
             },
-            Some(Err(snapshot_iterator_error)) => {
-                Err(SchemaValidationError::ConceptRead(ConceptReadError::SnapshotIterate { source: snapshot_iterator_error.clone() }))
-            },
+            Some(Err(concept_read_error)) => {
+                Err(SchemaValidationError::ConceptRead(concept_read_error))
+            }
         }
     }
     pub(crate) fn validate_exact_type_no_instances_relation<Snapshot: ReadableSnapshot>(
         snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
         relation_type: RelationType<'_>,
     ) -> Result<(), SchemaValidationError> {
-        let prefix =
-            ObjectVertex::build_prefix_type(Prefix::VertexRelation.prefix_id(), relation_type.vertex().type_id_());
-        let mut snapshot_iterator =
-            snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexRelation.fixed_width_keys()));
-        match snapshot_iterator.next() {
+        let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.clone());
+        match relation_iterator.next() {
             None => Ok(()),
             Some(Ok(_)) => {
                 Err(SchemaValidationError::DeletingTypeWithInstances(relation_type.wrap_for_error()))
             },
-            Some(Err(snapshot_iterator_error)) => {
-                Err(SchemaValidationError::ConceptRead(ConceptReadError::SnapshotIterate { source: snapshot_iterator_error.clone() }))
-            },
+            Some(Err(concept_read_error)) => {
+                Err(SchemaValidationError::ConceptRead(concept_read_error))
+            }
         }
     }
 
     pub(crate) fn validate_exact_type_no_instances_attribute<Snapshot: ReadableSnapshot>(
         snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
         attribute_type: AttributeType<'_>,
-        type_manager: &TypeManager<Snapshot>
     ) -> Result<(), SchemaValidationError> {
-        let value_type_opt = attribute_type.get_value_type(snapshot, type_manager).map_err(SchemaValidationError::ConceptRead)?;
-        let Some(value_type) = value_type_opt else {
-            return Ok(()); // No value type, no instances
-        };
-
-        let attribute_value_type_prefix = AttributeVertex::value_type_to_prefix_type(value_type);
-        let prefix =
-            AttributeVertex::build_prefix_type(attribute_value_type_prefix, attribute_type.vertex().type_id_());
-        let mut snapshot_iterator =
-            snapshot.iterate_range(KeyRange::new_within(prefix, attribute_value_type_prefix.fixed_width_keys()));
-        match snapshot_iterator.next() {
+        let mut attribute_iterator = thing_manager.get_attributes_in(snapshot, attribute_type.clone())
+            .map_err(|err| SchemaValidationError::ConceptRead(err.clone()))?;
+        match attribute_iterator.next() {
             None => Ok(()),
             Some(Ok(_)) => {
                 Err(SchemaValidationError::DeletingTypeWithInstances(attribute_type.wrap_for_error()))
             },
-            Some(Err(snapshot_iterator_error)) => {
-                Err(SchemaValidationError::ConceptRead(ConceptReadError::SnapshotIterate { source: snapshot_iterator_error.clone() }))
-            },
+            Some(Err(err)) => {
+                Err(SchemaValidationError::ConceptRead(err.clone()))
+            }
         }
     }
 
     pub(crate) fn validate_exact_type_no_instances_role<Snapshot: ReadableSnapshot>(
         snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
         role_type: RoleType<'_>,
     ) -> Result<(), SchemaValidationError> {
-
+        // TODO: See if we can use existing methods from the ThingManager
         let relation_type = TypeReader::get_relation(snapshot, role_type.clone().into_owned())
             .map_err(SchemaValidationError::ConceptRead)?.relation();
         let prefix =

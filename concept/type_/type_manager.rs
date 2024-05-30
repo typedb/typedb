@@ -732,8 +732,9 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
         OperationTimeValidation::validate_no_subtypes(snapshot, entity_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
-        OperationTimeValidation::validate_exact_type_no_instances_entity(snapshot, entity_type.clone().into_owned())
-            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+        // TODO: Re-enable when we get the thing_manager
+        // OperationTimeValidation::validate_exact_type_no_instances_entity(snapshot, entity_type.clone().into_owned())
+        //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         TypeWriter::storage_delete_label(snapshot, entity_type.clone().into_owned());
         TypeWriter::storage_delete_supertype(snapshot, entity_type.clone().into_owned());
@@ -746,8 +747,9 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
         OperationTimeValidation::validate_no_subtypes(snapshot, relation_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
-        OperationTimeValidation::validate_exact_type_no_instances_relation(snapshot, relation_type.clone().into_owned())
-            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+        // TODO: Re-enable when we get the thing_manager
+        // OperationTimeValidation::validate_exact_type_no_instances_relation(snapshot, relation_type.clone().into_owned())
+        //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         let declared_relates = TypeReader::get_relates_transitive(snapshot, relation_type.clone().into_owned()).unwrap();
         for (_role_type, relates) in declared_relates.iter() {
@@ -763,8 +765,9 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
         OperationTimeValidation::validate_no_subtypes(snapshot, attribute_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
-        OperationTimeValidation::validate_exact_type_no_instances_attribute(snapshot, attribute_type.clone().into_owned(), self)
-            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+        // TODO: Re-enable when we get the thing_manager
+        // OperationTimeValidation::validate_exact_type_no_instances_attribute(snapshot, attribute_type.clone().into_owned(), self)
+        //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         TypeWriter::storage_delete_label(snapshot, attribute_type.clone().into_owned());
         TypeWriter::storage_delete_supertype(snapshot, attribute_type.clone().into_owned());
@@ -775,8 +778,9 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         OperationTimeValidation::validate_type_is_not_root(snapshot, role_type.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
         // TODO: More validation
-        OperationTimeValidation::validate_exact_type_no_instances_role(snapshot, role_type.clone().into_owned())
-            .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
+        // TODO: Re-enable when we get the thing_manager
+        // OperationTimeValidation::validate_exact_type_no_instances_role(snapshot, role_type.clone().into_owned())
+        //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
 
         let relates = TypeReader::get_relation(snapshot, role_type.clone().into_owned()).unwrap();
@@ -816,8 +820,9 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         if let Some(existing_value_type) = TypeReader::get_value_type(snapshot, attribute.clone())
             .map_err(|source| ConceptWriteError::ConceptRead {source})? {
             if value_type != existing_value_type {
-                OperationTimeValidation::validate_exact_type_no_instances_attribute(snapshot, attribute.clone(), self)
-                    .map_err(|source| ConceptWriteError::SchemaValidation {  source } )?;
+                // TODO: Re-enable when we get the thing_manager
+                // OperationTimeValidation::validate_exact_type_no_instances_attribute(snapshot, attribute.clone(), self)
+                //     .map_err(|source| ConceptWriteError::SchemaValidation {  source } )?;
             }
         }
         // Compatibility with supertype value-type must be done at commit time.
