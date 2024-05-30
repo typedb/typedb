@@ -36,7 +36,7 @@ impl DateTimeTZBytes {
         let date_time = DateTimeBytes::new(self.bytes).as_naive_date_time();
         let tz =
             decode_tz(u16::from_be_bytes(self.bytes[Self::DATE_TIME_LENGTH..][..Self::TZ_LENGTH].try_into().unwrap()));
-        date_time.and_local_timezone(tz).unwrap()
+        date_time.and_utc().with_timezone(&tz)
     }
 
     pub(crate) fn bytes(&self) -> [u8; Self::LENGTH] {

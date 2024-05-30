@@ -7,6 +7,7 @@
 use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr};
 
 use chrono::NaiveDateTime;
+use chrono_tz::Tz;
 use concept::{
     thing::value::Value as TypeDBValue,
     type_::{
@@ -242,12 +243,13 @@ impl FromStr for ObjectRootLabel {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "value_type", regex = "(boolean|long|double|datetime|duration|string)")]
+#[param(name = "value_type", regex = "(boolean|long|double|datetime(?:tz)?|duration|string)")]
 pub(crate) enum ValueType {
     Boolean,
     Long,
     Double,
     DateTime,
+    DateTimeTZ,
     Duration,
     String,
 }
@@ -259,6 +261,7 @@ impl ValueType {
             ValueType::Long => TypeDBValueType::Long,
             ValueType::Double => TypeDBValueType::Double,
             ValueType::DateTime => TypeDBValueType::DateTime,
+            ValueType::DateTimeTZ => TypeDBValueType::DateTimeTZ,
             ValueType::Duration => TypeDBValueType::Duration,
             ValueType::String => TypeDBValueType::String,
         }
@@ -274,6 +277,7 @@ impl FromStr for ValueType {
             "boolean" => Self::Boolean,
             "double" => Self::Double,
             "datetime" => Self::DateTime,
+            "datetimetz" => Self::DateTimeTZ,
             "duration" => Self::Duration,
             _ => panic!("Unrecognised value type"),
         })
@@ -295,7 +299,12 @@ impl Value {
             TypeDBValueType::DateTime => {
                 TypeDBValue::DateTime(NaiveDateTime::parse_from_str(&self.raw_value, "%Y-%m-%d %H:%M:%S").unwrap())
             }
-            TypeDBValueType::DateTimeTZ => todo!(),
+            TypeDBValueType::DateTimeTZ => {
+                let (date_time, tz) = self.raw_value.rsplit_once(' ').unwrap();
+                let date_time = NaiveDateTime::parse_from_str(date_time.trim(), "%Y-%m-%d %H:%M:%S");
+                let tz = tz.trim().parse().unwrap();
+                TypeDBValue::DateTimeTZ(date_time.unwrap().and_local_timezone(tz).unwrap())
+            }
             TypeDBValueType::Duration => TypeDBValue::Duration(self.raw_value.parse().unwrap()),
             TypeDBValueType::String => TypeDBValue::String(Cow::Owned(self.raw_value)),
             TypeDBValueType::Struct(_) => todo!(),
