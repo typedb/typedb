@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = [
     ":__subpackages__",
@@ -37,6 +37,12 @@ rust_library(
         "@crates//:seahash",
         "@crates//:serde",
     ],
+)
+
+rust_test(
+    name = "encoding_unit_tests",
+    crate = ":encoding",
+    deps = [],
 )
 
 checkstyle_test(
