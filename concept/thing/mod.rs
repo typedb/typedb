@@ -6,13 +6,14 @@
 
 use bytes::byte_array::ByteArray;
 use encoding::{graph::thing::vertex_attribute::AttributeID, value::value_type::ValueType};
+use encoding::value::value_type::ValueTypeCategory;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
-    ConceptStatus,
 };
 
 pub mod attribute;
@@ -22,6 +23,7 @@ pub mod relation;
 pub mod statistics;
 pub mod thing_manager;
 pub mod value;
+mod value_struct;
 
 pub trait ThingAPI<'a> {
     fn set_modified<Snapshot: WritableSnapshot>(&self, snapshot: &mut Snapshot, thing_manager: &ThingManager<Snapshot>);
@@ -47,11 +49,11 @@ pub trait ThingAPI<'a> {
 }
 
 // TODO: where do these belong? They're encodings of values we store for keys
-pub(crate) fn decode_attribute_ids(value_type: ValueType, bytes: &[u8]) -> impl Iterator<Item = AttributeID> + '_ {
-    let chunk_size = AttributeID::value_type_encoding_length(value_type);
+pub(crate) fn decode_attribute_ids(value_type_category: ValueTypeCategory, bytes: &[u8]) -> impl Iterator<Item = AttributeID> + '_ {
+    let chunk_size = AttributeID::value_type_encoding_length(value_type_category);
     let chunks_iter = bytes.chunks_exact(chunk_size);
     debug_assert!(chunks_iter.remainder().is_empty());
-    chunks_iter.map(move |chunk| AttributeID::new(value_type, chunk))
+    chunks_iter.map(move |chunk| AttributeID::new(value_type_category, chunk))
 }
 
 pub(crate) fn encode_attribute_ids(attribute_ids: impl Iterator<Item = AttributeID>) -> ByteArray<BUFFER_VALUE_INLINE> {

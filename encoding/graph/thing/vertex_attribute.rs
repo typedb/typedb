@@ -26,6 +26,7 @@ use crate::{
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::value::value_type::ValueTypeCategory;
 
 #[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub struct AttributeVertex<'a> {
@@ -43,23 +44,23 @@ impl<'a> AttributeVertex<'a> {
         AttributeVertex { bytes }
     }
 
-    pub fn build(value_type: ValueType, type_id: TypeID, attribute_id: AttributeID) -> Self {
+    pub fn build(value_type_category: ValueTypeCategory, type_id: TypeID, attribute_id: AttributeID) -> Self {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE + attribute_id.length());
         bytes.bytes_mut()[Self::RANGE_PREFIX]
-            .copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
+            .copy_from_slice(&Self::value_type_category_to_prefix_type(value_type_category).prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id.length())].copy_from_slice(attribute_id.bytes());
         Self { bytes: Bytes::Array(bytes) }
     }
 
     pub(crate) fn build_prefix_type_attribute_id(
-        value_type: ValueType,
+        value_type_category: ValueTypeCategory,
         type_id: TypeID,
         attribute_id_part: &[u8],
     ) -> StorageKey<'static, BUFFER_KEY_INLINE> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE + attribute_id_part.len());
         bytes.bytes_mut()[Self::RANGE_PREFIX]
-            .copy_from_slice(&Self::value_type_to_prefix_type(value_type).prefix_id().bytes());
+            .copy_from_slice(&Self::value_type_category_to_prefix_type(value_type_category).prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
         bytes.bytes_mut()[Self::range_for_attribute_id(attribute_id_part.len())].copy_from_slice(attribute_id_part);
         StorageKey::new_owned(Self::KEYSPACE, bytes)
@@ -82,23 +83,25 @@ impl<'a> AttributeVertex<'a> {
                 && &storage_key.bytes()[Self::RANGE_PREFIX] <= &Prefix::ATTRIBUTE_MAX.prefix_id().bytes())
     }
 
-    pub fn value_type_to_prefix_type(value_type: ValueType) -> Prefix {
-        match value_type {
-            ValueType::Boolean => Prefix::VertexAttributeBoolean,
-            ValueType::Long => Prefix::VertexAttributeLong,
-            ValueType::Double => Prefix::VertexAttributeDouble,
-            ValueType::String => Prefix::VertexAttributeString,
-            ValueType::DateTime => Prefix::VertexAttributeDateTime,
+    pub fn value_type_category_to_prefix_type(value_type_category: ValueTypeCategory) -> Prefix {
+        match value_type_category {
+            ValueTypeCategory::Boolean => Prefix::VertexAttributeBoolean,
+            ValueTypeCategory::Long => Prefix::VertexAttributeLong,
+            ValueTypeCategory::Double => Prefix::VertexAttributeDouble,
+            ValueTypeCategory::String => Prefix::VertexAttributeString,
+            ValueTypeCategory::DateTime => Prefix::VertexAttributeDateTime,
+            ValueTypeCategory::Struct => Prefix::VertexAttributeStruct,
         }
     }
 
-    pub fn prefix_type_to_value_type(prefix: Prefix) -> ValueType {
+    pub fn prefix_type_to_value_id_encoding_length(prefix: Prefix) -> usize {
         match prefix {
-            Prefix::VertexAttributeBoolean => ValueType::Boolean,
-            Prefix::VertexAttributeLong => ValueType::Long,
-            Prefix::VertexAttributeDouble => ValueType::Double,
-            Prefix::VertexAttributeString => ValueType::String,
-            Prefix::VertexAttributeDateTime => ValueType::DateTime,
+            Prefix::VertexAttributeBoolean => BooleanAttributeID::LENGTH,
+            Prefix::VertexAttributeLong => LongAttributeID::LENGTH,
+            Prefix::VertexAttributeDouble => DoubleAttributeID::LENGTH,
+            Prefix::VertexAttributeString => StringAttributeID::LENGTH,
+            Prefix::VertexAttributeDateTime => DateTimeAttributeID::LENGTH,
+            Prefix::VertexAttributeStruct => StructAttributeID::LENGTH,
             _ => unreachable!("Unrecognised attribute vertex prefix type"),
         }
     }
@@ -109,19 +112,20 @@ impl<'a> AttributeVertex<'a> {
         StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
     }
 
-    pub fn value_type(&self) -> ValueType {
+    pub fn value_type_category(&self) -> ValueTypeCategory {
         match self.prefix() {
-            Prefix::VertexAttributeBoolean => ValueType::Boolean,
-            Prefix::VertexAttributeLong => ValueType::Long,
-            Prefix::VertexAttributeDouble => ValueType::Double,
-            Prefix::VertexAttributeDateTime => ValueType::DateTime,
-            Prefix::VertexAttributeString => ValueType::String,
+            Prefix::VertexAttributeBoolean => ValueTypeCategory::Boolean,
+            Prefix::VertexAttributeLong => ValueTypeCategory::Long,
+            Prefix::VertexAttributeDouble => ValueTypeCategory::Double,
+            Prefix::VertexAttributeDateTime => ValueTypeCategory::DateTime,
+            Prefix::VertexAttributeString => ValueTypeCategory::String,
+            Prefix::VertexAttributeStruct => ValueTypeCategory::Struct,
             _ => unreachable!("Unexpected prefix."),
         }
     }
 
     pub fn attribute_id(&self) -> AttributeID {
-        AttributeID::new(self.value_type(), &self.bytes.bytes()[self.range_of_attribute_id()])
+        AttributeID::new(self.value_type_category(), &self.bytes.bytes()[self.range_of_attribute_id()])
     }
 
     fn range_of_attribute_id(&self) -> Range<usize> {
@@ -194,16 +198,18 @@ pub enum AttributeID {
     Double(DoubleAttributeID),
     DateTime(DateTimeAttributeID),
     String(StringAttributeID),
+    Struct(StructAttributeID),
 }
 
 impl AttributeID {
-    pub fn new(value_type: ValueType, bytes: &[u8]) -> Self {
-        match value_type {
-            ValueType::Boolean => Self::Boolean(BooleanAttributeID::new(bytes.try_into().unwrap())),
-            ValueType::Long => Self::Long(LongAttributeID::new(bytes.try_into().unwrap())),
-            ValueType::Double => Self::Double(DoubleAttributeID::new(bytes.try_into().unwrap())),
-            ValueType::DateTime => Self::DateTime(DateTimeAttributeID::new(bytes.try_into().unwrap())),
-            ValueType::String => Self::String(StringAttributeID::new(bytes.try_into().unwrap())),
+    pub fn new(value_type_category: ValueTypeCategory, bytes: &[u8]) -> Self {
+        match value_type_category {
+            ValueTypeCategory::Boolean => Self::Boolean(BooleanAttributeID::new(bytes.try_into().unwrap())),
+            ValueTypeCategory::Long => Self::Long(LongAttributeID::new(bytes.try_into().unwrap())),
+            ValueTypeCategory::Double => Self::Double(DoubleAttributeID::new(bytes.try_into().unwrap())),
+            ValueTypeCategory::DateTime => Self::DateTime(DateTimeAttributeID::new(bytes.try_into().unwrap())),
+            ValueTypeCategory::String => Self::String(StringAttributeID::new(bytes.try_into().unwrap())),
+            ValueTypeCategory::Struct => Self::Struct(StructAttributeID::new(bytes.try_into().unwrap()))
         }
     }
 
@@ -215,16 +221,20 @@ impl AttributeID {
             ValueType::Double => Self::Double(DoubleAttributeID::build(value.encode_double())),
             ValueType::DateTime => Self::DateTime(DateTimeAttributeID::build(value.encode_date_time())),
             ValueType::String => Self::String(StringAttributeID::build_inline_id(value.encode_string::<256>())),
+            ValueType::Struct(_) => {
+                todo!()
+            }
         }
     }
 
-    pub fn value_type_encoding_length(value_type: ValueType) -> usize {
-        match value_type {
-            ValueType::Boolean => BooleanAttributeID::LENGTH,
-            ValueType::Long => LongAttributeID::LENGTH,
-            ValueType::Double => DoubleAttributeID::LENGTH,
-            ValueType::DateTime => DateTimeAttributeID::LENGTH,
-            ValueType::String => StringAttributeID::LENGTH,
+    pub fn value_type_encoding_length(value_type_category: ValueTypeCategory) -> usize {
+        match value_type_category {
+            ValueTypeCategory::Boolean => BooleanAttributeID::LENGTH,
+            ValueTypeCategory::Long => LongAttributeID::LENGTH,
+            ValueTypeCategory::Double => DoubleAttributeID::LENGTH,
+            ValueTypeCategory::DateTime => DateTimeAttributeID::LENGTH,
+            ValueTypeCategory::String => StringAttributeID::LENGTH,
+            ValueTypeCategory::Struct => StructAttributeID::LENGTH,
         }
     }
 
@@ -239,6 +249,10 @@ impl AttributeID {
             ValueType::Double => DoubleAttributeID::is_inlineable(),
             ValueType::DateTime => DateTimeAttributeID::is_inlineable(),
             ValueType::String => StringAttributeID::is_inlineable(value.encode_string::<256>()),
+            ValueType::Struct(definition_key) => {
+                todo!()
+                // StructAttributeID::is_inlineable()
+            }
         }
     }
 
@@ -249,6 +263,7 @@ impl AttributeID {
             AttributeID::Double(double_id) => double_id.bytes_ref(),
             AttributeID::DateTime(date_time_id) => date_time_id.bytes_ref(),
             AttributeID::String(string_id) => string_id.bytes_ref(),
+            AttributeID::Struct(struct_id) => struct_id.bytes_ref(),
         }
     }
 
@@ -259,6 +274,7 @@ impl AttributeID {
             AttributeID::Double(_) => DoubleAttributeID::LENGTH,
             AttributeID::DateTime(_) => DateTimeAttributeID::LENGTH,
             AttributeID::String(_) => StringAttributeID::LENGTH,
+            AttributeID::Struct(_) => StructAttributeID::LENGTH,
         }
     }
 
@@ -562,8 +578,8 @@ impl StringAttributeID {
     {
         debug_assert!(!Self::is_inlineable(string.as_reference()));
         let prefix_search = KeyRange::new_within(
-            AttributeVertex::build_prefix_type_attribute_id(ValueType::String, type_id, &id_without_tail),
-            AttributeVertex::value_type_to_prefix_type(ValueType::String).fixed_width_keys(),
+            AttributeVertex::build_prefix_type_attribute_id(ValueTypeCategory::String, type_id, &id_without_tail),
+            AttributeVertex::value_type_category_to_prefix_type(ValueTypeCategory::String).fixed_width_keys(),
         );
         let mut iter = snapshot.iterate_range(prefix_search);
         let mut next = iter.next().transpose()?;
@@ -644,6 +660,23 @@ impl StringAttributeID {
     }
 
     pub fn bytes_ref(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct StructAttributeID {
+    bytes: [u8; Self::LENGTH],
+}
+
+impl StructAttributeID {
+    const LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+
+    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
+        Self { bytes }
+    }
+
+    pub(crate) fn bytes_ref(&self) -> &[u8] {
         &self.bytes
     }
 }

@@ -26,6 +26,7 @@ use crate::{
     value::value_type::ValueType,
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::value::value_type::ValueTypeCategory;
 
 ///
 /// [has][object][Attribute8|Attribute17]
@@ -69,14 +70,14 @@ impl<'a> ThingEdgeHas<'a> {
 
     pub fn prefix_from_object_to_type(
         from: ObjectVertex,
-        to_value_type: ValueType,
+        to_value_type_category: ValueTypeCategory,
         to_type: TypeVertex,
     ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         let to_prefix = AttributeVertex::build_prefix_type(
-            AttributeVertex::value_type_to_prefix_type(to_value_type),
+            AttributeVertex::value_type_category_to_prefix_type(to_value_type_category),
             to_type.type_id_(),
         );
         let to_type_range = Self::range_from().end..Self::range_from().end + to_prefix.length();
@@ -266,8 +267,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
     fn from_length(&self) -> usize {
         let byte = self.bytes.bytes()[Self::INDEX_FROM_PREFIX];
         let prefix = PrefixID::new([byte]);
-        let value_type = AttributeVertex::prefix_type_to_value_type(Prefix::from_prefix_id(prefix));
-        let id_encoding_length = AttributeID::value_type_encoding_length(value_type);
+        let id_encoding_length = AttributeVertex::prefix_type_to_value_id_encoding_length(Prefix::from_prefix_id(prefix));
         AttributeVertex::LENGTH_PREFIX_TYPE + id_encoding_length
     }
 

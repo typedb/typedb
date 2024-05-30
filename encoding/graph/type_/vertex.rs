@@ -137,6 +137,7 @@ pub struct TypeID {
     bytes: [u8; TypeID::LENGTH],
 }
 
+// TODO: this type should move into constants.rs, similarly to DefinitionIDUInt
 pub type TypeIDUInt = u16;
 
 impl TypeID {

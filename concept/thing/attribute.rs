@@ -43,10 +43,6 @@ impl<'a> Attribute<'a> {
         Attribute { vertex, value: None }
     }
 
-    pub(crate) fn value_type(&self) -> ValueType {
-        self.vertex.value_type()
-    }
-
     pub fn type_(&self) -> AttributeType<'static> {
         AttributeType::new(build_vertex_attribute_type(self.vertex.type_id_()))
     }

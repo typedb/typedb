@@ -26,10 +26,11 @@ use encoding::{
     value::{
         label::Label,
         string_bytes::StringBytes,
-        value_type::{ValueType, ValueTypeID},
+        value_type::{ValueType},
     },
     AsBytes, Keyable,
 };
+use encoding::value::value_type::ValueTypeBytes;
 use iterator::Collector;
 use resource::constants::{encoding::LABEL_SCOPED_NAME_STRING_INLINE, snapshot::BUFFER_KEY_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
@@ -342,7 +343,7 @@ impl TypeReader {
         snapshot
             .get_mapped(
                 build_property_type_value_type(type_.into_vertex()).into_storage_key().as_reference(),
-                |bytes| ValueType::from_value_type_id(ValueTypeID::new(bytes.bytes().try_into().unwrap())),
+                |bytes| ValueTypeBytes::new(bytes.bytes().try_into().unwrap()).to_value_type()
             )
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }

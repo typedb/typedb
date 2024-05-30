@@ -248,8 +248,8 @@ impl TypeCache {
         &T::get_cache(self, type_).owner_player_cache().plays_transitive
     }
 
-    pub(crate) fn get_attribute_type_value_type<'a>(&self, attribute_type: AttributeType<'a>) -> Option<ValueType> {
-        AttributeType::get_cache(&self, attribute_type).value_type
+    pub(crate) fn get_attribute_type_value_type<'a>(&self, attribute_type: AttributeType<'a>) -> &Option<ValueType> {
+        &AttributeType::get_cache(&self, attribute_type).value_type
     }
 
     pub(crate) fn get_owns_annotations<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<OwnsAnnotation> {

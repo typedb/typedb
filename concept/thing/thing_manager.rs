@@ -173,11 +173,12 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         snapshot: &'this Snapshot,
         attribute_type: AttributeType<'_>,
     ) -> Result<AttributeIterator<'this, Snapshot>, ConceptReadError> {
-        let Some(value_type) = attribute_type.get_value_type(snapshot, self.type_manager.as_ref())? else {
+        let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager.as_ref())?;
+        let Some(value_type) = attribute_value_type.as_ref() else {
             return Ok(AttributeIterator::new_empty());
         };
 
-        let attribute_value_type_prefix = AttributeVertex::value_type_to_prefix_type(value_type);
+        let attribute_value_type_prefix = AttributeVertex::value_type_category_to_prefix_type(value_type.category());
         let prefix =
             AttributeVertex::build_prefix_type(attribute_value_type_prefix, attribute_type.vertex().type_id_());
         let attribute_iterator =
@@ -191,12 +192,14 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         Ok(AttributeIterator::new(attribute_iterator, has_reverse_iterator, snapshot, self.type_manager()))
     }
 
-    pub(crate) fn get_attribute_value(
+    pub(crate) fn get_attribute_value<'a>(
         &self,
         snapshot: &Snapshot,
-        attribute: &Attribute<'_>,
+        attribute: &'a Attribute<'a>,
     ) -> Result<Value<'static>, ConceptReadError> {
-        match attribute.value_type() {
+        let attribute_type = attribute.type_();
+        let value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
+        match value_type.as_ref().unwrap() {
             ValueType::Boolean => {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_boolean();
                 Ok(Value::Boolean(BooleanBytes::new(attribute_id.bytes()).as_bool()))
@@ -228,6 +231,9 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                         .unwrap())
                 }
             }
+            ValueType::Struct(definition_key) => {
+                todo!()
+            }
         }
     }
 
@@ -237,7 +243,13 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<Option<Attribute<'static>>, ConceptReadError> {
-        let attribute = match value.value_type() {
+        let value_type = value.value_type();
+        let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
+        if attribute_value_type.is_none() || attribute_value_type.as_ref().unwrap() != &value_type {
+            return Ok(None);
+        }
+
+        let attribute = match value_type {
             ValueType::Boolean | ValueType::Long | ValueType::Double | ValueType::DateTime => {
                 debug_assert!(AttributeID::is_inlineable(value.as_reference()));
                 match self.get_attribute_with_value_inline(snapshot, attribute_type, value) {
@@ -263,6 +275,9 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                     }
                 }
             }
+            ValueType::Struct(definition_key) => {
+                todo!()
+            }
         };
 
         let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
@@ -280,8 +295,12 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         value: Value<'_>,
     ) -> Result<Option<Attribute<'static>>, ConceptReadError> {
         debug_assert!(AttributeID::is_inlineable(value.as_reference()));
+        let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
+        if attribute_value_type.is_none() || attribute_value_type.as_ref().unwrap() == &value.value_type() {
+            return Ok(None)
+        }
         let vertex = AttributeVertex::build(
-            value.value_type(),
+            attribute_value_type.as_ref().unwrap().category(),
             attribute_type.vertex().type_id_(),
             AttributeID::build_inline(value),
         );
@@ -297,10 +316,11 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<bool, ConceptReadError> {
+        // TODO: check value type matches attribute value type
         let value_type = value.value_type();
         let vertex = if AttributeID::is_inlineable(value.as_reference()) {
             // don't need to do an extra lookup to get the attribute vertex - if it exists, it will have this ID
-            AttributeVertex::build(value_type, attribute_type.vertex().type_id_(), AttributeID::build_inline(value))
+            AttributeVertex::build(value_type.category(), attribute_type.vertex().type_id_(), AttributeID::build_inline(value))
         } else {
             // non-inline attributes require an extra lookup before checking for the has edge existence
             let attribute = self.get_attribute_with_value(snapshot, attribute_type, value)?;
@@ -335,13 +355,14 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
     ) -> Result<HasAttributeIterator, ConceptReadError> {
-        let value_type = match attribute_type.get_value_type(snapshot, self.type_manager())? {
+        let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
+        let value_type = match attribute_value_type.as_ref() {
             None => {
                 todo!("Handle missing value type - for abstract attributes. Or assume this will never happen")
             }
             Some(value_type) => value_type,
         };
-        let prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), value_type, attribute_type.into_vertex());
+        let prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), value_type.category(), attribute_type.into_vertex());
         Ok(HasAttributeIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
         ))
@@ -354,7 +375,8 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         attribute_type: AttributeType<'static>,
     ) -> Result<Vec<Attribute<'static>>, ConceptReadError> {
         let key = HAS_ORDER_PROPERTY_FACTORY.build(owner.vertex(), attribute_type.vertex());
-        let value_type = match attribute_type.get_value_type(snapshot, self.type_manager())? {
+        let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
+        let value_type = match attribute_value_type.as_ref() {
             None => {
                 todo!("Handle missing value type - for abstract attributes. Or assume this will never happen")
             }
@@ -362,7 +384,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         };
         let attributes = snapshot
             .get_mapped(key.as_storage_key().as_reference(), |bytes| {
-                decode_attribute_ids(value_type, bytes.bytes())
+                decode_attribute_ids(value_type.category(), bytes.bytes())
                     .map(|id| Attribute::new(AttributeVertex::new(Bytes::copy(id.bytes()))))
                     .collect()
             })
@@ -662,7 +684,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         value: Value<'_>,
     ) -> Result<Attribute<'a>, ConceptWriteError> {
         let value_type = attribute_type.get_value_type(snapshot, self.type_manager.as_ref())?;
-        if Some(value.value_type()) == value_type {
+        if Some(&value.value_type()) == value_type.as_ref() {
             let vertex = match value {
                 Value::Boolean(bool) => {
                     let encoded_boolean = BooleanBytes::build(bool);
@@ -719,10 +741,13 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                         .create_attribute_string(attribute_type.vertex().type_id_(), encoded_string, snapshot)
                         .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
                 }
+                Value::Struct(struct_) => {
+                    todo!()
+                }
             };
             Ok(Attribute::new(vertex))
         } else {
-            Err(ConceptWriteError::ValueTypeMismatch { expected: value_type, provided: value.value_type() })
+            Err(ConceptWriteError::ValueTypeMismatch { expected: value_type.as_ref().cloned(), provided: value.value_type() })
         }
     }
 

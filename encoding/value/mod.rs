@@ -6,6 +6,9 @@
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use storage::snapshot::ReadableSnapshot;
+use crate::graph::definition::r#struct::StructDefinition;
+use crate::value::struct_bytes::StructBytes;
 
 use self::{
     boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, double_bytes::DoubleBytes, long_bytes::LongBytes,
@@ -19,6 +22,7 @@ pub mod label;
 pub mod long_bytes;
 pub mod string_bytes;
 pub mod value_type;
+pub mod struct_bytes;
 
 pub fn encode_value_u64(count: u64) -> ByteArray<BUFFER_VALUE_INLINE> {
     // LE is normally platform-native
@@ -42,4 +46,6 @@ pub trait ValueEncodable: Clone {
     fn encode_date_time(&self) -> DateTimeBytes;
 
     fn encode_string<const INLINE_LENGTH: usize>(&self) -> StringBytes<INLINE_LENGTH>;
+
+    fn encode_struct<const INLINE_LENGTH: usize>(&self) -> StructBytes<INLINE_LENGTH>;
 }

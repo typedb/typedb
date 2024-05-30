@@ -39,6 +39,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     AsBytes, Keyable,
 };
+use encoding::value::value_type::ValueTypeBytes;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -511,11 +512,11 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         &self,
         snapshot: &Snapshot,
         attribute_type: AttributeType<'static>,
-    ) -> Result<Option<ValueType>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, Option<ValueType>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(cache.get_attribute_type_value_type(attribute_type))
+            Ok(MaybeOwns::Borrowed(cache.get_attribute_type_value_type(attribute_type)))
         } else {
-            TypeReader::get_value_type(snapshot, attribute_type)
+            Ok(MaybeOwns::Owned(TypeReader::get_value_type(snapshot, attribute_type)?))
         }
     }
 
@@ -865,7 +866,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     ) {
         let property_key =
             build_property_type_value_type(attribute.into_vertex()).into_storage_key().into_owned_array();
-        let property_value = ByteArray::copy(&value_type.value_type_id().bytes());
+        let property_value = ByteArray::copy(&ValueTypeBytes::build(&value_type).into_bytes());
         snapshot.put_val(property_key, property_value);
     }
 
