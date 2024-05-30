@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-
 server:
   address: 0.0.0.0:1729
 
@@ -63,5 +62,5 @@ vaticle-factory:
   #  username: $FACTORY_USERNAME
   #  token: $FACTORY_TOKEN
 
-development-mode: # Removed from config on release
+development-mode: # This should be the only difference between
   enable: true

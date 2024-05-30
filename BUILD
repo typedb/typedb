@@ -16,6 +16,27 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
 load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+
+string_flag(
+    name = "is_release",
+    build_setting_default = "false",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "release_mode",
+    flag_values = {
+        "//:is_release": "true",
+    },
+)
+
+config_setting(
+    name = "development_mode",
+    flag_values = {
+        "//:is_release": "false",
+    },
+)
 
 exports_files(
     ["VERSION", "deployment.bzl", "LICENSE", "README.md"],

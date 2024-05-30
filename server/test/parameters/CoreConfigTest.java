@@ -33,7 +33,7 @@ import static org.junit.Assert.fail;
 
 public class CoreConfigTest {
 
-    private static final Path CONFIG_PATH_DEFAULT = Paths.get("./server/parameters/config.yml");
+    private static final Path CONFIG_PATH_DEFAULT = Paths.get("server/parameters/config/config.yml");
 
     @Test
     public void config_file_is_read() {

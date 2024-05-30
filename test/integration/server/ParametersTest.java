@@ -31,7 +31,7 @@ import static org.junit.Assert.assertTrue;
 
 public class ParametersTest {
 
-    private static final Path CONFIG_PATH_DEFAULT = Paths.get("server/parameters/config.yml");
+    private static final Path CONFIG_PATH_DEFAULT = Paths.get("server/parameters/config/config.yml");
 
     @Test
     public void test_log_archive_age_limits() throws IOException, InterruptedException, TypeDBCheckedException {
@@ -116,8 +116,7 @@ public class ParametersTest {
                 new Option("log.logger.default.level", "trace"),
                 new Option("log.logger.storage.level", "trace"),
                 new Option("diagnostics.reporting.errors", "false"),
-                new Option("diagnostics.reporting.statistics", "false"),
-                new Option("development-mode.enable", "true")));
+                new Option("diagnostics.reporting.statistics", "false")));
     }
 
     private List<Path> getLogArchives(Path logDir) throws IOException {

@@ -9,18 +9,18 @@ host_compatible_java_test(
     name = "test-parameters",
     size = "large",
     srcs = ["ParametersTest.java"],
+    data = [
+        "//server/parameters/config",
+    ],
     native_libraries_deps = [
         "//:typedb",
         "//common:common",
         "//server:server",
         "//database:database",
     ],
-    data = [
-        "//server:config",
-    ],
     test_class = "com.vaticle.typedb.core.server.ParametersTest",
     deps = [
-        "//test/integration/util:util",
+        "//test/integration/util",
         "@vaticle_typeql//common/java:common",
     ],
 )
