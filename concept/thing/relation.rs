@@ -296,7 +296,8 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
     ) -> Result<(), ConceptWriteError> {
         for attr in self
             .get_has_unordered(snapshot, thing_manager)
-            .collect_cloned_vec(|(key, _value)| key.into_owned())
+            .map_static(|res| res.map(|(key, _value)| key.into_owned()))
+            .try_collect::<Vec<_>, _>()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
         {
             thing_manager.unset_has_unordered(snapshot, &self, attr);
@@ -316,7 +317,8 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
 
         for (relation, role) in self
             .get_relations(snapshot, thing_manager)
-            .collect_cloned_vec(|(relation, role, _count)| (relation.into_owned(), role.into_owned()))
+            .map_static(|res| res.map(|(relation, role, _count)| (relation.into_owned(), role.into_owned())))
+            .try_collect::<Vec<_>, _>()
             .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
         {
             thing_manager.unset_role_player(snapshot, relation, self.as_reference(), role)?;

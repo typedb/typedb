@@ -82,11 +82,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         EntityIterator::new(snapshot_iterator)
     }
 
-    pub fn get_objects_in<'this>(
-        &'this self,
-        snapshot: &'this Snapshot,
-        object_type: ObjectType<'_>,
-    ) -> ObjectIterator {
+    pub fn get_objects_in(&self, snapshot: &Snapshot, object_type: ObjectType<'_>) -> ObjectIterator {
         let vertex_prefix = match object_type {
             ObjectType::Entity(_) => Prefix::VertexEntity,
             ObjectType::Relation(_) => Prefix::VertexRelation,
@@ -96,29 +92,21 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         ObjectIterator::new(snapshot_iterator)
     }
 
-    pub fn get_entities_in<'this>(
-        &'this self,
-        snapshot: &'this Snapshot,
-        entity_type: EntityType<'_>,
-    ) -> EntityIterator {
+    pub fn get_entities_in(&self, snapshot: &Snapshot, entity_type: EntityType<'_>) -> EntityIterator {
         let prefix = ObjectVertex::build_prefix_type(Prefix::VertexEntity.prefix_id(), entity_type.vertex().type_id_());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexEntity.fixed_width_keys()));
         EntityIterator::new(snapshot_iterator)
     }
 
-    pub fn get_relations<'this>(&'this self, snapshot: &'this Snapshot) -> RelationIterator {
+    pub fn get_relations(&self, snapshot: &Snapshot) -> RelationIterator {
         let prefix = ObjectVertex::build_prefix_prefix(Prefix::VertexRelation);
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexRelation.fixed_width_keys()));
         RelationIterator::new(snapshot_iterator)
     }
 
-    pub fn get_relations_in<'this>(
-        &'this self,
-        snapshot: &'this Snapshot,
-        relation_type: RelationType<'_>,
-    ) -> RelationIterator {
+    pub fn get_relations_in(&self, snapshot: &Snapshot, relation_type: RelationType<'_>) -> RelationIterator {
         let prefix =
             ObjectVertex::build_prefix_type(Prefix::VertexRelation.prefix_id(), relation_type.vertex().type_id_());
         let snapshot_iterator =
@@ -126,11 +114,11 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         RelationIterator::new(snapshot_iterator)
     }
 
-    pub(crate) fn get_relations_player<'this, 'o>(
-        &'this self,
-        snapshot: &'this Snapshot,
+    pub(crate) fn get_relations_player<'o>(
+        &self,
+        snapshot: &Snapshot,
         player: &impl ObjectAPI<'o>,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<Relation<'a>, ConceptReadError>> {
         let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.vertex());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::EdgeRolePlayer.fixed_width_keys()));
@@ -140,9 +128,9 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         })
     }
 
-    pub(crate) fn get_relations_player_role<'this, 'o>(
-        &'this self,
-        snapshot: &'this Snapshot,
+    pub(crate) fn get_relations_player_role<'o>(
+        &self,
+        snapshot: &Snapshot,
         player: &impl ObjectAPI<'o>,
         role_type: RoleType<'static>,
     ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
@@ -353,9 +341,9 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         Ok(has_exists)
     }
 
-    pub(crate) fn get_has_unordered<'this, 'a>(
-        &'this self,
-        snapshot: &'this Snapshot,
+    pub(crate) fn get_has_unordered<'a>(
+        &self,
+        snapshot: &Snapshot,
         owner: &impl ObjectAPI<'a>,
     ) -> HasAttributeIterator {
         let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());

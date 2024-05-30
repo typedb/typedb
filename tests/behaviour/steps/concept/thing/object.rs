@@ -134,8 +134,11 @@ async fn object_get_has(
     let actuals = with_read_tx!(context, |tx| {
         object
             .get_has_unordered(&tx.snapshot, &tx.thing_manager)
-            .collect_cloned_vec(|(attribute, _count)| attribute.into_owned())
-            .unwrap()
+            .map_static(|res| {
+                let (attribute, _count) = res.unwrap();
+                attribute.into_owned()
+            })
+            .collect::<Vec<_>>()
     });
     contains_or_doesnt.check(std::slice::from_ref(attribute), &actuals);
 }
@@ -159,8 +162,11 @@ async fn object_get_has_type(
         object
             .get_has_type(&tx.snapshot, &tx.thing_manager, attribute_type)
             .unwrap()
-            .collect_cloned_vec(|(attribute, _count)| attribute.into_owned())
-            .unwrap()
+            .map_static(|res| {
+                let (attribute, _count) = res.unwrap();
+                attribute.into_owned()
+            })
+            .collect::<Vec<_>>()
     });
     contains_or_doesnt.check(std::slice::from_ref(attribute), &actuals);
 }
@@ -198,8 +204,11 @@ async fn object_get_has_with_annotations(
                 object
                     .get_has_type(&tx.snapshot, &tx.thing_manager, attribute_type)
                     .unwrap()
-                    .collect_cloned_vec(|(attribute, _count)| attribute.into_owned())
-                    .unwrap()
+                    .map_static(|res| {
+                        let (attribute, _count) = res.unwrap();
+                        attribute.into_owned()
+                    })
+                    .collect::<Vec<_>>()
             })
             .collect_vec()
     });
@@ -322,8 +331,11 @@ async fn attribute_owners_contains(
     let actuals = with_read_tx!(context, |tx| {
         attribute
             .get_owners(&tx.snapshot, &tx.thing_manager)
-            .collect_cloned_vec(|(owner, _count)| owner.into_owned())
-            .unwrap()
+            .map_static(|res| {
+                let (attribute, _count) = res.unwrap();
+                attribute.into_owned()
+            })
+            .collect::<Vec<_>>()
     });
     contains_or_doesnt.check(std::slice::from_ref(&object), &actuals)
 }

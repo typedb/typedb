@@ -147,7 +147,8 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
     ) -> Result<(), ConceptWriteError> {
         let owners = self
             .get_owners(snapshot, thing_manager)
-            .collect_cloned_vec(|(key, _)| key.into_owned())
+            .map_static(|res| res.map(|(key, _)| key.into_owned()))
+            .try_collect::<Vec<_>, _>()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for object in owners {
             thing_manager.unset_has_unordered(snapshot, &object, self.as_reference());
