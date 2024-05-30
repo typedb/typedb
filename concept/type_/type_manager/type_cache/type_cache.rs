@@ -11,24 +11,32 @@ use std::{
     sync::Arc,
 };
 
-use encoding::value::{label::Label, value_type::ValueType};
-use storage::{sequence_number::SequenceNumber, MVCCStorage, ReadSnapshotOpenError};
+use encoding::{
+    graph::Typed,
+    value::{label::Label, value_type::ValueType}
+    ,
+};
+use storage::{MVCCStorage, ReadSnapshotOpenError, sequence_number::SequenceNumber, snapshot::ReadableSnapshot};
 
 use crate::type_::{
     attribute_type::AttributeType,
     entity_type::EntityType,
-    object_type::ObjectType,
+    Ordering,
+    OwnerAPI,
     owns::{Owns, OwnsAnnotation},
+    PlayerAPI,
     plays::Plays,
     relates::Relates,
-    relation_type::RelationType,
-    role_type::RoleType,
-    type_cache::{
-        kind_cache::{AttributeTypeCache, EntityTypeCache, OwnsCache, PlaysCache, RelationTypeCache, RoleTypeCache},
-        selection::{self, CacheGetter, HasCommonTypeCache, HasOwnerPlayerCache},
+    relation_type::RelationType, role_type::RoleType, KindAPI, TypeAPI,
+};
+use crate::type_::object_type::ObjectType;
+use crate::type_::type_manager::type_cache::{
+    kind_cache::{
+        AttributeTypeCache, CommonTypeCache, EntityTypeCache, OwnerPlayerCache, OwnsCache, PlaysCache,
+        RelationTypeCache, RoleTypeCache,
     },
-    type_manager::KindAPI,
-    Ordering, OwnerAPI, PlayerAPI,
+    selection,
+    selection::{CacheGetter, HasCommonTypeCache, HasOwnerPlayerCache},
 };
 
 // TODO: could/should we slab allocate the schema cache?
@@ -187,12 +195,20 @@ impl TypeCache {
     pub(crate) fn get_annotations<'a, 'this, T, CACHE>(
         &'this self,
         type_: T,
-    ) -> &HashSet<<<T as KindAPI<'a>>::SelfStatic as KindAPI<'static>>::AnnotationType>
+    ) -> &HashSet<<<T as TypeAPI<'a>>::SelfStatic as KindAPI<'static>>::AnnotationType>
     where
         T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
         CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().annotations_declared
+    }
+
+    pub(crate) fn get_owns_for_attribute_type<'a>(&self, attribute_type: AttributeType<'a>) -> &HashSet<Owns<'static>> {
+        &AttributeType::get_cache(self, attribute_type).owns
+    }
+
+    pub(crate) fn get_owns_for_attribute_type_transitive<'a>(&self, attribute_type: AttributeType<'a>) -> &HashMap<ObjectType<'static>, Owns<'static>> {
+        &AttributeType::get_cache(self, attribute_type).owns_transitive
     }
 
     pub(crate) fn get_owns<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns<'static>>
@@ -229,6 +245,14 @@ impl TypeCache {
         &RelationType::get_cache(self, relation_type).relates_transitive
     }
 
+    pub(crate) fn get_plays_for_role_type<'a>(&self, role_type: RoleType<'a>) -> &HashSet<Plays<'static>> {
+        &RoleType::get_cache(self, role_type).plays
+    }
+
+    pub(crate) fn get_plays_for_role_type_transitive<'a>(&self, role_type: RoleType<'a>) -> &HashMap<ObjectType<'static>, Plays<'static>> {
+        &RoleType::get_cache(self, role_type).plays_transitive
+    }
+
     pub(crate) fn get_plays<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Plays<'static>>
     where
         T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
@@ -252,8 +276,8 @@ impl TypeCache {
         &AttributeType::get_cache(&self, attribute_type).value_type
     }
 
-    pub(crate) fn get_owns_annotations<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<OwnsAnnotation> {
-        &self.owns.get(&owns).unwrap().annotations_declared
+    pub(crate) fn get_owns_effective_annotations<'c>(&'c self, owns: Owns<'c>) -> &'c HashMap<OwnsAnnotation, Owns<'static>> {
+        &self.owns.get(&owns).unwrap().effective_annotations
     }
 
     pub(crate) fn get_owns_ordering<'c>(&'c self, owns: Owns<'c>) -> Ordering {

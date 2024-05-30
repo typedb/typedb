@@ -18,6 +18,7 @@ use crate::{
     layout::prefix::{Prefix, PrefixID},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::error::EncodingError;
 
 // TODO: we could make all Type constructs contain plain byte arrays, since they will always be 64 bytes (BUFFER_KEY_INLINE), then make Types all Copy
 //       However, we should benchmark this first, since 64 bytes may be better off referenced
@@ -26,63 +27,6 @@ use crate::{
 pub struct TypeVertex<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
-
-// TODO: Refactor into factories: https://github.com/vaticle/typedb/pull/7040#discussion_r1567373838
-macro_rules! type_vertex_constructors {
-    ($new_name:ident, $build_name:ident, $build_name_prefix:ident, $is_name:ident, Prefix::$prefix:ident) => {
-        pub fn $new_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> TypeVertex<'_> {
-            let vertex = TypeVertex::new(bytes);
-            debug_assert_eq!(vertex.prefix(), Prefix::$prefix);
-            vertex
-        }
-
-        pub fn $build_name(type_id: TypeID) -> TypeVertex<'static> {
-            TypeVertex::build(Prefix::$prefix.prefix_id(), type_id)
-        }
-
-        // TODO: is it better to have a const fn that is a reference to owned memory, or
-        //       to always induce a tiny copy have a non-const function?
-        pub fn $build_name_prefix() -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
-            const BYTES: [u8; TypeVertex::LENGTH_PREFIX] = Prefix::$prefix.prefix_id().bytes();
-            StorageKey::new_ref(TypeVertex::KEYSPACE, ByteReference::new(&BYTES))
-        }
-
-        pub fn $is_name(key: StorageKeyReference<'_>) -> bool {
-            key.keyspace_id() == crate::EncodingKeyspace::Schema.id()
-                && key.length() == TypeVertex::LENGTH
-                && TypeVertex::new(Bytes::Reference(key.byte_ref())).prefix() == Prefix::$prefix
-        }
-    };
-}
-
-type_vertex_constructors!(
-    new_vertex_entity_type,
-    build_vertex_entity_type,
-    build_vertex_entity_type_prefix,
-    is_vertex_entity_type,
-    Prefix::VertexEntityType
-);
-type_vertex_constructors!(
-    new_vertex_relation_type,
-    build_vertex_relation_type,
-    build_vertex_relation_type_prefix,
-    is_vertex_relation_type,
-    Prefix::VertexRelationType
-);
-type_vertex_constructors!(
-    new_vertex_role_type,
-    build_vertex_role_type,
-    build_vertex_role_type_prefix,
-    is_vertex_role_type,
-    Prefix::VertexRoleType
-);
-type_vertex_constructors!(
-    new_vertex_attribute_type,
-    build_vertex_attribute_type,
-    build_vertex_attribute_type_prefix,
-    is_vertex_attribute_type,
-    Prefix::VertexAttributeType
-);
 
 impl<'a> TypeVertex<'a> {
     pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
@@ -96,7 +40,7 @@ impl<'a> TypeVertex<'a> {
         TypeVertex { bytes }
     }
 
-    fn build(prefix: PrefixID, type_id: TypeID) -> Self {
+    pub(crate) fn build(prefix: PrefixID, type_id: TypeID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.bytes());
         array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
@@ -158,5 +102,47 @@ impl TypeID {
 
     pub fn bytes(&self) -> [u8; TypeID::LENGTH] {
         self.bytes
+    }
+}
+
+// Encoder traits
+pub(crate) fn build_type_vertex_prefix_key(prefix: Prefix) -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
+    StorageKey::new(
+        TypeVertex::KEYSPACE,
+        // TODO: Can we revert this to being a static const byte reference
+        Bytes::Array(ByteArray::inline(prefix.prefix_id().bytes(), TypeVertex::LENGTH_PREFIX))
+    )
+}
+
+pub trait TypeVertexEncoding<'a> : Sized {
+
+    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError>;
+
+    fn from_bytes(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Result<Self, EncodingError> {
+        Self::from_vertex(TypeVertex::new(bytes))
+    }
+
+    fn into_vertex(self) -> TypeVertex<'a>;
+}
+
+pub trait PrefixedTypeVertexEncoding<'a> : TypeVertexEncoding<'a>{
+    const PREFIX: Prefix;
+
+    fn build_from_type_id(type_id: TypeID) -> Self {
+        Self::from_vertex(TypeVertex::build(Self::PREFIX.prefix_id(), type_id)).unwrap()
+    }
+
+    fn prefix_for_kind() -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
+        build_type_vertex_prefix_key(Self::PREFIX)
+    }
+
+    fn is_decodable_from_key(key: StorageKeyReference<'_>) -> bool {
+        key.keyspace_id() == EncodingKeyspace::Schema.id() &&
+            Self::is_decodable_from(Bytes::Reference(key.byte_ref()))
+    }
+
+    fn is_decodable_from(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+        bytes.length() == TypeVertex::LENGTH
+            && TypeVertex::new(bytes).prefix() == Self::PREFIX
     }
 }

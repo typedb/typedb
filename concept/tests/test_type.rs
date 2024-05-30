@@ -8,21 +8,19 @@
 
 use std::sync::Arc;
 
-use concept::type_::{
-    annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, owns::Owns,
-    relation_type::RelationTypeAnnotation, role_type::RoleTypeAnnotation, type_cache::TypeCache,
-    type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
-};
+use concept::type_::{annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, Ordering, OwnerAPI, owns::Owns, PlayerAPI, relation_type::RelationTypeAnnotation, role_type::RoleTypeAnnotation, type_manager::TypeManager, TypeAPI};
+use concept::type_::type_manager::type_cache::TypeCache;
+
 use durability::wal::WAL;
 use encoding::{
-    graph::type_::{vertex_generator::TypeVertexGenerator, Kind},
-    value::{label::Label, value_type::ValueType},
     EncodingKeyspace,
+    graph::type_::{Kind, vertex_generator::TypeVertexGenerator},
+    value::{label::Label, value_type::ValueType},
 };
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadableSnapshot, ReadSnapshot, WriteSnapshot},
 };
 use test_utils::{create_tmp_dir, init_logging};
 
@@ -54,7 +52,7 @@ fn entity_usage() {
         // --- age sub attribute ---
         let age_label = Label::build("age");
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long);
+        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
 
         assert!(!age_type.is_root(&snapshot, &type_manager).unwrap());
         assert!(age_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());

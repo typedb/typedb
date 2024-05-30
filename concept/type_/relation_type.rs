@@ -7,11 +7,16 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{
-    graph::type_::vertex::{new_vertex_relation_type, TypeVertex},
+    graph::type_::vertex::TypeVertex,
     layout::prefix::Prefix,
     value::label::Label,
     Prefixed,
 };
+use encoding::error::EncodingError;
+use encoding::error::EncodingError::UnexpectedPrefix;
+use encoding::graph::type_::Kind;
+use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding};
+use encoding::layout::prefix::Prefix::VertexRelationType;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -35,34 +40,45 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::KindAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {
     vertex: TypeVertex<'a>,
 }
 
-impl<'a> RelationType<'a> {
-    pub fn new(vertex: TypeVertex<'a>) -> RelationType<'_> {
-        if vertex.prefix() != Prefix::VertexRelationType {
-            panic!(
-                "Type IID prefix was expected to be Prefix::RelationType ({:?}) but was {:?}",
-                Prefix::VertexRelationType,
-                vertex.prefix()
-            )
-        }
-        RelationType { vertex }
-    }
-}
+impl<'a> RelationType<'a> {}
 
 impl<'a> ConceptAPI<'a> for RelationType<'a> {}
 
-impl<'a> TypeAPI<'a> for RelationType<'a> {
-    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
-        self.vertex.as_reference()
+impl<'a> TypeVertexEncoding<'a> for RelationType<'a> {
+    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
+        debug_assert!(Self::PREFIX == VertexRelationType);
+        if vertex.prefix() != Prefix::VertexRelationType {
+            Err(UnexpectedPrefix { expected_prefix: Prefix::VertexRelationType, actual_prefix: vertex.prefix() })
+        } else {
+            Ok(RelationType { vertex })
+        }
     }
 
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
+    }
+}
+
+impl<'a> PrefixedTypeVertexEncoding<'a> for RelationType<'a> {
+    const PREFIX: Prefix = VertexRelationType;
+}
+
+impl<'a> TypeAPI<'a> for RelationType<'a> {
+    type SelfStatic = RelationType<'static>;
+
+    fn new(vertex: TypeVertex<'a>) -> RelationType<'_> {
+        Self::from_vertex(vertex).unwrap()
+    }
+
+    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+        self.vertex.as_reference()
     }
 
     fn is_abstract<Snapshot: ReadableSnapshot>(
@@ -79,9 +95,8 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: validation
-        type_manager.delete_relation_type(snapshot, self);
-        Ok(())
+        // TODO: validation (Or better, do it in type_manager)
+        type_manager.delete_relation_type(snapshot, self)
     }
 
     fn get_label<'m, Snapshot: ReadableSnapshot>(
@@ -91,6 +106,11 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
         type_manager.get_relation_type_label(snapshot, self.clone().into_owned())
     }
+}
+
+impl<'a> KindAPI<'a> for RelationType<'a> {
+    type AnnotationType = RelationTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Relation;
 }
 
 impl<'a> ObjectTypeAPI<'a> for RelationType<'a> {
@@ -117,7 +137,7 @@ impl<'a> RelationType<'a> {
         if self.is_root(snapshot, type_manager)? {
             Err(ConceptWriteError::RootModification)
         } else {
-            Ok(type_manager.storage_set_label(snapshot, self.clone().into_owned(), label))
+            type_manager.set_label(snapshot, self.clone().into_owned(), label)
         }
     }
 
@@ -135,8 +155,7 @@ impl<'a> RelationType<'a> {
         type_manager: &TypeManager<Snapshot>,
         supertype: RelationType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.storage_set_supertype(snapshot, self.clone().into_owned(), supertype);
-        Ok(())
+        type_manager.set_relation_type_supertype(snapshot, self.clone().into_owned(), supertype)
     }
 
     pub fn get_supertypes<'m, Snapshot: ReadableSnapshot>(
@@ -179,7 +198,7 @@ impl<'a> RelationType<'a> {
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
-                type_manager.storage_set_annotation_abstract(snapshot, self.clone().into_owned())
+                type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())
             }
         };
         Ok(())
@@ -193,7 +212,7 @@ impl<'a> RelationType<'a> {
     ) {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
-                type_manager.storage_delete_annotation_abstract(snapshot, self.clone().into_owned())
+                type_manager.delete_annotation_abstract(snapshot, self.clone().into_owned())
             }
         }
     }
@@ -268,7 +287,7 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         attribute_type: AttributeType<'static>,
         ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError> {
-        type_manager.storage_set_owns(snapshot, self.clone().into_owned(), attribute_type.clone(), ordering);
+        type_manager.set_owns(snapshot, self.clone().into_owned(), attribute_type.clone(), ordering);
         Ok(Owns::new(ObjectType::Relation(self.clone().into_owned()), attribute_type))
     }
 
@@ -279,7 +298,7 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: error if not owned?
-        type_manager.storage_delete_owns(snapshot, self.clone().into_owned(), attribute_type);
+        type_manager.delete_owns(snapshot, self.clone().into_owned(), attribute_type);
         Ok(())
     }
 
@@ -318,8 +337,7 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         role_type: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError> {
         // TODO: decide behaviour (ok or error) if already playing
-        type_manager.storage_set_plays(snapshot, self.clone().into_owned(), role_type.clone());
-        Ok(Plays::new(ObjectType::Relation(self.clone().into_owned()), role_type))
+        type_manager.set_plays(snapshot, self.clone().into_owned(), role_type.clone())
     }
 
     fn delete_plays<Snapshot: WritableSnapshot>(
@@ -329,8 +347,7 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: error if not playing?
-        type_manager.storage_delete_plays(snapshot, self.clone().into_owned(), role_type);
-        Ok(())
+        type_manager.delete_plays(snapshot, self.clone().into_owned(), role_type)
     }
 
     fn get_plays<'m, Snapshot: ReadableSnapshot>(
@@ -382,7 +399,7 @@ impl From<Annotation> for RelationTypeAnnotation {
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_to_relation_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> RelationType<'_> {
-    RelationType::new(new_vertex_relation_type(storage_key.into_bytes()))
+    RelationType::read_from(storage_key.into_bytes())
 }
 
 concept_iterator!(RelationTypeIterator, RelationType, storage_key_to_relation_type);

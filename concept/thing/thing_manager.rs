@@ -29,6 +29,7 @@ use encoding::{
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use regex::Regex;
+use encoding::graph::type_::vertex::TypeVertexEncoding;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_range::KeyRange,

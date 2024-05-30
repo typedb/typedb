@@ -6,7 +6,12 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::byte_array::ByteArray;
+use bytes::byte_reference::ByteReference;
+use bytes::Bytes;
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use crate::graph::type_::property::TypeVertexPropertyEncoding;
+use crate::layout::infix::Infix;
 
 use crate::{graph::definition::definition_key::DefinitionKey, AsBytes};
 
@@ -134,5 +139,19 @@ impl ValueTypeBytes {
 
     pub fn into_bytes(self) -> [u8; Self::LENGTH] {
         self.bytes
+    }
+}
+
+impl TypeVertexPropertyEncoding<'static> for ValueType {
+    const INFIX: Infix = Infix::PropertyValueType;
+
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
+        let mut bytes : [u8; ValueTypeBytes::LENGTH] = [0; ValueTypeBytes::LENGTH];
+        bytes.copy_from_slice(&value.bytes()[0..ValueTypeBytes::LENGTH]);
+        ValueTypeBytes::new(bytes).to_value_type()
+    }
+
+    fn to_value_bytes(self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::Array(ByteArray::copy(&ValueTypeBytes::build(&self).into_bytes())))
     }
 }

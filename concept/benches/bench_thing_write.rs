@@ -17,21 +17,22 @@ use std::{
 
 use concept::{
     thing::{object::ObjectAPI, thing_manager::ThingManager, value::Value},
-    type_::{type_cache::TypeCache, type_manager::TypeManager, Ordering, OwnerAPI},
+    type_::{type_manager::TypeManager, Ordering, OwnerAPI},
 };
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use durability::wal::WAL;
 use encoding::{
+    EncodingKeyspace,
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
     value::{label::Label, value_type::ValueType},
-    EncodingKeyspace,
 };
 use pprof::ProfilerGuard;
 use rand::distributions::{Alphanumeric, DistString};
+use concept::type_::type_manager::type_cache::TypeCache;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, WriteSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, WriteSnapshot},
 };
 use test_utils::{create_tmp_dir, init_logging};
 
@@ -75,9 +76,9 @@ fn create_schema(storage: &Arc<MVCCStorage<WALClient>>, type_vertex_generator: &
     {
         let type_manager = Rc::new(TypeManager::new(type_vertex_generator.clone(), None));
         let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap(), false).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long);
+        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap(), false).unwrap();
-        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String);
+        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
         let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap(), false).unwrap();
         person_type.set_owns(&mut snapshot, &type_manager, age_type, Ordering::Unordered).unwrap();
         person_type.set_owns(&mut snapshot, &type_manager, name_type, Ordering::Unordered).unwrap();

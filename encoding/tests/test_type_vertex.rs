@@ -11,13 +11,15 @@ use encoding::{
     error::EncodingError,
     graph::{
         type_::{
-            vertex::{build_vertex_entity_type, TypeID},
+            vertex::TypeID,
             vertex_generator::TypeVertexGenerator,
         },
         Typed,
     },
     AsBytes, EncodingKeyspace, Keyable,
 };
+use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding, TypeVertex};
+use encoding::layout::prefix::Prefix;
 use storage::{
     durability_client::WALClient,
     key_value::StorageKeyReference,
@@ -26,6 +28,23 @@ use storage::{
     MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
+
+pub struct MockEntityType<'a> { vertex: TypeVertex<'a> }
+
+impl<'a> TypeVertexEncoding<'a> for MockEntityType<'a> {
+    fn from_vertex(vertex: TypeVertex<'a>) -> Result<MockEntityType<'a>, EncodingError> {
+        Ok(MockEntityType { vertex })
+    }
+
+    fn into_vertex(self) -> TypeVertex<'a> {
+        self.vertex
+    }
+}
+
+impl<'a> PrefixedTypeVertexEncoding<'a> for MockEntityType<'a> {
+    const PREFIX: Prefix = Prefix::VertexEntityType;
+}
+
 
 // TODO: Update all tests with higher level APIs
 #[test]
@@ -62,7 +81,7 @@ fn entity_type_vertexes_are_reused() {
         let mut snapshot = storage.clone().open_snapshot_write();
         for i in 0..=create_till {
             if i % 2 == 0 {
-                let vertex = build_vertex_entity_type(TypeID::build(i));
+                let vertex = MockEntityType::build_from_type_id(TypeID::build(i)).vertex;
                 snapshot.delete(StorageKeyReference::new(vertex.keyspace(), vertex.bytes()).into());
                 // TODO: replace with type api call.
             }

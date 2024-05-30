@@ -5,25 +5,34 @@
  */
 
 use std::collections::{HashMap, HashSet};
-
+use std::hash::Hash;
 use bytes::byte_reference::ByteReference;
 use encoding::{
-    graph::type_::{edge::TypeEdge, vertex::TypeVertex},
+    graph::type_::vertex::TypeVertex,
     value::label::Label,
 };
 use primitive::maybe_owns::MaybeOwns;
 use serde::{Deserialize, Serialize};
+use bytes::Bytes;
+use encoding::AsBytes;
+use encoding::graph::type_::edge::TypeEdgeEncoding;
+use encoding::graph::type_::Kind;
+use encoding::graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding};
+use encoding::graph::type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding};
+use encoding::layout::infix::Infix;
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-
-use self::{annotation::AnnotationRegex, object_type::ObjectType};
+use self::object_type::ObjectType;
 use crate::{
+    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::AnnotationCardinality, attribute_type::AttributeType, owns::Owns, plays::Plays,
-        role_type::RoleType, type_manager::TypeManager,
+        attribute_type::AttributeType, owns::Owns, plays::Plays, role_type::RoleType,
+        type_manager::TypeManager,
     },
-    ConceptAPI,
 };
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use crate::type_::annotation::Annotation;
 
 pub mod annotation;
 pub mod attribute_type;
@@ -34,14 +43,18 @@ mod plays;
 mod relates;
 pub mod relation_type;
 pub mod role_type;
-pub mod type_cache;
 pub mod type_manager;
-mod type_reader;
+pub mod sub;
 
-pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
+pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone + Hash + Eq + 'a {
+    type SelfStatic: KindAPI<'static> + 'static;
+    fn new(vertex : TypeVertex<'a>) -> Self ;
+
+    fn read_from(b: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+        Self::from_bytes(b).unwrap()
+    }
+
     fn vertex(&self) -> TypeVertex<'_>;
-
-    fn into_vertex(self) -> TypeVertex<'a>;
 
     fn is_abstract<Snapshot: ReadableSnapshot>(
         &self,
@@ -60,6 +73,11 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + Sized + Clone {
         snapshot: &Snapshot,
         type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError>;
+}
+
+pub trait KindAPI<'a>: TypeAPI<'a>  + PrefixedTypeVertexEncoding<'a> {
+    type AnnotationType: Hash + Eq + From<Annotation>;
+    const ROOT_KIND: Kind;
 }
 
 pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> {
@@ -200,31 +218,55 @@ pub enum Ordering {
     Ordered,
 }
 
-pub(crate) trait IntoCanonicalTypeEdge<'a> {
-    fn as_type_edge(&self) -> TypeEdge<'static>;
+impl<'a> TypeVertexPropertyEncoding<'a> for Ordering {
+    const INFIX: Infix = Infix::PropertyOrdering;
 
-    fn into_type_edge(self) -> TypeEdge<'static>;
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Ordering {
+        bincode::deserialize(value.bytes()).unwrap()
+    }
+
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    }
 }
 
-// TODO: where do these belong?
-fn serialise_annotation_cardinality(annotation: AnnotationCardinality) -> Box<[u8]> {
-    bincode::serialize(&annotation).unwrap().into_boxed_slice()
+impl<'a> TypeEdgePropertyEncoding<'a> for Ordering {
+    const INFIX: Infix = Infix::PropertyOrdering;
+
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Ordering {
+        bincode::deserialize(value.bytes()).unwrap()
+    }
+
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    }
 }
 
-fn deserialise_annotation_cardinality(value: ByteReference<'_>) -> AnnotationCardinality {
-    bincode::deserialize(value.bytes()).unwrap()
+pub(crate) trait InterfaceImplementation<'a> : TypeEdgeEncoding<'a, From=Self::ObjectType, To=Self::InterfaceType> + Sized + Clone + Hash + Eq + 'a
+{
+    type AnnotationType;
+    type ObjectType: TypeAPI<'a>;
+    type InterfaceType: KindAPI<'a>;
+
+    fn object(&self) -> Self::ObjectType;
+
+    fn interface(&self) -> Self::InterfaceType;
+
+    fn unwrap_annotation(annotation: Self::AnnotationType) -> Annotation;
 }
 
-fn deserialise_annotation_regex(value: ByteReference<'_>) -> AnnotationRegex {
-    // TODO this .unwrap() should be handled as an error
-    // although it does indicate data corruption
-    AnnotationRegex::new(std::str::from_utf8(value.bytes()).unwrap().to_owned())
+pub struct EdgeOverride<EDGE: TypeEdgeEncoding<'static>> {
+    overridden: EDGE, // TODO: Consider storing EDGE::To instead
 }
 
-fn serialise_ordering(ordering: Ordering) -> Box<[u8]> {
-    bincode::serialize(&ordering).unwrap().into_boxed_slice()
-}
+impl<'a, EDGE: TypeEdgeEncoding<'static>> TypeEdgePropertyEncoding<'a> for EdgeOverride<EDGE> {
+    const INFIX: Infix = Infix::PropertyOverride;
 
-fn deserialise_ordering(value: ByteReference<'_>) -> Ordering {
-    bincode::deserialize(value.bytes()).unwrap()
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
+        Self { overridden: EDGE::decode_canonical_edge(Bytes::Reference(value).into_owned()) }
+    }
+
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::Reference(self.overridden.to_canonical_type_edge().bytes()).into_owned())
+    }
 }

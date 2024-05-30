@@ -4,14 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::{build_edge_plays, TypeEdge};
+use encoding::graph::type_::edge::TypeEdgeEncoding;
+use encoding::layout::prefix::Prefix;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::ConceptReadError,
-    type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, IntoCanonicalTypeEdge, TypeAPI},
+    type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, TypeAPI},
 };
+use crate::error::ConceptWriteError;
+use crate::type_::annotation::Annotation;
+use crate::type_::InterfaceImplementation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Plays<'a> {
@@ -45,9 +49,9 @@ impl<'a> Plays<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         overridden: Plays<'static>,
-    ) {
+    ) -> Result<(), ConceptWriteError>{
         // TODO: Validation
-        type_manager.storage_set_plays_overridden(snapshot, self.clone().into_owned(), overridden)
+        type_manager.set_plays_overridden(snapshot, self.clone().into_owned(), overridden)
     }
 
     fn into_owned(self) -> Plays<'static> {
@@ -55,12 +59,43 @@ impl<'a> Plays<'a> {
     }
 }
 
-impl<'a> IntoCanonicalTypeEdge<'a> for Plays<'a> {
-    fn as_type_edge(&self) -> TypeEdge<'static> {
-        build_edge_plays(self.player.vertex().clone().into_owned(), self.role.vertex().clone().into_owned())
+impl<'a> TypeEdgeEncoding<'a> for Plays<'a> {
+    const CANONICAL_PREFIX: Prefix = Prefix::EdgePlays;
+    const REVERSE_PREFIX: Prefix = Prefix::EdgePlaysReverse;
+    type From = ObjectType<'a>;
+    type To = RoleType<'a>;
+
+    fn from_vertices(player: ObjectType<'a>, role: RoleType<'a>) -> Self {
+        Plays { player, role }
     }
 
-    fn into_type_edge(self) -> TypeEdge<'static> {
-        build_edge_plays(self.player.vertex().clone().into_owned(), self.role.vertex().clone().into_owned())
+    fn canonical_from(&self) -> Self::From {
+        self.player()
+    }
+
+    fn canonical_to(&self) -> Self::To {
+        self.role()
+    }
+}
+
+
+// Can plays not be annotated?
+pub struct __PlaceholderPlaysAnnotation {}
+
+impl<'a> InterfaceImplementation<'a> for Plays<'a> {
+    type AnnotationType = __PlaceholderPlaysAnnotation;
+    type ObjectType = ObjectType<'a>;
+    type InterfaceType = RoleType<'a>;
+
+    fn object(&self) -> ObjectType<'a> {
+        self.player.clone()
+    }
+
+    fn interface(&self) -> RoleType<'a> {
+        self.role.clone()
+    }
+
+    fn unwrap_annotation(annotation: __PlaceholderPlaysAnnotation) -> Annotation {
+        unreachable!();
     }
 }

@@ -4,15 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use encoding::{
-    graph::type_::vertex::{new_vertex_role_type, TypeVertex},
+    graph::type_::vertex::TypeVertex,
     layout::prefix::Prefix,
     value::label::Label,
     Prefixed,
 };
 use lending_iterator::higher_order::Hkt;
+use encoding::error::EncodingError;
+use encoding::error::EncodingError::UnexpectedPrefix;
+use encoding::graph::type_::Kind;
+use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding};
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -32,6 +36,9 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::object_type::ObjectType;
+use crate::type_::KindAPI;
+use crate::type_::owns::Owns;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -39,9 +46,20 @@ pub struct RoleType<'a> {
 }
 
 impl<'a> RoleType<'a> {
-    pub fn new(vertex: TypeVertex<'a>) -> RoleType<'_> {
-        debug_assert_eq!(vertex.prefix(), Prefix::VertexRoleType);
-        RoleType { vertex }
+    pub fn get_players<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
+        type_manager.get_plays_for_role_type(snapshot, self.clone().into_owned())
+    }
+
+    pub fn get_players_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Plays<'static>>>, ConceptReadError> {
+        type_manager.get_plays_for_role_type_transitive(snapshot, self.clone().into_owned())
     }
 }
 
@@ -51,15 +69,34 @@ impl Hkt for RoleType<'static> {
 
 impl<'a> ConceptAPI<'a> for RoleType<'a> {}
 
-impl<'a> TypeAPI<'a> for RoleType<'a> {
-    fn vertex(&self) -> TypeVertex<'_> {
-        self.vertex.as_reference()
+impl<'a> PrefixedTypeVertexEncoding<'a> for RoleType<'a> {
+    const PREFIX: Prefix = Prefix::VertexRoleType;
+}
+
+impl<'a> TypeVertexEncoding<'a> for RoleType<'a> {
+    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
+        debug_assert_eq!(vertex.prefix(), Prefix::VertexRoleType);
+        if vertex.prefix() != Prefix::VertexRoleType {
+            Err(UnexpectedPrefix { expected_prefix: Prefix::VertexRoleType, actual_prefix: vertex.prefix() })
+        } else {
+            Ok(RoleType { vertex })
+        }
     }
 
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
     }
+}
 
+impl<'a> TypeAPI<'a> for RoleType<'a> {
+    type SelfStatic = RoleType<'static>;
+
+    fn new(vertex: TypeVertex<'a>) -> RoleType<'_> {
+        Self::from_vertex(vertex).unwrap()
+    }
+    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+        self.vertex.as_reference()
+    }
     fn is_abstract<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
@@ -74,9 +111,8 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: validation
-        type_manager.delete_role_type(snapshot, self);
-        Ok(())
+        // TODO: validation (Or better it in type_manager)
+        type_manager.delete_role_type(snapshot, self)
     }
 
     fn get_label<'m, Snapshot: ReadableSnapshot>(
@@ -122,8 +158,7 @@ impl<'a> RoleType<'a> {
         type_manager: &TypeManager<Snapshot>,
         supertype: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.storage_set_supertype(snapshot, self.clone().into_owned(), supertype);
-        Ok(())
+        type_manager.set_role_type_supertype(snapshot, self.clone().into_owned(), supertype)
     }
 
     pub fn get_supertypes<'m, Snapshot: ReadableSnapshot>(
@@ -183,13 +218,13 @@ impl<'a> RoleType<'a> {
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
-                type_manager.storage_set_annotation_abstract(snapshot, self.clone().into_owned())
+                type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())
             }
             RoleTypeAnnotation::Distinct(_) => {
-                type_manager.storage_set_annotation_distinct(snapshot, self.clone().into_owned())
+                type_manager.set_annotation_distinct(snapshot, self.clone().into_owned())
             }
             RoleTypeAnnotation::Cardinality(cardinality) => {
-                type_manager.storage_set_annotation_cardinality(snapshot, self.clone().into_owned(), cardinality)
+                type_manager.set_annotation_cardinality(snapshot, self.clone().into_owned(), cardinality)
             }
         };
         Ok(())
@@ -203,13 +238,13 @@ impl<'a> RoleType<'a> {
     ) {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
-                type_manager.storage_delete_annotation_abstract(snapshot, self.clone().into_owned())
+                type_manager.delete_annotation_abstract(snapshot, self.clone().into_owned())
             }
             RoleTypeAnnotation::Distinct(_) => {
-                type_manager.storage_delete_annotation_distinct(snapshot, self.clone().into_owned())
+                type_manager.delete_annotation_distinct(snapshot, self.clone().into_owned())
             }
             RoleTypeAnnotation::Cardinality(_) => {
-                type_manager.storage_delete_annotation_cardinality(snapshot, self.clone().into_owned())
+                type_manager.delete_annotation_cardinality(snapshot, self.clone().into_owned())
             }
         }
     }
@@ -223,14 +258,19 @@ impl<'a> RoleType<'a> {
     }
 }
 
+impl<'a> KindAPI<'a> for RoleType<'a> {
+    type AnnotationType = RoleTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Role;
+}
+
 // --- Played API ---
 impl<'a> RoleType<'a> {
-    fn get_plays<'m, Snapshot: ReadableSnapshot>(
+    pub fn get_plays<'m, Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        _type_manager: &'m TypeManager<Snapshot>,
-    ) -> MaybeOwns<'m, HashSet<Plays<'static>>> {
-        todo!()
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
+        type_manager.get_plays_for_role_type(snapshot, self.clone().into_owned())
     }
 }
 
@@ -264,7 +304,7 @@ impl From<Annotation> for RoleTypeAnnotation {
 
 // TODO: can we inline this into the macro invocation?
 fn storage_key_to_role_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> RoleType<'_> {
-    RoleType::new(new_vertex_role_type(storage_key.into_bytes()))
+    RoleType::read_from(storage_key.into_bytes())
 }
 
 concept_iterator!(RoleTypeIterator, RoleType, storage_key_to_role_type);

@@ -7,13 +7,15 @@
 use std::{error::Error, fmt, str::Utf8Error};
 
 use storage::snapshot::iterator::SnapshotIteratorError;
+use crate::layout::prefix::Prefix;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum EncodingError {
     UFT8Decode { bytes: Box<[u8]>, source: Utf8Error },
     TypeIDAllocate { source: std::sync::Arc<SnapshotIteratorError> },
     ExistingTypesRead { source: std::sync::Arc<SnapshotIteratorError> },
     TypeIDsExhausted { kind: crate::graph::type_::Kind },
+    UnexpectedPrefix { expected_prefix: Prefix, actual_prefix: Prefix}
 }
 
 impl fmt::Display for EncodingError {
@@ -29,6 +31,7 @@ impl Error for EncodingError {
             Self::TypeIDAllocate { source, .. } => Some(source),
             Self::ExistingTypesRead { source, .. } => Some(source),
             Self::TypeIDsExhausted { .. } => None,
+            EncodingError::UnexpectedPrefix { .. } => None,
         }
     }
 }

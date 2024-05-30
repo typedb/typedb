@@ -7,7 +7,7 @@
 use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::key_value::StorageKey;
 
 use crate::{
@@ -18,86 +18,13 @@ use crate::{
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::graph::type_::edge::TypeEdgeEncoding;
+use crate::graph::type_::vertex::TypeVertexEncoding;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct TypeVertexProperty<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
-
-macro_rules! type_vertex_property_constructors {
-    ($new_name:ident, $build_name:ident, $is_name:ident, InfixType::$infix:ident) => {
-        pub fn $new_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> TypeVertexProperty<'_> {
-            let vertex = TypeVertexProperty::new(bytes);
-            debug_assert_eq!(vertex.infix(), Infix::$infix);
-            vertex
-        }
-
-        pub fn $build_name(type_vertex: TypeVertex<'_>) -> TypeVertexProperty<'static> {
-            TypeVertexProperty::build(type_vertex, Infix::$infix)
-        }
-
-        pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-            Prefix::from_prefix_id(PrefixID::new([bytes.bytes()[0]])) == TypeVertexProperty::PREFIX
-                && $new_name(bytes).infix() == Infix::$infix
-        }
-    };
-}
-
-type_vertex_property_constructors!(
-    new_property_type_label,
-    build_property_type_label,
-    is_property_type_label_prefix,
-    InfixType::PropertyLabel
-);
-
-type_vertex_property_constructors!(
-    new_property_type_value_type,
-    build_property_type_value_type,
-    is_property_type_value_type,
-    InfixType::PropertyValueType
-);
-
-type_vertex_property_constructors!(
-    new_property_type_annotation_abstract,
-    build_property_type_annotation_abstract,
-    is_property_type_annotation_abstract,
-    InfixType::PropertyAnnotationAbstract
-);
-
-type_vertex_property_constructors!(
-    new_property_type_annotation_distinct,
-    build_property_type_annotation_distinct,
-    is_property_type_annotation_distinct,
-    InfixType::PropertyAnnotationDistinct
-);
-
-type_vertex_property_constructors!(
-    new_property_type_annotation_independent,
-    build_property_type_annotation_independent,
-    is_property_type_annotation_independent,
-    InfixType::PropertyAnnotationIndependent
-);
-
-type_vertex_property_constructors!(
-    new_property_type_annotation_cardinality,
-    build_property_type_annotation_cardinality,
-    is_property_type_annotation_cardinality,
-    InfixType::PropertyAnnotationCardinality
-);
-
-type_vertex_property_constructors!(
-    new_property_type_annotation_regex,
-    build_property_type_annotation_regex,
-    is_property_type_annotation_regex,
-    InfixType::PropertyAnnotationRegex
-);
-
-type_vertex_property_constructors!(
-    new_property_type_ordering,
-    build_property_type_ordering,
-    is_property_type_ordering,
-    InfixType::PropertyOrdering
-);
 
 impl<'a> TypeVertexProperty<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
@@ -196,71 +123,27 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {}
 
+pub trait TypeVertexPropertyEncoding<'a> {
+    const INFIX: Infix;
+
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self;
+
+    fn build_key<'b>(vertex: impl TypeVertexEncoding<'b>) -> TypeVertexProperty<'b> {
+        TypeVertexProperty::build(vertex.into_vertex(), Self::INFIX)
+    }
+
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
+    fn is_decodable_from(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+        key_bytes.length() == TypeVertexProperty::LENGTH_NO_SUFFIX
+            && TypeVertexProperty::new(key_bytes).infix() == Self::INFIX
+    }
+}
+
+
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct TypeEdgeProperty<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
-
-macro_rules! type_edge_property_constructors {
-    ($new_name:ident, $build_name:ident, $is_name:ident, InfixType::$infix:ident) => {
-        pub fn $new_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> TypeEdgeProperty<'_> {
-            let edge = TypeEdgeProperty::new(bytes);
-            debug_assert_eq!(edge.infix(), Infix::$infix);
-            edge
-        }
-
-        pub fn $build_name(type_edge: TypeEdge<'_>) -> TypeEdgeProperty<'static> {
-            TypeEdgeProperty::build(type_edge, Infix::$infix)
-        }
-
-        pub fn $is_name(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-            bytes.length() == TypeEdgeProperty::LENGTH_NO_SUFFIX
-                && TypeEdgeProperty::new(bytes).infix() == Infix::$infix
-        }
-    };
-}
-
-type_edge_property_constructors!(
-    new_property_type_edge_annotation_distinct,
-    build_property_type_edge_annotation_distinct,
-    is_property_type_edge_annotation_distinct,
-    InfixType::PropertyAnnotationDistinct
-);
-
-type_edge_property_constructors!(
-    new_property_type_edge_annotation_unique,
-    build_property_type_edge_annotation_unique,
-    is_property_type_edge_annotation_unique,
-    InfixType::PropertyAnnotationUnique
-);
-
-type_edge_property_constructors!(
-    new_property_type_edge_annotation_key,
-    build_property_type_edge_annotation_key,
-    is_property_type_edge_annotation_key,
-    InfixType::PropertyAnnotationKey
-);
-
-type_edge_property_constructors!(
-    new_property_type_edge_annotation_cardinality,
-    build_property_type_edge_annotation_cardinality,
-    is_property_type_edge_annotation_cardinality,
-    InfixType::PropertyAnnotationCardinality
-);
-
-type_edge_property_constructors!(
-    new_property_type_edge_override,
-    build_property_type_edge_override,
-    is_property_type_edge_override,
-    InfixType::PropertyOverride
-);
-
-type_edge_property_constructors!(
-    new_property_type_edge_ordering,
-    build_property_type_edge_ordering,
-    is_property_type_edge_ordering,
-    InfixType::PropertyOrdering
-);
 
 impl<'a> TypeEdgeProperty<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
@@ -358,3 +241,20 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {
 }
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {}
+
+pub trait TypeEdgePropertyEncoding<'a> : Sized {
+
+    const INFIX: Infix;
+
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self;
+
+    fn build_key<'b>(edge: impl TypeEdgeEncoding<'b>) -> TypeEdgeProperty<'b> {
+        TypeEdgeProperty::build(edge.to_canonical_type_edge(), Self::INFIX)
+    }
+
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
+    fn is_decodable_from(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+        key_bytes.length() == TypeEdgeProperty::LENGTH_NO_SUFFIX
+            && TypeEdgeProperty::new(key_bytes).infix() == Self::INFIX
+    }
+}

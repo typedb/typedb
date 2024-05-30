@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use encoding::{
     graph::type_::vertex::TypeVertex,
@@ -12,6 +12,11 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     Prefixed,
 };
+use encoding::error::EncodingError;
+use encoding::error::EncodingError::UnexpectedPrefix;
+use encoding::graph::type_::Kind;
+use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding};
+use encoding::layout::prefix::Prefix::{VertexAttributeType};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -26,34 +31,46 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::object_type::ObjectType;
+use crate::type_::KindAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
     vertex: TypeVertex<'a>,
 }
 
-impl<'a> AttributeType<'a> {
-    pub fn new(vertex: TypeVertex<'a>) -> AttributeType<'_> {
-        if vertex.prefix() != Prefix::VertexAttributeType {
-            panic!(
-                "Type IID prefix was expected to be Prefix::AttributeType ({:?}) but was {:?}",
-                Prefix::VertexAttributeType,
-                vertex.prefix()
-            )
-        }
-        AttributeType { vertex }
-    }
-}
+impl<'a> AttributeType<'a> { }
 
 impl<'a> ConceptAPI<'a> for AttributeType<'a> {}
 
-impl<'a> TypeAPI<'a> for AttributeType<'a> {
-    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
-        self.vertex.as_reference()
+
+impl<'a> PrefixedTypeVertexEncoding<'a> for AttributeType<'a> {
+    const PREFIX: Prefix = VertexAttributeType;
+}
+impl<'a> TypeVertexEncoding<'a> for AttributeType<'a> {
+    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
+        debug_assert!(Self::PREFIX == VertexAttributeType);
+        if vertex.prefix() != Prefix::VertexAttributeType {
+            Err(UnexpectedPrefix { expected_prefix: Prefix::VertexAttributeType, actual_prefix: vertex.prefix() })
+        } else {
+            Ok(AttributeType { vertex })
+        }
     }
 
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
+    }
+}
+
+impl<'a> TypeAPI<'a> for AttributeType<'a> {
+    type SelfStatic = AttributeType<'static>;
+
+    fn new(vertex: TypeVertex<'a>) -> AttributeType<'a> {
+        Self::from_vertex(vertex).unwrap()
+    }
+
+    fn vertex<'this>(&'this self) -> TypeVertex<'this> {
+        self.vertex.as_reference()
     }
 
     fn is_abstract<Snapshot: ReadableSnapshot>(
@@ -71,8 +88,7 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
         // TODO: Validation
-        type_manager.delete_attribute_type(snapshot, self);
-        Ok(())
+        type_manager.delete_attribute_type(snapshot, self)
     }
 
     fn get_label<'m, Snapshot: ReadableSnapshot>(
@@ -82,6 +98,11 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
         type_manager.get_attribute_type_label(snapshot, self.clone().into_owned())
     }
+}
+
+impl<'a> KindAPI<'a> for AttributeType<'a> {
+    type AnnotationType = AttributeTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Attribute;
 }
 
 impl<'a> AttributeType<'a> {
@@ -98,8 +119,8 @@ impl<'a> AttributeType<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         value_type: ValueType,
-    ) {
-        type_manager.storage_set_value_type(snapshot, self.clone().into_owned(), value_type)
+    ) -> Result<(), ConceptWriteError> {
+        type_manager.set_value_type(snapshot, self.clone().into_owned(), value_type)
     }
 
     pub fn get_value_type<Snapshot: ReadableSnapshot>(
@@ -117,9 +138,9 @@ impl<'a> AttributeType<'a> {
         label: &Label<'_>,
     ) -> Result<(), ConceptWriteError> {
         if self.is_root(snapshot, type_manager)? {
-            Err(ConceptWriteError::RootModification)
+            Err(ConceptWriteError::RootModification) // TODO: Move into TypeManager?
         } else {
-            Ok(type_manager.storage_set_label(snapshot, self.clone().into_owned(), label))
+            type_manager.set_label(snapshot, self.clone().into_owned(), label)
         }
     }
 
@@ -137,8 +158,7 @@ impl<'a> AttributeType<'a> {
         type_manager: &TypeManager<Snapshot>,
         supertype: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        type_manager.storage_set_supertype(snapshot, self.clone().into_owned(), supertype);
-        Ok(())
+        type_manager.set_attribute_type_supertype(snapshot, self.clone().into_owned(), supertype)
     }
 
     pub fn get_supertypes<'m, Snapshot: ReadableSnapshot>(
@@ -191,13 +211,13 @@ impl<'a> AttributeType<'a> {
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.storage_set_annotation_abstract(snapshot, self.clone().into_owned())
+                type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.storage_set_annotation_independent(snapshot, self.clone().into_owned())
+                type_manager.set_annotation_independent(snapshot, self.clone().into_owned())
             }
             AttributeTypeAnnotation::Regex(regex) => {
-                type_manager.storage_set_annotation_regex(snapshot, self.clone().into_owned(), regex)
+                type_manager.set_annotation_regex(snapshot, self.clone().into_owned(), regex)
             }
         };
         Ok(())
@@ -211,13 +231,13 @@ impl<'a> AttributeType<'a> {
     ) {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.storage_delete_annotation_abstract(snapshot, self.clone().into_owned())
+                type_manager.delete_annotation_abstract(snapshot, self.clone().into_owned())
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.storage_delete_annotation_independent(snapshot, self.clone().into_owned())
+                type_manager.delete_annotation_independent(snapshot, self.clone().into_owned())
             }
-            AttributeTypeAnnotation::Regex(regex) => {
-                type_manager.storage_delete_annotation_regex(snapshot, self.clone().into_owned(), regex)
+            AttributeTypeAnnotation::Regex(_) => {
+                type_manager.delete_annotation_regex(snapshot, self.clone().into_owned())
             }
         }
     }
@@ -229,15 +249,25 @@ impl<'a> AttributeType<'a> {
 
 // --- Owned API ---
 impl<'a> AttributeType<'a> {
-    fn get_owns<'m, Snapshot: ReadableSnapshot>(
+    pub fn get_owner_owns<'m, Snapshot: ReadableSnapshot>(
         &self,
-        snapshot: Snapshot,
-        _type_manager: &'m TypeManager<Snapshot>,
-    ) -> MaybeOwns<'m, HashSet<Owns<'static>>> {
-        todo!()
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_for_attribute(snapshot, self.clone().into_owned())
     }
 
-    fn get_owns_owners<Snapshot: ReadableSnapshot>(&self) {
+    pub fn get_owners_transitive<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager<Snapshot>,
+    ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owners_for_attribute_transitive(snapshot, self.clone().into_owned())
+    }
+
+    fn get_owns_owners<Snapshot: ReadableSnapshot>(&self)
+    {
+        // TODO: Why not just have owns?
         todo!()
     }
 }

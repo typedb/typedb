@@ -35,12 +35,19 @@ impl MayError {
     pub fn check<T: fmt::Debug, E: fmt::Debug>(&self, res: &Result<T, E>) {
         match self {
             MayError::False => {
-                res.as_ref().unwrap();
+                assert!(res.as_ref().is_ok());
             }
             MayError::True => {
-                res.as_ref().unwrap_err();
+                assert!(res.as_ref().is_err());
             }
         };
+    }
+
+    pub fn expects_error(&self) -> bool {
+        match self {
+            MayError::True => true,
+            MayError::False => false,
+        }
     }
 }
 
@@ -122,7 +129,8 @@ impl ContainsOrDoesnt {
     pub fn check<T: PartialEq + fmt::Debug>(&self, expected: &[T], actual: &[T]) {
         let expected_contains = self.expected_contains();
         for expected_item in expected {
-            assert_eq!(expected_contains, actual.contains(expected_item))
+            assert_eq!(expected_contains, actual.contains(expected_item),
+                       "{:?} {} {:?} ", actual, if expected_contains { "contains" } else { "does not contain" }, expected);
         }
     }
 

@@ -7,10 +7,11 @@
 use std::collections::HashSet;
 
 use encoding::{
-    graph::{thing::vertex_object::ObjectVertex, type_::vertex::build_vertex_entity_type, Typed},
+    graph::{thing::vertex_object::ObjectVertex, Typed},
     layout::prefix::Prefix,
     AsBytes, Keyable, Prefixed,
 };
+use encoding::graph::type_::vertex::PrefixedTypeVertexEncoding;
 use iterator::Collector;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -30,7 +31,6 @@ use crate::{
     type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
-
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Entity<'a> {
     vertex: ObjectVertex<'a>,
@@ -43,7 +43,7 @@ impl<'a> Entity<'a> {
     }
 
     pub fn type_(&self) -> EntityType<'static> {
-        EntityType::new(build_vertex_entity_type(self.vertex.type_id_()))
+        EntityType::build_from_type_id(self.vertex.type_id_())
     }
 
     pub fn as_reference(&self) -> Entity<'_> {

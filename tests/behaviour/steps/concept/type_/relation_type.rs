@@ -5,6 +5,7 @@
  */
 
 use ::concept::type_::Ordering;
+use concept::type_::object_type::ObjectType;
 use concept::type_::TypeAPI;
 use cucumber::gherkin::Step;
 use itertools::Itertools;
@@ -16,6 +17,7 @@ use crate::{
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
+use crate::params::ExistsOrDoesnt;
 
 #[apply(generic_step)]
 #[step(expr = "relation\\({type_label}\\) create role: {type_label}(; ){may_error}")]
@@ -106,13 +108,13 @@ pub async fn get_declared_roles_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) exists: {boolean}")]
-pub async fn get_role_exists(context: &mut Context, type_label: Label, role_label: Label, exists: Boolean) {
+#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) {exists_or_doesnt}")]
+pub async fn get_role_exists(context: &mut Context, type_label: Label, role_label: Label, exists: ExistsOrDoesnt) {
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
         let role_opt =
             relation.get_relates_role(&tx.snapshot, &tx.type_manager, role_label.to_typedb().name.as_str()).unwrap();
-        exists.check(role_opt.is_some());
+        exists.check(&role_opt, &format!("role {}:{}", type_label.to_typedb(), role_label.to_typedb()));
     });
 }
 
@@ -173,6 +175,34 @@ pub async fn type_get_supertype(
 }
 
 #[apply(generic_step)]
+#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) get supertypes {contains_or_doesnt}:")]
+pub async fn get_supertypes_contain(
+    context: &mut Context,
+    relation_label: Label,
+    role_label: Label,
+    contains: ContainsOrDoesnt,
+    step: &Step,
+) {
+    let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
+    with_read_tx!(context, |tx| {
+        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
+        let role = tx
+            .type_manager
+            .resolve_relates(&tx.snapshot, relation, role_label.to_typedb().name().as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        let supertype_labels = role
+            .get_supertypes(&tx.snapshot, &tx.type_manager)
+            .unwrap()
+            .iter()
+            .map(|supertype| supertype.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
+            .collect_vec();
+        contains.check(&expected_labels, &supertype_labels);
+    });
+}
+
+#[apply(generic_step)]
 #[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) get subtypes {contains_or_doesnt}:")]
 pub async fn get_subtypes_contain(
     context: &mut Context,
@@ -201,6 +231,31 @@ pub async fn get_subtypes_contain(
 }
 
 #[apply(generic_step)]
+#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) get subtypes is empty")]
+pub async fn get_subtypes_is_empty(
+    context: &mut Context,
+    relation_label: Label,
+    role_label: Label,
+) {
+    with_read_tx!(context, |tx| {
+        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
+        let role = tx
+            .type_manager
+            .resolve_relates(&tx.snapshot, relation, role_label.to_typedb().name().as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        let subtype_labels = role
+            .get_subtypes_transitive(&tx.snapshot, &tx.type_manager)
+            .unwrap()
+            .iter()
+            .map(|subtype| subtype.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned())
+            .collect_vec();
+        assert!(subtype_labels.is_empty(), "{:?} is not empty", subtype_labels);
+    });
+}
+
+#[apply(generic_step)]
 #[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) set name: {type_label}")]
 pub async fn type_set_label(context: &mut Context, relation_label: Label, role_label: Label, to_label: Label) {
     with_schema_tx!(context, |tx| {
@@ -216,12 +271,12 @@ pub async fn type_set_label(context: &mut Context, relation_label: Label, role_l
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get overridden role\\({type_label}\\) exists: {boolean}")]
+#[step(expr = "relation\\({type_label}\\) get overridden role\\({type_label}\\) {exists_or_doesnt}")]
 pub async fn get_overridden_role_exists(
     context: &mut Context,
     relation_label: Label,
     role_label: Label,
-    exists: Boolean,
+    exists: ExistsOrDoesnt,
 ) {
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
@@ -232,7 +287,7 @@ pub async fn get_overridden_role_exists(
             .unwrap()
             .role();
         let superrole_opt = role.get_supertype(&tx.snapshot, &tx.type_manager).unwrap();
-        exists.check(superrole_opt.is_some());
+        exists.check(&superrole_opt, &format!("overridden role for {}:{}", relation_label.to_typedb(), role_label.to_typedb()));
     });
 }
 
@@ -307,5 +362,33 @@ pub async fn relation_role_annotations_contain(
         let actual_contains =
             role.get_annotations(&tx.snapshot, &tx.type_manager).unwrap().contains(&annotation.into_typedb().into());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) get players {contains_or_doesnt}:")]
+pub async fn role_type_players_contain(
+    context: &mut Context,
+    relation_label: Label,
+    role_label: Label,
+    contains_or_doesnt: ContainsOrDoesnt,
+    step: &Step,
+) {
+    let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
+    with_read_tx!(context, |tx| {
+        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
+        let role = relation.get_relates_role(&tx.snapshot, &tx.type_manager, role_label.to_typedb().name().as_str()).unwrap().unwrap().role();
+        let actual_labels = role.get_plays(&tx.snapshot, &tx.type_manager).unwrap().iter()
+            .map(|plays| {
+                match plays.player() {
+                    ObjectType::Entity(entity_type) => {
+                        entity_type.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                    },
+                    ObjectType::Relation(relation_type) => {
+                        relation_type.get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned()
+                    }
+                }
+            }).collect::<Vec<String>>();
+        contains_or_doesnt.check(expected_labels.as_slice(), actual_labels.as_slice());
     });
 }

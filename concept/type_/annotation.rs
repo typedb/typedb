@@ -5,6 +5,14 @@
  */
 
 use serde::{Deserialize, Serialize};
+use bytes::byte_array::ByteArray;
+use bytes::byte_reference::ByteReference;
+use bytes::Bytes;
+use encoding::AsBytes;
+use encoding::graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding};
+use encoding::layout::infix::Infix;
+use encoding::layout::infix::Infix::{PropertyAnnotationAbstract, PropertyAnnotationDistinct, PropertyAnnotationIndependent, PropertyAnnotationKey, PropertyAnnotationUnique};
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
@@ -16,6 +24,7 @@ pub enum Annotation {
     Cardinality(AnnotationCardinality),
     Regex(AnnotationRegex),
 }
+
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationAbstract;
@@ -71,5 +80,87 @@ impl AnnotationRegex {
 
     pub fn regex(&self) -> &str {
         &self.regex
+    }
+}
+
+macro_rules! empty_type_vertex_property_encoding {
+    ($property:ident, $infix:ident) => {
+        impl<'a> TypeVertexPropertyEncoding<'a> for $property {
+            const INFIX: Infix = $infix;
+
+            fn from_value_bytes<'b>(value: ByteReference<'b>) -> $property {
+                debug_assert!(value.bytes().is_empty());
+                $property
+            }
+
+            fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+                None
+            }
+        }
+    };
+}
+
+empty_type_vertex_property_encoding!(AnnotationAbstract, PropertyAnnotationAbstract);
+empty_type_vertex_property_encoding!(AnnotationIndependent, PropertyAnnotationIndependent);
+empty_type_vertex_property_encoding!(AnnotationDistinct, PropertyAnnotationDistinct);
+
+impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationRegex {
+    const INFIX: Infix = Infix::PropertyAnnotationRegex;
+
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> AnnotationRegex {
+        // TODO this .unwrap() should be handled as an error
+        // although it does indicate data corruption
+        AnnotationRegex::new(std::str::from_utf8(value.bytes()).unwrap().to_owned())
+    }
+
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::Array(ByteArray::copy(self.regex().as_bytes())))
+    }
+}
+
+impl<'a> TypeVertexPropertyEncoding<'a> for AnnotationCardinality {
+    const INFIX: Infix = Infix::PropertyAnnotationCardinality;
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
+        // TODO this .unwrap() should be handled as an error
+        // although it does indicate data corruption
+        bincode::deserialize(value.bytes()).unwrap()
+    }
+
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    }
+}
+
+macro_rules! empty_type_edge_property_encoder {
+    ($property:ident, $infix:ident) => {
+        impl<'a> TypeEdgePropertyEncoding<'a> for $property {
+            const INFIX: Infix = $infix;
+
+            fn from_value_bytes<'b>(value: ByteReference<'b>) -> $property {
+                debug_assert!(value.bytes().is_empty());
+                $property
+            }
+
+            fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+                None
+            }
+        }
+    };
+}
+
+empty_type_edge_property_encoder!(AnnotationDistinct, PropertyAnnotationDistinct);
+empty_type_edge_property_encoder!(AnnotationKey, PropertyAnnotationKey);
+empty_type_edge_property_encoder!(AnnotationUnique, PropertyAnnotationUnique);
+
+impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationCardinality {
+    const INFIX: Infix = Infix::PropertyAnnotationCardinality;
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
+        // TODO this .unwrap() should be handled as an error
+        // although it does indicate data corruption
+        bincode::deserialize(value.bytes()).unwrap()
+    }
+
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
     }
 }

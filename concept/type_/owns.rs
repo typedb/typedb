@@ -4,9 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
+use encoding::graph::type_::edge::TypeEdgeEncoding;
+use encoding::layout::prefix::Prefix;
+use std::collections::{HashMap, HashSet};
 
-use encoding::graph::type_::edge::{build_edge_owns, TypeEdge};
+
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -17,9 +19,11 @@ use crate::{
         attribute_type::AttributeType,
         object_type::ObjectType,
         type_manager::TypeManager,
-        IntoCanonicalTypeEdge, Ordering, TypeAPI,
+        Ordering, TypeAPI,
     },
 };
+use crate::error::ConceptWriteError;
+use crate::type_::InterfaceImplementation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<'a> {
@@ -45,8 +49,8 @@ impl<'a> Owns<'a> {
         snapshot: &Snapshot,
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
-        let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains(&OwnsAnnotation::Key(AnnotationKey)))
+        let annotations = self.get_effective_annotations(snapshot, type_manager)?;
+        Ok(annotations.contains_key(&OwnsAnnotation::Key(AnnotationKey)))
     }
 
     pub fn is_unique<Snapshot: ReadableSnapshot>(
@@ -54,9 +58,9 @@ impl<'a> Owns<'a> {
         snapshot: &Snapshot,
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<bool, ConceptReadError> {
-        let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains(&OwnsAnnotation::Unique(AnnotationUnique))
-            || annotations.contains(&OwnsAnnotation::Key(AnnotationKey)))
+        let annotations = self.get_effective_annotations(snapshot, type_manager)?;
+        Ok(annotations.contains_key(&OwnsAnnotation::Unique(AnnotationUnique))
+            || annotations.contains_key(&OwnsAnnotation::Key(AnnotationKey)))
     }
 
     pub fn is_distinct<Snapshot: ReadableSnapshot>(
@@ -66,8 +70,8 @@ impl<'a> Owns<'a> {
     ) -> Result<bool, ConceptReadError> {
         let is_ordered = false; // TODO
         if is_ordered {
-            let annotations = self.get_annotations(snapshot, type_manager)?;
-            Ok(annotations.contains(&OwnsAnnotation::Distinct(AnnotationDistinct)))
+            let annotations = self.get_effective_annotations(snapshot, type_manager)?;
+            Ok(annotations.contains_key(&OwnsAnnotation::Distinct(AnnotationDistinct)))
         } else {
             Ok(true)
         }
@@ -78,8 +82,8 @@ impl<'a> Owns<'a> {
         snapshot: &Snapshot,
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<Option<AnnotationCardinality>, ConceptReadError> {
-        let annotations = self.get_annotations(snapshot, type_manager)?;
-        for annotation in &annotations {
+        let annotations = self.get_effective_annotations(snapshot, type_manager)?;
+        for annotation in annotations.keys() {
             match annotation {
                 OwnsAnnotation::Cardinality(cardinality) => return Ok(Some(*cardinality)),
                 OwnsAnnotation::Key(_) => return Ok(Some(AnnotationCardinality::new(1, Some(1)))),
@@ -103,17 +107,17 @@ impl<'a> Owns<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         overridden: Owns<'static>,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         // TODO: Validation
-        type_manager.storage_set_owns_overridden(snapshot, self.clone().into_owned(), overridden)
+        type_manager.set_owns_overridden(snapshot, self.clone().into_owned(), overridden)
     }
 
-    pub fn get_annotations<'this, Snapshot: ReadableSnapshot>(
+    pub fn get_effective_annotations<'this, Snapshot: ReadableSnapshot>(
         &'this self,
         snapshot: &Snapshot,
         type_manager: &'this TypeManager<Snapshot>,
-    ) -> Result<MaybeOwns<'this, HashSet<OwnsAnnotation>>, ConceptReadError> {
-        type_manager.get_owns_annotations(snapshot, self.clone())
+    ) -> Result<MaybeOwns<'this, HashMap<OwnsAnnotation, Owns<'static>>>, ConceptReadError> {
+        type_manager.get_owns_effective_annotations(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation<Snapshot: WritableSnapshot>(
@@ -121,15 +125,16 @@ impl<'a> Owns<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         annotation: OwnsAnnotation,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         match annotation {
-            OwnsAnnotation::Distinct(_) => type_manager.storage_set_edge_annotation_distinct(snapshot, self.clone()),
-            OwnsAnnotation::Unique(_) => type_manager.storage_set_edge_annotation_unique(snapshot, self.clone()),
-            OwnsAnnotation::Key(_) => type_manager.storage_set_edge_annotation_key(snapshot, self.clone()),
+            OwnsAnnotation::Distinct(_) => type_manager.set_edge_annotation_distinct(snapshot, self.clone()),
+            OwnsAnnotation::Key(_) => type_manager.set_edge_annotation_key(snapshot, self.clone()),
             OwnsAnnotation::Cardinality(cardinality) => {
-                type_manager.storage_set_edge_annotation_cardinality(snapshot, self.clone(), cardinality)
+                type_manager.set_edge_annotation_cardinality(snapshot, self.clone(), cardinality)
             }
+            OwnsAnnotation::Unique(_) => type_manager.set_edge_annotation_unique(snapshot, self.clone())
         }
+        Ok(()) // TODO
     }
 
     pub fn unset_annotation<Snapshot: WritableSnapshot>(
@@ -139,12 +144,13 @@ impl<'a> Owns<'a> {
         annotation: OwnsAnnotation,
     ) {
         match annotation {
-            OwnsAnnotation::Distinct(_) => type_manager.storage_unset_edge_annotation_distinct(snapshot, self.clone()),
-            OwnsAnnotation::Unique(_) => type_manager.storage_unset_edge_annotation_unique(snapshot, self.clone()),
-            OwnsAnnotation::Key(_) => type_manager.storage_unset_edge_annotation_key(snapshot, self.clone()),
+
+            OwnsAnnotation::Distinct(_) => type_manager.delete_edge_annotation_distinct(snapshot, self.clone()),
+            OwnsAnnotation::Key(_) => type_manager.delete_edge_annotation_key(snapshot, self.clone()),
             OwnsAnnotation::Cardinality(_) => {
-                type_manager.storage_unset_edge_annotation_cardinality(snapshot, self.clone())
+                type_manager.delete_edge_annotation_cardinality(snapshot, self.clone())
             }
+            OwnsAnnotation::Unique(_) => type_manager.delete_edge_annotation_unique(snapshot, self.clone())
         }
     }
 
@@ -154,7 +160,7 @@ impl<'a> Owns<'a> {
         type_manager: &TypeManager<Snapshot>,
         ordering: Ordering,
     ) {
-        type_manager.storage_set_owns_ordering(snapshot, self.clone().into_type_edge(), ordering)
+        type_manager.set_owns_ordering(snapshot, self.clone(), ordering)
     }
 
     pub fn get_ordering<Snapshot: ReadableSnapshot>(
@@ -170,13 +176,46 @@ impl<'a> Owns<'a> {
     }
 }
 
-impl<'a> IntoCanonicalTypeEdge<'a> for Owns<'a> {
-    fn as_type_edge(&self) -> TypeEdge<'static> {
-        build_edge_owns(self.owner.vertex().clone().into_owned(), self.attribute.vertex().clone().into_owned())
+impl<'a> TypeEdgeEncoding<'a> for Owns<'a> {
+    const CANONICAL_PREFIX: Prefix = Prefix::EdgeOwns;
+    const REVERSE_PREFIX: Prefix = Prefix::EdgeOwnsReverse;
+    type From = ObjectType<'a>;
+    type To = AttributeType<'a>;
+
+    fn from_vertices(from: ObjectType<'a>, to: AttributeType<'a>) -> Self {
+        Owns::new(from, to)
     }
 
-    fn into_type_edge(self) -> TypeEdge<'static> {
-        build_edge_owns(self.owner.vertex().clone().into_owned(), self.attribute.vertex().clone().into_owned())
+    fn canonical_from(&self) -> Self::From {
+        self.owner()
+    }
+
+    fn canonical_to(&self) -> Self::To {
+        self.attribute()
+    }
+}
+
+impl<'a> InterfaceImplementation<'a> for Owns<'a> {
+    type AnnotationType = OwnsAnnotation;
+    type ObjectType = ObjectType<'a>;
+    type InterfaceType = AttributeType<'a>;
+
+
+    fn object(&self) -> ObjectType<'a> {
+        self.owner.clone()
+    }
+
+    fn interface(&self) -> AttributeType<'a> {
+        self.attribute.clone()
+    }
+
+    fn unwrap_annotation(annotation: OwnsAnnotation) -> Annotation {
+        match annotation {
+            OwnsAnnotation::Distinct(distinct) => Annotation::Distinct(distinct),
+            OwnsAnnotation::Key(key) => Annotation::Key(key),
+            OwnsAnnotation::Cardinality(cardinality) => Annotation::Cardinality(cardinality),
+            OwnsAnnotation::Unique(unique) => Annotation::Unique(unique)
+        }
     }
 }
 

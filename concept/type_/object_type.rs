@@ -7,6 +7,9 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{graph::type_::vertex::TypeVertex, layout::prefix::Prefix, value::label::Label, Prefixed};
+use encoding::error::EncodingError;
+use encoding::error::EncodingError::UnexpectedPrefix;
+use encoding::graph::type_::vertex::TypeVertexEncoding;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -26,14 +29,6 @@ pub enum ObjectType<'a> {
 }
 
 impl<'a> ObjectType<'a> {
-    pub(crate) fn new(vertex: TypeVertex<'a>) -> Self {
-        match vertex.prefix() {
-            Prefix::VertexEntityType => ObjectType::Entity(EntityType::new(vertex)),
-            Prefix::VertexRelationType => ObjectType::Relation(RelationType::new(vertex)),
-            _ => unreachable!("Object type creation requires either entity type or relation type vertex."),
-        }
-    }
-
     pub fn get_supertype<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
@@ -49,6 +44,23 @@ impl<'a> ObjectType<'a> {
         match self {
             Self::Entity(entity_type) => ObjectType::Entity(entity_type.into_owned()),
             Self::Relation(relation_type) => ObjectType::Relation(relation_type.into_owned()),
+        }
+    }
+}
+
+impl<'a> TypeVertexEncoding<'a> for ObjectType<'a> {
+    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
+        match vertex.prefix() {
+            Prefix::VertexEntityType => Ok(ObjectType::Entity(EntityType::new(vertex))),
+            Prefix::VertexRelationType => Ok(ObjectType::Relation(RelationType::new(vertex))),
+            _ => Err(UnexpectedPrefix { actual_prefix: vertex.prefix(), expected_prefix: Prefix::VertexEntityType}), // TODO: That's not right. It can also be VertexRelationType
+        }
+    }
+
+    fn into_vertex(self) -> TypeVertex<'a> {
+        match self {
+            ObjectType::Entity(entity) => entity.into_vertex(),
+            ObjectType::Relation(relation) => relation.into_vertex(),
         }
     }
 }
@@ -118,6 +130,12 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
 impl<'a> ConceptAPI<'a> for ObjectType<'a> {}
 
 impl<'a> TypeAPI<'a> for ObjectType<'a> {
+    type SelfStatic = RelationType<'static>;
+
+    fn new(vertex: TypeVertex<'a>) -> Self {
+        Self::from_vertex(vertex).unwrap()
+    }
+
     fn vertex<'this>(&'this self) -> TypeVertex<'this> {
         match self {
             ObjectType::Entity(entity) => entity.vertex(),
@@ -125,12 +143,6 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
         }
     }
 
-    fn into_vertex(self) -> TypeVertex<'a> {
-        match self {
-            ObjectType::Entity(entity) => entity.into_vertex(),
-            ObjectType::Relation(relation) => relation.into_vertex(),
-        }
-    }
 
     fn is_abstract<Snapshot: ReadableSnapshot>(
         &self,

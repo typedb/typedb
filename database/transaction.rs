@@ -98,7 +98,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         let type_manager_owned = Arc::try_unwrap(self.type_manager).unwrap_or_else(|_| {
             panic!("Failed to unwrap type_manager arc");
         });
-        type_manager_owned.finalise()?;
+        type_manager_owned.finalise(&self.snapshot)?;
 
         // TODO: take lock to prevent new read transactions from opening
 

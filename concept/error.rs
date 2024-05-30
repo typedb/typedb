@@ -15,6 +15,7 @@ use crate::{
         annotation::AnnotationCardinality, attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType,
     },
 };
+use crate::type_::type_manager::validation::SchemaValidationError;
 
 #[derive(Debug)]
 pub struct ConceptError {
@@ -52,10 +53,12 @@ pub enum ConceptWriteError {
     ConceptRead {
         source: ConceptReadError,
     },
+    SchemaValidation {
+        source: SchemaValidationError
+    },
     Encoding {
         source: EncodingError,
     },
-
     ValueTypeMismatch {
         expected: Option<ValueType>,
         provided: ValueType,
@@ -113,6 +116,7 @@ impl Error for ConceptWriteError {
             Self::SnapshotIterate { source, .. } => Some(source),
             Self::ConceptRead { source } => Some(source),
             Self::Encoding { source, .. } => Some(source),
+            Self::SchemaValidation { source, .. } => Some(source),
             Self::ValueTypeMismatch { .. } => None,
             Self::RelationRoleCardinality { .. } => None,
             Self::RootModification { .. } => None,
@@ -132,6 +136,7 @@ impl From<ConceptReadError> for ConceptWriteError {
         match error {
             ConceptReadError::SnapshotGet { source } => Self::SnapshotGet { source },
             ConceptReadError::SnapshotIterate { source } => Self::SnapshotIterate { source },
+            ConceptReadError::Encoding { source, .. } => Self::Encoding { source }
         }
     }
 }
@@ -140,6 +145,7 @@ impl From<ConceptReadError> for ConceptWriteError {
 pub enum ConceptReadError {
     SnapshotGet { source: SnapshotGetError },
     SnapshotIterate { source: Arc<SnapshotIteratorError> },
+    Encoding { source: EncodingError },
 }
 
 impl fmt::Display for ConceptReadError {
@@ -153,6 +159,7 @@ impl Error for ConceptReadError {
         match self {
             Self::SnapshotGet { source, .. } => Some(source),
             Self::SnapshotIterate { source, .. } => Some(source),
+            ConceptReadError::Encoding { source, .. } => Some(source)
         }
     }
 }
