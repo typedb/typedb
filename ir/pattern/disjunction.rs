@@ -5,7 +5,7 @@
  */
 
 use std::fmt::{Display, Formatter};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 use crate::pattern::context::PatternContext;
 use crate::pattern::{Scope, ScopeId};
 use crate::pattern::variable::Variable;
@@ -24,6 +24,10 @@ impl Disjunction {
 
     pub(crate) fn variables(&self) -> Box<dyn Iterator<Item=Variable>> {
         todo!()
+    }
+
+    pub(crate) fn context(&self) -> MutexGuard<PatternContext> {
+        self.context.lock().unwrap()
     }
 }
 

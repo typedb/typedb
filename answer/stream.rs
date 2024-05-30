@@ -5,10 +5,6 @@
  */
 
 
-use crate::concept_map::ConceptMapPrototype;
+use crate::answer_map::AnswerMapPrototype;
 
 struct MapStream {}
-
-struct MapStreamPrototype {
-    map: ConceptMapPrototype,
-}

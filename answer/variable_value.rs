@@ -8,7 +8,7 @@ use concept::thing::value::Value;
 use encoding::value::value_type::ValueType;
 use crate::{Thing, Type};
 
-pub enum VariableValue<'a> {
+pub enum FunctionValue<'a> {
     Thing(Thing<'a>),
     ThingOptional(Option<Thing<'a>>),
     Value(Value<'a>),
@@ -17,15 +17,4 @@ pub enum VariableValue<'a> {
     ThingListOptional(Option<Vec<Thing<'a>>>),
     ValueList(Vec<Value<'a>>),
     ValueListOptional(Option<Vec<Value<'a>>>),
-}
-
-pub enum VariableValuePrototype {
-    Thing(Type),
-    ThingOptional(Type),
-    Value(ValueType), // TODO: what about user-structs
-    ValueOptional(ValueType),
-    ThingList(Type),
-    ThingListOptional(Type),
-    ValueList(ValueType),
-    ValueListOptional(ValueType),
 }

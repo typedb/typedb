@@ -5,7 +5,8 @@
  */
 
 use std::fmt::{Display, Formatter};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
+use std::task::Context;
 use crate::pattern::constraint::Constraints;
 use crate::pattern::context::PatternContext;
 use crate::pattern::pattern::Patterns;
@@ -54,56 +55,20 @@ impl Conjunction {
         &mut self.patterns
     }
 
+    pub(crate) fn context(&self) -> MutexGuard<PatternContext> {
+        self.context.lock().unwrap()
+    }
+
     pub fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, PatternDefinitionError> {
         self.context.lock().unwrap()
             .get_or_declare_variable_named(name, self)
     }
-
-    // pub fn add_negation(&mut self, mut negation: Negation) {
-    //     self.set_parent_variables(&mut negation);
-    //     self.negations.push(negation)
-    // }
-    //
-    // pub fn add_disjunction(&mut self, mut disjunction: Disjunction) {
-    //     for var in disjunction.variables() {
-    //         self.add_optional_var(var);
-    //     }
-    //     self.set_parent_variables(&mut disjunction);
-    //     self.disjunctions.push(disjunction)
-    // }
-    //
-    // fn set_parent_variables(&self, pattern: &mut impl Scope) {
-    //     for var in &self.declared_variables {
-    //         pattern.add_parent_variable(*var);
-    //     }
-    //     for var in &self.parent_variable {
-    //         pattern.add_parent_variable(*var);
-    //     }
-    // }
-    //
-    // fn set_child_parent_variable(&mut self, variable: Variable) {
-    //     for optional in &mut self.optionals {
-    //         optional.add_parent_variable(variable);
-    //     }
-    //     for disjunction in &mut self.disjunctions {
-    //         disjunction.add_parent_variable(variable);
-    //     }
-    //     for negation in &mut self.negations {
-    //         negation.add_parent_variable(variable);
-    //     }
-    // }
 }
 
 impl Scope for Conjunction {
     fn scope_id(&self) -> ScopeId {
         self.scope_id
     }
-
-    // fn add_parent_variable(&mut self, variable: Variable) {
-    //     self.parent_variable.insert(variable);
-    //     self.optional_variables.remove(&variable);
-    //     self.set_child_parent_variable(variable);
-    // }
 }
 
 impl Display for Conjunction {

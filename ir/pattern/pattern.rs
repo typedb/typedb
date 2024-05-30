@@ -5,7 +5,7 @@
  */
 
 use std::fmt::{Debug, Display, Formatter};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 use crate::pattern::conjunction::Conjunction;
 use crate::pattern::context::PatternContext;
 use crate::pattern::disjunction::Disjunction;
@@ -57,6 +57,24 @@ pub enum Pattern {
 }
 
 impl Pattern {
+
+    pub(crate) fn context(&self) -> MutexGuard<PatternContext> {
+        match self {
+            Pattern::Conjunction(conjunction) => {
+                conjunction.context()
+            }
+            Pattern::Disjunction(disjunction) => {
+                disjunction.context()
+            }
+            Pattern::Negation(negation) => {
+                negation.context()
+            }
+            Pattern::Optional(optional) => {
+                optional.context()
+            }
+        }
+    }
+
     fn as_conjunction(&self) -> Option<&Conjunction> {
         match self {
             Pattern::Conjunction(conjunction) => Some(conjunction),

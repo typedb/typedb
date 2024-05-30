@@ -61,6 +61,16 @@ impl Constraints {
         self.constraints.push(has.into());
         Ok(self.constraints.last().unwrap().as_has().unwrap())
     }
+
+    fn add_in_assignment_function(&mut self, assigned: Vec<Variable>, function_call: FunctionCall) -> Result<&InAssignment, PatternDefinitionError> {
+        debug_assert!(
+            assigned.iter().all(|var| self.context.lock().unwrap().is_variable_available(self.scope, *var))
+        );
+
+        let assignment = InAssignment::new(assigned, function_call);
+
+
+    }
 }
 
 impl Display for Constraints {
@@ -284,7 +294,13 @@ impl Display for ExpressionAssignment {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct InAssignment {
     variables: Vec<Variable>,
-    function: Arc<FunctionCall>,
+    function_call: FunctionCall,
+}
+
+impl InAssignment {
+    fn new(variables: Vec<Variable>, function_call: FunctionCall) -> Self {
+        Self { variables, function_call }
+    }
 }
 
 impl Display for InAssignment {

@@ -20,11 +20,8 @@ mod expression;
 mod function_call;
 pub mod context;
 
-
 trait Scope {
     fn scope_id(&self) -> ScopeId;
-
-    // fn add_parent_variable(&mut self, variable: Variable);
 }
 
 

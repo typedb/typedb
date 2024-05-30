@@ -8,13 +8,13 @@ use std::collections::HashMap;
 
 use ir::pattern::variable::Variable;
 
-use crate::variable_value::{VariableValue, VariableValuePrototype};
+use crate::{Concept, ConceptProtoype};
 
 // TODO: we could actually optimise this data structure into an array given the prototype + a index mapping
-pub struct ConceptMap<'a> {
-    map: HashMap<Variable, VariableValue<'a>>,
+pub struct AnswerMap<'a> {
+    map: HashMap<Variable, Concept<'a>>,
 }
 
-pub struct ConceptMapPrototype {
-    map: HashMap<Variable, VariableValuePrototype>,
+pub struct AnswerMapPrototype {
+    map: HashMap<Variable, ConceptProtoype>,
 }

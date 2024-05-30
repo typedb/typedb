@@ -15,6 +15,16 @@ rust_test(
     ],
 )
 
+rust_test(
+    name = "program",
+    crate_root = "prograrm.rs",
+    srcs =  ["program.rs"],
+    deps = [
+        "//ir:ir",
+    ],
+)
+
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

@@ -63,6 +63,10 @@ impl PatternContext {
         }
     }
 
+    pub(crate) fn get_variable(&self, name: &str) -> Option<Variable> {
+        self.variable_names_index.get(name).cloned()
+    }
+
     fn allocate_variable(&mut self) -> Variable {
         let variable = Variable::new(self.variable_id_allocator);
         self.variable_id_allocator += 1;

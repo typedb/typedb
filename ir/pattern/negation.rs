@@ -5,22 +5,26 @@
  */
 
 use std::fmt::{Display, Formatter};
+use std::sync::{Arc, Mutex, MutexGuard};
 use crate::pattern::{Scope, ScopeId};
+use crate::pattern::context::PatternContext;
 
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub(crate) struct Negation {
-
+    context: Arc<Mutex<PatternContext>>,
 }
 
 impl Negation {
-
+    pub(crate) fn context(&self) -> MutexGuard<PatternContext> {
+        self.context.lock().unwrap()
+    }
 }
+
 impl Scope for Negation {
     fn scope_id(&self) -> ScopeId {
         todo!()
     }
-
 }
 
 impl Display for Negation {

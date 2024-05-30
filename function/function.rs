@@ -4,9 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::variable_value::VariableValuePrototype;
 use encoding::graph::definition::definition_key::DefinitionKey;
-use ir::program::function::FunctionIR;
+use ir::program::function::{FunctionIR, FunctionValuePrototype};
 
 /// Function represents the user-defined structure:
 /// fun <name>(<args>) -> <return type> { <body> }
@@ -18,17 +17,27 @@ pub struct Function {
     arguments: Vec<FunctionArgument>,
     return_type: FunctionReturn,
 
-    // pre-compiled body
-    body_ir: FunctionIR,
+    // pre-compiled arguments, body, return
+    ir_body: FunctionIR,
 }
 
 struct FunctionArgument {
     name: String,
-    type_: VariableValuePrototype,
+    type_: FunctionValuePrototype,
 }
 
 enum FunctionReturn {
-    Stream(Vec<VariableValuePrototype>),
-    Single(VariableValuePrototype),
+    Stream(Vec<FunctionValuePrototype>),
+    Single(FunctionValuePrototype),
 }
 
+impl Function {
+
+    // TODO: receive a string, which can either come from the User or from Storage (deserialised)
+    fn new(definition_key: DefinitionKey, definition: &str) -> Self {
+        // 1. parse into TypeQL
+        // 2. extract into data structures
+        // 3. create IR & apply inference
+        todo!()
+    }
+}
