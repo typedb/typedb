@@ -42,7 +42,7 @@ checkstyle_test(
         "*",
         "thing/*",
         "type_/*",
-        "type_/type_cache/*",
+        "type_/type_manager/**/*",
     ]),
     exclude = glob([
         "Cargo.*",
