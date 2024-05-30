@@ -38,7 +38,7 @@ public class TypeDBCoreRunner implements TypeDBRunner {
     private final ProcessExecutor executor;
     private final Map<String, String> userOptions;
 
-    private static final Map<String, String> STATIC_OPTIONS = map(
+    private static final Map<String, String> OVERRIDABLE_OPTIONS = map(
             pair("--development-mode.enable", "true")
     );
 
@@ -95,11 +95,11 @@ public class TypeDBCoreRunner implements TypeDBRunner {
                 pair("--server.address", address()),
                 pair("--storage.data", dataDir.toAbsolutePath().toString())
         );
-        Map<String, String> staticOptionsWithoutOverrides = new HashMap<>(STATIC_OPTIONS);
-        userOptions.keySet().forEach(staticOptionsWithoutOverrides::remove);
+        Map<String, String> overriddenOptions = new HashMap<>(OVERRIDABLE_OPTIONS);
+        userOptions.keySet().forEach(overriddenOptions::remove);
 
         Map<String, String> options = new HashMap<>();
-        options.putAll(staticOptionsWithoutOverrides);
+        options.putAll(overriddenOptions);
         options.putAll(userOptions);
         options.putAll(dynamicOptions);
 
