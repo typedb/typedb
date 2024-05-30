@@ -80,7 +80,7 @@ public class CoreConfigParser extends Compound<CoreConfig> {
 
     @Override
     public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-        return list(server.help(path), storage.help(path), log.help(path), vaticleFactory.help(path));
+        return list(server.help(path), storage.help(path), log.help(path), vaticleFactory.help(path), developmentMode.help(path));
     }
 
     protected static Path configPathAbsolute(Path path) {
@@ -614,7 +614,9 @@ public class CoreConfigParser extends Compound<CoreConfig> {
     protected static class DevelopmentMode extends Compound<CoreConfig.DevelopmentMode> {
 
         protected static final String name = "development-mode";
-        protected static final String description = "Configure development mode for local and CI set ups.";
+        protected static final String description = "Configure development mode for testing setups. " +
+                "Note that running TypeDB in development mode will result in additional logging and may limit " +
+                "certain functionalities and overall productivity.";
 
         private static final Predefined<Boolean> enable =
                 predefined("enable", "Enable development mode.", BOOLEAN);

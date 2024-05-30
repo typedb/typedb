@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
+import static com.vaticle.typedb.common.collection.Collections.map;
+import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.tool.runner.Util.createProcessExecutor;
 import static com.vaticle.typedb.core.tool.runner.Util.findUnusedPorts;
 import static com.vaticle.typedb.core.tool.runner.Util.getServerArchiveFile;
@@ -34,14 +36,18 @@ public class TypeDBCoreRunner implements TypeDBRunner {
     private final int port;
     private StartedProcess process;
     private final ProcessExecutor executor;
-    private Map<String, String> options;
+    private final Map<String, String> userOptions;
+
+    private static final Map<String, String> STATIC_OPTIONS = map(
+            pair("--development-mode.enable", "true")
+    );
 
     public TypeDBCoreRunner() throws InterruptedException, TimeoutException, IOException {
         this(new HashMap<>());
     }
 
-    public TypeDBCoreRunner(Map<String, String> options) throws InterruptedException, TimeoutException, IOException {
-        this.options = options;
+    public TypeDBCoreRunner(Map<String, String> userOptions) throws InterruptedException, TimeoutException, IOException {
+        this.userOptions = userOptions;
         port = findUnusedPorts(1).get(0);
         System.out.println(address() + ": Constructing " + name() + " runner");
         System.out.println(address() + ": Extracting distribution archive...");
@@ -85,11 +91,16 @@ public class TypeDBCoreRunner implements TypeDBRunner {
     }
 
     private List<String> command() {
+        Map<String, String> dynamicOptions = map(
+                pair("--server.address", address()),
+                pair("--storage.data", dataDir.toAbsolutePath().toString())
+        );
+
         List<String> cmd = new ArrayList<>();
         cmd.add("server");
-        cmd.add("--server.address=" + address());
-        cmd.add("--storage.data=" + dataDir.toAbsolutePath().toString());
-        options.forEach((key, value) -> cmd.add(key + "=" + value));
+        addOptions(STATIC_OPTIONS, cmd);
+        addOptions(dynamicOptions, cmd);
+        addOptions(userOptions, cmd);
         return typeDBCommand(cmd);
     }
 
@@ -114,7 +125,6 @@ public class TypeDBCoreRunner implements TypeDBRunner {
             }
         }
     }
-
 
     @Override
     public void deleteFiles() {
@@ -142,6 +152,9 @@ public class TypeDBCoreRunner implements TypeDBRunner {
         });
     }
 
+    private void addOptions(Map<String, String> options, List<String> outArgs) {
+        options.forEach((key, value) -> outArgs.add(key + "=" + value));
+    }
 
     private void printLogs() {
         System.out.println(address() + ": ================");
