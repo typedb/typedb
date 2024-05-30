@@ -5,11 +5,13 @@
  */
 
 use std::collections::HashMap;
+use encoding::graph::definition::definition_key::DefinitionKey;
 use crate::pattern::pattern::Pattern;
 use crate::program::function::FunctionIR;
 
 struct Program {
     entry: Pattern,
     // modifiers: list of modifiers conceptually applied after the program executes
-    functions: HashMap<u64, FunctionIR>, // TODO: use function ID
+    // also: reduce operation if needed
+    functions: HashMap<DefinitionKey<'static>, FunctionIR>,
 }

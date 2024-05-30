@@ -6,5 +6,5 @@
 
 pub mod definition_key;
 pub mod definition_key_generator;
-pub mod function_bytes;
+pub mod function;
 pub mod r#struct;

@@ -10,6 +10,7 @@ package(default_visibility = [
     "//concept:__subpackages__",
     "//database:__subpackages__",
     "//function:__subpackages__",
+    "//ir:__subpackages__",
     "//tests/behaviour:__subpackages__",
 ])
 

@@ -4,7 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use encoding::graph::definition::definition_key::DefinitionKey;
+
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) struct FunctionCall {
-    function_id: FunctionId,
+    function_id: DefinitionKey<'static>,
 }

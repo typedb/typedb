@@ -5,13 +5,13 @@
  */
 
 use answer::variable_value::VariableValuePrototype;
-use encoding::graph::definition::definition::DefinitionKey;
+use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::program::function::FunctionIR;
 
 /// Function represents the user-defined structure:
 /// fun <name>(<args>) -> <return type> { <body> }
-struct Function {
-    definition_key: DefinitionKey,
+pub struct Function {
+    definition_key: DefinitionKey<'static>,
 
     // parsed representation
     name: String,

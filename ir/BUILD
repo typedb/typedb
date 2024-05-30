@@ -16,6 +16,7 @@ rust_library(
         "program/*.rs",
     ]),
     deps = [
+        "//encoding",
         "@crates//:itertools"
     ],
 )

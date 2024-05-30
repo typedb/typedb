@@ -5,5 +5,3 @@
  */
 
 
-/// Determine narrowest category per-variable
-
