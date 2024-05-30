@@ -251,7 +251,8 @@ pub trait TypeEdgePropertyEncoding<'a>: Sized {
         TypeEdgeProperty::build(edge.to_canonical_type_edge(), Self::INFIX)
     }
 
-    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>;
+
     fn is_decodable_from(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
         key_bytes.length() == TypeEdgeProperty::LENGTH_NO_SUFFIX
             && TypeEdgeProperty::new(key_bytes).infix() == Self::INFIX

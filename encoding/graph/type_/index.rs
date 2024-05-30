@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::marker::PhantomData;
 use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
@@ -14,27 +15,34 @@ use crate::{
     value::{label::Label, string_bytes::StringBytes},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::graph::definition::r#struct::StructDefinition;
+use crate::graph::type_::vertex::TypeVertex;
 
-pub struct LabelToTypeVertexIndex<'a> {
-    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
+pub(crate) trait IndexedKey {
+    const PREFIX: Prefix;
 }
 
-impl<'a> LabelToTypeVertexIndex<'a> {
-    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+pub struct IdentifierToTypeIndex<'a, T: IndexedKey> {
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
+    indexed_identifier: PhantomData<T>
+}
+
+impl<'a, T: IndexedKey> IdentifierToTypeIndex<'a, T> {
+    fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= PrefixID::LENGTH);
-        LabelToTypeVertexIndex { bytes }
+        Self { bytes , indexed_identifier: PhantomData }
     }
 
     pub fn build(label: &Label) -> Self {
         let label_string_bytes = label.scoped_name();
         let mut array = ByteArray::zeros(label_string_bytes.bytes().length() + PrefixID::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::IndexLabelToType.prefix_id().bytes());
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&T::PREFIX.prefix_id().bytes());
         array.bytes_mut()[Self::range_label(label_string_bytes.bytes().length())]
             .copy_from_slice(label_string_bytes.bytes().bytes());
-        LabelToTypeVertexIndex { bytes: Bytes::Array(array) }
+        Self { bytes: Bytes::Array(array), indexed_identifier: PhantomData }
     }
 
-    fn label(&'a self) -> StringBytes<'a, BUFFER_KEY_INLINE> {
+    pub fn label(&'a self) -> StringBytes<'a, BUFFER_KEY_INLINE> {
         StringBytes::new(Bytes::Reference(ByteReference::new(
             &self.bytes.bytes()[Self::range_label(self.label_length())],
         )))
@@ -49,7 +57,7 @@ impl<'a> LabelToTypeVertexIndex<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {
+impl<'a, T: IndexedKey> AsBytes<'a, BUFFER_KEY_INLINE> for IdentifierToTypeIndex<'a, T> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
@@ -59,10 +67,22 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {
+impl<'a, T: IndexedKey> Keyable<'a, BUFFER_KEY_INLINE> for IdentifierToTypeIndex<'a, T> {
     fn keyspace(&self) -> EncodingKeyspace {
         EncodingKeyspace::Schema
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {}
+impl<'a, T: IndexedKey> Prefixed<'a, BUFFER_KEY_INLINE> for IdentifierToTypeIndex<'a, T> {}
+
+
+// Specialisations
+pub type LabelToTypeVertexIndex<'a> = IdentifierToTypeIndex<'a, TypeVertex<'static>>;
+impl<'a> IndexedKey for Label<'a> {
+    const PREFIX: Prefix = Prefix::IndexLabelToType;
+}
+
+pub type LabelToStructDefinitionIndex<'a> = IdentifierToTypeIndex<'a, StructDefinition>;
+impl IndexedKey for StructDefinition {
+    const PREFIX: Prefix = Prefix::IndexLabelToDefinitionStruct;
+}

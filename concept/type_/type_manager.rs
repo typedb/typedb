@@ -60,6 +60,7 @@ pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
 
 pub struct TypeManager<Snapshot> {
     vertex_generator: Arc<TypeVertexGenerator>,
+    // definition_key_generator: Arc<DefinitionKeyGenerator>,
     type_cache: Option<Arc<TypeCache>>,
     snapshot: PhantomData<Snapshot>,
 }
@@ -276,6 +277,14 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
                 None
             }
         }))
+    }
+
+    pub fn get_struct_definition_key(&self, snapshot: &Snapshot, name: &str) -> DefinitionKey<'static> {
+        todo!()
+    }
+
+    pub fn get_struct_definition(&self, snapshot: &Snapshot, key: DefinitionKey<'static>) -> StructDefinition {
+        todo!()
     }
 
     get_type_methods! {
@@ -645,6 +654,15 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
 //      (If this feels like unnecessary indirection, feel free to refactor. I just need structure)
 //  Avoid cross-calling methods if it violates the above.
 impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
+
+    // pub fn create_struct(&self, snapshot: &mut Snapshot, struct_name: &Label<'static>, struct_definition: StructDefinition) -> Result<DefinitionKey<'static>, ConceptWriteError> {
+    //     // TODO: Validation
+    //     let definition_key = self.definition_key_generator.create_struct(snapshot)?;
+    //     TypeWriter::storage_put_struct(snapshot, definition_key.clone(), struct_name, struct_definition);
+    //     Ok(definition_key)
+    // }
+
+
     pub fn finalise(self, snapshot: &Snapshot) -> Result<(), Vec<ConceptWriteError>> {
         let type_errors = CommitTimeValidation::validate(snapshot);
         match type_errors {

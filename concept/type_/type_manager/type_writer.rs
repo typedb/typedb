@@ -17,6 +17,10 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     AsBytes, Keyable,
 };
+use encoding::graph::definition::definition_key::DefinitionKey;
+use encoding::graph::definition::DefinitionValueEncoding;
+use encoding::graph::definition::r#struct::StructDefinition;
+use encoding::graph::type_::index::LabelToStructDefinitionIndex;
 use storage::snapshot::WritableSnapshot;
 
 use crate::type_::{
@@ -30,6 +34,14 @@ pub struct TypeWriter<Snapshot: WritableSnapshot> {
 
 // TODO: Make everything pub(super) and make this submodule of type_manager.
 impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
+    pub(crate) fn storage_put_struct(snapshot: &mut Snapshot, definition_key: DefinitionKey<'static>, struct_label: &Label<'static>, struct_definition: StructDefinition) {
+        let index_key = LabelToStructDefinitionIndex::build(struct_label);
+        snapshot.put_val(index_key.into_storage_key().into_owned_array(), definition_key.into_array());
+        snapshot.put_val(definition_key.into_storage_key().into_owned_array(), struct_definition.to_bytes().unwrap().into_array());
+
+        todo!()
+    }
+
     // Basic vertex type operations
     pub(crate) fn storage_put_label<T: KindAPI<'static>>(snapshot: &mut Snapshot, type_: T, label: &Label<'_>) {
         debug_assert!(TypeReader::get_label(snapshot, type_.clone()).unwrap().is_none());

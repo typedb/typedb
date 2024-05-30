@@ -8,6 +8,12 @@ use std::collections::HashMap;
 
 use resource::constants::encoding::StructFieldIDUInt;
 use serde::{Deserialize, Serialize};
+use bytes::byte_reference::ByteReference;
+use bytes::Bytes;
+use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use crate::AsBytes;
+use crate::graph::definition::DefinitionValueEncoding;
+use crate::value::value_type::ValueType;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct StructDefinition {
@@ -18,7 +24,17 @@ pub struct StructDefinition {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct StructDefinitionField {
-    optional: bool,
-    // value_type: ValueType, // TODO
     index: StructFieldIDUInt,
+    optional: bool,
+    value_type: ValueType, // TODO
+}
+
+impl DefinitionValueEncoding for StructDefinition {
+    fn from_bytes<'b>(value: ByteReference<'b>) -> Self {
+        bincode::deserialize(value.bytes()).unwrap()
+    }
+
+    fn to_bytes(self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    }
 }
