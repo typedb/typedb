@@ -129,7 +129,6 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>,
     ) -> ConceptStatus {
-        let x = self.vertex();
         thing_manager.get_status(snapshot, self.vertex().as_storage_key())
     }
 
