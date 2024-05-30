@@ -98,11 +98,14 @@ public class TypeDBCoreRunner implements TypeDBRunner {
         Map<String, String> staticOptionsWithoutOverrides = new HashMap<>(STATIC_OPTIONS);
         userOptions.keySet().forEach(staticOptionsWithoutOverrides::remove);
 
+        Map<String, String> options = new HashMap<>();
+        options.putAll(staticOptionsWithoutOverrides);
+        options.putAll(userOptions);
+        options.putAll(dynamicOptions);
+
         List<String> cmd = new ArrayList<>();
         cmd.add("server");
-        addOptions(staticOptionsWithoutOverrides, cmd);
-        addOptions(userOptions, cmd);
-        addOptions(dynamicOptions, cmd);
+        options.forEach((key, value) -> cmd.add(key + "=" + value));
         return typeDBCommand(cmd);
     }
 
@@ -152,10 +155,6 @@ public class TypeDBCoreRunner implements TypeDBRunner {
                 e.printStackTrace();
             }
         });
-    }
-
-    private void addOptions(Map<String, String> options, List<String> outArgs) {
-        options.forEach((key, value) -> outArgs.add(key + "=" + value));
     }
 
     private void printLogs() {
