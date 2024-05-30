@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
+use encoding::graph::type_::edge::TypeEdgeEncoding;
 use encoding::layout::prefix::Prefix;
 use crate::type_::{relation_type::RelationType, role_type::RoleType, TypeAPI};
 
@@ -28,7 +28,7 @@ impl<'a> Relates<'a> {
     }
 }
 
-impl<'a> EncodableParametrisedTypeEdge<'a> for Relates<'a> {
+impl<'a> TypeEdgeEncoding<'a> for Relates<'a> {
     const CANONICAL_PREFIX: Prefix = Prefix::EdgeRelates;
     const REVERSE_PREFIX: Prefix = Prefix::EdgeRelatesReverse;
     type From = RelationType<'a>;

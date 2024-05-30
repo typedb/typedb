@@ -17,17 +17,15 @@ use encoding::{
         Kind,
         vertex_generator::TypeVertexGenerator,
     },
-    layout::prefix::Prefix,
     value::{
         label::Label,
-        value_type::{ValueType, ValueTypeBytes},
+        value_type::ValueType,
     },
     Keyable,
 };
-
-use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
-use encoding::graph::type_::property::EncodableTypeEdgeProperty;
-use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
+use encoding::graph::type_::edge::TypeEdgeEncoding;
+use encoding::graph::type_::property::TypeEdgePropertyEncoding;
+use encoding::graph::type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding};
 use primitive::maybe_owns::MaybeOwns;
 use storage::{
     durability_client::DurabilityClient,
@@ -40,7 +38,7 @@ use super::annotation::{AnnotationDistinct, AnnotationIndependent, AnnotationKey
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationCardinality},
+        annotation::{AnnotationAbstract, AnnotationCardinality},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::{EntityType, EntityTypeAnnotation},
         ObjectTypeAPI,
@@ -53,13 +51,12 @@ use crate::{
     },
 };
 use type_writer::TypeWriter;
-use validation::validation::OperationTimeValidation;
-use crate::type_::{InterfaceImplementation, OwnerAPI, PlayerAPI, WrappedTypeForError};
-use crate::type_::type_manager::validation::SchemaValidationError;
+use validation::{commit_time_validation::CommitTimeValidation, operation_time_validation::OperationTimeValidation};
+use crate::type_::{InterfaceImplementation, KindAPI, OwnerAPI, PlayerAPI};
+use crate::type_::object_type::ObjectType;
 
 pub mod validation;
 pub mod type_cache;
-pub mod encoding_helper;
 pub mod type_reader;
 mod type_writer;
 
@@ -110,11 +107,6 @@ impl<Snapshot> TypeManager<Snapshot> {
         }
         // TODO: pass error up
         snapshot.commit().unwrap();
-        Ok(())
-    }
-
-    pub fn finalise(self) -> Result<(), Vec<ConceptWriteError>> {
-        // todo!("Do we need to finalise anything here?");
         Ok(())
     }
 }
@@ -623,6 +615,23 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
 //      (If this feels like unnecessary indirection, feel free to refactor. I just need structure)
 //  Avoid cross-calling methods if it violates the above.
 impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
+
+    pub fn finalise(self, snapshot: &Snapshot) -> Result<(), Vec<ConceptWriteError>> {
+        let type_errors = CommitTimeValidation::validate(snapshot);
+        match type_errors {
+            Ok(errors) => {
+                if errors.is_empty() {
+                    Ok(())
+                } else {
+                    Err(errors.into_iter()
+                        .map(|error| ConceptWriteError::SchemaValidation { source: error })
+                        .collect())
+                }
+            }
+            Err(error) => Err(vec![ConceptWriteError::ConceptRead { source: error }]),
+        }
+    }
+
     pub fn create_entity_type(
         &self,
         snapshot: &mut Snapshot,
@@ -1064,7 +1073,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn set_edge_annotation_distinct<'b>(
         &self,
         snapshot: &mut Snapshot,
-        edge: impl EncodableParametrisedTypeEdge<'b>,
+        edge: impl TypeEdgeEncoding<'b>,
     ) {
         // TODO: Validation
         TypeWriter::storage_put_type_edge_property::<AnnotationDistinct>(snapshot, edge, None)
@@ -1073,7 +1082,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn delete_edge_annotation_distinct<'b>(
         &self,
         snapshot: &mut Snapshot,
-        edge: impl EncodableParametrisedTypeEdge<'b>,
+        edge: impl TypeEdgeEncoding<'b>,
     ) {
         // TODO: Validation
         TypeWriter::storage_delete_type_edge_property::<AnnotationDistinct>(snapshot, edge)
@@ -1082,7 +1091,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn set_edge_annotation_unique<'b>(
         &self,
         snapshot: &mut Snapshot,
-        edge: impl EncodableParametrisedTypeEdge<'b>,
+        edge: impl TypeEdgeEncoding<'b>,
     ) {
         // TODO: Validation
         TypeWriter::storage_put_type_edge_property::<AnnotationUnique>(snapshot, edge, None)
@@ -1091,7 +1100,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn delete_edge_annotation_unique<'b>(
         &self,
         snapshot: &mut Snapshot,
-        edge: impl EncodableParametrisedTypeEdge<'b>,
+        edge: impl TypeEdgeEncoding<'b>,
     ) {
         // TODO: Validation
         TypeWriter::storage_delete_type_edge_property::<AnnotationUnique>(snapshot, edge)
@@ -1100,7 +1109,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn set_edge_annotation_key<'b>(
         &self,
         snapshot: &mut Snapshot,
-        edge: impl EncodableParametrisedTypeEdge<'b>,
+        edge: impl TypeEdgeEncoding<'b>,
     ) {
         TypeWriter::storage_put_type_edge_property::<AnnotationKey>(snapshot, edge, None)
     }
@@ -1109,7 +1118,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn delete_edge_annotation_key<'b>(
         &self,
         snapshot: &mut Snapshot,
-        edge: impl EncodableParametrisedTypeEdge<'b>,
+        edge: impl TypeEdgeEncoding<'b>,
     ) {
         TypeWriter::storage_delete_type_edge_property::<AnnotationKey>(snapshot, edge)
     }
@@ -1117,7 +1126,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn set_edge_annotation_cardinality<'b>(
         &self,
         snapshot: &mut Snapshot,
-        edge: impl EncodableParametrisedTypeEdge<'b>,
+        edge: impl TypeEdgeEncoding<'b>,
         annotation: AnnotationCardinality,
     ) {
         TypeWriter::storage_put_type_edge_property::<AnnotationCardinality>(snapshot, edge, Some(annotation))
@@ -1126,51 +1135,8 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub(crate) fn delete_edge_annotation_cardinality<'b>(
         &self,
         snapshot: &mut Snapshot,
-        edge: impl EncodableParametrisedTypeEdge<'b>,
+        edge: impl TypeEdgeEncoding<'b>,
     ) {
         TypeWriter::storage_delete_type_edge_property::<AnnotationCardinality>(snapshot, edge)
-    }
-}
-
-pub trait KindAPI<'a>: TypeAPI<'a>  + PrefixedEncodableTypeVertex<'a> {
-    type AnnotationType: Hash + Eq + From<Annotation>;
-    const ROOT_KIND: Kind;
-
-    fn wrap_for_error(&self) -> WrappedTypeForError;
-}
-
-impl<'a> KindAPI<'a> for AttributeType<'a> {
-    type AnnotationType = AttributeTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Attribute;
-
-    fn wrap_for_error(&self) -> WrappedTypeForError {
-        WrappedTypeForError::AttributeType(self.clone().into_owned())
-    }
-}
-
-impl<'a> KindAPI<'a> for EntityType<'a> {
-    type AnnotationType = EntityTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Entity;
-
-    fn wrap_for_error(&self) -> WrappedTypeForError {
-        WrappedTypeForError::EntityType(self.clone().into_owned())
-    }
-}
-
-impl<'a> KindAPI<'a> for RelationType<'a> {
-    type AnnotationType = RelationTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Relation;
-
-    fn wrap_for_error(&self) -> WrappedTypeForError {
-        WrappedTypeForError::RelationType(self.clone().into_owned())
-    }
-}
-
-impl<'a> KindAPI<'a> for RoleType<'a> {
-    type AnnotationType = RoleTypeAnnotation;
-    const ROOT_KIND: Kind = Kind::Role;
-
-    fn wrap_for_error(&self) -> WrappedTypeForError {
-        WrappedTypeForError::RoleType(self.clone().into_owned())
     }
 }

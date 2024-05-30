@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use encoding::{graph::type_::vertex::TypeVertex, layout::prefix::Prefix, value::label::Label, Prefixed};
 use encoding::error::EncodingError;
 use encoding::error::EncodingError::UnexpectedPrefix;
-use encoding::graph::type_::vertex::EncodableTypeVertex;
+use encoding::graph::type_::vertex::TypeVertexEncoding;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -48,7 +48,7 @@ impl<'a> ObjectType<'a> {
     }
 }
 
-impl<'a> EncodableTypeVertex<'a> for ObjectType<'a> {
+impl<'a> TypeVertexEncoding<'a> for ObjectType<'a> {
     fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
         match vertex.prefix() {
             Prefix::VertexEntityType => Ok(ObjectType::Entity(EntityType::new(vertex))),

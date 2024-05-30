@@ -15,14 +15,14 @@ use encoding::{
         property::{
             TypeEdgeProperty, TypeVertexProperty,
         },
-        vertex::EncodableTypeVertex,
+        vertex::TypeVertexEncoding,
     },
     layout::infix::Infix,
     value::{
         label::Label,
         value_type::ValueType,
     },
-    AsBytes, Keyable,
+    Keyable,
 };
 use encoding::error::EncodingError;
 
@@ -30,8 +30,8 @@ use encoding::graph::type_::Kind;
 use iterator::Collector;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
-use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
-use encoding::graph::type_::property::{EncodableTypeEdgeProperty, EncodableTypeVertexProperty};
+use encoding::graph::type_::edge::TypeEdgeEncoding;
+use encoding::graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding};
 
 use crate::{
     error::ConceptReadError,
@@ -45,13 +45,13 @@ use crate::{
         relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::KindAPI,
-        Ordering, TypeAPI,
+        Ordering, TypeAPI, KindAPI,
     },
 };
 use crate::type_::annotation::{AnnotationCardinality, AnnotationRegex};
 use crate::type_::{EdgeOverride, InterfaceImplementation};
-use crate::type_::type_manager::encoding_helper::EdgeSub;
+use crate::type_::sub::Sub;
+use crate::type_::type_manager::validation::annotation_compatibility::is_edge_annotation_inherited;
 
 pub struct TypeReader {}
 
@@ -72,7 +72,7 @@ impl TypeReader {
             Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
             Ok(None) => Ok(None),
             Ok(Some(value)) => {
-                match T::decode(Bytes::Array(value)) {
+                match T::from_bytes(Bytes::Array(value)) {
                     Ok(type_) => Ok(Some(type_)),
                     Err(err) => {
                         match err {
@@ -95,10 +95,10 @@ impl TypeReader {
         T: TypeAPI<'static>,
     {
         Ok(snapshot
-            .iterate_range(KeyRange::new_within(EdgeSub::prefix_for_canonical_edges_from(subtype), TypeEdge::FIXED_WIDTH_ENCODING))
+            .iterate_range(KeyRange::new_within(Sub::prefix_for_canonical_edges_from(subtype), TypeEdge::FIXED_WIDTH_ENCODING))
             .first_cloned()
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
-            .map(|(key, _)| EdgeSub::<T>::decode_canonical_edge(Bytes::Array(key.into_byte_array())).supertype()))
+            .map(|(key, _)| Sub::<T>::decode_canonical_edge(Bytes::Array(key.into_byte_array())).supertype()))
     }
 
     pub fn get_supertypes_transitive<T>(
@@ -127,10 +127,10 @@ impl TypeReader {
     {
         Ok(snapshot
             .iterate_range(KeyRange::new_within(
-                EdgeSub::prefix_for_reverse_edges_from(supertype),
+                Sub::prefix_for_reverse_edges_from(supertype),
                 TypeEdge::FIXED_WIDTH_ENCODING,
             ))
-            .collect_cloned_vec(|key, _| EdgeSub::<T>::decode_reverse_edge(Bytes::Reference(key.byte_ref()).into_owned()).subtype())
+            .collect_cloned_vec(|key, _| Sub::<T>::decode_reverse_edge(Bytes::Reference(key.byte_ref()).into_owned()).subtype())
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
         )
     }
@@ -153,9 +153,9 @@ impl TypeReader {
         Ok(subtypes)
     }
 
-    pub(crate) fn get_label(
+    pub(crate) fn get_label<'a>(
         snapshot: &impl ReadableSnapshot,
-        type_: impl KindAPI<'static>,
+        type_: impl KindAPI<'a>,
     ) -> Result<Option<Label<'static>>, ConceptReadError> {
         Self::get_type_property::<Label<'static>>(snapshot, type_)
     }
@@ -184,7 +184,6 @@ impl TypeReader {
         where
             T: TypeAPI<'static>,
             IMPL : InterfaceImplementation<'static> + Hash + Eq {
-        // TODO: Should the owner of a transitive owns be the declaring owner or the inheriting owner? Running with the declaring owner for now.
         let mut transitive_implementations: HashMap<IMPL::InterfaceType, IMPL> = HashMap::new();
         let mut overridden_interfaces: HashSet<IMPL::InterfaceType> = HashSet::new();
         let mut current_type = Some(object_type);
@@ -212,12 +211,12 @@ impl TypeReader {
         implementation: IMPL,
     ) -> Result<Option<IMPL>, ConceptReadError>
     where
-        IMPL : EncodableParametrisedTypeEdge<'static> + Hash + Eq
+        IMPL : TypeEdgeEncoding<'static> + Hash + Eq
     {
         let override_property_key = EdgeOverride::<IMPL>::build_key(implementation);
         snapshot
             .get_mapped(override_property_key.into_storage_key().as_reference(), |overridden_edge_bytes| {
-                EdgeOverride::<IMPL>::decode_value(overridden_edge_bytes).overridden
+                EdgeOverride::<IMPL>::from_value_bytes(overridden_edge_bytes).overridden
             })
             .map_err(|error| ConceptReadError::SnapshotGet { source: error })
     }
@@ -291,9 +290,8 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         relation: RelationType<'static>,
     ) -> Result<HashMap<RoleType<'static>, Relates<'static>>, ConceptReadError> {
-        // TODO: Should the relation of a transitive relates be the declaring relation or the inheriting relation?
         let mut transitive_relates: HashMap<RoleType<'static>, Relates<'static>> = HashMap::new();
-        let mut overridden_relates: HashSet<RoleType<'static>> = HashSet::new(); // TODO: Should this store the relates? This feels more fool-proof if it's correct.
+        let mut overridden_relates: HashSet<RoleType<'static>> = HashSet::new();
         let mut current_relation = Some(relation);
         while current_relation.is_some() {
             let declared_relates = Self::get_relates(snapshot, current_relation.as_ref().unwrap().clone())?;
@@ -335,14 +333,14 @@ impl TypeReader {
 
     pub(crate) fn get_type_property<'a, PROPERTY>(
         snapshot: &impl ReadableSnapshot,
-        type_: impl EncodableTypeVertex<'a>
+        type_: impl TypeVertexEncoding<'a>
     ) -> Result<Option<PROPERTY>, ConceptReadError>
-        where PROPERTY: EncodableTypeVertexProperty<'static>
+        where PROPERTY: TypeVertexPropertyEncoding<'static>
     {
         let property = snapshot
             .get_mapped(
                 PROPERTY::build_key(type_).into_storage_key().as_reference(),
-                |value| PROPERTY::decode_value(value.clone()),
+                |value| PROPERTY::from_value_bytes(value.clone()),
             )
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
         Ok(property)
@@ -371,9 +369,9 @@ impl TypeReader {
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
                     Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
                     Infix::PropertyAnnotationCardinality => {
-                        Annotation::Cardinality(<AnnotationCardinality as EncodableTypeVertexProperty>::decode_value(value).into())
+                        Annotation::Cardinality(<AnnotationCardinality as TypeVertexPropertyEncoding>::from_value_bytes(value).into())
                     }
-                    Infix::PropertyAnnotationRegex => Annotation::Regex(AnnotationRegex::decode_value(value)),
+                    Infix::PropertyAnnotationRegex => Annotation::Regex(AnnotationRegex::from_value_bytes(value)),
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationUnique
                     | Infix::PropertyAnnotationKey
@@ -396,7 +394,7 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         edge: EDGE,
     ) -> Result<HashSet<Annotation>, ConceptReadError>
-        where EDGE: EncodableParametrisedTypeEdge<'static> + InterfaceImplementation<'static>
+        where EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>
     {
         let type_edge = edge.to_canonical_type_edge();
         snapshot
@@ -412,9 +410,9 @@ impl TypeReader {
                     Infix::PropertyAnnotationUnique => Annotation::Unique(AnnotationUnique),
                     Infix::PropertyAnnotationKey => Annotation::Key(AnnotationKey),
                     Infix::PropertyAnnotationCardinality => {
-                        Annotation::Cardinality(<AnnotationCardinality as EncodableTypeEdgeProperty>::decode_value(value))
+                        Annotation::Cardinality(<AnnotationCardinality as TypeEdgePropertyEncoding>::from_value_bytes(value))
                     }
-                    Infix::PropertyAnnotationRegex => Annotation::Regex(AnnotationRegex::decode_value(value)),
+                    Infix::PropertyAnnotationRegex => Annotation::Regex(AnnotationRegex::from_value_bytes(value)),
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationAbstract
                     | Infix::PropertyLabel
@@ -430,24 +428,18 @@ impl TypeReader {
             .map_err(|err| ConceptReadError::SnapshotIterate { source: err.clone() })
     }
 
-    // TODO: Annotations may not follow the simple override rule.
-    // If they don't, The vec contains method not work.
-    // If they do: Replace the Vec with a HashSet
     pub(crate) fn get_effective_type_edge_annotations<EDGE>(
         snapshot: &impl ReadableSnapshot,
         edge: EDGE,
     ) -> Result<HashMap<Annotation, EDGE>, ConceptReadError>
-    where EDGE: EncodableParametrisedTypeEdge<'static> + InterfaceImplementation<'static>
+    where EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>
     {
         let mut effective_annotations: HashMap<Annotation, EDGE> = HashMap::new();
-        let mut overridden_annotations : Vec<Infix> = Vec::new();
         let mut edge_opt = Some(edge);
         while let Some(edge) = edge_opt {
             let declared_edge_annotations = Self::get_type_edge_annotations(snapshot, edge.clone())?;
             for annotation in declared_edge_annotations {
-                if !overridden_annotations.contains(&annotation.infix()) {
-                    debug_assert!(!effective_annotations.iter().any(|(key, _)| {  key.infix() == annotation.infix() }));
-                    overridden_annotations.add(annotation.infix());
+                if is_edge_annotation_inherited(&annotation, &effective_annotations) {
                     effective_annotations.insert(annotation, edge.clone());
                 }
             }
@@ -466,14 +458,14 @@ impl TypeReader {
 
     pub(crate) fn get_type_edge_property<'a, PROPERTY>(
         snapshot: &impl ReadableSnapshot,
-        edge: impl EncodableParametrisedTypeEdge<'a>
+        edge: impl TypeEdgeEncoding<'a>
     ) -> Result<Option<PROPERTY>, ConceptReadError>
-    where PROPERTY: EncodableTypeEdgeProperty<'static>
+    where PROPERTY: TypeEdgePropertyEncoding<'static>
     {
         let property = snapshot
             .get_mapped(
                 PROPERTY::build_key(edge).into_storage_key().as_reference(),
-                |value| PROPERTY::decode_value(value.clone()),
+                |value| PROPERTY::from_value_bytes(value.clone()),
             )
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
         Ok(property)

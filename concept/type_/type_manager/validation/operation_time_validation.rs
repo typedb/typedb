@@ -11,22 +11,19 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use encoding::graph::thing::edge::ThingEdgeRolePlayer;
-use encoding::graph::thing::vertex_attribute::AttributeVertex;
-use encoding::graph::type_::vertex::EncodableTypeVertex;
+use encoding::graph::type_::vertex::TypeVertexEncoding;
 use encoding::graph::Typed;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
-use crate::error::ConceptReadError;
+use crate::type_::{TypeAPI, KindAPI};
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::entity_type::EntityType;
-use crate::type_::TypeAPI;
 use crate::type_::annotation::{Annotation, AnnotationAbstract};
 use crate::type_::object_type::ObjectType;
 use crate::type_::owns::Owns;
 use crate::type_::plays::Plays;
 use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
-use crate::type_::type_manager::{KindAPI, TypeManager};
 use crate::type_::type_manager::type_reader::TypeReader;
 use crate::type_::type_manager::validation::SchemaValidationError;
 use storage::key_range::KeyRange;
@@ -46,6 +43,9 @@ macro_rules! object_type_match {
     }
 }
 
+macro_rules! get_label {
+    ($snapshot: ident, $type_:ident) => { TypeReader::get_label($snapshot, $type_).unwrap().unwrap() };
+}
 
 pub struct OperationTimeValidation { }
 
@@ -73,7 +73,7 @@ impl OperationTimeValidation {
     {
         let no_subtypes = TypeReader::get_subtypes(snapshot, type_.clone())
             .map_err(SchemaValidationError::ConceptRead)?.is_empty();
-        if no_subtypes { Ok(()) } else { Err(SchemaValidationError::DeletingTypeWithSubtypes(type_.wrap_for_error())) }
+        if no_subtypes { Ok(()) } else { Err(SchemaValidationError::DeletingTypeWithSubtypes(get_label!(snapshot, type_))) }
     }
 
     pub(crate) fn validate_label_uniqueness<'a, Snapshot: ReadableSnapshot>(
@@ -100,7 +100,7 @@ impl OperationTimeValidation {
         supertype_value_type: Option<ValueType>
     ) -> Result<(), SchemaValidationError>
     {
-        let is_compatible = match (subtype_value_type, supertype_value_type) {
+        let is_compatible = match (&subtype_value_type, &supertype_value_type) {
             (None, None) => true,
             (Some(_), None) | (None, Some(_)) => false,
             (Some(sub), Some(sup)) => sup == sub,
@@ -124,7 +124,7 @@ impl OperationTimeValidation {
         if is_abstract {
             Ok(())
         } else {
-            Err(SchemaValidationError::TypeIsNotAbstract(type_.clone().wrap_for_error()))
+            Err(SchemaValidationError::TypeIsNotAbstract(get_label!(snapshot, type_)))
         }
     }
 
@@ -140,7 +140,7 @@ impl OperationTimeValidation {
         let existing_supertypes = TypeReader::get_supertypes_transitive(snapshot, supertype.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
         if supertype == type_ || existing_supertypes.contains(&type_) {
-            Err(SchemaValidationError::CyclicTypeHierarchy(type_.wrap_for_error(), supertype.wrap_for_error()))
+            Err(SchemaValidationError::CyclicTypeHierarchy(get_label!(snapshot, type_), get_label!(snapshot, supertype)))
         } else {
             Ok(())
         }
@@ -201,7 +201,7 @@ impl OperationTimeValidation {
         if supertypes.contains(&overridden.clone()) {
             Ok(())
         } else {
-            Err(SchemaValidationError::OverriddenTypeNotSupertype(type_.wrap_for_error(), overridden.wrap_for_error()))
+            Err(SchemaValidationError::OverriddenTypeNotSupertype(get_label!(snapshot, type_), get_label!(snapshot, overridden)))
         }
     }
 
@@ -249,7 +249,7 @@ impl OperationTimeValidation {
         match entity_iterator.next() {
             None => Ok(()),
             Some(Ok(_)) => {
-                Err(SchemaValidationError::DeletingTypeWithInstances(entity_type.wrap_for_error()))
+                Err(SchemaValidationError::DeletingTypeWithInstances(get_label!(snapshot, entity_type)))
             },
             Some(Err(concept_read_error)) => {
                 Err(SchemaValidationError::ConceptRead(concept_read_error))
@@ -265,7 +265,7 @@ impl OperationTimeValidation {
         match relation_iterator.next() {
             None => Ok(()),
             Some(Ok(_)) => {
-                Err(SchemaValidationError::DeletingTypeWithInstances(relation_type.wrap_for_error()))
+                Err(SchemaValidationError::DeletingTypeWithInstances(get_label!(snapshot, relation_type)))
             },
             Some(Err(concept_read_error)) => {
                 Err(SchemaValidationError::ConceptRead(concept_read_error))
@@ -283,7 +283,7 @@ impl OperationTimeValidation {
         match attribute_iterator.next() {
             None => Ok(()),
             Some(Ok(_)) => {
-                Err(SchemaValidationError::DeletingTypeWithInstances(attribute_type.wrap_for_error()))
+                Err(SchemaValidationError::DeletingTypeWithInstances(get_label!(snapshot, attribute_type)))
             },
             Some(Err(err)) => {
                 Err(SchemaValidationError::ConceptRead(err.clone()))
@@ -313,7 +313,8 @@ impl OperationTimeValidation {
             match role_player_iterator.next() {
                 None => {},
                 Some(Ok(_)) => {
-                    Err(SchemaValidationError::DeletingTypeWithInstances(role_type.wrap_for_error()))?;
+                    let role_type_clone = role_type.clone();
+                    Err(SchemaValidationError::DeletingTypeWithInstances(get_label!(snapshot, role_type_clone)))?;
                 },
                 Some(Err(concept_read_error)) => {
                     Err(SchemaValidationError::ConceptRead(concept_read_error))?;

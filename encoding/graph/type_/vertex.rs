@@ -114,21 +114,21 @@ pub(crate) fn build_type_vertex_prefix_key(prefix: Prefix) -> StorageKey<'static
     )
 }
 
-pub trait EncodableTypeVertex<'a> : Sized {
+pub trait TypeVertexEncoding<'a> : Sized {
 
     fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError>;
 
-    fn into_vertex(self) -> TypeVertex<'a>;
-
-    fn decode(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Result<Self, EncodingError> {
+    fn from_bytes(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Result<Self, EncodingError> {
         Self::from_vertex(TypeVertex::new(bytes))
     }
+
+    fn into_vertex(self) -> TypeVertex<'a>;
 }
 
-pub trait PrefixedEncodableTypeVertex<'a> : EncodableTypeVertex<'a>{
+pub trait PrefixedTypeVertexEncoding<'a> : TypeVertexEncoding<'a>{
     const PREFIX: Prefix;
 
-    fn from_type_id(type_id: TypeID) -> Self {
+    fn build_from_type_id(type_id: TypeID) -> Self {
         Self::from_vertex(TypeVertex::build(Self::PREFIX.prefix_id(), type_id)).unwrap()
     }
 
@@ -136,12 +136,12 @@ pub trait PrefixedEncodableTypeVertex<'a> : EncodableTypeVertex<'a>{
         build_type_vertex_prefix_key(Self::PREFIX)
     }
 
-    fn is_key_of_kind(key: StorageKeyReference<'_>) -> bool {
+    fn is_decodable_from_key(key: StorageKeyReference<'_>) -> bool {
         key.keyspace_id() == EncodingKeyspace::Schema.id() &&
-            Self::is_of_kind(Bytes::Reference(key.byte_ref()))
+            Self::is_decodable_from(Bytes::Reference(key.byte_ref()))
     }
 
-    fn is_of_kind(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+    fn is_decodable_from(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
         bytes.length() == TypeVertex::LENGTH
             && TypeVertex::new(bytes).prefix() == Self::PREFIX
     }

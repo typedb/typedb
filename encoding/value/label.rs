@@ -14,7 +14,7 @@ use resource::constants::encoding::{
 };
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use crate::AsBytes;
-use crate::graph::type_::property::EncodableTypeVertexProperty;
+use crate::graph::type_::property::TypeVertexPropertyEncoding;
 use crate::layout::infix::Infix;
 
 use crate::value::string_bytes::StringBytes;
@@ -91,15 +91,15 @@ impl<'a> Label<'a> {
     }
 }
 
-impl<'a> EncodableTypeVertexProperty<'a> for Label<'a> {
+impl<'a> TypeVertexPropertyEncoding<'a> for Label<'a> {
     const INFIX: Infix = Infix::PropertyLabel;
 
-    fn decode_value<'b>(value: ByteReference<'b>) -> Self {
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         let string_bytes = StringBytes::new(Bytes::<LABEL_SCOPED_NAME_STRING_INLINE>::Reference(value));
         Label::parse_from(string_bytes)
     }
 
-    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Array(ByteArray::from(self.scoped_name().bytes())))
     }
 }

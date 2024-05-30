@@ -4,18 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
+use encoding::graph::type_::edge::TypeEdgeEncoding;
 use encoding::layout::prefix::Prefix;
 use crate::type_::TypeAPI;
 
 
 #[derive(Clone)]
-pub struct EdgeSub<T> {
+pub struct Sub<T> {
     subtype: T,
     supertype: T,
 }
 
-impl<'a, T: TypeAPI<'a>> EdgeSub<T> {
+impl<'a, T: TypeAPI<'a>> Sub<T> {
 
     pub(crate) fn subtype(&self) -> T {
         self.subtype.clone()
@@ -26,14 +26,14 @@ impl<'a, T: TypeAPI<'a>> EdgeSub<T> {
     }
 }
 
-impl<'a, T: TypeAPI<'a>> EncodableParametrisedTypeEdge<'a> for EdgeSub<T> {
+impl<'a, T: TypeAPI<'a>> TypeEdgeEncoding<'a> for Sub<T> {
     const CANONICAL_PREFIX: Prefix = Prefix::EdgeSub;
     const REVERSE_PREFIX: Prefix = Prefix::EdgeSubReverse;
     type From = T;
     type To = T;
 
     fn from_vertices(from: T, to: T) -> Self {
-        EdgeSub { subtype: from, supertype: to,  }
+        Sub { subtype: from, supertype: to,  }
     }
 
     fn canonical_from(&self) -> Self::From {

@@ -18,8 +18,8 @@ use crate::{
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::graph::type_::edge::EncodableParametrisedTypeEdge;
-use crate::graph::type_::vertex::EncodableTypeVertex;
+use crate::graph::type_::edge::TypeEdgeEncoding;
+use crate::graph::type_::vertex::TypeVertexEncoding;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct TypeVertexProperty<'a> {
@@ -123,17 +123,17 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {}
 
-pub trait EncodableTypeVertexProperty<'a> {
+pub trait TypeVertexPropertyEncoding<'a> {
     const INFIX: Infix;
 
-    fn decode_value<'b>(value: ByteReference<'b>) -> Self;
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self;
 
-    fn build_key<'b>(vertex: impl EncodableTypeVertex<'b>) -> TypeVertexProperty<'b> {
+    fn build_key<'b>(vertex: impl TypeVertexEncoding<'b>) -> TypeVertexProperty<'b> {
         TypeVertexProperty::build(vertex.into_vertex(), Self::INFIX)
     }
 
-    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
-    fn is_property(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
+    fn is_decodable_from(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
         key_bytes.length() == TypeVertexProperty::LENGTH_NO_SUFFIX
             && TypeVertexProperty::new(key_bytes).infix() == Self::INFIX
     }
@@ -242,18 +242,18 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {}
 
-pub trait EncodableTypeEdgeProperty<'a> : Sized {
+pub trait TypeEdgePropertyEncoding<'a> : Sized {
 
     const INFIX: Infix;
 
-    fn decode_value<'b>(value: ByteReference<'b>) -> Self;
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self;
 
-    fn build_key<'b>(edge: impl EncodableParametrisedTypeEdge<'b>) -> TypeEdgeProperty<'b> {
+    fn build_key<'b>(edge: impl TypeEdgeEncoding<'b>) -> TypeEdgeProperty<'b> {
         TypeEdgeProperty::build(edge.to_canonical_type_edge(), Self::INFIX)
     }
 
-    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
-    fn is_property(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
+    fn is_decodable_from(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
         key_bytes.length() == TypeEdgeProperty::LENGTH_NO_SUFFIX
             && TypeEdgeProperty::new(key_bytes).infix() == Self::INFIX
     }

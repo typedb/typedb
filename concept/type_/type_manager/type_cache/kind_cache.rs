@@ -19,7 +19,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use lending_iterator::LendingIterator;
-use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
+use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::type_::{
@@ -31,9 +31,8 @@ use crate::type_::{
     relates::Relates,
     relation_type::RelationType,
     role_type::RoleType,
-    type_manager::KindAPI,
     type_manager::type_reader::TypeReader,
-    Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+    Ordering, OwnerAPI, PlayerAPI, TypeAPI, KindAPI,
 };
 
 #[derive(Debug)]

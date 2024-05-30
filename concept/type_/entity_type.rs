@@ -14,7 +14,8 @@ use encoding::{
 };
 use encoding::error::EncodingError;
 use encoding::error::EncodingError::UnexpectedPrefix;
-use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
+use encoding::graph::type_::Kind;
+use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding};
 use encoding::layout::prefix::Prefix::VertexEntityType;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -38,6 +39,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::KindAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType<'a> {
@@ -48,10 +50,10 @@ impl<'a> EntityType<'a> { }
 
 impl<'a> ConceptAPI<'a> for EntityType<'a> {}
 
-impl <'a> PrefixedEncodableTypeVertex<'a> for EntityType<'a> {
+impl <'a> PrefixedTypeVertexEncoding<'a> for EntityType<'a> {
     const PREFIX: Prefix = VertexEntityType;
 }
-impl<'a> EncodableTypeVertex<'a> for EntityType<'a> {
+impl<'a> TypeVertexEncoding<'a> for EntityType<'a> {
     fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
         debug_assert!(Self::PREFIX == VertexEntityType);
         if vertex.prefix() != Prefix::VertexEntityType {
@@ -107,6 +109,11 @@ impl<'a> ObjectTypeAPI<'a> for EntityType<'a> {
     fn into_owned_object_type(self) -> ObjectType<'static> {
         ObjectType::Entity(self.into_owned())
     }
+}
+
+impl<'a> KindAPI<'a> for EntityType<'a> {
+    type AnnotationType = EntityTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Entity;
 }
 
 impl<'a> EntityType<'a> {

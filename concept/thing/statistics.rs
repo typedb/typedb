@@ -23,7 +23,7 @@ use encoding::graph::{
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use serde::{Deserialize, Serialize};
-use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
+use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding};
 use storage::{
     durability_client::{DurabilityRecord, UnsequencedDurabilityRecord},
     iterator::MVCCReadError,
@@ -146,7 +146,7 @@ impl Statistics {
                 self.update_has(Object::new(edge.from()).type_(), Attribute::new(edge.to()).type_(), delta)
             } else if ThingEdgeRolePlayer::is_role_player(key_reference) {
                 let edge = ThingEdgeRolePlayer::new(Bytes::Reference(key_reference.byte_ref()));
-                let role_type = RoleType::from_type_id(edge.role_id());
+                let role_type = RoleType::build_from_type_id(edge.role_id());
                 self.update_role_player(
                     Object::new(edge.from()).type_(),
                     role_type,
@@ -156,14 +156,14 @@ impl Statistics {
             } else if ThingEdgeRelationIndex::is_index(key_reference) {
                 let edge = ThingEdgeRelationIndex::new(Bytes::Reference(key_reference.byte_ref()));
                 self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta)
-            } else if EntityType::is_key_of_kind(key_reference) {
+            } else if EntityType::is_decodable_from_key(key_reference) {
                 let type_ =
                     EntityType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.entity_counts.remove(&type_);
                     self.clear_object_type(ObjectType::Entity(type_));
                 }
-            } else if RelationType::is_key_of_kind(key_reference) {
+            } else if RelationType::is_decodable_from_key(key_reference) {
                 let type_ = RelationType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.relation_counts.remove(&type_);
@@ -171,7 +171,7 @@ impl Statistics {
                     let as_object_type = ObjectType::Relation(type_);
                     self.clear_object_type(as_object_type.clone());
                 }
-            } else if AttributeType::is_key_of_kind(key_reference) {
+            } else if AttributeType::is_decodable_from_key(key_reference) {
                 let type_ = AttributeType::read_from(
                     Bytes::Reference(key_reference.byte_ref()).into_owned()
                 );
@@ -183,7 +183,7 @@ impl Statistics {
                     });
                     self.has_attribute_counts.retain(|_, map| !map.is_empty());
                 }
-            } else if RoleType::is_key_of_kind(key_reference) {
+            } else if RoleType::is_decodable_from_key(key_reference) {
                 let type_ =
                     RoleType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
@@ -384,23 +384,23 @@ impl SerialisableType {
 
     pub(crate) fn into_entity_type(self) -> EntityType<'static> {
         match self {
-            Self::Entity(id) => EntityType::from_type_id(TypeID::build(id)),
+            Self::Entity(id) => EntityType::build_from_type_id(TypeID::build(id)),
             _ => panic!("Incompatible conversion."),
         }
     }
 
     pub(crate) fn into_relation_type(self) -> RelationType<'static> {
         match self {
-            Self::Relation(id) => RelationType::from_type_id(TypeID::build(id)),
+            Self::Relation(id) => RelationType::build_from_type_id(TypeID::build(id)),
             _ => panic!("Incompatible conversion."),
         }
     }
 
     pub(crate) fn into_object_type(self) -> ObjectType<'static> {
         match self {
-            Self::Entity(id) => ObjectType::Entity(EntityType::from_type_id(TypeID::build(id))),
+            Self::Entity(id) => ObjectType::Entity(EntityType::build_from_type_id(TypeID::build(id))),
             Self::Relation(id) => {
-                ObjectType::Relation(RelationType::from_type_id(TypeID::build(id)))
+                ObjectType::Relation(RelationType::build_from_type_id(TypeID::build(id)))
             }
             _ => panic!("Incompatible conversion."),
         }
@@ -408,14 +408,14 @@ impl SerialisableType {
 
     pub(crate) fn into_attribute_type(self) -> AttributeType<'static> {
         match self {
-            Self::Attribute(id) => AttributeType::from_type_id(TypeID::build(id)),
+            Self::Attribute(id) => AttributeType::build_from_type_id(TypeID::build(id)),
             _ => panic!("Incompatible conversion."),
         }
     }
 
     pub(crate) fn into_role_type(self) -> RoleType<'static> {
         match self {
-            Self::Role(id) => RoleType::from_type_id(TypeID::build(id)),
+            Self::Role(id) => RoleType::build_from_type_id(TypeID::build(id)),
             _ => panic!("Incompatible conversion."),
         }
     }

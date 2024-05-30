@@ -6,41 +6,33 @@
 
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
-use std::marker::PhantomData;
-
 use bytes::byte_reference::ByteReference;
 use encoding::{
-    graph::type_::{edge::TypeEdge, vertex::TypeVertex},
+    graph::type_::vertex::TypeVertex,
     value::label::Label,
 };
 use primitive::maybe_owns::MaybeOwns;
 use serde::{Deserialize, Serialize};
 use bytes::Bytes;
-use bytes::Bytes::Array;
 use encoding::AsBytes;
-use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
-use encoding::graph::type_::property::{EncodableTypeEdgeProperty, EncodableTypeVertexProperty};
-use encoding::graph::type_::vertex::EncodableTypeVertex;
+use encoding::graph::type_::edge::TypeEdgeEncoding;
+use encoding::graph::type_::Kind;
+use encoding::graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding};
+use encoding::graph::type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding};
 use encoding::layout::infix::Infix;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-
-use self::{annotation::AnnotationRegex, object_type::ObjectType};
+use self::object_type::ObjectType;
 use crate::{
     ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::AnnotationCardinality,
-        attribute_type::AttributeType, entity_type::EntityType, owns::Owns, plays::Plays,
-        relation_type::RelationType, role_type::RoleType,
+        attribute_type::AttributeType, owns::Owns, plays::Plays, role_type::RoleType,
         type_manager::TypeManager,
     },
 };
-use crate::type_::type_manager::KindAPI;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKey;
 use crate::type_::annotation::Annotation;
-use crate::type_::object_type::ObjectType;
 
 pub mod annotation;
 pub mod attribute_type;
@@ -52,13 +44,14 @@ mod relates;
 pub mod relation_type;
 pub mod role_type;
 pub mod type_manager;
+pub mod sub;
 
-pub trait TypeAPI<'a>: ConceptAPI<'a> + EncodableTypeVertex<'a> + Sized + Clone + Hash + Eq + 'a {
+pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone + Hash + Eq + 'a {
     type SelfStatic: KindAPI<'static> + 'static;
     fn new(vertex : TypeVertex<'a>) -> Self ;
 
     fn read_from(b: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
-        Self::decode(b).unwrap()
+        Self::from_bytes(b).unwrap()
     }
 
     fn vertex(&self) -> TypeVertex<'_>;
@@ -80,6 +73,11 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + EncodableTypeVertex<'a> + Sized + Clone 
         snapshot: &Snapshot,
         type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError>;
+}
+
+pub trait KindAPI<'a>: TypeAPI<'a>  + PrefixedTypeVertexEncoding<'a> {
+    type AnnotationType: Hash + Eq + From<Annotation>;
+    const ROOT_KIND: Kind;
 }
 
 pub trait ObjectTypeAPI<'a>: TypeAPI<'a> + OwnerAPI<'a> {
@@ -220,31 +218,31 @@ pub enum Ordering {
     Ordered,
 }
 
-impl<'a> EncodableTypeVertexProperty<'a> for Ordering {
+impl<'a> TypeVertexPropertyEncoding<'a> for Ordering {
     const INFIX: Infix = Infix::PropertyOrdering;
 
-    fn decode_value<'b>(value: ByteReference<'b>) -> Ordering {
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Ordering {
         bincode::deserialize(value.bytes()).unwrap()
     }
 
-    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
     }
 }
 
-impl<'a> EncodableTypeEdgeProperty<'a> for Ordering {
+impl<'a> TypeEdgePropertyEncoding<'a> for Ordering {
     const INFIX: Infix = Infix::PropertyOrdering;
 
-    fn decode_value<'b>(value: ByteReference<'b>) -> Ordering {
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Ordering {
         bincode::deserialize(value.bytes()).unwrap()
     }
 
-    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
     }
 }
 
-pub(crate) trait InterfaceImplementation<'a> : EncodableParametrisedTypeEdge<'a, From=Self::ObjectType, To=Self::InterfaceType> + Sized + Clone + Hash + Eq + 'a
+pub(crate) trait InterfaceImplementation<'a> : TypeEdgeEncoding<'a, From=Self::ObjectType, To=Self::InterfaceType> + Sized + Clone + Hash + Eq + 'a
 {
     type AnnotationType;
     type ObjectType: TypeAPI<'a>;
@@ -257,26 +255,18 @@ pub(crate) trait InterfaceImplementation<'a> : EncodableParametrisedTypeEdge<'a,
     fn unwrap_annotation(annotation: Self::AnnotationType) -> Annotation;
 }
 
-pub struct EdgeOverride<EDGE: EncodableParametrisedTypeEdge<'static>> {
+pub struct EdgeOverride<EDGE: TypeEdgeEncoding<'static>> {
     overridden: EDGE, // TODO: Consider storing EDGE::To instead
 }
 
-impl<'a, EDGE: EncodableParametrisedTypeEdge<'static>> EncodableTypeEdgeProperty<'a> for EdgeOverride<EDGE> {
+impl<'a, EDGE: TypeEdgeEncoding<'static>> TypeEdgePropertyEncoding<'a> for EdgeOverride<EDGE> {
     const INFIX: Infix = Infix::PropertyOverride;
 
-    fn decode_value<'b>(value: ByteReference<'b>) -> Self {
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
         Self { overridden: EDGE::decode_canonical_edge(Bytes::Reference(value).into_owned()) }
     }
 
-    fn build_value(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Reference(self.overridden.to_canonical_type_edge().bytes()).into_owned())
     }
-}
-
-#[derive(Clone, Debug)]
-pub enum WrappedTypeForError {
-    EntityType(EntityType<'static>),
-    RelationType(RelationType<'static>),
-    AttributeType(AttributeType<'static>),
-    RoleType(RoleType<'static>),
 }

@@ -15,7 +15,7 @@ use encoding::{
     value::decode_value_u64,
     AsBytes, Keyable,
 };
-use encoding::graph::type_::vertex::PrefixedEncodableTypeVertex;
+use encoding::graph::type_::vertex::PrefixedTypeVertexEncoding;
 use iterator::State;
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -44,7 +44,7 @@ impl<'a> Attribute<'a> {
     }
 
     pub fn type_(&self) -> AttributeType<'static> {
-        AttributeType::from_type_id(self.vertex.type_id_())
+        AttributeType::build_from_type_id(self.vertex.type_id_())
     }
 
     pub fn iid(&self) -> ByteReference<'_> {

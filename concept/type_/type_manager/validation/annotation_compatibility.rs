@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
+use std::collections::HashMap;
 use crate::type_::annotation::{Annotation, AnnotationCardinality, AnnotationKey};
 use crate::type_::type_manager::validation::SchemaValidationError;
 
@@ -26,4 +26,18 @@ fn validate_cardinalty_is_compatible_with(subtype_cardinality: AnnotationCardina
 
 fn validate_key_is_compatible_with(key: AnnotationKey, supertype_annotations: &Vec<Annotation>) -> Result<(), SchemaValidationError> {
     todo!()
+}
+
+pub(crate) fn is_edge_annotation_inherited<EDGE>(supertype_annotation: &Annotation, effective_annotations: &HashMap<Annotation, EDGE>) -> bool
+{
+    // In most cases we just need to see if the build_up_annotations contains nothing that 'overrides' it
+    match supertype_annotation {
+        Annotation::Abstract(_) => false,
+        Annotation::Distinct(_) => todo!(),
+        Annotation::Independent(_) => todo!(),
+        Annotation::Key(key) => todo!(),
+        Annotation::Cardinality(cardinality) => todo!(),
+        Annotation::Regex(_) => todo!(),
+        Annotation::Unique(_) => todo!(),
+    }
 }

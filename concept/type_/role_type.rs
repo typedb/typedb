@@ -15,7 +15,8 @@ use encoding::{
 use lending_iterator::higher_order::Hkt;
 use encoding::error::EncodingError;
 use encoding::error::EncodingError::UnexpectedPrefix;
-use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
+use encoding::graph::type_::Kind;
+use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding};
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -36,6 +37,7 @@ use crate::{
     ConceptAPI,
 };
 use crate::type_::object_type::ObjectType;
+use crate::type_::KindAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -66,11 +68,11 @@ impl Hkt for RoleType<'static> {
 
 impl<'a> ConceptAPI<'a> for RoleType<'a> {}
 
-impl<'a> PrefixedEncodableTypeVertex<'a> for RoleType<'a> {
+impl<'a> PrefixedTypeVertexEncoding<'a> for RoleType<'a> {
     const PREFIX: Prefix = Prefix::VertexRoleType;
 }
 
-impl<'a> EncodableTypeVertex<'a> for RoleType<'a> {
+impl<'a> TypeVertexEncoding<'a> for RoleType<'a> {
     fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
         debug_assert_eq!(vertex.prefix(), Prefix::VertexRoleType);
         if vertex.prefix() != Prefix::VertexRoleType {
@@ -253,6 +255,11 @@ impl<'a> RoleType<'a> {
     pub fn into_owned(self) -> RoleType<'static> {
         RoleType { vertex: self.vertex.into_owned() }
     }
+}
+
+impl<'a> KindAPI<'a> for RoleType<'a> {
+    type AnnotationType = RoleTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Role;
 }
 
 // --- Played API ---

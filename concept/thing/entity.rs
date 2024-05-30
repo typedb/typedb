@@ -11,7 +11,7 @@ use encoding::{
     layout::prefix::Prefix,
     AsBytes, Keyable, Prefixed,
 };
-use encoding::graph::type_::vertex::PrefixedEncodableTypeVertex;
+use encoding::graph::type_::vertex::PrefixedTypeVertexEncoding;
 use iterator::Collector;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -43,7 +43,7 @@ impl<'a> Entity<'a> {
     }
 
     pub fn type_(&self) -> EntityType<'static> {
-        EntityType::from_type_id(self.vertex.type_id_())
+        EntityType::build_from_type_id(self.vertex.type_id_())
     }
 
     pub fn as_reference(&self) -> Entity<'_> {

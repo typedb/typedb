@@ -14,8 +14,9 @@ use encoding::{
 };
 use encoding::error::EncodingError;
 use encoding::error::EncodingError::UnexpectedPrefix;
-use encoding::graph::type_::vertex::{EncodableTypeVertex, PrefixedEncodableTypeVertex};
-use encoding::layout::prefix::Prefix::{VertexEntityType, VertexRelationType};
+use encoding::graph::type_::Kind;
+use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding};
+use encoding::layout::prefix::Prefix::VertexRelationType;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -39,8 +40,7 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::type_::entity_type::EntityType;
-use crate::type_::object_type::ObjectType::Entity;
+use crate::type_::KindAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {
@@ -51,7 +51,7 @@ impl<'a> RelationType<'a> {}
 
 impl<'a> ConceptAPI<'a> for RelationType<'a> {}
 
-impl<'a> EncodableTypeVertex<'a> for RelationType<'a> {
+impl<'a> TypeVertexEncoding<'a> for RelationType<'a> {
     fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
         debug_assert!(Self::PREFIX == VertexRelationType);
         if vertex.prefix() != Prefix::VertexRelationType {
@@ -66,7 +66,7 @@ impl<'a> EncodableTypeVertex<'a> for RelationType<'a> {
     }
 }
 
-impl<'a> PrefixedEncodableTypeVertex<'a> for RelationType<'a> {
+impl<'a> PrefixedTypeVertexEncoding<'a> for RelationType<'a> {
     const PREFIX: Prefix = VertexRelationType;
 }
 
@@ -106,6 +106,11 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError> {
         type_manager.get_relation_type_label(snapshot, self.clone().into_owned())
     }
+}
+
+impl<'a> KindAPI<'a> for RelationType<'a> {
+    type AnnotationType = RelationTypeAnnotation;
+    const ROOT_KIND: Kind = Kind::Relation;
 }
 
 impl<'a> ObjectTypeAPI<'a> for RelationType<'a> {

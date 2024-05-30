@@ -15,7 +15,7 @@ use crate::{
     layout::prefix::{Prefix, PrefixID},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::graph::type_::vertex::EncodableTypeVertex;
+use crate::graph::type_::vertex::TypeVertexEncoding;
 
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -113,12 +113,12 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeEdge<'a> {
     }
 }
 
-pub trait EncodableParametrisedTypeEdge<'a> : Sized {
+pub trait TypeEdgeEncoding<'a> : Sized {
     const CANONICAL_PREFIX: Prefix;
     const REVERSE_PREFIX: Prefix;
 
-    type From: EncodableTypeVertex<'a>;
-    type To: EncodableTypeVertex<'a>;
+    type From: TypeVertexEncoding<'a>;
+    type To: TypeVertexEncoding<'a>;
 
     fn from_vertices(from: Self::From, to: Self::To) -> Self;
 

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
+use encoding::graph::type_::edge::TypeEdgeEncoding;
 use encoding::layout::prefix::Prefix;
 use std::collections::{HashMap, HashSet};
 
@@ -177,7 +177,7 @@ impl<'a> Owns<'a> {
     }
 }
 
-impl<'a> EncodableParametrisedTypeEdge<'a> for Owns<'a> {
+impl<'a> TypeEdgeEncoding<'a> for Owns<'a> {
     const CANONICAL_PREFIX: Prefix = Prefix::EdgeOwns;
     const REVERSE_PREFIX: Prefix = Prefix::EdgeOwnsReverse;
     type From = ObjectType<'a>;

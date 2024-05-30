@@ -10,10 +10,8 @@ use bytes::byte_array::ByteArray;
 use bytes::byte_reference::ByteReference;
 use bytes::Bytes;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
-use crate::graph::type_::property::EncodableTypeVertexProperty;
-use crate::layout::infix::{Infix, InfixID};
-use bytes::byte_array::ByteArray;
-use bytes::Bytes;
+use crate::graph::type_::property::TypeVertexPropertyEncoding;
+use crate::layout::infix::Infix;
 
 use crate::{graph::definition::definition_key::DefinitionKey, AsBytes};
 
@@ -144,14 +142,16 @@ impl ValueTypeBytes {
     }
 }
 
-impl EncodableTypeVertexProperty<'static> for ValueType {
+impl TypeVertexPropertyEncoding<'static> for ValueType {
     const INFIX: Infix = Infix::PropertyValueType;
 
-    fn decode_value<'b>(value: ByteReference<'b>) -> Self {
-        ValueType::from_value_type_id(ValueTypeID::new(value.bytes().try_into().unwrap()))
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
+        let mut bytes : [u8; ValueTypeBytes::LENGTH] = [0; ValueTypeBytes::LENGTH];
+        bytes.copy_from_slice(&value.bytes()[0..ValueTypeBytes::LENGTH]);
+        ValueTypeBytes::new(bytes).to_value_type()
     }
 
-    fn build_value(self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
-        Some(Bytes::Array(ByteArray::copy(ValueTypeBytes::build(&self).into_bytes())))
+    fn to_value_bytes(self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::Array(ByteArray::copy(&ValueTypeBytes::build(&self).into_bytes())))
     }
 }

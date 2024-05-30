@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
+use encoding::graph::type_::edge::TypeEdgeEncoding;
 use encoding::layout::prefix::Prefix;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -59,7 +59,7 @@ impl<'a> Plays<'a> {
     }
 }
 
-impl<'a> EncodableParametrisedTypeEdge<'a> for Plays<'a> {
+impl<'a> TypeEdgeEncoding<'a> for Plays<'a> {
     const CANONICAL_PREFIX: Prefix = Prefix::EdgePlays;
     const REVERSE_PREFIX: Prefix = Prefix::EdgePlaysReverse;
     type From = ObjectType<'a>;

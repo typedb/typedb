@@ -7,22 +7,21 @@
 use std::marker::PhantomData;
 use bytes::byte_array::ByteArray;
 use encoding::graph::type_::index::LabelToTypeVertexIndex;
-use encoding::graph::type_::property::{EncodableTypeEdgeProperty, EncodableTypeVertexProperty};
+use encoding::graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding};
 use encoding::{AsBytes, Keyable};
-use encoding::graph::type_::edge::EncodableParametrisedTypeEdge;
-use encoding::graph::type_::vertex::EncodableTypeVertex;
+use encoding::graph::type_::edge::TypeEdgeEncoding;
+use encoding::graph::type_::vertex::TypeVertexEncoding;
 use encoding::value::label::Label;
-use encoding::value::value_type::{ValueType, ValueTypeBytes};
+use encoding::value::value_type::ValueType;
 use storage::snapshot::WritableSnapshot;
 use crate::type_::relation_type::RelationType;
 use crate::type_::role_type::RoleType;
-use crate::type_::type_manager::KindAPI;
 use crate::type_::type_manager::type_reader::TypeReader;
-use crate::type_::{EdgeOverride, Ordering, TypeAPI};
+use crate::type_::{EdgeOverride, Ordering, TypeAPI, KindAPI};
 use crate::type_::attribute_type::AttributeType;
 use crate::type_::owns::Owns;
 use crate::type_::relates::Relates;
-use crate::type_::type_manager::encoding_helper::EdgeSub;
+use crate::type_::sub::Sub;
 
 pub struct TypeWriter<Snapshot: WritableSnapshot> {
     snapshot: PhantomData<Snapshot>,
@@ -54,7 +53,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     pub(crate) fn storage_put_supertype<K>(snapshot: &mut Snapshot, subtype: K, supertype: K)
         where K: KindAPI<'static>
     {
-        let sub_edge = EdgeSub::from_vertices(subtype.clone(), supertype.clone());
+        let sub_edge = Sub::from_vertices(subtype.clone(), supertype.clone());
         snapshot.put(sub_edge.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
         snapshot.put(sub_edge.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
@@ -63,7 +62,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     where T: KindAPI<'static>
     {
         let supertype = TypeReader::get_supertype(snapshot, subtype.clone()).unwrap().unwrap();
-        let sub_edge = EdgeSub::from_vertices(subtype.clone(), supertype.clone());
+        let sub_edge = Sub::from_vertices(subtype.clone(), supertype.clone());
         snapshot.delete(sub_edge.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
         snapshot.delete(sub_edge.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
@@ -102,7 +101,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         implementation: IMPL,
     )
     where
-        IMPL: EncodableParametrisedTypeEdge<'static> + Clone,
+        IMPL: TypeEdgeEncoding<'static> + Clone,
     {
         snapshot.put(implementation.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
         snapshot.put(implementation.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
@@ -112,28 +111,28 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot: &mut Snapshot,
         implementation: IMPL,
     )
-        where IMPL: EncodableParametrisedTypeEdge<'static> + Clone
+        where IMPL: TypeEdgeEncoding<'static> + Clone
     {
         snapshot.delete(implementation.clone().to_canonical_type_edge().into_storage_key().into_owned_array());
         snapshot.delete(implementation.clone().to_reverse_type_edge().into_storage_key().into_owned_array());
     }
 
 
-    pub(crate) fn storage_put_type_vertex_property<'a, P>(snapshot: &mut Snapshot, vertex: impl EncodableTypeVertex<'a>, property_opt: Option<P>)
+    pub(crate) fn storage_put_type_vertex_property<'a, P>(snapshot: &mut Snapshot, vertex: impl TypeVertexEncoding<'a>, property_opt: Option<P>)
         where
-            P: EncodableTypeVertexProperty<'a>,
+            P: TypeVertexPropertyEncoding<'a>,
     {
         let key = P::build_key(vertex).into_storage_key();
         if let(Some(property)) = property_opt {
-            let value =  property.build_value().unwrap();
+            let value =  property.to_value_bytes().unwrap();
             snapshot.put_val(key.into_owned_array(), value.into_array())
         } else {
             snapshot.put(key.into_owned_array())
         }
     }
 
-    pub(crate) fn storage_delete_type_vertex_property<'a, P>(snapshot: &mut Snapshot, edge: impl EncodableTypeVertex<'a>)
-        where P: EncodableTypeVertexProperty<'a>,
+    pub(crate) fn storage_delete_type_vertex_property<'a, P>(snapshot: &mut Snapshot, edge: impl TypeVertexEncoding<'a>)
+        where P: TypeVertexPropertyEncoding<'a>,
     {
         snapshot.delete(P::build_key(edge).into_storage_key().into_owned_array());
     }
@@ -143,7 +142,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         edge: E,
         overridden: E
     )
-    where E: EncodableParametrisedTypeEdge<'static>
+    where E: TypeEdgeEncoding<'static>
     {
         let overridden_to = EdgeOverride::<E> { overridden : overridden };
         Self::storage_put_type_edge_property(snapshot, edge, Some(overridden_to))
@@ -153,7 +152,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         snapshot: &mut Snapshot,
         edge: E,
     )
-        where E: EncodableParametrisedTypeEdge<'static>
+        where E: TypeEdgeEncoding<'static>
     {
         Self::storage_delete_type_edge_property::<EdgeOverride<E>>(snapshot, edge)
     }
@@ -172,21 +171,21 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         Self::storage_delete_type_edge_property::<Ordering>(snapshot, owns)
     }
 
-    pub(crate) fn storage_put_type_edge_property<'a, P>(snapshot: &mut Snapshot, edge: impl EncodableParametrisedTypeEdge<'a>, property_opt: Option<P>)
+    pub(crate) fn storage_put_type_edge_property<'a, P>(snapshot: &mut Snapshot, edge: impl TypeEdgeEncoding<'a>, property_opt: Option<P>)
     where
-        P: EncodableTypeEdgeProperty<'a>,
+        P: TypeEdgePropertyEncoding<'a>,
     {
         let key = P::build_key(edge).into_storage_key();
         if let(Some(property)) = property_opt {
-            let value =  property.build_value().unwrap();
+            let value =  property.to_value_bytes().unwrap();
             snapshot.put_val(key.into_owned_array(), value.into_array())
         } else {
             snapshot.put(key.into_owned_array())
         }
     }
 
-    pub(crate) fn storage_delete_type_edge_property<'a, P>(snapshot: &mut Snapshot, edge: impl EncodableParametrisedTypeEdge<'a>)
-        where P: EncodableTypeEdgeProperty<'a>,
+    pub(crate) fn storage_delete_type_edge_property<'a, P>(snapshot: &mut Snapshot, edge: impl TypeEdgeEncoding<'a>)
+        where P: TypeEdgePropertyEncoding<'a>,
     {
         snapshot.delete(P::build_key(edge).into_storage_key().into_owned_array());
     }

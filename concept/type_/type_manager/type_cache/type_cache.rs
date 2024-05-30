@@ -27,7 +27,7 @@ use crate::type_::{
     PlayerAPI,
     plays::Plays,
     relates::Relates,
-    relation_type::RelationType, role_type::RoleType, type_manager::KindAPI, TypeAPI,
+    relation_type::RelationType, role_type::RoleType, KindAPI, TypeAPI,
 };
 use crate::type_::object_type::ObjectType;
 use crate::type_::type_manager::type_cache::{
