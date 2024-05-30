@@ -615,8 +615,9 @@ public class CoreConfigParser extends Compound<CoreConfig> {
 
         protected static final String name = "development-mode";
         protected static final String description = "Configure development mode for testing setups. " +
-                "Note that running TypeDB in development mode will result in additional logging and may limit " +
-                "certain functionalities and overall productivity.";
+                "Note that running TypeDB in development mode may result in error reporting limitations " +
+                "(obstructing maintenance and support), additional logging, restricted functionalities, " +
+                "and reduced productivity.";
 
         private static final Predefined<Boolean> enable =
                 predefined("enable", "Enable development mode.", BOOLEAN);
