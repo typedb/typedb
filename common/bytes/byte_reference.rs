@@ -6,6 +6,8 @@
 
 use std::{fmt, ops::Range};
 
+use lending_iterator::higher_order::Hkt;
+
 use crate::{byte_array::ByteArray, util::HexBytesFormatter};
 
 /*
@@ -49,6 +51,10 @@ impl<'bytes, const INLINE_SIZE: usize> From<&'bytes ByteArray<INLINE_SIZE>> for 
     fn from(array: &'bytes ByteArray<INLINE_SIZE>) -> Self {
         array.as_ref()
     }
+}
+
+impl Hkt for ByteReference<'static> {
+    type HktSelf<'a> = ByteReference<'a>;
 }
 
 impl fmt::Debug for ByteReference<'_> {

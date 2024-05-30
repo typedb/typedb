@@ -5,15 +5,17 @@
  */
 
 use bytes::byte_array::ByteArray;
-use encoding::{graph::thing::vertex_attribute::AttributeID, value::value_type::ValueType};
-use encoding::value::value_type::ValueTypeCategory;
+use encoding::{
+    graph::thing::vertex_attribute::AttributeID,
+    value::value_type::{ValueType, ValueTypeCategory},
+};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
+    ConceptStatus,
 };
 
 pub mod attribute;
@@ -29,10 +31,10 @@ pub trait ThingAPI<'a> {
     fn set_modified<Snapshot: WritableSnapshot>(&self, snapshot: &mut Snapshot, thing_manager: &ThingManager<Snapshot>);
 
     // TODO: implementers could cache the status in a OnceCell if we do many operations on the same Thing at once
-    fn get_status<'m, Snapshot: ReadableSnapshot>(
+    fn get_status<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>,
+        thing_manager: &ThingManager<Snapshot>,
     ) -> ConceptStatus;
 
     fn errors<Snapshot: WritableSnapshot>(
@@ -49,7 +51,10 @@ pub trait ThingAPI<'a> {
 }
 
 // TODO: where do these belong? They're encodings of values we store for keys
-pub(crate) fn decode_attribute_ids(value_type_category: ValueTypeCategory, bytes: &[u8]) -> impl Iterator<Item = AttributeID> + '_ {
+pub(crate) fn decode_attribute_ids(
+    value_type_category: ValueTypeCategory,
+    bytes: &[u8],
+) -> impl Iterator<Item = AttributeID> + '_ {
     let chunk_size = AttributeID::value_type_encoding_length(value_type_category);
     let chunks_iter = bytes.chunks_exact(chunk_size);
     debug_assert!(chunks_iter.remainder().is_empty());

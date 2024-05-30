@@ -10,13 +10,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 
-use encoding::graph::definition::definition_key::DefinitionKey;
-use encoding::graph::type_::vertex::TypeVertex;
+use encoding::graph::{definition::definition_key::DefinitionKey, type_::vertex::TypeVertex};
 use resource::constants::encoding::StructFieldIDUInt;
+use serde::{Deserialize, Serialize};
 
 use crate::thing::value::Value;
 
@@ -25,16 +23,14 @@ pub struct StructValue<'a> {
     definition: DefinitionKey<'static>,
 
     // a map allows empty fields to not be recorded at all
-    fields: HashMap<StructFieldIDUInt, Value<'a>>
+    fields: HashMap<StructFieldIDUInt, Value<'a>>,
 }
 
 impl<'a> StructValue<'a> {
-
     pub fn definition_key(&self) -> DefinitionKey<'_> {
         self.definition.as_reference()
     }
 }
-
 
 // TODO: implement serialise/deserialise for the StructValue
 //       since JSON serialisation seems to be able to handle recursive nesting, it should be able to handle that

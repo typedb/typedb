@@ -8,8 +8,11 @@ use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr};
 
 use chrono::NaiveDateTime;
 use concept::{
-    thing::{object::Object, value::Value as TypeDBValue},
-    type_::{annotation::{self, Annotation as TypeDBAnnotation}, object_type::ObjectType},
+    thing::value::Value as TypeDBValue,
+    type_::{
+        annotation::{self, Annotation as TypeDBAnnotation, AnnotationCardinality},
+        object_type::ObjectType,
+    },
 };
 use cucumber::Parameter;
 use encoding::{
@@ -225,13 +228,14 @@ impl FromStr for ObjectRootLabel {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "value_type", regex = "(boolean|long|double|string|datetime)")]
+#[param(name = "value_type", regex = "(boolean|long|double|datetime|duration|string)")]
 pub(crate) enum ValueType {
     Boolean,
     Long,
     Double,
-    String,
     DateTime,
+    Duration,
+    String,
 }
 
 impl ValueType {
@@ -240,8 +244,9 @@ impl ValueType {
             ValueType::Boolean => TypeDBValueType::Boolean,
             ValueType::Long => TypeDBValueType::Long,
             ValueType::Double => TypeDBValueType::Double,
-            ValueType::String => TypeDBValueType::String,
             ValueType::DateTime => TypeDBValueType::DateTime,
+            ValueType::Duration => TypeDBValueType::Duration,
+            ValueType::String => TypeDBValueType::String,
         }
     }
 }
@@ -255,6 +260,7 @@ impl FromStr for ValueType {
             "boolean" => Self::Boolean,
             "double" => Self::Double,
             "datetime" => Self::DateTime,
+            "duration" => Self::Duration,
             _ => panic!("Unrecognised value type"),
         })
     }
@@ -275,7 +281,10 @@ impl Value {
             TypeDBValueType::DateTime => {
                 TypeDBValue::DateTime(NaiveDateTime::parse_from_str(&self.raw_value, "%Y-%m-%d %H:%M:%S").unwrap())
             }
+            TypeDBValueType::DateTimeTZ => todo!(),
+            TypeDBValueType::Duration => TypeDBValue::Duration(self.raw_value.parse().unwrap()),
             TypeDBValueType::String => TypeDBValue::String(Cow::Owned(self.raw_value)),
+            TypeDBValueType::Struct(_) => todo!(),
         }
     }
 }
@@ -314,6 +323,19 @@ impl FromStr for Annotation {
                 );
                 let regex = &regex[r#"@regex(""#.len()..regex.len() - r#"")"#.len()];
                 TypeDBAnnotation::Regex(annotation::AnnotationRegex::new(regex.to_owned()))
+            }
+            card if card.starts_with("@card") => {
+                assert!(
+                    card.starts_with("@card(") && card.ends_with(')'),
+                    r#"Invalid @card format: {card:?}. Expected "@card(min, max)""#
+                );
+                let card = card["@card(".len()..card.len() - ")".len()].trim();
+                let (min, max) =
+                    card.split_once(',').map(|(min, max)| (min.trim(), Some(max.trim()))).unwrap_or((card, None));
+                TypeDBAnnotation::Cardinality(AnnotationCardinality::new(
+                    min.parse().unwrap(),
+                    max.map(str::parse).transpose().unwrap(),
+                ))
             }
             _ => panic!("Unrecognised (or unimplemented) annotation: {s}"),
         };

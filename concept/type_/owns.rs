@@ -40,6 +40,15 @@ impl<'a> Owns<'a> {
         self.attribute.clone().into_owned()
     }
 
+    pub fn is_key<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+    ) -> Result<bool, ConceptReadError> {
+        let annotations = self.get_annotations(snapshot, type_manager)?;
+        Ok(annotations.contains(&OwnsAnnotation::Key(AnnotationKey)))
+    }
+
     pub fn is_unique<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
@@ -214,5 +223,3 @@ impl PartialEq<Annotation> for OwnsAnnotation {
         }
     }
 }
-
-

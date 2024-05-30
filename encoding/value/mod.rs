@@ -6,23 +6,25 @@
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
-use storage::snapshot::ReadableSnapshot;
-use crate::graph::definition::r#struct::StructDefinition;
-use crate::value::struct_bytes::StructBytes;
 
 use self::{
-    boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, double_bytes::DoubleBytes, long_bytes::LongBytes,
-    string_bytes::StringBytes, value_type::ValueType,
+    boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
+    double_bytes::DoubleBytes, duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes,
+    struct_bytes::StructBytes, value_type::ValueType,
 };
 
 pub mod boolean_bytes;
 pub mod date_time_bytes;
+pub mod date_time_tz_bytes;
 pub mod double_bytes;
+pub mod duration_bytes;
+pub mod duration_value;
 pub mod label;
 pub mod long_bytes;
+mod primitive_encoding;
 pub mod string_bytes;
-pub mod value_type;
 pub mod struct_bytes;
+pub mod value_type;
 
 pub fn encode_value_u64(count: u64) -> ByteArray<BUFFER_VALUE_INLINE> {
     // LE is normally platform-native
@@ -44,6 +46,10 @@ pub trait ValueEncodable: Clone {
     fn encode_double(&self) -> DoubleBytes;
 
     fn encode_date_time(&self) -> DateTimeBytes;
+
+    fn encode_date_time_tz(&self) -> DateTimeTZBytes;
+
+    fn encode_duration(&self) -> DurationBytes;
 
     fn encode_string<const INLINE_LENGTH: usize>(&self) -> StringBytes<INLINE_LENGTH>;
 

@@ -6,13 +6,13 @@
 
 use std::borrow::Cow;
 
-use chrono::NaiveDateTime;
-
+use chrono::{DateTime, NaiveDateTime};
+use chrono_tz::Tz;
 use encoding::value::{
-    boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, double_bytes::DoubleBytes, long_bytes::LongBytes,
-    string_bytes::StringBytes, value_type::ValueType, ValueEncodable,
+    boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
+    double_bytes::DoubleBytes, duration_bytes::DurationBytes, duration_value::Duration, long_bytes::LongBytes,
+    string_bytes::StringBytes, struct_bytes::StructBytes, value_type::ValueType, ValueEncodable,
 };
-use encoding::value::struct_bytes::StructBytes;
 
 use crate::thing::value_struct::StructValue;
 
@@ -22,19 +22,23 @@ pub enum Value<'a> {
     Long(i64),
     Double(f64),
     DateTime(NaiveDateTime),
+    DateTimeTZ(DateTime<Tz>),
+    Duration(Duration),
     String(Cow<'a, str>),
     Struct(Cow<'a, StructValue<'static>>),
 }
 
 impl<'a> Value<'a> {
     pub fn as_reference(&self) -> Value<'_> {
-        match self {
-            Value::Boolean(boolean) => Value::Boolean(*boolean),
-            Value::Long(long) => Value::Long(*long),
-            Value::Double(double) => Value::Double(*double),
-            Value::DateTime(date_time) => Value::DateTime(*date_time),
-            Value::String(string) => Value::String(Cow::Borrowed(string.as_ref())),
-            Value::Struct(struct_) => Value::Struct(Cow::Borrowed(struct_.as_ref()))
+        match *self {
+            Value::Boolean(boolean) => Value::Boolean(boolean),
+            Value::Long(long) => Value::Long(long),
+            Value::Double(double) => Value::Double(double),
+            Value::DateTime(date_time) => Value::DateTime(date_time),
+            Value::DateTimeTZ(date_time_tz) => Value::DateTimeTZ(date_time_tz),
+            Value::Duration(duration) => Value::Duration(duration),
+            Value::String(ref string) => Value::String(Cow::Borrowed(string.as_ref())),
+            Value::Struct(ref struct_) => Value::Struct(Cow::Borrowed(struct_.as_ref())),
         }
     }
 
@@ -76,7 +80,20 @@ impl<'a> Value<'a> {
     pub fn unwrap_struct(self) -> Cow<'a, StructValue<'static>> {
         match self {
             Value::Struct(struct_) => struct_,
-            _ => panic!("Cannot unwrap Struct if not a struct value.")
+            _ => panic!("Cannot unwrap Struct if not a struct value."),
+        }
+    }
+
+    pub(crate) fn into_owned(self) -> Value<'static> {
+        match self {
+            Self::Boolean(bool) => Value::Boolean(bool),
+            Self::Long(long) => Value::Long(long),
+            Self::Double(double) => Value::Double(double),
+            Self::DateTime(date_time) => Value::DateTime(date_time),
+            Self::DateTimeTZ(date_time_tz) => Value::DateTimeTZ(date_time_tz),
+            Self::Duration(duration) => Value::Duration(duration),
+            Self::String(string) => Value::String(Cow::Owned(string.into_owned())),
+            Self::Struct(struct_) => Value::Struct(Cow::Owned(struct_.into_owned())),
         }
     }
 }
@@ -88,8 +105,10 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::Long(_) => ValueType::Long,
             Value::Double(_) => ValueType::Double,
             Value::DateTime(_) => ValueType::DateTime,
+            Value::DateTimeTZ(_) => ValueType::DateTimeTZ,
+            Value::Duration(_) => ValueType::Duration,
             Value::String(_) => ValueType::String,
-            Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().into_owned())
+            Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().into_owned()),
         }
     }
 
@@ -121,6 +140,20 @@ impl<'a> ValueEncodable for Value<'a> {
         }
     }
 
+    fn encode_date_time_tz(&self) -> DateTimeTZBytes {
+        match self {
+            &Self::DateTimeTZ(date_time_tz) => DateTimeTZBytes::build(date_time_tz),
+            _ => panic!("Cannot encoded non-datetime as DateTimeBytes"),
+        }
+    }
+
+    fn encode_duration(&self) -> DurationBytes {
+        match self {
+            Self::Duration(duration) => DurationBytes::build(*duration),
+            _ => panic!("Cannot encoded non-duration as DurationBytes"),
+        }
+    }
+
     fn encode_string<const INLINE_LENGTH: usize>(&self) -> StringBytes<'_, INLINE_LENGTH> {
         match self {
             Value::String(str) => StringBytes::build_ref(str),
@@ -132,7 +165,7 @@ impl<'a> ValueEncodable for Value<'a> {
         match self {
             Value::Struct(struct_) => {
                 todo!()
-            },
+            }
             _ => panic!("Cannot encode non-Struct as StructBytes"),
         }
     }

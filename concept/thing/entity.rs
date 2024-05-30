@@ -110,13 +110,13 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         thing_manager: &ThingManager<Snapshot>,
     ) -> Result<(), ConceptWriteError> {
         let has = self
-            .get_has(snapshot, thing_manager)
+            .get_has_unordered(snapshot, thing_manager)
             .collect_cloned_vec(|(k, _)| k.into_owned())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         let mut has_attr_type_deleted = HashSet::new();
         for attr in has {
             has_attr_type_deleted.add(attr.type_());
-            thing_manager.unset_has(snapshot, &self, attr);
+            thing_manager.unset_has_unordered(snapshot, &self, attr);
         }
 
         for owns in self
@@ -129,7 +129,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
                 .get_ordering(snapshot, thing_manager.type_manager())
                 .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
             if matches!(ordering, Ordering::Ordered) {
-                thing_manager.unset_has_ordered(snapshot, self.as_reference(), owns.attribute());
+                thing_manager.unset_has_ordered(snapshot, &self, owns.attribute());
             }
         }
 
@@ -157,6 +157,10 @@ impl<'a> ObjectAPI<'a> for Entity<'a> {
 
     fn type_(&self) -> impl ObjectTypeAPI<'static> {
         self.type_()
+    }
+
+    fn into_owned_object(self) -> Object<'static> {
+        Object::Entity(self.into_owned())
     }
 }
 

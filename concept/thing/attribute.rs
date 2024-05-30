@@ -13,7 +13,7 @@ use encoding::{
         type_::vertex::build_vertex_attribute_type,
         Typed,
     },
-    value::{decode_value_u64, value_type::ValueType},
+    value::decode_value_u64,
     AsBytes, Keyable,
 };
 use iterator::State;
@@ -150,7 +150,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
             .collect_cloned_vec(|(key, _)| key.into_owned())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for object in owners {
-            thing_manager.unset_has(snapshot, &object, self.as_reference());
+            thing_manager.unset_has_unordered(snapshot, &object, self.as_reference());
         }
         thing_manager.delete_attribute(snapshot, self)?;
 
@@ -255,7 +255,9 @@ impl<'a, Snapshot: ReadableSnapshot> AttributeIterator<'a, Snapshot> {
         }
     }
 
-    fn iter_next(&mut self) -> Option<Result<(StorageKey<'_, BUFFER_KEY_INLINE>, Bytes<'_, BUFFER_VALUE_INLINE>), ConceptReadError>> {
+    fn iter_next(
+        &mut self,
+    ) -> Option<Result<(StorageKey<'_, BUFFER_KEY_INLINE>, Bytes<'_, BUFFER_VALUE_INLINE>), ConceptReadError>> {
         match &self.state {
             State::Init | State::ItemUsed => {
                 self.find_next_state();

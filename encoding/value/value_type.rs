@@ -6,24 +6,21 @@
 
 use std::ops::Range;
 
-use bytes::byte_array::ByteArray;
-use bytes::Bytes;
+use bytes::{byte_array::ByteArray, Bytes};
 
-use crate::AsBytes;
-use crate::graph::definition::definition_key::DefinitionKey;
+use crate::{graph::definition::definition_key::DefinitionKey, AsBytes};
 
-/// We can support Prefix::ATTRIBUTE_MAX - Prefix::ATTRIBUTE_MIN different built-in value types
+// We can support Prefix::ATTRIBUTE_MAX - Prefix::ATTRIBUTE_MIN different built-in value types
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ValueType {
     Boolean,
     Long,
     Double,
 
-    // TODO: consider splitting with/without timezone
     DateTime,
-    /*
-    Duration, // Naming: 'interval'?
-     */
+    DateTimeTZ,
+    Duration,
+
     String,
 
     Struct(DefinitionKey<'static>),
@@ -36,6 +33,8 @@ impl ValueType {
             ValueType::Long => ValueTypeCategory::Long,
             ValueType::Double => ValueTypeCategory::Double,
             ValueType::DateTime => ValueTypeCategory::DateTime,
+            ValueType::DateTimeTZ => ValueTypeCategory::DateTimeTZ,
+            ValueType::Duration => ValueTypeCategory::Duration,
             ValueType::String => ValueTypeCategory::String,
             ValueType::Struct(_) => ValueTypeCategory::Struct,
         }
@@ -47,6 +46,8 @@ impl ValueType {
             ValueTypeCategory::Long => Self::Long,
             ValueTypeCategory::Double => Self::Double,
             ValueTypeCategory::DateTime => Self::DateTime,
+            ValueTypeCategory::DateTimeTZ => Self::DateTimeTZ,
+            ValueTypeCategory::Duration => Self::Duration,
             ValueTypeCategory::String => Self::String,
             ValueTypeCategory::Struct => {
                 let definition_key = DefinitionKey::new(Bytes::Array(ByteArray::copy(&tail)));
@@ -62,20 +63,23 @@ pub enum ValueTypeCategory {
     Long,
     Double,
     DateTime,
+    DateTimeTZ,
+    Duration,
     String,
     Struct,
 }
 
 impl ValueTypeCategory {
-
     fn to_bytes(&self) -> [u8; ValueTypeBytes::CATEGORY_LENGTH] {
         match self {
             Self::Boolean => [0],
             Self::Long => [1],
             Self::Double => [2],
             Self::DateTime => [3],
-            Self::String => [4],
-            Self::Struct => [40]
+            Self::DateTimeTZ => [4],
+            Self::Duration => [5],
+            Self::String => [6],
+            Self::Struct => [40],
         }
     }
 
@@ -85,7 +89,9 @@ impl ValueTypeCategory {
             [1] => ValueTypeCategory::Long,
             [2] => ValueTypeCategory::Double,
             [3] => ValueTypeCategory::DateTime,
-            [4] => ValueTypeCategory::String,
+            [4] => ValueTypeCategory::DateTimeTZ,
+            [5] => ValueTypeCategory::Duration,
+            [6] => ValueTypeCategory::String,
             [40] => ValueTypeCategory::Struct,
             _ => panic!("Unrecognised value type category byte: {:?}", bytes),
         };
@@ -113,20 +119,16 @@ impl ValueTypeBytes {
     pub fn build(value_type: &ValueType) -> Self {
         let mut array = [0; Self::LENGTH];
         array[Self::RANGE_CATEGORY].copy_from_slice(&value_type.category().to_bytes());
-        match value_type {
-            ValueType::Struct(definition_key) => {
-                array[Self::RANGE_TAIL].copy_from_slice(&definition_key.bytes().bytes());
-            }
-            _ => {}
+        if let ValueType::Struct(definition_key) = value_type {
+            array[Self::RANGE_TAIL].copy_from_slice(definition_key.bytes().bytes());
         }
-
         Self { bytes: array }
     }
 
     pub fn to_value_type(&self) -> ValueType {
         ValueType::from_category_and_tail(
             ValueTypeCategory::from_bytes(self.bytes[Self::RANGE_CATEGORY].try_into().unwrap()),
-            self.bytes[Self::RANGE_TAIL].try_into().unwrap()
+            self.bytes[Self::RANGE_TAIL].try_into().unwrap(),
         )
     }
 

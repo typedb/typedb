@@ -6,11 +6,8 @@
 
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize};
-
 use resource::constants::encoding::StructFieldIDUInt;
-
-use crate::value::value_type::ValueType;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct StructDefinition {

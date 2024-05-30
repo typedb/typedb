@@ -92,7 +92,11 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
     }
 }
 
-impl<'a> ObjectTypeAPI<'a> for EntityType<'a> {}
+impl<'a> ObjectTypeAPI<'a> for EntityType<'a> {
+    fn into_owned_object_type(self) -> ObjectType<'static> {
+        ObjectType::Entity(self.into_owned())
+    }
+}
 
 impl<'a> EntityType<'a> {
     pub fn is_root<Snapshot: ReadableSnapshot>(

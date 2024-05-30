@@ -29,6 +29,7 @@ rust_library(
         "//storage",
 
         "@crates//:chrono",
+        "@crates//:chrono-tz",
         "@crates//:tracing",
         "@crates//:seahash",
         "@crates//:serde",
@@ -40,6 +41,7 @@ checkstyle_test(
     include = glob([
         "*",
         "graph/*",
+        "graph/definition/*",
         "graph/thing/*",
         "graph/type_/*",
         "layout/*",

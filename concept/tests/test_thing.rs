@@ -187,7 +187,7 @@ fn has() {
         person_1.set_has_unordered(&mut snapshot, &thing_manager, age_1).unwrap();
         person_1.set_has_unordered(&mut snapshot, &thing_manager, name_1).unwrap();
 
-        let retrieved_attributes_count = person_1.get_has(&snapshot, &thing_manager).count();
+        let retrieved_attributes_count = person_1.get_has_unordered(&snapshot, &thing_manager).count();
         assert_eq!(retrieved_attributes_count, 2);
 
         let finalise_result = thing_manager.finalise(&mut snapshot);
@@ -205,7 +205,7 @@ fn has() {
 
         let people = thing_manager.get_entities(&snapshot).collect_cloned();
         let person_1 = people.first().unwrap();
-        let retrieved_attributes_count = person_1.get_has(&snapshot, &thing_manager).count();
+        let retrieved_attributes_count = person_1.get_has_unordered(&snapshot, &thing_manager).count();
         assert_eq!(retrieved_attributes_count, 2);
     }
 }

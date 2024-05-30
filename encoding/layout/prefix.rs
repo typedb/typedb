@@ -42,14 +42,16 @@ impl PrefixID {
             | Prefix::IndexLabelToType
             | Prefix::PropertyTypeEdge
             | Prefix::DefinitionStruct
-            | Prefix::IndexLabelToDefinitionStruct =>  EncodingKeyspace::Schema,
+            | Prefix::IndexLabelToDefinitionStruct => EncodingKeyspace::Schema,
             Prefix::VertexEntity => todo!(),
             Prefix::VertexRelation => todo!(),
             Prefix::VertexAttributeBoolean => todo!(),
             Prefix::VertexAttributeLong => todo!(),
             Prefix::VertexAttributeDouble => todo!(),
-            Prefix::VertexAttributeString => todo!(),
             Prefix::VertexAttributeDateTime => todo!(),
+            Prefix::VertexAttributeDateTimeTZ => todo!(),
+            Prefix::VertexAttributeDuration => todo!(),
+            Prefix::VertexAttributeString => todo!(),
             Prefix::VertexAttributeStruct => todo!(),
             Prefix::EdgeHas => todo!(),
             Prefix::EdgeHasReverse => todo!(),
@@ -76,6 +78,8 @@ pub enum Prefix {
     VertexAttributeLong,
     VertexAttributeDouble,
     VertexAttributeDateTime,
+    VertexAttributeDateTimeTZ,
+    VertexAttributeDuration,
     VertexAttributeString,
     VertexAttributeStruct,
     _VertexAttributeLast, // marker to indicate reserved range for attribute types
@@ -97,16 +101,13 @@ pub enum Prefix {
 
     DefinitionStruct,
     // DefinitionFunction
-
     PropertyTypeVertex,
     PropertyTypeEdge,
     // PropertyDefinitionFunction,
-
     PropertyObjectVertex,
 
     IndexLabelToType,
-    IndexLabelToDefinitionStruct
-    // IndexLabelToDefinitionFunction
+    IndexLabelToDefinitionStruct, // IndexLabelToDefinitionFunction
 }
 
 macro_rules! prefix_functions {
@@ -176,8 +177,10 @@ impl Prefix {
            VertexAttributeBoolean => [50], true;
            VertexAttributeLong => [51], true;
            VertexAttributeDouble => [52], true;
-           VertexAttributeString => [53], true;
-           VertexAttributeDateTime => [54], true;
+           VertexAttributeDateTime => [53], true;
+           VertexAttributeDateTimeTZ => [54], true;
+           VertexAttributeDuration => [55], true;
+           VertexAttributeString => [56], true;
            VertexAttributeStruct => [90], true;
            _VertexAttributeLast => [99], true;
 

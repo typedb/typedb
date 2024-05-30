@@ -266,10 +266,30 @@ pub async fn get_overridden_role_label(
 }
 
 #[apply(generic_step)]
+#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) set annotation: {annotation}")]
+pub async fn relation_role_set_annotation(
+    context: &mut Context,
+    relation_label: Label,
+    role_label: Label,
+    annotation: Annotation,
+) {
+    with_schema_tx!(context, |tx| {
+        let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
+        let role = tx
+            .type_manager
+            .resolve_relates(&tx.snapshot, relation, role_label.to_typedb().name().as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        role.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb().into()).unwrap();
+    });
+}
+
+#[apply(generic_step)]
 #[step(
     expr = "relation\\({type_label}\\) get role\\({type_label}\\) get annotations {contains_or_doesnt}: {annotation}"
 )]
-pub async fn type_is_abstract(
+pub async fn relation_role_annotations_contain(
     context: &mut Context,
     relation_label: Label,
     role_label: Label,

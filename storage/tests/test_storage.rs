@@ -130,9 +130,9 @@ fn create_reopen() {
             load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), Some(checkpoint))
                 .unwrap();
         let items = storage
-            .iterate_keyspace_range(KeyRange::new_unbounded(StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(
-                &StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace, [0x0])),
-            ))))
+            .iterate_keyspace_range(KeyRange::new_unbounded(StorageKey::<BUFFER_VALUE_INLINE>::Reference(
+                StorageKeyReference::from(&StorageKeyArray::<BUFFER_VALUE_INLINE>::from((Keyspace, [0x0]))),
+            )))
             .collect_cloned::<BUFFER_VALUE_INLINE, 128>();
         let items = items.into_iter().map(|(key, _)| key).collect_vec();
         assert_eq!(items, keys.into_iter().map(StorageKeyArray::into_byte_array).collect_vec());

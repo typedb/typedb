@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use super::primitive_encoding::{decode_i64, encode_i64};
+
 #[derive(Debug, Copy, Clone)]
 pub struct LongBytes {
     bytes: [u8; Self::LENGTH],
@@ -17,11 +19,11 @@ impl LongBytes {
     }
 
     pub fn build(long: i64) -> Self {
-        Self { bytes: (long ^ i64::MIN).to_be_bytes() }
+        Self { bytes: encode_i64(long) }
     }
 
     pub fn as_i64(&self) -> i64 {
-        i64::from_be_bytes(self.bytes) ^ i64::MIN
+        decode_i64(self.bytes)
     }
 
     pub(crate) fn bytes(&self) -> [u8; Self::LENGTH] {

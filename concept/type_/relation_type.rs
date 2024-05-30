@@ -93,7 +93,11 @@ impl<'a> TypeAPI<'a> for RelationType<'a> {
     }
 }
 
-impl<'a> ObjectTypeAPI<'a> for RelationType<'a> {}
+impl<'a> ObjectTypeAPI<'a> for RelationType<'a> {
+    fn into_owned_object_type(self) -> ObjectType<'static> {
+        ObjectType::Relation(self.into_owned())
+    }
+}
 
 impl<'a> RelationType<'a> {
     pub fn is_root<Snapshot: ReadableSnapshot>(

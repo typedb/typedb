@@ -120,6 +120,22 @@ impl WriteBuffer {
         self.writes.insert(key, Write::Insert { value });
     }
 
+    pub(crate) fn uninsert(
+        &mut self,
+        key: ByteArray<BUFFER_KEY_INLINE>,
+        expected_value: ByteArray<BUFFER_VALUE_INLINE>,
+    ) {
+        match self.writes.remove(&key) {
+            Some(Write::Insert { value, .. }) => {
+                if value != expected_value {
+                    panic!("Unexpected value `{:?}` when trying to uninsert; expected `{:?}`", value, expected_value)
+                }
+            }
+            Some(_other_write) => panic!("Attempting to uninsert a key that was put or deleted"),
+            None => panic!("Attempting to uninsert a key that was not inserted"),
+        }
+    }
+
     pub(crate) fn put(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
         self.writes
             .insert(key, Write::Put { value, reinsert: Arc::new(AtomicBool::new(false)), known_to_exist: false });
@@ -130,7 +146,6 @@ impl WriteBuffer {
     }
 
     pub(crate) fn unput(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, expected_value: ByteArray<BUFFER_VALUE_INLINE>) {
-        //TODO better messages
         match self.writes.remove(&key) {
             Some(Write::Put { value, .. }) => {
                 if value != expected_value {
@@ -183,11 +198,7 @@ impl WriteBuffer {
         } else {
             Bound::Excluded(exclusive_end_bytes.bytes())
         };
-        self.writes
-            .range::<[u8], _>((Bound::Included(range_start.bytes()), end))
-            .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
-            .next()
-            .is_some()
+        self.writes.range::<[u8], _>((Bound::Included(range_start.bytes()), end)).any(|(_, write)| !write.is_delete())
     }
 
     fn compute_exclusive_end<const INLINE: usize>(
@@ -237,9 +248,7 @@ impl BufferRangeIterator {
         Self { inner: Vec::new().into_iter().peekable() }
     }
 
-    pub(crate) fn peek(
-        &mut self,
-    ) -> Option<&(StorageKeyArray<BUFFER_KEY_INLINE>, Write)> {
+    pub(crate) fn peek(&mut self) -> Option<&(StorageKeyArray<BUFFER_KEY_INLINE>, Write)> {
         self.inner.peek()
     }
 

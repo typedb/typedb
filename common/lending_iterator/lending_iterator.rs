@@ -95,6 +95,15 @@ pub trait LendingIterator: 'static {
         }
         count
     }
+
+    fn try_collect<B, E>(self) -> Result<B, E>
+    where
+        Self: Sized,
+        for<'a> Self::Item<'a>: 'static,
+        Result<B, E>: FromIterator<Self::Item<'static>>,
+    {
+        self.collect()
+    }
 }
 
 pub trait Seekable<K: ?Sized>: LendingIterator {
