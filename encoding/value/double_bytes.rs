@@ -4,7 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::graph::thing::vertex_attribute::AttributeIDLength;
+use super::primitive_encoding::decode_u64;
+use crate::{graph::thing::vertex_attribute::AttributeIDLength, value::primitive_encoding::encode_u64};
 
 #[derive(Debug, Copy, Clone)]
 pub struct DoubleBytes {
@@ -27,11 +28,11 @@ impl DoubleBytes {
         // If sign bit is set (the value is negative), the sign bit needs to be unset and the
         // magnitude bits inverted to preserve the ordering
         let encoded_bits = if double.is_sign_positive() { (-double).to_bits() } else { !double.to_bits() };
-        Self { bytes: encoded_bits.to_be_bytes() }
+        Self { bytes: encode_u64(encoded_bits) }
     }
 
     pub fn as_f64(&self) -> f64 {
-        let encoded_bits = u64::from_be_bytes(self.bytes);
+        let encoded_bits = decode_u64(self.bytes);
         if encoded_bits > Self::ENCODED_NEGATIVE_ZERO {
             -f64::from_bits(encoded_bits)
         } else {

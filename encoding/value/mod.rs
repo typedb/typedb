@@ -19,6 +19,8 @@ pub mod date_time_tz_bytes;
 pub mod double_bytes;
 pub mod duration_bytes;
 pub mod duration_value;
+pub mod fixed_point_bytes;
+pub mod fixed_point_value;
 pub mod label;
 pub mod long_bytes;
 mod primitive_encoding;

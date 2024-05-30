@@ -7,7 +7,10 @@
 use chrono::{DateTime, NaiveDateTime};
 use chrono_tz::Tz;
 
-use super::date_time_bytes::DateTimeBytes;
+use super::{
+    date_time_bytes::DateTimeBytes,
+    primitive_encoding::{decode_u16, encode_u16},
+};
 use crate::graph::thing::vertex_attribute::AttributeIDLength;
 
 #[derive(Debug, Copy, Clone)]
@@ -28,14 +31,13 @@ impl DateTimeTZBytes {
     pub fn build(date_time: DateTime<Tz>) -> Self {
         let mut bytes = DateTimeBytes::build(date_time.naive_utc()).bytes();
         bytes[Self::DATE_TIME_LENGTH..][..Self::TZ_LENGTH]
-            .copy_from_slice(&encode_tz(date_time.timezone()).to_be_bytes());
+            .copy_from_slice(&encode_u16(encode_tz(date_time.timezone())));
         Self { bytes }
     }
 
     pub fn as_date_time(&self) -> DateTime<Tz> {
         let date_time = DateTimeBytes::new(self.bytes).as_naive_date_time();
-        let tz =
-            decode_tz(u16::from_be_bytes(self.bytes[Self::DATE_TIME_LENGTH..][..Self::TZ_LENGTH].try_into().unwrap()));
+        let tz = decode_tz(decode_u16(self.bytes[Self::DATE_TIME_LENGTH..][..Self::TZ_LENGTH].try_into().unwrap()));
         date_time.and_utc().with_timezone(&tz)
     }
 
