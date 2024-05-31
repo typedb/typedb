@@ -22,6 +22,9 @@ import java.util.concurrent.TimeoutException;
 
 import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.core.tool.runner.CoreServerOpts.ADDR;
+import static com.vaticle.typedb.core.tool.runner.CoreServerOpts.DIAGNOSTICS_MONITORING_PORT;
+import static com.vaticle.typedb.core.tool.runner.CoreServerOpts.STORAGE_DATA;
 import static com.vaticle.typedb.core.tool.runner.Util.createProcessExecutor;
 import static com.vaticle.typedb.core.tool.runner.Util.findUnusedPorts;
 import static com.vaticle.typedb.core.tool.runner.Util.getServerArchiveFile;
@@ -34,6 +37,7 @@ public class TypeDBCoreRunner implements TypeDBRunner {
     private final Path dataDir;
     private final Path logsDir;
     private final int port;
+    private final int diagnosticsMonitoringPort;
     private StartedProcess process;
     private final ProcessExecutor executor;
     private final Map<String, String> userOptions;
@@ -49,6 +53,7 @@ public class TypeDBCoreRunner implements TypeDBRunner {
     public TypeDBCoreRunner(Map<String, String> userOptions) throws InterruptedException, TimeoutException, IOException {
         this.userOptions = userOptions;
         port = findUnusedPorts(1).get(0);
+        diagnosticsMonitoringPort = findUnusedPorts(1).get(0);
         System.out.println(address() + ": Constructing " + name() + " runner");
         System.out.println(address() + ": Extracting distribution archive...");
         distribution = unarchive(getServerArchiveFile());
@@ -76,6 +81,10 @@ public class TypeDBCoreRunner implements TypeDBRunner {
         return port;
     }
 
+    public int diagnosticsMonitoringPort() {
+        return diagnosticsMonitoringPort;
+    }
+
     @Override
     public void start() {
         System.out.println(address() + ": " +  name() + "is starting... ");
@@ -92,8 +101,9 @@ public class TypeDBCoreRunner implements TypeDBRunner {
 
     private List<String> command() {
         Map<String, String> dynamicOptions = map(
-                pair("--server.address", address()),
-                pair("--storage.data", dataDir.toAbsolutePath().toString())
+                pair(ADDR, address()),
+                pair(STORAGE_DATA, dataDir.toAbsolutePath().toString()),
+                pair(DIAGNOSTICS_MONITORING_PORT, String.valueOf(diagnosticsMonitoringPort()))
         );
         Map<String, String> overriddenOptions = new HashMap<>(OVERRIDABLE_OPTIONS);
         userOptions.keySet().forEach(overriddenOptions::remove);
