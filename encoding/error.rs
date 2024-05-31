@@ -13,10 +13,11 @@ use crate::layout::prefix::Prefix;
 #[derive(Debug, Clone)]
 pub enum EncodingError {
     UFT8Decode { bytes: Box<[u8]>, source: Utf8Error },
-    TypeIDAllocate { source: std::sync::Arc<SnapshotIteratorError> },
+    SchemaIDAllocate { source: std::sync::Arc<SnapshotIteratorError> },
     ExistingTypesRead { source: std::sync::Arc<SnapshotIteratorError> },
     TypeIDsExhausted { kind: crate::graph::type_::Kind },
     UnexpectedPrefix { expected_prefix: Prefix, actual_prefix: Prefix },
+    DefinitionIDsExhausted { prefix: Prefix },
 }
 
 impl fmt::Display for EncodingError {
@@ -29,10 +30,11 @@ impl Error for EncodingError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::UFT8Decode { source, .. } => Some(source),
-            Self::TypeIDAllocate { source, .. } => Some(source),
+            Self::SchemaIDAllocate { source, .. } => Some(source),
             Self::ExistingTypesRead { source, .. } => Some(source),
             Self::TypeIDsExhausted { .. } => None,
-            EncodingError::UnexpectedPrefix { .. } => None,
+            Self::DefinitionIDsExhausted { .. } => None,
+            Self::UnexpectedPrefix { .. } => None,
         }
     }
 }

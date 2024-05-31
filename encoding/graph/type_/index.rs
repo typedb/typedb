@@ -78,7 +78,7 @@ impl<'a, T: IndexedKey> Prefixed<'a, BUFFER_KEY_INLINE> for IdentifierToTypeInde
 
 // Specialisations
 pub type LabelToTypeVertexIndex<'a> = IdentifierToTypeIndex<'a, TypeVertex<'static>>;
-impl<'a> IndexedKey for Label<'a> {
+impl<'a> IndexedKey for TypeVertex<'a> {
     const PREFIX: Prefix = Prefix::IndexLabelToType;
 }
 

@@ -8,75 +8,15 @@ use std::sync::atomic::{AtomicU16, Ordering::Relaxed};
 
 use bytes::Bytes;
 use lending_iterator::LendingIterator;
-use storage::{key_range::KeyRange, snapshot::WritableSnapshot};
+use storage::snapshot::WritableSnapshot;
 
 use crate::{
     error::EncodingError,
-    graph::{
-        type_::{
-            vertex::{TypeID, TypeIDUInt, TypeVertex},
-            Kind,
-            Kind::{Attribute, Entity, Relation, Role},
-        },
-        Typed,
-    },
+    graph::type_::vertex::TypeVertex,
     layout::prefix::Prefix,
     Keyable,
 };
-
-pub struct TypeVertexAllocator {
-    kind: Kind,
-    last_allocated_type_id: AtomicU16,
-    prefix: Prefix,
-}
-
-impl TypeVertexAllocator {
-    fn new(kind: Kind, prefix: Prefix) -> TypeVertexAllocator {
-        Self { kind, last_allocated_type_id: AtomicU16::new(0), prefix }
-    }
-
-    fn find_unallocated_id<Snapshot: WritableSnapshot>(
-        &self,
-        snapshot: &Snapshot,
-        start: TypeIDUInt,
-    ) -> Result<Option<TypeIDUInt>, EncodingError> {
-        let mut type_vertex_iter = snapshot.iterate_range(KeyRange::new_inclusive(
-            TypeVertex::build(self.prefix.prefix_id(), TypeID::build(start)).into_storage_key(),
-            TypeVertex::build(self.prefix.prefix_id(), TypeID::build(TypeIDUInt::MAX)).into_storage_key(),
-        ));
-        for expected_next in start..=TypeIDUInt::MAX {
-            match type_vertex_iter.next() {
-                None => return Ok(Some(expected_next)),
-                Some(Err(err)) => {
-                    return Err(EncodingError::TypeIDAllocate { source: err.clone() });
-                }
-                Some(Ok((actual_next_key, _))) => {
-                    let actual_type_id = TypeVertex::new(Bytes::reference(actual_next_key.bytes())).type_id_().as_u16();
-                    if actual_type_id != expected_next {
-                        return Ok(Some(expected_next));
-                    }
-                }
-            }
-        }
-        Ok(None)
-    }
-
-    fn allocate<Snapshot: WritableSnapshot>(&self, snapshot: &Snapshot) -> Result<TypeVertex<'static>, EncodingError> {
-        let found = self.find_unallocated_id(snapshot, self.last_allocated_type_id.load(Relaxed))?;
-        if let Some(type_id) = found {
-            self.last_allocated_type_id.store(type_id, Relaxed);
-            Ok(TypeVertex::build(self.prefix.prefix_id(), TypeID::build(type_id)))
-        } else {
-            match self.find_unallocated_id(snapshot, 0)? {
-                None => Err(EncodingError::TypeIDsExhausted { kind: self.kind }),
-                Some(type_id) => {
-                    self.last_allocated_type_id.store(type_id, Relaxed);
-                    Ok(TypeVertex::build(self.prefix.prefix_id(), TypeID::build(type_id)))
-                }
-            }
-        }
-    }
-}
+use crate::graph::common::schema_id_allocator::TypeVertexAllocator;
 
 pub struct TypeVertexGenerator {
     next_entity: TypeVertexAllocator,
@@ -96,10 +36,10 @@ impl TypeVertexGenerator {
 
     pub fn new() -> TypeVertexGenerator {
         TypeVertexGenerator {
-            next_entity: TypeVertexAllocator::new(Entity, Prefix::VertexEntityType),
-            next_relation: TypeVertexAllocator::new(Relation, Prefix::VertexRelationType),
-            next_role: TypeVertexAllocator::new(Role, Prefix::VertexRoleType),
-            next_attribute: TypeVertexAllocator::new(Attribute, Prefix::VertexAttributeType),
+            next_entity: TypeVertexAllocator::new(Prefix::VertexEntityType),
+            next_relation: TypeVertexAllocator::new(Prefix::VertexRelationType),
+            next_role: TypeVertexAllocator::new(Prefix::VertexRoleType),
+            next_attribute: TypeVertexAllocator::new(Prefix::VertexAttributeType),
         }
     }
 

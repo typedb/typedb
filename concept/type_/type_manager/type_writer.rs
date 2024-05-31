@@ -36,10 +36,9 @@ pub struct TypeWriter<Snapshot: WritableSnapshot> {
 impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     pub(crate) fn storage_put_struct(snapshot: &mut Snapshot, definition_key: DefinitionKey<'static>, struct_label: &Label<'static>, struct_definition: StructDefinition) {
         let index_key = LabelToStructDefinitionIndex::build(struct_label);
-        snapshot.put_val(index_key.into_storage_key().into_owned_array(), definition_key.into_array());
+        snapshot.put_val(index_key.into_storage_key().into_owned_array(), ByteArray::copy(definition_key.clone().into_bytes().bytes()));
         snapshot.put_val(definition_key.into_storage_key().into_owned_array(), struct_definition.to_bytes().unwrap().into_array());
-
-        todo!()
+        todo!("test this")
     }
 
     // Basic vertex type operations

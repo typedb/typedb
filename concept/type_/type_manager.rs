@@ -22,6 +22,8 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     AsBytes, Keyable,
 };
+use encoding::graph::definition::definition_key::DefinitionKey;
+use encoding::graph::definition::r#struct::StructDefinition;
 use primitive::maybe_owns::MaybeOwns;
 use storage::{
     durability_client::DurabilityClient,
