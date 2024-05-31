@@ -182,9 +182,9 @@ impl fmt::Display for FixedPoint {
 
 #[cfg(test)]
 mod tests {
-    use std::ops::RangeBounds;
+    use std::ops::{RangeBounds, RangeInclusive};
 
-    use rand::{rngs::SmallRng, Rng, SeedableRng};
+    use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
 
     use super::{FixedPoint, FRACTIONAL_PART_DENOMINATOR};
 
@@ -218,7 +218,10 @@ mod tests {
             lhs.integer as i128 * FRACTIONAL_PART_DENOMINATOR as i128 + lhs.fractional as i128
         }
 
-        let mut rng = SmallRng::seed_from_u64(1337);
+        let seed = thread_rng().gen();
+        let mut rng = SmallRng::seed_from_u64(seed);
+        eprintln!("Running with seed: {seed}");
+
         let range = as_i128(FixedPoint::MIN)..=as_i128(FixedPoint::MAX);
         for _ in 0..1_000_000 {
             let lhs = random_fixed_point(&mut rng);

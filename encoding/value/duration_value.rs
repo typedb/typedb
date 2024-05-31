@@ -266,7 +266,7 @@ mod tests {
 
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
     use chrono_tz::Europe::London;
-    use rand::{rngs::SmallRng, Rng, SeedableRng};
+    use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
 
     use super::{Duration, MAX_YEAR, MIN_YEAR};
 
@@ -334,7 +334,10 @@ mod tests {
         let p1d = Duration::days(1);
         let pt24h = Duration::hours(24);
 
-        let mut rng = SmallRng::seed_from_u64(1337);
+        let seed = thread_rng().gen();
+        let mut rng = SmallRng::seed_from_u64(seed);
+        eprintln!("Running with seed: {seed}");
+
         for _ in 0..1_000_000 {
             let date_time = random_naive_utc_date_time(&mut rng);
             assert_eq!(date_time + p1d, date_time + pt24h);
