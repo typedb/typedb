@@ -21,7 +21,7 @@ impl Program {
 
     pub fn new(pattern: Pattern, functions: HashMap<DefinitionKey<'static>, FunctionIR>) -> Self {
 
-        // TODO: verify all required functions are provided
+        // TODO: verify exactly the required functions are provided
 
         Self {
             entry: pattern,
@@ -32,6 +32,10 @@ impl Program {
 }
 
 impl FunctionalBlock for Program {
+    fn pattern(&self) -> &Pattern {
+        &self.entry
+    }
+
     fn add_limit(&mut self, limit: u64) {
         self.modifiers.push(Modifier::Limit(Limit::new(limit)));
     }
@@ -41,13 +45,13 @@ impl FunctionalBlock for Program {
     }
 
     fn add_sort(&mut self, sort_variables: Vec<(&str, bool)>) -> Result<(), ModifierDefinitionError> {
-        let sort = Sort::new(sort_variables, &self.entry.context().lock().unwrap())?;
+        let sort = Sort::new(sort_variables, &self.entry.context())?;
         self.modifiers.push(Modifier::Sort(sort));
         Ok(())
     }
 
     fn add_filter(&mut self, variables: Vec<&str>) -> Result<(), ModifierDefinitionError> {
-        let filter = Filter::new(variables, &self.entry.context().lock().unwrap())?;
+        let filter = Filter::new(variables, &self.entry.context())?;
         self.modifiers.push(Modifier::Filter(filter));
         Ok(())
     }

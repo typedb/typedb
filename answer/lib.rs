@@ -15,7 +15,6 @@ use concept::type_::role_type::RoleType;
 
 pub mod answer_map;
 pub mod variable_value;
-pub mod stream;
 
 enum Concept<'a> {
     Type(Type),
@@ -23,7 +22,7 @@ enum Concept<'a> {
     Value(Value<'a>),
 }
 
-enum Type {
+pub enum Type {
     Entity(EntityType<'static>),
     Relation(RelationType<'static>),
     Attribute(AttributeType<'static>),
@@ -34,8 +33,4 @@ enum Thing<'a> {
     Entity(Entity<'a>),
     Relation(Relation<'a>),
     Attribute(Attribute<'a>),
-}
-
-enum ConceptProtoype {
-
 }

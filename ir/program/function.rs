@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::value::value_type::ValueType;
-use crate::pattern::constraint::Type;
 use crate::pattern::pattern::Pattern;
 use crate::pattern::variable::Variable;
 use crate::PatternDefinitionError;
@@ -16,6 +14,7 @@ pub struct FunctionIR {
     arguments: Vec<Variable>,
     pattern: Pattern,
     modifiers: Vec<Modifier>,
+    // TODO: how to encode return operation?
 }
 
 impl FunctionIR {
@@ -32,6 +31,10 @@ impl FunctionIR {
 }
 
 impl FunctionalBlock for FunctionIR {
+    fn pattern(&self) -> &Pattern {
+        &self.pattern
+    }
+
     fn add_limit(&mut self, limit: u64) {
         self.modifiers.push(Modifier::Limit(Limit::new(limit)));
     }
@@ -51,15 +54,4 @@ impl FunctionalBlock for FunctionIR {
         self.modifiers.push(Modifier::Filter(filter));
         Ok(())
     }
-}
-
-pub enum FunctionValuePrototype {
-    Thing(Type),
-    ThingOptional(Type),
-    Value(ValueType),
-    ValueOptional(ValueType),
-    ThingList(Type),
-    ThingListOptional(Type),
-    ValueList(ValueType),
-    ValueListOptional(ValueType),
 }

@@ -67,8 +67,9 @@ impl Constraints {
             assigned.iter().all(|var| self.context.lock().unwrap().is_variable_available(self.scope, *var))
         );
 
-        let assignment = InAssignment::new(assigned, function_call);
+        // let assignment = InAssignment::new(assigned, function_call);
 
+        todo!()
 
     }
 }

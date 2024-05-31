@@ -5,8 +5,8 @@
  */
 
 use concept::thing::value::Value;
-use encoding::value::value_type::ValueType;
-use crate::{Thing, Type};
+
+use crate::Thing;
 
 pub enum FunctionValue<'a> {
     Thing(Thing<'a>),

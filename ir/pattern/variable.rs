@@ -49,14 +49,13 @@ pub enum VariableCategory {
     RoleImpl,
     Value,
 
-    ListObject,
-    ListAttribute,
-    ListValue,
-    ListRoleImpl,
+    ObjectList,
+    AttributeList,
+    ValueList,
+    RoleImplList,
 }
 
 impl VariableCategory {
-
     pub(crate) fn narrowest(&self, other: Self) -> Option<Self> {
         match (self, other) {
             (Self::Type, Self::Type) => Some(Self::Type),
@@ -81,18 +80,18 @@ impl VariableCategory {
             (Self::Value, Self::Value) => Some(Self::Value),
             (_, Self::Value) | (Self::Value, _) => None,
 
-            (Self::ListObject, Self::ListObject) => Some(Self::ListObject),
-            (Self::ListObject, Self::ListRoleImpl) | (Self::ListRoleImpl, Self::ListObject) => Some(Self::ListRoleImpl),
-            (_, Self::ListObject) | (Self::ListObject, _) => None,
+            (Self::ObjectList, Self::ObjectList) => Some(Self::ObjectList),
+            (Self::ObjectList, Self::RoleImplList) | (Self::RoleImplList, Self::ObjectList) => Some(Self::RoleImplList),
+            (_, Self::ObjectList) | (Self::ObjectList, _) => None,
 
-            (Self::ListAttribute, Self::ListAttribute) => Some(Self::ListAttribute),
-            (_, Self::ListAttribute) | (Self::ListAttribute, _) => None,
+            (Self::AttributeList, Self::AttributeList) => Some(Self::AttributeList),
+            (_, Self::AttributeList) | (Self::AttributeList, _) => None,
 
-            (Self::ListValue, Self::ListValue) => Some(Self::ListValue),
-            (_, Self::ListValue) | (Self::ListValue, _) => None,
+            (Self::ValueList, Self::ValueList) => Some(Self::ValueList),
+            (_, Self::ValueList) | (Self::ValueList, _) => None,
 
-            (Self::ListRoleImpl, Self::ListRoleImpl) => Some(Self::ListRoleImpl),
-            (_, Self::ListRoleImpl) | (Self::ListRoleImpl, _) => None,
+            (Self::RoleImplList, Self::RoleImplList) => Some(Self::RoleImplList),
+            (_, Self::RoleImplList) | (Self::RoleImplList, _) => None,
         }
     }
 }
@@ -102,3 +101,23 @@ impl Display for VariableCategory {
         write!(f, "{:?}", self)
     }
 }
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum VariableOptionality {
+    Guaranteed,
+    Optional,
+}
+
+impl Display for VariableOptionality {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VariableOptionality::Guaranteed => {
+                write!(f, "Guaranteed")
+            }
+            VariableOptionality::Optional => {
+                write!(f, "Optional")
+            }
+        }
+    }
+}
+

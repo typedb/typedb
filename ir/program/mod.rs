@@ -4,13 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use crate::pattern::pattern::Pattern;
 use crate::program::modifier::ModifierDefinitionError;
 
 pub mod program;
 pub mod function;
 pub mod modifier;
 
+// A functional block is exactly 1 Pattern + any number of modifiers
 pub trait FunctionalBlock {
+
+    fn pattern(&self) -> &Pattern;
 
     fn add_limit(&mut self, limit: u64);
 
