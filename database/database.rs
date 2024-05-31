@@ -20,6 +20,7 @@ use encoding::{
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
     EncodingKeyspace,
 };
+use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
     isolation_manager::CommitType,
@@ -37,6 +38,7 @@ pub struct Database<D> {
     name: String,
     path: PathBuf,
     pub(super) storage: Arc<MVCCStorage<D>>,
+    pub(super) definition_key_generator: Arc<DefinitionKeyGenerator>,
     pub(super) type_vertex_generator: Arc<TypeVertexGenerator>,
     pub(super) thing_vertex_generator: Arc<ThingVertexGenerator>,
     thing_statistics: Arc<Statistics>,
@@ -69,6 +71,7 @@ impl Database<WALClient> {
             MVCCStorage::create::<EncodingKeyspace>(&name, path, WALClient::new(wal))
                 .map_err(|error| StorageOpen { source: error })?,
         );
+        let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
             Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
@@ -80,6 +83,7 @@ impl Database<WALClient> {
             name: name.as_ref().to_owned(),
             path: path.to_owned(),
             storage,
+            definition_key_generator,
             type_vertex_generator,
             thing_vertex_generator,
             thing_statistics: statistics,

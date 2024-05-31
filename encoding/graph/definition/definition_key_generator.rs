@@ -12,12 +12,16 @@ use crate::{
     },
     Keyable,
 };
+use crate::layout::prefix::Prefix;
 
 pub struct DefinitionKeyGenerator {
     next_struct: DefinitionKeyAllocator,
 }
 
 impl DefinitionKeyGenerator {
+    pub fn new() -> DefinitionKeyGenerator {
+        Self { next_struct: DefinitionKeyAllocator::new(Prefix::DefinitionStruct) }
+    }
     pub fn create_struct<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
