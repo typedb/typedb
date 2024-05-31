@@ -68,6 +68,10 @@ impl Duration {
     pub fn seconds(seconds: u64) -> Self {
         Self { months: 0, days: 0, nanos: seconds * NANOS_PER_SEC }
     }
+
+    pub fn nanos(nanos: u64) -> Self {
+        Self { months: 0, days: 0, nanos }
+    }
 }
 
 // Equivalent to derive(PartialEq), but spelled out to be clear this is the intended behaviour
@@ -262,8 +266,24 @@ mod tests {
 
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
     use chrono_tz::Europe::London;
+    use rand::{rngs::SmallRng, Rng, SeedableRng};
 
-    use super::Duration;
+    use super::{Duration, MAX_YEAR, MIN_YEAR};
+
+    fn random_naive_utc_date_time(rng: &mut impl Rng) -> NaiveDateTime {
+        let year = rng.gen_range(MIN_YEAR..=MAX_YEAR);
+        let is_leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+        let ordinal_day = rng.gen_range(1..365 + is_leap as u32);
+        let date = NaiveDate::from_yo_opt(year, ordinal_day).unwrap();
+
+        const SECS_PER_DAY: u32 = 24 * 60 * 60;
+        let secs_from_midnight = rng.gen_range(0..SECS_PER_DAY);
+        const NANOS_PER_SEC: u32 = 1_000_000_000;
+        let nsecs = rng.gen_range(0..NANOS_PER_SEC);
+        let time = NaiveTime::from_num_seconds_from_midnight_opt(secs_from_midnight, nsecs).unwrap();
+
+        date.and_time(time)
+    }
 
     #[test]
     fn adding_one_day_ignores_dst() {
@@ -307,5 +327,53 @@ mod tests {
         let pt24h = Duration::hours(24);
 
         assert_eq!(_2024_03_30__12_00_00 + pt24h, _2024_03_31__13_00_00)
+    }
+
+    #[test]
+    fn adding_24_hours_or_1_day_to_naive_datetime_is_always_the_same() {
+        let p1d = Duration::days(1);
+        let pt24h = Duration::hours(24);
+
+        let mut rng = SmallRng::seed_from_u64(1337);
+        for _ in 0..1_000_000 {
+            let date_time = random_naive_utc_date_time(&mut rng);
+            assert_eq!(date_time + p1d, date_time + pt24h);
+        }
+    }
+
+    #[test]
+    fn empty_duration_is_printed_correctly() {
+        let expected = "PT0S";
+        assert_eq!(expected, Duration::years(0).to_string());
+        assert_eq!(expected, Duration::months(0).to_string());
+        assert_eq!(expected, Duration::weeks(0).to_string());
+        assert_eq!(expected, Duration::days(0).to_string());
+        assert_eq!(expected, Duration::hours(0).to_string());
+        assert_eq!(expected, Duration::minutes(0).to_string());
+        assert_eq!(expected, Duration::seconds(0).to_string());
+        assert_eq!(expected, Duration::nanos(0).to_string());
+    }
+
+    #[test]
+    fn duration_is_parsed_correctly() {
+        let years = 7;
+        let months = 99;
+        let days = 1234;
+        let hours = 77;
+        let minutes = 123;
+        let seconds = 999;
+        let nanos = 987654321;
+
+        let input = format!("P{}Y{}M{}DT{}H{}M{}.{:09}S", years, months, days, hours, minutes, seconds, nanos);
+
+        let parsed = input.parse().unwrap();
+        let expected = Duration::years(years)
+            + Duration::months(months)
+            + Duration::days(days)
+            + Duration::hours(hours)
+            + Duration::minutes(minutes)
+            + Duration::seconds(seconds)
+            + Duration::nanos(nanos);
+        assert_eq!(expected, parsed);
     }
 }
