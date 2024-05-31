@@ -28,7 +28,7 @@ host_compatible_java_test(
         "@vaticle_typeql//common/java:common",
     ],
     data = [
-        "//server:config",
+        "//server/parameters/config",
         ":configurations"
     ],
 )

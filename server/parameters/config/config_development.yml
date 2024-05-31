@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-
 server:
   address: 0.0.0.0:1729
 
@@ -50,7 +49,6 @@ log:
       type: reasoner-perf-counters
 
 diagnostics:
-#  deployment-id:
   reporting:
     errors: true
     statistics: true
@@ -63,3 +61,6 @@ vaticle-factory:
   #  uri: "https://tracing.factory.vaticle.com:7979"
   #  username: $FACTORY_USERNAME
   #  token: $FACTORY_TOKEN
+
+development-mode:
+  enable: true

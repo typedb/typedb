@@ -23,17 +23,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
-import static com.vaticle.typedb.core.server.common.Constants.DEPLOYMENT_ID_FILE_NAME;
 import static com.vaticle.typedb.core.server.common.Constants.SERVER_ID_FILE_NAME;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_ARCHIVE_EXT;
 import static com.vaticle.typedb.core.test.integration.util.Util.deleteDirectory;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ParametersTest {
 
-    private static final Path CONFIG_PATH_DEFAULT = Paths.get("server/parameters/config.yml");
+    private static final Path CONFIG_PATH_DEFAULT = Paths.get("server/parameters/config/config.yml");
 
     @Test
     public void test_log_archive_age_limits() throws IOException, InterruptedException, TypeDBCheckedException {
@@ -71,7 +69,7 @@ public class ParametersTest {
     }
 
     @Test
-    public void test_deployment_server_id_getting() throws IOException, InterruptedException, TypeDBCheckedException {
+    public void test_server_id_getting() throws IOException, TypeDBCheckedException {
         Path logDir = null;
         Path dataDir = null;
         TypeDBServer typeDBServer = null;
@@ -79,11 +77,8 @@ public class ParametersTest {
             logDir = Files.createTempDirectory("log-file-tmp");
             dataDir = Files.createTempDirectory("data-tmp");
 
-            // Deployment ID: get from the config
             // Server ID: generate and save into a file
             Set<Option> testOptions = getGeneralTestOptions(dataDir, logDir);
-            testOptions.add(new Option("diagnostics.deployment-id", "TESTVALUEID01"));
-
             CoreConfig config = CoreConfigFactory.config(CONFIG_PATH_DEFAULT, testOptions, new CoreConfigParser());
             typeDBServer = TypeDBServer.create(config, false);
             typeDBServer.databaseMgr.create("test1");
@@ -93,12 +88,8 @@ public class ParametersTest {
 
             String savedServerId1 = Files.readString(serverIdPath);
 
-            Path deploymentIdPath = getDeploymentIdPath(dataDir);
-            assertFalse(deploymentIdPath.toFile().exists());
-
             typeDBServer.close();
 
-            // Deployment ID: get from server ID (absent in the config), save into a file
             // Server ID: get from the old file
             testOptions = getGeneralTestOptions(dataDir, logDir);
 
@@ -111,11 +102,6 @@ public class ParametersTest {
             assertTrue(serverIdPath.toFile().exists());
             String savedServerId2 = Files.readString(serverIdPath);
             assertEquals(savedServerId1, savedServerId2);
-
-            deploymentIdPath = getDeploymentIdPath(dataDir);
-            assertTrue(deploymentIdPath.toFile().exists());
-            String savedDeploymentId = Files.readString(deploymentIdPath);
-            assertEquals(savedServerId2, savedDeploymentId);
         } finally {
             if (typeDBServer != null) typeDBServer.close();
             if (dataDir != null) deleteDirectory(dataDir);
@@ -128,9 +114,7 @@ public class ParametersTest {
                 new Option("storage.data", dataDir.toAbsolutePath().toString()),
                 new Option("log.output.file.base-dir", logDir.toAbsolutePath().toString()),
                 new Option("log.logger.default.level", "trace"),
-                new Option("log.logger.storage.level", "trace"),
-                new Option("diagnostics.reporting.errors", "false"),
-                new Option("diagnostics.reporting.statistics", "false")));
+                new Option("log.logger.storage.level", "trace")));
     }
 
     private List<Path> getLogArchives(Path logDir) throws IOException {
@@ -139,10 +123,6 @@ public class ParametersTest {
 
     private Path getServerIdPath(Path dataDir) {
         return dataDir.resolve(SERVER_ID_FILE_NAME);
-    }
-
-    private Path getDeploymentIdPath(Path dataDir) {
-        return dataDir.resolve(DEPLOYMENT_ID_FILE_NAME);
     }
 
     private List<Path> getPaths(Path dir, String fileEnding) throws IOException {

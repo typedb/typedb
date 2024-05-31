@@ -14,7 +14,8 @@ java_library(
     deps = [
         "@maven//:info_picocli_picocli",
         "@maven//:org_zeroturnaround_zt_exec",
-        "@maven//:org_slf4j_slf4j_api"
+        "@maven//:org_slf4j_slf4j_api",
+        "@vaticle_typeql//common/java:common",
     ],
     visibility = ["//visibility:public"],
     tags = [
