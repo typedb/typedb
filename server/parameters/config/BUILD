@@ -17,7 +17,8 @@ genrule(
     name = "config",
     srcs = [":config_file"],
     outs = ["config.yml"],
-    cmd = "cp $(SRCS) $@",
+    cmd_bash = "cp $(SRCS) $@",
+    cmd_bat = "COPY $(SRCS) $@",
     visibility = ["//visibility:public"],
 )
 
