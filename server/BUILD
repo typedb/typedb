@@ -11,6 +11,27 @@ load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 
 package(default_visibility = ["//visibility:private"])
 
+string_flag(
+    name = "config",
+    build_setting_default = "development",
+)
+
+config_setting(
+    name = "release_mode",
+    flag_values = {
+        ":config": "release",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "development_mode",
+    flag_values = {
+        ":config": "development",
+    },
+    visibility = ["//visibility:public"],
+)
+
 genrule(
     name = "version-src",
     srcs = [

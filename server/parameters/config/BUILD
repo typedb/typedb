@@ -7,8 +7,8 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 filegroup(
     name = "config_file",
     srcs = select({
-        "//:release_mode": ["config_release.yml"],
-        "//:development_mode": ["config_development.yml"],
+        "//server:release_mode": ["config_release.yml"],
+        "//server:development_mode": ["config_development.yml"],
     }),
     visibility = ["//visibility:public"],
 )

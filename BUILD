@@ -18,27 +18,6 @@ load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_dep
 load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
 
-string_flag(
-    name = "is_release",
-    build_setting_default = "false",
-)
-
-config_setting(
-    name = "release_mode",
-    flag_values = {
-        "//:is_release": "true",
-    },
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "development_mode",
-    flag_values = {
-        "//:is_release": "false",
-    },
-    visibility = ["//visibility:public"],
-)
-
 exports_files(
     [
         "VERSION",
