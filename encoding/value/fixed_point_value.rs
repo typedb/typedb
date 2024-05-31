@@ -6,7 +6,7 @@
 
 use std::{
     fmt,
-    ops::{Add, Sub},
+    ops::{Add, Mul, Sub},
 };
 
 const FRACTIONAL_PART_DENOMINATOR: u64 = 10_000_000_000_000_000_000;
@@ -71,6 +71,105 @@ impl Sub for FixedPoint {
         Self::new(integer, fractional)
     }
 }
+
+impl Mul for FixedPoint {
+    type Output = FixedPoint;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        let lhs = self;
+
+        let extended_denominator = FRACTIONAL_PART_DENOMINATOR as u128;
+        let fractional = (lhs.fractional as u128 * rhs.fractional as u128 + /* rounding! */ extended_denominator / 2)
+            / extended_denominator;
+        let carry = fractional / extended_denominator;
+        let fractional = (fractional % extended_denominator) as u64;
+
+        let integer = (lhs.integer * rhs.integer) as i128 // intentionally letting overflow occur before extending
+            + lhs.fractional as i128 * rhs.integer as i128 / FRACTIONAL_PART_DENOMINATOR as i128
+            + lhs.integer as i128 * rhs.fractional as i128 / FRACTIONAL_PART_DENOMINATOR as i128
+            + carry as i128;
+
+        Self::new(integer as i64, fractional)
+    }
+}
+
+macro_rules! impl_integer_ops {
+    (
+        $($optrait:ident::$opname:ident),+ $(,)?
+        for
+        $types:tt
+    ) => {$(impl_integer_ops! { @op $optrait::$opname for $types})+};
+    (
+        @op $optrait:ident::$opname:ident
+        for
+        { $($int:ty),+ $(,)? }
+    ) => {$(
+        impl $optrait<$int> for FixedPoint {
+            type Output = FixedPoint;
+            fn $opname(self, rhs: $int) -> Self::Output {
+                $optrait::$opname(self, FixedPoint::new(rhs as i64, 0))
+            }
+        }
+        impl $optrait<FixedPoint> for $int {
+            type Output = FixedPoint;
+            fn $opname(self, rhs: FixedPoint) -> Self::Output {
+                $optrait::$opname(FixedPoint::new(self as i64, 0), rhs)
+            }
+        }
+        impl $optrait<&FixedPoint> for $int {
+            type Output = FixedPoint;
+            fn $opname(self, rhs: &FixedPoint) -> Self::Output {
+                $optrait::$opname(FixedPoint::new(self as i64, 0), rhs)
+            }
+        }
+        impl $optrait<FixedPoint> for &$int {
+            type Output = FixedPoint;
+            fn $opname(self, rhs: FixedPoint) -> Self::Output {
+                $optrait::$opname(FixedPoint::new(*self as i64, 0), rhs)
+            }
+        }
+        impl $optrait<&FixedPoint> for &$int {
+            type Output = FixedPoint;
+            fn $opname(self, rhs: &FixedPoint) -> Self::Output {
+                $optrait::$opname(FixedPoint::new(*self as i64, 0), rhs)
+            }
+        }
+    )+};
+}
+
+impl_integer_ops! {
+    Add::add, Sub::sub, Mul::mul
+    for
+    { u8, u16, u32, u64, i8, i16, i32, i64 }
+}
+
+macro_rules! impl_ref_ops {
+    ($($optrait:ident::$opname:ident),+ $(,)?) => {$(
+        impl<T> $optrait<&T> for FixedPoint
+        where
+            T: Copy,
+            FixedPoint: $optrait<T>,
+        {
+            type Output = <FixedPoint as $optrait<T>>::Output;
+            fn $opname(self, rhs: &T) -> Self::Output {
+                <FixedPoint as $optrait<T>>::$opname(self, *rhs)
+            }
+        }
+
+        impl<T> $optrait<T> for &FixedPoint
+        where
+            T: Copy,
+            FixedPoint: $optrait<T>,
+        {
+            type Output = <FixedPoint as $optrait<T>>::Output;
+            fn $opname(self, rhs: T) -> Self::Output {
+                <FixedPoint as $optrait<T>>::$opname(*self, rhs)
+            }
+        }
+    )+};
+}
+
+impl_ref_ops! { Add::add, Sub::sub, Mul::mul }
 
 impl fmt::Display for FixedPoint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
