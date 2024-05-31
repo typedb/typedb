@@ -5,8 +5,6 @@
  */
 
 use std::collections::HashMap;
-use bytes::byte_array::ByteArray;
-use bytes::Bytes;
 use encoding::graph::definition::definition_key::{DefinitionID, DefinitionKey};
 use encoding::layout::prefix::Prefix;
 use ir::pattern::conjunction::Conjunction;

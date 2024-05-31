@@ -4,6 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod function;
+pub mod function;
 mod function_manager;
 mod function_cache;

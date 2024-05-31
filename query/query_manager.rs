@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use function::function::Function;
 use ir::pattern::conjunction::Conjunction;
 
 struct QueryManager {
@@ -26,7 +27,7 @@ impl QueryManager {
     }
 
     fn create_match_executor(&self, query_functions: Vec<Function>) {
-        let conjunction = Conjunction::new();
+        // let conjunction = Conjunction::new();
         // ... build conjunction...
 
 

@@ -46,7 +46,7 @@ impl Function {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug,PartialEq)]
 pub enum FunctionValuePrototype {
     Thing(Type),
     ThingOptional(Type),

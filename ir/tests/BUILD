@@ -17,10 +17,11 @@ rust_test(
 
 rust_test(
     name = "program",
-    crate_root = "prograrm.rs",
+    crate_root = "program.rs",
     srcs =  ["program.rs"],
     deps = [
         "//common/bytes",
+        "//encoding",
         "//ir:ir",
     ],
 )

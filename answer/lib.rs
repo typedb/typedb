@@ -16,12 +16,14 @@ use concept::type_::role_type::RoleType;
 pub mod answer_map;
 pub mod variable_value;
 
+#[derive(Debug, PartialEq)]
 enum Concept<'a> {
     Type(Type),
     Thing(Thing<'a>),
     Value(Value<'a>),
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Type {
     Entity(EntityType<'static>),
     Relation(RelationType<'static>),
@@ -29,6 +31,7 @@ pub enum Type {
     RoleType(RoleType<'static>),
 }
 
+#[derive(Debug, PartialEq)]
 enum Thing<'a> {
     Entity(Entity<'a>),
     Relation(Relation<'a>),
