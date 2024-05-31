@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::Debug;
+use std::{collections::BTreeMap, fmt::Debug};
 
 use bytes::Bytes;
 use encoding::{
@@ -16,7 +16,7 @@ use encoding::{
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
-    key_value::{StorageKey, StorageKeyReference},
+    key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
@@ -246,18 +246,18 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
         {
             Ordering::Unordered => (),
-            Ordering::Ordered => todo!("throw good error"),
+            Ordering::Ordered => return Err(ConceptWriteError::SetHasUnorderedOwnsOrdered {}),
         }
-        thing_manager.unset_has_unordered(snapshot, self, attribute);
+        thing_manager.unset_has(snapshot, self, attribute);
         Ok(())
     }
 
-    fn set_has_ordered<Snapshot: ReadableSnapshot>(
+    fn set_has_ordered<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
         thing_manager: &ThingManager<Snapshot>,
         attribute_type: AttributeType<'static>,
-        attributes: Vec<Attribute<'_>>,
+        new_attributes: Vec<Attribute<'_>>,
     ) -> Result<(), ConceptWriteError> {
         if !thing_manager.object_exists(snapshot, self)? {
             return Err(ConceptWriteError::SetHasOnDeleted { owner: self.clone().into_owned_object() });
@@ -270,21 +270,38 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
             .get_ordering(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
         {
-            Ordering::Unordered => todo!("throw good error"),
+            Ordering::Unordered => return Err(ConceptWriteError::SetHasOrderedOwnsUnordered {}),
             Ordering::Ordered => (),
         }
 
+        let mut new_counts = BTreeMap::<_, u64>::new();
+        for attr in &new_attributes {
+            *new_counts.entry(attr).or_default() += 1;
+        }
+
         // 1. get owned list
-        let attributes = thing_manager
+        let old_attributes = thing_manager
             .get_has_type_ordered(snapshot, self, attribute_type.clone())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
 
-        // 2. Delete existing but no-longer necessary has, and add new ones, with the correct counts (!)
-        todo!()
+        let mut old_counts = BTreeMap::<_, u64>::new();
+        for attr in &old_attributes {
+            *old_counts.entry(attr).or_default() += 1;
+        }
 
-        // // 3. Overwrite owned list
-        // thing_manager.set_has_ordered(self.as_reference(), attribute_type, attributes);
-        // Ok(())
+        // 2. Delete existing but no-longer necessary has, and add new ones, with the correct counts (!)
+        for (attr, count) in old_counts {
+            if !new_counts.contains_key(&attr) {
+                thing_manager.unset_has(snapshot, self, attr.as_reference());
+            }
+        }
+        for (attr, count) in new_counts {
+            thing_manager.set_has_count(snapshot, self, attr.as_reference(), count);
+        }
+
+        // 3. Overwrite owned list
+        thing_manager.set_has_ordered(snapshot, self, attribute_type, new_attributes);
+        Ok(())
     }
 
     fn unset_has_ordered<Snapshot: WritableSnapshot>(

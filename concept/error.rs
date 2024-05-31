@@ -101,6 +101,9 @@ pub enum ConceptWriteError {
         attribute_type: AttributeType<'static>,
         cardinality: AnnotationCardinality,
     },
+
+    SetHasOrderedOwnsUnordered {},
+    SetHasUnorderedOwnsOrdered {},
 }
 
 impl fmt::Display for ConceptWriteError {
@@ -127,6 +130,8 @@ impl Error for ConceptWriteError {
             Self::MultipleKeys { .. } => None,
             Self::AddPlayerOnDeleted { .. } => None,
             Self::CardinalityViolation { .. } => None,
+            Self::SetHasOrderedOwnsUnordered { .. } => None,
+            Self::SetHasUnorderedOwnsOrdered { .. } => None,
         }
     }
 }

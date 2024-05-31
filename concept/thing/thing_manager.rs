@@ -909,6 +909,16 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         owner: &impl ObjectAPI<'a>,
         mut attribute: Attribute<'_>,
     ) {
+        self.set_has_count(snapshot, owner, attribute, 1)
+    }
+
+    pub(crate) fn set_has_count<'a>(
+        &self,
+        snapshot: &mut Snapshot,
+        owner: &impl ObjectAPI<'a>,
+        mut attribute: Attribute<'_>,
+        count: u64,
+    ) {
         let attribute_type = attribute.type_();
         let value = match attribute.get_value(snapshot, self) {
             Ok(value) => value,
@@ -923,17 +933,12 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         self.put_attribute(snapshot, attribute_type, value).unwrap();
         owner.set_modified(snapshot, self);
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
-        snapshot.put_val(has.into_storage_key().into_owned_array(), encode_value_u64(1));
+        snapshot.put_val(has.into_storage_key().into_owned_array(), encode_value_u64(count));
         let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.vertex());
-        snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), encode_value_u64(1));
+        snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), encode_value_u64(count));
     }
 
-    pub(crate) fn unset_has_unordered<'a>(
-        &self,
-        snapshot: &mut Snapshot,
-        owner: &impl ObjectAPI<'a>,
-        attribute: Attribute<'_>,
-    ) {
+    pub(crate) fn unset_has<'a>(&self, snapshot: &mut Snapshot, owner: &impl ObjectAPI<'a>, attribute: Attribute<'_>) {
         owner.set_modified(snapshot, self);
         let owner_status = owner.get_status(snapshot, self);
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex()).into_storage_key().into_owned_array();
@@ -957,7 +962,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     pub(crate) fn set_has_ordered<'a>(
         &self,
         snapshot: &mut Snapshot,
-        owner: impl ObjectAPI<'a>,
+        owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
         attributes: Vec<Attribute<'_>>,
     ) {
