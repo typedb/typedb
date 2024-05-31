@@ -23,6 +23,7 @@ import java.util.concurrent.TimeoutException;
 import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.tool.runner.CoreServerOpts.ADDR;
+import static com.vaticle.typedb.core.tool.runner.CoreServerOpts.DEVELOPMENT_MODE_ENABLE;
 import static com.vaticle.typedb.core.tool.runner.CoreServerOpts.DIAGNOSTICS_MONITORING_PORT;
 import static com.vaticle.typedb.core.tool.runner.CoreServerOpts.STORAGE_DATA;
 import static com.vaticle.typedb.core.tool.runner.Util.createProcessExecutor;
@@ -43,7 +44,7 @@ public class TypeDBCoreRunner implements TypeDBRunner {
     private final Map<String, String> userOptions;
 
     private static final Map<String, String> OVERRIDABLE_OPTIONS = map(
-            pair("--development-mode.enable", "true")
+            pair(DEVELOPMENT_MODE_ENABLE, "true")
     );
 
     public TypeDBCoreRunner() throws InterruptedException, TimeoutException, IOException {

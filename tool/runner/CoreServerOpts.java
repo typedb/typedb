@@ -11,4 +11,5 @@ public class CoreServerOpts {
     public static final String STORAGE_DATA = "--storage.data";
     public static final String DIAGNOSTICS_MONITORING_PORT = "--diagnostics.monitoring.port";
     public static final String LOG_OUTPUT_FILE_DIRECTORY = "--log.output.file.base-dir";
+    public static final String DEVELOPMENT_MODE_ENABLE = "--development-mode.enable";
 }
