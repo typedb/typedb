@@ -47,8 +47,10 @@ impl Add for FixedPoint {
         let lhs = self;
         let (fractional, carry) = match lhs.fractional.overflowing_add(rhs.fractional) {
             (frac, false) if frac < FRACTIONAL_PART_DENOMINATOR => (frac, 0),
-            (frac, true) if frac < FRACTIONAL_PART_DENOMINATOR => (frac + (u64::MAX - FRACTIONAL_PART_DENOMINATOR), 1),
-            (frac, false) => (frac - u64::MAX, 1),
+            (frac, true) if frac < FRACTIONAL_PART_DENOMINATOR => {
+                (frac + 0u64.wrapping_sub(FRACTIONAL_PART_DENOMINATOR), 1)
+            }
+            (frac, false) => (frac - FRACTIONAL_PART_DENOMINATOR, 1),
             (_, true) => unreachable!(),
         };
         let integer = lhs.integer + rhs.integer + carry;
@@ -175,5 +177,64 @@ impl fmt::Display for FixedPoint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO
         fmt::Display::fmt(&(self.integer as f64 + self.fractional as f64 / FRACTIONAL_PART_DENOMINATOR as f64), f)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::ops::RangeBounds;
+
+    use rand::{rngs::SmallRng, Rng, SeedableRng};
+
+    use super::{FixedPoint, FRACTIONAL_PART_DENOMINATOR};
+
+    fn random_fixed_point(rng: &mut impl Rng) -> FixedPoint {
+        FixedPoint { integer: rng.gen(), fractional: rng.gen_range(0..FRACTIONAL_PART_DENOMINATOR) }
+    }
+
+    #[test]
+    #[allow(clippy::assertions_on_constants)]
+    fn fractional_part_overflow_is_handled_correctly() {
+        let sub_one = 1 - FixedPoint::new(0, 1);
+        assert_eq!(sub_one, FixedPoint::new(0, FRACTIONAL_PART_DENOMINATOR - 1));
+        assert_eq!(sub_one + sub_one, 2 - FixedPoint::new(0, 2));
+
+        assert!(FRACTIONAL_PART_DENOMINATOR > u64::MAX / 2);
+
+        let u64_max_div_denom =
+            FixedPoint::new((u64::MAX / FRACTIONAL_PART_DENOMINATOR) as i64, u64::MAX % FRACTIONAL_PART_DENOMINATOR);
+        assert_eq!(
+            FixedPoint::new(0, FRACTIONAL_PART_DENOMINATOR - 1)
+                + FixedPoint::new(0, 0u64.wrapping_sub(FRACTIONAL_PART_DENOMINATOR)),
+            u64_max_div_denom
+        );
+
+        assert_eq!(sub_one * sub_one, 1 - FixedPoint::new(0, 2)); // rounded to nearest
+    }
+
+    #[test]
+    fn randomized_tests() {
+        const fn as_i128(lhs: FixedPoint) -> i128 {
+            lhs.integer as i128 * FRACTIONAL_PART_DENOMINATOR as i128 + lhs.fractional as i128
+        }
+
+        let mut rng = SmallRng::seed_from_u64(1337);
+        let range = as_i128(FixedPoint::MIN)..=as_i128(FixedPoint::MAX);
+        for _ in 0..1_000_000 {
+            let lhs = random_fixed_point(&mut rng);
+            let rhs = random_fixed_point(&mut rng);
+
+            if as_i128(lhs).checked_add(as_i128(rhs)).is_some_and(|res| range.contains(&res)) {
+                assert_eq!(as_i128(lhs + rhs), as_i128(lhs) + as_i128(rhs));
+            }
+            if as_i128(lhs).checked_sub(as_i128(rhs)).is_some_and(|res| range.contains(&res)) {
+                assert_eq!(as_i128(lhs - rhs), as_i128(lhs) - as_i128(rhs));
+            }
+            if as_i128(lhs).checked_mul(rhs.integer as i128).is_some_and(|res| range.contains(&res))
+                && as_i128(lhs).checked_mul(rhs.integer as i128 + 1).is_some_and(|res| range.contains(&res))
+            {
+                assert_eq!(as_i128(lhs - rhs), as_i128(lhs) - as_i128(rhs));
+            }
+        }
     }
 }
