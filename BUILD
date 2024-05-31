@@ -3,7 +3,6 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("//:deployment.bzl", deployment_docker = "deployment", deployment_github = "deployment")
-load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("@vaticle_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@vaticle_bazel_distribution//brew:rules.bzl", "deploy_brew")
