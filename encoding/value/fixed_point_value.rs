@@ -80,18 +80,26 @@ impl Mul for FixedPoint {
     fn mul(self, rhs: Self) -> Self::Output {
         let lhs = self;
 
-        let extended_denominator = FRACTIONAL_PART_DENOMINATOR as u128;
-        let fractional = (lhs.fractional as u128 * rhs.fractional as u128 + /* rounding! */ extended_denominator / 2)
-            / extended_denominator;
-        let carry = fractional / extended_denominator;
-        let fractional = (fractional % extended_denominator) as u64;
+        let extended_denominator = FRACTIONAL_PART_DENOMINATOR as i128;
+        let fractional = (lhs.fractional as i128 * rhs.fractional as i128
+            + /* rounding! */ extended_denominator / 2)
+            / extended_denominator
+            + lhs.fractional as i128 * rhs.integer as i128 % extended_denominator
+            + lhs.integer as i128 * rhs.fractional as i128 % extended_denominator;
+        let mut carry = fractional / extended_denominator;
+        let mut fractional = fractional % extended_denominator;
+
+        while fractional < 0 {
+            carry -= 1;
+            fractional += extended_denominator;
+        }
 
         let integer = (lhs.integer * rhs.integer) as i128 // intentionally letting overflow occur before extending
-            + lhs.fractional as i128 * rhs.integer as i128 / FRACTIONAL_PART_DENOMINATOR as i128
-            + lhs.integer as i128 * rhs.fractional as i128 / FRACTIONAL_PART_DENOMINATOR as i128
-            + carry as i128;
+            + lhs.fractional as i128 * rhs.integer as i128 / extended_denominator
+            + lhs.integer as i128 * rhs.fractional as i128 / extended_denominator
+            + carry;
 
-        Self::new(integer as i64, fractional)
+        Self::new(integer as i64, fractional as u64)
     }
 }
 
@@ -182,14 +190,20 @@ impl fmt::Display for FixedPoint {
 
 #[cfg(test)]
 mod tests {
-    use std::ops::{RangeBounds, RangeInclusive};
-
     use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
 
     use super::{FixedPoint, FRACTIONAL_PART_DENOMINATOR};
 
     fn random_fixed_point(rng: &mut impl Rng) -> FixedPoint {
         FixedPoint { integer: rng.gen(), fractional: rng.gen_range(0..FRACTIONAL_PART_DENOMINATOR) }
+    }
+
+    fn random_small_fixed_point(rng: &mut impl Rng) -> FixedPoint {
+        const INTEGER_MAX_ABS: i64 = (u64::MAX / FRACTIONAL_PART_DENOMINATOR) as i64;
+        FixedPoint {
+            integer: rng.gen_range(-INTEGER_MAX_ABS..=INTEGER_MAX_ABS),
+            fractional: rng.gen_range(0..FRACTIONAL_PART_DENOMINATOR),
+        }
     }
 
     #[test]
@@ -228,16 +242,74 @@ mod tests {
             let rhs = random_fixed_point(&mut rng);
 
             if as_i128(lhs).checked_add(as_i128(rhs)).is_some_and(|res| range.contains(&res)) {
-                assert_eq!(as_i128(lhs + rhs), as_i128(lhs) + as_i128(rhs));
+                assert_eq!(as_i128(lhs + rhs), as_i128(lhs) + as_i128(rhs), "{:?} + {:?} != {:?}", lhs, rhs, lhs + rhs);
             }
             if as_i128(lhs).checked_sub(as_i128(rhs)).is_some_and(|res| range.contains(&res)) {
-                assert_eq!(as_i128(lhs - rhs), as_i128(lhs) - as_i128(rhs));
+                assert_eq!(as_i128(lhs - rhs), as_i128(lhs) - as_i128(rhs), "{:?} - {:?} != {:?}", lhs, rhs, lhs - rhs);
             }
+
+            // two random fixed point numbers will almost always overflow on multiplication
+            let rhs = random_small_fixed_point(&mut rng);
+
             if as_i128(lhs).checked_mul(rhs.integer as i128).is_some_and(|res| range.contains(&res))
                 && as_i128(lhs).checked_mul(rhs.integer as i128 + 1).is_some_and(|res| range.contains(&res))
             {
-                assert_eq!(as_i128(lhs - rhs), as_i128(lhs) - as_i128(rhs));
+                let lhs_i128 = as_i128(lhs);
+                let rhs_i128 = as_i128(rhs);
+
+                let sign = lhs_i128.signum() * rhs_i128.signum();
+
+                let abs_lhs_u128 = lhs_i128.unsigned_abs();
+                let abs_rhs_u128 = rhs_i128.unsigned_abs();
+
+                let mul = unsigned_bigint_mul(as_unsigned_bigint(abs_lhs_u128), as_unsigned_bigint(abs_rhs_u128));
+                let bigint_mul_result = sign
+                    * ((mul[0] >= FRACTIONAL_PART_DENOMINATOR / 2) as i128
+                        + mul[1] as i128
+                        + mul[2] as i128 * FRACTIONAL_PART_DENOMINATOR as i128);
+
+                assert_eq!(as_i128(lhs * rhs), bigint_mul_result, "{:?} * {:?} != {:?}", lhs, rhs, lhs * rhs);
             }
         }
+    }
+
+    const DENOMINATOR_U128: u128 = FRACTIONAL_PART_DENOMINATOR as u128;
+
+    fn as_unsigned_bigint(int: u128) -> Vec<u64> {
+        vec![(int % DENOMINATOR_U128) as u64, (int / DENOMINATOR_U128) as u64]
+    }
+
+    fn unsigned_bigint_mul(lhs: Vec<u64>, rhs: Vec<u64>) -> Vec<u64> {
+        fn unsigned_bigint_add(lhs: Vec<u64>, rhs: Vec<u64>) -> Vec<u64> {
+            let mut carry = 0;
+            (0..=usize::max(lhs.len(), rhs.len()))
+                .map(|index| {
+                    let left = *lhs.get(index).unwrap_or(&0);
+                    let right = *rhs.get(index).unwrap_or(&0);
+                    let wide_res = left as u128 + right as u128 + carry as u128;
+                    carry = (wide_res / DENOMINATOR_U128) as u64;
+                    (wide_res % DENOMINATOR_U128) as u64
+                })
+                .collect()
+        }
+
+        fn bigint_mul_u64(lhs: Vec<u64>, rhs: u64) -> Vec<u64> {
+            let mut buf = Vec::new();
+            for (i, left) in lhs.into_iter().enumerate() {
+                let mut bigint = vec![0; i];
+                let wide_res = left as u128 * rhs as u128;
+                bigint.extend([(wide_res % DENOMINATOR_U128) as u64, (wide_res / DENOMINATOR_U128) as u64]);
+                buf = unsigned_bigint_add(buf, bigint);
+            }
+            buf
+        }
+
+        let mut buf = Vec::new();
+        for (i, left) in lhs.into_iter().enumerate() {
+            let mut bigint = vec![0; i];
+            bigint.extend(bigint_mul_u64(rhs.clone(), left));
+            buf = unsigned_bigint_add(buf, bigint);
+        }
+        buf
     }
 }
