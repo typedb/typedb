@@ -53,8 +53,9 @@ public class TypeDBCoreRunner implements TypeDBRunner {
 
     public TypeDBCoreRunner(Map<String, String> userOptions) throws InterruptedException, TimeoutException, IOException {
         this.userOptions = userOptions;
-        port = findUnusedPorts(1).get(0);
-        diagnosticsMonitoringPort = findUnusedPorts(1).get(0);
+        List<Integer> unusedPorts = findUnusedPorts(2);
+        port = unusedPorts.get(0);
+        diagnosticsMonitoringPort = unusedPorts.get(1);
         System.out.println(address() + ": Constructing " + name() + " runner");
         System.out.println(address() + ": Extracting distribution archive...");
         distribution = unarchive(getServerArchiveFile());
