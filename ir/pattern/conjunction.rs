@@ -7,6 +7,7 @@
 use std::fmt::{Display, Formatter};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::task::Context;
+use itertools::Itertools;
 use crate::pattern::constraint::Constraints;
 use crate::pattern::context::PatternContext;
 use crate::pattern::pattern::Patterns;
@@ -73,11 +74,11 @@ impl Scope for Conjunction {
 
 impl Display for Conjunction {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let current_width = 10; //f.width().unwrap_or(0);
-        writeln!(f, "{}{{", self.scope_id)?;
-        write!(f, "{: >width$}", &self.constraints, width=current_width)?;
-        write!(f, "{: >width$}", &self.patterns, width=current_width)?;
-        writeln!(f, "}}")?;
+        let current_width = f.width().unwrap_or(0);
+        let indent = (0..current_width).map(|_| " ").join("");
+        writeln!(f, "{}{} Conjunction", indent, self.scope_id)?;
+        write!(f, "{:>width$}", &self.constraints, width=current_width + 2)?;
+        write!(f, "{:>width$}", &self.patterns, width=current_width + 2)?;
         write!(f, "{}", self.context.lock().unwrap())?;
         Ok(())
     }

@@ -20,6 +20,7 @@ rust_test(
     crate_root = "prograrm.rs",
     srcs =  ["program.rs"],
     deps = [
+        "//common/bytes",
         "//ir:ir",
     ],
 )

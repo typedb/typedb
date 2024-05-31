@@ -4,12 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+
 use itertools::Itertools;
+
 use crate::pattern::{Scope, ScopeId};
 use crate::pattern::constraint::Constraint;
-use crate::pattern::variable::{Variable, VariableCategory};
+use crate::pattern::variable::{Variable, VariableCategory, VariableOptionality};
 use crate::PatternDefinitionError;
 
 #[derive(Debug)]
@@ -23,6 +25,7 @@ pub struct PatternContext {
     scope_parents: HashMap<ScopeId, ScopeId>,
 
     variable_categories: HashMap<Variable, (VariableCategory, Constraint)>,
+    variable_optionality: HashMap<Variable, VariableOptionality>,
 }
 
 impl PatternContext {
@@ -35,6 +38,7 @@ impl PatternContext {
             scope_id_allocator: 0,
             scope_parents: HashMap::new(),
             variable_categories: HashMap::new(),
+            variable_optionality: HashMap::new(),
         }
     }
 
@@ -134,6 +138,17 @@ impl PatternContext {
         }
     }
 
+    pub(crate) fn set_variable_is_optional(&mut self, variable: Variable) {
+        self.variable_optionality.insert(variable, VariableOptionality::Optional);
+    }
+
+    pub(crate) fn is_variable_optional(&self, variable: Variable) -> bool {
+        match self.variable_optionality.get(&variable).unwrap_or(&VariableOptionality::Required) {
+            VariableOptionality::Required => false,
+            VariableOptionality::Optional => true,
+        }
+    }
+
     fn is_equal_or_parent_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_parent: ScopeId) -> bool {
         scope == maybe_parent || Self::get_scope_parent(parents, scope).map(|p| Self::is_equal_or_parent_scope(parents, p, maybe_parent)).unwrap_or(false)
     }
@@ -151,7 +166,7 @@ impl Display for PatternContext {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Named variables:")?;
         for entry in self.variable_names.iter().sorted_by_key(|e| e.0) {
-            writeln!(f, "  {} -> $\"{}\"", entry.0, entry.1)?;
+            writeln!(f, "  {}: ${}", entry.0, entry.1)?;
         }
         writeln!(f, "Variable categories:")?;
         for entry in self.variable_categories.iter().sorted_by_key(|e| e.0) {

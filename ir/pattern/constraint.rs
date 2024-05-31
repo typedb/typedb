@@ -6,6 +6,7 @@
 
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::{Arc, Mutex};
+use itertools::Itertools;
 
 use crate::pattern::context::PatternContext;
 use crate::pattern::expression::Expression;
@@ -62,22 +63,39 @@ impl Constraints {
         Ok(self.constraints.last().unwrap().as_has().unwrap())
     }
 
-    fn add_in_assignment_function(&mut self, assigned: Vec<Variable>, function_call: FunctionCall) -> Result<&InAssignment, PatternDefinitionError> {
+    pub fn add_function_call(&mut self, assigned: Vec<Variable>, function_call: FunctionCall) -> Result<&FunctionCallBinding, PatternDefinitionError> {
+        use PatternDefinitionError::FunctionCallReturnArgCountMismatch;
         debug_assert!(
             assigned.iter().all(|var| self.context.lock().unwrap().is_variable_available(self.scope, *var))
         );
 
-        // let assignment = InAssignment::new(assigned, function_call);
+        if assigned.len() != function_call.returns().len() {
+            Err(FunctionCallReturnArgCountMismatch {
+                assigned_var_count: assigned.len(),
+                function_return_count: function_call.returns().len(),
+            })?
+        }
 
-        todo!()
+        let assignment = FunctionCallBinding::new(assigned, function_call);
 
+        for (index, var) in assignment.variables().enumerate() {
+            self.context.lock().unwrap().set_variable_category(
+                var,
+                assignment.function_call().returns()[index].0,
+                assignment.clone().into(),
+            )?;
+        }
+
+        self.constraints.push(assignment.into());
+        Ok(self.constraints.last().unwrap().as_function_call_binding().unwrap())
     }
 }
 
 impl Display for Constraints {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for constraint in &self.constraints {
-            writeln!(f, "{:>width$};", constraint, width = f.width().unwrap_or(0))?;
+            let indent = (0..f.width().unwrap_or(0)).map(|_| " ").join("");
+            writeln!(f, "{}{}", indent, constraint)?
         }
         Ok(())
     }
@@ -89,13 +107,13 @@ pub enum Constraint {
     Isa(Isa),
     RolePlayer(RolePlayer),
     Has(Has),
-    ExpressionBinding(ExpressionAssignment),
-    InBinding(InAssignment),
+    ExpressionBinding(ExpressionBinding),
+    FunctionCallBinding(FunctionCallBinding),
     Comparison(Comparison),
 }
 
 impl Constraint {
-    pub fn variables(&self) -> Box<dyn Iterator<Item=Variable>> {
+    pub fn variables(&self) -> Box<dyn Iterator<Item=Variable> + '_> {
         match self {
             Constraint::Type(type_) => {
                 Box::new(type_.variables())
@@ -109,8 +127,10 @@ impl Constraint {
             Constraint::Has(has) => {
                 Box::new(has.variables())
             }
-            Constraint::ExpressionBinding(assign) => todo!(),
-            Constraint::InBinding(assign) => todo!(),
+            Constraint::ExpressionBinding(binding) => todo!(),
+            Constraint::FunctionCallBinding(binding) => {
+                Box::new(binding.variables())
+            }
             Constraint::Comparison(comparison) => todo!(),
         }
     }
@@ -142,6 +162,13 @@ impl Constraint {
             _ => None
         }
     }
+
+    fn as_function_call_binding(&self) -> Option<&FunctionCallBinding> {
+        match self {
+            Constraint::FunctionCallBinding(binding) => Some(binding),
+            _ => None
+        }
+    }
 }
 
 impl Display for Constraint {
@@ -152,7 +179,7 @@ impl Display for Constraint {
             Constraint::RolePlayer(constraint) => Display::fmt(constraint, f),
             Constraint::Has(constraint) => Display::fmt(constraint, f),
             Constraint::ExpressionBinding(constraint) => Display::fmt(constraint, f),
-            Constraint::InBinding(constraint) => Display::fmt(constraint, f),
+            Constraint::FunctionCallBinding(constraint) => Display::fmt(constraint, f),
             Constraint::Comparison(constraint) => Display::fmt(constraint, f),
         }
     }
@@ -281,32 +308,50 @@ impl Display for Has {
 
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct ExpressionAssignment {
+pub struct ExpressionBinding {
     variables: Vec<Variable>,
     expression: Expression,
 }
 
-impl Display for ExpressionAssignment {
+impl Display for ExpressionBinding {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct InAssignment {
+pub struct FunctionCallBinding {
     variables: Vec<Variable>,
     function_call: FunctionCall,
 }
 
-impl InAssignment {
+impl FunctionCallBinding {
     fn new(variables: Vec<Variable>, function_call: FunctionCall) -> Self {
         Self { variables, function_call }
     }
+
+    pub fn variables(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.variables.iter().cloned()
+    }
+
+    // pub(crate) fn variables(&self) -> &Vec<Variable> {
+    //     &self.variables
+    // }
+
+    pub(crate) fn function_call(&self) -> &FunctionCall {
+        &self.function_call
+    }
 }
 
-impl Display for InAssignment {
+impl Into<Constraint> for FunctionCallBinding {
+    fn into(self) -> Constraint {
+        Constraint::FunctionCallBinding(self)
+    }
+}
+
+impl Display for FunctionCallBinding {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        write!(f, "{} in {}", self.variables().map(|i| i.to_string()).join(", "), self.function_call())
     }
 }
 

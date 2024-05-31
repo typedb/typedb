@@ -42,6 +42,7 @@ impl PrefixID {
             | Prefix::IndexLabelToType
             | Prefix::PropertyTypeEdge
             | Prefix::DefinitionStruct
+            | Prefix::DefinitionFunction
             | Prefix::IndexLabelToDefinitionStruct => EncodingKeyspace::Schema,
             Prefix::VertexEntity => todo!(),
             Prefix::VertexRelation => todo!(),
@@ -100,7 +101,8 @@ pub enum Prefix {
     EdgeRolePlayerIndex,
 
     DefinitionStruct,
-    // DefinitionFunction
+    DefinitionFunction,
+
     PropertyTypeVertex,
     PropertyTypeEdge,
     // PropertyDefinitionFunction,
@@ -169,6 +171,7 @@ impl Prefix {
            VertexAttributeType => [12], true;
            VertexRoleType => [15], true;
            DefinitionStruct => [20], true;
+           DefinitionFunction => [21], true;
 
            VertexEntity => [30], true;
            VertexRelation => [31], true;

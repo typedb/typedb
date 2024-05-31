@@ -20,11 +20,13 @@ pub struct FunctionIR {
 impl FunctionIR {
     fn new<'a>(pattern: Pattern, arguments: impl Iterator<Item=&'a str>) -> Result<Self, PatternDefinitionError> {
         let mut argument_variables = Vec::new();
-        let context = pattern.context();
-        for arg in arguments {
-            let var = context.get_variable(arg)
-                .ok_or_else(|| PatternDefinitionError::FunctionArgumentUnused { argument_variable: arg.to_string() })?;
-            argument_variables.push(var);
+        {
+            let context = pattern.context();
+            for arg in arguments {
+                let var = context.get_variable(arg)
+                    .ok_or_else(|| PatternDefinitionError::FunctionArgumentUnused { argument_variable: arg.to_string() })?;
+                argument_variables.push(var);
+            }
         }
         Ok(Self { arguments: argument_variables, pattern, modifiers: Vec::new() })
     }

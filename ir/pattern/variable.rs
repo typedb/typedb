@@ -45,6 +45,7 @@ pub enum VariableCategory {
     Thing,
 
     Object,
+    // TODO: introduce entity and relation, since these could be useful to make type inference easier
     Attribute,
     RoleImpl,
     Value,
@@ -104,18 +105,18 @@ impl Display for VariableCategory {
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum VariableOptionality {
-    Guaranteed,
+    Required,
     Optional,
 }
 
 impl Display for VariableOptionality {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            VariableOptionality::Guaranteed => {
-                write!(f, "Guaranteed")
+            VariableOptionality::Required => {
+                write!(f, "req")
             }
             VariableOptionality::Optional => {
-                write!(f, "Optional")
+                write!(f, "opt")
             }
         }
     }

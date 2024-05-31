@@ -27,7 +27,8 @@ pub enum PatternDefinitionError {
         category_2: VariableCategory,
         category_2_source: Constraint,
     },
-    FunctionArgumentUnused { argument_variable: String }
+    FunctionArgumentUnused { argument_variable: String },
+    FunctionCallReturnArgCountMismatch { assigned_var_count: usize, function_return_count: usize },
 }
 
 impl fmt::Display for PatternDefinitionError {
@@ -42,6 +43,7 @@ impl Error for PatternDefinitionError {
             Self::DisjointVariableReuse { .. } => None,
             Self::VariableCategoryMismatch { .. } => None,
             Self::FunctionArgumentUnused { .. } => None,
+            PatternDefinitionError::FunctionCallReturnArgCountMismatch { .. } => None,
         }
     }
 }

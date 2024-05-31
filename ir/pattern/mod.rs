@@ -17,7 +17,7 @@ pub mod conjunction;
 pub mod pattern;
 pub mod disjunction;
 mod expression;
-mod function_call;
+pub mod function_call;
 pub mod context;
 
 trait Scope {
@@ -41,6 +41,6 @@ impl ScopeId {
 
 impl Display for ScopeId {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "[{}]", self.id)
+        write!(f, "({})", self.id)
     }
 }

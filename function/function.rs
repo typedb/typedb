@@ -91,7 +91,7 @@ impl Into<VariableOptionality> for FunctionValuePrototype {
             FunctionValuePrototype::Thing(_)
             | FunctionValuePrototype::Value(_)
             | FunctionValuePrototype::ThingList(_)
-            | FunctionValuePrototype::ValueList(_) => VariableOptionality::Guaranteed,
+            | FunctionValuePrototype::ValueList(_) => VariableOptionality::Required,
             FunctionValuePrototype::ThingOptional(_)
             | FunctionValuePrototype::ValueOptional(_)
             | FunctionValuePrototype::ThingListOptional(_)
