@@ -414,3 +414,17 @@ impl FromStr for Var {
         Ok(Self { name: name.to_owned() })
     }
 }
+
+#[derive(Clone, Debug, Default, Parameter)]
+#[param(name = "vars", regex = r"\[(\$[a-z_-]+(?:, *\$[a-z_-]+)*)\]")]
+pub struct Vars {
+    pub names: Vec<String>,
+}
+
+impl FromStr for Vars {
+    type Err = Infallible;
+
+    fn from_str(str: &str) -> Result<Self, Self::Err> {
+        Ok(Self { names: str.split(',').map(|name| name.trim().to_owned()).collect() })
+    }
+}

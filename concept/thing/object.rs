@@ -290,17 +290,19 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
         }
 
         // 2. Delete existing but no-longer necessary has, and add new ones, with the correct counts (!)
-        for (attr, count) in old_counts {
-            if !new_counts.contains_key(&attr) {
+        for attr in old_counts.keys() {
+            if !new_counts.contains_key(attr) {
                 thing_manager.unset_has(snapshot, self, attr.as_reference());
             }
         }
         for (attr, count) in new_counts {
-            thing_manager.set_has_count(snapshot, self, attr.as_reference(), count);
+            if old_counts.get(&attr) != Some(&count) {
+                thing_manager.set_has_count(snapshot, self, attr.as_reference(), count);
+            }
         }
 
         // 3. Overwrite owned list
-        thing_manager.set_has_ordered(snapshot, self, attribute_type, new_attributes);
+        thing_manager.set_has_ordered(snapshot, self, attribute_type, new_attributes)?;
         Ok(())
     }
 

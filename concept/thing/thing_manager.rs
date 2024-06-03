@@ -965,11 +965,18 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
         attributes: Vec<Attribute<'_>>,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         owner.set_modified(snapshot, self);
+        let attribute_value_type = attribute_type
+            .get_value_type(snapshot, self.type_manager())?
+            .expect("Handle missing value type - for abstract attributes. Or assume this will never happen");
         let key = HAS_ORDER_PROPERTY_FACTORY.build(owner.vertex(), attribute_type.into_vertex());
-        let value = encode_attribute_ids(attributes.into_iter().map(|attr| attr.into_vertex().attribute_id()));
+        let value = encode_attribute_ids(
+            attribute_value_type.category(),
+            attributes.into_iter().map(|attr| attr.into_vertex().attribute_id()),
+        );
         snapshot.put_val(key.into_storage_key().into_owned_array(), value);
+        Ok(())
     }
 
     pub(crate) fn increment_has<'a>(

@@ -33,6 +33,22 @@ pub async fn set_owns(
 }
 
 #[apply(generic_step)]
+#[step(expr = "{root_label}\\({type_label}\\) set owns: {type_label}[]")]
+pub async fn set_owns_ordered(
+    context: &mut Context,
+    root_label: params::RootLabel,
+    type_label: params::Label,
+    attribute_type_label: params::Label,
+) {
+    let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
+    with_schema_tx!(context, |tx| {
+        let attr_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.to_typedb()).unwrap().unwrap();
+        object_type.set_owns(&mut tx.snapshot, &tx.type_manager, attr_type, Ordering::Ordered).unwrap();
+    });
+}
+
+#[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) unset owns: {type_label}")]
 pub async fn unset_owns(
     context: &mut Context,
@@ -49,7 +65,7 @@ pub async fn unset_owns(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns: {type_label}; set override: {type_label}(; ){may_error}")]
+#[step(expr = "{root_label}\\({type_label}\\) get owns: {type_label}; set override: {type_label}{may_error}")]
 pub async fn get_owns_set_override(
     context: &mut Context,
     root_label: params::RootLabel,
@@ -81,7 +97,7 @@ pub async fn get_owns_set_override(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns: {type_label}, set annotation: {annotation}(; ){may_error}")]
+#[step(expr = "{root_label}\\({type_label}\\) get owns: {type_label}, set annotation: {annotation}{may_error}")]
 pub async fn get_owns_set_annotation(
     context: &mut Context,
     root_label: params::RootLabel,

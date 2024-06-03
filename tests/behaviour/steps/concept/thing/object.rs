@@ -7,7 +7,6 @@
 use concept::{
     error::ConceptWriteError,
     thing::{
-        attribute::Attribute,
         object::{Object, ObjectAPI},
         ThingAPI,
     },
@@ -19,7 +18,10 @@ use macro_rules_attribute::apply;
 
 use crate::{
     assert::assert_matches,
-    concept::thing::attribute::{attribute_put_instance_with_value_impl, get_attribute_by_value},
+    concept::thing::{
+        attribute::{attribute_put_instance_with_value_impl, get_attribute_by_value},
+        has::object_set_has_impl,
+    },
     generic_step, params,
     thing_util::ObjectWithKey,
     transaction_context::{with_read_tx, with_write_tx},
@@ -42,22 +44,6 @@ fn object_create_instance_impl(
             }
         }
     })
-}
-
-fn object_set_has_impl(
-    context: &mut Context,
-    object: &Object<'static>,
-    key: &Attribute<'static>,
-) -> Result<(), ConceptWriteError> {
-    with_write_tx!(context, |tx| object.set_has_unordered(&mut tx.snapshot, &tx.thing_manager, key.as_reference()))
-}
-
-fn object_unset_has_impl(
-    context: &mut Context,
-    object: &Object<'static>,
-    key: &Attribute<'static>,
-) -> Result<(), ConceptWriteError> {
-    with_write_tx!(context, |tx| object.unset_has_unordered(&mut tx.snapshot, &tx.thing_manager, key.as_reference()))
 }
 
 #[apply(generic_step)]
@@ -88,35 +74,6 @@ async fn object_create_instance_with_key_var(
     let key = attribute_put_instance_with_value_impl(context, key_type_label, value).unwrap();
     object_set_has_impl(context, &object, &key).unwrap();
     context.objects.insert(var.name, Some(ObjectWithKey::new_with_key(object, key)));
-}
-
-#[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} set has: {var}(; ){may_error}")]
-async fn object_set_has(
-    context: &mut Context,
-    object_root: params::ObjectRootLabel,
-    object_var: params::Var,
-    attribute_var: params::Var,
-    may_error: params::MayError,
-) {
-    let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
-    object_root.assert(&object.type_());
-    let attribute = context.attributes[&attribute_var.name].as_ref().unwrap().to_owned();
-    may_error.check(&object_set_has_impl(context, &object, &attribute));
-}
-
-#[apply(generic_step)]
-#[step(expr = r"{object_root_label} {var} unset has: {var}")]
-async fn object_unset_has(
-    context: &mut Context,
-    object_root: params::ObjectRootLabel,
-    object_var: params::Var,
-    attribute_var: params::Var,
-) {
-    let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
-    object_root.assert(&object.type_());
-    let attribute = context.attributes[&attribute_var.name].as_ref().unwrap().to_owned();
-    object_unset_has_impl(context, &object, &attribute).unwrap();
 }
 
 #[apply(generic_step)]

@@ -61,6 +61,17 @@ pub(crate) fn decode_attribute_ids(
     chunks_iter.map(move |chunk| AttributeID::new(value_type_category, chunk))
 }
 
-pub(crate) fn encode_attribute_ids(attribute_ids: impl Iterator<Item = AttributeID>) -> ByteArray<BUFFER_VALUE_INLINE> {
-    todo!()
+pub(crate) fn encode_attribute_ids(
+    value_type_category: ValueTypeCategory,
+    attribute_ids: impl Iterator<Item = AttributeID>,
+) -> ByteArray<BUFFER_VALUE_INLINE> {
+    let chunk_size = AttributeID::value_type_encoding_length(value_type_category);
+    let (lower, upper) = attribute_ids.size_hint();
+    let size_hint = upper.unwrap_or(lower) * chunk_size;
+    let mut bytes = Vec::with_capacity(size_hint);
+    for attribute_id in attribute_ids {
+        bytes.extend(attribute_id.bytes());
+    }
+    // TODO allow inline?
+    ByteArray::boxed(bytes.into())
 }
