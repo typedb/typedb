@@ -46,7 +46,7 @@ pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "transaction commits(; ){may_error}")]
+#[step(expr = "transaction commits{may_error}")]
 pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
     match context.take_transaction().unwrap() {
         ActiveTransaction::Read(_) => {}

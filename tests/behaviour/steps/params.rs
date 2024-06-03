@@ -24,7 +24,7 @@ use itertools::Itertools;
 use crate::assert::assert_matches;
 
 #[derive(Debug, Parameter)]
-#[param(name = "may_error", regex = "(fails|)")]
+#[param(name = "may_error", regex = "(; fails|)")]
 pub(crate) enum MayError {
     False,
     True,
@@ -402,7 +402,7 @@ impl FromStr for Annotations {
 }
 
 #[derive(Clone, Debug, Default, Parameter)]
-#[param(name = "var", regex = r"(\$[\w_-]+)")]
+#[param(name = "var", regex = r"\$[\w_-]+")]
 pub struct Var {
     pub name: String,
 }

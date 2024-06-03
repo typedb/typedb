@@ -77,7 +77,7 @@ pub async fn type_put(context: &mut Context, root_label: RootLabel, type_label: 
 }
 
 #[apply(generic_step)]
-#[step(expr = "delete {root_label} type: {type_label}(; ){may_error}")]
+#[step(expr = "delete {root_label} type: {type_label}{may_error}")]
 pub async fn type_delete(context: &mut Context, root_label: RootLabel, type_label: Label, may_error: MayError) {
     with_schema_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
@@ -134,7 +134,7 @@ pub async fn type_get_label(context: &mut Context, root_label: RootLabel, type_l
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) set annotation: {annotation}(; ){may_error}")]
+#[step(expr = "{root_label}\\({type_label}\\) set annotation: {annotation}{may_error}")]
 pub async fn type_set_annotation(
     context: &mut Context,
     root_label: RootLabel,
@@ -171,7 +171,7 @@ pub async fn type_annotations_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) set supertype: {type_label}(; ){may_error}")]
+#[step(expr = "{root_label}\\({type_label}\\) set supertype: {type_label}{may_error}")]
 pub async fn type_set_supertype(
     context: &mut Context,
     root_label: RootLabel,
@@ -304,10 +304,9 @@ pub async fn get_subtypes_is_empty(context: &mut Context, root_label: RootLabel,
     });
 }
 
-
 // Plays
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) set plays role: {type_label}(; ){may_error}")]
+#[step(expr = "{root_label}\\({type_label}\\) set plays role: {type_label}{may_error}")]
 pub async fn set_plays_role(
     context: &mut Context,
     root_label: RootLabel,
@@ -324,7 +323,7 @@ pub async fn set_plays_role(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) unset plays role: {type_label}(; ){may_error}")]
+#[step(expr = "{root_label}\\({type_label}\\) unset plays role: {type_label}{may_error}")]
 pub async fn unset_plays_role(
     context: &mut Context,
     root_label: RootLabel,
@@ -341,7 +340,7 @@ pub async fn unset_plays_role(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get plays role: {type_label}; set override: {type_label}(; ){may_error}")]
+#[step(expr = "{root_label}\\({type_label}\\) get plays role: {type_label}; set override: {type_label}{may_error}")]
 pub async fn get_plays_set_override(
     context: &mut Context,
     root_label: RootLabel,
@@ -370,14 +369,13 @@ pub async fn get_plays_set_override(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get plays roles {contains_or_doesnt}:(; ){may_error}")]
+#[step(expr = "{root_label}\\({type_label}\\) get plays roles {contains_or_doesnt}:")]
 pub async fn get_plays_roles_contain(
     context: &mut Context,
+    step: &Step,
     root_label: RootLabel,
     type_label: Label,
     contains: ContainsOrDoesnt,
-    may_error: MayError,
-    step: &Step,
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
@@ -395,14 +393,13 @@ pub async fn get_plays_roles_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get plays roles explicit {contains_or_doesnt}:(; ){may_error}")]
+#[step(expr = "{root_label}\\({type_label}\\) get plays roles explicit {contains_or_doesnt}:")]
 pub async fn get_declared_plays_roles_contain(
     context: &mut Context,
+    step: &Step,
     root_label: RootLabel,
     type_label: Label,
     contains: ContainsOrDoesnt,
-    may_error: MayError,
-    step: &Step,
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
     let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);

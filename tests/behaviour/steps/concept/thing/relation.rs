@@ -22,7 +22,7 @@ use crate::{
 };
 
 #[apply(generic_step)]
-#[step(expr = r"relation {var} add player for role\({type_label}\): {var}(; ){may_error}")]
+#[step(expr = r"relation {var} add player for role\({type_label}\): {var}{may_error}")]
 async fn relation_add_player_for_role(
     context: &mut Context,
     relation_var: params::Var,

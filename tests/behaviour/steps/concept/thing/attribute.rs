@@ -31,7 +31,7 @@ pub fn attribute_put_instance_with_value_impl(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"attribute\({type_label}\) put instance with value: {value}(; ){may_error}")]
+#[step(expr = r"attribute\({type_label}\) put instance with value: {value}{may_error}")]
 async fn attribute_put_instance_with_value(
     context: &mut Context,
     type_label: params::Label,

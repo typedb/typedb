@@ -18,7 +18,7 @@ use crate::{
 };
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) create role: {type_label}(; ){may_error}")]
+#[step(expr = "relation\\({type_label}\\) create role: {type_label}{may_error}")]
 pub async fn relation_type_create_role(
     context: &mut Context,
     type_label: Label,
@@ -38,7 +38,7 @@ pub async fn relation_type_create_role(
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\); set override: {type_label}(; ){may_error}")]
+#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\); set override: {type_label}{may_error}")]
 pub async fn relation_type_override_role(
     context: &mut Context,
     type_label: Label,
@@ -134,7 +134,7 @@ pub async fn get_role_label(context: &mut Context, type_label: Label, role_label
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) delete role: {type_label}(; ){may_error}")]
+#[step(expr = "relation\\({type_label}\\) delete role: {type_label}{may_error}")]
 pub async fn delete_role(context: &mut Context, type_label: Label, role_label: Label, may_error: MayError) {
     with_schema_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
