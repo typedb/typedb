@@ -23,6 +23,7 @@ use crate::{
         has::object_set_has_impl,
     },
     generic_step, params,
+    params::check_boolean,
     thing_util::ObjectWithKey,
     transaction_context::{with_read_tx, with_write_tx},
     Context,
@@ -97,7 +98,7 @@ async fn object_is_deleted(
     let object_type = object.type_();
     let objects =
         with_read_tx!(context, |tx| { tx.thing_manager.get_objects_in(&tx.snapshot, object_type).collect_cloned() });
-    is_deleted.check(!objects.contains(object));
+    check_boolean!(is_deleted, !objects.contains(object));
 }
 
 #[apply(generic_step)]

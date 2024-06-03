@@ -10,7 +10,10 @@ use chrono::NaiveDateTime;
 use concept::{
     thing::value::Value as TypeDBValue,
     type_::{
-        annotation::{self, Annotation as TypeDBAnnotation, AnnotationCardinality},
+        annotation::{
+            Annotation as TypeDBAnnotation, AnnotationAbstract, AnnotationCardinality, AnnotationIndependent,
+            AnnotationKey, AnnotationRegex,
+        },
         object_type::ObjectType,
     },
 };
@@ -61,22 +64,22 @@ impl FromStr for MayError {
     }
 }
 
-#[derive(Debug, Default, Parameter)]
+#[derive(Debug, Parameter)]
 #[param(name = "boolean", regex = "(true|false)")]
 pub(crate) enum Boolean {
-    #[default]
     False,
     True,
 }
 
-impl Boolean {
-    pub fn check(&self, res: bool) {
-        match self {
-            Boolean::False => assert_eq!(false, res),
-            Boolean::True => assert_eq!(true, res),
-        };
-    }
+macro_rules! check_boolean {
+    ($boolean:ident, $expr:expr) => {
+        match $boolean {
+            $crate::params::Boolean::True => assert!($expr),
+            $crate::params::Boolean::False => assert!(!$expr),
+        }
+    };
 }
+pub(crate) use check_boolean;
 
 impl FromStr for Boolean {
     type Err = String;
@@ -338,16 +341,16 @@ impl FromStr for Annotation {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // This will have to be smarter to parse annotations out.
         let typedb_annotation = match s {
-            "@abstract" => TypeDBAnnotation::Abstract(annotation::AnnotationAbstract),
-            "@independent" => TypeDBAnnotation::Independent(annotation::AnnotationIndependent),
-            "@key" => TypeDBAnnotation::Key(annotation::AnnotationKey),
+            "@abstract" => TypeDBAnnotation::Abstract(AnnotationAbstract),
+            "@independent" => TypeDBAnnotation::Independent(AnnotationIndependent),
+            "@key" => TypeDBAnnotation::Key(AnnotationKey),
             regex if regex.starts_with("@regex") => {
                 assert!(
                     regex.starts_with(r#"@regex(""#) && regex.ends_with(r#"")"#),
                     r#"Invalid @regex format: {regex:?}. Expected "@regex("regex-here")""#
                 );
                 let regex = &regex[r#"@regex(""#.len()..regex.len() - r#"")"#.len()];
-                TypeDBAnnotation::Regex(annotation::AnnotationRegex::new(regex.to_owned()))
+                TypeDBAnnotation::Regex(AnnotationRegex::new(regex.to_owned()))
             }
             card if card.starts_with("@card") => {
                 assert!(
