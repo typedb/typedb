@@ -416,7 +416,7 @@ impl FromStr for Var {
 }
 
 #[derive(Clone, Debug, Default, Parameter)]
-#[param(name = "vars", regex = r"\[(\$[a-z_-]+(?:, *\$[a-z_-]+)*)\]")]
+#[param(name = "vars", regex = r"\[(\$[\w_-]+(?:,\s*\$[\w_-]+)*)\]")]
 pub struct Vars {
     pub names: Vec<String>,
 }
