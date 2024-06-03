@@ -6,6 +6,6 @@
 
 mod attribute;
 mod common;
-mod object;
 mod has;
+mod object;
 mod relation;
