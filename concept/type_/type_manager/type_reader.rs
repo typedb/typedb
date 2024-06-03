@@ -23,9 +23,13 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     Keyable,
 };
+use encoding::graph::definition::definition_key::DefinitionKey;
+use encoding::graph::definition::DefinitionValueEncoding;
+use encoding::graph::definition::r#struct::StructDefinition;
 use iterator::Collector;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
+use encoding::graph::type_::index::LabelToStructDefinitionIndex;
 
 use crate::{
     error::ConceptReadError,
@@ -57,8 +61,8 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         label: &Label<'_>,
     ) -> Result<Option<T>, ConceptReadError>
-    where
-        T: TypeAPI<'static>,
+        where
+            T: TypeAPI<'static>,
     {
         let key = LabelToTypeVertexIndex::build(label).into_storage_key();
         match snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {
@@ -74,6 +78,18 @@ impl TypeReader {
         }
     }
 
+    pub(crate) fn get_struct_definition_key(snapshot: &impl ReadableSnapshot, label: &Label<'_>) -> Result<Option<DefinitionKey<'static>>, ConceptReadError>
+    {
+        let index_key = LabelToStructDefinitionIndex::build(&label);
+        let bytes = snapshot.get(index_key.into_storage_key().as_reference()).unwrap();
+        Ok(bytes.map(|value| DefinitionKey::new(Bytes::Array(value))))
+    }
+
+    pub(crate) fn get_struct_definition(snapshot: &impl ReadableSnapshot, definition_key: &DefinitionKey<'_>) -> Result<StructDefinition, ConceptReadError>
+    {
+        let bytes = snapshot.get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference()).unwrap();
+        Ok(StructDefinition::from_bytes(bytes.unwrap().as_ref()))
+    }
     // TODO: Should get_{super/sub}type[s_transitive] return T or T::SelfStatic.
     // T::SelfStatic is the more consistent, more honest interface, but T is convenient.
     pub(crate) fn get_supertype<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Option<T>, ConceptReadError>

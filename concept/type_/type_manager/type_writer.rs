@@ -38,7 +38,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         let index_key = LabelToStructDefinitionIndex::build(struct_label);
         snapshot.put_val(index_key.into_storage_key().into_owned_array(), ByteArray::copy(definition_key.clone().into_bytes().bytes()));
         snapshot.put_val(definition_key.into_storage_key().into_owned_array(), struct_definition.to_bytes().unwrap().into_array());
-        todo!("test this")
+        // todo!("test this")
     }
 
     // Basic vertex type operations

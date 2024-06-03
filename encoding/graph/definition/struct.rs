@@ -32,7 +32,7 @@ pub struct StructDefinitionField {
 }
 
 impl StructDefinition {
-    pub fn new(definitions: HashMap<String, (ValueType, bool)>) -> StructDefinition {
+    pub fn define(definitions: HashMap<String, (ValueType, bool)>) -> StructDefinition {
         let mut fields: Vec<StructDefinitionField> = Vec::with_capacity(definitions.len());
         let mut field_names = HashMap::with_capacity(definitions.len());
         for (i, (name, (value_type, optional))) in definitions.into_iter().enumerate() {

@@ -9,6 +9,7 @@ use std::{error::Error, fmt, str::Utf8Error};
 use storage::snapshot::iterator::SnapshotIteratorError;
 
 use crate::layout::prefix::Prefix;
+use crate::value::value_type::ValueType;
 
 #[derive(Debug, Clone)]
 pub enum EncodingError {
@@ -18,6 +19,8 @@ pub enum EncodingError {
     TypeIDsExhausted { kind: crate::graph::type_::Kind },
     UnexpectedPrefix { expected_prefix: Prefix, actual_prefix: Prefix },
     DefinitionIDsExhausted { prefix: Prefix },
+    StructFieldValueTypeMismatch { field_name: String, expected: ValueType },
+    StructMissingRequiredField { field_name: String },
 }
 
 impl fmt::Display for EncodingError {
@@ -35,6 +38,8 @@ impl Error for EncodingError {
             Self::TypeIDsExhausted { .. } => None,
             Self::DefinitionIDsExhausted { .. } => None,
             Self::UnexpectedPrefix { .. } => None,
+            Self::StructFieldValueTypeMismatch { .. } => None,
+            Self::StructMissingRequiredField { .. } => None,
         }
     }
 }

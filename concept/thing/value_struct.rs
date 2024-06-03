@@ -12,9 +12,16 @@
 
 use std::collections::HashMap;
 
-use encoding::graph::{definition::definition_key::DefinitionKey, type_::vertex::TypeVertex};
+use encoding::graph::definition::definition_key::DefinitionKey;
 use resource::constants::encoding::StructFieldIDUInt;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{Visitor};
+
+use encoding::error::EncodingError;
+use encoding::graph::definition::r#struct::{StructDefinition, StructDefinitionField};
+
+use encoding::value::ValueEncodable;
+use iterator::Collector;
 
 use crate::thing::value::Value;
 
@@ -27,9 +34,36 @@ pub struct StructValue<'a> {
 }
 
 impl<'a> StructValue<'a> {
+    // TODO: Return vec<ValueTypeMismatch>
+    pub fn try_translate_fields(struct_definition: StructDefinition, value: HashMap<String, Value<'a>>) -> Result<HashMap<StructFieldIDUInt, Value<'a>>, Vec<EncodingError>> {
+        let mut fields : HashMap<StructFieldIDUInt, Value<'a>> = HashMap::new();
+        let mut errors: Vec<EncodingError> = Vec::new();
+        for (field_name, field_id) in struct_definition.field_names {
+            let field_definition: &StructDefinitionField = &struct_definition.fields.get(field_id as usize).unwrap();
+            if let Some(value) = value.get(&field_name) {
+                if field_definition.value_type == value.value_type()  {
+                    fields.insert(field_id, value.clone());
+                } else {
+                    errors.add(EncodingError::StructFieldValueTypeMismatch {
+                        field_name, expected: field_definition.value_type.clone(),
+                    })
+                }
+            } else if !field_definition.optional {
+                errors.add(EncodingError::StructMissingRequiredField { field_name })
+            }
+        }
+
+        if errors.is_empty() {
+            Ok(fields)
+        } else {
+            Err(errors)
+        }
+    }
+
     pub fn definition_key(&self) -> DefinitionKey<'_> {
         self.definition.as_reference()
     }
+
 }
 
 // TODO: implement serialise/deserialise for the StructValue

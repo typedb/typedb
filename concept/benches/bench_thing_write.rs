@@ -31,6 +31,7 @@ use encoding::{
 };
 use pprof::ProfilerGuard;
 use rand::distributions::{Alphanumeric, DistString};
+use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WriteSnapshot},
@@ -105,9 +106,10 @@ fn criterion_benchmark(c: &mut Criterion) {
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
                 .unwrap(),
         );
+        let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone())
+        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
             .unwrap();
         create_schema(&storage, &type_vertex_generator);
         let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
