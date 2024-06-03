@@ -206,14 +206,15 @@ impl<'a> RoleType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
-        let card: AnnotationCardinality = annotations
+        let ordering = self.get_ordering(snapshot, type_manager)?;
+        let card = annotations
             .iter()
             .filter_map(|annotation| match annotation {
-                RoleTypeAnnotation::Cardinality(card) => Some(card.clone()),
+                RoleTypeAnnotation::Cardinality(card) => Some(*card),
                 _ => None,
             })
             .next()
-            .unwrap_or_else(|| type_manager.role_default_cardinality());
+            .unwrap_or_else(|| type_manager.role_default_cardinality(ordering));
         Ok(card)
     }
 

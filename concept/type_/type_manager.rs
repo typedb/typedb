@@ -630,9 +630,12 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         }
     }
 
-    pub(crate) const fn role_default_cardinality(&self) -> AnnotationCardinality {
+    pub(crate) const fn role_default_cardinality(&self, ordering: Ordering) -> AnnotationCardinality {
         // TODO: read from database properties the default role cardinality the db was created with
-        AnnotationCardinality::new(1, Some(1))
+        match ordering {
+            Ordering::Unordered => AnnotationCardinality::new(1, Some(1)),
+            Ordering::Ordered => AnnotationCardinality::new(0, None),
+        }
     }
 }
 
