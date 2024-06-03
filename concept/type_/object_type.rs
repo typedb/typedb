@@ -6,10 +6,13 @@
 
 use std::collections::{HashMap, HashSet};
 
-use encoding::{graph::type_::vertex::TypeVertex, layout::prefix::Prefix, value::label::Label, Prefixed};
-use encoding::error::EncodingError;
-use encoding::error::EncodingError::UnexpectedPrefix;
-use encoding::graph::type_::vertex::TypeVertexEncoding;
+use encoding::{
+    error::{EncodingError, EncodingError::UnexpectedPrefix},
+    graph::type_::vertex::{TypeVertex, TypeVertexEncoding},
+    layout::prefix::Prefix,
+    value::label::Label,
+    Prefixed,
+};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -53,7 +56,7 @@ impl<'a> TypeVertexEncoding<'a> for ObjectType<'a> {
         match vertex.prefix() {
             Prefix::VertexEntityType => Ok(ObjectType::Entity(EntityType::new(vertex))),
             Prefix::VertexRelationType => Ok(ObjectType::Relation(RelationType::new(vertex))),
-            _ => Err(UnexpectedPrefix { actual_prefix: vertex.prefix(), expected_prefix: Prefix::VertexEntityType}), // TODO: That's not right. It can also be VertexRelationType
+            _ => Err(UnexpectedPrefix { actual_prefix: vertex.prefix(), expected_prefix: Prefix::VertexEntityType }), // TODO: That's not right. It can also be VertexRelationType
         }
     }
 
@@ -142,7 +145,6 @@ impl<'a> TypeAPI<'a> for ObjectType<'a> {
             ObjectType::Relation(relation) => relation.vertex(),
         }
     }
-
 
     fn is_abstract<Snapshot: ReadableSnapshot>(
         &self,

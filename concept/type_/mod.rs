@@ -4,35 +4,37 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
-use std::hash::Hash;
-use bytes::byte_reference::ByteReference;
+use std::{
+    collections::{HashMap, HashSet},
+    hash::Hash,
+};
+
+use bytes::{byte_reference::ByteReference, Bytes};
 use encoding::{
-    graph::type_::vertex::TypeVertex,
+    graph::type_::{
+        edge::TypeEdgeEncoding,
+        property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
+        vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+        Kind,
+    },
+    layout::infix::Infix,
     value::label::Label,
+    AsBytes,
 };
 use primitive::maybe_owns::MaybeOwns;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use serde::{Deserialize, Serialize};
-use bytes::Bytes;
-use encoding::AsBytes;
-use encoding::graph::type_::edge::TypeEdgeEncoding;
-use encoding::graph::type_::Kind;
-use encoding::graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding};
-use encoding::graph::type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding};
-use encoding::layout::infix::Infix;
-use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+
 use self::object_type::ObjectType;
 use crate::{
-    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        attribute_type::AttributeType, owns::Owns, plays::Plays, role_type::RoleType,
+        annotation::Annotation, attribute_type::AttributeType, owns::Owns, plays::Plays, role_type::RoleType,
         type_manager::TypeManager,
     },
+    ConceptAPI,
 };
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use crate::type_::annotation::Annotation;
 
 pub mod annotation;
 pub mod attribute_type;
@@ -43,12 +45,12 @@ mod plays;
 mod relates;
 pub mod relation_type;
 pub mod role_type;
-pub mod type_manager;
 pub mod sub;
+pub mod type_manager;
 
 pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone + Hash + Eq + 'a {
     type SelfStatic: KindAPI<'static> + 'static;
-    fn new(vertex : TypeVertex<'a>) -> Self ;
+    fn new(vertex: TypeVertex<'a>) -> Self;
 
     fn read_from(b: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         Self::from_bytes(b).unwrap()
@@ -75,7 +77,7 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError>;
 }
 
-pub trait KindAPI<'a>: TypeAPI<'a>  + PrefixedTypeVertexEncoding<'a> {
+pub trait KindAPI<'a>: TypeAPI<'a> + PrefixedTypeVertexEncoding<'a> {
     type AnnotationType: Hash + Eq + From<Annotation>;
     const ROOT_KIND: Kind;
 }
@@ -242,7 +244,8 @@ impl<'a> TypeEdgePropertyEncoding<'a> for Ordering {
     }
 }
 
-pub(crate) trait InterfaceImplementation<'a> : TypeEdgeEncoding<'a, From=Self::ObjectType, To=Self::InterfaceType> + Sized + Clone + Hash + Eq + 'a
+pub(crate) trait InterfaceImplementation<'a>:
+    TypeEdgeEncoding<'a, From = Self::ObjectType, To = Self::InterfaceType> + Sized + Clone + Hash + Eq + 'a
 {
     type AnnotationType;
     type ObjectType: TypeAPI<'a>;

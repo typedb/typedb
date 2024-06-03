@@ -4,6 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod function;
-mod function_cache;
-mod function_manager;
+mod apply_rp_index;
+mod eliminate_redundant_constraints;
+mod optimise;

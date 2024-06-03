@@ -7,18 +7,16 @@ load("@rules_rust//rust:defs.bzl", "rust_library")
 package(default_visibility = ["//visibility:public"])
 
 rust_library(
-    name = "ir",
+    name = "traversal",
     crate_root = "lib.rs",
     srcs = glob([
         "*.rs",
-        "inference/*.rs",
-        "optimisation/*.rs",
-        "pattern/*.rs",
-        "program/*.rs",
+        "*/*.rs"
     ]),
     deps = [
-        "//encoding",
-        "@crates//:itertools"
+        "//ir",
+        "//answer",
+        "//concept",
     ],
 )
 

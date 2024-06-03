@@ -13,14 +13,13 @@ use encoding::{
             edge::{ThingEdgeRelationIndex, ThingEdgeRolePlayer},
             vertex_object::ObjectVertex,
         },
+        type_::vertex::PrefixedTypeVertexEncoding,
         Typed,
     },
     layout::prefix::Prefix,
     value::decode_value_u64,
     AsBytes, Keyable, Prefixed,
 };
-
-use encoding::graph::type_::vertex::PrefixedTypeVertexEncoding;
 use iterator::Collector;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -45,7 +44,6 @@ use crate::{
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
-
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct Relation<'a> {
@@ -403,10 +401,7 @@ fn storage_key_to_role_player<'a>(
 ) -> (RolePlayer<'a>, u64) {
     let edge = ThingEdgeRolePlayer::new(storage_key.into_bytes());
     let role_type = RoleType::build_from_type_id(edge.role_id());
-    (
-        RolePlayer { player: Object::new(edge.into_to()), role_type },
-        decode_value_u64(value.as_reference()),
-    )
+    (RolePlayer { player: Object::new(edge.into_to()), role_type }, decode_value_u64(value.as_reference()))
 }
 
 impl Hkt for RolePlayer<'static> {

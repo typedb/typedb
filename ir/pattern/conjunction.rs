@@ -4,17 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
-use std::sync::{Arc, Mutex, MutexGuard};
-use std::task::Context;
-use itertools::Itertools;
-use crate::pattern::constraint::Constraints;
-use crate::pattern::context::PatternContext;
-use crate::pattern::pattern::Patterns;
-use crate::pattern::{Scope, ScopeId};
-use crate::pattern::variable::Variable;
-use crate::PatternDefinitionError;
+use std::{
+    fmt::{Display, Formatter},
+    sync::{Arc, Mutex, MutexGuard},
+    task::Context,
+};
 
+use itertools::Itertools;
+
+use crate::{
+    pattern::{
+        constraint::Constraints, context::PatternContext, pattern::Patterns, variable::Variable, Scope, ScopeId,
+    },
+    PatternDefinitionError,
+};
 
 #[derive(Debug)]
 pub struct Conjunction {
@@ -61,8 +64,7 @@ impl Conjunction {
     }
 
     pub fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, PatternDefinitionError> {
-        self.context.lock().unwrap()
-            .get_or_declare_variable_named(name, self)
+        self.context.lock().unwrap().get_or_declare_variable_named(name, self)
     }
 }
 
@@ -77,8 +79,8 @@ impl Display for Conjunction {
         let current_width = f.width().unwrap_or(0);
         let indent = (0..current_width).map(|_| " ").join("");
         writeln!(f, "{}{} Conjunction", indent, self.scope_id)?;
-        write!(f, "{:>width$}", &self.constraints, width=current_width + 2)?;
-        write!(f, "{:>width$}", &self.patterns, width=current_width + 2)?;
+        write!(f, "{:>width$}", &self.constraints, width = current_width + 2)?;
+        write!(f, "{:>width$}", &self.patterns, width = current_width + 2)?;
         write!(f, "{}", self.context.lock().unwrap())?;
         Ok(())
     }

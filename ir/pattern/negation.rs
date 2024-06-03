@@ -4,11 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
-use std::sync::{Arc, Mutex, MutexGuard};
-use crate::pattern::{Scope, ScopeId};
-use crate::pattern::context::PatternContext;
+use std::{
+    fmt::{Display, Formatter},
+    sync::{Arc, Mutex, MutexGuard},
+};
 
+use crate::pattern::{context::PatternContext, Scope, ScopeId};
 
 #[derive(Debug)]
 pub(crate) struct Negation {

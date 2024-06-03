@@ -53,8 +53,11 @@ macro_rules! impl_has_owner_player_cache {
     };
 }
 pub(super) use impl_has_owner_player_cache;
-use crate::type_::KindAPI;
-use crate::type_::type_manager::type_cache::{
-    kind_cache::{CommonTypeCache, OwnerPlayerCache},
-    TypeCache,
+
+use crate::type_::{
+    type_manager::type_cache::{
+        kind_cache::{CommonTypeCache, OwnerPlayerCache},
+        TypeCache,
+    },
+    KindAPI,
 };

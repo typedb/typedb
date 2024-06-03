@@ -4,40 +4,35 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
-use std::hash::Hash;
+use std::{
+    collections::{HashMap, HashSet},
+    hash::Hash,
+};
 
 use bytes::Bytes;
 use encoding::{
+    error::EncodingError,
     graph::type_::{
-        edge::TypeEdge,
+        edge::{TypeEdge, TypeEdgeEncoding},
         index::LabelToTypeVertexIndex,
-        property::{
-            TypeEdgeProperty, TypeVertexProperty,
-        },
+        property::{TypeEdgeProperty, TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
         vertex::TypeVertexEncoding,
+        Kind,
     },
     layout::infix::Infix,
-    value::{
-        label::Label,
-        value_type::ValueType,
-    },
+    value::{label::Label, value_type::ValueType},
     Keyable,
 };
-use encoding::error::EncodingError;
-
-use encoding::graph::type_::Kind;
 use iterator::Collector;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
-use encoding::graph::type_::edge::TypeEdgeEncoding;
-use encoding::graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding};
 
 use crate::{
     error::ConceptReadError,
     type_::{
         annotation::{
-            Annotation, AnnotationAbstract, AnnotationDistinct, AnnotationIndependent, AnnotationKey, AnnotationUnique,
+            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationDistinct, AnnotationIndependent,
+            AnnotationKey, AnnotationRegex, AnnotationUnique,
         },
         attribute_type::AttributeType,
         object_type::ObjectType,
@@ -45,13 +40,11 @@ use crate::{
         relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
-        Ordering, TypeAPI, KindAPI,
+        sub::Sub,
+        type_manager::validation::annotation_compatibility::is_edge_annotation_inherited,
+        EdgeOverride, InterfaceImplementation, KindAPI, Ordering, TypeAPI,
     },
 };
-use crate::type_::annotation::{AnnotationCardinality, AnnotationRegex};
-use crate::type_::{EdgeOverride, InterfaceImplementation};
-use crate::type_::sub::Sub;
-use crate::type_::type_manager::validation::annotation_compatibility::is_edge_annotation_inherited;
 
 pub struct TypeReader {}
 
@@ -71,31 +64,27 @@ impl TypeReader {
         match snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {
             Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
             Ok(None) => Ok(None),
-            Ok(Some(value)) => {
-                match T::from_bytes(Bytes::Array(value)) {
-                    Ok(type_) => Ok(Some(type_)),
-                    Err(err) => {
-                        match err {
-                            EncodingError::UnexpectedPrefix { .. } => Ok(None),
-                            _ => Err(ConceptReadError::Encoding{ source: err })
-                        }
-                    }
-                }
+            Ok(Some(value)) => match T::from_bytes(Bytes::Array(value)) {
+                Ok(type_) => Ok(Some(type_)),
+                Err(err) => match err {
+                    EncodingError::UnexpectedPrefix { .. } => Ok(None),
+                    _ => Err(ConceptReadError::Encoding { source: err }),
+                },
             },
         }
     }
 
     // TODO: Should get_{super/sub}type[s_transitive] return T or T::SelfStatic.
     // T::SelfStatic is the more consistent, more honest interface, but T is convenient.
-    pub(crate) fn get_supertype<T>(
-        snapshot: &impl ReadableSnapshot,
-        subtype: T,
-    ) -> Result<Option<T>, ConceptReadError>
+    pub(crate) fn get_supertype<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Option<T>, ConceptReadError>
     where
         T: TypeAPI<'static>,
     {
         Ok(snapshot
-            .iterate_range(KeyRange::new_within(Sub::prefix_for_canonical_edges_from(subtype), TypeEdge::FIXED_WIDTH_ENCODING))
+            .iterate_range(KeyRange::new_within(
+                Sub::prefix_for_canonical_edges_from(subtype),
+                TypeEdge::FIXED_WIDTH_ENCODING,
+            ))
             .first_cloned()
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
             .map(|(key, _)| Sub::<T>::decode_canonical_edge(Bytes::Array(key.into_byte_array())).supertype()))
@@ -118,10 +107,7 @@ impl TypeReader {
         Ok(supertypes)
     }
 
-    pub(crate) fn get_subtypes<T>(
-        snapshot: &impl ReadableSnapshot,
-        supertype: T,
-    ) -> Result<Vec<T>, ConceptReadError>
+    pub(crate) fn get_subtypes<T>(snapshot: &impl ReadableSnapshot, supertype: T) -> Result<Vec<T>, ConceptReadError>
     where
         T: KindAPI<'static>,
     {
@@ -130,20 +116,18 @@ impl TypeReader {
                 Sub::prefix_for_reverse_edges_from(supertype),
                 TypeEdge::FIXED_WIDTH_ENCODING,
             ))
-            .collect_cloned_vec(|key, _| Sub::<T>::decode_reverse_edge(Bytes::Reference(key.byte_ref()).into_owned()).subtype())
-            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?
-        )
+            .collect_cloned_vec(|key, _| {
+                Sub::<T>::decode_reverse_edge(Bytes::Reference(key.byte_ref()).into_owned()).subtype()
+            })
+            .map_err(|error| ConceptReadError::SnapshotIterate { source: error })?)
     }
 
-    pub fn get_subtypes_transitive<T>(
-        snapshot: &impl ReadableSnapshot,
-        subtype: T,
-    ) -> Result<Vec<T>, ConceptReadError>
+    pub fn get_subtypes_transitive<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Vec<T>, ConceptReadError>
     where
         T: KindAPI<'static>,
     {
         //subtypes DO NOT include themselves by design
-        let mut subtypes : Vec<T> = Vec::new();
+        let mut subtypes: Vec<T> = Vec::new();
         let mut stack = TypeReader::get_subtypes(snapshot, subtype.clone())?;
         while let Some(subtype) = stack.pop() {
             subtypes.push(subtype.clone());
@@ -165,30 +149,29 @@ impl TypeReader {
         owner: impl TypeAPI<'static>,
     ) -> Result<HashSet<IMPL>, ConceptReadError>
     where
-    IMPL : InterfaceImplementation<'static> + Hash + Eq
+        IMPL: InterfaceImplementation<'static> + Hash + Eq,
     {
         let owns_prefix = IMPL::prefix_for_canonical_edges_from(IMPL::ObjectType::new(owner.into_vertex()));
         snapshot
             .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| {
-                IMPL::decode_canonical_edge(Bytes::Reference(key.byte_ref()).into_owned())
-            })
+            .collect_cloned_hashset(|key, _| IMPL::decode_canonical_edge(Bytes::Reference(key.byte_ref()).into_owned()))
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
-
 
     pub(crate) fn get_implemented_interfaces_transitive<IMPL, T>(
         snapshot: &impl ReadableSnapshot,
         object_type: T,
     ) -> Result<HashMap<IMPL::InterfaceType, IMPL>, ConceptReadError>
-        where
-            T: TypeAPI<'static>,
-            IMPL : InterfaceImplementation<'static> + Hash + Eq {
+    where
+        T: TypeAPI<'static>,
+        IMPL: InterfaceImplementation<'static> + Hash + Eq,
+    {
         let mut transitive_implementations: HashMap<IMPL::InterfaceType, IMPL> = HashMap::new();
         let mut overridden_interfaces: HashSet<IMPL::InterfaceType> = HashSet::new();
         let mut current_type = Some(object_type);
         while current_type.is_some() {
-            let declared_implementations = Self::get_implemented_interfaces::<IMPL>(snapshot, current_type.as_ref().unwrap().clone())?;
+            let declared_implementations =
+                Self::get_implemented_interfaces::<IMPL>(snapshot, current_type.as_ref().unwrap().clone())?;
             for implementation in declared_implementations.into_iter() {
                 let interface = implementation.interface();
                 if !overridden_interfaces.contains(&interface) {
@@ -205,13 +188,12 @@ impl TypeReader {
         Ok(transitive_implementations)
     }
 
-
     pub(crate) fn get_implementation_override<IMPL>(
         snapshot: &impl ReadableSnapshot,
         implementation: IMPL,
     ) -> Result<Option<IMPL>, ConceptReadError>
     where
-        IMPL : TypeEdgeEncoding<'static> + Hash + Eq
+        IMPL: TypeEdgeEncoding<'static> + Hash + Eq,
     {
         let override_property_key = EdgeOverride::<IMPL>::build_key(implementation);
         snapshot
@@ -225,14 +207,13 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         interface_type: IMPL::InterfaceType,
     ) -> Result<HashSet<IMPL>, ConceptReadError>
-    where IMPL : InterfaceImplementation<'static> + Hash + Eq
+    where
+        IMPL: InterfaceImplementation<'static> + Hash + Eq,
     {
         let owns_prefix = IMPL::prefix_for_reverse_edges_from(interface_type);
         snapshot
             .iterate_range(KeyRange::new_within(owns_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| {
-                IMPL::decode_reverse_edge(Bytes::Array(key.byte_ref().into()))
-            })
+            .collect_cloned_hashset(|key, _| IMPL::decode_reverse_edge(Bytes::Array(key.byte_ref().into())))
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
     }
 
@@ -240,10 +221,12 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         interface_type: IMPL::InterfaceType,
     ) -> Result<HashMap<ObjectType<'static>, IMPL>, ConceptReadError>
-    where IMPL: InterfaceImplementation<'static, ObjectType=ObjectType<'static>> + Hash + Eq
+    where
+        IMPL: InterfaceImplementation<'static, ObjectType = ObjectType<'static>> + Hash + Eq,
     {
-        let mut impl_transitive : HashMap<ObjectType<'static>, IMPL> = HashMap::new();
-        let declared_impl_set: HashSet<IMPL> = Self::get_implementations_for_interface(snapshot, interface_type.clone())?;
+        let mut impl_transitive: HashMap<ObjectType<'static>, IMPL> = HashMap::new();
+        let declared_impl_set: HashSet<IMPL> =
+            Self::get_implementations_for_interface(snapshot, interface_type.clone())?;
 
         for declared_impl in declared_impl_set {
             let mut stack = Vec::new();
@@ -252,20 +235,22 @@ impl TypeReader {
             while let Some(sub_object) = stack.pop() {
                 let mut declared_impl_was_overridden = false;
                 for sub_owner_owns in Self::get_implemented_interfaces::<IMPL>(snapshot, sub_object.clone())? {
-                    if let Some(overridden_impl) = Self::get_implementation_override(snapshot, sub_owner_owns.clone())? {
-                        declared_impl_was_overridden = declared_impl_was_overridden || overridden_impl.interface() == interface_type;
+                    if let Some(overridden_impl) = Self::get_implementation_override(snapshot, sub_owner_owns.clone())?
+                    {
+                        declared_impl_was_overridden =
+                            declared_impl_was_overridden || overridden_impl.interface() == interface_type;
                     }
                 }
                 if !declared_impl_was_overridden {
                     debug_assert!(!impl_transitive.contains_key(&sub_object));
                     impl_transitive.insert(sub_object.clone(), declared_impl.clone());
                     match sub_object {
-                        ObjectType::Entity(owner) => {
-                            Self::get_subtypes(snapshot, owner)?.into_iter().for_each(|t| stack.push(ObjectType::new(t.into_vertex())))
-                        }
-                        ObjectType::Relation(owner) => {
-                            Self::get_subtypes(snapshot, owner)?.into_iter().for_each(|t| stack.push(ObjectType::new(t.into_vertex())))
-                        }
+                        ObjectType::Entity(owner) => Self::get_subtypes(snapshot, owner)?
+                            .into_iter()
+                            .for_each(|t| stack.push(ObjectType::new(t.into_vertex()))),
+                        ObjectType::Relation(owner) => Self::get_subtypes(snapshot, owner)?
+                            .into_iter()
+                            .for_each(|t| stack.push(ObjectType::new(t.into_vertex()))),
                     };
                 }
             }
@@ -317,9 +302,7 @@ impl TypeReader {
         let relates_prefix = Relates::prefix_for_reverse_edges_from(role);
         snapshot
             .iterate_range(KeyRange::new_within(relates_prefix, TypeEdge::FIXED_WIDTH_ENCODING))
-            .collect_cloned_vec(|key, _| {
-                Relates::decode_reverse_edge(Bytes::Reference(key.byte_ref()).into_owned())
-            })
+            .collect_cloned_vec(|key, _| Relates::decode_reverse_edge(Bytes::Reference(key.byte_ref()).into_owned()))
             .map_err(|error| ConceptReadError::SnapshotIterate { source: error })
             .map(|v| v.first().unwrap().clone())
     }
@@ -333,15 +316,15 @@ impl TypeReader {
 
     pub(crate) fn get_type_property<'a, PROPERTY>(
         snapshot: &impl ReadableSnapshot,
-        type_: impl TypeVertexEncoding<'a>
+        type_: impl TypeVertexEncoding<'a>,
     ) -> Result<Option<PROPERTY>, ConceptReadError>
-        where PROPERTY: TypeVertexPropertyEncoding<'static>
+    where
+        PROPERTY: TypeVertexPropertyEncoding<'static>,
     {
         let property = snapshot
-            .get_mapped(
-                PROPERTY::build_key(type_).into_storage_key().as_reference(),
-                |value| PROPERTY::from_value_bytes(value.clone()),
-            )
+            .get_mapped(PROPERTY::build_key(type_).into_storage_key().as_reference(), |value| {
+                PROPERTY::from_value_bytes(value.clone())
+            })
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
         Ok(property)
     }
@@ -368,9 +351,9 @@ impl TypeReader {
                     Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract),
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
                     Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
-                    Infix::PropertyAnnotationCardinality => {
-                        Annotation::Cardinality(<AnnotationCardinality as TypeVertexPropertyEncoding>::from_value_bytes(value).into())
-                    }
+                    Infix::PropertyAnnotationCardinality => Annotation::Cardinality(
+                        <AnnotationCardinality as TypeVertexPropertyEncoding>::from_value_bytes(value).into(),
+                    ),
                     Infix::PropertyAnnotationRegex => Annotation::Regex(AnnotationRegex::from_value_bytes(value)),
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationUnique
@@ -394,7 +377,8 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         edge: EDGE,
     ) -> Result<HashSet<Annotation>, ConceptReadError>
-        where EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>
+    where
+        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     {
         let type_edge = edge.to_canonical_type_edge();
         snapshot
@@ -409,9 +393,9 @@ impl TypeReader {
                     Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
                     Infix::PropertyAnnotationUnique => Annotation::Unique(AnnotationUnique),
                     Infix::PropertyAnnotationKey => Annotation::Key(AnnotationKey),
-                    Infix::PropertyAnnotationCardinality => {
-                        Annotation::Cardinality(<AnnotationCardinality as TypeEdgePropertyEncoding>::from_value_bytes(value))
-                    }
+                    Infix::PropertyAnnotationCardinality => Annotation::Cardinality(
+                        <AnnotationCardinality as TypeEdgePropertyEncoding>::from_value_bytes(value),
+                    ),
                     Infix::PropertyAnnotationRegex => Annotation::Regex(AnnotationRegex::from_value_bytes(value)),
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationAbstract
@@ -432,7 +416,8 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         edge: EDGE,
     ) -> Result<HashMap<Annotation, EDGE>, ConceptReadError>
-    where EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>
+    where
+        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static>,
     {
         let mut effective_annotations: HashMap<Annotation, EDGE> = HashMap::new();
         let mut edge_opt = Some(edge);
@@ -448,7 +433,6 @@ impl TypeReader {
         Ok(effective_annotations)
     }
 
-
     pub(crate) fn get_type_edge_ordering(
         snapshot: &impl ReadableSnapshot,
         owns: Owns<'_>,
@@ -458,15 +442,15 @@ impl TypeReader {
 
     pub(crate) fn get_type_edge_property<'a, PROPERTY>(
         snapshot: &impl ReadableSnapshot,
-        edge: impl TypeEdgeEncoding<'a>
+        edge: impl TypeEdgeEncoding<'a>,
     ) -> Result<Option<PROPERTY>, ConceptReadError>
-    where PROPERTY: TypeEdgePropertyEncoding<'static>
+    where
+        PROPERTY: TypeEdgePropertyEncoding<'static>,
     {
         let property = snapshot
-            .get_mapped(
-                PROPERTY::build_key(edge).into_storage_key().as_reference(),
-                |value| PROPERTY::from_value_bytes(value.clone()),
-            )
+            .get_mapped(PROPERTY::build_key(edge).into_storage_key().as_reference(), |value| {
+                PROPERTY::from_value_bytes(value.clone())
+            })
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
         Ok(property)
     }

@@ -11,7 +11,7 @@ use encoding::{
     graph::{
         type_::{
             edge::TypeEdge,
-            vertex::TypeVertex,
+            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
         },
         Typed,
     },
@@ -19,7 +19,6 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use lending_iterator::LendingIterator;
-use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::type_::{
@@ -32,7 +31,7 @@ use crate::type_::{
     relation_type::RelationType,
     role_type::RoleType,
     type_manager::type_reader::TypeReader,
-    Ordering, OwnerAPI, PlayerAPI, TypeAPI, KindAPI,
+    KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
 };
 
 #[derive(Debug)]
@@ -56,7 +55,7 @@ pub(crate) struct RoleTypeCache {
     pub(super) ordering: Ordering,
     pub(super) relates: Relates<'static>,
     pub(super) plays: HashSet<Plays<'static>>,
-    pub(super) plays_transitive: HashMap<ObjectType<'static>, Plays<'static>>
+    pub(super) plays_transitive: HashMap<ObjectType<'static>, Plays<'static>>,
 }
 
 #[derive(Debug)]
@@ -64,7 +63,7 @@ pub(crate) struct AttributeTypeCache {
     pub(super) common_type_cache: CommonTypeCache<AttributeType<'static>>,
     pub(super) value_type: Option<ValueType>,
     pub(super) owns: HashSet<Owns<'static>>,
-    pub(super) owns_transitive: HashMap<ObjectType<'static>, Owns<'static>>
+    pub(super) owns_transitive: HashMap<ObjectType<'static>, Owns<'static>>,
 }
 
 #[derive(Debug)]
@@ -103,13 +102,8 @@ pub struct OwnerPlayerCache {
 impl EntityTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<EntityTypeCache>]> {
         let entities = snapshot
-            .iterate_range(KeyRange::new_within(
-                EntityType::prefix_for_kind(),
-                EntityType::PREFIX.fixed_width_keys(),
-            ))
-            .collect_cloned_hashset(|key, _| {
-                EntityType::read_from(Bytes::Reference(key.byte_ref()).into_owned())
-            })
+            .iterate_range(KeyRange::new_within(EntityType::prefix_for_kind(), EntityType::PREFIX.fixed_width_keys()))
+            .collect_cloned_hashset(|key, _| EntityType::read_from(Bytes::Reference(key.byte_ref()).into_owned()))
             .unwrap();
         let max_entity_id = entities.iter().map(|e| e.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_entity_id).map(|_| None).collect::<Box<[_]>>();
@@ -132,9 +126,7 @@ impl RelationTypeCache {
                 RelationType::prefix_for_kind(),
                 Prefix::VertexRelationType.fixed_width_keys(),
             ))
-            .collect_cloned_hashset(|key, _| {
-                RelationType::read_from(Bytes::Reference(key.byte_ref()).into_owned())
-            })
+            .collect_cloned_hashset(|key, _| RelationType::read_from(Bytes::Reference(key.byte_ref()).into_owned()))
             .unwrap();
         let max_relation_id = relations.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_relation_id).map(|_| None).collect::<Box<[_]>>();
@@ -155,9 +147,7 @@ impl AttributeTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<AttributeTypeCache>]> {
         let attributes = snapshot
             .iterate_range(KeyRange::new_within(AttributeType::prefix_for_kind(), TypeVertex::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| {
-                AttributeType::read_from(Bytes::Reference(key.byte_ref()).into_owned())
-            })
+            .collect_cloned_hashset(|key, _| AttributeType::read_from(Bytes::Reference(key.byte_ref()).into_owned()))
             .unwrap();
         let max_attribute_id = attributes.iter().map(|a| a.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_attribute_id).map(|_| None).collect::<Box<[_]>>();
@@ -165,8 +155,13 @@ impl AttributeTypeCache {
             let cache = AttributeTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, attribute.clone()),
                 value_type: TypeReader::get_value_type(snapshot, attribute.clone()).unwrap(),
-                owns: TypeReader::get_implementations_for_interface::<Owns<'static>>(snapshot, attribute.clone()).unwrap(),
-                owns_transitive: TypeReader::get_implementations_for_interface_transitive::<Owns<'static>>(snapshot, attribute.clone()).unwrap()
+                owns: TypeReader::get_implementations_for_interface::<Owns<'static>>(snapshot, attribute.clone())
+                    .unwrap(),
+                owns_transitive: TypeReader::get_implementations_for_interface_transitive::<Owns<'static>>(
+                    snapshot,
+                    attribute.clone(),
+                )
+                .unwrap(),
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -178,9 +173,7 @@ impl RoleTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<RoleTypeCache>]> {
         let roles = snapshot
             .iterate_range(KeyRange::new_within(RoleType::prefix_for_kind(), TypeVertex::FIXED_WIDTH_ENCODING))
-            .collect_cloned_hashset(|key, _| {
-                RoleType::read_from(Bytes::Reference(key.byte_ref()).into_owned())
-            })
+            .collect_cloned_hashset(|key, _| RoleType::read_from(Bytes::Reference(key.byte_ref()).into_owned()))
             .unwrap();
         let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap();
         let mut caches = (0..=max_role_id).map(|_| None).collect::<Box<[_]>>();
@@ -191,7 +184,11 @@ impl RoleTypeCache {
                 ordering,
                 relates: TypeReader::get_relation(snapshot, role.clone()).unwrap(),
                 plays: TypeReader::get_implementations_for_interface::<Plays<'static>>(snapshot, role.clone()).unwrap(),
-                plays_transitive: TypeReader::get_implementations_for_interface_transitive::<Plays<'static>>(snapshot, role.clone()).unwrap(),
+                plays_transitive: TypeReader::get_implementations_for_interface_transitive::<Plays<'static>>(
+                    snapshot,
+                    role.clone(),
+                )
+                .unwrap(),
             };
             caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -248,7 +245,7 @@ impl PlaysCache {
     }
 }
 
-impl<T: KindAPI<'static, SelfStatic=T>> CommonTypeCache<T> {
+impl<T: KindAPI<'static, SelfStatic = T>> CommonTypeCache<T> {
     fn create<Snapshot>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
     where
         Snapshot: ReadableSnapshot,
@@ -276,13 +273,21 @@ impl OwnerPlayerCache {
     fn create<'a, Snapshot, T>(snapshot: &Snapshot, type_: T) -> OwnerPlayerCache
     where
         Snapshot: ReadableSnapshot,
-        T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static> + ,
+        T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static>,
     {
         OwnerPlayerCache {
             owns_declared: TypeReader::get_implemented_interfaces::<Owns<'static>>(snapshot, type_.clone()).unwrap(),
-            owns_transitive: TypeReader::get_implemented_interfaces_transitive::<Owns<'static>, T>(snapshot, type_.clone()).unwrap(),
+            owns_transitive: TypeReader::get_implemented_interfaces_transitive::<Owns<'static>, T>(
+                snapshot,
+                type_.clone(),
+            )
+            .unwrap(),
             plays_declared: TypeReader::get_implemented_interfaces::<Plays<'static>>(snapshot, type_.clone()).unwrap(),
-            plays_transitive: TypeReader::get_implemented_interfaces_transitive::<Plays<'static>, T>(snapshot, type_.clone()).unwrap(),
+            plays_transitive: TypeReader::get_implemented_interfaces_transitive::<Plays<'static>, T>(
+                snapshot,
+                type_.clone(),
+            )
+            .unwrap(),
         }
     }
 }

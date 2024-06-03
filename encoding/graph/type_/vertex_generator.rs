@@ -14,17 +14,15 @@ use crate::{
     error::EncodingError,
     graph::{
         type_::{
-            vertex::{
-                TypeID, TypeIDUInt, TypeVertex,
-            },
+            vertex::{TypeID, TypeIDUInt, TypeVertex},
             Kind,
             Kind::{Attribute, Entity, Relation, Role},
         },
         Typed,
     },
+    layout::prefix::Prefix,
     Keyable,
 };
-use crate::layout::prefix::Prefix;
 
 pub struct TypeVertexAllocator {
     kind: Kind,

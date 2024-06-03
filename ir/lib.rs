@@ -4,21 +4,23 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::error::Error;
-use std::fmt;
-use std::fmt::Display;
-use crate::pattern::constraint::Constraint;
+use std::{error::Error, fmt, fmt::Display};
 
-use crate::pattern::variable::{Variable, VariableCategory};
+use crate::pattern::{
+    constraint::Constraint,
+    variable::{Variable, VariableCategory},
+};
 
-pub mod pattern;
 mod inference;
+mod optimisation;
+pub mod pattern;
 pub mod program;
-
 
 #[derive(Debug)]
 pub enum PatternDefinitionError {
-    DisjointVariableReuse { variable_name: String },
+    DisjointVariableReuse {
+        variable_name: String,
+    },
     VariableCategoryMismatch {
         variable: Variable,
         variable_name: Option<String>,
@@ -27,8 +29,13 @@ pub enum PatternDefinitionError {
         category_2: VariableCategory,
         category_2_source: Constraint,
     },
-    FunctionArgumentUnused { argument_variable: String },
-    FunctionCallReturnArgCountMismatch { assigned_var_count: usize, function_return_count: usize },
+    FunctionArgumentUnused {
+        argument_variable: String,
+    },
+    FunctionCallReturnArgCountMismatch {
+        assigned_var_count: usize,
+        function_return_count: usize,
+    },
 }
 
 impl fmt::Display for PatternDefinitionError {

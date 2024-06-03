@@ -4,14 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Debug, Display, Formatter};
-use std::sync::{Arc, Mutex, MutexGuard};
-use crate::pattern::conjunction::Conjunction;
-use crate::pattern::context::PatternContext;
-use crate::pattern::disjunction::Disjunction;
-use crate::pattern::negation::Negation;
-use crate::pattern::optional::Optional;
-use crate::pattern::ScopeId;
+use std::{
+    fmt::{Debug, Display, Formatter},
+    sync::{Arc, Mutex, MutexGuard},
+};
+
+use crate::pattern::{
+    conjunction::Conjunction, context::PatternContext, disjunction::Disjunction, negation::Negation,
+    optional::Optional, ScopeId,
+};
 
 #[derive(Debug)]
 pub(crate) struct Patterns {
@@ -47,7 +48,6 @@ impl Display for Patterns {
     }
 }
 
-
 #[derive(Debug)]
 pub enum Pattern {
     Conjunction(Conjunction),
@@ -57,77 +57,68 @@ pub enum Pattern {
 }
 
 impl Pattern {
-
     pub(crate) fn context(&self) -> MutexGuard<PatternContext> {
         match self {
-            Pattern::Conjunction(conjunction) => {
-                conjunction.context()
-            }
-            Pattern::Disjunction(disjunction) => {
-                disjunction.context()
-            }
-            Pattern::Negation(negation) => {
-                negation.context()
-            }
-            Pattern::Optional(optional) => {
-                optional.context()
-            }
+            Pattern::Conjunction(conjunction) => conjunction.context(),
+            Pattern::Disjunction(disjunction) => disjunction.context(),
+            Pattern::Negation(negation) => negation.context(),
+            Pattern::Optional(optional) => optional.context(),
         }
     }
 
     fn as_conjunction(&self) -> Option<&Conjunction> {
         match self {
             Pattern::Conjunction(conjunction) => Some(conjunction),
-            _ => None
+            _ => None,
         }
     }
 
     fn as_conjunction_mut(&mut self) -> Option<&mut Conjunction> {
         match self {
             Pattern::Conjunction(conjunction) => Some(conjunction),
-            _ => None
+            _ => None,
         }
     }
 
     fn as_disjunction(&self) -> Option<&Disjunction> {
         match self {
             Pattern::Disjunction(disjunction) => Some(disjunction),
-            _ => None
+            _ => None,
         }
     }
 
     fn as_disjunction_mut(&mut self) -> Option<&mut Disjunction> {
         match self {
             Pattern::Disjunction(disjunction) => Some(disjunction),
-            _ => None
+            _ => None,
         }
     }
 
     fn as_negation(&self) -> Option<&Negation> {
         match self {
             Pattern::Negation(negation) => Some(negation),
-            _ => None
+            _ => None,
         }
     }
 
     fn as_negation_mut(&mut self) -> Option<&mut Negation> {
         match self {
             Pattern::Negation(negation) => Some(negation),
-            _ => None
+            _ => None,
         }
     }
 
     fn as_optional(&self) -> Option<&Optional> {
         match self {
             Pattern::Optional(optional) => Some(optional),
-            _ => None
+            _ => None,
         }
     }
 
     fn as_optional_mut(&mut self) -> Option<&mut Optional> {
         match self {
             Pattern::Optional(optional) => Some(optional),
-            _ => None
+            _ => None,
         }
     }
 }

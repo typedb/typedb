@@ -4,26 +4,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::TypeEdgeEncoding;
-use encoding::layout::prefix::Prefix;
 use std::collections::{HashMap, HashSet};
 
-
+use encoding::{graph::type_::edge::TypeEdgeEncoding, layout::prefix::Prefix};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    error::ConceptReadError,
+    error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationCardinality, AnnotationDistinct, AnnotationKey, AnnotationUnique},
         attribute_type::AttributeType,
         object_type::ObjectType,
         type_manager::TypeManager,
-        Ordering, TypeAPI,
+        InterfaceImplementation, Ordering, TypeAPI,
     },
 };
-use crate::error::ConceptWriteError;
-use crate::type_::InterfaceImplementation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<'a> {
@@ -132,7 +128,7 @@ impl<'a> Owns<'a> {
             OwnsAnnotation::Cardinality(cardinality) => {
                 type_manager.set_edge_annotation_cardinality(snapshot, self.clone(), cardinality)
             }
-            OwnsAnnotation::Unique(_) => type_manager.set_edge_annotation_unique(snapshot, self.clone())
+            OwnsAnnotation::Unique(_) => type_manager.set_edge_annotation_unique(snapshot, self.clone()),
         }
         Ok(()) // TODO
     }
@@ -144,13 +140,10 @@ impl<'a> Owns<'a> {
         annotation: OwnsAnnotation,
     ) {
         match annotation {
-
             OwnsAnnotation::Distinct(_) => type_manager.delete_edge_annotation_distinct(snapshot, self.clone()),
             OwnsAnnotation::Key(_) => type_manager.delete_edge_annotation_key(snapshot, self.clone()),
-            OwnsAnnotation::Cardinality(_) => {
-                type_manager.delete_edge_annotation_cardinality(snapshot, self.clone())
-            }
-            OwnsAnnotation::Unique(_) => type_manager.delete_edge_annotation_unique(snapshot, self.clone())
+            OwnsAnnotation::Cardinality(_) => type_manager.delete_edge_annotation_cardinality(snapshot, self.clone()),
+            OwnsAnnotation::Unique(_) => type_manager.delete_edge_annotation_unique(snapshot, self.clone()),
         }
     }
 
@@ -200,7 +193,6 @@ impl<'a> InterfaceImplementation<'a> for Owns<'a> {
     type ObjectType = ObjectType<'a>;
     type InterfaceType = AttributeType<'a>;
 
-
     fn object(&self) -> ObjectType<'a> {
         self.owner.clone()
     }
@@ -214,7 +206,7 @@ impl<'a> InterfaceImplementation<'a> for Owns<'a> {
             OwnsAnnotation::Distinct(distinct) => Annotation::Distinct(distinct),
             OwnsAnnotation::Key(key) => Annotation::Key(key),
             OwnsAnnotation::Cardinality(cardinality) => Annotation::Cardinality(cardinality),
-            OwnsAnnotation::Unique(unique) => Annotation::Unique(unique)
+            OwnsAnnotation::Unique(unique) => Annotation::Unique(unique),
         }
     }
 }

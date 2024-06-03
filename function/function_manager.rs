@@ -5,6 +5,4 @@
  */
 
 /// Analogy to TypeManager, but specialised just for Functions
-struct FunctionManager {
-
-}
+struct FunctionManager {}

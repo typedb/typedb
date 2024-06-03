@@ -4,14 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::thing::attribute::Attribute;
-use concept::thing::entity::Entity;
-use concept::thing::relation::Relation;
-use concept::thing::value::Value;
-use concept::type_::attribute_type::AttributeType;
-use concept::type_::entity_type::EntityType;
-use concept::type_::relation_type::RelationType;
-use concept::type_::role_type::RoleType;
+use concept::{
+    thing::{attribute::Attribute, entity::Entity, relation::Relation, value::Value},
+    type_::{attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType, role_type::RoleType},
+};
 
 pub mod answer_map;
 pub mod variable_value;

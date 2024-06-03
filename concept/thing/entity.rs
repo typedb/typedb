@@ -7,11 +7,10 @@
 use std::collections::HashSet;
 
 use encoding::{
-    graph::{thing::vertex_object::ObjectVertex, Typed},
+    graph::{thing::vertex_object::ObjectVertex, type_::vertex::PrefixedTypeVertexEncoding, Typed},
     layout::prefix::Prefix,
     AsBytes, Keyable, Prefixed,
 };
-use encoding::graph::type_::vertex::PrefixedTypeVertexEncoding;
 use iterator::Collector;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{

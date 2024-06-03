@@ -27,9 +27,7 @@ use crate::{
             vertex_attribute::{AttributeID, AttributeVertex, LongAttributeID, StringAttributeID},
             vertex_object::{ObjectID, ObjectVertex},
         },
-        type_::vertex::{
-            TypeID, TypeIDUInt, TypeVertex, build_type_vertex_prefix_key,
-        },
+        type_::vertex::{build_type_vertex_prefix_key, TypeID, TypeIDUInt, TypeVertex},
         Typed,
     },
     layout::prefix::Prefix,

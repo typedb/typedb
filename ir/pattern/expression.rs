@@ -4,7 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) struct Expression {
+use std::fmt::{Display, Formatter};
 
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct Expression {}
+
+impl Display for Expression {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
 }

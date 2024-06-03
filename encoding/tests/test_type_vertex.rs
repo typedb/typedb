@@ -11,15 +11,14 @@ use encoding::{
     error::EncodingError,
     graph::{
         type_::{
-            vertex::TypeID,
+            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
             vertex_generator::TypeVertexGenerator,
         },
         Typed,
     },
+    layout::prefix::Prefix,
     AsBytes, EncodingKeyspace, Keyable,
 };
-use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding, TypeVertex};
-use encoding::layout::prefix::Prefix;
 use storage::{
     durability_client::WALClient,
     key_value::StorageKeyReference,
@@ -29,7 +28,9 @@ use storage::{
 };
 use test_utils::{create_tmp_dir, init_logging};
 
-pub struct MockEntityType<'a> { vertex: TypeVertex<'a> }
+pub struct MockEntityType<'a> {
+    vertex: TypeVertex<'a>,
+}
 
 impl<'a> TypeVertexEncoding<'a> for MockEntityType<'a> {
     fn from_vertex(vertex: TypeVertex<'a>) -> Result<MockEntityType<'a>, EncodingError> {
@@ -44,7 +45,6 @@ impl<'a> TypeVertexEncoding<'a> for MockEntityType<'a> {
 impl<'a> PrefixedTypeVertexEncoding<'a> for MockEntityType<'a> {
     const PREFIX: Prefix = Prefix::VertexEntityType;
 }
-
 
 // TODO: Update all tests with higher level APIs
 #[test]

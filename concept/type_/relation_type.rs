@@ -7,16 +7,15 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{
-    graph::type_::vertex::TypeVertex,
-    layout::prefix::Prefix,
+    error::{EncodingError, EncodingError::UnexpectedPrefix},
+    graph::type_::{
+        vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+        Kind,
+    },
+    layout::prefix::{Prefix, Prefix::VertexRelationType},
     value::label::Label,
     Prefixed,
 };
-use encoding::error::EncodingError;
-use encoding::error::EncodingError::UnexpectedPrefix;
-use encoding::graph::type_::Kind;
-use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding};
-use encoding::layout::prefix::Prefix::VertexRelationType;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -36,11 +35,10 @@ use crate::{
         relates::Relates,
         role_type::RoleType,
         type_manager::TypeManager,
-        ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
     ConceptAPI,
 };
-use crate::type_::KindAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType<'a> {

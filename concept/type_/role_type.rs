@@ -7,16 +7,16 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{
-    graph::type_::vertex::TypeVertex,
+    error::{EncodingError, EncodingError::UnexpectedPrefix},
+    graph::type_::{
+        vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+        Kind,
+    },
     layout::prefix::Prefix,
     value::label::Label,
     Prefixed,
 };
 use lending_iterator::higher_order::Hkt;
-use encoding::error::EncodingError;
-use encoding::error::EncodingError::UnexpectedPrefix;
-use encoding::graph::type_::Kind;
-use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding};
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -29,16 +29,15 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationDistinct},
+        object_type::ObjectType,
+        owns::Owns,
         plays::Plays,
         relates::Relates,
         type_manager::TypeManager,
-        TypeAPI,
+        KindAPI, TypeAPI,
     },
     ConceptAPI,
 };
-use crate::type_::object_type::ObjectType;
-use crate::type_::KindAPI;
-use crate::type_::owns::Owns;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {

@@ -4,11 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
-use std::sync::{Arc, Mutex, MutexGuard};
-use crate::pattern::context::PatternContext;
-use crate::pattern::{Scope, ScopeId};
-use crate::pattern::variable::Variable;
+use std::{
+    fmt::{Display, Formatter},
+    sync::{Arc, Mutex, MutexGuard},
+};
+
+use crate::pattern::{context::PatternContext, variable::Variable, Scope, ScopeId};
 
 #[derive(Debug)]
 pub(crate) struct Disjunction {
@@ -22,7 +23,7 @@ impl Disjunction {
         Self { scope_id, context }
     }
 
-    pub(crate) fn variables(&self) -> Box<dyn Iterator<Item=Variable>> {
+    pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = Variable>> {
         todo!()
     }
 
@@ -35,7 +36,6 @@ impl Scope for Disjunction {
     fn scope_id(&self) -> ScopeId {
         todo!()
     }
-
 }
 
 impl Display for Disjunction {

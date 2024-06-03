@@ -4,12 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::{
+    fmt::{Display, Formatter},
+    sync::{Arc, Mutex, MutexGuard},
+};
 
-use crate::pattern::{Scope, ScopeId};
-use crate::pattern::context::PatternContext;
-use crate::pattern::variable::Variable;
+use crate::pattern::{context::PatternContext, variable::Variable, Scope, ScopeId};
 
 #[derive(Debug)]
 pub struct Optional {
@@ -23,7 +23,7 @@ impl Optional {
 }
 
 impl Optional {
-    pub(crate) fn variables(&self) -> Box<dyn Iterator<Item=Variable>> {
+    pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = Variable>> {
         todo!()
     }
 }

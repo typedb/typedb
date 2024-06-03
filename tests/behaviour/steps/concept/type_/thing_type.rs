@@ -261,12 +261,7 @@ pub async fn get_supertypes_contain(
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) get supertypes is empty")]
-pub async fn get_supertypes_is_empty(
-    context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    step: &Step,
-) {
+pub async fn get_supertypes_is_empty(context: &mut Context, root_label: RootLabel, type_label: Label, step: &Step) {
     with_read_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
             assert!(type_.get_supertypes(&tx.snapshot, &tx.type_manager).unwrap().is_empty());
@@ -301,19 +296,13 @@ pub async fn get_subtypes_contain(
 
 #[apply(generic_step)]
 #[step(expr = "{root_label}\\({type_label}\\) get subtypes is empty")]
-pub async fn get_subtypes_is_empty(
-    context: &mut Context,
-    root_label: RootLabel,
-    type_label: Label,
-    step: &Step,
-) {
+pub async fn get_subtypes_is_empty(context: &mut Context, root_label: RootLabel, type_label: Label, step: &Step) {
     with_read_tx!(context, |tx| {
         with_type!(tx, root_label, type_label, type_, {
             assert!(type_.get_subtypes(&tx.snapshot, &tx.type_manager).unwrap().is_empty());
         });
     });
 }
-
 
 // Owns
 #[apply(generic_step)]
@@ -346,7 +335,7 @@ pub async fn get_owns_set_override(
     type_label: Label,
     attr_type_label: Label,
     overridden_type_label: Label,
-    may_error: MayError
+    may_error: MayError,
 ) {
     let owner = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
@@ -378,7 +367,7 @@ pub async fn get_owns_set_annotation(
     type_label: Label,
     attr_type_label: Label,
     annotation: Annotation,
-    may_error: MayError
+    may_error: MayError,
 ) {
     let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_schema_tx!(context, |tx| {
@@ -391,22 +380,28 @@ pub async fn get_owns_set_annotation(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns: {type_label}; get annotations {contains_or_doesnt}: {annotation}")]
+#[step(
+    expr = "{root_label}\\({type_label}\\) get owns: {type_label}; get annotations {contains_or_doesnt}: {annotation}"
+)]
 pub async fn get_owns_get_annotations_contains(
     context: &mut Context,
     root_label: RootLabel,
     type_label: Label,
     attr_type_label: Label,
     contains_or_doesnt: ContainsOrDoesnt,
-    annotation: Annotation
+    annotation: Annotation,
 ) {
     let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_read_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        let actual_contains = owns.get_effective_annotations(&tx.snapshot, &tx.type_manager).unwrap().contains_key(&annotation.into_typedb().into());
-        assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);;
+        let owns =
+            object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let actual_contains = owns
+            .get_effective_annotations(&tx.snapshot, &tx.type_manager)
+            .unwrap()
+            .contains_key(&annotation.into_typedb().into());
+        assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
 
@@ -469,10 +464,15 @@ pub async fn get_owns_overridden_exists(
 ) {
     let object_type = get_as_object_type(context, root_label.to_typedb(), &type_label);
     with_read_tx!(context, |tx| {
-        let attr_type = tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let attr_type =
+            tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.to_typedb()).unwrap().unwrap();
+        let owns =
+            object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
         let overridden_owns_opt = owns.get_override(&tx.snapshot, &tx.type_manager).unwrap();
-        exists.check(&overridden_owns_opt, &format!("override for {} owns {}", type_label.to_typedb(), attr_type_label.to_typedb()));
+        exists.check(
+            &overridden_owns_opt,
+            &format!("override for {} owns {}", type_label.to_typedb(), attr_type_label.to_typedb()),
+        );
     });
 }
 
@@ -556,7 +556,8 @@ pub async fn get_plays_set_override(
         let player_supertype = player_type.get_supertype(&tx.snapshot, &tx.type_manager).unwrap().unwrap();
         let overridden_role_type =
             tx.type_manager.get_role_type(&tx.snapshot, &overridden_role_label.to_typedb()).unwrap().unwrap();
-        let overridden_plays_opt = player_supertype.get_plays_role_transitive(&tx.snapshot, &tx.type_manager, overridden_role_type).unwrap();
+        let overridden_plays_opt =
+            player_supertype.get_plays_role_transitive(&tx.snapshot, &tx.type_manager, overridden_role_type).unwrap();
         if let Some(overridden_plays) = overridden_plays_opt.as_ref() {
             let res = plays.set_override(&mut tx.snapshot, &tx.type_manager, overridden_plays_opt.unwrap());
             may_error.check(&res);

@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use ir::pattern::variable::Variable;
 
-use crate::{Concept};
+use crate::Concept;
 
 // TODO: we could actually optimise this data structure into an array given the prototype + a index mapping
 // TODO: what about optionality and lists

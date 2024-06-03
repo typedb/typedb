@@ -4,15 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+};
 
 use itertools::Itertools;
 
-use crate::pattern::{Scope, ScopeId};
-use crate::pattern::constraint::Constraint;
-use crate::pattern::variable::{Variable, VariableCategory, VariableOptionality};
-use crate::PatternDefinitionError;
+use crate::{
+    pattern::{
+        constraint::Constraint,
+        variable::{Variable, VariableCategory, VariableOptionality},
+        Scope, ScopeId,
+    },
+    PatternDefinitionError,
+};
 
 #[derive(Debug)]
 pub struct PatternContext {
@@ -42,7 +48,11 @@ impl PatternContext {
         }
     }
 
-    pub(crate) fn get_or_declare_variable_named(&mut self, name: &str, scope: &impl Scope) -> Result<Variable, PatternDefinitionError> {
+    pub(crate) fn get_or_declare_variable_named(
+        &mut self,
+        name: &str,
+        scope: &impl Scope,
+    ) -> Result<Variable, PatternDefinitionError> {
         match self.variable_names_index.get(name) {
             None => {
                 let variable = self.allocate_variable();
@@ -69,6 +79,10 @@ impl PatternContext {
 
     pub(crate) fn get_variable(&self, name: &str) -> Option<Variable> {
         self.variable_names_index.get(name).cloned()
+    }
+
+    pub(crate) fn get_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_declaration.keys().into_iter().cloned()
     }
 
     fn allocate_variable(&mut self) -> Variable {
@@ -99,6 +113,10 @@ impl PatternContext {
         scope
     }
 
+    pub(crate) fn get_variable_category(&self, variable: Variable) -> Option<VariableCategory> {
+        self.variable_categories.get(&variable).map(|(category, optionality)| *category)
+    }
+
     pub(crate) fn set_variable_category(
         &mut self,
         variable: Variable,
@@ -114,16 +132,14 @@ impl PatternContext {
             Some((existing_category, existing_source)) => {
                 let narrowest = existing_category.narrowest(category);
                 match narrowest {
-                    None => {
-                        Err(PatternDefinitionError::VariableCategoryMismatch {
-                            variable,
-                            variable_name: self.variable_names.get(&variable).cloned(),
-                            category_1: category,
-                            category_1_source: source,
-                            category_2: *existing_category,
-                            category_2_source: existing_source.clone(),
-                        })
-                    }
+                    None => Err(PatternDefinitionError::VariableCategoryMismatch {
+                        variable,
+                        variable_name: self.variable_names.get(&variable).cloned(),
+                        category_1: category,
+                        category_1_source: source,
+                        category_2: *existing_category,
+                        category_2_source: existing_source.clone(),
+                    }),
                     Some(narrowed) => {
                         if narrowed == *existing_category {
                             Ok(())
@@ -150,11 +166,16 @@ impl PatternContext {
     }
 
     fn is_equal_or_parent_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_parent: ScopeId) -> bool {
-        scope == maybe_parent || Self::get_scope_parent(parents, scope).map(|p| Self::is_equal_or_parent_scope(parents, p, maybe_parent)).unwrap_or(false)
+        scope == maybe_parent
+            || Self::get_scope_parent(parents, scope)
+                .map(|p| Self::is_equal_or_parent_scope(parents, p, maybe_parent))
+                .unwrap_or(false)
     }
 
     fn is_child_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_child: ScopeId) -> bool {
-        Self::get_scope_parent(parents, maybe_child).map(|c| c == scope || Self::is_child_scope(parents, scope, c)).unwrap_or(false)
+        Self::get_scope_parent(parents, maybe_child)
+            .map(|c| c == scope || Self::is_child_scope(parents, scope, c))
+            .unwrap_or(false)
     }
 
     fn get_scope_parent(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId) -> Option<ScopeId> {
@@ -170,9 +191,12 @@ impl Display for PatternContext {
         }
         writeln!(f, "Variable categories:")?;
         for entry in self.variable_categories.iter().sorted_by_key(|e| e.0) {
-            writeln!(f, "  {}: {}", entry.0, entry.1.0)?;
+            writeln!(f, "  {}: {}", entry.0, entry.1 .0)?;
+        }
+        writeln!(f, "Optional variables:")?;
+        for entry in self.variable_optionality.iter().sorted_by_key(|e| e.0) {
+            writeln!(f, "  {}", entry.0)?;
         }
         Ok(())
     }
 }
-

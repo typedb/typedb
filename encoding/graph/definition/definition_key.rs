@@ -4,9 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
-use std::fmt::{Display, Formatter};
-use std::ops::Range;
+use std::{
+    fmt::{Display, Formatter},
+    ops::Range,
+};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE};
@@ -72,8 +73,8 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for DefinitionKey<'a> {}
 impl<'a> Display for DefinitionKey<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         // we'll just arbitrarily write it out as an u64 in Big Endian
-        debug_assert!(self.bytes.length() < (u64::BITS/8) as usize);
-        let mut bytes = [0 as u8;(u64::BITS/8) as usize];
+        debug_assert!(self.bytes.length() < (u64::BITS / 8) as usize);
+        let mut bytes = [0 as u8; (u64::BITS / 8) as usize];
         bytes[0..self.bytes.length()].copy_from_slice(self.bytes.bytes());
         let as_u64 = u64::from_be_bytes(bytes);
         write!(f, "{}", as_u64)

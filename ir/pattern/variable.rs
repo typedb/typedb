@@ -45,7 +45,7 @@ pub enum VariableCategory {
     Thing,
 
     Object,
-    // TODO: introduce entity and relation, since these could be useful to make type inference easier
+    // TODO: if we introduce Entity and Relation, we will also have to introduce Entity/RelationRoleImpl
     Attribute,
     RoleImpl,
     Value,
@@ -121,4 +121,3 @@ impl Display for VariableOptionality {
         }
     }
 }
-

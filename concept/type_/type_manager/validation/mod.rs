@@ -4,22 +4,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::error::Error;
-use std::fmt;
-use encoding::graph::Typed;
-use encoding::value::label::Label;
-use encoding::value::value_type::ValueType;
+use std::{error::Error, fmt};
+
+use encoding::{
+    graph::Typed,
+    value::{label::Label, value_type::ValueType},
+};
 use storage::snapshot::ReadableSnapshot;
-use crate::error::ConceptReadError;
-use crate::type_::attribute_type::AttributeType;
-use crate::type_::object_type::ObjectType;
-use crate::type_::role_type::RoleType;
-use crate::type_::TypeAPI;
+
+use crate::{
+    error::ConceptReadError,
+    type_::{attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType, TypeAPI},
+};
 
 pub mod annotation_compatibility;
 pub mod commit_time_validation;
 pub mod operation_time_validation;
-
 
 #[derive(Debug, Clone)]
 pub enum SchemaValidationError {
@@ -50,7 +50,7 @@ impl Error for SchemaValidationError {
             Self::ConceptRead(source) => Some(source),
             Self::LabelUniqueness(_) => None,
             SchemaValidationError::RootModification => None,
-            SchemaValidationError::CyclicTypeHierarchy(_,_) => None,
+            SchemaValidationError::CyclicTypeHierarchy(_, _) => None,
             SchemaValidationError::RelatesNotInherited(_) => None,
             SchemaValidationError::OwnsNotInherited(_) => None,
             SchemaValidationError::PlaysNotInherited(_, _) => None,

@@ -4,11 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::definition::definition_key::DefinitionKey;
-use encoding::value::value_type::ValueType;
-use ir::pattern::variable::{VariableCategory, VariableOptionality};
-use ir::program::function::FunctionIR;
 use answer::Type;
+use encoding::{graph::definition::definition_key::DefinitionKey, value::value_type::ValueType};
+use ir::{
+    pattern::variable::{VariableCategory, VariableOptionality},
+    program::function::FunctionIR,
+};
 
 /// Function represents the user-defined structure:
 /// fun <name>(<args>) -> <return type> { <body> }
@@ -46,7 +47,7 @@ impl Function {
     }
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum FunctionValuePrototype {
     Thing(Type),
     ThingOptional(Type),
@@ -61,26 +62,22 @@ pub enum FunctionValuePrototype {
 impl Into<VariableCategory> for FunctionValuePrototype {
     fn into(self) -> VariableCategory {
         match self {
-            FunctionValuePrototype::Thing(type_)
-            | FunctionValuePrototype::ThingOptional(type_) => {
-                match type_ {
-                    Type::Entity(_) | Type::Relation(_) => VariableCategory::Object,
-                    Type::Attribute(_) =>  VariableCategory::Attribute,
-                    Type::RoleType(_) => unreachable!("A function cannot use role typed instances"),
-                }
+            FunctionValuePrototype::Thing(type_) | FunctionValuePrototype::ThingOptional(type_) => match type_ {
+                Type::Entity(_) | Type::Relation(_) => VariableCategory::Object,
+                Type::Attribute(_) => VariableCategory::Attribute,
+                Type::RoleType(_) => unreachable!("A function cannot use role typed instances"),
             },
-            FunctionValuePrototype::Value(_)
-            | FunctionValuePrototype::ValueOptional(_) => VariableCategory::Value,
-            FunctionValuePrototype::ThingList(type_)
-            | FunctionValuePrototype::ThingListOptional(type_) => {
+            FunctionValuePrototype::Value(_) | FunctionValuePrototype::ValueOptional(_) => VariableCategory::Value,
+            FunctionValuePrototype::ThingList(type_) | FunctionValuePrototype::ThingListOptional(type_) => {
                 match type_ {
                     Type::Entity(_) | Type::Relation(_) => VariableCategory::ObjectList,
                     Type::Attribute(_) => VariableCategory::AttributeList,
                     Type::RoleType(_) => unreachable!("A function cannot use role-list typed instances"),
                 }
-            },
-            FunctionValuePrototype::ValueList(_)
-            | FunctionValuePrototype::ValueListOptional(_) => VariableCategory::ValueList,
+            }
+            FunctionValuePrototype::ValueList(_) | FunctionValuePrototype::ValueListOptional(_) => {
+                VariableCategory::ValueList
+            }
         }
     }
 }

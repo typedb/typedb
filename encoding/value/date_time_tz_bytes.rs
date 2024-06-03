@@ -27,7 +27,8 @@ impl DateTimeTZBytes {
 
     pub fn build(date_time: DateTime<Tz>) -> Self {
         let mut bytes = DateTimeBytes::build(date_time.naive_utc()).bytes();
-        bytes[Self::DATE_TIME_LENGTH..][..Self::TZ_LENGTH].copy_from_slice(&encode_tz(date_time.timezone()).to_be_bytes());
+        bytes[Self::DATE_TIME_LENGTH..][..Self::TZ_LENGTH]
+            .copy_from_slice(&encode_tz(date_time.timezone()).to_be_bytes());
         Self { bytes }
     }
 

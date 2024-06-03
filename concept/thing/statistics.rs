@@ -18,12 +18,11 @@ use encoding::graph::{
         vertex_attribute::AttributeVertex,
         vertex_object::ObjectVertex,
     },
-    type_::vertex::{TypeID,TypeIDUInt},
+    type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
     Typed,
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use serde::{Deserialize, Serialize};
-use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding};
 use storage::{
     durability_client::{DurabilityRecord, UnsequencedDurabilityRecord},
     iterator::MVCCReadError,
@@ -157,8 +156,7 @@ impl Statistics {
                 let edge = ThingEdgeRelationIndex::new(Bytes::Reference(key_reference.byte_ref()));
                 self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta)
             } else if EntityType::is_decodable_from_key(key_reference) {
-                let type_ =
-                    EntityType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
+                let type_ = EntityType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.entity_counts.remove(&type_);
                     self.clear_object_type(ObjectType::Entity(type_));
@@ -172,9 +170,7 @@ impl Statistics {
                     self.clear_object_type(as_object_type.clone());
                 }
             } else if AttributeType::is_decodable_from_key(key_reference) {
-                let type_ = AttributeType::read_from(
-                    Bytes::Reference(key_reference.byte_ref()).into_owned()
-                );
+                let type_ = AttributeType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.attribute_counts.remove(&type_);
                     self.attribute_owner_counts.remove(&type_);
@@ -184,8 +180,7 @@ impl Statistics {
                     self.has_attribute_counts.retain(|_, map| !map.is_empty());
                 }
             } else if RoleType::is_decodable_from_key(key_reference) {
-                let type_ =
-                    RoleType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
+                let type_ = RoleType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.role_counts.remove(&type_);
                     self.role_player_counts.iter_mut().for_each(|(_, map)| {
@@ -399,9 +394,7 @@ impl SerialisableType {
     pub(crate) fn into_object_type(self) -> ObjectType<'static> {
         match self {
             Self::Entity(id) => ObjectType::Entity(EntityType::build_from_type_id(TypeID::build(id))),
-            Self::Relation(id) => {
-                ObjectType::Relation(RelationType::build_from_type_id(TypeID::build(id)))
-            }
+            Self::Relation(id) => ObjectType::Relation(RelationType::build_from_type_id(TypeID::build(id))),
             _ => panic!("Incompatible conversion."),
         }
     }

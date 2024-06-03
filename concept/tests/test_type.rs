@@ -8,19 +8,26 @@
 
 use std::sync::Arc;
 
-use concept::type_::{annotation::AnnotationAbstract, entity_type::EntityTypeAnnotation, object_type::ObjectType, Ordering, OwnerAPI, owns::Owns, PlayerAPI, relation_type::RelationTypeAnnotation, role_type::RoleTypeAnnotation, type_manager::TypeManager, TypeAPI};
-use concept::type_::type_manager::type_cache::TypeCache;
-
+use concept::type_::{
+    annotation::AnnotationAbstract,
+    entity_type::EntityTypeAnnotation,
+    object_type::ObjectType,
+    owns::Owns,
+    relation_type::RelationTypeAnnotation,
+    role_type::RoleTypeAnnotation,
+    type_manager::{type_cache::TypeCache, TypeManager},
+    Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+};
 use durability::wal::WAL;
 use encoding::{
-    EncodingKeyspace,
-    graph::type_::{Kind, vertex_generator::TypeVertexGenerator},
+    graph::type_::{vertex_generator::TypeVertexGenerator, Kind},
     value::{label::Label, value_type::ValueType},
+    EncodingKeyspace,
 };
 use storage::{
     durability_client::WALClient,
+    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, WriteSnapshot},
     MVCCStorage,
-    snapshot::{CommittableSnapshot, ReadableSnapshot, ReadSnapshot, WriteSnapshot},
 };
 use test_utils::{create_tmp_dir, init_logging};
 

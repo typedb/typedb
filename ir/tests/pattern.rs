@@ -4,9 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use ir::pattern::conjunction::Conjunction;
-use ir::pattern::variable::VariableCategory;
-use ir::PatternDefinitionError;
+use ir::{
+    pattern::{conjunction::Conjunction, variable::VariableCategory},
+    PatternDefinitionError,
+};
 
 #[test]
 fn build_conjunction_constraints() {
@@ -34,9 +35,15 @@ fn variable_category_mismatch() {
     let result = conjunction.constraints().add_isa(var_person, var_person_type);
     assert!(result.is_ok());
     let result = conjunction.constraints().add_isa(var_person_type, var_person);
-    assert!(matches!(result, Err(PatternDefinitionError::VariableCategoryMismatch {
-        variable: var_person_type, category_1: VariableCategory::Thing, category_2: VariableCategory::Type, ..
-    })));
+    assert!(matches!(
+        result,
+        Err(PatternDefinitionError::VariableCategoryMismatch {
+            variable: var_person_type,
+            category_1: VariableCategory::Thing,
+            category_2: VariableCategory::Type,
+            ..
+        })
+    ));
 }
 
 #[test]

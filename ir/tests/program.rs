@@ -5,15 +5,20 @@
  */
 
 use std::collections::HashMap;
-use encoding::graph::definition::definition_key::{DefinitionID, DefinitionKey};
-use encoding::layout::prefix::Prefix;
-use ir::pattern::conjunction::Conjunction;
-use ir::pattern::function_call::FunctionCall;
-use ir::pattern::pattern::Pattern;
-use ir::pattern::variable::{Variable, VariableCategory, VariableOptionality};
-use ir::program::program::Program;
-use ir::program::FunctionalBlock;
-use ir::program::modifier::ModifierDefinitionError;
+
+use encoding::{
+    graph::definition::definition_key::{DefinitionID, DefinitionKey},
+    layout::prefix::Prefix,
+};
+use ir::{
+    pattern::{
+        conjunction::Conjunction,
+        function_call::FunctionCall,
+        pattern::Pattern,
+        variable::{Variable, VariableCategory, VariableOptionality},
+    },
+    program::{modifier::ModifierDefinitionError, program::Program, FunctionalBlock},
+};
 
 #[test]
 fn build_program_modifiers() {
@@ -76,7 +81,10 @@ fn build_program_with_functions() {
         DefinitionKey::build(Prefix::DefinitionStruct, DefinitionID::build(1000)),
         function_call_var_mapping,
         function_call_var_categories,
-        vec![(VariableCategory::Value, VariableOptionality::Required), (VariableCategory::Value, VariableOptionality::Optional)],
+        vec![
+            (VariableCategory::Value, VariableOptionality::Required),
+            (VariableCategory::Value, VariableOptionality::Optional),
+        ],
         false,
     );
     conjunction.constraints().add_function_call(vec![var_count, var_mean], function_call).unwrap();

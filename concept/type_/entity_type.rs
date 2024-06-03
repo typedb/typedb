@@ -7,16 +7,15 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{
-    graph::type_::vertex::TypeVertex,
-    layout::prefix::Prefix,
+    error::{EncodingError, EncodingError::UnexpectedPrefix},
+    graph::type_::{
+        vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+        Kind,
+    },
+    layout::prefix::{Prefix, Prefix::VertexEntityType},
     value::label::Label,
     Prefixed,
 };
-use encoding::error::EncodingError;
-use encoding::error::EncodingError::UnexpectedPrefix;
-use encoding::graph::type_::Kind;
-use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding};
-use encoding::layout::prefix::Prefix::VertexEntityType;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -35,22 +34,21 @@ use crate::{
         plays::Plays,
         role_type::RoleType,
         type_manager::TypeManager,
-        ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
     ConceptAPI,
 };
-use crate::type_::KindAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType<'a> {
     vertex: TypeVertex<'a>,
 }
 
-impl<'a> EntityType<'a> { }
+impl<'a> EntityType<'a> {}
 
 impl<'a> ConceptAPI<'a> for EntityType<'a> {}
 
-impl <'a> PrefixedTypeVertexEncoding<'a> for EntityType<'a> {
+impl<'a> PrefixedTypeVertexEncoding<'a> for EntityType<'a> {
     const PREFIX: Prefix = VertexEntityType;
 }
 impl<'a> TypeVertexEncoding<'a> for EntityType<'a> {

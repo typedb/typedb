@@ -4,18 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::TypeEdgeEncoding;
-use encoding::layout::prefix::Prefix;
+use encoding::{graph::type_::edge::TypeEdgeEncoding, layout::prefix::Prefix};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    error::ConceptReadError,
-    type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, TypeAPI},
+    error::{ConceptReadError, ConceptWriteError},
+    type_::{
+        annotation::Annotation, object_type::ObjectType, role_type::RoleType, type_manager::TypeManager,
+        InterfaceImplementation, TypeAPI,
+    },
 };
-use crate::error::ConceptWriteError;
-use crate::type_::annotation::Annotation;
-use crate::type_::InterfaceImplementation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Plays<'a> {
@@ -49,7 +48,7 @@ impl<'a> Plays<'a> {
         snapshot: &mut Snapshot,
         type_manager: &TypeManager<Snapshot>,
         overridden: Plays<'static>,
-    ) -> Result<(), ConceptWriteError>{
+    ) -> Result<(), ConceptWriteError> {
         // TODO: Validation
         type_manager.set_plays_overridden(snapshot, self.clone().into_owned(), overridden)
     }
@@ -77,7 +76,6 @@ impl<'a> TypeEdgeEncoding<'a> for Plays<'a> {
         self.role()
     }
 }
-
 
 // Can plays not be annotated?
 pub struct __PlaceholderPlaysAnnotation {}

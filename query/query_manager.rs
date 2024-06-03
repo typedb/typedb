@@ -7,12 +7,9 @@
 use function::function::Function;
 use ir::pattern::conjunction::Conjunction;
 
-struct QueryManager {
-
-}
+struct QueryManager {}
 
 impl QueryManager {
-
     fn execute(&self, query: &str) {
         // 1. parse query into list of TypeQL clauses
         // 2. expand implicit clauses, eg. fetch clause; -> filter clause; fetch clause;
@@ -29,9 +26,6 @@ impl QueryManager {
     fn create_match_executor(&self, query_functions: Vec<Function>) {
         // let conjunction = Conjunction::new();
         // ... build conjunction...
-
-
-
     }
 }
 
@@ -45,12 +39,10 @@ enum Executor {
     Filter,
     Sort,
     Offset,
-    Limit
+    Limit,
 }
 
-trait PipelineStage {
-
-}
+trait PipelineStage {}
 
 enum QueryReturn {
     MapStream,

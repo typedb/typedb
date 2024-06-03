@@ -4,15 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use serde::{Deserialize, Serialize};
-use bytes::byte_array::ByteArray;
-use bytes::byte_reference::ByteReference;
-use bytes::Bytes;
-use encoding::AsBytes;
-use encoding::graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding};
-use encoding::layout::infix::Infix;
-use encoding::layout::infix::Infix::{PropertyAnnotationAbstract, PropertyAnnotationDistinct, PropertyAnnotationIndependent, PropertyAnnotationKey, PropertyAnnotationUnique};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use encoding::{
+    graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
+    layout::infix::{
+        Infix,
+        Infix::{
+            PropertyAnnotationAbstract, PropertyAnnotationDistinct, PropertyAnnotationIndependent,
+            PropertyAnnotationKey, PropertyAnnotationUnique,
+        },
+    },
+    AsBytes,
+};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
@@ -24,7 +29,6 @@ pub enum Annotation {
     Cardinality(AnnotationCardinality),
     Regex(AnnotationRegex),
 }
-
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationAbstract;

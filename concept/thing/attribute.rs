@@ -10,12 +10,12 @@ use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
+        type_::vertex::PrefixedTypeVertexEncoding,
         Typed,
     },
     value::decode_value_u64,
     AsBytes, Keyable,
 };
-use encoding::graph::type_::vertex::PrefixedTypeVertexEncoding;
 use iterator::State;
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -28,7 +28,7 @@ use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{object::Object, thing_manager::ThingManager, value::Value, ThingAPI},
-    type_::{attribute_type::AttributeType, type_manager::TypeManager, TypeAPI, ObjectTypeAPI},
+    type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 

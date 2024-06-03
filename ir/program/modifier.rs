@@ -4,13 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
-use std::error::Error;
-use std::fmt;
+use std::{collections::HashSet, error::Error, fmt};
 
-use crate::pattern::context::PatternContext;
-use crate::pattern::variable::Variable;
-use crate::program::modifier::ModifierDefinitionError::SortVariableNotAvailable;
+use crate::{
+    pattern::{context::PatternContext, variable::Variable},
+    program::modifier::ModifierDefinitionError::SortVariableNotAvailable,
+};
 
 pub enum Modifier {
     Filter(Filter),
@@ -29,7 +28,7 @@ impl Filter {
         for name in variables {
             match context.get_variable(name) {
                 None => Err(SortVariableNotAvailable { name: name.to_string() })?,
-                Some(var) => filter_variables.insert(var)
+                Some(var) => filter_variables.insert(var),
             };
         }
         Ok(Self { variables: filter_variables })
@@ -99,7 +98,7 @@ impl fmt::Display for ModifierDefinitionError {
 impl Error for ModifierDefinitionError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::FilterVariableNotAvailable{ .. } => None,
+            Self::FilterVariableNotAvailable { .. } => None,
             Self::SortVariableNotAvailable { .. } => None,
         }
     }

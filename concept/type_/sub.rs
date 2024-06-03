@@ -4,10 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::TypeEdgeEncoding;
-use encoding::layout::prefix::Prefix;
-use crate::type_::TypeAPI;
+use encoding::{graph::type_::edge::TypeEdgeEncoding, layout::prefix::Prefix};
 
+use crate::type_::TypeAPI;
 
 #[derive(Clone)]
 pub struct Sub<T> {
@@ -16,7 +15,6 @@ pub struct Sub<T> {
 }
 
 impl<'a, T: TypeAPI<'a>> Sub<T> {
-
     pub(crate) fn subtype(&self) -> T {
         self.subtype.clone()
     }
@@ -33,7 +31,7 @@ impl<'a, T: TypeAPI<'a>> TypeEdgeEncoding<'a> for Sub<T> {
     type To = T;
 
     fn from_vertices(from: T, to: T) -> Self {
-        Sub { subtype: from, supertype: to,  }
+        Sub { subtype: from, supertype: to }
     }
 
     fn canonical_from(&self) -> Self::From {

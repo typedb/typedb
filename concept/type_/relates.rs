@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::edge::TypeEdgeEncoding;
-use encoding::layout::prefix::Prefix;
+use encoding::{graph::type_::edge::TypeEdgeEncoding, layout::prefix::Prefix};
+
 use crate::type_::{relation_type::RelationType, role_type::RoleType, TypeAPI};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

@@ -17,22 +17,24 @@ use std::{
 
 use concept::{
     thing::{object::ObjectAPI, thing_manager::ThingManager, value::Value},
-    type_::{type_manager::TypeManager, Ordering, OwnerAPI},
+    type_::{
+        type_manager::{type_cache::TypeCache, TypeManager},
+        Ordering, OwnerAPI,
+    },
 };
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use durability::wal::WAL;
 use encoding::{
-    EncodingKeyspace,
     graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
     value::{label::Label, value_type::ValueType},
+    EncodingKeyspace,
 };
 use pprof::ProfilerGuard;
 use rand::distributions::{Alphanumeric, DistString};
-use concept::type_::type_manager::type_cache::TypeCache;
 use storage::{
     durability_client::WALClient,
-    MVCCStorage,
     snapshot::{CommittableSnapshot, WriteSnapshot},
+    MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
 

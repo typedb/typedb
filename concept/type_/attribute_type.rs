@@ -7,16 +7,15 @@
 use std::collections::{HashMap, HashSet};
 
 use encoding::{
-    graph::type_::vertex::TypeVertex,
-    layout::prefix::Prefix,
+    error::{EncodingError, EncodingError::UnexpectedPrefix},
+    graph::type_::{
+        vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+        Kind,
+    },
+    layout::prefix::{Prefix, Prefix::VertexAttributeType},
     value::{label::Label, value_type::ValueType},
     Prefixed,
 };
-use encoding::error::EncodingError;
-use encoding::error::EncodingError::UnexpectedPrefix;
-use encoding::graph::type_::Kind;
-use encoding::graph::type_::vertex::{TypeVertexEncoding, PrefixedTypeVertexEncoding};
-use encoding::layout::prefix::Prefix::{VertexAttributeType};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -25,24 +24,22 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationIndependent},
+        object_type::ObjectType,
         owns::Owns,
         type_manager::TypeManager,
-        TypeAPI,
+        KindAPI, TypeAPI,
     },
     ConceptAPI,
 };
-use crate::type_::object_type::ObjectType;
-use crate::type_::KindAPI;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
     vertex: TypeVertex<'a>,
 }
 
-impl<'a> AttributeType<'a> { }
+impl<'a> AttributeType<'a> {}
 
 impl<'a> ConceptAPI<'a> for AttributeType<'a> {}
-
 
 impl<'a> PrefixedTypeVertexEncoding<'a> for AttributeType<'a> {
     const PREFIX: Prefix = VertexAttributeType;
@@ -265,8 +262,7 @@ impl<'a> AttributeType<'a> {
         type_manager.get_owners_for_attribute_transitive(snapshot, self.clone().into_owned())
     }
 
-    fn get_owns_owners<Snapshot: ReadableSnapshot>(&self)
-    {
+    fn get_owns_owners<Snapshot: ReadableSnapshot>(&self) {
         // TODO: Why not just have owns?
         todo!()
     }

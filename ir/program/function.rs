@@ -4,11 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::pattern::pattern::Pattern;
-use crate::pattern::variable::Variable;
-use crate::PatternDefinitionError;
-use crate::program::FunctionalBlock;
-use crate::program::modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort};
+use crate::{
+    pattern::{pattern::Pattern, variable::Variable},
+    program::{
+        modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort},
+        FunctionalBlock,
+    },
+    PatternDefinitionError,
+};
 
 pub struct FunctionIR {
     arguments: Vec<Variable>,
@@ -18,13 +21,14 @@ pub struct FunctionIR {
 }
 
 impl FunctionIR {
-    fn new<'a>(pattern: Pattern, arguments: impl Iterator<Item=&'a str>) -> Result<Self, PatternDefinitionError> {
+    fn new<'a>(pattern: Pattern, arguments: impl Iterator<Item = &'a str>) -> Result<Self, PatternDefinitionError> {
         let mut argument_variables = Vec::new();
         {
             let context = pattern.context();
             for arg in arguments {
-                let var = context.get_variable(arg)
-                    .ok_or_else(|| PatternDefinitionError::FunctionArgumentUnused { argument_variable: arg.to_string() })?;
+                let var = context.get_variable(arg).ok_or_else(|| PatternDefinitionError::FunctionArgumentUnused {
+                    argument_variable: arg.to_string(),
+                })?;
                 argument_variables.push(var);
             }
         }

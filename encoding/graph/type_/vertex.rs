@@ -14,11 +14,11 @@ use storage::{
 };
 
 use crate::{
+    error::EncodingError,
     graph::Typed,
     layout::prefix::{Prefix, PrefixID},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::error::EncodingError;
 
 // TODO: we could make all Type constructs contain plain byte arrays, since they will always be 64 bytes (BUFFER_KEY_INLINE), then make Types all Copy
 //       However, we should benchmark this first, since 64 bytes may be better off referenced
@@ -110,12 +110,11 @@ pub(crate) fn build_type_vertex_prefix_key(prefix: Prefix) -> StorageKey<'static
     StorageKey::new(
         TypeVertex::KEYSPACE,
         // TODO: Can we revert this to being a static const byte reference
-        Bytes::Array(ByteArray::inline(prefix.prefix_id().bytes(), TypeVertex::LENGTH_PREFIX))
+        Bytes::Array(ByteArray::inline(prefix.prefix_id().bytes(), TypeVertex::LENGTH_PREFIX)),
     )
 }
 
-pub trait TypeVertexEncoding<'a> : Sized {
-
+pub trait TypeVertexEncoding<'a>: Sized {
     fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError>;
 
     fn from_bytes(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Result<Self, EncodingError> {
@@ -125,7 +124,7 @@ pub trait TypeVertexEncoding<'a> : Sized {
     fn into_vertex(self) -> TypeVertex<'a>;
 }
 
-pub trait PrefixedTypeVertexEncoding<'a> : TypeVertexEncoding<'a>{
+pub trait PrefixedTypeVertexEncoding<'a>: TypeVertexEncoding<'a> {
     const PREFIX: Prefix;
 
     fn build_from_type_id(type_id: TypeID) -> Self {
@@ -137,12 +136,10 @@ pub trait PrefixedTypeVertexEncoding<'a> : TypeVertexEncoding<'a>{
     }
 
     fn is_decodable_from_key(key: StorageKeyReference<'_>) -> bool {
-        key.keyspace_id() == EncodingKeyspace::Schema.id() &&
-            Self::is_decodable_from(Bytes::Reference(key.byte_ref()))
+        key.keyspace_id() == EncodingKeyspace::Schema.id() && Self::is_decodable_from(Bytes::Reference(key.byte_ref()))
     }
 
     fn is_decodable_from(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-        bytes.length() == TypeVertex::LENGTH
-            && TypeVertex::new(bytes).prefix() == Self::PREFIX
+        bytes.length() == TypeVertex::LENGTH && TypeVertex::new(bytes).prefix() == Self::PREFIX
     }
 }

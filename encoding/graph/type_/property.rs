@@ -11,15 +11,16 @@ use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::key_value::StorageKey;
 
 use crate::{
-    graph::type_::{edge::TypeEdge, vertex::TypeVertex},
+    graph::type_::{
+        edge::{TypeEdge, TypeEdgeEncoding},
+        vertex::{TypeVertex, TypeVertexEncoding},
+    },
     layout::{
         infix::{Infix, InfixID},
         prefix::{Prefix, PrefixID},
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::graph::type_::edge::TypeEdgeEncoding;
-use crate::graph::type_::vertex::TypeVertexEncoding;
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct TypeVertexProperty<'a> {
@@ -139,7 +140,6 @@ pub trait TypeVertexPropertyEncoding<'a> {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct TypeEdgeProperty<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
@@ -242,8 +242,7 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {
 
 impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {}
 
-pub trait TypeEdgePropertyEncoding<'a> : Sized {
-
+pub trait TypeEdgePropertyEncoding<'a>: Sized {
     const INFIX: Infix;
 
     fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self;

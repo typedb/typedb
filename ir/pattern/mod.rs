@@ -4,26 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{
+    fmt,
+    fmt::{Display, Formatter},
+};
 
-use std::fmt;
-use std::fmt::{Display, Formatter};
-
-pub mod variable;
-pub mod optional;
-pub mod negation;
-pub mod constraint;
 pub mod conjunction;
+pub mod constraint;
+pub mod negation;
+pub mod optional;
+pub mod variable;
 
-pub mod pattern;
+pub mod context;
 pub mod disjunction;
 mod expression;
 pub mod function_call;
-pub mod context;
+pub mod pattern;
 
 trait Scope {
     fn scope_id(&self) -> ScopeId;
 }
-
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct ScopeId {

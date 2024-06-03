@@ -13,9 +13,9 @@ use crate::{
     thing::{object::Object, relation::Relation, value::Value},
     type_::{
         annotation::AnnotationCardinality, attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType,
+        type_manager::validation::SchemaValidationError,
     },
 };
-use crate::type_::type_manager::validation::SchemaValidationError;
 
 #[derive(Debug)]
 pub struct ConceptError {
@@ -54,7 +54,7 @@ pub enum ConceptWriteError {
         source: ConceptReadError,
     },
     SchemaValidation {
-        source: SchemaValidationError
+        source: SchemaValidationError,
     },
     Encoding {
         source: EncodingError,
@@ -136,7 +136,7 @@ impl From<ConceptReadError> for ConceptWriteError {
         match error {
             ConceptReadError::SnapshotGet { source } => Self::SnapshotGet { source },
             ConceptReadError::SnapshotIterate { source } => Self::SnapshotIterate { source },
-            ConceptReadError::Encoding { source, .. } => Self::Encoding { source }
+            ConceptReadError::Encoding { source, .. } => Self::Encoding { source },
         }
     }
 }
@@ -159,7 +159,7 @@ impl Error for ConceptReadError {
         match self {
             Self::SnapshotGet { source, .. } => Some(source),
             Self::SnapshotIterate { source, .. } => Some(source),
-            ConceptReadError::Encoding { source, .. } => Some(source)
+            ConceptReadError::Encoding { source, .. } => Some(source),
         }
     }
 }

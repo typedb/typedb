@@ -5,11 +5,17 @@
  */
 
 use std::collections::HashMap;
+
 use encoding::graph::definition::definition_key::DefinitionKey;
-use crate::pattern::pattern::Pattern;
-use crate::program::function::FunctionIR;
-use crate::program::FunctionalBlock;
-use crate::program::modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort};
+
+use crate::{
+    pattern::pattern::Pattern,
+    program::{
+        function::FunctionIR,
+        modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort},
+        FunctionalBlock,
+    },
+};
 
 pub struct Program {
     entry: Pattern,
@@ -18,16 +24,17 @@ pub struct Program {
 }
 
 impl Program {
-
     pub fn new(pattern: Pattern, functions: HashMap<DefinitionKey<'static>, FunctionIR>) -> Self {
-
         // TODO: verify exactly the required functions are provided
+        debug_assert!(Self::all_variables_categorised(&pattern));
 
-        Self {
-            entry: pattern,
-            modifiers: Vec::new(),
-            functions: functions,
-        }
+        Self { entry: pattern, modifiers: Vec::new(), functions: functions }
+    }
+
+    fn all_variables_categorised(pattern: &Pattern) -> bool {
+        let context = pattern.context();
+        let mut variables = context.get_variables();
+        variables.all(|var| context.get_variable_category(var).is_some())
     }
 }
 
