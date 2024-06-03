@@ -20,6 +20,7 @@ import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_LOG_OUTPUT_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_REASONER_REQUIRES_DIR_OUTPUT;
+import static com.vaticle.typedb.core.server.parameters.CoreConfig.DevelopmentMode.disabledDevelopmentMode;
 
 public class CoreConfig {
 
@@ -28,13 +29,22 @@ public class CoreConfig {
     protected final Log log;
     protected final Diagnostics diagnostics;
     protected final VaticleFactory vaticleFactory;
+    protected final DevelopmentMode developmentMode;
 
-    protected CoreConfig(Server server, Storage storage, Log log, @Nullable Diagnostics diagnostics, @Nullable VaticleFactory vaticleFactory) {
+    protected CoreConfig(
+            Server server,
+            Storage storage,
+            Log log,
+            @Nullable Diagnostics diagnostics,
+            @Nullable VaticleFactory vaticleFactory,
+            @Nullable DevelopmentMode developmentMode
+    ) {
         this.server = server;
         this.storage = storage;
         this.log = log;
         this.diagnostics = diagnostics;
         this.vaticleFactory = vaticleFactory;
+        this.developmentMode = developmentMode != null ? developmentMode : disabledDevelopmentMode();
     }
 
     public Server server() {
@@ -55,6 +65,10 @@ public class CoreConfig {
 
     public VaticleFactory vaticleFactory() {
         return vaticleFactory;
+    }
+
+    public DevelopmentMode developmentMode() {
+        return developmentMode;
     }
 
     public static class Common {
@@ -364,7 +378,7 @@ public class CoreConfig {
                     output = outputs.get(outputName).asFile();
                 }
 
-                public boolean isEnabled() {
+                public boolean enabled() {
                     return enable;
                 }
 
@@ -382,7 +396,7 @@ public class CoreConfig {
                     this.enable = enable;
                 }
 
-                public boolean isEnabled() {
+                public boolean enabled() {
                     return enable;
                 }
             }
@@ -391,18 +405,12 @@ public class CoreConfig {
 
     public static class Diagnostics {
 
-        private final java.util.Optional<String> deploymentID;
         private final Reporting reporting;
         private final Monitoring monitoring;
 
-        public Diagnostics(java.util.Optional<String> deploymentID, Reporting reporting, Monitoring monitoring) {
-            this.deploymentID = deploymentID;
+        public Diagnostics(Reporting reporting, Monitoring monitoring) {
             this.reporting = reporting;
             this.monitoring = monitoring;
-        }
-
-        public Optional<String> deploymentID() {
-            return deploymentID;
         }
 
         public Reporting reporting() {
@@ -442,7 +450,7 @@ public class CoreConfig {
                 this.port = port;
             }
 
-            public boolean enable() {
+            public boolean enabled() {
                 return enable;
             }
 
@@ -469,7 +477,7 @@ public class CoreConfig {
             this.token = token;
         }
 
-        public boolean enable() {
+        public boolean enabled() {
             return enable;
         }
 
@@ -483,6 +491,23 @@ public class CoreConfig {
 
         public Optional<String> token() {
             return Optional.ofNullable(token);
+        }
+    }
+
+    public static class DevelopmentMode {
+
+        private final boolean enable;
+
+        DevelopmentMode(boolean enable) {
+            this.enable = enable;
+        }
+
+        public static DevelopmentMode disabledDevelopmentMode() {
+            return new DevelopmentMode(false);
+        }
+
+        public boolean enabled() {
+            return enable;
         }
     }
 }

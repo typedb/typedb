@@ -20,6 +20,12 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
+import static com.vaticle.typedb.common.collection.Collections.map;
+import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.core.tool.runner.CoreServerOpts.ADDR;
+import static com.vaticle.typedb.core.tool.runner.CoreServerOpts.DEVELOPMENT_MODE_ENABLE;
+import static com.vaticle.typedb.core.tool.runner.CoreServerOpts.DIAGNOSTICS_MONITORING_PORT;
+import static com.vaticle.typedb.core.tool.runner.CoreServerOpts.STORAGE_DATA;
 import static com.vaticle.typedb.core.tool.runner.Util.createProcessExecutor;
 import static com.vaticle.typedb.core.tool.runner.Util.findUnusedPorts;
 import static com.vaticle.typedb.core.tool.runner.Util.getServerArchiveFile;
@@ -32,17 +38,24 @@ public class TypeDBCoreRunner implements TypeDBRunner {
     private final Path dataDir;
     private final Path logsDir;
     private final int port;
+    private final int diagnosticsMonitoringPort;
     private StartedProcess process;
     private final ProcessExecutor executor;
-    private Map<String, String> options;
+    private final Map<String, String> userOptions;
+
+    private static final Map<String, String> OVERRIDABLE_OPTIONS = map(
+            pair(DEVELOPMENT_MODE_ENABLE, "true")
+    );
 
     public TypeDBCoreRunner() throws InterruptedException, TimeoutException, IOException {
         this(new HashMap<>());
     }
 
-    public TypeDBCoreRunner(Map<String, String> options) throws InterruptedException, TimeoutException, IOException {
-        this.options = options;
-        port = findUnusedPorts(1).get(0);
+    public TypeDBCoreRunner(Map<String, String> userOptions) throws InterruptedException, TimeoutException, IOException {
+        this.userOptions = userOptions;
+        List<Integer> unusedPorts = findUnusedPorts(2);
+        port = unusedPorts.get(0);
+        diagnosticsMonitoringPort = unusedPorts.get(1);
         System.out.println(address() + ": Constructing " + name() + " runner");
         System.out.println(address() + ": Extracting distribution archive...");
         distribution = unarchive(getServerArchiveFile());
@@ -70,6 +83,10 @@ public class TypeDBCoreRunner implements TypeDBRunner {
         return port;
     }
 
+    public int diagnosticsMonitoringPort() {
+        return diagnosticsMonitoringPort;
+    }
+
     @Override
     public void start() {
         System.out.println(address() + ": " +  name() + "is starting... ");
@@ -85,10 +102,21 @@ public class TypeDBCoreRunner implements TypeDBRunner {
     }
 
     private List<String> command() {
+        Map<String, String> dynamicOptions = map(
+                pair(ADDR, address()),
+                pair(STORAGE_DATA, dataDir.toAbsolutePath().toString()),
+                pair(DIAGNOSTICS_MONITORING_PORT, String.valueOf(diagnosticsMonitoringPort()))
+        );
+        Map<String, String> overriddenOptions = new HashMap<>(OVERRIDABLE_OPTIONS);
+        userOptions.keySet().forEach(overriddenOptions::remove);
+
+        Map<String, String> options = new HashMap<>();
+        options.putAll(overriddenOptions);
+        options.putAll(userOptions);
+        options.putAll(dynamicOptions);
+
         List<String> cmd = new ArrayList<>();
         cmd.add("server");
-        cmd.add("--server.address=" + address());
-        cmd.add("--storage.data=" + dataDir.toAbsolutePath().toString());
         options.forEach((key, value) -> cmd.add(key + "=" + value));
         return typeDBCommand(cmd);
     }
@@ -115,7 +143,6 @@ public class TypeDBCoreRunner implements TypeDBRunner {
         }
     }
 
-
     @Override
     public void deleteFiles() {
         stop();
@@ -141,7 +168,6 @@ public class TypeDBCoreRunner implements TypeDBRunner {
             }
         });
     }
-
 
     private void printLogs() {
         System.out.println(address() + ": ================");

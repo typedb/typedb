@@ -9,6 +9,7 @@ package com.vaticle.typedb.core.server.parameters.util;
 import com.vaticle.typedb.common.yaml.YAML;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 
+import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.file.Path;
@@ -38,6 +39,10 @@ public class YAMLParser {
         return new KeyValue.Predefined<>(key, description, valueParser);
     }
 
+    public static <TYPE> KeyValue.Optional<TYPE> optional(String key, String description, Value<TYPE> valueParser) {
+        return new KeyValue.Optional<>(key, description, valueParser);
+    }
+
     public static <TYPE> KeyValue.Dynamic<TYPE> dynamic(String description, Value<TYPE> valueParser) {
         return new KeyValue.Dynamic<>(description, valueParser);
     }
@@ -64,24 +69,52 @@ public class YAMLParser {
 
         public abstract Help help(String path);
 
-        public static class Predefined<TYPE> extends KeyValue {
-
+        public static abstract class Static extends KeyValue {
             private final String key;
-            final Value<TYPE> valueParser;
 
-            private Predefined(String key, String description, Value<TYPE> valueParser) {
+            Static(String key, String description) {
                 super(description);
                 this.key = key;
-                this.valueParser = valueParser;
             }
 
             public String key() {
                 return key;
             }
+        }
+
+        public static class Predefined<TYPE> extends Static {
+
+            final Value<TYPE> valueParser;
+
+            private Predefined(String key, String description, Value<TYPE> valueParser) {
+                super(key, description);
+                this.valueParser = valueParser;
+            }
 
             public TYPE parse(YAML.Map yaml, String path) {
                 String childPath = concatenate(path, key());
                 if (!yaml.containsKey(key())) throw TypeDBException.of(CONFIG_KEY_MISSING, childPath);
+                else return valueParser.parse(yaml.get(key()), childPath);
+            }
+
+            public Help help(String path) {
+                return valueParser.help(concatenate(path, key()), description());
+            }
+        }
+
+        public static class Optional<TYPE> extends Static {
+
+            final Value<TYPE> valueParser;
+
+            private Optional(String key, String description, Value<TYPE> valueParser) {
+                super(key, description);
+                this.valueParser = valueParser;
+            }
+
+            @Nullable
+            public TYPE parse(YAML.Map yaml, String path) {
+                String childPath = concatenate(path, key());
+                if (!yaml.containsKey(key())) return null;
                 else return valueParser.parse(yaml.get(key()), childPath);
             }
 

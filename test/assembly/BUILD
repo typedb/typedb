@@ -5,14 +5,12 @@
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//builder/java:rules.bzl", "typedb_java_test")
 
-
 typedb_java_test(
     name = "assembly",
     test_class = "com.vaticle.typedb.core.test.assembly.AssemblyTest",
     srcs = ["AssemblyTest.java"],
     deps = [
         "//tool/runner:typedb-runner",
-        "@vaticle_typeql//common/java:common",
         "@maven//:com_vaticle_typedb_typedb_console_runner",
     ],
     server_artifacts = {

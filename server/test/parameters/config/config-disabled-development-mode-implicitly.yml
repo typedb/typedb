@@ -50,7 +50,6 @@ log:
       type: reasoner-perf-counters
 
 diagnostics:
-  deployment-id: SERVERIDNUMBER123987<'AND '> MORE""! # Optional
   reporting:
     errors: true
     statistics: true

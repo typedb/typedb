@@ -33,7 +33,7 @@ import static org.junit.Assert.fail;
 
 public class CoreConfigTest {
 
-    private static final Path CONFIG_PATH_DEFAULT = Paths.get("./server/parameters/config.yml");
+    private static final Path CONFIG_PATH_DEFAULT = Paths.get("server/parameters/config/config.yml");
 
     @Test
     public void config_file_is_read() {
@@ -42,7 +42,7 @@ public class CoreConfigTest {
         assertEquals(new InetSocketAddress("0.0.0.0", 1729), config.server().address());
         assertEquals(500 * Bytes.MB, config.storage().databaseCache().dataSize());
         assertEquals(500 * Bytes.MB, config.storage().databaseCache().indexSize());
-        assertFalse(config.vaticleFactory().enable());
+        assertFalse(config.vaticleFactory().enabled());
         assertTrue(config.log().output().outputs().containsKey("stdout"));
         assertTrue(config.log().output().outputs().containsKey("file"));
         assertTrue(config.log().output().outputs().get("file").asFile().baseDirectory().toString().endsWith("server/logs"));
@@ -51,8 +51,9 @@ public class CoreConfigTest {
         assertNotNull(config.log().logger().defaultLogger());
         assertFalse(config.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("warn", config.log().logger().defaultLogger().level());
-        assertFalse(config.log().debugger().reasonerTracer().isEnabled());
-        assertFalse(config.log().debugger().reasonerPerfCounters().isEnabled());
+        assertFalse(config.log().debugger().reasonerTracer().enabled());
+        assertFalse(config.log().debugger().reasonerPerfCounters().enabled());
+        assertTrue(config.developmentMode().enabled());
     }
 
     @Test
@@ -63,7 +64,7 @@ public class CoreConfigTest {
         assertEquals(new InetSocketAddress("0.0.0.0", 1730), config.server().address());
         assertEquals(200 * Bytes.MB, config.storage().databaseCache().dataSize());
         assertEquals(700 * Bytes.MB, config.storage().databaseCache().indexSize());
-        assertFalse(config.vaticleFactory().enable());
+        assertFalse(config.vaticleFactory().enabled());
         assertTrue(config.log().output().outputs().containsKey("stdout"));
         assertTrue(config.log().output().outputs().containsKey("file"));
         assertTrue(config.log().output().outputs().get("file").asFile().baseDirectory().isAbsolute());
@@ -72,8 +73,8 @@ public class CoreConfigTest {
         assertNotNull(config.log().logger().defaultLogger());
         assertFalse(config.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("warn", config.log().logger().defaultLogger().level());
-        assertFalse(config.log().debugger().reasonerTracer().isEnabled());
-        assertFalse(config.log().debugger().reasonerPerfCounters().isEnabled());
+        assertFalse(config.log().debugger().reasonerTracer().enabled());
+        assertFalse(config.log().debugger().reasonerPerfCounters().enabled());
     }
 
     @Test
@@ -147,19 +148,6 @@ public class CoreConfigTest {
     }
 
     @Test
-    public void config_file_missing_deployment_id_key() {
-        Path configFile = Paths.get("./server/test/parameters/config/config-missing-deployment-id-key.yml");
-
-        try {
-            CoreConfigFactory.config(configFile, new HashSet<>(), new CoreConfigParser());
-            fail();
-        } catch (TypeDBException e) {
-            assertEquals(CONFIG_KEY_MISSING.code(), e.errorMessage().code());
-            assertEquals(CONFIG_KEY_MISSING.message("diagnostics.deployment-id"), e.getMessage());
-        }
-    }
-
-    @Test
     public void config_file_accepts_overrides() {
         CoreConfig config = CoreConfigFactory.config(
                 CONFIG_PATH_DEFAULT,
@@ -174,7 +162,7 @@ public class CoreConfigTest {
         );
         assertTrue(config.storage().dataDir().toString().endsWith("server/alt-data"));
         assertEquals(new InetSocketAddress("0.0.0.0", 1730), config.server().address());
-        assertFalse(config.vaticleFactory().enable());
+        assertFalse(config.vaticleFactory().enabled());
         assertTrue(config.log().output().outputs().containsKey("stdout"));
         assertTrue(config.log().output().outputs().containsKey("file"));
         assertTrue(config.log().output().outputs().get("file").asFile().baseDirectory().toString().endsWith("server/alt-logs"));
@@ -184,8 +172,8 @@ public class CoreConfigTest {
         assertFalse(config.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("info", config.log().logger().defaultLogger().level());
         assertEquals(list("file"), config.log().logger().filteredLoggers().get("typedb").outputs());
-        assertFalse(config.log().debugger().reasonerTracer().isEnabled());
-        assertFalse(config.log().debugger().reasonerPerfCounters().isEnabled());
+        assertFalse(config.log().debugger().reasonerTracer().enabled());
+        assertFalse(config.log().debugger().reasonerPerfCounters().enabled());
     }
 
     @Test
@@ -209,10 +197,16 @@ public class CoreConfigTest {
     }
 
     @Test
-    public void config_file_with_correct_optional_values() {
-        Path configFile = Paths.get("./server/test/parameters/config/config-correct-optional-values.yml");
-        CoreConfig config = CoreConfigFactory.config(configFile, new HashSet<>(), new CoreConfigParser());
-        assertTrue(config.diagnostics().deploymentID().isPresent());
-        assertEquals("SERVERIDNUMBER123987<'AND '> MORE\"\"!", config.diagnostics().deploymentID().get());
+    public void development_mode_disabled_explicitly() {
+        Path configPaths = Paths.get("./server/test/parameters/config/config-disabled-development-mode-explicitly.yml");
+        CoreConfig config = CoreConfigFactory.config(configPaths, new HashSet<>(), new CoreConfigParser());
+        assertFalse(config.developmentMode().enabled());
+    }
+
+    @Test
+    public void development_mode_disabled_implicitly() {
+        Path configPaths = Paths.get("./server/test/parameters/config/config-disabled-development-mode-implicitly.yml");
+        CoreConfig config = CoreConfigFactory.config(configPaths, new HashSet<>(), new CoreConfigParser());
+        assertFalse(config.developmentMode().enabled());
     }
 }
