@@ -618,6 +618,18 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         }
     }
 
+    pub(crate) fn get_role_ordering(
+        &self,
+        snapshot: &Snapshot,
+        role_type: RoleType<'static>,
+    ) -> Result<Ordering, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(cache.get_role_type_ordering(role_type))
+        } else {
+            Ok(TypeReader::get_type_ordering(snapshot, role_type)?)
+        }
+    }
+
     pub(crate) const fn role_default_cardinality(&self) -> AnnotationCardinality {
         // TODO: read from database properties the default role cardinality the db was created with
         AnnotationCardinality::new(1, Some(1))
@@ -1057,7 +1069,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
         TypeWriter::storage_delete_owns_ordering(snapshot, owns)
     }
 
-    fn set_role_ordering(&self, snapshot: &mut Snapshot, role: RoleType<'_>, ordering: Ordering) {
+    pub(crate) fn set_role_ordering(&self, snapshot: &mut Snapshot, role: RoleType<'_>, ordering: Ordering) {
         TypeWriter::storage_put_type_vertex_property(snapshot, role, Some(ordering))
     }
 

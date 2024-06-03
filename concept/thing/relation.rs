@@ -20,11 +20,10 @@ use encoding::{
     value::decode_value_u64,
     AsBytes, Keyable, Prefixed,
 };
-use iterator::Collector;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
-    key_value::{StorageKey, StorageKeyReference},
+    key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
@@ -40,12 +39,12 @@ use crate::{
         annotation::AnnotationDistinct,
         relation_type::RelationType,
         role_type::{RoleType, RoleTypeAnnotation},
-        ObjectTypeAPI,
+        ObjectTypeAPI, Ordering, TypeAPI,
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Relation<'a> {
     vertex: ObjectVertex<'a>,
 }
@@ -200,6 +199,68 @@ impl<'a> Relation<'a> {
         } else {
             thing_manager.increment_role_player(snapshot, self.as_reference(), player.as_reference(), role_type.clone())
         }
+    }
+
+    pub fn set_players_ordered<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
+        role_type: RoleType<'static>,
+        new_players: Vec<Object<'_>>,
+    ) -> Result<(), ConceptWriteError> {
+        if !thing_manager.object_exists(snapshot, self)? {
+            return Err(ConceptWriteError::AddPlayerOnDeleted { relation: self.clone().into_owned() });
+        }
+
+        match role_type
+            .get_ordering(snapshot, thing_manager.type_manager())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
+        {
+            Ordering::Unordered => todo!(),
+            Ordering::Ordered => (),
+        }
+
+        let mut new_counts = HashMap::<_, u64>::new();
+        for player in &new_players {
+            *new_counts.entry(player).or_default() += 1;
+        }
+
+        // 1. get owned list
+        let old_players = thing_manager
+            .get_role_players_ordered(snapshot, self.as_reference(), role_type.clone())
+            .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
+
+        let mut old_counts = HashMap::<_, u64>::new();
+        for player in &old_players {
+            *old_counts.entry(player).or_default() += 1;
+        }
+
+        // 2. Delete existing but no-longer necessary has, and add new ones, with the correct counts (!)
+        for player in old_counts.keys() {
+            if !new_counts.contains_key(player) {
+                thing_manager.unset_role_player(
+                    snapshot,
+                    self.as_reference(),
+                    player.as_reference(),
+                    role_type.clone(),
+                )?;
+            }
+        }
+        for (player, count) in new_counts {
+            if old_counts.get(&player) != Some(&count) {
+                thing_manager.set_role_player_count(
+                    snapshot,
+                    self.as_reference(),
+                    player.as_reference(),
+                    role_type.clone(),
+                    count,
+                )?;
+            }
+        }
+
+        // 3. Overwrite owned list
+        thing_manager.set_role_players_ordered(snapshot, self.as_reference(), role_type, new_players)?;
+        Ok(())
     }
 
     pub fn remove_player_single<Snapshot: WritableSnapshot>(

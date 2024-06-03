@@ -45,6 +45,30 @@ async fn relation_add_player_for_role(
 }
 
 #[apply(generic_step)]
+#[step(expr = r"relation {var} set players for role\({type_label}[]\): {vars}{may_error}")]
+async fn relation_set_players_for_role(
+    context: &mut Context,
+    relation_var: params::Var,
+    role_label: params::Label,
+    player_vars: params::Vars,
+    may_error: params::MayError,
+) {
+    let relation = context.objects[&relation_var.name].as_ref().unwrap().object.clone().unwrap_relation();
+    let players =
+        player_vars.names.into_iter().map(|name| context.objects[&name].as_ref().unwrap().object.clone()).collect_vec();
+    let res = with_write_tx!(context, |tx| {
+        let role_type = relation
+            .type_()
+            .get_relates_role(&tx.snapshot, &tx.type_manager, role_label.to_typedb().name().as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        relation.set_players_ordered(&mut tx.snapshot, &tx.thing_manager, role_type, players)
+    });
+    may_error.check(&res);
+}
+
+#[apply(generic_step)]
 #[step(expr = r"relation {var} remove player for role\({type_label}\): {var}")]
 async fn relation_remove_player_for_role(
     context: &mut Context,

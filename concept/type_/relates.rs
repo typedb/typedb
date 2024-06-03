@@ -6,7 +6,7 @@
 
 use encoding::{graph::type_::edge::TypeEdgeEncoding, layout::prefix::Prefix};
 
-use crate::type_::{relation_type::RelationType, role_type::RoleType, TypeAPI};
+use crate::type_::{relation_type::RelationType, role_type::RoleType};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Relates<'a> {

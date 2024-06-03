@@ -31,7 +31,7 @@ impl<'a> ObjectVertex<'a> {
     pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
     pub const FIXED_WIDTH_ENCODING: bool = true;
 
-    pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectID::LENGTH;
+    pub const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectID::LENGTH;
     pub(crate) const LENGTH_PREFIX_PREFIX: usize = PrefixID::LENGTH;
     pub(crate) const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
 

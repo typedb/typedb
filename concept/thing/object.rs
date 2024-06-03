@@ -33,7 +33,7 @@ use crate::{
     ConceptStatus,
 };
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Object<'a> {
     Entity(Entity<'a>),
     Relation(Relation<'a>),
