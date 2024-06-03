@@ -392,8 +392,8 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         ))
     }
 
-    pub(crate) fn get_has_type_ordered<'this, 'a>(
-        &'this self,
+    pub(crate) fn get_has_type_ordered<'a>(
+        &self,
         snapshot: &Snapshot,
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
@@ -409,7 +409,13 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         let attributes = snapshot
             .get_mapped(key.as_storage_key().as_reference(), |bytes| {
                 decode_attribute_ids(value_type.category(), bytes.bytes())
-                    .map(|id| Attribute::new(AttributeVertex::new(Bytes::copy(id.bytes()))))
+                    .map(|id| {
+                        Attribute::new(AttributeVertex::build(
+                            value_type.category(),
+                            attribute_type.vertex().type_id_(),
+                            id,
+                        ))
+                    })
                     .collect()
             })
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?

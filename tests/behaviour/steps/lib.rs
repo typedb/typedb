@@ -54,6 +54,7 @@ pub struct Context {
 
     objects: HashMap<String, Option<ObjectWithKey>>,
     attributes: HashMap<String, Option<Attribute<'static>>>,
+    attribute_lists: HashMap<String, Vec<Attribute<'static>>>,
 }
 
 impl Context {

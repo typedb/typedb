@@ -166,8 +166,9 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
         &self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-    ) -> HasAttributeIterator {
-        thing_manager.get_has_ordered(snapshot, self)
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Vec<Attribute<'_>>, ConceptReadError> {
+        thing_manager.get_has_type_ordered(snapshot, self, attribute_type)
     }
 
     fn get_has_type<'m, Snapshot: ReadableSnapshot>(

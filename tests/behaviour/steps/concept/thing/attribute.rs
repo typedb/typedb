@@ -85,6 +85,14 @@ async fn attribute_has_value(context: &mut Context, var: params::Var, value: par
     });
 }
 
+#[apply(generic_step)]
+#[step(expr = r"attribute {var}[{int}] is {var}")]
+async fn attribute_list_at_index_is(context: &mut Context, list_var: params::Var, index: usize, attribute_var: params::Var) {
+    let list_item = &context.attribute_lists[&list_var.name][index];
+    let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
+    assert_eq!(list_item, attribute);
+}
+
 pub fn get_attribute_by_value(
     context: &mut Context,
     type_label: params::Label,
