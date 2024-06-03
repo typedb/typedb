@@ -197,7 +197,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
         {
             Ordering::Unordered => (),
-            Ordering::Ordered => todo!("throw a good error"),
+            Ordering::Ordered => return Err(ConceptWriteError::SetHasUnorderedOwnsOrdered {}),
         }
 
         if owns.is_unique(snapshot, thing_manager.type_manager())?

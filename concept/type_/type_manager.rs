@@ -1083,7 +1083,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
 
     pub(crate) fn set_annotation_independent(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {
         // TODO: Validation
-        TypeWriter::storage_put_type_vertex_property::<AnnotationDistinct>(snapshot, type_, None)
+        TypeWriter::storage_put_type_vertex_property::<AnnotationIndependent>(snapshot, type_, None)
     }
 
     pub(crate) fn delete_annotation_independent(&self, snapshot: &mut Snapshot, type_: impl TypeAPI<'static>) {

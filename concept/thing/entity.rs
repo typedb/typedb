@@ -117,7 +117,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         let mut has_attr_type_deleted = HashSet::new();
         for attr in has {
             has_attr_type_deleted.add(attr.type_());
-            thing_manager.unset_has_unordered(snapshot, &self, attr);
+            thing_manager.unset_has(snapshot, &self, attr);
         }
 
         for owns in self

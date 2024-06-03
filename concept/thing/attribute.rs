@@ -151,7 +151,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
             .try_collect::<Vec<_>, _>()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for object in owners {
-            thing_manager.unset_has_unordered(snapshot, &object, self.as_reference());
+            thing_manager.unset_has(snapshot, &object, self.as_reference());
         }
         thing_manager.delete_attribute(snapshot, self)?;
 

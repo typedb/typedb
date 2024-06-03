@@ -967,7 +967,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         attributes: Vec<Attribute<'_>>,
     ) {
         owner.set_modified(snapshot, self);
-        let key = HAS_ORDER_PROPERTY_FACTORY.build(owner.into_vertex(), attribute_type.into_vertex());
+        let key = HAS_ORDER_PROPERTY_FACTORY.build(owner.vertex(), attribute_type.into_vertex());
         let value = encode_attribute_ids(attributes.into_iter().map(|attr| attr.into_vertex().attribute_id()));
         snapshot.put_val(key.into_storage_key().into_owned_array(), value);
     }

@@ -300,7 +300,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
             .try_collect::<Vec<_>, _>()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
         {
-            thing_manager.unset_has_unordered(snapshot, &self, attr);
+            thing_manager.unset_has(snapshot, &self, attr);
         }
 
         // TODO

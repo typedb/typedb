@@ -352,7 +352,7 @@ impl TypeReader {
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
                     Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),
                     Infix::PropertyAnnotationCardinality => Annotation::Cardinality(
-                        <AnnotationCardinality as TypeVertexPropertyEncoding>::from_value_bytes(value).into(),
+                        <AnnotationCardinality as TypeVertexPropertyEncoding>::from_value_bytes(value),
                     ),
                     Infix::PropertyAnnotationRegex => Annotation::Regex(AnnotationRegex::from_value_bytes(value)),
                     | Infix::_PropertyAnnotationLast
@@ -449,7 +449,7 @@ impl TypeReader {
     {
         let property = snapshot
             .get_mapped(PROPERTY::build_key(edge).into_storage_key().as_reference(), |value| {
-                PROPERTY::from_value_bytes(value.clone())
+                PROPERTY::from_value_bytes(value)
             })
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?;
         Ok(property)
