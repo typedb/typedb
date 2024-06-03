@@ -39,7 +39,7 @@ impl DateTimeBytes {
         DateTime::from_timestamp(secs, nsecs).unwrap().naive_utc()
     }
 
-    pub(crate) fn bytes(&self) -> [u8; Self::LENGTH] {
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
         self.bytes
     }
 }

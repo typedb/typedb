@@ -28,7 +28,7 @@ impl BooleanBytes {
         self.bytes[0] != 0
     }
 
-    pub(crate) fn bytes(&self) -> [u8; Self::LENGTH] {
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
         self.bytes
     }
 }

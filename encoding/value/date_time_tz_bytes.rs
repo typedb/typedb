@@ -41,7 +41,7 @@ impl DateTimeTZBytes {
         date_time.and_utc().with_timezone(&tz)
     }
 
-    pub(crate) fn bytes(&self) -> [u8; Self::LENGTH] {
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
         self.bytes
     }
 }
