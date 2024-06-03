@@ -7,7 +7,6 @@
 use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr};
 
 use chrono::NaiveDateTime;
-use chrono_tz::Tz;
 use concept::{
     thing::value::Value as TypeDBValue,
     type_::{
@@ -24,10 +23,9 @@ use itertools::Itertools;
 
 use crate::assert::assert_matches;
 
-#[derive(Debug, Default, Parameter)]
+#[derive(Debug, Parameter)]
 #[param(name = "may_error", regex = "(fails|)")]
 pub(crate) enum MayError {
-    #[default]
     False,
     True,
 }
@@ -36,10 +34,10 @@ impl MayError {
     pub fn check<T: fmt::Debug, E: fmt::Debug>(&self, res: &Result<T, E>) {
         match self {
             MayError::False => {
-                assert!(res.as_ref().is_ok());
+                res.as_ref().unwrap();
             }
             MayError::True => {
-                assert!(res.as_ref().is_err());
+                res.as_ref().unwrap_err();
             }
         };
     }
