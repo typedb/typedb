@@ -4,13 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt;
-use std::ops::Range;
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use serde::de::{Error, Unexpected, Visitor};
+use std::{fmt, ops::Range};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use serde::{
+    de,
+    de::{Error, Unexpected, Visitor},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
 
 use crate::{
     graph::{definition::definition_key::DefinitionKey, type_::property::TypeVertexPropertyEncoding},
@@ -152,7 +154,10 @@ impl ValueTypeBytes {
 }
 
 impl Serialize for ValueType {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
         serializer.serialize_bytes(&ValueTypeBytes::build(self).into_bytes())
     }
 }
@@ -172,7 +177,10 @@ impl TypeVertexPropertyEncoding<'static> for ValueType {
 }
 
 impl<'de> Deserialize<'de> for ValueType {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         struct ValueTypeVisitor;
 
         impl<'de> Visitor<'de> for ValueTypeVisitor {
@@ -183,7 +191,8 @@ impl<'de> Deserialize<'de> for ValueType {
             }
 
             fn visit_bytes<E>(self, v: &[u8]) -> Result<ValueType, E>
-                where E: de::Error
+            where
+                E: de::Error,
             {
                 if v.len() == ValueTypeBytes::LENGTH {
                     Ok(ValueType::from_value_bytes(ByteReference::new(v)))

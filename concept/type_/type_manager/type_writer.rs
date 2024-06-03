@@ -8,19 +8,18 @@ use std::marker::PhantomData;
 
 use bytes::byte_array::ByteArray;
 use encoding::{
-    graph::type_::{
-        edge::TypeEdgeEncoding,
-        index::LabelToTypeVertexIndex,
-        property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
-        vertex::TypeVertexEncoding,
+    graph::{
+        definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
+        type_::{
+            edge::TypeEdgeEncoding,
+            index::{LabelToStructDefinitionIndex, LabelToTypeVertexIndex},
+            property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
+            vertex::TypeVertexEncoding,
+        },
     },
     value::{label::Label, value_type::ValueType},
     AsBytes, Keyable,
 };
-use encoding::graph::definition::definition_key::DefinitionKey;
-use encoding::graph::definition::DefinitionValueEncoding;
-use encoding::graph::definition::r#struct::StructDefinition;
-use encoding::graph::type_::index::LabelToStructDefinitionIndex;
 use storage::snapshot::WritableSnapshot;
 
 use crate::type_::{
@@ -34,10 +33,21 @@ pub struct TypeWriter<Snapshot: WritableSnapshot> {
 
 // TODO: Make everything pub(super) and make this submodule of type_manager.
 impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
-    pub(crate) fn storage_put_struct(snapshot: &mut Snapshot, definition_key: DefinitionKey<'static>, struct_label: &Label<'static>, struct_definition: StructDefinition) {
+    pub(crate) fn storage_put_struct(
+        snapshot: &mut Snapshot,
+        definition_key: DefinitionKey<'static>,
+        struct_label: &Label<'static>,
+        struct_definition: StructDefinition,
+    ) {
         let index_key = LabelToStructDefinitionIndex::build(struct_label);
-        snapshot.put_val(index_key.into_storage_key().into_owned_array(), ByteArray::copy(definition_key.clone().into_bytes().bytes()));
-        snapshot.put_val(definition_key.into_storage_key().into_owned_array(), struct_definition.to_bytes().unwrap().into_array());
+        snapshot.put_val(
+            index_key.into_storage_key().into_owned_array(),
+            ByteArray::copy(definition_key.clone().into_bytes().bytes()),
+        );
+        snapshot.put_val(
+            definition_key.into_storage_key().into_owned_array(),
+            struct_definition.to_bytes().unwrap().into_array(),
+        );
         // todo!("test this")
     }
 

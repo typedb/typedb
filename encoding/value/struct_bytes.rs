@@ -4,12 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::borrow::Cow;
-use std::fmt;
+use std::{borrow::Cow, fmt};
+
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use serde::{Deserialize, Serialize};
 
-use bytes::{byte_reference::ByteReference, Bytes};
-use bytes::byte_array::ByteArray;
 use crate::AsBytes;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -17,7 +16,7 @@ pub struct StructBytes<'a, const INLINE_LENGTH: usize> {
     bytes: Bytes<'a, INLINE_LENGTH>,
 }
 
-pub trait StructRepresentation<'a> : Clone {
+pub trait StructRepresentation<'a>: Clone {
     fn to_bytes<const INLINE_LENGTH: usize>(&self) -> StructBytes<'static, INLINE_LENGTH>;
 
     fn from_bytes<const INLINE_LENGTH: usize>(struct_bytes: &StructBytes<'a, INLINE_LENGTH>) -> Self;

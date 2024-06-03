@@ -4,19 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::marker::PhantomData;
-use std::ops::Range;
+use std::{marker::PhantomData, ops::Range};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
 use crate::{
+    graph::{definition::r#struct::StructDefinition, type_::vertex::TypeVertex},
     layout::prefix::{Prefix, PrefixID},
     value::{label::Label, string_bytes::StringBytes},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::graph::definition::r#struct::StructDefinition;
-use crate::graph::type_::vertex::TypeVertex;
 
 pub(crate) trait IndexedKey {
     const PREFIX: Prefix;
@@ -24,13 +22,13 @@ pub(crate) trait IndexedKey {
 
 pub struct IdentifierToTypeIndex<'a, T: IndexedKey> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
-    indexed_identifier: PhantomData<T>
+    indexed_identifier: PhantomData<T>,
 }
 
 impl<'a, T: IndexedKey> IdentifierToTypeIndex<'a, T> {
     fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= PrefixID::LENGTH);
-        Self { bytes , indexed_identifier: PhantomData }
+        Self { bytes, indexed_identifier: PhantomData }
     }
 
     pub fn build(label: &Label) -> Self {
@@ -74,7 +72,6 @@ impl<'a, T: IndexedKey> Keyable<'a, BUFFER_KEY_INLINE> for IdentifierToTypeIndex
 }
 
 impl<'a, T: IndexedKey> Prefixed<'a, BUFFER_KEY_INLINE> for IdentifierToTypeIndex<'a, T> {}
-
 
 // Specialisations
 pub type LabelToTypeVertexIndex<'a> = IdentifierToTypeIndex<'a, TypeVertex<'static>>;

@@ -12,11 +12,10 @@ use storage::snapshot::WritableSnapshot;
 
 use crate::{
     error::EncodingError,
-    graph::type_::vertex::TypeVertex,
+    graph::{common::schema_id_allocator::TypeVertexAllocator, type_::vertex::TypeVertex},
     layout::prefix::Prefix,
     Keyable,
 };
-use crate::graph::common::schema_id_allocator::TypeVertexAllocator;
 
 pub struct TypeVertexGenerator {
     next_entity: TypeVertexAllocator,

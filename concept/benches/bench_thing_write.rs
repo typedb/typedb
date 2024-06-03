@@ -25,13 +25,15 @@ use concept::{
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use durability::wal::WAL;
 use encoding::{
-    graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
+    graph::{
+        definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
+        type_::vertex_generator::TypeVertexGenerator,
+    },
     value::{label::Label, value_type::ValueType},
     EncodingKeyspace,
 };
 use pprof::ProfilerGuard;
 use rand::distributions::{Alphanumeric, DistString};
-use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WriteSnapshot},
@@ -109,8 +111,12 @@ fn criterion_benchmark(c: &mut Criterion) {
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
-            .unwrap();
+        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(
+            storage.clone(),
+            definition_key_generator.clone(),
+            type_vertex_generator.clone(),
+        )
+        .unwrap();
         create_schema(&storage, &type_vertex_generator);
         let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
         b.iter(|| {

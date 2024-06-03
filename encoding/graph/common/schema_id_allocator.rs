@@ -4,34 +4,40 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::any::Any;
-use std::marker::PhantomData;
-use std::sync::atomic::AtomicU64;
-use std::sync::atomic::Ordering::Relaxed;
+use std::{
+    any::Any,
+    marker::PhantomData,
+    sync::atomic::{AtomicU64, Ordering::Relaxed},
+};
+
 use bytes::Bytes;
 use lending_iterator::LendingIterator;
-use resource::constants::encoding::DefinitionIDUInt;
-use storage::key_range::KeyRange;
-use storage::snapshot::WritableSnapshot;
-use crate::error::EncodingError;
-use crate::Keyable;
-use crate::layout::prefix::Prefix;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::key_value::StorageKey;
-use crate::graph::definition::definition_key::{DefinitionID, DefinitionKey};
-use crate::graph::type_::Kind;
-use crate::graph::type_::vertex::{TypeID, TypeIDUInt, TypeVertex};
-use crate::graph::Typed;
+use resource::constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE};
+use storage::{key_range::KeyRange, key_value::StorageKey, snapshot::WritableSnapshot};
+
+use crate::{
+    error::EncodingError,
+    graph::{
+        definition::definition_key::{DefinitionID, DefinitionKey},
+        type_::{
+            vertex::{TypeID, TypeIDUInt, TypeVertex},
+            Kind,
+        },
+        Typed,
+    },
+    layout::prefix::Prefix,
+    Keyable,
+};
 
 pub type TypeVertexAllocator = SchemaIDAllocator<TypeVertex<'static>>;
 pub type DefinitionKeyAllocator = SchemaIDAllocator<DefinitionKey<'static>>;
 
-pub trait AllocationHelper : Sized {
-    const MIN_ID : u64;
-    const MAX_ID : u64;
+pub trait AllocationHelper: Sized {
+    const MIN_ID: u64;
+    const MAX_ID: u64;
 
     fn object_from_id(prefix: Prefix, id: u64) -> Self;
-    fn id_from_key<'b>(key : StorageKey<'b, BUFFER_KEY_INLINE>) -> u64;
+    fn id_from_key<'b>(key: StorageKey<'b, BUFFER_KEY_INLINE>) -> u64;
     fn ids_exhausted_error(prefix: Prefix) -> EncodingError;
 }
 
@@ -41,8 +47,7 @@ pub struct SchemaIDAllocator<T: AllocationHelper> {
     phantom: PhantomData<T>,
 }
 
-impl<'a, T:AllocationHelper + Keyable<'a, BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
-
+impl<'a, T: AllocationHelper + Keyable<'a, BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
     pub fn new(prefix: Prefix) -> Self {
         Self { last_allocated_type_id: AtomicU64::new(0), prefix, phantom: PhantomData }
     }
@@ -109,7 +114,7 @@ impl AllocationHelper for TypeVertex<'static> {
             Prefix::VertexRelationType => Kind::Relation,
             Prefix::VertexAttributeType => Kind::Attribute,
             Prefix::VertexRoleType => Kind::Role,
-            _ => unreachable!()
+            _ => unreachable!(),
         };
         EncodingError::TypeIDsExhausted { kind }
     }

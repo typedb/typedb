@@ -17,10 +17,12 @@ use concept::{error::ConceptWriteError, thing::statistics::Statistics, type_::ty
 use durability::wal::{WALError, WAL};
 use encoding::{
     error::EncodingError,
-    graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
+    graph::{
+        definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
+        type_::vertex_generator::TypeVertexGenerator,
+    },
     EncodingKeyspace,
 };
-use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
     isolation_manager::CommitType,

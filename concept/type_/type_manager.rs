@@ -12,19 +12,21 @@ use std::{
 };
 
 use encoding::{
-    graph::type_::{
-        edge::TypeEdgeEncoding,
-        property::TypeEdgePropertyEncoding,
-        vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
-        vertex_generator::TypeVertexGenerator,
-        Kind,
+    graph::{
+        definition::{
+            definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition,
+        },
+        type_::{
+            edge::TypeEdgeEncoding,
+            property::TypeEdgePropertyEncoding,
+            vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
+            vertex_generator::TypeVertexGenerator,
+            Kind,
+        },
     },
     value::{label::Label, value_type::ValueType},
     AsBytes, Keyable,
 };
-use encoding::graph::definition::definition_key::DefinitionKey;
-use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
-use encoding::graph::definition::r#struct::StructDefinition;
 use primitive::maybe_owns::MaybeOwns;
 use storage::{
     durability_client::DurabilityClient,
@@ -76,7 +78,8 @@ impl<Snapshot> TypeManager<Snapshot> {
     ) -> Result<(), ConceptWriteError> {
         let mut snapshot = storage.clone().open_snapshot_write();
         {
-            let type_manager = TypeManager::<WriteSnapshot<D>>::new(definition_key_generator, vertex_generator.clone(), None);
+            let type_manager =
+                TypeManager::<WriteSnapshot<D>>::new(definition_key_generator, vertex_generator.clone(), None);
             let root_entity = type_manager.create_entity_type(&mut snapshot, &Kind::Entity.root_label(), true)?;
             root_entity.set_annotation(
                 &mut snapshot,
@@ -263,8 +266,12 @@ macro_rules! get_type_annotations {
 }
 
 impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
-    pub fn new(definition_key_generator: Arc<DefinitionKeyGenerator>, vertex_generator: Arc<TypeVertexGenerator>, schema_cache: Option<Arc<TypeCache>>) -> Self {
-        TypeManager { definition_key_generator,  vertex_generator, type_cache: schema_cache, snapshot: PhantomData }
+    pub fn new(
+        definition_key_generator: Arc<DefinitionKeyGenerator>,
+        vertex_generator: Arc<TypeVertexGenerator>,
+        schema_cache: Option<Arc<TypeCache>>,
+    ) -> Self {
+        TypeManager { definition_key_generator, vertex_generator, type_cache: schema_cache, snapshot: PhantomData }
     }
 
     pub fn resolve_relates(
@@ -283,18 +290,25 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         }))
     }
 
-    pub fn get_struct_definition_key(&self, snapshot: &Snapshot, label: &Label<'static>) -> Result<Option<MaybeOwns<'_, DefinitionKey<'static>>>, ConceptReadError> {
+    pub fn get_struct_definition_key(
+        &self,
+        snapshot: &Snapshot,
+        label: &Label<'static>,
+    ) -> Result<Option<MaybeOwns<'_, DefinitionKey<'static>>>, ConceptReadError> {
         // if let Some(cache) = &self.type_cache {
         //     Ok(MaybeOwns::Borrowed(cache.get_struct_definition_key(label)))
         // } else {
         //     Ok(MaybeOwns::Owned(TypeReader::get_struct_definition_key(snapshot, label)))
         // }
-        let definition_key = TypeReader::get_struct_definition_key(snapshot, label)?
-            .map(|opt| MaybeOwns::Owned(opt));
+        let definition_key = TypeReader::get_struct_definition_key(snapshot, label)?.map(|opt| MaybeOwns::Owned(opt));
         Ok(definition_key)
     }
 
-    pub fn get_struct_definition(&self, snapshot: &Snapshot, definition_key: &DefinitionKey<'static>) -> Result<MaybeOwns<'_,StructDefinition>, ConceptReadError> {
+    pub fn get_struct_definition(
+        &self,
+        snapshot: &Snapshot,
+        definition_key: &DefinitionKey<'static>,
+    ) -> Result<MaybeOwns<'_, StructDefinition>, ConceptReadError> {
         // if let Some(cache) = &self.type_cache {
         //     Ok(MaybeOwns::Borrowed(cache.get_struct_definition(key)))
         // } else {
@@ -671,9 +685,16 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
 //      (If this feels like unnecessary indirection, feel free to refactor. I just need structure)
 //  Avoid cross-calling methods if it violates the above.
 impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
-    pub fn create_struct(&self, snapshot: &mut Snapshot, struct_name: &Label<'static>, struct_definition: StructDefinition) -> Result<DefinitionKey<'static>, ConceptWriteError> {
+    pub fn create_struct(
+        &self,
+        snapshot: &mut Snapshot,
+        struct_name: &Label<'static>,
+        struct_definition: StructDefinition,
+    ) -> Result<DefinitionKey<'static>, ConceptWriteError> {
         // TODO: Validation
-        let definition_key = self.definition_key_generator.create_struct(snapshot)
+        let definition_key = self
+            .definition_key_generator
+            .create_struct(snapshot)
             .map_err(|source| ConceptWriteError::Encoding { source })?;
         TypeWriter::storage_put_struct(snapshot, definition_key.clone(), struct_name, struct_definition);
         Ok(definition_key)

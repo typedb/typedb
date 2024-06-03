@@ -6,14 +6,11 @@
 
 use std::collections::HashMap;
 
-use resource::constants::encoding::StructFieldIDUInt;
+use bytes::{byte_reference::ByteReference, Bytes};
+use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_VALUE_INLINE};
 use serde::{Deserialize, Serialize};
-use bytes::byte_reference::ByteReference;
-use bytes::Bytes;
-use resource::constants::snapshot::BUFFER_VALUE_INLINE;
-use crate::AsBytes;
-use crate::graph::definition::DefinitionValueEncoding;
-use crate::value::value_type::ValueType;
+
+use crate::{graph::definition::DefinitionValueEncoding, value::value_type::ValueType, AsBytes};
 
 // TODO: Revisit to think about serialisation.
 // Storing index in the StructDefinitionField opens the door for duplicates?
@@ -37,7 +34,7 @@ impl StructDefinition {
         let mut field_names = HashMap::with_capacity(definitions.len());
         for (i, (name, (value_type, optional))) in definitions.into_iter().enumerate() {
             let index = i as StructFieldIDUInt;
-            fields.push( StructDefinitionField { index, optional, value_type } );
+            fields.push(StructDefinitionField { index, optional, value_type });
             field_names.insert(name, index);
         }
         StructDefinition { fields, field_names }

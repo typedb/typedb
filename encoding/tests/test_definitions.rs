@@ -6,19 +6,18 @@
 
 #![deny(unused_must_use)]
 
-use std::collections::HashMap;
-use std::rc::Rc;
-use std::sync::Arc;
+use std::{collections::HashMap, rc::Rc, sync::Arc};
+
 use bytes::Bytes;
 use durability::wal::WAL;
-use encoding::{AsBytes, EncodingKeyspace};
-use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
-use encoding::graph::definition::DefinitionValueEncoding;
-use encoding::graph::definition::r#struct::StructDefinition;
-use encoding::value::label::Label;
-use encoding::value::value_type::ValueType;
-use storage::durability_client::WALClient;
-use storage::MVCCStorage;
+use encoding::{
+    graph::definition::{
+        definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition, DefinitionValueEncoding,
+    },
+    value::{label::Label, value_type::ValueType},
+    AsBytes, EncodingKeyspace,
+};
+use storage::{durability_client::WALClient, MVCCStorage};
 use test_utils::{create_tmp_dir, init_logging};
 
 // fn create_struct<Snapshot: WritableSnapshot>(
@@ -54,13 +53,16 @@ use test_utils::{create_tmp_dir, init_logging};
 
 fn struct_definitions_equal(first: &StructDefinition, second: &StructDefinition) -> bool {
     let mut all_match = true;
-    all_match = all_match && first.field_names.len() == second.field_names.len() && first.fields.len() == second.fields.len();
-    all_match = all_match && first.field_names.iter().all(|(k,v)| {
-            second.field_names.contains_key(k) && v == second.field_names.get(k).unwrap()
-        });
-    all_match = all_match && std::iter::zip(first.fields.iter(), second.fields.iter()).all(|(f1,f2)|{
-        f1.index == f2.index && f1.optional == f2.optional && f1.value_type == f2.value_type
-    });
+    all_match =
+        all_match && first.field_names.len() == second.field_names.len() && first.fields.len() == second.fields.len();
+    all_match = all_match
+        && first
+            .field_names
+            .iter()
+            .all(|(k, v)| second.field_names.contains_key(k) && v == second.field_names.get(k).unwrap());
+    all_match = all_match
+        && std::iter::zip(first.fields.iter(), second.fields.iter())
+            .all(|(f1, f2)| f1.index == f2.index && f1.optional == f2.optional && f1.value_type == f2.value_type);
     all_match
 }
 
@@ -86,10 +88,8 @@ fn test_struct_definition() {
     assert_eq!(0, struct_0_key.definition_id().as_uint());
     assert!(struct_definitions_equal(&struct_0_definition, &decoded_struct_0_def));
 
-
-    let struct_1_definition = StructDefinition::define(HashMap::from([
-        ("f0_nested".into(), (ValueType::Struct(struct_0_key), false)),
-    ]));
+    let struct_1_definition =
+        StructDefinition::define(HashMap::from([("f0_nested".into(), (ValueType::Struct(struct_0_key), false))]));
 
     let struct_1_key = definition_key_generator.create_struct(&mut snapshot).unwrap();
     assert_eq!(1, struct_1_key.definition_id().as_uint());
