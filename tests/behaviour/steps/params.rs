@@ -10,7 +10,10 @@ use chrono::NaiveDateTime;
 use concept::{
     thing::value::Value as TypeDBValue,
     type_::{
-        annotation::{self, Annotation as TypeDBAnnotation, AnnotationCardinality},
+        annotation::{
+            Annotation as TypeDBAnnotation, AnnotationAbstract, AnnotationCardinality, AnnotationIndependent,
+            AnnotationKey, AnnotationRegex,
+        },
         object_type::ObjectType,
     },
 };
@@ -23,10 +26,9 @@ use itertools::Itertools;
 
 use crate::assert::assert_matches;
 
-#[derive(Debug, Default, Parameter)]
-#[param(name = "may_error", regex = "(fails|)")]
+#[derive(Debug, Parameter)]
+#[param(name = "may_error", regex = "(; fails|)")]
 pub(crate) enum MayError {
-    #[default]
     False,
     True,
 }
@@ -35,10 +37,10 @@ impl MayError {
     pub fn check<T: fmt::Debug, E: fmt::Debug>(&self, res: &Result<T, E>) {
         match self {
             MayError::False => {
-                assert!(res.as_ref().is_ok());
+                res.as_ref().unwrap();
             }
             MayError::True => {
-                assert!(res.as_ref().is_err());
+                res.as_ref().unwrap_err();
             }
         };
     }
@@ -62,22 +64,22 @@ impl FromStr for MayError {
     }
 }
 
-#[derive(Debug, Default, Parameter)]
+#[derive(Debug, Parameter)]
 #[param(name = "boolean", regex = "(true|false)")]
 pub(crate) enum Boolean {
-    #[default]
     False,
     True,
 }
 
-impl Boolean {
-    pub fn check(&self, res: bool) {
-        match self {
-            Boolean::False => assert_eq!(false, res),
-            Boolean::True => assert_eq!(true, res),
-        };
-    }
+macro_rules! check_boolean {
+    ($boolean:ident, $expr:expr) => {
+        match $boolean {
+            $crate::params::Boolean::True => assert!($expr),
+            $crate::params::Boolean::False => assert!(!$expr),
+        }
+    };
 }
+pub(crate) use check_boolean;
 
 impl FromStr for Boolean {
     type Err = String;
@@ -242,12 +244,14 @@ impl FromStr for ObjectRootLabel {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "value_type", regex = "(boolean|long|double|datetime|duration|string)")]
+#[param(name = "value_type", regex = "(boolean|long|double|datetime(?:tz)?|duration|string)")]
 pub(crate) enum ValueType {
     Boolean,
     Long,
     Double,
+    Decimal,
     DateTime,
+    DateTimeTZ,
     Duration,
     String,
 }
@@ -258,7 +262,9 @@ impl ValueType {
             ValueType::Boolean => TypeDBValueType::Boolean,
             ValueType::Long => TypeDBValueType::Long,
             ValueType::Double => TypeDBValueType::Double,
+            ValueType::Decimal => TypeDBValueType::Decimal,
             ValueType::DateTime => TypeDBValueType::DateTime,
+            ValueType::DateTimeTZ => TypeDBValueType::DateTimeTZ,
             ValueType::Duration => TypeDBValueType::Duration,
             ValueType::String => TypeDBValueType::String,
         }
@@ -269,12 +275,14 @@ impl FromStr for ValueType {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
-            "long" => Self::Long,
-            "string" => Self::String,
             "boolean" => Self::Boolean,
+            "long" => Self::Long,
             "double" => Self::Double,
+            "decimal" => Self::Decimal,
             "datetime" => Self::DateTime,
+            "datetimetz" => Self::DateTimeTZ,
             "duration" => Self::Duration,
+            "string" => Self::String,
             _ => panic!("Unrecognised value type"),
         })
     }
@@ -292,10 +300,16 @@ impl Value {
             TypeDBValueType::Boolean => TypeDBValue::Boolean(self.raw_value.parse().unwrap()),
             TypeDBValueType::Long => TypeDBValue::Long(self.raw_value.parse().unwrap()),
             TypeDBValueType::Double => TypeDBValue::Double(self.raw_value.parse().unwrap()),
+            TypeDBValueType::Decimal => todo!(),
             TypeDBValueType::DateTime => {
                 TypeDBValue::DateTime(NaiveDateTime::parse_from_str(&self.raw_value, "%Y-%m-%d %H:%M:%S").unwrap())
             }
-            TypeDBValueType::DateTimeTZ => todo!(),
+            TypeDBValueType::DateTimeTZ => {
+                let (date_time, tz) = self.raw_value.rsplit_once(' ').unwrap();
+                let date_time = NaiveDateTime::parse_from_str(date_time.trim(), "%Y-%m-%d %H:%M:%S");
+                let tz = tz.trim().parse().unwrap();
+                TypeDBValue::DateTimeTZ(date_time.unwrap().and_local_timezone(tz).unwrap())
+            }
             TypeDBValueType::Duration => TypeDBValue::Duration(self.raw_value.parse().unwrap()),
             TypeDBValueType::String => TypeDBValue::String(Cow::Owned(self.raw_value)),
             TypeDBValueType::Struct(_) => todo!(),
@@ -327,16 +341,16 @@ impl FromStr for Annotation {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // This will have to be smarter to parse annotations out.
         let typedb_annotation = match s {
-            "@abstract" => TypeDBAnnotation::Abstract(annotation::AnnotationAbstract),
-            "@independent" => TypeDBAnnotation::Independent(annotation::AnnotationIndependent),
-            "@key" => TypeDBAnnotation::Key(annotation::AnnotationKey),
+            "@abstract" => TypeDBAnnotation::Abstract(AnnotationAbstract),
+            "@independent" => TypeDBAnnotation::Independent(AnnotationIndependent),
+            "@key" => TypeDBAnnotation::Key(AnnotationKey),
             regex if regex.starts_with("@regex") => {
                 assert!(
                     regex.starts_with(r#"@regex(""#) && regex.ends_with(r#"")"#),
                     r#"Invalid @regex format: {regex:?}. Expected "@regex("regex-here")""#
                 );
                 let regex = &regex[r#"@regex(""#.len()..regex.len() - r#"")"#.len()];
-                TypeDBAnnotation::Regex(annotation::AnnotationRegex::new(regex.to_owned()))
+                TypeDBAnnotation::Regex(AnnotationRegex::new(regex.to_owned()))
             }
             card if card.starts_with("@card") => {
                 assert!(
@@ -391,7 +405,7 @@ impl FromStr for Annotations {
 }
 
 #[derive(Clone, Debug, Default, Parameter)]
-#[param(name = "var", regex = r"(\$[\w_-]+)")]
+#[param(name = "var", regex = r"\$[\w_-]+")]
 pub struct Var {
     pub name: String,
 }
@@ -401,5 +415,19 @@ impl FromStr for Var {
 
     fn from_str(name: &str) -> Result<Self, Self::Err> {
         Ok(Self { name: name.to_owned() })
+    }
+}
+
+#[derive(Clone, Debug, Default, Parameter)]
+#[param(name = "vars", regex = r"\[(\$[\w_-]+(?:,\s*\$[\w_-]+)*)\]")]
+pub struct Vars {
+    pub names: Vec<String>,
+}
+
+impl FromStr for Vars {
+    type Err = Infallible;
+
+    fn from_str(str: &str) -> Result<Self, Self::Err> {
+        Ok(Self { names: str.split(',').map(|name| name.trim().to_owned()).collect() })
     }
 }

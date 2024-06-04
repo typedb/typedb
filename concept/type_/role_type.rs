@@ -24,13 +24,13 @@ use storage::{
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
+use super::Ordering;
 use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationDistinct},
         object_type::ObjectType,
-        owns::Owns,
         plays::Plays,
         relates::Relates,
         type_manager::TypeManager,
@@ -59,6 +59,22 @@ impl<'a> RoleType<'a> {
         type_manager: &'m TypeManager<Snapshot>,
     ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Plays<'static>>>, ConceptReadError> {
         type_manager.get_plays_for_role_type_transitive(snapshot, self.clone().into_owned())
+    }
+    pub fn get_ordering<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+    ) -> Result<Ordering, ConceptReadError> {
+        type_manager.get_role_ordering(snapshot, self.clone().into_owned())
+    }
+
+    pub fn set_ordering<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut Snapshot,
+        type_manager: &TypeManager<Snapshot>,
+        ordering: Ordering,
+    ) {
+        type_manager.set_role_ordering(snapshot, self.clone(), ordering)
     }
 }
 
@@ -190,14 +206,15 @@ impl<'a> RoleType<'a> {
         type_manager: &TypeManager<Snapshot>,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
-        let card: AnnotationCardinality = annotations
+        let ordering = self.get_ordering(snapshot, type_manager)?;
+        let card = annotations
             .iter()
             .filter_map(|annotation| match annotation {
-                RoleTypeAnnotation::Cardinality(card) => Some(card.clone()),
+                RoleTypeAnnotation::Cardinality(card) => Some(*card),
                 _ => None,
             })
             .next()
-            .unwrap_or_else(|| type_manager.role_default_cardinality());
+            .unwrap_or_else(|| type_manager.role_default_cardinality(ordering));
         Ok(card)
     }
 

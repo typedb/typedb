@@ -9,7 +9,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use ::concept::thing::attribute::Attribute;
+use ::concept::thing::{attribute::Attribute, object::Object};
 use cucumber::{StatsWriter, World};
 use database::Database;
 use server::typedb;
@@ -53,7 +53,9 @@ pub struct Context {
     active_transaction: Option<ActiveTransaction>,
 
     objects: HashMap<String, Option<ObjectWithKey>>,
+    object_lists: HashMap<String, Vec<Object<'static>>>,
     attributes: HashMap<String, Option<Attribute<'static>>>,
+    attribute_lists: HashMap<String, Vec<Attribute<'static>>>,
 }
 
 impl Context {

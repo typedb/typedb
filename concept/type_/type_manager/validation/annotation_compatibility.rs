@@ -15,17 +15,18 @@ pub(crate) fn are_annotations_compatible(
     subtype_annotation: Annotation,
     supertype_annotations: &Vec<Annotation>,
 ) -> Result<(), SchemaValidationError> {
-    match subtype_annotation {
-        Annotation::Abstract(_) => todo!(),
-        Annotation::Distinct(_) => todo!(),
-        Annotation::Independent(_) => todo!(),
-        Annotation::Key(key) => validate_key_is_compatible_with(key, supertype_annotations),
-        Annotation::Cardinality(cardinality) => {
-            validate_cardinalty_is_compatible_with(cardinality, supertype_annotations)
-        }
-        Annotation::Regex(_) => todo!(), // TODO: https://cs.stackexchange.com/a/9131 yikes. Can we just return Ok(())?
-        Annotation::Unique(_) => todo!(),
-    }
+    // match subtype_annotation {
+    // Annotation::Abstract(_) => todo!(),
+    // Annotation::Distinct(_) => todo!(),
+    // Annotation::Independent(_) => todo!(),
+    // Annotation::Key(key) => validate_key_is_compatible_with(key, supertype_annotations),
+    // Annotation::Cardinality(cardinality) => {
+    // validate_cardinalty_is_compatible_with(cardinality, supertype_annotations)
+    // }
+    // Annotation::Regex(_) => todo!(), // TODO: https://cs.stackexchange.com/a/9131 yikes. Can we just return Ok(())?
+    // Annotation::Unique(_) => todo!(),
+    // }
+    Ok(())
 }
 
 fn validate_cardinalty_is_compatible_with(
@@ -47,13 +48,14 @@ pub(crate) fn is_edge_annotation_inherited<EDGE>(
     effective_annotations: &HashMap<Annotation, EDGE>,
 ) -> bool {
     // In most cases we just need to see if the build_up_annotations contains nothing that 'overrides' it
-    match supertype_annotation {
-        Annotation::Abstract(_) => false,
-        Annotation::Distinct(_) => todo!(),
-        Annotation::Independent(_) => todo!(),
-        Annotation::Key(key) => todo!(),
-        Annotation::Cardinality(cardinality) => todo!(),
-        Annotation::Regex(_) => todo!(),
-        Annotation::Unique(_) => todo!(),
-    }
+    // match supertype_annotation {
+    // Annotation::Abstract(_) => false,
+    // Annotation::Distinct(_) => todo!(),
+    // Annotation::Independent(_) => todo!(),
+    // Annotation::Key(key) => todo!(),
+    // Annotation::Cardinality(cardinality) => todo!(),
+    // Annotation::Regex(_) => todo!(),
+    // Annotation::Unique(_) => todo!(),
+    // }
+    true
 }

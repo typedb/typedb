@@ -12,6 +12,7 @@ use encoding::{
     AsBytes, Keyable, Prefixed,
 };
 use iterator::Collector;
+use lending_iterator::LendingIterator;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::StorageKey,
@@ -30,7 +31,7 @@ use crate::{
     type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Entity<'a> {
     vertex: ObjectVertex<'a>,
 }
@@ -110,12 +111,13 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
     ) -> Result<(), ConceptWriteError> {
         let has = self
             .get_has_unordered(snapshot, thing_manager)
-            .collect_cloned_vec(|(k, _)| k.into_owned())
+            .map_static(|res| res.map(|(k, _)| k.into_owned()))
+            .try_collect::<Vec<_>, _>()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         let mut has_attr_type_deleted = HashSet::new();
         for attr in has {
             has_attr_type_deleted.add(attr.type_());
-            thing_manager.unset_has_unordered(snapshot, &self, attr);
+            thing_manager.unset_has(snapshot, &self, attr);
         }
 
         for owns in self
@@ -134,7 +136,8 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
 
         let relations_roles = self
             .get_relations(snapshot, thing_manager)
-            .collect_cloned_vec(|(relation, role, _count)| (relation.into_owned(), role.into_owned()))
+            .map_static(|res| res.map(|(relation, role, _count)| (relation.into_owned(), role.into_owned())))
+            .try_collect::<Vec<_>, _>()
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for (relation, role) in relations_roles {
             thing_manager.unset_role_player(snapshot, relation, self.as_reference(), role)?;

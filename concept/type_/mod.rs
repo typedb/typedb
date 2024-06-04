@@ -223,7 +223,7 @@ pub enum Ordering {
 impl<'a> TypeVertexPropertyEncoding<'a> for Ordering {
     const INFIX: Infix = Infix::PropertyOrdering;
 
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Ordering {
+    fn from_value_bytes(value: ByteReference<'_>) -> Ordering {
         bincode::deserialize(value.bytes()).unwrap()
     }
 
@@ -235,7 +235,7 @@ impl<'a> TypeVertexPropertyEncoding<'a> for Ordering {
 impl<'a> TypeEdgePropertyEncoding<'a> for Ordering {
     const INFIX: Infix = Infix::PropertyOrdering;
 
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Ordering {
+    fn from_value_bytes(value: ByteReference<'_>) -> Ordering {
         bincode::deserialize(value.bytes()).unwrap()
     }
 
@@ -265,7 +265,7 @@ pub struct EdgeOverride<EDGE: TypeEdgeEncoding<'static>> {
 impl<'a, EDGE: TypeEdgeEncoding<'static>> TypeEdgePropertyEncoding<'a> for EdgeOverride<EDGE> {
     const INFIX: Infix = Infix::PropertyOverride;
 
-    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
+    fn from_value_bytes(value: ByteReference<'_>) -> Self {
         Self { overridden: EDGE::decode_canonical_edge(Bytes::Reference(value).into_owned()) }
     }
 

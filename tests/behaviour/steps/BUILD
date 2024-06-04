@@ -22,6 +22,7 @@ rust_library(
         "//util/test:test_utils",
 
         "@crates//:chrono",
+        "@crates//:chrono-tz",
         "@crates//:cucumber",
         "@crates//:itertools",
         "@crates//:macro_rules_attribute",

@@ -22,7 +22,7 @@ use crate::{
 };
 
 #[apply(generic_step)]
-#[step(expr = r"relation {var} add player for role\({type_label}\): {var}(; ){may_error}")]
+#[step(expr = r"relation {var} add player for role\({type_label}\): {var}{may_error}")]
 async fn relation_add_player_for_role(
     context: &mut Context,
     relation_var: params::Var,
@@ -40,6 +40,30 @@ async fn relation_add_player_for_role(
             .unwrap()
             .role();
         relation.add_player(&mut tx.snapshot, &tx.thing_manager, role_type, player)
+    });
+    may_error.check(&res);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"relation {var} set players for role\({type_label}[]\): {vars}{may_error}")]
+async fn relation_set_players_for_role(
+    context: &mut Context,
+    relation_var: params::Var,
+    role_label: params::Label,
+    player_vars: params::Vars,
+    may_error: params::MayError,
+) {
+    let relation = context.objects[&relation_var.name].as_ref().unwrap().object.clone().unwrap_relation();
+    let players =
+        player_vars.names.into_iter().map(|name| context.objects[&name].as_ref().unwrap().object.clone()).collect_vec();
+    let res = with_write_tx!(context, |tx| {
+        let role_type = relation
+            .type_()
+            .get_relates_role(&tx.snapshot, &tx.type_manager, role_label.to_typedb().name().as_str())
+            .unwrap()
+            .unwrap()
+            .role();
+        relation.set_players_ordered(&mut tx.snapshot, &tx.thing_manager, role_type, players)
     });
     may_error.check(&res);
 }
@@ -63,6 +87,38 @@ async fn relation_remove_player_for_role(
             .role();
         relation.remove_player_single(&mut tx.snapshot, &tx.thing_manager, role_type, player).unwrap();
     });
+}
+
+#[apply(generic_step)]
+#[step(expr = r"{var} = relation {var} get players for role\({type_label}[]\)")]
+async fn relation_get_players_ordered(
+    context: &mut Context,
+    players_var: params::Var,
+    relation_var: params::Var,
+    role_label: params::Label,
+) {
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let players = with_read_tx!(context, |tx| {
+        let relates =
+            relation.type_().get_relates_role(&tx.snapshot, &tx.type_manager, role_label.to_typedb().name().as_str());
+        let role_type = relates.unwrap().unwrap().role();
+        let players = relation.get_players_ordered(&tx.snapshot, &tx.thing_manager, role_type).unwrap();
+        players.into_iter().map(Object::into_owned).collect()
+    });
+    context.object_lists.insert(players_var.name, players);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"roleplayer {var}[{int}] is {var}")]
+async fn roleplayer_list_at_index_is(
+    context: &mut Context,
+    list_var: params::Var,
+    index: usize,
+    roleplayer_var: params::Var,
+) {
+    let list_item = &context.object_lists[&list_var.name][index];
+    let roleplayer = &context.objects[&roleplayer_var.name].as_ref().unwrap().object;
+    assert_eq!(list_item, roleplayer);
 }
 
 #[apply(generic_step)]

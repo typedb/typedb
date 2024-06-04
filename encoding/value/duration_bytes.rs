@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use super::duration_value::Duration;
+use super::{
+    duration_value::Duration,
+    primitive_encoding::{decode_u32, decode_u64, encode_u32, encode_u64},
+};
 use crate::graph::thing::vertex_attribute::AttributeIDLength;
 
 #[derive(Debug, Copy, Clone)]
@@ -26,18 +29,17 @@ impl DurationBytes {
     pub fn build(duration: Duration) -> Self {
         let Duration { months, days, nanos } = duration;
         let mut bytes = [0; Self::LENGTH];
-        bytes[..Self::MONTHS_LENGTH].copy_from_slice(&months.to_be_bytes());
-        bytes[Self::MONTHS_LENGTH..][..Self::DAYS_LENGTH].copy_from_slice(&days.to_be_bytes());
-        bytes[Self::MONTHS_LENGTH + Self::DAYS_LENGTH..][..Self::NANOS_LENGTH].copy_from_slice(&nanos.to_be_bytes());
+        bytes[..Self::MONTHS_LENGTH].copy_from_slice(&encode_u32(months));
+        bytes[Self::MONTHS_LENGTH..][..Self::DAYS_LENGTH].copy_from_slice(&encode_u32(days));
+        bytes[Self::MONTHS_LENGTH + Self::DAYS_LENGTH..][..Self::NANOS_LENGTH].copy_from_slice(&encode_u64(nanos));
         Self { bytes }
     }
 
     pub fn as_duration(&self) -> Duration {
-        let months = u32::from_be_bytes(self.bytes[..Self::MONTHS_LENGTH].try_into().unwrap());
-        let days = u32::from_be_bytes(self.bytes[Self::MONTHS_LENGTH..][..Self::DAYS_LENGTH].try_into().unwrap());
-        let nanos = u64::from_be_bytes(
-            self.bytes[Self::MONTHS_LENGTH + Self::DAYS_LENGTH..][..Self::NANOS_LENGTH].try_into().unwrap(),
-        );
+        let months = decode_u32(self.bytes[..Self::MONTHS_LENGTH].try_into().unwrap());
+        let days = decode_u32(self.bytes[Self::MONTHS_LENGTH..][..Self::DAYS_LENGTH].try_into().unwrap());
+        let nanos =
+            decode_u64(self.bytes[Self::MONTHS_LENGTH + Self::DAYS_LENGTH..][..Self::NANOS_LENGTH].try_into().unwrap());
         Duration { months, days, nanos }
     }
 

@@ -12,7 +12,8 @@ use concept::{
 use macro_rules_attribute::apply;
 
 use crate::{
-    generic_step, params,
+    generic_step,
+    params::{self, check_boolean},
     transaction_context::{with_read_tx, with_write_tx},
     Context,
 };
@@ -31,7 +32,7 @@ pub fn attribute_put_instance_with_value_impl(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"attribute\({type_label}\) put instance with value: {value}(; ){may_error}")]
+#[step(expr = r"attribute\({type_label}\) put instance with value: {value}{may_error}")]
 async fn attribute_put_instance_with_value(
     context: &mut Context,
     type_label: params::Label,
@@ -85,6 +86,19 @@ async fn attribute_has_value(context: &mut Context, var: params::Var, value: par
     });
 }
 
+#[apply(generic_step)]
+#[step(expr = r"attribute {var}[{int}] is {var}")]
+async fn attribute_list_at_index_is(
+    context: &mut Context,
+    list_var: params::Var,
+    index: usize,
+    attribute_var: params::Var,
+) {
+    let list_item = &context.attribute_lists[&list_var.name][index];
+    let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
+    assert_eq!(list_item, attribute);
+}
+
 pub fn get_attribute_by_value(
     context: &mut Context,
     type_label: params::Label,
@@ -127,7 +141,7 @@ async fn attribute_is_deleted(context: &mut Context, var: params::Var, is_delete
         let value = attribute.get_value(&tx.snapshot, &tx.thing_manager).unwrap();
         tx.thing_manager.get_attribute_with_value(&tx.snapshot, attribute_type, value).unwrap()
     });
-    is_deleted.check(get.is_none());
+    check_boolean!(is_deleted, get.is_none());
 }
 
 #[apply(generic_step)]

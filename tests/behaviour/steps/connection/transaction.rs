@@ -10,7 +10,7 @@ use macro_rules_attribute::apply;
 use crate::{
     assert::assert_matches,
     generic_step,
-    params::{Boolean, MayError},
+    params::{check_boolean, Boolean, MayError},
     ActiveTransaction, Context,
 };
 
@@ -30,8 +30,7 @@ pub async fn connection_open_transaction(context: &mut Context, tx_type: String,
 #[apply(generic_step)]
 #[step(expr = "transaction is open: {boolean}")]
 pub async fn transaction_is_open(context: &mut Context, is_open: Boolean) {
-    let actual = context.transaction().is_some();
-    is_open.check(actual);
+    check_boolean!(is_open, context.transaction().is_some());
 }
 
 #[apply(generic_step)]
@@ -46,7 +45,7 @@ pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "transaction commits(; ){may_error}")]
+#[step(expr = "transaction commits{may_error}")]
 pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
     match context.take_transaction().unwrap() {
         ActiveTransaction::Read(_) => {}

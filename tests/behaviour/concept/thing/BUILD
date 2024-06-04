@@ -28,6 +28,17 @@ rust_test(
 )
 
 rust_test(
+    name = "has",
+    srcs = ["has.rs"],
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = ["@vaticle_typedb_behaviour//concept/thing:has.feature"],
+    crate_features = ["bazel"],
+)
+
+rust_test(
     name = "relation",
     srcs = ["relation.rs"],
     deps = [
@@ -35,6 +46,17 @@ rust_test(
         "@crates//:tokio",
     ],
     data = ["@vaticle_typedb_behaviour//concept/thing:relation.feature"],
+    crate_features = ["bazel"],
+)
+
+rust_test(
+    name = "roleplayer",
+    srcs = ["roleplayer.rs"],
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = ["@vaticle_typedb_behaviour//concept/thing:roleplayer.feature"],
     crate_features = ["bazel"],
 )
 

@@ -9,13 +9,15 @@ use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
 use self::{
     boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
-    double_bytes::DoubleBytes, duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes,
-    struct_bytes::StructBytes, value_type::ValueType,
+    decimal_bytes::DecimalBytes, double_bytes::DoubleBytes, duration_bytes::DurationBytes, long_bytes::LongBytes,
+    string_bytes::StringBytes, struct_bytes::StructBytes, value_type::ValueType,
 };
 
 pub mod boolean_bytes;
 pub mod date_time_bytes;
 pub mod date_time_tz_bytes;
+pub mod decimal_bytes;
+pub mod decimal_value;
 pub mod double_bytes;
 pub mod duration_bytes;
 pub mod duration_value;
@@ -44,6 +46,8 @@ pub trait ValueEncodable: Clone {
     fn encode_long(&self) -> LongBytes;
 
     fn encode_double(&self) -> DoubleBytes;
+
+    fn encode_decimal(&self) -> DecimalBytes;
 
     fn encode_date_time(&self) -> DateTimeBytes;
 

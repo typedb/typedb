@@ -25,7 +25,7 @@ macro_rules! concept_iterator {
 
             pub fn peek(&mut self) -> Option<Result<$concept_type<'_>, $crate::error::ConceptReadError>> {
                 use $crate::error::ConceptReadError::SnapshotIterate;
-                self.iter_peek().map(|result| {
+                self.snapshot_iterator.as_mut()?.peek().map(|result| {
                     result
                         .map(|(storage_key, _value_bytes)| {
                             $map_fn(::storage::key_value::StorageKey::Reference(storage_key))
@@ -36,21 +36,6 @@ macro_rules! concept_iterator {
 
             pub fn seek(&mut self) {
                 todo!()
-            }
-
-            fn iter_peek(
-                &mut self,
-            ) -> Option<
-                Result<
-                    (::storage::key_value::StorageKeyReference<'_>, bytes::byte_reference::ByteReference<'_>),
-                    std::sync::Arc<storage::snapshot::iterator::SnapshotIteratorError>,
-                >,
-            > {
-                if let Some(iter) = self.snapshot_iterator.as_mut() {
-                    iter.peek()
-                } else {
-                    None
-                }
             }
 
             pub fn collect_cloned(mut self) -> Vec<$concept_type<'static>> {
@@ -92,7 +77,7 @@ macro_rules! edge_iterator {
 
             pub fn peek<$lt>(&$lt mut self) -> Option<Result<$mapped_type, $crate::error::ConceptReadError>> {
                 use $crate::error::ConceptReadError::SnapshotIterate;
-                self.iter_peek().map(|result| {
+                self.snapshot_iterator.as_mut()?.peek().map(|result| {
                     result
                         .map(|(storage_key, value_bytes)| {
                             $map_fn(
@@ -106,30 +91,6 @@ macro_rules! edge_iterator {
 
             pub fn seek(&mut self) {
                 todo!()
-            }
-
-            fn iter_peek(
-                &mut self,
-            ) -> Option<
-                Result<
-                    (StorageKeyReference<'_>, bytes::byte_reference::ByteReference<'_>),
-                    std::sync::Arc<storage::snapshot::iterator::SnapshotIteratorError>,
-                >,
-            > {
-                if let Some(iter) = self.snapshot_iterator.as_mut() {
-                    iter.peek()
-                } else {
-                    None
-                }
-            }
-
-            pub fn collect_cloned_vec<F, M>(mut self, mapper: F) -> Result<Vec<M>, $crate::error::ConceptReadError>
-            where
-                F: for<$lt> Fn($mapped_type) -> M + 'static,
-                M: 'static
-            {
-                use ::lending_iterator::LendingIterator;
-                self.map_static(move |item| Ok(mapper(item?))).collect()
             }
         }
 

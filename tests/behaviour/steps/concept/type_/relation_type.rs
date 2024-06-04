@@ -4,26 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use ::concept::type_::Ordering;
-use concept::type_::{object_type::ObjectType, TypeAPI};
+use concept::type_::{object_type::ObjectType, Ordering, TypeAPI};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 
 use crate::{
-    generic_step,
-    params::{Annotation, Boolean, ContainsOrDoesnt, ExistsOrDoesnt, Label, MayError},
+    generic_step, params,
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) create role: {type_label}(; ){may_error}")]
+#[step(expr = r"relation\({type_label}\) create role: {type_label}{may_error}")]
 pub async fn relation_type_create_role(
     context: &mut Context,
-    type_label: Label,
-    role_label: Label,
-    may_error: MayError,
+    type_label: params::Label,
+    role_label: params::Label,
+    may_error: params::MayError,
 ) {
     with_schema_tx!(context, |tx| {
         let relation_type = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
@@ -38,13 +36,33 @@ pub async fn relation_type_create_role(
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\); set override: {type_label}(; ){may_error}")]
+#[step(expr = r"relation\({type_label}\) create role: {type_label}[]{may_error}")]
+pub async fn relation_type_create_ordered_role(
+    context: &mut Context,
+    type_label: params::Label,
+    role_label: params::Label,
+    may_error: params::MayError,
+) {
+    with_schema_tx!(context, |tx| {
+        let relation_type = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
+        let res = relation_type.create_relates(
+            &mut tx.snapshot,
+            &tx.type_manager,
+            role_label.to_typedb().name().as_str(),
+            Ordering::Ordered,
+        );
+        may_error.check(&res);
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\); set override: {type_label}{may_error}")]
 pub async fn relation_type_override_role(
     context: &mut Context,
-    type_label: Label,
-    role_label: Label,
-    overridden_label: Label,
-    may_error: MayError,
+    type_label: params::Label,
+    role_label: params::Label,
+    overridden_label: params::Label,
+    may_error: params::MayError,
 ) {
     with_schema_tx!(context, |tx| {
         let relation_type = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
@@ -65,8 +83,13 @@ pub async fn relation_type_override_role(
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get roles {contains_or_doesnt}:")]
-pub async fn get_roles_contain(context: &mut Context, type_label: Label, contains: ContainsOrDoesnt, step: &Step) {
+#[step(expr = r"relation\({type_label}\) get roles {contains_or_doesnt}:")]
+pub async fn get_roles_contain(
+    context: &mut Context,
+    type_label: params::Label,
+    contains: params::ContainsOrDoesnt,
+    step: &Step,
+) {
     let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
     with_read_tx!(context, |tx| {
         let type_ = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
@@ -83,11 +106,11 @@ pub async fn get_roles_contain(context: &mut Context, type_label: Label, contain
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get declared roles {contains_or_doesnt}:")]
+#[step(expr = r"relation\({type_label}\) get declared roles {contains_or_doesnt}:")]
 pub async fn get_declared_roles_contain(
     context: &mut Context,
-    type_label: Label,
-    contains: ContainsOrDoesnt,
+    type_label: params::Label,
+    contains: params::ContainsOrDoesnt,
     step: &Step,
 ) {
     let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
@@ -106,8 +129,13 @@ pub async fn get_declared_roles_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) {exists_or_doesnt}")]
-pub async fn get_role_exists(context: &mut Context, type_label: Label, role_label: Label, exists: ExistsOrDoesnt) {
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) {exists_or_doesnt}")]
+pub async fn get_role_exists(
+    context: &mut Context,
+    type_label: params::Label,
+    role_label: params::Label,
+    exists: params::ExistsOrDoesnt,
+) {
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
         let role_opt =
@@ -117,8 +145,13 @@ pub async fn get_role_exists(context: &mut Context, type_label: Label, role_labe
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) get label: {type_label}")]
-pub async fn get_role_label(context: &mut Context, type_label: Label, role_label: Label, expected_label: Label) {
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get label: {type_label}")]
+pub async fn get_role_label(
+    context: &mut Context,
+    type_label: params::Label,
+    role_label: params::Label,
+    expected_label: params::Label,
+) {
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
         let role = relation
@@ -134,8 +167,13 @@ pub async fn get_role_label(context: &mut Context, type_label: Label, role_label
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) delete role: {type_label}(; ){may_error}")]
-pub async fn delete_role(context: &mut Context, type_label: Label, role_label: Label, may_error: MayError) {
+#[step(expr = r"relation\({type_label}\) delete role: {type_label}{may_error}")]
+pub async fn delete_role(
+    context: &mut Context,
+    type_label: params::Label,
+    role_label: params::Label,
+    may_error: params::MayError,
+) {
     with_schema_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.to_typedb()).unwrap().unwrap();
         let role = relation
@@ -149,12 +187,12 @@ pub async fn delete_role(context: &mut Context, type_label: Label, role_label: L
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) get supertype: {type_label}")]
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get supertype: {type_label}")]
 pub async fn type_get_supertype(
     context: &mut Context,
-    relation_label: Label,
-    role_label: Label,
-    expected_superrole_label: Label,
+    relation_label: params::Label,
+    role_label: params::Label,
+    expected_superrole_label: params::Label,
 ) {
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
@@ -173,12 +211,12 @@ pub async fn type_get_supertype(
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) get supertypes {contains_or_doesnt}:")]
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get supertypes {contains_or_doesnt}:")]
 pub async fn get_supertypes_contain(
     context: &mut Context,
-    relation_label: Label,
-    role_label: Label,
-    contains: ContainsOrDoesnt,
+    relation_label: params::Label,
+    role_label: params::Label,
+    contains: params::ContainsOrDoesnt,
     step: &Step,
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
@@ -203,12 +241,12 @@ pub async fn get_supertypes_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) get subtypes {contains_or_doesnt}:")]
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get subtypes {contains_or_doesnt}:")]
 pub async fn get_subtypes_contain(
     context: &mut Context,
-    relation_label: Label,
-    role_label: Label,
-    contains: ContainsOrDoesnt,
+    relation_label: params::Label,
+    role_label: params::Label,
+    contains: params::ContainsOrDoesnt,
     step: &Step,
 ) {
     let expected_labels = util::iter_table(step).map(|str| str.to_owned()).collect_vec();
@@ -231,8 +269,8 @@ pub async fn get_subtypes_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) get subtypes is empty")]
-pub async fn get_subtypes_is_empty(context: &mut Context, relation_label: Label, role_label: Label) {
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get subtypes is empty")]
+pub async fn get_subtypes_is_empty(context: &mut Context, relation_label: params::Label, role_label: params::Label) {
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
         let role = tx
@@ -252,8 +290,13 @@ pub async fn get_subtypes_is_empty(context: &mut Context, relation_label: Label,
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) set name: {type_label}")]
-pub async fn type_set_label(context: &mut Context, relation_label: Label, role_label: Label, to_label: Label) {
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) set name: {type_label}")]
+pub async fn type_set_label(
+    context: &mut Context,
+    relation_label: params::Label,
+    role_label: params::Label,
+    to_label: params::Label,
+) {
     with_schema_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
         let role = tx
@@ -267,12 +310,12 @@ pub async fn type_set_label(context: &mut Context, relation_label: Label, role_l
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get overridden role\\({type_label}\\) {exists_or_doesnt}")]
+#[step(expr = r"relation\({type_label}\) get overridden role\({type_label}\) {exists_or_doesnt}")]
 pub async fn get_overridden_role_exists(
     context: &mut Context,
-    relation_label: Label,
-    role_label: Label,
-    exists: ExistsOrDoesnt,
+    relation_label: params::Label,
+    role_label: params::Label,
+    exists: params::ExistsOrDoesnt,
 ) {
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
@@ -291,12 +334,12 @@ pub async fn get_overridden_role_exists(
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get overridden role\\({type_label}\\) get label: {type_label}")]
+#[step(expr = r"relation\({type_label}\) get overridden role\({type_label}\) get label: {type_label}")]
 pub async fn get_overridden_role_label(
     context: &mut Context,
-    relation_label: Label,
-    role_label: Label,
-    expected_label: Label,
+    relation_label: params::Label,
+    role_label: params::Label,
+    expected_label: params::Label,
 ) {
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
@@ -320,12 +363,12 @@ pub async fn get_overridden_role_label(
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) set annotation: {annotation}")]
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) set annotation: {annotation}")]
 pub async fn relation_role_set_annotation(
     context: &mut Context,
-    relation_label: Label,
-    role_label: Label,
-    annotation: Annotation,
+    relation_label: params::Label,
+    role_label: params::Label,
+    annotation: params::Annotation,
 ) {
     with_schema_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
@@ -340,15 +383,13 @@ pub async fn relation_role_set_annotation(
 }
 
 #[apply(generic_step)]
-#[step(
-    expr = "relation\\({type_label}\\) get role\\({type_label}\\) get annotations {contains_or_doesnt}: {annotation}"
-)]
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get annotations {contains_or_doesnt}: {annotation}")]
 pub async fn relation_role_annotations_contain(
     context: &mut Context,
-    relation_label: Label,
-    role_label: Label,
-    contains_or_doesnt: ContainsOrDoesnt,
-    annotation: Annotation,
+    relation_label: params::Label,
+    role_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
+    annotation: params::Annotation,
 ) {
     with_read_tx!(context, |tx| {
         let relation = tx.type_manager.get_relation_type(&tx.snapshot, &relation_label.to_typedb()).unwrap().unwrap();
@@ -365,12 +406,12 @@ pub async fn relation_role_annotations_contain(
 }
 
 #[apply(generic_step)]
-#[step(expr = "relation\\({type_label}\\) get role\\({type_label}\\) get players {contains_or_doesnt}:")]
+#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get players {contains_or_doesnt}:")]
 pub async fn role_type_players_contain(
     context: &mut Context,
-    relation_label: Label,
-    role_label: Label,
-    contains_or_doesnt: ContainsOrDoesnt,
+    relation_label: params::Label,
+    role_label: params::Label,
+    contains_or_doesnt: params::ContainsOrDoesnt,
     step: &Step,
 ) {
     let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
