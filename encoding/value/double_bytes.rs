@@ -44,3 +44,45 @@ impl DoubleBytes {
         self.bytes
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
+
+    use super::DoubleBytes;
+
+    fn random_finite_f64(rng: &mut impl Rng) -> f64 {
+        loop {
+            let float = f64::from_bits(rng.next_u64());
+            if float.is_finite() {
+                break float;
+            }
+        }
+    }
+
+    #[test]
+    fn ordering_is_preserved() {
+        let seed = thread_rng().gen();
+        let mut rng = SmallRng::seed_from_u64(seed);
+        eprintln!("Running with seed: {seed}");
+        for _ in 0..1_000_000 {
+            let lhs = random_finite_f64(&mut rng);
+            let rhs = random_finite_f64(&mut rng);
+
+            let lhs_bytes = DoubleBytes::build(lhs);
+            let rhs_bytes = DoubleBytes::build(rhs);
+
+            assert_eq!(
+                lhs < rhs,
+                lhs_bytes.bytes() < rhs_bytes.bytes(),
+                "{:e} (0x{:016X}) < {:e} (0x{:016X}) but 0x{:016X} >= 0x{:016X}",
+                lhs,
+                lhs.to_bits(),
+                rhs,
+                rhs.to_bits(),
+                u64::from_be_bytes(lhs_bytes.bytes()),
+                u64::from_be_bytes(rhs_bytes.bytes()),
+            )
+        }
+    }
+}
