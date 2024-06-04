@@ -90,6 +90,38 @@ async fn relation_remove_player_for_role(
 }
 
 #[apply(generic_step)]
+#[step(expr = r"{var} = relation {var} get players for role\({type_label}[]\)")]
+async fn relation_get_players_ordered(
+    context: &mut Context,
+    players_var: params::Var,
+    relation_var: params::Var,
+    role_label: params::Label,
+) {
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let players = with_read_tx!(context, |tx| {
+        let relates =
+            relation.type_().get_relates_role(&tx.snapshot, &tx.type_manager, role_label.to_typedb().name().as_str());
+        let role_type = relates.unwrap().unwrap().role();
+        let players = relation.get_players_ordered(&tx.snapshot, &tx.thing_manager, role_type).unwrap();
+        players.into_iter().map(Object::into_owned).collect()
+    });
+    context.object_lists.insert(players_var.name, players);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"roleplayer {var}[{int}] is {var}")]
+async fn roleplayer_list_at_index_is(
+    context: &mut Context,
+    list_var: params::Var,
+    index: usize,
+    roleplayer_var: params::Var,
+) {
+    let list_item = &context.object_lists[&list_var.name][index];
+    let roleplayer = &context.objects[&roleplayer_var.name].as_ref().unwrap().object;
+    assert_eq!(list_item, roleplayer);
+}
+
+#[apply(generic_step)]
 #[step(expr = r"relation {var} get players {contains_or_doesnt}: {var}")]
 async fn relation_get_players_contains(
     context: &mut Context,

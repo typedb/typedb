@@ -138,6 +138,15 @@ impl<'a> Relation<'a> {
         thing_manager.get_role_players(snapshot, self.as_reference())
     }
 
+    pub fn get_players_ordered<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
+        role_type: RoleType<'static>,
+    ) -> Result<Vec<Object<'_>>, ConceptReadError> {
+        thing_manager.get_role_players_ordered(snapshot, self.as_reference(), role_type)
+    }
+
     pub fn get_players_role_type<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
