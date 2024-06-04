@@ -298,9 +298,13 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         // if let Some(cache) = &self.type_cache {
         //     Ok(MaybeOwns::Borrowed(cache.get_struct_definition_key(label)))
         // } else {
-        //     Ok(MaybeOwns::Owned(TypeReader::get_struct_definition_key(snapshot, label)))
+        //     let definition_key = TypeReader::get_struct_definition_key(snapshot, label)?
+        //         .map(|opt| MaybeOwns::Owned(opt));
+        //     Ok(definition_key)
         // }
-        let definition_key = TypeReader::get_struct_definition_key(snapshot, label)?.map(|opt| MaybeOwns::Owned(opt));
+        // TODO: Cache
+        let definition_key = TypeReader::get_struct_definition_key(snapshot, label)?
+            .map(|opt| MaybeOwns::Owned(opt));
         Ok(definition_key)
     }
 
@@ -314,6 +318,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         // } else {
         //     Ok(MaybeOwns::Owned(TypeReader::get_struct_definition(key)))
         // }
+        // TODO: Cache
         let struct_def = TypeReader::get_struct_definition(snapshot, definition_key)?;
         Ok(MaybeOwns::Owned(struct_def))
     }

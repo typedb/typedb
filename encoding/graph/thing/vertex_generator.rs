@@ -39,6 +39,8 @@ use crate::{
     },
     AsBytes, Keyable, Prefixed,
 };
+use crate::graph::definition::definition_key::DefinitionKey;
+use crate::value::struct_bytes::StructBytes;
 
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,
@@ -326,12 +328,12 @@ impl ThingVertexGenerator {
     where
         Snapshot: WritableSnapshot,
     {
-        if string.length() <= StringAttributeID::ENCODING_INLINE_CAPACITY {
+        if StringAttributeID::is_inlineable(string.as_reference()) {
             Ok(StringAttributeID::build_inline_id(string))
         } else {
             let id = StringAttributeID::build_hashed_id(type_id, string, snapshot, &self.large_value_hasher)?;
             let hash = id.get_hash_prefix_hash();
-            let lock = ByteArray::copy_concat([&type_id.bytes(), &hash]);
+            let lock = ByteArray::copy_concat([&Prefix::VertexAttributeString.prefix_id().bytes(), &type_id.bytes(), &hash]);
             snapshot.exclusive_lock_add(lock);
             Ok(id)
         }
@@ -349,4 +351,24 @@ impl ThingVertexGenerator {
         assert!(!StringAttributeID::is_inlineable(string.as_reference()));
         StringAttributeID::find_hashed_id(type_id, string, snapshot, &self.large_value_hasher)
     }
+    //
+    // pub fn create_attribute_id_struct<const INLINE_LENGTH: usize, Snapshot>(
+    //     &self,
+    //     type_id: TypeID,
+    //     struct_bytes: StructBytes<'_, INLINE_LENGTH>,
+    //     snapshot: &mut Snapshot,
+    // ) -> Result<StructAttributeID, Arc<SnapshotIteratorError>>
+    //     where
+    //         Snapshot: WritableSnapshot,
+    // {
+    //     if struct_bytes.length() <= StructAttributeID::ENCODING_INLINE_CAPACITY {
+    //         Ok(StructAttributeID::build_inline_id(struct_bytes))
+    //     } else {
+    //         let id = StructAttributeID::build_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)?;
+    //         let hash = id.get_disambiguated_hash();
+    //         let lock = ByteArray::copy_concat([&Prefix::VertexAttributeStruct.prefix_id().bytes(), &type_id.bytes(), &hash]);
+    //         snapshot.exclusive_lock_add(lock);
+    //         Ok(id)
+    //     }
+    // }
 }

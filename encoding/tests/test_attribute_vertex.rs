@@ -18,6 +18,7 @@ use encoding::{
     value::string_bytes::StringBytes,
     AsBytes, EncodingKeyspace,
 };
+use encoding::graph::thing::vertex_attribute::HashableID;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, init_logging};
@@ -61,12 +62,12 @@ fn generate_string_attribute_vertex() {
         assert!(!vertex_id.is_inline());
         assert_eq!(
             vertex_id.get_hash_prefix(),
-            string_bytes.bytes().bytes()[StringAttributeID::ENCODING_STRING_PREFIX_RANGE]
+            string_bytes.bytes().bytes()[StringAttributeID::ENCODING_PREFIX_RANGE]
         );
         assert_eq!(
             vertex_id.get_hash_hash(),
             seahash::hash(string_bytes.bytes().bytes()).to_be_bytes()
-                [0..StringAttributeID::ENCODING_STRING_HASH_LENGTH]
+                [0..StringAttributeID::ENCODING_HASH_LENGTH]
         );
         assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
     }
@@ -86,14 +87,14 @@ fn generate_string_attribute_vertex() {
         assert!(!vertex_id.is_inline());
         assert_eq!(
             vertex_id.get_hash_prefix(),
-            string_bytes.bytes().bytes()[StringAttributeID::ENCODING_STRING_PREFIX_RANGE]
+            string_bytes.bytes().bytes()[StringAttributeID::ENCODING_PREFIX_RANGE]
         );
         assert_eq!(
             vertex_id.get_hash_hash(),
-            CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASH_LENGTH]
+            CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_HASH_LENGTH]
         );
         assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
-
+        {
         let string_collide = "Hello world, this is using the same prefix and will collide.";
         let string_collide_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
         let collide_vertex = thing_vertex_generator
@@ -104,13 +105,34 @@ fn generate_string_attribute_vertex() {
         assert!(!collide_id.is_inline());
         assert_eq!(
             collide_id.get_hash_prefix(),
-            string_collide_bytes.bytes().bytes()[StringAttributeID::ENCODING_STRING_PREFIX_RANGE]
+            string_collide_bytes.bytes().bytes()[StringAttributeID::ENCODING_PREFIX_RANGE]
         );
         assert_eq!(
             collide_id.get_hash_hash(),
-            CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASH_LENGTH]
+            CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_HASH_LENGTH]
         );
         assert_eq!(collide_id.get_hash_disambiguator(), 1u8);
+        }
+        {
+
+            let string_collide = "Hello world, this is using the same prefix and will collide AGAIN!.";
+            let string_collide_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
+            let collide_vertex = thing_vertex_generator
+                .create_attribute_string(type_id, string_collide_bytes.as_reference(), &mut snapshot)
+                .unwrap();
+
+            let collide_id = collide_vertex.attribute_id().unwrap_string();
+            assert!(!collide_id.is_inline());
+            assert_eq!(
+                collide_id.get_hash_prefix(),
+                string_collide_bytes.bytes().bytes()[StringAttributeID::ENCODING_PREFIX_RANGE]
+            );
+            assert_eq!(
+                collide_id.get_hash_hash(),
+                CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_HASH_LENGTH]
+            );
+            assert_eq!(collide_id.get_hash_disambiguator(), 2u8);
+        }
     }
 }
 

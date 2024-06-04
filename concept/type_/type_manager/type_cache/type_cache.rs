@@ -15,6 +15,7 @@ use encoding::{
     graph::Typed,
     value::{label::Label, value_type::ValueType},
 };
+use encoding::graph::definition::definition_key::DefinitionKey;
 use storage::{sequence_number::SequenceNumber, snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
 
 use crate::type_::{
@@ -54,6 +55,7 @@ pub struct TypeCache {
     relation_types_index_label: HashMap<Label<'static>, RelationType<'static>>,
     role_types_index_label: HashMap<Label<'static>, RoleType<'static>>,
     attribute_types_index_label: HashMap<Label<'static>, AttributeType<'static>>,
+    // struct_definition_index_label: HashMap<Label<'static>, DefinitionKey<'static>>
 }
 
 selection::impl_cache_getter!(EntityTypeCache, EntityType, entity_types);
@@ -298,6 +300,10 @@ impl TypeCache {
     pub(crate) fn get_plays_override<'c>(&'c self, plays: Plays<'c>) -> &'c Option<Plays<'static>> {
         &self.plays.get(&plays).unwrap().overrides
     }
+
+    // pub(crate) fn get_struct_definition_key<'c>(&'c self, label: &Label<'static>,) -> &'c Option<DefinitionKey<'static>>{
+    //     &self.struct_definition_index_label.get(&label)
+    // }
 }
 
 #[derive(Debug)]

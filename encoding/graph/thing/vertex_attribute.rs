@@ -604,21 +604,144 @@ pub struct StringAttributeID {
     bytes: [u8; Self::LENGTH],
 }
 
+pub trait HashableID<const LENGTH: usize> : Sized {
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory;
+
+    const ENCODING_TAIL_BYTE_IS_HASH_FLAG: u8 = 0b10000000;
+    const ENCODING_INLINE_CAPACITY: usize = LENGTH - 1;
+    // Length
+    const ENCODING_HASH_LENGTH: usize = 8;
+    const ENCODING_PREFIX_LENGTH: usize = LENGTH - (1 + Self::ENCODING_HASH_LENGTH);
+    // Index
+    const ENCODING_TAIL_BYTE_INDEX: usize = LENGTH - 1;
+
+    // Range
+    const ENCODING_PREFIX_RANGE: Range<usize> = 0..Self::ENCODING_PREFIX_LENGTH;
+    const ENCODING_HASH_RANGE: Range<usize> = Self::ENCODING_PREFIX_LENGTH..Self::ENCODING_PREFIX_LENGTH +Self::ENCODING_HASH_LENGTH;
+
+    fn new(bytes: [u8; LENGTH]) -> Self;
+
+    fn set_prefix(value_bytes: &[u8], into_slice: &mut [u8; LENGTH]);
+
+    fn build_hashed_id_with_ambiguous_tail(value_bytes: &[u8], hasher: &impl Fn(&[u8]) -> u64) -> [u8; LENGTH] {
+        let mut id_bytes : [u8; LENGTH] = [0; LENGTH];
+        let hash = hasher(value_bytes);
+        Self::set_prefix(value_bytes, &mut id_bytes);
+        id_bytes[Self::ENCODING_HASH_RANGE].copy_from_slice(&hash.to_be_bytes());
+        id_bytes[Self::ENCODING_TAIL_BYTE_INDEX] = Self::ENCODING_TAIL_BYTE_IS_HASH_FLAG;
+        id_bytes
+    }
+
+    fn build_hashed_id_from_value_bytes<Snapshot>(
+        type_id: TypeID,
+        value_bytes: &[u8],
+        snapshot: &Snapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+    ) -> Result<Either<Self,Self>, Arc<SnapshotIteratorError>>
+        where
+            Snapshot: ReadableSnapshot,
+    {
+        debug_assert!(!Self::is_inlineable(value_bytes));
+        let mut id_bytes = Self::build_hashed_id_with_ambiguous_tail(value_bytes, hasher);
+        let existing_or_tail = Self::find_existing_or_next_tail(type_id, value_bytes, &id_bytes, snapshot)?;
+        match existing_or_tail {
+            Either::First(existing_tail) => {
+                Self::set_hash_disambiguator(&mut id_bytes, existing_tail);
+                Ok(Either::First(Self::new(id_bytes)))
+            },
+            Either::Second(new_tail) => {
+                if new_tail & Self::ENCODING_TAIL_BYTE_IS_HASH_FLAG != 0 { // over 127 // TODO: should we panic?
+                    panic!("String encoding space has no space remaining within the prefix and hash prefix.")
+                }
+                Self::set_hash_disambiguator(&mut id_bytes, new_tail);
+                Ok(Either::Second(Self::new(id_bytes)))
+            }
+        }
+    }
+
+    fn find_hashed_id_for_value_bytes<Snapshot>(
+        type_id: TypeID,
+        value_bytes: &[u8],
+        snapshot: &Snapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+    ) -> Result<Option<Self>, Arc<SnapshotIteratorError>>
+        where
+            Snapshot: ReadableSnapshot,
+    {
+        let mut id_bytes = Self::build_hashed_id_with_ambiguous_tail(value_bytes, hasher);
+        let existing_or_next_tail = Self::find_existing_or_next_tail(type_id, value_bytes, &id_bytes, snapshot)?;
+        match existing_or_next_tail {
+            Either::First(existing_tail) => {
+                Self::set_hash_disambiguator(&mut id_bytes, existing_tail);
+                Ok(Some(Self::new(id_bytes)))
+            },
+            Either::Second(_) => Ok(None),
+        }
+    }
+
+    fn find_existing_or_next_tail<Snapshot>(
+        type_id: TypeID,
+        value_bytes: &[u8],
+        id_with_ambiguous_tail: &[u8; LENGTH],
+        snapshot: &Snapshot,
+    ) -> Result<Either<u8, u8>, Arc<SnapshotIteratorError>>
+        where
+            Snapshot: ReadableSnapshot,
+    {
+        let prefix_search = KeyRange::new_within( // The tail byte must be excluded
+            AttributeVertex::build_prefix_type_attribute_id(Self::VALUE_TYPE_CATEGORY,  type_id, &id_with_ambiguous_tail[0..(Self::ENCODING_TAIL_BYTE_INDEX)]),
+                                                  AttributeVertex::value_type_category_to_prefix_type(Self::VALUE_TYPE_CATEGORY).fixed_width_keys(),
+        );
+
+        let mut iter = snapshot.iterate_range(prefix_search);
+        let mut next = iter.next().transpose()?;
+        let mut first_unused_tail : Option<u8> = None;
+
+        let mut tail: u8 = 0;
+        while let Some((key, value)) = next {
+            let existing_attribute_id = AttributeVertex::new(Bytes::reference(key.bytes())).attribute_id();
+            if value.bytes() == value_bytes {
+                let existing_tail = Self::get_hash_disambiguator(key.bytes());
+                return Ok(Either::First(existing_tail));
+            } else if tail != Self::get_hash_disambiguator(existing_attribute_id.bytes()) {
+                // found unused tail ID
+                first_unused_tail = Some(tail);
+            }
+            tail += 1;
+            next = iter.next().transpose()?;
+        }
+        Ok(Either::Second(first_unused_tail.unwrap_or(tail)))
+    }
+
+    fn get_hash_disambiguator(bytes: &[u8]) -> u8 {
+        debug_assert!(LENGTH == bytes.len() && !Self::is_inline_bytes(bytes));
+        let byte = bytes[Self::ENCODING_TAIL_BYTE_INDEX];
+        byte & !Self::ENCODING_TAIL_BYTE_IS_HASH_FLAG // unsets 0b1___ high bit
+    }
+
+
+    /// Encode the last byte by setting 0b1[7 bits representing disambiguator]
+    fn set_hash_disambiguator(bytes: &mut [u8; LENGTH], disambiguator: u8) {
+        debug_assert!(disambiguator & Self::ENCODING_TAIL_BYTE_IS_HASH_FLAG == 0); // ie. disambiguator < 128, not using high bit
+        bytes[Self::ENCODING_TAIL_BYTE_INDEX] = disambiguator | Self::ENCODING_TAIL_BYTE_IS_HASH_FLAG;
+    }
+
+    fn is_inline_bytes(bytes: &[u8]) -> bool {
+        bytes[Self::ENCODING_TAIL_BYTE_INDEX] & Self::ENCODING_TAIL_BYTE_IS_HASH_FLAG == 0
+    }
+
+    fn is_inlineable(value_bytes: &[u8]) -> bool {
+        value_bytes.len() <= Self::ENCODING_INLINE_CAPACITY
+    }
+}
+
+
 impl StringAttributeID {
     const LENGTH: usize = AttributeIDLength::LONG_LENGTH;
-
-    pub(crate) const ENCODING_INLINE_CAPACITY: usize = Self::LENGTH - 1;
-    const ENCODING_STRING_PREFIX_LENGTH: usize = 8;
-    pub const ENCODING_STRING_PREFIX_RANGE: Range<usize> = 0..Self::ENCODING_STRING_PREFIX_LENGTH;
-    pub const ENCODING_STRING_HASH_LENGTH: usize = 8;
-    const ENCODING_STRING_HASH_RANGE: Range<usize> = Self::ENCODING_STRING_PREFIX_RANGE.end
-        ..Self::ENCODING_STRING_PREFIX_RANGE.end + Self::ENCODING_STRING_HASH_LENGTH;
     const ENCODING_STRING_PREFIX_HASH_LENGTH: usize =
-        Self::ENCODING_STRING_PREFIX_LENGTH + Self::ENCODING_STRING_HASH_LENGTH;
-    const ENCODING_STRING_PREFIX_HASH_RANGE: Range<usize> = Self::ENCODING_STRING_PREFIX_RANGE.start
-        ..Self::ENCODING_STRING_PREFIX_RANGE.start + Self::ENCODING_STRING_PREFIX_HASH_LENGTH;
-
-    const ENCODING_STRING_TAIL_BYTE_INDEX: usize = Self::ENCODING_STRING_HASH_RANGE.end;
+        Self::ENCODING_PREFIX_LENGTH + Self::ENCODING_HASH_LENGTH;
+    const ENCODING_STRING_PREFIX_HASH_RANGE: Range<usize> =
+        Self::ENCODING_PREFIX_RANGE.start..Self::ENCODING_HASH_RANGE.end;
     const ENCODING_STRING_TAIL_MASK: u8 = 0b10000000;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
@@ -643,125 +766,15 @@ impl StringAttributeID {
     fn set_tail_inline_length(bytes: &mut [u8; Self::LENGTH], length: u8) {
         assert!(length & Self::ENCODING_STRING_TAIL_MASK == 0); // ie < 128, high bit not set
                                                                 // because the high bit is not set, we already conform to the required mask of high bit = 0
-        bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = length;
-    }
-
-    ///
-    /// Build a hashed string ID, including picking the tail disambiguator bits.
-    /// If a matching existing String with ID is found, return it.
-    /// Otherwise, create an ID using the next available tail ID.
-    ///
-    pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
-        type_id: TypeID,
-        string: StringBytes<'_, INLINE_LENGTH>,
-        snapshot: &Snapshot,
-        hasher: &impl Fn(&[u8]) -> u64,
-    ) -> Result<Self, Arc<SnapshotIteratorError>>
-    where
-        Snapshot: ReadableSnapshot,
-    {
-        debug_assert!(!Self::is_inlineable(string.as_reference()));
-        let mut id_bytes = Self::build_hashed_id_without_tail(string.as_reference(), hasher);
-        let existing_or_tail = Self::find_hashed_id_or_next_tail(type_id, string, id_bytes, snapshot)?;
-        match existing_or_tail {
-            Either::First(existing) => Ok(existing),
-            Either::Second(tail) => {
-                if tail & Self::ENCODING_STRING_TAIL_MASK != 0 {
-                    // over 127
-                    // TODO: should we panic?
-                    panic!("String encoding space has no space remaining within the prefix and hash prefix.")
-                }
-                Self::set_tail_hash_disambiguator(&mut id_bytes, tail);
-                Ok(Self::new(id_bytes))
-            }
-        }
-    }
-
-    pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
-        type_id: TypeID,
-        string: StringBytes<'_, INLINE_LENGTH>,
-        snapshot: &Snapshot,
-        hasher: &impl Fn(&[u8]) -> u64,
-    ) -> Result<Option<Self>, Arc<SnapshotIteratorError>>
-    where
-        Snapshot: ReadableSnapshot,
-    {
-        debug_assert!(!Self::is_inlineable(string.as_reference()));
-        let existing_or_tail = Self::find_hashed_id_or_next_tail(
-            type_id,
-            string.as_reference(),
-            Self::build_hashed_id_without_tail(string.as_reference(), hasher),
-            snapshot,
-        )?;
-        match existing_or_tail {
-            Either::First(existing) => Ok(Some(existing)),
-            Either::Second(_) => Ok(None),
-        }
-    }
-
-    fn build_hashed_id_without_tail<const INLINE_LENGTH: usize>(
-        string: StringBytes<'_, INLINE_LENGTH>,
-        hasher: &impl Fn(&[u8]) -> u64,
-    ) -> [u8; Self::LENGTH] {
-        let mut bytes = [0u8; Self::LENGTH];
-        bytes[Self::ENCODING_STRING_PREFIX_RANGE]
-            .copy_from_slice(&string.bytes().bytes()[Self::ENCODING_STRING_PREFIX_RANGE]);
-        let hash_bytes: [u8; Self::ENCODING_STRING_HASH_LENGTH] = Self::apply_hash(string, hasher);
-        bytes[Self::ENCODING_STRING_HASH_RANGE].copy_from_slice(&hash_bytes);
-        bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = Self::ENCODING_STRING_TAIL_MASK;
-        bytes
-    }
-
-    fn find_hashed_id_or_next_tail<const INLINE_LENGTH: usize, Snapshot>(
-        type_id: TypeID,
-        string: StringBytes<'_, INLINE_LENGTH>,
-        id_without_tail: [u8; Self::LENGTH],
-        snapshot: &Snapshot,
-    ) -> Result<Either<Self, u8>, Arc<SnapshotIteratorError>>
-    where
-        Snapshot: ReadableSnapshot,
-    {
-        debug_assert!(!Self::is_inlineable(string.as_reference()));
-        let prefix_search = KeyRange::new_within(
-            AttributeVertex::build_prefix_type_attribute_id(ValueTypeCategory::String, type_id, &id_without_tail),
-            AttributeVertex::value_type_category_to_prefix_type(ValueTypeCategory::String).fixed_width_keys(),
-        );
-        let mut iter = snapshot.iterate_range(prefix_search);
-        let mut next = iter.next().transpose()?;
-        let mut tail: u8 = 0;
-        while let Some((key, value)) = next {
-            let existing_attribute_id = AttributeVertex::new(Bytes::reference(key.bytes())).attribute_id();
-            let existing_string_id = Self::new(existing_attribute_id.bytes().try_into().unwrap());
-            if StringBytes::new(value) == string {
-                return Ok(Either::First(existing_string_id));
-            } else if tail != existing_string_id.get_hash_disambiguator() {
-                // found unused tail ID
-                return Ok(Either::Second(tail));
-            }
-            tail += 1;
-            next = iter.next().transpose()?;
-        }
-        Ok(Either::Second(tail))
-    }
-
-    fn apply_hash<const INLINE_LENGTH: usize>(
-        string: StringBytes<'_, INLINE_LENGTH>,
-        hasher: &impl Fn(&[u8]) -> u64,
-    ) -> [u8; Self::ENCODING_STRING_HASH_LENGTH] {
-        hasher(string.bytes().bytes()).to_be_bytes()
-    }
-
-    ///
-    /// Encode the last byte by setting 0b1[7 bits representing disambiguator]
-    ///
-    fn set_tail_hash_disambiguator(bytes: &mut [u8; Self::LENGTH], disambiguator: u8) {
-        debug_assert!(disambiguator & Self::ENCODING_STRING_TAIL_MASK == 0); // ie. disambiguator < 128, not using high bit
-                                                                             // sets 0x1[disambiguator]
-        bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] = disambiguator | Self::ENCODING_STRING_TAIL_MASK;
+        bytes[Self::ENCODING_TAIL_BYTE_INDEX] = length;
     }
 
     pub fn is_inline(&self) -> bool {
-        self.bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX] & Self::ENCODING_STRING_TAIL_MASK == 0
+        Self::is_inline_bytes(&self.bytes)
+    }
+
+    pub fn get_hash_disambiguator(&self) -> u8 {
+        <Self as HashableID<{AttributeIDLength::LONG_LENGTH}>>::get_hash_disambiguator(&self.bytes)
     }
 
     pub fn get_inline_string_bytes(&self) -> StringBytes<'static, 16> {
@@ -776,30 +789,51 @@ impl StringAttributeID {
 
     pub fn get_inline_length(&self) -> u8 {
         debug_assert!(self.is_inline());
-        self.bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX]
+        self.bytes[Self::ENCODING_TAIL_BYTE_INDEX]
     }
 
-    pub fn get_hash_prefix(&self) -> [u8; Self::ENCODING_STRING_PREFIX_LENGTH] {
-        debug_assert!(!self.is_inline());
-        (&self.bytes[Self::ENCODING_STRING_PREFIX_RANGE]).try_into().unwrap()
+    ///
+    pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
+        type_id: TypeID,
+        string: StringBytes<'_, INLINE_LENGTH>,
+        snapshot: &Snapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+    ) -> Result<Self, Arc<SnapshotIteratorError>>
+        where
+            Snapshot: ReadableSnapshot,
+    {
+        let existing_or_new = Self::build_hashed_id_from_value_bytes(type_id, string.bytes().bytes(), snapshot, hasher)?;
+        match existing_or_new {
+            Either::First(id) | Either::Second(id) => Ok(id)
+        }
     }
 
-    pub fn get_hash_hash(&self) -> [u8; Self::ENCODING_STRING_HASH_LENGTH] {
+    pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
+        type_id: TypeID,
+        string: StringBytes<'_, INLINE_LENGTH>,
+        snapshot: &Snapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+    ) -> Result<Option<Self>, Arc<SnapshotIteratorError>>
+        where
+            Snapshot: ReadableSnapshot,
+    {
+       Self::find_hashed_id_for_value_bytes(type_id, string.bytes().bytes(), snapshot, hasher)
+    }
+
+    pub fn get_hash_prefix(&self) -> [u8; Self::ENCODING_PREFIX_LENGTH] {
         debug_assert!(!self.is_inline());
-        (&self.bytes[Self::ENCODING_STRING_HASH_RANGE]).try_into().unwrap()
+        (&self.bytes[Self::ENCODING_PREFIX_RANGE]).try_into().unwrap()
+    }
+
+    pub fn get_hash_hash(&self) -> [u8; Self::ENCODING_HASH_LENGTH] {
+        debug_assert!(!self.is_inline());
+        (&self.bytes[Self::ENCODING_HASH_RANGE]).try_into().unwrap()
     }
 
     pub fn get_hash_prefix_hash(&self) -> [u8; Self::ENCODING_STRING_PREFIX_HASH_LENGTH] {
         debug_assert!(!self.is_inline());
         (&self.bytes[Self::ENCODING_STRING_PREFIX_HASH_RANGE]).try_into().unwrap()
     }
-
-    pub fn get_hash_disambiguator(&self) -> u8 {
-        debug_assert!(!self.is_inline());
-        let byte = self.bytes[Self::ENCODING_STRING_TAIL_BYTE_INDEX];
-        byte & !Self::ENCODING_STRING_TAIL_MASK // unsets 0x1___ high bit
-    }
-
     pub fn bytes(&self) -> [u8; Self::LENGTH] {
         self.bytes
     }
@@ -808,6 +842,20 @@ impl StringAttributeID {
         &self.bytes
     }
 }
+
+impl HashableID<{AttributeIDLength::LONG_LENGTH}> for StringAttributeID {
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::String;
+
+    fn new(bytes: [u8; AttributeIDLength::LONG_LENGTH]) -> Self {
+        StringAttributeID { bytes }
+    }
+
+    fn set_prefix(value_bytes: &[u8], into_bytes: &mut [u8; AttributeIDLength::LONG_LENGTH]) {
+        into_bytes[Self::ENCODING_PREFIX_RANGE]
+            .copy_from_slice(&value_bytes[0..Self::ENCODING_PREFIX_LENGTH]);
+    }
+}
+
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct StructAttributeID {
