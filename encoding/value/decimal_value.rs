@@ -17,12 +17,12 @@ const _ASSERT: () = {
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct FixedPoint {
+pub struct Decimal {
     integer: i64,
     fractional: u64,
 }
 
-impl FixedPoint {
+impl Decimal {
     pub const MIN: Self = Self::new(i64::MIN, 0);
     pub const MAX: Self = Self::new(i64::MAX, FRACTIONAL_PART_DENOMINATOR - 1);
 
@@ -40,7 +40,7 @@ impl FixedPoint {
     }
 }
 
-impl Add for FixedPoint {
+impl Add for Decimal {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -59,7 +59,7 @@ impl Add for FixedPoint {
     }
 }
 
-impl Sub for FixedPoint {
+impl Sub for Decimal {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -74,8 +74,8 @@ impl Sub for FixedPoint {
     }
 }
 
-impl Mul for FixedPoint {
-    type Output = FixedPoint;
+impl Mul for Decimal {
+    type Output = Decimal;
 
     fn mul(self, rhs: Self) -> Self::Output {
         let lhs = self;
@@ -114,34 +114,34 @@ macro_rules! impl_integer_ops {
         for
         { $($int:ty),+ $(,)? }
     ) => {$(
-        impl $optrait<$int> for FixedPoint {
-            type Output = FixedPoint;
+        impl $optrait<$int> for Decimal {
+            type Output = Decimal;
             fn $opname(self, rhs: $int) -> Self::Output {
-                $optrait::$opname(self, FixedPoint::new(rhs as i64, 0))
+                $optrait::$opname(self, Decimal::new(rhs as i64, 0))
             }
         }
-        impl $optrait<FixedPoint> for $int {
-            type Output = FixedPoint;
-            fn $opname(self, rhs: FixedPoint) -> Self::Output {
-                $optrait::$opname(FixedPoint::new(self as i64, 0), rhs)
+        impl $optrait<Decimal> for $int {
+            type Output = Decimal;
+            fn $opname(self, rhs: Decimal) -> Self::Output {
+                $optrait::$opname(Decimal::new(self as i64, 0), rhs)
             }
         }
-        impl $optrait<&FixedPoint> for $int {
-            type Output = FixedPoint;
-            fn $opname(self, rhs: &FixedPoint) -> Self::Output {
-                $optrait::$opname(FixedPoint::new(self as i64, 0), rhs)
+        impl $optrait<&Decimal> for $int {
+            type Output = Decimal;
+            fn $opname(self, rhs: &Decimal) -> Self::Output {
+                $optrait::$opname(Decimal::new(self as i64, 0), rhs)
             }
         }
-        impl $optrait<FixedPoint> for &$int {
-            type Output = FixedPoint;
-            fn $opname(self, rhs: FixedPoint) -> Self::Output {
-                $optrait::$opname(FixedPoint::new(*self as i64, 0), rhs)
+        impl $optrait<Decimal> for &$int {
+            type Output = Decimal;
+            fn $opname(self, rhs: Decimal) -> Self::Output {
+                $optrait::$opname(Decimal::new(*self as i64, 0), rhs)
             }
         }
-        impl $optrait<&FixedPoint> for &$int {
-            type Output = FixedPoint;
-            fn $opname(self, rhs: &FixedPoint) -> Self::Output {
-                $optrait::$opname(FixedPoint::new(*self as i64, 0), rhs)
+        impl $optrait<&Decimal> for &$int {
+            type Output = Decimal;
+            fn $opname(self, rhs: &Decimal) -> Self::Output {
+                $optrait::$opname(Decimal::new(*self as i64, 0), rhs)
             }
         }
     )+};
@@ -155,25 +155,25 @@ impl_integer_ops! {
 
 macro_rules! impl_ref_ops {
     ($($optrait:ident::$opname:ident),+ $(,)?) => {$(
-        impl<T> $optrait<&T> for FixedPoint
+        impl<T> $optrait<&T> for Decimal
         where
             T: Copy,
-            FixedPoint: $optrait<T>,
+            Decimal: $optrait<T>,
         {
-            type Output = <FixedPoint as $optrait<T>>::Output;
+            type Output = <Decimal as $optrait<T>>::Output;
             fn $opname(self, rhs: &T) -> Self::Output {
-                <FixedPoint as $optrait<T>>::$opname(self, *rhs)
+                <Decimal as $optrait<T>>::$opname(self, *rhs)
             }
         }
 
-        impl<T> $optrait<T> for &FixedPoint
+        impl<T> $optrait<T> for &Decimal
         where
             T: Copy,
-            FixedPoint: $optrait<T>,
+            Decimal: $optrait<T>,
         {
-            type Output = <FixedPoint as $optrait<T>>::Output;
+            type Output = <Decimal as $optrait<T>>::Output;
             fn $opname(self, rhs: T) -> Self::Output {
-                <FixedPoint as $optrait<T>>::$opname(*self, rhs)
+                <Decimal as $optrait<T>>::$opname(*self, rhs)
             }
         }
     )+};
@@ -181,7 +181,7 @@ macro_rules! impl_ref_ops {
 
 impl_ref_ops! { Add::add, Sub::sub, Mul::mul }
 
-impl fmt::Display for FixedPoint {
+impl fmt::Display for Decimal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO
         fmt::Display::fmt(&(self.integer as f64 + self.fractional as f64 / FRACTIONAL_PART_DENOMINATOR as f64), f)
@@ -192,15 +192,15 @@ impl fmt::Display for FixedPoint {
 mod tests {
     use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
 
-    use super::{FixedPoint, FRACTIONAL_PART_DENOMINATOR};
+    use super::{Decimal, FRACTIONAL_PART_DENOMINATOR};
 
-    fn random_fixed_point(rng: &mut impl Rng) -> FixedPoint {
-        FixedPoint { integer: rng.gen(), fractional: rng.gen_range(0..FRACTIONAL_PART_DENOMINATOR) }
+    fn random_decimal(rng: &mut impl Rng) -> Decimal {
+        Decimal { integer: rng.gen(), fractional: rng.gen_range(0..FRACTIONAL_PART_DENOMINATOR) }
     }
 
-    fn random_small_fixed_point(rng: &mut impl Rng) -> FixedPoint {
+    fn random_small_decimal(rng: &mut impl Rng) -> Decimal {
         const INTEGER_MAX_ABS: i64 = (u64::MAX / FRACTIONAL_PART_DENOMINATOR) as i64;
-        FixedPoint {
+        Decimal {
             integer: rng.gen_range(-INTEGER_MAX_ABS..=INTEGER_MAX_ABS),
             fractional: rng.gen_range(0..FRACTIONAL_PART_DENOMINATOR),
         }
@@ -209,26 +209,26 @@ mod tests {
     #[test]
     #[allow(clippy::assertions_on_constants)]
     fn fractional_part_overflow_is_handled_correctly() {
-        let sub_one = 1 - FixedPoint::new(0, 1);
-        assert_eq!(sub_one, FixedPoint::new(0, FRACTIONAL_PART_DENOMINATOR - 1));
-        assert_eq!(sub_one + sub_one, 2 - FixedPoint::new(0, 2));
+        let sub_one = 1 - Decimal::new(0, 1);
+        assert_eq!(sub_one, Decimal::new(0, FRACTIONAL_PART_DENOMINATOR - 1));
+        assert_eq!(sub_one + sub_one, 2 - Decimal::new(0, 2));
 
         assert!(FRACTIONAL_PART_DENOMINATOR > u64::MAX / 2);
 
         let u64_max_div_denom =
-            FixedPoint::new((u64::MAX / FRACTIONAL_PART_DENOMINATOR) as i64, u64::MAX % FRACTIONAL_PART_DENOMINATOR);
+            Decimal::new((u64::MAX / FRACTIONAL_PART_DENOMINATOR) as i64, u64::MAX % FRACTIONAL_PART_DENOMINATOR);
         assert_eq!(
-            FixedPoint::new(0, FRACTIONAL_PART_DENOMINATOR - 1)
-                + FixedPoint::new(0, 0u64.wrapping_sub(FRACTIONAL_PART_DENOMINATOR)),
+            Decimal::new(0, FRACTIONAL_PART_DENOMINATOR - 1)
+                + Decimal::new(0, 0u64.wrapping_sub(FRACTIONAL_PART_DENOMINATOR)),
             u64_max_div_denom
         );
 
-        assert_eq!(sub_one * sub_one, 1 - FixedPoint::new(0, 2)); // rounded to nearest
+        assert_eq!(sub_one * sub_one, 1 - Decimal::new(0, 2)); // rounded to nearest
     }
 
     #[test]
     fn randomized_tests() {
-        const fn as_i128(lhs: FixedPoint) -> i128 {
+        const fn as_i128(lhs: Decimal) -> i128 {
             lhs.integer as i128 * FRACTIONAL_PART_DENOMINATOR as i128 + lhs.fractional as i128
         }
 
@@ -236,10 +236,10 @@ mod tests {
         let mut rng = SmallRng::seed_from_u64(seed);
         eprintln!("Running with seed: {seed}");
 
-        let range = as_i128(FixedPoint::MIN)..=as_i128(FixedPoint::MAX);
+        let range = as_i128(Decimal::MIN)..=as_i128(Decimal::MAX);
         for _ in 0..1_000_000 {
-            let lhs = random_fixed_point(&mut rng);
-            let rhs = random_fixed_point(&mut rng);
+            let lhs = random_decimal(&mut rng);
+            let rhs = random_decimal(&mut rng);
 
             if as_i128(lhs).checked_add(as_i128(rhs)).is_some_and(|res| range.contains(&res)) {
                 assert_eq!(as_i128(lhs + rhs), as_i128(lhs) + as_i128(rhs), "{:?} + {:?} != {:?}", lhs, rhs, lhs + rhs);
@@ -248,8 +248,8 @@ mod tests {
                 assert_eq!(as_i128(lhs - rhs), as_i128(lhs) - as_i128(rhs), "{:?} - {:?} != {:?}", lhs, rhs, lhs - rhs);
             }
 
-            // two random fixed point numbers will almost always overflow on multiplication
-            let rhs = random_small_fixed_point(&mut rng);
+            // two random decimal numbers will almost always overflow on multiplication
+            let rhs = random_small_decimal(&mut rng);
 
             if as_i128(lhs).checked_mul(rhs.integer as i128).is_some_and(|res| range.contains(&res))
                 && as_i128(lhs).checked_mul(rhs.integer as i128 + 1).is_some_and(|res| range.contains(&res))

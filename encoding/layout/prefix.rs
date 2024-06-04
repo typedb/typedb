@@ -49,7 +49,7 @@ impl PrefixID {
             Prefix::VertexAttributeBoolean => todo!(),
             Prefix::VertexAttributeLong => todo!(),
             Prefix::VertexAttributeDouble => todo!(),
-            Prefix::VertexAttributeFixedPoint => todo!(),
+            Prefix::VertexAttributeDecimal => todo!(),
             Prefix::VertexAttributeDateTime => todo!(),
             Prefix::VertexAttributeDateTimeTZ => todo!(),
             Prefix::VertexAttributeDuration => todo!(),
@@ -79,7 +79,7 @@ pub enum Prefix {
     VertexAttributeBoolean,
     VertexAttributeLong,
     VertexAttributeDouble,
-    VertexAttributeFixedPoint,
+    VertexAttributeDecimal,
     VertexAttributeDateTime,
     VertexAttributeDateTimeTZ,
     VertexAttributeDuration,
@@ -182,7 +182,7 @@ impl Prefix {
            VertexAttributeBoolean => [50], true;
            VertexAttributeLong => [51], true;
            VertexAttributeDouble => [52], true;
-           VertexAttributeFixedPoint => [53], true;
+           VertexAttributeDecimal => [53], true;
            VertexAttributeDateTime => [54], true;
            VertexAttributeDateTimeTZ => [55], true;
            VertexAttributeDuration => [56], true;

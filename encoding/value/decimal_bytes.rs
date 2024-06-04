@@ -5,17 +5,17 @@
  */
 
 use super::{
-    fixed_point_value::FixedPoint,
+    decimal_value::Decimal,
     primitive_encoding::{decode_i64, decode_u64, encode_i64, encode_u64},
 };
 use crate::graph::thing::vertex_attribute::AttributeIDLength;
 
 #[derive(Debug, Copy, Clone)]
-pub struct FixedPointBytes {
+pub struct DecimalBytes {
     bytes: [u8; Self::LENGTH],
 }
 
-impl FixedPointBytes {
+impl DecimalBytes {
     const LENGTH: usize = AttributeIDLength::Long.length();
 
     const INTEGER_LENGTH: usize = i64::BITS as usize / 8;
@@ -25,17 +25,17 @@ impl FixedPointBytes {
         Self { bytes }
     }
 
-    pub fn build(fixed: FixedPoint) -> Self {
+    pub fn build(fixed: Decimal) -> Self {
         let mut bytes = [0; Self::LENGTH];
         bytes[..Self::INTEGER_LENGTH].copy_from_slice(&encode_i64(fixed.integer_part()));
         bytes[Self::INTEGER_LENGTH..][..Self::FRACTIONAL_LENGTH].copy_from_slice(&encode_u64(fixed.fractional_part()));
         Self { bytes }
     }
 
-    pub fn as_fixed_point(&self) -> FixedPoint {
+    pub fn as_decimal(&self) -> Decimal {
         let integer = decode_i64(self.bytes[..Self::INTEGER_LENGTH].try_into().unwrap());
         let fractional = decode_u64(self.bytes[Self::INTEGER_LENGTH..][..Self::FRACTIONAL_LENGTH].try_into().unwrap());
-        FixedPoint::new(integer, fractional)
+        Decimal::new(integer, fractional)
     }
 
     pub(crate) fn bytes(&self) -> [u8; Self::LENGTH] {

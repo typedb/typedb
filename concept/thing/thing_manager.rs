@@ -22,9 +22,8 @@ use encoding::{
     layout::prefix::Prefix,
     value::{
         boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
-        decode_value_u64, double_bytes::DoubleBytes, duration_bytes::DurationBytes, encode_value_u64,
-        fixed_point_bytes::FixedPointBytes, long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType,
-        ValueEncodable,
+        decimal_bytes::DecimalBytes, decode_value_u64, double_bytes::DoubleBytes, duration_bytes::DurationBytes,
+        encode_value_u64, long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType, ValueEncodable,
     },
     Keyable,
 };
@@ -200,9 +199,9 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_double();
                 Ok(Value::Double(DoubleBytes::new(attribute_id.bytes()).as_f64()))
             }
-            ValueType::FixedPoint => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_fixed_point();
-                Ok(Value::FixedPoint(FixedPointBytes::new(attribute_id.bytes()).as_fixed_point()))
+            ValueType::Decimal => {
+                let attribute_id = attribute.vertex().attribute_id().unwrap_decimal();
+                Ok(Value::Decimal(DecimalBytes::new(attribute_id.bytes()).as_decimal()))
             }
             ValueType::DateTime => {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_date_time();
@@ -253,7 +252,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
             | ValueType::Boolean
             | ValueType::Long
             | ValueType::Double
-            | ValueType::FixedPoint
+            | ValueType::Decimal
             | ValueType::DateTime
             | ValueType::DateTimeTZ
             | ValueType::Duration => {
@@ -803,11 +802,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                         snapshot,
                     )
                 }
-                Value::FixedPoint(fixed_point) => {
-                    let encoded_fixed_point = FixedPointBytes::build(fixed_point);
-                    self.vertex_generator.create_attribute_fixed_point(
+                Value::Decimal(decimal) => {
+                    let encoded_decimal = DecimalBytes::build(decimal);
+                    self.vertex_generator.create_attribute_decimal(
                         attribute_type.vertex().type_id_(),
-                        encoded_fixed_point,
+                        encoded_decimal,
                         snapshot,
                     )
                 }

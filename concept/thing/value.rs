@@ -10,9 +10,9 @@ use chrono::{DateTime, NaiveDateTime};
 use chrono_tz::Tz;
 use encoding::value::{
     boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
-    double_bytes::DoubleBytes, duration_bytes::DurationBytes, duration_value::Duration,
-    fixed_point_bytes::FixedPointBytes, fixed_point_value::FixedPoint, long_bytes::LongBytes,
-    string_bytes::StringBytes, struct_bytes::StructBytes, value_type::ValueType, ValueEncodable,
+    decimal_bytes::DecimalBytes, decimal_value::Decimal, double_bytes::DoubleBytes, duration_bytes::DurationBytes,
+    duration_value::Duration, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
+    value_type::ValueType, ValueEncodable,
 };
 
 use crate::thing::value_struct::StructValue;
@@ -22,7 +22,7 @@ pub enum Value<'a> {
     Boolean(bool),
     Long(i64),
     Double(f64),
-    FixedPoint(FixedPoint),
+    Decimal(Decimal),
     DateTime(NaiveDateTime),
     DateTimeTZ(DateTime<Tz>),
     Duration(Duration),
@@ -36,7 +36,7 @@ impl<'a> Value<'a> {
             Value::Boolean(boolean) => Value::Boolean(boolean),
             Value::Long(long) => Value::Long(long),
             Value::Double(double) => Value::Double(double),
-            Value::FixedPoint(fixed_point) => Value::FixedPoint(fixed_point),
+            Value::Decimal(decimal) => Value::Decimal(decimal),
             Value::DateTime(date_time) => Value::DateTime(date_time),
             Value::DateTimeTZ(date_time_tz) => Value::DateTimeTZ(date_time_tz),
             Value::Duration(duration) => Value::Duration(duration),
@@ -92,7 +92,7 @@ impl<'a> Value<'a> {
             Self::Boolean(bool) => Value::Boolean(bool),
             Self::Long(long) => Value::Long(long),
             Self::Double(double) => Value::Double(double),
-            Self::FixedPoint(fixed_point) => Value::FixedPoint(fixed_point),
+            Self::Decimal(decimal) => Value::Decimal(decimal),
             Self::DateTime(date_time) => Value::DateTime(date_time),
             Self::DateTimeTZ(date_time_tz) => Value::DateTimeTZ(date_time_tz),
             Self::Duration(duration) => Value::Duration(duration),
@@ -108,7 +108,7 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::Boolean(_) => ValueType::Boolean,
             Value::Long(_) => ValueType::Long,
             Value::Double(_) => ValueType::Double,
-            Value::FixedPoint(_) => ValueType::FixedPoint,
+            Value::Decimal(_) => ValueType::Decimal,
             Value::DateTime(_) => ValueType::DateTime,
             Value::DateTimeTZ(_) => ValueType::DateTimeTZ,
             Value::Duration(_) => ValueType::Duration,
@@ -138,10 +138,10 @@ impl<'a> ValueEncodable for Value<'a> {
         }
     }
 
-    fn encode_fixed_point(&self) -> FixedPointBytes {
+    fn encode_decimal(&self) -> DecimalBytes {
         match self {
-            Self::FixedPoint(fixed_point) => FixedPointBytes::build(*fixed_point),
-            _ => panic!("Cannot encode non-fixed_point as FixedPointBytes"),
+            Self::Decimal(decimal) => DecimalBytes::build(*decimal),
+            _ => panic!("Cannot encode non-decimal as DecimalBytes"),
         }
     }
 

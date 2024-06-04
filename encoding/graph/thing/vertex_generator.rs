@@ -18,8 +18,8 @@ use storage::{
 };
 
 use super::vertex_attribute::{
-    BooleanAttributeID, DateTimeAttributeID, DateTimeTZAttributeID, DoubleAttributeID, DurationAttributeID,
-    FixedPointAttributeID,
+    BooleanAttributeID, DateTimeAttributeID, DateTimeTZAttributeID, DecimalAttributeID, DoubleAttributeID,
+    DurationAttributeID,
 };
 use crate::{
     error::EncodingError,
@@ -34,8 +34,8 @@ use crate::{
     layout::prefix::Prefix,
     value::{
         boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
-        double_bytes::DoubleBytes, duration_bytes::DurationBytes, fixed_point_bytes::FixedPointBytes,
-        long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueTypeCategory,
+        decimal_bytes::DecimalBytes, double_bytes::DoubleBytes, duration_bytes::DurationBytes, long_bytes::LongBytes,
+        string_bytes::StringBytes, value_type::ValueTypeCategory,
     },
     AsBytes, Keyable, Prefixed,
 };
@@ -196,21 +196,18 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_fixed_point<Snapshot>(
+    pub fn create_attribute_decimal<Snapshot>(
         &self,
         type_id: TypeID,
-        value: FixedPointBytes,
+        value: DecimalBytes,
         snapshot: &mut Snapshot,
     ) -> AttributeVertex<'static>
     where
         Snapshot: WritableSnapshot,
     {
-        let fixed_point_attribute_id = self.create_attribute_id_fixed_point(value);
-        let vertex = AttributeVertex::build(
-            ValueTypeCategory::FixedPoint,
-            type_id,
-            AttributeID::FixedPoint(fixed_point_attribute_id),
-        );
+        let decimal_attribute_id = self.create_attribute_id_decimal(value);
+        let vertex =
+            AttributeVertex::build(ValueTypeCategory::Decimal, type_id, AttributeID::Decimal(decimal_attribute_id));
         snapshot.put(vertex.as_storage_key().into_owned_array());
         vertex
     }
@@ -278,8 +275,8 @@ impl ThingVertexGenerator {
         DoubleAttributeID::build(value)
     }
 
-    pub fn create_attribute_id_fixed_point(&self, value: FixedPointBytes) -> FixedPointAttributeID {
-        FixedPointAttributeID::build(value)
+    pub fn create_attribute_id_decimal(&self, value: DecimalBytes) -> DecimalAttributeID {
+        DecimalAttributeID::build(value)
     }
 
     pub fn create_attribute_id_date_time(&self, value: DateTimeBytes) -> DateTimeAttributeID {

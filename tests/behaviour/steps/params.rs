@@ -249,7 +249,7 @@ pub(crate) enum ValueType {
     Boolean,
     Long,
     Double,
-    FixedPoint,
+    Decimal,
     DateTime,
     DateTimeTZ,
     Duration,
@@ -262,7 +262,7 @@ impl ValueType {
             ValueType::Boolean => TypeDBValueType::Boolean,
             ValueType::Long => TypeDBValueType::Long,
             ValueType::Double => TypeDBValueType::Double,
-            ValueType::FixedPoint => TypeDBValueType::FixedPoint,
+            ValueType::Decimal => TypeDBValueType::Decimal,
             ValueType::DateTime => TypeDBValueType::DateTime,
             ValueType::DateTimeTZ => TypeDBValueType::DateTimeTZ,
             ValueType::Duration => TypeDBValueType::Duration,
@@ -278,7 +278,7 @@ impl FromStr for ValueType {
             "boolean" => Self::Boolean,
             "long" => Self::Long,
             "double" => Self::Double,
-            "fixed" => Self::FixedPoint,
+            "decimal" => Self::Decimal,
             "datetime" => Self::DateTime,
             "datetimetz" => Self::DateTimeTZ,
             "duration" => Self::Duration,
@@ -300,7 +300,7 @@ impl Value {
             TypeDBValueType::Boolean => TypeDBValue::Boolean(self.raw_value.parse().unwrap()),
             TypeDBValueType::Long => TypeDBValue::Long(self.raw_value.parse().unwrap()),
             TypeDBValueType::Double => TypeDBValue::Double(self.raw_value.parse().unwrap()),
-            TypeDBValueType::FixedPoint => todo!(),
+            TypeDBValueType::Decimal => todo!(),
             TypeDBValueType::DateTime => {
                 TypeDBValue::DateTime(NaiveDateTime::parse_from_str(&self.raw_value, "%Y-%m-%d %H:%M:%S").unwrap())
             }
