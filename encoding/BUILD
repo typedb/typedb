@@ -42,7 +42,9 @@ rust_library(
 rust_test(
     name = "encoding_unit_tests",
     crate = ":encoding",
-    deps = [],
+    deps = [
+        "@crates//:rand",
+    ],
 )
 
 checkstyle_test(
