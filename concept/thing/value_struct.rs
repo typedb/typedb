@@ -41,6 +41,7 @@ use serde::{
     ser::{SerializeSeq, SerializeTuple, SerializeTupleVariant},
     Deserialize, Deserializer, Serialize, Serializer,
 };
+use encoding::value::decimal_bytes::DecimalBytes;
 
 use crate::thing::value::Value;
 
@@ -127,6 +128,12 @@ impl<'a> Serialize for Value<'a> {
                 seq.serialize_element(&DoubleBytes::build(*value).bytes())?;
                 seq.end()
             }
+            Value::Decimal(value) => {
+                let mut seq = serializer.serialize_seq(Some(2))?;
+                seq.serialize_element(&Prefix::VertexAttributeDecimal.prefix_id().bytes())?;
+                seq.serialize_element(&DecimalBytes::build(*value).bytes())?;
+                seq.end()
+            }
             Value::DateTime(value) => {
                 let mut seq = serializer.serialize_seq(Some(2))?;
                 seq.serialize_element(&Prefix::VertexAttributeDateTime.prefix_id().bytes())?;
@@ -179,7 +186,7 @@ impl<'a, 'de> Deserialize<'de> for Value<'a> {
                 A: SeqAccess<'de>,
             {
                 let prefix_bytes = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let prefix = Prefix::from_prefix_id(PrefixID::new(prefix_bytes));
+                let prefix =  Prefix::from_prefix_id(PrefixID::new(prefix_bytes));
                 match prefix {
                     Prefix::VertexAttributeBoolean => {
                         let value_bytes = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
@@ -192,6 +199,10 @@ impl<'a, 'de> Deserialize<'de> for Value<'a> {
                     Prefix::VertexAttributeDouble => {
                         let value_bytes = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                         Ok(Value::Double(DoubleBytes::new(value_bytes).as_f64()))
+                    }
+                    Prefix::VertexAttributeDecimal => {
+                        let value_bytes = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                        Ok(Value::Decimal(DecimalBytes::new(value_bytes).as_decimal()))
                     }
                     Prefix::VertexAttributeDateTime => {
                         let value_bytes = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;

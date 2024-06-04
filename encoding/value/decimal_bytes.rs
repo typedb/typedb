@@ -38,7 +38,7 @@ impl DecimalBytes {
         Decimal::new(integer, fractional)
     }
 
-    pub(crate) fn bytes(&self) -> [u8; Self::LENGTH] {
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
         self.bytes
     }
 }
