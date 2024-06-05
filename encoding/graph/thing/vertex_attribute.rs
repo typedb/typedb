@@ -589,18 +589,19 @@ impl DurationAttributeID {
 ///   Case 2: string does not fit in 16 bytes:
 ///     [8: prefix][8: hash][1: 0b1[disambiguator]]
 ///
-///  4 byte hash: collision probability of 50% at 77k elements
-///  5 byte hash: collision probability of 50% at 1.25m elements
-///  6 byte hash: collision probability of 50% at 20m elements
-///  7 byte hash: collision probability of 50% at 320m elements
-///  8 byte hash: collision probability of 50% at 5b elements
+/// Framing this as the generalised birthday problem, where
+///     D: #days in a year, X: #people in the room, p: probability of a collision, N: number of collisions
+/// mapped to:
+///     D: #buckets = 2^b for b bits of hash, X: #keys inserted
+/// Taking a tuple approach reflected here: https://math.stackexchange.com/a/25878
+/// We arrive at the p = (1/D^(N-1)) * (X^N)/(N!) ---> X = (p * N! D^(N-1) )^(1/N)
+/// With an approximation: X = (D* N/e) * (p * sqrt(2 * pi * N)/D )**(1/N)
+/// The dominating (DN) factor is intuitive, because it is the breaking point for an oracle hasher.
 ///
-///  With an 8 byte prefix and 7 byte hash we can insert up to 100 million elements behind the same prefix
-///  before we have a 5% chance of collision. With 100 million entries with 100 bytes each, we can store 20GB of data in the same prefix.
-///  We also allow disambiguation in the tail byte of the ID, so we can tolerate up to 127 collsions, or approximately 2TB of data with above assumptions.
-
-// TODO: Note: This analysis seems to be based on the birthday problem, which gives the probability of any 2 keys colliding ACROSS ALL buckets.
-// The actual problem - the probability of 127 collisions for any SINGLE bucket is vanishingly small.
+/// Even for, D = 2**64; N = 3; p=0.01   ;   X = 10^12.
+/// If we're concerned about performance, we should be interested in the expected value for the
+///     'number of collisions we'll encounter when looking up a given key'.
+/// This is just (X/D)
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct StringAttributeID {
     bytes: [u8; Self::LENGTH],
