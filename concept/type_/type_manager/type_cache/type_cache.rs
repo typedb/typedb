@@ -12,10 +12,9 @@ use std::{
 };
 
 use encoding::{
-    graph::Typed,
+    graph::{definition::definition_key::DefinitionKey, Typed},
     value::{label::Label, value_type::ValueType},
 };
-use encoding::graph::definition::definition_key::DefinitionKey;
 use storage::{sequence_number::SequenceNumber, snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
 
 use crate::type_::{

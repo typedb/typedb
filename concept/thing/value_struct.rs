@@ -24,6 +24,7 @@ use encoding::{
         boolean_bytes::BooleanBytes,
         date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes,
+        decimal_bytes::DecimalBytes,
         double_bytes::DoubleBytes,
         duration_bytes::DurationBytes,
         long_bytes::LongBytes,
@@ -41,7 +42,6 @@ use serde::{
     ser::{SerializeSeq, SerializeTuple, SerializeTupleVariant},
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use encoding::value::decimal_bytes::DecimalBytes;
 
 use crate::thing::value::Value;
 
@@ -186,7 +186,7 @@ impl<'a, 'de> Deserialize<'de> for Value<'a> {
                 A: SeqAccess<'de>,
             {
                 let prefix_bytes = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let prefix =  Prefix::from_prefix_id(PrefixID::new(prefix_bytes));
+                let prefix = Prefix::from_prefix_id(PrefixID::new(prefix_bytes));
                 match prefix {
                     Prefix::VertexAttributeBoolean => {
                         let value_bytes = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;

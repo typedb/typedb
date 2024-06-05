@@ -303,8 +303,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         //     Ok(definition_key)
         // }
         // TODO: Cache
-        let definition_key = TypeReader::get_struct_definition_key(snapshot, label)?
-            .map(|opt| MaybeOwns::Owned(opt));
+        let definition_key = TypeReader::get_struct_definition_key(snapshot, label)?.map(|opt| MaybeOwns::Owned(opt));
         Ok(definition_key)
     }
 

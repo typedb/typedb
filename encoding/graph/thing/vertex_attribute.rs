@@ -29,12 +29,12 @@ use crate::{
         duration_bytes::DurationBytes,
         long_bytes::LongBytes,
         string_bytes::StringBytes,
+        struct_bytes::StructBytes,
         value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::value::struct_bytes::StructBytes;
 
 #[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub struct AttributeVertex<'a> {
@@ -612,7 +612,7 @@ pub struct StringAttributeID {
     bytes: [u8; Self::LENGTH],
 }
 
-pub trait HashableAttributeID<const LENGTH: usize> : Sized {
+pub trait HashableAttributeID<const LENGTH: usize>: Sized {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory;
     const ENCODING_HASH_LENGTH: usize;
 
@@ -620,16 +620,17 @@ pub trait HashableAttributeID<const LENGTH: usize> : Sized {
     const ENCODING_TAIL_BYTE_INDEX: usize = LENGTH - 1;
 
     // Range
-    const ENCODING_PREFIX_LENGTH: usize = LENGTH - (Self::ENCODING_HASH_LENGTH+1);
+    const ENCODING_PREFIX_LENGTH: usize = LENGTH - (Self::ENCODING_HASH_LENGTH + 1);
     const ENCODING_PREFIX_RANGE: Range<usize> = 0..Self::ENCODING_PREFIX_LENGTH;
-    const ENCODING_HASH_RANGE: Range<usize> = Self::ENCODING_PREFIX_LENGTH..Self::ENCODING_PREFIX_LENGTH +Self::ENCODING_HASH_LENGTH;
+    const ENCODING_HASH_RANGE: Range<usize> =
+        Self::ENCODING_PREFIX_LENGTH..Self::ENCODING_PREFIX_LENGTH + Self::ENCODING_HASH_LENGTH;
 
     fn new(bytes: [u8; LENGTH]) -> Self;
 
     fn set_prefix(value_bytes: &[u8], into_slice: &mut [u8; LENGTH]);
 
     fn build_hashed_id_with_ambiguous_tail(value_bytes: &[u8], hasher: &impl Fn(&[u8]) -> u64) -> [u8; LENGTH] {
-        let mut id_bytes : [u8; LENGTH] = [0; LENGTH];
+        let mut id_bytes: [u8; LENGTH] = [0; LENGTH];
         let hash = hasher(value_bytes);
         Self::set_prefix(value_bytes, &mut id_bytes);
         id_bytes[Self::ENCODING_HASH_RANGE].copy_from_slice(&hash.to_be_bytes()[0..Self::ENCODING_HASH_LENGTH]);
@@ -642,9 +643,9 @@ pub trait HashableAttributeID<const LENGTH: usize> : Sized {
         value_bytes: &[u8],
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
-    ) -> Result<Either<Self,Self>, Arc<SnapshotIteratorError>>
-        where
-            Snapshot: ReadableSnapshot,
+    ) -> Result<Either<Self, Self>, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: ReadableSnapshot,
     {
         let mut id_bytes = Self::build_hashed_id_with_ambiguous_tail(value_bytes, hasher);
         let existing_or_tail = Self::find_existing_or_next_tail(type_id, value_bytes, &id_bytes, snapshot)?;
@@ -652,9 +653,10 @@ pub trait HashableAttributeID<const LENGTH: usize> : Sized {
             Either::First(existing_tail) => {
                 Self::set_hash_disambiguator(&mut id_bytes, existing_tail);
                 Ok(Either::First(Self::new(id_bytes)))
-            },
+            }
             Either::Second(new_tail) => {
-                if new_tail & Self::ENCODING_TAIL_BYTE_IS_HASH_FLAG != 0 { // over 127 // TODO: should we panic?
+                if new_tail & Self::ENCODING_TAIL_BYTE_IS_HASH_FLAG != 0 {
+                    // over 127 // TODO: should we panic?
                     panic!("String encoding space has no space remaining within the prefix and hash prefix.")
                 }
                 Self::set_hash_disambiguator(&mut id_bytes, new_tail);
@@ -669,8 +671,8 @@ pub trait HashableAttributeID<const LENGTH: usize> : Sized {
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Result<Option<Self>, Arc<SnapshotIteratorError>>
-        where
-            Snapshot: ReadableSnapshot,
+    where
+        Snapshot: ReadableSnapshot,
     {
         let mut id_bytes = Self::build_hashed_id_with_ambiguous_tail(value_bytes, hasher);
         let existing_or_next_tail = Self::find_existing_or_next_tail(type_id, value_bytes, &id_bytes, snapshot)?;
@@ -678,7 +680,7 @@ pub trait HashableAttributeID<const LENGTH: usize> : Sized {
             Either::First(existing_tail) => {
                 Self::set_hash_disambiguator(&mut id_bytes, existing_tail);
                 Ok(Some(Self::new(id_bytes)))
-            },
+            }
             Either::Second(_) => Ok(None),
         }
     }
@@ -689,17 +691,22 @@ pub trait HashableAttributeID<const LENGTH: usize> : Sized {
         id_with_ambiguous_tail: &[u8; LENGTH],
         snapshot: &Snapshot,
     ) -> Result<Either<u8, u8>, Arc<SnapshotIteratorError>>
-        where
-            Snapshot: ReadableSnapshot,
+    where
+        Snapshot: ReadableSnapshot,
     {
-        let prefix_search = KeyRange::new_within( // The tail byte must be excluded
-            AttributeVertex::build_prefix_type_attribute_id(Self::VALUE_TYPE_CATEGORY,  type_id, &id_with_ambiguous_tail[0..(Self::ENCODING_TAIL_BYTE_INDEX)]),
-                                                  AttributeVertex::value_type_category_to_prefix_type(Self::VALUE_TYPE_CATEGORY).fixed_width_keys(),
+        let prefix_search = KeyRange::new_within(
+            // The tail byte must be excluded
+            AttributeVertex::build_prefix_type_attribute_id(
+                Self::VALUE_TYPE_CATEGORY,
+                type_id,
+                &id_with_ambiguous_tail[0..(Self::ENCODING_TAIL_BYTE_INDEX)],
+            ),
+            AttributeVertex::value_type_category_to_prefix_type(Self::VALUE_TYPE_CATEGORY).fixed_width_keys(),
         );
 
         let mut iter = snapshot.iterate_range(prefix_search);
         let mut next = iter.next().transpose()?;
-        let mut first_unused_tail : Option<u8> = None;
+        let mut first_unused_tail: Option<u8> = None;
 
         let mut tail: u8 = 0;
         while let Some((key, value)) = next {
@@ -723,7 +730,6 @@ pub trait HashableAttributeID<const LENGTH: usize> : Sized {
         byte & !Self::ENCODING_TAIL_BYTE_IS_HASH_FLAG // unsets 0b1___ high bit
     }
 
-
     /// Encode the last byte by setting 0b1[7 bits representing disambiguator]
     fn set_hash_disambiguator(bytes: &mut [u8; LENGTH], disambiguator: u8) {
         debug_assert!(disambiguator & Self::ENCODING_TAIL_BYTE_IS_HASH_FLAG == 0); // ie. disambiguator < 128, not using high bit
@@ -735,12 +741,10 @@ pub trait HashableAttributeID<const LENGTH: usize> : Sized {
     }
 }
 
-
 impl StringAttributeID {
     const LENGTH: usize = AttributeIDLength::LONG_LENGTH;
     const ENCODING_STRING_INLINE_CAPACITY: usize = Self::LENGTH - 1;
-    const ENCODING_STRING_PREFIX_HASH_LENGTH: usize =
-        Self::ENCODING_PREFIX_LENGTH + Self::ENCODING_HASH_LENGTH;
+    const ENCODING_STRING_PREFIX_HASH_LENGTH: usize = Self::ENCODING_PREFIX_LENGTH + Self::ENCODING_HASH_LENGTH;
     const ENCODING_STRING_PREFIX_HASH_RANGE: Range<usize> =
         Self::ENCODING_PREFIX_RANGE.start..Self::ENCODING_HASH_RANGE.end;
     const ENCODING_STRING_TAIL_MASK: u8 = 0b10000000;
@@ -775,7 +779,7 @@ impl StringAttributeID {
     }
 
     pub fn get_hash_disambiguator(&self) -> u8 {
-        <Self as HashableAttributeID<{Self::LENGTH}>>::get_hash_disambiguator(&self.bytes)
+        <Self as HashableAttributeID<{ Self::LENGTH }>>::get_hash_disambiguator(&self.bytes)
     }
 
     pub fn get_inline_string_bytes(&self) -> StringBytes<'static, 16> {
@@ -800,13 +804,14 @@ impl StringAttributeID {
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Result<Self, Arc<SnapshotIteratorError>>
-        where
-            Snapshot: ReadableSnapshot,
+    where
+        Snapshot: ReadableSnapshot,
     {
         debug_assert!(!Self::is_inlineable(string.as_reference()));
-        let existing_or_new = Self::build_hashed_id_from_value_bytes(type_id, string.bytes().bytes(), snapshot, hasher)?;
+        let existing_or_new =
+            Self::build_hashed_id_from_value_bytes(type_id, string.bytes().bytes(), snapshot, hasher)?;
         match existing_or_new {
-            Either::First(id) | Either::Second(id) => Ok(id)
+            Either::First(id) | Either::Second(id) => Ok(id),
         }
     }
 
@@ -816,11 +821,11 @@ impl StringAttributeID {
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Result<Option<Self>, Arc<SnapshotIteratorError>>
-        where
-            Snapshot: ReadableSnapshot,
+    where
+        Snapshot: ReadableSnapshot,
     {
         debug_assert!(!Self::is_inlineable(string.as_reference()));
-       Self::find_hashed_id_for_value_bytes(type_id, string.bytes().bytes(), snapshot, hasher)
+        Self::find_hashed_id_for_value_bytes(type_id, string.bytes().bytes(), snapshot, hasher)
     }
 
     pub fn get_hash_prefix(&self) -> [u8; Self::ENCODING_PREFIX_LENGTH] {
@@ -846,7 +851,7 @@ impl StringAttributeID {
     }
 }
 
-impl HashableAttributeID<{StringAttributeID::LENGTH}> for StringAttributeID {
+impl HashableAttributeID<{ StringAttributeID::LENGTH }> for StringAttributeID {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::String;
     const ENCODING_HASH_LENGTH: usize = 8;
 
@@ -855,11 +860,9 @@ impl HashableAttributeID<{StringAttributeID::LENGTH}> for StringAttributeID {
     }
 
     fn set_prefix(value_bytes: &[u8], into_bytes: &mut [u8; AttributeIDLength::LONG_LENGTH]) {
-        into_bytes[Self::ENCODING_PREFIX_RANGE]
-            .copy_from_slice(&value_bytes[0..Self::ENCODING_PREFIX_LENGTH]);
+        into_bytes[Self::ENCODING_PREFIX_RANGE].copy_from_slice(&value_bytes[0..Self::ENCODING_PREFIX_LENGTH]);
     }
 }
-
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct StructAttributeID {
@@ -877,19 +880,19 @@ impl StructAttributeID {
         &self.bytes
     }
 
-
     pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
         type_id: TypeID,
         string: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Result<Self, Arc<SnapshotIteratorError>>
-        where
-            Snapshot: ReadableSnapshot,
+    where
+        Snapshot: ReadableSnapshot,
     {
-        let existing_or_new = Self::build_hashed_id_from_value_bytes(type_id, string.bytes().bytes(), snapshot, hasher)?;
+        let existing_or_new =
+            Self::build_hashed_id_from_value_bytes(type_id, string.bytes().bytes(), snapshot, hasher)?;
         match existing_or_new {
-            Either::First(id) | Either::Second(id) => Ok(id)
+            Either::First(id) | Either::Second(id) => Ok(id),
         }
     }
 
@@ -899,22 +902,22 @@ impl StructAttributeID {
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Result<Option<Self>, Arc<SnapshotIteratorError>>
-        where
-            Snapshot: ReadableSnapshot,
+    where
+        Snapshot: ReadableSnapshot,
     {
         Self::find_hashed_id_for_value_bytes(type_id, string.bytes().bytes(), snapshot, hasher)
     }
 
-    pub fn get_hash_hash(&self) -> [u8; Self::ENCODING_HASH_LENGTH]{
+    pub fn get_hash_hash(&self) -> [u8; Self::ENCODING_HASH_LENGTH] {
         self.bytes[Self::ENCODING_HASH_RANGE].try_into().unwrap()
     }
 
     pub fn get_hash_disambiguator(&self) -> u8 {
-        <Self as HashableAttributeID<{Self::LENGTH}>>::get_hash_disambiguator(&self.bytes)
+        <Self as HashableAttributeID<{ Self::LENGTH }>>::get_hash_disambiguator(&self.bytes)
     }
 }
 
-impl HashableAttributeID<{StructAttributeID::LENGTH}> for StructAttributeID {
+impl HashableAttributeID<{ StructAttributeID::LENGTH }> for StructAttributeID {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Struct;
     const ENCODING_HASH_LENGTH: usize = 7;
 

@@ -17,10 +17,14 @@ use storage::{
     MVCCKey, MVCCStorage,
 };
 
-use super::vertex_attribute::{BooleanAttributeID, DateTimeAttributeID, DateTimeTZAttributeID, DecimalAttributeID, DoubleAttributeID, DurationAttributeID, StructAttributeID};
+use super::vertex_attribute::{
+    BooleanAttributeID, DateTimeAttributeID, DateTimeTZAttributeID, DecimalAttributeID, DoubleAttributeID,
+    DurationAttributeID, StructAttributeID,
+};
 use crate::{
     error::EncodingError,
     graph::{
+        definition::definition_key::DefinitionKey,
         thing::{
             vertex_attribute::{AttributeID, AttributeVertex, LongAttributeID, StringAttributeID},
             vertex_object::{ObjectID, ObjectVertex},
@@ -32,12 +36,10 @@ use crate::{
     value::{
         boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
         decimal_bytes::DecimalBytes, double_bytes::DoubleBytes, duration_bytes::DurationBytes, long_bytes::LongBytes,
-        string_bytes::StringBytes, value_type::ValueTypeCategory,
+        string_bytes::StringBytes, struct_bytes::StructBytes, value_type::ValueTypeCategory,
     },
     AsBytes, Keyable, Prefixed,
 };
-use crate::graph::definition::definition_key::DefinitionKey;
-use crate::value::struct_bytes::StructBytes;
 
 pub struct ThingVertexGenerator {
     entity_ids: Box<[AtomicU64]>,
@@ -330,7 +332,8 @@ impl ThingVertexGenerator {
         } else {
             let id = StringAttributeID::build_hashed_id(type_id, string, snapshot, &self.large_value_hasher)?;
             let hash = id.get_hash_prefix_hash();
-            let lock = ByteArray::copy_concat([&Prefix::VertexAttributeString.prefix_id().bytes(), &type_id.bytes(), &hash]);
+            let lock =
+                ByteArray::copy_concat([&Prefix::VertexAttributeString.prefix_id().bytes(), &type_id.bytes(), &hash]);
             snapshot.exclusive_lock_add(lock);
             Ok(id)
         }
@@ -355,8 +358,8 @@ impl ThingVertexGenerator {
         value: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &mut Snapshot,
     ) -> Result<AttributeVertex<'static>, Arc<SnapshotIteratorError>>
-        where
-            Snapshot: WritableSnapshot,
+    where
+        Snapshot: WritableSnapshot,
     {
         let struct_attribute_id = self.create_attribute_id_struct(type_id, value.as_reference(), snapshot)?;
         let vertex =
@@ -371,13 +374,14 @@ impl ThingVertexGenerator {
         struct_bytes: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &mut Snapshot,
     ) -> Result<StructAttributeID, Arc<SnapshotIteratorError>>
-        where
-            Snapshot: WritableSnapshot,
+    where
+        Snapshot: WritableSnapshot,
     {
         // We don't inline structs
         let id = StructAttributeID::build_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)?;
         let hash = id.get_hash_hash();
-        let lock = ByteArray::copy_concat([&Prefix::VertexAttributeStruct.prefix_id().bytes(), &type_id.bytes(), &hash]);
+        let lock =
+            ByteArray::copy_concat([&Prefix::VertexAttributeStruct.prefix_id().bytes(), &type_id.bytes(), &hash]);
         snapshot.exclusive_lock_add(lock);
         Ok(id)
     }
