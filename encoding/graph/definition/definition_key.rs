@@ -11,6 +11,10 @@ use std::{
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE};
+use serde::{
+    de::{Error, Visitor},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
 
 use crate::{
     layout::prefix::{Prefix, PrefixID},
@@ -108,5 +112,39 @@ impl DefinitionID {
 
     pub fn bytes(&self) -> [u8; DefinitionID::LENGTH] {
         self.bytes
+    }
+}
+
+impl<'a> Serialize for DefinitionKey<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_bytes(self.bytes.bytes())
+    }
+}
+
+impl<'de> Deserialize<'de> for DefinitionKey<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        pub struct DefinitionKeyVisitor;
+        impl<'de> Visitor<'de> for DefinitionKeyVisitor {
+            type Value = DefinitionKey<'static>;
+
+            fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+                formatter.write_str("`DefinitionKey`")
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                Ok(DefinitionKey { bytes: Bytes::Array(ByteArray::copy(v)) })
+            }
+        }
+
+        deserializer.deserialize_bytes(DefinitionKeyVisitor)
     }
 }

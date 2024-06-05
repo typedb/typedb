@@ -6,15 +6,14 @@
 
 #![deny(unused_must_use)]
 
-use std::{borrow::Cow, sync::Arc};
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use concept::{
     thing::{
         object::{Object, ObjectAPI},
         thing_manager::ThingManager,
         value::Value,
-        value_struct::StructValue
+        value_struct::StructValue,
     },
     type_::{
         annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent},
@@ -28,13 +27,13 @@ use concept::{
 use durability::wal::WAL;
 use encoding::{
     graph::{
-        definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
+        definition::{definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition},
+        thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
     value::{label::Label, value_type::ValueType},
-    EncodingKeyspace,
+    AsBytes, EncodingKeyspace,
 };
-use encoding::graph::definition::r#struct::StructDefinition;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -726,13 +725,13 @@ fn struct_create() {
         storage.clone(),
         definition_key_generator.clone(),
         type_vertex_generator.clone(),
-    ).unwrap();
+    )
+    .unwrap();
 
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
     let type_manager =
         Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
     let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
-
 
     let attr_0_label = Label::build("attr_0");
     let struct_0_label = Label::build("struct_0");
@@ -744,43 +743,53 @@ fn struct_create() {
 
     let instance_0_fields = HashMap::from([
         ("s0_f0_l0".to_owned(), Value::Long(123)),
-        ("s0_f1_s0".to_owned(), Value::String(Cow::Owned("abc".to_owned())))
+        ("s0_f1_s0".to_owned(), Value::String(Cow::Owned("abc".to_owned()))),
     ]);
-    let instance_0 = StructValue::try_translate_fields(definition_0.clone(), instance_0_fields).unwrap();
-    {
+    let struct_0_key = {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-
-        let struct_0_key = type_manager.create_struct(&mut snapshot, &struct_0_label, definition_0).unwrap();
+        let struct_0_key = type_manager.create_struct(&mut snapshot, &struct_0_label, definition_0.clone()).unwrap();
         let attr_0_type = type_manager.create_attribute_type(&mut snapshot, &attr_0_label, false).unwrap();
-        attr_0_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_0_key)).unwrap();
+        attr_0_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_0_key.clone())).unwrap();
         snapshot.commit().unwrap();
-    }
+        struct_0_key
+    };
 
+    let instance_0 =
+        StructValue::try_translate_fields(struct_0_key.clone(), definition_0.clone(), instance_0_fields).unwrap();
     {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let attr_0_type = type_manager.get_attribute_type(&snapshot, &attr_0_label).unwrap().unwrap();
+        let mut attr_0_type = type_manager.get_attribute_type(&snapshot, &attr_0_label).unwrap().unwrap();
+        attr_0_type
+            .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .unwrap();
         let attr_0_value_type = attr_0_type.get_value_type(&snapshot, &type_manager).unwrap().unwrap();
         let struct_0_key = match attr_0_value_type {
             ValueType::Struct(struct_0_key) => struct_0_key,
-            _ => assert!(false)
+            v => panic!("Unexpected value type: {:?}", v),
         };
-        type_manager.get_struct_definition_key(&snapshot, &struct_0_label).unwrap().unwrap();
-        let definition_0 = type_manager.get_struct_definition(&snapshot, &struct_0_key).unwrap();
-
-        let attr_0_instance = thing_manager.create_attribute(&mut snapshot, attr_0_type, Value::Struct(Cow::Owned(instance_0))).unwrap();
+        let read_key = type_manager.get_struct_definition_key(&snapshot, &struct_0_label).unwrap().unwrap();
+        let read_definition = type_manager.get_struct_definition(&snapshot, &struct_0_key).unwrap();
+        assert_eq!(struct_0_key.bytes(), read_key.bytes());
+        assert_eq!(definition_0, *read_definition);
+        thing_manager
+            .create_attribute(&mut snapshot, attr_0_type, Value::Struct(Cow::Owned(instance_0.clone())))
+            .unwrap();
         snapshot.commit().unwrap();
     }
 
     {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let attr_0_type = type_manager.get_attribute_type(&snapshot, &attr_0_label).unwrap().unwrap();
-        let mut attr_0 = thing_manager.get_attributes_in(&snapshot, attr_0_type.clone()).unwrap().collect_cloned().get(0).unwrap();
+        let attr_vec = thing_manager.get_attributes_in(&snapshot, attr_0_type.clone()).unwrap().collect_cloned();
+        let mut attr_0 = attr_vec.get(0).unwrap().clone();
         let value_0 = attr_0.get_value(&snapshot, &thing_manager).unwrap();
         match value_0 {
-            Value::Struct(v) => assert!(structs_equal(&v, &instance_0)),
+            Value::Struct(v) => {
+                assert!(structs_equal(&v, &instance_0));
+            }
             _ => assert!(false, "Wrong data type"),
         }
-        assert!();
+        // assert!();
         snapshot.commit().unwrap();
     }
 }
@@ -789,11 +798,5 @@ fn structs_equal(first: &StructValue, second: &StructValue) -> bool {
     let f1 = first.fields();
     let f2 = second.fields();
 
-    f1.len() == f2.len() && f1.iter().all(|(k,v1)| {
-         if let(Some(v2)) = f2.get(&k) {
-             v2 == v1
-         } else {
-             false
-         }
-    })
+    f1.len() == f2.len() && f1.iter().all(|(k, v1)| if let (Some(v2)) = f2.get(&k) { v2 == v1 } else { false })
 }

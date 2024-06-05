@@ -21,9 +21,19 @@ use encoding::{
     },
     layout::prefix::Prefix,
     value::{
-        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
-        decimal_bytes::DecimalBytes, decode_value_u64, double_bytes::DoubleBytes, duration_bytes::DurationBytes,
-        encode_value_u64, long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType, ValueEncodable,
+        boolean_bytes::BooleanBytes,
+        date_time_bytes::DateTimeBytes,
+        date_time_tz_bytes::DateTimeTZBytes,
+        decimal_bytes::DecimalBytes,
+        decode_value_u64,
+        double_bytes::DoubleBytes,
+        duration_bytes::DurationBytes,
+        encode_value_u64,
+        long_bytes::LongBytes,
+        string_bytes::StringBytes,
+        struct_bytes::{StructBytes, StructRepresentation},
+        value_type::ValueType,
+        ValueEncodable,
     },
     Keyable,
 };
@@ -47,6 +57,7 @@ use crate::{
         object::{HasAttributeIterator, Object, ObjectAPI, ObjectIterator},
         relation::{IndexedPlayersIterator, Relation, RelationIterator, RelationRoleIterator, RolePlayerIterator},
         value::Value,
+        value_struct::StructValue,
         ThingAPI,
     },
     type_::{
@@ -231,7 +242,15 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                 }
             }
             ValueType::Struct(definition_key) => {
-                todo!()
+                let attribute_id = attribute.vertex().attribute_id().unwrap_struct();
+                Ok(snapshot
+                    .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
+                        Value::Struct(Cow::Owned(StructValue::from_bytes(StructBytes::new(Bytes::<1>::Reference(
+                            bytes,
+                        )))))
+                    })
+                    .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
+                    .unwrap())
             }
         }
     }
@@ -858,7 +877,10 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                         .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
                 }
                 Value::Struct(struct_) => {
-                    todo!()
+                    let encoded_struct: StructBytes<'static, BUFFER_KEY_INLINE> = StructBytes::build(&struct_);
+                    self.vertex_generator
+                        .create_attribute_struct(attribute_type.vertex().type_id_(), encoded_struct, snapshot)
+                        .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
                 }
             };
             Ok(Attribute::new(vertex))

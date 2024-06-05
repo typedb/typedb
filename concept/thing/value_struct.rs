@@ -10,7 +10,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::HashMap, fmt::Formatter};
+use std::{
+    borrow::Cow,
+    collections::HashMap,
+    fmt::{Formatter, Write},
+};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
@@ -45,18 +49,19 @@ use serde::{
 
 use crate::thing::value::Value;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct StructValue<'a> {
     // a map allows empty fields to not be recorded at all
     fields: HashMap<StructFieldIDUInt, Value<'a>>,
+    definition_key: DefinitionKey<'a>, // WIll not be serialised
 }
 
 impl<'a> StructValue<'a> {
-    // TODO: Return vec<ValueTypeMismatch>
     pub fn try_translate_fields(
+        definition_key: DefinitionKey<'a>,
         struct_definition: StructDefinition,
         value: HashMap<String, Value<'a>>,
-    ) -> Result<HashMap<StructFieldIDUInt, Value<'a>>, Vec<EncodingError>> {
+    ) -> Result<StructValue<'a>, Vec<EncodingError>> {
         let mut fields: HashMap<StructFieldIDUInt, Value<'a>> = HashMap::new();
         let mut errors: Vec<EncodingError> = Vec::new();
         for (field_name, field_id) in struct_definition.field_names {
@@ -76,15 +81,18 @@ impl<'a> StructValue<'a> {
         }
 
         if errors.is_empty() {
-            Ok(fields)
+            Ok(StructValue { definition_key, fields })
         } else {
             Err(errors)
         }
     }
 
-    pub fn definition_key(&self) -> DefinitionKey<'_> {
-        // self.definition.as_reference()
-        todo!()
+    pub fn definition_key(&self) -> &DefinitionKey<'a> {
+        &self.definition_key
+    }
+
+    pub fn fields(&self) -> &HashMap<StructFieldIDUInt, Value<'a>> {
+        &self.fields
     }
 }
 
@@ -93,7 +101,7 @@ impl<'a> StructRepresentation<'a> for StructValue<'a> {
         StructBytes::new(Bytes::Array(ByteArray::boxed(bincode::serialize(self).unwrap().into_boxed_slice())))
     }
 
-    fn from_bytes<const INLINE_LENGTH: usize>(struct_bytes: &StructBytes<'a, INLINE_LENGTH>) -> Self {
+    fn from_bytes<'b, const INLINE_LENGTH: usize>(struct_bytes: StructBytes<'b, INLINE_LENGTH>) -> Self {
         bincode::deserialize(struct_bytes.bytes().bytes()).unwrap()
     }
 }
@@ -160,8 +168,8 @@ impl<'a> Serialize for Value<'a> {
             }
             Value::Struct(value) => {
                 let mut seq = serializer.serialize_seq(Some(2))?;
-                seq.serialize_element(&Prefix::VertexAttributeStruct.prefix_id().bytes())?;
-                seq.serialize_element(&StructBytes::<BUFFER_VALUE_INLINE>::build(value).bytes().bytes())?;
+                seq.serialize_element(&Prefix::VertexAttributeStruct.prefix_id().bytes()[0])?;
+                seq.serialize_element(value)?;
                 seq.end()
             }
         }
@@ -225,9 +233,8 @@ impl<'a, 'de> Deserialize<'de> for Value<'a> {
                         )))
                     }
                     Prefix::VertexAttributeStruct => {
-                        let value_bytes = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                        let struct_bytes = StructBytes::new(Bytes::<BUFFER_VALUE_INLINE>::copy(value_bytes));
-                        Ok(Value::Struct(Cow::Owned(StructValue::from_bytes(&struct_bytes))))
+                        let struct_value = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                        Ok(Value::Struct(Cow::Owned(struct_value)))
                     }
                     other => Err(de::Error::invalid_value(Unexpected::Bytes(&prefix_bytes), &self)),
                 }
@@ -235,6 +242,46 @@ impl<'a, 'de> Deserialize<'de> for Value<'a> {
         }
 
         deserializer.deserialize_seq(ValueVisitor)
+    }
+}
+
+impl<'a> Serialize for StructValue<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_seq(Some(2))?;
+        s.serialize_element(&self.definition_key)?;
+        s.serialize_element(&self.fields)?;
+        s.end()
+    }
+}
+
+impl<'a, 'de> Deserialize<'de> for StructValue<'a> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        pub struct StructValueVisitor;
+        impl<'de> Visitor<'de> for StructValueVisitor {
+            type Value = StructValue<'static>;
+
+            fn expecting(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("`StructValue`")
+            }
+
+            fn visit_seq<A>(self, seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: SeqAccess<'de>,
+            {
+                let mut s = seq;
+                assert_eq!(2, s.size_hint().unwrap());
+                let definition_key = s.next_element::<DefinitionKey<'de>>()?.unwrap().into_owned();
+                let fields = s.next_element::<HashMap<StructFieldIDUInt, Value<'static>>>()?.unwrap();
+                Ok(StructValue { definition_key, fields })
+            }
+        }
+        deserializer.deserialize_seq(StructValueVisitor)
     }
 }
 

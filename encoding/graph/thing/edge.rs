@@ -285,6 +285,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
             Prefix::VertexAttributeDateTimeTZ => EncodingKeyspace::Data,
             Prefix::VertexAttributeDuration => EncodingKeyspace::Data,
             Prefix::VertexAttributeString => EncodingKeyspace::Data,
+            Prefix::VertexAttributeStruct => EncodingKeyspace::Data,
             Prefix::_VertexAttributeLast => EncodingKeyspace::Data,
             _ => unreachable!("Unrecognised attribute prefix type."),
         }

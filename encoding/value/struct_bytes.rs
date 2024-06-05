@@ -19,7 +19,7 @@ pub struct StructBytes<'a, const INLINE_LENGTH: usize> {
 pub trait StructRepresentation<'a>: Clone {
     fn to_bytes<const INLINE_LENGTH: usize>(&self) -> StructBytes<'static, INLINE_LENGTH>;
 
-    fn from_bytes<const INLINE_LENGTH: usize>(struct_bytes: &StructBytes<'a, INLINE_LENGTH>) -> Self;
+    fn from_bytes<'b, const INLINE_LENGTH: usize>(struct_bytes: StructBytes<'b, INLINE_LENGTH>) -> Self;
 }
 
 impl<'a, const INLINE_LENGTH: usize> StructBytes<'a, INLINE_LENGTH> {
@@ -31,7 +31,7 @@ impl<'a, const INLINE_LENGTH: usize> StructBytes<'a, INLINE_LENGTH> {
         struct_value.to_bytes()
     }
 
-    pub fn as_struct<T: StructRepresentation<'a>>(&'a self) -> T {
+    pub fn as_struct<T: StructRepresentation<'a>>(self) -> T {
         T::from_bytes(self)
     }
 
