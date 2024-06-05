@@ -17,10 +17,7 @@ use storage::{
     MVCCKey, MVCCStorage,
 };
 
-use super::vertex_attribute::{
-    BooleanAttributeID, DateTimeAttributeID, DateTimeTZAttributeID, DecimalAttributeID, DoubleAttributeID,
-    DurationAttributeID,
-};
+use super::vertex_attribute::{BooleanAttributeID, DateTimeAttributeID, DateTimeTZAttributeID, DecimalAttributeID, DoubleAttributeID, DurationAttributeID, StructAttributeID};
 use crate::{
     error::EncodingError,
     graph::{
@@ -351,24 +348,37 @@ impl ThingVertexGenerator {
         assert!(!StringAttributeID::is_inlineable(string.as_reference()));
         StringAttributeID::find_hashed_id(type_id, string, snapshot, &self.large_value_hasher)
     }
-    //
-    // pub fn create_attribute_id_struct<const INLINE_LENGTH: usize, Snapshot>(
-    //     &self,
-    //     type_id: TypeID,
-    //     struct_bytes: StructBytes<'_, INLINE_LENGTH>,
-    //     snapshot: &mut Snapshot,
-    // ) -> Result<StructAttributeID, Arc<SnapshotIteratorError>>
-    //     where
-    //         Snapshot: WritableSnapshot,
-    // {
-    //     if struct_bytes.length() <= StructAttributeID::ENCODING_INLINE_CAPACITY {
-    //         Ok(StructAttributeID::build_inline_id(struct_bytes))
-    //     } else {
-    //         let id = StructAttributeID::build_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)?;
-    //         let hash = id.get_disambiguated_hash();
-    //         let lock = ByteArray::copy_concat([&Prefix::VertexAttributeStruct.prefix_id().bytes(), &type_id.bytes(), &hash]);
-    //         snapshot.exclusive_lock_add(lock);
-    //         Ok(id)
-    //     }
-    // }
+
+    pub fn create_attribute_struct<const INLINE_LENGTH: usize, Snapshot>(
+        &self,
+        type_id: TypeID,
+        value: StructBytes<'_, INLINE_LENGTH>,
+        snapshot: &mut Snapshot,
+    ) -> Result<AttributeVertex<'static>, Arc<SnapshotIteratorError>>
+        where
+            Snapshot: WritableSnapshot,
+    {
+        let struct_attribute_id = self.create_attribute_id_struct(type_id, value.as_reference(), snapshot)?;
+        let vertex =
+            AttributeVertex::build(ValueTypeCategory::Struct, type_id, AttributeID::Struct(struct_attribute_id));
+        snapshot.put_val(vertex.as_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
+        Ok(vertex)
+    }
+
+    pub fn create_attribute_id_struct<const INLINE_LENGTH: usize, Snapshot>(
+        &self,
+        type_id: TypeID,
+        struct_bytes: StructBytes<'_, INLINE_LENGTH>,
+        snapshot: &mut Snapshot,
+    ) -> Result<StructAttributeID, Arc<SnapshotIteratorError>>
+        where
+            Snapshot: WritableSnapshot,
+    {
+        // We don't inline structs
+        let id = StructAttributeID::build_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)?;
+        let hash = id.get_hash_hash();
+        let lock = ByteArray::copy_concat([&Prefix::VertexAttributeStruct.prefix_id().bytes(), &type_id.bytes(), &hash]);
+        snapshot.exclusive_lock_add(lock);
+        Ok(id)
+    }
 }

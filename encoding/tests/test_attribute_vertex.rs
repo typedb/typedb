@@ -7,6 +7,8 @@
 #![deny(unused_must_use)]
 
 use std::{rc::Rc, sync::Arc};
+use bytes::byte_array::ByteArray;
+use bytes::Bytes;
 
 use durability::wal::WAL;
 use encoding::{
@@ -18,7 +20,8 @@ use encoding::{
     value::string_bytes::StringBytes,
     AsBytes, EncodingKeyspace,
 };
-use encoding::graph::thing::vertex_attribute::HashableID;
+use encoding::graph::thing::vertex_attribute::{HashableAttributeID, StructAttributeID};
+use encoding::value::struct_bytes::StructBytes;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, init_logging};
@@ -130,6 +133,86 @@ fn generate_string_attribute_vertex() {
             assert_eq!(
                 collide_id.get_hash_hash(),
                 CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_HASH_LENGTH]
+            );
+            assert_eq!(collide_id.get_hash_disambiguator(), 2u8);
+        }
+    }
+}
+
+#[test]
+fn generate_struct_attribute_vertex() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>(Rc::from("storage"), &storage_path, WALClient::new(wal))
+            .unwrap(),
+    );
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let type_id = TypeID::build(0);
+
+    let thing_vertex_generator = ThingVertexGenerator::new();
+
+    assert_eq!(StructAttributeID::ENCODING_PREFIX_LENGTH, 0);
+
+    // 1. vertex for long string that does not exist beforehand with default hasher
+    {
+        let struct_bytes_raw: [u8; 4] = [1,2,3,4];
+        let struct_bytes: StructBytes<'_, BUFFER_KEY_INLINE> = StructBytes::new(Bytes::Array(ByteArray::copy(&struct_bytes_raw)));
+        let vertex = thing_vertex_generator
+            .create_attribute_struct(type_id, struct_bytes.as_reference(), &mut snapshot)
+            .unwrap();
+        let vertex_id = vertex.attribute_id().unwrap_struct();
+        assert_eq!(
+            vertex_id.get_hash_hash(),
+            seahash::hash(struct_bytes.bytes().bytes()).to_be_bytes()[0..StructAttributeID::ENCODING_HASH_LENGTH]
+        );
+        assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
+    }
+
+    // 2. use a constant hasher to force collisions
+    const CONSTANT_HASH: u64 = 0;
+    let thing_vertex_generator = ThingVertexGenerator::new_with_hasher(|_bytes| CONSTANT_HASH);
+
+    {
+        let struct_bytes_raw: [u8; 4] = [5,6,7,8];
+        let struct_bytes: StructBytes<'_, BUFFER_KEY_INLINE> = StructBytes::new(Bytes::Array(ByteArray::copy(&struct_bytes_raw)));
+        let vertex = thing_vertex_generator
+            .create_attribute_struct(type_id, struct_bytes.as_reference(), &mut snapshot)
+            .unwrap();
+        let vertex_id = vertex.attribute_id().unwrap_struct();
+        assert_eq!(
+            vertex_id.get_hash_hash(),
+            CONSTANT_HASH.to_be_bytes()[0..StructAttributeID::ENCODING_HASH_LENGTH]
+        );
+        assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
+        {
+            let struct_collide_raw: [u8; 4] = [9,10,11,12];
+            let struct_collide_bytes: StructBytes<'_, BUFFER_KEY_INLINE> = StructBytes::new(Bytes::Array(ByteArray::copy(&struct_collide_raw)));
+            let collide_vertex = thing_vertex_generator
+                .create_attribute_struct(type_id, struct_collide_bytes.as_reference(), &mut snapshot)
+                .unwrap();
+
+            let collide_id = collide_vertex.attribute_id().unwrap_struct();
+            assert_eq!(
+                collide_id.get_hash_hash(),
+                CONSTANT_HASH.to_be_bytes()[0..StructAttributeID::ENCODING_HASH_LENGTH]
+            );
+            assert_eq!(collide_id.get_hash_disambiguator(), 1u8);
+        }
+        assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
+        {
+            let struct_collide_raw: [u8; 4] = [13,14,15,16];
+            let struct_collide_bytes: StructBytes<'_, BUFFER_KEY_INLINE> = StructBytes::new(Bytes::Array(ByteArray::copy(&struct_collide_raw)));
+            let collide_vertex = thing_vertex_generator
+                .create_attribute_struct(type_id, struct_collide_bytes.as_reference(), &mut snapshot)
+                .unwrap();
+
+            let collide_id = collide_vertex.attribute_id().unwrap_struct();
+            assert_eq!(
+                collide_id.get_hash_hash(),
+                CONSTANT_HASH.to_be_bytes()[0..StructAttributeID::ENCODING_HASH_LENGTH]
             );
             assert_eq!(collide_id.get_hash_disambiguator(), 2u8);
         }

@@ -34,6 +34,7 @@ use crate::{
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
+use crate::value::struct_bytes::StructBytes;
 
 #[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub struct AttributeVertex<'a> {
@@ -357,7 +358,7 @@ impl AttributeID {
     pub fn unwrap_date_time_tz(self) -> DateTimeTZAttributeID {
         match self {
             AttributeID::DateTimeTZ(date_time_tz_id) => date_time_tz_id,
-            _ => panic!("Cannot unwrap DateTime ID from non-datetime attribute ID."),
+            _ => panic!("Cannot unwrap DateTimeTZ ID from non-datetimeTZ attribute ID."),
         }
     }
 
@@ -371,7 +372,14 @@ impl AttributeID {
     pub fn unwrap_string(self) -> StringAttributeID {
         match self {
             AttributeID::String(string_id) => string_id,
-            _ => panic!("Cannot unwrap String ID from non-long attribute ID."),
+            _ => panic!("Cannot unwrap String ID from non-string attribute ID."),
+        }
+    }
+
+    pub fn unwrap_struct(self) -> StructAttributeID {
+        match self {
+            AttributeID::Struct(struct_id) => struct_id,
+            _ => panic!("Cannot unwrap Struct ID from non-struct attribute ID."),
         }
     }
 }
@@ -604,18 +612,15 @@ pub struct StringAttributeID {
     bytes: [u8; Self::LENGTH],
 }
 
-pub trait HashableID<const LENGTH: usize> : Sized {
+pub trait HashableAttributeID<const LENGTH: usize> : Sized {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory;
+    const ENCODING_HASH_LENGTH: usize;
 
     const ENCODING_TAIL_BYTE_IS_HASH_FLAG: u8 = 0b10000000;
-    const ENCODING_INLINE_CAPACITY: usize = LENGTH - 1;
-    // Length
-    const ENCODING_HASH_LENGTH: usize = 8;
-    const ENCODING_PREFIX_LENGTH: usize = LENGTH - (1 + Self::ENCODING_HASH_LENGTH);
-    // Index
     const ENCODING_TAIL_BYTE_INDEX: usize = LENGTH - 1;
 
     // Range
+    const ENCODING_PREFIX_LENGTH: usize = LENGTH - (Self::ENCODING_HASH_LENGTH+1);
     const ENCODING_PREFIX_RANGE: Range<usize> = 0..Self::ENCODING_PREFIX_LENGTH;
     const ENCODING_HASH_RANGE: Range<usize> = Self::ENCODING_PREFIX_LENGTH..Self::ENCODING_PREFIX_LENGTH +Self::ENCODING_HASH_LENGTH;
 
@@ -627,7 +632,7 @@ pub trait HashableID<const LENGTH: usize> : Sized {
         let mut id_bytes : [u8; LENGTH] = [0; LENGTH];
         let hash = hasher(value_bytes);
         Self::set_prefix(value_bytes, &mut id_bytes);
-        id_bytes[Self::ENCODING_HASH_RANGE].copy_from_slice(&hash.to_be_bytes());
+        id_bytes[Self::ENCODING_HASH_RANGE].copy_from_slice(&hash.to_be_bytes()[0..Self::ENCODING_HASH_LENGTH]);
         id_bytes[Self::ENCODING_TAIL_BYTE_INDEX] = Self::ENCODING_TAIL_BYTE_IS_HASH_FLAG;
         id_bytes
     }
@@ -641,7 +646,6 @@ pub trait HashableID<const LENGTH: usize> : Sized {
         where
             Snapshot: ReadableSnapshot,
     {
-        debug_assert!(!Self::is_inlineable(value_bytes));
         let mut id_bytes = Self::build_hashed_id_with_ambiguous_tail(value_bytes, hasher);
         let existing_or_tail = Self::find_existing_or_next_tail(type_id, value_bytes, &id_bytes, snapshot)?;
         match existing_or_tail {
@@ -729,15 +733,12 @@ pub trait HashableID<const LENGTH: usize> : Sized {
     fn is_inline_bytes(bytes: &[u8]) -> bool {
         bytes[Self::ENCODING_TAIL_BYTE_INDEX] & Self::ENCODING_TAIL_BYTE_IS_HASH_FLAG == 0
     }
-
-    fn is_inlineable(value_bytes: &[u8]) -> bool {
-        value_bytes.len() <= Self::ENCODING_INLINE_CAPACITY
-    }
 }
 
 
 impl StringAttributeID {
     const LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+    const ENCODING_STRING_INLINE_CAPACITY: usize = Self::LENGTH - 1;
     const ENCODING_STRING_PREFIX_HASH_LENGTH: usize =
         Self::ENCODING_PREFIX_LENGTH + Self::ENCODING_HASH_LENGTH;
     const ENCODING_STRING_PREFIX_HASH_RANGE: Range<usize> =
@@ -749,7 +750,7 @@ impl StringAttributeID {
     }
 
     pub(crate) fn is_inlineable<const INLINE_LENGTH: usize>(string: StringBytes<'_, INLINE_LENGTH>) -> bool {
-        string.length() <= Self::ENCODING_INLINE_CAPACITY
+        string.length() <= Self::ENCODING_STRING_INLINE_CAPACITY
     }
 
     pub(crate) fn build_inline_id<const INLINE_LENGTH: usize>(string: StringBytes<'_, INLINE_LENGTH>) -> Self {
@@ -774,7 +775,7 @@ impl StringAttributeID {
     }
 
     pub fn get_hash_disambiguator(&self) -> u8 {
-        <Self as HashableID<{AttributeIDLength::LONG_LENGTH}>>::get_hash_disambiguator(&self.bytes)
+        <Self as HashableAttributeID<{Self::LENGTH}>>::get_hash_disambiguator(&self.bytes)
     }
 
     pub fn get_inline_string_bytes(&self) -> StringBytes<'static, 16> {
@@ -802,6 +803,7 @@ impl StringAttributeID {
         where
             Snapshot: ReadableSnapshot,
     {
+        debug_assert!(!Self::is_inlineable(string.as_reference()));
         let existing_or_new = Self::build_hashed_id_from_value_bytes(type_id, string.bytes().bytes(), snapshot, hasher)?;
         match existing_or_new {
             Either::First(id) | Either::Second(id) => Ok(id)
@@ -817,6 +819,7 @@ impl StringAttributeID {
         where
             Snapshot: ReadableSnapshot,
     {
+        debug_assert!(!Self::is_inlineable(string.as_reference()));
        Self::find_hashed_id_for_value_bytes(type_id, string.bytes().bytes(), snapshot, hasher)
     }
 
@@ -843,8 +846,9 @@ impl StringAttributeID {
     }
 }
 
-impl HashableID<{AttributeIDLength::LONG_LENGTH}> for StringAttributeID {
+impl HashableAttributeID<{StringAttributeID::LENGTH}> for StringAttributeID {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::String;
+    const ENCODING_HASH_LENGTH: usize = 8;
 
     fn new(bytes: [u8; AttributeIDLength::LONG_LENGTH]) -> Self {
         StringAttributeID { bytes }
@@ -863,7 +867,7 @@ pub struct StructAttributeID {
 }
 
 impl StructAttributeID {
-    const LENGTH: usize = AttributeIDLength::LONG_LENGTH;
+    const LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
@@ -871,5 +875,54 @@ impl StructAttributeID {
 
     pub(crate) fn bytes_ref(&self) -> &[u8] {
         &self.bytes
+    }
+
+
+    pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
+        type_id: TypeID,
+        string: StructBytes<'_, INLINE_LENGTH>,
+        snapshot: &Snapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+    ) -> Result<Self, Arc<SnapshotIteratorError>>
+        where
+            Snapshot: ReadableSnapshot,
+    {
+        let existing_or_new = Self::build_hashed_id_from_value_bytes(type_id, string.bytes().bytes(), snapshot, hasher)?;
+        match existing_or_new {
+            Either::First(id) | Either::Second(id) => Ok(id)
+        }
+    }
+
+    pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
+        type_id: TypeID,
+        string: StructBytes<'_, INLINE_LENGTH>,
+        snapshot: &Snapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+    ) -> Result<Option<Self>, Arc<SnapshotIteratorError>>
+        where
+            Snapshot: ReadableSnapshot,
+    {
+        Self::find_hashed_id_for_value_bytes(type_id, string.bytes().bytes(), snapshot, hasher)
+    }
+
+    pub fn get_hash_hash(&self) -> [u8; Self::ENCODING_HASH_LENGTH]{
+        self.bytes[Self::ENCODING_HASH_RANGE].try_into().unwrap()
+    }
+
+    pub fn get_hash_disambiguator(&self) -> u8 {
+        <Self as HashableAttributeID<{Self::LENGTH}>>::get_hash_disambiguator(&self.bytes)
+    }
+}
+
+impl HashableAttributeID<{StructAttributeID::LENGTH}> for StructAttributeID {
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Struct;
+    const ENCODING_HASH_LENGTH: usize = 7;
+
+    fn new(bytes: [u8; StructAttributeID::LENGTH]) -> Self {
+        StructAttributeID { bytes }
+    }
+
+    fn set_prefix(_value_bytes: &[u8], _into_slice: &mut [u8; StructAttributeID::LENGTH]) {
+        // We don't do prefixes for structs
     }
 }
