@@ -598,7 +598,9 @@ impl DurationAttributeID {
 ///  With an 8 byte prefix and 7 byte hash we can insert up to 100 million elements behind the same prefix
 ///  before we have a 5% chance of collision. With 100 million entries with 100 bytes each, we can store 20GB of data in the same prefix.
 ///  We also allow disambiguation in the tail byte of the ID, so we can tolerate up to 127 collsions, or approximately 2TB of data with above assumptions.
-///
+
+// TODO: Note: This analysis seems to be based on the birthday problem, which gives the probability of any 2 keys colliding ACROSS ALL buckets.
+// The actual problem - the probability of 127 collisions for any SINGLE bucket is vanishingly small.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct StringAttributeID {
     bytes: [u8; Self::LENGTH],
