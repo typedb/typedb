@@ -7,12 +7,14 @@
 #![deny(unused_must_use)]
 
 use std::{borrow::Cow, sync::Arc};
+use std::collections::HashMap;
 
 use concept::{
     thing::{
         object::{Object, ObjectAPI},
         thing_manager::ThingManager,
         value::Value,
+        value_struct::StructValue
     },
     type_::{
         annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent},
@@ -32,6 +34,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     EncodingKeyspace,
 };
+use encoding::graph::definition::r#struct::StructDefinition;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -710,4 +713,87 @@ fn role_player_duplicates() {
 }
 
 #[test]
-fn struct_create() {}
+fn struct_create() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
+    );
+    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
+    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
+    TypeManager::<WriteSnapshot<WALClient>>::initialise_types(
+        storage.clone(),
+        definition_key_generator.clone(),
+        type_vertex_generator.clone(),
+    ).unwrap();
+
+    let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
+    let type_manager =
+        Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
+    let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
+
+
+    let attr_0_label = Label::build("attr_0");
+    let struct_0_label = Label::build("struct_0");
+    let fields_0: HashMap<String, (ValueType, bool)> = HashMap::from([
+        ("s0_f0_l0".to_owned(), (ValueType::Long, false)),
+        ("s0_f1_s0".to_owned(), (ValueType::String, false)),
+    ]);
+    let definition_0 = StructDefinition::define(fields_0);
+
+    let instance_0_fields = HashMap::from([
+        ("s0_f0_l0".to_owned(), Value::Long(123)),
+        ("s0_f1_s0".to_owned(), Value::String(Cow::Owned("abc".to_owned())))
+    ]);
+    let instance_0 = StructValue::try_translate_fields(definition_0.clone(), instance_0_fields).unwrap();
+    {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+
+        let struct_0_key = type_manager.create_struct(&mut snapshot, &struct_0_label, definition_0).unwrap();
+        let attr_0_type = type_manager.create_attribute_type(&mut snapshot, &attr_0_label, false).unwrap();
+        attr_0_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_0_key)).unwrap();
+        snapshot.commit().unwrap();
+    }
+
+    {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let attr_0_type = type_manager.get_attribute_type(&snapshot, &attr_0_label).unwrap().unwrap();
+        let attr_0_value_type = attr_0_type.get_value_type(&snapshot, &type_manager).unwrap().unwrap();
+        let struct_0_key = match attr_0_value_type {
+            ValueType::Struct(struct_0_key) => struct_0_key,
+            _ => assert!(false)
+        };
+        type_manager.get_struct_definition_key(&snapshot, &struct_0_label).unwrap().unwrap();
+        let definition_0 = type_manager.get_struct_definition(&snapshot, &struct_0_key).unwrap();
+
+        let attr_0_instance = thing_manager.create_attribute(&mut snapshot, attr_0_type, Value::Struct(Cow::Owned(instance_0))).unwrap();
+        snapshot.commit().unwrap();
+    }
+
+    {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let attr_0_type = type_manager.get_attribute_type(&snapshot, &attr_0_label).unwrap().unwrap();
+        let mut attr_0 = thing_manager.get_attributes_in(&snapshot, attr_0_type.clone()).unwrap().collect_cloned().get(0).unwrap();
+        let value_0 = attr_0.get_value(&snapshot, &thing_manager).unwrap();
+        match value_0 {
+            Value::Struct(v) => assert!(structs_equal(&v, &instance_0)),
+            _ => assert!(false, "Wrong data type"),
+        }
+        assert!();
+        snapshot.commit().unwrap();
+    }
+}
+
+fn structs_equal(first: &StructValue, second: &StructValue) -> bool {
+    let f1 = first.fields();
+    let f2 = second.fields();
+
+    f1.len() == f2.len() && f1.iter().all(|(k,v1)| {
+         if let(Some(v2)) = f2.get(&k) {
+             v2 == v1
+         } else {
+             false
+         }
+    })
+}
