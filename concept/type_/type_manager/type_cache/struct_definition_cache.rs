@@ -21,7 +21,7 @@ impl StructDefinitionCache {
                 StructDefinition::PREFIX.fixed_width_keys(),
             ))
             .collect_cloned_hashmap(|key, value| {
-                (DefinitionKey::new(Bytes::Array(key.byte_ref().into())), StructDefinition::from_bytes(key.byte_ref()))
+                (DefinitionKey::new(Bytes::Array(key.byte_ref().into())), StructDefinition::from_bytes(value))
             })
             .unwrap();
 

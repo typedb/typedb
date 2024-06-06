@@ -785,18 +785,11 @@ fn struct_create() {
         let value_0 = attr_0.get_value(&snapshot, &thing_manager).unwrap();
         match value_0 {
             Value::Struct(v) => {
-                assert!(structs_equal(&v, &instance_0));
+                assert_eq!(instance_0, *v);
             }
             _ => assert!(false, "Wrong data type"),
         }
         // assert!();
         snapshot.commit().unwrap();
     }
-}
-
-fn structs_equal(first: &StructValue, second: &StructValue) -> bool {
-    let f1 = first.fields();
-    let f2 = second.fields();
-
-    f1.len() == f2.len() && f1.iter().all(|(k, v1)| if let (Some(v2)) = f2.get(&k) { v2 == v1 } else { false })
 }

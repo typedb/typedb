@@ -355,19 +355,61 @@ fn test_struct_definition() {
     );
 
     let struct_1_key = type_manager.create_struct(&mut snapshot, struct_1_definition.clone()).unwrap();
+    // Read buffered
     {
+        assert_eq!(0, struct_0_key.definition_id().as_uint());
+        let read_0_key = type_manager.get_struct_definition_key(&snapshot, &struct_0_name).unwrap().unwrap();
+        assert_eq!(struct_0_key.definition_id().as_uint(), read_0_key.definition_id().as_uint());
+        let read_0_definition = type_manager.get_struct_definition(&snapshot, read_0_key).unwrap();
+        assert_eq!(struct_0_definition, *read_0_definition);
+
+        assert_eq!(1, struct_1_key.definition_id().as_uint());
+        let read_1_key = type_manager.get_struct_definition_key(&snapshot, &struct_1_name).unwrap().unwrap();
+        assert_eq!(struct_1_key.definition_id().as_uint(), read_1_key.definition_id().as_uint());
+        let read_1_definition = type_manager.get_struct_definition(&snapshot, read_1_key).unwrap();
+        assert_eq!(struct_1_definition, *read_1_definition);
+    }
+    snapshot.commit().unwrap();
+
+    // Persisted, without cache
+    {
+        let snapshot = storage.clone().open_snapshot_read();
+        let type_manager = TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None);
+
         assert_eq!(0, struct_0_key.definition_id().as_uint());
         // Read back:
         let read_0_key = type_manager.get_struct_definition_key(&snapshot, &struct_0_name).unwrap().unwrap();
         assert_eq!(struct_0_key.definition_id().as_uint(), read_0_key.definition_id().as_uint());
         let read_0_definition = type_manager.get_struct_definition(&snapshot, read_0_key).unwrap();
-        assert!(struct_definitions_equal(&struct_0_definition, &read_0_definition));
+        assert_eq!(struct_0_definition, *read_0_definition);
 
         let read_1_key = type_manager.get_struct_definition_key(&snapshot, &struct_1_name).unwrap().unwrap();
         assert_eq!(struct_1_key.definition_id().as_uint(), read_1_key.definition_id().as_uint());
         let read_1_definition = type_manager.get_struct_definition(&snapshot, read_1_key).unwrap();
-        assert!(struct_definitions_equal(&struct_1_definition, &read_1_definition));
+        assert_eq!(struct_1_definition, *read_1_definition);
+
+        snapshot.close_resources()
     }
 
-    // With cache
+    // Persisted, with cache
+    {
+        let snapshot = storage.clone().open_snapshot_read();
+        let type_cache = Arc::new(TypeCache::new(storage.clone(), snapshot.open_sequence_number()).unwrap());
+        let type_manager =
+            TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), Some(type_cache));
+
+        assert_eq!(0, struct_0_key.definition_id().as_uint());
+        // Read back:
+        let read_0_key = type_manager.get_struct_definition_key(&snapshot, &struct_0_name).unwrap().unwrap();
+        assert_eq!(struct_0_key.definition_id().as_uint(), read_0_key.definition_id().as_uint());
+        let read_0_definition = type_manager.get_struct_definition(&snapshot, read_0_key).unwrap();
+        assert_eq!(struct_0_definition, *read_0_definition);
+
+        let read_1_key = type_manager.get_struct_definition_key(&snapshot, &struct_1_name).unwrap().unwrap();
+        assert_eq!(struct_1_key.definition_id().as_uint(), read_1_key.definition_id().as_uint());
+        let read_1_definition = type_manager.get_struct_definition(&snapshot, read_1_key).unwrap();
+        assert_eq!(struct_1_definition, *read_1_definition);
+
+        snapshot.close_resources()
+    }
 }
