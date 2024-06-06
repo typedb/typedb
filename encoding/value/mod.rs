@@ -27,6 +27,7 @@ mod primitive_encoding;
 pub mod string_bytes;
 pub mod struct_bytes;
 pub mod value_type;
+pub mod struct_index;
 
 pub fn encode_value_u64(count: u64) -> ByteArray<BUFFER_VALUE_INLINE> {
     // LE is normally platform-native

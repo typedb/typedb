@@ -61,6 +61,7 @@ impl PrefixID {
             Prefix::EdgeRolePlayer => todo!(),
             Prefix::EdgeRolePlayerReverse => todo!(),
             Prefix::EdgeRolePlayerIndex => todo!(),
+            Prefix::IndexValueToStruct => todo!(),
             Prefix::PropertyObjectVertex => todo!(),
             Prefix::_VertexAttributeLast => unreachable!("Marker enum variant should not be used."),
         }
@@ -113,6 +114,8 @@ pub enum Prefix {
 
     IndexLabelToType,
     IndexLabelToDefinitionStruct, // IndexLabelToDefinitionFunction
+
+    IndexValueToStruct,
 }
 
 macro_rules! prefix_functions {
@@ -212,7 +215,9 @@ impl Prefix {
            PropertyDefinition => [164], false; // TODO: Why are properties not fixed width keys?
 
            IndexLabelToType => [182], false;
-           IndexLabelToDefinitionStruct => [183], false
+           IndexLabelToDefinitionStruct => [183], false;
+
+           IndexValueToStruct => [190], false
            // Reserved: 200-255
     );
 }

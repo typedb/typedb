@@ -15,6 +15,7 @@ use std::{
     collections::HashMap,
     fmt::{Formatter, Write},
 };
+use std::sync::Arc;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
@@ -46,6 +47,8 @@ use serde::{
     ser::{SerializeSeq},
     Deserialize, Deserializer, Serialize, Serializer,
 };
+use encoding::graph::thing::vertex_attribute::StructAttributeID;
+use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
 
 use crate::thing::value::Value;
 
@@ -96,6 +99,48 @@ impl<'a> StructValue<'a> {
     pub fn fields(&self) -> &HashMap<StructFieldIDUInt, Value<'a>> {
         &self.fields
     }
+
+    //
+    // // TODO: Lots of wasted space using a u16 path.
+    // pub fn TEMP__create_index_entries(&self, thing_vertex_generator: Arc<ThingVertexGenerator>, attribute_id: StructAttributeID) -> Vec<Vec<u8>> {
+    //     let mut acc: Vec<Vec<u8>> = Vec::new();
+    //     let mut path: Vec<StructFieldIDUInt> = Vec::new();
+    //     Self::create_index_entries_rec(thing_vertex_generator, &self.fields, &mut path, &mut acc);
+    //     acc
+    // }
+    //
+    // fn create_index_entries_rec(thing_vertex_generator: Arc<ThingVertexGenerator>, fields: &HashMap<StructFieldIDUInt, Value<'a>>, path: &mut Vec<StructFieldIDUInt>, acc: &mut Vec<Vec<u8>>) {
+    //     for (idx, value) in fields.iter() {
+    //         if let Value::Struct(struct_val) = value {
+    //             path.push(*idx);
+    //             Self::create_index_entries_rec(thing_vertex_generator.clone(), struct_val.fields(), path, acc);
+    //             let popped = path.pop();
+    //             debug_assert_eq!(*idx, popped);
+    //         } else {
+    //             acc.push(Self::create_index_encode_entry(thing_vertex_generator.clone(), path, value))
+    //         }
+    //     }
+    //
+    // }
+    //
+    // fn create_index_encode_entry(thing_vertex_generator: Arc<ThingVertexGenerator>, path: &Vec<u16>, value: &Value<'a>) -> Vec<u8> {
+    //     let encoded : Vec<u8> = Vec::with_capacity(PrefixID::LENGTH + path.len() + AttributeIDLength::LONG_LENGTH + StructAttributeID::ENCODING_LENGTH);
+    //     for p in path {
+    //         encoded.extend_from_slice(p.as_be_bytes())
+    //     }
+    //     match value {
+    //         Value::Boolean(_) => {}
+    //         Value::Long(_) => {}
+    //         Value::Double(_) => {}
+    //         Value::Decimal(_) => {}
+    //         Value::DateTime(_) => {}
+    //         Value::DateTimeTZ(_) => {}
+    //         Value::Duration(_) => {}
+    //         Value::String(_) => {},
+    //         Value::Struct(_) => unreachable!()
+    //     }
+    //
+    // }
 }
 
 impl<'a> StructRepresentation<'a> for StructValue<'a> {

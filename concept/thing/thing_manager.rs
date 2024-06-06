@@ -40,6 +40,7 @@ use encoding::{
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use regex::Regex;
+use encoding::graph::thing::vertex_attribute::StructAttributeID;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_range::KeyRange,
@@ -890,6 +891,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 provided: value.value_type(),
             })
         }
+    }
+
+    fn index_struct_fields<'a>(&self, snapshot: &mut Snapshot, attribute_id: StructAttributeID, struct_value: StructValue<'a>) {
+        // let index_entries = struct_value.TEMP__create_index_entries(self.vertex_generator.clone(), attribute_id);
+        todo!()
     }
 
     pub(crate) fn delete_entity(&self, snapshot: &mut Snapshot, entity: Entity<'_>) {

@@ -126,6 +126,10 @@ impl ThingVertexGenerator {
         Ok(ThingVertexGenerator { entity_ids, relation_ids, large_value_hasher })
     }
 
+    pub(crate) fn TEMP__apply_hasher(&self, bytes: &[u8]) -> u64 {
+        (self.large_value_hasher)(bytes)
+    }
+
     fn extract_object_id(k: &MVCCKey<'_>, _: &[u8]) -> ObjectVertex<'static> {
         ObjectVertex::new(Bytes::Array(ByteArray::copy(k.key())))
     }
