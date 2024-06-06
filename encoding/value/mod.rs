@@ -26,7 +26,6 @@ pub mod long_bytes;
 mod primitive_encoding;
 pub mod string_bytes;
 pub mod struct_bytes;
-pub mod struct_value;
 pub mod value_type;
 
 pub fn encode_value_u64(count: u64) -> ByteArray<BUFFER_VALUE_INLINE> {

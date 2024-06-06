@@ -49,11 +49,13 @@ use serde::{
 
 use crate::thing::value::Value;
 
+// TODO: There's a strong case to handroll encoding of structs and store them as just bytes in memory.
+// And throw in some accessor logic so we can efficiently access & deserialise just the fields we need on demand.
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructValue<'a> {
+    definition_key: DefinitionKey<'a>,
     // a map allows empty fields to not be recorded at all
     fields: HashMap<StructFieldIDUInt, Value<'a>>,
-    definition_key: DefinitionKey<'a>, // WIll not be serialised
 }
 
 impl<'a> StructValue<'a> {
