@@ -43,6 +43,7 @@ impl PrefixID {
             | Prefix::PropertyTypeEdge
             | Prefix::DefinitionStruct
             | Prefix::DefinitionFunction
+            | Prefix::PropertyDefinition
             | Prefix::IndexLabelToDefinitionStruct => EncodingKeyspace::Schema,
             Prefix::VertexEntity => todo!(),
             Prefix::VertexRelation => todo!(),
@@ -107,7 +108,7 @@ pub enum Prefix {
 
     PropertyTypeVertex,
     PropertyTypeEdge,
-    // PropertyDefinitionFunction,
+    PropertyDefinition,
     PropertyObjectVertex,
 
     IndexLabelToType,
@@ -208,6 +209,7 @@ impl Prefix {
            PropertyTypeVertex => [160], false;
            PropertyTypeEdge => [162], false;
            PropertyObjectVertex => [163], false;
+           PropertyDefinition => [164], false; // TODO: Why are properties not fixed width keys?
 
            IndexLabelToType => [182], false;
            IndexLabelToDefinitionStruct => [183], false

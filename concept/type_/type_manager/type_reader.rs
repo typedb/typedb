@@ -23,7 +23,7 @@ use encoding::{
         },
     },
     layout::infix::Infix,
-    value::{label::Label, value_type::ValueType},
+    value::{label::Label, string_bytes::StringBytes, value_type::ValueType},
     Keyable,
 };
 use iterator::Collector;
@@ -63,7 +63,7 @@ impl TypeReader {
     where
         T: TypeAPI<'static>,
     {
-        let key = LabelToTypeVertexIndex::build(label).into_storage_key();
+        let key = LabelToTypeVertexIndex::build(label.scoped_name.as_reference()).into_storage_key();
         match snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {
             Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
             Ok(None) => Ok(None),
@@ -79,16 +79,16 @@ impl TypeReader {
 
     pub(crate) fn get_struct_definition_key(
         snapshot: &impl ReadableSnapshot,
-        label: &Label<'_>,
+        name: &str,
     ) -> Result<Option<DefinitionKey<'static>>, ConceptReadError> {
-        let index_key = LabelToStructDefinitionIndex::build(&label);
+        let index_key = LabelToStructDefinitionIndex::build(StringBytes::<BUFFER_KEY_INLINE>::build_ref(name));
         let bytes = snapshot.get(index_key.into_storage_key().as_reference()).unwrap();
         Ok(bytes.map(|value| DefinitionKey::new(Bytes::Array(value))))
     }
 
     pub(crate) fn get_struct_definition(
         snapshot: &impl ReadableSnapshot,
-        definition_key: &DefinitionKey<'_>,
+        definition_key: DefinitionKey<'_>,
     ) -> Result<StructDefinition, ConceptReadError> {
         let bytes =
             snapshot.get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference()).unwrap();
@@ -251,7 +251,6 @@ impl TypeReader {
         for declared_impl in declared_impl_set {
             let mut stack = Vec::new();
             stack.push(declared_impl.object());
-            let mut object_types: Vec<ObjectType<'static>> = Vec::new();
             while let Some(sub_object) = stack.pop() {
                 let mut declared_impl_was_overridden = false;
                 for sub_owner_owns in Self::get_implemented_interfaces::<IMPL>(snapshot, sub_object.clone())? {

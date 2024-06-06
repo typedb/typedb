@@ -10,13 +10,20 @@ use bytes::{byte_reference::ByteReference, Bytes};
 use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_VALUE_INLINE};
 use serde::{Deserialize, Serialize};
 
-use crate::{graph::definition::DefinitionValueEncoding, value::value_type::ValueType, AsBytes};
+use crate::{
+    graph::definition::DefinitionValueEncoding,
+    layout::prefix::Prefix,
+    value::{label::Label, value_type::ValueType},
+    AsBytes,
+};
 
 // TODO: Revisit to think about serialisation.
 // Storing index in the StructDefinitionField opens the door for duplicates?
 // We also have redundancy in storing the StructFieldIDUInt twice.
+// TODO: Should this not have
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct StructDefinition {
+    pub name: String,
     pub fields: Vec<StructDefinitionField>,
     pub field_names: HashMap<String, StructFieldIDUInt>,
 }
@@ -29,7 +36,9 @@ pub struct StructDefinitionField {
 }
 
 impl StructDefinition {
-    pub fn define(definitions: HashMap<String, (ValueType, bool)>) -> StructDefinition {
+    pub const PREFIX: Prefix = Prefix::DefinitionStruct;
+
+    pub fn define(name: String, definitions: HashMap<String, (ValueType, bool)>) -> StructDefinition {
         let mut fields: Vec<StructDefinitionField> = Vec::with_capacity(definitions.len());
         let mut field_names = HashMap::with_capacity(definitions.len());
         for (i, (name, (value_type, optional))) in definitions.into_iter().enumerate() {
@@ -37,7 +46,7 @@ impl StructDefinition {
             fields.push(StructDefinitionField { index, optional, value_type });
             field_names.insert(name, index);
         }
-        StructDefinition { fields, field_names }
+        StructDefinition { name, fields, field_names }
     }
 }
 

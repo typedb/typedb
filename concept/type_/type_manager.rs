@@ -293,33 +293,25 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
     pub fn get_struct_definition_key(
         &self,
         snapshot: &Snapshot,
-        label: &Label<'static>,
-    ) -> Result<Option<MaybeOwns<'_, DefinitionKey<'static>>>, ConceptReadError> {
-        // if let Some(cache) = &self.type_cache {
-        //     Ok(MaybeOwns::Borrowed(cache.get_struct_definition_key(label)))
-        // } else {
-        //     let definition_key = TypeReader::get_struct_definition_key(snapshot, label)?
-        //         .map(|opt| MaybeOwns::Owned(opt));
-        //     Ok(definition_key)
-        // }
-        // TODO: Cache
-        let definition_key = TypeReader::get_struct_definition_key(snapshot, label)?.map(|opt| MaybeOwns::Owned(opt));
-        Ok(definition_key)
+        name: &str,
+    ) -> Result<Option<DefinitionKey<'static>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(cache.get_struct_definition_key(name))
+        } else {
+            TypeReader::get_struct_definition_key(snapshot, name)
+        }
     }
 
     pub fn get_struct_definition(
         &self,
         snapshot: &Snapshot,
-        definition_key: &DefinitionKey<'static>,
+        definition_key: DefinitionKey<'static>,
     ) -> Result<MaybeOwns<'_, StructDefinition>, ConceptReadError> {
-        // if let Some(cache) = &self.type_cache {
-        //     Ok(MaybeOwns::Borrowed(cache.get_struct_definition(key)))
-        // } else {
-        //     Ok(MaybeOwns::Owned(TypeReader::get_struct_definition(key)))
-        // }
-        // TODO: Cache
-        let struct_def = TypeReader::get_struct_definition(snapshot, definition_key)?;
-        Ok(MaybeOwns::Owned(struct_def))
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_struct_definition(definition_key.clone())))
+        } else {
+            Ok(MaybeOwns::Owned(TypeReader::get_struct_definition(snapshot, definition_key.clone())?))
+        }
     }
 
     get_type_methods! {
@@ -692,7 +684,6 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub fn create_struct(
         &self,
         snapshot: &mut Snapshot,
-        struct_name: &Label<'static>,
         struct_definition: StructDefinition,
     ) -> Result<DefinitionKey<'static>, ConceptWriteError> {
         // TODO: Validation
@@ -700,7 +691,7 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
             .definition_key_generator
             .create_struct(snapshot)
             .map_err(|source| ConceptWriteError::Encoding { source })?;
-        TypeWriter::storage_put_struct(snapshot, definition_key.clone(), struct_name, struct_definition);
+        TypeWriter::storage_put_struct(snapshot, definition_key.clone(), struct_definition);
         Ok(definition_key)
     }
 

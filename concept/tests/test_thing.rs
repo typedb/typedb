@@ -734,12 +734,12 @@ fn struct_create() {
     let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
 
     let attr_0_label = Label::build("attr_0");
-    let struct_0_label = Label::build("struct_0");
+    let struct_0_name = "struct_0";
     let fields_0: HashMap<String, (ValueType, bool)> = HashMap::from([
         ("s0_f0_l0".to_owned(), (ValueType::Long, false)),
         ("s0_f1_s0".to_owned(), (ValueType::String, false)),
     ]);
-    let definition_0 = StructDefinition::define(fields_0);
+    let definition_0 = StructDefinition::define(struct_0_name.to_owned(), fields_0);
 
     let instance_0_fields = HashMap::from([
         ("s0_f0_l0".to_owned(), Value::Long(123)),
@@ -747,7 +747,7 @@ fn struct_create() {
     ]);
     let struct_0_key = {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let struct_0_key = type_manager.create_struct(&mut snapshot, &struct_0_label, definition_0.clone()).unwrap();
+        let struct_0_key = type_manager.create_struct(&mut snapshot, definition_0.clone()).unwrap();
         let attr_0_type = type_manager.create_attribute_type(&mut snapshot, &attr_0_label, false).unwrap();
         attr_0_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_0_key.clone())).unwrap();
         snapshot.commit().unwrap();
@@ -767,8 +767,8 @@ fn struct_create() {
             ValueType::Struct(struct_0_key) => struct_0_key,
             v => panic!("Unexpected value type: {:?}", v),
         };
-        let read_key = type_manager.get_struct_definition_key(&snapshot, &struct_0_label).unwrap().unwrap();
-        let read_definition = type_manager.get_struct_definition(&snapshot, &struct_0_key).unwrap();
+        let read_key = type_manager.get_struct_definition_key(&snapshot, &struct_0_name).unwrap().unwrap();
+        let read_definition = type_manager.get_struct_definition(&snapshot, struct_0_key.clone()).unwrap();
         assert_eq!(struct_0_key.bytes(), read_key.bytes());
         assert_eq!(definition_0, *read_definition);
         thing_manager

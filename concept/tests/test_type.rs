@@ -341,29 +341,31 @@ fn test_struct_definition() {
     let mut snapshot = storage.clone().open_snapshot_write();
     let type_manager = TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None);
 
-    let struct_0_label = Label::build("struct_0");
-    let struct_0_definition = StructDefinition::define(HashMap::from([
-        ("f0_bool".into(), (ValueType::Boolean, false)),
-        ("f1_long".into(), (ValueType::Long, false)),
-    ]));
-    let struct_0_key = type_manager.create_struct(&mut snapshot, &struct_0_label, struct_0_definition.clone()).unwrap();
+    let struct_0_name = "struct_0";
+    let struct_0_definition = StructDefinition::define(
+        struct_0_name.to_owned(),
+        HashMap::from([("f0_bool".into(), (ValueType::Boolean, false)), ("f1_long".into(), (ValueType::Long, false))]),
+    );
+    let struct_0_key = type_manager.create_struct(&mut snapshot, struct_0_definition.clone()).unwrap();
 
-    let struct_1_label = Label::build("struct_1");
-    let struct_1_definition = StructDefinition::define(HashMap::from([(
-        "f0_nested".into(),
-        (ValueType::Struct(struct_0_key.clone()), false),
-    )]));
-    let struct_1_key = type_manager.create_struct(&mut snapshot, &struct_1_label, struct_1_definition.clone());
+    let struct_1_name = "struct_1";
+    let struct_1_definition = StructDefinition::define(
+        struct_1_name.to_owned(),
+        HashMap::from([("f0_nested".into(), (ValueType::Struct(struct_0_key.clone()), false))]),
+    );
+
+    let struct_1_key = type_manager.create_struct(&mut snapshot, struct_1_definition.clone()).unwrap();
     {
         assert_eq!(0, struct_0_key.definition_id().as_uint());
         // Read back:
-        let read_0_key = type_manager.get_struct_definition_key(&snapshot, &struct_0_label).unwrap().unwrap();
+        let read_0_key = type_manager.get_struct_definition_key(&snapshot, &struct_0_name).unwrap().unwrap();
         assert_eq!(struct_0_key.definition_id().as_uint(), read_0_key.definition_id().as_uint());
-        let read_0_definition = type_manager.get_struct_definition(&snapshot, &read_0_key).unwrap();
+        let read_0_definition = type_manager.get_struct_definition(&snapshot, read_0_key).unwrap();
         assert!(struct_definitions_equal(&struct_0_definition, &read_0_definition));
 
-        let read_1_key = type_manager.get_struct_definition_key(&snapshot, &struct_1_label).unwrap().unwrap();
-        let read_1_definition = type_manager.get_struct_definition(&snapshot, &read_1_key).unwrap();
+        let read_1_key = type_manager.get_struct_definition_key(&snapshot, &struct_1_name).unwrap().unwrap();
+        assert_eq!(struct_1_key.definition_id().as_uint(), read_1_key.definition_id().as_uint());
+        let read_1_definition = type_manager.get_struct_definition(&snapshot, read_1_key).unwrap();
         assert!(struct_definitions_equal(&struct_1_definition, &read_1_definition));
     }
 

@@ -6,6 +6,7 @@
 
 mod kind_cache;
 mod selection;
+mod struct_definition_cache;
 mod type_cache;
 
 pub use type_cache::TypeCache;
