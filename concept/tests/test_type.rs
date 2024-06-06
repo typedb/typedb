@@ -304,21 +304,6 @@ fn role_usage() {
     }
 }
 
-fn struct_definitions_equal(first: &StructDefinition, second: &StructDefinition) -> bool {
-    let mut all_match = true;
-    all_match =
-        all_match && first.field_names.len() == second.field_names.len() && first.fields.len() == second.fields.len();
-    all_match = all_match
-        && first
-            .field_names
-            .iter()
-            .all(|(k, v)| second.field_names.contains_key(k) && v == second.field_names.get(k).unwrap());
-    all_match = all_match
-        && std::iter::zip(first.fields.iter(), second.fields.iter())
-            .all(|(f1, f2)| f1.index == f2.index && f1.optional == f2.optional && f1.value_type == f2.value_type);
-    all_match
-}
-
 #[test]
 fn test_struct_definition() {
     init_logging();

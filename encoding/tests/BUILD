@@ -55,6 +55,7 @@ rust_test(
         "//encoding",
         "//storage",
         "//durability",
+        "//resource",
         "//util/test:test_utils",
 
         "@crates//:rand",

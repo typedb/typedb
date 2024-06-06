@@ -789,7 +789,6 @@ fn struct_create() {
             }
             _ => assert!(false, "Wrong data type"),
         }
-        // assert!();
         snapshot.commit().unwrap();
     }
 }
