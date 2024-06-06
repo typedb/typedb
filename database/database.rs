@@ -77,8 +77,12 @@ impl Database<WALClient> {
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
             Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
-        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone())
-            .map_err(|err| SchemaInitialise { source: err })?;
+        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(
+            storage.clone(),
+            definition_key_generator.clone(),
+            type_vertex_generator.clone(),
+        )
+        .map_err(|err| SchemaInitialise { source: err })?;
         let statistics = Arc::new(Statistics::new(storage.read_watermark()));
 
         Ok(Database::<WALClient> {
@@ -105,11 +109,16 @@ impl Database<WALClient> {
             MVCCStorage::load::<EncodingKeyspace>(&name, path, WALClient::new(wal), &checkpoint)
                 .map_err(|error| StorageOpen { source: error })?,
         );
+        let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
             Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
-        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone())
-            .map_err(|err| SchemaInitialise { source: err })?;
+        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(
+            storage.clone(),
+            definition_key_generator.clone(),
+            type_vertex_generator.clone(),
+        )
+        .map_err(|err| SchemaInitialise { source: err })?;
 
         let statistics = storage
             .durability()
@@ -123,6 +132,7 @@ impl Database<WALClient> {
             name: name.as_ref().to_owned(),
             path: path.to_owned(),
             storage,
+            definition_key_generator,
             type_vertex_generator,
             thing_vertex_generator,
             thing_statistics: Arc::new(statistics),

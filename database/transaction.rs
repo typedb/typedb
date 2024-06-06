@@ -30,7 +30,11 @@ impl<D: DurabilityClient> TransactionRead<D> {
         //       If it's too far in the future, we should find a more appropriate statistics snapshot from the WAL
 
         let snapshot: ReadSnapshot<D> = database.storage.clone().open_snapshot_read();
-        let type_manager = Arc::new(TypeManager::new(database.type_vertex_generator.clone(), None)); // TODO pass cache
+        let type_manager = Arc::new(TypeManager::new(
+            database.definition_key_generator.clone(),
+            database.type_vertex_generator.clone(),
+            None,
+        )); // TODO pass cache
         let thing_manager = ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
         Self { database, snapshot, type_manager, thing_manager }
     }
@@ -52,7 +56,11 @@ pub struct TransactionWrite<D> {
 impl<D: DurabilityClient> TransactionWrite<D> {
     pub fn open(database: Arc<Database<D>>) -> Self {
         let snapshot: WriteSnapshot<D> = database.storage.clone().open_snapshot_write();
-        let type_manager = Arc::new(TypeManager::new(database.type_vertex_generator.clone(), None)); // TODO pass cache
+        let type_manager = Arc::new(TypeManager::new(
+            database.definition_key_generator.clone(),
+            database.type_vertex_generator.clone(),
+            None,
+        )); // TODO pass cache
         let thing_manager = ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
         Self { database, snapshot, type_manager, thing_manager }
     }
@@ -82,7 +90,11 @@ pub struct TransactionSchema<D> {
 impl<D: DurabilityClient> TransactionSchema<D> {
     pub fn open(database: Arc<Database<D>>) -> Self {
         let snapshot: SchemaSnapshot<D> = database.storage.clone().open_snapshot_schema();
-        let type_manager = Arc::new(TypeManager::new(database.type_vertex_generator.clone(), None));
+        let type_manager = Arc::new(TypeManager::new(
+            database.definition_key_generator.clone(),
+            database.type_vertex_generator.clone(),
+            None,
+        ));
         let thing_manager = ThingManager::new(database.thing_vertex_generator.clone(), type_manager.clone());
 
         // TODO: take WRITE schema transaction lock (data write transactions take it as READ) - prevents data txn while schema txn running

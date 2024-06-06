@@ -50,7 +50,7 @@ impl<'a> DefinitionKey<'a> {
         DefinitionID::new(self.bytes().bytes()[Self::RANGE_DEFINITION_ID].try_into().unwrap())
     }
 
-    pub(crate) fn build(prefix: Prefix, definition_id: DefinitionID) -> Self {
+    pub fn build(prefix: Prefix, definition_id: DefinitionID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         array.bytes_mut()[Self::RANGE_DEFINITION_ID].copy_from_slice(&definition_id.bytes());
