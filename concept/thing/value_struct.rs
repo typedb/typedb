@@ -43,7 +43,7 @@ use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_VALUE_IN
 use serde::{
     de,
     de::{EnumAccess, SeqAccess, Unexpected, VariantAccess, Visitor},
-    ser::{SerializeSeq, SerializeTuple, SerializeTupleVariant},
+    ser::{SerializeSeq},
     Deserialize, Deserializer, Serialize, Serializer,
 };
 
@@ -289,6 +289,8 @@ impl<'a, 'de> Deserialize<'de> for StructValue<'a> {
 
 pub mod test {
     use std::{borrow::Cow, collections::HashMap};
+    use encoding::graph::definition::definition_key::{DefinitionID, DefinitionKey};
+    use encoding::graph::definition::r#struct::StructDefinition;
 
     use encoding::value::struct_bytes::{StructBytes, StructRepresentation};
     use resource::constants::snapshot::BUFFER_VALUE_INLINE;
@@ -297,12 +299,16 @@ pub mod test {
     #[test]
     fn test_serde() {
         let long_value = Value::Long(5);
+        let nested_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
         let nested_fields = HashMap::from([(0, long_value)]);
-        let nested_struct = StructValue { fields: nested_fields };
+        let nested_struct = StructValue { definition_key: nested_key , fields: nested_fields };
+
+        let struct_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
         let struct_fields = HashMap::from([(0, Value::Struct(Cow::Owned(nested_struct.clone())))]);
-        let struct_value = StructValue { fields: struct_fields };
+        let struct_value = StructValue { definition_key: struct_key, fields: struct_fields };
+
         let struct_bytes: StructBytes<'static, BUFFER_VALUE_INLINE> = struct_value.to_bytes();
-        let decoded = StructValue::from_bytes(&struct_bytes);
+        let decoded = StructValue::from_bytes(struct_bytes.as_reference());
         assert_eq!(decoded.fields, struct_value.fields);
     }
 }
