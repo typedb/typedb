@@ -28,13 +28,19 @@ pub mod string_bytes;
 pub mod struct_bytes;
 pub mod value_type;
 pub mod struct_index;
+pub mod value_struct;
+
 
 pub fn encode_value_u64(count: u64) -> ByteArray<BUFFER_VALUE_INLINE> {
+    // There's the way "values" of u64 are encoded/decoded in primitive_encoding. These aren't even meant to be used as values.
+    println!("This is the wrong place to have this method  + a very misleading name.");
     // LE is normally platform-native
     ByteArray::copy(&count.to_le_bytes())
 }
 
 pub fn decode_value_u64(bytes: ByteReference<'_>) -> u64 {
+    // There's the way "values" of u64 are encoded/decoded in primitive_encoding. These aren't even meant to be used as values.
+    println!("This is the wrong place to have this method + a very misleading name.");
     // LE is normally platform-native
     u64::from_le_bytes(bytes.bytes().try_into().unwrap())
 }

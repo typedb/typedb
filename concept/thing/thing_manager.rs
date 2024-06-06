@@ -31,7 +31,7 @@ use encoding::{
         encode_value_u64,
         long_bytes::LongBytes,
         string_bytes::StringBytes,
-        struct_bytes::{StructBytes, StructRepresentation},
+        struct_bytes::StructBytes,
         value_type::ValueType,
         ValueEncodable,
     },
@@ -41,6 +41,7 @@ use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use regex::Regex;
 use encoding::graph::thing::vertex_attribute::StructAttributeID;
+use encoding::value::value_struct::StructValue;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_range::KeyRange,
@@ -58,7 +59,6 @@ use crate::{
         object::{HasAttributeIterator, Object, ObjectAPI, ObjectIterator},
         relation::{IndexedPlayersIterator, Relation, RelationIterator, RelationRoleIterator, RolePlayerIterator},
         value::Value,
-        value_struct::StructValue,
         ThingAPI,
     },
     type_::{
@@ -246,9 +246,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_struct();
                 Ok(snapshot
                     .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
-                        Value::Struct(Cow::Owned(StructValue::from_bytes(StructBytes::new(Bytes::<1>::Reference(
-                            bytes,
-                        )))))
+                        Value::Struct(Cow::Owned(StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct()))
                     })
                     .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
                     .unwrap())

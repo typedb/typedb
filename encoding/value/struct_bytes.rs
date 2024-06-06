@@ -10,16 +10,11 @@ use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use serde::{Deserialize, Serialize};
 
 use crate::AsBytes;
+use crate::value::value_struct::StructValue;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct StructBytes<'a, const INLINE_LENGTH: usize> {
     bytes: Bytes<'a, INLINE_LENGTH>,
-}
-
-pub trait StructRepresentation<'a>: Clone {
-    fn to_bytes<const INLINE_LENGTH: usize>(&self) -> StructBytes<'static, INLINE_LENGTH>;
-
-    fn from_bytes<'b, const INLINE_LENGTH: usize>(struct_bytes: StructBytes<'b, INLINE_LENGTH>) -> Self;
 }
 
 impl<'a, const INLINE_LENGTH: usize> StructBytes<'a, INLINE_LENGTH> {
@@ -27,12 +22,12 @@ impl<'a, const INLINE_LENGTH: usize> StructBytes<'a, INLINE_LENGTH> {
         StructBytes { bytes: value }
     }
 
-    pub fn build<T: StructRepresentation<'a>>(struct_value: &Cow<T>) -> StructBytes<'static, INLINE_LENGTH> {
-        struct_value.to_bytes()
+    pub fn build(struct_value: &Cow<StructValue<'a>>) -> StructBytes<'static, INLINE_LENGTH> {
+        StructBytes::new(Bytes::Array(ByteArray::boxed(bincode::serialize(struct_value).unwrap().into_boxed_slice())))
     }
 
-    pub fn as_struct<T: StructRepresentation<'a>>(self) -> T {
-        T::from_bytes(self)
+    pub fn as_struct(self) -> StructValue<'static> {
+        bincode::deserialize(self.bytes().into_bytes()).unwrap()
     }
 
     pub fn length(&self) -> usize {

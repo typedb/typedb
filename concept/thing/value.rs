@@ -14,8 +14,7 @@ use encoding::value::{
     duration_value::Duration, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
     value_type::ValueType, ValueEncodable,
 };
-
-use crate::thing::value_struct::StructValue;
+use encoding::value::value_struct::StructValue;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value<'a> {

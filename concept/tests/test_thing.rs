@@ -13,7 +13,6 @@ use concept::{
         object::{Object, ObjectAPI},
         thing_manager::ThingManager,
         value::Value,
-        value_struct::StructValue,
     },
     type_::{
         annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent},
@@ -31,9 +30,10 @@ use encoding::{
         thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
-    value::{label::Label, value_type::ValueType},
+    value::{label::Label, value_type::ValueType, value_struct::StructValue},
     AsBytes, EncodingKeyspace,
 };
+use encoding::value::value_struct::FieldValue;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
@@ -742,8 +742,8 @@ fn struct_create() {
     let definition_0 = StructDefinition::define(struct_0_name.to_owned(), fields_0);
 
     let instance_0_fields = HashMap::from([
-        ("s0_f0_l0".to_owned(), Value::Long(123)),
-        ("s0_f1_s0".to_owned(), Value::String(Cow::Owned("abc".to_owned()))),
+        ("s0_f0_l0".to_owned(), FieldValue::Long(123)),
+        ("s0_f1_s0".to_owned(), FieldValue::String(Cow::Owned("abc".to_owned()))),
     ]);
     let struct_0_key = {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
