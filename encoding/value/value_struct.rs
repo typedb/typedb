@@ -20,28 +20,22 @@ use std::sync::Arc;
 use chrono::{DateTime, NaiveDateTime};
 use chrono_tz::Tz;
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
-use crate::{
-    error::EncodingError,
-    graph::definition::{
-        definition_key::DefinitionKey,
-        r#struct::{StructDefinition, StructDefinitionField},
-    },
-    layout::prefix::{Prefix, PrefixID},
-    value::{
-        boolean_bytes::BooleanBytes,
-        date_time_bytes::DateTimeBytes,
-        date_time_tz_bytes::DateTimeTZBytes,
-        decimal_bytes::DecimalBytes,
-        double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes,
-        long_bytes::LongBytes,
-        string_bytes::StringBytes,
-        struct_bytes::StructBytes,
-        ValueEncodable,
-    },
-    AsBytes,
-};
+use bytes::{byte_reference::ByteReference, Bytes};
+use crate::{error::EncodingError, graph::definition::{
+    definition_key::DefinitionKey,
+    r#struct::{StructDefinition, StructDefinitionField},
+}, layout::prefix::{Prefix, PrefixID}, value::{
+    boolean_bytes::BooleanBytes,
+    date_time_bytes::DateTimeBytes,
+    date_time_tz_bytes::DateTimeTZBytes,
+    decimal_bytes::DecimalBytes,
+    double_bytes::DoubleBytes,
+    duration_bytes::DurationBytes,
+    long_bytes::LongBytes,
+    string_bytes::StringBytes,
+    struct_bytes::StructBytes,
+    ValueEncodable,
+}, AsBytes, EncodingKeyspace, Keyable};
 use resource::constants::{encoding, encoding::StructFieldIDUInt, snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE}};
 use serde::{
     de,
@@ -49,11 +43,20 @@ use serde::{
     ser::{SerializeSeq},
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use crate::graph::thing::vertex_attribute::{AttributeIDLength, StructAttributeID};
+use bytes::byte_array::ByteArray;
+use lending_iterator::LendingIterator;
+use primitive::either::Either;
+use storage::key_range::KeyRange;
+use storage::key_value::StorageKey;
+use storage::snapshot::iterator::SnapshotIteratorError;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use crate::graph::common::value_hasher::DisambiguatingHashedID;
+use crate::graph::thing::vertex_attribute::{AttributeIDLength, AttributeVertex, StructAttributeID};
 use crate::graph::thing::vertex_generator::ThingVertexGenerator;
+use crate::graph::type_::vertex::TypeID;
 use crate::value::decimal_value::Decimal;
 use crate::value::duration_value::Duration;
-use crate::value::value_type::ValueType;
+use crate::value::value_type::{ValueType, ValueTypeCategory};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FieldValue<'a> { // Tempting to make it all static
@@ -133,58 +136,25 @@ impl<'a> StructValue<'a> {
     }
 
     // Deeply nested structs may take up a lot of space with the u16 path.
-    pub fn create_index_entries(&self, hasher: fn(&[u8]) -> u64, attribute_id: &StructAttributeID) -> Vec<StructIndexEntry<'a>> {
-        todo!();
-        let mut acc: Vec<StructIndexEntry<'a>> = Vec::new();
+    pub fn create_index_entries(&self, snapshot: &impl WritableSnapshot, hasher: &impl Fn(&[u8]) -> u64, attribute_id: &StructAttributeID) -> Result<Vec<StructIndexEntry>, Arc<SnapshotIteratorError>> {
+        let mut acc: Vec<StructIndexEntry> = Vec::new();
         let mut path: Vec<StructFieldIDUInt> = Vec::new();
-        Self::create_index_entries_recursively(hasher, attribute_id, &self.fields, &mut path, &mut acc);
-        acc
+        Self::create_index_entries_recursively(snapshot, hasher, attribute_id, &self.fields, &mut path, &mut acc)?;
+        Ok(acc)
     }
 
-    fn create_index_entries_recursively(hasher: fn(&[u8]) -> u64, attribute_id: &StructAttributeID, fields: &HashMap<StructFieldIDUInt, FieldValue<'a>>, path: &mut Vec<StructFieldIDUInt>, acc: &mut Vec<StructIndexEntry<'a>>) {
+    fn create_index_entries_recursively(snapshot: &impl WritableSnapshot, hasher: &impl Fn(&[u8]) -> u64, attribute_id: &StructAttributeID, fields: &HashMap<StructFieldIDUInt, FieldValue<'a>>, path: &mut Vec<StructFieldIDUInt>, acc: &mut Vec<StructIndexEntry>) -> Result<(), Arc<SnapshotIteratorError>>{
         for (idx, value) in fields.iter() {
             if let FieldValue::Struct(struct_val) = value {
                 path.push(*idx);
-                Self::create_index_entries_recursively(hasher.clone(), attribute_id, struct_val.fields(), path, acc);
+                Self::create_index_entries_recursively(snapshot, hasher.clone(), attribute_id, struct_val.fields(), path, acc)?;
                 let popped = path.pop().unwrap();
                 debug_assert_eq!(*idx, popped);
             } else {
-                acc.push(StructIndexEntry::build(hasher.clone(), path, value, attribute_id));
+                acc.push(StructIndexEntry::build(snapshot, hasher.clone(), path, value, attribute_id)?);
             }
         }
-    }
-}
-
-pub struct StructIndexEntry<'a> {
-    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
-}
-
-impl<'a> StructIndexEntry<'a> {
-
-    /// Encoded as:
-    /// Prefix::IndexValueToStruct{1} + field_id[u16] * depth + Value[SHORT_LENGTH|LONG_LENGTH] + StructAttributeID[STRUCT_ATTRIBUTE_ID_LENGTH]
-    ///  TODO: Are there advantages of encoding the definition_key at the beginning & attributeID at the end?
-    fn build(hasher: fn(&[u8]) -> u64, path: &Vec<u16>, value: &FieldValue<'a>, attribute_id: &StructAttributeID) -> StructIndexEntry<'a> {
-        let mut buf: Vec<u8> = Vec::with_capacity(PrefixID::LENGTH + path.len() + AttributeIDLength::Long.length() + StructAttributeID::LENGTH);
-        buf.extend_from_slice(&Prefix::IndexValueToStruct.prefix_id().bytes);
-        for p in path {
-            buf.extend_from_slice(&p.to_be_bytes())
-        }
-        match value {
-            FieldValue::Boolean(value) => buf.extend_from_slice(&BooleanBytes::build(*value).bytes()),
-            FieldValue::Long(value) => buf.extend_from_slice(&LongBytes::build(*value).bytes()),
-            FieldValue::Double(value) => buf.extend_from_slice(&DoubleBytes::build(*value).bytes()),
-            FieldValue::Decimal(value) => buf.extend_from_slice(&DecimalBytes::build(*value).bytes()),
-            FieldValue::DateTime(value) => buf.extend_from_slice(&DateTimeBytes::build(*value).bytes()),
-            FieldValue::DateTimeTZ(value) => buf.extend_from_slice(&DateTimeTZBytes::build(*value).bytes()),
-            FieldValue::Duration(value) => buf.extend_from_slice(&DurationBytes::build(*value).bytes()),
-            FieldValue::String(value) => {
-                todo!("Disambiguated string hashes"); // TODO: Do we want to disambiguate or just compare values.
-            },
-            FieldValue::Struct(_) => unreachable!(),
-        };
-        buf.extend_from_slice(attribute_id.bytes_ref());
-        Self { bytes: Bytes::copy(buf.into_boxed_slice().deref()) }
+        Ok(())
     }
 }
 
@@ -251,6 +221,72 @@ impl<'a> Serialize for FieldValue<'a> {
                 seq.end()
             }
         }
+    }
+}
+
+
+pub struct StructIndexEntry {
+    bytes: Bytes<'static, BUFFER_KEY_INLINE>,
+}
+
+impl StructIndexEntry {
+    const STRING_FIELD_HASH_LENGTH: usize = 9;
+    const STRING_FIELD_PREFIX_LENGTH: usize = 8;
+
+    /// Encoded as:
+    /// Prefix::IndexValueToStruct{1} + field_id[u16] * depth + Value[SHORT_LENGTH|LONG_LENGTH] + StructAttributeID[STRUCT_ATTRIBUTE_ID_LENGTH]
+    ///  TODO: Are there advantages of encoding the definition_key at the beginning & attributeID at the end?
+    fn build<'a>(snapshot: &impl WritableSnapshot, hasher: &impl Fn(&[u8]) -> u64, path: &Vec<u16>, value: &FieldValue<'a>, attribute_id: &StructAttributeID) -> Result<StructIndexEntry, Arc<SnapshotIteratorError>> // We need to store it as well.
+    {
+        let mut buf: Vec<u8> = Vec::with_capacity(PrefixID::LENGTH + path.len() + AttributeIDLength::Long.length() + StructAttributeID::LENGTH);
+        buf.extend_from_slice(&Prefix::IndexValueToStruct.prefix_id().bytes);
+        for p in path {
+            buf.extend_from_slice(&p.to_be_bytes())
+        }
+        match value {
+            FieldValue::Boolean(value) => buf.extend_from_slice(&BooleanBytes::build(*value).bytes()),
+            FieldValue::Long(value) => buf.extend_from_slice(&LongBytes::build(*value).bytes()),
+            FieldValue::Double(value) => buf.extend_from_slice(&DoubleBytes::build(*value).bytes()),
+            FieldValue::Decimal(value) => buf.extend_from_slice(&DecimalBytes::build(*value).bytes()),
+            FieldValue::DateTime(value) => buf.extend_from_slice(&DateTimeBytes::build(*value).bytes()),
+            FieldValue::DateTimeTZ(value) => buf.extend_from_slice(&DateTimeTZBytes::build(*value).bytes()),
+            FieldValue::Duration(value) => buf.extend_from_slice(&DurationBytes::build(*value).bytes()),
+            FieldValue::String(value) => {
+                let bytes = StringBytes::<0>::build_ref(value).into_bytes();
+                buf.extend_from_slice(&bytes.bytes()[0..Self::STRING_FIELD_PREFIX_LENGTH]);
+                let prefix_key = Bytes::reference(buf.as_slice());
+                let disambiguated_hash_bytes: [u8; StructIndexEntry::STRING_FIELD_HASH_LENGTH] =
+                    match Self::find_existing_or_next_disambiguated_hash(snapshot, hasher, prefix_key, bytes.bytes())? {
+                        Either::First(hash) => hash,
+                        Either::Second(hash) => hash
+                    };
+                buf.extend_from_slice(&disambiguated_hash_bytes);
+            },
+            FieldValue::Struct(_) => unreachable!(),
+        };
+        buf.extend_from_slice(attribute_id.bytes_ref());
+        Ok(Self { bytes: Bytes::copy(buf.into_boxed_slice().deref()) })
+    }
+}
+
+impl DisambiguatingHashedID<{StructIndexEntry::STRING_FIELD_HASH_LENGTH}> for StructIndexEntry {
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data; // TODO
+    const FIXED_WIDTH_KEYS: bool = {  Prefix::IndexValueToStruct.fixed_width_keys() };
+}
+
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for StructIndexEntry {
+    fn bytes(&'a self) -> ByteReference<'a> {
+        self.bytes.as_reference()
+    }
+
+    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
+        self.bytes
+    }
+}
+
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for StructIndexEntry {
+    fn keyspace(&self) -> EncodingKeyspace {
+        Self::KEYSPACE
     }
 }
 

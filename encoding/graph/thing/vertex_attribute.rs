@@ -775,7 +775,7 @@ impl StringAttributeID {
     }
 
     pub fn is_inline(&self) -> bool {
-        !Self::is_inline_bytes(&self.bytes)
+        Self::is_inline_bytes(&self.bytes)
     }
 
     pub fn get_hash_disambiguator(&self) -> u8 {

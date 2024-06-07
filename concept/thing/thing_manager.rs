@@ -877,9 +877,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 }
                 Value::Struct(struct_) => {
                     let encoded_struct: StructBytes<'static, BUFFER_KEY_INLINE> = StructBytes::build(&struct_);
-                    self.vertex_generator
+                    let struct_attribute = self.vertex_generator
                         .create_attribute_struct(attribute_type.vertex().type_id_(), encoded_struct, snapshot)
-                        .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
+                        .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
+                    self.index_struct_fields(snapshot, struct_attribute.attribute_id().unwrap_struct(), &struct_);
+                    struct_attribute
                 }
             };
             Ok(Attribute::new(vertex))
@@ -891,9 +893,12 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         }
     }
 
-    fn index_struct_fields<'a>(&self, snapshot: &mut Snapshot, attribute_id: StructAttributeID, struct_value: StructValue<'a>) {
-        // let index_entries = struct_value.TEMP__create_index_entries(self.vertex_generator.clone(), attribute_id);
-        todo!()
+    fn index_struct_fields<'a>(&self, snapshot: &mut Snapshot, attribute_id: StructAttributeID, struct_value: &StructValue<'a>) {
+        // TODO: I shouldn't be unwrapping the result
+        let index_entries = struct_value.create_index_entries(snapshot, self.vertex_generator.TEMP__hasher(), &attribute_id).unwrap();
+        for entry in index_entries {
+            snapshot.put(entry.into_storage_key().into_owned_array());
+        }
     }
 
     pub(crate) fn delete_entity(&self, snapshot: &mut Snapshot, entity: Entity<'_>) {
