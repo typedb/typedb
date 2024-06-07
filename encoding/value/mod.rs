@@ -26,10 +26,9 @@ pub mod long_bytes;
 mod primitive_encoding;
 pub mod string_bytes;
 pub mod struct_bytes;
-pub mod value_type;
 pub mod struct_index;
 pub mod value_struct;
-
+pub mod value_type;
 
 pub fn encode_value_u64(count: u64) -> ByteArray<BUFFER_VALUE_INLINE> {
     // There's the way "values" of u64 are encoded/decoded in primitive_encoding. These aren't even meant to be used as values.

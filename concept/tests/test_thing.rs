@@ -19,11 +19,10 @@ use concept::{
         attribute_type::AttributeTypeAnnotation,
         owns::OwnsAnnotation,
         role_type::RoleTypeAnnotation,
-        type_manager::TypeManager,
+        type_manager::{type_reader::TypeReader, TypeManager},
         Ordering, OwnerAPI, PlayerAPI,
     },
 };
-use concept::type_::type_manager::type_reader::TypeReader;
 use durability::wal::WAL;
 use encoding::{
     graph::{
@@ -31,17 +30,19 @@ use encoding::{
         thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
-    value::{label::Label, value_type::ValueType, value_struct::StructValue},
+    value::{
+        label::Label,
+        value_struct::{FieldValue, StructValue},
+        value_type::ValueType,
+    },
     AsBytes, EncodingKeyspace,
 };
-use encoding::value::value_struct::FieldValue;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
+    snapshot::{CommittableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
 };
-use storage::snapshot::WritableSnapshot;
 use test_utils::{create_tmp_dir, init_logging};
 
 #[test]
@@ -728,7 +729,7 @@ fn create_and_read_string_attributes() {
         definition_key_generator.clone(),
         type_vertex_generator.clone(),
     )
-        .unwrap();
+    .unwrap();
 
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
     let type_manager =
@@ -752,8 +753,12 @@ fn create_and_read_string_attributes() {
 
     {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        thing_manager.create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str()))).unwrap();
-        thing_manager.create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str()))).unwrap();
+        thing_manager
+            .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .unwrap();
+        thing_manager
+            .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .unwrap();
         snapshot.commit().unwrap();
     };
 
@@ -761,18 +766,25 @@ fn create_and_read_string_attributes() {
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let mut attrs = thing_manager.get_attributes_in(&snapshot, attr_type.clone()).unwrap().collect_cloned();
-        let attr_values: Vec<String> = attrs.into_iter().map(|mut attr| {
-            (*attr.get_value(&snapshot, &thing_manager).unwrap().unwrap_string()).to_owned()
-        }).collect();
+        let attr_values: Vec<String> = attrs
+            .into_iter()
+            .map(|mut attr| (*attr.get_value(&snapshot, &thing_manager).unwrap().unwrap_string()).to_owned())
+            .collect();
         assert!(attr_values.contains(&short_string));
         assert!(attr_values.contains(&long_string));
     }
     // read them back by value
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let mut read_short_string = thing_manager.get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str()))).unwrap().unwrap();
+        let mut read_short_string = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .unwrap()
+            .unwrap();
         assert_eq!(short_string, read_short_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
-        let mut read_long_string = thing_manager.get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str()))).unwrap().unwrap();
+        let mut read_long_string = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .unwrap()
+            .unwrap();
         assert_eq!(long_string, read_long_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
     }
 }
@@ -856,7 +868,10 @@ fn struct_create() {
             _ => assert!(false, "Wrong data type"),
         }
 
-        let attr_0_by_id = thing_manager.get_attribute_with_value(&snapshot, attr_0_type.clone(), Value::Struct(Cow::Borrowed(&instance_0))).unwrap().unwrap();
+        let attr_0_by_id = thing_manager
+            .get_attribute_with_value(&snapshot, attr_0_type.clone(), Value::Struct(Cow::Borrowed(&instance_0)))
+            .unwrap()
+            .unwrap();
         assert_eq!(attr_0, attr_0_by_id);
 
         snapshot.close_resources();

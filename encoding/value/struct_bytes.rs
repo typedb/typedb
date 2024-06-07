@@ -9,8 +9,7 @@ use std::{borrow::Cow, fmt};
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use serde::{Deserialize, Serialize};
 
-use crate::AsBytes;
-use crate::value::value_struct::StructValue;
+use crate::{value::value_struct::StructValue, AsBytes};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct StructBytes<'a, const INLINE_LENGTH: usize> {

@@ -12,9 +12,8 @@ use encoding::value::{
     boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
     decimal_bytes::DecimalBytes, decimal_value::Decimal, double_bytes::DoubleBytes, duration_bytes::DurationBytes,
     duration_value::Duration, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
-    value_type::ValueType, ValueEncodable,
+    value_struct::StructValue, value_type::ValueType, ValueEncodable,
 };
-use encoding::value::value_struct::StructValue;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value<'a> {
@@ -174,9 +173,7 @@ impl<'a> ValueEncodable for Value<'a> {
 
     fn encode_struct<const INLINE_LENGTH: usize>(&self) -> StructBytes<'static, INLINE_LENGTH> {
         match self {
-            Value::Struct(struct_) => {
-                StructBytes::build(struct_)
-            }
+            Value::Struct(struct_) => StructBytes::build(struct_),
             _ => panic!("Cannot encode non-Struct as StructBytes"),
         }
     }

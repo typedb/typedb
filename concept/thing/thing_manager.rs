@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
-use std::any::Any;
+use std::{any::Any, borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -13,11 +12,11 @@ use encoding::{
         thing::{
             edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeRelationIndex, ThingEdgeRolePlayer},
             property::{HAS_ORDER_PROPERTY_FACTORY, ROLE_PLAYER_ORDER_PROPERTY_FACTORY},
-            vertex_attribute::{AttributeID, AttributeVertex},
+            vertex_attribute::{AttributeID, AttributeVertex, StructAttributeID},
             vertex_generator::ThingVertexGenerator,
             vertex_object::ObjectVertex,
         },
-        type_::vertex::TypeVertexEncoding,
+        type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
     layout::prefix::Prefix,
@@ -33,7 +32,8 @@ use encoding::{
         long_bytes::LongBytes,
         string_bytes::StringBytes,
         struct_bytes::StructBytes,
-        value_type::ValueType,
+        value_struct::StructValue,
+        value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
     },
     Keyable,
@@ -41,10 +41,6 @@ use encoding::{
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use regex::Regex;
-use encoding::graph::thing::vertex_attribute::StructAttributeID;
-use encoding::graph::type_::vertex::PrefixedTypeVertexEncoding;
-use encoding::value::value_struct::StructValue;
-use encoding::value::value_type::ValueTypeCategory;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_range::KeyRange,
@@ -70,12 +66,11 @@ use crate::{
         object_type::ObjectType,
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::TypeManager,
+        type_manager::{type_reader::TypeReader, TypeManager},
         ObjectTypeAPI, OwnerAPI, TypeAPI,
     },
     ConceptStatus,
 };
-use crate::type_::type_manager::type_reader::TypeReader;
 
 pub struct ThingManager<Snapshot> {
     vertex_generator: Arc<ThingVertexGenerator>,
@@ -246,14 +241,12 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                         .unwrap())
                 }
             }
-            ValueType::Struct(definition_key) => {
-                Ok(snapshot
-                    .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
-                        Value::Struct(Cow::Owned(StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct()))
-                    })
-                    .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
-                    .unwrap())
-            }
+            ValueType::Struct(definition_key) => Ok(snapshot
+                .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
+                    Value::Struct(Cow::Owned(StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct()))
+                })
+                .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
+                .unwrap()),
         }
     }
 
@@ -295,9 +288,11 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                         value.encode_string::<256>(),
                         snapshot,
                     ) {
-                        Ok(Some(id)) => Attribute::new(
-                            AttributeVertex::build(ValueTypeCategory::String, attribute_type.vertex().type_id_(), AttributeID::String(id))
-                        ),
+                        Ok(Some(id)) => Attribute::new(AttributeVertex::build(
+                            ValueTypeCategory::String,
+                            attribute_type.vertex().type_id_(),
+                            AttributeID::String(id),
+                        )),
                         Ok(None) => return Ok(None),
                         Err(err) => return Err(ConceptReadError::SnapshotIterate { source: err }),
                     }
@@ -310,12 +305,14 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                     snapshot,
                 ) {
                     Ok(Some(id)) => {
-                        let attribute = Attribute::new(
-                            AttributeVertex::build(ValueTypeCategory::Struct, attribute_type.vertex().type_id_(), AttributeID::Struct(id))
-                        );
+                        let attribute = Attribute::new(AttributeVertex::build(
+                            ValueTypeCategory::Struct,
+                            attribute_type.vertex().type_id_(),
+                            AttributeID::Struct(id),
+                        ));
                         let type_from_attribute = attribute.clone().type_();
                         attribute
-                    },
+                    }
                     Ok(None) => return Ok(None),
                     Err(err) => return Err(ConceptReadError::SnapshotIterate { source: err }),
                 }
@@ -896,7 +893,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 }
                 Value::Struct(struct_) => {
                     let encoded_struct: StructBytes<'static, BUFFER_KEY_INLINE> = StructBytes::build(&struct_);
-                    let struct_attribute = self.vertex_generator
+                    let struct_attribute = self
+                        .vertex_generator
                         .create_attribute_struct(attribute_type.vertex().type_id_(), encoded_struct, snapshot)
                         .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
                     self.index_struct_fields(snapshot, struct_attribute.attribute_id().unwrap_struct(), &struct_);
@@ -912,9 +910,15 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         }
     }
 
-    fn index_struct_fields<'a>(&self, snapshot: &mut Snapshot, attribute_id: StructAttributeID, struct_value: &StructValue<'a>) {
+    fn index_struct_fields<'a>(
+        &self,
+        snapshot: &mut Snapshot,
+        attribute_id: StructAttributeID,
+        struct_value: &StructValue<'a>,
+    ) {
         // TODO: I shouldn't be unwrapping the result
-        let index_entries = struct_value.create_index_entries(snapshot, self.vertex_generator.TEMP__hasher(), &attribute_id).unwrap();
+        let index_entries =
+            struct_value.create_index_entries(snapshot, self.vertex_generator.TEMP__hasher(), &attribute_id).unwrap();
         for entry in index_entries {
             snapshot.put(entry.into_storage_key().into_owned_array());
         }

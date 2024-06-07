@@ -14,52 +14,68 @@ use std::{
     borrow::Cow,
     collections::HashMap,
     fmt::{Formatter, Write},
+    ops::Deref,
+    sync::Arc,
 };
-use std::ops::Deref;
-use std::sync::Arc;
+
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use chrono::{DateTime, NaiveDateTime};
 use chrono_tz::Tz;
-
-use bytes::{byte_reference::ByteReference, Bytes};
-use crate::{error::EncodingError, graph::definition::{
-    definition_key::DefinitionKey,
-    r#struct::{StructDefinition, StructDefinitionField},
-}, layout::prefix::{Prefix, PrefixID}, value::{
-    boolean_bytes::BooleanBytes,
-    date_time_bytes::DateTimeBytes,
-    date_time_tz_bytes::DateTimeTZBytes,
-    decimal_bytes::DecimalBytes,
-    double_bytes::DoubleBytes,
-    duration_bytes::DurationBytes,
-    long_bytes::LongBytes,
-    string_bytes::StringBytes,
-    struct_bytes::StructBytes,
-    ValueEncodable,
-}, AsBytes, EncodingKeyspace, Keyable};
-use resource::constants::{encoding, encoding::StructFieldIDUInt, snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE}};
+use lending_iterator::LendingIterator;
+use primitive::either::Either;
+use resource::constants::{
+    encoding,
+    encoding::StructFieldIDUInt,
+    snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+};
 use serde::{
     de,
     de::{EnumAccess, SeqAccess, Unexpected, VariantAccess, Visitor},
-    ser::{SerializeSeq},
+    ser::SerializeSeq,
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use bytes::byte_array::ByteArray;
-use lending_iterator::LendingIterator;
-use primitive::either::Either;
-use storage::key_range::KeyRange;
-use storage::key_value::StorageKey;
-use storage::snapshot::iterator::SnapshotIteratorError;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use crate::graph::common::value_hasher::DisambiguatingHashedID;
-use crate::graph::thing::vertex_attribute::{AttributeIDLength, AttributeVertex, StructAttributeID};
-use crate::graph::thing::vertex_generator::ThingVertexGenerator;
-use crate::graph::type_::vertex::TypeID;
-use crate::value::decimal_value::Decimal;
-use crate::value::duration_value::Duration;
-use crate::value::value_type::{ValueType, ValueTypeCategory};
+use storage::{
+    key_range::KeyRange,
+    key_value::StorageKey,
+    snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
+};
+
+use crate::{
+    error::EncodingError,
+    graph::{
+        common::value_hasher::DisambiguatingHashedID,
+        definition::{
+            definition_key::DefinitionKey,
+            r#struct::{StructDefinition, StructDefinitionField},
+        },
+        thing::{
+            vertex_attribute::{AttributeIDLength, AttributeVertex, StructAttributeID},
+            vertex_generator::ThingVertexGenerator,
+        },
+        type_::vertex::TypeID,
+    },
+    layout::prefix::{Prefix, PrefixID},
+    value::{
+        boolean_bytes::BooleanBytes,
+        date_time_bytes::DateTimeBytes,
+        date_time_tz_bytes::DateTimeTZBytes,
+        decimal_bytes::DecimalBytes,
+        decimal_value::Decimal,
+        double_bytes::DoubleBytes,
+        duration_bytes::DurationBytes,
+        duration_value::Duration,
+        long_bytes::LongBytes,
+        string_bytes::StringBytes,
+        struct_bytes::StructBytes,
+        value_type::{ValueType, ValueTypeCategory},
+        ValueEncodable,
+    },
+    AsBytes, EncodingKeyspace, Keyable,
+};
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum FieldValue<'a> { // Tempting to make it all static
+pub enum FieldValue<'a> {
+    // Tempting to make it all static
     Boolean(bool),
     Long(i64),
     Double(f64),
@@ -136,18 +152,37 @@ impl<'a> StructValue<'a> {
     }
 
     // Deeply nested structs may take up a lot of space with the u16 path.
-    pub fn create_index_entries(&self, snapshot: &impl WritableSnapshot, hasher: &impl Fn(&[u8]) -> u64, attribute_id: &StructAttributeID) -> Result<Vec<StructIndexEntry>, Arc<SnapshotIteratorError>> {
+    pub fn create_index_entries(
+        &self,
+        snapshot: &impl WritableSnapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+        attribute_id: &StructAttributeID,
+    ) -> Result<Vec<StructIndexEntry>, Arc<SnapshotIteratorError>> {
         let mut acc: Vec<StructIndexEntry> = Vec::new();
         let mut path: Vec<StructFieldIDUInt> = Vec::new();
         Self::create_index_entries_recursively(snapshot, hasher, attribute_id, &self.fields, &mut path, &mut acc)?;
         Ok(acc)
     }
 
-    fn create_index_entries_recursively(snapshot: &impl WritableSnapshot, hasher: &impl Fn(&[u8]) -> u64, attribute_id: &StructAttributeID, fields: &HashMap<StructFieldIDUInt, FieldValue<'a>>, path: &mut Vec<StructFieldIDUInt>, acc: &mut Vec<StructIndexEntry>) -> Result<(), Arc<SnapshotIteratorError>>{
+    fn create_index_entries_recursively(
+        snapshot: &impl WritableSnapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+        attribute_id: &StructAttributeID,
+        fields: &HashMap<StructFieldIDUInt, FieldValue<'a>>,
+        path: &mut Vec<StructFieldIDUInt>,
+        acc: &mut Vec<StructIndexEntry>,
+    ) -> Result<(), Arc<SnapshotIteratorError>> {
         for (idx, value) in fields.iter() {
             if let FieldValue::Struct(struct_val) = value {
                 path.push(*idx);
-                Self::create_index_entries_recursively(snapshot, hasher.clone(), attribute_id, struct_val.fields(), path, acc)?;
+                Self::create_index_entries_recursively(
+                    snapshot,
+                    hasher.clone(),
+                    attribute_id,
+                    struct_val.fields(),
+                    path,
+                    acc,
+                )?;
                 let popped = path.pop().unwrap();
                 debug_assert_eq!(*idx, popped);
             } else {
@@ -224,26 +259,34 @@ impl<'a> Serialize for FieldValue<'a> {
     }
 }
 
-
 pub struct StructIndexEntry {
     bytes: Bytes<'static, BUFFER_KEY_INLINE>,
 }
 
 impl StructIndexEntry {
-    const STRING_FIELD_LENGTH : usize = 17;
+    const STRING_FIELD_LENGTH: usize = 17;
     const STRING_FIELD_DISAMBIGUATED_HASH_LENGTH: usize = 9;
-    const STRING_FIELD_HASHED_PREFIX_LENGTH: usize = {Self::STRING_FIELD_LENGTH - Self::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH};
-    const STRING_FIELD_HASHED_FLAG : u8 = 0b1000_0000;
+    const STRING_FIELD_HASHED_PREFIX_LENGTH: usize =
+        { Self::STRING_FIELD_LENGTH - Self::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH };
+    const STRING_FIELD_HASHED_FLAG: u8 = 0b1000_0000;
     const STRING_FIELD_HASHED_FLAG_INDEX: usize = Self::STRING_FIELD_HASHED_HASH_LENGTH;
     const STRING_FIELD_HASHED_HASH_LENGTH: usize = Self::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH - 1;
-    const STRING_FIELD_INLINE_LENGTH: usize = {Self::STRING_FIELD_LENGTH - 1};
+    const STRING_FIELD_INLINE_LENGTH: usize = { Self::STRING_FIELD_LENGTH - 1 };
 
     /// Encoded as:
     /// Prefix::IndexValueToStruct{1} + field_id[u16] * depth + Value[SHORT_LENGTH|LONG_LENGTH] + StructAttributeID[STRUCT_ATTRIBUTE_ID_LENGTH]
     ///  TODO: Are there advantages of encoding the definition_key at the beginning & attributeID at the end?
-    fn build<'a>(snapshot: &impl WritableSnapshot, hasher: &impl Fn(&[u8]) -> u64, path: &Vec<u16>, value: &FieldValue<'a>, attribute_id: &StructAttributeID) -> Result<StructIndexEntry, Arc<SnapshotIteratorError>> // We need to store it as well.
+    fn build<'a>(
+        snapshot: &impl WritableSnapshot,
+        hasher: &impl Fn(&[u8]) -> u64,
+        path: &Vec<u16>,
+        value: &FieldValue<'a>,
+        attribute_id: &StructAttributeID,
+    ) -> Result<StructIndexEntry, Arc<SnapshotIteratorError>> // We need to store it as well.
     {
-        let mut buf: Vec<u8> = Vec::with_capacity(PrefixID::LENGTH + path.len() + AttributeIDLength::Long.length() + StructAttributeID::LENGTH);
+        let mut buf: Vec<u8> = Vec::with_capacity(
+            PrefixID::LENGTH + path.len() + AttributeIDLength::Long.length() + StructAttributeID::LENGTH,
+        );
         buf.extend_from_slice(&Prefix::IndexValueToStruct.prefix_id().bytes);
         for p in path {
             buf.extend_from_slice(&p.to_be_bytes())
@@ -259,7 +302,8 @@ impl StructIndexEntry {
             FieldValue::String(value) => {
                 let string_bytes = StringBytes::<0>::build_ref(value);
                 if Self::is_inlineable(string_bytes.as_reference()) {
-                    let mut inline_bytes : [u8; Self::STRING_FIELD_INLINE_LENGTH] = [0; Self::STRING_FIELD_INLINE_LENGTH];
+                    let mut inline_bytes: [u8; Self::STRING_FIELD_INLINE_LENGTH] =
+                        [0; Self::STRING_FIELD_INLINE_LENGTH];
                     inline_bytes[0..string_bytes.bytes().length()].copy_from_slice(string_bytes.bytes().bytes());
                     buf.extend_from_slice(&inline_bytes);
                     buf.push(string_bytes.length() as u8);
@@ -267,18 +311,27 @@ impl StructIndexEntry {
                     buf.extend_from_slice(&string_bytes.bytes().bytes()[0..Self::STRING_FIELD_HASHED_PREFIX_LENGTH]);
                     let prefix_key = Bytes::reference(buf.as_slice());
                     let mut disambiguated_hash_bytes: [u8; StructIndexEntry::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH] =
-                        match Self::find_existing_or_next_disambiguated_hash(snapshot, hasher, prefix_key, string_bytes.bytes().bytes())? {
+                        match Self::find_existing_or_next_disambiguated_hash(
+                            snapshot,
+                            hasher,
+                            prefix_key,
+                            string_bytes.bytes().bytes(),
+                        )? {
                             Either::First(hash) => hash,
-                            Either::Second(hash) => hash
+                            Either::Second(hash) => hash,
                         };
-                    if disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] & Self::STRING_FIELD_HASHED_FLAG == 1 {
+                    if disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] & Self::STRING_FIELD_HASHED_FLAG
+                        == 1
+                    {
                         panic!("Too many collisions when allocating struct value hash")
                     } else {
-                        disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] = disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] | Self::STRING_FIELD_HASHED_FLAG;
+                        disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] = disambiguated_hash_bytes
+                            [Self::STRING_FIELD_HASHED_FLAG_INDEX]
+                            | Self::STRING_FIELD_HASHED_FLAG;
                     }
                     buf.extend_from_slice(&disambiguated_hash_bytes);
                 }
-            },
+            }
             FieldValue::Struct(_) => unreachable!(),
         };
         buf.extend_from_slice(attribute_id.bytes_ref());
@@ -290,9 +343,9 @@ impl StructIndexEntry {
     }
 }
 
-impl DisambiguatingHashedID<{StructIndexEntry::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH }> for StructIndexEntry {
+impl DisambiguatingHashedID<{ StructIndexEntry::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH }> for StructIndexEntry {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data; // TODO
-    const FIXED_WIDTH_KEYS: bool = {  Prefix::IndexValueToStruct.fixed_width_keys() };
+    const FIXED_WIDTH_KEYS: bool = { Prefix::IndexValueToStruct.fixed_width_keys() };
 }
 
 impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for StructIndexEntry {
@@ -422,19 +475,26 @@ impl<'a, 'de> Deserialize<'de> for StructValue<'a> {
 
 pub mod test {
     use std::{borrow::Cow, collections::HashMap};
-    use crate::graph::definition::definition_key::{DefinitionID, DefinitionKey};
-    use crate::graph::definition::r#struct::StructDefinition;
 
-    use crate::value::struct_bytes::StructBytes;
     use resource::constants::snapshot::BUFFER_VALUE_INLINE;
-    use crate::value::value_struct::{FieldValue, StructValue};
+
+    use crate::{
+        graph::definition::{
+            definition_key::{DefinitionID, DefinitionKey},
+            r#struct::StructDefinition,
+        },
+        value::{
+            struct_bytes::StructBytes,
+            value_struct::{FieldValue, StructValue},
+        },
+    };
 
     #[test]
     fn test_serde() {
         let long_value = FieldValue::Long(5);
         let nested_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
         let nested_fields = HashMap::from([(0, long_value)]);
-        let nested_struct = StructValue { definition_key: nested_key , fields: nested_fields };
+        let nested_struct = StructValue { definition_key: nested_key, fields: nested_fields };
 
         let struct_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
         let struct_fields = HashMap::from([(0, FieldValue::Struct(Cow::Owned(nested_struct.clone())))]);

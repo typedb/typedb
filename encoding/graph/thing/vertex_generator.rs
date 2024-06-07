@@ -396,10 +396,9 @@ impl ThingVertexGenerator {
         struct_bytes: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
     ) -> Result<Option<StructAttributeID>, Arc<SnapshotIteratorError>>
-        where
-            Snapshot: ReadableSnapshot,
+    where
+        Snapshot: ReadableSnapshot,
     {
         StructAttributeID::find_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)
     }
-
 }
