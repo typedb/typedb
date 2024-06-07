@@ -295,7 +295,9 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                         value.encode_string::<256>(),
                         snapshot,
                     ) {
-                        Ok(Some(id)) => Attribute::new(AttributeVertex::new(Bytes::copy(&id.bytes()))),
+                        Ok(Some(id)) => Attribute::new(
+                            AttributeVertex::build(ValueTypeCategory::String, attribute_type.vertex().type_id_(), AttributeID::String(id))
+                        ),
                         Ok(None) => return Ok(None),
                         Err(err) => return Err(ConceptReadError::SnapshotIterate { source: err }),
                     }
@@ -308,7 +310,9 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                     snapshot,
                 ) {
                     Ok(Some(id)) => {
-                        let attribute = Attribute::new(AttributeVertex::build(ValueTypeCategory::Struct, attribute_type.vertex().type_id_(), AttributeID::Struct(id)));
+                        let attribute = Attribute::new(
+                            AttributeVertex::build(ValueTypeCategory::Struct, attribute_type.vertex().type_id_(), AttributeID::Struct(id))
+                        );
                         let type_from_attribute = attribute.clone().type_();
                         attribute
                     },

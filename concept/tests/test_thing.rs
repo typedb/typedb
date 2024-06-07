@@ -714,6 +714,70 @@ fn role_player_duplicates() {
 }
 
 #[test]
+fn create_and_read_string_attributes() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
+    );
+    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
+    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
+    TypeManager::<WriteSnapshot<WALClient>>::initialise_types(
+        storage.clone(),
+        definition_key_generator.clone(),
+        type_vertex_generator.clone(),
+    )
+        .unwrap();
+
+    let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
+    let type_manager =
+        Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
+    let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
+
+    let attr_label = Label::build("test_string_attr");
+    let short_string = "short".to_owned();
+    let long_string = "this string is 33 characters long".to_owned();
+    let attr_type = {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label, false).unwrap();
+        attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+        attr_type
+            .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .unwrap();
+
+        snapshot.commit().unwrap();
+        attr_type
+    };
+
+    {
+        let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        thing_manager.create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str()))).unwrap();
+        thing_manager.create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str()))).unwrap();
+        snapshot.commit().unwrap();
+    };
+
+    // read them back by type
+    {
+        let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let mut attrs = thing_manager.get_attributes_in(&snapshot, attr_type.clone()).unwrap().collect_cloned();
+        let attr_values: Vec<String> = attrs.into_iter().map(|mut attr| {
+            (*attr.get_value(&snapshot, &thing_manager).unwrap().unwrap_string()).to_owned()
+        }).collect();
+        assert!(attr_values.contains(&short_string));
+        assert!(attr_values.contains(&long_string));
+    }
+    // read them back by value
+    {
+        let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let mut read_short_string = thing_manager.get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str()))).unwrap().unwrap();
+        assert_eq!(short_string, read_short_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
+        let mut read_long_string = thing_manager.get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str()))).unwrap().unwrap();
+        assert_eq!(long_string, read_long_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
+    }
+}
+
+#[test]
 fn struct_create() {
     init_logging();
     let storage_path = create_tmp_dir();
