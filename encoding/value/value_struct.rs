@@ -230,8 +230,13 @@ pub struct StructIndexEntry {
 }
 
 impl StructIndexEntry {
-    const STRING_FIELD_HASH_LENGTH: usize = 9;
-    const STRING_FIELD_PREFIX_LENGTH: usize = 8;
+    const STRING_FIELD_LENGTH : usize = 17;
+    const STRING_FIELD_DISAMBIGUATED_HASH_LENGTH: usize = 9;
+    const STRING_FIELD_HASHED_PREFIX_LENGTH: usize = {Self::STRING_FIELD_LENGTH - Self::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH};
+    const STRING_FIELD_HASHED_FLAG : u8 = 0b1000_0000;
+    const STRING_FIELD_HASHED_FLAG_INDEX: usize = Self::STRING_FIELD_HASHED_HASH_LENGTH;
+    const STRING_FIELD_HASHED_HASH_LENGTH: usize = Self::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH - 1;
+    const STRING_FIELD_INLINE_LENGTH: usize = {Self::STRING_FIELD_LENGTH - 1};
 
     /// Encoded as:
     /// Prefix::IndexValueToStruct{1} + field_id[u16] * depth + Value[SHORT_LENGTH|LONG_LENGTH] + StructAttributeID[STRUCT_ATTRIBUTE_ID_LENGTH]
@@ -252,24 +257,40 @@ impl StructIndexEntry {
             FieldValue::DateTimeTZ(value) => buf.extend_from_slice(&DateTimeTZBytes::build(*value).bytes()),
             FieldValue::Duration(value) => buf.extend_from_slice(&DurationBytes::build(*value).bytes()),
             FieldValue::String(value) => {
-                let bytes = StringBytes::<0>::build_ref(value).into_bytes();
-                buf.extend_from_slice(&bytes.bytes()[0..Self::STRING_FIELD_PREFIX_LENGTH]);
-                let prefix_key = Bytes::reference(buf.as_slice());
-                let disambiguated_hash_bytes: [u8; StructIndexEntry::STRING_FIELD_HASH_LENGTH] =
-                    match Self::find_existing_or_next_disambiguated_hash(snapshot, hasher, prefix_key, bytes.bytes())? {
-                        Either::First(hash) => hash,
-                        Either::Second(hash) => hash
-                    };
-                buf.extend_from_slice(&disambiguated_hash_bytes);
+                let string_bytes = StringBytes::<0>::build_ref(value);
+                if Self::is_inlineable(string_bytes.as_reference()) {
+                    let mut inline_bytes : [u8; Self::STRING_FIELD_INLINE_LENGTH] = [0; Self::STRING_FIELD_INLINE_LENGTH];
+                    inline_bytes[0..string_bytes.bytes().length()].copy_from_slice(string_bytes.bytes().bytes());
+                    buf.extend_from_slice(&inline_bytes);
+                    buf.push(string_bytes.length() as u8);
+                } else {
+                    buf.extend_from_slice(&string_bytes.bytes().bytes()[0..Self::STRING_FIELD_HASHED_PREFIX_LENGTH]);
+                    let prefix_key = Bytes::reference(buf.as_slice());
+                    let mut disambiguated_hash_bytes: [u8; StructIndexEntry::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH] =
+                        match Self::find_existing_or_next_disambiguated_hash(snapshot, hasher, prefix_key, string_bytes.bytes().bytes())? {
+                            Either::First(hash) => hash,
+                            Either::Second(hash) => hash
+                        };
+                    if disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] & Self::STRING_FIELD_HASHED_FLAG == 1 {
+                        panic!("Too many collisions when allocating struct value hash")
+                    } else {
+                        disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] = disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] | Self::STRING_FIELD_HASHED_FLAG;
+                    }
+                    buf.extend_from_slice(&disambiguated_hash_bytes);
+                }
             },
             FieldValue::Struct(_) => unreachable!(),
         };
         buf.extend_from_slice(attribute_id.bytes_ref());
         Ok(Self { bytes: Bytes::copy(buf.into_boxed_slice().deref()) })
     }
+
+    fn is_inlineable<'a, const INLINE_SIZE: usize>(string_bytes: StringBytes<'a, INLINE_SIZE>) -> bool {
+        string_bytes.length() < Self::STRING_FIELD_HASHED_PREFIX_LENGTH + Self::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH
+    }
 }
 
-impl DisambiguatingHashedID<{StructIndexEntry::STRING_FIELD_HASH_LENGTH}> for StructIndexEntry {
+impl DisambiguatingHashedID<{StructIndexEntry::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH }> for StructIndexEntry {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data; // TODO
     const FIXED_WIDTH_KEYS: bool = {  Prefix::IndexValueToStruct.fixed_width_keys() };
 }
