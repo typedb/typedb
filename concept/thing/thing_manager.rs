@@ -5,6 +5,7 @@
  */
 
 use std::{borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
+use std::any::Any;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -41,7 +42,9 @@ use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use regex::Regex;
 use encoding::graph::thing::vertex_attribute::StructAttributeID;
+use encoding::graph::type_::vertex::PrefixedTypeVertexEncoding;
 use encoding::value::value_struct::StructValue;
+use encoding::value::value_type::ValueTypeCategory;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_range::KeyRange,
@@ -72,6 +75,7 @@ use crate::{
     },
     ConceptStatus,
 };
+use crate::type_::type_manager::type_reader::TypeReader;
 
 pub struct ThingManager<Snapshot> {
     vertex_generator: Arc<ThingVertexGenerator>,
@@ -243,7 +247,6 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                 }
             }
             ValueType::Struct(definition_key) => {
-                let attribute_id = attribute.vertex().attribute_id().unwrap_struct();
                 Ok(snapshot
                     .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
                         Value::Struct(Cow::Owned(StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct()))
@@ -298,8 +301,20 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                     }
                 }
             }
-            ValueType::Struct(definition_key) => {
-                todo!()
+            ValueType::Struct(_) => {
+                match self.vertex_generator.find_attribute_id_struct(
+                    attribute_type.vertex().type_id_(),
+                    value.encode_struct::<256>(),
+                    snapshot,
+                ) {
+                    Ok(Some(id)) => {
+                        let attribute = Attribute::new(AttributeVertex::build(ValueTypeCategory::Struct, attribute_type.vertex().type_id_(), AttributeID::Struct(id)));
+                        let type_from_attribute = attribute.clone().type_();
+                        attribute
+                    },
+                    Ok(None) => return Ok(None),
+                    Err(err) => return Err(ConceptReadError::SnapshotIterate { source: err }),
+                }
             }
         };
 

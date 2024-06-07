@@ -389,4 +389,17 @@ impl ThingVertexGenerator {
         snapshot.exclusive_lock_add(lock);
         Ok(id)
     }
+
+    pub fn find_attribute_id_struct<const INLINE_LENGTH: usize, Snapshot>(
+        &self,
+        type_id: TypeID,
+        struct_bytes: StructBytes<'_, INLINE_LENGTH>,
+        snapshot: &Snapshot,
+    ) -> Result<Option<StructAttributeID>, Arc<SnapshotIteratorError>>
+        where
+            Snapshot: ReadableSnapshot,
+    {
+        StructAttributeID::find_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)
+    }
+
 }

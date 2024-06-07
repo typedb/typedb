@@ -23,6 +23,7 @@ use concept::{
         Ordering, OwnerAPI, PlayerAPI,
     },
 };
+use concept::type_::type_manager::type_reader::TypeReader;
 use durability::wal::WAL;
 use encoding::{
     graph::{
@@ -40,6 +41,7 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
     MVCCStorage,
 };
+use storage::snapshot::WritableSnapshot;
 use test_utils::{create_tmp_dir, init_logging};
 
 #[test]
@@ -789,6 +791,10 @@ fn struct_create() {
             }
             _ => assert!(false, "Wrong data type"),
         }
-        snapshot.commit().unwrap();
+
+        let attr_0_by_id = thing_manager.get_attribute_with_value(&snapshot, attr_0_type.clone(), Value::Struct(Cow::Borrowed(&instance_0))).unwrap().unwrap();
+        assert_eq!(attr_0, attr_0_by_id);
+
+        snapshot.close_resources();
     }
 }

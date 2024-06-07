@@ -712,7 +712,7 @@ pub trait HashableAttributeID<const LENGTH: usize>: Sized {
         while let Some((key, value)) = next {
             let existing_attribute_id = AttributeVertex::new(Bytes::reference(key.bytes())).attribute_id();
             if value.bytes() == value_bytes {
-                let existing_tail = Self::get_hash_disambiguator(key.bytes());
+                let existing_tail = Self::get_hash_disambiguator(existing_attribute_id.bytes());
                 return Ok(Either::First(existing_tail));
             } else if tail != Self::get_hash_disambiguator(existing_attribute_id.bytes()) {
                 // found unused tail ID
@@ -876,7 +876,11 @@ impl StructAttributeID {
         Self { bytes }
     }
 
-    pub(crate) fn bytes_ref(&self) -> &[u8] {
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+        self.bytes
+    }
+
+    pub fn bytes_ref(&self) -> &[u8] {
         &self.bytes
     }
 
