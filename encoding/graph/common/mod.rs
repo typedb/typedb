@@ -4,4 +4,5 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod schema_id_allocator;
+pub(crate) mod schema_id_allocator;
+pub(crate) mod value_hasher;

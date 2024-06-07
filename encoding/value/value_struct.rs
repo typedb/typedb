@@ -15,6 +15,8 @@ use std::{
     collections::HashMap,
     fmt::{Formatter, Write},
 };
+use std::ops::Deref;
+use std::sync::Arc;
 use chrono::{DateTime, NaiveDateTime};
 use chrono_tz::Tz;
 
@@ -40,13 +42,15 @@ use crate::{
     },
     AsBytes,
 };
-use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_VALUE_INLINE};
+use resource::constants::{encoding, encoding::StructFieldIDUInt, snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE}};
 use serde::{
     de,
     de::{EnumAccess, SeqAccess, Unexpected, VariantAccess, Visitor},
     ser::{SerializeSeq},
     Deserialize, Deserializer, Serialize, Serializer,
 };
+use crate::graph::thing::vertex_attribute::{AttributeIDLength, StructAttributeID};
+use crate::graph::thing::vertex_generator::ThingVertexGenerator;
 use crate::value::decimal_value::Decimal;
 use crate::value::duration_value::Duration;
 use crate::value::value_type::ValueType;
@@ -128,55 +132,64 @@ impl<'a> StructValue<'a> {
         &self.fields
     }
 
-    //
-    // // TODO: Lots of wasted space using a u16 path.
-    // pub fn TEMP__create_index_entries(&self, thing_vertex_generator: Arc<ThingVertexGenerator>, attribute_id: StructAttributeID) -> Vec<Vec<u8>> {
-    //     let mut acc: Vec<Vec<u8>> = Vec::new();
-    //     let mut path: Vec<StructFieldIDUInt> = Vec::new();
-    //     Self::create_index_entries_rec(thing_vertex_generator, &self.fields, &mut path, &mut acc);
-    //     acc
-    // }
-    //
-    // fn create_index_entries_rec(thing_vertex_generator: Arc<ThingVertexGenerator>, fields: &HashMap<StructFieldIDUInt, Value<'a>>, path: &mut Vec<StructFieldIDUInt>, acc: &mut Vec<Vec<u8>>) {
-    //     for (idx, value) in fields.iter() {
-    //         if let Value::Struct(struct_val) = value {
-    //             path.push(*idx);
-    //             Self::create_index_entries_rec(thing_vertex_generator.clone(), struct_val.fields(), path, acc);
-    //             let popped = path.pop();
-    //             debug_assert_eq!(*idx, popped);
-    //         } else {
-    //             acc.push(Self::create_index_encode_entry(thing_vertex_generator.clone(), path, value))
-    //         }
-    //     }
-    //
-    // }
-    //
-    // fn create_index_encode_entry(thing_vertex_generator: Arc<ThingVertexGenerator>, path: &Vec<u16>, value: &Value<'a>) -> Vec<u8> {
-    //     let encoded : Vec<u8> = Vec::with_capacity(PrefixID::LENGTH + path.len() + AttributeIDLength::LONG_LENGTH + StructAttributeID::ENCODING_LENGTH);
-    //     for p in path {
-    //         encoded.extend_from_slice(p.as_be_bytes())
-    //     }
-    //     match value {
-    //         Value::Boolean(_) => {}
-    //         Value::Long(_) => {}
-    //         Value::Double(_) => {}
-    //         Value::Decimal(_) => {}
-    //         Value::DateTime(_) => {}
-    //         Value::DateTimeTZ(_) => {}
-    //         Value::Duration(_) => {}
-    //         Value::String(_) => {},
-    //         Value::Struct(_) => unreachable!()
-    //     }
-    //
-    // }
+    // Deeply nested structs may take up a lot of space with the u16 path.
+    pub fn create_index_entries(&self, hasher: fn(&[u8]) -> u64, attribute_id: &StructAttributeID) -> Vec<StructIndexEntry<'a>> {
+        todo!();
+        let mut acc: Vec<StructIndexEntry<'a>> = Vec::new();
+        let mut path: Vec<StructFieldIDUInt> = Vec::new();
+        Self::create_index_entries_recursively(hasher, attribute_id, &self.fields, &mut path, &mut acc);
+        acc
+    }
+
+    fn create_index_entries_recursively(hasher: fn(&[u8]) -> u64, attribute_id: &StructAttributeID, fields: &HashMap<StructFieldIDUInt, FieldValue<'a>>, path: &mut Vec<StructFieldIDUInt>, acc: &mut Vec<StructIndexEntry<'a>>) {
+        for (idx, value) in fields.iter() {
+            if let FieldValue::Struct(struct_val) = value {
+                path.push(*idx);
+                Self::create_index_entries_recursively(hasher.clone(), attribute_id, struct_val.fields(), path, acc);
+                let popped = path.pop().unwrap();
+                debug_assert_eq!(*idx, popped);
+            } else {
+                acc.push(StructIndexEntry::build(hasher.clone(), path, value, attribute_id));
+            }
+        }
+    }
+}
+
+pub struct StructIndexEntry<'a> {
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
+}
+
+impl<'a> StructIndexEntry<'a> {
+
+    /// Encoded as:
+    /// Prefix::IndexValueToStruct{1} + field_id[u16] * depth + Value[SHORT_LENGTH|LONG_LENGTH] + StructAttributeID[STRUCT_ATTRIBUTE_ID_LENGTH]
+    ///  TODO: Are there advantages of encoding the definition_key at the beginning & attributeID at the end?
+    fn build(hasher: fn(&[u8]) -> u64, path: &Vec<u16>, value: &FieldValue<'a>, attribute_id: &StructAttributeID) -> StructIndexEntry<'a> {
+        let mut buf: Vec<u8> = Vec::with_capacity(PrefixID::LENGTH + path.len() + AttributeIDLength::Long.length() + StructAttributeID::LENGTH);
+        buf.extend_from_slice(&Prefix::IndexValueToStruct.prefix_id().bytes);
+        for p in path {
+            buf.extend_from_slice(&p.to_be_bytes())
+        }
+        match value {
+            FieldValue::Boolean(value) => buf.extend_from_slice(&BooleanBytes::build(*value).bytes()),
+            FieldValue::Long(value) => buf.extend_from_slice(&LongBytes::build(*value).bytes()),
+            FieldValue::Double(value) => buf.extend_from_slice(&DoubleBytes::build(*value).bytes()),
+            FieldValue::Decimal(value) => buf.extend_from_slice(&DecimalBytes::build(*value).bytes()),
+            FieldValue::DateTime(value) => buf.extend_from_slice(&DateTimeBytes::build(*value).bytes()),
+            FieldValue::DateTimeTZ(value) => buf.extend_from_slice(&DateTimeTZBytes::build(*value).bytes()),
+            FieldValue::Duration(value) => buf.extend_from_slice(&DurationBytes::build(*value).bytes()),
+            FieldValue::String(value) => {
+                todo!("Disambiguated string hashes"); // TODO: Do we want to disambiguate or just compare values.
+            },
+            FieldValue::Struct(_) => unreachable!(),
+        };
+        buf.extend_from_slice(attribute_id.bytes_ref());
+        Self { bytes: Bytes::copy(buf.into_boxed_slice().deref()) }
+    }
 }
 
 // TODO: implement serialise/deserialise for the StructValue
 //       since JSON serialisation seems to be able to handle recursive nesting, it should be able to handle that
-impl<'a> FieldValue<'a> {
-    pub const ENUM_NAME: &'static str = "Value";
-}
-
 impl<'a> Serialize for FieldValue<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
