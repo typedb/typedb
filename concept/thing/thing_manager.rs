@@ -4,13 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    borrow::Cow,
-    collections::HashSet,
-    marker::PhantomData,
-    ops::{Bound, Range, RangeBounds},
-    sync::Arc,
-};
+use std::{borrow::Cow, collections::HashSet, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -401,10 +395,10 @@ impl ThingManager {
         HasIterator::new(snapshot.iterate_range(range))
     }
 
-    pub fn get_attributes_by_struct_field<'this, 'a, Snapshot: ReadableSnapshot>(
+    pub fn get_attributes_by_struct_field<'this, Snapshot: ReadableSnapshot>(
         &'this self,
         snapshot: &'this Snapshot,
-        attribute_type: AttributeType<'a>,
+        attribute_type: AttributeType<'_>,
         path_to_field: Vec<StructFieldIDUInt>,
         value: Value<'_>,
     ) -> Result<StructIndexToAttributeIterator<'_, Snapshot>, ConceptReadError> {
@@ -503,7 +497,7 @@ impl ThingManager {
         &'this self,
         snapshot: &'this impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
-        mut attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
+        attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
     ) -> Result<HasAttributeIterator, ConceptReadError> {
         let mut min_prefix_inclusive = None;
         let mut max_prefix_inclusive = None;
@@ -1414,9 +1408,9 @@ impl<'txn> ThingManager {
         relation: Relation<'_>,
         player: Object<'_>,
         role_type: RoleType<'_>,
-        total_player_count: u64,
+        count_for_player: u64,
     ) -> Result<(), ConceptWriteError> {
-        debug_assert_ne!(total_player_count, 0);
+        debug_assert_ne!(count_for_player, 0);
         let players = relation
             .get_players(snapshot, self)
             .map_static(|item| {
@@ -1427,17 +1421,20 @@ impl<'txn> ThingManager {
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for (rp_player, rp_role_type, rp_count) in players {
             let is_same_rp = rp_player == player && rp_role_type == role_type;
-            if is_same_rp && total_player_count > 1 {
-                let repetitions = total_player_count - 1;
-                let index = ThingEdgeRelationIndex::build(
-                    player.vertex(),
-                    player.vertex(),
-                    relation.vertex(),
-                    role_type.vertex().type_id_(),
-                    role_type.vertex().type_id_(),
-                );
-                snapshot.put_val(index.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(repetitions)));
-            } else if !is_same_rp {
+            if is_same_rp {
+                let repetitions = count_for_player - 1;
+                if repetitions > 0 {
+                    let index = ThingEdgeRelationIndex::build(
+                        player.vertex(),
+                        player.vertex(),
+                        relation.vertex(),
+                        role_type.vertex().type_id_(),
+                        role_type.vertex().type_id_(),
+                    );
+                    snapshot
+                        .put_val(index.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(repetitions)));
+                }
+            } else {
                 let rp_repetitions = rp_count;
                 let index = ThingEdgeRelationIndex::build(
                     player.vertex(),
@@ -1448,7 +1445,7 @@ impl<'txn> ThingManager {
                 );
                 snapshot
                     .put_val(index.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(rp_repetitions)));
-                let player_repetitions = total_player_count;
+                let player_repetitions = count_for_player;
                 let index_reverse = ThingEdgeRelationIndex::build(
                     rp_player.vertex(),
                     player.vertex(),
