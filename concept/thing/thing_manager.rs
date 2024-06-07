@@ -41,6 +41,7 @@ use encoding::{
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use regex::Regex;
+use encoding::value::value_struct::FieldValue;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_range::KeyRange,
@@ -390,6 +391,15 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         HasAttributeIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
         )
+    }
+
+    pub(crate) fn get_attributes_by_struct_field<'this, 'a, 'v>(
+        &'this self,
+        snapshot: &'this Snapshot,
+        attribute_type: AttributeType<'a>,
+        value: FieldValue<'v>
+    ) -> Result<AttributeIterator<Snapshot>, ConceptReadError> {
+        todo!("TODO")
     }
 
     pub(crate) fn get_has_ordered<'this, 'a>(

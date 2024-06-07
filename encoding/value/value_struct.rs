@@ -113,6 +113,10 @@ pub struct StructValue<'a> {
 }
 
 impl<'a> StructValue<'a> {
+    pub fn new(definition_key: DefinitionKey<'a>, fields: HashMap<StructFieldIDUInt, FieldValue<'a>>) -> StructValue<'a> {
+        StructValue { definition_key, fields }
+    }
+
     pub fn try_translate_fields(
         definition_key: DefinitionKey<'a>,
         struct_definition: StructDefinition,

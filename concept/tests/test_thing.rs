@@ -23,6 +23,7 @@ use concept::{
         Ordering, OwnerAPI, PlayerAPI,
     },
 };
+use concept::thing::attribute::Attribute;
 use durability::wal::WAL;
 use encoding::{
     graph::{
@@ -44,6 +45,30 @@ use storage::{
     MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
+
+fn prepare() -> (Arc<MVCCStorage<WALClient>>, Arc<TypeManager<WriteSnapshot<WALClient>>>, ThingManager<WriteSnapshot<WALClient>>) {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
+    );
+    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
+    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
+    TypeManager::<WriteSnapshot<WALClient>>::initialise_types(
+        storage.clone(),
+        definition_key_generator.clone(),
+        type_vertex_generator.clone(),
+    )
+        .unwrap();
+
+    let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
+    let type_manager =
+        Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
+    let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
+
+    (storage, type_manager, thing_manager)
+}
 
 #[test]
 fn thing_create_iterate() {
@@ -715,27 +740,8 @@ fn role_player_duplicates() {
 }
 
 #[test]
-fn create_and_read_string_attributes() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WALClient>>::initialise_types(
-        storage.clone(),
-        definition_key_generator.clone(),
-        type_vertex_generator.clone(),
-    )
-    .unwrap();
-
-    let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-    let type_manager =
-        Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
-    let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
-
+fn string_write_read() {
+    let (storage, type_manager, thing_manager) = prepare();
     let attr_label = Label::build("test_string_attr");
     let short_string = "short".to_owned();
     let long_string = "this string is 33 characters long".to_owned();
@@ -790,90 +796,133 @@ fn create_and_read_string_attributes() {
 }
 
 #[test]
-fn struct_create() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
-    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WALClient>>::initialise_types(
-        storage.clone(),
-        definition_key_generator.clone(),
-        type_vertex_generator.clone(),
-    )
-    .unwrap();
+fn struct_write_read() {
+    let (storage, type_manager, thing_manager) = prepare();
 
-    let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-    let type_manager =
-        Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
-    let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
-
-    let attr_0_label = Label::build("attr_0");
-    let struct_0_name = "struct_0";
-    let fields_0: HashMap<String, (ValueType, bool)> = HashMap::from([
-        ("s0_f0_l0".to_owned(), (ValueType::Long, false)),
-        ("s0_f1_s0".to_owned(), (ValueType::String, false)),
+    let attr_label = Label::build("struct_test_attr");
+    let struct_name = "struct_test_test";
+    let fields: HashMap<String, (ValueType, bool)> = HashMap::from([
+        ("f0l".to_owned(), (ValueType::Long, false)),
+        ("f1s".to_owned(), (ValueType::String, false)),
     ]);
-    let definition_0 = StructDefinition::define(struct_0_name.to_owned(), fields_0);
+    let definition = StructDefinition::define(struct_name.to_owned(), fields);
 
-    let instance_0_fields = HashMap::from([
-        ("s0_f0_l0".to_owned(), FieldValue::Long(123)),
-        ("s0_f1_s0".to_owned(), FieldValue::String(Cow::Owned("abc".to_owned()))),
+    let instance_fields = HashMap::from([
+        ("f0l".to_owned(), FieldValue::Long(123)),
+        ("f1s".to_owned(), FieldValue::String(Cow::Owned("abc".to_owned()))),
     ]);
-    let struct_0_key = {
+    let struct_key = {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let struct_0_key = type_manager.create_struct(&mut snapshot, definition_0.clone()).unwrap();
-        let attr_0_type = type_manager.create_attribute_type(&mut snapshot, &attr_0_label, false).unwrap();
-        attr_0_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_0_key.clone())).unwrap();
+        let struct_key = type_manager.create_struct(&mut snapshot, definition.clone()).unwrap();
+        let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label, false).unwrap();
+        attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_key.clone())).unwrap();
         snapshot.commit().unwrap();
-        struct_0_key
+        struct_key
     };
 
-    let instance_0 =
-        StructValue::try_translate_fields(struct_0_key.clone(), definition_0.clone(), instance_0_fields).unwrap();
-    {
+    let struct_value =
+        StructValue::try_translate_fields(struct_key.clone(), definition.clone(), instance_fields).unwrap();
+
+    let attr_created = {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let mut attr_0_type = type_manager.get_attribute_type(&snapshot, &attr_0_label).unwrap().unwrap();
-        attr_0_type
+        let mut attr_type = type_manager.get_attribute_type(&snapshot, &attr_label).unwrap().unwrap();
+        attr_type
             .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
             .unwrap();
-        let attr_0_value_type = attr_0_type.get_value_type(&snapshot, &type_manager).unwrap().unwrap();
-        let struct_0_key = match attr_0_value_type {
-            ValueType::Struct(struct_0_key) => struct_0_key,
+        let attr_value_type = attr_type.get_value_type(&snapshot, &type_manager).unwrap().unwrap();
+        let struct_key = match attr_value_type {
+            ValueType::Struct(struct_key) => struct_key,
             v => panic!("Unexpected value type: {:?}", v),
         };
-        let read_key = type_manager.get_struct_definition_key(&snapshot, &struct_0_name).unwrap().unwrap();
-        let read_definition = type_manager.get_struct_definition(&snapshot, struct_0_key.clone()).unwrap();
-        assert_eq!(struct_0_key.bytes(), read_key.bytes());
-        assert_eq!(definition_0, *read_definition);
-        thing_manager
-            .create_attribute(&mut snapshot, attr_0_type, Value::Struct(Cow::Owned(instance_0.clone())))
+        let read_key = type_manager.get_struct_definition_key(&snapshot, &struct_name).unwrap().unwrap();
+        let read_definition = type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap();
+        assert_eq!(struct_key.bytes(), read_key.bytes());
+        assert_eq!(definition, *read_definition);
+        let attr_instance = thing_manager
+            .create_attribute(&mut snapshot, attr_type, Value::Struct(Cow::Owned(struct_value.clone())))
             .unwrap();
         snapshot.commit().unwrap();
-    }
+        attr_instance
+    };
 
     {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let attr_0_type = type_manager.get_attribute_type(&snapshot, &attr_0_label).unwrap().unwrap();
-        let attr_vec = thing_manager.get_attributes_in(&snapshot, attr_0_type.clone()).unwrap().collect_cloned();
-        let mut attr_0 = attr_vec.get(0).unwrap().clone();
-        let value_0 = attr_0.get_value(&snapshot, &thing_manager).unwrap();
+        let attr_type = type_manager.get_attribute_type(&snapshot, &attr_label).unwrap().unwrap();
+        let attr_vec = thing_manager.get_attributes_in(&snapshot, attr_type.clone()).unwrap().collect_cloned();
+        let mut attr = attr_vec.get(0).unwrap().clone();
+        let value_0 = attr.get_value(&snapshot, &thing_manager).unwrap();
         match value_0 {
             Value::Struct(v) => {
-                assert_eq!(instance_0, *v);
+                assert_eq!(struct_value, *v);
             }
             _ => assert!(false, "Wrong data type"),
         }
 
-        let attr_0_by_id = thing_manager
-            .get_attribute_with_value(&snapshot, attr_0_type.clone(), Value::Struct(Cow::Borrowed(&instance_0)))
+        let attr_by_id = thing_manager
+            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::Struct(Cow::Borrowed(&struct_value)))
             .unwrap()
             .unwrap();
-        assert_eq!(attr_0, attr_0_by_id);
-
+        assert_eq!(attr, attr_by_id);
+        assert_eq!(attr_created, attr);
         snapshot.close_resources();
     }
+}
+
+#[test]
+fn read_struct_by_field() {
+    let (storage, type_manager, thing_manager) = prepare();
+
+    let attr_label = Label::build("index_test_attr");
+    let nested_struct_def = StructDefinition::define(
+        "nested_test_struct".to_owned(),
+        HashMap::from([
+            ("nested_string".to_owned(), (ValueType::String, false)),
+        ])
+    );
+
+    let nested_struct_key = {
+        let mut snapshot = storage.open_snapshot_write();
+        let nested_struct_key = type_manager.create_struct(&mut snapshot, nested_struct_def).unwrap();
+        snapshot.commit().unwrap();
+        nested_struct_key
+    };
+
+    let struct_def = StructDefinition::define(
+        "index_test_struct".to_owned(),
+        HashMap::from([
+            ("f_nested".to_owned(), (ValueType::Struct(nested_struct_key), false)),
+        ])
+    );
+    let (attr_type, struct_key, struct_def) = {
+        let mut snapshot = storage.open_snapshot_write();
+        let struct_key = type_manager.create_struct(&mut snapshot, struct_def.clone()).unwrap();
+        let mut attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label, false).unwrap();
+        attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_key.clone())).unwrap();
+        snapshot.commit().unwrap();
+        (attr_type, struct_key, struct_def)
+    };
+
+    // Create value
+    let mut struct_values : Vec<StructValue> = Vec::new();
+    let field_values = ["abc", "xyz"];
+    {
+        let mut snapshot = storage.open_snapshot_write();
+        let mut attrs = Vec::new();
+        for val in field_values {
+            let nested_struct_value = StructValue::new(nested_struct_key.clone(), HashMap::from([(0, FieldValue::String(Cow::Borrowed(val)))]));
+            let outer_struct_value = StructValue::new(struct_key.clone(), HashMap::from([(0, FieldValue::Struct(Cow::Owned(nested_struct_value)))]));
+            let attr = thing_manager.create_attribute(&mut snapshot, attr_type.clone(), Value::Struct(Cow::Borrowed(&outer_struct_value))).unwrap();
+            attrs.push(attr);
+        }
+
+        for (val, attr) in std::iter::zip(field_values, attrs.iter()) {
+            let attr_by_field : Vec<Attribute> = thing_manager
+                .get_attributes_by_struct_field(&snapshot, attr_type.clone(), [0], Value::String(Cow::Borrowed(val)))
+                .unwrap()
+                .collect();
+            assert_eq!(1, attr_by_field.len());
+            assert_eq!(attr, attr_by_field);
+        }
+        snapshot.close_resources();
+    };
 }
