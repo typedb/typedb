@@ -10,6 +10,7 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use concept::{
     thing::{
+        attribute::Attribute,
         object::{Object, ObjectAPI},
         thing_manager::ThingManager,
         value::Value,
@@ -23,7 +24,6 @@ use concept::{
         Ordering, OwnerAPI, PlayerAPI,
     },
 };
-use concept::thing::attribute::Attribute;
 use durability::wal::WAL;
 use encoding::{
     graph::{
@@ -46,7 +46,8 @@ use storage::{
 };
 use test_utils::{create_tmp_dir, init_logging};
 
-fn prepare() -> (Arc<MVCCStorage<WALClient>>, Arc<TypeManager<WriteSnapshot<WALClient>>>, ThingManager<WriteSnapshot<WALClient>>) {
+fn prepare(
+) -> (Arc<MVCCStorage<WALClient>>, Arc<TypeManager<WriteSnapshot<WALClient>>>, ThingManager<WriteSnapshot<WALClient>>) {
     init_logging();
     let storage_path = create_tmp_dir();
     let wal = WAL::create(&storage_path).unwrap();
@@ -60,7 +61,7 @@ fn prepare() -> (Arc<MVCCStorage<WALClient>>, Arc<TypeManager<WriteSnapshot<WALC
         definition_key_generator.clone(),
         type_vertex_generator.clone(),
     )
-        .unwrap();
+    .unwrap();
 
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
     let type_manager =
@@ -801,10 +802,8 @@ fn struct_write_read() {
 
     let attr_label = Label::build("struct_test_attr");
     let struct_name = "struct_test_test";
-    let fields: HashMap<String, (ValueType, bool)> = HashMap::from([
-        ("f0l".to_owned(), (ValueType::Long, false)),
-        ("f1s".to_owned(), (ValueType::String, false)),
-    ]);
+    let fields: HashMap<String, (ValueType, bool)> =
+        HashMap::from([("f0l".to_owned(), (ValueType::Long, false)), ("f1s".to_owned(), (ValueType::String, false))]);
     let definition = StructDefinition::define(struct_name.to_owned(), fields);
 
     let instance_fields = HashMap::from([
@@ -875,9 +874,7 @@ fn read_struct_by_field() {
     let attr_label = Label::build("index_test_attr");
     let nested_struct_def = StructDefinition::define(
         "nested_test_struct".to_owned(),
-        HashMap::from([
-            ("nested_string".to_owned(), (ValueType::String, false)),
-        ])
+        HashMap::from([("nested_string".to_owned(), (ValueType::String, false))]),
     );
 
     let nested_struct_key = {
@@ -889,36 +886,49 @@ fn read_struct_by_field() {
 
     let struct_def = StructDefinition::define(
         "index_test_struct".to_owned(),
-        HashMap::from([
-            ("f_nested".to_owned(), (ValueType::Struct(nested_struct_key.clone()), false)),
-        ])
+        HashMap::from([("f_nested".to_owned(), (ValueType::Struct(nested_struct_key.clone()), false))]),
     );
     let (attr_type, struct_key, struct_def) = {
         let mut snapshot = storage.clone().open_snapshot_write();
         let struct_key = type_manager.create_struct(&mut snapshot, struct_def.clone()).unwrap();
         let mut attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label, false).unwrap();
         attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_key.clone())).unwrap();
-        attr_type.set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent)).unwrap();
+        attr_type
+            .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .unwrap();
         snapshot.commit().unwrap();
         (attr_type, struct_key, struct_def)
     };
 
     // Create value
-    let mut struct_values : Vec<StructValue> = Vec::new();
+    let mut struct_values: Vec<StructValue> = Vec::new();
     let field_values = ["abc", "xyz"];
     {
         let mut snapshot = storage.clone().open_snapshot_write();
         let mut attrs = Vec::new();
         for val in field_values {
-            let nested_struct_value = StructValue::new(nested_struct_key.clone(), HashMap::from([(0, FieldValue::String(Cow::Borrowed(val)))]));
-            let outer_struct_value = StructValue::new(struct_key.clone(), HashMap::from([(0, FieldValue::Struct(Cow::Owned(nested_struct_value)))]));
-            let attr = thing_manager.create_attribute(&mut snapshot, attr_type.clone(), Value::Struct(Cow::Borrowed(&outer_struct_value))).unwrap();
+            let nested_struct_value = StructValue::new(
+                nested_struct_key.clone(),
+                HashMap::from([(0, FieldValue::String(Cow::Borrowed(val)))]),
+            );
+            let outer_struct_value = StructValue::new(
+                struct_key.clone(),
+                HashMap::from([(0, FieldValue::Struct(Cow::Owned(nested_struct_value)))]),
+            );
+            let attr = thing_manager
+                .create_attribute(&mut snapshot, attr_type.clone(), Value::Struct(Cow::Borrowed(&outer_struct_value)))
+                .unwrap();
             attrs.push(attr);
         }
 
         for (val, attr) in std::iter::zip(field_values, attrs.iter()) {
             let mut attr_by_field_iterator = thing_manager
-                .get_attributes_by_struct_field(&snapshot, attr_type.clone(), vec!(0), FieldValue::String(Cow::Borrowed(val)))
+                .get_attributes_by_struct_field(
+                    &snapshot,
+                    attr_type.clone(),
+                    vec![0],
+                    FieldValue::String(Cow::Borrowed(val)),
+                )
                 .unwrap();
             let mut attr_by_field: Vec<Attribute> = Vec::new();
             while let Some(res) = attr_by_field_iterator.next() {

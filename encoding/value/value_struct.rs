@@ -11,14 +11,13 @@
  */
 
 use std::{
+    any::Any,
     borrow::Cow,
     collections::HashMap,
     fmt::{Formatter, Write},
-    ops::Deref,
+    ops::{Deref, Range},
     sync::Arc,
 };
-use std::any::Any;
-use std::ops::Range;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use chrono::{DateTime, NaiveDateTime};
@@ -42,35 +41,39 @@ use storage::{
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
 };
 
-use crate::{error::EncodingError, graph::{
-    common::value_hasher::DisambiguatingHashedID,
-    definition::{
-        definition_key::DefinitionKey,
-        r#struct::{StructDefinition, StructDefinitionField},
+use crate::{
+    error::EncodingError,
+    graph::{
+        common::value_hasher::DisambiguatingHashedID,
+        definition::{
+            definition_key::DefinitionKey,
+            r#struct::{StructDefinition, StructDefinitionField},
+        },
+        thing::{
+            vertex_attribute::{AttributeID, AttributeIDLength, AttributeVertex, StructAttributeID},
+            vertex_generator::ThingVertexGenerator,
+        },
+        type_::vertex::{TypeID, TypeVertex},
+        Typed,
     },
-    thing::{
-        vertex_attribute::{AttributeIDLength, AttributeVertex, StructAttributeID},
-        vertex_generator::ThingVertexGenerator,
+    layout::prefix::{Prefix, PrefixID},
+    value::{
+        boolean_bytes::BooleanBytes,
+        date_time_bytes::DateTimeBytes,
+        date_time_tz_bytes::DateTimeTZBytes,
+        decimal_bytes::DecimalBytes,
+        decimal_value::Decimal,
+        double_bytes::DoubleBytes,
+        duration_bytes::DurationBytes,
+        duration_value::Duration,
+        long_bytes::LongBytes,
+        string_bytes::StringBytes,
+        struct_bytes::StructBytes,
+        value_type::{ValueType, ValueTypeCategory},
+        ValueEncodable,
     },
-    type_::vertex::TypeID,
-}, layout::prefix::{Prefix, PrefixID}, value::{
-    boolean_bytes::BooleanBytes,
-    date_time_bytes::DateTimeBytes,
-    date_time_tz_bytes::DateTimeTZBytes,
-    decimal_bytes::DecimalBytes,
-    decimal_value::Decimal,
-    double_bytes::DoubleBytes,
-    duration_bytes::DurationBytes,
-    duration_value::Duration,
-    long_bytes::LongBytes,
-    string_bytes::StringBytes,
-    struct_bytes::StructBytes,
-    value_type::{ValueType, ValueTypeCategory},
-    ValueEncodable,
-}, AsBytes, EncodingKeyspace, Keyable, Prefixed};
-use crate::graph::thing::vertex_attribute::AttributeID;
-use crate::graph::type_::vertex::TypeVertex;
-use crate::graph::Typed;
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FieldValue<'a> {
@@ -112,7 +115,10 @@ pub struct StructValue<'a> {
 }
 
 impl<'a> StructValue<'a> {
-    pub fn new(definition_key: DefinitionKey<'a>, fields: HashMap<StructFieldIDUInt, FieldValue<'a>>) -> StructValue<'a> {
+    pub fn new(
+        definition_key: DefinitionKey<'a>,
+        fields: HashMap<StructFieldIDUInt, FieldValue<'a>>,
+    ) -> StructValue<'a> {
         StructValue { definition_key, fields }
     }
 
@@ -159,7 +165,7 @@ impl<'a> StructValue<'a> {
         &self,
         snapshot: &impl WritableSnapshot,
         hasher: &impl Fn(&[u8]) -> u64,
-        attribute: &AttributeVertex<'_>
+        attribute: &AttributeVertex<'_>,
     ) -> Result<Vec<StructIndexEntry>, Arc<SnapshotIteratorError>> {
         let mut acc: Vec<StructIndexEntry> = Vec::new();
         let mut path: Vec<StructFieldIDUInt> = Vec::new();
@@ -263,7 +269,7 @@ impl<'a> Serialize for FieldValue<'a> {
 }
 
 pub struct StructIndexEntry<'a> {
-    bytes: Bytes<'a, BUFFER_KEY_INLINE>
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
 // pub type _IndexEntryEncodedValue<const SHORT_LENGTH: usize, const LONG_LENGTH: usize> = Either<[u8; SHORT_LENGTH], [u8; LONG_LENGTH]>;
@@ -277,7 +283,8 @@ impl<'a> StructIndexEntry<'a> {
     pub fn attribute_vertex(&self) -> AttributeVertex<'static> {
         let bytes = self.bytes.bytes();
         let attribute_type_id = TypeID::new(bytes[StructIndexEntry::ENCODING_TYPEID_RANGE].try_into().unwrap());
-        let attribute_id = AttributeID::new(ValueTypeCategory::Struct, &bytes[(bytes.len()-StructAttributeID::LENGTH)..bytes.len()]);
+        let attribute_id =
+            AttributeID::new(ValueTypeCategory::Struct, &bytes[(bytes.len() - StructAttributeID::LENGTH)..bytes.len()]);
         AttributeVertex::build(ValueTypeCategory::Struct, attribute_type_id, attribute_id)
     }
 }
@@ -286,26 +293,32 @@ impl StructIndexEntry<'static> {
     const PREFIX: Prefix = Prefix::IndexValueToStruct;
 
     const ENCODING_PREFIX_RANGE: Range<usize> = 0..PrefixID::LENGTH;
-    const ENCODING_VALUE_TYPE_RANGE: Range<usize> =  Self::ENCODING_PREFIX_RANGE.end..{Self::ENCODING_PREFIX_RANGE.end + 1};
-    const ENCODING_TYPEID_RANGE: Range<usize> = Self::ENCODING_VALUE_TYPE_RANGE.end..{Self::ENCODING_VALUE_TYPE_RANGE.end + TypeID::LENGTH};
+    const ENCODING_VALUE_TYPE_RANGE: Range<usize> =
+        Self::ENCODING_PREFIX_RANGE.end..{ Self::ENCODING_PREFIX_RANGE.end + 1 };
+    const ENCODING_TYPEID_RANGE: Range<usize> =
+        Self::ENCODING_VALUE_TYPE_RANGE.end..{ Self::ENCODING_VALUE_TYPE_RANGE.end + TypeID::LENGTH };
 
-    const ENCODING_VALUE_RANGE_SHORT: Range<usize> =  Self::ENCODING_TYPEID_RANGE.end..{Self::ENCODING_TYPEID_RANGE.end + AttributeIDLength::Short.length()};
-    const ENCODING_STRUCT_ATTRIBUTE_ID_RANGE_LONG: Range<usize> = Self::ENCODING_VALUE_RANGE_LONG.end..{Self::ENCODING_VALUE_RANGE_LONG.end + StructAttributeID::LENGTH};
+    const ENCODING_VALUE_RANGE_SHORT: Range<usize> =
+        Self::ENCODING_TYPEID_RANGE.end..{ Self::ENCODING_TYPEID_RANGE.end + AttributeIDLength::Short.length() };
+    const ENCODING_STRUCT_ATTRIBUTE_ID_RANGE_LONG: Range<usize> =
+        Self::ENCODING_VALUE_RANGE_LONG.end..{ Self::ENCODING_VALUE_RANGE_LONG.end + StructAttributeID::LENGTH };
 
-    const ENCODING_VALUE_RANGE_LONG: Range<usize> =  Self::ENCODING_TYPEID_RANGE.end..{Self::ENCODING_TYPEID_RANGE.end + AttributeIDLength::Long.length()};
-    const ENCODING_STRUCT_ATTRIBUTE_ID_RANGE_SHORT: Range<usize> = Self::ENCODING_VALUE_RANGE_SHORT.end..{Self::ENCODING_VALUE_RANGE_SHORT.end + StructAttributeID::LENGTH};
+    const ENCODING_VALUE_RANGE_LONG: Range<usize> =
+        Self::ENCODING_TYPEID_RANGE.end..{ Self::ENCODING_TYPEID_RANGE.end + AttributeIDLength::Long.length() };
+    const ENCODING_STRUCT_ATTRIBUTE_ID_RANGE_SHORT: Range<usize> =
+        Self::ENCODING_VALUE_RANGE_SHORT.end..{ Self::ENCODING_VALUE_RANGE_SHORT.end + StructAttributeID::LENGTH };
 
     pub fn build<'b, 'c>(
         snapshot: &impl ReadableSnapshot,
         hasher: &impl Fn(&[u8]) -> u64,
         path_to_field: &Vec<StructFieldIDUInt>,
         value: &FieldValue<'b>,
-        attribute: &AttributeVertex<'c>
+        attribute: &AttributeVertex<'c>,
     ) -> Result<StructIndexEntry<'static>, Arc<SnapshotIteratorError>> {
         debug_assert_eq!(Prefix::VertexAttributeStruct, attribute.prefix());
         let mut buf = Self::build_search_key_bytes(snapshot, hasher, path_to_field, value, attribute.type_id_())?;
         buf.extend_from_slice(attribute.attribute_id().bytes());
-        Ok( Self { bytes: Bytes::copy(buf.as_slice()) } )
+        Ok(Self { bytes: Bytes::copy(buf.as_slice()) })
     }
 
     pub fn build_search_key<'b, 'c>(
@@ -313,7 +326,7 @@ impl StructIndexEntry<'static> {
         hasher: &impl Fn(&[u8]) -> u64,
         path_to_field: &Vec<StructFieldIDUInt>,
         value: &FieldValue<'b>,
-        attribute_type: &TypeVertex<'c>
+        attribute_type: &TypeVertex<'c>,
     ) -> Result<StorageKey<'static, BUFFER_KEY_INLINE>, Arc<SnapshotIteratorError>> {
         let mut buf = Self::build_search_key_bytes(snapshot, hasher, path_to_field, value, attribute_type.type_id_())?;
         Ok(StorageKey::new_owned(Self::KEYSPACE, ByteArray::copy(buf.as_slice())))
@@ -324,16 +337,15 @@ impl StructIndexEntry<'static> {
         hasher: &impl Fn(&[u8]) -> u64,
         path_to_field: &Vec<StructFieldIDUInt>,
         value: &FieldValue<'b>,
-        attribute_type_id: TypeID
-    ) -> Result<Vec<u8>, Arc<SnapshotIteratorError>>
-    {
+        attribute_type_id: TypeID,
+    ) -> Result<Vec<u8>, Arc<SnapshotIteratorError>> {
         let mut buf: Vec<u8> = Vec::with_capacity(
             PrefixID::LENGTH +  // Prefix::IndexValueToStruct
                 PrefixID::LENGTH +      // ValueTypeCategory of indexed value
                 TypeID::LENGTH +        // TypeID of Attribute being indexed
                 path_to_field.len() +   // Path to the field
                 AttributeIDLength::Long.length() + // Value for the field.
-                StructAttributeID::LENGTH,  // ID of the attribute being indexed
+                StructAttributeID::LENGTH, // ID of the attribute being indexed
         );
 
         buf.extend_from_slice(&Prefix::IndexValueToStruct.prefix_id().bytes);
@@ -374,12 +386,11 @@ impl<'a> StructIndexEntry<'a> {
         snapshot: &impl ReadableSnapshot,
         hasher: &impl Fn(&[u8]) -> u64,
         string_bytes: StringBytes<'_, INLINE_SIZE>,
-        buf: &mut Vec<u8>
-    ) -> Result<(), Arc<SnapshotIteratorError>>
-    {
+        buf: &mut Vec<u8>,
+    ) -> Result<(), Arc<SnapshotIteratorError>> {
         if Self::is_inlineable(string_bytes.as_reference()) {
-            let mut inline_bytes: [u8; {StructIndexEntry::STRING_FIELD_INLINE_LENGTH}] =
-                [0; {StructIndexEntry::STRING_FIELD_INLINE_LENGTH}];
+            let mut inline_bytes: [u8; { StructIndexEntry::STRING_FIELD_INLINE_LENGTH }] =
+                [0; { StructIndexEntry::STRING_FIELD_INLINE_LENGTH }];
             inline_bytes[0..string_bytes.bytes().length()].copy_from_slice(string_bytes.bytes().bytes());
             buf.extend_from_slice(&inline_bytes);
             buf.push(string_bytes.length() as u8);
@@ -396,14 +407,11 @@ impl<'a> StructIndexEntry<'a> {
                     Either::First(hash) => hash,
                     Either::Second(hash) => hash,
                 };
-            if disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] & Self::STRING_FIELD_HASHED_FLAG
-                == 1
-            {
+            if disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] & Self::STRING_FIELD_HASHED_FLAG == 1 {
                 panic!("Too many collisions when allocating struct value hash")
             } else {
-                disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] = disambiguated_hash_bytes
-                    [Self::STRING_FIELD_HASHED_FLAG_INDEX]
-                    | Self::STRING_FIELD_HASHED_FLAG;
+                disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] =
+                    disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] | Self::STRING_FIELD_HASHED_FLAG;
             }
             buf.extend_from_slice(&disambiguated_hash_bytes);
         }
