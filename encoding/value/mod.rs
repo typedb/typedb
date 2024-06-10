@@ -26,7 +26,6 @@ pub mod long_bytes;
 mod primitive_encoding;
 pub mod string_bytes;
 pub mod struct_bytes;
-pub mod struct_index;
 pub mod value_struct;
 pub mod value_type;
 

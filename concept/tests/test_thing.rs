@@ -901,7 +901,6 @@ fn read_struct_by_field() {
     };
 
     // Create value
-    let mut struct_values: Vec<StructValue> = Vec::new();
     let field_values = ["abc", "xyz"];
     {
         let mut snapshot = storage.clone().open_snapshot_write();

@@ -202,8 +202,6 @@ impl<'a> StructValue<'a> {
     }
 }
 
-// TODO: implement serialise/deserialise for the StructValue
-//       since JSON serialisation seems to be able to handle recursive nesting, it should be able to handle that
 impl<'a> Serialize for FieldValue<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -271,9 +269,6 @@ impl<'a> Serialize for FieldValue<'a> {
 pub struct StructIndexEntry<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
-
-// pub type _IndexEntryEncodedValue<const SHORT_LENGTH: usize, const LONG_LENGTH: usize> = Either<[u8; SHORT_LENGTH], [u8; LONG_LENGTH]>;
-// pub type IndexEntryEncodedValue = _IndexEntryEncodedValue<{AttributeIDLength::Short.length()}, {AttributeIDLength::Long.length()}>
 
 impl<'a> StructIndexEntry<'a> {
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
@@ -396,7 +391,7 @@ impl<'a> StructIndexEntry<'a> {
             buf.push(string_bytes.length() as u8);
         } else {
             buf.extend_from_slice(&string_bytes.bytes().bytes()[0..Self::STRING_FIELD_HASHED_PREFIX_LENGTH]);
-            let prefix_key = Bytes::reference(buf.as_slice());
+            let prefix_key: Bytes<'_, BUFFER_KEY_INLINE> = Bytes::reference(buf.as_slice());
             let mut disambiguated_hash_bytes: [u8; StructIndexEntry::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH] =
                 match Self::find_existing_or_next_disambiguated_hash(
                     snapshot,
@@ -407,12 +402,6 @@ impl<'a> StructIndexEntry<'a> {
                     Either::First(hash) => hash,
                     Either::Second(hash) => hash,
                 };
-            if disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] & Self::STRING_FIELD_HASHED_FLAG == 1 {
-                panic!("Too many collisions when allocating struct value hash")
-            } else {
-                disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] =
-                    disambiguated_hash_bytes[Self::STRING_FIELD_HASHED_FLAG_INDEX] | Self::STRING_FIELD_HASHED_FLAG;
-            }
             buf.extend_from_slice(&disambiguated_hash_bytes);
         }
         Ok(())
