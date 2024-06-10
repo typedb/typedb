@@ -881,7 +881,7 @@ fn read_struct_by_field() {
     );
 
     let nested_struct_key = {
-        let mut snapshot = storage.open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         let nested_struct_key = type_manager.create_struct(&mut snapshot, nested_struct_def).unwrap();
         snapshot.commit().unwrap();
         nested_struct_key
@@ -890,14 +890,15 @@ fn read_struct_by_field() {
     let struct_def = StructDefinition::define(
         "index_test_struct".to_owned(),
         HashMap::from([
-            ("f_nested".to_owned(), (ValueType::Struct(nested_struct_key), false)),
+            ("f_nested".to_owned(), (ValueType::Struct(nested_struct_key.clone()), false)),
         ])
     );
     let (attr_type, struct_key, struct_def) = {
-        let mut snapshot = storage.open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         let struct_key = type_manager.create_struct(&mut snapshot, struct_def.clone()).unwrap();
         let mut attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label, false).unwrap();
         attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_key.clone())).unwrap();
+        attr_type.set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent)).unwrap();
         snapshot.commit().unwrap();
         (attr_type, struct_key, struct_def)
     };
@@ -906,7 +907,7 @@ fn read_struct_by_field() {
     let mut struct_values : Vec<StructValue> = Vec::new();
     let field_values = ["abc", "xyz"];
     {
-        let mut snapshot = storage.open_snapshot_write();
+        let mut snapshot = storage.clone().open_snapshot_write();
         let mut attrs = Vec::new();
         for val in field_values {
             let nested_struct_value = StructValue::new(nested_struct_key.clone(), HashMap::from([(0, FieldValue::String(Cow::Borrowed(val)))]));
@@ -916,12 +917,15 @@ fn read_struct_by_field() {
         }
 
         for (val, attr) in std::iter::zip(field_values, attrs.iter()) {
-            let attr_by_field : Vec<Attribute> = thing_manager
-                .get_attributes_by_struct_field(&snapshot, attr_type.clone(), [0], Value::String(Cow::Borrowed(val)))
-                .unwrap()
-                .collect();
+            let mut attr_by_field_iterator = thing_manager
+                .get_attributes_by_struct_field(&snapshot, attr_type.clone(), vec!(0), FieldValue::String(Cow::Borrowed(val)))
+                .unwrap();
+            let mut attr_by_field: Vec<Attribute> = Vec::new();
+            while let Some(res) = attr_by_field_iterator.next() {
+                attr_by_field.push(res.as_ref().unwrap().clone().into_owned());
+            }
             assert_eq!(1, attr_by_field.len());
-            assert_eq!(attr, attr_by_field);
+            assert_eq!(attr, attr_by_field.get(0).unwrap());
         }
         snapshot.close_resources();
     };

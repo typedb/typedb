@@ -41,7 +41,8 @@ use encoding::{
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use regex::Regex;
-use encoding::value::value_struct::FieldValue;
+use encoding::value::value_struct::{FieldValue, StructIndexEntry};
+use resource::constants::encoding::StructFieldIDUInt;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_range::KeyRange,
@@ -72,6 +73,7 @@ use crate::{
     },
     ConceptStatus,
 };
+use crate::thing::attribute::StructIndexToAttributeIterator;
 
 pub struct ThingManager<Snapshot> {
     vertex_generator: Arc<ThingVertexGenerator>,
@@ -393,13 +395,36 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         )
     }
 
-    pub(crate) fn get_attributes_by_struct_field<'this, 'a, 'v>(
+    pub fn get_attributes_by_struct_field<'this, 'a, 'v>(
         &'this self,
         snapshot: &'this Snapshot,
         attribute_type: AttributeType<'a>,
+        path_to_field: Vec<StructFieldIDUInt>,
         value: FieldValue<'v>
-    ) -> Result<AttributeIterator<Snapshot>, ConceptReadError> {
-        todo!("TODO")
+    ) -> Result<StructIndexToAttributeIterator<'_, Snapshot>, ConceptReadError> {
+        // TODO: Should I assert that the attribute-type is a struct?
+        // Surely all that validation is done if traversal is the only way to access these.
+        debug_assert!({
+            let value_type = attribute_type.get_value_type(snapshot, &self.type_manager).unwrap().unwrap();
+            value_type.category() == ValueTypeCategory::Struct
+        });
+
+        let prefix = StructIndexEntry::build_search_key(snapshot, self.vertex_generator.TEMP__hasher(), &path_to_field, &value, &attribute_type.vertex())
+            .map_err(|source| ConceptReadError::SnapshotIterate { source })?;
+        let index_to_attribute_iterator = snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::IndexValueToStruct.fixed_width_keys()));
+
+        // TODO: I took this from get_attributes_in. Do I really need to suffix the value_type?
+        // I understand that `$x has $y; $y = "foo";` may benefit from such an encoding, but if this truly comes after the traversal engine.
+        // The concept API is hardly canonical if we're doing an existence check
+        let attribute_value_type_prefix = AttributeVertex::value_type_category_to_prefix_type(ValueTypeCategory::Struct);
+        let prefix =
+            AttributeVertex::build_prefix_type(attribute_value_type_prefix, attribute_type.vertex().type_id_());
+
+        let has_reverse_prefix =
+            ThingEdgeHasReverse::prefix_from_type(attribute_value_type_prefix, attribute_type.vertex().type_id_());
+        let has_reverse_iterator =
+            snapshot.iterate_range(KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING));
+        Ok(StructIndexToAttributeIterator::new(index_to_attribute_iterator, has_reverse_iterator, snapshot, &self.type_manager))
     }
 
     pub(crate) fn get_has_ordered<'this, 'a>(
@@ -907,7 +932,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                         .vertex_generator
                         .create_attribute_struct(attribute_type.vertex().type_id_(), encoded_struct, snapshot)
                         .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
-                    self.index_struct_fields(snapshot, struct_attribute.attribute_id().unwrap_struct(), &struct_);
+                    self.index_struct_fields(snapshot, &struct_attribute, &struct_);
                     struct_attribute
                 }
             };
@@ -923,12 +948,12 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     fn index_struct_fields<'a>(
         &self,
         snapshot: &mut Snapshot,
-        attribute_id: StructAttributeID,
+        attribute_vertex: &AttributeVertex<'static>,
         struct_value: &StructValue<'a>,
     ) {
         // TODO: I shouldn't be unwrapping the result
         let index_entries =
-            struct_value.create_index_entries(snapshot, self.vertex_generator.TEMP__hasher(), &attribute_id).unwrap();
+            struct_value.create_index_entries(snapshot, self.vertex_generator.TEMP__hasher(), &attribute_vertex).unwrap();
         for entry in index_entries {
             snapshot.put(entry.into_storage_key().into_owned_array());
         }
