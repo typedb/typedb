@@ -19,7 +19,7 @@ pub struct DateTimeTZBytes {
 }
 
 impl DateTimeTZBytes {
-    const LENGTH: usize = AttributeIDLength::Long.length();
+    pub(crate) const LENGTH: usize = AttributeIDLength::Long.length();
 
     const DATE_TIME_LENGTH: usize = (i64::BITS + u32::BITS) as usize / 8;
     const TZ_LENGTH: usize = u16::BITS as usize / 8;

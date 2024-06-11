@@ -16,7 +16,7 @@ pub struct DecimalBytes {
 }
 
 impl DecimalBytes {
-    const LENGTH: usize = AttributeIDLength::Long.length();
+    pub(crate) const LENGTH: usize = AttributeIDLength::Long.length();
 
     const INTEGER_LENGTH: usize = i64::BITS as usize / 8;
     const FRACTIONAL_LENGTH: usize = u64::BITS as usize / 8;

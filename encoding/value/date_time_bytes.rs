@@ -15,7 +15,7 @@ pub struct DateTimeBytes {
 }
 
 impl DateTimeBytes {
-    const LENGTH: usize = AttributeIDLength::Long.length();
+    pub(crate) const LENGTH: usize = AttributeIDLength::Long.length();
 
     const TIMESTAMP_LENGTH: usize = i64::BITS as usize / 8;
     const NANOS_LENGTH: usize = u32::BITS as usize / 8;

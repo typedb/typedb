@@ -16,7 +16,7 @@ pub struct DurationBytes {
 }
 
 impl DurationBytes {
-    const LENGTH: usize = AttributeIDLength::Long.length();
+    pub(crate) const LENGTH: usize = AttributeIDLength::Long.length();
 
     const MONTHS_LENGTH: usize = u32::BITS as usize / 8;
     const DAYS_LENGTH: usize = u32::BITS as usize / 8;

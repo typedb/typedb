@@ -13,7 +13,7 @@ pub struct DoubleBytes {
 }
 
 impl DoubleBytes {
-    const LENGTH: usize = AttributeIDLength::Short.length();
+    pub(crate) const LENGTH: usize = AttributeIDLength::Short.length();
 
     const ENCODED_NEGATIVE_ZERO: u64 = i64::MAX as u64;
 

@@ -12,7 +12,7 @@ pub struct LongBytes {
 }
 
 impl LongBytes {
-    const LENGTH: usize = 8;
+    pub(crate) const LENGTH: usize = 8;
 
     pub fn new(bytes: [u8; LongBytes::LENGTH]) -> Self {
         Self { bytes }
