@@ -42,10 +42,8 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         let index_key = LabelToStructDefinitionIndex::build::<BUFFER_KEY_INLINE>(StringBytes::build_ref(
             struct_definition.name.as_str(),
         ));
-        snapshot.put_val(
-            index_key.into_storage_key().into_owned_array(),
-            ByteArray::copy(definition_key.clone().into_bytes().into_array().bytes()),
-        );
+        snapshot
+            .put_val(index_key.into_storage_key().into_owned_array(), ByteArray::copy(definition_key.bytes().bytes()));
         snapshot.put_val(
             definition_key.into_storage_key().into_owned_array(),
             struct_definition.into_bytes().unwrap().into_array(),
