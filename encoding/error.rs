@@ -22,7 +22,7 @@ pub enum EncodingError {
     StructMissingRequiredField { field_name: String },
     StructFieldUnresolvable { struct_name: String, field_path: Vec<String> },
     IndexingIntoNonStructField { struct_name: String, field_path: Vec<String> },
-    ValueTooLarge(usize),
+    StructFieldValueTooLarge(usize),
     UnexpectedEndOfEncodedStruct,
 }
 
@@ -45,7 +45,7 @@ impl Error for EncodingError {
             Self::StructMissingRequiredField { .. } => None,
             Self::StructFieldUnresolvable { .. } => None,
             Self::IndexingIntoNonStructField { .. } => None,
-            EncodingError::ValueTooLarge(_) => None,
+            EncodingError::StructFieldValueTooLarge(_) => None,
             EncodingError::UnexpectedEndOfEncodedStruct => None,
         }
     }

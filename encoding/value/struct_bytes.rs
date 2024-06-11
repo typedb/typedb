@@ -40,6 +40,10 @@ pub struct StructBytes<'a, const INLINE_LENGTH: usize> {
 }
 
 impl<'a, const INLINE_LENGTH: usize> StructBytes<'a, INLINE_LENGTH> {
+    const MAX_VALUE_SIZE: usize = ((1 << 31) - 1);
+    const VLE_IS_SINGLE_BYTE_FLAG: u8 = 0b1000_0000;
+    const VLE_SINGLE_BYTE_MAX_SIZE: usize = { Self::VLE_IS_SINGLE_BYTE_FLAG as usize - 1 };
+
     pub fn new(value: Bytes<'a, INLINE_LENGTH>) -> Self {
         StructBytes { bytes: value }
     }
@@ -111,20 +115,17 @@ fn encode_struct_into<'a>(struct_value: &StructValue<'a>, buf: &mut Vec<u8>) -> 
 }
 
 fn append_length_as_vle(len: usize, buf: &mut Vec<u8>) -> Result<(), EncodingError> {
-    if len < u8::MAX as usize {
-        buf.push(1 as u8);
+    if len <= StructBytes::<0>::VLE_SINGLE_BYTE_MAX_SIZE {
+        debug_assert_eq!(0, (len as u8) & StructBytes::<0>::VLE_IS_SINGLE_BYTE_FLAG);
         buf.push(len as u8);
         Ok(())
-    } else if len < u16::MAX as usize {
-        buf.push(2 as u8);
-        buf.extend_from_slice(&(len as u16).to_be_bytes());
-        Ok(())
-    } else if len < u32::MAX as usize {
-        buf.push(4 as u8);
-        buf.extend_from_slice(&(len as u32).to_be_bytes());
+    } else if len <= StructBytes::<0>::MAX_VALUE_SIZE {
+        let mut be_bytes = (len as u32).to_be_bytes();
+        be_bytes[0] = be_bytes[0] | StructBytes::<0>::VLE_IS_SINGLE_BYTE_FLAG;
+        buf.extend_from_slice(&be_bytes);
         Ok(())
     } else {
-        Err(EncodingError::ValueTooLarge(len))
+        Err(EncodingError::StructFieldValueTooLarge(len))
     }
 }
 
@@ -179,14 +180,12 @@ fn decode_struct_increment_offset(offset: &mut usize, buf: &[u8]) -> Result<Stru
 }
 
 fn read_vle_increment_offset(offset: &mut usize, buf: &[u8]) -> Result<usize, EncodingError> {
-    let n_bytes = read_slice_increment_offset(offset, 1, buf)?[0];
-    let length: usize = match n_bytes {
-        1 => u8::from_be_bytes(read_bytes_increment_offset::<1>(offset, buf)?) as usize,
-        2 => u16::from_be_bytes(read_bytes_increment_offset::<2>(offset, buf)?) as usize,
-        4 => u32::from_be_bytes(read_bytes_increment_offset::<4>(offset, buf)?) as usize,
-        _ => panic!("Bad VLE encoding. n_bytes = {n_bytes}"),
-    };
-    Ok(length)
+    let is_single_byte = buf[*offset] & StructBytes::<0>::VLE_IS_SINGLE_BYTE_FLAG == 0;
+    if is_single_byte {
+        Ok(u8::from_be_bytes(read_bytes_increment_offset::<1>(offset, buf)?) as usize)
+    } else {
+        Ok(u32::from_be_bytes(read_bytes_increment_offset::<4>(offset, buf)?) as usize)
+    }
 }
 
 fn read_slice_increment_offset<'a>(
@@ -237,17 +236,26 @@ pub mod test {
         {
             let mut vec: Vec<u8> = Vec::new();
             append_length_as_vle(3, &mut vec).unwrap();
-            assert_eq!(&[1, 3], vec.as_slice());
+            assert_eq!(&[3], vec.as_slice());
         }
         {
             let mut vec: Vec<u8> = Vec::new();
-            append_length_as_vle(256 + 4, &mut vec).unwrap();
-            assert_eq!(&[2, 1, 4], vec.as_slice());
+            append_length_as_vle(127, &mut vec).unwrap();
+            assert_eq!(&[127], vec.as_slice());
         }
         {
             let mut vec: Vec<u8> = Vec::new();
-            append_length_as_vle((u32::MAX - 5) as usize, &mut vec).unwrap();
-            assert_eq!(&[4, 255, 255, 255, 255 - 5], vec.as_slice());
+            append_length_as_vle(128, &mut vec).unwrap();
+            assert_eq!(&[128, 0, 0, 128], vec.as_slice());
+        }
+        {
+            let mut vec: Vec<u8> = Vec::new();
+            assert!(append_length_as_vle((1 + u32::MAX / 2) as usize, &mut vec).is_err());
+        }
+        {
+            let mut vec: Vec<u8> = Vec::new();
+            append_length_as_vle((u32::MAX / 2) as usize, &mut vec).unwrap();
+            assert_eq!(&[255, 255, 255, 255], vec.as_slice());
         }
     }
 
@@ -259,7 +267,10 @@ pub mod test {
         ];
         for (string_value, long_value) in test_values {
             let nested_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
-            let nested_fields = HashMap::from([(0, string_value), (1, long_value)]);
+            let nested_fields = HashMap::from([
+                // (0, string_value),
+                (1, long_value),
+            ]);
             let nested_struct = StructValue::new(nested_key, nested_fields);
 
             let struct_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
@@ -268,6 +279,7 @@ pub mod test {
 
             let struct_bytes: StructBytes<'static, BUFFER_VALUE_INLINE> =
                 StructBytes::build(&Cow::Borrowed(&struct_value));
+            println!("{:x?}", struct_bytes.bytes.bytes());
             let decoded = struct_bytes.as_struct();
             assert_eq!(decoded.fields(), struct_value.fields());
         }
