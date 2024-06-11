@@ -48,7 +48,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         );
         snapshot.put_val(
             definition_key.into_storage_key().into_owned_array(),
-            struct_definition.to_bytes().unwrap().into_array(),
+            struct_definition.into_bytes().unwrap().into_array(),
         );
     }
 

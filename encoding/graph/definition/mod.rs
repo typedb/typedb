@@ -15,5 +15,5 @@ pub mod r#struct;
 pub trait DefinitionValueEncoding {
     fn from_bytes<'b>(value: ByteReference<'b>) -> Self;
 
-    fn to_bytes(self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>>;
+    fn into_bytes(self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>>;
 }

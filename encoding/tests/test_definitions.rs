@@ -38,7 +38,7 @@ fn define_struct<Snapshot: WritableSnapshot>(
     // Store definition
     snapshot.put_val(
         definition_key.clone().into_storage_key().into_owned_array(),
-        definition.clone().to_bytes().unwrap().into_array(),
+        definition.clone().into_bytes().unwrap().into_array(),
     );
     let index_key =
         LabelToStructDefinitionIndex::build(StringBytes::<BUFFER_KEY_INLINE>::build_ref(definition.name.as_str()));

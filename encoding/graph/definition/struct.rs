@@ -51,7 +51,7 @@ impl DefinitionValueEncoding for StructDefinition {
         bincode::deserialize(value.bytes()).unwrap()
     }
 
-    fn to_bytes(self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+    fn into_bytes(self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
     }
 }
