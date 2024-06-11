@@ -318,7 +318,6 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         }
     }
 
-    // TODO: Error type
     pub fn resolve_struct_field(
         &self,
         snapshot: &Snapshot,

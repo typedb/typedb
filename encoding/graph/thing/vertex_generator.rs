@@ -125,7 +125,7 @@ impl ThingVertexGenerator {
         Ok(ThingVertexGenerator { entity_ids, relation_ids, large_value_hasher })
     }
 
-    pub fn TEMP__hasher(&self) -> &impl Fn(&[u8]) -> u64 {
+    pub fn hasher(&self) -> &impl Fn(&[u8]) -> u64 {
         &self.large_value_hasher
     }
 

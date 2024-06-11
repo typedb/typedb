@@ -4,7 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{any::Any, borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
+use std::{
+    any::Any,
+    borrow::{Borrow, Cow},
+    collections::HashSet,
+    marker::PhantomData,
+    sync::Arc,
+};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -399,16 +405,14 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         path_to_field: Vec<StructFieldIDUInt>,
         value: FieldValue<'v>,
     ) -> Result<StructIndexToAttributeIterator<'_, Snapshot>, ConceptReadError> {
-        // TODO: Should I assert that the attribute-type is a struct?
-        // Surely all that validation is done if traversal is the only way to access these.
         debug_assert!({
             let value_type = attribute_type.get_value_type(snapshot, &self.type_manager).unwrap().unwrap();
             value_type.category() == ValueTypeCategory::Struct
         });
 
-        let prefix = StructIndexEntry::build_search_key(
+        let prefix = StructIndexEntry::build_prefix_typeid_path_value(
             snapshot,
-            self.vertex_generator.TEMP__hasher(),
+            self.vertex_generator.borrow(),
             &path_to_field,
             &value,
             &attribute_type.vertex(),
@@ -942,7 +946,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                         .vertex_generator
                         .create_attribute_struct(attribute_type.vertex().type_id_(), encoded_struct, snapshot)
                         .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
-                    self.index_struct_fields(snapshot, &struct_attribute, &struct_);
+                    self.index_struct_fields(snapshot, &struct_attribute, &struct_)?;
                     struct_attribute
                 }
             };
@@ -960,11 +964,10 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         snapshot: &mut Snapshot,
         attribute_vertex: &AttributeVertex<'static>,
         struct_value: &StructValue<'a>,
-    ) {
-        // TODO: I shouldn't be unwrapping the result
+    ) -> Result<(), ConceptWriteError> {
         let index_entries = struct_value
-            .create_index_entries(snapshot, self.vertex_generator.TEMP__hasher(), &attribute_vertex)
-            .unwrap();
+            .create_index_entries(snapshot, self.vertex_generator.borrow(), &attribute_vertex)
+            .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
         for entry in index_entries {
             let StructIndexEntry { key, value } = entry;
             match value {
@@ -972,6 +975,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 Some(value) => snapshot.put_val(key.into_storage_key().into_owned_array(), value.into_array()),
             }
         }
+        Ok(())
     }
 
     pub(crate) fn delete_entity(&self, snapshot: &mut Snapshot, entity: Entity<'_>) {

@@ -9,7 +9,6 @@ use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
 pub mod definition_key;
 pub mod definition_key_generator;
-pub mod definition_key_property;
 pub mod function;
 pub mod r#struct;
 

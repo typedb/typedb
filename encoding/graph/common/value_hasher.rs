@@ -12,7 +12,7 @@ use storage::{
 
 use crate::EncodingKeyspace;
 
-pub(crate) trait DisambiguatingHashedID<const TOTAL_LENGTH: usize> {
+pub(crate) trait HashedID<const TOTAL_LENGTH: usize> {
     const HASHID_HASH_LENGTH: usize = TOTAL_LENGTH - 1;
     const HASHID_DISAMBIGUATOR_BYTE_INDEX: usize = Self::HASHID_HASH_LENGTH;
     const HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG: u8 = 0b1000_0000;

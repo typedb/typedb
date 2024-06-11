@@ -11,16 +11,12 @@ use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_VALUE_IN
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    graph::definition::DefinitionValueEncoding,
-    layout::prefix::Prefix,
-    value::{label::Label, value_type::ValueType},
-    AsBytes,
+    graph::definition::DefinitionValueEncoding, layout::prefix::Prefix, value::value_type::ValueType, AsBytes,
 };
 
 // TODO: Revisit to think about serialisation.
 // Storing index in the StructDefinitionField opens the door for duplicates?
 // We also have redundancy in storing the StructFieldIDUInt twice.
-// TODO: Should this not have
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct StructDefinition {
     pub name: String,
@@ -32,7 +28,7 @@ pub struct StructDefinition {
 pub struct StructDefinitionField {
     pub index: StructFieldIDUInt,
     pub optional: bool,
-    pub value_type: ValueType, // TODO
+    pub value_type: ValueType,
 }
 
 impl StructDefinition {

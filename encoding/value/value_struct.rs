@@ -44,7 +44,7 @@ use storage::{
 use crate::{
     error::EncodingError,
     graph::{
-        common::value_hasher::DisambiguatingHashedID,
+        common::value_hasher::HashedID,
         definition::{
             definition_key::DefinitionKey,
             r#struct::{StructDefinition, StructDefinitionField},
@@ -164,12 +164,19 @@ impl<'a> StructValue<'a> {
     pub fn create_index_entries(
         &self,
         snapshot: &impl WritableSnapshot,
-        hasher: &impl Fn(&[u8]) -> u64,
+        thing_vertex_generator: &ThingVertexGenerator,
         attribute: &AttributeVertex<'_>,
     ) -> Result<Vec<StructIndexEntry>, Arc<SnapshotIteratorError>> {
         let mut acc: Vec<StructIndexEntry> = Vec::new();
         let mut path: Vec<StructFieldIDUInt> = Vec::new();
-        Self::create_index_entries_recursively(snapshot, hasher, attribute, &self.fields, &mut path, &mut acc)?;
+        Self::create_index_entries_recursively(
+            snapshot,
+            thing_vertex_generator.hasher(),
+            attribute,
+            &self.fields,
+            &mut path,
+            &mut acc,
+        )?;
         Ok(acc)
     }
 
@@ -322,7 +329,13 @@ impl StructIndexEntry<'static> {
         attribute: &AttributeVertex<'c>,
     ) -> Result<StructIndexEntry<'static>, Arc<SnapshotIteratorError>> {
         debug_assert_eq!(Prefix::VertexAttributeStruct, attribute.prefix());
-        let mut buf = Self::build_search_key_bytes(snapshot, hasher, path_to_field, value, attribute.type_id_())?;
+        let mut buf = Self::build_prefix_typeid_path_value_into_buf(
+            snapshot,
+            hasher,
+            path_to_field,
+            value,
+            attribute.type_id_(),
+        )?;
         buf.extend_from_slice(attribute.attribute_id().bytes());
 
         let value = match &value {
@@ -339,18 +352,24 @@ impl StructIndexEntry<'static> {
         Ok(Self { key: StructIndexEntryKey::new(Bytes::copy(buf.as_slice())), value })
     }
 
-    pub fn build_search_key<'b, 'c>(
+    pub fn build_prefix_typeid_path_value<'b, 'c>(
         snapshot: &impl ReadableSnapshot,
-        hasher: &impl Fn(&[u8]) -> u64,
+        thing_vertex_generator: &ThingVertexGenerator,
         path_to_field: &Vec<StructFieldIDUInt>,
         value: &FieldValue<'b>,
         attribute_type: &TypeVertex<'c>,
     ) -> Result<StorageKey<'static, BUFFER_KEY_INLINE>, Arc<SnapshotIteratorError>> {
-        let mut buf = Self::build_search_key_bytes(snapshot, hasher, path_to_field, value, attribute_type.type_id_())?;
+        let mut buf = Self::build_prefix_typeid_path_value_into_buf(
+            snapshot,
+            thing_vertex_generator.hasher(),
+            path_to_field,
+            value,
+            attribute_type.type_id_(),
+        )?;
         Ok(StorageKey::new_owned(Self::KEYSPACE, ByteArray::copy(buf.as_slice())))
     }
 
-    fn build_search_key_bytes<'b>(
+    fn build_prefix_typeid_path_value_into_buf<'b>(
         snapshot: &impl ReadableSnapshot,
         hasher: &impl Fn(&[u8]) -> u64,
         path_to_field: &Vec<StructFieldIDUInt>,
@@ -392,12 +411,11 @@ impl StructIndexEntry<'static> {
 
 impl<'a> StructIndexEntry<'a> {
     const STRING_FIELD_LENGTH: usize = 17;
-    const STRING_FIELD_DISAMBIGUATED_HASH_LENGTH: usize = 9;
-    const STRING_FIELD_HASHED_PREFIX_LENGTH: usize =
-        { Self::STRING_FIELD_LENGTH - Self::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH };
+    const STRING_FIELD_HASHID_LENGTH: usize = 9;
+    const STRING_FIELD_HASHED_PREFIX_LENGTH: usize = { Self::STRING_FIELD_LENGTH - Self::STRING_FIELD_HASHID_LENGTH };
     const STRING_FIELD_HASHED_FLAG: u8 = 0b1000_0000;
     const STRING_FIELD_HASHED_FLAG_INDEX: usize = Self::STRING_FIELD_HASHED_HASH_LENGTH;
-    const STRING_FIELD_HASHED_HASH_LENGTH: usize = Self::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH - 1;
+    const STRING_FIELD_HASHED_HASH_LENGTH: usize = Self::STRING_FIELD_HASHID_LENGTH - 1;
     const STRING_FIELD_INLINE_LENGTH: usize = { Self::STRING_FIELD_LENGTH - 1 };
 
     fn encode_string_into<const INLINE_SIZE: usize>(
@@ -415,7 +433,7 @@ impl<'a> StructIndexEntry<'a> {
         } else {
             buf.extend_from_slice(&string_bytes.bytes().bytes()[0..Self::STRING_FIELD_HASHED_PREFIX_LENGTH]);
             let prefix_key: Bytes<'_, BUFFER_KEY_INLINE> = Bytes::reference(buf.as_slice());
-            let disambiguated_hash_bytes: [u8; StructIndexEntry::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH] =
+            let disambiguated_hash_bytes: [u8; StructIndexEntry::STRING_FIELD_HASHID_LENGTH] =
                 match Self::find_existing_or_next_disambiguated_hash(
                     snapshot,
                     hasher,
@@ -431,11 +449,11 @@ impl<'a> StructIndexEntry<'a> {
     }
 
     fn is_string_inlineable<'b, const INLINE_SIZE: usize>(string_bytes: StringBytes<'b, INLINE_SIZE>) -> bool {
-        string_bytes.length() < Self::STRING_FIELD_HASHED_PREFIX_LENGTH + Self::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH
+        string_bytes.length() < Self::STRING_FIELD_HASHED_PREFIX_LENGTH + Self::STRING_FIELD_HASHID_LENGTH
     }
 }
 
-impl<'a> DisambiguatingHashedID<{ StructIndexEntry::STRING_FIELD_DISAMBIGUATED_HASH_LENGTH }> for StructIndexEntry<'a> {
+impl<'a> HashedID<{ StructIndexEntry::STRING_FIELD_HASHID_LENGTH }> for StructIndexEntry<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data; // TODO
     const FIXED_WIDTH_KEYS: bool = { Prefix::IndexValueToStruct.fixed_width_keys() };
 }

@@ -32,7 +32,7 @@ use crate::{
 pub type TypeVertexAllocator = SchemaIDAllocator<TypeVertex<'static>>;
 pub type DefinitionKeyAllocator = SchemaIDAllocator<DefinitionKey<'static>>;
 
-pub trait AllocationHelper: Sized {
+trait SchemaID: Sized {
     const MIN_ID: u64;
     const MAX_ID: u64;
 
@@ -41,13 +41,13 @@ pub trait AllocationHelper: Sized {
     fn ids_exhausted_error(prefix: Prefix) -> EncodingError;
 }
 
-pub struct SchemaIDAllocator<T: AllocationHelper> {
+pub struct SchemaIDAllocator<T: SchemaID> {
     last_allocated_type_id: AtomicU64,
     prefix: Prefix,
     phantom: PhantomData<T>,
 }
 
-impl<'a, T: AllocationHelper + Keyable<'a, BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
+impl<'a, T: SchemaID + Keyable<'a, BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
     pub fn new(prefix: Prefix) -> Self {
         Self { last_allocated_type_id: AtomicU64::new(0), prefix, phantom: PhantomData }
     }
@@ -95,7 +95,7 @@ impl<'a, T: AllocationHelper + Keyable<'a, BUFFER_KEY_INLINE>> SchemaIDAllocator
     }
 }
 
-impl AllocationHelper for TypeVertex<'static> {
+impl SchemaID for TypeVertex<'static> {
     const MIN_ID: u64 = TypeIDUInt::MIN as u64;
     const MAX_ID: u64 = TypeIDUInt::MAX as u64;
 
@@ -120,7 +120,7 @@ impl AllocationHelper for TypeVertex<'static> {
     }
 }
 
-impl AllocationHelper for DefinitionKey<'static> {
+impl SchemaID for DefinitionKey<'static> {
     const MIN_ID: u64 = DefinitionIDUInt::MIN as u64;
     const MAX_ID: u64 = DefinitionIDUInt::MAX as u64;
 

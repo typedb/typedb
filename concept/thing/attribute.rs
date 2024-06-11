@@ -205,22 +205,22 @@ impl ExtractAttributeFromKey for StructIndexAttributeExtractor {
     }
 }
 
-pub struct _AttributeIterator<'a, Snapshot: ReadableSnapshot, KeyInterpreter: ExtractAttributeFromKey> {
+pub struct AttributeIteratorImpl<'a, Snapshot: ReadableSnapshot, AttributeExtractor: ExtractAttributeFromKey> {
     snapshot: Option<&'a Snapshot>,
     type_manager: Option<&'a TypeManager<Snapshot>>,
     attributes_iterator: Option<SnapshotRangeIterator>,
     has_reverse_iterator: Option<SnapshotRangeIterator>,
     state: State<ConceptReadError>,
-    key_interepreter: PhantomData<KeyInterpreter>,
+    key_interepreter: PhantomData<AttributeExtractor>,
 }
 
 pub type AttributeIterator<'a, Snapshot: ReadableSnapshot> =
-    _AttributeIterator<'a, Snapshot, StandardAttributeExtractor>;
+    AttributeIteratorImpl<'a, Snapshot, StandardAttributeExtractor>;
 pub type StructIndexToAttributeIterator<'a, Snapshot: ReadableSnapshot> =
-    _AttributeIterator<'a, Snapshot, StructIndexAttributeExtractor>;
+    AttributeIteratorImpl<'a, Snapshot, StructIndexAttributeExtractor>;
 
 impl<'a, Snapshot: ReadableSnapshot, KeyInterpreter: ExtractAttributeFromKey>
-    _AttributeIterator<'a, Snapshot, KeyInterpreter>
+    AttributeIteratorImpl<'a, Snapshot, KeyInterpreter>
 {
     pub(crate) fn new(
         attributes_iterator: SnapshotRangeIterator,

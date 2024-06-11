@@ -44,7 +44,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         ));
         snapshot.put_val(
             index_key.into_storage_key().into_owned_array(),
-            ByteArray::copy(definition_key.clone().into_bytes().bytes()),
+            ByteArray::copy(definition_key.clone().into_bytes().into_array().bytes()),
         );
         snapshot.put_val(
             definition_key.into_storage_key().into_owned_array(),
