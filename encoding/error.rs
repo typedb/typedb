@@ -8,7 +8,7 @@ use std::{error::Error, fmt, str::Utf8Error};
 
 use storage::snapshot::iterator::SnapshotIteratorError;
 
-use crate::{layout::prefix::Prefix, value::value_type::ValueType};
+use crate::{graph::definition::definition_key::DefinitionKey, layout::prefix::Prefix, value::value_type::ValueType};
 
 #[derive(Debug, Clone)]
 pub enum EncodingError {
@@ -20,6 +20,8 @@ pub enum EncodingError {
     DefinitionIDsExhausted { prefix: Prefix },
     StructFieldValueTypeMismatch { field_name: String, expected: ValueType },
     StructMissingRequiredField { field_name: String },
+    StructFieldUnresolvable { struct_name: String, field_path: Vec<String> },
+    IndexingIntoNonStructField { struct_name: String, field_path: Vec<String> },
 }
 
 impl fmt::Display for EncodingError {
@@ -39,6 +41,8 @@ impl Error for EncodingError {
             Self::UnexpectedPrefix { .. } => None,
             Self::StructFieldValueTypeMismatch { .. } => None,
             Self::StructMissingRequiredField { .. } => None,
+            Self::StructFieldUnresolvable { .. } => None,
+            Self::IndexingIntoNonStructField { .. } => None,
         }
     }
 }

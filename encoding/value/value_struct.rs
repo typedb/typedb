@@ -182,8 +182,8 @@ impl<'a> StructValue<'a> {
         acc: &mut Vec<StructIndexEntry<'static>>,
     ) -> Result<(), Arc<SnapshotIteratorError>> {
         for (idx, value) in fields.iter() {
+            path.push(*idx);
             if let FieldValue::Struct(struct_val) = value {
-                path.push(*idx);
                 Self::create_index_entries_recursively(
                     snapshot,
                     hasher.clone(),
@@ -192,11 +192,11 @@ impl<'a> StructValue<'a> {
                     path,
                     acc,
                 )?;
-                let popped = path.pop().unwrap();
-                debug_assert_eq!(*idx, popped);
             } else {
                 acc.push(StructIndexEntry::build(snapshot, hasher.clone(), path, value, attribute)?);
             }
+            let popped = path.pop().unwrap();
+            debug_assert_eq!(*idx, popped);
         }
         Ok(())
     }
@@ -592,8 +592,8 @@ pub mod test {
         let struct_fields = HashMap::from([(0, FieldValue::Struct(Cow::Owned(nested_struct.clone())))]);
         let struct_value = StructValue { definition_key: struct_key, fields: struct_fields };
 
-        let struct_bytes: StructBytes<'static, BUFFER_VALUE_INLINE> = struct_value.to_bytes();
-        let decoded = StructValue::from_bytes(struct_bytes.as_reference());
+        let struct_bytes: StructBytes<'static, BUFFER_VALUE_INLINE> = StructBytes::build(&Cow::Borrowed(&struct_value));
+        let decoded = struct_bytes.as_struct();
         assert_eq!(decoded.fields, struct_value.fields);
     }
 }

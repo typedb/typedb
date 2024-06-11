@@ -12,9 +12,12 @@ use std::{
 };
 
 use encoding::{
+    error::EncodingError,
     graph::{
         definition::{
-            definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition,
+            definition_key::DefinitionKey,
+            definition_key_generator::DefinitionKeyGenerator,
+            r#struct::{StructDefinition, StructDefinitionField},
         },
         type_::{
             edge::TypeEdgeEncoding,
@@ -28,6 +31,7 @@ use encoding::{
     AsBytes, Keyable,
 };
 use primitive::maybe_owns::MaybeOwns;
+use resource::constants::encoding::StructFieldIDUInt;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
@@ -312,6 +316,49 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         } else {
             Ok(MaybeOwns::Owned(TypeReader::get_struct_definition(snapshot, definition_key.clone())?))
         }
+    }
+
+    // TODO: Error type
+    pub fn resolve_struct_field(
+        &self,
+        snapshot: &Snapshot,
+        fields_path: &Vec<String>,
+        definition: StructDefinition,
+    ) -> Result<Vec<StructFieldIDUInt>, ConceptReadError> {
+        let mut resolved: Vec<StructFieldIDUInt> = Vec::with_capacity(fields_path.len());
+        let maybe_owns_definition = MaybeOwns::Borrowed(&definition);
+        let mut at = maybe_owns_definition;
+        for (i, f) in fields_path.iter().enumerate() {
+            let field_idx_opt = at.field_names.get(f);
+            if let Some(field_idx) = field_idx_opt {
+                resolved.push(*field_idx);
+                let next_def: &StructDefinitionField = at.fields.get(*field_idx as usize).unwrap();
+                match &next_def.value_type {
+                    ValueType::Struct(definition_key) => {
+                        at = self.get_struct_definition(snapshot, definition_key.clone())?;
+                    }
+                    _ => {
+                        if (i + 1) < fields_path.len() {
+                            return Err(ConceptReadError::Encoding {
+                                source: EncodingError::IndexingIntoNonStructField {
+                                    struct_name: definition.name,
+                                    field_path: fields_path.clone(),
+                                },
+                            });
+                        }
+                    }
+                }
+            } else {
+                return Err(ConceptReadError::Encoding {
+                    source: EncodingError::StructFieldUnresolvable {
+                        struct_name: definition.name,
+                        field_path: fields_path.clone(),
+                    },
+                });
+            }
+        }
+
+        Ok(resolved)
     }
 
     get_type_methods! {

@@ -921,11 +921,18 @@ fn read_struct_by_field() {
         }
 
         for (val, attr) in std::iter::zip(field_values, attrs.iter()) {
+            let field_path = type_manager
+                .resolve_struct_field(
+                    &snapshot,
+                    &vec!["f_nested".to_owned(), "nested_string".to_owned()],
+                    struct_def.clone(),
+                )
+                .unwrap();
             let mut attr_by_field_iterator = thing_manager
                 .get_attributes_by_struct_field(
                     &snapshot,
                     attr_type.clone(),
-                    vec![0],
+                    field_path,
                     FieldValue::String(Cow::Borrowed(val)),
                 )
                 .unwrap();
