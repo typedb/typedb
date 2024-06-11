@@ -198,7 +198,7 @@ impl ExtractAttributeFromKey for StructIndexAttributeExtractor {
     fn storage_key_to_attribute_vertex<'bytes>(
         storage_key: StorageKey<'bytes, BUFFER_KEY_INLINE>,
     ) -> AttributeVertex<'bytes> {
-        StructIndexEntry::new(Bytes::reference(storage_key.bytes())).attribute_vertex()
+        StructIndexEntry::new(Bytes::reference(storage_key.bytes()), None).attribute_vertex()
     }
 }
 

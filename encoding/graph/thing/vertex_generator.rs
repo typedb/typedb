@@ -24,7 +24,6 @@ use super::vertex_attribute::{
 use crate::{
     error::EncodingError,
     graph::{
-        definition::definition_key::DefinitionKey,
         thing::{
             vertex_attribute::{AttributeID, AttributeVertex, LongAttributeID, StringAttributeID},
             vertex_object::{ObjectID, ObjectVertex},

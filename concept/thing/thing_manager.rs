@@ -966,7 +966,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             .create_index_entries(snapshot, self.vertex_generator.TEMP__hasher(), &attribute_vertex)
             .unwrap();
         for entry in index_entries {
-            snapshot.put(entry.into_storage_key().into_owned_array());
+            if let Some(value_bytes) = entry.value_bytes() {
+                snapshot.put_val(entry.into_storage_key().into_owned_array(), value_bytes.into_array());
+            } else {
+                snapshot.put(entry.into_storage_key().into_owned_array());
+            }
         }
     }
 
