@@ -266,26 +266,32 @@ impl<'a> Serialize for FieldValue<'a> {
     }
 }
 
-pub struct StructIndexEntry<'a> {
+pub struct StructIndexEntryKey<'a> {
     key_bytes: Bytes<'a, BUFFER_KEY_INLINE>,
-    value_bytes: Option<Bytes<'a, BUFFER_VALUE_INLINE>>,
+}
+
+pub struct StructIndexEntry<'a> {
+    pub key: StructIndexEntryKey<'a>,
+    pub value: Option<Bytes<'a, BUFFER_VALUE_INLINE>>,
+}
+
+impl<'a> StructIndexEntryKey<'a> {
+    pub fn new(key_bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+        Self { key_bytes }
+    }
 }
 
 impl<'a> StructIndexEntry<'a> {
-    pub fn new(key_bytes: Bytes<'a, BUFFER_KEY_INLINE>, value_bytes: Option<Bytes<'a, BUFFER_VALUE_INLINE>>) -> Self {
-        Self { key_bytes, value_bytes }
+    pub fn new(key: StructIndexEntryKey<'a>, value: Option<Bytes<'a, BUFFER_VALUE_INLINE>>) -> Self {
+        Self { key, value }
     }
 
     pub fn attribute_vertex(&self) -> AttributeVertex<'static> {
-        let bytes = self.key_bytes.bytes();
+        let bytes = self.key.key_bytes.bytes();
         let attribute_type_id = TypeID::new(bytes[StructIndexEntry::ENCODING_TYPEID_RANGE].try_into().unwrap());
         let attribute_id =
             AttributeID::new(ValueTypeCategory::Struct, &bytes[(bytes.len() - StructAttributeID::LENGTH)..bytes.len()]);
         AttributeVertex::build(ValueTypeCategory::Struct, attribute_type_id, attribute_id)
-    }
-
-    pub fn value_bytes(&self) -> &Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
-        &self.value_bytes
     }
 }
 
@@ -319,20 +325,18 @@ impl StructIndexEntry<'static> {
         let mut buf = Self::build_search_key_bytes(snapshot, hasher, path_to_field, value, attribute.type_id_())?;
         buf.extend_from_slice(attribute.attribute_id().bytes());
 
-        let value_bytes = match &value {
+        let value = match &value {
             FieldValue::Boolean(_)
             | FieldValue::Long(_)
             | FieldValue::Double(_)
             | FieldValue::Decimal(_)
             | FieldValue::DateTime(_)
             | FieldValue::DateTimeTZ(_)
-            | FieldValue::Duration(_) => {
-                None
-            },
+            | FieldValue::Duration(_) => None,
             FieldValue::String(value) => Some(StringBytes::<BUFFER_VALUE_INLINE>::build_owned(value).into_bytes()),
             FieldValue::Struct(_) => unreachable!(),
         };
-        Ok(Self { key_bytes: Bytes::copy(buf.as_slice()), value_bytes })
+        Ok(Self { key: StructIndexEntryKey::new(Bytes::copy(buf.as_slice())), value })
     }
 
     pub fn build_search_key<'b, 'c>(
@@ -436,7 +440,7 @@ impl<'a> DisambiguatingHashedID<{ StructIndexEntry::STRING_FIELD_DISAMBIGUATED_H
     const FIXED_WIDTH_KEYS: bool = { Prefix::IndexValueToStruct.fixed_width_keys() };
 }
 
-impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for StructIndexEntry<'a> {
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for StructIndexEntryKey<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.key_bytes.as_reference()
     }
@@ -446,9 +450,9 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for StructIndexEntry<'a> {
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for StructIndexEntry<'a> {
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for StructIndexEntryKey<'a> {
     fn keyspace(&self) -> EncodingKeyspace {
-        Self::KEYSPACE
+        StructIndexEntry::KEYSPACE
     }
 }
 

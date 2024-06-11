@@ -13,7 +13,10 @@ use encoding::{
         type_::vertex::PrefixedTypeVertexEncoding,
         Typed,
     },
-    value::{decode_value_u64, value_struct::StructIndexEntry},
+    value::{
+        decode_value_u64,
+        value_struct::{StructIndexEntry, StructIndexEntryKey},
+    },
     AsBytes, Keyable,
 };
 use iterator::State;
@@ -198,7 +201,7 @@ impl ExtractAttributeFromKey for StructIndexAttributeExtractor {
     fn storage_key_to_attribute_vertex<'bytes>(
         storage_key: StorageKey<'bytes, BUFFER_KEY_INLINE>,
     ) -> AttributeVertex<'bytes> {
-        StructIndexEntry::new(Bytes::reference(storage_key.bytes()), None).attribute_vertex()
+        StructIndexEntry::new(StructIndexEntryKey::new(Bytes::reference(storage_key.bytes())), None).attribute_vertex()
     }
 }
 
