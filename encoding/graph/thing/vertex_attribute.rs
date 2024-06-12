@@ -279,7 +279,7 @@ impl AttributeID {
             ValueType::DateTimeTZ => DateTimeTZAttributeID::is_inlineable(),
             ValueType::Duration => DurationAttributeID::is_inlineable(),
             ValueType::String => StringAttributeID::is_inlineable(value.encode_string::<256>()),
-            ValueType::Struct(_) => StructAttributeID::is_inlineable()
+            ValueType::Struct(_) => StructAttributeID::is_inlineable(),
         }
     }
 
@@ -618,8 +618,6 @@ impl StringAttributeID {
     const ENCODING_STRING_TAIL_IS_HASH_MASK: u8 = 0b10000000;
     const ENCODING_STRING_TAIL_INDEX: usize = { Self::LENGTH - 1 };
 
-
-
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
     }
@@ -641,7 +639,7 @@ impl StringAttributeID {
     ///
     fn set_tail_inline_length(bytes: &mut [u8; Self::LENGTH], length: u8) {
         assert_eq!(0, length & Self::ENCODING_STRING_TAIL_IS_HASH_MASK); // ie < 128, high bit not set
-                                                                        // because the high bit is not set, we already conform to the required mask of high bit = 0
+                                                                         // because the high bit is not set, we already conform to the required mask of high bit = 0
         bytes[Self::ENCODING_STRING_TAIL_INDEX] = length;
     }
 

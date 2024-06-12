@@ -29,21 +29,17 @@ use durability::wal::WAL;
 use encoding::{
     error::EncodingError,
     graph::{
-        definition::{
-            definition_key::DefinitionKey,
-            definition_key_generator::DefinitionKeyGenerator,
-        },
+        definition::{definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator},
         thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
     value::{
         label::Label,
         value_struct::{FieldValue, StructValue},
-        value_type::ValueType,
+        value_type::{ValueType, ValueTypeCategory},
     },
     EncodingKeyspace,
 };
-use encoding::value::value_type::ValueTypeCategory;
 use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,

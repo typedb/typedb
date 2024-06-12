@@ -10,12 +10,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    borrow::Cow,
-    collections::HashMap,
-    ops::Range,
-    sync::Arc,
-};
+use std::{borrow::Cow, collections::HashMap, ops::Range, sync::Arc};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use chrono::{DateTime, NaiveDateTime};
