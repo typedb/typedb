@@ -18,10 +18,12 @@ pub enum EncodingError {
     TypeIDsExhausted { kind: crate::graph::type_::Kind },
     UnexpectedPrefix { expected_prefix: Prefix, actual_prefix: Prefix },
     DefinitionIDsExhausted { prefix: Prefix },
-    StructFieldValueTypeMismatch { field_name: String, expected: ValueType },
-    StructMissingRequiredField { field_name: String },
+    StructFieldValueTypeMismatch { struct_name: String, field_name: String, expected: ValueType },
+    StructMissingRequiredField { struct_name: String, field_name: String },
+    StructMultipleValuesForField { struct_name: String, field_name: String }, // TODO: This is unused because the API on ThingManager accepts a HashMap, but will be needed when we're parsing structs.
     StructFieldUnresolvable { struct_name: String, field_path: Vec<String> },
     IndexingIntoNonStructField { struct_name: String, field_path: Vec<String> },
+    StructPathIncomplete { struct_name: String, field_path: Vec<String> },
     StructFieldValueTooLarge(usize),
     UnexpectedEndOfEncodedStruct,
 }
@@ -43,10 +45,12 @@ impl Error for EncodingError {
             Self::UnexpectedPrefix { .. } => None,
             Self::StructFieldValueTypeMismatch { .. } => None,
             Self::StructMissingRequiredField { .. } => None,
+            Self::StructMultipleValuesForField { .. } => None,
             Self::StructFieldUnresolvable { .. } => None,
             Self::IndexingIntoNonStructField { .. } => None,
-            EncodingError::StructFieldValueTooLarge(_) => None,
-            EncodingError::UnexpectedEndOfEncodedStruct => None,
+            Self::StructFieldValueTooLarge(_) => None,
+            Self::UnexpectedEndOfEncodedStruct => None,
+            Self::StructPathIncomplete { .. } => None,
         }
     }
 }

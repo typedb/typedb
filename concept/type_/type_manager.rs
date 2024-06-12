@@ -337,7 +337,9 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
                         at = self.get_struct_definition(snapshot, definition_key.clone())?;
                     }
                     _ => {
-                        if (i + 1) < fields_path.len() {
+                        if (i + 1) == fields_path.len() {
+                            return Ok(resolved);
+                        } else {
                             return Err(ConceptReadError::Encoding {
                                 source: EncodingError::IndexingIntoNonStructField {
                                     struct_name: definition.name,
@@ -357,7 +359,12 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
             }
         }
 
-        Ok(resolved)
+        Err(ConceptReadError::Encoding {
+            source: EncodingError::StructPathIncomplete {
+                struct_name: definition.name,
+                field_path: fields_path.clone(),
+            },
+        })
     }
 
     get_type_methods! {

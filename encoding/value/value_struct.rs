@@ -133,15 +133,21 @@ impl<'a> StructValue<'a> {
             let field_definition: &StructDefinitionField = &struct_definition.fields.get(field_id as usize).unwrap();
             if let Some(value) = value.get(&field_name) {
                 if field_definition.value_type == value.value_type() {
-                    fields.insert(field_id, value.clone());
+                    if !fields.contains_key(&field_id) {
+                        fields.insert(field_id, value.clone());
+                    }
                 } else {
                     errors.push(EncodingError::StructFieldValueTypeMismatch {
+                        struct_name: struct_definition.name.clone(),
                         field_name,
                         expected: field_definition.value_type.clone(),
                     })
                 }
             } else if !field_definition.optional {
-                errors.push(EncodingError::StructMissingRequiredField { field_name })
+                errors.push(EncodingError::StructMissingRequiredField {
+                    struct_name: struct_definition.name.clone(),
+                    field_name,
+                })
             }
         }
 

@@ -9,6 +9,7 @@
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use concept::{
+    error::ConceptReadError,
     thing::{
         attribute::Attribute,
         object::{Object, ObjectAPI},
@@ -26,6 +27,7 @@ use concept::{
 };
 use durability::wal::WAL;
 use encoding::{
+    error::EncodingError,
     graph::{
         definition::{definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition},
         thing::vertex_generator::ThingVertexGenerator,
@@ -39,6 +41,7 @@ use encoding::{
     AsBytes, EncodingKeyspace,
 };
 use lending_iterator::LendingIterator;
+use resource::constants::encoding::StructFieldIDUInt;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot},
@@ -945,4 +948,71 @@ fn read_struct_by_field() {
         }
         snapshot.close_resources();
     };
+}
+
+#[test]
+fn struct_errors() {
+    let (storage, type_manager, thing_manager) = prepare();
+
+    let (struct_key, nested_struct_key) = {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        let nested_struct_def = StructDefinition::define(
+            "nested_test_struct".to_owned(),
+            HashMap::from([("nested_string".to_owned(), (ValueType::String, false))]),
+        );
+        let nested_struct_key = type_manager.create_struct(&mut snapshot, nested_struct_def).unwrap();
+
+        let struct_def = StructDefinition::define(
+            "errors_test_struct".to_owned(),
+            HashMap::from([("f_nested".to_owned(), (ValueType::Struct(nested_struct_key.clone()), false))]),
+        );
+
+        let struct_key = type_manager.create_struct(&mut snapshot, struct_def.clone()).unwrap();
+        snapshot.commit().unwrap();
+        (struct_key, nested_struct_key)
+    };
+
+    {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        let struct_def = type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap();
+        assert!(matches!(
+            type_manager.resolve_struct_field(&snapshot, &vec!["non-existant".to_owned()], struct_def.clone()),
+            Err(ConceptReadError::Encoding { source: EncodingError::StructFieldUnresolvable { .. } })
+        ));
+        assert!(matches!(
+            type_manager.resolve_struct_field(
+                &snapshot,
+                &vec!["f_nested".to_owned(), "nested_string".to_owned(), "but-strings-arent-structs".to_owned()],
+                struct_def.clone()
+            ),
+            Err(ConceptReadError::Encoding { source: EncodingError::IndexingIntoNonStructField { .. } })
+        ));
+        assert!(matches!(
+            type_manager.resolve_struct_field(&snapshot, &vec![], struct_def.clone()),
+            Err(ConceptReadError::Encoding { source: EncodingError::StructPathIncomplete { .. } }) // TODO: I don't have an error for this, so I don't handle it.
+        ));
+    };
+
+    {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        let struct_def = type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap();
+        let nested_struct_def = type_manager.get_struct_definition(&snapshot, nested_struct_key.clone()).unwrap();
+        {
+            let err = StructValue::try_translate_fields(
+                struct_key.clone(),
+                struct_def.clone(),
+                HashMap::from([("f_nested".to_owned(), FieldValue::Long(0))]),
+            )
+            .unwrap_err();
+            assert!(
+                err.len() == 1 && matches!(err.get(0).unwrap(), EncodingError::StructFieldValueTypeMismatch { .. })
+            );
+        }
+        {
+            let err = StructValue::try_translate_fields(struct_key.clone(), struct_def.clone(), HashMap::from([]))
+                .unwrap_err();
+            assert!(err.len() == 1 && matches!(err.get(0).unwrap(), EncodingError::StructMissingRequiredField { .. }));
+        }
+        snapshot.close_resources();
+    }
 }
