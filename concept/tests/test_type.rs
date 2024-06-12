@@ -6,7 +6,7 @@
 
 #![deny(unused_must_use)]
 
-use std::{collections::HashMap, rc::Rc, sync::Arc};
+use std::{borrow::Borrow, collections::HashMap, rc::Rc, sync::Arc};
 
 use concept::type_::{
     annotation::AnnotationAbstract,
@@ -21,7 +21,9 @@ use concept::type_::{
 use durability::wal::WAL;
 use encoding::{
     graph::{
-        definition::{definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition},
+        definition::{
+            definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition,
+        },
         type_::{vertex_generator::TypeVertexGenerator, Kind},
     },
     value::{label::Label, value_type::ValueType},
@@ -29,7 +31,7 @@ use encoding::{
 };
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, WriteSnapshot},
+    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
@@ -326,33 +328,35 @@ fn test_struct_definition() {
     let mut snapshot = storage.clone().open_snapshot_write();
     let type_manager = TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None);
 
-    let struct_0_name = "struct_0";
-    let struct_0_definition = StructDefinition::define(
-        struct_0_name.to_owned(),
-        HashMap::from([("f0_bool".into(), (ValueType::Boolean, false)), ("f1_long".into(), (ValueType::Long, false))]),
-    );
-    let struct_0_key = type_manager.create_struct(&mut snapshot, struct_0_definition.clone()).unwrap();
+    let nested_struct_name = "nested_struct".to_owned();
+    let nested_struct_fields =
+        HashMap::from([("f0_bool".into(), (ValueType::Boolean, false)), ("f1_long".into(), (ValueType::Long, false))]);
+    let nested_struct_key =
+        define_struct(&mut snapshot, &type_manager, nested_struct_name.clone(), nested_struct_fields.clone());
 
-    let struct_1_name = "struct_1";
-    let struct_1_definition = StructDefinition::define(
-        struct_1_name.to_owned(),
-        HashMap::from([("f0_nested".into(), (ValueType::Struct(struct_0_key.clone()), false))]),
-    );
+    let outer_struct_name = "outer_struct".to_owned();
+    let outer_struct_fields =
+        HashMap::from([("f0_nested".into(), (ValueType::Struct(nested_struct_key.clone()), false))]);
 
-    let struct_1_key = type_manager.create_struct(&mut snapshot, struct_1_definition.clone()).unwrap();
+    let outer_struct_key =
+        define_struct(&mut snapshot, &type_manager, outer_struct_name.clone(), outer_struct_fields.clone());
     // Read buffered
     {
-        assert_eq!(0, struct_0_key.definition_id().as_uint());
-        let read_0_key = type_manager.get_struct_definition_key(&snapshot, &struct_0_name).unwrap().unwrap();
-        assert_eq!(struct_0_key.definition_id().as_uint(), read_0_key.definition_id().as_uint());
-        let read_0_definition = type_manager.get_struct_definition(&snapshot, read_0_key).unwrap();
-        assert_eq!(struct_0_definition, *read_0_definition);
+        assert_eq!(0, nested_struct_key.definition_id().as_uint());
+        let read_nested_key =
+            type_manager.get_struct_definition_key(&snapshot, &nested_struct_name.clone()).unwrap().unwrap();
+        assert_eq!(nested_struct_key.definition_id().as_uint(), read_nested_key.definition_id().as_uint());
+        let read_nested_definition = type_manager.get_struct_definition(&snapshot, read_nested_key).unwrap();
+        assert_eq!(&nested_struct_name, &read_nested_definition.name);
+        assert_eq!(&nested_struct_fields, &remap_struct_fields(read_nested_definition.borrow()));
 
-        assert_eq!(1, struct_1_key.definition_id().as_uint());
-        let read_1_key = type_manager.get_struct_definition_key(&snapshot, &struct_1_name).unwrap().unwrap();
-        assert_eq!(struct_1_key.definition_id().as_uint(), read_1_key.definition_id().as_uint());
-        let read_1_definition = type_manager.get_struct_definition(&snapshot, read_1_key).unwrap();
-        assert_eq!(struct_1_definition, *read_1_definition);
+        assert_eq!(1, outer_struct_key.definition_id().as_uint());
+        let read_outer_key =
+            type_manager.get_struct_definition_key(&snapshot, &outer_struct_name.clone()).unwrap().unwrap();
+        assert_eq!(outer_struct_key.definition_id().as_uint(), read_outer_key.definition_id().as_uint());
+        let read_outer_definition = type_manager.get_struct_definition(&snapshot, read_outer_key).unwrap();
+        assert_eq!(&outer_struct_name, &read_outer_definition.name);
+        assert_eq!(&outer_struct_fields, &remap_struct_fields(read_outer_definition.borrow()));
     }
     snapshot.commit().unwrap();
 
@@ -361,17 +365,19 @@ fn test_struct_definition() {
         let snapshot = storage.clone().open_snapshot_read();
         let type_manager = TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None);
 
-        assert_eq!(0, struct_0_key.definition_id().as_uint());
+        assert_eq!(0, nested_struct_key.definition_id().as_uint());
         // Read back:
-        let read_0_key = type_manager.get_struct_definition_key(&snapshot, &struct_0_name).unwrap().unwrap();
-        assert_eq!(struct_0_key.definition_id().as_uint(), read_0_key.definition_id().as_uint());
-        let read_0_definition = type_manager.get_struct_definition(&snapshot, read_0_key).unwrap();
-        assert_eq!(struct_0_definition, *read_0_definition);
+        let read_nested_key = type_manager.get_struct_definition_key(&snapshot, &nested_struct_name).unwrap().unwrap();
+        assert_eq!(nested_struct_key.definition_id().as_uint(), read_nested_key.definition_id().as_uint());
+        let read_nested_definition = type_manager.get_struct_definition(&snapshot, read_nested_key).unwrap();
+        assert_eq!(&nested_struct_name, &read_nested_definition.name);
+        assert_eq!(&nested_struct_fields, &remap_struct_fields(read_nested_definition.borrow()));
 
-        let read_1_key = type_manager.get_struct_definition_key(&snapshot, &struct_1_name).unwrap().unwrap();
-        assert_eq!(struct_1_key.definition_id().as_uint(), read_1_key.definition_id().as_uint());
-        let read_1_definition = type_manager.get_struct_definition(&snapshot, read_1_key).unwrap();
-        assert_eq!(struct_1_definition, *read_1_definition);
+        let read_outer_key = type_manager.get_struct_definition_key(&snapshot, &outer_struct_name).unwrap().unwrap();
+        assert_eq!(outer_struct_key.definition_id().as_uint(), read_outer_key.definition_id().as_uint());
+        let read_outer_definition = type_manager.get_struct_definition(&snapshot, read_outer_key).unwrap();
+        assert_eq!(&outer_struct_name, &read_outer_definition.name);
+        assert_eq!(&outer_struct_fields, &remap_struct_fields(read_outer_definition.borrow()));
 
         snapshot.close_resources()
     }
@@ -383,18 +389,44 @@ fn test_struct_definition() {
         let type_manager =
             TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), Some(type_cache));
 
-        assert_eq!(0, struct_0_key.definition_id().as_uint());
+        assert_eq!(0, nested_struct_key.definition_id().as_uint());
         // Read back:
-        let read_0_key = type_manager.get_struct_definition_key(&snapshot, &struct_0_name).unwrap().unwrap();
-        assert_eq!(struct_0_key.definition_id().as_uint(), read_0_key.definition_id().as_uint());
-        let read_0_definition = type_manager.get_struct_definition(&snapshot, read_0_key).unwrap();
-        assert_eq!(struct_0_definition, *read_0_definition);
+        let read_nested_key = type_manager.get_struct_definition_key(&snapshot, &nested_struct_name).unwrap().unwrap();
+        assert_eq!(nested_struct_key.definition_id().as_uint(), read_nested_key.definition_id().as_uint());
+        let read_nested_definition = type_manager.get_struct_definition(&snapshot, read_nested_key).unwrap();
+        assert_eq!(&nested_struct_name, &read_nested_definition.name);
+        assert_eq!(&nested_struct_fields, &remap_struct_fields(read_nested_definition.borrow()));
 
-        let read_1_key = type_manager.get_struct_definition_key(&snapshot, &struct_1_name).unwrap().unwrap();
-        assert_eq!(struct_1_key.definition_id().as_uint(), read_1_key.definition_id().as_uint());
-        let read_1_definition = type_manager.get_struct_definition(&snapshot, read_1_key).unwrap();
-        assert_eq!(struct_1_definition, *read_1_definition);
+        let read_outer_key = type_manager.get_struct_definition_key(&snapshot, &outer_struct_name).unwrap().unwrap();
+        assert_eq!(outer_struct_key.definition_id().as_uint(), read_outer_key.definition_id().as_uint());
+        let read_outer_definition = type_manager.get_struct_definition(&snapshot, read_outer_key).unwrap();
+        assert_eq!(&outer_struct_name, &read_outer_definition.name);
+        assert_eq!(&outer_struct_fields, &remap_struct_fields(read_outer_definition.borrow()));
 
         snapshot.close_resources()
     }
+}
+
+fn remap_struct_fields(struct_definition: &StructDefinition) -> HashMap<String, (ValueType, bool)> {
+    struct_definition
+        .field_names
+        .iter()
+        .map(|(name, idx)| {
+            let field_def = struct_definition.fields.get(&idx).unwrap();
+            (name.to_owned(), (field_def.value_type.clone(), field_def.optional))
+        })
+        .collect()
+}
+
+pub fn define_struct<Snapshot: WritableSnapshot>(
+    snapshot: &mut Snapshot,
+    type_manager: &TypeManager<Snapshot>,
+    name: String,
+    definitions: HashMap<String, (ValueType, bool)>,
+) -> DefinitionKey<'static> {
+    let struct_key = type_manager.create_struct(snapshot, name).unwrap();
+    for (name, (value_type, optional)) in definitions {
+        type_manager.add_struct_field(snapshot, struct_key.clone(), name, value_type, optional).unwrap();
+    }
+    struct_key
 }

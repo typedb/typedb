@@ -21,7 +21,7 @@ use concept::{
         attribute_type::AttributeTypeAnnotation,
         owns::OwnsAnnotation,
         role_type::RoleTypeAnnotation,
-        type_manager::{type_reader::TypeReader, TypeManager},
+        type_manager::TypeManager,
         Ordering, OwnerAPI, PlayerAPI,
     },
 };
@@ -29,7 +29,10 @@ use durability::wal::WAL;
 use encoding::{
     error::EncodingError,
     graph::{
-        definition::{definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition},
+        definition::{
+            definition_key::DefinitionKey,
+            definition_key_generator::DefinitionKeyGenerator,
+        },
         thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
@@ -38,10 +41,10 @@ use encoding::{
         value_struct::{FieldValue, StructValue},
         value_type::ValueType,
     },
-    AsBytes, EncodingKeyspace,
+    EncodingKeyspace,
 };
+use encoding::value::value_type::ValueTypeCategory;
 use lending_iterator::LendingIterator;
-use resource::constants::encoding::StructFieldIDUInt;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot},
@@ -804,10 +807,9 @@ fn struct_write_read() {
     let (storage, type_manager, thing_manager) = prepare();
 
     let attr_label = Label::build("struct_test_attr");
-    let struct_name = "struct_test_test";
+    let struct_name = "struct_test_test".to_owned();
     let fields: HashMap<String, (ValueType, bool)> =
         HashMap::from([("f0l".to_owned(), (ValueType::Long, false)), ("f1s".to_owned(), (ValueType::String, false))]);
-    let definition = StructDefinition::define(struct_name.to_owned(), fields);
 
     let instance_fields = HashMap::from([
         ("f0l".to_owned(), FieldValue::Long(123)),
@@ -815,36 +817,33 @@ fn struct_write_read() {
     ]);
     let struct_key = {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let struct_key = type_manager.create_struct(&mut snapshot, definition.clone()).unwrap();
+        let struct_key = define_struct(&mut snapshot, &type_manager, struct_name, fields);
         let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label, false).unwrap();
+        attr_type
+            .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
+            .unwrap();
         attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_key.clone())).unwrap();
         snapshot.commit().unwrap();
         struct_key
     };
 
-    let struct_value =
-        StructValue::try_translate_fields(struct_key.clone(), definition.clone(), instance_fields).unwrap();
-
-    let attr_created = {
+    let (attr_created, struct_value) = {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let mut attr_type = type_manager.get_attribute_type(&snapshot, &attr_label).unwrap().unwrap();
-        attr_type
-            .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
-            .unwrap();
+        let struct_value = StructValue::build(
+            struct_key.clone(),
+            type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap().clone(),
+            instance_fields,
+        )
+        .unwrap();
+
         let attr_value_type = attr_type.get_value_type(&snapshot, &type_manager).unwrap().unwrap();
-        let struct_key = match attr_value_type {
-            ValueType::Struct(struct_key) => struct_key,
-            v => panic!("Unexpected value type: {:?}", v),
-        };
-        let read_key = type_manager.get_struct_definition_key(&snapshot, &struct_name).unwrap().unwrap();
-        let read_definition = type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap();
-        assert_eq!(struct_key.bytes(), read_key.bytes());
-        assert_eq!(definition, *read_definition);
+        assert_eq!(ValueTypeCategory::Struct, attr_value_type.category());
         let attr_instance = thing_manager
             .create_attribute(&mut snapshot, attr_type, Value::Struct(Cow::Owned(struct_value.clone())))
             .unwrap();
         snapshot.commit().unwrap();
-        attr_instance
+        (attr_instance, struct_value)
     };
 
     {
@@ -875,32 +874,31 @@ fn read_struct_by_field() {
     let (storage, type_manager, thing_manager) = prepare();
 
     let attr_label = Label::build("index_test_attr");
-    let nested_struct_def = StructDefinition::define(
-        "nested_test_struct".to_owned(),
-        HashMap::from([("nested_string".to_owned(), (ValueType::String, false))]),
-    );
+    let nested_struct_spec =
+        ("nested_test_struct".to_owned(), HashMap::from([("nested_string".to_owned(), (ValueType::String, false))]));
 
     let nested_struct_key = {
         let mut snapshot = storage.clone().open_snapshot_write();
-        let nested_struct_key = type_manager.create_struct(&mut snapshot, nested_struct_def).unwrap();
+        let nested_struct_key = define_struct(&mut snapshot, &type_manager, nested_struct_spec.0, nested_struct_spec.1);
         snapshot.commit().unwrap();
         nested_struct_key
     };
 
-    let struct_def = StructDefinition::define(
+    let struct_spec = (
         "index_test_struct".to_owned(),
         HashMap::from([("f_nested".to_owned(), (ValueType::Struct(nested_struct_key.clone()), false))]),
     );
     let (attr_type, struct_key, struct_def) = {
         let mut snapshot = storage.clone().open_snapshot_write();
-        let struct_key = type_manager.create_struct(&mut snapshot, struct_def.clone()).unwrap();
+        let struct_key = define_struct(&mut snapshot, &type_manager, struct_spec.0, struct_spec.1);
         let mut attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label, false).unwrap();
         attr_type.set_value_type(&mut snapshot, &type_manager, ValueType::Struct(struct_key.clone())).unwrap();
         attr_type
             .set_annotation(&mut snapshot, &type_manager, AttributeTypeAnnotation::Independent(AnnotationIndependent))
             .unwrap();
+        let struct_def = type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap();
         snapshot.commit().unwrap();
-        (attr_type, struct_key, struct_def)
+        (attr_type, struct_key.clone(), struct_def)
     };
 
     // Create value
@@ -952,28 +950,27 @@ fn read_struct_by_field() {
 
 #[test]
 fn struct_errors() {
-    let (storage, type_manager, thing_manager) = prepare();
+    let (storage, type_manager, _thing_manager) = prepare();
 
     let (struct_key, nested_struct_key) = {
         let mut snapshot = storage.clone().open_snapshot_write();
-        let nested_struct_def = StructDefinition::define(
+        let nested_struct_spec = (
             "nested_test_struct".to_owned(),
             HashMap::from([("nested_string".to_owned(), (ValueType::String, false))]),
         );
-        let nested_struct_key = type_manager.create_struct(&mut snapshot, nested_struct_def).unwrap();
+        let nested_struct_key = define_struct(&mut snapshot, &type_manager, nested_struct_spec.0, nested_struct_spec.1);
 
-        let struct_def = StructDefinition::define(
+        let struct_spec = (
             "errors_test_struct".to_owned(),
             HashMap::from([("f_nested".to_owned(), (ValueType::Struct(nested_struct_key.clone()), false))]),
         );
-
-        let struct_key = type_manager.create_struct(&mut snapshot, struct_def.clone()).unwrap();
+        let struct_key = define_struct(&mut snapshot, &type_manager, struct_spec.0, struct_spec.1);
         snapshot.commit().unwrap();
         (struct_key, nested_struct_key)
     };
 
     {
-        let mut snapshot = storage.clone().open_snapshot_write();
+        let snapshot = storage.clone().open_snapshot_write();
         let struct_def = type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap();
         assert!(matches!(
             type_manager.resolve_struct_field(&snapshot, &vec!["non-existant".to_owned()], struct_def.clone()),
@@ -996,9 +993,9 @@ fn struct_errors() {
     {
         let mut snapshot = storage.clone().open_snapshot_write();
         let struct_def = type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap();
-        let nested_struct_def = type_manager.get_struct_definition(&snapshot, nested_struct_key.clone()).unwrap();
+        type_manager.get_struct_definition(&snapshot, nested_struct_key.clone()).unwrap();
         {
-            let err = StructValue::try_translate_fields(
+            let err = StructValue::build(
                 struct_key.clone(),
                 struct_def.clone(),
                 HashMap::from([("f_nested".to_owned(), FieldValue::Long(0))]),
@@ -1009,10 +1006,22 @@ fn struct_errors() {
             );
         }
         {
-            let err = StructValue::try_translate_fields(struct_key.clone(), struct_def.clone(), HashMap::from([]))
-                .unwrap_err();
+            let err = StructValue::build(struct_key.clone(), struct_def.clone(), HashMap::from([])).unwrap_err();
             assert!(err.len() == 1 && matches!(err.get(0).unwrap(), EncodingError::StructMissingRequiredField { .. }));
         }
         snapshot.close_resources();
     }
+}
+
+pub fn define_struct<Snapshot: WritableSnapshot>(
+    snapshot: &mut Snapshot,
+    type_manager: &TypeManager<Snapshot>,
+    name: String,
+    definitions: HashMap<String, (ValueType, bool)>,
+) -> DefinitionKey<'static> {
+    let struct_key = type_manager.create_struct(snapshot, name).unwrap();
+    for (name, (value_type, optional)) in definitions {
+        type_manager.add_struct_field(snapshot, struct_key.clone(), name, value_type, optional).unwrap();
+    }
+    struct_key
 }

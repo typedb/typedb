@@ -18,6 +18,7 @@ pub enum EncodingError {
     TypeIDsExhausted { kind: crate::graph::type_::Kind },
     UnexpectedPrefix { expected_prefix: Prefix, actual_prefix: Prefix },
     DefinitionIDsExhausted { prefix: Prefix },
+    StructDuplicateFieldDefinition { struct_name: String, field_name: String },
     StructFieldValueTypeMismatch { struct_name: String, field_name: String, expected: ValueType },
     StructMissingRequiredField { struct_name: String, field_name: String },
     StructMultipleValuesForField { struct_name: String, field_name: String }, // TODO: This is unused because the API on ThingManager accepts a HashMap, but will be needed when we're parsing structs.
@@ -26,6 +27,7 @@ pub enum EncodingError {
     StructPathIncomplete { struct_name: String, field_path: Vec<String> },
     StructFieldValueTooLarge(usize),
     UnexpectedEndOfEncodedStruct,
+    StructAlreadyHasMaximumNumberOfFields { struct_name: String },
 }
 
 impl fmt::Display for EncodingError {
@@ -43,6 +45,8 @@ impl Error for EncodingError {
             Self::TypeIDsExhausted { .. } => None,
             Self::DefinitionIDsExhausted { .. } => None,
             Self::UnexpectedPrefix { .. } => None,
+            Self::StructDuplicateFieldDefinition { .. } => None,
+            Self::StructAlreadyHasMaximumNumberOfFields { .. } => None,
             Self::StructFieldValueTypeMismatch { .. } => None,
             Self::StructMissingRequiredField { .. } => None,
             Self::StructMultipleValuesForField { .. } => None,

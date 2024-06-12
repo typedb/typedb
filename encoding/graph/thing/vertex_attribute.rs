@@ -279,10 +279,7 @@ impl AttributeID {
             ValueType::DateTimeTZ => DateTimeTZAttributeID::is_inlineable(),
             ValueType::Duration => DurationAttributeID::is_inlineable(),
             ValueType::String => StringAttributeID::is_inlineable(value.encode_string::<256>()),
-            ValueType::Struct(definition_key) => {
-                todo!()
-                // StructAttributeID::is_inlineable()
-            }
+            ValueType::Struct(_) => StructAttributeID::is_inlineable()
         }
     }
 
@@ -613,13 +610,15 @@ pub struct StringAttributeID {
 impl StringAttributeID {
     const LENGTH: usize = AttributeIDLength::LONG_LENGTH;
     const ENCODING_STRING_INLINE_CAPACITY: usize = Self::LENGTH - 1;
-    const ENCODING_STRING_HASHED_PREFIX_LENGTH: usize =
+    pub const ENCODING_STRING_HASHED_PREFIX_LENGTH: usize =
         { StringAttributeID::ENCODING_STRING_INLINE_CAPACITY - StringAttributeID::HASHID_HASH_LENGTH };
-    const ENCODING_STRING_HASHED_HASH_LENGTH: usize = 8;
-    const ENCODING_STRING_HASHED_PREFIX_HASH_LENGTH: usize =
+    pub const ENCODING_STRING_HASHED_HASH_LENGTH: usize = 8;
+    pub const ENCODING_STRING_HASHED_PREFIX_HASH_LENGTH: usize =
         Self::ENCODING_STRING_HASHED_PREFIX_LENGTH + Self::ENCODING_STRING_HASHED_HASH_LENGTH;
     const ENCODING_STRING_TAIL_IS_HASH_MASK: u8 = 0b10000000;
     const ENCODING_STRING_TAIL_INDEX: usize = { Self::LENGTH - 1 };
+
+
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
@@ -641,7 +640,7 @@ impl StringAttributeID {
     /// Encode the last byte by setting 0b0[7 bits representing length of the prefix characters]
     ///
     fn set_tail_inline_length(bytes: &mut [u8; Self::LENGTH], length: u8) {
-        assert!(length & Self::ENCODING_STRING_TAIL_IS_HASH_MASK == 0); // ie < 128, high bit not set
+        assert_eq!(0, length & Self::ENCODING_STRING_TAIL_IS_HASH_MASK); // ie < 128, high bit not set
                                                                         // because the high bit is not set, we already conform to the required mask of high bit = 0
         bytes[Self::ENCODING_STRING_TAIL_INDEX] = length;
     }
@@ -782,7 +781,7 @@ pub struct StructAttributeID {
 
 impl StructAttributeID {
     pub(crate) const LENGTH: usize = AttributeIDLength::SHORT_LENGTH;
-    const ENCODING_HASH_LENGTH: usize = { Self::LENGTH - 1 };
+    pub const ENCODING_HASH_LENGTH: usize = { Self::LENGTH - 1 };
     const ENCODING_STRUCT_TAIL_INDEX: usize = { Self::LENGTH - 1 };
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
@@ -842,7 +841,7 @@ impl StructAttributeID {
                 );
                 Ok(Some(Self { bytes: hashed_id }))
             }
-            Either::Second(hashed_id) => Ok(None),
+            Either::Second(_) => Ok(None),
         }
     }
 
@@ -852,6 +851,10 @@ impl StructAttributeID {
 
     pub fn get_hash_disambiguator(&self) -> u8 {
         self.bytes[Self::ENCODING_STRUCT_TAIL_INDEX] & !Self::HASHID_DISAMBIGUATOR_BYTE_IS_HASH_FLAG
+    }
+
+    pub(crate) const fn is_inlineable() -> bool {
+        false
     }
 }
 

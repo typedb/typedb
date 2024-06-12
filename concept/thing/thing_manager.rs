@@ -5,7 +5,6 @@
  */
 
 use std::{
-    any::Any,
     borrow::{Borrow, Cow},
     collections::HashSet,
     marker::PhantomData,
@@ -18,11 +17,11 @@ use encoding::{
         thing::{
             edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeRelationIndex, ThingEdgeRolePlayer},
             property::{HAS_ORDER_PROPERTY_FACTORY, ROLE_PLAYER_ORDER_PROPERTY_FACTORY},
-            vertex_attribute::{AttributeID, AttributeVertex, StructAttributeID},
+            vertex_attribute::{AttributeID, AttributeVertex},
             vertex_generator::ThingVertexGenerator,
             vertex_object::ObjectVertex,
         },
-        type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
+        type_::vertex::TypeVertexEncoding,
         Typed,
     },
     layout::prefix::Prefix,
@@ -54,7 +53,7 @@ use storage::{
     snapshot::{write::Write, ReadableSnapshot, WritableSnapshot},
 };
 
-use super::{decode_role_players, encode_role_players, relation::RolePlayer};
+use super::{decode_role_players, encode_role_players};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
@@ -72,7 +71,7 @@ use crate::{
         object_type::ObjectType,
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::{type_reader::TypeReader, TypeManager},
+        type_manager::TypeManager,
         ObjectTypeAPI, OwnerAPI, TypeAPI,
     },
     ConceptStatus,

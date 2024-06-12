@@ -11,32 +11,21 @@
  */
 
 use std::{
-    any::Any,
     borrow::Cow,
     collections::HashMap,
-    fmt::{Formatter, Write},
-    ops::{Deref, Range},
+    ops::Range,
     sync::Arc,
 };
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use chrono::{DateTime, NaiveDateTime};
 use chrono_tz::Tz;
-use lending_iterator::LendingIterator;
 use primitive::either::Either;
 use resource::constants::{
-    encoding,
     encoding::StructFieldIDUInt,
     snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
 };
-use serde::{
-    de,
-    de::{EnumAccess, SeqAccess, Unexpected, VariantAccess, Visitor},
-    ser::SerializeSeq,
-    Deserialize, Deserializer, Serialize, Serializer,
-};
 use storage::{
-    key_range::KeyRange,
     key_value::StorageKey,
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
 };
@@ -68,7 +57,6 @@ use crate::{
         duration_value::Duration,
         long_bytes::LongBytes,
         string_bytes::StringBytes,
-        struct_bytes::StructBytes,
         value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
     },
@@ -122,7 +110,7 @@ impl<'a> StructValue<'a> {
         StructValue { definition_key, fields }
     }
 
-    pub fn try_translate_fields(
+    pub fn build(
         definition_key: DefinitionKey<'a>,
         struct_definition: StructDefinition,
         value: HashMap<String, FieldValue<'a>>,
@@ -130,7 +118,7 @@ impl<'a> StructValue<'a> {
         let mut fields: HashMap<StructFieldIDUInt, FieldValue<'a>> = HashMap::new();
         let mut errors: Vec<EncodingError> = Vec::new();
         for (field_name, field_id) in struct_definition.field_names {
-            let field_definition: &StructDefinitionField = &struct_definition.fields.get(field_id as usize).unwrap();
+            let field_definition: &StructDefinitionField = &struct_definition.fields.get(&field_id).unwrap();
             if let Some(value) = value.get(&field_name) {
                 if field_definition.value_type == value.value_type() {
                     if !fields.contains_key(&field_id) {

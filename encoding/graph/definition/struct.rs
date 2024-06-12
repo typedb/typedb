@@ -11,7 +11,8 @@ use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_VALUE_IN
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    graph::definition::DefinitionValueEncoding, layout::prefix::Prefix, value::value_type::ValueType, AsBytes,
+    error::EncodingError, graph::definition::DefinitionValueEncoding, layout::prefix::Prefix,
+    value::value_type::ValueType, AsBytes,
 };
 
 // TODO: Revisit to think about serialisation.
@@ -20,7 +21,7 @@ use crate::{
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct StructDefinition {
     pub name: String,
-    pub fields: Vec<StructDefinitionField>,
+    pub fields: HashMap<StructFieldIDUInt, StructDefinitionField>,
     pub field_names: HashMap<String, StructFieldIDUInt>,
 }
 
@@ -34,15 +35,39 @@ pub struct StructDefinitionField {
 impl StructDefinition {
     pub const PREFIX: Prefix = Prefix::DefinitionStruct;
 
-    pub fn define(name: String, definitions: HashMap<String, (ValueType, bool)>) -> StructDefinition {
-        let mut fields: Vec<StructDefinitionField> = Vec::with_capacity(definitions.len());
-        let mut field_names = HashMap::with_capacity(definitions.len());
-        for (i, (name, (value_type, optional))) in definitions.into_iter().enumerate() {
-            let index = i as StructFieldIDUInt;
-            fields.push(StructDefinitionField { index, optional, value_type });
-            field_names.insert(name, index);
+    pub fn new(name: String) -> StructDefinition {
+        StructDefinition { name, fields: HashMap::new(), field_names: HashMap::new() }
+    }
+
+    pub fn add_field(
+        &mut self,
+        field_name: String,
+        value_type: ValueType,
+        optional: bool,
+    ) -> Result<(), EncodingError> {
+        if self.fields.len() > StructFieldIDUInt::MAX as usize {
+            Err(EncodingError::StructAlreadyHasMaximumNumberOfFields { struct_name: self.name.clone() })
+        } else if self.field_names.contains_key(&field_name) {
+            Err(EncodingError::StructDuplicateFieldDefinition { struct_name: self.name.clone(), field_name })
+        } else {
+            let index = (0..self.fields.len() as StructFieldIDUInt)
+                .into_iter()
+                .find(|idx| !self.fields.contains_key(idx))
+                .unwrap_or(self.fields.len() as StructFieldIDUInt);
+            self.fields.insert(index, StructDefinitionField { index, optional, value_type });
+            self.field_names.insert(field_name, index);
+            Ok(())
         }
-        StructDefinition { name, fields, field_names }
+    }
+
+    pub fn delete_field(&mut self, field_name: String) -> Result<(), EncodingError> {
+        if !self.field_names.contains_key(&field_name) {
+            Err(EncodingError::StructFieldUnresolvable { struct_name: self.name.clone(), field_path: vec![field_name] })
+        } else {
+            let field_idx = self.field_names.remove(&field_name).unwrap();
+            self.fields.remove(&field_idx).unwrap();
+            Ok(())
+        }
     }
 }
 

@@ -13,7 +13,7 @@ use durability::wal::WAL;
 use encoding::{
     graph::{
         thing::{
-            vertex_attribute::{HashableAttributeID, StringAttributeID, StructAttributeID},
+            vertex_attribute::{StringAttributeID, StructAttributeID},
             vertex_generator::ThingVertexGenerator,
         },
         type_::{vertex::TypeID, vertex_generator::TypeVertexGenerator},
@@ -63,10 +63,10 @@ fn generate_string_attribute_vertex() {
             .unwrap();
         let vertex_id = vertex.attribute_id().unwrap_string();
         assert!(!vertex_id.is_inline());
-        assert_eq!(vertex_id.get_hash_prefix(), string_bytes.bytes().bytes()[StringAttributeID::ENCODING_PREFIX_RANGE]);
+        assert_eq!(vertex_id.get_hash_prefix(), string_bytes.bytes().bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_PREFIX_LENGTH]);
         assert_eq!(
             vertex_id.get_hash_hash(),
-            seahash::hash(string_bytes.bytes().bytes()).to_be_bytes()[0..StringAttributeID::ENCODING_HASH_LENGTH]
+            seahash::hash(string_bytes.bytes().bytes()).to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_HASH_LENGTH]
         );
         assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
     }
@@ -84,8 +84,8 @@ fn generate_string_attribute_vertex() {
 
         let vertex_id = vertex.attribute_id().unwrap_string();
         assert!(!vertex_id.is_inline());
-        assert_eq!(vertex_id.get_hash_prefix(), string_bytes.bytes().bytes()[StringAttributeID::ENCODING_PREFIX_RANGE]);
-        assert_eq!(vertex_id.get_hash_hash(), CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_HASH_LENGTH]);
+        assert_eq!(vertex_id.get_hash_prefix(), string_bytes.bytes().bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_PREFIX_LENGTH]);
+        assert_eq!(vertex_id.get_hash_hash(), CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_HASH_LENGTH]);
         assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
         {
             let string_collide = "Hello world, this is using the same prefix and will collide.";
@@ -98,11 +98,11 @@ fn generate_string_attribute_vertex() {
             assert!(!collide_id.is_inline());
             assert_eq!(
                 collide_id.get_hash_prefix(),
-                string_collide_bytes.bytes().bytes()[StringAttributeID::ENCODING_PREFIX_RANGE]
+                string_collide_bytes.bytes().bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_PREFIX_LENGTH]
             );
             assert_eq!(
                 collide_id.get_hash_hash(),
-                CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_HASH_LENGTH]
+                CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_HASH_LENGTH]
             );
             assert_eq!(collide_id.get_hash_disambiguator(), 1u8);
         }
@@ -117,11 +117,11 @@ fn generate_string_attribute_vertex() {
             assert!(!collide_id.is_inline());
             assert_eq!(
                 collide_id.get_hash_prefix(),
-                string_collide_bytes.bytes().bytes()[StringAttributeID::ENCODING_PREFIX_RANGE]
+                string_collide_bytes.bytes().bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_PREFIX_LENGTH]
             );
             assert_eq!(
                 collide_id.get_hash_hash(),
-                CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_HASH_LENGTH]
+                CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_HASH_LENGTH]
             );
             assert_eq!(collide_id.get_hash_disambiguator(), 2u8);
         }
@@ -142,8 +142,6 @@ fn generate_struct_attribute_vertex() {
     let type_id = TypeID::build(0);
 
     let thing_vertex_generator = ThingVertexGenerator::new();
-
-    assert_eq!(StructAttributeID::ENCODING_PREFIX_LENGTH, 0);
 
     // 1. vertex for long string that does not exist beforehand with default hasher
     {

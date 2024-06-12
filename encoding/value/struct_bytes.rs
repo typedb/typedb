@@ -40,7 +40,7 @@ pub struct StructBytes<'a, const INLINE_LENGTH: usize> {
 }
 
 impl<'a, const INLINE_LENGTH: usize> StructBytes<'a, INLINE_LENGTH> {
-    const MAX_VALUE_SIZE: usize = ((1 << 31) - 1);
+    const MAX_VALUE_SIZE: usize = (1 << 31) - 1;
     const VLE_IS_SINGLE_BYTE_FLAG: u8 = 0b1000_0000;
     const VLE_SINGLE_BYTE_MAX_SIZE: usize = { Self::VLE_IS_SINGLE_BYTE_FLAG as usize - 1 };
 
@@ -268,7 +268,7 @@ pub mod test {
         for (string_value, long_value) in test_values {
             let nested_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
             let nested_fields = HashMap::from([
-                // (0, string_value),
+                (0, string_value),
                 (1, long_value),
             ]);
             let nested_struct = StructValue::new(nested_key, nested_fields);

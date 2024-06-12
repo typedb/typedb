@@ -331,7 +331,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
             let field_idx_opt = at.field_names.get(f);
             if let Some(field_idx) = field_idx_opt {
                 resolved.push(*field_idx);
-                let next_def: &StructDefinitionField = at.fields.get(*field_idx as usize).unwrap();
+                let next_def: &StructDefinitionField = at.fields.get(&field_idx).unwrap();
                 match &next_def.value_type {
                     ValueType::Struct(definition_key) => {
                         at = self.get_struct_definition(snapshot, definition_key.clone())?;
@@ -737,15 +737,47 @@ impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
     pub fn create_struct(
         &self,
         snapshot: &mut Snapshot,
-        struct_definition: StructDefinition,
+        name: String,
     ) -> Result<DefinitionKey<'static>, ConceptWriteError> {
         // TODO: Validation
         let definition_key = self
             .definition_key_generator
             .create_struct(snapshot)
             .map_err(|source| ConceptWriteError::Encoding { source })?;
-        TypeWriter::storage_put_struct(snapshot, definition_key.clone(), struct_definition);
+        TypeWriter::storage_put_struct(snapshot, definition_key.clone(), StructDefinition::new(name));
         Ok(definition_key)
+    }
+
+    pub fn add_struct_field(
+        &self,
+        snapshot: &mut Snapshot,
+        definition_key: DefinitionKey<'static>,
+        field_name: String,
+        value_type: ValueType,
+        is_optional: bool,
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: Validation
+        let mut struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())
+            .map_err(|source| ConceptWriteError::ConceptRead { source })?;
+        struct_definition
+            .add_field(field_name, value_type, is_optional)
+            .map_err(|source| ConceptWriteError::Encoding { source })?;
+        TypeWriter::storage_put_struct(snapshot, definition_key.clone(), struct_definition);
+        Ok(())
+    }
+
+    pub fn delete_struct_field(
+        &self,
+        snapshot: &mut Snapshot,
+        definition_key: DefinitionKey<'static>,
+        field_name: String,
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: Validation
+        let mut struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())
+            .map_err(|source| ConceptWriteError::ConceptRead { source })?;
+        struct_definition.delete_field(field_name).map_err(|source| ConceptWriteError::Encoding { source })?;
+        TypeWriter::storage_put_struct(snapshot, definition_key.clone(), struct_definition);
+        Ok(())
     }
 
     pub fn finalise(self, snapshot: &Snapshot) -> Result<(), Vec<ConceptWriteError>> {
