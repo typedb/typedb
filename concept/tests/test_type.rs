@@ -8,15 +8,18 @@
 
 use std::{borrow::Borrow, collections::HashMap, rc::Rc, sync::Arc};
 
-use concept::type_::{
-    annotation::AnnotationAbstract,
-    entity_type::EntityTypeAnnotation,
-    object_type::ObjectType,
-    owns::Owns,
-    relation_type::RelationTypeAnnotation,
-    role_type::RoleTypeAnnotation,
-    type_manager::{type_cache::TypeCache, TypeManager},
-    Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+use concept::{
+    error::ConceptWriteError,
+    type_::{
+        annotation::AnnotationAbstract,
+        entity_type::EntityTypeAnnotation,
+        object_type::ObjectType,
+        owns::Owns,
+        relation_type::RelationTypeAnnotation,
+        role_type::RoleTypeAnnotation,
+        type_manager::{type_cache::TypeCache, TypeManager},
+        Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+    },
 };
 use durability::wal::WAL;
 use encoding::{
@@ -418,7 +421,7 @@ fn remap_struct_fields(struct_definition: &StructDefinition) -> HashMap<String, 
         .collect()
 }
 
-pub fn define_struct<Snapshot: WritableSnapshot>(
+fn define_struct<Snapshot: WritableSnapshot>(
     snapshot: &mut Snapshot,
     type_manager: &TypeManager<Snapshot>,
     name: String,
@@ -429,4 +432,73 @@ pub fn define_struct<Snapshot: WritableSnapshot>(
         type_manager.add_struct_field(snapshot, struct_key.clone(), name, value_type, optional).unwrap();
     }
     struct_key
+}
+
+#[test]
+fn test_struct_definition_updates() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>(Rc::from("storage"), &storage_path, WALClient::new(wal))
+            .unwrap(),
+    );
+    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
+    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
+    TypeManager::<WriteSnapshot<WALClient>>::initialise_types(
+        storage.clone(),
+        definition_key_generator.clone(),
+        type_vertex_generator.clone(),
+    )
+    .unwrap();
+
+    let type_manager = TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None);
+
+    // types to add
+    let f_long = ("f_long".to_owned(), (ValueType::Long, false));
+    let f_string = ("f_string".to_owned(), (ValueType::String, false));
+
+    let struct_name = "structs_can_be_modified".to_owned();
+
+    let struct_key = {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        let struct_key = type_manager.create_struct(&mut snapshot, struct_name.clone()).unwrap();
+
+        let (field, (value_type, is_optional)) = f_long.clone();
+        type_manager.add_struct_field(&mut snapshot, struct_key.clone(), field, value_type, is_optional).unwrap();
+        assert_eq!(
+            HashMap::from([f_long.clone()]),
+            remap_struct_fields(&type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap())
+        );
+
+        snapshot.commit().unwrap();
+        struct_key
+    };
+
+    {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        let (field, (value_type, is_optional)) = f_string.clone();
+        type_manager.add_struct_field(&mut snapshot, struct_key.clone(), field, value_type, is_optional).unwrap();
+        assert_eq!(
+            HashMap::from([f_long.clone(), f_string.clone()]),
+            remap_struct_fields(&type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap())
+        );
+
+        type_manager.delete_struct_field(&mut snapshot, struct_key.clone(), f_long.clone().0.to_owned()).unwrap();
+        assert_eq!(
+            HashMap::from([f_string.clone()]),
+            remap_struct_fields(&type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap())
+        );
+
+        snapshot.commit().unwrap();
+    };
+
+    {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        assert_eq!(
+            HashMap::from([f_string.clone()]),
+            remap_struct_fields(&type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap())
+        );
+        snapshot.close_resources();
+    }
 }
