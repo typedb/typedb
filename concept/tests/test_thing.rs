@@ -982,7 +982,7 @@ fn struct_errors() {
         ));
         assert!(matches!(
             type_manager.resolve_struct_field(&snapshot, &vec![], struct_def.clone()),
-            Err(ConceptReadError::Encoding { source: EncodingError::StructPathIncomplete { .. } }) // TODO: I don't have an error for this, so I don't handle it.
+            Err(ConceptReadError::Encoding { source: EncodingError::StructPathIncomplete { .. } })
         ));
     };
 

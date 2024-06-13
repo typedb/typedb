@@ -420,9 +420,6 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         let index_to_attribute_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::IndexValueToStruct.fixed_width_keys()));
 
-        // TODO: I took this from get_attributes_in. Do I really need to suffix the value_type?
-        // I understand that `$x has $y; $y = "foo";` may benefit from such an encoding, but if this truly comes after the traversal engine.
-        // The concept API is hardly canonical if we're doing an existence check
         let attribute_value_type_prefix =
             AttributeVertex::value_type_category_to_prefix_type(ValueTypeCategory::Struct);
         let prefix =

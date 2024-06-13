@@ -88,8 +88,8 @@ impl<'a> FieldValue<'a> {
     }
 }
 
-// TODO: There's a strong case to handroll encoding of structs and store them as just bytes in memory.
-// And throw in some accessor logic so we can efficiently access & deserialise just the fields we need on demand.
+// TODO: Do we want to encode / decode the full struct all the time? or just wrap bytes and
+// write some accessor logic so we efficiently deserialize only the fields we need.
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructValue<'a> {
     definition_key: DefinitionKey<'a>,
@@ -379,7 +379,7 @@ impl<'a> StructIndexEntry<'a> {
 }
 
 impl<'a> HashedID<{ StructIndexEntry::STRING_FIELD_HASHID_LENGTH }> for StructIndexEntry<'a> {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data; // TODO
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
     const FIXED_WIDTH_KEYS: bool = { Prefix::IndexValueToStruct.fixed_width_keys() };
 }
 

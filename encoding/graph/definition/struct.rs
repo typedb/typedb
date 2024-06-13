@@ -15,9 +15,8 @@ use crate::{
     value::value_type::ValueType, AsBytes,
 };
 
-// TODO: Revisit to think about serialisation.
-// Storing index in the StructDefinitionField opens the door for duplicates?
-// We also have redundancy in storing the StructFieldIDUInt twice.
+// TODO: We could serialize fields and field_names as just a sequence of triples,
+//  forcing a consistency check between the two maps.
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct StructDefinition {
     pub name: String,
