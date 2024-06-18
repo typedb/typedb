@@ -138,13 +138,14 @@ impl<'a> Owns<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         annotation: OwnsAnnotation,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         match annotation {
             OwnsAnnotation::Distinct(_) => type_manager.delete_edge_annotation_distinct(snapshot, self.clone()),
             OwnsAnnotation::Key(_) => type_manager.delete_edge_annotation_key(snapshot, self.clone()),
             OwnsAnnotation::Cardinality(_) => type_manager.delete_edge_annotation_cardinality(snapshot, self.clone()),
             OwnsAnnotation::Unique(_) => type_manager.delete_edge_annotation_unique(snapshot, self.clone()),
         }
+        Ok(()) // TODO
     }
 
     pub fn set_ordering(&self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager, ordering: Ordering) {

@@ -232,23 +232,24 @@ impl<'a> RoleType<'a> {
         Ok(())
     }
 
-    fn delete_annotation(
+    pub fn unset_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         annotation: RoleTypeAnnotation,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         match annotation {
             RoleTypeAnnotation::Abstract(_) => {
-                type_manager.delete_annotation_abstract(snapshot, self.clone().into_owned())
+                type_manager.unset_annotation_abstract(snapshot, self.clone().into_owned())
             }
             RoleTypeAnnotation::Distinct(_) => {
-                type_manager.delete_annotation_distinct(snapshot, self.clone().into_owned())
+                type_manager.unset_annotation_distinct(snapshot, self.clone().into_owned())
             }
             RoleTypeAnnotation::Cardinality(_) => {
-                type_manager.delete_annotation_cardinality(snapshot, self.clone().into_owned())
+                type_manager.unset_annotation_cardinality(snapshot, self.clone().into_owned())
             }
         }
+        Ok(()) // TODO
     }
 
     fn get_relates(&self, _type_manager: &TypeManager) -> Relates<'static> {

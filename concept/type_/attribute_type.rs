@@ -227,23 +227,24 @@ impl<'a> AttributeType<'a> {
         Ok(())
     }
 
-    fn delete_annotation(
+    pub fn unset_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         annotation: AttributeTypeAnnotation,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.delete_annotation_abstract(snapshot, self.clone().into_owned())
+                type_manager.unset_annotation_abstract(snapshot, self.clone().into_owned())
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.delete_annotation_independent(snapshot, self.clone().into_owned())
+                type_manager.unset_annotation_independent(snapshot, self.clone().into_owned())
             }
             AttributeTypeAnnotation::Regex(_) => {
-                type_manager.delete_annotation_regex(snapshot, self.clone().into_owned())
+                type_manager.unset_annotation_regex(snapshot, self.clone().into_owned())
             }
         }
+        Ok(()) // TODO
     }
 
     pub fn into_owned(self) -> AttributeType<'static> {

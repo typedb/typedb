@@ -198,17 +198,18 @@ impl<'a> RelationType<'a> {
         Ok(())
     }
 
-    fn delete_annotation(
+    pub fn unset_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         annotation: RelationTypeAnnotation,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
-                type_manager.delete_annotation_abstract(snapshot, self.clone().into_owned())
+                type_manager.unset_annotation_abstract(snapshot, self.clone().into_owned())
             }
         }
+        Ok(()) // TODO
     }
 
     pub fn create_relates(
