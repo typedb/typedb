@@ -813,7 +813,7 @@ fn read_struct_by_field() {
             let field_path = type_manager
                 .resolve_struct_field(
                     &snapshot,
-                    &vec!["f_nested".to_owned(), "nested_string".to_owned()],
+                    &vec!["f_nested", "nested_string"],
                     struct_def.clone(),
                 )
                 .unwrap();
@@ -862,13 +862,13 @@ fn struct_errors() {
         let snapshot = storage.clone().open_snapshot_write();
         let struct_def = type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap();
         assert!(matches!(
-            type_manager.resolve_struct_field(&snapshot, &vec!["non-existant".to_owned()], struct_def.clone()),
+            type_manager.resolve_struct_field(&snapshot, &vec!["non-existant"], struct_def.clone()),
             Err(ConceptReadError::Encoding { source: EncodingError::StructFieldUnresolvable { .. } })
         ));
         assert!(matches!(
             type_manager.resolve_struct_field(
                 &snapshot,
-                &vec!["f_nested".to_owned(), "nested_string".to_owned(), "but-strings-arent-structs".to_owned()],
+                &vec!["f_nested", "nested_string", "but-strings-arent-structs"],
                 struct_def.clone()
             ),
             Err(ConceptReadError::Encoding { source: EncodingError::IndexingIntoNonStructField { .. } })

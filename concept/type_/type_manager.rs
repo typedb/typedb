@@ -321,14 +321,14 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
     pub fn resolve_struct_field(
         &self,
         snapshot: &Snapshot,
-        fields_path: &Vec<String>,
+        fields_path: &Vec<&str>,
         definition: StructDefinition,
     ) -> Result<Vec<StructFieldIDUInt>, ConceptReadError> {
         let mut resolved: Vec<StructFieldIDUInt> = Vec::with_capacity(fields_path.len());
         let maybe_owns_definition = MaybeOwns::Borrowed(&definition);
         let mut at = maybe_owns_definition;
         for (i, f) in fields_path.iter().enumerate() {
-            let field_idx_opt = at.field_names.get(f);
+            let field_idx_opt = at.field_names.get(*f);
             if let Some(field_idx) = field_idx_opt {
                 resolved.push(*field_idx);
                 let next_def: &StructDefinitionField = at.fields.get(&field_idx).unwrap();
@@ -343,7 +343,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
                             return Err(ConceptReadError::Encoding {
                                 source: EncodingError::IndexingIntoNonStructField {
                                     struct_name: definition.name,
-                                    field_path: fields_path.clone(),
+                                    field_path: fields_path.clone().into_iter().map(|str| str.to_owned()).collect(),
                                 },
                             });
                         }
@@ -353,7 +353,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
                 return Err(ConceptReadError::Encoding {
                     source: EncodingError::StructFieldUnresolvable {
                         struct_name: definition.name,
-                        field_path: fields_path.clone(),
+                        field_path: fields_path.clone().into_iter().map(|str| str.to_owned()).collect(),
                     },
                 });
             }
@@ -362,7 +362,7 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
         Err(ConceptReadError::Encoding {
             source: EncodingError::StructPathIncomplete {
                 struct_name: definition.name,
-                field_path: fields_path.clone(),
+                field_path: fields_path.clone().into_iter().map(|str| str.to_owned()).collect(),
             },
         })
     }
