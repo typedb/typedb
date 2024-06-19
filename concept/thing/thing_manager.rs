@@ -246,7 +246,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                         .unwrap())
                 }
             }
-            ValueType::Struct(definition_key) => Ok(snapshot
+            ValueType::Struct(_) => Ok(snapshot
                 .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
                     Value::Struct(Cow::Owned(StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct()))
                 })
@@ -315,7 +315,6 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                             attribute_type.vertex().type_id_(),
                             AttributeID::Struct(id),
                         ));
-                        let type_from_attribute = attribute.clone().type_();
                         attribute
                     }
                     Ok(None) => return Ok(None),
@@ -422,8 +421,6 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
         let attribute_value_type_prefix =
             AttributeVertex::value_type_category_to_prefix_type(ValueTypeCategory::Struct);
-        let prefix =
-            AttributeVertex::build_prefix_type(attribute_value_type_prefix, attribute_type.vertex().type_id_());
 
         let has_reverse_prefix =
             ThingEdgeHasReverse::prefix_from_type(attribute_value_type_prefix, attribute_type.vertex().type_id_());

@@ -15,8 +15,6 @@ use crate::{
     value::value_type::ValueType, AsBytes,
 };
 
-// TODO: We could serialize fields and field_names as just a sequence of triples,
-//  forcing a consistency check between the two maps.
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct StructDefinition {
     pub name: String,
