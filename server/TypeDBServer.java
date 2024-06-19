@@ -14,6 +14,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
+import com.vaticle.typedb.core.concurrent.executor.ParallelThreadPoolExecutor;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreFactory;
 import com.vaticle.typedb.core.database.Factory;
@@ -25,12 +26,17 @@ import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
 import com.vaticle.typedb.core.server.parameters.CoreSubcommand;
 import com.vaticle.typedb.core.server.parameters.CoreSubcommandParser;
 import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
+import io.grpc.Metadata;
+import io.grpc.ServerCall;
+import io.grpc.ServerCallExecutorSupplier;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.sentry.Sentry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.InetAddress;
@@ -42,6 +48,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -248,7 +255,7 @@ public class TypeDBServer implements AutoCloseable {
         MigratorService migratorService = new MigratorService(databaseMgr, Version.VERSION);
 
         return NettyServerBuilder.forAddress(config.server().address())
-                .executor(Executors.service())
+                .callExecutor(new CustomExecutor(Executors.service()))
                 .workerEventLoopGroup(Executors.network())
                 .bossEventLoopGroup(Executors.network())
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
@@ -400,5 +407,25 @@ public class TypeDBServer implements AutoCloseable {
         CoreMigratorClient migrator = CoreMigratorClient.create(subcmdImport.port());
         boolean success = migrator.importDatabase(subcmdImport.database(), subcmdImport.schemaFile(), subcmdImport.dataFile());
         System.exit(success ? 0 : 1);
+    }
+
+    private static class CustomExecutor implements ServerCallExecutorSupplier, Executor {
+
+        private final ParallelThreadPoolExecutor executor;
+
+        public CustomExecutor(ParallelThreadPoolExecutor executor) {
+            this.executor = executor;
+        }
+
+        @Nullable
+        @Override
+        public <ReqT, RespT> Executor getExecutor(ServerCall<ReqT, RespT> call, Metadata metadata) {
+            return this;
+        }
+
+        @Override
+        public void execute(Runnable command) {
+            executor.execute(command);
+        }
     }
 }
