@@ -14,7 +14,6 @@ import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
-import com.vaticle.typedb.core.concurrent.executor.ParallelThreadPoolExecutor;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreFactory;
 import com.vaticle.typedb.core.database.Factory;
@@ -26,6 +25,7 @@ import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
 import com.vaticle.typedb.core.server.parameters.CoreSubcommand;
 import com.vaticle.typedb.core.server.parameters.CoreSubcommandParser;
 import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
+import com.vaticle.typedb.protocol.TypeDBGrpc;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallExecutorSupplier;
@@ -35,7 +35,6 @@ import io.sentry.Sentry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.BindException;
@@ -255,7 +254,8 @@ public class TypeDBServer implements AutoCloseable {
         MigratorService migratorService = new MigratorService(databaseMgr, Version.VERSION);
 
         return NettyServerBuilder.forAddress(config.server().address())
-                .callExecutor(new CustomExecutor(Executors.service()))
+                .executor(Executors.network()) //  "executor(Executor) runs necessary tasks before the ServerCallExecutorSupplier is ready to be called, then it switches over."
+                .callExecutor(new ExecutorSelector(Executors.service(), Executors.transactionService()))
                 .workerEventLoopGroup(Executors.network())
                 .bossEventLoopGroup(Executors.network())
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
@@ -409,23 +409,24 @@ public class TypeDBServer implements AutoCloseable {
         System.exit(success ? 0 : 1);
     }
 
-    private static class CustomExecutor implements ServerCallExecutorSupplier, Executor {
+    private static class ExecutorSelector implements ServerCallExecutorSupplier {
 
-        private final ParallelThreadPoolExecutor executor;
+        private final Executor nonBlockingCallExecutor;
+        private final Executor blockingCallExecutor;
 
-        public CustomExecutor(ParallelThreadPoolExecutor executor) {
-            this.executor = executor;
+        public ExecutorSelector(Executor nonBlockingCallExecutor, Executor blockingCallExecutor) {
+            this.nonBlockingCallExecutor = nonBlockingCallExecutor;
+            this.blockingCallExecutor = blockingCallExecutor;
         }
 
         @Nullable
         @Override
         public <ReqT, RespT> Executor getExecutor(ServerCall<ReqT, RespT> call, Metadata metadata) {
-            return this;
-        }
-
-        @Override
-        public void execute(Runnable command) {
-            executor.execute(command);
+            if (call.getMethodDescriptor() == TypeDBGrpc.getTransactionMethod()) {
+                return blockingCallExecutor;
+            } else {
+                return nonBlockingCallExecutor;
+            }
         }
     }
 }
