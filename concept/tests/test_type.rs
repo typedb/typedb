@@ -8,17 +8,15 @@
 
 use std::{borrow::Borrow, collections::HashMap, rc::Rc, sync::Arc};
 
-use concept::{
-    type_::{
-        annotation::AnnotationAbstract,
-        entity_type::EntityTypeAnnotation,
-        object_type::ObjectType,
-        owns::Owns,
-        relation_type::RelationTypeAnnotation,
-        role_type::RoleTypeAnnotation,
-        type_manager::{type_cache::TypeCache, TypeManager},
-        Ordering, OwnerAPI, PlayerAPI, TypeAPI,
-    },
+use concept::type_::{
+    annotation::AnnotationAbstract,
+    entity_type::EntityTypeAnnotation,
+    object_type::ObjectType,
+    owns::Owns,
+    relation_type::RelationTypeAnnotation,
+    role_type::RoleTypeAnnotation,
+    type_manager::{type_cache::TypeCache, TypeManager},
+    Ordering, OwnerAPI, PlayerAPI, TypeAPI,
 };
 use durability::wal::WAL;
 use encoding::{
@@ -43,8 +41,7 @@ This test is used to help develop the API of Types.
 We don't aim for complete coverage of all APIs, and will rely on the BDD scenarios for coverage.
  */
 
-fn setup_storage(
-) -> Arc<MVCCStorage<WALClient>> {
+fn setup_storage() -> Arc<MVCCStorage<WALClient>> {
     init_logging();
     let storage_path = create_tmp_dir();
     let wal = WAL::create(&storage_path).unwrap();
@@ -58,15 +55,19 @@ fn setup_storage(
         storage.clone(),
         definition_key_generator.clone(),
         type_vertex_generator.clone(),
-    ).unwrap();
+    )
+    .unwrap();
     storage
 }
 
-fn type_manager<Snapshot: ReadableSnapshot>(storage: Arc<MVCCStorage<WALClient>>, cache_at_snapshot: Option<&Snapshot>) -> Arc<TypeManager<Snapshot>>
-{
+fn type_manager<Snapshot: ReadableSnapshot>(
+    storage: Arc<MVCCStorage<WALClient>>,
+    cache_at_snapshot: Option<&Snapshot>,
+) -> Arc<TypeManager<Snapshot>> {
     let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    let cache = cache_at_snapshot.map(|snapshot| Arc::new(TypeCache::new(storage.clone(), snapshot.open_sequence_number()).unwrap()));
+    let cache = cache_at_snapshot
+        .map(|snapshot| Arc::new(TypeCache::new(storage.clone(), snapshot.open_sequence_number()).unwrap()));
     let type_manager =
         Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), cache));
 

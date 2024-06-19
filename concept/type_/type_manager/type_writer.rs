@@ -12,7 +12,7 @@ use encoding::{
         definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
         type_::{
             edge::TypeEdgeEncoding,
-            index::{NameToStructDefinitionIndex, LabelToTypeVertexIndex},
+            index::{LabelToTypeVertexIndex, NameToStructDefinitionIndex},
             property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
             vertex::TypeVertexEncoding,
         },

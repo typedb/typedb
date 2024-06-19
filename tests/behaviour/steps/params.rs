@@ -7,20 +7,17 @@
 use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr};
 
 use chrono::NaiveDateTime;
-use concept::{
-    thing::value::Value as TypeDBValue,
-    type_::{
-        annotation::{
-            Annotation as TypeDBAnnotation, AnnotationAbstract, AnnotationCardinality, AnnotationIndependent,
-            AnnotationKey, AnnotationRegex,
-        },
-        object_type::ObjectType,
+use concept::type_::{
+    annotation::{
+        Annotation as TypeDBAnnotation, AnnotationAbstract, AnnotationCardinality, AnnotationIndependent,
+        AnnotationKey, AnnotationRegex,
     },
+    object_type::ObjectType,
 };
 use cucumber::Parameter;
 use encoding::{
     graph::type_::Kind as TypeDBTypeKind,
-    value::{label::Label as TypeDBLabel, value_type::ValueType as TypeDBValueType},
+    value::{label::Label as TypeDBLabel, value::Value as TypeDBValue, value_type::ValueType as TypeDBValueType},
 };
 use itertools::Itertools;
 

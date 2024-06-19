@@ -15,6 +15,7 @@ use encoding::{
     },
     value::{
         decode_value_u64,
+        value::Value,
         value_struct::{StructIndexEntry, StructIndexEntryKey},
     },
     AsBytes, Keyable,
@@ -30,7 +31,7 @@ use storage::{
 use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{object::Object, thing_manager::ThingManager, value::Value, ThingAPI},
+    thing::{object::Object, thing_manager::ThingManager, ThingAPI},
     type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
@@ -214,9 +215,8 @@ pub struct AttributeIteratorImpl<'a, Snapshot: ReadableSnapshot, AttributeExtrac
     key_interepreter: PhantomData<AttributeExtractor>,
 }
 
-pub type AttributeIterator<'a, Snapshot: ReadableSnapshot> =
-    AttributeIteratorImpl<'a, Snapshot, StandardAttributeExtractor>;
-pub type StructIndexToAttributeIterator<'a, Snapshot: ReadableSnapshot> =
+pub type AttributeIterator<'a, Snapshot> = AttributeIteratorImpl<'a, Snapshot, StandardAttributeExtractor>;
+pub type StructIndexToAttributeIterator<'a, Snapshot> =
     AttributeIteratorImpl<'a, Snapshot, StructIndexAttributeExtractor>;
 
 impl<'a, Snapshot: ReadableSnapshot, KeyInterpreter: ExtractAttributeFromKey>

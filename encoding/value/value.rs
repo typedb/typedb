@@ -8,7 +8,8 @@ use std::borrow::Cow;
 
 use chrono::{DateTime, NaiveDateTime};
 use chrono_tz::Tz;
-use encoding::value::{
+
+use crate::value::{
     boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
     decimal_bytes::DecimalBytes, decimal_value::Decimal, double_bytes::DoubleBytes, duration_bytes::DurationBytes,
     duration_value::Duration, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
@@ -85,7 +86,7 @@ impl<'a> Value<'a> {
         }
     }
 
-    pub(crate) fn into_owned(self) -> Value<'static> {
+    pub fn into_owned(self) -> Value<'static> {
         match self {
             Self::Boolean(bool) => Value::Boolean(bool),
             Self::Long(long) => Value::Long(long),

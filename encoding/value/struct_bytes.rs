@@ -20,16 +20,10 @@ use crate::{
         r#struct::StructDefinition,
     },
     value::{
-        boolean_bytes::BooleanBytes,
-        date_time_bytes::DateTimeBytes,
-        date_time_tz_bytes::DateTimeTZBytes,
-        decimal_bytes::DecimalBytes,
-        double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes,
-        long_bytes::LongBytes,
-        string_bytes::StringBytes,
-        value_struct::{FieldValue, StructValue},
-        value_type::ValueTypeCategory,
+        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
+        decimal_bytes::DecimalBytes, double_bytes::DoubleBytes, duration_bytes::DurationBytes, long_bytes::LongBytes,
+        string_bytes::StringBytes, value::Value, value_struct::StructValue, value_type::ValueTypeCategory,
+        ValueEncodable,
     },
     AsBytes,
 };
@@ -92,24 +86,24 @@ impl<'a, const INLINE_LENGTH: usize> fmt::Display for StructBytes<'a, INLINE_LEN
 // Encode
 fn encode_struct_into<'a>(struct_value: &StructValue<'a>, buf: &mut Vec<u8>) -> Result<(), EncodingError> {
     buf.extend_from_slice(&struct_value.definition_key().definition_id().bytes());
-    let sorted_fields: Vec<(&StructFieldIDUInt, &FieldValue<'a>)> = struct_value.fields().iter().collect();
+    let sorted_fields: Vec<(&StructFieldIDUInt, &Value<'a>)> = struct_value.fields().iter().collect();
     append_length_as_vle(sorted_fields.len(), buf)?;
     for (idx, value) in sorted_fields {
         buf.extend_from_slice(&idx.to_be_bytes());
         buf.extend_from_slice(&value.value_type().category().to_bytes());
         match value {
-            FieldValue::Boolean(value) => buf.extend_from_slice(&BooleanBytes::build(*value).bytes()),
-            FieldValue::Long(value) => buf.extend_from_slice(&LongBytes::build(*value).bytes()),
-            FieldValue::Double(value) => buf.extend_from_slice(&DoubleBytes::build(*value).bytes()),
-            FieldValue::Decimal(value) => buf.extend_from_slice(&DecimalBytes::build(*value).bytes()),
-            FieldValue::DateTime(value) => buf.extend_from_slice(&DateTimeBytes::build(*value).bytes()),
-            FieldValue::DateTimeTZ(value) => buf.extend_from_slice(&DateTimeTZBytes::build(*value).bytes()),
-            FieldValue::Duration(value) => buf.extend_from_slice(&DurationBytes::build(*value).bytes()),
-            FieldValue::String(value) => {
+            Value::Boolean(value) => buf.extend_from_slice(&BooleanBytes::build(*value).bytes()),
+            Value::Long(value) => buf.extend_from_slice(&LongBytes::build(*value).bytes()),
+            Value::Double(value) => buf.extend_from_slice(&DoubleBytes::build(*value).bytes()),
+            Value::Decimal(value) => buf.extend_from_slice(&DecimalBytes::build(*value).bytes()),
+            Value::DateTime(value) => buf.extend_from_slice(&DateTimeBytes::build(*value).bytes()),
+            Value::DateTimeTZ(value) => buf.extend_from_slice(&DateTimeTZBytes::build(*value).bytes()),
+            Value::Duration(value) => buf.extend_from_slice(&DurationBytes::build(*value).bytes()),
+            Value::String(value) => {
                 append_length_as_vle(value.len(), buf)?;
                 buf.extend_from_slice(StringBytes::<0>::build_ref(value.borrow()).bytes().bytes())
             }
-            FieldValue::Struct(value) => encode_struct_into(value.borrow(), buf)?,
+            Value::Struct(value) => encode_struct_into(value.borrow(), buf)?,
         }
     }
     Ok(())
@@ -136,44 +130,44 @@ fn decode_struct_increment_offset(offset: &mut usize, buf: &[u8]) -> Result<Stru
         DefinitionID::build(u16::from_be_bytes(read_bytes_increment_offset::<{ DefinitionID::LENGTH }>(offset, buf)?));
     let definition_key = DefinitionKey::build(StructDefinition::PREFIX, definition_id_u16);
     let n_fields = read_vle_increment_offset(offset, buf)?;
-    let mut fields: HashMap<StructFieldIDUInt, FieldValue<'static>> = HashMap::new();
+    let mut fields: HashMap<StructFieldIDUInt, Value<'static>> = HashMap::new();
     for _ in 0..n_fields {
         let field_idx: StructFieldIDUInt = u16::from_be_bytes(read_bytes_increment_offset::<2>(offset, buf)?);
         let value_type_category = ValueTypeCategory::from_bytes(read_bytes_increment_offset::<1>(offset, buf)?);
         let value = match value_type_category {
-            ValueTypeCategory::Boolean => FieldValue::Boolean(
+            ValueTypeCategory::Boolean => Value::Boolean(
                 BooleanBytes::new(read_bytes_increment_offset::<{ BooleanBytes::LENGTH }>(offset, buf)?).as_bool(),
             ),
-            ValueTypeCategory::Long => FieldValue::Long(
-                LongBytes::new(read_bytes_increment_offset::<{ LongBytes::LENGTH }>(offset, buf)?).as_i64(),
-            ),
-            ValueTypeCategory::Double => FieldValue::Double(
+            ValueTypeCategory::Long => {
+                Value::Long(LongBytes::new(read_bytes_increment_offset::<{ LongBytes::LENGTH }>(offset, buf)?).as_i64())
+            }
+            ValueTypeCategory::Double => Value::Double(
                 DoubleBytes::new(read_bytes_increment_offset::<{ DoubleBytes::LENGTH }>(offset, buf)?).as_f64(),
             ),
-            ValueTypeCategory::Decimal => FieldValue::Decimal(
+            ValueTypeCategory::Decimal => Value::Decimal(
                 DecimalBytes::new(read_bytes_increment_offset::<{ DecimalBytes::LENGTH }>(offset, buf)?).as_decimal(),
             ),
-            ValueTypeCategory::DateTime => FieldValue::DateTime(
+            ValueTypeCategory::DateTime => Value::DateTime(
                 DateTimeBytes::new(read_bytes_increment_offset::<{ DateTimeBytes::LENGTH }>(offset, buf)?)
                     .as_naive_date_time(),
             ),
-            ValueTypeCategory::DateTimeTZ => FieldValue::DateTimeTZ(
+            ValueTypeCategory::DateTimeTZ => Value::DateTimeTZ(
                 DateTimeTZBytes::new(read_bytes_increment_offset::<{ DateTimeTZBytes::LENGTH }>(offset, buf)?)
                     .as_date_time(),
             ),
-            ValueTypeCategory::Duration => FieldValue::Duration(
+            ValueTypeCategory::Duration => Value::Duration(
                 DurationBytes::new(read_bytes_increment_offset::<{ DurationBytes::LENGTH }>(offset, buf)?)
                     .as_duration(),
             ),
             ValueTypeCategory::String => {
                 let len: usize = read_vle_increment_offset(offset, buf)?;
-                FieldValue::String(Cow::Owned(
+                Value::String(Cow::Owned(
                     StringBytes::new(Bytes::<0>::reference(read_slice_increment_offset(offset, len, buf)?))
                         .as_str()
                         .to_owned(),
                 ))
             }
-            ValueTypeCategory::Struct => FieldValue::Struct(Cow::Owned(decode_struct_increment_offset(offset, buf)?)),
+            ValueTypeCategory::Struct => Value::Struct(Cow::Owned(decode_struct_increment_offset(offset, buf)?)),
         };
         fields.insert(field_idx, value);
     }
@@ -230,7 +224,8 @@ pub mod test {
         },
         value::{
             struct_bytes::{append_length_as_vle, read_vle_increment_offset, StructBytes},
-            value_struct::{FieldValue, StructValue},
+            value::Value,
+            value_struct::StructValue,
         },
     };
 
@@ -274,8 +269,8 @@ pub mod test {
     #[test]
     fn encoding_decoding() {
         let test_values = [
-            (FieldValue::String(Cow::Borrowed("abc")), FieldValue::Long(0xbeef)),
-            (FieldValue::String(Cow::Owned(String::from_utf8(vec![b'X'; 512]).unwrap())), FieldValue::Long(0xf00d)), // Bigger than 256 characters
+            (Value::String(Cow::Borrowed("abc")), Value::Long(0xbeef)),
+            (Value::String(Cow::Owned(String::from_utf8(vec![b'X'; 512]).unwrap())), Value::Long(0xf00d)), // Bigger than 256 characters
         ];
         for (string_value, long_value) in test_values {
             let nested_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
@@ -283,7 +278,7 @@ pub mod test {
             let nested_struct = StructValue::new(nested_key, nested_fields);
 
             let struct_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
-            let struct_fields = HashMap::from([(0, FieldValue::Struct(Cow::Owned(nested_struct.clone())))]);
+            let struct_fields = HashMap::from([(0, Value::Struct(Cow::Owned(nested_struct.clone())))]);
             let struct_value = StructValue::new(struct_key, struct_fields);
 
             let struct_bytes: StructBytes<'static, BUFFER_VALUE_INLINE> =

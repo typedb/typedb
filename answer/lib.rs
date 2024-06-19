@@ -5,9 +5,10 @@
  */
 
 use concept::{
-    thing::{attribute::Attribute, entity::Entity, relation::Relation, value::Value},
+    thing::{attribute::Attribute, entity::Entity, relation::Relation},
     type_::{attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType, role_type::RoleType},
 };
+use encoding::value::value::Value;
 
 pub mod answer_map;
 pub mod variable_value;

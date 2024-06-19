@@ -16,7 +16,7 @@ use encoding::{
         definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
         type_::{
             edge::{TypeEdge, TypeEdgeEncoding},
-            index::{NameToStructDefinitionIndex, LabelToTypeVertexIndex},
+            index::{LabelToTypeVertexIndex, NameToStructDefinitionIndex},
             property::{TypeEdgeProperty, TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
             vertex::TypeVertexEncoding,
             Kind,

@@ -52,41 +52,12 @@ use crate::{
         duration_value::Duration,
         long_bytes::LongBytes,
         string_bytes::StringBytes,
+        value::Value,
         value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum FieldValue<'a> {
-    // Tempting to make it all static
-    Boolean(bool),
-    Long(i64),
-    Double(f64),
-    Decimal(Decimal),
-    DateTime(NaiveDateTime),
-    DateTimeTZ(DateTime<Tz>),
-    Duration(Duration),
-    String(Cow<'a, str>),
-    Struct(Cow<'a, StructValue<'static>>),
-}
-
-impl<'a> FieldValue<'a> {
-    pub(crate) fn value_type(&self) -> ValueType {
-        match self {
-            FieldValue::Boolean(_) => ValueType::Boolean,
-            FieldValue::Long(_) => ValueType::Long,
-            FieldValue::Double(_) => ValueType::Double,
-            FieldValue::Decimal(_) => ValueType::Decimal,
-            FieldValue::DateTime(_) => ValueType::DateTime,
-            FieldValue::DateTimeTZ(_) => ValueType::DateTimeTZ,
-            FieldValue::Duration(_) => ValueType::Duration,
-            FieldValue::String(_) => ValueType::String,
-            FieldValue::Struct(struct_value) => ValueType::Struct(struct_value.definition_key.clone()),
-        }
-    }
-}
 
 // TODO: Do we want to encode / decode the full struct all the time? or just wrap bytes and
 // write some accessor logic so we efficiently deserialize only the fields we need.
@@ -94,23 +65,20 @@ impl<'a> FieldValue<'a> {
 pub struct StructValue<'a> {
     definition_key: DefinitionKey<'a>,
     // a map allows empty fields to not be recorded at all
-    fields: HashMap<StructFieldIDUInt, FieldValue<'a>>,
+    fields: HashMap<StructFieldIDUInt, Value<'a>>,
 }
 
 impl<'a> StructValue<'a> {
-    pub fn new(
-        definition_key: DefinitionKey<'a>,
-        fields: HashMap<StructFieldIDUInt, FieldValue<'a>>,
-    ) -> StructValue<'a> {
+    pub fn new(definition_key: DefinitionKey<'a>, fields: HashMap<StructFieldIDUInt, Value<'a>>) -> StructValue<'a> {
         StructValue { definition_key, fields }
     }
 
     pub fn build(
         definition_key: DefinitionKey<'a>,
         struct_definition: StructDefinition,
-        value: HashMap<String, FieldValue<'a>>,
+        value: HashMap<String, Value<'a>>,
     ) -> Result<StructValue<'a>, Vec<EncodingError>> {
-        let mut fields: HashMap<StructFieldIDUInt, FieldValue<'a>> = HashMap::new();
+        let mut fields: HashMap<StructFieldIDUInt, Value<'a>> = HashMap::new();
         let mut errors: Vec<EncodingError> = Vec::new();
         for (field_name, field_id) in struct_definition.field_names {
             let field_definition: &StructDefinitionField = &struct_definition.fields.get(&field_id).unwrap();
@@ -145,7 +113,7 @@ impl<'a> StructValue<'a> {
         &self.definition_key
     }
 
-    pub fn fields(&self) -> &HashMap<StructFieldIDUInt, FieldValue<'a>> {
+    pub fn fields(&self) -> &HashMap<StructFieldIDUInt, Value<'a>> {
         &self.fields
     }
 
@@ -173,13 +141,13 @@ impl<'a> StructValue<'a> {
         snapshot: &impl WritableSnapshot,
         hasher: &impl Fn(&[u8]) -> u64,
         attribute: &AttributeVertex<'b>,
-        fields: &HashMap<StructFieldIDUInt, FieldValue<'a>>,
+        fields: &HashMap<StructFieldIDUInt, Value<'a>>,
         path: &mut Vec<StructFieldIDUInt>,
         acc: &mut Vec<StructIndexEntry<'static>>,
     ) -> Result<(), Arc<SnapshotIteratorError>> {
         for (idx, value) in fields.iter() {
             path.push(*idx);
-            if let FieldValue::Struct(struct_val) = value {
+            if let Value::Struct(struct_val) = value {
                 Self::create_index_entries_recursively(
                     snapshot,
                     hasher.clone(),
@@ -250,7 +218,7 @@ impl StructIndexEntry<'static> {
         snapshot: &impl ReadableSnapshot,
         hasher: &impl Fn(&[u8]) -> u64,
         path_to_field: &Vec<StructFieldIDUInt>,
-        value: &FieldValue<'b>,
+        value: &Value<'b>,
         attribute: &AttributeVertex<'c>,
     ) -> Result<StructIndexEntry<'static>, Arc<SnapshotIteratorError>> {
         debug_assert_eq!(Prefix::VertexAttributeStruct, attribute.prefix());
@@ -264,15 +232,15 @@ impl StructIndexEntry<'static> {
         buf.extend_from_slice(attribute.attribute_id().bytes());
 
         let value = match &value {
-            FieldValue::Boolean(_)
-            | FieldValue::Long(_)
-            | FieldValue::Double(_)
-            | FieldValue::Decimal(_)
-            | FieldValue::DateTime(_)
-            | FieldValue::DateTimeTZ(_)
-            | FieldValue::Duration(_) => None,
-            FieldValue::String(value) => Some(StringBytes::<BUFFER_VALUE_INLINE>::build_owned(value).into_bytes()),
-            FieldValue::Struct(_) => unreachable!(),
+            Value::Boolean(_)
+            | Value::Long(_)
+            | Value::Double(_)
+            | Value::Decimal(_)
+            | Value::DateTime(_)
+            | Value::DateTimeTZ(_)
+            | Value::Duration(_) => None,
+            Value::String(value) => Some(StringBytes::<BUFFER_VALUE_INLINE>::build_owned(value).into_bytes()),
+            Value::Struct(_) => unreachable!(),
         };
         Ok(Self { key: StructIndexEntryKey::new(Bytes::copy(buf.as_slice())), value })
     }
@@ -281,7 +249,7 @@ impl StructIndexEntry<'static> {
         snapshot: &impl ReadableSnapshot,
         thing_vertex_generator: &ThingVertexGenerator,
         path_to_field: &Vec<StructFieldIDUInt>,
-        value: &FieldValue<'b>,
+        value: &Value<'b>,
         attribute_type: &TypeVertex<'c>,
     ) -> Result<StorageKey<'static, BUFFER_KEY_INLINE>, Arc<SnapshotIteratorError>> {
         let mut buf = Self::build_prefix_typeid_path_value_into_buf(
@@ -298,7 +266,7 @@ impl StructIndexEntry<'static> {
         snapshot: &impl ReadableSnapshot,
         hasher: &impl Fn(&[u8]) -> u64,
         path_to_field: &Vec<StructFieldIDUInt>,
-        value: &FieldValue<'b>,
+        value: &Value<'b>,
         attribute_type_id: TypeID,
     ) -> Result<Vec<u8>, Arc<SnapshotIteratorError>> {
         let mut buf: Vec<u8> = Vec::with_capacity(
@@ -317,18 +285,18 @@ impl StructIndexEntry<'static> {
             buf.extend_from_slice(&p.to_be_bytes())
         }
         match &value {
-            FieldValue::Boolean(value) => buf.extend_from_slice(&BooleanBytes::build(*value).bytes()),
-            FieldValue::Long(value) => buf.extend_from_slice(&LongBytes::build(*value).bytes()),
-            FieldValue::Double(value) => buf.extend_from_slice(&DoubleBytes::build(*value).bytes()),
-            FieldValue::Decimal(value) => buf.extend_from_slice(&DecimalBytes::build(*value).bytes()),
-            FieldValue::DateTime(value) => buf.extend_from_slice(&DateTimeBytes::build(*value).bytes()),
-            FieldValue::DateTimeTZ(value) => buf.extend_from_slice(&DateTimeTZBytes::build(*value).bytes()),
-            FieldValue::Duration(value) => buf.extend_from_slice(&DurationBytes::build(*value).bytes()),
-            FieldValue::String(value) => {
+            Value::Boolean(value) => buf.extend_from_slice(&BooleanBytes::build(*value).bytes()),
+            Value::Long(value) => buf.extend_from_slice(&LongBytes::build(*value).bytes()),
+            Value::Double(value) => buf.extend_from_slice(&DoubleBytes::build(*value).bytes()),
+            Value::Decimal(value) => buf.extend_from_slice(&DecimalBytes::build(*value).bytes()),
+            Value::DateTime(value) => buf.extend_from_slice(&DateTimeBytes::build(*value).bytes()),
+            Value::DateTimeTZ(value) => buf.extend_from_slice(&DateTimeTZBytes::build(*value).bytes()),
+            Value::Duration(value) => buf.extend_from_slice(&DurationBytes::build(*value).bytes()),
+            Value::String(value) => {
                 let string_bytes = StringBytes::<0>::build_ref(value);
                 Self::encode_string_into(snapshot, hasher, string_bytes.as_reference(), &mut buf)?;
             }
-            FieldValue::Struct(_) => unreachable!(),
+            Value::Struct(_) => unreachable!(),
         };
         Ok(buf)
     }

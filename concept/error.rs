@@ -6,11 +6,14 @@
 
 use std::{error::Error, fmt, sync::Arc};
 
-use encoding::{error::EncodingError, value::value_type::ValueType};
+use encoding::{
+    error::EncodingError,
+    value::{value::Value, value_type::ValueType},
+};
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 
 use crate::{
-    thing::{object::Object, relation::Relation, value::Value},
+    thing::{object::Object, relation::Relation},
     type_::{
         annotation::AnnotationCardinality, attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType,
         type_manager::validation::SchemaValidationError,

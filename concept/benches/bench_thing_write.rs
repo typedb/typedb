@@ -16,7 +16,7 @@ use std::{
 };
 
 use concept::{
-    thing::{object::ObjectAPI, thing_manager::ThingManager, value::Value},
+    thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{
         type_manager::{type_cache::TypeCache, TypeManager},
         Ordering, OwnerAPI,
@@ -29,7 +29,7 @@ use encoding::{
         definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
-    value::{label::Label, value_type::ValueType},
+    value::{label::Label, value::Value, value_type::ValueType},
     EncodingKeyspace,
 };
 use pprof::ProfilerGuard;
