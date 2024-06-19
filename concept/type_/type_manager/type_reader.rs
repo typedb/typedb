@@ -16,7 +16,7 @@ use encoding::{
         definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
         type_::{
             edge::{TypeEdge, TypeEdgeEncoding},
-            index::{LabelToStructDefinitionIndex, LabelToTypeVertexIndex},
+            index::{NameToStructDefinitionIndex, LabelToTypeVertexIndex},
             property::{TypeEdgeProperty, TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
             vertex::TypeVertexEncoding,
             Kind,
@@ -81,7 +81,7 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         name: &str,
     ) -> Result<Option<DefinitionKey<'static>>, ConceptReadError> {
-        let index_key = LabelToStructDefinitionIndex::build(StringBytes::<BUFFER_KEY_INLINE>::build_ref(name));
+        let index_key = NameToStructDefinitionIndex::build(StringBytes::<BUFFER_KEY_INLINE>::build_ref(name));
         let bytes = snapshot.get(index_key.into_storage_key().as_reference()).unwrap();
         Ok(bytes.map(|value| DefinitionKey::new(Bytes::Array(value))))
     }

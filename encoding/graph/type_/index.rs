@@ -16,19 +16,19 @@ use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
-pub(crate) trait IndexedType {
+pub(crate) trait Indexable {
     const PREFIX: Prefix;
 }
 
-pub struct IdentifierToTypeIndex<'a, T: IndexedType> {
+pub struct IdentifierIndex<'a, T: Indexable> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
-    indexed_identifier: PhantomData<T>,
+    indexed_type: PhantomData<T>,
 }
 
-impl<'a, T: IndexedType> IdentifierToTypeIndex<'a, T> {
+impl<'a, T: Indexable> IdentifierIndex<'a, T> {
     fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= PrefixID::LENGTH);
-        Self { bytes, indexed_identifier: PhantomData }
+        Self { bytes, indexed_type: PhantomData }
     }
 
     pub fn build<const INLINE_SIZE: usize>(identifier: StringBytes<INLINE_SIZE>) -> Self {
@@ -36,7 +36,7 @@ impl<'a, T: IndexedType> IdentifierToTypeIndex<'a, T> {
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&T::PREFIX.prefix_id().bytes());
         array.bytes_mut()[Self::range_identifier(identifier.bytes().length())]
             .copy_from_slice(identifier.bytes().bytes());
-        Self { bytes: Bytes::Array(array), indexed_identifier: PhantomData }
+        Self { bytes: Bytes::Array(array), indexed_type: PhantomData }
     }
 
     pub fn identifier(&'a self) -> StringBytes<'a, BUFFER_KEY_INLINE> {
@@ -54,7 +54,7 @@ impl<'a, T: IndexedType> IdentifierToTypeIndex<'a, T> {
     }
 }
 
-impl<'a, T: IndexedType> AsBytes<'a, BUFFER_KEY_INLINE> for IdentifierToTypeIndex<'a, T> {
+impl<'a, T: Indexable> AsBytes<'a, BUFFER_KEY_INLINE> for IdentifierIndex<'a, T> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
@@ -64,21 +64,21 @@ impl<'a, T: IndexedType> AsBytes<'a, BUFFER_KEY_INLINE> for IdentifierToTypeInde
     }
 }
 
-impl<'a, T: IndexedType> Keyable<'a, BUFFER_KEY_INLINE> for IdentifierToTypeIndex<'a, T> {
+impl<'a, T: Indexable> Keyable<'a, BUFFER_KEY_INLINE> for IdentifierIndex<'a, T> {
     fn keyspace(&self) -> EncodingKeyspace {
         EncodingKeyspace::Schema
     }
 }
 
-impl<'a, T: IndexedType> Prefixed<'a, BUFFER_KEY_INLINE> for IdentifierToTypeIndex<'a, T> {}
+impl<'a, T: Indexable> Prefixed<'a, BUFFER_KEY_INLINE> for IdentifierIndex<'a, T> {}
 
 // Specialisations
-pub type LabelToTypeVertexIndex<'a> = IdentifierToTypeIndex<'a, TypeVertex<'static>>;
-impl<'a> IndexedType for TypeVertex<'a> {
+pub type LabelToTypeVertexIndex<'a> = IdentifierIndex<'a, TypeVertex<'static>>;
+impl<'a> Indexable for TypeVertex<'a> {
     const PREFIX: Prefix = Prefix::IndexLabelToType;
 }
 
-pub type LabelToStructDefinitionIndex<'a> = IdentifierToTypeIndex<'a, StructDefinition>;
-impl IndexedType for StructDefinition {
-    const PREFIX: Prefix = Prefix::IndexLabelToDefinitionStruct;
+pub type NameToStructDefinitionIndex<'a> = IdentifierIndex<'a, StructDefinition>;
+impl Indexable for StructDefinition {
+    const PREFIX: Prefix = Prefix::IndexNameToDefinitionStruct;
 }

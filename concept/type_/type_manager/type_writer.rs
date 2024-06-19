@@ -12,7 +12,7 @@ use encoding::{
         definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
         type_::{
             edge::TypeEdgeEncoding,
-            index::{LabelToStructDefinitionIndex, LabelToTypeVertexIndex},
+            index::{NameToStructDefinitionIndex, LabelToTypeVertexIndex},
             property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
             vertex::TypeVertexEncoding,
         },
@@ -39,7 +39,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         definition_key: DefinitionKey<'static>,
         struct_definition: StructDefinition,
     ) {
-        let index_key = LabelToStructDefinitionIndex::build::<BUFFER_KEY_INLINE>(StringBytes::build_ref(
+        let index_key = NameToStructDefinitionIndex::build::<BUFFER_KEY_INLINE>(StringBytes::build_ref(
             struct_definition.name.as_str(),
         ));
         snapshot

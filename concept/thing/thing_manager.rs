@@ -30,10 +30,9 @@ use encoding::{
         date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes,
         decimal_bytes::DecimalBytes,
-        decode_value_u64,
+        primitive_encoding::{decode_u64, encode_u64},
         double_bytes::DoubleBytes,
         duration_bytes::DurationBytes,
-        encode_value_u64,
         long_bytes::LongBytes,
         string_bytes::StringBytes,
         struct_bytes::StructBytes,
@@ -1052,9 +1051,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         self.put_attribute(snapshot, attribute_type, value).unwrap();
         owner.set_modified(snapshot, self);
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
-        snapshot.put_val(has.into_storage_key().into_owned_array(), encode_value_u64(count));
+        snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
         let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.vertex());
-        snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), encode_value_u64(count));
+        snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
     }
 
     pub(crate) fn unset_has<'a>(&self, snapshot: &mut Snapshot, owner: &impl ObjectAPI<'a>, attribute: Attribute<'_>) {
@@ -1066,8 +1065,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         match owner_status {
             ConceptStatus::Inserted => {
                 let count = 1;
-                snapshot.unput_val(has, encode_value_u64(count));
-                snapshot.unput_val(has_reverse, encode_value_u64(count));
+                snapshot.unput_val(has, ByteArray::copy(&encode_u64(count)));
+                snapshot.unput_val(has_reverse, ByteArray::copy(&encode_u64(count)));
             }
             ConceptStatus::Persisted => {
                 snapshot.delete(has);
@@ -1121,14 +1120,14 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
         let role_player =
             ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
-        snapshot.put_val(role_player.into_storage_key().into_owned_array(), encode_value_u64(count));
+        snapshot.put_val(role_player.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
         let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
             player.clone().into_vertex(),
             relation.clone().into_vertex(),
             role_type.clone().into_vertex(),
         );
-        snapshot.put_val(role_player_reverse.into_storage_key().into_owned_array(), encode_value_u64(count));
+        snapshot.put_val(role_player_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
         if self
             .type_manager
@@ -1174,8 +1173,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             snapshot.delete(role_player.as_storage_key().into_owned_array());
             snapshot.delete(role_player_reverse.as_storage_key().into_owned_array());
         } else {
-            snapshot.put_val(role_player.as_storage_key().into_owned_array(), encode_value_u64(count));
-            snapshot.put_val(role_player_reverse.as_storage_key().into_owned_array(), encode_value_u64(count));
+            snapshot.put_val(role_player.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+            snapshot.put_val(role_player_reverse.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
             if self
                 .type_manager
@@ -1216,8 +1215,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         match owner_status {
             ConceptStatus::Inserted => {
                 let count = 1;
-                snapshot.unput_val(role_player, encode_value_u64(count));
-                snapshot.unput_val(role_player_reverse, encode_value_u64(count));
+                snapshot.unput_val(role_player, ByteArray::copy(&encode_u64(count)));
+                snapshot.unput_val(role_player_reverse, ByteArray::copy(&encode_u64(count)));
             }
             ConceptStatus::Persisted => {
                 snapshot.delete(role_player);
@@ -1248,7 +1247,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     ) -> Result<(), ConceptWriteError> {
         let role_player =
             ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
-        let rp_count = snapshot.get_mapped(role_player.as_storage_key().as_reference(), decode_value_u64).unwrap();
+        let rp_count = snapshot.get_mapped(role_player.as_storage_key().as_reference(), |arr| {
+            decode_u64(arr.bytes().try_into().unwrap())
+        }).unwrap();
 
         #[cfg(debug_assertions)]
         {
@@ -1258,7 +1259,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 role_type.clone().into_vertex(),
             );
             let rp_reverse_count =
-                snapshot.get_mapped(role_player_reverse.as_storage_key().as_reference(), decode_value_u64).unwrap();
+                snapshot.get_mapped(role_player_reverse.as_storage_key().as_reference(), |arr| {
+                    decode_u64(arr.bytes().try_into().unwrap())
+                }).unwrap();
             debug_assert_eq!(&rp_count, &rp_reverse_count, "roleplayer count mismatch!");
         }
 
@@ -1277,7 +1280,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     ) -> Result<(), ConceptWriteError> {
         let role_player =
             ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
-        let rp_count = snapshot.get_mapped(role_player.as_storage_key().as_reference(), decode_value_u64).unwrap();
+        let rp_count = snapshot.get_mapped(role_player.as_storage_key().as_reference(), |arr| {
+            decode_u64(arr.bytes().try_into().unwrap())
+        }).unwrap();
 
         #[cfg(debug_assertions)]
         {
@@ -1287,7 +1292,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 role_type.clone().into_vertex(),
             );
             let rp_reverse_count =
-                snapshot.get_mapped(role_player_reverse.as_storage_key().as_reference(), decode_value_u64).unwrap();
+                snapshot.get_mapped(role_player_reverse.as_storage_key().as_reference(), |arr| {
+                    decode_u64(arr.bytes().try_into().unwrap())
+                }).unwrap();
             debug_assert_eq!(&rp_count, &rp_reverse_count, "roleplayer count mismatch!");
         }
 
@@ -1366,7 +1373,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                     role_type.vertex().type_id_(),
                     role_type.vertex().type_id_(),
                 );
-                snapshot.put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
+                snapshot.put_val(index.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(repetitions)));
             } else if !is_same_rp {
                 let rp_repetitions = rp_count;
                 let index = ThingEdgeRelationIndex::build(
@@ -1376,7 +1383,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                     role_type.vertex().type_id_(),
                     rp_role_type.vertex().type_id_(),
                 );
-                snapshot.put_val(index.as_storage_key().into_owned_array(), encode_value_u64(rp_repetitions));
+                snapshot.put_val(index.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(rp_repetitions)));
                 let player_repetitions = total_player_count;
                 let index_reverse = ThingEdgeRelationIndex::build(
                     rp_player.vertex(),
@@ -1386,7 +1393,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                     role_type.vertex().type_id_(),
                 );
                 snapshot
-                    .put_val(index_reverse.as_storage_key().into_owned_array(), encode_value_u64(player_repetitions));
+                    .put_val(index_reverse.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(player_repetitions)));
             }
         }
         Ok(())

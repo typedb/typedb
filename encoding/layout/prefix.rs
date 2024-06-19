@@ -43,7 +43,7 @@ impl PrefixID {
             | Prefix::PropertyTypeEdge
             | Prefix::DefinitionStruct
             | Prefix::DefinitionFunction
-            | Prefix::IndexLabelToDefinitionStruct => EncodingKeyspace::Schema,
+            | Prefix::IndexNameToDefinitionStruct => EncodingKeyspace::Schema,
             Prefix::VertexEntity => todo!(),
             Prefix::VertexRelation => todo!(),
             Prefix::VertexAttributeBoolean => todo!(),
@@ -112,7 +112,7 @@ pub enum Prefix {
     PropertyObjectVertex,
 
     IndexLabelToType,
-    IndexLabelToDefinitionStruct, // IndexLabelToDefinitionFunction
+    IndexNameToDefinitionStruct, // IndexLabelToDefinitionFunction
 
     IndexValueToStruct,
 }
@@ -213,7 +213,7 @@ impl Prefix {
            PropertyObjectVertex => [163], true;
 
            IndexLabelToType => [182], false;
-           IndexLabelToDefinitionStruct => [183], false;
+           IndexNameToDefinitionStruct => [183], false;
 
            IndexValueToStruct => [190], false
            // Reserved: 200-255

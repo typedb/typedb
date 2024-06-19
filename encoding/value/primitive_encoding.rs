@@ -20,11 +20,11 @@ pub(super) fn encode_u32(value: u32) -> [u8; 4] {
     value.to_be_bytes()
 }
 
-pub(super) fn decode_u64(bytes: [u8; 8]) -> u64 {
+pub fn decode_u64(bytes: [u8; 8]) -> u64 {
     u64::from_be_bytes(bytes)
 }
 
-pub(super) fn encode_u64(value: u64) -> [u8; 8] {
+pub fn encode_u64(value: u64) -> [u8; 8] {
     value.to_be_bytes()
 }
 
