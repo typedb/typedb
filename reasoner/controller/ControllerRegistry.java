@@ -46,6 +46,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONING_TERMINATED_WITH_CAUSE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 import static java.util.stream.Collectors.toMap;
 
 public class ControllerRegistry {
@@ -278,6 +279,10 @@ public class ControllerRegistry {
         controllerContext.tracer().ifPresent(Tracer::finishTrace);
         controllerContext.processor().perfCounters().logCounters();
         controllerContext.processor().perfCounters().stopPrinting();
+        terminationCause = TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, TypeDBException.of(TRANSACTION_CLOSED));
+        controllers.forEach(controller -> controller.executeNext(driver -> driver.terminate(terminationCause)));
+        materialisationController.executeNext(a -> a.terminate(terminationCause));
+        controllerContext.processor().monitor().executeNext(a -> a.terminate(terminationCause));
     }
 
     public static abstract class ControllerView {

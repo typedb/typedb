@@ -13,6 +13,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
@@ -27,6 +28,7 @@ public class Executors {
 
     private static final Logger LOG = LoggerFactory.getLogger(Executors.class);
     private static final String TYPEDB_CORE_SERVICE_THREAD_NAME = "typedb-service";
+    private static final String TYPEDB_CORE_TRANSACTION_SERVICE_THREAD_NAME = "typedb-transaction-service";
     private static final String TYPEDB_CORE_ASYNC_THREAD_1_NAME = "typedb-async-1";
     private static final String TYPEDB_CORE_ASYNC_THREAD_2_NAME = "typedb-async-2";
     private static final String TYPEDB_CORE_NETWORK_THREAD_NAME = "typedb-network";
@@ -38,6 +40,7 @@ public class Executors {
     private static Executors singleton = null;
 
     private final ParallelThreadPoolExecutor serviceExecutorService;
+    private final ParallelThreadPoolExecutor transactionExecutorService;
     private final ParallelThreadPoolExecutor asyncExecutorService1;
     private final ParallelThreadPoolExecutor asyncExecutorService2;
     private final ActorExecutorGroup actorExecutorService;
@@ -48,6 +51,7 @@ public class Executors {
     private Executors(int parallelisation) {
         if (parallelisation <= 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
         serviceExecutorService = new ParallelThreadPoolExecutor(parallelisation, threadFactory(TYPEDB_CORE_SERVICE_THREAD_NAME));
+        transactionExecutorService = new ParallelThreadPoolExecutor(parallelisation, threadFactory(TYPEDB_CORE_TRANSACTION_SERVICE_THREAD_NAME));
         asyncExecutorService1 = new ParallelThreadPoolExecutor(parallelisation, threadFactory(TYPEDB_CORE_ASYNC_THREAD_1_NAME));
         asyncExecutorService2 = new ParallelThreadPoolExecutor(parallelisation, threadFactory(TYPEDB_CORE_ASYNC_THREAD_2_NAME));
         actorExecutorService = new ActorExecutorGroup(parallelisation, threadFactory(TYPEDB_CORE_ACTOR_THREAD_NAME));
@@ -56,6 +60,11 @@ public class Executors {
                                                               threadFactory(TYPEDB_CORE_SCHEDULED_THREAD_NAME));
         serialService = java.util.concurrent.Executors.newSingleThreadExecutor(threadFactory(TYPEDB_CORE_SERIAL_THREAD_NAME));
         scheduledThreadPool.setRemoveOnCancelPolicy(true);
+    }
+
+    public static Executor transactionService() {
+        assert isInitialised();
+        return singleton.transactionExecutorService;
     }
 
     private NamedThreadFactory threadFactory(String threadNamePrefix) {
