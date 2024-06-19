@@ -632,7 +632,7 @@ fn role_player_duplicates() {
 }
 
 #[test]
-fn string_write_read() {
+fn attribute_string_write_read() {
     let storage = setup_storage();
     let (type_manager, thing_manager) = managers(storage.clone()) ;
     let attr_label = Label::build("test_string_attr");
@@ -689,7 +689,7 @@ fn string_write_read() {
 }
 
 #[test]
-fn struct_write_read() {
+fn attribute_struct_write_read() {
     let storage = setup_storage();
     let (type_manager, thing_manager) = managers(storage.clone()) ;
 
@@ -757,7 +757,7 @@ fn struct_write_read() {
 }
 
 #[test]
-fn read_struct_by_field() {
+fn read_attribute_struct_by_field() {
     let storage = setup_storage();
     let (type_manager, thing_manager) = managers(storage.clone()) ;
 
@@ -837,7 +837,7 @@ fn read_struct_by_field() {
 }
 
 #[test]
-fn struct_errors() {
+fn attribute_struct_errors() {
     let storage = setup_storage();
     let (type_manager, thing_manager) = managers(storage.clone()) ;
 
