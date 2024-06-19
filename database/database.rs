@@ -17,7 +17,10 @@ use concept::{error::ConceptWriteError, thing::statistics::Statistics, type_::ty
 use durability::wal::{WALError, WAL};
 use encoding::{
     error::EncodingError,
-    graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
+    graph::{
+        definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
+        type_::vertex_generator::TypeVertexGenerator,
+    },
     EncodingKeyspace,
 };
 use storage::{
@@ -37,6 +40,7 @@ pub struct Database<D> {
     name: String,
     path: PathBuf,
     pub(super) storage: Arc<MVCCStorage<D>>,
+    pub(super) definition_key_generator: Arc<DefinitionKeyGenerator>,
     pub(super) type_vertex_generator: Arc<TypeVertexGenerator>,
     pub(super) thing_vertex_generator: Arc<ThingVertexGenerator>,
     thing_statistics: Arc<Statistics>,
@@ -69,17 +73,23 @@ impl Database<WALClient> {
             MVCCStorage::create::<EncodingKeyspace>(&name, path, WALClient::new(wal))
                 .map_err(|error| StorageOpen { source: error })?,
         );
+        let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
             Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
-        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone())
-            .map_err(|err| SchemaInitialise { source: err })?;
+        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(
+            storage.clone(),
+            definition_key_generator.clone(),
+            type_vertex_generator.clone(),
+        )
+        .map_err(|err| SchemaInitialise { source: err })?;
         let statistics = Arc::new(Statistics::new(storage.read_watermark()));
 
         Ok(Database::<WALClient> {
             name: name.as_ref().to_owned(),
             path: path.to_owned(),
             storage,
+            definition_key_generator,
             type_vertex_generator,
             thing_vertex_generator,
             thing_statistics: statistics,
@@ -99,11 +109,16 @@ impl Database<WALClient> {
             MVCCStorage::load::<EncodingKeyspace>(&name, path, WALClient::new(wal), &checkpoint)
                 .map_err(|error| StorageOpen { source: error })?,
         );
+        let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator =
             Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
-        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone())
-            .map_err(|err| SchemaInitialise { source: err })?;
+        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(
+            storage.clone(),
+            definition_key_generator.clone(),
+            type_vertex_generator.clone(),
+        )
+        .map_err(|err| SchemaInitialise { source: err })?;
 
         let statistics = storage
             .durability()
@@ -117,6 +132,7 @@ impl Database<WALClient> {
             name: name.as_ref().to_owned(),
             path: path.to_owned(),
             storage,
+            definition_key_generator,
             type_vertex_generator,
             thing_vertex_generator,
             thing_statistics: Arc::new(statistics),

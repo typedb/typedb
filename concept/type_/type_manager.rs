@@ -12,17 +12,26 @@ use std::{
 };
 
 use encoding::{
-    graph::type_::{
-        edge::TypeEdgeEncoding,
-        property::TypeEdgePropertyEncoding,
-        vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
-        vertex_generator::TypeVertexGenerator,
-        Kind,
+    error::EncodingError,
+    graph::{
+        definition::{
+            definition_key::DefinitionKey,
+            definition_key_generator::DefinitionKeyGenerator,
+            r#struct::{StructDefinition, StructDefinitionField},
+        },
+        type_::{
+            edge::TypeEdgeEncoding,
+            property::TypeEdgePropertyEncoding,
+            vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
+            vertex_generator::TypeVertexGenerator,
+            Kind,
+        },
     },
     value::{label::Label, value_type::ValueType},
     AsBytes, Keyable,
 };
 use primitive::maybe_owns::MaybeOwns;
+use resource::constants::encoding::StructFieldIDUInt;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
@@ -60,6 +69,7 @@ pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
 
 pub struct TypeManager<Snapshot> {
     vertex_generator: Arc<TypeVertexGenerator>,
+    definition_key_generator: Arc<DefinitionKeyGenerator>,
     type_cache: Option<Arc<TypeCache>>,
     snapshot: PhantomData<Snapshot>,
 }
@@ -67,11 +77,13 @@ pub struct TypeManager<Snapshot> {
 impl<Snapshot> TypeManager<Snapshot> {
     pub fn initialise_types<D: DurabilityClient>(
         storage: Arc<MVCCStorage<D>>,
+        definition_key_generator: Arc<DefinitionKeyGenerator>,
         vertex_generator: Arc<TypeVertexGenerator>,
     ) -> Result<(), ConceptWriteError> {
         let mut snapshot = storage.clone().open_snapshot_write();
         {
-            let type_manager = TypeManager::<WriteSnapshot<D>>::new(vertex_generator.clone(), None);
+            let type_manager =
+                TypeManager::<WriteSnapshot<D>>::new(definition_key_generator, vertex_generator.clone(), None);
             let root_entity = type_manager.create_entity_type(&mut snapshot, &Kind::Entity.root_label(), true)?;
             root_entity.set_annotation(
                 &mut snapshot,
@@ -258,8 +270,12 @@ macro_rules! get_type_annotations {
 }
 
 impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
-    pub fn new(vertex_generator: Arc<TypeVertexGenerator>, schema_cache: Option<Arc<TypeCache>>) -> Self {
-        TypeManager { vertex_generator, type_cache: schema_cache, snapshot: PhantomData }
+    pub fn new(
+        definition_key_generator: Arc<DefinitionKeyGenerator>,
+        vertex_generator: Arc<TypeVertexGenerator>,
+        schema_cache: Option<Arc<TypeCache>>,
+    ) -> Self {
+        TypeManager { definition_key_generator, vertex_generator, type_cache: schema_cache, snapshot: PhantomData }
     }
 
     pub fn resolve_relates(
@@ -276,6 +292,79 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
                 None
             }
         }))
+    }
+
+    pub fn get_struct_definition_key(
+        &self,
+        snapshot: &Snapshot,
+        name: &str,
+    ) -> Result<Option<DefinitionKey<'static>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(cache.get_struct_definition_key(name))
+        } else {
+            TypeReader::get_struct_definition_key(snapshot, name)
+        }
+    }
+
+    pub fn get_struct_definition(
+        &self,
+        snapshot: &Snapshot,
+        definition_key: DefinitionKey<'static>,
+    ) -> Result<MaybeOwns<'_, StructDefinition>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_struct_definition(definition_key.clone())))
+        } else {
+            Ok(MaybeOwns::Owned(TypeReader::get_struct_definition(snapshot, definition_key.clone())?))
+        }
+    }
+
+    pub fn resolve_struct_field(
+        &self,
+        snapshot: &Snapshot,
+        fields_path: &Vec<&str>,
+        definition: StructDefinition,
+    ) -> Result<Vec<StructFieldIDUInt>, ConceptReadError> {
+        let mut resolved: Vec<StructFieldIDUInt> = Vec::with_capacity(fields_path.len());
+        let maybe_owns_definition = MaybeOwns::Borrowed(&definition);
+        let mut at = maybe_owns_definition;
+        for (i, f) in fields_path.iter().enumerate() {
+            let field_idx_opt = at.field_names.get(*f);
+            if let Some(field_idx) = field_idx_opt {
+                resolved.push(*field_idx);
+                let next_def: &StructDefinitionField = at.fields.get(&field_idx).unwrap();
+                match &next_def.value_type {
+                    ValueType::Struct(definition_key) => {
+                        at = self.get_struct_definition(snapshot, definition_key.clone())?;
+                    }
+                    _ => {
+                        if (i + 1) == fields_path.len() {
+                            return Ok(resolved);
+                        } else {
+                            return Err(ConceptReadError::Encoding {
+                                source: EncodingError::IndexingIntoNonStructField {
+                                    struct_name: definition.name,
+                                    field_path: fields_path.clone().into_iter().map(|str| str.to_owned()).collect(),
+                                },
+                            });
+                        }
+                    }
+                }
+            } else {
+                return Err(ConceptReadError::Encoding {
+                    source: EncodingError::StructFieldUnresolvable {
+                        struct_name: definition.name,
+                        field_path: fields_path.clone().into_iter().map(|str| str.to_owned()).collect(),
+                    },
+                });
+            }
+        }
+
+        Err(ConceptReadError::Encoding {
+            source: EncodingError::StructPathIncomplete {
+                struct_name: definition.name,
+                field_path: fields_path.clone().into_iter().map(|str| str.to_owned()).collect(),
+            },
+        })
     }
 
     get_type_methods! {
@@ -645,6 +734,52 @@ impl<Snapshot: ReadableSnapshot> TypeManager<Snapshot> {
 //      (If this feels like unnecessary indirection, feel free to refactor. I just need structure)
 //  Avoid cross-calling methods if it violates the above.
 impl<Snapshot: WritableSnapshot> TypeManager<Snapshot> {
+    pub fn create_struct(
+        &self,
+        snapshot: &mut Snapshot,
+        name: String,
+    ) -> Result<DefinitionKey<'static>, ConceptWriteError> {
+        // TODO: Validation
+        let definition_key = self
+            .definition_key_generator
+            .create_struct(snapshot)
+            .map_err(|source| ConceptWriteError::Encoding { source })?;
+        TypeWriter::storage_put_struct(snapshot, definition_key.clone(), StructDefinition::new(name));
+        Ok(definition_key)
+    }
+
+    pub fn add_struct_field(
+        &self,
+        snapshot: &mut Snapshot,
+        definition_key: DefinitionKey<'static>,
+        field_name: String,
+        value_type: ValueType,
+        is_optional: bool,
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: Validation
+        let mut struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())
+            .map_err(|source| ConceptWriteError::ConceptRead { source })?;
+        struct_definition
+            .add_field(field_name, value_type, is_optional)
+            .map_err(|source| ConceptWriteError::Encoding { source })?;
+        TypeWriter::storage_put_struct(snapshot, definition_key.clone(), struct_definition);
+        Ok(())
+    }
+
+    pub fn delete_struct_field(
+        &self,
+        snapshot: &mut Snapshot,
+        definition_key: DefinitionKey<'static>,
+        field_name: String,
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: Validation
+        let mut struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())
+            .map_err(|source| ConceptWriteError::ConceptRead { source })?;
+        struct_definition.delete_field(field_name).map_err(|source| ConceptWriteError::Encoding { source })?;
+        TypeWriter::storage_put_struct(snapshot, definition_key.clone(), struct_definition);
+        Ok(())
+    }
+
     pub fn finalise(self, snapshot: &Snapshot) -> Result<(), Vec<ConceptWriteError>> {
         let type_errors = CommitTimeValidation::validate(snapshot);
         match type_errors {

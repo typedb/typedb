@@ -43,7 +43,7 @@ impl PrefixID {
             | Prefix::PropertyTypeEdge
             | Prefix::DefinitionStruct
             | Prefix::DefinitionFunction
-            | Prefix::IndexLabelToDefinitionStruct => EncodingKeyspace::Schema,
+            | Prefix::IndexNameToDefinitionStruct => EncodingKeyspace::Schema,
             Prefix::VertexEntity => todo!(),
             Prefix::VertexRelation => todo!(),
             Prefix::VertexAttributeBoolean => todo!(),
@@ -60,6 +60,7 @@ impl PrefixID {
             Prefix::EdgeRolePlayer => todo!(),
             Prefix::EdgeRolePlayerReverse => todo!(),
             Prefix::EdgeRolePlayerIndex => todo!(),
+            Prefix::IndexValueToStruct => todo!(),
             Prefix::PropertyObjectVertex => todo!(),
             Prefix::_VertexAttributeLast => unreachable!("Marker enum variant should not be used."),
         }
@@ -111,7 +112,9 @@ pub enum Prefix {
     PropertyObjectVertex,
 
     IndexLabelToType,
-    IndexLabelToDefinitionStruct, // IndexLabelToDefinitionFunction
+    IndexNameToDefinitionStruct, // IndexLabelToDefinitionFunction
+
+    IndexValueToStruct,
 }
 
 macro_rules! prefix_functions {
@@ -205,12 +208,14 @@ impl Prefix {
            EdgeRolePlayerReverse => [133], true;
            EdgeRolePlayerIndex => [140], true;
 
-           PropertyTypeVertex => [160], false;
-           PropertyTypeEdge => [162], false;
-           PropertyObjectVertex => [163], false;
+           PropertyTypeVertex => [160], true;
+           PropertyTypeEdge => [162], true;
+           PropertyObjectVertex => [163], true;
 
            IndexLabelToType => [182], false;
-           IndexLabelToDefinitionStruct => [183], false
+           IndexNameToDefinitionStruct => [183], false;
+
+           IndexValueToStruct => [190], false
            // Reserved: 200-255
     );
 }

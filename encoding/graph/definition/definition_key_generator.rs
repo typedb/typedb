@@ -3,31 +3,28 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-use resource::constants::encoding::DefinitionIDAtomicUInt;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
     error::EncodingError,
-    graph::definition::definition_key::{DefinitionID, DefinitionKey},
+    graph::{common::schema_id_allocator::DefinitionKeyAllocator, definition::definition_key::DefinitionKey},
     layout::prefix::Prefix,
     Keyable,
 };
 
 pub struct DefinitionKeyGenerator {
-    // TODO: implement full allocator with recycling
-    next_struct_id: DefinitionIDAtomicUInt,
+    next_struct: DefinitionKeyAllocator,
 }
 
 impl DefinitionKeyGenerator {
+    pub fn new() -> DefinitionKeyGenerator {
+        Self { next_struct: DefinitionKeyAllocator::new(Prefix::DefinitionStruct) }
+    }
     pub fn create_struct<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
     ) -> Result<DefinitionKey<'static>, EncodingError> {
-        // TODO: implement
-        let id = 0;
-
-        let definition_key = DefinitionKey::build(Prefix::DefinitionStruct, DefinitionID::build(id));
+        let definition_key = self.next_struct.allocate(snapshot)?;
         snapshot.put(definition_key.as_storage_key().into_owned_array());
         Ok(definition_key)
     }

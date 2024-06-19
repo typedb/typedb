@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::thing::value::Value;
+use encoding::value::value::Value;
 
 use crate::Thing;
 

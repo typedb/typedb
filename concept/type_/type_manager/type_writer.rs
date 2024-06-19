@@ -8,15 +8,19 @@ use std::marker::PhantomData;
 
 use bytes::byte_array::ByteArray;
 use encoding::{
-    graph::type_::{
-        edge::TypeEdgeEncoding,
-        index::LabelToTypeVertexIndex,
-        property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
-        vertex::TypeVertexEncoding,
+    graph::{
+        definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
+        type_::{
+            edge::TypeEdgeEncoding,
+            index::{LabelToTypeVertexIndex, NameToStructDefinitionIndex},
+            property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
+            vertex::TypeVertexEncoding,
+        },
     },
-    value::{label::Label, value_type::ValueType},
+    value::{label::Label, string_bytes::StringBytes, value_type::ValueType},
     AsBytes, Keyable,
 };
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::WritableSnapshot;
 
 use crate::type_::{
@@ -30,12 +34,28 @@ pub struct TypeWriter<Snapshot: WritableSnapshot> {
 
 // TODO: Make everything pub(super) and make this submodule of type_manager.
 impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
+    pub(crate) fn storage_put_struct(
+        snapshot: &mut Snapshot,
+        definition_key: DefinitionKey<'static>,
+        struct_definition: StructDefinition,
+    ) {
+        let index_key = NameToStructDefinitionIndex::build::<BUFFER_KEY_INLINE>(StringBytes::build_ref(
+            struct_definition.name.as_str(),
+        ));
+        snapshot
+            .put_val(index_key.into_storage_key().into_owned_array(), ByteArray::copy(definition_key.bytes().bytes()));
+        snapshot.put_val(
+            definition_key.into_storage_key().into_owned_array(),
+            struct_definition.into_bytes().unwrap().into_array(),
+        );
+    }
+
     // Basic vertex type operations
     pub(crate) fn storage_put_label<T: KindAPI<'static>>(snapshot: &mut Snapshot, type_: T, label: &Label<'_>) {
         debug_assert!(TypeReader::get_label(snapshot, type_.clone()).unwrap().is_none());
         Self::storage_put_type_vertex_property(snapshot, type_.clone(), Some(label.clone().into_owned()));
 
-        let label_to_vertex_key = LabelToTypeVertexIndex::build(label);
+        let label_to_vertex_key = LabelToTypeVertexIndex::build(label.scoped_name());
         let vertex_value = ByteArray::from(type_.into_vertex().bytes());
         snapshot.put_val(label_to_vertex_key.into_storage_key().into_owned_array(), vertex_value);
     }
@@ -45,7 +65,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         let existing_label = TypeReader::get_label(snapshot, type_.clone()).unwrap();
         if let Some(label) = existing_label {
             Self::storage_delete_type_vertex_property::<Label<'_>>(snapshot, type_);
-            let label_to_vertex_key = LabelToTypeVertexIndex::build(&label);
+            let label_to_vertex_key = LabelToTypeVertexIndex::build(label.scoped_name());
             snapshot.delete(label_to_vertex_key.into_storage_key().into_owned_array());
         }
     }
@@ -141,7 +161,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     where
         E: TypeEdgeEncoding<'static>,
     {
-        let overridden_to = EdgeOverride::<E> { overridden: overridden };
+        let overridden_to = EdgeOverride::<E> { overridden };
         Self::storage_put_type_edge_property(snapshot, edge, Some(overridden_to))
     }
 

@@ -4,7 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
+use std::{
+    borrow::{Borrow, Cow},
+    collections::HashSet,
+    marker::PhantomData,
+    sync::Arc,
+};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -21,32 +26,42 @@ use encoding::{
     },
     layout::prefix::Prefix,
     value::{
-        boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
-        decimal_bytes::DecimalBytes, decode_value_u64, double_bytes::DoubleBytes, duration_bytes::DurationBytes,
-        encode_value_u64, long_bytes::LongBytes, string_bytes::StringBytes, value_type::ValueType, ValueEncodable,
+        boolean_bytes::BooleanBytes,
+        date_time_bytes::DateTimeBytes,
+        date_time_tz_bytes::DateTimeTZBytes,
+        decimal_bytes::DecimalBytes,
+        double_bytes::DoubleBytes,
+        duration_bytes::DurationBytes,
+        long_bytes::LongBytes,
+        primitive_encoding::{decode_u64, encode_u64},
+        string_bytes::StringBytes,
+        struct_bytes::StructBytes,
+        value::Value,
+        value_struct::{StructIndexEntry, StructValue},
+        value_type::{ValueType, ValueTypeCategory},
+        ValueEncodable,
     },
     Keyable,
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use regex::Regex;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_KEY_INLINE};
 use storage::{
     key_range::KeyRange,
     key_value::StorageKey,
     snapshot::{write::Write, ReadableSnapshot, WritableSnapshot},
 };
 
-use super::{decode_role_players, encode_role_players, relation::RolePlayer};
+use super::{decode_role_players, encode_role_players};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        attribute::{Attribute, AttributeIterator, AttributeOwnerIterator},
+        attribute::{Attribute, AttributeIterator, AttributeOwnerIterator, StructIndexToAttributeIterator},
         decode_attribute_ids, encode_attribute_ids,
         entity::{Entity, EntityIterator},
         object::{HasAttributeIterator, Object, ObjectAPI, ObjectIterator},
         relation::{IndexedPlayersIterator, Relation, RelationIterator, RelationRoleIterator, RolePlayerIterator},
-        value::Value,
         ThingAPI,
     },
     type_::{
@@ -230,9 +245,12 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                         .unwrap())
                 }
             }
-            ValueType::Struct(definition_key) => {
-                todo!()
-            }
+            ValueType::Struct(_) => Ok(snapshot
+                .get_mapped(attribute.vertex().as_storage_key().as_reference(), |bytes| {
+                    Value::Struct(Cow::Owned(StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct()))
+                })
+                .map_err(|error| ConceptReadError::SnapshotGet { source: error })?
+                .unwrap()),
         }
     }
 
@@ -274,14 +292,33 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
                         value.encode_string::<256>(),
                         snapshot,
                     ) {
-                        Ok(Some(id)) => Attribute::new(AttributeVertex::new(Bytes::copy(&id.bytes()))),
+                        Ok(Some(id)) => Attribute::new(AttributeVertex::build(
+                            ValueTypeCategory::String,
+                            attribute_type.vertex().type_id_(),
+                            AttributeID::String(id),
+                        )),
                         Ok(None) => return Ok(None),
                         Err(err) => return Err(ConceptReadError::SnapshotIterate { source: err }),
                     }
                 }
             }
-            ValueType::Struct(definition_key) => {
-                todo!()
+            ValueType::Struct(_) => {
+                match self.vertex_generator.find_attribute_id_struct(
+                    attribute_type.vertex().type_id_(),
+                    value.encode_struct::<256>(),
+                    snapshot,
+                ) {
+                    Ok(Some(id)) => {
+                        let attribute = Attribute::new(AttributeVertex::build(
+                            ValueTypeCategory::Struct,
+                            attribute_type.vertex().type_id_(),
+                            AttributeID::Struct(id),
+                        ));
+                        attribute
+                    }
+                    Ok(None) => return Ok(None),
+                    Err(err) => return Err(ConceptReadError::SnapshotIterate { source: err }),
+                }
             }
         };
 
@@ -356,6 +393,44 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         HasAttributeIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
         )
+    }
+
+    pub fn get_attributes_by_struct_field<'this, 'a, 'v>(
+        &'this self,
+        snapshot: &'this Snapshot,
+        attribute_type: AttributeType<'a>,
+        path_to_field: Vec<StructFieldIDUInt>,
+        value: Value<'v>,
+    ) -> Result<StructIndexToAttributeIterator<'_, Snapshot>, ConceptReadError> {
+        debug_assert!({
+            let value_type = attribute_type.get_value_type(snapshot, &self.type_manager).unwrap().unwrap();
+            value_type.category() == ValueTypeCategory::Struct
+        });
+
+        let prefix = StructIndexEntry::build_prefix_typeid_path_value(
+            snapshot,
+            self.vertex_generator.borrow(),
+            &path_to_field,
+            &value,
+            &attribute_type.vertex(),
+        )
+        .map_err(|source| ConceptReadError::SnapshotIterate { source })?;
+        let index_to_attribute_iterator =
+            snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::IndexValueToStruct.fixed_width_keys()));
+
+        let attribute_value_type_prefix =
+            AttributeVertex::value_type_category_to_prefix_type(ValueTypeCategory::Struct);
+
+        let has_reverse_prefix =
+            ThingEdgeHasReverse::prefix_from_type(attribute_value_type_prefix, attribute_type.vertex().type_id_());
+        let has_reverse_iterator =
+            snapshot.iterate_range(KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING));
+        Ok(StructIndexToAttributeIterator::new(
+            index_to_attribute_iterator,
+            has_reverse_iterator,
+            snapshot,
+            &self.type_manager,
+        ))
     }
 
     pub(crate) fn get_has_ordered<'this, 'a>(
@@ -858,7 +933,13 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                         .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?
                 }
                 Value::Struct(struct_) => {
-                    todo!()
+                    let encoded_struct: StructBytes<'static, BUFFER_KEY_INLINE> = StructBytes::build(&struct_);
+                    let struct_attribute = self
+                        .vertex_generator
+                        .create_attribute_struct(attribute_type.vertex().type_id_(), encoded_struct, snapshot)
+                        .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
+                    self.index_struct_fields(snapshot, &struct_attribute, &struct_)?;
+                    struct_attribute
                 }
             };
             Ok(Attribute::new(vertex))
@@ -868,6 +949,25 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 provided: value.value_type(),
             })
         }
+    }
+
+    fn index_struct_fields<'a>(
+        &self,
+        snapshot: &mut Snapshot,
+        attribute_vertex: &AttributeVertex<'static>,
+        struct_value: &StructValue<'a>,
+    ) -> Result<(), ConceptWriteError> {
+        let index_entries = struct_value
+            .create_index_entries(snapshot, self.vertex_generator.borrow(), &attribute_vertex)
+            .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
+        for entry in index_entries {
+            let StructIndexEntry { key, value } = entry;
+            match value {
+                None => snapshot.put(key.into_storage_key().into_owned_array()),
+                Some(value) => snapshot.put_val(key.into_storage_key().into_owned_array(), value.into_array()),
+            }
+        }
+        Ok(())
     }
 
     pub(crate) fn delete_entity(&self, snapshot: &mut Snapshot, entity: Entity<'_>) {
@@ -951,9 +1051,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         self.put_attribute(snapshot, attribute_type, value).unwrap();
         owner.set_modified(snapshot, self);
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
-        snapshot.put_val(has.into_storage_key().into_owned_array(), encode_value_u64(count));
+        snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
         let has_reverse = ThingEdgeHasReverse::build(attribute.into_vertex(), owner.vertex());
-        snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), encode_value_u64(count));
+        snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
     }
 
     pub(crate) fn unset_has<'a>(&self, snapshot: &mut Snapshot, owner: &impl ObjectAPI<'a>, attribute: Attribute<'_>) {
@@ -965,8 +1065,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         match owner_status {
             ConceptStatus::Inserted => {
                 let count = 1;
-                snapshot.unput_val(has, encode_value_u64(count));
-                snapshot.unput_val(has_reverse, encode_value_u64(count));
+                snapshot.unput_val(has, ByteArray::copy(&encode_u64(count)));
+                snapshot.unput_val(has_reverse, ByteArray::copy(&encode_u64(count)));
             }
             ConceptStatus::Persisted => {
                 snapshot.delete(has);
@@ -1020,14 +1120,15 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
         let role_player =
             ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
-        snapshot.put_val(role_player.into_storage_key().into_owned_array(), encode_value_u64(count));
+        snapshot.put_val(role_player.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
         let role_player_reverse = ThingEdgeRolePlayer::build_role_player_reverse(
             player.clone().into_vertex(),
             relation.clone().into_vertex(),
             role_type.clone().into_vertex(),
         );
-        snapshot.put_val(role_player_reverse.into_storage_key().into_owned_array(), encode_value_u64(count));
+        snapshot
+            .put_val(role_player_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
         if self
             .type_manager
@@ -1073,8 +1174,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             snapshot.delete(role_player.as_storage_key().into_owned_array());
             snapshot.delete(role_player_reverse.as_storage_key().into_owned_array());
         } else {
-            snapshot.put_val(role_player.as_storage_key().into_owned_array(), encode_value_u64(count));
-            snapshot.put_val(role_player_reverse.as_storage_key().into_owned_array(), encode_value_u64(count));
+            snapshot.put_val(role_player.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+            snapshot
+                .put_val(role_player_reverse.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
             if self
                 .type_manager
@@ -1115,8 +1217,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         match owner_status {
             ConceptStatus::Inserted => {
                 let count = 1;
-                snapshot.unput_val(role_player, encode_value_u64(count));
-                snapshot.unput_val(role_player_reverse, encode_value_u64(count));
+                snapshot.unput_val(role_player, ByteArray::copy(&encode_u64(count)));
+                snapshot.unput_val(role_player_reverse, ByteArray::copy(&encode_u64(count)));
             }
             ConceptStatus::Persisted => {
                 snapshot.delete(role_player);
@@ -1147,7 +1249,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     ) -> Result<(), ConceptWriteError> {
         let role_player =
             ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
-        let rp_count = snapshot.get_mapped(role_player.as_storage_key().as_reference(), decode_value_u64).unwrap();
+        let rp_count = snapshot
+            .get_mapped(role_player.as_storage_key().as_reference(), |arr| decode_u64(arr.bytes().try_into().unwrap()))
+            .unwrap();
 
         #[cfg(debug_assertions)]
         {
@@ -1156,8 +1260,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 relation.vertex(),
                 role_type.clone().into_vertex(),
             );
-            let rp_reverse_count =
-                snapshot.get_mapped(role_player_reverse.as_storage_key().as_reference(), decode_value_u64).unwrap();
+            let rp_reverse_count = snapshot
+                .get_mapped(role_player_reverse.as_storage_key().as_reference(), |arr| {
+                    decode_u64(arr.bytes().try_into().unwrap())
+                })
+                .unwrap();
             debug_assert_eq!(&rp_count, &rp_reverse_count, "roleplayer count mismatch!");
         }
 
@@ -1176,7 +1283,9 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     ) -> Result<(), ConceptWriteError> {
         let role_player =
             ThingEdgeRolePlayer::build_role_player(relation.vertex(), player.vertex(), role_type.clone().into_vertex());
-        let rp_count = snapshot.get_mapped(role_player.as_storage_key().as_reference(), decode_value_u64).unwrap();
+        let rp_count = snapshot
+            .get_mapped(role_player.as_storage_key().as_reference(), |arr| decode_u64(arr.bytes().try_into().unwrap()))
+            .unwrap();
 
         #[cfg(debug_assertions)]
         {
@@ -1185,8 +1294,11 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 relation.vertex(),
                 role_type.clone().into_vertex(),
             );
-            let rp_reverse_count =
-                snapshot.get_mapped(role_player_reverse.as_storage_key().as_reference(), decode_value_u64).unwrap();
+            let rp_reverse_count = snapshot
+                .get_mapped(role_player_reverse.as_storage_key().as_reference(), |arr| {
+                    decode_u64(arr.bytes().try_into().unwrap())
+                })
+                .unwrap();
             debug_assert_eq!(&rp_count, &rp_reverse_count, "roleplayer count mismatch!");
         }
 
@@ -1265,7 +1377,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                     role_type.vertex().type_id_(),
                     role_type.vertex().type_id_(),
                 );
-                snapshot.put_val(index.as_storage_key().into_owned_array(), encode_value_u64(repetitions));
+                snapshot.put_val(index.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(repetitions)));
             } else if !is_same_rp {
                 let rp_repetitions = rp_count;
                 let index = ThingEdgeRelationIndex::build(
@@ -1275,7 +1387,8 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                     role_type.vertex().type_id_(),
                     rp_role_type.vertex().type_id_(),
                 );
-                snapshot.put_val(index.as_storage_key().into_owned_array(), encode_value_u64(rp_repetitions));
+                snapshot
+                    .put_val(index.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(rp_repetitions)));
                 let player_repetitions = total_player_count;
                 let index_reverse = ThingEdgeRelationIndex::build(
                     rp_player.vertex(),
@@ -1284,8 +1397,10 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                     rp_role_type.vertex().type_id_(),
                     role_type.vertex().type_id_(),
                 );
-                snapshot
-                    .put_val(index_reverse.as_storage_key().into_owned_array(), encode_value_u64(player_repetitions));
+                snapshot.put_val(
+                    index_reverse.as_storage_key().into_owned_array(),
+                    ByteArray::copy(&encode_u64(player_repetitions)),
+                );
             }
         }
         Ok(())

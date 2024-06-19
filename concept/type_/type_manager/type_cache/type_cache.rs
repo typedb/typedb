@@ -12,7 +12,10 @@ use std::{
 };
 
 use encoding::{
-    graph::Typed,
+    graph::{
+        definition::{definition_key::DefinitionKey, r#struct::StructDefinition},
+        Typed,
+    },
     value::{label::Label, value_type::ValueType},
 };
 use storage::{sequence_number::SequenceNumber, snapshot::ReadableSnapshot, MVCCStorage, ReadSnapshotOpenError};
@@ -33,6 +36,7 @@ use crate::type_::{
         },
         selection,
         selection::{CacheGetter, HasCommonTypeCache, HasOwnerPlayerCache},
+        struct_definition_cache::StructDefinitionCache,
     },
     KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
 };
@@ -50,10 +54,13 @@ pub struct TypeCache {
     owns: HashMap<Owns<'static>, OwnsCache>,
     plays: HashMap<Plays<'static>, PlaysCache>,
 
+    struct_definitions: Box<[Option<StructDefinitionCache>]>,
+
     entity_types_index_label: HashMap<Label<'static>, EntityType<'static>>,
     relation_types_index_label: HashMap<Label<'static>, RelationType<'static>>,
     role_types_index_label: HashMap<Label<'static>, RoleType<'static>>,
     attribute_types_index_label: HashMap<Label<'static>, AttributeType<'static>>,
+    struct_definition_index_by_name: HashMap<String, DefinitionKey<'static>>,
 }
 
 selection::impl_cache_getter!(EntityTypeCache, EntityType, entity_types);
@@ -87,11 +94,13 @@ impl TypeCache {
         let relation_type_caches = RelationTypeCache::create(&snapshot);
         let role_type_caches = RoleTypeCache::create(&snapshot);
         let attribute_type_caches = AttributeTypeCache::create(&snapshot);
+        let struct_definition_caches = StructDefinitionCache::create(&snapshot);
 
         let entity_types_index_label = Self::build_label_to_type_index(&entity_type_caches);
         let relation_types_index_label = Self::build_label_to_type_index(&relation_type_caches);
         let role_types_index_label = Self::build_label_to_type_index(&role_type_caches);
         let attribute_types_index_label = Self::build_label_to_type_index(&attribute_type_caches);
+        let struct_definition_index_by_name = Self::build_name_to_struct_definition_index(&struct_definition_caches);
 
         Ok(TypeCache {
             open_sequence_number,
@@ -101,11 +110,13 @@ impl TypeCache {
             attribute_types: attribute_type_caches,
             owns: OwnsCache::create(&snapshot),
             plays: PlaysCache::create(&snapshot),
+            struct_definitions: struct_definition_caches,
 
             entity_types_index_label,
             relation_types_index_label,
             role_types_index_label,
             attribute_types_index_label,
+            struct_definition_index_by_name,
         })
     }
 
@@ -118,6 +129,17 @@ impl TypeCache {
                 entry
                     .as_ref()
                     .map(|cache| (cache.common_type_cache().label.clone(), cache.common_type_cache().type_.clone()))
+            })
+            .collect()
+    }
+
+    fn build_name_to_struct_definition_index(
+        struct_cache_array: &[Option<StructDefinitionCache>],
+    ) -> HashMap<String, DefinitionKey<'static>> {
+        struct_cache_array
+            .iter()
+            .filter_map(|entry| {
+                entry.as_ref().map(|cache| (cache.definition.name.clone(), cache.definition_key.clone()))
             })
             .collect()
     }
@@ -297,6 +319,14 @@ impl TypeCache {
 
     pub(crate) fn get_plays_override<'c>(&'c self, plays: Plays<'c>) -> &'c Option<Plays<'static>> {
         &self.plays.get(&plays).unwrap().overrides
+    }
+
+    pub(crate) fn get_struct_definition_key(&self, label: &str) -> Option<DefinitionKey<'static>> {
+        self.struct_definition_index_by_name.get(label).cloned()
+    }
+
+    pub(crate) fn get_struct_definition(&self, definition_key: DefinitionKey<'static>) -> &StructDefinition {
+        &self.struct_definitions[definition_key.definition_id().as_uint() as usize].as_ref().unwrap().definition
     }
 }
 

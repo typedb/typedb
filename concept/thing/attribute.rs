@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::cmp::Ordering;
+use std::{cmp::Ordering, marker::PhantomData};
 
 use bytes::Bytes;
 use encoding::{
@@ -13,7 +13,11 @@ use encoding::{
         type_::vertex::PrefixedTypeVertexEncoding,
         Typed,
     },
-    value::decode_value_u64,
+    value::{
+        decode_value_u64,
+        value::Value,
+        value_struct::{StructIndexEntry, StructIndexEntryKey},
+    },
     AsBytes, Keyable,
 };
 use iterator::State;
@@ -27,7 +31,7 @@ use storage::{
 use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{object::Object, thing_manager::ThingManager, value::Value, ThingAPI},
+    thing::{object::Object, thing_manager::ThingManager, ThingAPI},
     type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
@@ -180,15 +184,44 @@ impl<'a> Ord for Attribute<'a> {
 }
 
 /// Attribute iterators handle hiding dependent attributes that were not deleted yet
-pub struct AttributeIterator<'a, Snapshot: ReadableSnapshot> {
+trait ExtractAttributeFromKey {
+    fn storage_key_to_attribute_vertex<'bytes>(
+        storage_key: StorageKey<'bytes, BUFFER_KEY_INLINE>,
+    ) -> AttributeVertex<'bytes>;
+}
+pub struct StandardAttributeExtractor;
+impl ExtractAttributeFromKey for StandardAttributeExtractor {
+    fn storage_key_to_attribute_vertex<'bytes>(
+        storage_key: StorageKey<'bytes, BUFFER_KEY_INLINE>,
+    ) -> AttributeVertex<'bytes> {
+        AttributeVertex::new(storage_key.into_bytes())
+    }
+}
+pub struct StructIndexAttributeExtractor;
+impl ExtractAttributeFromKey for StructIndexAttributeExtractor {
+    fn storage_key_to_attribute_vertex<'bytes>(
+        storage_key: StorageKey<'bytes, BUFFER_KEY_INLINE>,
+    ) -> AttributeVertex<'bytes> {
+        StructIndexEntry::new(StructIndexEntryKey::new(Bytes::reference(storage_key.bytes())), None).attribute_vertex()
+    }
+}
+
+pub struct AttributeIteratorImpl<'a, Snapshot: ReadableSnapshot, AttributeExtractor: ExtractAttributeFromKey> {
     snapshot: Option<&'a Snapshot>,
     type_manager: Option<&'a TypeManager<Snapshot>>,
     attributes_iterator: Option<SnapshotRangeIterator>,
     has_reverse_iterator: Option<SnapshotRangeIterator>,
     state: State<ConceptReadError>,
+    key_interepreter: PhantomData<AttributeExtractor>,
 }
 
-impl<'a, Snapshot: ReadableSnapshot> AttributeIterator<'a, Snapshot> {
+pub type AttributeIterator<'a, Snapshot> = AttributeIteratorImpl<'a, Snapshot, StandardAttributeExtractor>;
+pub type StructIndexToAttributeIterator<'a, Snapshot> =
+    AttributeIteratorImpl<'a, Snapshot, StructIndexAttributeExtractor>;
+
+impl<'a, Snapshot: ReadableSnapshot, KeyInterpreter: ExtractAttributeFromKey>
+    AttributeIteratorImpl<'a, Snapshot, KeyInterpreter>
+{
     pub(crate) fn new(
         attributes_iterator: SnapshotRangeIterator,
         has_reverse_iterator: SnapshotRangeIterator,
@@ -201,6 +234,7 @@ impl<'a, Snapshot: ReadableSnapshot> AttributeIterator<'a, Snapshot> {
             attributes_iterator: Some(attributes_iterator),
             has_reverse_iterator: Some(has_reverse_iterator),
             state: State::Init,
+            key_interepreter: PhantomData,
         }
     }
 
@@ -211,17 +245,14 @@ impl<'a, Snapshot: ReadableSnapshot> AttributeIterator<'a, Snapshot> {
             attributes_iterator: None,
             has_reverse_iterator: None,
             state: State::Done,
+            key_interepreter: PhantomData,
         }
-    }
-
-    fn storage_key_to_attribute_vertex(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> AttributeVertex<'_> {
-        AttributeVertex::new(storage_key.into_bytes())
     }
 
     pub fn peek(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
         self.iter_peek().map(|result| {
             result.map(|(storage_key, _value_bytes)| {
-                Attribute::new(Self::storage_key_to_attribute_vertex(StorageKey::Reference(storage_key)))
+                Attribute::new(KeyInterpreter::storage_key_to_attribute_vertex(StorageKey::Reference(storage_key)))
             })
         })
     }
@@ -229,7 +260,9 @@ impl<'a, Snapshot: ReadableSnapshot> AttributeIterator<'a, Snapshot> {
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<Result<Attribute<'_>, ConceptReadError>> {
         self.iter_next().map(|result| {
-            result.map(|(storage_key, _value_bytes)| Attribute::new(Self::storage_key_to_attribute_vertex(storage_key)))
+            result.map(|(storage_key, _value_bytes)| {
+                Attribute::new(KeyInterpreter::storage_key_to_attribute_vertex(storage_key))
+            })
         })
     }
 
@@ -289,7 +322,7 @@ impl<'a, Snapshot: ReadableSnapshot> AttributeIterator<'a, Snapshot> {
             match self.attributes_iterator.as_mut().unwrap().peek() {
                 None => self.state = State::Done,
                 Some(Ok((key, _))) => {
-                    let attribute_vertex = Self::storage_key_to_attribute_vertex(StorageKey::Reference(key));
+                    let attribute_vertex = KeyInterpreter::storage_key_to_attribute_vertex(StorageKey::Reference(key));
                     let independent = Attribute::new(attribute_vertex.as_reference())
                         .type_()
                         .is_independent(self.snapshot.unwrap(), self.type_manager.unwrap());

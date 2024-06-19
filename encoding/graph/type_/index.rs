@@ -4,52 +4,57 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::ops::Range;
+use std::{marker::PhantomData, ops::Range};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
 use crate::{
+    graph::{definition::r#struct::StructDefinition, type_::vertex::TypeVertex},
     layout::prefix::{Prefix, PrefixID},
-    value::{label::Label, string_bytes::StringBytes},
+    value::string_bytes::StringBytes,
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
-pub struct LabelToTypeVertexIndex<'a> {
-    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
+pub(crate) trait Indexable {
+    const PREFIX: Prefix;
 }
 
-impl<'a> LabelToTypeVertexIndex<'a> {
-    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+pub struct IdentifierIndex<'a, T: Indexable> {
+    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
+    indexed_type: PhantomData<T>,
+}
+
+impl<'a, T: Indexable> IdentifierIndex<'a, T> {
+    fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= PrefixID::LENGTH);
-        LabelToTypeVertexIndex { bytes }
+        Self { bytes, indexed_type: PhantomData }
     }
 
-    pub fn build(label: &Label) -> Self {
-        let label_string_bytes = label.scoped_name();
-        let mut array = ByteArray::zeros(label_string_bytes.bytes().length() + PrefixID::LENGTH);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Prefix::IndexLabelToType.prefix_id().bytes());
-        array.bytes_mut()[Self::range_label(label_string_bytes.bytes().length())]
-            .copy_from_slice(label_string_bytes.bytes().bytes());
-        LabelToTypeVertexIndex { bytes: Bytes::Array(array) }
+    pub fn build<const INLINE_SIZE: usize>(identifier: StringBytes<INLINE_SIZE>) -> Self {
+        let mut array = ByteArray::zeros(identifier.bytes().length() + PrefixID::LENGTH);
+        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&T::PREFIX.prefix_id().bytes());
+        array.bytes_mut()[Self::range_identifier(identifier.bytes().length())]
+            .copy_from_slice(identifier.bytes().bytes());
+        Self { bytes: Bytes::Array(array), indexed_type: PhantomData }
     }
 
-    fn label(&'a self) -> StringBytes<'a, BUFFER_KEY_INLINE> {
+    pub fn identifier(&'a self) -> StringBytes<'a, BUFFER_KEY_INLINE> {
         StringBytes::new(Bytes::Reference(ByteReference::new(
-            &self.bytes.bytes()[Self::range_label(self.label_length())],
+            &self.bytes.bytes()[Self::range_identifier(self.identifier_length())],
         )))
     }
 
-    fn label_length(&self) -> usize {
+    fn identifier_length(&self) -> usize {
         self.bytes.length() - PrefixID::LENGTH
     }
 
-    fn range_label(label_length: usize) -> Range<usize> {
-        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + label_length
+    fn range_identifier(identifier_length: usize) -> Range<usize> {
+        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + identifier_length
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {
+impl<'a, T: Indexable> AsBytes<'a, BUFFER_KEY_INLINE> for IdentifierIndex<'a, T> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
@@ -59,10 +64,21 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {
+impl<'a, T: Indexable> Keyable<'a, BUFFER_KEY_INLINE> for IdentifierIndex<'a, T> {
     fn keyspace(&self) -> EncodingKeyspace {
         EncodingKeyspace::Schema
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for LabelToTypeVertexIndex<'a> {}
+impl<'a, T: Indexable> Prefixed<'a, BUFFER_KEY_INLINE> for IdentifierIndex<'a, T> {}
+
+// Specialisations
+pub type LabelToTypeVertexIndex<'a> = IdentifierIndex<'a, TypeVertex<'static>>;
+impl<'a> Indexable for TypeVertex<'a> {
+    const PREFIX: Prefix = Prefix::IndexLabelToType;
+}
+
+pub type NameToStructDefinitionIndex<'a> = IdentifierIndex<'a, StructDefinition>;
+impl Indexable for StructDefinition {
+    const PREFIX: Prefix = Prefix::IndexNameToDefinitionStruct;
+}

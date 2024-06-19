@@ -16,7 +16,7 @@ use std::{
 };
 
 use concept::{
-    thing::{object::ObjectAPI, thing_manager::ThingManager, value::Value},
+    thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{
         type_manager::{type_cache::TypeCache, TypeManager},
         Ordering, OwnerAPI,
@@ -25,8 +25,11 @@ use concept::{
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
 use durability::wal::WAL;
 use encoding::{
-    graph::{thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator},
-    value::{label::Label, value_type::ValueType},
+    graph::{
+        definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
+        type_::vertex_generator::TypeVertexGenerator,
+    },
+    value::{label::Label, value::Value, value_type::ValueType},
     EncodingKeyspace,
 };
 use pprof::ProfilerGuard;
@@ -44,13 +47,18 @@ static PERSON_LABEL: OnceLock<Label> = OnceLock::new();
 
 fn write_entity_attributes(
     storage: Arc<MVCCStorage<WALClient>>,
+    definition_key_generator: Arc<DefinitionKeyGenerator>,
     type_vertex_generator: Arc<TypeVertexGenerator>,
     thing_vertex_generator: Arc<ThingVertexGenerator>,
     schema_cache: Arc<TypeCache>,
 ) {
     let mut snapshot = storage.clone().open_snapshot_write();
     {
-        let type_manager = Arc::new(TypeManager::new(type_vertex_generator.clone(), Some(schema_cache)));
+        let type_manager = Arc::new(TypeManager::new(
+            definition_key_generator.clone(),
+            type_vertex_generator.clone(),
+            Some(schema_cache),
+        ));
         let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone());
 
         let person_type = type_manager.get_entity_type(&snapshot, PERSON_LABEL.get().unwrap()).unwrap().unwrap();
@@ -73,10 +81,15 @@ fn write_entity_attributes(
     snapshot.commit().unwrap();
 }
 
-fn create_schema(storage: &Arc<MVCCStorage<WALClient>>, type_vertex_generator: &Arc<TypeVertexGenerator>) {
+fn create_schema(
+    storage: Arc<MVCCStorage<WALClient>>,
+    definition_key_generator: Arc<DefinitionKeyGenerator>,
+    type_vertex_generator: Arc<TypeVertexGenerator>,
+) {
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
-        let type_manager = Rc::new(TypeManager::new(type_vertex_generator.clone(), None));
+        let type_manager =
+            Rc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None));
         let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap(), false).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap(), false).unwrap();
@@ -105,15 +118,21 @@ fn criterion_benchmark(c: &mut Criterion) {
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
                 .unwrap(),
         );
+        let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
         let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
         let thing_vertex_generator = Arc::new(ThingVertexGenerator::new());
-        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone())
-            .unwrap();
-        create_schema(&storage, &type_vertex_generator);
+        TypeManager::<WriteSnapshot<WALClient>>::initialise_types(
+            storage.clone(),
+            definition_key_generator.clone(),
+            type_vertex_generator.clone(),
+        )
+        .unwrap();
+        create_schema(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone());
         let schema_cache = Arc::new(TypeCache::new(storage.clone(), storage.read_watermark()).unwrap());
         b.iter(|| {
             write_entity_attributes(
                 storage.clone(),
+                definition_key_generator.clone(),
                 type_vertex_generator.clone(),
                 thing_vertex_generator.clone(),
                 schema_cache.clone(),

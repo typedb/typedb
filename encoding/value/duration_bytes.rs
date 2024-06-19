@@ -16,7 +16,7 @@ pub struct DurationBytes {
 }
 
 impl DurationBytes {
-    const LENGTH: usize = AttributeIDLength::Long.length();
+    pub(crate) const LENGTH: usize = AttributeIDLength::Long.length();
 
     const MONTHS_LENGTH: usize = u32::BITS as usize / 8;
     const DAYS_LENGTH: usize = u32::BITS as usize / 8;
@@ -43,7 +43,7 @@ impl DurationBytes {
         Duration { months, days, nanos }
     }
 
-    pub(crate) fn bytes(&self) -> [u8; Self::LENGTH] {
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
         self.bytes
     }
 }

@@ -6,7 +6,7 @@
 
 #![deny(unused_must_use)]
 
-use std::sync::Arc;
+use std::{borrow::Borrow, collections::HashMap, rc::Rc, sync::Arc};
 
 use concept::type_::{
     annotation::AnnotationAbstract,
@@ -20,13 +20,18 @@ use concept::type_::{
 };
 use durability::wal::WAL;
 use encoding::{
-    graph::type_::{vertex_generator::TypeVertexGenerator, Kind},
+    graph::{
+        definition::{
+            definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition,
+        },
+        type_::{vertex_generator::TypeVertexGenerator, Kind},
+    },
     value::{label::Label, value_type::ValueType},
     EncodingKeyspace,
 };
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, WriteSnapshot},
+    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
@@ -36,21 +41,47 @@ This test is used to help develop the API of Types.
 We don't aim for complete coverage of all APIs, and will rely on the BDD scenarios for coverage.
  */
 
-#[test]
-fn entity_usage() {
+fn setup_storage() -> Arc<MVCCStorage<WALClient>> {
     init_logging();
     let storage_path = create_tmp_dir();
     let wal = WAL::create(&storage_path).unwrap();
     let storage = Arc::new(
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
+
+    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
+    TypeManager::<WriteSnapshot<WALClient>>::initialise_types(
+        storage.clone(),
+        definition_key_generator.clone(),
+        type_vertex_generator.clone(),
+    )
+    .unwrap();
+    storage
+}
+
+fn type_manager<Snapshot: ReadableSnapshot>(
+    storage: Arc<MVCCStorage<WALClient>>,
+    cache_at_snapshot: Option<&Snapshot>,
+) -> Arc<TypeManager<Snapshot>> {
+    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
+    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
+    let cache = cache_at_snapshot
+        .map(|snapshot| Arc::new(TypeCache::new(storage.clone(), snapshot.open_sequence_number()).unwrap()));
+    let type_manager =
+        Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), cache));
+
+    type_manager
+}
+
+#[test]
+fn entity_usage() {
+    let storage = setup_storage();
 
     let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
     {
         // Without cache, uncommitted
-        let type_manager = TypeManager::new(type_vertex_generator.clone(), None);
+        let type_manager = type_manager(storage.clone(), None);
 
         let root_entity = type_manager.get_entity_type(&snapshot, &Kind::Entity.root_label()).unwrap().unwrap();
         assert_eq!(*root_entity.get_label(&snapshot, &type_manager).unwrap(), Kind::Entity.root_label());
@@ -135,7 +166,7 @@ fn entity_usage() {
         // With cache, committed
         let snapshot: ReadSnapshot<_> = storage.clone().open_snapshot_read();
         let type_cache = Arc::new(TypeCache::new(storage.clone(), snapshot.open_sequence_number()).unwrap());
-        let type_manager = TypeManager::new(type_vertex_generator.clone(), Some(type_cache));
+        let type_manager = type_manager(storage.clone(), Some(&snapshot));
 
         let root_entity = type_manager.get_entity_type(&snapshot, &Kind::Entity.root_label()).unwrap().unwrap();
         assert_eq!(*root_entity.get_label(&snapshot, &type_manager).unwrap(), Kind::Entity.root_label());
@@ -206,14 +237,7 @@ fn entity_usage() {
 
 #[test]
 fn role_usage() {
-    init_logging();
-    let storage_path = create_tmp_dir();
-    let wal = WAL::create(&storage_path).unwrap();
-    let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
-    );
-    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WALClient>>::initialise_types(storage.clone(), type_vertex_generator.clone()).unwrap();
+    let storage = setup_storage();
 
     let friendship_label = Label::build("friendship");
     let friend_name = "friend";
@@ -222,7 +246,7 @@ fn role_usage() {
     let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
     {
         // Without cache, uncommitted
-        let type_manager = TypeManager::new(type_vertex_generator.clone(), None);
+        let type_manager = type_manager(storage.clone(), None);
         let root_relation = type_manager.get_relation_type(&snapshot, &Kind::Relation.root_label()).unwrap().unwrap();
         assert_eq!(*root_relation.get_label(&snapshot, &type_manager).unwrap(), Kind::Relation.root_label());
         assert!(root_relation.is_root(&snapshot, &type_manager).unwrap());
@@ -266,7 +290,7 @@ fn role_usage() {
         // With cache, committed
         let snapshot: ReadSnapshot<_> = storage.clone().open_snapshot_read();
         let type_cache = Arc::new(TypeCache::new(storage.clone(), snapshot.open_sequence_number()).unwrap());
-        let type_manager = TypeManager::new(type_vertex_generator.clone(), Some(type_cache));
+        let type_manager = type_manager(storage.clone(), Some(&snapshot));
 
         // --- friendship sub relation, relates friend ---
         let friendship_type = type_manager.get_relation_type(&snapshot, &friendship_label).unwrap().unwrap();
@@ -284,5 +308,169 @@ fn role_usage() {
             person_type.get_plays_role(&snapshot, &type_manager, role_type.clone().into_owned()).unwrap().unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type.clone()));
         debug_assert_eq!(plays.role(), role_type);
+    }
+}
+
+#[test]
+fn test_struct_definition() {
+    let storage = setup_storage();
+
+    // Without cache, uncommitted
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let type_manager = type_manager(storage.clone(), None);
+
+    let nested_struct_name = "nested_struct".to_owned();
+    let nested_struct_fields =
+        HashMap::from([("f0_bool".into(), (ValueType::Boolean, false)), ("f1_long".into(), (ValueType::Long, false))]);
+    let nested_struct_key =
+        define_struct(&mut snapshot, &type_manager, nested_struct_name.clone(), nested_struct_fields.clone());
+
+    let outer_struct_name = "outer_struct".to_owned();
+    let outer_struct_fields =
+        HashMap::from([("f0_nested".into(), (ValueType::Struct(nested_struct_key.clone()), false))]);
+
+    let outer_struct_key =
+        define_struct(&mut snapshot, &type_manager, outer_struct_name.clone(), outer_struct_fields.clone());
+    // Read buffered
+    {
+        assert_eq!(0, nested_struct_key.definition_id().as_uint());
+        let read_nested_key =
+            type_manager.get_struct_definition_key(&snapshot, &nested_struct_name.clone()).unwrap().unwrap();
+        assert_eq!(nested_struct_key.definition_id().as_uint(), read_nested_key.definition_id().as_uint());
+        let read_nested_definition = type_manager.get_struct_definition(&snapshot, read_nested_key).unwrap();
+        assert_eq!(&nested_struct_name, &read_nested_definition.name);
+        assert_eq!(&nested_struct_fields, &remap_struct_fields(read_nested_definition.borrow()));
+
+        assert_eq!(1, outer_struct_key.definition_id().as_uint());
+        let read_outer_key =
+            type_manager.get_struct_definition_key(&snapshot, &outer_struct_name.clone()).unwrap().unwrap();
+        assert_eq!(outer_struct_key.definition_id().as_uint(), read_outer_key.definition_id().as_uint());
+        let read_outer_definition = type_manager.get_struct_definition(&snapshot, read_outer_key).unwrap();
+        assert_eq!(&outer_struct_name, &read_outer_definition.name);
+        assert_eq!(&outer_struct_fields, &remap_struct_fields(read_outer_definition.borrow()));
+    }
+    snapshot.commit().unwrap();
+
+    // Persisted, without cache
+    {
+        let snapshot = storage.clone().open_snapshot_read();
+        let type_manager = crate::type_manager(storage.clone(), None);
+
+        assert_eq!(0, nested_struct_key.definition_id().as_uint());
+        // Read back:
+        let read_nested_key = type_manager.get_struct_definition_key(&snapshot, &nested_struct_name).unwrap().unwrap();
+        assert_eq!(nested_struct_key.definition_id().as_uint(), read_nested_key.definition_id().as_uint());
+        let read_nested_definition = type_manager.get_struct_definition(&snapshot, read_nested_key).unwrap();
+        assert_eq!(&nested_struct_name, &read_nested_definition.name);
+        assert_eq!(&nested_struct_fields, &remap_struct_fields(read_nested_definition.borrow()));
+
+        let read_outer_key = type_manager.get_struct_definition_key(&snapshot, &outer_struct_name).unwrap().unwrap();
+        assert_eq!(outer_struct_key.definition_id().as_uint(), read_outer_key.definition_id().as_uint());
+        let read_outer_definition = type_manager.get_struct_definition(&snapshot, read_outer_key).unwrap();
+        assert_eq!(&outer_struct_name, &read_outer_definition.name);
+        assert_eq!(&outer_struct_fields, &remap_struct_fields(read_outer_definition.borrow()));
+
+        snapshot.close_resources()
+    }
+
+    // Persisted, with cache
+    {
+        let snapshot = storage.clone().open_snapshot_read();
+        let type_cache = Arc::new(TypeCache::new(storage.clone(), snapshot.open_sequence_number()).unwrap());
+        let type_manager = crate::type_manager(storage.clone(), Some(&snapshot));
+
+        assert_eq!(0, nested_struct_key.definition_id().as_uint());
+        // Read back:
+        let read_nested_key = type_manager.get_struct_definition_key(&snapshot, &nested_struct_name).unwrap().unwrap();
+        assert_eq!(nested_struct_key.definition_id().as_uint(), read_nested_key.definition_id().as_uint());
+        let read_nested_definition = type_manager.get_struct_definition(&snapshot, read_nested_key).unwrap();
+        assert_eq!(&nested_struct_name, &read_nested_definition.name);
+        assert_eq!(&nested_struct_fields, &remap_struct_fields(read_nested_definition.borrow()));
+
+        let read_outer_key = type_manager.get_struct_definition_key(&snapshot, &outer_struct_name).unwrap().unwrap();
+        assert_eq!(outer_struct_key.definition_id().as_uint(), read_outer_key.definition_id().as_uint());
+        let read_outer_definition = type_manager.get_struct_definition(&snapshot, read_outer_key).unwrap();
+        assert_eq!(&outer_struct_name, &read_outer_definition.name);
+        assert_eq!(&outer_struct_fields, &remap_struct_fields(read_outer_definition.borrow()));
+
+        snapshot.close_resources()
+    }
+}
+
+fn remap_struct_fields(struct_definition: &StructDefinition) -> HashMap<String, (ValueType, bool)> {
+    struct_definition
+        .field_names
+        .iter()
+        .map(|(name, idx)| {
+            let field_def = struct_definition.fields.get(&idx).unwrap();
+            (name.to_owned(), (field_def.value_type.clone(), field_def.optional))
+        })
+        .collect()
+}
+
+fn define_struct<Snapshot: WritableSnapshot>(
+    snapshot: &mut Snapshot,
+    type_manager: &TypeManager<Snapshot>,
+    name: String,
+    definitions: HashMap<String, (ValueType, bool)>,
+) -> DefinitionKey<'static> {
+    let struct_key = type_manager.create_struct(snapshot, name).unwrap();
+    for (name, (value_type, optional)) in definitions {
+        type_manager.add_struct_field(snapshot, struct_key.clone(), name, value_type, optional).unwrap();
+    }
+    struct_key
+}
+
+#[test]
+fn test_struct_definition_updates() {
+    let storage = setup_storage();
+    let type_manager = type_manager(storage.clone(), None);
+
+    // types to add
+    let f_long = ("f_long".to_owned(), (ValueType::Long, false));
+    let f_string = ("f_string".to_owned(), (ValueType::String, false));
+
+    let struct_name = "structs_can_be_modified".to_owned();
+
+    let struct_key = {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        let struct_key = type_manager.create_struct(&mut snapshot, struct_name.clone()).unwrap();
+
+        let (field, (value_type, is_optional)) = f_long.clone();
+        type_manager.add_struct_field(&mut snapshot, struct_key.clone(), field, value_type, is_optional).unwrap();
+        assert_eq!(
+            HashMap::from([f_long.clone()]),
+            remap_struct_fields(&type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap())
+        );
+
+        snapshot.commit().unwrap();
+        struct_key
+    };
+
+    {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        let (field, (value_type, is_optional)) = f_string.clone();
+        type_manager.add_struct_field(&mut snapshot, struct_key.clone(), field, value_type, is_optional).unwrap();
+        assert_eq!(
+            HashMap::from([f_long.clone(), f_string.clone()]),
+            remap_struct_fields(&type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap())
+        );
+
+        type_manager.delete_struct_field(&mut snapshot, struct_key.clone(), f_long.clone().0.to_owned()).unwrap();
+        assert_eq!(
+            HashMap::from([f_string.clone()]),
+            remap_struct_fields(&type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap())
+        );
+
+        snapshot.commit().unwrap();
+    };
+
+    {
+        let mut snapshot = storage.clone().open_snapshot_write();
+        assert_eq!(
+            HashMap::from([f_string.clone()]),
+            remap_struct_fields(&type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap())
+        );
+        snapshot.close_resources();
     }
 }

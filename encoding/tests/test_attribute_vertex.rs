@@ -8,14 +8,18 @@
 
 use std::{rc::Rc, sync::Arc};
 
+use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;
 use encoding::{
     graph::{
-        thing::{vertex_attribute::StringAttributeID, vertex_generator::ThingVertexGenerator},
+        thing::{
+            vertex_attribute::{StringAttributeID, StructAttributeID},
+            vertex_generator::ThingVertexGenerator,
+        },
         type_::{vertex::TypeID, vertex_generator::TypeVertexGenerator},
         Typed,
     },
-    value::string_bytes::StringBytes,
+    value::{string_bytes::StringBytes, struct_bytes::StructBytes},
     AsBytes, EncodingKeyspace,
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -61,12 +65,12 @@ fn generate_string_attribute_vertex() {
         assert!(!vertex_id.is_inline());
         assert_eq!(
             vertex_id.get_hash_prefix(),
-            string_bytes.bytes().bytes()[StringAttributeID::ENCODING_STRING_PREFIX_RANGE]
+            string_bytes.bytes().bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_PREFIX_LENGTH]
         );
         assert_eq!(
             vertex_id.get_hash_hash(),
             seahash::hash(string_bytes.bytes().bytes()).to_be_bytes()
-                [0..StringAttributeID::ENCODING_STRING_HASH_LENGTH]
+                [0..StringAttributeID::ENCODING_STRING_HASHED_HASH_LENGTH]
         );
         assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
     }
@@ -86,31 +90,130 @@ fn generate_string_attribute_vertex() {
         assert!(!vertex_id.is_inline());
         assert_eq!(
             vertex_id.get_hash_prefix(),
-            string_bytes.bytes().bytes()[StringAttributeID::ENCODING_STRING_PREFIX_RANGE]
+            string_bytes.bytes().bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_PREFIX_LENGTH]
         );
         assert_eq!(
             vertex_id.get_hash_hash(),
-            CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASH_LENGTH]
+            CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_HASH_LENGTH]
         );
         assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
+        {
+            let string_collide = "Hello world, this is using the same prefix and will collide.";
+            let string_collide_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
+            let collide_vertex = thing_vertex_generator
+                .create_attribute_string(type_id, string_collide_bytes.as_reference(), &mut snapshot)
+                .unwrap();
 
-        let string_collide = "Hello world, this is using the same prefix and will collide.";
-        let string_collide_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
-        let collide_vertex = thing_vertex_generator
-            .create_attribute_string(type_id, string_collide_bytes.as_reference(), &mut snapshot)
+            let collide_id = collide_vertex.attribute_id().unwrap_string();
+            assert!(!collide_id.is_inline());
+            assert_eq!(
+                collide_id.get_hash_prefix(),
+                string_collide_bytes.bytes().bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_PREFIX_LENGTH]
+            );
+            assert_eq!(
+                collide_id.get_hash_hash(),
+                CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_HASH_LENGTH]
+            );
+            assert_eq!(collide_id.get_hash_disambiguator(), 1u8);
+        }
+        {
+            let string_collide = "Hello world, this is using the same prefix and will collide AGAIN!.";
+            let string_collide_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
+            let collide_vertex = thing_vertex_generator
+                .create_attribute_string(type_id, string_collide_bytes.as_reference(), &mut snapshot)
+                .unwrap();
+
+            let collide_id = collide_vertex.attribute_id().unwrap_string();
+            assert!(!collide_id.is_inline());
+            assert_eq!(
+                collide_id.get_hash_prefix(),
+                string_collide_bytes.bytes().bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_PREFIX_LENGTH]
+            );
+            assert_eq!(
+                collide_id.get_hash_hash(),
+                CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASHED_HASH_LENGTH]
+            );
+            assert_eq!(collide_id.get_hash_disambiguator(), 2u8);
+        }
+    }
+}
+
+#[test]
+fn generate_struct_attribute_vertex() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>(Rc::from("storage"), &storage_path, WALClient::new(wal))
+            .unwrap(),
+    );
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let type_id = TypeID::build(0);
+
+    let thing_vertex_generator = ThingVertexGenerator::new();
+
+    // 1. vertex for long string that does not exist beforehand with default hasher
+    {
+        let struct_bytes_raw: [u8; 4] = [1, 2, 3, 4];
+        let struct_bytes: StructBytes<'_, BUFFER_KEY_INLINE> =
+            StructBytes::new(Bytes::Array(ByteArray::copy(&struct_bytes_raw)));
+        let vertex = thing_vertex_generator
+            .create_attribute_struct(type_id, struct_bytes.as_reference(), &mut snapshot)
             .unwrap();
+        let vertex_id = vertex.attribute_id().unwrap_struct();
+        assert_eq!(
+            vertex_id.get_hash_hash(),
+            seahash::hash(struct_bytes.bytes().bytes()).to_be_bytes()[0..StructAttributeID::ENCODING_HASH_LENGTH]
+        );
+        assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
+    }
 
-        let collide_id = collide_vertex.attribute_id().unwrap_string();
-        assert!(!collide_id.is_inline());
-        assert_eq!(
-            collide_id.get_hash_prefix(),
-            string_collide_bytes.bytes().bytes()[StringAttributeID::ENCODING_STRING_PREFIX_RANGE]
-        );
-        assert_eq!(
-            collide_id.get_hash_hash(),
-            CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::ENCODING_STRING_HASH_LENGTH]
-        );
-        assert_eq!(collide_id.get_hash_disambiguator(), 1u8);
+    // 2. use a constant hasher to force collisions
+    const CONSTANT_HASH: u64 = 0;
+    let thing_vertex_generator = ThingVertexGenerator::new_with_hasher(|_bytes| CONSTANT_HASH);
+
+    {
+        let struct_bytes_raw: [u8; 4] = [5, 6, 7, 8];
+        let struct_bytes: StructBytes<'_, BUFFER_KEY_INLINE> =
+            StructBytes::new(Bytes::Array(ByteArray::copy(&struct_bytes_raw)));
+        let vertex = thing_vertex_generator
+            .create_attribute_struct(type_id, struct_bytes.as_reference(), &mut snapshot)
+            .unwrap();
+        let vertex_id = vertex.attribute_id().unwrap_struct();
+        assert_eq!(vertex_id.get_hash_hash(), CONSTANT_HASH.to_be_bytes()[0..StructAttributeID::ENCODING_HASH_LENGTH]);
+        assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
+        {
+            let struct_collide_raw: [u8; 4] = [9, 10, 11, 12];
+            let struct_collide_bytes: StructBytes<'_, BUFFER_KEY_INLINE> =
+                StructBytes::new(Bytes::Array(ByteArray::copy(&struct_collide_raw)));
+            let collide_vertex = thing_vertex_generator
+                .create_attribute_struct(type_id, struct_collide_bytes.as_reference(), &mut snapshot)
+                .unwrap();
+
+            let collide_id = collide_vertex.attribute_id().unwrap_struct();
+            assert_eq!(
+                collide_id.get_hash_hash(),
+                CONSTANT_HASH.to_be_bytes()[0..StructAttributeID::ENCODING_HASH_LENGTH]
+            );
+            assert_eq!(collide_id.get_hash_disambiguator(), 1u8);
+        }
+        assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
+        {
+            let struct_collide_raw: [u8; 4] = [13, 14, 15, 16];
+            let struct_collide_bytes: StructBytes<'_, BUFFER_KEY_INLINE> =
+                StructBytes::new(Bytes::Array(ByteArray::copy(&struct_collide_raw)));
+            let collide_vertex = thing_vertex_generator
+                .create_attribute_struct(type_id, struct_collide_bytes.as_reference(), &mut snapshot)
+                .unwrap();
+
+            let collide_id = collide_vertex.attribute_id().unwrap_struct();
+            assert_eq!(
+                collide_id.get_hash_hash(),
+                CONSTANT_HASH.to_be_bytes()[0..StructAttributeID::ENCODING_HASH_LENGTH]
+            );
+            assert_eq!(collide_id.get_hash_disambiguator(), 2u8);
+        }
     }
 }
 

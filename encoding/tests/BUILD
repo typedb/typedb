@@ -44,7 +44,24 @@ rust_test(
     ]
 )
 
+rust_test(
+    name = "test_definitions",
+    srcs = glob([
+        "test_definitions.rs",
+    ]),
+    deps = [
+        "//common/bytes",
+        "//common/logger",
+        "//encoding",
+        "//storage",
+        "//durability",
+        "//resource",
+        "//util/test:test_utils",
 
+        "@crates//:rand",
+        "@crates//:tracing",
+    ]
+)
 
 checkstyle_test(
     name = "checkstyle",

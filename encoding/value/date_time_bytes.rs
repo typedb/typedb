@@ -15,7 +15,7 @@ pub struct DateTimeBytes {
 }
 
 impl DateTimeBytes {
-    const LENGTH: usize = AttributeIDLength::Long.length();
+    pub(crate) const LENGTH: usize = AttributeIDLength::Long.length();
 
     const TIMESTAMP_LENGTH: usize = i64::BITS as usize / 8;
     const NANOS_LENGTH: usize = u32::BITS as usize / 8;
@@ -39,7 +39,7 @@ impl DateTimeBytes {
         DateTime::from_timestamp(secs, nsecs).unwrap().naive_utc()
     }
 
-    pub(crate) fn bytes(&self) -> [u8; Self::LENGTH] {
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
         self.bytes
     }
 }

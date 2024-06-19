@@ -11,9 +11,17 @@ use std::{
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE};
+use serde::{
+    de::{Error, Visitor},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
+use storage::key_value::StorageKey;
 
 use crate::{
-    layout::prefix::{Prefix, PrefixID},
+    layout::{
+        infix::Infix,
+        prefix::{Prefix, PrefixID},
+    },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
@@ -31,9 +39,15 @@ impl<'a> DefinitionKey<'a> {
     pub(crate) const RANGE_DEFINITION_ID: Range<usize> =
         Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + DefinitionID::LENGTH;
 
+    pub(crate) const LABEL_KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         Self { bytes }
+    }
+
+    pub fn definition_id(&self) -> DefinitionID {
+        DefinitionID::new(self.bytes().bytes()[Self::RANGE_DEFINITION_ID].try_into().unwrap())
     }
 
     pub fn build(prefix: Prefix, definition_id: DefinitionID) -> Self {
@@ -41,6 +55,14 @@ impl<'a> DefinitionKey<'a> {
         array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
         array.bytes_mut()[Self::RANGE_DEFINITION_ID].copy_from_slice(&definition_id.bytes());
         Self { bytes: Bytes::Array(array) }
+    }
+
+    pub fn build_prefix(prefix: Prefix) -> StorageKey<'static, { DefinitionKey::LENGTH_PREFIX }> {
+        StorageKey::new(
+            DefinitionKey::KEYSPACE,
+            // TODO: Can we use a static const byte reference
+            Bytes::Array(ByteArray::inline(prefix.prefix_id().bytes(), DefinitionKey::LENGTH_PREFIX)),
+        )
     }
 
     pub fn as_reference<'this: 'a>(&'this self) -> DefinitionKey<'this> {
@@ -104,5 +126,39 @@ impl DefinitionID {
 
     pub fn bytes(&self) -> [u8; DefinitionID::LENGTH] {
         self.bytes
+    }
+}
+
+impl<'a> Serialize for DefinitionKey<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_bytes(self.bytes.bytes())
+    }
+}
+
+impl<'de> Deserialize<'de> for DefinitionKey<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        pub struct DefinitionKeyVisitor;
+        impl<'de> Visitor<'de> for DefinitionKeyVisitor {
+            type Value = DefinitionKey<'static>;
+
+            fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+                formatter.write_str("`DefinitionKey`")
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                Ok(DefinitionKey { bytes: Bytes::Array(ByteArray::copy(v)) })
+            }
+        }
+
+        deserializer.deserialize_bytes(DefinitionKeyVisitor)
     }
 }

@@ -10,7 +10,7 @@ use bytes::Bytes;
 use encoding::{
     graph::thing::{edge::ThingEdgeHas, vertex_object::ObjectVertex},
     layout::prefix::Prefix,
-    value::decode_value_u64,
+    value::{decode_value_u64, value::Value},
     Prefixed,
 };
 use lending_iterator::{higher_order::Hkt, LendingIterator};
@@ -23,9 +23,7 @@ use storage::{
 use crate::{
     concept_iterator, edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{
-        attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, value::Value, ThingAPI,
-    },
+    thing::{attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, ThingAPI},
     type_::{
         attribute_type::AttributeType, object_type::ObjectType, owns::Owns, role_type::RoleType,
         type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI,

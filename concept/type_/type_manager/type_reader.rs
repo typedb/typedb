@@ -12,19 +12,22 @@ use std::{
 use bytes::Bytes;
 use encoding::{
     error::EncodingError,
-    graph::type_::{
-        edge::{TypeEdge, TypeEdgeEncoding},
-        index::LabelToTypeVertexIndex,
-        property::{TypeEdgeProperty, TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
-        vertex::TypeVertexEncoding,
-        Kind,
+    graph::{
+        definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
+        type_::{
+            edge::{TypeEdge, TypeEdgeEncoding},
+            index::{LabelToTypeVertexIndex, NameToStructDefinitionIndex},
+            property::{TypeEdgeProperty, TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
+            vertex::TypeVertexEncoding,
+            Kind,
+        },
     },
     layout::infix::Infix,
-    value::{label::Label, value_type::ValueType},
+    value::{label::Label, string_bytes::StringBytes, value_type::ValueType},
     Keyable,
 };
 use iterator::Collector;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
@@ -60,7 +63,7 @@ impl TypeReader {
     where
         T: TypeAPI<'static>,
     {
-        let key = LabelToTypeVertexIndex::build(label).into_storage_key();
+        let key = LabelToTypeVertexIndex::build(label.scoped_name.as_reference()).into_storage_key();
         match snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {
             Err(error) => Err(ConceptReadError::SnapshotGet { source: error }),
             Ok(None) => Ok(None),
@@ -74,6 +77,23 @@ impl TypeReader {
         }
     }
 
+    pub(crate) fn get_struct_definition_key(
+        snapshot: &impl ReadableSnapshot,
+        name: &str,
+    ) -> Result<Option<DefinitionKey<'static>>, ConceptReadError> {
+        let index_key = NameToStructDefinitionIndex::build(StringBytes::<BUFFER_KEY_INLINE>::build_ref(name));
+        let bytes = snapshot.get(index_key.into_storage_key().as_reference()).unwrap();
+        Ok(bytes.map(|value| DefinitionKey::new(Bytes::Array(value))))
+    }
+
+    pub(crate) fn get_struct_definition(
+        snapshot: &impl ReadableSnapshot,
+        definition_key: DefinitionKey<'_>,
+    ) -> Result<StructDefinition, ConceptReadError> {
+        let bytes =
+            snapshot.get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference()).unwrap();
+        Ok(StructDefinition::from_bytes(bytes.unwrap().as_ref()))
+    }
     // TODO: Should get_{super/sub}type[s_transitive] return T or T::SelfStatic.
     // T::SelfStatic is the more consistent, more honest interface, but T is convenient.
     pub(crate) fn get_supertype<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Option<T>, ConceptReadError>
@@ -231,7 +251,6 @@ impl TypeReader {
         for declared_impl in declared_impl_set {
             let mut stack = Vec::new();
             stack.push(declared_impl.object());
-            let mut object_types: Vec<ObjectType<'static>> = Vec::new();
             while let Some(sub_object) = stack.pop() {
                 let mut declared_impl_was_overridden = false;
                 for sub_owner_owns in Self::get_implemented_interfaces::<IMPL>(snapshot, sub_object.clone())? {

@@ -8,14 +8,13 @@ use std::borrow::Cow;
 
 use chrono::{DateTime, NaiveDateTime};
 use chrono_tz::Tz;
-use encoding::value::{
+
+use crate::value::{
     boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
     decimal_bytes::DecimalBytes, decimal_value::Decimal, double_bytes::DoubleBytes, duration_bytes::DurationBytes,
     duration_value::Duration, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
-    value_type::ValueType, ValueEncodable,
+    value_struct::StructValue, value_type::ValueType, ValueEncodable,
 };
-
-use crate::thing::value_struct::StructValue;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value<'a> {
@@ -87,7 +86,7 @@ impl<'a> Value<'a> {
         }
     }
 
-    pub(crate) fn into_owned(self) -> Value<'static> {
+    pub fn into_owned(self) -> Value<'static> {
         match self {
             Self::Boolean(bool) => Value::Boolean(bool),
             Self::Long(long) => Value::Long(long),
@@ -113,7 +112,7 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::DateTimeTZ(_) => ValueType::DateTimeTZ,
             Value::Duration(_) => ValueType::Duration,
             Value::String(_) => ValueType::String,
-            Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().into_owned()),
+            Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().clone().into_owned()),
         }
     }
 
@@ -175,9 +174,7 @@ impl<'a> ValueEncodable for Value<'a> {
 
     fn encode_struct<const INLINE_LENGTH: usize>(&self) -> StructBytes<'static, INLINE_LENGTH> {
         match self {
-            Value::Struct(struct_) => {
-                todo!()
-            }
+            Value::Struct(struct_) => StructBytes::build(struct_),
             _ => panic!("Cannot encode non-Struct as StructBytes"),
         }
     }

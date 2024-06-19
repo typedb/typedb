@@ -31,6 +31,7 @@ rust_library(
         "//resource",
         "//storage",
 
+        "@crates//:bincode",
         "@crates//:chrono",
         "@crates//:chrono-tz",
         "@crates//:tracing",

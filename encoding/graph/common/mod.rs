@@ -4,9 +4,5 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod kind_cache;
-mod selection;
-mod struct_definition_cache;
-mod type_cache;
-
-pub use type_cache::TypeCache;
+pub(crate) mod schema_id_allocator;
+pub(crate) mod value_hasher;
