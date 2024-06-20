@@ -40,8 +40,8 @@ use crate::{
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
         match &$obj_var {
-            ObjectType::Entity($obj_var) => $block,
-            ObjectType::Relation($obj_var) => $block,
+            ObjectType::Entity($obj_var) => $block
+            ObjectType::Relation($obj_var) => $block
         }
     };
 }
@@ -109,6 +109,42 @@ impl OperationTimeValidation {
             Ok(())
         }
     }
+
+    fn validate_role_name_uniqueness_non_transitive<'a, Snapshot: ReadableSnapshot>(
+        snapshot: &Snapshot,
+        relation_type: RelationType<'static>,
+        new_label: &Label<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let scoped_label = Label::build_scoped(
+            new_label.name.as_str(),
+            TypeReader::get_label(snapshot, relation_type).unwrap().unwrap().name().as_str(),
+        );
+
+        if TypeReader::get_labelled_type::<RoleType<'static>>(snapshot, &scoped_label)
+            .map_err(SchemaValidationError::ConceptRead)?
+            .is_some() {
+            Err(SchemaValidationError::RoleNameUniqueness(new_label.clone()))
+        } else {
+            Ok(())
+        }
+    }
+
+    pub(crate) fn validate_role_name_uniqueness<'a, Snapshot: ReadableSnapshot>(
+        snapshot: &Snapshot,
+        relation_type: RelationType<'static>,
+        label: &Label<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let existing_relation_supertypes = TypeReader::get_supertypes_transitive(snapshot, relation_type.clone().into_owned())
+            .map_err(SchemaValidationError::ConceptRead)?;
+
+        Self::validate_role_name_uniqueness_non_transitive(snapshot, relation_type, label)?;
+        for relation_supertype in existing_relation_supertypes {
+            Self::validate_role_name_uniqueness_non_transitive(snapshot, relation_supertype, label)?;
+        }
+
+        Ok(())
+    }
+
 
     pub(crate) fn validate_value_types_compatible(
         subtype_value_type: Option<ValueType>,

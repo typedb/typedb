@@ -95,7 +95,7 @@ impl TypeManager {
             let root_role = type_manager.create_role_type(
                 &mut snapshot,
                 &Kind::Role.root_label(),
-                root_relation.clone(),
+                root_relation.clone(), // TODO: Do we need to clone here????
                 true,
                 Ordering::Unordered,
             )?;
@@ -848,7 +848,7 @@ impl TypeManager {
         is_root: bool,
         ordering: Ordering,
     ) -> Result<RoleType<'static>, ConceptWriteError> {
-        OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
+        OperationTimeValidation::validate_role_name_uniqueness(snapshot, relation_type.clone().into_owned(), &label.clone().into_owned())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let type_vertex = self
@@ -858,7 +858,7 @@ impl TypeManager {
         let role = RoleType::new(type_vertex);
         TypeWriter::storage_put_label(snapshot, role.clone(), label);
         TypeWriter::storage_put_relates(snapshot, relation_type, role.clone());
-        self.set_role_ordering(snapshot, role.clone(), ordering);
+        self.set_role_ordering(snapshot, role.clone(), ordering)?;
         if !is_root {
             TypeWriter::storage_put_supertype(
                 snapshot,
@@ -983,15 +983,36 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, type_.clone()).is_ok());
         match T::ROOT_KIND {
-            Kind::Role => todo!("Validate uniqueness in ancestry"),
             Kind::Entity | Kind::Attribute | Kind::Relation => {
                 OperationTimeValidation::validate_label_uniqueness(snapshot, &label.clone().into_owned())
                     .map_err(|source| ConceptWriteError::SchemaValidation { source })
                     .unwrap(); // TODO: Propagate error instead
             }
+            _ => unreachable!("Use set_name instead")
         }
         TypeWriter::storage_delete_label(snapshot, type_.clone());
         TypeWriter::storage_put_label(snapshot, type_, &label);
+        Ok(())
+    }
+
+    pub(crate) fn set_role_type_name(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        role_type: RoleType<'static>,
+        name: &str,
+    ) -> Result<(), ConceptWriteError> {
+        debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, role_type.clone()).is_ok());
+
+        let old_label = TypeReader::get_label(snapshot, role_type.clone()).unwrap().unwrap();
+        debug_assert!(old_label.scope().is_some());
+        let new_label = Label::build_scoped(name, old_label.scope().unwrap().as_str());
+
+        let relation_type = TypeReader::get_relation(snapshot, role_type.clone()).unwrap().relation();
+        OperationTimeValidation::validate_role_name_uniqueness(snapshot, relation_type, &new_label.clone().into_owned())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        TypeWriter::storage_delete_label(snapshot, role_type.clone());
+        TypeWriter::storage_put_label(snapshot, role_type, &new_label);
         Ok(())
     }
 
@@ -1214,8 +1235,10 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         role: RoleType<'_>,
         ordering: Ordering,
-    ) {
-        TypeWriter::storage_put_type_vertex_property(snapshot, role, Some(ordering))
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: Validation
+        TypeWriter::storage_put_type_vertex_property(snapshot, role, Some(ordering));
+        Ok(())
     }
 
     pub(crate) fn set_annotation_abstract(&self, snapshot: &mut impl WritableSnapshot, type_: impl KindAPI<'static>) {
