@@ -1222,8 +1222,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn set_owns_ordering(&self, snapshot: &mut impl WritableSnapshot, owns: Owns<'_>, ordering: Ordering) {
-        TypeWriter::storage_set_owns_ordering(snapshot, owns, ordering)
+    pub(crate) fn set_owns_ordering(&self, snapshot: &mut impl WritableSnapshot, owns: Owns<'_>, ordering: Ordering) -> Result<(), ConceptWriteError> {
+        TypeWriter::storage_set_owns_ordering(snapshot, owns, ordering);
+        Ok(())
     }
 
     pub(crate) fn delete_owns_ordering(&self, snapshot: &mut impl WritableSnapshot, owns: Owns<'_>) {

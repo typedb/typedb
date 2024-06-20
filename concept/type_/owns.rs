@@ -148,7 +148,12 @@ impl<'a> Owns<'a> {
         Ok(()) // TODO
     }
 
-    pub fn set_ordering(&self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager, ordering: Ordering) {
+    pub fn set_ordering<Snapshot: WritableSnapshot>(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        ordering: Ordering,
+    ) -> Result<(), ConceptWriteError> {
         type_manager.set_owns_ordering(snapshot, self.clone(), ordering)
     }
 
