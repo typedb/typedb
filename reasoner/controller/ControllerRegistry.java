@@ -279,7 +279,7 @@ public class ControllerRegistry {
         controllerContext.tracer().ifPresent(Tracer::finishTrace);
         controllerContext.processor().perfCounters().logCounters();
         controllerContext.processor().perfCounters().stopPrinting();
-        terminationCause = TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, TypeDBException.of(TRANSACTION_CLOSED));
+        terminationCause = null;
         controllers.forEach(controller -> controller.executeNext(driver -> driver.terminate(terminationCause)));
         materialisationController.executeNext(a -> a.terminate(terminationCause));
         controllerContext.processor().monitor().executeNext(a -> a.terminate(terminationCause));
