@@ -4,9 +4,28 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::value::value::Value;
+use std::sync::Arc;
+use concept::thing::value::Value;
 
-use crate::Thing;
+use crate::{Thing, Type};
+
+#[derive(Debug, Clone)]
+pub enum VariableValue<'a> {
+    Empty,
+    Type(Type),
+    Thing(Thing<'a>),
+    Value(Value<'a>),
+    ThingList(Arc<[Thing<'a>]>),
+    ValueList(Arc<[Value<'a>]>),
+}
+
+impl<'a> VariableValue<'a> {
+
+    pub const EMPTY: VariableValue<'static> = VariableValue::Empty;
+
+
+
+}
 
 pub enum FunctionValue<'a> {
     Thing(Thing<'a>),

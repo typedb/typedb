@@ -20,7 +20,7 @@ enum Concept<'a> {
     Value(Value<'a>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Entity(EntityType<'static>),
     Relation(RelationType<'static>),
@@ -28,7 +28,7 @@ pub enum Type {
     RoleType(RoleType<'static>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 enum Thing<'a> {
     Entity(Entity<'a>),
     Relation(Relation<'a>),

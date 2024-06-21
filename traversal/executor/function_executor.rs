@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod pattern_executor;
-mod program_executor;
-mod function_executor;
+use crate::planner::pattern_plan::PatternPlan;
+
+pub(crate) struct FunctionExecutor {
+    plan: PatternPlan,
+}
