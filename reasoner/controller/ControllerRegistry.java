@@ -46,7 +46,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONING_TERMINATED_WITH_CAUSE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 import static java.util.stream.Collectors.toMap;
 
 public class ControllerRegistry {
@@ -106,10 +105,14 @@ public class ControllerRegistry {
         return logicMgr;
     }
 
-    public void terminate(Throwable cause) {
+    public void exception(Throwable cause) {
+        LOG.error("Terminating reasoning due to exception:", cause);
+        terminate(TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, cause));
+    }
+
+    public void terminate(TypeDBException cause) {
         if (terminated.compareAndSet(false, true)) {
-            LOG.error("Terminating reasoning due to exception:", cause);
-            terminationCause = TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, cause);
+            terminationCause = cause;
             controllers.forEach(actor -> actor.executeNext(a -> a.terminate(terminationCause)));
             materialisationController.executeNext(a -> a.terminate(terminationCause));
             controllerContext.processor().monitor().executeNext(a -> a.terminate(terminationCause));
@@ -124,6 +127,7 @@ public class ControllerRegistry {
             ReasonerConsumer<?> reasonerConsumer, Function<Driver<C>, C> actorFn
     ) {
         if (terminated.get()) {  // guard races without synchronized
+            assert terminationCause != null;
             reasonerConsumer.exception(terminationCause);
             throw terminationCause;
         }
@@ -135,6 +139,7 @@ public class ControllerRegistry {
 
     private <C extends AbstractController<?, ?, ?, ?, ?, C>> Driver<C> createController(Function<Driver<C>, C> actorFn) {
         if (terminated.get()) {  // guard races without synchronized
+            assert terminationCause != null;
             throw terminationCause;
         }
         Driver<C> controller = Actor.driver(actorFn, controllerContext.executorService());
@@ -279,10 +284,7 @@ public class ControllerRegistry {
         controllerContext.tracer().ifPresent(Tracer::finishTrace);
         controllerContext.processor().perfCounters().logCounters();
         controllerContext.processor().perfCounters().stopPrinting();
-        terminationCause = TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, TypeDBException.of(TRANSACTION_CLOSED));
-        controllers.forEach(controller -> controller.executeNext(driver -> driver.terminate(terminationCause)));
-        materialisationController.executeNext(a -> a.terminate(terminationCause));
-        controllerContext.processor().monitor().executeNext(a -> a.terminate(terminationCause));
+        terminate(null);
     }
 
     public static abstract class ControllerView {

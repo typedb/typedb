@@ -163,7 +163,7 @@ public class ReasonerTest {
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
                 RuntimeException exception = new RuntimeException();
-                txn.reasoner().controllerRegistry().terminate(exception);
+                txn.reasoner().controllerRegistry().exception(exception);
                 try {
                     List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x isa is-still-good; get;").asGet()).toList();
                 } catch (TypeDBException e) {
