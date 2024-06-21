@@ -10,7 +10,7 @@ use encoding::value::{label::Label, value_type::ValueType};
 
 use crate::{
     error::ConceptReadError,
-    type_::{attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType},
+    type_::{annotation::AnnotationCategory, attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType, TypeAPI, Ordering},
 };
 
 pub mod annotation_compatibility;
@@ -29,7 +29,11 @@ pub enum SchemaValidationError {
     PlaysNotInherited(ObjectType<'static>, RoleType<'static>),
     OverriddenTypeNotSupertype(Label<'static>, Label<'static>),
     PlaysNotDeclared(ObjectType<'static>, RoleType<'static>),
+    TypeDoesNotHaveAnnotation(Label<'static>),
+    AnnotationCanOnlyBeSetOnAttributeOrOwns(Label<'static>, AnnotationCategory),
     TypeIsNotAbstract(Label<'static>),
+    TypeOrderingIsIncompatible(Ordering),
+    AbsentValueType,
     IncompatibleValueType(Option<ValueType>),
     IncompatibleValueTypes(Option<ValueType>, Option<ValueType>),
     DeletingTypeWithSubtypes(Label<'static>),
@@ -55,7 +59,11 @@ impl Error for SchemaValidationError {
             Self::PlaysNotInherited(_, _) => None,
             Self::OverriddenTypeNotSupertype(_, _) => None,
             Self::PlaysNotDeclared(_, _) => None,
+            Self::TypeOrderingIsIncompatible(_) => None,
+            Self::AnnotationCanOnlyBeSetOnAttributeOrOwns(_, _) => None,
+            Self::TypeDoesNotHaveAnnotation(_) => None,
             Self::TypeIsNotAbstract(_) => None,
+            Self::AbsentValueType => None,
             Self::IncompatibleValueType(_) => None,
             Self::IncompatibleValueTypes(_, _) => None,
             Self::DeletingTypeWithSubtypes(_) => None,

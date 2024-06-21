@@ -38,7 +38,7 @@ use type_cache::TypeCache;
 use type_writer::TypeWriter;
 use validation::{commit_time_validation::CommitTimeValidation, operation_time_validation::OperationTimeValidation};
 
-use super::annotation::{AnnotationDistinct, AnnotationIndependent, AnnotationKey, AnnotationRegex, AnnotationUnique};
+use super::annotation::{Annotation, AnnotationCategory, AnnotationDistinct, AnnotationIndependent, AnnotationKey, AnnotationRegex, AnnotationUnique};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
@@ -1118,12 +1118,16 @@ impl TypeManager {
         owner: impl OwnerAPI<'static>,
         attribute: AttributeType<'static>,
         ordering: Ordering,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         // TODO: Validation
+        // TODO: Needs KindAPI, while OwnerAPI is only TypeAPI (validate that both are abstract or both are not abstract!)
+        // OperationTimeValidation::validate_type_is_abstract(snapshot, supertype.clone())
+        //     .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
         TypeWriter::storage_put_interface_impl(snapshot, owns.clone());
         TypeWriter::storage_put_type_edge_property(snapshot, owns, Some(ordering));
+        Ok(())
     }
 
     pub(crate) fn delete_owns(
@@ -1131,12 +1135,13 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         owner: impl ObjectTypeAPI<'static>,
         attribute: AttributeType<'static>,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         // TODO: Validation
 
         let owns = Owns::new(ObjectType::new(owner.clone().into_vertex()), attribute.clone());
         TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns.clone());
         TypeWriter::storage_delete_interface_impl(snapshot, owns.clone());
+        Ok(())
     }
 
     pub(crate) fn set_owns_overridden(
@@ -1222,11 +1227,19 @@ impl TypeManager {
         Ok(())
     }
 
+<<<<<<< HEAD
     pub(crate) fn set_owns_ordering(&self, snapshot: &mut impl WritableSnapshot, owns: Owns<'_>, ordering: Ordering) -> Result<(), ConceptWriteError> {
+=======
+    pub(crate) fn set_owns_ordering(
+        &self, snapshot: &mut Snapshot, owns: Owns<'_>, ordering: Ordering
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: Validation
+>>>>>>> e9ea70938 (Add more validation for owns annotations and ordering. Add more bdd steps for owns)
         TypeWriter::storage_set_owns_ordering(snapshot, owns, ordering);
         Ok(())
     }
 
+<<<<<<< HEAD
     pub(crate) fn delete_owns_ordering(&self, snapshot: &mut impl WritableSnapshot, owns: Owns<'_>) {
         TypeWriter::storage_delete_owns_ordering(snapshot, owns)
     }
@@ -1236,37 +1249,84 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         role: RoleType<'_>,
         ordering: Ordering,
+=======
+    pub(crate) fn delete_owns_ordering(
+        &self, snapshot: &mut Snapshot, owns: Owns<'_>
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: Validation
+        TypeWriter::storage_delete_owns_ordering(snapshot, owns);
+        Ok(())
+    }
+
+    pub(crate) fn set_role_ordering(
+        &self, snapshot: &mut Snapshot, role: RoleType<'_>, ordering: Ordering
+>>>>>>> e9ea70938 (Add more validation for owns annotations and ordering. Add more bdd steps for owns)
     ) -> Result<(), ConceptWriteError> {
         // TODO: Validation
         TypeWriter::storage_put_type_vertex_property(snapshot, role, Some(ordering));
         Ok(())
     }
 
+<<<<<<< HEAD
     pub(crate) fn set_annotation_abstract(&self, snapshot: &mut impl WritableSnapshot, type_: impl KindAPI<'static>) {
+=======
+    pub(crate) fn set_annotation_abstract(
+        &self, snapshot: &mut Snapshot, type_: impl KindAPI<'static>
+    ) -> Result<(), ConceptWriteError> {
+>>>>>>> e9ea70938 (Add more validation for owns annotations and ordering. Add more bdd steps for owns)
         // TODO: Validation
-        TypeWriter::storage_put_type_vertex_property::<AnnotationAbstract>(snapshot, type_, None)
+        TypeWriter::storage_put_type_vertex_property::<AnnotationAbstract>(snapshot, type_, None);
+        Ok(())
     }
 
     pub(crate) fn unset_annotation_abstract(
+<<<<<<< HEAD
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
     ) {
         TypeWriter::storage_delete_type_vertex_property::<AnnotationAbstract>(snapshot, type_)
+=======
+        &self, snapshot: &mut Snapshot, type_: impl KindAPI<'static>
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: Validation
+        TypeWriter::storage_delete_type_vertex_property::<AnnotationAbstract>(snapshot, type_);
+        Ok(())
+>>>>>>> e9ea70938 (Add more validation for owns annotations and ordering. Add more bdd steps for owns)
     }
 
     pub(crate) fn unset_attribute_type_annotation_abstract(
         &self,
+<<<<<<< HEAD
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>)
         -> Result<(), ConceptWriteError> {
+=======
+        snapshot: &mut Snapshot,
+        type_: AttributeType<'static>,
+    ) -> Result<(), ConceptWriteError> {
+>>>>>>> e9ea70938 (Add more validation for owns annotations and ordering. Add more bdd steps for owns)
         OperationTimeValidation::validate_no_subtypes(snapshot, type_.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_value_type_exists(
+            TypeReader::get_value_type(snapshot, type_.clone())?,
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        Self::unset_annotation_abstract(self, snapshot, type_);
+        Self::unset_annotation_abstract(self, snapshot, type_)
+    }
+
+    pub(crate) fn set_annotation_distinct(
+        &self, snapshot: &mut Snapshot, role_type: RoleType<'_>,
+    ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_type_ordering(snapshot, role_type.clone(), Ordering::Ordered)
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        // TODO: Validation for existing instances?
+        TypeWriter::storage_put_type_vertex_property::<AnnotationDistinct>(snapshot, role_type, None);
         Ok(())
     }
 
+<<<<<<< HEAD
     pub(crate) fn set_annotation_distinct(&self, snapshot: &mut impl WritableSnapshot, type_: impl KindAPI<'static>) {
         // TODO: Validation
         TypeWriter::storage_put_type_vertex_property::<AnnotationDistinct>(snapshot, type_, None)
@@ -1285,6 +1345,25 @@ impl TypeManager {
     pub(crate) fn unset_annotation_independent(&self, snapshot: &mut impl WritableSnapshot, type_: impl KindAPI<'static>) {
         // TODO: Validation
         TypeWriter::storage_delete_type_vertex_property::<AnnotationIndependent>(snapshot, type_)
+=======
+    pub(crate) fn unset_annotation_distinct(&self, snapshot: &mut Snapshot, type_: impl KindAPI<'static>) -> Result<(), ConceptWriteError> {
+        // TODO: Validation for existing instances?
+        TypeWriter::storage_delete_type_vertex_property::<AnnotationDistinct>(snapshot, type_);
+        Ok(())
+    }
+
+    pub(crate) fn set_annotation_independent(&self, snapshot: &mut Snapshot, type_: impl KindAPI<'static>) -> Result<(), ConceptWriteError> {
+        TypeWriter::storage_put_type_vertex_property::<AnnotationIndependent>(snapshot, type_, None);
+        Ok(())
+    }
+
+    pub(crate) fn unset_annotation_independent(
+        &self, snapshot: &mut Snapshot, type_: impl KindAPI<'static>
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: Validation
+        TypeWriter::storage_delete_type_vertex_property::<AnnotationIndependent>(snapshot, type_);
+        Ok(())
+>>>>>>> e9ea70938 (Add more validation for owns annotations and ordering. Add more bdd steps for owns)
     }
 
     pub(crate) fn set_annotation_cardinality(
@@ -1292,13 +1371,22 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         type_: impl KindAPI<'static>,
         annotation: AnnotationCardinality,
-    ) {
+    ) -> Result<(), ConceptWriteError> {
         // TODO: Validation
-        TypeWriter::storage_insert_type_vertex_property::<AnnotationCardinality>(snapshot, type_, Some(annotation))
+        TypeWriter::storage_insert_type_vertex_property::<AnnotationCardinality>(snapshot, type_, Some(annotation));
+        Ok(())
     }
 
+<<<<<<< HEAD
     pub(crate) fn unset_annotation_cardinality(&self, snapshot: &mut impl WritableSnapshot, type_: impl KindAPI<'static>) {
         TypeWriter::storage_delete_type_vertex_property::<AnnotationCardinality>(snapshot, type_)
+=======
+    pub(crate) fn unset_annotation_cardinality(
+        &self, snapshot: &mut Snapshot, type_: impl KindAPI<'static>
+    ) -> Result<(), ConceptWriteError> {
+        TypeWriter::storage_delete_type_vertex_property::<AnnotationCardinality>(snapshot, type_);
+        Ok(())
+>>>>>>> e9ea70938 (Add more validation for owns annotations and ordering. Add more bdd steps for owns)
     }
 
     pub(crate) fn set_annotation_regex(
@@ -1310,44 +1398,83 @@ impl TypeManager {
         OperationTimeValidation::validate_annotation_regex_compatible_value_type(
             TypeReader::get_value_type(snapshot, type_.clone())?
         ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        // TODO: Verify that there is no regex on owns
 
         TypeWriter::storage_insert_type_vertex_property::<AnnotationRegex>(snapshot, type_, Some(regex));
         Ok(())
     }
 
+<<<<<<< HEAD
     pub(crate) fn unset_annotation_regex(&self, snapshot: &mut impl WritableSnapshot, type_: impl KindAPI<'static>) {
+=======
+    pub(crate) fn unset_annotation_regex(
+        &self, snapshot: &mut Snapshot, type_: impl KindAPI<'static>
+    ) -> Result<(), ConceptWriteError> {
+>>>>>>> e9ea70938 (Add more validation for owns annotations and ordering. Add more bdd steps for owns)
         // TODO debug assert that stored regex matches
         // TODO: Validation
-        TypeWriter::storage_delete_type_vertex_property::<AnnotationRegex>(snapshot, type_)
+        TypeWriter::storage_delete_type_vertex_property::<AnnotationRegex>(snapshot, type_);
+        Ok(())
     }
 
     pub(crate) fn set_edge_annotation_distinct<'b>(
+<<<<<<< HEAD
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: impl TypeEdgeEncoding<'b>,
     ) {
-        // TODO: Validation
-        TypeWriter::storage_put_type_edge_property::<AnnotationDistinct>(snapshot, edge, None)
+=======
+        &self, snapshot: &mut Snapshot, edge: Owns<'_>
+    ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_type_edge_ordering(snapshot, edge.clone(), Ordering::Ordered)
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        TypeWriter::storage_put_type_edge_property::<AnnotationDistinct>(snapshot, edge, None);
+        Ok(())
     }
 
+    pub(crate) fn delete_edge_annotation_distinct<'b>(
+        &self, snapshot: &mut Snapshot, edge: impl TypeEdgeEncoding<'b>
+    ) -> Result<(), ConceptWriteError> {
+>>>>>>> e9ea70938 (Add more validation for owns annotations and ordering. Add more bdd steps for owns)
+        // TODO: Validation
+        TypeWriter::storage_delete_type_edge_property::<AnnotationDistinct>(snapshot, edge);
+        Ok(())
+    }
+
+<<<<<<< HEAD
     pub(crate) fn delete_edge_annotation_distinct<'b>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: impl TypeEdgeEncoding<'b>,
     ) {
+=======
+    pub(crate) fn set_edge_annotation_unique<'b>(
+        &self, snapshot: &mut Snapshot, edge: impl TypeEdgeEncoding<'b>
+    ) -> Result<(), ConceptWriteError> {
+>>>>>>> e9ea70938 (Add more validation for owns annotations and ordering. Add more bdd steps for owns)
         // TODO: Validation
-        TypeWriter::storage_delete_type_edge_property::<AnnotationDistinct>(snapshot, edge)
+        TypeWriter::storage_put_type_edge_property::<AnnotationUnique>(snapshot, edge, None);
+        Ok(())
     }
 
+<<<<<<< HEAD
     pub(crate) fn set_edge_annotation_unique<'b>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: impl TypeEdgeEncoding<'b>,
     ) {
+=======
+    pub(crate) fn delete_edge_annotation_unique<'b>(
+        &self, snapshot: &mut Snapshot, edge: impl TypeEdgeEncoding<'b>
+    ) -> Result<(), ConceptWriteError> {
+>>>>>>> e9ea70938 (Add more validation for owns annotations and ordering. Add more bdd steps for owns)
         // TODO: Validation
-        TypeWriter::storage_put_type_edge_property::<AnnotationUnique>(snapshot, edge, None)
+        TypeWriter::storage_delete_type_edge_property::<AnnotationUnique>(snapshot, edge);
+        Ok(())
     }
 
+<<<<<<< HEAD
     pub(crate) fn delete_edge_annotation_unique<'b>(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -1371,6 +1498,20 @@ impl TypeManager {
         edge: impl TypeEdgeEncoding<'b>,
     ) {
         TypeWriter::storage_delete_type_edge_property::<AnnotationKey>(snapshot, edge)
+=======
+    pub(crate) fn set_edge_annotation_key<'b>(
+        &self, snapshot: &mut Snapshot, edge: impl TypeEdgeEncoding<'b>,
+    ) -> Result<(), ConceptWriteError> {
+        TypeWriter::storage_put_type_edge_property::<AnnotationKey>(snapshot, edge, None);
+        Ok(())
+    }
+
+    pub(crate) fn delete_edge_annotation_key<'b>(
+        &self, snapshot: &mut Snapshot, edge: impl TypeEdgeEncoding<'b>,
+    ) -> Result<(), ConceptWriteError> {
+        TypeWriter::storage_delete_type_edge_property::<AnnotationKey>(snapshot, edge);
+        Ok(())
+>>>>>>> e9ea70938 (Add more validation for owns annotations and ordering. Add more bdd steps for owns)
     }
 
     pub(crate) fn set_edge_annotation_cardinality<'b>(
@@ -1378,15 +1519,45 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         edge: impl TypeEdgeEncoding<'b>,
         annotation: AnnotationCardinality,
-    ) {
-        TypeWriter::storage_insert_type_edge_property::<AnnotationCardinality>(snapshot, edge, Some(annotation))
+    ) -> Result<(), ConceptWriteError> {
+        TypeWriter::storage_insert_type_edge_property::<AnnotationCardinality>(snapshot, edge, Some(annotation));
+        Ok(())
     }
 
     pub(crate) fn delete_edge_annotation_cardinality<'b>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: impl TypeEdgeEncoding<'b>,
-    ) {
-        TypeWriter::storage_delete_type_edge_property::<AnnotationCardinality>(snapshot, edge)
+    ) -> Result<(), ConceptWriteError> {
+        TypeWriter::storage_delete_type_edge_property::<AnnotationCardinality>(snapshot, edge);
+        Ok(())
+    }
+
+    pub(crate) fn set_edge_annotation_regex<'b>(
+        &self,
+        snapshot: &mut Snapshot,
+        owns: Owns<'b>,
+        regex: AnnotationRegex,
+    ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_annotation_regex_compatible_value_type(
+            TypeReader::get_value_type(snapshot, owns.attribute().clone())?
+        ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_owns_attribute_type_does_not_have_annotation_category_when_setting_owns_annotation(
+            snapshot, owns.clone(), AnnotationCategory::Regex
+        ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        // TODO: Verify that there is no regex on subtype (owns that overrides us)
+        // TODO: Verify that there is no regex on supertype (owns that we override)
+
+        TypeWriter::storage_put_type_edge_property::<AnnotationRegex>(snapshot, owns, Some(regex));
+        Ok(())
+    }
+
+    pub(crate) fn delete_edge_annotation_regex<'b>(
+        &self, snapshot: &mut Snapshot, edge: impl TypeEdgeEncoding<'b>
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: Validation
+        TypeWriter::storage_delete_type_edge_property::<AnnotationRegex>(snapshot, edge);
+        Ok(())
     }
 }
