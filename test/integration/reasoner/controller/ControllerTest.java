@@ -138,7 +138,7 @@ public class ControllerTest {
                     fail();
                 }
                 Exception e = new RuntimeException("Intentional kill");
-                registry.terminate(e);
+                registry.exception(e);
                 Throwable receivedException = answerProducer.exceptions().poll(200, TimeUnit.MILLISECONDS);
                 assertEquals(TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, e), receivedException);
             }

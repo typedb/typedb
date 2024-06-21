@@ -52,7 +52,9 @@ public class RootDisjunctionController
     @Override
     public void terminate(Throwable cause) {
         super.terminate(cause);
-        reasonerConsumer.exception(cause);
+        if (cause != null) {
+            reasonerConsumer.exception(cause);
+        }
     }
 
     protected static class Processor extends DisjunctionController.Processor<ConceptMap, Processor> {

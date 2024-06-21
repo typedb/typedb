@@ -100,20 +100,20 @@ public abstract class AbstractController<
             String code = ((TypeDBException) e).errorMessage().code();
             if (code.equals(RESOURCE_CLOSED.code())) {
                 LOG.debug("Controller interrupted by resource close: {}", e.getMessage());
-                context.registry().terminate(e);
+                context.registry().exception(e);
                 return;
             } else {
                 LOG.debug("Controller interrupted by TypeDB exception: {}", e.getMessage());
             }
         }
         LOG.error("Actor exception", e);
-        context.registry().terminate(e);
+        context.registry().exception(e);
     }
 
     @Override
-    public void terminate(Throwable cause) {
+    public void terminate(@Nullable Throwable cause) {
         super.terminate(cause);
-        LOG.debug("Controller terminated.", cause);
+        if (cause != null) LOG.debug("Controller terminated.", cause);
         processors.values().forEach(p -> p.executeNext(a -> a.terminate(cause)));
     }
 
