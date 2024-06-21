@@ -53,6 +53,7 @@ checkstyle_test(
     include = glob([
         "*",
         "graph/*",
+        "graph/common/*",
         "graph/definition/*",
         "graph/thing/*",
         "graph/type_/*",
