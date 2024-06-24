@@ -20,10 +20,7 @@ pub enum VariableValue<'a> {
 }
 
 impl<'a> VariableValue<'a> {
-
     pub const EMPTY: VariableValue<'static> = VariableValue::Empty;
-
-
 
 }
 

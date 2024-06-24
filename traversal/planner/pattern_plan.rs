@@ -4,12 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
 use ir::pattern::constraint::{Comparison, ExpressionBinding, FunctionCallBinding, Has, RolePlayer};
 use ir::pattern::variable::Variable;
 
 pub(crate) struct PatternPlan {
-    steps: Vec<Step>
+    steps: Vec<Step>,
+    // TODO: each pattern plan should have its own modifiers?
 }
 
 impl PatternPlan {
@@ -30,12 +30,12 @@ Each variable will still be created using an Iterator that is composed.
 
 
 pub(crate) struct Step {
-    execution: Execution,
+    pub(crate) execution: Execution,
     // filters: Vec<Filter>, // local filtering operations without storage lookups
 
     input_variables: Vec<Variable>,
     generated_variables: Vec<Variable>, // including optional ones
-    total_variables_count: u32, // including optional ones
+    pub(crate) total_variables_count: u32, // including optional ones
 }
 
 impl Step {

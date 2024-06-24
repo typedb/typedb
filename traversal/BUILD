@@ -18,6 +18,8 @@ rust_library(
         "//concept",
         "//encoding",
         "//ir",
+
+        "@crates//:itertools",
     ],
 )
 
