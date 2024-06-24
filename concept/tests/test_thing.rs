@@ -983,7 +983,7 @@ pub fn define_struct(
 ) -> DefinitionKey<'static> {
     let struct_key = type_manager.create_struct(snapshot, name).unwrap();
     for (name, (value_type, optional)) in definitions {
-        type_manager.add_struct_field(snapshot, struct_key.clone(), name, value_type, optional).unwrap();
+        type_manager.create_struct_field(snapshot, struct_key.clone(), name, value_type, optional).unwrap();
     }
     struct_key
 }
