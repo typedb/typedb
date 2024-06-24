@@ -8,6 +8,7 @@ package(default_visibility = ["//visibility:public",])
 
 rust_test(
     name = "test_storage",
+    crate_root = "test_storage.rs",
     srcs = glob([
         "test_storage.rs",
         "test_common/*.rs",
@@ -29,6 +30,7 @@ rust_test(
 
 rust_test(
     name = "test_snapshot",
+    crate_root = "test_snapshot.rs",
     srcs = glob([
         "test_snapshot.rs",
         "test_common/*.rs",
@@ -49,6 +51,7 @@ rust_test(
 
 rust_test(
     name = "test_recovery",
+    crate_root = "test_recovery.rs",
     srcs = glob([
         "test_recovery.rs",
         "test_common/*.rs",
@@ -71,6 +74,7 @@ rust_test(
 
 rust_test(
     name = "test_mvcc",
+    crate_root = "test_mvcc.rs",
     srcs = glob([
         "test_mvcc.rs",
         "test_common/*.rs",
@@ -90,6 +94,7 @@ rust_test(
 
 rust_test(
     name = "test_isolation",
+    crate_root = "test_isolation.rs",
     srcs = glob([
         "test_isolation.rs",
         "test_common/*.rs",

@@ -35,6 +35,7 @@ rust_test(
 #  cargo test --release  --bench bench_rocks --package storage -- threads=1 batches=10000 batch_size=64 database=typedb
 rust_test(
     name = "bench_rocks",
+    crate_root = "bench_rocks.rs",
     srcs = glob([
         "bench_rocks.rs",
         "bench_rocks_impl/**/*.rs",
