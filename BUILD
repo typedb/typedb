@@ -294,7 +294,7 @@ assemble_apt(
     empty_dirs_permission = "0777",
     files = assemble_files,
     installation_dir = apt_installation_dir,
-    maintainer = "Vaticle <community@vaticle.com>",
+    maintainer = "TypeDB Community <community@typedb.com>",
     symlinks = apt_symlinks,
     workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
 )
@@ -329,7 +329,7 @@ assemble_apt(
     empty_dirs_permission = "0777",
     files = assemble_files,
     installation_dir = apt_installation_dir,
-    maintainer = "Vaticle <community@vaticle.com>",
+    maintainer = "TypeDB Community <community@typedb.com>",
     symlinks = apt_symlinks,
     workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
 )
