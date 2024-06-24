@@ -724,7 +724,7 @@ impl TypeManager {
 
     pub(crate) fn get_plays_effective_annotations<'this>(
         &'this self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         plays: Plays<'static>,
     ) -> Result<MaybeOwns<'this, HashMap<PlaysAnnotation, Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
@@ -1342,7 +1342,9 @@ impl TypeManager {
         type_: impl KindAPI<'static>,
         annotation: AnnotationCardinality,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: Validation
+        OperationTimeValidation::validate_cardinality_arguments(annotation)
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         TypeWriter::storage_insert_type_vertex_property::<AnnotationCardinality>(snapshot, type_, Some(annotation));
         Ok(())
     }
@@ -1389,7 +1391,7 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn delete_edge_annotation_distinct<'b>(
+    pub(crate) fn unset_edge_annotation_distinct<'b>(
         &self, snapshot: &mut impl WritableSnapshot, edge: impl TypeEdgeEncoding<'b>
     ) -> Result<(), ConceptWriteError> {
         // TODO: Validation
@@ -1404,7 +1406,8 @@ impl TypeManager {
         TypeWriter::storage_put_type_edge_property::<AnnotationUnique>(snapshot, edge, None);
         Ok(())
     }
-    pub(crate) fn delete_edge_annotation_unique<'b>(
+
+    pub(crate) fn unset_edge_annotation_unique<'b>(
         &self, snapshot: &mut impl WritableSnapshot, edge: impl TypeEdgeEncoding<'b>
     ) -> Result<(), ConceptWriteError> {
         // TODO: Validation
@@ -1419,7 +1422,7 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn delete_edge_annotation_key<'b>(
+    pub(crate) fn unset_edge_annotation_key<'b>(
         &self, snapshot: &mut impl WritableSnapshot, edge: impl TypeEdgeEncoding<'b>,
     ) -> Result<(), ConceptWriteError> {
         TypeWriter::storage_delete_type_edge_property::<AnnotationKey>(snapshot, edge);
@@ -1432,11 +1435,14 @@ impl TypeManager {
         edge: impl TypeEdgeEncoding<'b>,
         annotation: AnnotationCardinality,
     ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_cardinality_arguments(annotation)
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         TypeWriter::storage_insert_type_edge_property::<AnnotationCardinality>(snapshot, edge, Some(annotation));
         Ok(())
     }
 
-    pub(crate) fn delete_edge_annotation_cardinality<'b>(
+    pub(crate) fn unset_edge_annotation_cardinality<'b>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: impl TypeEdgeEncoding<'b>,
@@ -1465,7 +1471,7 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn delete_edge_annotation_regex<'b>(
+    pub(crate) fn unset_edge_annotation_regex<'b>(
         &self, snapshot: &mut impl WritableSnapshot, edge: impl TypeEdgeEncoding<'b>
     ) -> Result<(), ConceptWriteError> {
         // TODO: Validation

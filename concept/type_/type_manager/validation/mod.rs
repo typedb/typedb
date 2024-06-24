@@ -40,6 +40,7 @@ pub enum SchemaValidationError {
     IncompatibleValueTypes(Option<ValueType>, Option<ValueType>),
     DeletingTypeWithSubtypes(Label<'static>),
     DeletingTypeWithInstances(Label<'static>),
+    InvalidCardinalityArguments(u64, Option<u64>),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -72,6 +73,7 @@ impl Error for SchemaValidationError {
             Self::IncompatibleValueTypes(_, _) => None,
             Self::DeletingTypeWithSubtypes(_) => None,
             Self::DeletingTypeWithInstances(_) => None,
+            Self::InvalidCardinalityArguments(_, _) => None,
         }
     }
 }
