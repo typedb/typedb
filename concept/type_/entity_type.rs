@@ -173,6 +173,14 @@ impl<'a> EntityType<'a> {
         type_manager.get_entity_type_subtypes_transitive(snapshot, self.clone().into_owned())
     }
 
+    pub fn get_annotations_declared<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<EntityTypeAnnotation>>, ConceptReadError> {
+        type_manager.get_entity_type_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
     pub fn get_annotations<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -237,11 +245,19 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         Ok(())
     }
 
-    fn get_owns<'m>(
+    fn get_owns_declared<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
+        type_manager.get_entity_type_owns_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_owns<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_owns(snapshot, self.clone().into_owned())
     }
 
@@ -252,15 +268,7 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
         let expected_owns = Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type);
-        Ok(self.get_owns(snapshot, type_manager)?.contains(&expected_owns).then_some(expected_owns))
-    }
-
-    fn get_owns_transitive<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
-        type_manager.get_entity_type_owns_transitive(snapshot, self.clone().into_owned())
+        Ok(self.get_owns_declared(snapshot, type_manager)?.contains(&expected_owns).then_some(expected_owns))
     }
 }
 
@@ -286,11 +294,19 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         type_manager.delete_plays(snapshot, self.clone().into_owned(), role_type)
     }
 
-    fn get_plays<'m>(
+    fn get_plays_declared<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
+        type_manager.get_entity_type_plays_declared(snapshot, self.clone().into_owned())
+    }
+
+    fn get_plays<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_plays(snapshot, self.clone().into_owned())
     }
 
@@ -301,15 +317,7 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         role_type: RoleType<'static>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError> {
         let expected_plays = Plays::new(ObjectType::Entity(self.clone().into_owned()), role_type);
-        Ok(self.get_plays(snapshot, type_manager)?.contains(&expected_plays).then_some(expected_plays))
-    }
-
-    fn get_plays_transitive<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
-        type_manager.get_entity_type_plays_transitive(snapshot, self.clone().into_owned())
+        Ok(self.get_plays_declared(snapshot, type_manager)?.contains(&expected_plays).then_some(expected_plays))
     }
 }
 

@@ -45,20 +45,20 @@ pub struct RoleType<'a> {
 }
 
 impl<'a> RoleType<'a> {
-    pub fn get_players<'m>(
+    pub fn get_players_declared<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
-        type_manager.get_plays_for_role_type(snapshot, self.clone().into_owned())
+        type_manager.get_plays_for_role_type_declared(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_players_transitive<'m>(
+    pub fn get_players<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Plays<'static>>>, ConceptReadError> {
-        type_manager.get_plays_for_role_type_transitive(snapshot, self.clone().into_owned())
+        type_manager.get_plays_for_role_type(snapshot, self.clone().into_owned())
     }
     pub fn get_ordering(
         &self,
@@ -221,6 +221,14 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_type_annotations(snapshot, self.clone().into_owned())
     }
 
+    pub fn get_annotations_declared<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<RoleTypeAnnotation>>, ConceptReadError> {
+        type_manager.get_role_type_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
     pub fn set_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -269,11 +277,19 @@ impl<'a> KindAPI<'a> for RoleType<'a> {
 
 // --- Played API ---
 impl<'a> RoleType<'a> {
-    pub fn get_plays<'m>(
+    pub fn get_plays_declared<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, ConceptReadError> {
+        type_manager.get_plays_for_role_type_declared(snapshot, self.clone().into_owned())
+    }
+
+    pub fn get_plays<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Plays<'static>>>, ConceptReadError> {
         type_manager.get_plays_for_role_type(snapshot, self.clone().into_owned())
     }
 }

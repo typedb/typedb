@@ -118,6 +118,14 @@ impl<'a> AttributeType<'a> {
         type_manager.get_attribute_type_is_root(snapshot, self.clone().into_owned())
     }
 
+    pub fn get_value_type(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<ValueType>, ConceptReadError> {
+        type_manager.get_attribute_type_value_type(snapshot, self.clone().into_owned())
+    }
+
     pub fn set_value_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -125,14 +133,6 @@ impl<'a> AttributeType<'a> {
         value_type: ValueType,
     ) -> Result<(), ConceptWriteError> {
         type_manager.set_value_type(snapshot, self.clone().into_owned(), value_type)
-    }
-
-    pub fn get_value_type(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<Option<ValueType>, ConceptReadError> {
-        type_manager.get_attribute_type_value_type(snapshot, self.clone().into_owned())
     }
 
     pub fn set_label(
@@ -199,6 +199,14 @@ impl<'a> AttributeType<'a> {
             .contains(&AttributeTypeAnnotation::Independent(AnnotationIndependent)))
     }
 
+    pub fn get_annotations_declared<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<AttributeTypeAnnotation>>, ConceptReadError> {
+        type_manager.get_attribute_type_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
     pub fn get_annotations<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -254,20 +262,20 @@ impl<'a> AttributeType<'a> {
 
 // --- Owned API ---
 impl<'a> AttributeType<'a> {
-    pub fn get_owner_owns<'m>(
+    pub fn get_owns_declared<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owns_for_attribute(snapshot, self.clone().into_owned())
+        type_manager.get_owns_for_attribute_declared(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_owners_transitive<'m>(
+    pub fn get_owns<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owners_for_attribute_transitive(snapshot, self.clone().into_owned())
+        type_manager.get_owns_for_attribute(snapshot, self.clone().into_owned())
     }
 
     fn get_owns_owners(&self) {

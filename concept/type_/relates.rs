@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use encoding::{graph::type_::edge::TypeEdgeEncoding, layout::prefix::Prefix};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -37,9 +37,9 @@ impl<'a> Relates<'a> {
     pub fn get_cardinality<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        type_manager: &TypeManager<Snapshot>,
+        type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
-        let annotations = self.get_effective_annotations(snapshot, type_manager)?;
+        let annotations = self.get_annotations(snapshot, type_manager)?;
         let ordering = self.role.get_ordering(snapshot, type_manager)?;
         let card = annotations
             .iter()
@@ -52,18 +52,26 @@ impl<'a> Relates<'a> {
         Ok(card)
     }
 
-    pub fn get_effective_annotations<'m, Snapshot: ReadableSnapshot>(
+    pub fn get_annotations_declared<'m, Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        type_manager: &'m TypeManager<Snapshot>,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<RelatesAnnotation>>, ConceptReadError> {
+        type_manager.get_relates_annotations_declared(snapshot, self.clone().into_owned())
+    }
+
+    pub fn get_annotations<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<RelatesAnnotation, Relates<'static>>>, ConceptReadError> {
-        type_manager.get_relates_effective_annotations(snapshot, self.clone().into_owned())
+        type_manager.get_relates_annotations(snapshot, self.clone().into_owned())
     }
 
     pub fn set_annotation<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
-        type_manager: &TypeManager<Snapshot>,
+        type_manager: &TypeManager,
         annotation: RelatesAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {
@@ -80,7 +88,7 @@ impl<'a> Relates<'a> {
     pub fn unset_annotation<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
-        type_manager: &TypeManager<Snapshot>,
+        type_manager: &TypeManager,
         annotation: RelatesAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {

@@ -115,7 +115,7 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
 
         for owns in self
             .type_()
-            .get_owns(snapshot, thing_manager.type_manager())
+            .get_owns_declared(snapshot, thing_manager.type_manager())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?
             .iter()
         {

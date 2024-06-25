@@ -161,7 +161,7 @@ macro_rules! get_supertypes_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
-                    let supertypes = TypeReader::get_supertypes_transitive(snapshot, type_)?;
+                    let supertypes = TypeReader::get_supertypes(snapshot, type_)?;
                     Ok(MaybeOwns::Owned(supertypes))
                 }
             }
@@ -264,6 +264,25 @@ macro_rules! get_type_annotations {
     }
 }
 
+macro_rules! get_type_annotations {
+    ($(
+        fn $method_name:ident() -> $type_:ident = $reader_method:ident | $cache_method:ident | $annotation_type:ident;
+    )*) => {
+        $(
+            pub(crate) fn $method_name(
+                &self, snapshot: &Snapshot, type_: $type_<'static>
+            ) -> Result<MaybeOwns<'_, HashSet<$annotation_type>>, ConceptReadError> {
+                 if let Some(cache) = &self.type_cache {
+                    Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
+                } else {
+                    let annotations = TypeReader::$reader_method(snapshot, type_)?;
+                    Ok(MaybeOwns::Owned(annotations))
+                }
+            }
+        )*
+    }
+}
+
 impl TypeManager {
     pub fn new(
         definition_key_generator: Arc<DefinitionKeyGenerator>,
@@ -280,7 +299,7 @@ impl TypeManager {
         role_name: &str,
     ) -> Result<Option<Relates<'static>>, ConceptReadError> {
         // TODO: Efficiency. We could build an index in TypeCache.
-        Ok(self.get_relation_type_relates_transitive(snapshot, relation)?.iter().find_map(|(_role, relates)| {
+        Ok(self.get_relation_type_relates(snapshot, relation)?.iter().find_map(|(_role, relates)| {
             if self.get_role_type_label(snapshot, relates.role()).unwrap().name.as_str() == role_name {
                 Some(relates.clone())
             } else {
@@ -412,29 +431,43 @@ impl TypeManager {
         fn get_attribute_type_label() -> AttributeType = get_label;
     }
 
-    pub(crate) fn get_entity_type_owns(
+    pub(crate) fn get_entity_type_owns_declared(
         &self,
         snapshot: &impl ReadableSnapshot,
         entity_type: EntityType<'static>,
     ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_owns(entity_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_owns_declared(entity_type)))
         } else {
-            let owns = TypeReader::get_implemented_interfaces(snapshot, entity_type.clone())?;
+            let owns = TypeReader::get_implemented_interfaces_declared(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
 
-    pub(crate) fn get_relation_type_owns(
+    pub(crate) fn get_relation_type_owns_declared(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
     ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_owns(relation_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_owns_declared(relation_type)))
         } else {
-            let owns = TypeReader::get_implemented_interfaces(snapshot, relation_type.clone())?;
+            let owns = TypeReader::get_implemented_interfaces_declared(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(owns))
+        }
+    }
+
+    pub(crate) fn get_owns_for_attribute_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_owns_for_attribute_type_declared(attribute_type.clone())))
+        } else {
+            let plays =
+                TypeReader::get_implementations_for_interface_declared::<Owns<'static>>(snapshot, attribute_type.clone())?;
+            Ok(MaybeOwns::Owned(plays))
         }
     }
 
@@ -442,25 +475,11 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Owns<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashMap<ObjectType<'static>, Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_for_attribute_type(attribute_type.clone())))
         } else {
-            let plays =
-                TypeReader::get_implementations_for_interface::<Owns<'static>>(snapshot, attribute_type.clone())?;
-            Ok(MaybeOwns::Owned(plays))
-        }
-    }
-
-    pub(crate) fn get_owners_for_attribute_transitive(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<ObjectType<'static>, Owns<'static>>>, ConceptReadError> {
-        if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_owns_for_attribute_type_transitive(attribute_type.clone())))
-        } else {
-            let owns = TypeReader::get_implementations_for_interface_transitive::<Owns<'static>>(
+            let owns = TypeReader::get_implementations_for_interface::<Owns<'static>>(
                 snapshot,
                 attribute_type.clone(),
             )?;
@@ -468,11 +487,24 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_relation_type_relates(
+    pub(crate) fn get_relation_type_relates_declared(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
     ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates_declared(relation_type)))
+        } else {
+            let relates = TypeReader::get_relates_declared(snapshot, relation_type.clone())?;
+            Ok(MaybeOwns::Owned(relates))
+        }
+    }
+
+    pub(crate) fn get_relation_type_relates(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType<'static>,
+    ) -> Result<MaybeOwns<'_, HashMap<RoleType<'static>, Relates<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates(relation_type)))
         } else {
@@ -481,16 +513,16 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_relation_type_relates_transitive(
+    pub(crate) fn get_plays_for_role_type_declared(
         &self,
         snapshot: &impl ReadableSnapshot,
-        relation_type: RelationType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<RoleType<'static>, Relates<'static>>>, ConceptReadError> {
+        role_type: RoleType<'static>,
+    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates_transitive(relation_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_plays_for_role_type_declared(role_type.clone())))
         } else {
-            let relates = TypeReader::get_relates_transitive(snapshot, relation_type.clone())?;
-            Ok(MaybeOwns::Owned(relates))
+            let plays = TypeReader::get_implementations_for_interface_declared::<Plays<'static>>(snapshot, role_type.clone())?;
+            Ok(MaybeOwns::Owned(plays))
         }
     }
 
@@ -498,24 +530,11 @@ impl TypeManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         role_type: RoleType<'static>,
-    ) -> Result<MaybeOwns<'_, HashSet<Plays<'static>>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'_, HashMap<ObjectType<'static>, Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_for_role_type(role_type.clone())))
         } else {
-            let plays = TypeReader::get_implementations_for_interface::<Plays<'static>>(snapshot, role_type.clone())?;
-            Ok(MaybeOwns::Owned(plays))
-        }
-    }
-
-    pub(crate) fn get_plays_for_role_type_transitive(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        role_type: RoleType<'static>,
-    ) -> Result<MaybeOwns<'_, HashMap<ObjectType<'static>, Plays<'static>>>, ConceptReadError> {
-        if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_plays_for_role_type_transitive(role_type.clone())))
-        } else {
-            let plays = TypeReader::get_implementations_for_interface_transitive::<Plays<'static>>(
+            let plays = TypeReader::get_implementations_for_interface::<Plays<'static>>(
                 snapshot,
                 role_type.clone(),
             )?;
@@ -523,15 +542,15 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_entity_type_owns_transitive(
+    pub(crate) fn get_entity_type_owns(
         &self,
         snapshot: &impl ReadableSnapshot,
         entity_type: EntityType<'static>,
     ) -> Result<MaybeOwns<'_, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_owns_transitive(entity_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_owns(entity_type)))
         } else {
-            let owns = TypeReader::get_implemented_interfaces_transitive::<Owns<'static>, EntityType<'static>>(
+            let owns = TypeReader::get_implemented_interfaces::<Owns<'static>, EntityType<'static>>(
                 snapshot,
                 entity_type.clone(),
             )?;
@@ -539,15 +558,15 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_relation_type_owns_transitive(
+    pub(crate) fn get_relation_type_owns(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
     ) -> Result<MaybeOwns<'_, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_owns_transitive(relation_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_owns(relation_type)))
         } else {
-            let owns = TypeReader::get_implemented_interfaces_transitive::<Owns<'static>, RelationType<'static>>(
+            let owns = TypeReader::get_implemented_interfaces::<Owns<'static>, RelationType<'static>>(
                 snapshot,
                 relation_type.clone(),
             )?;
@@ -562,7 +581,7 @@ impl TypeManager {
     ) -> Result<bool, ConceptReadError> {
         // TODO: it would be good if this doesn't require recomputation
         let mut max_card = 0;
-        let relates = relation_type.get_relates(snapshot, self)?;
+        let relates = relation_type.get_relates_declared(snapshot, self)?;
         for relates in relates.iter() {
             let card = relates.get_cardinality(snapshot, self)?;
             match card.end() {
@@ -573,27 +592,27 @@ impl TypeManager {
         Ok(max_card <= RELATION_INDEX_THRESHOLD)
     }
 
-    pub(crate) fn get_entity_type_plays<'this>(
+    pub(crate) fn get_entity_type_plays_declared<'this>(
         &'this self,
         snapshot: &impl ReadableSnapshot,
         entity_type: EntityType<'static>,
     ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_plays(entity_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_plays_declared(entity_type)))
         } else {
-            let plays = TypeReader::get_implemented_interfaces(snapshot, entity_type.clone())?;
+            let plays = TypeReader::get_implemented_interfaces_declared(snapshot, entity_type.clone())?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
-    pub(crate) fn get_entity_type_plays_transitive(
+    pub(crate) fn get_entity_type_plays(
         &self,
         snapshot: &impl ReadableSnapshot,
         entity_type: EntityType<'static>,
     ) -> Result<MaybeOwns<'_, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_plays_transitive(entity_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_plays(entity_type)))
         } else {
-            let plays = TypeReader::get_implemented_interfaces_transitive::<Plays<'static>, EntityType<'static>>(
+            let plays = TypeReader::get_implemented_interfaces::<Plays<'static>, EntityType<'static>>(
                 snapshot,
                 entity_type.clone(),
             )?;
@@ -601,28 +620,28 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_relation_type_plays<'this>(
+    pub(crate) fn get_relation_type_plays_declared<'this>(
         &'this self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
     ) -> Result<MaybeOwns<'this, HashSet<Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_plays(relation_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_plays_declared(relation_type)))
         } else {
-            let plays = TypeReader::get_implemented_interfaces(snapshot, relation_type.clone())?;
+            let plays = TypeReader::get_implemented_interfaces_declared(snapshot, relation_type.clone())?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
 
-    pub(crate) fn get_relation_type_plays_transitive(
+    pub(crate) fn get_relation_type_plays(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
     ) -> Result<MaybeOwns<'_, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_plays_transitive(relation_type)))
+            Ok(MaybeOwns::Borrowed(cache.get_plays(relation_type)))
         } else {
-            let plays = TypeReader::get_implemented_interfaces_transitive::<Plays<'static>, RelationType<'static>>(
+            let plays = TypeReader::get_implemented_interfaces::<Plays<'static>, RelationType<'static>>(
                 snapshot,
                 relation_type.clone(),
             )?;
@@ -655,10 +674,15 @@ impl TypeManager {
     }
 
     get_type_annotations! {
-        fn get_entity_type_annotations() -> EntityType = get_annotations | EntityTypeAnnotation;
-        fn get_relation_type_annotations() -> RelationType = get_annotations | RelationTypeAnnotation;
-        fn get_role_type_annotations() -> RoleType = get_annotations | RoleTypeAnnotation;
-        fn get_attribute_type_annotations() -> AttributeType = get_annotations | AttributeTypeAnnotation;
+        fn get_entity_type_annotations() -> EntityType = get_type_annotations | get_annotations | EntityTypeAnnotation;
+        fn get_relation_type_annotations() -> RelationType = get_type_annotations | get_annotations | RelationTypeAnnotation;
+        fn get_role_type_annotations() -> RoleType = get_type_annotations | get_annotations | RoleTypeAnnotation;
+        fn get_attribute_type_annotations() -> AttributeType = get_type_annotations | get_annotations | AttributeTypeAnnotation;
+
+        fn get_entity_type_annotations_declared() -> EntityType = get_type_annotations_declared | get_annotations_declared | EntityTypeAnnotation;
+        fn get_relation_type_annotations_declared() -> RelationType = get_type_annotations_declared | get_annotations_declared | RelationTypeAnnotation;
+        fn get_role_type_annotations_declared() -> RoleType = get_type_annotations_declared | get_annotations_declared | RoleTypeAnnotation;
+        fn get_attribute_type_annotations_declared() -> AttributeType = get_type_annotations_declared | get_annotations_declared | AttributeTypeAnnotation;
     }
 
     pub(crate) fn get_owns_overridden(
@@ -670,23 +694,6 @@ impl TypeManager {
             Ok(MaybeOwns::Borrowed(cache.get_owns_override(owns)))
         } else {
             Ok(MaybeOwns::Owned(TypeReader::get_implementation_override(snapshot, owns)?))
-        }
-    }
-
-    pub(crate) fn get_owns_effective_annotations<'this>(
-        &'this self,
-        snapshot: &impl ReadableSnapshot,
-        owns: Owns<'static>,
-    ) -> Result<MaybeOwns<'this, HashMap<OwnsAnnotation, Owns<'static>>>, ConceptReadError> {
-        if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_owns_effective_annotations(owns)))
-        } else {
-            let annotations: HashMap<OwnsAnnotation, Owns<'static>> =
-                TypeReader::get_effective_type_edge_annotations(snapshot, owns)?
-                    .into_iter()
-                    .map(|(annotation, owns)| (OwnsAnnotation::from(annotation), owns))
-                    .collect();
-            Ok(MaybeOwns::Owned(annotations))
         }
     }
 
@@ -735,16 +742,67 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_plays_effective_annotations<'this>(
+    pub(crate) fn get_owns_annotations_declared<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        owns: Owns<'static>,
+    ) -> Result<MaybeOwns<'this, HashSet<OwnsAnnotation>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_owns_annotations_declared(owns)))
+        } else {
+            let annotations: HashSet<OwnsAnnotation> =
+                TypeReader::get_type_edge_annotations_declared(snapshot, owns)?
+                    .into_iter()
+                    .map(|annotation| OwnsAnnotation::from(annotation))
+                    .collect();
+            Ok(MaybeOwns::Owned(annotations))
+        }
+    }
+
+    pub(crate) fn get_owns_annotations<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        owns: Owns<'static>,
+    ) -> Result<MaybeOwns<'this, HashMap<OwnsAnnotation, Owns<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_owns_annotations(owns)))
+        } else {
+            let annotations: HashMap<OwnsAnnotation, Owns<'static>> =
+                TypeReader::get_type_edge_annotations(snapshot, owns)?
+                    .into_iter()
+                    .map(|(annotation, owns)| (OwnsAnnotation::from(annotation), owns))
+                    .collect();
+            Ok(MaybeOwns::Owned(annotations))
+        }
+    }
+
+    pub(crate) fn get_plays_annotations_declared<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        plays: Plays<'static>,
+    ) -> Result<MaybeOwns<'this, HashSet<PlaysAnnotation>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_plays_annotations_declared(plays)))
+        } else {
+            let annotations: HashSet<PlaysAnnotation> =
+                TypeReader::get_type_edge_annotations_declared(snapshot, plays)?
+                    .into_iter()
+                    .map(|annotation| PlaysAnnotation::from(annotation))
+                    .collect();
+            Ok(MaybeOwns::Owned(annotations))
+        }
+    }
+
+    pub(crate) fn get_plays_annotations<'this>(
         &'this self,
         snapshot: &impl ReadableSnapshot,
         plays: Plays<'static>,
     ) -> Result<MaybeOwns<'this, HashMap<PlaysAnnotation, Plays<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_plays_effective_annotations(plays)))
+            Ok(MaybeOwns::Borrowed(cache.get_plays_annotations(plays)))
         } else {
             let annotations: HashMap<PlaysAnnotation, Plays<'static>> =
-                TypeReader::get_effective_type_edge_annotations(snapshot, plays)?
+                TypeReader::get_type_edge_annotations(snapshot, plays)?
                     .into_iter()
                     .map(|(annotation, plays)| (PlaysAnnotation::from(annotation), plays))
                     .collect();
@@ -752,16 +810,34 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_relates_effective_annotations<'this>(
+    pub(crate) fn get_relates_annotations_declared<'this>(
+        &'this self,
+        snapshot: &impl ReadableSnapshot,
+        relates: Relates<'static>,
+    ) -> Result<MaybeOwns<'this, HashSet<RelatesAnnotation>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_relates_annotations_declared(relates)))
+        } else {
+            // TODO: Move these calls to a common place so it could be called from both cache init and here?
+            let annotations: HashSet<RelatesAnnotation> =
+                TypeReader::get_type_edge_annotations_declared(snapshot, relates)?
+                    .into_iter()
+                    .map(|annotation| RelatesAnnotation::from(annotation))
+                    .collect();
+            Ok(MaybeOwns::Owned(annotations))
+        }
+    }
+
+    pub(crate) fn get_relates_annotations<'this>(
         &'this self,
         snapshot: &impl ReadableSnapshot,
         relates: Relates<'static>,
     ) -> Result<MaybeOwns<'this, HashMap<RelatesAnnotation, Relates<'static>>>, ConceptReadError> {
         if let Some(cache) = &self.type_cache {
-            Ok(MaybeOwns::Borrowed(cache.get_relates_effective_annotations(relates)))
+            Ok(MaybeOwns::Borrowed(cache.get_relates_annotations(relates)))
         } else {
             let annotations: HashMap<RelatesAnnotation, Relates<'static>> =
-                TypeReader::get_effective_type_edge_annotations(snapshot, relates)?
+                TypeReader::get_type_edge_annotations(snapshot, relates)?
                     .into_iter()
                     .map(|(annotation, relates)| (RelatesAnnotation::from(annotation), relates))
                     .collect();
@@ -986,7 +1062,7 @@ impl TypeManager {
         //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
         let declared_relates =
-            TypeReader::get_relates_transitive(snapshot, relation_type.clone().into_owned()).unwrap();
+            TypeReader::get_relates(snapshot, relation_type.clone().into_owned()).unwrap();
         for (_role_type, relates) in declared_relates.iter() {
             self.delete_role_type(snapshot, relates.role().clone())?; // TODO: Should we replace it with individual calls?
         }

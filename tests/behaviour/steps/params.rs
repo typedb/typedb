@@ -304,7 +304,7 @@ pub(crate) enum ValueType {
 }
 
 impl ValueType {
-    pub fn into_typedb<Snapshot: ReadableSnapshot>(&self, type_manager: &Arc<TypeManager<Snapshot>>, snapshot: &Snapshot) -> TypeDBValueType {
+    pub fn into_typedb<Snapshot: ReadableSnapshot>(&self, type_manager: &Arc<TypeManager>, snapshot: &Snapshot) -> TypeDBValueType {
         match self {
             ValueType::Boolean => TypeDBValueType::Boolean,
             ValueType::Long => TypeDBValueType::Long,
