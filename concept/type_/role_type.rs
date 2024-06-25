@@ -16,7 +16,6 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
-use encoding::layout::prefix::Prefix::VertexRelationType;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -30,7 +29,7 @@ use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationDistinct},
+        annotation::{Annotation, AnnotationAbstract},
         object_type::ObjectType,
         plays::Plays,
         relates::Relates,
@@ -232,12 +231,6 @@ impl<'a> RoleType<'a> {
             RoleTypeAnnotation::Abstract(_) => {
                 type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())?
             }
-            RoleTypeAnnotation::Distinct(_) => { // TODO: Move to relates (edge!)
-                type_manager.set_annotation_distinct(snapshot, self.clone().into_owned())?
-            }
-            RoleTypeAnnotation::Cardinality(cardinality) => { // TODO: Move to relates (edge!)
-                type_manager.set_annotation_cardinality(snapshot, self.clone().into_owned(), cardinality)?
-            }
         };
         Ok(())
     }
@@ -252,18 +245,16 @@ impl<'a> RoleType<'a> {
             RoleTypeAnnotation::Abstract(_) => {
                 type_manager.unset_annotation_abstract(snapshot, self.clone().into_owned())?
             }
-            RoleTypeAnnotation::Distinct(_) => {
-                type_manager.unset_annotation_distinct(snapshot, self.clone().into_owned())?
-            }
-            RoleTypeAnnotation::Cardinality(_) => {
-                type_manager.unset_annotation_cardinality(snapshot, self.clone().into_owned())?
-            }
         }
-        Ok(()) // TODO
+        Ok(())
     }
 
-    fn get_relates(&self, _type_manager: &TypeManager) -> Relates<'static> {
-        todo!()
+    pub(crate) fn get_relates<'m>(
+        &self,
+        snapshot: &impl WritableSnapshot,
+        type_manager: &'m TypeManager
+    ) -> Result<MaybeOwns<'m, Relates<'static>>, ConceptReadError> {
+        type_manager.get_role_type_relates(snapshot, self.clone().into_owned())
     }
 
     pub fn into_owned(self) -> RoleType<'static> {
@@ -290,18 +281,16 @@ impl<'a> RoleType<'a> {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum RoleTypeAnnotation {
     Abstract(AnnotationAbstract),
-    Distinct(AnnotationDistinct),
-    Cardinality(AnnotationCardinality),
 }
 
 impl From<Annotation> for RoleTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Abstract(annotation) => RoleTypeAnnotation::Abstract(annotation),
-            Annotation::Distinct(annotation) => RoleTypeAnnotation::Distinct(annotation),
-            Annotation::Cardinality(annotation) => RoleTypeAnnotation::Cardinality(annotation),
 
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Role type."),
+            Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Role type."),
+            Annotation::Cardinality(_) => unreachable!("Cardinality annotation not available for Role type."),
             Annotation::Unique(_) => unreachable!("Unique annotation not available for Role type."),
             Annotation::Key(_) => unreachable!("Key annotation not available for Role type."),
             Annotation::Regex(_) => unreachable!("Regex annotation not available for Role type."),
@@ -313,8 +302,6 @@ impl Into<Annotation> for RoleTypeAnnotation {
     fn into(self) -> Annotation {
         match self {
             RoleTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
-            RoleTypeAnnotation::Distinct(annotation) => Annotation::Distinct(annotation),
-            RoleTypeAnnotation::Cardinality(annotation) => Annotation::Cardinality(annotation),
         }
     }
 }
