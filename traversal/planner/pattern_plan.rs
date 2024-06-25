@@ -51,7 +51,7 @@ impl Step {
 }
 
 pub(crate) enum Execution {
-    SortedIterators(Vec<Iterate>, Variable),
+    SortedIterators(Vec<Iterate>),
     UnsortedIterator(Iterate, Vec<Check>),
     Single(Single, Vec<Check>),
 
@@ -61,22 +61,24 @@ pub(crate) enum Execution {
 }
 
 pub(crate) enum Iterate {
-    Has(Has),
-    HasFrom(Has),
-    HasReverse(Has),
-    HasReverseFrom(Has),
+    HasCanonical(Has, IterateEdgeMode), // owner -> attribute
+    HasReverse(Has, IterateEdgeMode), // attribute -> owner
 
-    RolePlayer(RolePlayer),
-    RolePlayerFrom(RolePlayer),
-    RolePlayerReverse(RolePlayer),
-    RolePlayerReverseFrom(RolePlayer),
+    RolePlayerCanonical(RolePlayer, IterateEdgeMode), //
+    RolePlayerReverse(RolePlayer, IterateEdgeMode),
 
     FunctionCallBinding(FunctionCallBinding),
 
-    Comparison(Comparison),
-    ComparisonFrom(Comparison),
-    ComparisonReverse(Comparison),
-    ComparisonReverseFrom(Comparison),
+    ComparisonVariableCanonical(Comparison), // rhs to lhs
+    ComparisonVariableReverse(Comparison), // some comparisons are reversible + iterable
+
+    ComparisonConstant(Comparison)
+}
+
+pub(crate) enum IterateEdgeMode {
+    UnboundSortedFrom,
+    UnboundSortedTo, // normally expensive, read all Froms + merge sort -> TOs
+    BoundFromSortedTo,
 }
 
 pub(crate) enum Single {

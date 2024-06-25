@@ -12,7 +12,7 @@ use ir::pattern::variable::Variable;
 use crate::planner::pattern_plan::{Check, Execution, Iterate, PatternPlan, Single, Step};
 
 pub(crate) struct PatternExecutor {
-    variable_positions: HashMap<Variable, Position>,
+    variable_positions: HashMap<Variable, Position>, // we should be able to get away with an array, since Variables allocate in sequence
     variable_positions_index: Vec<Variable>,
     steps: Vec<StepExecutor>,
     // modifiers: Modifier,
@@ -52,7 +52,7 @@ impl PatternExecutor {
 
     pub fn into_rows(self) -> impl Iterator<Item=Vec<(Variable, VariableValue<'static>)>> {
         // TODO: we could use a lending iterator here to avoid a malloc row/answer
-        self.flat_map(|batch| batch.into_rows())
+        self.flat_map(|batch| batch.into_rows_cloned())
     }
 
     fn compute_next_batch(&mut self) -> Option<Batch> {
@@ -135,8 +135,8 @@ impl StepExecutor {
         let Step { execution: execution, total_variables_count: vars_count, .. } = step;
 
         match execution {
-            Execution::SortedIterators(iterates, sort_var) => {
-                Self::Sorted(SortedExecutor::new(iterates, sort_var, vars_count))
+            Execution::SortedIterators(iterates) => {
+                Self::Sorted(SortedExecutor::new(iterates, vars_count))
             }
             Execution::UnsortedIterator(iterate, checks) => {
                 Self::Unsorted(UnsortedExecutor::new(iterate, checks, vars_count))
@@ -183,7 +183,6 @@ impl StepExecutor {
 
 struct SortedExecutor {
     iterates: Vec<Iterate>,
-    sort_variable: Variable,
     // iterator:
 
     output_width: u32,
@@ -191,17 +190,25 @@ struct SortedExecutor {
 }
 
 impl SortedExecutor {
-    fn new(iterates: Vec<Iterate>, sort_variable: Variable, vars_count: u32) -> Self {
+    fn new(iterates: Vec<Iterate>,vars_count: u32) -> Self {
         Self {
             iterates,
-            sort_variable,
             output_width: vars_count,
             output: None,
         }
     }
 
     fn batch_from(&mut self, input_batch: Batch) -> Option<Batch> {
-        todo!()
+        // TODO: avoid malloc
+        input_batch.into_rows_cloned()
+            .flat_map(|row| {
+                // TODO: can we avoid this malloc?
+                let iterators = Vec::with_capacity(self.iterates.len());
+
+                for iter in &self.iterates {
+
+                }
+            })
     }
 
     fn batch_continue(&mut self) -> Option<Batch> {
@@ -323,7 +330,7 @@ impl Batch {
         BATCH_ROWS_MAX as usize
     }
 
-    fn into_rows(self) -> RowsIterator {
+    fn into_rows_cloned(self) -> RowsIterator {
         RowsIterator { batch: self, index: 0 }
     }
 }
