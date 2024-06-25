@@ -324,9 +324,9 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeHasReverse<'a> {
 }
 
 ///
-/// [rp][object][relation][role_id]
+/// [rp][relation][object][role_id]
 /// OR
-/// [rp_reverse][relation][object][role_id]
+/// [rp_reverse][object][relation][role_id]
 ///
 pub struct ThingEdgeRolePlayer<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
