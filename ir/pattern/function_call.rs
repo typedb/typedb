@@ -8,36 +8,38 @@ use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
 };
+use std::hash::Hash;
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 use itertools::Itertools;
+use crate::pattern::IrID;
 
 use crate::pattern::variable::{Variable, VariableCategory, VariableOptionality};
 
 /// This IR has information copied from the target function, so inference can be block-local
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct FunctionCall {
+pub struct FunctionCall<ID: IrID> {
     function_id: DefinitionKey<'static>,
     // map call variable to function-internal varirable
-    call_variable_mapping: HashMap<Variable, Variable>,
+    call_variable_mapping: HashMap<ID, Variable>,
     // map call variable to category of variable as indicated by function signature
-    call_variable_categories: HashMap<Variable, VariableCategory>,
+    call_variable_categories: HashMap<ID, VariableCategory>,
     returns: Vec<(VariableCategory, VariableOptionality)>,
     return_is_stream: bool,
 }
 
-impl FunctionCall {
+impl<ID: IrID> FunctionCall<ID> {
     pub fn new(
         function_id: DefinitionKey<'static>,
-        call_variable_mapping: HashMap<Variable, Variable>,
-        call_variable_categories: HashMap<Variable, VariableCategory>,
+        call_variable_mapping: HashMap<ID, Variable>,
+        call_variable_categories: HashMap<ID, VariableCategory>,
         returns: Vec<(VariableCategory, VariableOptionality)>,
         return_is_stream: bool,
     ) -> Self {
         Self { function_id, call_variable_mapping, call_variable_categories, returns, return_is_stream }
     }
 
-    pub(crate) fn call_variable_mapping(&self) -> &HashMap<Variable, Variable> {
+    pub(crate) fn call_id_mapping(&self) -> &HashMap<ID, Variable> {
         &self.call_variable_mapping
     }
 
@@ -50,7 +52,7 @@ impl FunctionCall {
     }
 }
 
-impl Display for FunctionCall {
+impl<ID: IrID> Display for FunctionCall<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let formatted_args = self
             .call_variable_mapping

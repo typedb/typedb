@@ -5,11 +5,15 @@
  */
 
 use std::fmt::{Display, Formatter};
+use std::marker::PhantomData;
+use crate::pattern::IrID;
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct Expression {}
+pub(crate) struct Expression<ID: IrID> {
+    phantom: PhantomData<ID>
+}
 
-impl Display for Expression {
+impl<ID: IrID> Display for Expression<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }

@@ -7,12 +7,14 @@
 use std::collections::HashMap;
 
 use answer::variable_value::VariableValue;
+use ir::pattern::constraint::{Comparison, FunctionCallBinding, Has, RolePlayer};
 use ir::pattern::variable::Variable;
 
-use crate::planner::pattern_plan::{Check, Execution, Iterate, PatternPlan, Single, Step};
+use crate::planner::pattern_plan::{Check, Execution, Iterate, PatternPlan, Single, SortedIterateMode, Step};
 
 pub(crate) struct PatternExecutor {
-    variable_positions: HashMap<Variable, Position>, // we should be able to get away with an array, since Variables allocate in sequence
+    variable_positions: HashMap<Variable, Position>,
+    // we should be able to get away with an array, since Variables allocate in sequence
     variable_positions_index: Vec<Variable>,
     steps: Vec<StepExecutor>,
     // modifiers: Modifier,
@@ -50,7 +52,7 @@ impl PatternExecutor {
         }
     }
 
-    pub fn into_rows(self) -> impl Iterator<Item=Vec<(Variable, VariableValue<'static>)>> {
+    pub fn into_rows(self) -> impl Iterator<Item=Row> {
         // TODO: we could use a lending iterator here to avoid a malloc row/answer
         self.flat_map(|batch| batch.into_rows_cloned())
     }
@@ -190,7 +192,7 @@ struct SortedExecutor {
 }
 
 impl SortedExecutor {
-    fn new(iterates: Vec<Iterate>,vars_count: u32) -> Self {
+    fn new(iterates: Vec<Iterate>, vars_count: u32) -> Self {
         Self {
             iterates,
             output_width: vars_count,
@@ -205,9 +207,7 @@ impl SortedExecutor {
                 // TODO: can we avoid this malloc?
                 let iterators = Vec::with_capacity(self.iterates.len());
 
-                for iter in &self.iterates {
-
-                }
+                for iter in &self.iterates {}
             })
     }
 
@@ -341,16 +341,21 @@ struct RowsIterator {
 }
 
 impl Iterator for RowsIterator {
-    type Item = Vec<(Variable, VariableValue<'static>)>;
+    type Item = Row;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index > self.batch.rows() {
             None
         } else {
             let slice = &self.batch.data[self.index * self.batch.width..(self.index + 1) * self.batch.width];
-            Some(slice.to_vec())
+            self.index += 1;
+            Some(Row { row: slice.to_vec() })
         }
     }
+}
+
+pub(crate) struct Row {
+    row: Vec<(Variable, VariableValue<'static>)>,
 }
 
 type Position = u32;

@@ -459,7 +459,7 @@ pub struct ThingEdgeRelationIndex<'a> {
 
 impl<'a> ThingEdgeRelationIndex<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
-    const PREFIX: Prefix = Prefix::EdgeRolePlayerIndex;
+    const PREFIX: Prefix = Prefix::EdgeRelationIndex;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
     const RANGE_FROM: Range<usize> = Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + ObjectVertex::LENGTH;

@@ -8,6 +8,7 @@ use std::{
     fmt,
     fmt::{Display, Formatter},
 };
+use std::hash::Hash;
 
 pub mod conjunction;
 pub mod constraint;
@@ -44,3 +45,5 @@ impl Display for ScopeId {
         write!(f, "({})", self.id)
     }
 }
+
+trait IrID: Copy + Display + Hash + Eq + PartialEq + Ord + PartialOrd + 'static {}

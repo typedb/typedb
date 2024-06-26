@@ -5,6 +5,7 @@
  */
 
 use std::fmt::{Display, Formatter};
+use crate::pattern::IrID;
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Variable {
@@ -16,6 +17,8 @@ impl Variable {
         Self { id: VariableId { id } }
     }
 }
+
+impl IrID for Variable {}
 
 impl Display for Variable {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

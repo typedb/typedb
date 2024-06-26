@@ -25,9 +25,9 @@ pub enum PatternDefinitionError {
         variable: Variable,
         variable_name: Option<String>,
         category_1: VariableCategory,
-        category_1_source: Constraint,
+        category_1_source: Constraint<Variable>,
         category_2: VariableCategory,
-        category_2_source: Constraint,
+        category_2_source: Constraint<Variable>,
     },
     FunctionArgumentUnused {
         argument_variable: String,

@@ -7,3 +7,4 @@
 mod pattern_executor;
 mod program_executor;
 mod function_executor;
+mod constraint_iterator;

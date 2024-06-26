@@ -13,11 +13,9 @@ pub(crate) struct PatternPlan {
 }
 
 impl PatternPlan {
-
     pub(crate) fn into_steps(self) -> impl Iterator<Item=Step> {
         self.steps.into_iter()
     }
-
 }
 
 /*
@@ -34,12 +32,12 @@ pub(crate) struct Step {
     // filters: Vec<Filter>, // local filtering operations without storage lookups
 
     input_variables: Vec<Variable>,
-    generated_variables: Vec<Variable>, // including optional ones
+    generated_variables: Vec<Variable>,
+    // including optional ones
     pub(crate) total_variables_count: u32, // including optional ones
 }
 
 impl Step {
-
     pub(crate) fn generated_variables(&self) -> &Vec<Variable> {
         &self.generated_variables
     }
@@ -47,7 +45,6 @@ impl Step {
     pub(crate) fn total_variables_count(&self) -> u32 {
         self.total_variables_count
     }
-
 }
 
 pub(crate) enum Execution {
@@ -61,24 +58,71 @@ pub(crate) enum Execution {
 }
 
 pub(crate) enum Iterate {
-    HasCanonical(Has, IterateEdgeMode), // owner -> attribute
-    HasReverse(Has, IterateEdgeMode), // attribute -> owner
+    Has(Has, SortedIterateMode),
+    // owner -> attribute
+    HasReverse(Has, SortedIterateMode), // attribute -> owner
 
-    RolePlayerCanonical(RolePlayer, IterateEdgeMode), //
-    RolePlayerReverse(RolePlayer, IterateEdgeMode),
+    RolePlayer(RolePlayer, SortedIterateMode),
+    // relation -> player
+    RolePlayerReverse(RolePlayer, SortedIterateMode), // player -> relation
+
+    // RelationIndex(RelationIndex, SortedIterateMode)
+    // RelationIndexReverse(RelationIndex, SortedIterateMode)
 
     FunctionCallBinding(FunctionCallBinding),
 
-    ComparisonVariableCanonical(Comparison), // rhs to lhs
-    ComparisonVariableReverse(Comparison), // some comparisons are reversible + iterable
-
-    ComparisonConstant(Comparison)
+    Comparison(Comparison), // lhs derived from rhs. We need to decide if lhs will always be sorted
+    ComparisonReverse(Comparison), // rhs derived from lhs
 }
 
-pub(crate) enum IterateEdgeMode {
+impl Iterate {
+    pub(crate) fn sort_variable(&self) -> Option<Variable> {
+        match self {
+            Iterate::Has(has, mode) => {
+                match mode.is_sorted_from() {
+                    true => Some(has.owner()),
+                    false => Some(has.attribute())
+                }
+            }
+            Iterate::HasReverse(has, mode) => {
+                match mode.is_sorted_from() {
+                    true => Some(has.attribute()),
+                    false => Some(has.owner()),
+                }
+            }
+            Iterate::RolePlayer(rp, mode) => {
+                match mode.is_sorted_from() {
+                    true => Some(rp.relation()),
+                    false => Some(rp.player()),
+                }
+            }
+            Iterate::RolePlayerReverse(rp, mode) => {
+                match mode.is_sorted_from() {
+                    true => Some(rp.player()),
+                    false => Some(rp.relation()),
+                }
+            }
+            Iterate::FunctionCallBinding(_) => None,
+            Iterate::Comparison(comparison) => Some(comparison.lhs()),
+            Iterate::ComparisonReverse(comparison) => Some(comparison.rhs()),
+        }
+    }
+}
+
+pub(crate) enum SortedIterateMode {
     UnboundSortedFrom,
-    UnboundSortedTo, // normally expensive, read all Froms + merge sort -> TOs
+    UnboundSortedTo,
+    // normally expensive, read all Froms + merge sort -> TOs
     BoundFromSortedTo,
+}
+
+impl SortedIterateMode {
+    const fn is_sorted_from(&self) -> bool {
+        match self {
+            SortedIterateMode::UnboundSortedFrom => true,
+            SortedIterateMode::UnboundSortedTo | SortedIterateMode::BoundFromSortedTo => false
+        }
+    }
 }
 
 pub(crate) enum Single {

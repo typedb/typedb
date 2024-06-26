@@ -37,8 +37,8 @@ pub fn infer_types(program: &Program) {
 }
 
 struct TypeAnnotations {
-    variables: HashMap<Variable, HashSet<Type>>,
-    constraints: HashMap<Constraint, ConstraintTypeAnnotations>,
+    variables: HashMap<Variable, HashSet<Type<Variable>>>,
+    constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
 }
 
 impl TypeAnnotations {
@@ -54,13 +54,13 @@ enum ConstraintTypeAnnotations {
 }
 
 struct LeftRightAnnotations {
-    left_to_right: BTreeMap<Type, BTreeSet<Type>>,
-    right_to_left: BTreeMap<Type, BTreeSet<Type>>,
+    left_to_right: BTreeMap<Type<Variable>, BTreeSet<Type<Variable>>>,
+    right_to_left: BTreeMap<Type<Variable>, BTreeSet<Type<Variable>>>,
 }
 
 struct LeftRightFilteredAnnotations {
-    left_to_right: BTreeMap<Type, (BTreeSet<Type>, HashSet<Type>)>,
-    right_to_left: BTreeMap<Type, (BTreeSet<Type>, HashSet<Type>)>,
+    left_to_right: BTreeMap<Type<Variable>, (BTreeSet<Type<Variable>>, HashSet<Type<Variable>>)>,
+    right_to_left: BTreeMap<Type<Variable>, (BTreeSet<Type<Variable>>, HashSet<Type<Variable>>)>,
     // TODO: I think we'll need to be able to traverse from the Filter variable to the left and right. example: `match $role sub friendship:friend; $r ($role: $x);`
     // filter_to_left
     // filter_to_right

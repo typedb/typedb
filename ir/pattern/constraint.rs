@@ -18,22 +18,23 @@ use crate::{
         context::PatternContext,
         expression::Expression,
         function_call::FunctionCall,
-        variable::{Variable, VariableCategory, VariableOptionality},
         ScopeId,
+        variable::{Variable, VariableCategory, VariableOptionality},
     },
     PatternDefinitionError,
 };
+use crate::pattern::IrID;
 
 #[derive(Debug)]
 pub struct Constraints {
     scope: ScopeId,
     context: Arc<Mutex<PatternContext>>,
-    constraints: Vec<Constraint>,
+    constraints: Vec<Constraint<Variable>>,
 
     // TODO: could also store indexes into the Constraints vec? Depends how expensive Constraints are and if we delete
-    left_constrained_index: HashMap<Variable, Vec<Constraint>>,
-    right_constrained_index: HashMap<Variable, Vec<Constraint>>,
-    filter_constrained_index: HashMap<Variable, Vec<Constraint>>,
+    left_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,
+    right_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,
+    filter_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,
 }
 
 impl Constraints {
@@ -48,24 +49,24 @@ impl Constraints {
         }
     }
 
-    fn add_constraint(&mut self, constraint: impl Into<Constraint> + Clone) -> &Constraint {
+    fn add_constraint(&mut self, constraint: impl Into<Constraint<Variable>> + Clone) -> &Constraint<Variable> {
         let constraint = constraint.into();
         self.constraints.push(constraint.clone());
-        constraint.variables_foreach(|var, side| match side {
-            ConstraintVariableSide::Left => {
+        constraint.ids_foreach(|var, side| match side {
+            ConstraintIDSide::Left => {
                 self.left_constrained_index.entry(var).or_insert_with(|| Vec::new()).push(constraint.clone());
             }
-            ConstraintVariableSide::Right => {
+            ConstraintIDSide::Right => {
                 self.right_constrained_index.entry(var).or_insert_with(|| Vec::new()).push(constraint.clone());
             }
-            ConstraintVariableSide::Filter => {
+            ConstraintIDSide::Filter => {
                 self.filter_constrained_index.entry(var).or_insert_with(|| Vec::new()).push(constraint.clone());
             }
         });
         self.constraints.last().unwrap()
     }
 
-    pub fn add_type(&mut self, variable: Variable, type_: &str) -> Result<&Type, PatternDefinitionError> {
+    pub fn add_type(&mut self, variable: Variable, type_: &str) -> Result<&Type<Variable>, PatternDefinitionError> {
         debug_assert!(self.context.lock().unwrap().is_variable_available(self.scope, variable));
         let type_ = Type::new(variable, type_.to_string());
         self.context.lock().unwrap().set_variable_category(variable, VariableCategory::Type, type_.clone().into())?;
@@ -73,7 +74,7 @@ impl Constraints {
         Ok(as_ref.as_type().unwrap())
     }
 
-    pub fn add_isa(&mut self, thing: Variable, type_: Variable) -> Result<&Isa, PatternDefinitionError> {
+    pub fn add_isa(&mut self, thing: Variable, type_: Variable) -> Result<&Isa<Variable>, PatternDefinitionError> {
         debug_assert!(
             self.context.lock().unwrap().is_variable_available(self.scope, thing)
                 && self.context.lock().unwrap().is_variable_available(self.scope, type_)
@@ -85,7 +86,7 @@ impl Constraints {
         Ok(as_ref.as_isa().unwrap())
     }
 
-    pub fn add_has(&mut self, owner: Variable, attribute: Variable) -> Result<&Has, PatternDefinitionError> {
+    pub fn add_has(&mut self, owner: Variable, attribute: Variable) -> Result<&Has<Variable>, PatternDefinitionError> {
         debug_assert!(
             self.context.lock().unwrap().is_variable_available(self.scope, owner)
                 && self.context.lock().unwrap().is_variable_available(self.scope, attribute)
@@ -104,8 +105,8 @@ impl Constraints {
     pub fn add_function_call(
         &mut self,
         assigned: Vec<Variable>,
-        function_call: FunctionCall,
-    ) -> Result<&FunctionCallBinding, PatternDefinitionError> {
+        function_call: FunctionCall<Variable>,
+    ) -> Result<&FunctionCallBinding<Variable>, PatternDefinitionError> {
         use PatternDefinitionError::FunctionCallReturnArgCountMismatch;
         debug_assert!(assigned.iter().all(|var| self.context.lock().unwrap().is_variable_available(self.scope, *var)));
 
@@ -118,7 +119,7 @@ impl Constraints {
 
         let binding = FunctionCallBinding::new(assigned, function_call);
 
-        for (index, var) in binding.variables().enumerate() {
+        for (index, var) in binding.ids().enumerate() {
             self.context.lock().unwrap().set_variable_category(
                 var,
                 binding.function_call().returns()[index].0,
@@ -137,8 +138,8 @@ impl Constraints {
     pub fn add_expression(
         &mut self,
         variable: Variable,
-        expression: Expression,
-    ) -> Result<&ExpressionBinding, PatternDefinitionError> {
+        expression: Expression<Variable>,
+    ) -> Result<&ExpressionBinding<Variable>, PatternDefinitionError> {
         debug_assert!(self.context.lock().unwrap().is_variable_available(self.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
         self.context.lock().unwrap().set_variable_category(
@@ -162,80 +163,80 @@ impl Display for Constraints {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Constraint {
-    Type(Type),
-    Isa(Isa),
-    RolePlayer(RolePlayer),
-    Has(Has),
-    ExpressionBinding(ExpressionBinding),
-    FunctionCallBinding(FunctionCallBinding),
-    Comparison(Comparison),
+pub enum Constraint<ID: IrID> {
+    Type(Type<ID>),
+    Isa(Isa<ID>),
+    RolePlayer(RolePlayer<ID>),
+    Has(Has<ID>),
+    ExpressionBinding(ExpressionBinding<ID>),
+    FunctionCallBinding(FunctionCallBinding<ID>),
+    Comparison(Comparison<ID>),
 }
 
-impl Constraint {
-    pub fn variables(&self) -> Box<dyn Iterator<Item = Variable> + '_> {
+impl<ID: IrID> Constraint<ID> {
+    pub fn ids(&self) -> Box<dyn Iterator<Item=ID> + '_> {
         match self {
-            Constraint::Type(type_) => Box::new(type_.variables()),
-            Constraint::Isa(isa) => Box::new(isa.variables()),
-            Constraint::RolePlayer(rp) => rp.variables(),
-            Constraint::Has(has) => Box::new(has.variables()),
+            Constraint::Type(type_) => Box::new(type_.ids()),
+            Constraint::Isa(isa) => Box::new(isa.ids()),
+            Constraint::RolePlayer(rp) => Box::new(rp.ids()),
+            Constraint::Has(has) => Box::new(has.ids()),
             Constraint::ExpressionBinding(binding) => todo!(),
-            Constraint::FunctionCallBinding(binding) => Box::new(binding.variables()),
+            Constraint::FunctionCallBinding(binding) => Box::new(binding.ids()),
             Constraint::Comparison(comparison) => todo!(),
         }
     }
 
-    pub fn variables_foreach<F>(&self, function: F)
-    where
-        F: FnMut(Variable, ConstraintVariableSide) -> (),
+    pub fn ids_foreach<F>(&self, function: F)
+        where
+            F: FnMut(ID, ConstraintIDSide) -> (),
     {
         match self {
-            Constraint::Type(type_) => type_.variables_foreach(function),
-            Constraint::Isa(isa) => isa.variables_foreach(function),
-            Constraint::RolePlayer(rp) => rp.variables_foreach(function),
-            Constraint::Has(has) => has.variables_foreach(function),
+            Constraint::Type(type_) => type_.ids_foreach(function),
+            Constraint::Isa(isa) => isa.ids_foreach(function),
+            Constraint::RolePlayer(rp) => rp.ids_foreach(function),
+            Constraint::Has(has) => has.ids_foreach(function),
             Constraint::ExpressionBinding(binding) => todo!(),
-            Constraint::FunctionCallBinding(binding) => binding.variables_foreach(function),
+            Constraint::FunctionCallBinding(binding) => binding.ids_foreach(function),
             Constraint::Comparison(comparison) => todo!(),
         }
     }
 
-    fn as_type(&self) -> Option<&Type> {
+    fn as_type(&self) -> Option<&Type<ID>> {
         match self {
             Constraint::Type(type_) => Some(type_),
             _ => None,
         }
     }
 
-    fn as_isa(&self) -> Option<&Isa> {
+    fn as_isa(&self) -> Option<&Isa<ID>> {
         match self {
             Constraint::Isa(isa) => Some(isa),
             _ => None,
         }
     }
 
-    fn as_role_player(&self) -> Option<&RolePlayer> {
+    fn as_role_player(&self) -> Option<&RolePlayer<ID>> {
         match self {
             Constraint::RolePlayer(rp) => Some(rp),
             _ => None,
         }
     }
 
-    fn as_has(&self) -> Option<&Has> {
+    fn as_has(&self) -> Option<&Has<ID>> {
         match self {
             Constraint::Has(has) => Some(has),
             _ => None,
         }
     }
 
-    fn as_function_call_binding(&self) -> Option<&FunctionCallBinding> {
+    fn as_function_call_binding(&self) -> Option<&FunctionCallBinding<ID>> {
         match self {
             Constraint::FunctionCallBinding(binding) => Some(binding),
             _ => None,
         }
     }
 
-    fn as_expression_binding(&self) -> Option<&ExpressionBinding> {
+    fn as_expression_binding(&self) -> Option<&ExpressionBinding<ID>> {
         match self {
             Constraint::ExpressionBinding(binding) => Some(binding),
             _ => None,
@@ -243,7 +244,7 @@ impl Constraint {
     }
 }
 
-impl Display for Constraint {
+impl<ID: IrID> Display for Constraint<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Constraint::Type(constraint) => Display::fmt(constraint, f),
@@ -257,120 +258,125 @@ impl Display for Constraint {
     }
 }
 
-enum ConstraintVariableSide {
+enum ConstraintIDSide {
     Left,
     Right,
     Filter,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Type {
-    var: Variable,
+pub struct Type<ID: IrID> {
+    left: ID,
     type_: String,
 }
 
-impl Type {
-    fn new(var: Variable, type_: String) -> Self {
-        Self { var, type_ }
+impl<ID: IrID> Type<ID> {
+    fn new(identifier: ID, type_: String) -> Self {
+        Self { left: identifier, type_ }
     }
 
-    pub fn variables(&self) -> impl Iterator<Item = Variable> + Sized {
-        [self.var].into_iter()
+    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
+        [self.left].into_iter()
     }
 
-    pub fn variables_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(Variable, ConstraintVariableSide) -> (),
+    pub fn ids_foreach<F>(&self, mut function: F)
+        where
+            F: FnMut(ID, ConstraintIDSide) -> (),
     {
-        function(self.var, ConstraintVariableSide::Left)
+        function(self.left, ConstraintIDSide::Left)
     }
 }
 
-impl Into<Constraint> for Type {
-    fn into(self) -> Constraint {
+impl<ID: IrID> Into<Constraint<ID>> for Type<ID> {
+    fn into(self) -> Constraint<ID> {
         Constraint::Type(self)
     }
 }
 
-impl Display for Type {
+impl<ID: IrID> Display for Type<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         // TODO: implement indentation without rewriting it everywhere
-        // write!(f, "{: >width$} {} type {}", "", self.var, self.type_, width=f.width().unwrap_or(0))
-        write!(f, "{} type {}", self.var, self.type_)
+        // write!(f, "{: >width$} {} type {}", "", self.left, self.type_, width=f.width().unwrap_or(0))
+        write!(f, "{} type {}", self.left, self.type_)
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Isa {
-    thing: Variable,
-    type_: Variable,
+pub struct Isa<ID: IrID> {
+    thing: ID,
+    type_: ID,
 }
 
-impl Isa {
-    fn new(thing: Variable, type_: Variable) -> Self {
+impl<ID: IrID> Isa<ID> {
+    fn new(thing: ID, type_: ID) -> Self {
         Isa { thing, type_ }
     }
 
-    pub fn variables(&self) -> impl Iterator<Item = Variable> + Sized {
+    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
         [self.thing, self.type_].into_iter()
     }
 
-    pub fn variables_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(Variable, ConstraintVariableSide) -> (),
+    pub fn ids_foreach<F>(&self, mut function: F)
+        where
+            F: FnMut(ID, ConstraintIDSide) -> (),
     {
-        function(self.thing, ConstraintVariableSide::Left);
-        function(self.type_, ConstraintVariableSide::Right)
+        function(self.thing, ConstraintIDSide::Left);
+        function(self.type_, ConstraintIDSide::Right)
     }
 }
 
-impl Into<Constraint> for Isa {
-    fn into(self) -> Constraint {
+impl<ID: IrID> Into<Constraint<ID>> for Isa<ID> {
+    fn into(self) -> Constraint<ID> {
         Constraint::Isa(self)
     }
 }
 
-impl Display for Isa {
+impl<ID: IrID> Display for Isa<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} isa {}", self.thing, self.type_)
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct RolePlayer {
-    relation: Variable,
-    player: Variable,
-    role_type: Option<Variable>,
+pub struct RolePlayer<ID: IrID> {
+    relation: ID,
+    player: ID,
+    role_type: Option<ID>,
 }
 
-impl RolePlayer {
-    pub fn variables(&self) -> Box<dyn Iterator<Item = Variable>> {
-        match self.role_type {
-            None => Box::new([self.relation, self.player].into_iter()),
-            Some(role_type) => Box::new([self.relation, self.player, role_type].into_iter()),
-        }
+impl<ID: IrID> RolePlayer<ID> {
+    pub fn relation(&self) -> ID {
+        self.relation
     }
 
-    pub fn variables_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(Variable, ConstraintVariableSide) -> (),
+    pub fn player(&self) -> ID {
+        self.player
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item=ID> {
+        [self.relation, self.player].into_iter().chain(self.role_type)
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+        where
+            F: FnMut(ID, ConstraintIDSide) -> (),
     {
-        function(self.relation, ConstraintVariableSide::Left);
-        function(self.player, ConstraintVariableSide::Right);
+        function(self.relation, ConstraintIDSide::Left);
+        function(self.player, ConstraintIDSide::Right);
         match self.role_type.clone() {
             None => {}
-            Some(role) => function(role, ConstraintVariableSide::Filter),
+            Some(role) => function(role, ConstraintIDSide::Filter),
         };
     }
 }
 
-impl Into<Constraint> for RolePlayer {
-    fn into(self) -> Constraint {
+impl<ID: IrID> Into<Constraint<ID>> for RolePlayer<ID> {
+    fn into(self) -> Constraint<ID> {
         Constraint::RolePlayer(self)
     }
 }
 
-impl Display for RolePlayer {
+impl<ID: IrID> Display for RolePlayer<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self.role_type {
             None => {
@@ -384,134 +390,174 @@ impl Display for RolePlayer {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Has {
-    owner: Variable,
-    attribute: Variable,
+pub struct Has<ID: IrID> {
+    owner: ID,
+    attribute: ID,
 }
 
-impl Has {
-    fn new(owner: Variable, attribute: Variable) -> Self {
+impl<ID: IrID> Has<ID> {
+    fn new(owner: ID, attribute: ID) -> Self {
         Has { owner, attribute }
     }
 
-    pub fn variables(&self) -> impl Iterator<Item = Variable> {
+    pub fn owner(&self) -> ID {
+        self.owner
+    }
+
+    pub fn attribute(&self) -> ID {
+        self.attribute
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item=ID> {
         [self.owner, self.attribute].into_iter()
     }
 
-    pub fn variables_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(Variable, ConstraintVariableSide) -> (),
+    pub fn ids_foreach<F>(&self, mut function: F)
+        where
+            F: FnMut(ID, ConstraintIDSide) -> (),
     {
-        function(self.owner, ConstraintVariableSide::Left);
-        function(self.attribute, ConstraintVariableSide::Right);
+        function(self.owner, ConstraintIDSide::Left);
+        function(self.attribute, ConstraintIDSide::Right);
     }
 }
 
-impl Into<Constraint> for Has {
-    fn into(self) -> Constraint {
+impl<ID: IrID> Into<Constraint<ID>> for Has<ID> {
+    fn into(self) -> Constraint<ID> {
         Constraint::Has(self)
     }
 }
 
-impl Display for Has {
+impl<ID: IrID> Display for Has<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} has {}", self.owner, self.attribute)
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct ExpressionBinding {
-    variable: Variable,
-    expression: Expression,
+pub struct ExpressionBinding<ID: IrID> {
+    left: ID,
+    expression: Expression<ID>,
 }
 
-impl ExpressionBinding {
-    fn new(variable: Variable, expression: Expression) -> Self {
-        Self { variable, expression }
+impl<ID: IrID> ExpressionBinding<ID> {
+    fn new(left: ID, expression: Expression<ID>) -> Self {
+        Self { left, expression }
     }
 
-    fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
+    fn ids(&self) -> impl Iterator<Item=ID> {
         panic!("Unimplemented");
         empty()
     }
 
-    pub fn variables_foreach<F>(&self, function: F)
-    where
-        F: FnMut(Variable, ConstraintVariableSide) -> (),
+    pub fn ids_foreach<F>(&self, function: F)
+        where
+            F: FnMut(ID, ConstraintIDSide) -> (),
     {
         todo!()
     }
 }
 
-impl Into<Constraint> for ExpressionBinding {
-    fn into(self) -> Constraint {
+impl<ID: IrID> Into<Constraint<ID>> for ExpressionBinding<ID> {
+    fn into(self) -> Constraint<ID> {
         Constraint::ExpressionBinding(self)
     }
 }
 
-impl Display for ExpressionBinding {
+impl<ID: IrID> Display for ExpressionBinding<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} = {}", self.variable, self.expression)
+        write!(f, "{} = {}", self.left, self.expression)
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct FunctionCallBinding {
-    variables: Vec<Variable>,
-    function_call: FunctionCall,
+pub struct FunctionCallBinding<ID: IrID> {
+    left: Vec<ID>,
+    function_call: FunctionCall<ID>,
 }
 
-impl FunctionCallBinding {
-    fn new(variables: Vec<Variable>, function_call: FunctionCall) -> Self {
-        Self { variables, function_call }
+impl<ID: IrID> FunctionCallBinding<ID> {
+    fn new(left: Vec<ID>, function_call: FunctionCall<ID>) -> Self {
+        Self { left, function_call }
     }
 
-    pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variables.iter().cloned()
-    }
-
-    pub fn variables_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(Variable, ConstraintVariableSide) -> (),
-    {
-        for var in &self.variables {
-            function(*var, ConstraintVariableSide::Left)
-        }
-
-        for var in self.function_call.call_variable_mapping().keys() {
-            function(*var, ConstraintVariableSide::Right)
-        }
-    }
-
-    pub(crate) fn function_call(&self) -> &FunctionCall {
+    pub(crate) fn function_call(&self) -> &FunctionCall<ID> {
         &self.function_call
     }
+
+    pub fn ids(&self) -> impl Iterator<Item=ID> + '_ {
+        self.left.iter().cloned()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+        where
+            F: FnMut(ID, ConstraintIDSide) -> (),
+    {
+        for id in &self.left {
+            function(*id, ConstraintIDSide::Left)
+        }
+
+        for id in self.function_call.call_id_mapping().keys() {
+            function(*id, ConstraintIDSide::Right)
+        }
+    }
 }
 
-impl Into<Constraint> for FunctionCallBinding {
-    fn into(self) -> Constraint {
+impl<ID: IrID> Into<Constraint<ID>> for FunctionCallBinding<ID> {
+    fn into(self) -> Constraint<ID> {
         Constraint::FunctionCallBinding(self)
     }
 }
 
-impl Display for FunctionCallBinding {
+impl<ID: IrID> Display for FunctionCallBinding<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.function_call.return_is_stream() {
-            write!(f, "{} in {}", self.variables().map(|i| i.to_string()).join(", "), self.function_call())
+            write!(f, "{} in {}", self.ids().map(|i| i.to_string()).join(", "), self.function_call())
         } else {
-            write!(f, "{} = {}", self.variables().map(|i| i.to_string()).join(", "), self.function_call())
+            write!(f, "{} = {}", self.ids().map(|i| i.to_string()).join(", "), self.function_call())
         }
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Comparison {
-    lhs: Variable,
-    rhs: Variable,
+pub struct Comparison<ID: IrID> {
+    lhs: ID,
+    rhs: ID,
     // comparator: Comparator,
 }
 
-impl Display for Comparison {
+impl<ID: IrID> Comparison<ID> {
+    fn new(lhs: ID, rhs: ID) -> Self {
+        Self { lhs, rhs }
+    }
+
+    pub fn lhs(&self) -> ID {
+        self.lhs
+    }
+
+    pub fn rhs(&self) -> ID {
+        self.rhs
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item=ID> {
+        [self.lhs, self.rhs].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+        where
+            F: FnMut(ID, ConstraintIDSide) -> (),
+    {
+        function(self.lhs, ConstraintIDSide::Left);
+        function(self.rhs, ConstraintIDSide::Right);
+    }
+}
+
+impl<ID: IrID> Into<Constraint<ID>> for Comparison<ID> {
+    fn into(self) -> Constraint<ID> {
+        Constraint::Comparison(self)
+    }
+}
+
+impl<ID: IrID> Display for Comparison<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }
