@@ -115,7 +115,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains(&RoleTypeAnnotation::Abstract(AnnotationAbstract)))
+        Ok(annotations.contains_key(&RoleTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
     fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError> {
@@ -217,7 +217,7 @@ impl<'a> RoleType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<RoleTypeAnnotation>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashMap<RoleTypeAnnotation, RoleType<'static>>>, ConceptReadError> {
         type_manager.get_role_type_annotations(snapshot, self.clone().into_owned())
     }
 

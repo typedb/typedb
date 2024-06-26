@@ -974,7 +974,7 @@ impl<'txn> ThingManager {
                 Value::String(string) => {
                     let annotations =
                         self.type_manager.get_attribute_type_annotations(snapshot, attribute_type.clone())?;
-                    for annotation in annotations.iter() {
+                    for (annotation, _) in annotations.iter() {
                         match annotation {
                             AttributeTypeAnnotation::Abstract(_) => todo!("create abstract attribute"),
                             AttributeTypeAnnotation::Independent(_) => (),

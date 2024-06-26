@@ -82,7 +82,7 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract)))
+        Ok(annotations.contains_key(&EntityTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
     fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError> {
@@ -185,7 +185,7 @@ impl<'a> EntityType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<EntityTypeAnnotation>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashMap<EntityTypeAnnotation, EntityType<'static>>>, ConceptReadError> {
         type_manager.get_entity_type_annotations(snapshot, self.clone().into_owned())
     }
 
