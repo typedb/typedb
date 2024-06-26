@@ -27,7 +27,7 @@ use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationAbstract},
+        annotation::{Annotation, AnnotationAbstract, AnnotationCascade},
         attribute_type::AttributeType,
         object_type::ObjectType,
         owns::Owns,
@@ -201,7 +201,10 @@ impl<'a> RelationType<'a> {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
                 type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())?
-            }
+            },
+            RelationTypeAnnotation::Cascade(_) => {
+                type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())?
+            },
         };
         Ok(())
     }
@@ -215,7 +218,10 @@ impl<'a> RelationType<'a> {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
                 type_manager.unset_owner_annotation_abstract(snapshot, self.clone().into_owned())?
-            }
+            },
+            RelationTypeAnnotation::Cascade(_) => {
+                type_manager.unset_annotation_abstract(snapshot, self.clone().into_owned())?
+            },
         }
         Ok(()) // TODO
     }
@@ -366,12 +372,14 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum RelationTypeAnnotation {
     Abstract(AnnotationAbstract),
+    Cascade(AnnotationCascade),
 }
 
 impl From<Annotation> for RelationTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
         match annotation {
             Annotation::Abstract(annotation) => RelationTypeAnnotation::Abstract(annotation),
+            Annotation::Cascade(annotation) => RelationTypeAnnotation::Cascade(annotation),
 
             Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Relation type."),
             Annotation::Independent(_) => unreachable!("Independent annotation not available for Relation type."),
@@ -387,6 +395,7 @@ impl Into<Annotation> for RelationTypeAnnotation {
     fn into(self) -> Annotation {
         match self {
             RelationTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
+            RelationTypeAnnotation::Cascade(annotation) => Annotation::Cascade(annotation),
         }
     }
 }
