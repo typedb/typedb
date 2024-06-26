@@ -36,12 +36,14 @@ pub enum SchemaValidationError {
     NonAbstractSupertypeOfAbstractSubtype(Label<'static>, Label<'static>),
     OwnsAbstractType(Label<'static>),
     TypeOrderingIsIncompatible(Ordering, Ordering),
+    InvalidOrderingForDistinctAnnotation(Label<'static>),
     AbsentValueType,
     IncompatibleValueType(Option<ValueType>),
     IncompatibleValueTypes(Option<ValueType>, Option<ValueType>),
     DeletingTypeWithSubtypes(Label<'static>),
     DeletingTypeWithInstances(Label<'static>),
     InvalidCardinalityArguments(u64, Option<u64>),
+    CannotUnsetNotDeclaredAnnotation(AnnotationCategory),
 }
 
 impl fmt::Display for SchemaValidationError {
@@ -64,6 +66,7 @@ impl Error for SchemaValidationError {
             Self::OverriddenTypeNotSupertype(_, _) => None,
             Self::PlaysNotDeclared(_, _) => None,
             Self::TypeOrderingIsIncompatible(_, _) => None,
+            Self::InvalidOrderingForDistinctAnnotation(_) => None,
             Self::AnnotationCanOnlyBeSetOnAttributeOrOwns(_, _) => None,
             Self::TypeDoesNotHaveAnnotation(_) => None,
             Self::NonAbstractCannotOwnAbstract(_, _) => None,
@@ -76,6 +79,7 @@ impl Error for SchemaValidationError {
             Self::DeletingTypeWithSubtypes(_) => None,
             Self::DeletingTypeWithInstances(_) => None,
             Self::InvalidCardinalityArguments(_, _) => None,
+            Self::CannotUnsetNotDeclaredAnnotation(_) => None,
         }
     }
 }
