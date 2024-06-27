@@ -7,40 +7,7 @@
 use std::fmt::{Display, Formatter};
 use crate::pattern::IrID;
 
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Variable {
-    id: VariableId,
-}
-
-impl Variable {
-    pub fn new(id: u16) -> Self {
-        Self { id: VariableId { id } }
-    }
-}
-
 impl IrID for Variable {}
-
-impl Display for Variable {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "${}", self.id)
-    }
-}
-
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
-pub(crate) struct VariableId {
-    id: u16,
-    // TODO: retain line/character from original query at which point this Variable was declared
-}
-
-impl VariableId {
-    const MAX: usize = u16::MAX as usize;
-}
-
-impl Display for VariableId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.id)
-    }
-}
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum VariableCategory {
