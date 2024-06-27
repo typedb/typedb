@@ -167,6 +167,7 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_type_supertype(snapshot, self.clone().into_owned())
     }
 
+<<<<<<< HEAD
     pub fn set_supertype(
         &self,
         snapshot: &mut impl WritableSnapshot,
