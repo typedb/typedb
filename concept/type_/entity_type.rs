@@ -5,6 +5,7 @@
  */
 
 use std::collections::{HashMap, HashSet};
+use itertools::Itertools;
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
@@ -27,7 +28,7 @@ use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationAbstract},
+        annotation::{Annotation, AnnotationCategory, AnnotationAbstract},
         attribute_type::AttributeType,
         object_type::ObjectType,
         owns::Owns,
@@ -38,6 +39,10 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::attribute_type::AttributeTypeAnnotation;
+use crate::type_::role_type::RoleTypeAnnotation;
+use crate::type_::type_manager::validation::SchemaValidationError;
+use crate::type_::type_manager::validation::SchemaValidationError::UnsupportedAnnotationForType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType<'a> {
@@ -189,6 +194,26 @@ impl<'a> EntityType<'a> {
         type_manager.get_entity_type_annotations(snapshot, self.clone().into_owned())
     }
 
+    // pub fn get_annotation_categories<'m, Snapshot: ReadableSnapshot>(
+    //     &self,
+    //     snapshot: &Snapshot,
+    //     type_manager: &'m TypeManager<Snapshot>,
+    // ) -> Result<MaybeOwns<'m, HashMap<AnnotationCategory, EntityType<'static>>>, ConceptReadError> {
+    //     type_manager.get_entity_type_annotation_categories(snapshot, self.clone().into_owned())
+    // }
+    //
+    // pub fn get_annotation_of_category_if_exists<'m, Snapshot: ReadableSnapshot>(
+    //     &self,
+    //     snapshot: &Snapshot,
+    //     type_manager: &'m TypeManager<Snapshot>,
+    //     annotation_category: AnnotationCategory,
+    // ) -> Result<EntityTypeAnnotation, ConceptReadError> {
+    //     self.get_annotations(snapshot, type_manager).map(|annotations| {
+    //         annotations.into_iter().filter(|(annotation, _)| annotation.).next
+    //     })
+    //
+    // }
+
     pub fn set_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -205,16 +230,19 @@ impl<'a> EntityType<'a> {
 
     pub fn unset_annotation(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl ReadableSnapshot,
         type_manager: &TypeManager,
-        annotation: EntityTypeAnnotation,
+        annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
-        match annotation {
+        let entity_annotation = EntityTypeAnnotation::try_getting_default(annotation_category)
+            .map_err(|source| ConceptWriteError::Operation {source})?;
+        match entity_annotation {
             EntityTypeAnnotation::Abstract(_) => {
                 type_manager.unset_owner_annotation_abstract(snapshot, self.clone().into_owned())?
             }
         }
-        Ok(()) // TODO
+
+        Ok(())
     }
 
     pub fn into_owned(self) -> EntityType<'static> {
@@ -326,18 +354,34 @@ pub enum EntityTypeAnnotation {
     Abstract(AnnotationAbstract),
 }
 
+impl EntityTypeAnnotation {
+    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<EntityTypeAnnotation, SchemaValidationError> {
+        annotation_category.to_default_annotation().into()
+    }
+}
+
+impl From<Annotation> for Result<EntityTypeAnnotation, SchemaValidationError> {
+    fn from(annotation: Annotation) -> Result<EntityTypeAnnotation, SchemaValidationError> {
+        match annotation {
+            Annotation::Abstract(annotation) => Ok(EntityTypeAnnotation::Abstract(annotation)),
+
+            Annotation::Distinct(_) => Err(UnsupportedAnnotationForType(annotation.category())),
+            Annotation::Independent(_) => Err(UnsupportedAnnotationForType(annotation.category())),
+            Annotation::Unique(_) => Err(UnsupportedAnnotationForType(annotation.category())),
+            Annotation::Key(_) => Err(UnsupportedAnnotationForType(annotation.category())),
+            Annotation::Cardinality(_) => Err(UnsupportedAnnotationForType(annotation.category())),
+            Annotation::Regex(_) => Err(UnsupportedAnnotationForType(annotation.category())),
+            Annotation::Cascade(_) => Err(UnsupportedAnnotationForType(annotation.category())),
+        }
+    }
+}
+
 impl From<Annotation> for EntityTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
-        match annotation {
-            Annotation::Abstract(annotation) => EntityTypeAnnotation::Abstract(annotation),
-
-            Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Entity type."),
-            Annotation::Independent(_) => unreachable!("Independent annotation not available for Entity type."),
-            Annotation::Unique(_) => unreachable!("Unique annotation not available for Entity type."),
-            Annotation::Key(_) => unreachable!("Key annotation not available for Entity type."),
-            Annotation::Cardinality(_) => unreachable!("Cardinality annotation not available for Entity type."),
-            Annotation::Regex(_) => unreachable!("Regex annotation not available for Entity type."),
-            Annotation::Cascade(_) => unreachable!("Cascade annotation not available for Entity type."),
+        let into_annotation: Result<EntityTypeAnnotation, SchemaValidationError> = annotation.into();
+        match into_annotation {
+            Ok(into_annotation) => into_annotation,
+            Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),
         }
     }
 }
@@ -345,7 +389,7 @@ impl From<Annotation> for EntityTypeAnnotation {
 impl Into<Annotation> for EntityTypeAnnotation {
     fn into(self) -> Annotation {
         match self {
-            EntityTypeAnnotation::Abstract(annotation)=> Annotation::Abstract(annotation),
+            EntityTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
         }
     }
 }
