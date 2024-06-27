@@ -5,13 +5,14 @@
  */
 
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use answer::Type;
+use answer::variable::Variable;
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 
 use crate::{
     pattern::{
-        constraint::{Constraint, Type},
-        variable::Variable,
+        constraint::{Constraint},
     },
     program::program::Program,
 };
@@ -37,7 +38,7 @@ pub fn infer_types(program: &Program) {
 }
 
 struct TypeAnnotations {
-    variables: HashMap<Variable, HashSet<Type<Variable>>>,
+    variables: HashMap<Variable, HashSet<Type>>,
     constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
 }
 
@@ -54,13 +55,13 @@ enum ConstraintTypeAnnotations {
 }
 
 struct LeftRightAnnotations {
-    left_to_right: BTreeMap<Type<Variable>, BTreeSet<Type<Variable>>>,
-    right_to_left: BTreeMap<Type<Variable>, BTreeSet<Type<Variable>>>,
+    left_to_right: BTreeMap<Type, BTreeSet<Type>>,
+    right_to_left: BTreeMap<Type, BTreeSet<Type>>,
 }
 
 struct LeftRightFilteredAnnotations {
-    left_to_right: BTreeMap<Type<Variable>, (BTreeSet<Type<Variable>>, HashSet<Type<Variable>>)>,
-    right_to_left: BTreeMap<Type<Variable>, (BTreeSet<Type<Variable>>, HashSet<Type<Variable>>)>,
+    left_to_right: BTreeMap<Type, (BTreeSet<Type>, HashSet<Type>)>,
+    right_to_left: BTreeMap<Type, (BTreeSet<Type>, HashSet<Type>)>,
     // TODO: I think we'll need to be able to traverse from the Filter variable to the left and right. example: `match $role sub friendship:friend; $r ($role: $x);`
     // filter_to_left
     // filter_to_right

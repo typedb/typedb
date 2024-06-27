@@ -10,6 +10,12 @@ use crate::planner::function_plan::FunctionPlan;
 use crate::planner::pattern_plan::PatternPlan;
 
 pub(crate) struct ProgramPlan {
-    entry: PatternPlan,
-    functions: HashMap<DefinitionKey<'static>, FunctionPlan>
+    pub(crate) entry: PatternPlan,
+    pub(crate) functions: HashMap<DefinitionKey<'static>, FunctionPlan>,
+}
+
+impl ProgramPlan {
+    pub(crate) fn new(entry: PatternPlan, functions: HashMap<DefinitionKey<'static>, FunctionPlan>) -> Self {
+        todo!()
+    }
 }

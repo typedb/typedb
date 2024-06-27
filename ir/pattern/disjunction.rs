@@ -8,8 +8,9 @@ use std::{
     fmt::{Display, Formatter},
     sync::{Arc, Mutex, MutexGuard},
 };
+use answer::variable::Variable;
 
-use crate::pattern::{context::PatternContext, variable::Variable, Scope, ScopeId};
+use crate::pattern::{context::PatternContext, Scope, ScopeId};
 
 #[derive(Debug)]
 pub(crate) struct Disjunction {

@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use answer::variable::Variable;
 use ir::pattern::constraint::{Comparison, ExpressionBinding, FunctionCallBinding, Has, RolePlayer};
-use ir::pattern::variable::Variable;
 
 pub(crate) struct PatternPlan {
     steps: Vec<Step>,
@@ -58,21 +58,21 @@ pub(crate) enum Execution {
 }
 
 pub(crate) enum Iterate {
-    Has(Has, SortedIterateMode),
+    Has(Has<Variable>, SortedIterateMode),
     // owner -> attribute
-    HasReverse(Has, SortedIterateMode), // attribute -> owner
+    HasReverse(Has<Variable>, SortedIterateMode), // attribute -> owner
 
-    RolePlayer(RolePlayer, SortedIterateMode),
+    RolePlayer(RolePlayer<Variable>, SortedIterateMode),
     // relation -> player
-    RolePlayerReverse(RolePlayer, SortedIterateMode), // player -> relation
+    RolePlayerReverse(RolePlayer<Variable>, SortedIterateMode), // player -> relation
 
     // RelationIndex(RelationIndex, SortedIterateMode)
     // RelationIndexReverse(RelationIndex, SortedIterateMode)
 
-    FunctionCallBinding(FunctionCallBinding),
+    FunctionCallBinding(FunctionCallBinding<Variable>),
 
-    Comparison(Comparison), // lhs derived from rhs. We need to decide if lhs will always be sorted
-    ComparisonReverse(Comparison), // rhs derived from lhs
+    Comparison(Comparison<Variable>), // lhs derived from rhs. We need to decide if lhs will always be sorted
+    ComparisonReverse(Comparison<Variable>), // rhs derived from lhs
 }
 
 impl Iterate {
@@ -117,22 +117,29 @@ pub(crate) enum SortedIterateMode {
 }
 
 impl SortedIterateMode {
-    const fn is_sorted_from(&self) -> bool {
+    pub const fn is_sorted_from(&self) -> bool {
         match self {
             SortedIterateMode::UnboundSortedFrom => true,
             SortedIterateMode::UnboundSortedTo | SortedIterateMode::BoundFromSortedTo => false
         }
     }
+
+    pub const fn is_unbounded(&self) -> bool {
+        match self {
+            SortedIterateMode::UnboundSortedFrom | SortedIterateMode::UnboundSortedTo => true,
+            SortedIterateMode::BoundFromSortedTo => false
+        }
+    }
 }
 
 pub(crate) enum Single {
-    ExpressionBinding(ExpressionBinding)
+    ExpressionBinding(ExpressionBinding<Variable>)
 }
 
 pub(crate) enum Check {
-    Has(Has),
-    RolePlayer(RolePlayer),
-    Comparison(Comparison),
+    Has(Has<Variable>),
+    RolePlayer(RolePlayer<Variable>),
+    Comparison(Comparison<Variable>),
 }
 
 // enum Filter {

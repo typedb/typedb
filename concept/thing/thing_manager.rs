@@ -4,12 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    borrow::{Borrow, Cow},
-    collections::HashSet,
-    marker::PhantomData,
-    sync::Arc,
-};
+use std::{borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
+use std::ops::{Bound, Range, RangeBounds};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -75,6 +71,7 @@ use crate::{
     },
     ConceptStatus,
 };
+use crate::thing::object::HasIterator;
 
 pub struct ThingManager<Snapshot> {
     vertex_generator: Arc<ThingVertexGenerator>,
@@ -134,7 +131,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &self,
         snapshot: &Snapshot,
         player: &impl ObjectAPI<'o>,
-    ) -> impl for<'a> LendingIterator<Item<'a> = Result<Relation<'a>, ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a>=Result<Relation<'a>, ConceptReadError>> {
         let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.vertex());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING_REVERSE));
@@ -149,7 +146,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         snapshot: &Snapshot,
         player: &impl ObjectAPI<'o>,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x>=Result<Relation<'x>, ConceptReadError>> {
         let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.vertex());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING_REVERSE));
@@ -384,16 +381,18 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         Ok(has_exists)
     }
 
-    pub(crate) fn get_has_unordered<'a>(
+    pub fn get_has_from_type_range_unordered<'a>(
         &self,
         snapshot: &Snapshot,
-        owner: &impl ObjectAPI<'a>,
-    ) -> HasAttributeIterator {
-        let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
-        HasAttributeIterator::new(
-            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
-        )
+        owner_type_range: KeyRange<ObjectType<'static>>,
+    ) -> HasIterator {
+        let range = owner_type_range.map(
+            |type_| ThingEdgeHas::prefix_from_type(type_.into_vertex()),
+            |_| ThingEdgeHas::FIXED_WIDTH_ENCODING,
+        );
+        HasIterator::new(snapshot.iterate_range(range))
     }
+
 
     pub fn get_attributes_by_struct_field<'this, 'a, 'v>(
         &'this self,
@@ -433,9 +432,10 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         ))
     }
 
-    pub(crate) fn get_has_ordered<'this, 'a>(
-        &'this self,
-        snapshot: &'this Snapshot,
+
+    pub(crate) fn get_has_from_thing_unordered<'a>(
+        &self,
+        snapshot: &Snapshot,
         owner: &impl ObjectAPI<'a>,
     ) -> HasAttributeIterator {
         let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
@@ -443,8 +443,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
         )
     }
-
-    pub(crate) fn get_has_type_unordered<'this, 'a>(
+    pub(crate) fn get_has_from_thing_to_type_unordered<'this, 'a>(
         &'this self,
         snapshot: &'this Snapshot,
         owner: &impl ObjectAPI<'a>,
@@ -467,7 +466,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         ))
     }
 
-    pub(crate) fn get_has_type_ordered<'a>(
+    pub(crate) fn get_has_to_type_ordered<'a>(
         &self,
         snapshot: &Snapshot,
         owner: &impl ObjectAPI<'a>,

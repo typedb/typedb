@@ -20,7 +20,7 @@ impl ProgramExecutor {
     fn new(program_plan: ProgramPlan) -> Self {
 
         let ProgramPlan { entry: entry_plan, functions: function_plans } = program_plan;
-        let entry = PatternExecutor::new(entry_plan);
+        let entry = PatternExecutor::new(entry_plan, &HashMap::new());
 
         // TODO: functions
 

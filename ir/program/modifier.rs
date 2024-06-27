@@ -5,9 +5,10 @@
  */
 
 use std::{collections::HashSet, error::Error, fmt};
+use answer::variable::Variable;
 
 use crate::{
-    pattern::{context::PatternContext, variable::Variable},
+    pattern::{context::PatternContext},
     program::modifier::ModifierDefinitionError::SortVariableNotAvailable,
 };
 

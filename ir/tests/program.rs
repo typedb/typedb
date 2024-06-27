@@ -5,6 +5,7 @@
  */
 
 use std::collections::HashMap;
+use answer::variable::Variable;
 
 use encoding::{
     graph::definition::definition_key::{DefinitionID, DefinitionKey},
@@ -15,7 +16,7 @@ use ir::{
         conjunction::Conjunction,
         function_call::FunctionCall,
         pattern::Pattern,
-        variable::{Variable, VariableCategory, VariableOptionality},
+        variable_category::{VariableCategory, VariableOptionality},
     },
     program::{modifier::ModifierDefinitionError, program::Program, FunctionalBlock},
 };

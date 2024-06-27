@@ -5,17 +5,20 @@
  */
 
 use std::collections::HashMap;
+use itertools::Itertools;
+use answer::variable::Variable;
 
 use answer::variable_value::VariableValue;
 use ir::pattern::constraint::{Comparison, FunctionCallBinding, Has, RolePlayer};
-use ir::pattern::variable::Variable;
+use crate::executor::constraint_iterator::ConstraintIteratorProvider;
+use crate::executor::Position;
 
 use crate::planner::pattern_plan::{Check, Execution, Iterate, PatternPlan, Single, SortedIterateMode, Step};
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, Position>,
-    // we should be able to get away with an array, since Variables allocate in sequence
     variable_positions_index: Vec<Variable>,
+
     steps: Vec<StepExecutor>,
     // modifiers: Modifier,
 
@@ -24,7 +27,7 @@ pub(crate) struct PatternExecutor {
 }
 
 impl PatternExecutor {
-    pub(crate) fn new(plan: PatternPlan) -> Self {
+    pub(crate) fn new(plan: PatternPlan, variable_positions: &HashMap<Variable, Position>) -> Self {
         // 1. assign positions based on the output variables of each step
         // 2. create step executors that have an output Batch corresponding to the total size of the variables we care about
 
@@ -32,14 +35,14 @@ impl PatternExecutor {
         let mut steps = Vec::new();
         for step in plan.into_steps() {
             for variable in step.generated_variables() {
-                let previous = variable_positions.insert(*variable, variable_positions.len() as Position);
+                let previous = variable_positions.insert(*variable, Position::new(variable_positions.len() as u32));
                 debug_assert_eq!(previous, Option::None);
             }
-            steps.push(StepExecutor::new(step))
+            steps.push(StepExecutor::new(step, &variable_positions))
         }
         let mut variable_positions_index = vec![Variable::new(0); variable_positions.len()];
         for (variable, position) in &variable_positions {
-            variable_positions_index[*position as usize] = *variable
+            variable_positions_index[position.as_usize()] = *variable
         }
 
         PatternExecutor {
@@ -133,30 +136,32 @@ enum StepExecutor {
 
 
 impl StepExecutor {
-    fn new(step: Step) -> Self {
+    fn new(step: Step, variable_positions: &HashMap<Variable, Position>) -> Self {
         let Step { execution: execution, total_variables_count: vars_count, .. } = step;
 
         match execution {
             Execution::SortedIterators(iterates) => {
-                Self::Sorted(SortedExecutor::new(iterates, vars_count))
+                Self::Sorted(SortedExecutor::new(iterates, vars_count, variable_positions))
             }
             Execution::UnsortedIterator(iterate, checks) => {
-                Self::Unsorted(UnsortedExecutor::new(iterate, checks, vars_count))
+                Self::Unsorted(UnsortedExecutor::new(iterate, checks, vars_count, variable_positions))
             }
             Execution::Single(single, checks) => {
-                Self::Single(SingleExecutor::new(single, checks))
+                Self::Single(SingleExecutor::new(single, checks, variable_positions))
             }
             Execution::Disjunction(plans) => {
-                let executors = plans.into_iter().map(|pattern_plan| PatternExecutor::new(pattern_plan)).collect();
-                Self::Disjunction(DisjunctionExecutor::new(executors))
+                todo!()
+                // let executors = plans.into_iter().map(|pattern_plan| PatternExecutor::new(pattern_plan, )).collect();
+                // Self::Disjunction(DisjunctionExecutor::new(executors, variable_positions))
             }
             Execution::Negation(plan) => {
-                let executor = PatternExecutor::new(plan);
-                // TODO: add limit 1, filters if they aren't there already?
-                Self::Negation(NegationExecutor::new(executor))
+                todo!()
+                // let executor = PatternExecutor::new(plan, );
+                // // TODO: add limit 1, filters if they aren't there already?
+                // Self::Negation(NegationExecutor::new(executor, variable_positions))
             }
             Execution::Optional(plan) => {
-                Self::Optional(OptionalExecutor::new(PatternExecutor::new(plan)))
+                Self::Optional(OptionalExecutor::new(PatternExecutor::new(plan, variable_positions)))
             }
         }
     }
@@ -184,7 +189,7 @@ impl StepExecutor {
 }
 
 struct SortedExecutor {
-    iterates: Vec<Iterate>,
+    iterator_providers: Vec<ConstraintIteratorProvider>,
     // iterator:
 
     output_width: u32,
@@ -192,9 +197,14 @@ struct SortedExecutor {
 }
 
 impl SortedExecutor {
-    fn new(iterates: Vec<Iterate>, vars_count: u32) -> Self {
+    fn new(iterates: Vec<Iterate>, vars_count: u32, variable_positions: &HashMap<Variable, Position>) -> Self {
+        let providers = iterates
+            .into_iter()
+            .map(|iterate| ConstraintIteratorProvider::new(iterate, variable_positions))
+            .collect_vec();
+
         Self {
-            iterates,
+            iterator_providers: providers,
             output_width: vars_count,
             output: None,
         }
@@ -202,13 +212,14 @@ impl SortedExecutor {
 
     fn batch_from(&mut self, input_batch: Batch) -> Option<Batch> {
         // TODO: avoid malloc
-        input_batch.into_rows_cloned()
-            .flat_map(|row| {
-                // TODO: can we avoid this malloc?
-                let iterators = Vec::with_capacity(self.iterates.len());
-
-                for iter in &self.iterates {}
-            })
+        // input_batch.into_rows_cloned()
+        //     .flat_map(|row| {
+        //         // TODO: can we avoid this malloc?
+        //         let iterators = Vec::with_capacity(self.iterates.len());
+        //
+        //         for iter in &self.iterates {}
+        //     })
+        todo!()
     }
 
     fn batch_continue(&mut self) -> Option<Batch> {
@@ -225,7 +236,7 @@ struct UnsortedExecutor {
 }
 
 impl UnsortedExecutor {
-    fn new(iterate: Iterate, checks: Vec<Check>, total_vars: u32) -> Self {
+    fn new(iterate: Iterate, checks: Vec<Check>, total_vars: u32, variable_positions: &HashMap<Variable, Position>) -> Self {
         Self {
             iterate,
             checks,
@@ -249,7 +260,7 @@ struct SingleExecutor {
 }
 
 impl SingleExecutor {
-    fn new(provider: Single, checks: Vec<Check>) -> SingleExecutor {
+    fn new(provider: Single, checks: Vec<Check>, variable_positions: &HashMap<Variable, Position>) -> SingleExecutor {
         Self { provider, checks }
     }
 
@@ -263,7 +274,7 @@ struct DisjunctionExecutor {
 }
 
 impl DisjunctionExecutor {
-    fn new(executors: Vec<PatternExecutor>) -> DisjunctionExecutor {
+    fn new(executors: Vec<PatternExecutor>, variable_positions: &HashMap<Variable, Position>) -> DisjunctionExecutor {
         Self { executors }
     }
 
@@ -281,7 +292,7 @@ struct NegationExecutor {
 }
 
 impl NegationExecutor {
-    fn new(executor: PatternExecutor) -> NegationExecutor {
+    fn new(executor: PatternExecutor, variable_positions: &HashMap<Variable, Position>) -> NegationExecutor {
         Self { executor }
     }
 
@@ -313,7 +324,7 @@ const BATCH_ROWS_MAX: u32 = 64;
 
 pub struct Batch {
     width: usize,
-    data: Vec<(Variable, VariableValue<'static>)>,
+    data: Vec<VariableValue<'static>>,
 }
 
 impl Batch {
@@ -321,7 +332,7 @@ impl Batch {
         let size = width * BATCH_ROWS_MAX;
         Batch {
             width: width as usize,
-            data: vec![(Variable::new(0), VariableValue::Empty); size as usize],
+            data: vec![VariableValue::Empty; size as usize],
         }
     }
 
@@ -355,7 +366,5 @@ impl Iterator for RowsIterator {
 }
 
 pub(crate) struct Row {
-    row: Vec<(Variable, VariableValue<'static>)>,
+    row: Vec<VariableValue<'static>>,
 }
-
-type Position = u32;

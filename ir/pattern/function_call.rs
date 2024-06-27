@@ -12,9 +12,10 @@ use std::hash::Hash;
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 use itertools::Itertools;
+use answer::variable::Variable;
 use crate::pattern::IrID;
 
-use crate::pattern::variable::{Variable, VariableCategory, VariableOptionality};
+use crate::pattern::variable_category::{VariableCategory, VariableOptionality};
 
 /// This IR has information copied from the target function, so inference can be block-local
 #[derive(Debug, Clone, Eq, PartialEq)]

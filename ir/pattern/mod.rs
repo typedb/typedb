@@ -9,12 +9,13 @@ use std::{
     fmt::{Display, Formatter},
 };
 use std::hash::Hash;
+use answer::variable::Variable;
 
 pub mod conjunction;
 pub mod constraint;
 pub mod negation;
 pub mod optional;
-pub mod variable;
+pub mod variable_category;
 
 pub mod context;
 pub mod disjunction;
@@ -46,4 +47,6 @@ impl Display for ScopeId {
     }
 }
 
-trait IrID: Copy + Display + Hash + Eq + PartialEq + Ord + PartialOrd + 'static {}
+pub trait IrID: Copy + Display + Hash + Eq + PartialEq + Ord + PartialOrd + 'static {}
+
+impl IrID for Variable {}

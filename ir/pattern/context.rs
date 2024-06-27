@@ -10,11 +10,12 @@ use std::{
 };
 
 use itertools::Itertools;
+use answer::variable::Variable;
 
 use crate::{
     pattern::{
         constraint::Constraint,
-        variable::{Variable, VariableCategory, VariableOptionality},
+        variable_category::{VariableCategory, VariableOptionality},
         Scope, ScopeId,
     },
     PatternDefinitionError,

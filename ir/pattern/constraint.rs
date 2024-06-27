@@ -12,6 +12,7 @@ use std::{
 };
 
 use itertools::Itertools;
+use answer::variable::Variable;
 
 use crate::{
     pattern::{
@@ -19,7 +20,7 @@ use crate::{
         expression::Expression,
         function_call::FunctionCall,
         ScopeId,
-        variable::{Variable, VariableCategory, VariableOptionality},
+        variable_category::{VariableCategory, VariableOptionality},
     },
     PatternDefinitionError,
 };
@@ -345,6 +346,10 @@ pub struct RolePlayer<ID: IrID> {
 }
 
 impl<ID: IrID> RolePlayer<ID> {
+    pub fn new(relation: ID, player: ID, role_type: Option<ID>) -> Self {
+        Self { relation, player, role_type }
+    }
+
     pub fn relation(&self) -> ID {
         self.relation
     }
@@ -367,6 +372,14 @@ impl<ID: IrID> RolePlayer<ID> {
             None => {}
             Some(role) => function(role, ConstraintIDSide::Filter),
         };
+    }
+
+    pub fn into_ids<T: IrID>(self, mapping: &HashMap<ID, T>) -> RolePlayer<T> {
+        RolePlayer::new(
+            *mapping.get(&self.relation).unwrap(),
+            *mapping.get(&self.player).unwrap(),
+            self.role_type.map(|rt| *mapping.get(&rt).unwrap())
+        )
     }
 }
 
@@ -418,6 +431,10 @@ impl<ID: IrID> Has<ID> {
     {
         function(self.owner, ConstraintIDSide::Left);
         function(self.attribute, ConstraintIDSide::Right);
+    }
+
+    pub fn into_ids<T: IrID>(self, mapping: &HashMap<ID, T>) -> Has<T> {
+        Has::new(*mapping.get(&self.owner).unwrap(), *mapping.get(&self.attribute).unwrap())
     }
 }
 

@@ -32,6 +32,7 @@ use crate::{
 ///
 /// Note: mixed suffix lengths will in general be OK since we have a different attribute type prefix separating them
 ///
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ThingEdgeHas<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
@@ -41,6 +42,7 @@ impl<'a> ThingEdgeHas<'a> {
     const PREFIX: Prefix = Prefix::EdgeHas;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
+    pub const LENGTH_PREFIX_FROM_TYPE: usize = PrefixID::LENGTH + ObjectVertex::LENGTH_PREFIX_TYPE;
     pub const LENGTH_PREFIX_FROM_OBJECT: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
     pub const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize =
         PrefixID::LENGTH + ObjectVertex::LENGTH + AttributeVertex::LENGTH_PREFIX_TYPE;
@@ -56,6 +58,16 @@ impl<'a> ThingEdgeHas<'a> {
         bytes.bytes_mut()[Self::range_from()].copy_from_slice(from.bytes().bytes());
         bytes.bytes_mut()[Self::range_to_for_vertex(to.as_reference())].copy_from_slice(to.bytes().bytes());
         ThingEdgeHas { bytes: Bytes::Array(bytes) }
+    }
+
+    pub fn prefix_from_type(
+        type_: TypeVertex<'static>,
+    ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_TYPE }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
+        bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
+        bytes.bytes_mut()[Self::range_from_type()]
+            .copy_from_slice(ObjectVertex::build_prefix_from_type_vertex(type_).bytes());
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
     pub fn prefix_from_object(
@@ -109,6 +121,10 @@ impl<'a> ThingEdgeHas<'a> {
         AttributeVertex::new(self.bytes.into_range(range))
     }
 
+    const fn range_from_type() -> Range<usize> {
+        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + ObjectVertex::LENGTH_PREFIX_TYPE
+    }
+
     const fn range_from() -> Range<usize> {
         Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + ObjectVertex::LENGTH
     }
@@ -151,7 +167,7 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeHas<'a> {
 ///
 /// Note that these are represented here together, but should go to different keyspaces due to different prefix lengths
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ThingEdgeHasReverse<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
@@ -248,7 +264,7 @@ impl<'a> ThingEdgeHasReverse<'a> {
         AttributeVertex::new(Bytes::Reference(reference))
     }
 
-    fn to(&'a self) -> ObjectVertex<'a> {
+    pub fn to(&'a self) -> ObjectVertex<'a> {
         let reference = ByteReference::new(&self.bytes.bytes()[self.range_to()]);
         ObjectVertex::new(Bytes::Reference(reference))
     }

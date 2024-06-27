@@ -5,9 +5,6 @@
  */
 
 use std::fmt::{Display, Formatter};
-use crate::pattern::IrID;
-
-impl IrID for Variable {}
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum VariableCategory {

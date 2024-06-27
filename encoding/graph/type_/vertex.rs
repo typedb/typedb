@@ -76,6 +76,16 @@ impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}
 
 impl<'a> Typed<'a, BUFFER_KEY_INLINE> for TypeVertex<'a> {}
 
+impl<'a> primitive::prefix::Prefix for TypeVertex<'a> {
+    fn starts_with(&self, other: &Self) -> bool {
+        self.bytes.starts_with(&other.bytes)
+    }
+
+    fn into_starts_with(self, other: Self) -> bool {
+        self.bytes.as_reference().into_starts_with(other.bytes.as_reference())
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct TypeID {
     bytes: [u8; TypeID::LENGTH],

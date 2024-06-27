@@ -8,6 +8,7 @@ pub mod combinators;
 pub mod higher_order;
 
 use std::{cmp::Ordering, iter, mem::transmute};
+use std::borrow::Borrow;
 
 use combinators::FilterMap;
 use higher_order::AdHocHkt;
@@ -16,16 +17,18 @@ use crate::{
     combinators::{Filter, Map, TakeWhile},
     higher_order::{FnMutHktHelper, Hkt},
 };
+use crate::higher_order::FnHktHelper;
 
 pub trait LendingIterator: 'static {
     type Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>>;
 
-    fn filter<P>(self, pred: P) -> Filter<Self, P>
+    fn filter<P, F>(self, pred: P) -> Filter<Self, P>
     where
         Self: Sized,
-        P: FnMut(&Self::Item<'_>) -> bool,
+        P: Borrow<F>,
+        F: for<'a, 'b> FnHktHelper<&'a Self::Item<'b>, bool> + ?Sized
     {
         Filter::new(self, pred)
     }

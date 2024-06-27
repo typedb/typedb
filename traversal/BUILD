@@ -15,9 +15,11 @@ rust_library(
     ]),
     deps = [
         "//answer",
+        "//common/lending_iterator",
         "//concept",
         "//encoding",
         "//ir",
+        "//storage",
 
         "@crates//:itertools",
     ],
