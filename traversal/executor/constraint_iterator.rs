@@ -7,17 +7,20 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
+use itertools::{Itertools, kmerge_by, KMergeBy, merge_join_by};
 
 use answer::Type;
 use answer::variable::Variable;
 use concept::error::ConceptReadError;
 use concept::thing::attribute::Attribute;
-use concept::thing::object::HasIterator;
+use concept::thing::object::{HasAttributeIterator, HasIterator, Object, ObjectAPI};
 use concept::thing::thing_manager::ThingManager;
+use concept::type_::attribute_type::AttributeType;
 use ir::pattern::constraint::{Comparison, FunctionCallBinding, Has, RolePlayer};
-use lending_iterator::combinators::Filter;
-use lending_iterator::higher_order::FnHktHelper;
+use lending_iterator::adaptors::{Filter, Map};
+use lending_iterator::higher_order::{AdHocHkt, FnHktHelper, FnMutHktHelper};
 use lending_iterator::LendingIterator;
+use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::key_range::KeyRange;
 use storage::snapshot::ReadableSnapshot;
 
@@ -89,7 +92,10 @@ struct HasProvider {
     has: Has<Position>,
     iterate_mode: SortedIterateMode,
     owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    attribute_types: Arc<HashSet<AttributeType<'static>>>,
     filter_fn: HasProviderFilter,
+
+    owner_cache: Option<Vec<Object<'static>>>,
 }
 
 enum HasProviderFilter {
@@ -97,8 +103,6 @@ enum HasProviderFilter {
     AttributeFilter(Arc<AttributeFilterFn>),
 }
 
-// type HasFilterFn = dyn for<'a, 'b> Fn(&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>) -> bool;
-// type AttributeFilterFn = dyn for<'a, 'b> Fn(&'a Result<(Attribute<'b>, u64), ConceptReadError>) -> bool;
 type HasFilterFn = dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
 type AttributeFilterFn = dyn for<'a, 'b> FnHktHelper<&'a Result<(Attribute<'b>, u64), ConceptReadError>, bool>;
 
@@ -119,22 +123,25 @@ impl HasProviderFilter {
 }
 
 impl HasProvider {
-    pub(crate) fn new(
+    pub(crate) fn new<Snapshot: ReadableSnapshot>(
         has: Has<Position>,
         iterate_mode: SortedIterateMode,
         owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
-        attribute_types: Arc<HashSet<Type>>,
-    ) -> Self {
+        attribute_types: Arc<HashSet<AttributeType<'static>>>,
+        snapshot: &Snapshot,
+        thing_manager: ThingManager<Snapshot>,
+    ) -> Result<Self, ConceptReadError> {
         debug_assert!(owner_attribute_types.len() > 0);
         let filter_fn = if iterate_mode.is_unbounded() {
             HasProviderFilter::HasFilter(
                 Arc::new({
                     let owner_att_types = owner_attribute_types.clone();
+                    let att_types = attribute_types.clone();
                     move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| {
                         match result {
                             Ok((has, _)) => {
                                 owner_att_types.contains_key(&Type::from(has.owner().type_())) &&
-                                    attribute_types.contains(&Type::Attribute(has.attribute().type_()))
+                                    att_types.contains(&has.attribute().type_())
                             }
                             Err(_) => true
                         }
@@ -143,39 +150,74 @@ impl HasProvider {
             )
         } else {
             HasProviderFilter::AttributeFilter(
-                Arc::new(move |result: &Result<(Attribute<'_>, u64), ConceptReadError>| {
-                    match result {
-                        Ok((attribute, _)) => {
-                            attribute_types.contains(&Type::Attribute(attribute.type_()))
+                Arc::new({
+                    let att_types = attribute_types.clone();
+                    move |result: &Result<(Attribute<'_>, u64), ConceptReadError>| {
+                        match result {
+                            Ok((attribute, _)) => {
+                                att_types.contains(&attribute.type_())
+                            }
+                            Err(_) => true
                         }
-                        Err(_) => true
                     }
                 })
             )
         };
 
-        Self { has, iterate_mode, owner_attribute_types: owner_attribute_types, filter_fn }
+        let owner_cache = if matches!(iterate_mode, SortedIterateMode::UnboundSortedTo) {
+            let mut cache = Vec::new();
+            for owner_type in owner_attribute_types.keys() {
+                for result in thing_manager.get_objects_in(snapshot, owner_type.as_object_type())
+                    .map_static(|result| result.map(|object| object.clone().into_owned()))
+                    .into_iter() {
+                    match result {
+                        Ok(object) => cache.push(object),
+                        Err(err) => return Err(err),
+                    }
+                }
+            }
+            debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
+            Some(cache)
+        } else {
+            None
+        };
+
+        Ok(Self { has, iterate_mode, owner_attribute_types: owner_attribute_types, attribute_types, filter_fn, owner_cache })
     }
 
     pub(crate) fn get_iterator<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        thing_manager: ThingManager<Snapshot>,
+        thing_manager: &ThingManager<Snapshot>,
         row: &Row,
-    ) -> ConstraintIterator {
+    ) -> Result<ConstraintIterator, ConceptReadError> {
         match self.iterate_mode {
             SortedIterateMode::UnboundSortedFrom => {
                 let first_from_type = self.owner_attribute_types.first_key_value().unwrap().0;
                 let last_key_from_type = self.owner_attribute_types.last_key_value().unwrap().0;
                 let key_range = KeyRange::new_inclusive(first_from_type.as_object_type(), last_key_from_type.as_object_type());
                 let filter_fn = self.filter_fn.has_filter();
+                // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
                 let iterator: Filter<HasIterator, Arc<HasFilterFn>> = thing_manager
                     .get_has_from_type_range_unordered(snapshot, key_range)
                     .filter::<_, HasFilterFn>(filter_fn);
-
-                ConstraintIterator::HasUnboundedSortedFrom(iterator)
+                Ok(ConstraintIterator::HasUnboundedSortedFrom(iterator))
             }
             SortedIterateMode::UnboundSortedTo => {
+                // debug_assert!(self.owner_cache.is_some());
+                // let mut iterators = Vec::new();
+                // for iter in self.owner_cache.as_ref().unwrap().iter().map(|object|
+                //     object.get_has_types_range_unordered(snapshot, thing_manager, self.attribute_types.iter().cloned())
+                // ) {
+                //     let iter: HasAttributeIterator = iter?;
+                //
+                // }
+                //
+                // let merged = kmerge_by(iterators, |(attr_1, _), (attr_2, _)| attr_1 < attr_2);
+                // let unique = merged.dedup_by(|(attr_1, _)| attr_1);
+                // let single_counts = unique.map(|(attr, count)| (attr, 1));
+                //
+                // // ConstraintIterator::HasUnboundSortedTo(single_counts)
                 todo!()
             }
             SortedIterateMode::BoundFromSortedTo => {

@@ -123,7 +123,7 @@ async fn object_get_has_list(
         let attribute_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.to_typedb()).unwrap().unwrap();
         object
-            .get_has_ordered(&tx.snapshot, &tx.thing_manager, attribute_type)
+            .get_has_type_ordered(&tx.snapshot, &tx.thing_manager, attribute_type)
             .unwrap()
             .into_iter()
             .map(|attr| attr.into_owned())
@@ -173,7 +173,7 @@ async fn object_get_has_type(
         let attribute_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attribute_type_label.to_typedb()).unwrap().unwrap();
         object
-            .get_has_type(&tx.snapshot, &tx.thing_manager, attribute_type)
+            .get_has_type_unordered(&tx.snapshot, &tx.thing_manager, attribute_type)
             .unwrap()
             .map_static(|res| {
                 let (attribute, _count) = res.unwrap();
@@ -215,7 +215,7 @@ async fn object_get_has_with_annotations(
             .into_iter()
             .flat_map(|attribute_type| {
                 object
-                    .get_has_type(&tx.snapshot, &tx.thing_manager, attribute_type)
+                    .get_has_type_unordered(&tx.snapshot, &tx.thing_manager, attribute_type)
                     .unwrap()
                     .map_static(|res| {
                         let (attribute, _count) = res.unwrap();

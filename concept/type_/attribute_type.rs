@@ -44,6 +44,7 @@ impl<'a> ConceptAPI<'a> for AttributeType<'a> {}
 impl<'a> PrefixedTypeVertexEncoding<'a> for AttributeType<'a> {
     const PREFIX: Prefix = VertexAttributeType;
 }
+
 impl<'a> TypeVertexEncoding<'a> for AttributeType<'a> {
     fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
         debug_assert!(Self::PREFIX == VertexAttributeType);
@@ -56,6 +57,16 @@ impl<'a> TypeVertexEncoding<'a> for AttributeType<'a> {
 
     fn into_vertex(self) -> TypeVertex<'a> {
         self.vertex
+    }
+}
+
+impl<'a> primitive::prefix::Prefix for AttributeType<'a> {
+    fn starts_with(&self, other: &Self) -> bool {
+        self.vertex().starts_with(&other.vertex())
+    }
+
+    fn into_starts_with(self, other: Self) -> bool {
+        self.vertex().as_reference().into_starts_with(other.vertex().as_reference())
     }
 }
 

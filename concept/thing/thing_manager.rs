@@ -451,9 +451,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     ) -> Result<HasAttributeIterator, ConceptReadError> {
         let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
         let value_type = match attribute_value_type.as_ref() {
-            None => {
-                todo!("Handle missing value type - for abstract attributes. Or assume this will never happen")
-            }
+            None => return Ok(HasAttributeIterator::new_empty()),
             Some(value_type) => value_type,
         };
         let prefix = ThingEdgeHas::prefix_from_object_to_type(
@@ -466,7 +464,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         ))
     }
 
-    pub(crate) fn get_has_to_type_ordered<'a>(
+    pub(crate) fn get_has_from_thing_to_type_ordered<'a>(
         &self,
         snapshot: &Snapshot,
         owner: &impl ObjectAPI<'a>,
@@ -475,9 +473,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         let key = HAS_ORDER_PROPERTY_FACTORY.build(owner.vertex(), attribute_type.vertex());
         let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
         let value_type = match attribute_value_type.as_ref() {
-            None => {
-                todo!("Handle missing value type - for abstract attributes. Or assume this will never happen")
-            }
+            None => return Ok(Vec::new()),
             Some(value_type) => value_type,
         };
         let attributes = snapshot
@@ -495,6 +491,44 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?
             .unwrap_or_else(Vec::new);
         Ok(attributes)
+    }
+
+    pub(crate) fn get_has_from_thing_to_type_range_unordered<'this, 'a>(
+        &'this self,
+        snapshot: &'this Snapshot,
+        owner: &impl ObjectAPI<'a>,
+        mut attribute_types_defining_range: impl Iterator<Item=AttributeType<'static>>,
+    ) -> Result<HasAttributeIterator, ConceptReadError> {
+        let mut min_prefix_inclusive = None;
+        let mut max_prefix_inclusive = None;
+        for result in attribute_types_defining_range
+            .map(|attribute_type| {
+                match attribute_type.get_value_type(snapshot, self.type_manager()) {
+                    Ok(Some(vt)) => {
+                        Ok(Some(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), vt.category(), attribute_type.vertex())))
+                    }
+                    Ok(None) => Ok(None),
+                    Err(err) => Err(err)
+                }
+            }) {
+            match result? {
+                None => {}
+                Some(prefix) => {
+                    if min_prefix_inclusive.is_none() || min_prefix_inclusive.as_ref().unwrap() > &prefix {
+                        min_prefix_inclusive = Some(prefix)
+                    } else if max_prefix_inclusive.is_none() || max_prefix_inclusive.as_ref().unwrap() < &prefix {
+                        max_prefix_inclusive = Some(prefix)
+                    }
+                }
+            }
+        }
+
+        let range = if max_prefix_inclusive.is_some() {
+            KeyRange::new_inclusive(min_prefix_inclusive.unwrap(), max_prefix_inclusive.unwrap())
+        } else {
+            KeyRange::new_within(min_prefix_inclusive.unwrap(), ThingEdgeHas::FIXED_WIDTH_ENCODING)
+        };
+        Ok(HasAttributeIterator::new(snapshot.iterate_range(range)))
     }
 
     pub(crate) fn get_owners<'this>(
@@ -794,7 +828,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             .expect("encountered a has edge without a corresponding owns in the schema");
 
         if let Some(cardinality) = owns.get_cardinality(snapshot, self.type_manager())? {
-            let count = owner.get_has_type(snapshot, self, attribute_type.clone())?.count();
+            let count = owner.get_has_type_unordered(snapshot, self, attribute_type.clone())?.count();
             if !cardinality.is_valid(count as u64) {
                 if owns.is_key(snapshot, &*self.type_manager)? {
                     if count == 0 {

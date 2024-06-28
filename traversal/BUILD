@@ -19,6 +19,7 @@ rust_library(
         "//concept",
         "//encoding",
         "//ir",
+        "//resource",
         "//storage",
 
         "@crates//:itertools",
