@@ -4,10 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::Debug;
+pub(crate) struct FunctionPlan {
 
-pub trait Prefix: Ord + Clone + Debug {
-    fn starts_with(&self, other: &Self) -> bool;
-
-    fn into_starts_with(self, other: Self) -> bool;
 }

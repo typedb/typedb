@@ -5,13 +5,13 @@
  */
 
 use std::collections::HashMap;
+use crate::variable::Variable;
 
-use ir::pattern::variable::Variable;
 
-use crate::Concept;
+use crate::variable_value::VariableValue;
 
 // TODO: we could actually optimise this data structure into an array given the prototype + a index mapping
 // TODO: what about optionality and lists
 pub struct AnswerMap<'a> {
-    map: HashMap<Variable, Concept<'a>>,
+    map: HashMap<Variable, VariableValue<'a>>,
 }

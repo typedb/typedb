@@ -19,6 +19,7 @@ use storage::{
     key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
+use storage::key_range::KeyRange;
 
 use crate::{
     concept_iterator, edge_iterator,
@@ -30,6 +31,7 @@ use crate::{
     },
     ConceptStatus,
 };
+use crate::thing::has::Has;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Object<'a> {
@@ -140,6 +142,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
     fn into_vertex(self) -> ObjectVertex<'a>;
 
     fn type_(&self) -> impl ObjectTypeAPI<'static>;
+
     fn into_owned_object(self) -> Object<'static>;
 
     fn has_attribute<Snapshot: ReadableSnapshot>(
@@ -157,25 +160,34 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
     ) -> HasAttributeIterator {
-        thing_manager.get_has_unordered(snapshot, self)
+        thing_manager.get_has_from_thing_unordered(snapshot, self)
     }
 
-    fn get_has_ordered<'m, Snapshot: ReadableSnapshot>(
-        &self,
-        snapshot: &'m Snapshot,
-        thing_manager: &'m ThingManager<Snapshot>,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<Vec<Attribute<'_>>, ConceptReadError> {
-        thing_manager.get_has_type_ordered(snapshot, self, attribute_type)
-    }
-
-    fn get_has_type<'m, Snapshot: ReadableSnapshot>(
+    fn get_has_type_unordered<'m, Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
         attribute_type: AttributeType<'static>,
     ) -> Result<HasAttributeIterator, ConceptReadError> {
-        thing_manager.get_has_type_unordered(snapshot, self, attribute_type)
+        thing_manager.get_has_from_thing_to_type_unordered(snapshot, self, attribute_type)
+    }
+
+    fn get_has_type_ordered<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &'m Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<Vec<Attribute<'_>>, ConceptReadError> {
+        thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type)
+    }
+
+    fn get_has_types_range_unordered<'m, Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &'m Snapshot,
+        thing_manager: &'m ThingManager<Snapshot>,
+        attribute_types_defining_range: impl Iterator<Item=AttributeType<'static>>,
+    ) -> Result<HasAttributeIterator, ConceptReadError> {
+        thing_manager.get_has_from_thing_to_type_range_unordered(snapshot, self, attribute_types_defining_range)
     }
 
     fn set_has_unordered<Snapshot: WritableSnapshot>(
@@ -216,7 +228,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
 
         if let Some(cardinality) = owns.get_cardinality(snapshot, thing_manager.type_manager())? {
             let count = self
-                .get_has_type(snapshot, thing_manager, owns.attribute())
+                .get_has_type_unordered(snapshot, thing_manager, owns.attribute())
                 .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
                 .count();
             if !cardinality.is_valid(count as u64 + 1) {
@@ -280,7 +292,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
 
         // 1. get owned list
         let old_attributes = thing_manager
-            .get_has_type_ordered(snapshot, self, attribute_type.clone())
+            .get_has_from_thing_to_type_ordered(snapshot, self, attribute_type.clone())
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
 
         let mut old_counts = BTreeMap::<_, u64>::new();
@@ -403,8 +415,21 @@ fn storage_key_to_has_attribute<'a>(
     (Attribute::new(edge.into_to()), decode_value_u64(value.as_reference()))
 }
 
+fn storage_key_to_has<'a>(
+    storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
+    value: Bytes<'a, BUFFER_VALUE_INLINE>,
+) -> (Has<'a>, u64) {
+    (Has::new_from_edge(ThingEdgeHas::new(storage_key.into_bytes())), decode_value_u64(value.as_reference()))
+}
+
 edge_iterator!(
     HasAttributeIterator;
     'a -> (Attribute<'a>, u64);
     storage_key_to_has_attribute
+);
+
+edge_iterator!(
+    HasIterator;
+    'a -> (Has<'a>, u64);
+    storage_key_to_has
 );

@@ -382,4 +382,8 @@ impl<const ARRAY_INLINE_SIZE: usize> Prefix for ByteArray<ARRAY_INLINE_SIZE> {
     fn starts_with(&self, other: &Self) -> bool {
         self.bytes().starts_with(other.bytes())
     }
+
+    fn into_starts_with(self, other: Self) -> bool {
+        self.bytes().starts_with(other.bytes())
+    }
 }

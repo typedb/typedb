@@ -4,28 +4,32 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod combinators;
+pub mod adaptors;
 pub mod higher_order;
+mod kmerge;
 
 use std::{cmp::Ordering, iter, mem::transmute};
+use std::borrow::Borrow;
 
-use combinators::FilterMap;
+use adaptors::FilterMap;
 use higher_order::AdHocHkt;
 
 use crate::{
-    combinators::{Filter, Map, TakeWhile},
+    adaptors::{Filter, Map, TakeWhile},
     higher_order::{FnMutHktHelper, Hkt},
 };
+use crate::higher_order::FnHktHelper;
 
 pub trait LendingIterator: 'static {
     type Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>>;
 
-    fn filter<P>(self, pred: P) -> Filter<Self, P>
+    fn filter<P, F>(self, pred: P) -> Filter<Self, P>
     where
         Self: Sized,
-        P: FnMut(&Self::Item<'_>) -> bool,
+        P: Borrow<F>,
+        F: for<'a, 'b> FnHktHelper<&'a Self::Item<'b>, bool> + ?Sized
     {
         Filter::new(self, pred)
     }
@@ -129,6 +133,10 @@ impl<LI: LendingIterator> Peekable<LI> {
                 transmute::<Option<LI::Item<'_>>, Option<LI::Item<'static>>>(self.iter.next())
             };
         }
+        self.get_peeked()
+    }
+
+    pub(crate) fn get_peeked(&self) -> Option<&LI::Item<'_>> {
         unsafe {
             // SAFETY: the item reference borrows this iterator mutably. This iterator cannot be advanced while it exists.
             transmute::<Option<&LI::Item<'static>>, Option<&LI::Item<'_>>>(self.item.as_ref())

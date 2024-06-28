@@ -10,11 +10,12 @@ use std::{
 };
 
 use itertools::Itertools;
+use answer::variable::Variable;
 
 use crate::{
     pattern::{
         constraint::Constraint,
-        variable::{Variable, VariableCategory, VariableOptionality},
+        variable_category::{VariableCategory, VariableOptionality},
         Scope, ScopeId,
     },
     PatternDefinitionError,
@@ -30,7 +31,7 @@ pub struct PatternContext {
     scope_id_allocator: u16,
     scope_parents: HashMap<ScopeId, ScopeId>,
 
-    variable_categories: HashMap<Variable, (VariableCategory, Constraint)>,
+    variable_categories: HashMap<Variable, (VariableCategory, Constraint<Variable>)>,
     variable_optionality: HashMap<Variable, VariableOptionality>,
 }
 
@@ -121,7 +122,7 @@ impl PatternContext {
         &mut self,
         variable: Variable,
         category: VariableCategory,
-        source: Constraint,
+        source: Constraint<Variable>,
     ) -> Result<(), PatternDefinitionError> {
         let mut existing_category = self.variable_categories.get_mut(&variable);
         match existing_category {

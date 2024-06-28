@@ -7,14 +7,14 @@
 use std::{
     fmt::{Display, Formatter},
     sync::{Arc, Mutex, MutexGuard},
-    task::Context,
 };
 
 use itertools::Itertools;
+use answer::variable::Variable;
 
 use crate::{
     pattern::{
-        constraint::Constraints, context::PatternContext, pattern::Patterns, variable::Variable, Scope, ScopeId,
+        constraint::Constraints, context::PatternContext, pattern::Patterns, Scope, ScopeId,
     },
     PatternDefinitionError,
 };

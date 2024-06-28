@@ -15,7 +15,6 @@ rust_library(
     deps = [
         "//concept",
         "//encoding",
-        "//ir",
     ],
 )
 

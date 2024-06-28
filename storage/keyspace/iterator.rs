@@ -8,7 +8,7 @@ use std::cmp::Ordering;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use lending_iterator::{
-    combinators::{SeekableMap, TakeWhile},
+    adaptors::{SeekableMap, TakeWhile},
     LendingIterator, Peekable, Seekable,
 };
 use logger::result::ResultExt;

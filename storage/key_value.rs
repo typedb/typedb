@@ -105,6 +105,10 @@ impl<'bytes, const SZ: usize> Prefix for StorageKey<'bytes, SZ> {
     fn starts_with(&self, other: &Self) -> bool {
         self.bytes().starts_with(other.bytes())
     }
+
+    fn into_starts_with(self, other: Self) -> bool {
+        self.into_bytes().into_starts_with(other.into_bytes())
+    }
 }
 
 impl<const SZ: usize> Hkt for StorageKey<'static, SZ> {

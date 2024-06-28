@@ -4,12 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    borrow::{Borrow, Cow},
-    collections::HashSet,
-    marker::PhantomData,
-    sync::Arc,
-};
+use std::{borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
+use std::ops::{Bound, Range, RangeBounds};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -75,6 +71,7 @@ use crate::{
     },
     ConceptStatus,
 };
+use crate::thing::object::HasIterator;
 
 pub struct ThingManager<Snapshot> {
     vertex_generator: Arc<ThingVertexGenerator>,
@@ -134,7 +131,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &self,
         snapshot: &Snapshot,
         player: &impl ObjectAPI<'o>,
-    ) -> impl for<'a> LendingIterator<Item<'a> = Result<Relation<'a>, ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a>=Result<Relation<'a>, ConceptReadError>> {
         let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.vertex());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING_REVERSE));
@@ -149,7 +146,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         snapshot: &Snapshot,
         player: &impl ObjectAPI<'o>,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x>=Result<Relation<'x>, ConceptReadError>> {
         let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.vertex());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING_REVERSE));
@@ -384,16 +381,18 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         Ok(has_exists)
     }
 
-    pub(crate) fn get_has_unordered<'a>(
+    pub fn get_has_from_type_range_unordered<'a>(
         &self,
         snapshot: &Snapshot,
-        owner: &impl ObjectAPI<'a>,
-    ) -> HasAttributeIterator {
-        let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
-        HasAttributeIterator::new(
-            snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
-        )
+        owner_type_range: KeyRange<ObjectType<'static>>,
+    ) -> HasIterator {
+        let range = owner_type_range.map(
+            |type_| ThingEdgeHas::prefix_from_type(type_.into_vertex()),
+            |_| ThingEdgeHas::FIXED_WIDTH_ENCODING,
+        );
+        HasIterator::new(snapshot.iterate_range(range))
     }
+
 
     pub fn get_attributes_by_struct_field<'this, 'a, 'v>(
         &'this self,
@@ -409,7 +408,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
         let prefix = StructIndexEntry::build_prefix_typeid_path_value(
             snapshot,
-            self.vertex_generator.borrow(),
+            &self.vertex_generator,
             &path_to_field,
             &value,
             &attribute_type.vertex(),
@@ -433,9 +432,10 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         ))
     }
 
-    pub(crate) fn get_has_ordered<'this, 'a>(
-        &'this self,
-        snapshot: &'this Snapshot,
+
+    pub(crate) fn get_has_from_thing_unordered<'a>(
+        &self,
+        snapshot: &Snapshot,
         owner: &impl ObjectAPI<'a>,
     ) -> HasAttributeIterator {
         let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
@@ -443,8 +443,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
         )
     }
-
-    pub(crate) fn get_has_type_unordered<'this, 'a>(
+    pub(crate) fn get_has_from_thing_to_type_unordered<'this, 'a>(
         &'this self,
         snapshot: &'this Snapshot,
         owner: &impl ObjectAPI<'a>,
@@ -452,9 +451,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     ) -> Result<HasAttributeIterator, ConceptReadError> {
         let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
         let value_type = match attribute_value_type.as_ref() {
-            None => {
-                todo!("Handle missing value type - for abstract attributes. Or assume this will never happen")
-            }
+            None => return Ok(HasAttributeIterator::new_empty()),
             Some(value_type) => value_type,
         };
         let prefix = ThingEdgeHas::prefix_from_object_to_type(
@@ -467,7 +464,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         ))
     }
 
-    pub(crate) fn get_has_type_ordered<'a>(
+    pub(crate) fn get_has_from_thing_to_type_ordered<'a>(
         &self,
         snapshot: &Snapshot,
         owner: &impl ObjectAPI<'a>,
@@ -476,9 +473,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         let key = HAS_ORDER_PROPERTY_FACTORY.build(owner.vertex(), attribute_type.vertex());
         let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager())?;
         let value_type = match attribute_value_type.as_ref() {
-            None => {
-                todo!("Handle missing value type - for abstract attributes. Or assume this will never happen")
-            }
+            None => return Ok(Vec::new()),
             Some(value_type) => value_type,
         };
         let attributes = snapshot
@@ -496,6 +491,44 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
             .map_err(|err| ConceptReadError::SnapshotGet { source: err })?
             .unwrap_or_else(Vec::new);
         Ok(attributes)
+    }
+
+    pub(crate) fn get_has_from_thing_to_type_range_unordered<'this, 'a>(
+        &'this self,
+        snapshot: &'this Snapshot,
+        owner: &impl ObjectAPI<'a>,
+        mut attribute_types_defining_range: impl Iterator<Item=AttributeType<'static>>,
+    ) -> Result<HasAttributeIterator, ConceptReadError> {
+        let mut min_prefix_inclusive = None;
+        let mut max_prefix_inclusive = None;
+        for result in attribute_types_defining_range
+            .map(|attribute_type| {
+                match attribute_type.get_value_type(snapshot, self.type_manager()) {
+                    Ok(Some(vt)) => {
+                        Ok(Some(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), vt.category(), attribute_type.vertex())))
+                    }
+                    Ok(None) => Ok(None),
+                    Err(err) => Err(err)
+                }
+            }) {
+            match result? {
+                None => {}
+                Some(prefix) => {
+                    if min_prefix_inclusive.is_none() || min_prefix_inclusive.as_ref().unwrap() > &prefix {
+                        min_prefix_inclusive = Some(prefix)
+                    } else if max_prefix_inclusive.is_none() || max_prefix_inclusive.as_ref().unwrap() < &prefix {
+                        max_prefix_inclusive = Some(prefix)
+                    }
+                }
+            }
+        }
+
+        let range = if max_prefix_inclusive.is_some() {
+            KeyRange::new_inclusive(min_prefix_inclusive.unwrap(), max_prefix_inclusive.unwrap())
+        } else {
+            KeyRange::new_within(min_prefix_inclusive.unwrap(), ThingEdgeHas::FIXED_WIDTH_ENCODING)
+        };
+        Ok(HasAttributeIterator::new(snapshot.iterate_range(range)))
     }
 
     pub(crate) fn get_owners<'this>(
@@ -795,7 +828,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             .expect("encountered a has edge without a corresponding owns in the schema");
 
         if let Some(cardinality) = owns.get_cardinality(snapshot, self.type_manager())? {
-            let count = owner.get_has_type(snapshot, self, attribute_type.clone())?.count();
+            let count = owner.get_has_type_unordered(snapshot, self, attribute_type.clone())?.count();
             if !cardinality.is_valid(count as u64) {
                 if owns.is_key(snapshot, &*self.type_manager)? {
                     if count == 0 {
@@ -958,7 +991,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         struct_value: &StructValue<'a>,
     ) -> Result<(), ConceptWriteError> {
         let index_entries = struct_value
-            .create_index_entries(snapshot, self.vertex_generator.borrow(), &attribute_vertex)
+            .create_index_entries(snapshot, &self.vertex_generator, &attribute_vertex)
             .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
         for entry in index_entries {
             let StructIndexEntry { key, value } = entry;

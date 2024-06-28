@@ -4,7 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, marker::PhantomData};
+use std::cmp::Ordering;
+use std::marker::PhantomData;
+use std::sync::Arc;
 
 use bytes::Bytes;
 use encoding::{
@@ -39,7 +41,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Attribute<'a> {
     vertex: AttributeVertex<'a>,
-    value: Option<Value<'a>>, // TODO: if we end up doing traversals over Vertex instead of Concept, we could embed the Value cache into the AttributeVertex
+    value: Option<Arc<Value<'a>>>, // TODO: if we end up doing traversals over Vertex instead of Concept, we could embed the Value cache into the AttributeVertex
 }
 
 impl<'a> Attribute<'a> {
@@ -62,7 +64,7 @@ impl<'a> Attribute<'a> {
     ) -> Result<Value<'_>, ConceptReadError> {
         if self.value.is_none() {
             let value = thing_manager.get_attribute_value(snapshot, self)?;
-            self.value = Some(value);
+            self.value = Some(Arc::new(value));
         }
         Ok(self.value.as_ref().unwrap().as_reference())
     }
@@ -100,7 +102,7 @@ impl<'a> Attribute<'a> {
     }
 
     pub fn as_reference(&self) -> Attribute<'_> {
-        Attribute { vertex: self.vertex.as_reference(), value: self.value.as_ref().map(|value| value.as_reference()) }
+        Attribute { vertex: self.vertex.as_reference(), value: self.value.clone() }
     }
 
     pub(crate) fn vertex<'this: 'a>(&'this self) -> AttributeVertex<'this> {
@@ -212,7 +214,7 @@ pub struct AttributeIteratorImpl<'a, Snapshot: ReadableSnapshot, AttributeExtrac
     attributes_iterator: Option<SnapshotRangeIterator>,
     has_reverse_iterator: Option<SnapshotRangeIterator>,
     state: State<ConceptReadError>,
-    key_interepreter: PhantomData<AttributeExtractor>,
+    key_interpreter: PhantomData<AttributeExtractor>,
 }
 
 pub type AttributeIterator<'a, Snapshot> = AttributeIteratorImpl<'a, Snapshot, StandardAttributeExtractor>;
@@ -234,7 +236,7 @@ impl<'a, Snapshot: ReadableSnapshot, KeyInterpreter: ExtractAttributeFromKey>
             attributes_iterator: Some(attributes_iterator),
             has_reverse_iterator: Some(has_reverse_iterator),
             state: State::Init,
-            key_interepreter: PhantomData,
+            key_interpreter: PhantomData,
         }
     }
 
@@ -245,7 +247,7 @@ impl<'a, Snapshot: ReadableSnapshot, KeyInterpreter: ExtractAttributeFromKey>
             attributes_iterator: None,
             has_reverse_iterator: None,
             state: State::Done,
-            key_interepreter: PhantomData,
+            key_interpreter: PhantomData,
         }
     }
 

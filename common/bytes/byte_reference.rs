@@ -7,6 +7,7 @@
 use std::{fmt, ops::Range};
 
 use lending_iterator::higher_order::Hkt;
+use primitive::prefix::Prefix;
 
 use crate::{byte_array::ByteArray, util::HexBytesFormatter};
 
@@ -50,6 +51,16 @@ impl<'bytes> ByteReference<'bytes> {
 impl<'bytes, const INLINE_SIZE: usize> From<&'bytes ByteArray<INLINE_SIZE>> for ByteReference<'bytes> {
     fn from(array: &'bytes ByteArray<INLINE_SIZE>) -> Self {
         array.as_ref()
+    }
+}
+
+impl<'prefix> Prefix for ByteReference<'prefix> {
+    fn starts_with(&self, other: &Self) -> bool {
+        self.bytes.starts_with(other.bytes)
+    }
+
+    fn into_starts_with(self, other: Self) -> bool {
+        self.bytes.starts_with(other.bytes)
     }
 }
 

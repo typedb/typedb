@@ -11,6 +11,7 @@ package(default_visibility = [
     "//database:__subpackages__",
     "//function:__subpackages__",
     "//ir:__subpackages__",
+    "//traversal:__subpackages__",
     "//tests/behaviour:__subpackages__",
 ])
 

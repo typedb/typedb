@@ -5,7 +5,7 @@
  */
 
 use ir::{
-    pattern::{conjunction::Conjunction, variable::VariableCategory},
+    pattern::{conjunction::Conjunction, variable_category::VariableCategory},
     PatternDefinitionError,
 };
 

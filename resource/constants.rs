@@ -8,6 +8,10 @@ pub mod server {
     pub const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
 }
 
+pub mod traversal {
+    pub const CONSTANT_CONCEPT_LIMIT: usize = 5;
+}
+
 pub mod snapshot {
     pub const BUFFER_KEY_INLINE: usize = 40;
     pub const BUFFER_VALUE_INLINE: usize = 64;

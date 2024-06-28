@@ -7,7 +7,7 @@
 use answer::Type;
 use encoding::{graph::definition::definition_key::DefinitionKey, value::value_type::ValueType};
 use ir::{
-    pattern::variable::{VariableCategory, VariableOptionality},
+    pattern::variable_category::{VariableCategory, VariableOptionality},
     program::function::FunctionIR,
 };
 

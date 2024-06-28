@@ -4,8 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use answer::variable::Variable;
 use crate::{
-    pattern::{pattern::Pattern, variable::Variable},
+    pattern::{pattern::Pattern},
     program::{
         modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort},
         FunctionalBlock,

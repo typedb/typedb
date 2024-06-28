@@ -5,16 +5,15 @@
  */
 
 use std::{error::Error, fmt, fmt::Display};
+use answer::variable::Variable;
 
-use crate::pattern::{
-    constraint::Constraint,
-    variable::{Variable, VariableCategory},
-};
+use crate::pattern::{constraint::Constraint, IrID, variable_category::{VariableCategory}};
 
 mod inference;
 mod optimisation;
 pub mod pattern;
 pub mod program;
+
 
 #[derive(Debug)]
 pub enum PatternDefinitionError {
@@ -25,9 +24,9 @@ pub enum PatternDefinitionError {
         variable: Variable,
         variable_name: Option<String>,
         category_1: VariableCategory,
-        category_1_source: Constraint,
+        category_1_source: Constraint<Variable>,
         category_2: VariableCategory,
-        category_2_source: Constraint,
+        category_2_source: Constraint<Variable>,
     },
     FunctionArgumentUnused {
         argument_variable: String,

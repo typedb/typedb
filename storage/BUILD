@@ -11,6 +11,7 @@ package(default_visibility = [
     "//server:__subpackages__",
     "//storage/tests:__subpackages__",
     "//storage/benches:__subpackages__",
+    "//traversal:__subpackages__",
     "//tests:__subpackages__",
 ])
 

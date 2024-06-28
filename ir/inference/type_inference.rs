@@ -5,13 +5,14 @@
  */
 
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use answer::Type;
+use answer::variable::Variable;
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 
 use crate::{
     pattern::{
-        constraint::{Constraint, Type},
-        variable::Variable,
+        constraint::{Constraint},
     },
     program::program::Program,
 };
@@ -38,7 +39,7 @@ pub fn infer_types(program: &Program) {
 
 struct TypeAnnotations {
     variables: HashMap<Variable, HashSet<Type>>,
-    constraints: HashMap<Constraint, ConstraintTypeAnnotations>,
+    constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
 }
 
 impl TypeAnnotations {

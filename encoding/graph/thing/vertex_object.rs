@@ -93,10 +93,7 @@ impl<'a> ObjectVertex<'a> {
             Prefix::VertexRelationType => Prefix::VertexRelation,
             _ => unreachable!(),
         };
-        let mut array = ByteArray::zeros(Self::LENGTH_PREFIX_TYPE);
-        array.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
-        array.bytes_mut()[Self::RANGE_TYPE_ID].copy_from_slice(&type_vertex.type_id_().bytes());
-        StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
+        Self::build_prefix_type(prefix.prefix_id(), type_vertex.type_id_())
     }
 
     pub fn object_id(&self) -> ObjectID {

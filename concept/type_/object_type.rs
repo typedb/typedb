@@ -6,13 +6,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use encoding::{
-    error::{EncodingError, EncodingError::UnexpectedPrefix},
-    graph::type_::vertex::{TypeVertex, TypeVertexEncoding},
-    layout::prefix::Prefix,
-    value::label::Label,
-    Prefixed,
-};
+use encoding::{error::{EncodingError, EncodingError::UnexpectedPrefix}, graph::type_::vertex::{TypeVertex, TypeVertexEncoding}, layout::prefix::Prefix, value::label::Label, Prefixed, AsBytes};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -65,6 +59,16 @@ impl<'a> TypeVertexEncoding<'a> for ObjectType<'a> {
             ObjectType::Entity(entity) => entity.into_vertex(),
             ObjectType::Relation(relation) => relation.into_vertex(),
         }
+    }
+}
+
+impl<'a> primitive::prefix::Prefix for ObjectType<'a> {
+    fn starts_with(&self, other: &Self) -> bool {
+        self.vertex().starts_with(&other.vertex())
+    }
+
+    fn into_starts_with(self, other: Self) -> bool {
+        self.vertex().as_reference().into_starts_with(other.vertex().as_reference())
     }
 }
 

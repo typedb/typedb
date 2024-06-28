@@ -5,11 +5,13 @@
  */
 
 use std::{cmp::Ordering, marker::PhantomData, mem::transmute};
+use std::borrow::Borrow;
 
 use crate::{
     higher_order::{FnMutHktHelper, Hkt},
     LendingIterator, Seekable,
 };
+use crate::higher_order::FnHktHelper;
 
 pub struct Map<I, F, B> {
     iter: I,
@@ -91,10 +93,10 @@ impl<I, F> Filter<I, F> {
     }
 }
 
-impl<I, F> LendingIterator for Filter<I, F>
+impl<I, P> LendingIterator for Filter<I, P>
 where
     I: LendingIterator,
-    F: for<'a, 'b> FnMutHktHelper<&'b I::Item<'a>, bool>,
+    P: Borrow<dyn for<'a, 'b> FnHktHelper<&'a I::Item<'b>, bool>> + 'static,
 {
     type Item<'a> = I::Item<'a>;
 
@@ -103,7 +105,7 @@ where
             match self.iter.next() {
                 None => return None,
                 Some(item) => {
-                    if (self.pred)(&item) {
+                    if (self.pred.borrow())(&item) {
                         return Some(unsafe {
                             // SAFETY: this transmutes from Item to Item to extend the lifetime
                             // to the borrow of `self` and immediately return.
@@ -121,7 +123,7 @@ where
 impl<I, F, K> Seekable<K> for Filter<I, F>
 where
     I: Seekable<K>,
-    F: for<'a, 'b> FnMutHktHelper<&'b I::Item<'a>, bool>,
+    F:Borrow<dyn for<'a, 'b> FnHktHelper<&'b I::Item<'a>, bool>> + 'static,
 {
     fn seek(&mut self, key: &K) {
         self.iter.seek(key)
