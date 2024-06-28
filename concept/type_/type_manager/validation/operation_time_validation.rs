@@ -43,6 +43,7 @@ use crate::{
     },
 };
 use crate::error::ConceptWriteError;
+use crate::type_::attribute_type::AttributeTypeAnnotation;
 use crate::type_::InterfaceImplementation;
 
 macro_rules! object_type_match {
@@ -270,7 +271,9 @@ impl OperationTimeValidation {
 
     // TODO: Move to annotation_compatibility ?
 
-    pub(crate) fn validate_annotation_regex_compatible_value_type(
+    pub(crate) fn validate_annotation_regex_compatible_value_type<Snapshot: ReadableSnapshot>(
+        snapshot: &Snapshot,
+        attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
     ) -> Result<(), SchemaValidationError> {
         let is_compatible = match &value_type {
@@ -281,7 +284,7 @@ impl OperationTimeValidation {
         if is_compatible {
             Ok(())
         } else {
-            Err(SchemaValidationError::IncompatibleValueType(value_type))
+            Err(SchemaValidationError::AnnotationRegexRequiresStringValueType(get_label!(snapshot, attribute_type)))
         }
     }
 
@@ -305,22 +308,7 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_type_does_not_have_annotation_regex(
-        value_type: Option<ValueType>,
-    ) -> Result<(), SchemaValidationError> {
-        let is_compatible = match &value_type {
-            Some(ValueType::String) => true,
-            _ => false
-        };
-
-        if is_compatible {
-            Ok(())
-        } else {
-            Err(SchemaValidationError::IncompatibleValueType(value_type))
-        }
-    }
-
-    pub(crate) fn validate_type_is_abstract<T: KindAPI<'static>>(
+    pub(crate) fn validate_type_is_abstract<T>(
         snapshot: &impl ReadableSnapshot,
         type_: T,
     ) -> Result<(), SchemaValidationError>
@@ -756,6 +744,7 @@ impl OperationTimeValidation {
         match value_type {
             Some(_) => {
                 Self::validate_value_type_compatible_with_abstractness(snapshot, attribute_type.clone(), None, None)?;
+                Self::validate_current_annotations_do_not_require_unsetted_value_type(snapshot, attribute_type.clone())?;
                 Self::validate_no_non_abstract_subtypes_without_value_type(snapshot, attribute_type)
                 // TODO: Re-enable when we get the thing_manager
                 // OperationTimeValidation::validate_exact_type_no_instances_attribute(snapshot, self, attribute.clone())
@@ -784,6 +773,28 @@ impl OperationTimeValidation {
                     ));
                 }
             }
+        Ok(())
+    }
+
+    pub(crate) fn validate_current_annotations_do_not_require_unsetted_value_type(
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let annotations = TypeReader::get_type_annotations(snapshot, attribute_type.clone())
+            .map_err(SchemaValidationError::ConceptRead)?;
+
+        for (annotation, _) in annotations {
+            match annotation {
+                AttributeTypeAnnotation::Regex(_) => return Err(
+                    SchemaValidationError::AnnotationRegexRequiresStringValueType(
+                        get_label!(snapshot, attribute_type)
+                    )
+                ),
+                | AttributeTypeAnnotation::Abstract(_)
+                | AttributeTypeAnnotation::Independent(_) => {}
+            }
+        }
+
         Ok(())
     }
 
