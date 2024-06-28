@@ -408,7 +408,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
         let prefix = StructIndexEntry::build_prefix_typeid_path_value(
             snapshot,
-            self.vertex_generator.borrow(),
+            &self.vertex_generator,
             &path_to_field,
             &value,
             &attribute_type.vertex(),
@@ -991,7 +991,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         struct_value: &StructValue<'a>,
     ) -> Result<(), ConceptWriteError> {
         let index_entries = struct_value
-            .create_index_entries(snapshot, self.vertex_generator.borrow(), &attribute_vertex)
+            .create_index_entries(snapshot, &self.vertex_generator, &attribute_vertex)
             .map_err(|err| ConceptWriteError::SnapshotIterate { source: err })?;
         for entry in index_entries {
             let StructIndexEntry { key, value } = entry;

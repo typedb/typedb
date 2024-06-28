@@ -5,6 +5,7 @@
  */
 
 use std::cmp::Ordering;
+use std::marker::PhantomData;
 use std::sync::Arc;
 
 use bytes::Bytes;
@@ -213,7 +214,7 @@ pub struct AttributeIteratorImpl<'a, Snapshot: ReadableSnapshot, AttributeExtrac
     attributes_iterator: Option<SnapshotRangeIterator>,
     has_reverse_iterator: Option<SnapshotRangeIterator>,
     state: State<ConceptReadError>,
-    key_interepreter: PhantomData<AttributeExtractor>,
+    key_interpreter: PhantomData<AttributeExtractor>,
 }
 
 pub type AttributeIterator<'a, Snapshot> = AttributeIteratorImpl<'a, Snapshot, StandardAttributeExtractor>;
@@ -235,7 +236,7 @@ impl<'a, Snapshot: ReadableSnapshot, KeyInterpreter: ExtractAttributeFromKey>
             attributes_iterator: Some(attributes_iterator),
             has_reverse_iterator: Some(has_reverse_iterator),
             state: State::Init,
-            key_interepreter: PhantomData,
+            key_interpreter: PhantomData,
         }
     }
 
@@ -246,7 +247,7 @@ impl<'a, Snapshot: ReadableSnapshot, KeyInterpreter: ExtractAttributeFromKey>
             attributes_iterator: None,
             has_reverse_iterator: None,
             state: State::Done,
-            key_interepreter: PhantomData,
+            key_interpreter: PhantomData,
         }
     }
 

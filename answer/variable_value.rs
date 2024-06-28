@@ -5,7 +5,7 @@
  */
 
 use std::sync::Arc;
-use concept::thing::value::Value;
+use encoding::value::value::Value;
 
 use crate::{Thing, Type};
 

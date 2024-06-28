@@ -20,6 +20,7 @@ rust_test(
     crate_root = "program.rs",
     srcs =  ["program.rs"],
     deps = [
+        "//answer",
         "//common/bytes",
         "//encoding",
         "//ir:ir",
