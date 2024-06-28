@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+
 use encoding::value::value::Value;
 
 use crate::{Thing, Type};
@@ -21,7 +22,6 @@ pub enum VariableValue<'a> {
 
 impl<'a> VariableValue<'a> {
     pub const EMPTY: VariableValue<'static> = VariableValue::Empty;
-
 }
 
 pub enum FunctionValue<'a> {

@@ -8,17 +8,15 @@ pub mod adaptors;
 pub mod higher_order;
 mod kmerge;
 
-use std::{cmp::Ordering, iter, mem::transmute};
-use std::borrow::Borrow;
+use std::{borrow::Borrow, cmp::Ordering, iter, mem::transmute};
 
 use adaptors::FilterMap;
 use higher_order::AdHocHkt;
 
 use crate::{
     adaptors::{Filter, Map, TakeWhile},
-    higher_order::{FnMutHktHelper, Hkt},
+    higher_order::{FnHktHelper, FnMutHktHelper, Hkt},
 };
-use crate::higher_order::FnHktHelper;
 
 pub trait LendingIterator: 'static {
     type Item<'a>;
@@ -29,7 +27,7 @@ pub trait LendingIterator: 'static {
     where
         Self: Sized,
         P: Borrow<F>,
-        F: for<'a, 'b> FnHktHelper<&'a Self::Item<'b>, bool> + ?Sized
+        F: for<'a, 'b> FnHktHelper<&'a Self::Item<'b>, bool> + ?Sized,
     {
         Filter::new(self, pred)
     }

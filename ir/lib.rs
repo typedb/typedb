@@ -5,15 +5,15 @@
  */
 
 use std::{error::Error, fmt, fmt::Display};
+
 use answer::variable::Variable;
 
-use crate::pattern::{constraint::Constraint, IrID, variable_category::{VariableCategory}};
+use crate::pattern::{constraint::Constraint, variable_category::VariableCategory, IrID};
 
 mod inference;
 mod optimisation;
 pub mod pattern;
 pub mod program;
-
 
 #[derive(Debug)]
 pub enum PatternDefinitionError {

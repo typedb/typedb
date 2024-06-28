@@ -7,15 +7,17 @@
 use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
+    hash::Hash,
 };
-use std::hash::Hash;
 
+use answer::variable::Variable;
 use encoding::graph::definition::definition_key::DefinitionKey;
 use itertools::Itertools;
-use answer::variable::Variable;
-use crate::pattern::IrID;
 
-use crate::pattern::variable_category::{VariableCategory, VariableOptionality};
+use crate::pattern::{
+    variable_category::{VariableCategory, VariableOptionality},
+    IrID,
+};
 
 /// This IR has information copied from the target function, so inference can be block-local
 #[derive(Debug, Clone, Eq, PartialEq)]

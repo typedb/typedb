@@ -5,8 +5,9 @@
  */
 
 use answer::variable::Variable;
+
 use crate::{
-    pattern::{pattern::Pattern},
+    pattern::pattern::Pattern,
     program::{
         modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort},
         FunctionalBlock,

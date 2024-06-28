@@ -5,13 +5,13 @@
  */
 
 use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse};
-use crate::thing::attribute::Attribute;
-use crate::thing::object::Object;
+
+use crate::thing::{attribute::Attribute, object::Object};
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Has<'a> {
     Edge(ThingEdgeHas<'a>),
-    EdgeReverse(ThingEdgeHasReverse<'a>)
+    EdgeReverse(ThingEdgeHasReverse<'a>),
 }
 
 impl<'a> Has<'a> {
@@ -26,14 +26,14 @@ impl<'a> Has<'a> {
     pub fn owner(&'a self) -> Object<'a> {
         match self {
             Has::Edge(edge) => Object::new(edge.from()),
-            Has::EdgeReverse(edge_reverse) => Object::new(edge_reverse.to())
+            Has::EdgeReverse(edge_reverse) => Object::new(edge_reverse.to()),
         }
     }
 
     pub fn attribute(&'a self) -> Attribute<'a> {
         match self {
             Has::Edge(edge) => Attribute::new(edge.to()),
-            Has::EdgeReverse(edge_reverse) => Attribute::new(edge_reverse.from())
+            Has::EdgeReverse(edge_reverse) => Attribute::new(edge_reverse.from()),
         }
     }
 }

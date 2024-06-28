@@ -5,10 +5,8 @@
  */
 
 use std::collections::HashMap;
-use crate::variable::Variable;
 
-
-use crate::variable_value::VariableValue;
+use crate::{variable::Variable, variable_value::VariableValue};
 
 // TODO: we could actually optimise this data structure into an array given the prototype + a index mapping
 // TODO: what about optionality and lists

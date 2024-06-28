@@ -6,15 +6,16 @@
 
 use concept::{
     thing::{attribute::Attribute, entity::Entity, relation::Relation},
-    type_::{attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType, role_type::RoleType},
+    type_::{
+        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
+        role_type::RoleType, ObjectTypeAPI,
+    },
 };
-use concept::type_::object_type::ObjectType;
-use concept::type_::ObjectTypeAPI;
 use encoding::value::value::Value;
 
 pub mod answer_map;
-pub mod variable_value;
 pub mod variable;
+pub mod variable_value;
 
 #[derive(Debug, PartialEq)]
 enum Concept<'a> {

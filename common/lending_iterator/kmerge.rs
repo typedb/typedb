@@ -4,12 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::cmp::Ordering;
-use std::collections::BinaryHeap;
-use std::marker::PhantomData;
+use std::{cmp::Ordering, collections::BinaryHeap, marker::PhantomData};
 
-use crate::{LendingIterator, Peekable};
-use crate::higher_order::FnHktHelper;
+use crate::{higher_order::FnHktHelper, LendingIterator, Peekable};
 
 pub struct KMergeBy<I: LendingIterator, F> {
     iterators: BinaryHeap<PeekWrapper<I, F>>,
@@ -27,11 +24,11 @@ enum State {
 }
 
 impl<I: LendingIterator, F> KMergeBy<I, F>
-    where
-        I: LendingIterator,
-        F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + Copy
+where
+    I: LendingIterator,
+    F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + Copy,
 {
-    pub fn new(mut iters: impl Iterator<Item=Peekable<I>>, compare_fn: F) -> Self {
+    pub fn new(mut iters: impl Iterator<Item = Peekable<I>>, compare_fn: F) -> Self {
         let iters = iters
             .map(|mut peekable| {
                 let _ = peekable.peek(); // peek requires a mutable ownership, which we can't do in a filter()
@@ -55,9 +52,9 @@ impl<I: LendingIterator, F> KMergeBy<I, F>
 }
 
 impl<I, F> LendingIterator for KMergeBy<I, F>
-    where
-        I: LendingIterator,
-        F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + Copy
+where
+    I: LendingIterator,
+    F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + Copy,
 {
     type Item<'a> = I::Item<'a>;
 
@@ -79,9 +76,7 @@ impl<I, F> LendingIterator for KMergeBy<I, F>
                 self.state = State::Used;
                 self.next_iterator.as_mut().unwrap().iter.next()
             }
-            State::Done => {
-                None
-            }
+            State::Done => None,
         }
     }
 }
@@ -94,9 +89,9 @@ struct PeekWrapper<I: LendingIterator, F> {
 }
 
 impl<I, F> PartialOrd for PeekWrapper<I, F>
-    where
-        I: LendingIterator,
-        F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering>
+where
+    I: LendingIterator,
+    F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering>,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some((self.cmp_fn)((self.iter.get_peeked().unwrap(), other.iter.get_peeked().unwrap())))
@@ -104,9 +99,9 @@ impl<I, F> PartialOrd for PeekWrapper<I, F>
 }
 
 impl<I, F> Ord for PeekWrapper<I, F>
-    where
-        I: LendingIterator,
-        F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering>
+where
+    I: LendingIterator,
+    F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering>,
 {
     fn cmp(&self, other: &Self) -> Ordering {
         self.partial_cmp(other).unwrap()
@@ -114,9 +109,9 @@ impl<I, F> Ord for PeekWrapper<I, F>
 }
 
 impl<I, F> PartialEq for PeekWrapper<I, F>
-    where
-        I: LendingIterator,
-        F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering>
+where
+    I: LendingIterator,
+    F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering>,
 {
     fn eq(&self, other: &Self) -> bool {
         self.partial_cmp(other).unwrap().is_eq()
@@ -124,7 +119,8 @@ impl<I, F> PartialEq for PeekWrapper<I, F>
 }
 
 impl<I, F> Eq for PeekWrapper<I, F>
-    where
-        I: LendingIterator,
-        F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering>
-{}
+where
+    I: LendingIterator,
+    F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering>,
+{
+}

@@ -9,8 +9,8 @@ use std::{
     fmt::{Display, Formatter},
 };
 
-use itertools::Itertools;
 use answer::variable::Variable;
+use itertools::Itertools;
 
 use crate::{
     pattern::{

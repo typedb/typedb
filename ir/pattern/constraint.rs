@@ -11,20 +11,19 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use itertools::Itertools;
 use answer::variable::Variable;
+use itertools::Itertools;
 
 use crate::{
     pattern::{
         context::PatternContext,
         expression::Expression,
         function_call::FunctionCall,
-        ScopeId,
         variable_category::{VariableCategory, VariableOptionality},
+        IrID, ScopeId,
     },
     PatternDefinitionError,
 };
-use crate::pattern::IrID;
 
 #[derive(Debug)]
 pub struct Constraints {
@@ -175,7 +174,7 @@ pub enum Constraint<ID: IrID> {
 }
 
 impl<ID: IrID> Constraint<ID> {
-    pub fn ids(&self) -> Box<dyn Iterator<Item=ID> + '_> {
+    pub fn ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
             Constraint::Type(type_) => Box::new(type_.ids()),
             Constraint::Isa(isa) => Box::new(isa.ids()),
@@ -188,8 +187,8 @@ impl<ID: IrID> Constraint<ID> {
     }
 
     pub fn ids_foreach<F>(&self, function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide) -> (),
+    where
+        F: FnMut(ID, ConstraintIDSide) -> (),
     {
         match self {
             Constraint::Type(type_) => type_.ids_foreach(function),
@@ -276,13 +275,13 @@ impl<ID: IrID> Type<ID> {
         Self { left: identifier, type_ }
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
         [self.left].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide) -> (),
+    where
+        F: FnMut(ID, ConstraintIDSide) -> (),
     {
         function(self.left, ConstraintIDSide::Left)
     }
@@ -313,13 +312,13 @@ impl<ID: IrID> Isa<ID> {
         Isa { thing, type_ }
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> + Sized {
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
         [self.thing, self.type_].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide) -> (),
+    where
+        F: FnMut(ID, ConstraintIDSide) -> (),
     {
         function(self.thing, ConstraintIDSide::Left);
         function(self.type_, ConstraintIDSide::Right)
@@ -358,13 +357,13 @@ impl<ID: IrID> RolePlayer<ID> {
         self.player
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
         [self.relation, self.player].into_iter().chain(self.role_type)
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide) -> (),
+    where
+        F: FnMut(ID, ConstraintIDSide) -> (),
     {
         function(self.relation, ConstraintIDSide::Left);
         function(self.player, ConstraintIDSide::Right);
@@ -378,7 +377,7 @@ impl<ID: IrID> RolePlayer<ID> {
         RolePlayer::new(
             *mapping.get(&self.relation).unwrap(),
             *mapping.get(&self.player).unwrap(),
-            self.role_type.map(|rt| *mapping.get(&rt).unwrap())
+            self.role_type.map(|rt| *mapping.get(&rt).unwrap()),
         )
     }
 }
@@ -421,13 +420,13 @@ impl<ID: IrID> Has<ID> {
         self.attribute
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
         [self.owner, self.attribute].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide) -> (),
+    where
+        F: FnMut(ID, ConstraintIDSide) -> (),
     {
         function(self.owner, ConstraintIDSide::Left);
         function(self.attribute, ConstraintIDSide::Right);
@@ -461,14 +460,14 @@ impl<ID: IrID> ExpressionBinding<ID> {
         Self { left, expression }
     }
 
-    fn ids(&self) -> impl Iterator<Item=ID> {
+    fn ids(&self) -> impl Iterator<Item = ID> {
         panic!("Unimplemented");
         empty()
     }
 
     pub fn ids_foreach<F>(&self, function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide) -> (),
+    where
+        F: FnMut(ID, ConstraintIDSide) -> (),
     {
         todo!()
     }
@@ -501,13 +500,13 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         &self.function_call
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> + '_ {
+    pub fn ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.left.iter().cloned()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide) -> (),
+    where
+        F: FnMut(ID, ConstraintIDSide) -> (),
     {
         for id in &self.left {
             function(*id, ConstraintIDSide::Left)
@@ -555,13 +554,13 @@ impl<ID: IrID> Comparison<ID> {
         self.rhs
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
         [self.lhs, self.rhs].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID, ConstraintIDSide) -> (),
+    where
+        F: FnMut(ID, ConstraintIDSide) -> (),
     {
         function(self.lhs, ConstraintIDSide::Left);
         function(self.rhs, ConstraintIDSide::Right);

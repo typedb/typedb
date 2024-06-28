@@ -5,17 +5,11 @@
  */
 
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
-use answer::Type;
-use answer::variable::Variable;
 
+use answer::{variable::Variable, Type};
 use encoding::graph::definition::definition_key::DefinitionKey;
 
-use crate::{
-    pattern::{
-        constraint::{Constraint},
-    },
-    program::program::Program,
-};
+use crate::{pattern::constraint::Constraint, program::program::Program};
 
 /*
 Design:

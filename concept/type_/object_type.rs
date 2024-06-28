@@ -6,7 +6,13 @@
 
 use std::collections::{HashMap, HashSet};
 
-use encoding::{error::{EncodingError, EncodingError::UnexpectedPrefix}, graph::type_::vertex::{TypeVertex, TypeVertexEncoding}, layout::prefix::Prefix, value::label::Label, Prefixed, AsBytes};
+use encoding::{
+    error::{EncodingError, EncodingError::UnexpectedPrefix},
+    graph::type_::vertex::{TypeVertex, TypeVertexEncoding},
+    layout::prefix::Prefix,
+    value::label::Label,
+    AsBytes, Prefixed,
+};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 

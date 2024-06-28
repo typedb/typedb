@@ -4,14 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, marker::PhantomData, mem::transmute};
-use std::borrow::Borrow;
+use std::{borrow::Borrow, cmp::Ordering, marker::PhantomData, mem::transmute};
 
 use crate::{
-    higher_order::{FnMutHktHelper, Hkt},
+    higher_order::{FnHktHelper, FnMutHktHelper, Hkt},
     LendingIterator, Seekable,
 };
-use crate::higher_order::FnHktHelper;
 
 pub struct Map<I, F, B> {
     iter: I,
@@ -123,7 +121,7 @@ where
 impl<I, F, K> Seekable<K> for Filter<I, F>
 where
     I: Seekable<K>,
-    F:Borrow<dyn for<'a, 'b> FnHktHelper<&'b I::Item<'a>, bool>> + 'static,
+    F: Borrow<dyn for<'a, 'b> FnHktHelper<&'b I::Item<'a>, bool>> + 'static,
 {
     fn seek(&mut self, key: &K) {
         self.iter.seek(key)

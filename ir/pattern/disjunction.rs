@@ -8,6 +8,7 @@ use std::{
     fmt::{Display, Formatter},
     sync::{Arc, Mutex, MutexGuard},
 };
+
 use answer::variable::Variable;
 
 use crate::pattern::{context::PatternContext, Scope, ScopeId};

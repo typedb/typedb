@@ -5,15 +5,15 @@
  */
 
 use std::collections::HashMap;
-use itertools::Itertools;
-use answer::variable::Variable;
 
-use answer::variable_value::VariableValue;
+use answer::{variable::Variable, variable_value::VariableValue};
 use ir::pattern::constraint::{Comparison, FunctionCallBinding, Has, RolePlayer};
-use crate::executor::constraint_iterator::ConstraintIteratorProvider;
-use crate::executor::Position;
+use itertools::Itertools;
 
-use crate::planner::pattern_plan::{Check, Execution, Iterate, PatternPlan, Single, SortedIterateMode, Step};
+use crate::{
+    executor::{constraint_iterator::ConstraintIteratorProvider, Position},
+    planner::pattern_plan::{Check, Execution, Iterate, PatternPlan, Single, SortedIterateMode, Step},
+};
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, Position>,
@@ -21,7 +21,6 @@ pub(crate) struct PatternExecutor {
 
     steps: Vec<StepExecutor>,
     // modifiers: Modifier,
-
     outputs: Option<Batch>,
     output_index: usize,
 }
@@ -55,7 +54,7 @@ impl PatternExecutor {
         }
     }
 
-    pub fn into_rows(self) -> impl Iterator<Item=Row> {
+    pub fn into_rows(self) -> impl Iterator<Item = Row> {
         // TODO: we could use a lending iterator here to avoid a malloc row/answer
         self.flat_map(|batch| batch.into_rows_cloned())
     }
@@ -134,7 +133,6 @@ enum StepExecutor {
     Optional(OptionalExecutor),
 }
 
-
 impl StepExecutor {
     fn new(step: Step, variable_positions: &HashMap<Variable, Position>) -> Self {
         let Step { execution: execution, total_variables_count: vars_count, .. } = step;
@@ -146,9 +144,7 @@ impl StepExecutor {
             Execution::UnsortedIterator(iterate, checks) => {
                 Self::Unsorted(UnsortedExecutor::new(iterate, checks, vars_count, variable_positions))
             }
-            Execution::Single(single, checks) => {
-                Self::Single(SingleExecutor::new(single, checks, variable_positions))
-            }
+            Execution::Single(single, checks) => Self::Single(SingleExecutor::new(single, checks, variable_positions)),
             Execution::Disjunction(plans) => {
                 todo!()
                 // let executors = plans.into_iter().map(|pattern_plan| PatternExecutor::new(pattern_plan, )).collect();
@@ -191,7 +187,6 @@ impl StepExecutor {
 struct SortedExecutor {
     iterator_providers: Vec<ConstraintIteratorProvider>,
     // iterator:
-
     output_width: u32,
     output: Option<Batch>,
 }
@@ -203,11 +198,7 @@ impl SortedExecutor {
             .map(|iterate| ConstraintIteratorProvider::new(iterate, variable_positions))
             .collect_vec();
 
-        Self {
-            iterator_providers: providers,
-            output_width: vars_count,
-            output: None,
-        }
+        Self { iterator_providers: providers, output_width: vars_count, output: None }
     }
 
     fn batch_from(&mut self, input_batch: Batch) -> Option<Batch> {
@@ -236,13 +227,13 @@ struct UnsortedExecutor {
 }
 
 impl UnsortedExecutor {
-    fn new(iterate: Iterate, checks: Vec<Check>, total_vars: u32, variable_positions: &HashMap<Variable, Position>) -> Self {
-        Self {
-            iterate,
-            checks,
-            output_width: total_vars,
-            output: None,
-        }
+    fn new(
+        iterate: Iterate,
+        checks: Vec<Check>,
+        total_vars: u32,
+        variable_positions: &HashMap<Variable, Position>,
+    ) -> Self {
+        Self { iterate, checks, output_width: total_vars, output: None }
     }
 
     fn batch_from(&mut self, input_batch: Batch) -> Option<Batch> {
@@ -301,7 +292,6 @@ impl NegationExecutor {
     }
 }
 
-
 struct OptionalExecutor {
     executor: PatternExecutor,
 }
@@ -330,10 +320,7 @@ pub struct Batch {
 impl Batch {
     fn new(width: u32) -> Self {
         let size = width * BATCH_ROWS_MAX;
-        Batch {
-            width: width as usize,
-            data: vec![VariableValue::Empty; size as usize],
-        }
+        Batch { width: width as usize, data: vec![VariableValue::Empty; size as usize] }
     }
 
     fn rows(&self) -> usize {

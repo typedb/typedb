@@ -7,8 +7,9 @@
 use std::{
     fmt,
     fmt::{Display, Formatter},
+    hash::Hash,
 };
-use std::hash::Hash;
+
 use answer::variable::Variable;
 
 pub mod conjunction;

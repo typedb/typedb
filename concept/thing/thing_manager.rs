@@ -4,8 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::HashSet, marker::PhantomData, sync::Arc};
-use std::ops::{Bound, Range, RangeBounds};
+use std::{
+    borrow::Cow,
+    collections::HashSet,
+    marker::PhantomData,
+    ops::{Bound, Range, RangeBounds},
+    sync::Arc,
+};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -56,7 +61,7 @@ use crate::{
         attribute::{Attribute, AttributeIterator, AttributeOwnerIterator, StructIndexToAttributeIterator},
         decode_attribute_ids, encode_attribute_ids,
         entity::{Entity, EntityIterator},
-        object::{HasAttributeIterator, Object, ObjectAPI, ObjectIterator},
+        object::{HasAttributeIterator, HasIterator, Object, ObjectAPI, ObjectIterator},
         relation::{IndexedPlayersIterator, Relation, RelationIterator, RelationRoleIterator, RolePlayerIterator},
         ThingAPI,
     },
@@ -71,7 +76,6 @@ use crate::{
     },
     ConceptStatus,
 };
-use crate::thing::object::HasIterator;
 
 pub struct ThingManager<Snapshot> {
     vertex_generator: Arc<ThingVertexGenerator>,
@@ -131,7 +135,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &self,
         snapshot: &Snapshot,
         player: &impl ObjectAPI<'o>,
-    ) -> impl for<'a> LendingIterator<Item<'a>=Result<Relation<'a>, ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<Relation<'a>, ConceptReadError>> {
         let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.vertex());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING_REVERSE));
@@ -146,7 +150,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         snapshot: &Snapshot,
         player: &impl ObjectAPI<'o>,
         role_type: RoleType<'static>,
-    ) -> impl for<'x> LendingIterator<Item<'x>=Result<Relation<'x>, ConceptReadError>> {
+    ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
         let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.vertex());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING_REVERSE));
@@ -386,13 +390,10 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         snapshot: &Snapshot,
         owner_type_range: KeyRange<ObjectType<'static>>,
     ) -> HasIterator {
-        let range = owner_type_range.map(
-            |type_| ThingEdgeHas::prefix_from_type(type_.into_vertex()),
-            |_| ThingEdgeHas::FIXED_WIDTH_ENCODING,
-        );
+        let range = owner_type_range
+            .map(|type_| ThingEdgeHas::prefix_from_type(type_.into_vertex()), |_| ThingEdgeHas::FIXED_WIDTH_ENCODING);
         HasIterator::new(snapshot.iterate_range(range))
     }
-
 
     pub fn get_attributes_by_struct_field<'this, 'a, 'v>(
         &'this self,
@@ -431,7 +432,6 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
             &self.type_manager,
         ))
     }
-
 
     pub(crate) fn get_has_from_thing_unordered<'a>(
         &self,
@@ -497,20 +497,21 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         &'this self,
         snapshot: &'this Snapshot,
         owner: &impl ObjectAPI<'a>,
-        mut attribute_types_defining_range: impl Iterator<Item=AttributeType<'static>>,
+        mut attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
     ) -> Result<HasAttributeIterator, ConceptReadError> {
         let mut min_prefix_inclusive = None;
         let mut max_prefix_inclusive = None;
-        for result in attribute_types_defining_range
-            .map(|attribute_type| {
-                match attribute_type.get_value_type(snapshot, self.type_manager()) {
-                    Ok(Some(vt)) => {
-                        Ok(Some(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), vt.category(), attribute_type.vertex())))
-                    }
-                    Ok(None) => Ok(None),
-                    Err(err) => Err(err)
-                }
-            }) {
+        for result in attribute_types_defining_range.map(|attribute_type| {
+            match attribute_type.get_value_type(snapshot, self.type_manager()) {
+                Ok(Some(vt)) => Ok(Some(ThingEdgeHas::prefix_from_object_to_type(
+                    owner.vertex(),
+                    vt.category(),
+                    attribute_type.vertex(),
+                ))),
+                Ok(None) => Ok(None),
+                Err(err) => Err(err),
+            }
+        }) {
             match result? {
                 None => {}
                 Some(prefix) => {

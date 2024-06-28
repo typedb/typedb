@@ -9,13 +9,11 @@ use std::{
     sync::{Arc, Mutex, MutexGuard},
 };
 
-use itertools::Itertools;
 use answer::variable::Variable;
+use itertools::Itertools;
 
 use crate::{
-    pattern::{
-        constraint::Constraints, context::PatternContext, pattern::Patterns, Scope, ScopeId,
-    },
+    pattern::{constraint::Constraints, context::PatternContext, pattern::Patterns, Scope, ScopeId},
     PatternDefinitionError,
 };
 

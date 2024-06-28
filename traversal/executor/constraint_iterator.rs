@@ -4,29 +4,35 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    sync::Arc,
+};
 
-use std::collections::{BTreeMap, HashMap, HashSet};
-use std::sync::Arc;
-use itertools::{Itertools, kmerge_by, KMergeBy, merge_join_by};
-
-use answer::Type;
-use answer::variable::Variable;
-use concept::error::ConceptReadError;
-use concept::thing::attribute::Attribute;
-use concept::thing::object::{HasAttributeIterator, HasIterator, Object, ObjectAPI};
-use concept::thing::thing_manager::ThingManager;
-use concept::type_::attribute_type::AttributeType;
+use answer::{variable::Variable, Type};
+use concept::{
+    error::ConceptReadError,
+    thing::{
+        attribute::Attribute,
+        object::{HasAttributeIterator, HasIterator, Object, ObjectAPI},
+        thing_manager::ThingManager,
+    },
+    type_::attribute_type::AttributeType,
+};
 use ir::pattern::constraint::{Comparison, FunctionCallBinding, Has, RolePlayer};
-use lending_iterator::adaptors::{Filter, Map};
-use lending_iterator::higher_order::{AdHocHkt, FnHktHelper, FnMutHktHelper};
-use lending_iterator::LendingIterator;
+use itertools::{kmerge_by, merge_join_by, Itertools, KMergeBy};
+use lending_iterator::{
+    adaptors::{Filter, Map},
+    higher_order::{AdHocHkt, FnHktHelper, FnMutHktHelper},
+    LendingIterator,
+};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
-use storage::key_range::KeyRange;
-use storage::snapshot::ReadableSnapshot;
+use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
-use crate::executor::pattern_executor::Row;
-use crate::executor::Position;
-use crate::planner::pattern_plan::{Iterate, SortedIterateMode};
+use crate::{
+    executor::{pattern_executor::Row, Position},
+    planner::pattern_plan::{Iterate, SortedIterateMode},
+};
 
 pub(crate) enum ConstraintIteratorProvider {
     Has(HasProvider),
@@ -37,7 +43,6 @@ pub(crate) enum ConstraintIteratorProvider {
 
     // RelationIndex(RelationIndexProvider)
     // RelationIndexReverse(RelationIndexReverseProvider)
-
     FunctionCallBinding(FunctionCallBindingProvider),
 
     Comparison(ComparisonProvider),
@@ -57,11 +62,10 @@ impl ConstraintIteratorProvider {
             Iterate::RolePlayer(rp, mode) => {
                 Self::RolePlayer(RolePlayerProvider { role_player: rp.into_ids(variable_mapping), iterate_mode: mode })
             }
-            Iterate::RolePlayerReverse(rp, mode) => {
-                Self::RolePlayerReverse(
-                    RolePlayerReverseProvider { role_player: rp.into_ids(variable_mapping), iterate_mode: mode }
-                )
-            }
+            Iterate::RolePlayerReverse(rp, mode) => Self::RolePlayerReverse(RolePlayerReverseProvider {
+                role_player: rp.into_ids(variable_mapping),
+                iterate_mode: mode,
+            }),
             Iterate::FunctionCallBinding(function_call) => {
                 todo!()
             }
@@ -110,14 +114,14 @@ impl HasProviderFilter {
     fn has_filter(&self) -> Arc<HasFilterFn> {
         match self {
             HasProviderFilter::HasFilter(filter) => filter.clone(),
-            HasProviderFilter::AttributeFilter(_) => unreachable!("Attribute filter is not has filter.")
+            HasProviderFilter::AttributeFilter(_) => unreachable!("Attribute filter is not has filter."),
         }
     }
 
     fn attribute_filter(&self) -> Arc<AttributeFilterFn> {
         match self {
             HasProviderFilter::HasFilter(_) => unreachable!("Has filter is not attribute filter."),
-            HasProviderFilter::AttributeFilter(filter) => filter.clone()
+            HasProviderFilter::AttributeFilter(filter) => filter.clone(),
         }
     }
 }
@@ -133,43 +137,35 @@ impl HasProvider {
     ) -> Result<Self, ConceptReadError> {
         debug_assert!(owner_attribute_types.len() > 0);
         let filter_fn = if iterate_mode.is_unbounded() {
-            HasProviderFilter::HasFilter(
-                Arc::new({
-                    let owner_att_types = owner_attribute_types.clone();
-                    let att_types = attribute_types.clone();
-                    move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| {
-                        match result {
-                            Ok((has, _)) => {
-                                owner_att_types.contains_key(&Type::from(has.owner().type_())) &&
-                                    att_types.contains(&has.attribute().type_())
-                            }
-                            Err(_) => true
-                        }
+            HasProviderFilter::HasFilter(Arc::new({
+                let owner_att_types = owner_attribute_types.clone();
+                let att_types = attribute_types.clone();
+                move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
+                    Ok((has, _)) => {
+                        owner_att_types.contains_key(&Type::from(has.owner().type_()))
+                            && att_types.contains(&has.attribute().type_())
                     }
-                })
-            )
+                    Err(_) => true,
+                }
+            }))
         } else {
-            HasProviderFilter::AttributeFilter(
-                Arc::new({
-                    let att_types = attribute_types.clone();
-                    move |result: &Result<(Attribute<'_>, u64), ConceptReadError>| {
-                        match result {
-                            Ok((attribute, _)) => {
-                                att_types.contains(&attribute.type_())
-                            }
-                            Err(_) => true
-                        }
-                    }
-                })
-            )
+            HasProviderFilter::AttributeFilter(Arc::new({
+                let att_types = attribute_types.clone();
+                move |result: &Result<(Attribute<'_>, u64), ConceptReadError>| match result {
+                    Ok((attribute, _)) => att_types.contains(&attribute.type_()),
+                    Err(_) => true,
+                }
+            }))
         };
 
         let owner_cache = if matches!(iterate_mode, SortedIterateMode::UnboundSortedTo) {
             let mut cache = Vec::new();
             for owner_type in owner_attribute_types.keys() {
-                for result in thing_manager.get_objects_in(snapshot, owner_type.as_object_type())
+                for result in thing_manager
+                    .get_objects_in(snapshot, owner_type.as_object_type())
                     .map_static(|result| result.map(|object| object.clone().into_owned()))
-                    .into_iter() {
+                    .into_iter()
+                {
                     match result {
                         Ok(object) => cache.push(object),
                         Err(err) => return Err(err),
@@ -182,7 +178,14 @@ impl HasProvider {
             None
         };
 
-        Ok(Self { has, iterate_mode, owner_attribute_types: owner_attribute_types, attribute_types, filter_fn, owner_cache })
+        Ok(Self {
+            has,
+            iterate_mode,
+            owner_attribute_types: owner_attribute_types,
+            attribute_types,
+            filter_fn,
+            owner_cache,
+        })
     }
 
     pub(crate) fn get_iterator<Snapshot: ReadableSnapshot>(
@@ -195,7 +198,8 @@ impl HasProvider {
             SortedIterateMode::UnboundSortedFrom => {
                 let first_from_type = self.owner_attribute_types.first_key_value().unwrap().0;
                 let last_key_from_type = self.owner_attribute_types.last_key_value().unwrap().0;
-                let key_range = KeyRange::new_inclusive(first_from_type.as_object_type(), last_key_from_type.as_object_type());
+                let key_range =
+                    KeyRange::new_inclusive(first_from_type.as_object_type(), last_key_from_type.as_object_type());
                 let filter_fn = self.filter_fn.has_filter();
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
                 let iterator: Filter<HasIterator, Arc<HasFilterFn>> = thing_manager

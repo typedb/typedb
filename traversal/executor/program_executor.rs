@@ -5,28 +5,26 @@
  */
 
 use std::collections::HashMap;
+
 use encoding::graph::definition::definition_key::DefinitionKey;
-use crate::executor::function_executor::FunctionExecutor;
-use crate::executor::pattern_executor::PatternExecutor;
-use crate::planner::program_plan::ProgramPlan;
+
+use crate::{
+    executor::{function_executor::FunctionExecutor, pattern_executor::PatternExecutor},
+    planner::program_plan::ProgramPlan,
+};
 
 pub struct ProgramExecutor {
     entry: PatternExecutor,
-    functions: HashMap<DefinitionKey<'static>, FunctionExecutor>
+    functions: HashMap<DefinitionKey<'static>, FunctionExecutor>,
 }
 
 impl ProgramExecutor {
-
     fn new(program_plan: ProgramPlan) -> Self {
-
         let ProgramPlan { entry: entry_plan, functions: function_plans } = program_plan;
         let entry = PatternExecutor::new(entry_plan, &HashMap::new());
 
         // TODO: functions
 
-        Self {
-            entry: entry,
-            functions: HashMap::new(),
-        }
+        Self { entry: entry, functions: HashMap::new() }
     }
 }

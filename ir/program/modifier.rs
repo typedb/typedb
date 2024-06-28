@@ -5,12 +5,10 @@
  */
 
 use std::{collections::HashSet, error::Error, fmt};
+
 use answer::variable::Variable;
 
-use crate::{
-    pattern::{context::PatternContext},
-    program::modifier::ModifierDefinitionError::SortVariableNotAvailable,
-};
+use crate::{pattern::context::PatternContext, program::modifier::ModifierDefinitionError::SortVariableNotAvailable};
 
 pub enum Modifier {
     Filter(Filter),

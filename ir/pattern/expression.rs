@@ -4,13 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
-use std::marker::PhantomData;
+use std::{
+    fmt::{Display, Formatter},
+    marker::PhantomData,
+};
+
 use crate::pattern::IrID;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Expression<ID: IrID> {
-    phantom: PhantomData<ID>
+    phantom: PhantomData<ID>,
 }
 
 impl<ID: IrID> Display for Expression<ID> {

@@ -5,9 +5,10 @@
  */
 
 use std::collections::HashMap;
+
 use encoding::graph::definition::definition_key::DefinitionKey;
-use crate::planner::function_plan::FunctionPlan;
-use crate::planner::pattern_plan::PatternPlan;
+
+use crate::planner::{function_plan::FunctionPlan, pattern_plan::PatternPlan};
 
 pub(crate) struct ProgramPlan {
     pub(crate) entry: PatternPlan,

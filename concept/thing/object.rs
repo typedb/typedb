@@ -16,22 +16,23 @@ use encoding::{
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
+    key_range::KeyRange,
     key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
-use storage::key_range::KeyRange;
 
 use crate::{
     concept_iterator, edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, ThingAPI},
+    thing::{
+        attribute::Attribute, entity::Entity, has::Has, relation::Relation, thing_manager::ThingManager, ThingAPI,
+    },
     type_::{
         attribute_type::AttributeType, object_type::ObjectType, owns::Owns, role_type::RoleType,
         type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI,
     },
     ConceptStatus,
 };
-use crate::thing::has::Has;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Object<'a> {
@@ -185,7 +186,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
         &self,
         snapshot: &'m Snapshot,
         thing_manager: &'m ThingManager<Snapshot>,
-        attribute_types_defining_range: impl Iterator<Item=AttributeType<'static>>,
+        attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
     ) -> Result<HasAttributeIterator, ConceptReadError> {
         thing_manager.get_has_from_thing_to_type_range_unordered(snapshot, self, attribute_types_defining_range)
     }

@@ -4,9 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::cmp::Ordering;
-use std::marker::PhantomData;
-use std::sync::Arc;
+use std::{cmp::Ordering, marker::PhantomData, sync::Arc};
 
 use bytes::Bytes;
 use encoding::{

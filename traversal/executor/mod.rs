@@ -5,17 +5,17 @@
  */
 
 use std::fmt::{Display, Formatter};
+
 use ir::pattern::IrID;
 
+mod constraint_iterator;
+mod function_executor;
 mod pattern_executor;
 mod program_executor;
-mod function_executor;
-mod constraint_iterator;
-
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub(crate) struct Position {
-    position: u32
+    position: u32,
 }
 
 impl Position {

@@ -5,8 +5,8 @@
  */
 
 use std::collections::HashMap;
-use answer::variable::Variable;
 
+use answer::variable::Variable;
 use encoding::{
     graph::definition::definition_key::{DefinitionID, DefinitionKey},
     layout::prefix::Prefix,

@@ -21,11 +21,11 @@ use crate::{
 
 pub mod attribute;
 pub mod entity;
+pub mod has;
 pub mod object;
 pub mod relation;
 pub mod statistics;
 pub mod thing_manager;
-pub mod has;
 
 pub trait ThingAPI<'a> {
     fn set_modified<Snapshot: WritableSnapshot>(&self, snapshot: &mut Snapshot, thing_manager: &ThingManager<Snapshot>);
