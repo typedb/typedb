@@ -5,6 +5,7 @@
  */
 
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::sync::Arc;
 
 use answer::{variable::Variable, Type};
 use encoding::graph::definition::definition_key::DefinitionKey;
@@ -31,8 +32,8 @@ pub fn infer_types(program: &Program) {
     let mut function_type_annotations: HashMap<DefinitionKey<'static>, TypeAnnotations> = HashMap::new();
 }
 
-struct TypeAnnotations {
-    variables: HashMap<Variable, HashSet<Type>>,
+pub struct TypeAnnotations {
+    variables: HashMap<Variable, Arc<HashSet<Type>>>,
     constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
 }
 
@@ -40,17 +41,40 @@ impl TypeAnnotations {
     fn new() -> Self {
         TypeAnnotations { variables: HashMap::new(), constraints: HashMap::new() }
     }
+
+    pub fn variable_annotations(&self, variable: Variable) -> Option<Arc<HashSet<Type>>> {
+        self.variables.get(&variable).map(|annotations| annotations.clone())
+    }
+
+    pub fn constraint_annotations(&self, constraint: Constraint<Variable>) -> Option<&ConstraintTypeAnnotations> {
+        self.constraints.get(&constraint)
+    }
 }
 
-enum ConstraintTypeAnnotations {
+pub enum ConstraintTypeAnnotations {
     LeftRight(LeftRightAnnotations),
     LeftRightFiltered(LeftRightFilteredAnnotations), // note: function calls, comparators, and value assignments are not stored here, since they do not actually co-constrain Schema types possible.
                                                      //       in other words, they are always right to left or deal only in value types.
 }
 
-struct LeftRightAnnotations {
-    left_to_right: BTreeMap<Type, BTreeSet<Type>>,
-    right_to_left: BTreeMap<Type, BTreeSet<Type>>,
+impl ConstraintTypeAnnotations {
+    pub fn get_left_right(&self) -> &LeftRightAnnotations {
+        match self {
+            ConstraintTypeAnnotations::LeftRight(annotations) => annotations,
+            ConstraintTypeAnnotations::LeftRightFiltered(_) => panic!("Unexpected type.")
+        }
+    }
+}
+
+pub struct LeftRightAnnotations {
+    left_to_right: Arc<BTreeMap<Type, Vec<Type>>>,
+    right_to_left: Arc<BTreeMap<Type, Vec<Type>>>,
+}
+
+impl LeftRightAnnotations {
+    pub fn left_to_right(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
+        self.left_to_right.clone()
+    }
 }
 
 struct LeftRightFilteredAnnotations {

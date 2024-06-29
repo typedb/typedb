@@ -162,7 +162,7 @@ impl Display for Constraints {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Constraint<ID: IrID> {
     Type(Type<ID>),
     Isa(Isa<ID>),
@@ -264,7 +264,7 @@ enum ConstraintIDSide {
     Filter,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Type<ID: IrID> {
     left: ID,
     type_: String,
@@ -301,7 +301,7 @@ impl<ID: IrID> Display for Type<ID> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Isa<ID: IrID> {
     thing: ID,
     type_: ID,
@@ -337,7 +337,7 @@ impl<ID: IrID> Display for Isa<ID> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RolePlayer<ID: IrID> {
     relation: ID,
     player: ID,
@@ -401,7 +401,7 @@ impl<ID: IrID> Display for RolePlayer<ID> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Has<ID: IrID> {
     owner: ID,
     attribute: ID,
@@ -449,7 +449,7 @@ impl<ID: IrID> Display for Has<ID> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ExpressionBinding<ID: IrID> {
     left: ID,
     expression: Expression<ID>,
@@ -485,7 +485,7 @@ impl<ID: IrID> Display for ExpressionBinding<ID> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct FunctionCallBinding<ID: IrID> {
     left: Vec<ID>,
     function_call: FunctionCall<ID>,
@@ -534,7 +534,7 @@ impl<ID: IrID> Display for FunctionCallBinding<ID> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Comparison<ID: IrID> {
     lhs: ID,
     rhs: ID,

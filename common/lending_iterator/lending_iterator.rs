@@ -6,7 +6,7 @@
 
 pub mod adaptors;
 pub mod higher_order;
-mod kmerge;
+pub mod kmerge;
 
 use std::{borrow::Borrow, cmp::Ordering, iter, mem::transmute};
 

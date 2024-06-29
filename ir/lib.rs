@@ -10,7 +10,7 @@ use answer::variable::Variable;
 
 use crate::pattern::{constraint::Constraint, variable_category::VariableCategory, IrID};
 
-mod inference;
+pub mod inference;
 mod optimisation;
 pub mod pattern;
 pub mod program;

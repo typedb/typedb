@@ -11,6 +11,7 @@ use concept::{
         role_type::RoleType, ObjectTypeAPI,
     },
 };
+use concept::thing::object::Object;
 use encoding::value::value::Value;
 
 pub mod answer_map;
@@ -52,9 +53,18 @@ impl From<ObjectType<'static>> for Type {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-enum Thing<'a> {
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum Thing<'a> {
     Entity(Entity<'a>),
     Relation(Relation<'a>),
     Attribute(Attribute<'a>),
+}
+
+impl<'a> From<Object<'a>> for Thing<'a> {
+    fn from(object: Object<'a>) -> Self {
+        match object {
+            Object::Entity(entity) => Thing::Entity(entity),
+            Object::Relation(relation) => Thing::Relation(relation),
+        }
+    }
 }

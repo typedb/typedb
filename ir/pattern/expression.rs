@@ -11,7 +11,7 @@ use std::{
 
 use crate::pattern::IrID;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub(crate) struct Expression<ID: IrID> {
     phantom: PhantomData<ID>,
 }

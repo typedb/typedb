@@ -5,8 +5,11 @@
  */
 
 use std::collections::HashMap;
+use concept::thing::thing_manager::ThingManager;
 
 use encoding::graph::definition::definition_key::DefinitionKey;
+use ir::inference::type_inference::TypeAnnotations;
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     executor::{function_executor::FunctionExecutor, pattern_executor::PatternExecutor},
@@ -19,9 +22,9 @@ pub struct ProgramExecutor {
 }
 
 impl ProgramExecutor {
-    fn new(program_plan: ProgramPlan) -> Self {
+    fn new<Snapshot: ReadableSnapshot>(program_plan: ProgramPlan, type_annotations: &TypeAnnotations, snapshot: &Snapshot, thing_manager: &ThingManager<Snapshot>) -> Self {
         let ProgramPlan { entry: entry_plan, functions: function_plans } = program_plan;
-        let entry = PatternExecutor::new(entry_plan, &HashMap::new());
+        let entry = PatternExecutor::new(entry_plan, &HashMap::new(), type_annotations, snapshot, thing_manager);
 
         // TODO: functions
 

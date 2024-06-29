@@ -504,7 +504,7 @@ impl ThingManager {
         snapshot: &'this impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
         attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
-    ) -> Result<HasAttributeIterator, ConceptReadError> {
+    ) -> Result<HasIterator, ConceptReadError> {
         let mut min_prefix_inclusive = None;
         let mut max_prefix_inclusive = None;
         for result in attribute_types_defining_range.map(|attribute_type| {
@@ -535,7 +535,7 @@ impl ThingManager {
         } else {
             KeyRange::new_within(min_prefix_inclusive.unwrap(), ThingEdgeHas::FIXED_WIDTH_ENCODING)
         };
-        Ok(HasAttributeIterator::new(snapshot.iterate_range(range)))
+        Ok(HasIterator::new(snapshot.iterate_range(range)))
     }
 
     pub(crate) fn get_owners<'this>(

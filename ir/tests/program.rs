@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use answer::variable::Variable;
 use encoding::{
@@ -74,7 +74,7 @@ fn build_program_with_functions() {
 
     conjunction.constraints().add_isa(var_person, var_person_type).unwrap();
 
-    let mut function_call_var_mapping = HashMap::new();
+    let mut function_call_var_mapping = BTreeMap::new();
     function_call_var_mapping.insert(var_person, Variable::new(1000));
     let mut function_call_var_categories = HashMap::new();
     function_call_var_categories.insert(var_person, VariableCategory::Object);
