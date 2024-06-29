@@ -41,12 +41,12 @@ impl<'a> Plays<'a> {
         self.role.clone()
     }
 
-    pub fn get_override<'m>(
-        &self,
+    pub fn get_override<'this>(
+        &'this self,
         snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Option<Plays<'static>>>, ConceptReadError> {
-        type_manager.get_plays_overridden(snapshot, self.clone().into_owned())
+        type_manager: &'this TypeManager,
+    ) -> Result<MaybeOwns<'this, Option<Plays<'static>>>, ConceptReadError> {
+        type_manager.get_plays_overridde(snapshot, self.clone().into_owned())
     }
 
     pub fn set_override(
@@ -58,33 +58,33 @@ impl<'a> Plays<'a> {
         type_manager.set_plays_overridden(snapshot, self.clone().into_owned(), overridden)
     }
 
-    pub fn unset_override<Snapshot: WritableSnapshot>(
+    pub fn unset_override(
         &self,
-        snapshot: &mut Snapshot,
-        type_manager: &TypeManager<Snapshot>,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
     ) -> Result<(), ConceptWriteError> {
         type_manager.unset_plays_overridden(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_annotations_declared<'this, Snapshot: ReadableSnapshot>(
+    pub fn get_annotations_declared<'this>(
         &'this self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
     ) -> Result<MaybeOwns<'this, HashSet<PlaysAnnotation>>, ConceptReadError> {
         type_manager.get_plays_annotations_declared(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_annotations<'this, Snapshot: ReadableSnapshot>(
+    pub fn get_annotations<'this>(
         &'this self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
     ) -> Result<MaybeOwns<'this, HashMap<PlaysAnnotation, Plays<'static>>>, ConceptReadError> {
         type_manager.get_plays_annotations(snapshot, self.clone().into_owned())
     }
 
-    pub fn set_annotation<Snapshot: WritableSnapshot>(
+    pub fn set_annotation(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl ReadableSnapshot,
         type_manager: &TypeManager,
         annotation: PlaysAnnotation,
     ) -> Result<(), ConceptWriteError> {

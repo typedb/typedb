@@ -611,6 +611,51 @@ impl OperationTimeValidation {
         }
     }
 
+    pub(crate) fn validate_attribute_type_owns_not_overridden<T>(
+        snapshot: &impl ReadableSnapshot,
+        owner: T,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<(), SchemaValidationError>
+        where
+            T: ObjectTypeAPI<'static>,
+    {
+        let is_overridden = {
+            let all_overridden = TypeReader::get_overridden_interfaces::<Owns<'static>, T>(snapshot, owner.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+            all_overridden.contains_key(&attribute_type)
+        };
+        if !is_overridden {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::OwnsCannotBeDeclaredAsItHasBeenOverridden(
+                get_label!(snapshot, owner), attribute_type
+            ))
+        }
+    }
+
+    pub(crate) fn validate_role_plays_not_overridden<T, Snapshot>(
+        snapshot: &Snapshot,
+        player: T,
+        role_type: RoleType<'static>,
+    ) -> Result<(), SchemaValidationError>
+        where
+            Snapshot: ReadableSnapshot,
+            T: ObjectTypeAPI<'static>,
+    {
+        let is_overridden = {
+            let all_overridden = TypeReader::get_overridden_interfaces::<Plays<'static>, T>(snapshot, player.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+            all_overridden.contains_key(&role_type)
+        };
+        if !is_overridden {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::PlaysCannotBeDeclaredAsItHasBeenOverridden(
+                get_label!(snapshot, player), role_type
+            ))
+        }
+    }
+
     pub(crate) fn validate_plays_is_inherited(
         snapshot: &impl ReadableSnapshot,
         player: ObjectType<'static>,
