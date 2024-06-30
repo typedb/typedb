@@ -37,32 +37,33 @@ impl PatternExecutor {
         type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>,
-    ) -> Self {
+    ) -> Result<Self, ConceptReadError> {
         // 1. assign positions based on the output variables of each step
         // 2. create step executors that have an output Batch corresponding to the total size of the variables we care about
 
         let mut variable_positions = HashMap::new();
-        let mut steps = Vec::new();
+        let mut steps = Vec::with_capacity(plan.steps().len());
         for step in plan.into_steps() {
             for variable in step.generated_variables() {
                 let previous = variable_positions.insert(*variable, Position::new(variable_positions.len() as u32));
                 debug_assert_eq!(previous, Option::None);
             }
-            steps.push(StepExecutor::new(step, &variable_positions, type_annotations, snapshot, thing_manager))
+            let executor = StepExecutor::new(step, &variable_positions, type_annotations, snapshot, thing_manager)?;
+            steps.push(executor)
         }
         let mut variable_positions_index = vec![Variable::new(0); variable_positions.len()];
         for (variable, position) in &variable_positions {
             variable_positions_index[position.as_usize()] = *variable
         }
 
-        PatternExecutor {
+        Ok(PatternExecutor {
             variable_positions,
             variable_positions_index,
             steps,
             // modifiers:
             outputs: None,
             output_index: 0,
-        }
+        })
     }
 
     pub fn into_rows(self) {
@@ -153,17 +154,20 @@ impl StepExecutor {
         type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>,
-    ) -> Self {
+    ) -> Result<Self, ConceptReadError> {
         let Step { execution: execution, total_variables_count: vars_count, .. } = step;
 
         match execution {
             Execution::SortedIterators(iterates) => {
-                Self::Sorted(SortedExecutor::new(iterates, vars_count, variable_positions, type_annotations, snapshot, thing_manager))
+                let executor = SortedExecutor::new(iterates, vars_count, variable_positions, type_annotations, snapshot, thing_manager)?;
+                Ok(Self::Sorted(executor))
             }
             Execution::UnsortedIterator(iterate, checks) => {
-                Self::Unsorted(UnsortedExecutor::new(iterate, checks, vars_count, variable_positions))
+                Ok(Self::Unsorted(UnsortedExecutor::new(iterate, checks, vars_count, variable_positions)))
             }
-            Execution::Single(single, checks) => Self::Single(SingleExecutor::new(single, checks, variable_positions)),
+            Execution::Single(single, checks) => {
+                Ok(Self::Single(SingleExecutor::new(single, checks, variable_positions)))
+            }
             Execution::Disjunction(plans) => {
                 todo!()
                 // let executors = plans.into_iter().map(|pattern_plan| PatternExecutor::new(pattern_plan, )).collect();
@@ -176,7 +180,8 @@ impl StepExecutor {
                 // Self::Negation(NegationExecutor::new(executor, variable_positions))
             }
             Execution::Optional(plan) => {
-                Self::Optional(OptionalExecutor::new(PatternExecutor::new(plan, variable_positions, type_annotations, snapshot, thing_manager)))
+                let pattern_executor = PatternExecutor::new(plan, variable_positions, type_annotations, snapshot, thing_manager)?;
+                Ok(Self::Optional(OptionalExecutor::new(pattern_executor)))
             }
         }
     }
@@ -230,20 +235,20 @@ impl SortedExecutor {
         type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>,
-    ) -> Self {
-        let providers = iterates
+    ) -> Result<Self, ConceptReadError> {
+        let providers: Vec<ConstraintIteratorProvider> = iterates
             .into_iter()
             .map(|iterate| ConstraintIteratorProvider::new(iterate, variable_positions, type_annotations, snapshot, thing_manager))
-            .collect_vec();
+            .collect::<Result<Vec<_>, ConceptReadError>>()?;
 
-        Self {
+        Ok(Self {
             iterators: Vec::with_capacity(providers.len()),
             iterator_providers: providers,
             output_width: vars_count,
             input: None,
             next_input_row: 0,
             output: None,
-        }
+        })
     }
 
     fn batch_from<Snapshot: ReadableSnapshot>(

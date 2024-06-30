@@ -42,6 +42,13 @@ impl Type {
             Type::RoleType(_) => panic!("Role Type is not an Object type"),
         }
     }
+
+    pub fn as_attribute_type(&self) -> AttributeType<'static> {
+        match self {
+            Type::Attribute(attribute) => attribute.clone().into_owned(),
+            _ => panic!("Type is not an Attribute type.")
+        }
+    }
 }
 
 impl From<ObjectType<'static>> for Type {

@@ -13,6 +13,10 @@ pub(crate) struct PatternPlan {
 }
 
 impl PatternPlan {
+    pub(crate) fn steps(&self) -> &Vec<Step> {
+        &self.steps
+    }
+
     pub(crate) fn into_steps(self) -> impl Iterator<Item = Step> {
         self.steps.into_iter()
     }

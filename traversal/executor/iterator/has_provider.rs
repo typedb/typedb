@@ -101,7 +101,7 @@ impl HasProvider {
         owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
         attribute_types: Arc<HashSet<Type>>,
         snapshot: &Snapshot,
-        thing_manager: ThingManager<Snapshot>,
+        thing_manager: &ThingManager<Snapshot>,
     ) -> Result<Self, ConceptReadError> {
         debug_assert!(owner_attribute_types.len() > 0);
         let filter_fn = match &iterate_mode {
@@ -193,14 +193,14 @@ impl HasProvider {
                     // no heap allocs needed if there is only 1 iterator
                     let iterator: Filter<HasIterator, Arc<HasFilterAttributeFn>> = self.owner_cache.as_ref().unwrap()
                         .get(0).unwrap()
-                        .get_has_types_range_unordered(snapshot, thing_manager, self.attribute_types.iter().map(|t| t.as_att.cloned())?
+                        .get_has_types_range_unordered(snapshot, thing_manager, self.attribute_types.iter().map(|t| t.as_attribute_type()))?
                         .filter::<_, HasFilterAttributeFn>(self.filter_fn.has_attribute_filter());
                     Ok(ConstraintIterator::HasUnboundedSortedAttributeSingle(Peekable::new(iterator), self.has.clone()))
                 } else {
                     // TODO: we could create a reusable space for these temporarily held iterators so we don't have allocate again before the merging iterator
                     let mut iterators: Vec<Peekable<HasIterator>> = Vec::with_capacity(self.owner_cache.as_ref().unwrap().len());
                     for iter in self.owner_cache.as_ref().unwrap().iter().map(|object|
-                        object.get_has_types_range_unordered(snapshot, thing_manager, self.attribute_types.iter().cloned())
+                        object.get_has_types_range_unordered(snapshot, thing_manager, self.attribute_types.iter().map(|t| t.as_attribute_type()))
                     ) {
                         iterators.push(Peekable::new(iter?))
                     }
@@ -220,10 +220,10 @@ impl HasProvider {
                 let owner = row.get(self.has.owner());
                 let iterator = match owner {
                     VariableValue::Thing(Thing::Entity(entity)) => {
-                        entity.get_has_types_range_unordered(snapshot, thing_manager, self.attribute_types.iter().cloned())?
+                        entity.get_has_types_range_unordered(snapshot, thing_manager, self.attribute_types.iter().map(|t| t.as_attribute_type()))?
                     }
                     VariableValue::Thing(Thing::Relation(relation)) => {
-                        relation.get_has_types_range_unordered(snapshot, thing_manager, self.attribute_types.iter().cloned())?
+                        relation.get_has_types_range_unordered(snapshot, thing_manager, self.attribute_types.iter().map(|t| t.as_attribute_type()))?
                     }
                     _ => unreachable!("Has owner must be an entity or relation.")
                 };

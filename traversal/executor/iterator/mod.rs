@@ -14,7 +14,7 @@ use answer::Thing;
 
 use answer::variable::Variable;
 use answer::variable_value::VariableValue;
-use concept::error::ConceptReadError;
+use concept::error::{ConceptError, ConceptReadError};
 use concept::thing::has::Has;
 use concept::thing::thing_manager::ThingManager;
 use ir::inference::type_inference::TypeAnnotations;
@@ -63,29 +63,32 @@ impl ConstraintIteratorProvider {
         type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>
-    ) -> Self {
+    ) -> Result<Self, ConceptReadError> {
         match iterate {
             Iterate::Has(has, mode) => {
                 let has_attribute = has.attribute();
-                Self::Has(HasProvider::new(
-                    has.into_ids(variable_to_position),
+                let provider = HasProvider::new(
+                    has.clone().into_ids(variable_to_position),
                     mode,
                     type_annotations.constraint_annotations(has.into()).unwrap().get_left_right().left_to_right(),
                     type_annotations.variable_annotations(has_attribute).unwrap(),
                     snapshot,
                     thing_manager,
-                ))
+                )?;
+                Ok(Self::Has(provider))
             }
             Iterate::HasReverse(has, mode) => {
-                Self::HasReverse(HasReverseProvider::new(has.into_ids(variable_to_position), mode))
+                Ok(Self::HasReverse(HasReverseProvider::new(has.into_ids(variable_to_position), mode)))
             }
             Iterate::RolePlayer(rp, mode) => {
-                Self::RolePlayer(RolePlayerProvider::new(rp.into_ids(variable_to_position), mode))
+                Ok(Self::RolePlayer(RolePlayerProvider::new(rp.into_ids(variable_to_position), mode)))
             }
-            Iterate::RolePlayerReverse(rp, mode) => Self::RolePlayerReverse(RolePlayerReverseProvider::new(
-                rp.into_ids(variable_to_position),
-                mode,
-            )),
+            Iterate::RolePlayerReverse(rp, mode) => {
+                Ok(Self::RolePlayerReverse(RolePlayerReverseProvider::new(
+                    rp.into_ids(variable_to_position),
+                    mode,
+                )))
+            },
             Iterate::FunctionCallBinding(function_call) => {
                 todo!()
             }
@@ -178,7 +181,7 @@ impl ConstraintIterator {
             }
             ConstraintIterator::HasBoundedSortedAttribute(iter, has) => {
                 let (has_value, _): &(Has<'_>, u64) = iter.peek().unwrap().as_ref()?;
-                debug_assert!(row.get(has.owner()) != VariableValue::Empty);
+                debug_assert!(*row.get(has.owner()) == VariableValue::Thing(Thing::from(has_value.owner())));
                 row.set(has.attribute(), VariableValue::Thing(Thing::Attribute(has_value.attribute().clone().into_owned())));
                 Ok(())
             }

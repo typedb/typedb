@@ -5,6 +5,7 @@
  */
 
 use std::collections::HashMap;
+use concept::error::ConceptReadError;
 use concept::thing::thing_manager::ThingManager;
 
 use encoding::graph::definition::definition_key::DefinitionKey;
@@ -22,12 +23,17 @@ pub struct ProgramExecutor {
 }
 
 impl ProgramExecutor {
-    fn new<Snapshot: ReadableSnapshot>(program_plan: ProgramPlan, type_annotations: &TypeAnnotations, snapshot: &Snapshot, thing_manager: &ThingManager<Snapshot>) -> Self {
+    fn new<Snapshot: ReadableSnapshot>(
+        program_plan: ProgramPlan,
+        type_annotations: &TypeAnnotations,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
+    ) -> Result<Self, ConceptReadError> {
         let ProgramPlan { entry: entry_plan, functions: function_plans } = program_plan;
-        let entry = PatternExecutor::new(entry_plan, &HashMap::new(), type_annotations, snapshot, thing_manager);
+        let entry = PatternExecutor::new(entry_plan, &HashMap::new(), type_annotations, snapshot, thing_manager)?;
 
         // TODO: functions
 
-        Self { entry: entry, functions: HashMap::new() }
+        Ok(Self { entry: entry, functions: HashMap::new() })
     }
 }
