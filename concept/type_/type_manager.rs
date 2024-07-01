@@ -1452,7 +1452,7 @@ impl TypeManager {
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         OperationTimeValidation::validate_overridden_is_supertype(snapshot, owns.attribute(), overridden.attribute())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-        OperationTimeValidation::validate_owns_override_ordering_match(snapshot, owns.clone(), overridden.clone())
+        OperationTimeValidation::validate_owns_override_ordering_match(snapshot, owns.clone(), overridden.clone(), None)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         TypeWriter::storage_set_type_edge_overridden(snapshot, owns, overridden); // .attribute().clone());
@@ -1535,8 +1535,9 @@ impl TypeManager {
             .map_err(|source| ConceptWriteError::ConceptRead { source })?;
         match owns_override_opt {
             Some(owns_override) => {
-                OperationTimeValidation::validate_owns_override_ordering_match(snapshot, owns.clone(), owns_override.clone())
-                    .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+                OperationTimeValidation::validate_owns_override_ordering_match(
+                    snapshot, owns.clone(), owns_override.clone(), Some(ordering)
+                ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
             }
             None => {}
         }
@@ -1558,8 +1559,9 @@ impl TypeManager {
             .map_err(|source| ConceptWriteError::ConceptRead { source })?;
         match relates_override_opt {
             Some(relates_override) => {
-                OperationTimeValidation::validate_role_supertype_ordering_match(snapshot, relates.role().clone(), relates_override.role().clone())
-                    .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+                OperationTimeValidation::validate_role_supertype_ordering_match(
+                    snapshot, relates.role().clone(), relates_override.role().clone(), Some(ordering)
+                ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
             }
             None => {}
         }
@@ -1690,6 +1692,12 @@ impl TypeManager {
             snapshot, type_.clone(), AnnotationCategory::Regex
         ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        if let Some(supertype) = TypeReader::get_supertype(snapshot, type_.clone())
+            .map_err(|source| ConceptWriteError::ConceptRead { source })? {
+            OperationTimeValidation::validate_type_regex_narrows_annotation(snapshot, supertype, regex.clone())
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
+
         // TODO: Validate that regex value is correct
         // TODO: Verify that there is no regex on owns
         // TODO: Verify that there is no regex on supertypes
@@ -1700,9 +1708,12 @@ impl TypeManager {
     }
 
     pub(crate) fn unset_annotation_regex(
-        &self, snapshot: &mut impl WritableSnapshot, type_: impl KindAPI<'static>,
+        &self, snapshot: &mut impl WritableSnapshot, type_: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_unset_annotation_is_not_inherited(
+            snapshot, type_.clone(), AnnotationCategory::Regex,
+        ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_annotation_set_only_for_interface::<Owns<'static>>(
             snapshot, type_.clone(), AnnotationCategory::Regex,
         ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1730,8 +1741,9 @@ impl TypeManager {
         // TODO: More validation - instances exist.
         OperationTimeValidation::validate_relates_is_inherited(snapshot, relates.relation(), overridden.role())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-        OperationTimeValidation::validate_role_supertype_ordering_match(snapshot, relates.role().clone(), overridden.role().clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_role_supertype_ordering_match(
+            snapshot, relates.role().clone(), overridden.role().clone(), None
+        ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         Self::set_supertype(self, snapshot, relates.role(), overridden.role())?;
         TypeWriter::storage_set_type_edge_overridden(snapshot, relates.clone(), overridden.clone()); // .attribute().clone());
@@ -1900,9 +1912,20 @@ impl TypeManager {
             snapshot, owns.clone(), AnnotationCategory::Regex
         ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_owns_attribute_type_does_not_have_annotation_category_when_setting_owns_annotation(
+        OperationTimeValidation::validate_annotation_set_only_for_interface_implementation(
             snapshot, owns.clone(), AnnotationCategory::Regex,
         ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        // TODO: Maybe delete?
+        // OperationTimeValidation::validate_owns_attribute_type_does_not_have_annotation_category_when_setting_owns_annotation(
+        //     snapshot, owns.clone(), AnnotationCategory::Regex,
+        // ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        if let Some(override_edge) = TypeReader::get_implementation_override(snapshot, owns.clone())
+            .map_err(|source| ConceptWriteError::ConceptRead { source })? {
+            OperationTimeValidation::validate_edge_regex_narrows_annotation(snapshot, override_edge, regex.clone())
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
+
         // TODO: Validate that regex value is correct
         // TODO: Verify that there is no regex on supertypes
         // TODO: Verify that there is no regex on subtypes (schema validation only)
