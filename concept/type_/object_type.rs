@@ -92,15 +92,15 @@ impl<'a> OwnerAPI<'a> for ObjectType<'a> {
         }
     }
 
-    fn delete_owns(
+    fn unset_owns(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
         match self {
-            ObjectType::Entity(entity) => entity.delete_owns(snapshot, type_manager, attribute_type),
-            ObjectType::Relation(relation) => relation.delete_owns(snapshot, type_manager, attribute_type),
+            ObjectType::Entity(entity) => entity.unset_owns(snapshot, type_manager, attribute_type),
+            ObjectType::Relation(relation) => relation.unset_owns(snapshot, type_manager, attribute_type),
         }
     }
 
@@ -204,15 +204,15 @@ impl<'a> PlayerAPI<'a> for ObjectType<'a> {
         }
     }
 
-    fn delete_plays(
+    fn unset_plays(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
         match self {
-            ObjectType::Entity(entity) => entity.delete_plays(snapshot, type_manager, role_type),
-            ObjectType::Relation(relation) => relation.delete_plays(snapshot, type_manager, role_type),
+            ObjectType::Entity(entity) => entity.unset_plays(snapshot, type_manager, role_type),
+            ObjectType::Relation(relation) => relation.unset_plays(snapshot, type_manager, role_type),
         }
     }
 

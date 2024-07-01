@@ -90,7 +90,7 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError>;
 
-    fn delete_owns(
+    fn unset_owns(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
@@ -152,7 +152,7 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         role_type: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError>;
 
-    fn delete_plays(
+    fn unset_plays(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
