@@ -19,7 +19,7 @@ use ir::{
     },
     program::{modifier::ModifierDefinitionError, program::Program},
 };
-use ir::program::FunctionalBlock;
+use ir::program::block::FunctionalBlock;
 
 #[test]
 fn build_program_modifiers() {

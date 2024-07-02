@@ -11,16 +11,17 @@ use std::{
 
 use answer::variable::Variable;
 
-use crate::pattern::{context::PatternContext, Scope, ScopeId};
+use crate::pattern::{Scope, ScopeId};
+use crate::program::block::BlockContext;
 
 #[derive(Debug)]
 pub(crate) struct Disjunction {
     scope_id: ScopeId,
-    context: Arc<Mutex<PatternContext>>,
+    context: Arc<Mutex<BlockContext>>,
 }
 
 impl Disjunction {
-    pub(crate) fn new_child(parent_scope_id: ScopeId, context: Arc<Mutex<PatternContext>>) -> Self {
+    pub(crate) fn new_child(parent_scope_id: ScopeId, context: Arc<Mutex<BlockContext>>) -> Self {
         let scope_id = context.lock().unwrap().create_child_scope(parent_scope_id);
         Self { scope_id, context }
     }
@@ -29,7 +30,7 @@ impl Disjunction {
         todo!()
     }
 
-    pub(crate) fn context(&self) -> MutexGuard<PatternContext> {
+    pub(crate) fn context(&self) -> MutexGuard<BlockContext> {
         self.context.lock().unwrap()
     }
 }

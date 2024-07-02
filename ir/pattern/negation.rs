@@ -9,15 +9,16 @@ use std::{
     sync::{Arc, Mutex, MutexGuard},
 };
 
-use crate::pattern::{context::PatternContext, Scope, ScopeId};
+use crate::pattern::{Scope, ScopeId};
+use crate::program::block::BlockContext;
 
 #[derive(Debug)]
 pub(crate) struct Negation {
-    context: Arc<Mutex<PatternContext>>,
+    context: Arc<Mutex<BlockContext>>,
 }
 
 impl Negation {
-    pub(crate) fn context(&self) -> MutexGuard<PatternContext> {
+    pub(crate) fn context(&self) -> MutexGuard<BlockContext> {
         self.context.lock().unwrap()
     }
 }

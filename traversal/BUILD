@@ -11,8 +11,9 @@ rust_library(
     crate_root = "lib.rs",
     srcs = glob([
         "*.rs",
-        "*/*.rs"
-    ]),
+        "*/*.rs",
+        "*/*/*.rs",
+    ], exclude=["tests/**"]),
     deps = [
         "//answer",
         "//common/lending_iterator",

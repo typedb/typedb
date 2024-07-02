@@ -10,13 +10,13 @@ use encoding::graph::definition::definition_key::DefinitionKey;
 
 use crate::planner::{function_plan::FunctionPlan, pattern_plan::PatternPlan};
 
-pub(crate) struct ProgramPlan {
+pub struct ProgramPlan {
     pub(crate) entry: PatternPlan,
     pub(crate) functions: HashMap<DefinitionKey<'static>, FunctionPlan>,
 }
 
 impl ProgramPlan {
     pub(crate) fn new(entry: PatternPlan, functions: HashMap<DefinitionKey<'static>, FunctionPlan>) -> Self {
-        todo!()
+        Self { entry, functions }
     }
 }

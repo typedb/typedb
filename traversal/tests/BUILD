@@ -7,26 +7,22 @@ load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test")
 package(default_visibility = ["//visibility:public",])
 
 rust_test(
-    name = "pattern",
-    crate_root = "pattern.rs",
-    srcs =  ["pattern.rs"],
-    deps = [
-        "//ir:ir",
-    ],
-)
-
-rust_test(
-    name = "program",
-    crate_root = "program.rs",
-    srcs =  ["program.rs"],
+    name = "executor",
+    crate_root = "executor.rs",
+    srcs =  ["executor.rs"],
     deps = [
         "//answer",
+        "//concept",
         "//common/bytes",
+        "//durability",
         "//encoding",
         "//ir:ir",
+        "//traversal",
+        "//storage",
+
+        "//util/test:test_utils",
     ],
 )
-
 
 checkstyle_test(
     name = "checkstyle",

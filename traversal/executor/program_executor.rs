@@ -5,9 +5,9 @@
  */
 
 use std::collections::HashMap;
+
 use concept::error::ConceptReadError;
 use concept::thing::thing_manager::ThingManager;
-
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::inference::type_inference::TypeAnnotations;
 use storage::snapshot::ReadableSnapshot;
@@ -30,7 +30,7 @@ impl ProgramExecutor {
         thing_manager: &ThingManager<Snapshot>,
     ) -> Result<Self, ConceptReadError> {
         let ProgramPlan { entry: entry_plan, functions: function_plans } = program_plan;
-        let entry = PatternExecutor::new(entry_plan, &HashMap::new(), type_annotations, snapshot, thing_manager)?;
+        let entry = PatternExecutor::new(entry_plan, type_annotations, snapshot, thing_manager)?;
 
         // TODO: functions
 

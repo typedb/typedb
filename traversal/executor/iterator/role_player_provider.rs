@@ -9,15 +9,15 @@ use ir::pattern::constraint::RolePlayer;
 use crate::executor::iterator::ConstraintIterator;
 use crate::executor::pattern_executor::Row;
 use crate::executor::Position;
-use crate::planner::pattern_plan::SortedIterateMode;
+use crate::planner::pattern_plan::IterateMode;
 
 pub(crate) struct RolePlayerProvider {
     role_player: RolePlayer<Position>,
-    iterate_mode: SortedIterateMode,
+    iterate_mode: IterateMode,
 }
 
 impl RolePlayerProvider {
-    pub(crate) fn new(role_player: RolePlayer<Position>, iterate_mode: SortedIterateMode) -> RolePlayerProvider {
+    pub(crate) fn new(role_player: RolePlayer<Position>, iterate_mode: IterateMode) -> RolePlayerProvider {
         Self { role_player, iterate_mode }
     }
 }

@@ -9,15 +9,15 @@ use ir::pattern::constraint::Has;
 use crate::executor::iterator::ConstraintIterator;
 use crate::executor::pattern_executor::Row;
 use crate::executor::Position;
-use crate::planner::pattern_plan::SortedIterateMode;
+use crate::planner::pattern_plan::IterateMode;
 
 pub(crate) struct HasReverseProvider {
     has: Has<Position>,
-    iterate_mode: SortedIterateMode,
+    iterate_mode: IterateMode,
 }
 
 impl HasReverseProvider {
-    pub(crate) fn new(has: Has<Position>, iterate_mode: SortedIterateMode) -> HasReverseProvider {
+    pub(crate) fn new(has: Has<Position>, iterate_mode: IterateMode) -> HasReverseProvider {
         Self { has, iterate_mode }
     }
 }

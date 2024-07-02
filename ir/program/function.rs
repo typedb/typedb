@@ -6,14 +6,8 @@
 
 use answer::variable::Variable;
 
-use crate::{
-    PatternDefinitionError,
-    program::{
-        FunctionalBlock,
-        modifier::Modifier,
-    },
-};
-use crate::pattern::conjunction::Conjunction;
+use crate::PatternDefinitionError;
+use crate::program::block::FunctionalBlock;
 
 pub struct FunctionIR {
     arguments: Vec<Variable>,

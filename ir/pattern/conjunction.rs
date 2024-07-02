@@ -14,24 +14,23 @@ use itertools::Itertools;
 use answer::variable::Variable;
 
 use crate::{
-    pattern::{constraint::Constraints, context::PatternContext, Scope, ScopeId},
+    pattern::{constraint::Constraints, Scope, ScopeId},
     PatternDefinitionError,
 };
 use crate::pattern::nested_pattern::NestedPattern;
+use crate::program::block::BlockContext;
 
 #[derive(Debug)]
 pub struct Conjunction {
     scope_id: ScopeId,
-    context: Arc<Mutex<PatternContext>>,
+    context: Arc<Mutex<BlockContext>>,
 
     constraints: Constraints,
     nested_patterns: Vec<NestedPattern>,
 }
 
 impl Conjunction {
-    pub fn new(context: Arc<Mutex<PatternContext>>) -> Self {
-        let scope_id = context.lock().unwrap().create_root_scope();
-
+    pub fn new(scope_id: ScopeId, context: Arc<Mutex<BlockContext>>) -> Self {
         Conjunction {
             scope_id,
             context: context.clone(),

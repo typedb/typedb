@@ -18,7 +18,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::executor::iterator::{ConstraintIterator, ConstraintIteratorProvider};
 use crate::executor::Position;
-use crate::planner::pattern_plan::{Check, Execution, Iterate, PatternPlan, Single, Step};
+use crate::planner::pattern_plan::{Check, Execution, Iterate, PatternPlan, Single, IterateMode, Step};
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, Position>,
@@ -33,7 +33,6 @@ pub(crate) struct PatternExecutor {
 impl PatternExecutor {
     pub(crate) fn new<Snapshot: ReadableSnapshot>(
         plan: PatternPlan,
-        variable_positions: &HashMap<Variable, Position>,
         type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>,
@@ -155,8 +154,8 @@ impl StepExecutor {
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>,
     ) -> Result<Self, ConceptReadError> {
-        let Step { execution: execution, total_variables_count: vars_count, .. } = step;
-
+        let vars_count = step.total_variables_count();
+        let Step { execution: execution, .. } = step;
         match execution {
             Execution::SortedIterators(iterates) => {
                 let executor = SortedExecutor::new(iterates, vars_count, variable_positions, type_annotations, snapshot, thing_manager)?;
@@ -180,7 +179,7 @@ impl StepExecutor {
                 // Self::Negation(NegationExecutor::new(executor, variable_positions))
             }
             Execution::Optional(plan) => {
-                let pattern_executor = PatternExecutor::new(plan, variable_positions, type_annotations, snapshot, thing_manager)?;
+                let pattern_executor = PatternExecutor::new(plan, type_annotations, snapshot, thing_manager)?;
                 Ok(Self::Optional(OptionalExecutor::new(pattern_executor)))
             }
         }

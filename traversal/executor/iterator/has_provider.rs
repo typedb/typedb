@@ -37,13 +37,13 @@ use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
     executor::{pattern_executor::Row, Position},
-    planner::pattern_plan::{Iterate, SortedIterateMode},
+    planner::pattern_plan::{Iterate, IterateMode},
 };
 use crate::executor::iterator::ConstraintIterator;
 
 pub(crate) struct HasProvider {
     has: Has<Position>,
-    iterate_mode: SortedIterateMode,
+    iterate_mode: IterateMode,
     owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
     attribute_types: Arc<HashSet<Type>>,
     filter_fn: HasProviderFilter,
@@ -97,7 +97,7 @@ impl HasProviderFilter {
 impl HasProvider {
     pub(crate) fn new<Snapshot: ReadableSnapshot>(
         has: Has<Position>,
-        iterate_mode: SortedIterateMode,
+        iterate_mode: IterateMode,
         owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
         attribute_types: Arc<HashSet<Type>>,
         snapshot: &Snapshot,
@@ -105,7 +105,7 @@ impl HasProvider {
     ) -> Result<Self, ConceptReadError> {
         debug_assert!(owner_attribute_types.len() > 0);
         let filter_fn = match &iterate_mode {
-            SortedIterateMode::UnboundSortedFrom => {
+            IterateMode::UnboundSortedFrom => {
                 HasProviderFilter::HasFilterBoth(Arc::new({
                     let owner_att_types = owner_attribute_types.clone();
                     let att_types = attribute_types.clone();
@@ -118,7 +118,7 @@ impl HasProvider {
                     }
                 }))
             }
-            SortedIterateMode::UnboundSortedTo => {
+            IterateMode::UnboundSortedTo => {
                 HasProviderFilter::HasFilterAttribute(Arc::new({
                     let att_types = attribute_types.clone();
                     move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
@@ -127,7 +127,7 @@ impl HasProvider {
                     }
                 }))
             }
-            SortedIterateMode::BoundFromSortedTo => {
+            IterateMode::BoundFromSortedTo => {
                 HasProviderFilter::AttributeFilter(Arc::new({
                     let att_types = attribute_types.clone();
                     move |result: &Result<(Attribute<'_>, u64), ConceptReadError>| match result {
@@ -138,7 +138,7 @@ impl HasProvider {
             }
         };
 
-        let owner_cache = if matches!(iterate_mode, SortedIterateMode::UnboundSortedTo) {
+        let owner_cache = if matches!(iterate_mode, IterateMode::UnboundSortedTo) {
             let mut cache = Vec::new();
             for owner_type in owner_attribute_types.keys() {
                 for result in thing_manager
@@ -175,7 +175,7 @@ impl HasProvider {
         row: &Row,
     ) -> Result<ConstraintIterator, ConceptReadError> {
         match self.iterate_mode {
-            SortedIterateMode::UnboundSortedFrom => {
+            IterateMode::UnboundSortedFrom => {
                 let first_from_type = self.owner_attribute_types.first_key_value().unwrap().0;
                 let last_key_from_type = self.owner_attribute_types.last_key_value().unwrap().0;
                 let key_range =
@@ -187,7 +187,7 @@ impl HasProvider {
                     .filter::<_, HasFilterBothFn>(filter_fn);
                 Ok(ConstraintIterator::HasUnboundedSortedOwner(Peekable::new(iterator), self.has.clone()))
             }
-            SortedIterateMode::UnboundSortedTo => {
+            IterateMode::UnboundSortedTo => {
                 debug_assert!(self.owner_cache.is_some());
                 if self.owner_cache.as_ref().unwrap().len() == 1 {
                     // no heap allocs needed if there is only 1 iterator
@@ -215,7 +215,7 @@ impl HasProvider {
                     todo!()
                 }
             }
-            SortedIterateMode::BoundFromSortedTo => {
+            IterateMode::BoundFromSortedTo => {
                 debug_assert!(row.len() > self.has.owner().as_usize());
                 let owner = row.get(self.has.owner());
                 let iterator = match owner {

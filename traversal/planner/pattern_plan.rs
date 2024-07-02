@@ -7,12 +7,17 @@
 use answer::variable::Variable;
 use ir::pattern::constraint::{Comparison, ExpressionBinding, FunctionCallBinding, Has, RolePlayer};
 
-pub(crate) struct PatternPlan {
+pub struct PatternPlan {
     steps: Vec<Step>,
     // TODO: each pattern plan should have its own modifiers?
 }
 
 impl PatternPlan {
+
+    pub fn new(steps: Vec<Step>) -> Self {
+        Self { steps }
+    }
+
     pub(crate) fn steps(&self) -> &Vec<Step> {
         &self.steps
     }
@@ -26,8 +31,6 @@ impl PatternPlan {
 Plan should indicate direction and operation to use.
 Plan should indicate whether returns iterator or single
 Plan should indicate pre-sortedness of iterator (allows intersecting automatically)
-
-Each variable will still be created using an Iterator that is composed.
  */
 
 pub(crate) struct Step {
@@ -35,8 +38,6 @@ pub(crate) struct Step {
     // filters: Vec<Filter>, // local filtering operations without storage lookups
     input_variables: Vec<Variable>,
     generated_variables: Vec<Variable>,
-    // including optional ones
-    pub(crate) total_variables_count: u32, // including optional ones
 }
 
 impl Step {
@@ -45,7 +46,7 @@ impl Step {
     }
 
     pub(crate) fn total_variables_count(&self) -> u32 {
-        self.total_variables_count
+        (self.input_variables.len() + self.generated_variables.len()) as u32
     }
 }
 
@@ -60,67 +61,45 @@ pub(crate) enum Execution {
 }
 
 pub(crate) enum Iterate {
-    Has(Has<Variable>, SortedIterateMode),
     // owner -> attribute
-    HasReverse(Has<Variable>, SortedIterateMode), // attribute -> owner
+    Has(Has<Variable>, IterateMode),
+    // attribute -> owner
+    HasReverse(Has<Variable>, IterateMode),
 
-    RolePlayer(RolePlayer<Variable>, SortedIterateMode),
     // relation -> player
-    RolePlayerReverse(RolePlayer<Variable>, SortedIterateMode), // player -> relation
+    RolePlayer(RolePlayer<Variable>, IterateMode),
+    // player -> relation
+    RolePlayerReverse(RolePlayer<Variable>, IterateMode),
 
-    // RelationIndex(RelationIndex, SortedIterateMode)
-    // RelationIndexReverse(RelationIndex, SortedIterateMode)
+    // RelationIndex(RelationIndex)
+    // RelationIndexReverse(RelationIndex)
     FunctionCallBinding(FunctionCallBinding<Variable>),
 
-    Comparison(Comparison<Variable>), // lhs derived from rhs. We need to decide if lhs will always be sorted
-    ComparisonReverse(Comparison<Variable>), // rhs derived from lhs
+    // lhs derived from rhs. We need to decide if lhs will always be sorted
+    Comparison(Comparison<Variable>),
+    // rhs derived from lhs
+    ComparisonReverse(Comparison<Variable>),
 }
 
-impl Iterate {
-    pub(crate) fn sort_variable(&self) -> Option<Variable> {
-        match self {
-            Iterate::Has(has, mode) => match mode.is_sorted_from() {
-                true => Some(has.owner()),
-                false => Some(has.attribute()),
-            },
-            Iterate::HasReverse(has, mode) => match mode.is_sorted_from() {
-                true => Some(has.attribute()),
-                false => Some(has.owner()),
-            },
-            Iterate::RolePlayer(rp, mode) => match mode.is_sorted_from() {
-                true => Some(rp.relation()),
-                false => Some(rp.player()),
-            },
-            Iterate::RolePlayerReverse(rp, mode) => match mode.is_sorted_from() {
-                true => Some(rp.player()),
-                false => Some(rp.relation()),
-            },
-            Iterate::FunctionCallBinding(_) => None,
-            Iterate::Comparison(comparison) => Some(comparison.lhs()),
-            Iterate::ComparisonReverse(comparison) => Some(comparison.rhs()),
-        }
-    }
-}
-
-pub(crate) enum SortedIterateMode {
+pub(crate) enum IterateMode {
     UnboundSortedFrom,
     UnboundSortedTo,
     // normally expensive, read all Froms + merge sort -> TOs
     BoundFromSortedTo,
 }
 
-impl SortedIterateMode {
+impl IterateMode {
     pub const fn is_sorted_from(&self) -> bool {
         match self {
-            SortedIterateMode::UnboundSortedFrom => true,
-            SortedIterateMode::UnboundSortedTo | SortedIterateMode::BoundFromSortedTo => false,
+            IterateMode::UnboundSortedFrom => true,
+            IterateMode::UnboundSortedTo | IterateMode::BoundFromSortedTo => false,
         }
     }
 
     pub const fn is_unbounded(&self) -> bool {
         match self {
-            SortedIterateMode::UnboundSortedFrom | SortedIterateMode::UnboundSortedTo => true,
-            SortedIterateMode::BoundFromSortedTo => false,
+            IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => true,
+            IterateMode::BoundFromSortedTo => false,
         }
     }
 }

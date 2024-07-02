@@ -10,9 +10,11 @@ use std::{
 };
 
 use crate::pattern::{
-    context::PatternContext, disjunction::Disjunction, negation::Negation,
+    disjunction::Disjunction, negation::Negation,
     optional::Optional,
 };
+
+use crate::program::block::BlockContext;
 
 #[derive(Debug)]
 pub enum NestedPattern {
@@ -22,7 +24,7 @@ pub enum NestedPattern {
 }
 
 impl NestedPattern {
-    pub(crate) fn context(&self) -> MutexGuard<PatternContext> {
+    pub(crate) fn context(&self) -> MutexGuard<BlockContext> {
         match self {
             NestedPattern::Disjunction(disjunction) => disjunction.context(),
             NestedPattern::Negation(negation) => negation.context(),

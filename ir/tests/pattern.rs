@@ -5,10 +5,10 @@
  */
 
 use ir::{
-    pattern::{conjunction::Conjunction, variable_category::VariableCategory},
+    pattern::variable_category::VariableCategory,
     PatternDefinitionError,
 };
-use ir::program::FunctionalBlock;
+use ir::program::block::FunctionalBlock;
 
 #[test]
 fn build_conjunction_constraints() {

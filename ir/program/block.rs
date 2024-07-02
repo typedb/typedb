@@ -4,25 +4,74 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    fmt::{Display, Formatter},
-};
 
-use answer::variable::Variable;
+use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
+use std::sync::{Arc, Mutex, MutexGuard};
 use itertools::Itertools;
+use answer::variable::Variable;
+use crate::pattern::conjunction::Conjunction;
+use crate::pattern::constraint::Constraint;
+use crate::pattern::ScopeId;
+use crate::pattern::variable_category::{VariableCategory, VariableOptionality};
+use crate::PatternDefinitionError;
+use crate::program::modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort};
 
-use crate::{
-    pattern::{
-        constraint::Constraint,
-        variable_category::{VariableCategory, VariableOptionality},
-        Scope, ScopeId,
-    },
-    PatternDefinitionError,
-};
+// A functional block is exactly 1 Conjunction + any number of modifiers
+pub struct FunctionalBlock {
+    conjunction: Conjunction,
+    modifiers: Vec<Modifier>,
+    context: Arc<Mutex<BlockContext>>,
+}
+
+impl FunctionalBlock {
+    pub fn new() -> Self {
+        let mut context = BlockContext::new();
+        let root_scope = context.create_root_scope();
+        let context = Arc::new(Mutex::new(context));
+        let root = Conjunction::new(root_scope, context.clone());
+        Self {
+            conjunction: root,
+            modifiers: Vec::new(),
+            context: context,
+        }
+    }
+
+    pub fn conjunction(&self) -> &Conjunction {
+        &self.conjunction
+    }
+
+    pub fn conjunction_mut(&mut self) -> &mut Conjunction {
+        &mut self.conjunction
+    }
+
+    pub(crate) fn context(&self) -> MutexGuard<BlockContext> {
+        self.context.lock().unwrap()
+    }
+
+    pub fn add_limit(&mut self, limit: u64) {
+        self.modifiers.push(Modifier::Limit(Limit::new(limit)));
+    }
+
+    pub fn add_offset(&mut self, offset: u64) {
+        self.modifiers.push(Modifier::Offset(Offset::new(offset)))
+    }
+
+    pub fn add_sort(&mut self, sort_variables: Vec<(&str, bool)>) -> Result<(), ModifierDefinitionError> {
+        let sort = Sort::new(sort_variables, &self.context())?;
+        self.modifiers.push(Modifier::Sort(sort));
+        Ok(())
+    }
+
+    pub fn add_filter(&mut self, variables: Vec<&str>) -> Result<(), ModifierDefinitionError> {
+        let filter = Filter::new(variables, &self.context())?;
+        self.modifiers.push(Modifier::Filter(filter));
+        Ok(())
+    }
+}
 
 #[derive(Debug)]
-pub struct PatternContext {
+pub struct BlockContext {
     variable_names: HashMap<Variable, String>,
     variable_declaration: HashMap<Variable, ScopeId>,
     variable_names_index: HashMap<String, Variable>,
@@ -35,8 +84,8 @@ pub struct PatternContext {
     variable_optionality: HashMap<Variable, VariableOptionality>,
 }
 
-impl PatternContext {
-    pub(crate) fn new() -> PatternContext {
+impl BlockContext {
+    pub(crate) fn new() -> BlockContext {
         Self {
             variable_names: HashMap::new(),
             variable_declaration: HashMap::new(),
@@ -52,7 +101,7 @@ impl PatternContext {
     pub(crate) fn get_or_declare_variable_named(
         &mut self,
         name: &str,
-        scope: &impl Scope,
+        scope: &impl crate::pattern::Scope,
     ) -> Result<Variable, PatternDefinitionError> {
         match self.variable_names_index.get(name) {
             None => {
@@ -169,8 +218,8 @@ impl PatternContext {
     fn is_equal_or_parent_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_parent: ScopeId) -> bool {
         scope == maybe_parent
             || Self::get_scope_parent(parents, scope)
-                .map(|p| Self::is_equal_or_parent_scope(parents, p, maybe_parent))
-                .unwrap_or(false)
+            .map(|p| Self::is_equal_or_parent_scope(parents, p, maybe_parent))
+            .unwrap_or(false)
     }
 
     fn is_child_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_child: ScopeId) -> bool {
@@ -184,7 +233,7 @@ impl PatternContext {
     }
 }
 
-impl Display for PatternContext {
+impl Display for BlockContext {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Named variables:")?;
         for entry in self.variable_names.iter().sorted_by_key(|e| e.0) {

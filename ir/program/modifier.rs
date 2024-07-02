@@ -8,7 +8,8 @@ use std::{collections::HashSet, error::Error, fmt};
 
 use answer::variable::Variable;
 
-use crate::{pattern::context::PatternContext, program::modifier::ModifierDefinitionError::SortVariableNotAvailable};
+use crate::{program::modifier::ModifierDefinitionError::SortVariableNotAvailable};
+use crate::program::block::BlockContext;
 
 pub enum Modifier {
     Filter(Filter),
@@ -22,7 +23,7 @@ pub struct Filter {
 }
 
 impl Filter {
-    pub(crate) fn new(variables: Vec<&str>, context: &PatternContext) -> Result<Self, ModifierDefinitionError> {
+    pub(crate) fn new(variables: Vec<&str>, context: &BlockContext) -> Result<Self, ModifierDefinitionError> {
         let mut filter_variables = HashSet::new();
         for name in variables {
             match context.get_variable(name) {
@@ -39,7 +40,7 @@ pub struct Sort {
 }
 
 impl Sort {
-    pub(crate) fn new(variables: Vec<(&str, bool)>, context: &PatternContext) -> Result<Self, ModifierDefinitionError> {
+    pub(crate) fn new(variables: Vec<(&str, bool)>, context: &BlockContext) -> Result<Self, ModifierDefinitionError> {
         // TODO: convert vars to pattern variables
 
         let mut sort_variables = Vec::new();

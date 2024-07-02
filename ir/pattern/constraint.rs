@@ -16,7 +16,6 @@ use itertools::Itertools;
 
 use crate::{
     pattern::{
-        context::PatternContext,
         expression::Expression,
         function_call::FunctionCall,
         variable_category::{VariableCategory, VariableOptionality},
@@ -24,11 +23,12 @@ use crate::{
     },
     PatternDefinitionError,
 };
+use crate::program::block::BlockContext;
 
 #[derive(Debug)]
 pub struct Constraints {
     scope: ScopeId,
-    context: Arc<Mutex<PatternContext>>,
+    context: Arc<Mutex<BlockContext>>,
     constraints: Vec<Constraint<Variable>>,
 
     // TODO: could also store indexes into the Constraints vec? Depends how expensive Constraints are and if we delete
@@ -38,7 +38,7 @@ pub struct Constraints {
 }
 
 impl Constraints {
-    pub(crate) fn new(scope: ScopeId, context: Arc<Mutex<PatternContext>>) -> Self {
+    pub(crate) fn new(scope: ScopeId, context: Arc<Mutex<BlockContext>>) -> Self {
         Self {
             scope,
             context,

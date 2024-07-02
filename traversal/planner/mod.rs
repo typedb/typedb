@@ -14,4 +14,4 @@ For example, function stream outputs are probably not seekable since we won't ha
  */
 pub(crate) mod function_plan;
 pub(crate) mod pattern_plan;
-pub(crate) mod program_plan;
+pub mod program_plan;
