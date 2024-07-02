@@ -46,7 +46,7 @@ impl<'a> Plays<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
     ) -> Result<MaybeOwns<'this, Option<Plays<'static>>>, ConceptReadError> {
-        type_manager.get_plays_overridde(snapshot, self.clone().into_owned())
+        type_manager.get_plays_override(snapshot, self.clone().into_owned())
     }
 
     pub fn set_override(

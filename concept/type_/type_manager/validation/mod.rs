@@ -19,7 +19,6 @@ use crate::{
         TypeAPI, Ordering
     },
 };
-use crate::type_::annotation::Annotation;
 
 pub mod annotation_compatibility;
 pub mod commit_time_validation;
@@ -48,15 +47,19 @@ pub enum SchemaValidationError {
     OrderingDoesNotMatchWithSupertype(Label<'static>, Label<'static>),
     InvalidOrderingForDistinctAnnotation(Label<'static>),
     AttributeTypeWithoutValueTypeShouldBeAbstract(Label<'static>),
-    AnnotationRegexRequiresStringValueType(Label<'static>),
+    AnnotationRegexOnAttributeRequiresStringValueType(Label<'static>),
+    AnnotationRegexOnOwnsRequiresStringValueType(Label<'static>, Label<'static>),
+    AnnotationUniqueOnOwnsRequiresKeyableValueType(Label<'static>, Label<'static>),
+    AnnotationKeyOnOwnsRequiresKeyableValueType(Label<'static>, Label<'static>),
     CannotSetAnnotationToInterfaceBecauseItAlreadyExistsForItsImplementation(Label<'static>, AnnotationCategory),
     CannotSetAnnotationToInterfaceImplementationBecauseItAlreadyExistsForItsInterface(Label<'static>, AnnotationCategory),
     CannotChangeValueTypeOfAttributeType(Label<'static>, Option<ValueType>),
     DeletingTypeWithSubtypes(Label<'static>),
     DeletingTypeWithInstances(Label<'static>),
-    InvalidCardinalityArguments(u64, Option<u64>),
+    InvalidCardinalityArguments(AnnotationCardinality),
+    InvalidRegexArguments(AnnotationRegex),
     CardinalityShouldNarrowInheritedCardinality(AnnotationCardinality),
-    RegexCannotBeRedeclaredOrNarrowedOnSubtypes(AnnotationRegex),
+    RegexCannotBeRedeclaredOnSubtypes(AnnotationRegex),
     CannotUnsetInheritedOwns(Label<'static>, Label<'static>),
     CannotUnsetInheritedPlays(Label<'static>, Label<'static>),
     CannotUnsetInheritedAnnotation(AnnotationCategory, Label<'static>),
@@ -68,7 +71,7 @@ pub enum SchemaValidationError {
     ValueTypeIsNotKeyable(Label<'static>, Label<'static>, Option<ValueType>),
     ValueTypeIsNotKeyableForKeyAnnotation(Label<'static>, Label<'static>, Option<ValueType>),
     ValueTypeIsNotKeyableForUniqueAnnotation(Label<'static>, Label<'static>, Option<ValueType>),
-    AnnotationIsNotCompatibleWithInheritedAnnotation(AnnotationCategory, AnnotationCategory, Label<'static>),
+    DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(AnnotationCategory, AnnotationCategory, Label<'static>),
     AnnotationIsNotCompatibleWithDeclaredAnnotation(AnnotationCategory, AnnotationCategory, Label<'static>),
 }
 
@@ -102,15 +105,19 @@ impl Error for SchemaValidationError {
             Self::NonAbstractSupertypeOfAbstractSubtype(_, _) => None,
             Self::OwnsAbstractType(_) => None,
             Self::AttributeTypeWithoutValueTypeShouldBeAbstract(_) => None,
-            Self::AnnotationRegexRequiresStringValueType(_) => None,
+            Self::AnnotationRegexOnAttributeRequiresStringValueType(_) => None,
+            Self::AnnotationRegexOnOwnsRequiresStringValueType(_, _) => None,
+            Self::AnnotationUniqueOnOwnsRequiresKeyableValueType(_, _) => None,
+            Self::AnnotationKeyOnOwnsRequiresKeyableValueType(_, _) => None,
             Self::CannotSetAnnotationToInterfaceBecauseItAlreadyExistsForItsImplementation(_, _) => None,
             Self::CannotSetAnnotationToInterfaceImplementationBecauseItAlreadyExistsForItsInterface(_, _) => None,
             Self::CannotChangeValueTypeOfAttributeType(_, _) => None,
             Self::DeletingTypeWithSubtypes(_) => None,
             Self::DeletingTypeWithInstances(_) => None,
-            Self::InvalidCardinalityArguments(_, _) => None,
+            Self::InvalidCardinalityArguments(_) => None,
+            Self::InvalidRegexArguments(_) => None,
             Self::CardinalityShouldNarrowInheritedCardinality(_) => None,
-            Self::RegexCannotBeRedeclaredOrNarrowedOnSubtypes(_) => None,
+            Self::RegexCannotBeRedeclaredOnSubtypes(_) => None,
             Self::CannotUnsetInheritedOwns(_, _) => None,
             Self::CannotUnsetInheritedPlays(_, _) => None,
             Self::CannotUnsetInheritedAnnotation(_, _) => None,
@@ -122,7 +129,7 @@ impl Error for SchemaValidationError {
             Self::ValueTypeIsNotKeyable(_, _, _) => None,
             Self::ValueTypeIsNotKeyableForKeyAnnotation(_, _, _) => None,
             Self::ValueTypeIsNotKeyableForUniqueAnnotation(_, _, _) => None,
-            Self::AnnotationIsNotCompatibleWithInheritedAnnotation(_, _, _) => None,
+            Self::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(_, _, _) => None,
             Self::AnnotationIsNotCompatibleWithDeclaredAnnotation(_, _, _) => None,
         }
     }
