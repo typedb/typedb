@@ -9,8 +9,8 @@ use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr, sync::Arc};
 use chrono::NaiveDateTime;
 use concept::type_::{
     annotation::{
-        Annotation as TypeDBAnnotation, AnnotationAbstract, AnnotationCardinality, AnnotationIndependent,
-        AnnotationKey, AnnotationRegex, AnnotationCascade, AnnotationCategory as TypeDBAnnotationCategory
+        Annotation as TypeDBAnnotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade,
+        AnnotationCategory as TypeDBAnnotationCategory, AnnotationIndependent, AnnotationKey, AnnotationRegex,
     },
     object_type::ObjectType,
 };
@@ -77,12 +77,16 @@ macro_rules! check_boolean {
     };
 }
 pub(crate) use check_boolean;
-use concept::type_::annotation::{AnnotationDistinct, AnnotationUnique};
-use concept::type_::type_manager::TypeManager;
+use concept::type_::{
+    annotation::{AnnotationDistinct, AnnotationUnique},
+    type_manager::TypeManager,
+};
 use database::transaction::TransactionRead;
 use encoding::graph::definition::definition_key::DefinitionKey;
-use storage::durability_client::WALClient;
-use storage::snapshot::{ReadableSnapshot, ReadSnapshot};
+use storage::{
+    durability_client::WALClient,
+    snapshot::{ReadSnapshot, ReadableSnapshot},
+};
 
 impl FromStr for Boolean {
     type Err = String;
@@ -114,7 +118,7 @@ impl ExistsOrDoesnt {
     pub fn check_result<T: fmt::Debug, E>(&self, scrutinee: &Result<T, E>, message: &str) {
         let option = match scrutinee {
             Ok(result) => Some(result),
-            Err(_) => None
+            Err(_) => None,
         };
         self.check(&option, message)
     }
@@ -286,10 +290,7 @@ impl FromStr for ObjectRootLabel {
 }
 
 #[derive(Debug, Parameter)]
-#[param(
-    name = "value_type",
-    regex = "(boolean|long|double|decimal|datetime(?:tz)?|duration|string|[A-Za-z0-9_:-]+)"
-)]
+#[param(name = "value_type", regex = "(boolean|long|double|decimal|datetime(?:tz)?|duration|string|[A-Za-z0-9_:-]+)")]
 pub(crate) enum ValueType {
     Boolean,
     Long,
@@ -304,7 +305,15 @@ pub(crate) enum ValueType {
 }
 
 impl ValueType {
+<<<<<<< HEAD
     pub fn into_typedb<Snapshot: ReadableSnapshot>(&self, type_manager: &Arc<TypeManager>, snapshot: &Snapshot) -> TypeDBValueType {
+=======
+    pub fn into_typedb<Snapshot: ReadableSnapshot>(
+        &self,
+        type_manager: &Arc<TypeManager<Snapshot>>,
+        snapshot: &Snapshot,
+    ) -> TypeDBValueType {
+>>>>>>> ca622d171 (Run rustfmt)
         match self {
             ValueType::Boolean => TypeDBValueType::Boolean,
             ValueType::Long => TypeDBValueType::Long,
@@ -316,10 +325,11 @@ impl ValueType {
             ValueType::Duration => TypeDBValueType::Duration,
             ValueType::String => TypeDBValueType::String,
             ValueType::Struct(label) => TypeDBValueType::Struct(
-                type_manager.get_struct_definition_key(
-                    &snapshot, label.into_typedb().scoped_name().as_str(),
-                ).unwrap().unwrap())
-            ,
+                type_manager
+                    .get_struct_definition_key(&snapshot, label.into_typedb().scoped_name().as_str())
+                    .unwrap()
+                    .unwrap(),
+            ),
         }
     }
 }
@@ -456,12 +466,12 @@ impl FromStr for Annotation {
 
                 TypeDBAnnotation::Cardinality(AnnotationCardinality::new(
                     min.parse().unwrap(),
-                    max.map(|val| {
-                        match val {
-                            "*" => { Ok(None) }
-                            _ => val.parse().map(Some).map_err(|_| "Failed to parse max")
-                        }
-                    }).unwrap().unwrap(),
+                    max.map(|val| match val {
+                        "*" => Ok(None),
+                        _ => val.parse().map(Some).map_err(|_| "Failed to parse max"),
+                    })
+                    .unwrap()
+                    .unwrap(),
                 ))
             }
             _ => panic!("Unrecognised (or unimplemented) annotation: {s}"),
@@ -497,7 +507,7 @@ impl FromStr for AnnotationCategory {
             "@card" => TypeDBAnnotationCategory::Cardinality,
             "@subkey" => return Err("Not implemented!".to_owned()), //TypeDBAnnotationCategory::Subkey,
             "@values" => return Err("Not implemented!".to_owned()), //TypeDBAnnotationCategory::Values,
-            "@range" => return Err("Not implemented!".to_owned()), //TypeDBAnnotationCategory::Range,
+            "@range" => return Err("Not implemented!".to_owned()),  //TypeDBAnnotationCategory::Range,
             "@replace" => return Err("Not implemented!".to_owned()), //TypeDBAnnotationCategory::Replace,
             _ => panic!("Unrecognised (or unimplemented) annotation: {s}"),
         };
@@ -532,7 +542,7 @@ impl FromStr for Annotations {
                 Some(anno.parse::<Annotation>().map(|anno| anno.typedb_annotation))
             }
         })
-            .try_collect()?;
+        .try_collect()?;
 
         Ok(Self { typedb_annotations })
     }

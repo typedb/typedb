@@ -4,11 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::type_::{annotation, Ordering, OwnerAPI, TypeAPI};
+use concept::type_::{annotation, owns::OwnsAnnotation, Ordering, OwnerAPI, TypeAPI};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
-use concept::type_::owns::OwnsAnnotation;
 
 use super::thing_type::get_as_object_type;
 use crate::{
@@ -143,7 +142,9 @@ pub async fn get_owns_set_annotation(
 }
 
 #[apply(generic_step)]
-#[step(expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) unset annotation: {annotation_category}{may_error}")]
+#[step(
+    expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) unset annotation: {annotation_category}{may_error}"
+)]
 pub async fn get_owns_unset_annotation(
     context: &mut Context,
     root_label: params::RootLabel,
@@ -188,7 +189,6 @@ pub async fn get_owns_annotations_contains(
     });
 }
 
-
 #[apply(generic_step)]
 #[step(
     expr = "{root_label}\\({type_label}\\) get owns\\({type_label}\\) get annotation categories {contains_or_doesnt}: {annotation_category}"
@@ -210,7 +210,10 @@ pub async fn get_owns_annotations_categories_contains(
         let actual_contains = owns
             .get_annotations(&tx.snapshot, &tx.type_manager)
             .unwrap()
-            .iter().map(|(annotation, _)| <OwnsAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category())
+            .iter()
+            .map(|(annotation, _)| {
+                <OwnsAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category()
+            })
             .contains(&annotation_category.into_typedb());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
@@ -258,10 +261,7 @@ pub async fn get_owns_annotations_is_empty(
         let owns =
             object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
 
-        let actual_is_empty = owns
-            .get_annotations(&tx.snapshot, &tx.type_manager)
-            .unwrap()
-            .is_empty();
+        let actual_is_empty = owns.get_annotations(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
     });
 }
@@ -282,10 +282,7 @@ pub async fn get_owns_declared_annotations_is_empty(
         let owns =
             object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
 
-        let actual_is_empty = owns
-            .get_annotations_declared(&tx.snapshot, &tx.type_manager)
-            .unwrap()
-            .is_empty();
+        let actual_is_empty = owns.get_annotations_declared(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
     });
 }
@@ -324,9 +321,7 @@ pub async fn get_owns_is_empty(
 ) {
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
-        let actual_is_empty = object_type
-            .get_owns(&tx.snapshot, &tx.type_manager)
-            .unwrap().is_empty();
+        let actual_is_empty = object_type.get_owns(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
     });
 }
@@ -392,13 +387,8 @@ pub async fn get_owns_get_label(
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = owner.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        let actual_type_label = owns
-            .attribute()
-            .get_label(&tx.snapshot, &tx.type_manager)
-            .unwrap()
-            .scoped_name()
-            .as_str()
-            .to_owned();
+        let actual_type_label =
+            owns.attribute().get_label(&tx.snapshot, &tx.type_manager).unwrap().scoped_name().as_str().to_owned();
         assert_eq!(expected_label.into_typedb().scoped_name().as_str().to_owned(), actual_type_label);
     });
 }

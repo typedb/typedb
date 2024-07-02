@@ -34,8 +34,8 @@ use crate::{
     error::ConceptReadError,
     type_::{
         annotation::{
-            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationDistinct, AnnotationIndependent,
-            AnnotationKey, AnnotationRegex, AnnotationUnique, AnnotationCascade
+            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct,
+            AnnotationIndependent, AnnotationKey, AnnotationRegex, AnnotationUnique,
         },
         attribute_type::AttributeType,
         object_type::ObjectType,
@@ -110,10 +110,7 @@ impl TypeReader {
             .map(|(key, _)| Sub::<T>::decode_canonical_edge(Bytes::Array(key.into_byte_array())).supertype()))
     }
 
-    pub fn get_supertypes<T>(
-        snapshot: &impl ReadableSnapshot,
-        subtype: T,
-    ) -> Result<Vec<T>, ConceptReadError>
+    pub fn get_supertypes<T>(snapshot: &impl ReadableSnapshot, subtype: T) -> Result<Vec<T>, ConceptReadError>
     where
         T: KindAPI<'static>,
     {
@@ -212,9 +209,9 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         object_type: T,
     ) -> Result<HashMap<IMPL::InterfaceType, IMPL>, ConceptReadError>
-        where
-            T: TypeAPI<'static>,
-            IMPL: InterfaceImplementation<'static> + Hash + Eq,
+    where
+        T: TypeAPI<'static>,
+        IMPL: InterfaceImplementation<'static> + Hash + Eq,
     {
         let mut overridden_interfaces: HashMap<IMPL::InterfaceType, IMPL> = HashMap::new();
         let mut current_type = Some(object_type);
@@ -224,7 +221,8 @@ impl TypeReader {
             for implementation in declared_implementations.into_iter() {
                 if let Some(overridden) = Self::get_implementation_override(snapshot, implementation.clone())? {
                     if overridden.interface() != implementation.interface()
-                        && !overridden_interfaces.contains_key(&overridden.interface()) {
+                        && !overridden_interfaces.contains_key(&overridden.interface())
+                    {
                         overridden_interfaces.insert(overridden.interface(), overridden);
                     }
                 }
@@ -370,8 +368,7 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         type_: AttributeType<'static>,
     ) -> Result<Option<ValueType>, ConceptReadError> {
-        Self::get_value_type(snapshot, type_)
-            .map(|result| result.map(|(value_type, _)| value_type))
+        Self::get_value_type(snapshot, type_).map(|result| result.map(|(value_type, _)| value_type))
     }
 
     pub(crate) fn get_type_property_declared<'a, PROPERTY>(
@@ -393,9 +390,9 @@ impl TypeReader {
         snapshot: &impl ReadableSnapshot,
         type_: SOURCE,
     ) -> Result<Option<(PROPERTY, SOURCE)>, ConceptReadError>
-        where
-            PROPERTY: TypeVertexPropertyEncoding<'static>,
-            SOURCE: TypeAPI<'static> + Clone,
+    where
+        PROPERTY: TypeVertexPropertyEncoding<'static>,
+        SOURCE: TypeAPI<'static> + Clone,
     {
         let mut type_opt = Some(type_);
         while let Some(curr_type) = type_opt {
@@ -432,9 +429,9 @@ impl TypeReader {
                     Infix::PropertyAnnotationCardinality => Annotation::Cardinality(
                         <AnnotationCardinality as TypeVertexPropertyEncoding>::from_value_bytes(value),
                     ),
-                    Infix::PropertyAnnotationRegex => Annotation::Regex(
-                        <AnnotationRegex as TypeVertexPropertyEncoding>::from_value_bytes(value),
-                    ),
+                    Infix::PropertyAnnotationRegex => {
+                        Annotation::Regex(<AnnotationRegex as TypeVertexPropertyEncoding>::from_value_bytes(value))
+                    }
                     Infix::PropertyAnnotationCascade => Annotation::Cascade(AnnotationCascade),
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationUnique
@@ -497,9 +494,9 @@ impl TypeReader {
                     Infix::PropertyAnnotationCardinality => Annotation::Cardinality(
                         <AnnotationCardinality as TypeEdgePropertyEncoding>::from_value_bytes(value),
                     ),
-                    Infix::PropertyAnnotationRegex => Annotation::Regex(
-                        <AnnotationRegex as TypeEdgePropertyEncoding>::from_value_bytes(value),
-                    ),
+                    Infix::PropertyAnnotationRegex => {
+                        Annotation::Regex(<AnnotationRegex as TypeEdgePropertyEncoding>::from_value_bytes(value))
+                    }
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationAbstract
                     | Infix::PropertyAnnotationCascade

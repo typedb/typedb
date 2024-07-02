@@ -205,9 +205,9 @@ async fn object_get_has_with_annotations(
             .unwrap()
             .into_iter()
             .filter(|owns| {
-                annotations.iter().all(|anno| {
-                    owns.get_annotations(&tx.snapshot, &tx.type_manager).unwrap().contains_key(anno)
-                })
+                annotations
+                    .iter()
+                    .all(|anno| owns.get_annotations(&tx.snapshot, &tx.type_manager).unwrap().contains_key(anno))
             })
             .map(|owns| owns.attribute())
             .collect_vec();

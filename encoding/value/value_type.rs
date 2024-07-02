@@ -62,9 +62,7 @@ impl ValueType {
             | ValueType::Duration
             | ValueType::String => true,
 
-            | ValueType::Double
-            | ValueType::Decimal
-            | ValueType::Struct(_) => false,
+            | ValueType::Double | ValueType::Decimal | ValueType::Struct(_) => false,
         }
     }
 

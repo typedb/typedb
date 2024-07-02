@@ -4,12 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::type_::{
-    Ordering, OwnerAPI, PlayerAPI, TypeAPI,
-    annotation,
-    plays::PlaysAnnotation,
-};
-
+use concept::type_::{annotation, plays::PlaysAnnotation, Ordering, OwnerAPI, PlayerAPI, TypeAPI};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
@@ -114,18 +109,13 @@ pub async fn get_plays_is_empty(
 ) {
     let object_type = get_as_object_type(context, root_label.into_typedb(), &type_label);
     with_read_tx!(context, |tx| {
-        let actual_is_empty = object_type
-            .get_plays(&tx.snapshot, &tx.type_manager)
-            .unwrap()
-            .is_empty();
+        let actual_is_empty = object_type.get_plays(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
     });
 }
 
 #[apply(generic_step)]
-#[step(
-    expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) set override: {type_label}{may_error}"
-)]
+#[step(expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) set override: {type_label}{may_error}")]
 pub async fn get_plays_set_override(
     context: &mut Context,
     root_label: RootLabel,
@@ -185,7 +175,10 @@ pub async fn get_plays_overridden_exists(
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(&tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
         let plays_override_opt = plays.get_override(&tx.snapshot, &tx.type_manager).unwrap();
-        exists.check(&plays_override_opt, &format!("no plays override for {} of {}", role_label.into_typedb(), type_label.into_typedb()));
+        exists.check(
+            &plays_override_opt,
+            &format!("no plays override for {} of {}", role_label.into_typedb(), type_label.into_typedb()),
+        );
     });
 }
 
@@ -217,9 +210,7 @@ pub async fn get_plays_overridden_get_label(
 }
 
 #[apply(generic_step)]
-#[step(
-    expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) set annotation: {annotation}{may_error}"
-)]
+#[step(expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) set annotation: {annotation}{may_error}")]
 pub async fn get_plays_set_annotation(
     context: &mut Context,
     root_label: RootLabel,
@@ -282,7 +273,6 @@ pub async fn get_plays_annotations_contains(
     });
 }
 
-
 #[apply(generic_step)]
 #[step(
     expr = "{root_label}\\({type_label}\\) get plays\\({type_label}\\) get annotation categories {contains_or_doesnt}: {annotation_category}"
@@ -302,7 +292,10 @@ pub async fn get_plays_annotation_categories_contains(
         let actual_contains = plays
             .get_annotations(&tx.snapshot, &tx.type_manager)
             .unwrap()
-            .iter().map(|(annotation, _)| <PlaysAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category())
+            .iter()
+            .map(|(annotation, _)| {
+                <PlaysAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category()
+            })
             .contains(&annotation_category.into_typedb());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
@@ -345,10 +338,7 @@ pub async fn get_owns_annotations_is_empty(
     with_read_tx!(context, |tx| {
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(&tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
-        let actual_is_empty = plays
-            .get_annotations(&tx.snapshot, &tx.type_manager)
-            .unwrap()
-            .is_empty();
+        let actual_is_empty = plays.get_annotations(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
     });
 }
@@ -366,10 +356,7 @@ pub async fn get_owns_declared_annotations_is_empty(
     with_read_tx!(context, |tx| {
         let role_type = tx.type_manager.get_role_type(&tx.snapshot, &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(&tx.snapshot, &tx.type_manager, role_type).unwrap().unwrap();
-        let actual_is_empty = plays
-            .get_annotations_declared(&tx.snapshot, &tx.type_manager)
-            .unwrap()
-            .is_empty();
+        let actual_is_empty = plays.get_annotations_declared(&tx.snapshot, &tx.type_manager).unwrap().is_empty();
         is_empty_or_not.check(actual_is_empty);
     });
 }

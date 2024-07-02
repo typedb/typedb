@@ -97,7 +97,7 @@ pub(crate) struct CommonTypeCache<T: KindAPI<'static>> {
     // TODO: Should these all be sets instead of vec?
     pub(super) supertype: Option<T>, // TODO: use smallvec if we want to have some inline - benchmark.
     pub(super) supertypes: Vec<T>,   // TODO: use smallvec if we want to have some inline - benchmark.
-    pub(super) subtypes: Vec<T>, // TODO: benchmark smallvec.
+    pub(super) subtypes: Vec<T>,     // TODO: benchmark smallvec.
     pub(super) subtypes_transitive: Vec<T>, // TODO: benchmark smallvec
 }
 
@@ -167,13 +167,13 @@ impl AttributeTypeCache {
             let cache = AttributeTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, attribute.clone()),
                 value_type: TypeReader::get_value_type(snapshot, attribute.clone()).unwrap(),
-                owns_declared: TypeReader::get_implementations_for_interface_declared::<Owns<'static>>(snapshot, attribute.clone())
-                    .unwrap(),
-                owns: TypeReader::get_implementations_for_interface::<Owns<'static>>(
+                owns_declared: TypeReader::get_implementations_for_interface_declared::<Owns<'static>>(
                     snapshot,
                     attribute.clone(),
                 )
                 .unwrap(),
+                owns: TypeReader::get_implementations_for_interface::<Owns<'static>>(snapshot, attribute.clone())
+                    .unwrap(),
             };
             caches[attribute.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -195,12 +195,12 @@ impl RoleTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, role.clone()),
                 ordering,
                 relates: TypeReader::get_role_type_relates(snapshot, role.clone()).unwrap(),
-                plays_declared: TypeReader::get_implementations_for_interface_declared::<Plays<'static>>(snapshot, role.clone()).unwrap(),
-                plays: TypeReader::get_implementations_for_interface::<Plays<'static>>(
+                plays_declared: TypeReader::get_implementations_for_interface_declared::<Plays<'static>>(
                     snapshot,
                     role.clone(),
                 )
                 .unwrap(),
+                plays: TypeReader::get_implementations_for_interface::<Plays<'static>>(snapshot, role.clone()).unwrap(),
             };
             caches[role.vertex().type_id_().as_u16() as usize] = Some(cache);
         }
@@ -337,24 +337,16 @@ impl OwnerPlayerCache {
         T: KindAPI<'static> + OwnerAPI<'static> + PlayerAPI<'static>,
     {
         OwnerPlayerCache {
-            owns_declared: TypeReader::get_implemented_interfaces_declared::<Owns<'static>>(snapshot, type_.clone()).unwrap(),
-            owns: TypeReader::get_implemented_interfaces::<Owns<'static>, T>(
-                snapshot,
-                type_.clone(),
-            ).unwrap(),
-            owns_overridden: TypeReader::get_overridden_interfaces::<Owns<'static>, T>(
-                snapshot,
-                type_.clone(),
-            ).unwrap(),
-            plays_declared: TypeReader::get_implemented_interfaces_declared::<Plays<'static>>(snapshot, type_.clone()).unwrap(),
-            plays: TypeReader::get_implemented_interfaces::<Plays<'static>, T>(
-                snapshot,
-                type_.clone(),
-            ).unwrap(),
-            plays_overridden: TypeReader::get_overridden_interfaces::<Plays<'static>, T>(
-                snapshot,
-                type_.clone(),
-            ).unwrap(),
+            owns_declared: TypeReader::get_implemented_interfaces_declared::<Owns<'static>>(snapshot, type_.clone())
+                .unwrap(),
+            owns: TypeReader::get_implemented_interfaces::<Owns<'static>, T>(snapshot, type_.clone()).unwrap(),
+            owns_overridden: TypeReader::get_overridden_interfaces::<Owns<'static>, T>(snapshot, type_.clone())
+                .unwrap(),
+            plays_declared: TypeReader::get_implemented_interfaces_declared::<Plays<'static>>(snapshot, type_.clone())
+                .unwrap(),
+            plays: TypeReader::get_implemented_interfaces::<Plays<'static>, T>(snapshot, type_.clone()).unwrap(),
+            plays_overridden: TypeReader::get_overridden_interfaces::<Plays<'static>, T>(snapshot, type_.clone())
+                .unwrap(),
         }
     }
 }

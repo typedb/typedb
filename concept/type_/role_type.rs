@@ -29,14 +29,11 @@ use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationCategory, AnnotationAbstract},
+        annotation::{Annotation, AnnotationAbstract, AnnotationCategory},
         object_type::ObjectType,
         plays::Plays,
         relates::Relates,
-        type_manager::{
-            TypeManager,
-            validation::ConversionError
-        },
+        type_manager::{validation::ConversionError, TypeManager},
         KindAPI, TypeAPI,
     },
     ConceptAPI,
@@ -165,7 +162,6 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_type_supertype(snapshot, self.clone().into_owned())
     }
 
-<<<<<<< HEAD
     pub fn set_supertype(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -254,7 +250,7 @@ impl<'a> RoleType<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let role_type_annotation = RoleTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Conversion {source})?;
+            .map_err(|source| ConceptWriteError::Conversion { source })?;
         match role_type_annotation {
             RoleTypeAnnotation::Abstract(_) => {
                 type_manager.unset_annotation_abstract(snapshot, self.clone().into_owned())?
@@ -316,9 +312,13 @@ impl From<Annotation> for Result<RoleTypeAnnotation, ConversionError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(RoleTypeAnnotation::Abstract(annotation)),
 
-            Annotation::Independent(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Independent(_) => {
+                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
+            }
             Annotation::Distinct(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Cardinality(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Cardinality(_) => {
+                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
+            }
             Annotation::Unique(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
             Annotation::Key(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
             Annotation::Regex(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),

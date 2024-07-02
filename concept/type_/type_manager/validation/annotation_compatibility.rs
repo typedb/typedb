@@ -13,7 +13,7 @@ pub(crate) fn is_annotation_inheritable<T, TAnnotation>(
     effective_annotations: &HashMap<TAnnotation, T>,
 ) -> bool
 where
-    TAnnotation : Clone + Into<Annotation>,
+    TAnnotation: Clone + Into<Annotation>,
 {
     let supertype_category = supertype_annotation.clone().into().category();
     if !supertype_category.inheritable() {

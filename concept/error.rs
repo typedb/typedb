@@ -15,12 +15,15 @@ use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 use crate::{
     thing::{object::Object, relation::Relation},
     type_::{
-        annotation::AnnotationCardinality, attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType,
-        type_manager::validation::SchemaValidationError,
+        annotation::AnnotationCardinality,
+        attribute_type::AttributeType,
+        object_type::ObjectType,
+        role_type::RoleType,
+        type_manager::validation::{
+            operation_time_validation::OperationTimeValidation, ConversionError, SchemaValidationError,
+        },
     },
 };
-use crate::type_::type_manager::validation::ConversionError;
-use crate::type_::type_manager::validation::operation_time_validation::OperationTimeValidation;
 
 #[derive(Debug)]
 pub struct ConceptError {
@@ -110,7 +113,9 @@ pub enum ConceptWriteError {
     SetHasOrderedOwnsUnordered {},
     SetHasUnorderedOwnsOrdered {},
 
-    Conversion { source: ConversionError },
+    Conversion {
+        source: ConversionError,
+    },
 }
 
 impl fmt::Display for ConceptWriteError {

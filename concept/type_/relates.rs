@@ -5,18 +5,19 @@
  */
 
 use std::collections::{HashMap, HashSet};
+
 use encoding::{graph::type_::edge::TypeEdgeEncoding, layout::prefix::Prefix};
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        InterfaceImplementation, relation_type::RelationType, role_type::RoleType,
-        annotation::{Annotation, AnnotationCategory, AnnotationCardinality, AnnotationDistinct},
-        type_manager::{
-            TypeManager,
-            validation::ConversionError,
-        },
+        annotation::{Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct},
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::{validation::ConversionError, TypeManager},
+        InterfaceImplementation,
     },
 };
 
@@ -114,7 +115,7 @@ impl<'a> Relates<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let relates_annotation = RelatesAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Conversion {source})?;
+            .map_err(|source| ConceptWriteError::Conversion { source })?;
         match relates_annotation {
             RelatesAnnotation::Distinct(_) => {
                 type_manager.unset_edge_annotation_distinct(snapshot, self.clone().into_owned())?
@@ -183,7 +184,9 @@ impl From<Annotation> for Result<RelatesAnnotation, ConversionError> {
             Annotation::Cardinality(annotation) => Ok(RelatesAnnotation::Cardinality(annotation)),
 
             Annotation::Abstract(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Independent(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Independent(_) => {
+                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
+            }
             Annotation::Unique(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
             Annotation::Key(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
             Annotation::Regex(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),

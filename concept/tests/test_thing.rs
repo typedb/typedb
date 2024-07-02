@@ -257,8 +257,7 @@ fn attribute_cleanup_on_concurrent_detach() {
         name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
-        let owns_age =
-            person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Ordered).unwrap();
+        let owns_age = person_type.set_owns(&mut snapshot, &type_manager, age_type.clone(), Ordering::Ordered).unwrap();
         owns_age.set_annotation(&mut snapshot, &type_manager, OwnsAnnotation::Distinct(AnnotationDistinct)).unwrap();
 
         person_type.set_owns(&mut snapshot, &type_manager, name_type.clone(), Ordering::Unordered).unwrap();
@@ -273,9 +272,9 @@ fn attribute_cleanup_on_concurrent_detach() {
             .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned(String::from(name_bob_value))))
             .unwrap();
 
-        alice.set_has_ordered(&mut snapshot, &thing_manager, age_type.clone(), vec!(age.as_reference())).unwrap();
+        alice.set_has_ordered(&mut snapshot, &thing_manager, age_type.clone(), vec![age.as_reference()]).unwrap();
         alice.set_has_unordered(&mut snapshot, &thing_manager, name_alice).unwrap();
-        bob.set_has_ordered(&mut snapshot, &thing_manager, age_type, vec!(age.as_reference())).unwrap();
+        bob.set_has_ordered(&mut snapshot, &thing_manager, age_type, vec![age.as_reference()]).unwrap();
         bob.set_has_unordered(&mut snapshot, &thing_manager, name_bob).unwrap();
         let finalise_result = thing_manager.finalise(&mut snapshot);
         assert!(finalise_result.is_ok());
@@ -519,8 +518,7 @@ fn role_player_duplicates() {
         let (type_manager, thing_manager) = managers(storage.clone());
         let list_type = type_manager.create_relation_type(&mut snapshot, &list_label, false).unwrap();
         list_type.create_relates(&mut snapshot, &type_manager, entry_role_label, Ordering::Unordered).unwrap();
-        let entry_relates =
-            list_type.get_relates_of_role(&snapshot, &type_manager, entry_role_label).unwrap().unwrap();
+        let entry_relates = list_type.get_relates_of_role(&snapshot, &type_manager, entry_role_label).unwrap().unwrap();
         entry_relates
             .set_annotation(
                 &mut snapshot,

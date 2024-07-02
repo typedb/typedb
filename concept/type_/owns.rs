@@ -13,13 +13,13 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationCategory, AnnotationCardinality, AnnotationDistinct, AnnotationKey, AnnotationUnique, AnnotationRegex},
+        annotation::{
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationKey, AnnotationRegex,
+            AnnotationUnique,
+        },
         attribute_type::AttributeType,
         object_type::ObjectType,
-        type_manager::{
-            TypeManager,
-            validation::ConversionError
-        },
+        type_manager::{validation::ConversionError, TypeManager},
         InterfaceImplementation, Ordering, TypeAPI,
     },
 };
@@ -71,8 +71,8 @@ impl<'a> Owns<'a> {
             Ordering::Ordered => {
                 let annotations = self.get_annotations(snapshot, type_manager)?;
                 Ok(annotations.contains_key(&OwnsAnnotation::Distinct(AnnotationDistinct)))
-            },
-            Ordering::Unordered => Ok(true)
+            }
+            Ordering::Unordered => Ok(true),
         }
     }
 
@@ -141,13 +141,19 @@ impl<'a> Owns<'a> {
         annotation: OwnsAnnotation,
     ) -> Result<(), ConceptWriteError> {
         match annotation {
-            OwnsAnnotation::Distinct(_) => type_manager.set_owns_annotation_distinct(snapshot, self.clone().into_owned())?,
+            OwnsAnnotation::Distinct(_) => {
+                type_manager.set_owns_annotation_distinct(snapshot, self.clone().into_owned())?
+            }
             OwnsAnnotation::Key(_) => type_manager.set_edge_annotation_key(snapshot, self.clone().into_owned())?,
             OwnsAnnotation::Cardinality(cardinality) => {
                 type_manager.set_edge_annotation_cardinality(snapshot, self.clone().into_owned(), cardinality)?
             }
-            OwnsAnnotation::Unique(_) => type_manager.set_edge_annotation_unique(snapshot, self.clone().into_owned())?,
-            OwnsAnnotation::Regex(regex) => type_manager.set_edge_annotation_regex(snapshot, self.clone().into_owned(), regex)?,
+            OwnsAnnotation::Unique(_) => {
+                type_manager.set_edge_annotation_unique(snapshot, self.clone().into_owned())?
+            }
+            OwnsAnnotation::Regex(regex) => {
+                type_manager.set_edge_annotation_regex(snapshot, self.clone().into_owned(), regex)?
+            }
         }
         Ok(()) // TODO
     }
@@ -159,13 +165,21 @@ impl<'a> Owns<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let owns_annotation = OwnsAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Conversion {source})?;
+            .map_err(|source| ConceptWriteError::Conversion { source })?;
         match owns_annotation {
-            OwnsAnnotation::Distinct(_) => type_manager.unset_edge_annotation_distinct(snapshot, self.clone().into_owned())?,
+            OwnsAnnotation::Distinct(_) => {
+                type_manager.unset_edge_annotation_distinct(snapshot, self.clone().into_owned())?
+            }
             OwnsAnnotation::Key(_) => type_manager.unset_edge_annotation_key(snapshot, self.clone().into_owned())?,
-            OwnsAnnotation::Cardinality(_) => type_manager.unset_edge_annotation_cardinality(snapshot, self.clone().into_owned())?,
-            OwnsAnnotation::Unique(_) => type_manager.unset_edge_annotation_unique(snapshot, self.clone().into_owned())?,
-            OwnsAnnotation::Regex(_) => type_manager.unset_edge_annotation_regex(snapshot, self.clone().into_owned())?,
+            OwnsAnnotation::Cardinality(_) => {
+                type_manager.unset_edge_annotation_cardinality(snapshot, self.clone().into_owned())?
+            }
+            OwnsAnnotation::Unique(_) => {
+                type_manager.unset_edge_annotation_unique(snapshot, self.clone().into_owned())?
+            }
+            OwnsAnnotation::Regex(_) => {
+                type_manager.unset_edge_annotation_regex(snapshot, self.clone().into_owned())?
+            }
         }
         Ok(()) // TODO
     }
@@ -250,7 +264,9 @@ impl From<Annotation> for Result<OwnsAnnotation, ConversionError> {
             Annotation::Regex(annotation) => Ok(OwnsAnnotation::Regex(annotation)),
 
             Annotation::Abstract(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Independent(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Independent(_) => {
+                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
+            }
             Annotation::Cascade(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
         }
     }

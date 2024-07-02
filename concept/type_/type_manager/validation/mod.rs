@@ -11,12 +11,12 @@ use encoding::value::{label::Label, value_type::ValueType};
 use crate::{
     error::ConceptReadError,
     type_::{
-        annotation::{AnnotationCategory, AnnotationCardinality, AnnotationRegex},
+        annotation::{AnnotationCardinality, AnnotationCategory, AnnotationRegex},
         attribute_type::AttributeType,
         object_type::ObjectType,
-        role_type::RoleType,
         relation_type::RelationType,
-        TypeAPI, InterfaceImplementation
+        role_type::RoleType,
+        InterfaceImplementation, TypeAPI,
     },
 };
 
@@ -52,7 +52,10 @@ pub enum SchemaValidationError {
     ValueTypeIsNotKeyableForKeyAnnotation(Label<'static>, Label<'static>, Option<ValueType>),
     ValueTypeIsNotKeyableForUniqueAnnotation(Label<'static>, Label<'static>, Option<ValueType>),
     CannotSetAnnotationToInterfaceBecauseItAlreadyExistsForItsImplementation(Label<'static>, AnnotationCategory),
-    CannotSetAnnotationToInterfaceImplementationBecauseItAlreadyExistsForItsInterface(Label<'static>, AnnotationCategory),
+    CannotSetAnnotationToInterfaceImplementationBecauseItAlreadyExistsForItsInterface(
+        Label<'static>,
+        AnnotationCategory,
+    ),
     InvalidCardinalityArguments(AnnotationCardinality),
     InvalidRegexArguments(AnnotationRegex),
     CardinalityShouldNarrowInheritedCardinality(AnnotationCardinality, AnnotationCardinality),

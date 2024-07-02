@@ -36,6 +36,7 @@ use crate::{
         ThingAPI,
     },
     type_::{
+<<<<<<< HEAD
         annotation::AnnotationDistinct,
         relation_type::RelationType,
 <<<<<<< HEAD
@@ -44,6 +45,9 @@ use crate::{
 =======
         relates::RelatesAnnotation,
         role_type::RoleType,
+=======
+        annotation::AnnotationDistinct, relates::RelatesAnnotation, relation_type::RelationType, role_type::RoleType,
+>>>>>>> ca622d171 (Run rustfmt)
         ObjectTypeAPI, Ordering, TypeAPI,
 >>>>>>> 3bf0b845f (Move distinct and card annotations from role to relates)
     },

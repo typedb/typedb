@@ -10,13 +10,14 @@ use encoding::{
     layout::infix::{
         Infix,
         Infix::{
-            PropertyAnnotationAbstract, PropertyAnnotationDistinct, PropertyAnnotationIndependent,
-            PropertyAnnotationKey, PropertyAnnotationUnique, PropertyAnnotationCascade
+            PropertyAnnotationAbstract, PropertyAnnotationCascade, PropertyAnnotationDistinct,
+            PropertyAnnotationIndependent, PropertyAnnotationKey, PropertyAnnotationUnique,
         },
     },
 };
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
+
 use crate::type_::attribute_type::AttributeTypeAnnotation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -81,8 +82,7 @@ impl AnnotationCardinality {
     }
 
     pub fn narrowed_correctly_by(&self, other: &Self) -> bool {
-        self.start_narrowed_correctly_by(other.start())
-            && self.end_narrowed_correctly_by(other.end())
+        self.start_narrowed_correctly_by(other.start()) && self.end_narrowed_correctly_by(other.end())
     }
 
     fn start_narrowed_correctly_by(&self, other_start_inclusive: u64) -> bool {
@@ -148,7 +148,8 @@ pub enum AnnotationCategory {
 }
 
 impl AnnotationCategory {
-    pub fn to_default_annotation(&self) -> Annotation { // TODO: fn const for regex default
+    pub fn to_default_annotation(&self) -> Annotation {
+        // TODO: fn const for regex default
         match self {
             AnnotationCategory::Abstract => Annotation::Abstract(AnnotationAbstract),
             AnnotationCategory::Distinct => Annotation::Distinct(AnnotationDistinct),
@@ -163,24 +164,17 @@ impl AnnotationCategory {
 
     pub fn compatible_to_declare_together(&self, other: AnnotationCategory) -> bool {
         match self {
-            AnnotationCategory::Unique => {
-                match other {
-                    AnnotationCategory::Key => false,
-                    _ => true,
-                }
+            AnnotationCategory::Unique => match other {
+                AnnotationCategory::Key => false,
+                _ => true,
             },
-            AnnotationCategory::Cardinality => {
-                match other {
-                    AnnotationCategory::Key => false,
-                    _ => true,
-                }
+            AnnotationCategory::Cardinality => match other {
+                AnnotationCategory::Key => false,
+                _ => true,
             },
-            AnnotationCategory::Key => {
-                match other {
-                    | AnnotationCategory::Unique
-                    | AnnotationCategory::Cardinality => false,
-                    _ => true,
-                }
+            AnnotationCategory::Key => match other {
+                | AnnotationCategory::Unique | AnnotationCategory::Cardinality => false,
+                _ => true,
             },
             | AnnotationCategory::Abstract
             | AnnotationCategory::Distinct
@@ -192,13 +186,11 @@ impl AnnotationCategory {
 
     pub fn compatible_to_transitively_add(&self, other_to_add: AnnotationCategory) -> bool {
         match self {
-            AnnotationCategory::Key => {
-                match other_to_add {
-                    AnnotationCategory::Unique => false,
-                    AnnotationCategory::Cardinality => false,
-                    _ => true,
-                }
-            }
+            AnnotationCategory::Key => match other_to_add {
+                AnnotationCategory::Unique => false,
+                AnnotationCategory::Cardinality => false,
+                _ => true,
+            },
             | AnnotationCategory::Unique
             | AnnotationCategory::Cardinality
             | AnnotationCategory::Abstract

@@ -99,8 +99,11 @@ async fn relation_get_players_ordered(
 ) {
     let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
     let players = with_read_tx!(context, |tx| {
-        let relates =
-            relation.type_().get_relates_of_role(&tx.snapshot, &tx.type_manager, role_label.into_typedb().name().as_str());
+        let relates = relation.type_().get_relates_of_role(
+            &tx.snapshot,
+            &tx.type_manager,
+            role_label.into_typedb().name().as_str(),
+        );
         let role_type = relates.unwrap().unwrap().role();
         let players = relation.get_players_ordered(&tx.snapshot, &tx.thing_manager, role_type).unwrap();
         players.into_iter().map(Object::into_owned).collect()

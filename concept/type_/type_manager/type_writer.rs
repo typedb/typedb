@@ -50,10 +50,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         );
     }
 
-    pub(crate) fn storage_delete_struct(
-        snapshot: &mut Snapshot,
-        definition_key: &DefinitionKey<'static>,
-    ) {
+    pub(crate) fn storage_delete_struct(snapshot: &mut Snapshot, definition_key: &DefinitionKey<'static>) {
         let existing_struct = TypeReader::get_struct_definition(snapshot, definition_key.clone());
         if let Ok(struct_definition) = existing_struct {
             let index_key = NameToStructDefinitionIndex::build::<BUFFER_KEY_INLINE>(StringBytes::build_ref(
@@ -111,10 +108,7 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
         TypeWriter::storage_put_type_vertex_property(snapshot, attribute, Some(value_type));
     }
 
-    pub(crate) fn storage_unset_value_type(
-        snapshot: &mut Snapshot,
-        attribute: AttributeType<'static>,
-    ) {
+    pub(crate) fn storage_unset_value_type(snapshot: &mut Snapshot, attribute: AttributeType<'static>) {
         TypeWriter::storage_delete_type_vertex_property::<ValueType>(snapshot, attribute);
     }
 

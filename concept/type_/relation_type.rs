@@ -27,17 +27,14 @@ use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationCategory, AnnotationAbstract, AnnotationCascade},
+        annotation::{Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory},
         attribute_type::AttributeType,
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
         relates::Relates,
         role_type::RoleType,
-        type_manager::{
-            TypeManager,
-            validation::ConversionError
-        },
+        type_manager::{validation::ConversionError, TypeManager},
         KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
     ConceptAPI,
@@ -204,10 +201,10 @@ impl<'a> RelationType<'a> {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
                 type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())?
-            },
+            }
             RelationTypeAnnotation::Cascade(_) => {
                 type_manager.set_annotation_cascade(snapshot, self.clone().into_owned())?
-            },
+            }
         };
         Ok(())
     }
@@ -219,14 +216,14 @@ impl<'a> RelationType<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let relation_type_annotation = RelationTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Conversion {source})?;
+            .map_err(|source| ConceptWriteError::Conversion { source })?;
         match relation_type_annotation {
             RelationTypeAnnotation::Abstract(_) => {
                 type_manager.unset_owner_annotation_abstract(snapshot, self.clone().into_owned())?
-            },
+            }
             RelationTypeAnnotation::Cascade(_) => {
                 type_manager.unset_annotation_cascade(snapshot, self.clone().into_owned())?
-            },
+            }
         }
         Ok(()) // TODO
     }
@@ -320,12 +317,12 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        Ok(self.get_owns(snapshot, type_manager)?
+        Ok(self
+            .get_owns(snapshot, type_manager)?
             .iter()
             .map(|(_, owns)| owns)
             .find(|owns| owns.attribute() == attribute_type)
-            .cloned()
-        )
+            .cloned())
     }
 }
 
@@ -370,12 +367,12 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError> {
-        Ok(self.get_plays(snapshot, type_manager)?
+        Ok(self
+            .get_plays(snapshot, type_manager)?
             .iter()
             .map(|(_, plays)| plays)
             .find(|plays| plays.role() == role_type)
-            .cloned()
-        )
+            .cloned())
     }
 }
 
@@ -386,7 +383,9 @@ pub enum RelationTypeAnnotation {
 }
 
 impl RelationTypeAnnotation {
-    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<RelationTypeAnnotation, ConversionError> {
+    pub fn try_getting_default(
+        annotation_category: AnnotationCategory,
+    ) -> Result<RelationTypeAnnotation, ConversionError> {
         annotation_category.to_default_annotation().into()
     }
 }
@@ -398,10 +397,14 @@ impl From<Annotation> for Result<RelationTypeAnnotation, ConversionError> {
             Annotation::Cascade(annotation) => Ok(RelationTypeAnnotation::Cascade(annotation)),
 
             Annotation::Distinct(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Independent(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Independent(_) => {
+                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
+            }
             Annotation::Unique(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
             Annotation::Key(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Cardinality(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Cardinality(_) => {
+                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
+            }
             Annotation::Regex(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
         }
     }

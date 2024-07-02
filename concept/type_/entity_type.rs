@@ -5,7 +5,6 @@
  */
 
 use std::collections::{HashMap, HashSet};
-use itertools::Itertools;
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
@@ -17,6 +16,7 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
+use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -28,16 +28,13 @@ use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationCategory, AnnotationAbstract},
+        annotation::{Annotation, AnnotationAbstract, AnnotationCategory},
         attribute_type::AttributeType,
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
         role_type::RoleType,
-        type_manager::{
-            TypeManager,
-            validation::ConversionError,
-        },
+        type_manager::{validation::ConversionError, TypeManager},
         KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
     ConceptAPI,
@@ -234,7 +231,7 @@ impl<'a> EntityType<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let entity_annotation = EntityTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Conversion {source})?;
+            .map_err(|source| ConceptWriteError::Conversion { source })?;
         match entity_annotation {
             EntityTypeAnnotation::Abstract(_) => {
                 type_manager.unset_owner_annotation_abstract(snapshot, self.clone().into_owned())?
@@ -293,12 +290,12 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        Ok(self.get_owns(snapshot, type_manager)?
+        Ok(self
+            .get_owns(snapshot, type_manager)?
             .iter()
             .map(|(_, owns)| owns)
             .find(|owns| owns.attribute() == attribute_type)
-            .cloned()
-        )
+            .cloned())
     }
 }
 
@@ -343,12 +340,12 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError> {
-        Ok(self.get_plays(snapshot, type_manager)?
+        Ok(self
+            .get_plays(snapshot, type_manager)?
             .iter()
             .map(|(_, plays)| plays)
             .find(|plays| plays.role() == role_type)
-            .cloned()
-        )
+            .cloned())
     }
 }
 
@@ -358,7 +355,9 @@ pub enum EntityTypeAnnotation {
 }
 
 impl EntityTypeAnnotation {
-    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<EntityTypeAnnotation, ConversionError> {
+    pub fn try_getting_default(
+        annotation_category: AnnotationCategory,
+    ) -> Result<EntityTypeAnnotation, ConversionError> {
         annotation_category.to_default_annotation().into()
     }
 }
@@ -369,10 +368,14 @@ impl From<Annotation> for Result<EntityTypeAnnotation, ConversionError> {
             Annotation::Abstract(annotation) => Ok(EntityTypeAnnotation::Abstract(annotation)),
 
             Annotation::Distinct(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Independent(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Independent(_) => {
+                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
+            }
             Annotation::Unique(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
             Annotation::Key(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Cardinality(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Cardinality(_) => {
+                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
+            }
             Annotation::Regex(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
             Annotation::Cascade(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
         }

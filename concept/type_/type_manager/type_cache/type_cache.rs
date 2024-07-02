@@ -29,7 +29,7 @@ use crate::type_::{
     type_manager::type_cache::{
         kind_cache::{
             AttributeTypeCache, CommonTypeCache, EntityTypeCache, OwnerPlayerCache, OwnsCache, PlaysCache,
-            RelationTypeCache, RoleTypeCache, RelatesCache
+            RelatesCache, RelationTypeCache, RoleTypeCache,
         },
         selection,
         selection::{CacheGetter, HasCommonTypeCache, HasOwnerPlayerCache},
@@ -227,16 +227,16 @@ impl TypeCache {
         &'this self,
         type_: T,
     ) -> &HashMap<<<T as TypeAPI<'a>>::SelfStatic as KindAPI<'static>>::AnnotationType, <T as TypeAPI<'a>>::SelfStatic>
-        where
-            T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
-            CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
+    where
+        T: KindAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasCommonTypeCache<T::SelfStatic> + 'this,
     {
         &T::get_cache(self, type_).common_type_cache().annotations
     }
 
     pub(crate) fn get_owns_for_attribute_type_declared<'a>(
         &self,
-        attribute_type: AttributeType<'a>
+        attribute_type: AttributeType<'a>,
     ) -> &HashSet<Owns<'static>> {
         &AttributeType::get_cache(self, attribute_type).owns_declared
     }
@@ -271,9 +271,9 @@ impl TypeCache {
         &'this self,
         type_: T,
     ) -> &HashMap<AttributeType<'static>, Owns<'static>>
-        where
-            T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
-            CACHE: HasOwnerPlayerCache + 'this,
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasOwnerPlayerCache + 'this,
     {
         &T::get_cache(self, type_).owner_player_cache().owns_overridden
     }
@@ -288,7 +288,7 @@ impl TypeCache {
 
     pub(crate) fn get_relation_type_relates_declared<'a>(
         &self,
-        relation_type: RelationType<'a>
+        relation_type: RelationType<'a>,
     ) -> &HashSet<Relates<'static>> {
         &RelationType::get_cache(self, relation_type).relates_declared
     }
@@ -314,10 +314,7 @@ impl TypeCache {
         &self.relates.get(&relates).unwrap().annotations
     }
 
-    pub(crate) fn get_relates_override<'c>(
-        &'c self,
-        relates: Relates<'c>
-    ) -> &'c Option<Relates<'static>> {
+    pub(crate) fn get_relates_override<'c>(&'c self, relates: Relates<'c>) -> &'c Option<Relates<'static>> {
         &self.relates.get(&relates).unwrap().overrides
     }
 
@@ -355,9 +352,9 @@ impl TypeCache {
         &'this self,
         type_: T,
     ) -> &'this HashMap<RoleType<'static>, Plays<'static>>
-        where
-            T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
-            CACHE: HasOwnerPlayerCache + 'this,
+    where
+        T: OwnerAPI<'a> + PlayerAPI<'a> + CacheGetter<CacheType = CACHE>,
+        CACHE: HasOwnerPlayerCache + 'this,
     {
         &T::get_cache(self, type_).owner_player_cache().plays_overridden
     }
@@ -366,10 +363,7 @@ impl TypeCache {
         &self.plays.get(&plays).unwrap().overrides
     }
 
-    pub(crate) fn get_plays_annotations_declared<'c>(
-        &'c self,
-        plays: Plays<'c>,
-    ) -> &'c HashSet<PlaysAnnotation> {
+    pub(crate) fn get_plays_annotations_declared<'c>(&'c self, plays: Plays<'c>) -> &'c HashSet<PlaysAnnotation> {
         &self.plays.get(&plays).unwrap().annotations_declared
     }
 
@@ -382,22 +376,16 @@ impl TypeCache {
 
     pub(crate) fn get_attribute_type_value_type<'a>(
         &self,
-        attribute_type: AttributeType<'a>
+        attribute_type: AttributeType<'a>,
     ) -> &Option<(ValueType, AttributeType<'static>)> {
         &AttributeType::get_cache(&self, attribute_type).value_type
     }
 
-    pub(crate) fn get_owns_annotations_declared<'c>(
-        &'c self,
-        owns: Owns<'c>,
-    ) -> &'c HashSet<OwnsAnnotation> {
+    pub(crate) fn get_owns_annotations_declared<'c>(&'c self, owns: Owns<'c>) -> &'c HashSet<OwnsAnnotation> {
         &self.owns.get(&owns).unwrap().annotations_declared
     }
 
-    pub(crate) fn get_owns_annotations<'c>(
-        &'c self,
-        owns: Owns<'c>,
-    ) -> &'c HashMap<OwnsAnnotation, Owns<'static>> {
+    pub(crate) fn get_owns_annotations<'c>(&'c self, owns: Owns<'c>) -> &'c HashMap<OwnsAnnotation, Owns<'static>> {
         &self.owns.get(&owns).unwrap().annotations
     }
 

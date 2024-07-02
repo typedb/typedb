@@ -26,10 +26,7 @@ use crate::{
         annotation::{Annotation, AnnotationAbstract, AnnotationIndependent},
         object_type::ObjectType,
         owns::Owns,
-        type_manager::{
-            TypeManager,
-            validation::ConversionError
-        },
+        type_manager::{validation::ConversionError, TypeManager},
         KindAPI, TypeAPI,
     },
     ConceptAPI,
@@ -128,8 +125,7 @@ impl<'a> AttributeType<'a> {
     ) -> Result<Option<ValueType>, ConceptReadError> {
         type_manager
             .get_attribute_type_value_type(snapshot, self.clone().into_owned())
-            .map(|value_type_opt| value_type_opt
-                .map(|(value_type, source)| value_type))
+            .map(|value_type_opt| value_type_opt.map(|(value_type, source)| value_type))
     }
 
     pub fn set_value_type(
@@ -256,7 +252,7 @@ impl<'a> AttributeType<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let relation_type_annotation = AttributeTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Conversion {source})?;
+            .map_err(|source| ConceptWriteError::Conversion { source })?;
         match relation_type_annotation {
             AttributeTypeAnnotation::Abstract(_) => {
                 type_manager.unset_attribute_type_annotation_abstract(snapshot, self.clone().into_owned())?
@@ -308,7 +304,9 @@ pub enum AttributeTypeAnnotation {
 }
 
 impl AttributeTypeAnnotation {
-    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<AttributeTypeAnnotation, ConversionError> {
+    pub fn try_getting_default(
+        annotation_category: AnnotationCategory,
+    ) -> Result<AttributeTypeAnnotation, ConversionError> {
         annotation_category.to_default_annotation().into()
     }
 }
@@ -323,7 +321,9 @@ impl From<Annotation> for Result<AttributeTypeAnnotation, ConversionError> {
             Annotation::Distinct(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
             Annotation::Unique(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
             Annotation::Key(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Cardinality(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Cardinality(_) => {
+                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
+            }
             Annotation::Cascade(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
         }
     }
@@ -342,9 +342,9 @@ impl From<Annotation> for AttributeTypeAnnotation {
 impl Into<Annotation> for AttributeTypeAnnotation {
     fn into(self) -> Annotation {
         match self {
-            AttributeTypeAnnotation::Abstract(annotation)=> Annotation::Abstract(annotation),
-            AttributeTypeAnnotation::Independent(annotation)=> Annotation::Independent(annotation),
-            AttributeTypeAnnotation::Regex(annotation)=> Annotation::Regex(annotation),
+            AttributeTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
+            AttributeTypeAnnotation::Independent(annotation) => Annotation::Independent(annotation),
+            AttributeTypeAnnotation::Regex(annotation) => Annotation::Regex(annotation),
         }
     }
 }
