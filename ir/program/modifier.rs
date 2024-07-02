@@ -11,6 +11,7 @@ use answer::variable::Variable;
 use crate::{program::modifier::ModifierDefinitionError::SortVariableNotAvailable};
 use crate::program::block::BlockContext;
 
+#[derive(Debug, Clone)]
 pub enum Modifier {
     Filter(Filter),
     Sort(Sort),
@@ -18,12 +19,14 @@ pub enum Modifier {
     Limit(Limit),
 }
 
+#[derive(Debug, Clone)]
 pub struct Filter {
     variables: HashSet<Variable>,
 }
 
 impl Filter {
     pub(crate) fn new(variables: Vec<&str>, context: &BlockContext) -> Result<Self, ModifierDefinitionError> {
+        // TODO: convert named to block variables
         let mut filter_variables = HashSet::new();
         for name in variables {
             match context.get_variable(name) {
@@ -35,6 +38,7 @@ impl Filter {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Sort {
     variables: Vec<SortVariable>,
 }
@@ -60,11 +64,13 @@ impl Sort {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 enum SortVariable {
     Ascending(Variable),
     Descending(Variable),
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct Offset {
     offset: u64,
 }
@@ -75,6 +81,7 @@ impl Offset {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct Limit {
     limit: u64,
 }

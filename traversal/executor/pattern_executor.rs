@@ -65,7 +65,7 @@ impl PatternExecutor {
         })
     }
 
-    pub fn into_rows(self) {
+    pub fn into_iterator(self) {
         // TODO: we could use a lending iterator here to avoid a malloc row/answer
         // self.flat_map(|batch| batch.into_rows_cloned())
         todo!()
@@ -154,7 +154,7 @@ impl StepExecutor {
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>,
     ) -> Result<Self, ConceptReadError> {
-        let vars_count = step.total_variables_count();
+        let vars_count = variable_positions.len() as u32;
         let Step { execution: execution, .. } = step;
         match execution {
             Execution::SortedIterators(iterates) => {

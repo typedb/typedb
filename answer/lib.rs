@@ -51,6 +51,30 @@ impl Type {
     }
 }
 
+impl From<EntityType<'static>> for Type {
+    fn from(value: EntityType<'static>) -> Self {
+        Self::Entity(value)
+    }
+}
+
+impl From<RelationType<'static>> for Type {
+    fn from(value: RelationType<'static>) -> Self {
+        Self::Relation(value)
+    }
+}
+
+impl From<RoleType<'static>> for Type {
+    fn from(value: RoleType<'static>) -> Self {
+        Self::RoleType(value)
+    }
+}
+
+impl From<AttributeType<'static>> for Type {
+    fn from(value: AttributeType<'static>) -> Self {
+        Self::Attribute(value)
+    }
+}
+
 impl From<ObjectType<'static>> for Type {
     fn from(type_: ObjectType<'static>) -> Self {
         match type_ {

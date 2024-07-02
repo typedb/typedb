@@ -23,7 +23,7 @@ pub struct ProgramExecutor {
 }
 
 impl ProgramExecutor {
-    fn new<Snapshot: ReadableSnapshot>(
+    pub fn new<Snapshot: ReadableSnapshot>(
         program_plan: ProgramPlan,
         type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
@@ -35,5 +35,9 @@ impl ProgramExecutor {
         // TODO: functions
 
         Ok(Self { entry: entry, functions: HashMap::new() })
+    }
+
+    pub fn execute_entry(&self) {
+        self.entry.into_rows()
     }
 }

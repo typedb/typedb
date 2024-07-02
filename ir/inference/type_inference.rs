@@ -28,7 +28,7 @@ Note: On function call boundaries, can assume the current set of schema types pe
  */
 
 pub fn infer_types(program: &Program) {
-    let mut entry_type_annotations = TypeAnnotations::new();
+    let mut entry_type_annotations = TypeAnnotations::new(HashMap::new(), HashMap::new());
     let mut function_type_annotations: HashMap<DefinitionKey<'static>, TypeAnnotations> = HashMap::new();
 }
 
@@ -38,7 +38,10 @@ pub struct TypeAnnotations {
 }
 
 impl TypeAnnotations {
-    fn new() -> Self {
+    pub fn new(
+        variables: HashMap<Variable, Arc<HashSet<Type>>>,
+        constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
+    ) -> Self {
         TypeAnnotations { variables: HashMap::new(), constraints: HashMap::new() }
     }
 
@@ -54,7 +57,7 @@ impl TypeAnnotations {
 pub enum ConstraintTypeAnnotations {
     LeftRight(LeftRightAnnotations),
     LeftRightFiltered(LeftRightFilteredAnnotations), // note: function calls, comparators, and value assignments are not stored here, since they do not actually co-constrain Schema types possible.
-                                                     //       in other words, they are always right to left or deal only in value types.
+    //       in other words, they are always right to left or deal only in value types.
 }
 
 impl ConstraintTypeAnnotations {
@@ -72,6 +75,10 @@ pub struct LeftRightAnnotations {
 }
 
 impl LeftRightAnnotations {
+
+    pub fn new(left_to_right: BTreeMap<Type, Vec<Type>>, right_to_left: BTreeMap<Type, Vec<Type>>) -> Self {
+        Self { left_to_right: Arc::new(left_to_right), right_to_left: Arc::new(right_to_left) }
+    }
     pub fn left_to_right(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
         self.left_to_right.clone()
     }

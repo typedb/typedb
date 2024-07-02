@@ -119,7 +119,7 @@ impl Constraints {
 
         let binding = FunctionCallBinding::new(assigned, function_call);
 
-        for (index, var) in binding.ids().enumerate() {
+        for (index, var) in binding.ids_assigned().enumerate() {
             self.context.lock().unwrap().set_variable_category(
                 var,
                 binding.function_call().returns()[index].0,
@@ -181,7 +181,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::RolePlayer(rp) => Box::new(rp.ids()),
             Constraint::Has(has) => Box::new(has.ids()),
             Constraint::ExpressionBinding(binding) => todo!(),
-            Constraint::FunctionCallBinding(binding) => Box::new(binding.ids()),
+            Constraint::FunctionCallBinding(binding) => Box::new(binding.ids_assigned()),
             Constraint::Comparison(comparison) => todo!(),
         }
     }
@@ -357,6 +357,10 @@ impl<ID: IrID> RolePlayer<ID> {
         self.player
     }
 
+    pub fn role_type(&self) -> Option<ID> {
+        self.role_type
+    }
+
     pub fn ids(&self) -> impl Iterator<Item = ID> {
         [self.relation, self.player].into_iter().chain(self.role_type)
     }
@@ -465,6 +469,10 @@ impl<ID: IrID> ExpressionBinding<ID> {
         empty()
     }
 
+    pub fn ids_assigned(&self) -> impl Iterator<Item=ID> {
+        [self.left].into_iter()
+    }
+
     pub fn ids_foreach<F>(&self, function: F)
     where
         F: FnMut(ID, ConstraintIDSide) -> (),
@@ -487,28 +495,33 @@ impl<ID: IrID> Display for ExpressionBinding<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct FunctionCallBinding<ID: IrID> {
-    left: Vec<ID>,
+    assigned: Vec<ID>,
     function_call: FunctionCall<ID>,
 }
 
 impl<ID: IrID> FunctionCallBinding<ID> {
     fn new(left: Vec<ID>, function_call: FunctionCall<ID>) -> Self {
-        Self { left, function_call }
+        Self { assigned: left, function_call }
     }
 
     pub(crate) fn function_call(&self) -> &FunctionCall<ID> {
         &self.function_call
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> + '_ {
-        self.left.iter().cloned()
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        panic!("Unimplemented");
+        empty()
+    }
+
+    pub fn ids_assigned(&self) -> impl Iterator<Item = ID> + '_ {
+        self.assigned.iter().cloned()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
     where
         F: FnMut(ID, ConstraintIDSide) -> (),
     {
-        for id in &self.left {
+        for id in &self.assigned {
             function(*id, ConstraintIDSide::Left)
         }
 
@@ -527,9 +540,9 @@ impl<ID: IrID> Into<Constraint<ID>> for FunctionCallBinding<ID> {
 impl<ID: IrID> Display for FunctionCallBinding<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.function_call.return_is_stream() {
-            write!(f, "{} in {}", self.ids().map(|i| i.to_string()).join(", "), self.function_call())
+            write!(f, "{} in {}", self.ids_assigned().map(|i| i.to_string()).join(", "), self.function_call())
         } else {
-            write!(f, "{} = {}", self.ids().map(|i| i.to_string()).join(", "), self.function_call())
+            write!(f, "{} = {}", self.ids_assigned().map(|i| i.to_string()).join(", "), self.function_call())
         }
     }
 }

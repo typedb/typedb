@@ -57,16 +57,16 @@ impl FunctionalBlock {
         self.modifiers.push(Modifier::Offset(Offset::new(offset)))
     }
 
-    pub fn add_sort(&mut self, sort_variables: Vec<(&str, bool)>) -> Result<(), ModifierDefinitionError> {
+    pub fn add_sort(&mut self, sort_variables: Vec<(&str, bool)>) -> Result<&Modifier, ModifierDefinitionError> {
         let sort = Sort::new(sort_variables, &self.context())?;
         self.modifiers.push(Modifier::Sort(sort));
-        Ok(())
+        Ok(self.modifiers.last().unwrap())
     }
 
-    pub fn add_filter(&mut self, variables: Vec<&str>) -> Result<(), ModifierDefinitionError> {
+    pub fn add_filter(&mut self, variables: Vec<&str>) -> Result<&Modifier, ModifierDefinitionError> {
         let filter = Filter::new(variables, &self.context())?;
         self.modifiers.push(Modifier::Filter(filter));
-        Ok(())
+        Ok(self.modifiers.last().unwrap())
     }
 }
 

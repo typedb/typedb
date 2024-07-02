@@ -16,7 +16,7 @@ pub struct ProgramPlan {
 }
 
 impl ProgramPlan {
-    pub(crate) fn new(entry: PatternPlan, functions: HashMap<DefinitionKey<'static>, FunctionPlan>) -> Self {
+    pub fn new(entry: PatternPlan, functions: HashMap<DefinitionKey<'static>, FunctionPlan>) -> Self {
         Self { entry, functions }
     }
 }

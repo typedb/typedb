@@ -5,7 +5,8 @@
  */
 
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap, HashSet};
+use std::fmt::Pointer;
 use std::sync::Arc;
 
 use concept::thing::object::ObjectAPI;
@@ -20,12 +21,15 @@ use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
 use encoding::value::label::Label;
 use encoding::value::value::Value;
 use encoding::value::value_type::ValueType;
+use ir::inference::type_inference::{ConstraintTypeAnnotations, LeftRightAnnotations, TypeAnnotations};
 use ir::program::block::FunctionalBlock;
-use ir::program::program::Program;
 use storage::durability_client::WALClient;
 use storage::MVCCStorage;
 use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, ReadSnapshot, WriteSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
+use traversal::executor::program_executor::ProgramExecutor;
+use traversal::planner::pattern_plan::{Execution, Iterate, IterateMode, PatternPlan, Step};
+use traversal::planner::program_plan::ProgramPlan;
 
 fn setup_storage() -> Arc<MVCCStorage<WALClient>> {
     init_logging();
@@ -62,13 +66,14 @@ fn load_managers<Snapshot: ReadableSnapshot>(
 fn traverse_has() {
     let storage = setup_storage();
 
+    let person_label = Label::build("person");
+    let age_label = Label::build("age");
+    let name_label = Label::build("name");
+
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
         let (type_manager, thing_manager) = load_managers(storage.clone());
 
-        let person_label = Label::build("person");
-        let age_label = Label::build("age");
-        let name_label = Label::build("name");
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
@@ -88,13 +93,13 @@ fn traverse_has() {
         let mut _age_5 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(14)).unwrap();
 
         let mut _name_1 = thing_manager.create_attribute(
-            &mut snapshot, name_type.clone(), Value::String(Cow::Owned("John".to_string()))
+            &mut snapshot, name_type.clone(), Value::String(Cow::Owned("John".to_string())),
         ).unwrap();
         let mut _name_2 = thing_manager.create_attribute(
-            &mut snapshot, name_type.clone(), Value::String(Cow::Owned("Alice".to_string()))
+            &mut snapshot, name_type.clone(), Value::String(Cow::Owned("Alice".to_string())),
         ).unwrap();
         let mut _name_3 = thing_manager.create_attribute(
-            &mut snapshot, name_type.clone(), Value::String(Cow::Owned("Leila".to_string()))
+            &mut snapshot, name_type.clone(), Value::String(Cow::Owned("Leila".to_string())),
         ).unwrap();
 
         _person_1.set_has_unordered(&mut snapshot, &thing_manager, _age_1.clone()).unwrap();
@@ -115,28 +120,79 @@ fn traverse_has() {
     }
     snapshot.commit().unwrap();
 
+    // query:
+    //   match
+    //    $person has name $name, has age $age;
+    //   limit 3;
+    //   filter $person, $age;
+
+    // IR
+    let mut block = FunctionalBlock::new();
+    let mut conjunction = block.conjunction_mut();
+    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
+    let var_age = conjunction.get_or_declare_variable(&"age").unwrap();
+    let var_name = conjunction.get_or_declare_variable(&"name").unwrap();
+    let has_age = conjunction.constraints_mut().add_has(var_person, var_age).unwrap().clone();
+    let has_name = conjunction.constraints_mut().add_has(var_person, var_name).unwrap().clone();
+    block.add_limit(3);
+    let filter = block.add_filter(vec![&"person", &"age"]).unwrap().clone();
+
+    // Plan
+    let steps = vec![
+        Step::new(Execution::SortedIterators(vec![
+            Iterate::Has(has_age.clone(), IterateMode::UnboundSortedFrom),
+            Iterate::Has(has_name.clone(), IterateMode::UnboundSortedFrom),
+        ]), &HashSet::new())
+    ];
+    // TODO: incorporate the filter
+    let pattern_plan = PatternPlan::new(steps);
+    let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
+
+    // Executor
+    let executor = {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (type_manager, thing_manager) = load_managers(storage.clone());
+
+        let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
+        let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
+        let name_type = type_manager.get_attribute_type(&snapshot, &name_label).unwrap().unwrap();
+
+        // Type Annotations
+        let mut variable_annotations = HashMap::new();
+        variable_annotations.insert(var_person, Arc::new(HashSet::from([person_type.clone().into()])));
+        variable_annotations.insert(var_name, Arc::new(HashSet::from([name_type.clone().into()])));
+        variable_annotations.insert(var_age, Arc::new(HashSet::from([age_type.clone().into()])));
+
+        let mut constraint_annotations = HashMap::new();
+        constraint_annotations.insert(has_age.into(), ConstraintTypeAnnotations::LeftRight(
+            LeftRightAnnotations::new(
+                BTreeMap::from([
+                    (person_type.clone().into(), vec![age_type.clone().into()])
+                ]),
+                BTreeMap::from([
+                    (age_type.clone().into(), vec![person_type.clone().into()]),
+                ]),
+            )
+        ));
+
+        constraint_annotations.insert(has_name.into(), ConstraintTypeAnnotations::LeftRight(
+            LeftRightAnnotations::new(
+                BTreeMap::from([
+                    (person_type.clone().into(), vec![name_type.clone().into()])
+                ]),
+                BTreeMap::from([
+                    (name_type.clone().into(), vec![person_type.clone().into()]),
+                ]),
+            )
+        ));
+
+        let type_annotations = TypeAnnotations::new(variable_annotations, constraint_annotations);
+        ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager)
+    };
+
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone());
-        let entities = thing_manager.get_entities(&snapshot).collect_cloned();
-        assert_eq!(entities.len(), 4);
+
     }
-
-    // query: match $person has name $name, has age $age; limit 3; filter $person, $age;
-
-    let mut block = FunctionalBlock::new();
-    {
-        let mut conjunction = block.conjunction_mut();
-        let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
-        let var_age = conjunction.get_or_declare_variable(&"age").unwrap();
-        let var_name = conjunction.get_or_declare_variable(&"name").unwrap();
-        conjunction.constraints_mut().add_has(var_person, var_age).unwrap();
-        conjunction.constraints_mut().add_has(var_person, var_name).unwrap();
-    }
-    block.add_limit(3);
-    block.add_filter(vec![&"person", &"age"]);
-    let mut program = Program::new(block, HashMap::new());
-
-    // let pattern_plan = PatternPlan::new();
-    // let program_plan = ProgramPlan::new();
 }
