@@ -1544,7 +1544,6 @@ impl TypeManager {
     pub(crate) fn set_owns_ordering(
         &self, snapshot: &mut impl WritableSnapshot, owns: Owns<'static>, ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: Validation
         OperationTimeValidation::validate_owns_distinct_annotation_ordering(snapshot, owns.clone(), Some(ordering), None)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1567,7 +1566,6 @@ impl TypeManager {
     pub(crate) fn set_role_ordering(
         &self, snapshot: &mut impl WritableSnapshot, role: RoleType<'_>, ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: Validation
         let relates = self.get_role_type_relates(snapshot, role.clone().into_owned())?;
         OperationTimeValidation::validate_relates_distinct_annotation_ordering(snapshot, relates.clone(), Some(ordering), None)
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
@@ -1768,9 +1766,8 @@ impl TypeManager {
         ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         OperationTimeValidation::validate_edge_override_annotations_compatibility(snapshot, relates.clone(), overridden.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
         Self::set_supertype(self, snapshot, relates.role(), overridden.role())?;
-        TypeWriter::storage_set_type_edge_overridden(snapshot, relates.clone(), overridden.clone()); 
+        TypeWriter::storage_set_type_edge_overridden(snapshot, relates, overridden);
         Ok(())
     }
 
@@ -1782,6 +1779,7 @@ impl TypeManager {
         // TODO: Validation
         // TODO: More validation - instances exist.
 
+        TypeWriter::storage_delete_supertype(snapshot, relates.role().clone());
         self.set_role_type_root_supertype(snapshot, relates.role());
         TypeWriter::storage_delete_type_edge_overridden(snapshot, relates);
         Ok(())
