@@ -225,7 +225,7 @@ impl<'a> RelationType<'a> {
                 type_manager.unset_annotation_cascade(snapshot, self.clone().into_owned())?
             }
         }
-        Ok(()) // TODO
+        Ok(())
     }
 
     pub fn create_relates(

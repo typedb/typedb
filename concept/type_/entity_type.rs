@@ -190,26 +190,6 @@ impl<'a> EntityType<'a> {
         type_manager.get_entity_type_annotations(snapshot, self.clone().into_owned())
     }
 
-    // pub fn get_annotation_categories<'m, Snapshot: ReadableSnapshot>(
-    //     &self,
-    //     snapshot: &Snapshot,
-    //     type_manager: &'m TypeManager<Snapshot>,
-    // ) -> Result<MaybeOwns<'m, HashMap<AnnotationCategory, EntityType<'static>>>, ConceptReadError> {
-    //     type_manager.get_entity_type_annotation_categories(snapshot, self.clone().into_owned())
-    // }
-    //
-    // pub fn get_annotation_of_category_if_exists<'m, Snapshot: ReadableSnapshot>(
-    //     &self,
-    //     snapshot: &Snapshot,
-    //     type_manager: &'m TypeManager<Snapshot>,
-    //     annotation_category: AnnotationCategory,
-    // ) -> Result<EntityTypeAnnotation, ConceptReadError> {
-    //     self.get_annotations(snapshot, type_manager).map(|annotations| {
-    //         annotations.into_iter().filter(|(annotation, _)| annotation.).next
-    //     })
-    //
-    // }
-
     pub fn set_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,

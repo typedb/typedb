@@ -97,7 +97,7 @@ impl TypeManager {
             let root_role = type_manager.create_role_type(
                 &mut snapshot,
                 &Kind::Role.root_label(),
-                root_relation.clone(), // TODO: Do we need to clone here????
+                root_relation.clone(),
                 true,
                 Ordering::Unordered,
             )?;
@@ -897,7 +897,6 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relates_annotations_declared(relates)))
         } else {
-            // TODO: Move these calls to a common place so it could be called from both cache init and here?
             let annotations: HashSet<RelatesAnnotation> =
                 TypeReader::get_type_edge_annotations_declared(snapshot, relates)?
                     .into_iter()
@@ -956,8 +955,7 @@ impl TypeManager {
         value_type: ValueType,
         is_optional: bool,
     ) -> Result<(), ConceptWriteError> {
-        let mut struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())
-            .map_err(|source| ConceptWriteError::ConceptRead { source })?;
+        let mut struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())?;
         struct_definition
             .add_field(field_name, value_type, is_optional)
             .map_err(|source| ConceptWriteError::Encoding { source })?;
@@ -972,8 +970,7 @@ impl TypeManager {
         definition_key: DefinitionKey<'static>,
         field_name: String,
     ) -> Result<(), ConceptWriteError> {
-        let mut struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())
-            .map_err(|source| ConceptWriteError::ConceptRead { source })?;
+        let mut struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())?;
         struct_definition.delete_field(field_name).map_err(|source| ConceptWriteError::Encoding { source })?;
 
         TypeWriter::storage_put_struct(snapshot, definition_key.clone(), struct_definition);
@@ -1201,7 +1198,7 @@ impl TypeManager {
         // OperationTimeValidation::validate_exact_type_no_instances_role(snapshot, role_type.clone().into_owned())
         //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
-        let relates = TypeReader::get_role_type_relates(snapshot, role_type.clone().into_owned()).unwrap(); // Unwrap -> error?
+        let relates = TypeReader::get_role_type_relates(snapshot, role_type.clone().into_owned()).unwrap(); // TODO: Unwrap -> error?
         let relation = relates.relation();
         let role = relates.role();
 
@@ -1264,15 +1261,11 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, role_type.clone()).is_ok());
 
-        let old_label = TypeReader::get_label(snapshot, role_type.clone())
-            .map_err(|source| ConceptWriteError::ConceptRead { source })?
-            .unwrap();
+        let old_label = TypeReader::get_label(snapshot, role_type.clone())?.unwrap();
         debug_assert!(old_label.scope().is_some());
 
         let new_label = Label::build_scoped(name, old_label.scope().unwrap().as_str());
-        let relation_type = TypeReader::get_role_type_relates(snapshot, role_type.clone())
-            .map_err(|source| ConceptWriteError::ConceptRead { source })?
-            .relation();
+        let relation_type = TypeReader::get_role_type_relates(snapshot, role_type.clone())?.relation();
 
         OperationTimeValidation::validate_role_name_uniqueness(
             snapshot,
@@ -1294,9 +1287,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, role_type.clone()).is_ok());
 
-        let old_label = TypeReader::get_label(snapshot, role_type.clone())
-            .map_err(|source| ConceptWriteError::ConceptRead { source })?
-            .unwrap();
+        let old_label = TypeReader::get_label(snapshot, role_type.clone())?.unwrap();
         debug_assert!(old_label.scope().is_some());
 
         let new_label = Label::build_scoped(old_label.name().as_str(), scope);
@@ -1314,8 +1305,7 @@ impl TypeManager {
     ) -> Result<(), ConceptWriteError> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, attribute.clone()).is_ok());
 
-        let existing_value_type_with_source = TypeReader::get_value_type(snapshot, attribute.clone())
-            .map_err(|source| ConceptWriteError::ConceptRead { source })?;
+        let existing_value_type_with_source = TypeReader::get_value_type(snapshot, attribute.clone())?;
 
         OperationTimeValidation::validate_value_type_compatible_with_inherited_value_type(
             snapshot,
@@ -1438,7 +1428,6 @@ impl TypeManager {
         attribute: AttributeType<'static>,
         ordering: Ordering,
     ) -> Result<(), ConceptWriteError> {
-        // TODO: Validation
         OperationTimeValidation::validate_ownership_abstractness(snapshot, owner.clone(), attribute.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1498,10 +1487,8 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        let overridden_value_type_with_source = TypeReader::get_value_type(snapshot, overridden.attribute().clone())
-            .map_err(|source| ConceptWriteError::ConceptRead { source })?;
-        let value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())
-            .map_err(|source| ConceptWriteError::ConceptRead { source })?; // TODO: Just ?
+        let overridden_value_type_with_source = TypeReader::get_value_type(snapshot, overridden.attribute().clone())?;
+        let value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?;
 
         OperationTimeValidation::validate_value_type_compatible_with_inherited_value_type(
             snapshot,
@@ -1606,8 +1593,7 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: subtype ordering match should be checked on commit time, not operation time!
-        let owns_override_opt = TypeReader::get_implementation_override(snapshot, owns.clone())
-            .map_err(|source| ConceptWriteError::ConceptRead { source })?;
+        let owns_override_opt = TypeReader::get_implementation_override(snapshot, owns.clone())?;
         match owns_override_opt {
             Some(owns_override) => {
                 OperationTimeValidation::validate_owns_override_ordering_match(
@@ -1641,8 +1627,7 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: subtype ordering match should be checked on commit time, not operation time!
-        let relates_override_opt = TypeReader::get_implementation_override(snapshot, relates.clone())
-            .map_err(|source| ConceptWriteError::ConceptRead { source })?;
+        let relates_override_opt = TypeReader::get_implementation_override(snapshot, relates.clone())?;
         match relates_override_opt {
             Some(relates_override) => {
                 OperationTimeValidation::validate_role_supertype_ordering_match(
@@ -1840,9 +1825,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        if let Some(supertype) = TypeReader::get_supertype(snapshot, type_.clone())
-            .map_err(|source| ConceptWriteError::ConceptRead { source })?
-        {
+        if let Some(supertype) = TypeReader::get_supertype(snapshot, type_.clone())? {
             OperationTimeValidation::validate_type_regex_narrows_annotation(snapshot, supertype, regex.clone())
                 .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
@@ -1962,7 +1945,7 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn set_edge_annotation_unique(
+    pub(crate) fn set_owns_annotation_unique(
         &self,
         snapshot: &mut impl WritableSnapshot,
         owns: Owns<'static>,
@@ -1992,7 +1975,7 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn unset_edge_annotation_unique(
+    pub(crate) fn unset_owns_annotation_unique(
         &self,
         snapshot: &mut impl WritableSnapshot,
         owns: Owns<'static>,
@@ -2008,7 +1991,7 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn set_edge_annotation_key(
+    pub(crate) fn set_owns_annotation_key(
         &self,
         snapshot: &mut impl WritableSnapshot,
         owns: Owns<'static>,
@@ -2083,9 +2066,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        if let Some(override_edge) = TypeReader::get_implementation_override(snapshot, edge.clone())
-            .map_err(|source| ConceptWriteError::ConceptRead { source })?
-        {
+        if let Some(override_edge) = TypeReader::get_implementation_override(snapshot, edge.clone())? {
             OperationTimeValidation::validate_cardinality_narrows_annotation(snapshot, override_edge, cardinality)
                 .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
@@ -2113,7 +2094,7 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn set_edge_annotation_regex(
+    pub(crate) fn set_owns_annotation_regex(
         &self,
         snapshot: &mut impl WritableSnapshot,
         owns: Owns<'static>,
@@ -2150,9 +2131,7 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        if let Some(override_edge) = TypeReader::get_implementation_override(snapshot, owns.clone())
-            .map_err(|source| ConceptWriteError::ConceptRead { source })?
-        {
+        if let Some(override_edge) = TypeReader::get_implementation_override(snapshot, owns.clone())? {
             OperationTimeValidation::validate_edge_regex_narrows_annotation(snapshot, override_edge, regex.clone())
                 .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }

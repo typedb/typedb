@@ -18,8 +18,6 @@ use encoding::{
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
 
-use crate::type_::attribute_type::AttributeTypeAnnotation;
-
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
     Abstract(AnnotationAbstract),

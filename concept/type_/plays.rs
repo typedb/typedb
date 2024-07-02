@@ -92,7 +92,7 @@ impl<'a> Plays<'a> {
                 type_manager.set_edge_annotation_cardinality(snapshot, self.clone().into_owned(), cardinality)?
             }
         }
-        Ok(()) // TODO
+        Ok(())
     }
 
     pub fn unset_annotation(
@@ -108,7 +108,7 @@ impl<'a> Plays<'a> {
                 type_manager.unset_edge_annotation_cardinality(snapshot, self.clone().into_owned())?
             }
         }
-        Ok(()) // TODO
+        Ok(())
     }
 
     fn into_owned(self) -> Plays<'static> {

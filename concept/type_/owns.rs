@@ -144,18 +144,18 @@ impl<'a> Owns<'a> {
             OwnsAnnotation::Distinct(_) => {
                 type_manager.set_owns_annotation_distinct(snapshot, self.clone().into_owned())?
             }
-            OwnsAnnotation::Key(_) => type_manager.set_edge_annotation_key(snapshot, self.clone().into_owned())?,
+            OwnsAnnotation::Key(_) => type_manager.set_owns_annotation_key(snapshot, self.clone().into_owned())?,
             OwnsAnnotation::Cardinality(cardinality) => {
                 type_manager.set_edge_annotation_cardinality(snapshot, self.clone().into_owned(), cardinality)?
             }
             OwnsAnnotation::Unique(_) => {
-                type_manager.set_edge_annotation_unique(snapshot, self.clone().into_owned())?
+                type_manager.set_owns_annotation_unique(snapshot, self.clone().into_owned())?
             }
             OwnsAnnotation::Regex(regex) => {
-                type_manager.set_edge_annotation_regex(snapshot, self.clone().into_owned(), regex)?
+                type_manager.set_owns_annotation_regex(snapshot, self.clone().into_owned(), regex)?
             }
         }
-        Ok(()) // TODO
+        Ok(())
     }
 
     pub fn unset_annotation(
@@ -175,13 +175,13 @@ impl<'a> Owns<'a> {
                 type_manager.unset_edge_annotation_cardinality(snapshot, self.clone().into_owned())?
             }
             OwnsAnnotation::Unique(_) => {
-                type_manager.unset_edge_annotation_unique(snapshot, self.clone().into_owned())?
+                type_manager.unset_owns_annotation_unique(snapshot, self.clone().into_owned())?
             }
             OwnsAnnotation::Regex(_) => {
                 type_manager.unset_edge_annotation_regex(snapshot, self.clone().into_owned())?
             }
         }
-        Ok(()) // TODO
+        Ok(())
     }
 
     pub fn set_ordering<Snapshot: WritableSnapshot>(

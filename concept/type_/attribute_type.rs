@@ -264,7 +264,7 @@ impl<'a> AttributeType<'a> {
                 type_manager.unset_annotation_regex(snapshot, self.clone().into_owned())?
             }
         }
-        Ok(()) // TODO
+        Ok(())
     }
 
     pub fn into_owned(self) -> AttributeType<'static> {
