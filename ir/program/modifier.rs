@@ -40,6 +40,8 @@ pub struct Sort {
 
 impl Sort {
     pub(crate) fn new(variables: Vec<(&str, bool)>, context: &PatternContext) -> Result<Self, ModifierDefinitionError> {
+        // TODO: convert vars to pattern variables
+
         let mut sort_variables = Vec::new();
         for (name, is_ascending) in variables {
             match context.get_variable(name) {

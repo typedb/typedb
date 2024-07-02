@@ -22,7 +22,7 @@ pub mod context;
 pub mod disjunction;
 mod expression;
 pub mod function_call;
-pub mod pattern;
+pub mod nested_pattern;
 
 trait Scope {
     fn scope_id(&self) -> ScopeId;

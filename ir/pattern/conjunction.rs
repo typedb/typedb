@@ -9,13 +9,15 @@ use std::{
     sync::{Arc, Mutex, MutexGuard},
 };
 
-use answer::variable::Variable;
 use itertools::Itertools;
 
+use answer::variable::Variable;
+
 use crate::{
-    pattern::{constraint::Constraints, context::PatternContext, pattern::Patterns, Scope, ScopeId},
+    pattern::{constraint::Constraints, context::PatternContext, Scope, ScopeId},
     PatternDefinitionError,
 };
+use crate::pattern::nested_pattern::NestedPattern;
 
 #[derive(Debug)]
 pub struct Conjunction {
@@ -23,42 +25,23 @@ pub struct Conjunction {
     context: Arc<Mutex<PatternContext>>,
 
     constraints: Constraints,
-    patterns: Patterns,
+    nested_patterns: Vec<NestedPattern>,
 }
 
 impl Conjunction {
-    pub fn new_root() -> Self {
-        let context = Arc::new(Mutex::from(PatternContext::new()));
+    pub fn new(context: Arc<Mutex<PatternContext>>) -> Self {
         let scope_id = context.lock().unwrap().create_root_scope();
 
         Conjunction {
             scope_id,
             context: context.clone(),
             constraints: Constraints::new(scope_id, context.clone()),
-            patterns: Patterns::new(scope_id, context),
+            nested_patterns: Vec::new(),
         }
     }
 
-    pub(crate) fn new_child(parent_scope_id: ScopeId, context: Arc<Mutex<PatternContext>>) -> Self {
-        let scope_id = context.lock().unwrap().create_child_scope(parent_scope_id);
-        Conjunction {
-            scope_id,
-            context: context.clone(),
-            constraints: Constraints::new(scope_id, context.clone()),
-            patterns: Patterns::new(scope_id, context),
-        }
-    }
-
-    pub fn constraints(&mut self) -> &mut Constraints {
+    pub fn constraints_mut(&mut self) -> &mut Constraints {
         &mut self.constraints
-    }
-
-    pub fn patterns(&mut self) -> &mut Patterns {
-        &mut self.patterns
-    }
-
-    pub(crate) fn context(&self) -> MutexGuard<PatternContext> {
-        self.context.lock().unwrap()
     }
 
     pub fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, PatternDefinitionError> {
@@ -78,7 +61,9 @@ impl Display for Conjunction {
         let indent = (0..current_width).map(|_| " ").join("");
         writeln!(f, "{}{} Conjunction", indent, self.scope_id)?;
         write!(f, "{:>width$}", &self.constraints, width = current_width + 2)?;
-        write!(f, "{:>width$}", &self.patterns, width = current_width + 2)?;
+        for pattern in &self.nested_patterns {
+            write!(f, "{:>width$}", pattern, width = current_width + 2)?;
+        }
         write!(f, "{}", self.context.lock().unwrap())?;
         Ok(())
     }
