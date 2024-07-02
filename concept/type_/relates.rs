@@ -10,15 +10,15 @@ use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
-    type_::{InterfaceImplementation, relation_type::RelationType, role_type::RoleType,
-    annotation::{Annotation, AnnotationCardinality, AnnotationDistinct},
-    type_manager::TypeManager},
+    type_::{
+        InterfaceImplementation, relation_type::RelationType, role_type::RoleType,
+        annotation::{Annotation, AnnotationCategory, AnnotationCardinality, AnnotationDistinct},
+        type_manager::{
+            TypeManager,
+            validation::ConversionError,
+        },
+    },
 };
-use crate::type_::annotation::AnnotationCategory;
-use crate::type_::owns::{Owns, OwnsAnnotation};
-use crate::type_::plays::PlaysAnnotation;
-use crate::type_::type_manager::validation::SchemaValidationError;
-use crate::type_::type_manager::validation::SchemaValidationError::UnsupportedAnnotationForType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Relates<'a> {
@@ -114,7 +114,7 @@ impl<'a> Relates<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let relates_annotation = RelatesAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Operation {source})?;
+            .map_err(|source| ConceptWriteError::Conversion {source})?;
         match relates_annotation {
             RelatesAnnotation::Distinct(_) => {
                 type_manager.unset_edge_annotation_distinct(snapshot, self.clone().into_owned())?
@@ -171,30 +171,30 @@ pub enum RelatesAnnotation {
 }
 
 impl RelatesAnnotation {
-    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<RelatesAnnotation, SchemaValidationError> {
+    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<RelatesAnnotation, ConversionError> {
         annotation_category.to_default_annotation().into()
     }
 }
 
-impl From<Annotation> for Result<RelatesAnnotation, SchemaValidationError> {
-    fn from(annotation: Annotation) -> Result<RelatesAnnotation, SchemaValidationError> {
+impl From<Annotation> for Result<RelatesAnnotation, ConversionError> {
+    fn from(annotation: Annotation) -> Result<RelatesAnnotation, ConversionError> {
         match annotation {
             Annotation::Distinct(annotation) => Ok(RelatesAnnotation::Distinct(annotation)),
             Annotation::Cardinality(annotation) => Ok(RelatesAnnotation::Cardinality(annotation)),
 
-            Annotation::Abstract(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Independent(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Unique(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Key(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Regex(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Cascade(_) => Err(UnsupportedAnnotationForType(annotation.category())),
+            Annotation::Abstract(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Independent(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Unique(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Key(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Regex(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Cascade(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
         }
     }
 }
 
 impl From<Annotation> for RelatesAnnotation {
     fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<RelatesAnnotation, SchemaValidationError> = annotation.into();
+        let into_annotation: Result<RelatesAnnotation, ConversionError> = annotation.into();
         match into_annotation {
             Ok(into_annotation) => into_annotation,
             Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),

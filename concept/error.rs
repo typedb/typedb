@@ -19,6 +19,7 @@ use crate::{
         type_manager::validation::SchemaValidationError,
     },
 };
+use crate::type_::type_manager::validation::ConversionError;
 use crate::type_::type_manager::validation::operation_time_validation::OperationTimeValidation;
 
 #[derive(Debug)]
@@ -109,7 +110,7 @@ pub enum ConceptWriteError {
     SetHasOrderedOwnsUnordered {},
     SetHasUnorderedOwnsOrdered {},
 
-    Operation { source: SchemaValidationError }, // TODO: Find a better place for it... It is used for annotations now
+    Conversion { source: ConversionError },
 }
 
 impl fmt::Display for ConceptWriteError {
@@ -138,7 +139,7 @@ impl Error for ConceptWriteError {
             Self::CardinalityViolation { .. } => None,
             Self::SetHasOrderedOwnsUnordered { .. } => None,
             Self::SetHasUnorderedOwnsOrdered { .. } => None,
-            Self::Operation { .. } => None,
+            Self::Conversion { .. } => None,
         }
     }
 }

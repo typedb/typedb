@@ -26,15 +26,14 @@ use crate::{
         annotation::{Annotation, AnnotationAbstract, AnnotationIndependent},
         object_type::ObjectType,
         owns::Owns,
-        type_manager::TypeManager,
+        type_manager::{
+            TypeManager,
+            validation::ConversionError
+        },
         KindAPI, TypeAPI,
     },
     ConceptAPI,
 };
-use crate::type_::relation_type::RelationTypeAnnotation;
-use crate::type_::role_type::RoleTypeAnnotation;
-use crate::type_::type_manager::validation::SchemaValidationError;
-use crate::type_::type_manager::validation::SchemaValidationError::UnsupportedAnnotationForType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
@@ -257,7 +256,7 @@ impl<'a> AttributeType<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let relation_type_annotation = AttributeTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Operation {source})?;
+            .map_err(|source| ConceptWriteError::Conversion {source})?;
         match relation_type_annotation {
             AttributeTypeAnnotation::Abstract(_) => {
                 type_manager.unset_attribute_type_annotation_abstract(snapshot, self.clone().into_owned())?
@@ -309,30 +308,30 @@ pub enum AttributeTypeAnnotation {
 }
 
 impl AttributeTypeAnnotation {
-    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<AttributeTypeAnnotation, SchemaValidationError> {
+    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<AttributeTypeAnnotation, ConversionError> {
         annotation_category.to_default_annotation().into()
     }
 }
 
-impl From<Annotation> for Result<AttributeTypeAnnotation, SchemaValidationError> {
-    fn from(annotation: Annotation) -> Result<AttributeTypeAnnotation, SchemaValidationError> {
+impl From<Annotation> for Result<AttributeTypeAnnotation, ConversionError> {
+    fn from(annotation: Annotation) -> Result<AttributeTypeAnnotation, ConversionError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(AttributeTypeAnnotation::Abstract(annotation)),
             Annotation::Independent(annotation) => Ok(AttributeTypeAnnotation::Independent(annotation)),
             Annotation::Regex(annotation) => Ok(AttributeTypeAnnotation::Regex(annotation)),
 
-            Annotation::Distinct(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Unique(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Key(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Cardinality(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Cascade(_) => Err(UnsupportedAnnotationForType(annotation.category())),
+            Annotation::Distinct(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Unique(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Key(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Cardinality(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Cascade(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
         }
     }
 }
 
 impl From<Annotation> for AttributeTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<AttributeTypeAnnotation, SchemaValidationError> = annotation.into();
+        let into_annotation: Result<AttributeTypeAnnotation, ConversionError> = annotation.into();
         match into_annotation {
             Ok(into_annotation) => into_annotation,
             Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),

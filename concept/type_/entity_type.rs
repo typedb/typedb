@@ -34,15 +34,14 @@ use crate::{
         owns::Owns,
         plays::Plays,
         role_type::RoleType,
-        type_manager::TypeManager,
+        type_manager::{
+            TypeManager,
+            validation::ConversionError,
+        },
         KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
     ConceptAPI,
 };
-use crate::type_::attribute_type::AttributeTypeAnnotation;
-use crate::type_::role_type::RoleTypeAnnotation;
-use crate::type_::type_manager::validation::SchemaValidationError;
-use crate::type_::type_manager::validation::SchemaValidationError::UnsupportedAnnotationForType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType<'a> {
@@ -235,7 +234,7 @@ impl<'a> EntityType<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let entity_annotation = EntityTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Operation {source})?;
+            .map_err(|source| ConceptWriteError::Conversion {source})?;
         match entity_annotation {
             EntityTypeAnnotation::Abstract(_) => {
                 type_manager.unset_owner_annotation_abstract(snapshot, self.clone().into_owned())?
@@ -359,30 +358,30 @@ pub enum EntityTypeAnnotation {
 }
 
 impl EntityTypeAnnotation {
-    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<EntityTypeAnnotation, SchemaValidationError> {
+    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<EntityTypeAnnotation, ConversionError> {
         annotation_category.to_default_annotation().into()
     }
 }
 
-impl From<Annotation> for Result<EntityTypeAnnotation, SchemaValidationError> {
-    fn from(annotation: Annotation) -> Result<EntityTypeAnnotation, SchemaValidationError> {
+impl From<Annotation> for Result<EntityTypeAnnotation, ConversionError> {
+    fn from(annotation: Annotation) -> Result<EntityTypeAnnotation, ConversionError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(EntityTypeAnnotation::Abstract(annotation)),
 
-            Annotation::Distinct(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Independent(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Unique(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Key(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Cardinality(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Regex(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Cascade(_) => Err(UnsupportedAnnotationForType(annotation.category())),
+            Annotation::Distinct(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Independent(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Unique(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Key(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Cardinality(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Regex(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Cascade(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
         }
     }
 }
 
 impl From<Annotation> for EntityTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<EntityTypeAnnotation, SchemaValidationError> = annotation.into();
+        let into_annotation: Result<EntityTypeAnnotation, ConversionError> = annotation.into();
         match into_annotation {
             Ok(into_annotation) => into_annotation,
             Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),

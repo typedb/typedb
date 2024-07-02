@@ -13,17 +13,16 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationCardinality, AnnotationDistinct, AnnotationKey, AnnotationUnique, AnnotationRegex},
+        annotation::{Annotation, AnnotationCategory, AnnotationCardinality, AnnotationDistinct, AnnotationKey, AnnotationUnique, AnnotationRegex},
         attribute_type::AttributeType,
         object_type::ObjectType,
-        type_manager::TypeManager,
+        type_manager::{
+            TypeManager,
+            validation::ConversionError
+        },
         InterfaceImplementation, Ordering, TypeAPI,
     },
 };
-use crate::type_::annotation::AnnotationCategory;
-use crate::type_::plays::PlaysAnnotation;
-use crate::type_::type_manager::validation::SchemaValidationError;
-use crate::type_::type_manager::validation::SchemaValidationError::UnsupportedAnnotationForType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<'a> {
@@ -160,7 +159,7 @@ impl<'a> Owns<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let owns_annotation = OwnsAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Operation {source})?;
+            .map_err(|source| ConceptWriteError::Conversion {source})?;
         match owns_annotation {
             OwnsAnnotation::Distinct(_) => type_manager.unset_edge_annotation_distinct(snapshot, self.clone().into_owned())?,
             OwnsAnnotation::Key(_) => type_manager.unset_edge_annotation_key(snapshot, self.clone().into_owned())?,
@@ -236,13 +235,13 @@ pub enum OwnsAnnotation {
 }
 
 impl OwnsAnnotation {
-    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<OwnsAnnotation, SchemaValidationError> {
+    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<OwnsAnnotation, ConversionError> {
         annotation_category.to_default_annotation().into()
     }
 }
 
-impl From<Annotation> for Result<OwnsAnnotation, SchemaValidationError> {
-    fn from(annotation: Annotation) -> Result<OwnsAnnotation, SchemaValidationError> {
+impl From<Annotation> for Result<OwnsAnnotation, ConversionError> {
+    fn from(annotation: Annotation) -> Result<OwnsAnnotation, ConversionError> {
         match annotation {
             Annotation::Distinct(annotation) => Ok(OwnsAnnotation::Distinct(annotation)),
             Annotation::Unique(annotation) => Ok(OwnsAnnotation::Unique(annotation)),
@@ -250,16 +249,16 @@ impl From<Annotation> for Result<OwnsAnnotation, SchemaValidationError> {
             Annotation::Cardinality(annotation) => Ok(OwnsAnnotation::Cardinality(annotation)),
             Annotation::Regex(annotation) => Ok(OwnsAnnotation::Regex(annotation)),
 
-            Annotation::Abstract(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Independent(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Cascade(_) => Err(UnsupportedAnnotationForType(annotation.category())),
+            Annotation::Abstract(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Independent(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Cascade(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
         }
     }
 }
 
 impl From<Annotation> for OwnsAnnotation {
     fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<OwnsAnnotation, SchemaValidationError> = annotation.into();
+        let into_annotation: Result<OwnsAnnotation, ConversionError> = annotation.into();
         match into_annotation {
             Ok(into_annotation) => into_annotation,
             Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),

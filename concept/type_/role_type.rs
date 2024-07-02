@@ -29,20 +29,18 @@ use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationAbstract},
+        annotation::{Annotation, AnnotationCategory, AnnotationAbstract},
         object_type::ObjectType,
         plays::Plays,
         relates::Relates,
-        type_manager::TypeManager,
+        type_manager::{
+            TypeManager,
+            validation::ConversionError
+        },
         KindAPI, TypeAPI,
     },
     ConceptAPI,
 };
-use crate::type_::annotation::AnnotationCategory;
-use crate::type_::attribute_type::AttributeTypeAnnotation;
-use crate::type_::relation_type::RelationTypeAnnotation;
-use crate::type_::type_manager::validation::SchemaValidationError;
-use crate::type_::type_manager::validation::SchemaValidationError::UnsupportedAnnotationForType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RoleType<'a> {
@@ -256,7 +254,7 @@ impl<'a> RoleType<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let role_type_annotation = RoleTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Operation {source})?;
+            .map_err(|source| ConceptWriteError::Conversion {source})?;
         match role_type_annotation {
             RoleTypeAnnotation::Abstract(_) => {
                 type_manager.unset_annotation_abstract(snapshot, self.clone().into_owned())?
@@ -308,30 +306,30 @@ pub enum RoleTypeAnnotation {
 }
 
 impl RoleTypeAnnotation {
-    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<RoleTypeAnnotation, SchemaValidationError> {
+    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<RoleTypeAnnotation, ConversionError> {
         annotation_category.to_default_annotation().into()
     }
 }
 
-impl From<Annotation> for Result<RoleTypeAnnotation, SchemaValidationError> {
-    fn from(annotation: Annotation) -> Result<RoleTypeAnnotation, SchemaValidationError> {
+impl From<Annotation> for Result<RoleTypeAnnotation, ConversionError> {
+    fn from(annotation: Annotation) -> Result<RoleTypeAnnotation, ConversionError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(RoleTypeAnnotation::Abstract(annotation)),
 
-            Annotation::Independent(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Distinct(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Cardinality(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Unique(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Key(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Regex(_) => Err(UnsupportedAnnotationForType(annotation.category())),
-            Annotation::Cascade(_) => Err(UnsupportedAnnotationForType(annotation.category())),
+            Annotation::Independent(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Distinct(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Cardinality(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Unique(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Key(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Regex(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Cascade(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
         }
     }
 }
 
 impl From<Annotation> for RoleTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<RoleTypeAnnotation, SchemaValidationError> = annotation.into();
+        let into_annotation: Result<RoleTypeAnnotation, ConversionError> = annotation.into();
         match into_annotation {
             Ok(into_annotation) => into_annotation,
             Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),

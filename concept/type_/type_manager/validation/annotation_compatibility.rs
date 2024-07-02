@@ -4,28 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-use crate::type_::{annotation::{Annotation, AnnotationCardinality, AnnotationKey}, KindAPI, type_manager::validation::SchemaValidationError};
-use crate::type_::annotation::{AnnotationAbstract, AnnotationCategory, AnnotationDistinct, AnnotationIndependent, AnnotationRegex, AnnotationUnique};
-
-pub(crate) fn are_annotations_compatible(
-    subtype_annotation: Annotation,
-    supertype_annotations: &Vec<Annotation>,
-) -> Result<(), SchemaValidationError> {
-    // match subtype_annotation {
-    // Annotation::Abstract(_) => todo!(),
-    // Annotation::Distinct(_) => todo!(),
-    // Annotation::Independent(_) => todo!(),
-    // Annotation::Key(key) => validate_key_is_compatible_with(key, supertype_annotations),
-    // Annotation::Cardinality(cardinality) => {
-    // validate_cardinalty_is_compatible_with(cardinality, supertype_annotations)
-    // }
-    // Annotation::Regex(_) => todo!(), // TODO: https://cs.stackexchange.com/a/9131 yikes. Can we just return Ok(())?
-    // Annotation::Unique(_) => todo!(),
-    // }
-    Ok(())
-}
+use crate::type_::annotation::Annotation;
 
 pub(crate) fn is_annotation_inheritable<T, TAnnotation>(
     supertype_annotation: &TAnnotation,
