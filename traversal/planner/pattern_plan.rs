@@ -5,6 +5,7 @@
  */
 
 use std::collections::HashSet;
+use itertools::Itertools;
 
 use answer::variable::Variable;
 use ir::pattern::constraint::{Comparison, ExpressionBinding, FunctionCallBinding, Has, RolePlayer};
@@ -70,18 +71,24 @@ impl Execution {
         match self {
             Execution::SortedIterators(iterates) => {
                 iterates.iter().for_each(|iterate|
-                    iterate.foreach_generated(bound_variables, |var| generated.push(var))
+                    iterate.foreach_generated(bound_variables, |var| if !generated.contains(&var) {
+                        generated.push(var)
+                    })
                 );
             }
             Execution::UnsortedIterator(iterate, checks) => {
-                iterate.foreach_generated(bound_variables, |var| generated.push(var));
+                iterate.foreach_generated(bound_variables, |var| if !generated.contains(&var) {
+                    generated.push(var)
+                });
                 // TODO: this should be a debug as a whole
                 checks.iter().for_each(
                     |check| check.foreach_variable(|var| debug_assert!(!bound_variables.contains(&var)))
                 );
             }
             Execution::Single(single, checks) => {
-                single.foreach_generated(bound_variables, |var| generated.push(var));
+                single.foreach_generated(bound_variables, |var| if !generated.contains(&var) {
+                    generated.push(var)
+                });
                 // TODO: this should be a debug as a whole
                 checks.iter().for_each(
                     |check| check.foreach_variable(|var| debug_assert!(!bound_variables.contains(&var)))

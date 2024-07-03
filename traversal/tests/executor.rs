@@ -6,7 +6,6 @@
 
 use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::fmt::Pointer;
 use std::sync::Arc;
 
 use concept::thing::object::ObjectAPI;
@@ -187,12 +186,21 @@ fn traverse_has() {
         ));
 
         let type_annotations = TypeAnnotations::new(variable_annotations, constraint_annotations);
-        ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager)
+        ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager).unwrap()
     };
 
     {
-        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, thing_manager) = load_managers(storage.clone());
+        let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
+        let (type_manager, thing_manager) = load_managers::<ReadSnapshot<WALClient>>(storage.clone());
+        let thing_manager = Arc::new(thing_manager);
 
+        let iterator = executor.into_iterator(snapshot, thing_manager);
+
+        // let rows: Vec<Result<Vec<VariableValue<'static>>, ConceptReadError>> = iterator
+        //     .map_static(|row| row.map(|row| row.to_vec()).map_err(|err| err.clone()))
+        //     .collect();
+        todo!()
+
+        // dbg!("{:?}", rows);
     }
 }

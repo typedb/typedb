@@ -14,6 +14,7 @@ rust_test(
         "//answer",
         "//concept",
         "//common/bytes",
+        "//common/lending_iterator",
         "//durability",
         "//encoding",
         "//ir:ir",

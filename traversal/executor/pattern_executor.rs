@@ -6,11 +6,7 @@
 
 use std::collections::HashMap;
 use std::io::Read;
-use std::option::Iter;
 use std::sync::Arc;
-
-use itertools::Itertools;
-use log::warn;
 
 use answer::variable::Variable;
 use answer::variable_value::VariableValue;
@@ -22,7 +18,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::executor::iterator::{ConstraintIterator, ConstraintIteratorProvider};
 use crate::executor::Position;
-use crate::planner::pattern_plan::{Check, Execution, Iterate, PatternPlan, Single, IterateMode, Step};
+use crate::planner::pattern_plan::{Check, Execution, Iterate, PatternPlan, Single, Step};
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, Position>,
@@ -30,6 +26,7 @@ pub(crate) struct PatternExecutor {
 
     steps: Vec<StepExecutor>,
     // modifiers: Modifier,
+    initialised: bool,
     outputs: Option<Batch>,
     output_index: usize,
 }
@@ -64,6 +61,7 @@ impl PatternExecutor {
             variable_positions_index,
             steps,
             // modifiers:
+            initialised: false,
             outputs: None,
             output_index: 0,
         })
@@ -73,7 +71,7 @@ impl PatternExecutor {
         self,
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager<Snapshot>>,
-    ) -> impl for<'a> LendingIterator<Item<'a>=Result<Row<'a>, &'a ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a>=Result<ImmutableRow<'a>, &'a ConceptReadError>> {
         AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager))
             .flat_map(|batch| BatchRowIterator::new(batch))
     }
@@ -84,49 +82,53 @@ impl PatternExecutor {
         thing_manager: &ThingManager<Snapshot>,
     ) -> Result<Option<Batch>, ConceptReadError> {
         let steps_len = self.steps.len();
-        let mut step_index = steps_len;
-        let mut last_batch = None;
-        let mut direction = Direction::Backward;
-        while true {
-            let step = &mut self.steps[step_index];
+
+        let (mut current_step, mut last_batch, mut direction) = if self.initialised {
+            (steps_len - 1, None, Direction::Backward)
+        } else {
+            self.initialised = true;
+            (0, Some(Batch::EMPTY_SINGLE_ROW), Direction::Forward)
+        };
+
+        loop {
+            let step = &mut self.steps[current_step];
             match direction {
                 Direction::Forward => {
-                    if step_index > steps_len {
+                    if current_step > steps_len {
                         return Ok(last_batch);
                     } else {
                         let batch = step.batch_from(last_batch.take().unwrap(), snapshot, thing_manager)?;
                         match batch {
                             None => {
                                 direction = Direction::Backward;
-                                step_index -= 1;
+                                current_step -= 1;
                             }
                             Some(batch) => {
                                 last_batch = Some(batch);
-                                step_index += 1;
+                                current_step += 1;
                             }
                         }
                     }
                 }
                 Direction::Backward => {
-                    if step_index < 0 {
+                    if current_step < 0 {
                         return Ok(None);
                     } else {
                         let batch = step.batch_continue(snapshot, thing_manager)?;
                         match batch {
                             None => {
                                 direction = Direction::Backward;
-                                step_index -= 1;
+                                current_step -= 1;
                             }
                             Some(batch) => {
                                 last_batch = Some(batch);
-                                step_index += 1;
+                                current_step += 1;
                             }
                         }
                     }
                 }
             }
         }
-        unreachable!("Computation must return from loop")
     }
 }
 
@@ -241,8 +243,7 @@ struct SortedExecutor {
     iterators: Vec<ConstraintIterator>,
     output_width: u32,
 
-    input: Option<Batch>,
-    next_input_row: usize,
+    input: Option<BatchRowIterator>,
     output: Option<Batch>,
 }
 
@@ -265,7 +266,6 @@ impl SortedExecutor {
             iterator_providers: providers,
             output_width: vars_count,
             input: None,
-            next_input_row: 0,
             output: None,
         })
     }
@@ -276,13 +276,10 @@ impl SortedExecutor {
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>,
     ) -> Result<Option<Batch>, ConceptReadError> {
-        debug_assert!(
-            self.output.is_none()
-                && (self.input.is_none() || self.next_input_row == self.input.as_ref().unwrap().rows_count())
-        );
-        self.input = Some(input_batch);
-        self.next_input_row = 0;
-        self.compute_next_batch(snapshot, thing_manager)?;
+        debug_assert!(self.output.is_none() && (self.input.is_none() || !self.input.as_ref().unwrap().has_next()));
+        self.input = Some(BatchRowIterator::new(Ok(input_batch)));
+        debug_assert!(self.input.as_ref().unwrap().has_next());
+        self.may_compute_next_batch(snapshot, thing_manager)?;
         Ok(self.output.take())
     }
 
@@ -291,42 +288,83 @@ impl SortedExecutor {
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>,
     ) -> Result<Option<Batch>, ConceptReadError> {
-        debug_assert!(
-            self.output.is_none()
-                && (self.input.is_some() && self.next_input_row < self.input.as_ref().unwrap().rows_count())
-        );
-        self.compute_next_batch(snapshot, thing_manager)?;
+        debug_assert!(self.output.is_none());
+        self.may_compute_next_batch(snapshot, thing_manager)?;
         Ok(self.output.take())
     }
 
-    fn compute_next_batch<Snapshot: ReadableSnapshot>(
+    fn may_compute_next_batch<Snapshot: ReadableSnapshot>(
         &mut self,
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>,
     ) -> Result<(), ConceptReadError> {
-        // don't allocate batch until 1 answer is confirmed
         if self.iterators.is_empty() {
-            self.create_iterators(snapshot, thing_manager)?;
+            if !self.create_iterators(snapshot, thing_manager)? {
+                return Ok(());
+            }
         }
-        self.next_iterators_intersection();
-        Ok(())
+        // if self.compute_next_intersection() {
+        //     // don't allocate batch until 1 answer is confirmed
+        //     let mut batch = Batch::new(self.output_width);
+        //     batch.append(|mut row| self.write_into(&mut row))?;
+        //     while !batch.is_full() && self.compute_next_intersection() {
+        //         batch.append(|mut row| self.write_into(&mut row))?;
+        //     }
+        //     self.output = Some(batch);
+        // }
+        // Ok(())
+        todo!()
     }
 
     fn create_iterators<Snapshot: ReadableSnapshot>(
         &mut self,
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>,
-    ) -> Result<(), ConceptReadError> {
+    ) -> Result<bool, ConceptReadError> {
         debug_assert!(self.iterators.is_empty());
-        let next_row = self.input.as_mut().unwrap().get_row(self.next_input_row);
-        // for provider in &self.iterator_providers {
-        //     self.iterators.push(provider.get_iterator(snapshot, thing_manager))
-        // }
-        todo!()
+        let next_row = self.input.as_mut().unwrap().next().transpose().map_err(|err| err.clone())?;
+        match next_row {
+            None => Ok(false),
+            Some(row) => {
+                for provider in &self.iterator_providers {
+                    self.iterators.push(provider.get_iterator(snapshot, thing_manager, row)?);
+                }
+                Ok(true)
+            }
+        }
     }
 
-    fn next_iterators_intersection(&mut self) {
-        todo!()
+    fn compute_next_intersection(&mut self) -> Result<bool, ConceptReadError> {
+        let current_max = match self.iterators[0].peek_sorted_value() {
+            None => return Ok(false),
+            Some(Ok(value)) => value,
+            Some(Err(err)) => return Err(err.clone()),
+        };
+
+        loop {
+            for iter in &mut self.iterators {
+                // match iter.peek_sorted_value() {
+                //     None => {
+                //         self.cleanup_iterators();
+                //         return false;
+                //     }
+                //     Some(Ok(value)) => {
+                //         let cmp = current_max.cmp(value);
+                //     }
+                //     Some(Err(err)) => {
+                //         Err(err.clone())
+                //     }
+                // }
+                todo!()
+            }
+        }
+    }
+
+    fn write_into(&mut self, row: &mut Row<'_>) -> Result<(), ConceptReadError> {
+        for iter in &mut self.iterators {
+            iter.write_values(row).map_err(|err| err.clone())?
+        }
+        Ok(())
     }
 }
 
@@ -424,51 +462,84 @@ impl OptionalExecutor {
 
 const BATCH_ROWS_MAX: u32 = 64;
 
-pub struct Batch {
-    width: usize,
+struct Batch {
+    width: u32,
+    entries: u32,
     data: Vec<VariableValue<'static>>,
 }
 
 impl Batch {
+    const EMPTY_SINGLE_ROW: Batch = Batch { width: 0, entries: 1, data: Vec::new() };
+
     fn new(width: u32) -> Self {
         let size = width * BATCH_ROWS_MAX;
-        Batch { width: width as usize, data: vec![VariableValue::Empty; size as usize] }
+        Batch { width: width, data: vec![VariableValue::Empty; size as usize], entries: 0 }
     }
 
-    fn rows_count(&self) -> usize {
-        // TODO adjust if batch is not full
-        BATCH_ROWS_MAX as usize
+    fn rows_count(&self) -> u32 {
+        self.entries
     }
 
-    pub(crate) fn get_row(&mut self, index: usize) -> Row<'_> {
-        let slice = &mut self.data[index * self.width..(index + 1) * self.width];
+    fn is_full(&self) -> bool {
+        (self.entries * self.width) as usize == self.data.len()
+    }
+
+    fn get_row(&self, index: u32) -> ImmutableRow<'_> {
+        debug_assert!(index <= self.entries);
+        let start = (index * self.width) as usize;
+        let end = ((index + 1) * self.width) as usize;
+        let slice = &self.data[start..end];
+        ImmutableRow { row: slice }
+    }
+
+    fn get_row_mut(&mut self, index: u32) -> Row<'_> {
+        debug_assert!(index <= self.entries);
+        self.row_internal_mut(index)
+    }
+
+    fn append<T>(&mut self, mut writer: impl FnMut(Row<'_>) -> T) -> T {
+        debug_assert!(!self.is_full());
+        let row = self.row_internal_mut(self.entries);
+        let result = writer(row);
+        self.entries += 1;
+        result
+    }
+
+    fn row_internal_mut(&mut self, index: u32) -> Row<'_> {
+        let start = (index * self.width) as usize;
+        let end = ((index + 1) * self.width) as usize;
+        let slice = &mut self.data[start..end];
         Row { row: slice }
     }
 }
 
 struct BatchRowIterator {
     batch: Result<Batch, ConceptReadError>,
-    index: usize,
+    index: u32,
 }
 
 impl BatchRowIterator {
     fn new(batch: Result<Batch, ConceptReadError>) -> Self {
         Self { batch, index: 0 }
     }
+
+    fn has_next(&self) -> bool {
+        self.batch.as_ref().is_ok_and(|batch| self.index < batch.rows_count())
+    }
 }
 
 impl LendingIterator for BatchRowIterator {
-    type Item<'a> = Result<Row<'a>, &'a ConceptReadError>;
+    type Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self.batch.as_mut() {
             Ok(batch) => {
-                if self.index > batch.rows_count() {
+                if self.index >= batch.rows_count() {
                     None
                 } else {
-                    let slice = &mut batch.data[self.index * batch.width..(self.index + 1) * batch.width];
+                    let row = batch.get_row(self.index);
                     self.index += 1;
-                    Some(Ok(Row { row: slice }))
+                    Some(Ok(row))
                 }
             }
             Err(err) => Some(Err(err))
@@ -476,6 +547,7 @@ impl LendingIterator for BatchRowIterator {
     }
 }
 
+#[derive(Debug)]
 pub struct Row<'a> {
     row: &'a mut [VariableValue<'static>],
 }
@@ -492,5 +564,26 @@ impl<'a> Row<'a> {
     pub(crate) fn set(&mut self, position: Position, value: VariableValue<'static>) {
         debug_assert!(*self.get(position) == VariableValue::Empty);
         self.row[position.as_usize()] = value;
+    }
+
+}
+
+
+#[derive(Debug, Copy, Clone)]
+pub struct ImmutableRow<'a> {
+    row: &'a [VariableValue<'static>]
+}
+
+impl<'a> ImmutableRow<'a> {
+    pub fn len(&self) -> usize {
+        self.row.len()
+    }
+
+    pub fn get(&self, position: Position) -> &VariableValue {
+        &self.row[position.as_usize()]
+    }
+
+    pub fn to_vec(&self) -> Vec<VariableValue<'static>> {
+        self.row.to_vec()
     }
 }

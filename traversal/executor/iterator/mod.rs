@@ -32,6 +32,7 @@ use crate::executor::iterator::has_provider::{HasBoundedSortedToIterator, HasPro
 use crate::executor::iterator::has_reverse_provider::HasReverseProvider;
 use crate::executor::iterator::role_player_provider::RolePlayerProvider;
 use crate::executor::iterator::role_player_reverse_provider::RolePlayerReverseProvider;
+use crate::executor::pattern_executor::ImmutableRow;
 use crate::planner::pattern_plan::IterateMode;
 
 mod has_reverse_provider;
@@ -106,7 +107,7 @@ impl ConstraintIteratorProvider {
         &self,
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>,
-        row: &Row
+        row: ImmutableRow<'_>
     ) -> Result<ConstraintIterator, ConceptReadError> {
         match self {
             ConstraintIteratorProvider::Has(provider) => provider.get_iterator(snapshot, thing_manager, row),

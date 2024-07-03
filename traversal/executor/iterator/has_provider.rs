@@ -40,6 +40,7 @@ use crate::{
     planner::pattern_plan::{Iterate, IterateMode},
 };
 use crate::executor::iterator::ConstraintIterator;
+use crate::executor::pattern_executor::ImmutableRow;
 
 pub(crate) struct HasProvider {
     has: Has<Position>,
@@ -172,7 +173,7 @@ impl HasProvider {
         &self,
         snapshot: &Snapshot,
         thing_manager: &ThingManager<Snapshot>,
-        row: &Row,
+        row: ImmutableRow<'_>,
     ) -> Result<ConstraintIterator, ConceptReadError> {
         match self.iterate_mode {
             IterateMode::UnboundSortedFrom => {

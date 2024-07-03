@@ -42,7 +42,7 @@ impl TypeAnnotations {
         variables: HashMap<Variable, Arc<HashSet<Type>>>,
         constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     ) -> Self {
-        TypeAnnotations { variables: HashMap::new(), constraints: HashMap::new() }
+        TypeAnnotations { variables: variables, constraints:constraints }
     }
 
     pub fn variable_annotations(&self, variable: Variable) -> Option<Arc<HashSet<Type>>> {

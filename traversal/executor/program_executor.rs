@@ -18,7 +18,7 @@ use crate::{
     executor::{function_executor::FunctionExecutor, pattern_executor::PatternExecutor},
     planner::program_plan::ProgramPlan,
 };
-use crate::executor::pattern_executor::Row;
+use crate::executor::pattern_executor::{ImmutableRow, Row};
 
 pub struct ProgramExecutor {
     entry: PatternExecutor,
@@ -44,7 +44,7 @@ impl ProgramExecutor {
         self,
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager<Snapshot>>
-    ) -> impl for<'a> LendingIterator<Item<'a>=Result<Row<'a>, &'a ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a>=Result<ImmutableRow<'a>, &'a ConceptReadError>> {
         self.entry.into_iterator(snapshot, thing_manager)
     }
 }
