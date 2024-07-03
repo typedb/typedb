@@ -4,13 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    borrow::Cow,
-    collections::HashSet,
-    marker::PhantomData,
-    ops::{Bound, Range, RangeBounds},
-    sync::Arc,
-};
+use std::{borrow::Cow, collections::HashSet, sync::Arc};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
@@ -28,6 +22,7 @@ use encoding::{
     layout::prefix::Prefix,
     value::{
         boolean_bytes::BooleanBytes,
+        date_bytes::DateBytes,
         date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes,
         decimal_bytes::DecimalBytes,
@@ -77,29 +72,28 @@ use crate::{
     ConceptStatus,
 };
 
-pub struct ThingManager<Snapshot> {
+pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
-    type_manager: Arc<TypeManager<Snapshot>>,
-    snapshot: PhantomData<Snapshot>,
+    type_manager: Arc<TypeManager>,
 }
 
-impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
-    pub fn new(vertex_generator: Arc<ThingVertexGenerator>, type_manager: Arc<TypeManager<Snapshot>>) -> Self {
-        ThingManager { vertex_generator, type_manager, snapshot: PhantomData }
+impl ThingManager {
+    pub fn new(vertex_generator: Arc<ThingVertexGenerator>, type_manager: Arc<TypeManager>) -> Self {
+        ThingManager { vertex_generator, type_manager }
     }
 
-    pub(crate) fn type_manager(&self) -> &TypeManager<Snapshot> {
+    pub(crate) fn type_manager(&self) -> &TypeManager {
         &self.type_manager
     }
 
-    pub fn get_entities(&self, snapshot: &Snapshot) -> EntityIterator {
+    pub fn get_entities(&self, snapshot: &impl ReadableSnapshot) -> EntityIterator {
         let prefix = ObjectVertex::build_prefix_prefix(Prefix::VertexEntity);
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexEntity.fixed_width_keys()));
         EntityIterator::new(snapshot_iterator)
     }
 
-    pub fn get_objects_in(&self, snapshot: &Snapshot, object_type: ObjectType<'_>) -> ObjectIterator {
+    pub fn get_objects_in(&self, snapshot: &impl ReadableSnapshot, object_type: ObjectType<'_>) -> ObjectIterator {
         let vertex_prefix = match object_type {
             ObjectType::Entity(_) => Prefix::VertexEntity,
             ObjectType::Relation(_) => Prefix::VertexRelation,
@@ -109,21 +103,25 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         ObjectIterator::new(snapshot_iterator)
     }
 
-    pub fn get_entities_in(&self, snapshot: &Snapshot, entity_type: EntityType<'_>) -> EntityIterator {
+    pub fn get_entities_in(&self, snapshot: &impl ReadableSnapshot, entity_type: EntityType<'_>) -> EntityIterator {
         let prefix = ObjectVertex::build_prefix_type(Prefix::VertexEntity.prefix_id(), entity_type.vertex().type_id_());
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexEntity.fixed_width_keys()));
         EntityIterator::new(snapshot_iterator)
     }
 
-    pub fn get_relations(&self, snapshot: &Snapshot) -> RelationIterator {
+    pub fn get_relations(&self, snapshot: &impl ReadableSnapshot) -> RelationIterator {
         let prefix = ObjectVertex::build_prefix_prefix(Prefix::VertexRelation);
         let snapshot_iterator =
             snapshot.iterate_range(KeyRange::new_within(prefix, Prefix::VertexRelation.fixed_width_keys()));
         RelationIterator::new(snapshot_iterator)
     }
 
-    pub fn get_relations_in(&self, snapshot: &Snapshot, relation_type: RelationType<'_>) -> RelationIterator {
+    pub fn get_relations_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType<'_>,
+    ) -> RelationIterator {
         let prefix =
             ObjectVertex::build_prefix_type(Prefix::VertexRelation.prefix_id(), relation_type.vertex().type_id_());
         let snapshot_iterator =
@@ -133,7 +131,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn get_relations_player<'o>(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         player: &impl ObjectAPI<'o>,
     ) -> impl for<'a> LendingIterator<Item<'a> = Result<Relation<'a>, ConceptReadError>> {
         let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.vertex());
@@ -147,7 +145,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn get_relations_player_role<'o>(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         player: &impl ObjectAPI<'o>,
         role_type: RoleType<'static>,
     ) -> impl for<'x> LendingIterator<Item<'x> = Result<Relation<'x>, ConceptReadError>> {
@@ -160,7 +158,10 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         })
     }
 
-    pub fn get_attributes<'this>(&'this self, snapshot: &'this Snapshot) -> AttributeIterator<'_, Snapshot> {
+    pub fn get_attributes<'this, Snapshot: ReadableSnapshot>(
+        &'this self,
+        snapshot: &'this Snapshot,
+    ) -> AttributeIterator<'_, Snapshot> {
         let start = AttributeVertex::build_prefix_prefix(Prefix::ATTRIBUTE_MIN);
         let end = AttributeVertex::build_prefix_prefix(Prefix::ATTRIBUTE_MAX);
         let attribute_iterator = snapshot.iterate_range(KeyRange::new_inclusive(start, end));
@@ -173,9 +174,9 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub fn get_attributes_in<'this>(
         &'this self,
-        snapshot: &'this Snapshot,
+        snapshot: &'this impl ReadableSnapshot,
         attribute_type: AttributeType<'_>,
-    ) -> Result<AttributeIterator<'this, Snapshot>, ConceptReadError> {
+    ) -> Result<AttributeIterator<'this, impl ReadableSnapshot>, ConceptReadError> {
         let attribute_value_type = attribute_type.get_value_type(snapshot, self.type_manager.as_ref())?;
         let Some(value_type) = attribute_value_type.as_ref() else {
             return Ok(AttributeIterator::new_empty());
@@ -197,7 +198,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn get_attribute_value<'a>(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         attribute: &'a Attribute<'a>,
     ) -> Result<Value<'static>, ConceptReadError> {
         let attribute_type = attribute.type_();
@@ -218,6 +219,10 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
             ValueType::Decimal => {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_decimal();
                 Ok(Value::Decimal(DecimalBytes::new(attribute_id.bytes()).as_decimal()))
+            }
+            ValueType::Date => {
+                let attribute_id = attribute.vertex().attribute_id().unwrap_date();
+                Ok(Value::Date(DateBytes::new(attribute_id.bytes()).as_naive_date()))
             }
             ValueType::DateTime => {
                 let attribute_id = attribute.vertex().attribute_id().unwrap_date_time();
@@ -257,7 +262,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub fn get_attribute_with_value(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<Option<Attribute<'static>>, ConceptReadError> {
@@ -272,6 +277,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
             | ValueType::Long
             | ValueType::Double
             | ValueType::Decimal
+            | ValueType::Date
             | ValueType::DateTime
             | ValueType::DateTimeTZ
             | ValueType::Duration => {
@@ -333,7 +339,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     fn get_attribute_with_value_inline(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<Option<Attribute<'static>>, ConceptReadError> {
@@ -354,7 +360,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn has_attribute<'a>(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
@@ -387,7 +393,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub fn get_has_from_type_range_unordered<'a>(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         owner_type_range: KeyRange<ObjectType<'static>>,
     ) -> HasIterator {
         let range = owner_type_range
@@ -395,12 +401,12 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         HasIterator::new(snapshot.iterate_range(range))
     }
 
-    pub fn get_attributes_by_struct_field<'this, 'a, 'v>(
+    pub fn get_attributes_by_struct_field<'this, Snapshot: ReadableSnapshot>(
         &'this self,
         snapshot: &'this Snapshot,
-        attribute_type: AttributeType<'a>,
+        attribute_type: AttributeType<'_>,
         path_to_field: Vec<StructFieldIDUInt>,
-        value: Value<'v>,
+        value: Value<'_>,
     ) -> Result<StructIndexToAttributeIterator<'_, Snapshot>, ConceptReadError> {
         debug_assert!({
             let value_type = attribute_type.get_value_type(snapshot, &self.type_manager).unwrap().unwrap();
@@ -435,7 +441,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn get_has_from_thing_unordered<'a>(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
     ) -> HasAttributeIterator {
         let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
@@ -445,7 +451,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     }
     pub(crate) fn get_has_from_thing_to_type_unordered<'this, 'a>(
         &'this self,
-        snapshot: &'this Snapshot,
+        snapshot: &'this impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
     ) -> Result<HasAttributeIterator, ConceptReadError> {
@@ -466,7 +472,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn get_has_from_thing_to_type_ordered<'a>(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
     ) -> Result<Vec<Attribute<'static>>, ConceptReadError> {
@@ -495,9 +501,9 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn get_has_from_thing_to_type_range_unordered<'this, 'a>(
         &'this self,
-        snapshot: &'this Snapshot,
+        snapshot: &'this impl ReadableSnapshot,
         owner: &impl ObjectAPI<'a>,
-        mut attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
+        attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
     ) -> Result<HasAttributeIterator, ConceptReadError> {
         let mut min_prefix_inclusive = None;
         let mut max_prefix_inclusive = None;
@@ -534,7 +540,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn get_owners<'this>(
         &'this self,
-        snapshot: &'this Snapshot,
+        snapshot: &'this impl ReadableSnapshot,
         attribute: Attribute<'_>,
     ) -> AttributeOwnerIterator {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.into_vertex());
@@ -545,7 +551,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn get_owners_by_type<'this, 'a>(
         &'this self,
-        snapshot: &'this Snapshot,
+        snapshot: &'this impl ReadableSnapshot,
         attribute: Attribute<'_>,
         owner_type: impl ObjectTypeAPI<'a>,
     ) -> AttributeOwnerIterator {
@@ -555,14 +561,19 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         )
     }
 
-    pub(crate) fn has_owners(&self, snapshot: &Snapshot, attribute: Attribute<'_>, buffered_only: bool) -> bool {
+    pub(crate) fn has_owners(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        attribute: Attribute<'_>,
+        buffered_only: bool,
+    ) -> bool {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.into_vertex());
         snapshot.any_in_range(KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING), buffered_only)
     }
 
     pub(crate) fn get_relations_roles<'this, 'a>(
         &'this self,
-        snapshot: &'this Snapshot,
+        snapshot: &'this impl ReadableSnapshot,
         player: impl ObjectAPI<'a>,
     ) -> RelationRoleIterator {
         let prefix = ThingEdgeRolePlayer::prefix_reverse_from_player(player.into_vertex());
@@ -573,7 +584,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn has_role_players(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         relation: Relation<'_>,
         buffered_only: bool, // FIXME use enums
     ) -> bool {
@@ -581,7 +592,11 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         snapshot.any_in_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING), buffered_only)
     }
 
-    pub(crate) fn get_role_players(&self, snapshot: &Snapshot, relation: Relation<'_>) -> RolePlayerIterator {
+    pub(crate) fn get_role_players(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation: Relation<'_>,
+    ) -> RolePlayerIterator {
         let prefix = ThingEdgeRolePlayer::prefix_from_relation(relation.into_vertex());
         RolePlayerIterator::new(
             snapshot.iterate_range(KeyRange::new_within(prefix, ThingEdgeRolePlayer::FIXED_WIDTH_ENCODING)),
@@ -590,7 +605,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn get_role_players_ordered(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         relation: Relation<'_>,
         role_type: RoleType<'static>,
     ) -> Result<Vec<Object<'static>>, ConceptReadError> {
@@ -606,7 +621,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn get_indexed_players<'a>(
         &'a self,
-        snapshot: &'a Snapshot,
+        snapshot: &'a impl ReadableSnapshot,
         from: Object<'_>,
     ) -> IndexedPlayersIterator {
         let prefix = ThingEdgeRelationIndex::prefix_from(from.vertex());
@@ -615,9 +630,14 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
         )
     }
 
-    pub(crate) fn get_status(&self, snapshot: &Snapshot, key: StorageKey<'_, BUFFER_KEY_INLINE>) -> ConceptStatus {
+    pub(crate) fn get_status(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        key: StorageKey<'_, BUFFER_KEY_INLINE>,
+    ) -> ConceptStatus {
         snapshot
-            .get_buffered_write_mapped(key.as_reference(), |write| match write {
+            .get_buffered_write(key.as_reference())
+            .map(|write| match write {
                 Write::Insert { .. } => ConceptStatus::Inserted,
                 Write::Put { .. } => ConceptStatus::Put,
                 Write::Delete => ConceptStatus::Deleted,
@@ -633,7 +653,7 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn object_exists<'a>(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         object: &impl ObjectAPI<'a>,
     ) -> Result<bool, ConceptReadError> {
         match snapshot.get::<0>(object.vertex().as_storage_key().as_reference()) {
@@ -643,13 +663,13 @@ impl<Snapshot: ReadableSnapshot> ThingManager<Snapshot> {
     }
 }
 
-impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
-    pub(crate) fn lock_existing<'a>(&self, snapshot: &mut Snapshot, object: impl ObjectAPI<'a>) {
+impl<'txn> ThingManager {
+    pub(crate) fn lock_existing<'a>(&self, snapshot: &mut impl WritableSnapshot, object: impl ObjectAPI<'a>) {
         snapshot.unmodifiable_lock_add(object.into_vertex().as_storage_key().into_owned_array())
     }
 
     // TODO we should differentiate "validation errors" and "an error occurred during validation"
-    pub fn finalise(self, snapshot: &mut Snapshot) -> Result<(), Vec<ConceptWriteError>> {
+    pub fn finalise(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
         self.cleanup_relations(snapshot).map_err(|err| vec![err])?;
         self.cleanup_attributes(snapshot).map_err(|err| vec![err])?;
         let thing_errors = self.thing_errors(snapshot);
@@ -660,7 +680,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         }
     }
 
-    fn cleanup_relations(&self, snapshot: &mut Snapshot) -> Result<(), ConceptWriteError> {
+    fn cleanup_relations(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), ConceptWriteError> {
         let mut any_deleted = true;
         while any_deleted {
             any_deleted = false;
@@ -704,7 +724,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         Ok(())
     }
 
-    fn cleanup_attributes(&self, snapshot: &mut Snapshot) -> Result<(), ConceptWriteError> {
+    fn cleanup_attributes(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), ConceptWriteError> {
         for (key, _write) in snapshot
             .iterate_buffered_writes_range(KeyRange::new_within(
                 ThingEdgeHas::prefix(),
@@ -751,7 +771,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         Ok(())
     }
 
-    fn thing_errors(&self, snapshot: &mut Snapshot) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
+    fn thing_errors(&self, snapshot: &mut impl WritableSnapshot) -> Result<Vec<ConceptWriteError>, ConceptReadError> {
         let mut errors = Vec::new();
 
         self.validate_ownerships(&mut errors, snapshot)?;
@@ -778,7 +798,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     fn validate_ownerships(
         &self,
         errors: &mut Vec<ConceptWriteError>,
-        snapshot: &Snapshot,
+        snapshot: &impl WritableSnapshot,
     ) -> Result<(), ConceptReadError> {
         for (key, _) in snapshot.iterate_buffered_writes_range(KeyRange::new_within(
             ThingEdgeHas::prefix(),
@@ -820,7 +840,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         &self,
         owner: Object<'_>,
         attribute_type: AttributeType<'static>,
-        snapshot: &Snapshot,
+        snapshot: &impl WritableSnapshot,
         errors: &mut Vec<ConceptWriteError>,
     ) -> Result<(), ConceptReadError> {
         let owner_type = owner.type_();
@@ -855,7 +875,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub fn create_entity<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         entity_type: EntityType<'static>,
     ) -> Result<Entity<'a>, ConceptWriteError> {
         Ok(Entity::new(self.vertex_generator.create_entity(entity_type.vertex().type_id_(), snapshot)))
@@ -863,7 +883,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub fn create_relation<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType<'static>,
     ) -> Result<Relation<'a>, ConceptWriteError> {
         Ok(Relation::new(self.vertex_generator.create_relation(relation_type.vertex().type_id_(), snapshot)))
@@ -871,7 +891,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub fn create_attribute<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<Attribute<'a>, ConceptWriteError> {
@@ -880,7 +900,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn put_attribute<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         attribute_type: AttributeType<'static>,
         value: Value<'_>,
     ) -> Result<Attribute<'a>, ConceptWriteError> {
@@ -916,6 +936,14 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                     self.vertex_generator.create_attribute_decimal(
                         attribute_type.vertex().type_id_(),
                         encoded_decimal,
+                        snapshot,
+                    )
+                }
+                Value::Date(date) => {
+                    let encoded_date = DateBytes::build(date);
+                    self.vertex_generator.create_attribute_date(
+                        attribute_type.vertex().type_id_(),
+                        encoded_date,
                         snapshot,
                     )
                 }
@@ -987,7 +1015,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     fn index_struct_fields<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         attribute_vertex: &AttributeVertex<'static>,
         struct_value: &StructValue<'a>,
     ) -> Result<(), ConceptWriteError> {
@@ -1004,13 +1032,13 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         Ok(())
     }
 
-    pub(crate) fn delete_entity(&self, snapshot: &mut Snapshot, entity: Entity<'_>) {
+    pub(crate) fn delete_entity(&self, snapshot: &mut impl WritableSnapshot, entity: Entity<'_>) {
         let key = entity.into_vertex().into_storage_key().into_owned_array();
         snapshot.unmodifiable_lock_remove(&key);
         snapshot.delete(key)
     }
 
-    pub(crate) fn delete_relation(&self, snapshot: &mut Snapshot, relation: Relation<'_>) {
+    pub(crate) fn delete_relation(&self, snapshot: &mut impl WritableSnapshot, relation: Relation<'_>) {
         let key = relation.into_vertex().into_storage_key().into_owned_array();
         snapshot.unmodifiable_lock_remove(&key);
         snapshot.delete(key)
@@ -1018,7 +1046,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn delete_attribute(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
         let key = attribute.into_vertex().into_storage_key().into_owned_array();
@@ -1026,13 +1054,13 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         Ok(())
     }
 
-    pub(crate) fn uninsert_entity(&self, snapshot: &mut Snapshot, entity: Entity<'_>) {
+    pub(crate) fn uninsert_entity(&self, snapshot: &mut impl WritableSnapshot, entity: Entity<'_>) {
         let key = entity.into_vertex().into_storage_key().into_owned_array();
         snapshot.unmodifiable_lock_remove(&key);
         snapshot.uninsert(key)
     }
 
-    pub(crate) fn uninsert_relation(&self, snapshot: &mut Snapshot, relation: Relation<'_>) {
+    pub(crate) fn uninsert_relation(&self, snapshot: &mut impl WritableSnapshot, relation: Relation<'_>) {
         let key = relation.into_vertex().into_storage_key().into_owned_array();
         snapshot.unmodifiable_lock_remove(&key);
         snapshot.uninsert(key)
@@ -1040,7 +1068,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn unput_attribute(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         mut attribute: Attribute<'_>,
     ) -> Result<(), ConceptWriteError> {
         let value = match attribute
@@ -1057,7 +1085,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn set_has_unordered<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         owner: &impl ObjectAPI<'a>,
         mut attribute: Attribute<'_>,
     ) {
@@ -1066,7 +1094,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn set_has_count<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         owner: &impl ObjectAPI<'a>,
         mut attribute: Attribute<'_>,
         count: u64,
@@ -1090,7 +1118,12 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
         snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
     }
 
-    pub(crate) fn unset_has<'a>(&self, snapshot: &mut Snapshot, owner: &impl ObjectAPI<'a>, attribute: Attribute<'_>) {
+    pub(crate) fn unset_has<'a>(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        owner: &impl ObjectAPI<'a>,
+        attribute: Attribute<'_>,
+    ) {
         owner.set_modified(snapshot, self);
         let owner_status = owner.get_status(snapshot, self);
         let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex()).into_storage_key().into_owned_array();
@@ -1113,7 +1146,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn set_has_ordered<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
         attributes: Vec<Attribute<'_>>,
@@ -1133,7 +1166,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn unset_has_ordered<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         owner: &impl ObjectAPI<'a>,
         attribute_type: AttributeType<'static>,
     ) {
@@ -1144,7 +1177,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn put_role_player_unordered<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
@@ -1176,7 +1209,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn set_role_players_ordered<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
         role_type: RoleType<'static>,
         players: Vec<Object<'_>>,
@@ -1190,7 +1223,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
 
     pub(crate) fn set_role_player_count<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
@@ -1231,7 +1264,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     /// Delete all counts of the specific role player in a given relation, and update indexes if required
     pub fn unset_role_player<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
@@ -1246,7 +1279,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 .into_storage_key()
                 .into_owned_array();
 
-        let owner_status = relation.get_status(snapshot, self);
+        let owner_status = relation.get_status(&*snapshot, self);
 
         match owner_status {
             ConceptStatus::Inserted => {
@@ -1276,7 +1309,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     /// Caller must provide a lock that prevents race conditions on the player counts on the relation
     pub(crate) fn increment_role_player<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
@@ -1309,7 +1342,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     /// Caller must provide a lock that prevents race conditions on the player counts on the relation
     pub(crate) fn decrement_role_player<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
@@ -1345,7 +1378,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     ///
     pub(crate) fn relation_index_player_deleted<'a>(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
         player: impl ObjectAPI<'a>,
         role_type: RoleType<'_>,
@@ -1385,13 +1418,13 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
     /// while M to N has N index repetitions.
     pub(crate) fn relation_index_player_regenerate(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         relation: Relation<'_>,
         player: Object<'_>,
         role_type: RoleType<'_>,
-        total_player_count: u64,
+        count_for_player: u64,
     ) -> Result<(), ConceptWriteError> {
-        debug_assert_ne!(total_player_count, 0);
+        debug_assert_ne!(count_for_player, 0);
         let players = relation
             .get_players(snapshot, self)
             .map_static(|item| {
@@ -1402,17 +1435,20 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
             .map_err(|err| ConceptWriteError::ConceptRead { source: err })?;
         for (rp_player, rp_role_type, rp_count) in players {
             let is_same_rp = rp_player == player && rp_role_type == role_type;
-            if is_same_rp && total_player_count > 1 {
-                let repetitions = total_player_count - 1;
-                let index = ThingEdgeRelationIndex::build(
-                    player.vertex(),
-                    player.vertex(),
-                    relation.vertex(),
-                    role_type.vertex().type_id_(),
-                    role_type.vertex().type_id_(),
-                );
-                snapshot.put_val(index.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(repetitions)));
-            } else if !is_same_rp {
+            if is_same_rp {
+                let repetitions = count_for_player - 1;
+                if repetitions > 0 {
+                    let index = ThingEdgeRelationIndex::build(
+                        player.vertex(),
+                        player.vertex(),
+                        relation.vertex(),
+                        role_type.vertex().type_id_(),
+                        role_type.vertex().type_id_(),
+                    );
+                    snapshot
+                        .put_val(index.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(repetitions)));
+                }
+            } else {
                 let rp_repetitions = rp_count;
                 let index = ThingEdgeRelationIndex::build(
                     player.vertex(),
@@ -1423,7 +1459,7 @@ impl<'txn, Snapshot: WritableSnapshot> ThingManager<Snapshot> {
                 );
                 snapshot
                     .put_val(index.as_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(rp_repetitions)));
-                let player_repetitions = total_player_count;
+                let player_repetitions = count_for_player;
                 let index_reverse = ThingEdgeRelationIndex::build(
                     rp_player.vertex(),
                     player.vertex(),

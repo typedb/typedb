@@ -127,13 +127,13 @@ impl HasProviderFilter {
 }
 
 impl HasProvider {
-    pub(crate) fn new<Snapshot: ReadableSnapshot>(
+    pub(crate) fn new(
         has: Has<Position>,
         iterate_mode: SortedIterateMode,
         owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
         attribute_types: Arc<HashSet<AttributeType<'static>>>,
-        snapshot: &Snapshot,
-        thing_manager: ThingManager<Snapshot>,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: ThingManager,
     ) -> Result<Self, ConceptReadError> {
         debug_assert!(owner_attribute_types.len() > 0);
         let filter_fn = if iterate_mode.is_unbounded() {
@@ -178,20 +178,13 @@ impl HasProvider {
             None
         };
 
-        Ok(Self {
-            has,
-            iterate_mode,
-            owner_attribute_types: owner_attribute_types,
-            attribute_types,
-            filter_fn,
-            owner_cache,
-        })
+        Ok(Self { has, iterate_mode, owner_attribute_types, attribute_types, filter_fn, owner_cache })
     }
 
-    pub(crate) fn get_iterator<Snapshot: ReadableSnapshot>(
+    pub(crate) fn get_iterator(
         &self,
-        snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
         row: &Row,
     ) -> Result<ConstraintIterator, ConceptReadError> {
         match self.iterate_mode {
