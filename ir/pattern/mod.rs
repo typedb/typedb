@@ -18,13 +18,12 @@ pub mod negation;
 pub mod optional;
 pub mod variable_category;
 
-pub mod context;
 pub mod disjunction;
 mod expression;
 pub mod function_call;
-pub mod pattern;
+pub mod nested_pattern;
 
-trait Scope {
+pub(crate) trait Scope {
     fn scope_id(&self) -> ScopeId;
 }
 
@@ -37,7 +36,7 @@ pub struct ScopeId {
 impl ScopeId {
     pub const ROOT: ScopeId = ScopeId { id: 0 };
 
-    fn new(id: u16) -> Self {
+    pub(crate) fn new(id: u16) -> Self {
         ScopeId { id }
     }
 }

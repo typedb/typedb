@@ -6,7 +6,7 @@
 
 pub mod adaptors;
 pub mod higher_order;
-mod kmerge;
+pub mod kmerge;
 
 use std::{borrow::Borrow, cmp::Ordering, iter, mem::transmute};
 
@@ -17,6 +17,7 @@ use crate::{
     adaptors::{Filter, Map, TakeWhile},
     higher_order::{FnHktHelper, FnMutHktHelper, Hkt},
 };
+use crate::adaptors::FlatMap;
 
 pub trait LendingIterator: 'static {
     type Item<'a>;
@@ -65,6 +66,15 @@ pub trait LendingIterator: 'static {
         F: for<'a> FnMutHktHelper<Self::Item<'a>, Option<B::HktSelf<'a>>>,
     {
         FilterMap::new(self, mapper)
+    }
+
+    fn flat_map<J, F>(self, mapper: F) -> FlatMap<Self, J, F>
+    where
+        Self: Sized,
+        J: LendingIterator,
+        F: for<'a> FnMutHktHelper<Self::Item<'a>, J>,
+    {
+        FlatMap::new(self, mapper)
     }
 
     fn into_iter(mut self) -> impl Iterator<Item = Self::Item<'static>>
@@ -179,3 +189,22 @@ where
         self.iter.compare_key(item, key)
     }
 }
+
+pub struct AsLendingIterator<I: Iterator> {
+    iter: I
+}
+
+impl<I: Iterator> AsLendingIterator<I> {
+    pub fn new(iter: I) -> Self {
+        AsLendingIterator { iter }
+    }
+}
+
+impl<I: Iterator + 'static> LendingIterator for AsLendingIterator<I> {
+    type Item<'a> = I::Item;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        self.iter.next()
+    }
+}
+

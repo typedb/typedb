@@ -179,7 +179,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         attribute_types_defining_range: impl Iterator<Item = AttributeType<'static>>,
-    ) -> Result<HasAttributeIterator, ConceptReadError> {
+    ) -> Result<HasIterator, ConceptReadError> {
         thing_manager.get_has_from_thing_to_type_range_unordered(snapshot, self, attribute_types_defining_range)
     }
 

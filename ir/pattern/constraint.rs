@@ -16,7 +16,6 @@ use itertools::Itertools;
 
 use crate::{
     pattern::{
-        context::PatternContext,
         expression::Expression,
         function_call::FunctionCall,
         variable_category::{VariableCategory, VariableOptionality},
@@ -24,11 +23,12 @@ use crate::{
     },
     PatternDefinitionError,
 };
+use crate::program::block::BlockContext;
 
 #[derive(Debug)]
 pub struct Constraints {
     scope: ScopeId,
-    context: Arc<Mutex<PatternContext>>,
+    context: Arc<Mutex<BlockContext>>,
     constraints: Vec<Constraint<Variable>>,
 
     // TODO: could also store indexes into the Constraints vec? Depends how expensive Constraints are and if we delete
@@ -38,7 +38,7 @@ pub struct Constraints {
 }
 
 impl Constraints {
-    pub(crate) fn new(scope: ScopeId, context: Arc<Mutex<PatternContext>>) -> Self {
+    pub(crate) fn new(scope: ScopeId, context: Arc<Mutex<BlockContext>>) -> Self {
         Self {
             scope,
             context,
@@ -119,7 +119,7 @@ impl Constraints {
 
         let binding = FunctionCallBinding::new(assigned, function_call);
 
-        for (index, var) in binding.ids().enumerate() {
+        for (index, var) in binding.ids_assigned().enumerate() {
             self.context.lock().unwrap().set_variable_category(
                 var,
                 binding.function_call().returns()[index].0,
@@ -162,7 +162,7 @@ impl Display for Constraints {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Constraint<ID: IrID> {
     Type(Type<ID>),
     Isa(Isa<ID>),
@@ -181,7 +181,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::RolePlayer(rp) => Box::new(rp.ids()),
             Constraint::Has(has) => Box::new(has.ids()),
             Constraint::ExpressionBinding(binding) => todo!(),
-            Constraint::FunctionCallBinding(binding) => Box::new(binding.ids()),
+            Constraint::FunctionCallBinding(binding) => Box::new(binding.ids_assigned()),
             Constraint::Comparison(comparison) => todo!(),
         }
     }
@@ -264,7 +264,7 @@ enum ConstraintIDSide {
     Filter,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Type<ID: IrID> {
     left: ID,
     type_: String,
@@ -301,7 +301,7 @@ impl<ID: IrID> Display for Type<ID> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Isa<ID: IrID> {
     thing: ID,
     type_: ID,
@@ -337,7 +337,7 @@ impl<ID: IrID> Display for Isa<ID> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RolePlayer<ID: IrID> {
     relation: ID,
     player: ID,
@@ -355,6 +355,10 @@ impl<ID: IrID> RolePlayer<ID> {
 
     pub fn player(&self) -> ID {
         self.player
+    }
+
+    pub fn role_type(&self) -> Option<ID> {
+        self.role_type
     }
 
     pub fn ids(&self) -> impl Iterator<Item = ID> {
@@ -401,7 +405,7 @@ impl<ID: IrID> Display for RolePlayer<ID> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Has<ID: IrID> {
     owner: ID,
     attribute: ID,
@@ -449,7 +453,7 @@ impl<ID: IrID> Display for Has<ID> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ExpressionBinding<ID: IrID> {
     left: ID,
     expression: Expression<ID>,
@@ -463,6 +467,10 @@ impl<ID: IrID> ExpressionBinding<ID> {
     fn ids(&self) -> impl Iterator<Item = ID> {
         panic!("Unimplemented");
         empty()
+    }
+
+    pub fn ids_assigned(&self) -> impl Iterator<Item=ID> {
+        [self.left].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, function: F)
@@ -485,30 +493,35 @@ impl<ID: IrID> Display for ExpressionBinding<ID> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct FunctionCallBinding<ID: IrID> {
-    left: Vec<ID>,
+    assigned: Vec<ID>,
     function_call: FunctionCall<ID>,
 }
 
 impl<ID: IrID> FunctionCallBinding<ID> {
     fn new(left: Vec<ID>, function_call: FunctionCall<ID>) -> Self {
-        Self { left, function_call }
+        Self { assigned: left, function_call }
     }
 
     pub(crate) fn function_call(&self) -> &FunctionCall<ID> {
         &self.function_call
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = ID> + '_ {
-        self.left.iter().cloned()
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
+        panic!("Unimplemented");
+        empty()
+    }
+
+    pub fn ids_assigned(&self) -> impl Iterator<Item = ID> + '_ {
+        self.assigned.iter().cloned()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
     where
         F: FnMut(ID, ConstraintIDSide) -> (),
     {
-        for id in &self.left {
+        for id in &self.assigned {
             function(*id, ConstraintIDSide::Left)
         }
 
@@ -527,14 +540,14 @@ impl<ID: IrID> Into<Constraint<ID>> for FunctionCallBinding<ID> {
 impl<ID: IrID> Display for FunctionCallBinding<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.function_call.return_is_stream() {
-            write!(f, "{} in {}", self.ids().map(|i| i.to_string()).join(", "), self.function_call())
+            write!(f, "{} in {}", self.ids_assigned().map(|i| i.to_string()).join(", "), self.function_call())
         } else {
-            write!(f, "{} = {}", self.ids().map(|i| i.to_string()).join(", "), self.function_call())
+            write!(f, "{} = {}", self.ids_assigned().map(|i| i.to_string()).join(", "), self.function_call())
         }
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Comparison<ID: IrID> {
     lhs: ID,
     rhs: ID,

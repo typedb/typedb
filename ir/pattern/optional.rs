@@ -11,15 +11,16 @@ use std::{
 
 use answer::variable::Variable;
 
-use crate::pattern::{context::PatternContext, Scope, ScopeId};
+use crate::pattern::{Scope, ScopeId};
+use crate::program::block::BlockContext;
 
 #[derive(Debug)]
 pub struct Optional {
-    context: Arc<Mutex<PatternContext>>,
+    context: Arc<Mutex<BlockContext>>,
 }
 
 impl Optional {
-    pub(crate) fn context(&self) -> MutexGuard<PatternContext> {
+    pub(crate) fn context(&self) -> MutexGuard<BlockContext> {
         self.context.lock().unwrap()
     }
 }

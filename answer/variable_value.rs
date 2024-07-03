@@ -10,7 +10,7 @@ use encoding::value::value::Value;
 
 use crate::{Thing, Type};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum VariableValue<'a> {
     Empty,
     Type(Type),

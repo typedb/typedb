@@ -31,6 +31,10 @@ pub enum Value<'a> {
     Struct(Cow<'a, StructValue<'static>>),
 }
 
+// TODO: should we implement our own Equality, which takes into account floating point EPSILON? Otherwise, we'll transmit rounding errors throughout the language
+impl<'a> Eq for Value<'a> {
+}
+
 impl<'a> Value<'a> {
     pub fn as_reference(&self) -> Value<'_> {
         match *self {
@@ -191,3 +195,4 @@ impl<'a> ValueEncodable for Value<'a> {
         }
     }
 }
+

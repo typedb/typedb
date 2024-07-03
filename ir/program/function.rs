@@ -6,27 +6,23 @@
 
 use answer::variable::Variable;
 
-use crate::{
-    pattern::pattern::Pattern,
-    program::{
-        modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort},
-        FunctionalBlock,
-    },
-    PatternDefinitionError,
-};
+use crate::PatternDefinitionError;
+use crate::program::block::FunctionalBlock;
 
 pub struct FunctionIR {
     arguments: Vec<Variable>,
-    pattern: Pattern,
-    modifiers: Vec<Modifier>,
+    block: FunctionalBlock,
     // TODO: how to encode return operation?
 }
 
 impl FunctionIR {
-    fn new<'a>(pattern: Pattern, arguments: impl Iterator<Item = &'a str>) -> Result<Self, PatternDefinitionError> {
+    fn new<'a>(
+        block: FunctionalBlock,
+        arguments: impl Iterator<Item=&'a str>,
+    ) -> Result<Self, PatternDefinitionError> {
         let mut argument_variables = Vec::new();
         {
-            let context = pattern.context();
+            let context = block.context();
             for arg in arguments {
                 let var = context.get_variable(arg).ok_or_else(|| PatternDefinitionError::FunctionArgumentUnused {
                     argument_variable: arg.to_string(),
@@ -34,32 +30,6 @@ impl FunctionIR {
                 argument_variables.push(var);
             }
         }
-        Ok(Self { arguments: argument_variables, pattern, modifiers: Vec::new() })
-    }
-}
-
-impl FunctionalBlock for FunctionIR {
-    fn pattern(&self) -> &Pattern {
-        &self.pattern
-    }
-
-    fn add_limit(&mut self, limit: u64) {
-        self.modifiers.push(Modifier::Limit(Limit::new(limit)));
-    }
-
-    fn add_offset(&mut self, offset: u64) {
-        self.modifiers.push(Modifier::Offset(Offset::new(offset)))
-    }
-
-    fn add_sort(&mut self, sort_variables: Vec<(&str, bool)>) -> Result<(), ModifierDefinitionError> {
-        let sort = Sort::new(sort_variables, &self.pattern.context())?;
-        self.modifiers.push(Modifier::Sort(sort));
-        Ok(())
-    }
-
-    fn add_filter(&mut self, variables: Vec<&str>) -> Result<(), ModifierDefinitionError> {
-        let filter = Filter::new(variables, &self.pattern.context())?;
-        self.modifiers.push(Modifier::Filter(filter));
-        Ok(())
+        Ok(Self { arguments: argument_variables, block })
     }
 }

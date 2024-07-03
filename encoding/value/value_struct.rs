@@ -50,7 +50,7 @@ use crate::{
 
 // TODO: Do we want to encode / decode the full struct all the time? or just wrap bytes and
 // write some accessor logic so we efficiently deserialize only the fields we need.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct StructValue<'a> {
     definition_key: DefinitionKey<'a>,
     // a map allows empty fields to not be recorded at all

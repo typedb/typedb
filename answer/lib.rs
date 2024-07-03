@@ -11,6 +11,7 @@ use concept::{
         role_type::RoleType, ObjectTypeAPI,
     },
 };
+use concept::thing::object::Object;
 use encoding::value::value::Value;
 
 pub mod answer_map;
@@ -41,6 +42,37 @@ impl Type {
             Type::RoleType(_) => panic!("Role Type is not an Object type"),
         }
     }
+
+    pub fn as_attribute_type(&self) -> AttributeType<'static> {
+        match self {
+            Type::Attribute(attribute) => attribute.clone().into_owned(),
+            _ => panic!("Type is not an Attribute type.")
+        }
+    }
+}
+
+impl From<EntityType<'static>> for Type {
+    fn from(value: EntityType<'static>) -> Self {
+        Self::Entity(value)
+    }
+}
+
+impl From<RelationType<'static>> for Type {
+    fn from(value: RelationType<'static>) -> Self {
+        Self::Relation(value)
+    }
+}
+
+impl From<RoleType<'static>> for Type {
+    fn from(value: RoleType<'static>) -> Self {
+        Self::RoleType(value)
+    }
+}
+
+impl From<AttributeType<'static>> for Type {
+    fn from(value: AttributeType<'static>) -> Self {
+        Self::Attribute(value)
+    }
 }
 
 impl From<ObjectType<'static>> for Type {
@@ -52,9 +84,18 @@ impl From<ObjectType<'static>> for Type {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-enum Thing<'a> {
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum Thing<'a> {
     Entity(Entity<'a>),
     Relation(Relation<'a>),
     Attribute(Attribute<'a>),
+}
+
+impl<'a> From<Object<'a>> for Thing<'a> {
+    fn from(object: Object<'a>) -> Self {
+        match object {
+            Object::Entity(entity) => Thing::Entity(entity),
+            Object::Relation(relation) => Thing::Relation(relation),
+        }
+    }
 }

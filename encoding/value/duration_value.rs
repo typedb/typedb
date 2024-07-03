@@ -81,6 +81,8 @@ impl PartialEq for Duration {
     }
 }
 
+impl Eq for Duration {}
+
 impl Add for Duration {
     type Output = Self;
 

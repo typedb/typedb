@@ -9,7 +9,7 @@ package(default_visibility = [
     "//answer:__pkg__",
     "//database:__pkg__",
     "//ir:__pkg__",
-    "//traversal:__pkg__",
+    "//traversal:__subpackages__",
     "//tests/behaviour:__subpackages__",
 ])
 

@@ -8,58 +8,31 @@ use std::collections::HashMap;
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 
-use crate::{
-    pattern::pattern::Pattern,
-    program::{
-        function::FunctionIR,
-        modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort},
-        FunctionalBlock,
-    },
+use crate::program::block::FunctionalBlock;
+
+use crate::program::{
+    function::FunctionIR,
 };
 
 pub struct Program {
-    entry: Pattern,
-    modifiers: Vec<Modifier>,
+    entry: FunctionalBlock,
     functions: HashMap<DefinitionKey<'static>, FunctionIR>,
 }
 
 impl Program {
-    pub fn new(pattern: Pattern, functions: HashMap<DefinitionKey<'static>, FunctionIR>) -> Self {
+    pub fn new(entry_block: FunctionalBlock, functions: HashMap<DefinitionKey<'static>, FunctionIR>) -> Self {
         // TODO: verify exactly the required functions are provided
-        debug_assert!(Self::all_variables_categorised(&pattern));
-
-        Self { entry: pattern, modifiers: Vec::new(), functions: functions }
+        debug_assert!(Self::all_variables_categorised(&entry_block));
+        Self { entry: entry_block, functions: functions }
     }
 
-    fn all_variables_categorised(pattern: &Pattern) -> bool {
-        let context = pattern.context();
+    pub fn entry(&mut self) -> &mut FunctionalBlock {
+        &mut self.entry
+    }
+
+    fn all_variables_categorised(block: &FunctionalBlock) -> bool {
+        let context = block.context();
         let mut variables = context.get_variables();
         variables.all(|var| context.get_variable_category(var).is_some())
-    }
-}
-
-impl FunctionalBlock for Program {
-    fn pattern(&self) -> &Pattern {
-        &self.entry
-    }
-
-    fn add_limit(&mut self, limit: u64) {
-        self.modifiers.push(Modifier::Limit(Limit::new(limit)));
-    }
-
-    fn add_offset(&mut self, offset: u64) {
-        self.modifiers.push(Modifier::Offset(Offset::new(offset)))
-    }
-
-    fn add_sort(&mut self, sort_variables: Vec<(&str, bool)>) -> Result<(), ModifierDefinitionError> {
-        let sort = Sort::new(sort_variables, &self.entry.context())?;
-        self.modifiers.push(Modifier::Sort(sort));
-        Ok(())
-    }
-
-    fn add_filter(&mut self, variables: Vec<&str>) -> Result<(), ModifierDefinitionError> {
-        let filter = Filter::new(variables, &self.entry.context())?;
-        self.modifiers.push(Modifier::Filter(filter));
-        Ok(())
     }
 }
