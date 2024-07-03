@@ -49,7 +49,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         &'this self,
         conjunction: &'graph Conjunction,
     ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
-        let mut tig = self.recursively_allocate(conjunction);
+        let mut tig = self.build_recursive(conjunction);
         self.seed_types_impl(&mut tig, &BTreeMap::new())?;
         Ok(tig)
     }
@@ -92,14 +92,14 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         Ok(())
     }
 
-    fn recursively_allocate<'conj>(&self, conjunction: &'conj Conjunction) -> TypeInferenceGraph<'conj> {
-        let mut disjunctions = Vec::new();
-        let mut optionals = Vec::new();
-        let mut negations = Vec::new();
+    fn build_recursive<'conj>(&self, conjunction: &'conj Conjunction) -> TypeInferenceGraph<'conj> {
+        let mut nested_disjunctions = Vec::new();
+        let mut nested_optionals = Vec::new();
+        let mut nested_negations = Vec::new();
         for pattern in conjunction.nested_patterns() {
             match pattern {
                 NestedPattern::Disjunction(disjunction) => {
-                    let nested_tigs = disjunction.conjunctions().iter().map(|c| self.recursively_allocate(c)).collect();
+                    let nested_tigs = disjunction.conjunctions().iter().map(|c| self.build_recursive(c)).collect();
                     let shared_variables: BTreeSet<Variable> = disjunction
                         .conjunctions()
                         .iter()
@@ -114,17 +114,17 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
                                 })
                         })
                         .collect();
-                    disjunctions.push(NestedTypeInferenceGraphDisjunction {
+                    nested_disjunctions.push(NestedTypeInferenceGraphDisjunction {
                         disjunction: nested_tigs,
                         shared_variables,
                         shared_vertex_annotations: BTreeMap::new(),
                     });
                 }
                 NestedPattern::Negation(negation) => {
-                    negations.push(self.recursively_allocate(negation.conjunction()));
+                    nested_negations.push(self.build_recursive(negation.conjunction()));
                 }
                 NestedPattern::Optional(optional) => {
-                    optionals.push(self.recursively_allocate(optional.conjunction()));
+                    nested_optionals.push(self.build_recursive(optional.conjunction()));
                 }
             }
         }
@@ -133,9 +133,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             conjunction,
             vertices: BTreeMap::new(),
             edges: Vec::new(),
-            nested_disjunctions: disjunctions,
-            nested_negations: negations,
-            nested_optionals: optionals,
+            nested_disjunctions,
+            nested_negations,
+            nested_optionals,
         }
     }
 
