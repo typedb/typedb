@@ -30,7 +30,7 @@ impl ProgramExecutor {
         program_plan: ProgramPlan,
         type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         let ProgramPlan { entry: entry_plan, functions: function_plans } = program_plan;
         let entry = PatternExecutor::new(entry_plan, type_annotations, snapshot, thing_manager)?;
@@ -43,7 +43,7 @@ impl ProgramExecutor {
     pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(
         self,
         snapshot: Arc<Snapshot>,
-        thing_manager: Arc<ThingManager<Snapshot>>
+        thing_manager: Arc<ThingManager>
     ) -> impl for<'a> LendingIterator<Item<'a>=Result<ImmutableRow<'a>, &'a ConceptReadError>> {
         self.entry.into_iterator(snapshot, thing_manager)
     }

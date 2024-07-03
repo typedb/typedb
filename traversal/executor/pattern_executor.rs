@@ -36,7 +36,7 @@ impl PatternExecutor {
         plan: PatternPlan,
         type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         // 1. assign positions based on the output variables of each step
         // 2. create step executors that have an output Batch corresponding to the total size of the variables we care about
@@ -70,7 +70,7 @@ impl PatternExecutor {
     pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(
         self,
         snapshot: Arc<Snapshot>,
-        thing_manager: Arc<ThingManager<Snapshot>>,
+        thing_manager: Arc<ThingManager>,
     ) -> impl for<'a> LendingIterator<Item<'a>=Result<ImmutableRow<'a>, &'a ConceptReadError>> {
         AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager))
             .flat_map(|batch| BatchRowIterator::new(batch))
@@ -79,7 +79,7 @@ impl PatternExecutor {
     fn compute_next_batch<Snapshot: ReadableSnapshot>(
         &mut self,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
         let steps_len = self.steps.len();
 
@@ -140,11 +140,11 @@ enum Direction {
 struct BatchIterator<Snapshot> {
     executor: PatternExecutor,
     snapshot: Arc<Snapshot>,
-    thing_manager: Arc<ThingManager<Snapshot>>,
+    thing_manager: Arc<ThingManager>,
 }
 
 impl<Snapshot: ReadableSnapshot> BatchIterator<Snapshot> {
-    fn new(executor: PatternExecutor, snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager<Snapshot>>) -> Self {
+    fn new(executor: PatternExecutor, snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>) -> Self {
         Self { executor, snapshot, thing_manager }
     }
 }
@@ -174,7 +174,7 @@ impl StepExecutor {
         variable_positions: &HashMap<Variable, Position>,
         type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         let vars_count = variable_positions.len() as u32;
         let Step { execution: execution, .. } = step;
@@ -211,7 +211,7 @@ impl StepExecutor {
         &mut self,
         input_batch: Batch,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
         match self {
             StepExecutor::Sorted(sorted) => sorted.batch_from(input_batch, snapshot, thing_manager),
@@ -226,7 +226,7 @@ impl StepExecutor {
     fn batch_continue<Snapshot: ReadableSnapshot>(
         &mut self,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
         match self {
             StepExecutor::Sorted(sorted) => sorted.batch_continue(snapshot, thing_manager),
@@ -254,7 +254,7 @@ impl SortedExecutor {
         variable_positions: &HashMap<Variable, Position>,
         type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         let providers: Vec<ConstraintIteratorProvider> = iterates
             .into_iter()
@@ -274,7 +274,7 @@ impl SortedExecutor {
         &mut self,
         input_batch: Batch,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
         debug_assert!(self.output.is_none() && (self.input.is_none() || !self.input.as_ref().unwrap().has_next()));
         self.input = Some(BatchRowIterator::new(Ok(input_batch)));
@@ -286,7 +286,7 @@ impl SortedExecutor {
     fn batch_continue<Snapshot: ReadableSnapshot>(
         &mut self,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        thing_manager: &ThingManager,
     ) -> Result<Option<Batch>, ConceptReadError> {
         debug_assert!(self.output.is_none());
         self.may_compute_next_batch(snapshot, thing_manager)?;
@@ -296,7 +296,7 @@ impl SortedExecutor {
     fn may_compute_next_batch<Snapshot: ReadableSnapshot>(
         &mut self,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        thing_manager: &ThingManager,
     ) -> Result<(), ConceptReadError> {
         if self.iterators.is_empty() {
             if !self.create_iterators(snapshot, thing_manager)? {
@@ -319,7 +319,7 @@ impl SortedExecutor {
     fn create_iterators<Snapshot: ReadableSnapshot>(
         &mut self,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        thing_manager: &ThingManager,
     ) -> Result<bool, ConceptReadError> {
         debug_assert!(self.iterators.is_empty());
         let next_row = self.input.as_mut().unwrap().next().transpose().map_err(|err| err.clone())?;

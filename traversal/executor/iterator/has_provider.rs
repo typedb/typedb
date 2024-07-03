@@ -102,7 +102,7 @@ impl HasProvider {
         owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
         attribute_types: Arc<HashSet<Type>>,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         debug_assert!(owner_attribute_types.len() > 0);
         let filter_fn = match &iterate_mode {
@@ -172,7 +172,7 @@ impl HasProvider {
     pub(crate) fn get_iterator<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        thing_manager: &ThingManager,
         row: ImmutableRow<'_>,
     ) -> Result<ConstraintIterator, ConceptReadError> {
         match self.iterate_mode {

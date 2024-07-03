@@ -64,7 +64,7 @@ impl ConstraintIteratorProvider {
         variable_to_position: &HashMap<Variable, Position>,
         type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>
+        thing_manager: &ThingManager
     ) -> Result<Self, ConceptReadError> {
         match iterate {
             Iterate::Has(has, mode) => {
@@ -106,7 +106,7 @@ impl ConstraintIteratorProvider {
     pub(crate) fn get_iterator<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager<Snapshot>,
+        thing_manager: &ThingManager,
         row: ImmutableRow<'_>
     ) -> Result<ConstraintIterator, ConceptReadError> {
         match self {

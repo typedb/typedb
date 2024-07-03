@@ -24,7 +24,7 @@ use ir::inference::type_inference::{ConstraintTypeAnnotations, LeftRightAnnotati
 use ir::program::block::FunctionalBlock;
 use storage::durability_client::WALClient;
 use storage::MVCCStorage;
-use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, ReadSnapshot, WriteSnapshot};
+use storage::snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 use traversal::executor::program_executor::ProgramExecutor;
 use traversal::planner::pattern_plan::{Execution, Iterate, IterateMode, PatternPlan, Step};
@@ -40,7 +40,7 @@ fn setup_storage() -> Arc<MVCCStorage<WALClient>> {
 
     let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::<WriteSnapshot<WALClient>>::initialise_types(
+    TypeManager::initialise_types(
         storage.clone(),
         definition_key_generator.clone(),
         type_vertex_generator.clone(),
@@ -49,9 +49,9 @@ fn setup_storage() -> Arc<MVCCStorage<WALClient>> {
     storage
 }
 
-fn load_managers<Snapshot: ReadableSnapshot>(
+fn load_managers(
     storage: Arc<MVCCStorage<WALClient>>,
-) -> (Arc<TypeManager<Snapshot>>, ThingManager<Snapshot>) {
+) -> (Arc<TypeManager>, ThingManager) {
     let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage).unwrap());
@@ -191,7 +191,7 @@ fn traverse_has() {
 
     {
         let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
-        let (type_manager, thing_manager) = load_managers::<ReadSnapshot<WALClient>>(storage.clone());
+        let (type_manager, thing_manager) = load_managers(storage.clone());
         let thing_manager = Arc::new(thing_manager);
 
         let iterator = executor.into_iterator(snapshot, thing_manager);
