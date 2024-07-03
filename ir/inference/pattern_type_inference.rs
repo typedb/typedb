@@ -149,43 +149,19 @@ impl<'this> TypeInferenceEdge<'this> {
         }
     }
 
-    // Updates
-    fn remove_type(&mut self, from_variable: Variable, type_: TypeAnnotation) {
-        let TypeInferenceEdge { constraint, left, right, left_to_right, right_to_left } = self;
-        if &from_variable == left {
-            Self::remove_type_from(&type_, left_to_right, right_to_left);
-        } else if &from_variable == right {
-            Self::remove_type_from(&type_, right_to_left, left_to_right);
-        } else {
-            unreachable!(
-                "Bad argument. Expected variable to be {} or {}, but was {}",
-                self.left, self.right, from_variable
-            )
-        }
-    }
-
-    fn remove_type_from(
+    fn remove_type_from_values_of(
         type_: &TypeAnnotation,
-        remove_key: &mut BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
-        remove_values: &mut BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
+        keys_to_look_under: &BTreeSet<TypeAnnotation>,
+        remove_from_values_of: &mut BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
     ) {
-        for other_type in remove_key.get(&type_).unwrap() {
-            let remaining_size = Self::remove_from_value_set(remove_values, other_type, type_);
+        for other_type in keys_to_look_under {
+            let value_set_to_remove_from = remove_from_values_of.get_mut(&other_type).unwrap();
+            value_set_to_remove_from.remove(&type_);
+            let remaining_size = value_set_to_remove_from.len();
             if 0 == remaining_size {
-                remove_values.remove(&other_type);
+                remove_from_values_of.remove(&other_type);
             }
         }
-        remove_key.remove(&type_);
-    }
-
-    fn remove_from_value_set(
-        remove_from_values_of: &mut BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
-        for_key: &TypeAnnotation,
-        value: &TypeAnnotation,
-    ) -> usize {
-        let value_set_to_remove_from = remove_from_values_of.get_mut(&for_key).unwrap();
-        value_set_to_remove_from.remove(&value);
-        value_set_to_remove_from.len()
     }
 
     // prune_vertices
@@ -207,23 +183,20 @@ impl<'this> TypeInferenceEdge<'this> {
     }
 
     fn prune_self_from_vertices(&mut self, vertices: &VertexAnnotations) {
+        let TypeInferenceEdge { left_to_right, right_to_left, .. } = self;
         {
             let left_vertex_annotations = vertices.get(&self.left).unwrap();
-            let prune_left: Vec<TypeAnnotation> = self
-                .left_to_right
-                .iter()
-                .filter_map(|(k, _)| if left_vertex_annotations.contains(k) { None } else { Some(k.clone()) })
-                .collect();
-            prune_left.into_iter().for_each(|type_| self.remove_type(self.left, type_));
+            left_to_right.iter().filter(|(left_type, _)| !left_vertex_annotations.contains(*left_type)).for_each(
+                |(left_type, right_keys)| Self::remove_type_from_values_of(left_type, right_keys, right_to_left),
+            );
+            left_to_right.retain(|left_type, _| left_vertex_annotations.contains(&left_type));
         };
         {
             let right_vertex_annotations = vertices.get(&self.right).unwrap();
-            let prune_right: Vec<TypeAnnotation> = self
-                .right_to_left
-                .iter()
-                .filter_map(|(k, _)| if right_vertex_annotations.contains(k) { None } else { Some(k.clone()) })
-                .collect();
-            prune_right.into_iter().for_each(|type_| self.remove_type(self.right, type_))
+            right_to_left.iter().filter(|(right_type, _)| !right_vertex_annotations.contains(*right_type)).for_each(
+                |(right_type, left_keys)| Self::remove_type_from_values_of(right_type, left_keys, left_to_right),
+            );
+            right_to_left.retain(|left_type, _| right_vertex_annotations.contains(&left_type));
         };
     }
 }
