@@ -8,11 +8,13 @@ use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet},
     iter::zip,
+    sync::MutexGuard,
 };
 
 use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::{
     error::ConceptReadError,
+    thing::attribute,
     type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
 };
 use encoding::{
@@ -33,7 +35,9 @@ use crate::{
         constraint::{Comparison, Constraint, FunctionCallBinding, Has, Isa, RolePlayer, Sub, Type},
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
+        ScopeId,
     },
+    program::block::BlockContext,
 };
 
 pub struct TypeSeeder<'this, Snapshot: ReadableSnapshot> {
@@ -59,13 +63,11 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         tig: &mut TypeInferenceGraph<'graph>,
         parent_vertices: &VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        tig.conjunction.constraints().constraints().iter().flat_map(|constraint| constraint.ids()).dedup().for_each(
-            |v| {
-                if let Some(parent_annotations) = parent_vertices.get(&v) {
-                    tig.vertices.insert(v, parent_annotations.clone());
-                }
-            },
-        );
+        self.get_local_variables(&tig.conjunction.context(), tig.conjunction.scope_id()).for_each(|v| {
+            if let Some(parent_annotations) = parent_vertices.get(&v) {
+                tig.vertices.insert(v, parent_annotations.clone());
+            }
+        });
 
         self.seed_vertex_annotations_from_type_and_function_return(tig)?;
         let mut some_vertex_was_directly_annotated = true;
@@ -100,18 +102,13 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             match pattern {
                 NestedPattern::Disjunction(disjunction) => {
                     let nested_tigs = disjunction.conjunctions().iter().map(|c| self.build_recursive(c)).collect();
+                    let context = conjunction.context(); // We know they're the same context
                     let shared_variables: BTreeSet<Variable> = disjunction
                         .conjunctions()
                         .iter()
                         .flat_map(|nested_conj| {
-                            nested_conj
-                                .constraints()
-                                .constraints()
-                                .iter()
-                                .flat_map(|constraint| constraint.ids())
-                                .filter(|variable| {
-                                    conjunction.context().is_variable_available(conjunction.scope_id(), *variable)
-                                })
+                            self.get_local_variables(&context, nested_conj.scope_id())
+                                .filter(|variable| context.is_variable_available(conjunction.scope_id(), *variable))
                         })
                         .collect();
                     nested_disjunctions.push(NestedTypeInferenceGraphDisjunction {
@@ -145,67 +142,56 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         tig: &mut TypeInferenceGraph<'graph>,
     ) -> Result<(), TypeInferenceError> {
         // Get vertex annotations from Type & Function returns
+        let TypeInferenceGraph { conjunction, vertices, .. } = tig;
         for constraint in tig.conjunction.constraints().constraints() {
             match constraint {
-                Constraint::Type(type_constraint) => {
-                    let annotation_opt = self
-                        .get_annotation_for_type_label(&type_constraint)
-                        .map_err(|source| TypeInferenceError::ConceptRead { source })?;
-                    if let Some(annotation) = annotation_opt {
-                        Self::intersect_unary(
-                            &mut tig.vertices,
-                            type_constraint.left,
-                            Cow::Owned(BTreeSet::from([annotation])),
-                        );
-                    } else {
-                        return Err(TypeInferenceError::LabelNotResolved(type_constraint.type_.clone()));
-                    }
-                }
-                Constraint::FunctionCallBinding(binding) => {
-                    self.infer_annotations_from_function_call_binding(binding, &mut tig.vertices)
-                }
-                _ => {} // Do nothing
+                Constraint::Type(c) => c.apply(self, vertices)?,
+                Constraint::FunctionCallBinding(c) => c.apply(self, vertices)?,
+                _ => {}
             }
         }
-        for nested in &mut tig.nested_disjunctions {
-            for nested_tig in &mut nested.disjunction {
-                self.seed_vertex_annotations_from_type_and_function_return(nested_tig)?;
-            }
+        for nested_tig in tig.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
+            self.seed_vertex_annotations_from_type_and_function_return(nested_tig)?;
         }
         Ok(())
+    }
+
+    fn get_local_variables<'a>(
+        &'a self,
+        context: &'a MutexGuard<BlockContext>,
+        conjunction_scope_id: ScopeId,
+    ) -> impl Iterator<Item = Variable> + '_ {
+        context.get_variable_scopes().filter(move |(v, scope)| **scope == conjunction_scope_id).map(|(v, _)| *v)
     }
 
     fn annotate_unannotated_vertex<'graph>(
         &self,
         tig: &mut TypeInferenceGraph<'graph>,
     ) -> Result<bool, ConceptReadError> {
-        let unannotated_vars: Vec<Variable> = tig
-            .conjunction
-            .constraints()
-            .constraints()
-            .iter()
-            .flat_map(|constraint| constraint.ids())
-            .dedup()
-            .filter(|v| !tig.vertices.contains_key(v))
-            .collect();
-        if let Some(v) = unannotated_vars.first() {
-            let annotations = if let Some(variable_category) = tig.conjunction.context().get_variable_category(*v) {
+        let unannotated_vars: Option<Variable> = self
+            .get_local_variables(&tig.conjunction.context(), tig.conjunction.scope_id())
+            .find(|v| !tig.vertices.contains_key(v));
+        if let Some(v) = unannotated_vars {
+            let annotations = if let Some(variable_category) = tig.conjunction.context().get_variable_category(v) {
                 match variable_category {
                     VariableCategory::Type => self.get_unbounded_type_annotations(true, true, true, true)?,
                     VariableCategory::ThingType => self.get_unbounded_type_annotations(true, true, true, false)?,
                     VariableCategory::RoleType => self.get_unbounded_type_annotations(false, false, false, true)?,
                     VariableCategory::Thing => self.get_unbounded_type_annotations(true, true, true, false)?,
-                    VariableCategory::Object => self.get_unbounded_type_annotations(true, true, false, false)?,
-                    VariableCategory::Attribute => self.get_unbounded_type_annotations(false, false, true, false)?,
-                    VariableCategory::Value => self.get_unbounded_type_annotations(false, false, true, false)?,
-                    | VariableCategory::ObjectList | VariableCategory::AttributeList | VariableCategory::ValueList => {
-                        todo!()
+                    VariableCategory::ObjectList | VariableCategory::Object => {
+                        self.get_unbounded_type_annotations(true, true, false, false)?
+                    }
+                    VariableCategory::AttributeList | VariableCategory::Attribute => {
+                        self.get_unbounded_type_annotations(false, false, true, false)?
+                    }
+                    VariableCategory::ValueList | VariableCategory::Value => {
+                        self.get_unbounded_type_annotations(false, false, true, false)?
                     }
                 }
             } else {
                 self.get_unbounded_type_annotations(true, true, true, true)?
             };
-            tig.vertices.insert(*v, annotations);
+            tig.vertices.insert(v, annotations);
             Ok(true)
         } else {
             let mut any = false;
@@ -289,28 +275,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         }
     }
 
-    fn infer_annotations_from_function_call_binding(
-        &self,
-        binding: &FunctionCallBinding<Variable>,
-        vertices: &mut VertexAnnotations,
-    ) {
-        todo!();
-        let return_annotations: Vec<Option<BTreeSet<TypeAnnotation>>> = Vec::new(); // TODO
-        let argument_annotations: VertexAnnotations = BTreeMap::new(); // TODO
-        debug_assert_eq!(binding.assigned().len(), return_annotations.len());
-        for (return_variable, return_annotation_opt) in zip(binding.assigned(), &return_annotations) {
-            if let Some(return_annotations) = return_annotation_opt {
-                Self::intersect_unary(vertices, *return_variable, Cow::Borrowed(return_annotations));
-            }
-        }
-
-        for (caller_variable, argument_variable) in binding.function_call().call_id_mapping() {
-            if let Some(argument_annotations) = argument_annotations.get(argument_variable) {
-                Self::intersect_unary(vertices, *caller_variable, Cow::Borrowed(argument_annotations));
-            }
-        }
-    }
-
     // Phase 2: Use constraints to infer annotations on other vertices
     fn propagate_vertex_annotations<'graph>(
         &self,
@@ -356,7 +320,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
 
     fn try_propagating_vertex_annotation_impl<'conj>(
         &self,
-        inner: &impl BinaryConstraintWrapper,
+        inner: &impl BinaryConstraint,
         vertices: &mut BTreeMap<Variable, BTreeSet<TypeAnnotation>>,
     ) -> Result<bool, ConceptReadError> {
         let (left, right) = (inner.left(), inner.right());
@@ -387,7 +351,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         for variable in nested.shared_variables.iter() {
             if let Some(parent_annotations) = parent_vertices.get_mut(variable) {
                 for nested_tig in &mut nested.disjunction {
-                    Self::intersect_unary(&mut nested_tig.vertices, *variable, Cow::Borrowed(parent_annotations));
+                    Self::add_or_intersect(&mut nested_tig.vertices, *variable, Cow::Borrowed(parent_annotations));
                 }
             }
         }
@@ -442,8 +406,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         }
     }
 
-    fn intersect_unary(
-        unary_annotations: &mut BTreeMap<Variable, BTreeSet<TypeAnnotation>>,
+    fn add_or_intersect(
+        unary_annotations: &mut VertexAnnotations,
         variable: Variable,
         new_annotations: Cow<BTreeSet<TypeAnnotation>>,
     ) -> bool {
@@ -455,6 +419,13 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             unary_annotations.insert(variable, new_annotations.into_owned());
             true
         }
+    }
+
+    fn vars_in_scope(context: &BlockContext, scope_id: ScopeId) -> impl Iterator<Item = Variable> + '_ {
+        context
+            .get_variable_scopes()
+            .filter(move |(variable, scope)| scope_id == **scope)
+            .map(|(variable, _)| *variable)
     }
 
     // Phase 3: seed edges
@@ -490,7 +461,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     fn seed_edge<'conj>(
         &self,
         constraint: &'conj Constraint<Variable>,
-        inner: &impl BinaryConstraintWrapper,
+        inner: &impl BinaryConstraint,
         vertices: &VertexAnnotations,
     ) -> Result<TypeInferenceEdge<'conj>, ConceptReadError> {
         let (left, right) = (inner.left(), inner.right());
@@ -501,7 +472,101 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     }
 }
 
-pub trait BinaryConstraintWrapper {
+trait UnaryConstraint {
+    fn apply<Snapshot: ReadableSnapshot>(
+        &self,
+        seeder: &TypeSeeder<Snapshot>,
+        tig_vertices: &mut VertexAnnotations,
+    ) -> Result<(), TypeInferenceError>;
+}
+
+impl Type<Variable> {
+    fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
+        &self,
+        seeder: &TypeSeeder<Snapshot>,
+        label: &Label<'static>,
+    ) -> Result<Option<TypeAnnotation>, ConceptReadError> {
+        let mut t = None;
+
+        t = seeder.type_manager.get_attribute_type(seeder.snapshot, label)?.map(|attr| TypeAnnotation::Attribute(attr));
+        if t.is_some() {
+            return Ok(t);
+        }
+
+        t = seeder.type_manager.get_entity_type(seeder.snapshot, label)?.map(|entity| TypeAnnotation::Entity(entity));
+        if t.is_some() {
+            return Ok(t);
+        }
+
+        t = seeder
+            .type_manager
+            .get_relation_type(seeder.snapshot, label)?
+            .map(|relation| TypeAnnotation::Relation(relation));
+        if t.is_some() {
+            return Ok(t);
+        }
+
+        t = seeder.type_manager.get_role_type(seeder.snapshot, label)?.map(|role| TypeAnnotation::RoleType(role));
+        if t.is_some() {
+            return Ok(t);
+        }
+
+        Ok(None)
+    }
+}
+
+impl UnaryConstraint for Type<Variable> {
+    fn apply<Snapshot: ReadableSnapshot>(
+        &self,
+        seeder: &TypeSeeder<Snapshot>,
+        tig_vertices: &mut VertexAnnotations,
+    ) -> Result<(), TypeInferenceError> {
+        let annotation_opt = self
+            .get_type_annotation_from_label(seeder, &Label::build(&self.type_))
+            .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+        if let Some(annotation) = annotation_opt {
+            TypeSeeder::<Snapshot>::add_or_intersect(tig_vertices, self.left, Cow::Owned(BTreeSet::from([annotation])));
+            Ok(())
+        } else {
+            Err(TypeInferenceError::LabelNotResolved(self.type_.clone()))
+        }
+    }
+}
+
+impl UnaryConstraint for FunctionCallBinding<Variable> {
+    fn apply<Snapshot: ReadableSnapshot>(
+        &self,
+        seeder: &TypeSeeder<Snapshot>,
+        tig_vertices: &mut VertexAnnotations,
+    ) -> Result<(), TypeInferenceError> {
+        todo!();
+        let return_annotations: Vec<Option<BTreeSet<TypeAnnotation>>> = Vec::new(); // TODO
+        let argument_annotations: VertexAnnotations = BTreeMap::new(); // TODO
+        debug_assert_eq!(self.assigned().len(), return_annotations.len());
+        for (return_variable, return_annotation_opt) in zip(self.assigned(), &return_annotations) {
+            if let Some(return_annotations) = return_annotation_opt {
+                TypeSeeder::<Snapshot>::add_or_intersect(
+                    tig_vertices,
+                    *return_variable,
+                    Cow::Borrowed(return_annotations),
+                );
+            }
+        }
+
+        for (caller_variable, argument_variable) in self.function_call().call_id_mapping() {
+            if let Some(argument_annotations) = argument_annotations.get(argument_variable) {
+                TypeSeeder::<Snapshot>::add_or_intersect(
+                    tig_vertices,
+                    *caller_variable,
+                    Cow::Borrowed(argument_annotations),
+                );
+            }
+        }
+        Ok(())
+    }
+}
+
+trait BinaryConstraint {
     fn left(&self) -> Variable;
     fn right(&self) -> Variable;
 
@@ -547,7 +612,7 @@ pub trait BinaryConstraintWrapper {
     ) -> Result<(), ConceptReadError>;
 }
 
-impl BinaryConstraintWrapper for Has<Variable> {
+impl BinaryConstraint for Has<Variable> {
     fn left(&self) -> Variable {
         self.owner()
     }
@@ -605,7 +670,7 @@ impl BinaryConstraintWrapper for Has<Variable> {
     }
 }
 
-impl BinaryConstraintWrapper for Isa<Variable> {
+impl BinaryConstraint for Isa<Variable> {
     fn left(&self) -> Variable {
         self.thing()
     }
@@ -711,7 +776,7 @@ impl BinaryConstraintWrapper for Isa<Variable> {
     }
 }
 
-impl BinaryConstraintWrapper for Sub<Variable> {
+impl BinaryConstraint for Sub<Variable> {
     fn left(&self) -> Variable {
         self.subtype()
     }
@@ -818,7 +883,7 @@ impl BinaryConstraintWrapper for Sub<Variable> {
 }
 
 // TODO: This is very inefficient. If needed, We can replace uses by a specialised implementation which pre-computes attributes by value-type.
-impl BinaryConstraintWrapper for Comparison<Variable> {
+impl BinaryConstraint for Comparison<Variable> {
     fn left(&self) -> Variable {
         self.lhs()
     }
@@ -888,7 +953,7 @@ struct RelationRoleEdge<'graph> {
     role_player: &'graph RolePlayer<Variable>,
 }
 
-impl<'graph> BinaryConstraintWrapper for PlayerRoleEdge<'graph> {
+impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
     fn left(&self) -> Variable {
         self.role_player.player
     }
@@ -946,7 +1011,7 @@ impl<'graph> BinaryConstraintWrapper for PlayerRoleEdge<'graph> {
     }
 }
 
-impl<'graph> BinaryConstraintWrapper for RelationRoleEdge<'graph> {
+impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
     fn left(&self) -> Variable {
         self.role_player.relation
     }

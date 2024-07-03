@@ -273,56 +273,56 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    fn as_type(&self) -> Option<&Type<ID>> {
+    pub(crate) fn as_type(&self) -> Option<&Type<ID>> {
         match self {
             Constraint::Type(type_) => Some(type_),
             _ => None,
         }
     }
 
-    fn as_sub(&self) -> Option<&Sub<ID>> {
+    pub(crate) fn as_sub(&self) -> Option<&Sub<ID>> {
         match self {
             Constraint::Sub(sub) => Some(sub),
             _ => None,
         }
     }
 
-    fn as_isa(&self) -> Option<&Isa<ID>> {
+    pub(crate) fn as_isa(&self) -> Option<&Isa<ID>> {
         match self {
             Constraint::Isa(isa) => Some(isa),
             _ => None,
         }
     }
 
-    fn as_role_player(&self) -> Option<&RolePlayer<ID>> {
+    pub(crate) fn as_role_player(&self) -> Option<&RolePlayer<ID>> {
         match self {
             Constraint::RolePlayer(rp) => Some(rp),
             _ => None,
         }
     }
 
-    fn as_has(&self) -> Option<&Has<ID>> {
+    pub(crate) fn as_has(&self) -> Option<&Has<ID>> {
         match self {
             Constraint::Has(has) => Some(has),
             _ => None,
         }
     }
 
-    fn as_comparison(&self) -> Option<&Comparison<ID>> {
+    pub(crate) fn as_comparison(&self) -> Option<&Comparison<ID>> {
         match self {
             Constraint::Comparison(cmp) => Some(cmp),
             _ => None,
         }
     }
 
-    fn as_function_call_binding(&self) -> Option<&FunctionCallBinding<ID>> {
+    pub(crate) fn as_function_call_binding(&self) -> Option<&FunctionCallBinding<ID>> {
         match self {
             Constraint::FunctionCallBinding(binding) => Some(binding),
             _ => None,
         }
     }
 
-    fn as_expression_binding(&self) -> Option<&ExpressionBinding<ID>> {
+    pub(crate) fn as_expression_binding(&self) -> Option<&ExpressionBinding<ID>> {
         match self {
             Constraint::ExpressionBinding(binding) => Some(binding),
             _ => None,

@@ -138,6 +138,10 @@ impl BlockContext {
         self.variable_declaration.keys().into_iter().cloned()
     }
 
+    pub(crate) fn get_variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
+        self.variable_declaration.iter()
+    }
+
     fn allocate_variable(&mut self) -> Variable {
         let variable = Variable::new(self.variable_id_allocator);
         self.variable_id_allocator += 1;
