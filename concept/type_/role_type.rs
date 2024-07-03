@@ -68,7 +68,12 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_ordering(snapshot, self.clone().into_owned())
     }
 
-    pub fn set_ordering(&self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager, ordering: Ordering) {
+    pub fn set_ordering(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
+        ordering: Ordering,
+    ) -> Result<(), ConceptWriteError> {
         type_manager.set_role_ordering(snapshot, self.clone(), ordering)
     }
 }
@@ -162,15 +167,6 @@ impl<'a> RoleType<'a> {
         type_manager.get_role_type_supertype(snapshot, self.clone().into_owned())
     }
 
-    pub fn set_supertype(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        type_manager: &TypeManager,
-        supertype: RoleType<'static>,
-    ) -> Result<(), ConceptWriteError> {
-        type_manager.set_role_type_supertype(snapshot, self.clone().into_owned(), supertype)
-    }
-
     pub fn get_supertypes<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -193,24 +189,6 @@ impl<'a> RoleType<'a> {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<RoleType<'static>>>, ConceptReadError> {
         type_manager.get_role_type_subtypes_transitive(snapshot, self.clone().into_owned())
-    }
-
-    pub fn get_cardinality(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-    ) -> Result<AnnotationCardinality, ConceptReadError> {
-        let annotations = self.get_annotations(snapshot, type_manager)?;
-        let ordering = self.get_ordering(snapshot, type_manager)?;
-        let card = annotations
-            .iter()
-            .filter_map(|annotation| match annotation {
-                RoleTypeAnnotation::Cardinality(card) => Some(*card),
-                _ => None,
-            })
-            .next()
-            .unwrap_or_else(|| type_manager.role_default_cardinality(ordering));
-        Ok(card)
     }
 
     pub fn get_annotations<'m>(
@@ -262,7 +240,7 @@ impl<'a> RoleType<'a> {
     pub(crate) fn get_relates<'m>(
         &self,
         snapshot: &impl WritableSnapshot,
-        type_manager: &'m TypeManager
+        type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Relates<'static>>, ConceptReadError> {
         type_manager.get_role_type_relates(snapshot, self.clone().into_owned())
     }

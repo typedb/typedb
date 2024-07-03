@@ -206,7 +206,7 @@ impl<'a> EntityType<'a> {
 
     pub fn unset_annotation(
         &self,
-        snapshot: &mut impl ReadableSnapshot,
+        snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {

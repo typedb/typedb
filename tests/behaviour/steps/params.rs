@@ -83,10 +83,7 @@ use concept::type_::{
 };
 use database::transaction::TransactionRead;
 use encoding::graph::definition::definition_key::DefinitionKey;
-use storage::{
-    durability_client::WALClient,
-    snapshot::{ReadSnapshot, ReadableSnapshot},
-};
+use storage::{durability_client::WALClient, snapshot::ReadableSnapshot};
 
 impl FromStr for Boolean {
     type Err = String;
@@ -290,7 +287,7 @@ impl FromStr for ObjectRootLabel {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "value_type", regex = "(boolean|long|double|decimal|datetime(?:tz)?|duration|string|[A-Za-z0-9_:-]+)")]
+#[param(name = "value_type", regex = "(boolean|long|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)")]
 pub(crate) enum ValueType {
     Boolean,
     Long,
@@ -305,15 +302,7 @@ pub(crate) enum ValueType {
 }
 
 impl ValueType {
-<<<<<<< HEAD
-    pub fn into_typedb<Snapshot: ReadableSnapshot>(&self, type_manager: &Arc<TypeManager>, snapshot: &Snapshot) -> TypeDBValueType {
-=======
-    pub fn into_typedb<Snapshot: ReadableSnapshot>(
-        &self,
-        type_manager: &Arc<TypeManager<Snapshot>>,
-        snapshot: &Snapshot,
-    ) -> TypeDBValueType {
->>>>>>> ca622d171 (Run rustfmt)
+    pub fn into_typedb(&self, type_manager: &Arc<TypeManager>, snapshot: &impl ReadableSnapshot) -> TypeDBValueType {
         match self {
             ValueType::Boolean => TypeDBValueType::Boolean,
             ValueType::Long => TypeDBValueType::Long,
@@ -326,7 +315,7 @@ impl ValueType {
             ValueType::String => TypeDBValueType::String,
             ValueType::Struct(label) => TypeDBValueType::Struct(
                 type_manager
-                    .get_struct_definition_key(&snapshot, label.into_typedb().scoped_name().as_str())
+                    .get_struct_definition_key(snapshot, label.into_typedb().scoped_name().as_str())
                     .unwrap()
                     .unwrap(),
             ),
@@ -344,7 +333,7 @@ impl FromStr for ValueType {
             "decimal" => Self::Decimal,
             "date" => Self::Date,
             "datetime" => Self::DateTime,
-            "datetimetz" => Self::DateTimeTZ,
+            "datetime-tz" => Self::DateTimeTZ,
             "duration" => Self::Duration,
             "string" => Self::String,
             _ => Self::Struct(Label { label_string: s.to_string() }),

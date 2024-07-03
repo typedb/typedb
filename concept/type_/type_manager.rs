@@ -6,9 +6,9 @@
 
 use std::{
     collections::{HashMap, HashSet},
+    hash::Hash,
     sync::Arc,
 };
-use std::hash::Hash;
 
 use encoding::{
     error::EncodingError,
@@ -254,7 +254,7 @@ macro_rules! get_type_annotations_declared {
     )*) => {
         $(
             pub(crate) fn $method_name(
-                &self, snapshot: &Snapshot, type_: $type_<'static>
+                &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
             ) -> Result<MaybeOwns<'_, HashSet<$annotation_type>>, ConceptReadError> {
                  if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
@@ -273,7 +273,7 @@ macro_rules! get_type_annotations {
     )*) => {
         $(
             pub(crate) fn $method_name(
-                &self, snapshot: &Snapshot, type_: $type_<'static>
+                &self, snapshot: &impl ReadableSnapshot, type_: $type_<'static>
             ) -> Result<MaybeOwns<'_, HashMap<$annotation_type, $type_<'static>>>, ConceptReadError> {
                  if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
@@ -1356,7 +1356,12 @@ impl TypeManager {
         Ok(())
     }
 
-    fn set_supertype<K>(&self, snapshot: &mut impl WritableSnapshot, subtype: K, supertype: K) -> Result<(), ConceptWriteError>
+    fn set_supertype<K>(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        subtype: K,
+        supertype: K,
+    ) -> Result<(), ConceptWriteError>
     where
         K: KindAPI<'static>,
     {
@@ -1768,26 +1773,6 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn set_annotation_cardinality(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        type_: impl KindAPI<'static>,
-        annotation: AnnotationCardinality,
-    ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_cardinality_arguments(annotation)
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        TypeWriter::storage_insert_type_vertex_property::<AnnotationCardinality>(snapshot, type_, Some(annotation));
-        Ok(())
-    }
-
-    pub(crate) fn unset_annotation_cardinality(
-        &self, snapshot: &mut impl WritableSnapshot, type_: impl KindAPI<'static>
-    ) -> Result<(), ConceptWriteError> {
-        TypeWriter::storage_delete_type_vertex_property::<AnnotationCardinality>(snapshot, type_);
-        Ok(())
-    }
-
     pub(crate) fn set_annotation_regex(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -1847,10 +1832,6 @@ impl TypeManager {
             AnnotationCategory::Regex,
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        OperationTimeValidation::validate_annotation_set_only_for_interface::<Owns<'static>>(
-            snapshot, type_.clone(), AnnotationCategory::Regex,
-        ).map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         TypeWriter::storage_delete_type_vertex_property::<AnnotationRegex>(snapshot, type_);
         Ok(())

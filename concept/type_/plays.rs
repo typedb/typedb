@@ -83,7 +83,7 @@ impl<'a> Plays<'a> {
 
     pub fn set_annotation(
         &self,
-        snapshot: &mut impl ReadableSnapshot,
+        snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         annotation: PlaysAnnotation,
     ) -> Result<(), ConceptWriteError> {

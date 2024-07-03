@@ -137,15 +137,15 @@ impl<'a> AttributeType<'a> {
         type_manager.set_value_type(snapshot, self.clone().into_owned(), value_type)
     }
 
-    pub fn unset_value_type<Snapshot: WritableSnapshot>(
+    pub fn unset_value_type(
         &self,
-        snapshot: &mut impl ReadableSnapshot,
+        snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<(), ConceptWriteError> {
         type_manager.unset_value_type(snapshot, self.clone().into_owned())
     }
 
-    pub fn set_label<Snapshot: WritableSnapshot>(
+    pub fn set_label(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,

@@ -40,26 +40,26 @@ impl<'a> Relates<'a> {
         self.role.clone()
     }
 
-    pub fn set_override<Snapshot: WritableSnapshot>(
+    pub fn set_override(
         &self,
-        snapshot: &mut Snapshot,
-        type_manager: &TypeManager<Snapshot>,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
         overridden: Relates<'static>,
     ) -> Result<(), ConceptWriteError> {
         type_manager.set_relates_overridden(snapshot, self.clone().into_owned(), overridden)
     }
 
-    pub fn unset_override<Snapshot: WritableSnapshot>(
+    pub fn unset_override(
         &self,
-        snapshot: &mut Snapshot,
-        type_manager: &TypeManager<Snapshot>,
+        snapshot: &mut impl WritableSnapshot,
+        type_manager: &TypeManager,
     ) -> Result<(), ConceptWriteError> {
         type_manager.unset_relates_overridden(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_cardinality<Snapshot: ReadableSnapshot>(
+    pub fn get_cardinality(
         &self,
-        snapshot: &Snapshot,
+        snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
@@ -91,9 +91,9 @@ impl<'a> Relates<'a> {
         type_manager.get_relates_annotations(snapshot, self.clone().into_owned())
     }
 
-    pub fn set_annotation<Snapshot: WritableSnapshot>(
+    pub fn set_annotation(
         &self,
-        snapshot: &mut Snapshot,
+        snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         annotation: RelatesAnnotation,
     ) -> Result<(), ConceptWriteError> {

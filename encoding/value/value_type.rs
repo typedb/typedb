@@ -58,6 +58,7 @@ impl ValueType {
             | ValueType::Boolean
             | ValueType::Long
             | ValueType::Decimal
+            | ValueType::Date
             | ValueType::DateTime
             | ValueType::DateTimeTZ
             | ValueType::Duration

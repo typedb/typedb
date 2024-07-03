@@ -152,6 +152,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     pub fn commit(mut self) -> Result<(), SchemaCommitError> {
         use SchemaCommitError::{ConceptWrite, Statistics};
         self.thing_manager.finalise(&mut self.snapshot).map_err(|errors| ConceptWrite { errors })?;
+        drop(self.thing_manager);
         let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap type_manager Arc");
         type_manager.finalise(&self.snapshot).map_err(|errors| ConceptWrite { errors })?;
 

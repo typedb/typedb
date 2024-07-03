@@ -110,7 +110,7 @@ impl<'a> Owns<'a> {
         type_manager.set_owns_overridden(snapshot, self.clone().into_owned(), overridden)
     }
 
-    pub fn unset_override<Snapshot: WritableSnapshot>(
+    pub fn unset_override(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
@@ -184,7 +184,7 @@ impl<'a> Owns<'a> {
         Ok(())
     }
 
-    pub fn set_ordering<Snapshot: WritableSnapshot>(
+    pub fn set_ordering(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
