@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::cmp::Ordering;
 use std::{collections::HashMap, io::Read, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue};
@@ -344,28 +345,39 @@ impl SortedExecutor {
     }
 
     fn compute_next_intersection(&mut self) -> Result<bool, ConceptReadError> {
-        let current_max = match self.iterators[0].peek_sorted_value() {
+        let mut current_max = match self.iterators[0].peek_sorted_value() {
             None => return Ok(false),
             Some(Ok(value)) => value,
             Some(Err(err)) => return Err(err.clone()),
         };
 
         loop {
+            let mut failed = false;
             for iter in &mut self.iterators {
-                // match iter.peek_sorted_value() {
-                //     None => {
-                //         self.cleanup_iterators();
-                //         return false;
-                //     }
-                //     Some(Ok(value)) => {
-                //         let cmp = current_max.cmp(value);
-                //     }
-                //     Some(Err(err)) => {
-                //         Err(err.clone())
-                //     }
-                // }
-                todo!()
+                match iter.peek_sorted_value() {
+                    None => {
+                        failed = false;
+                    }
+                    Some(Ok(value)) => {
+                        let cmp = current_max.partial_cmp(&value).unwrap();
+                        match cmp {
+                            Ordering::Less => {
+                                // TODO: loop/seek until at equal or larger
+                            }
+                            Ordering::Equal => {
+                                continue
+                            }
+                            Ordering::Greater => {
+                                current_max = value;
+                            }
+                        }
+                    }
+                    Some(Err(err)) => {
+                        return Err(err.clone());
+                    }
+                }
             }
+            return Ok(true);
         }
     }
 

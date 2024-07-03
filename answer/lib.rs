@@ -83,7 +83,7 @@ impl From<ObjectType<'static>> for Type {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Thing<'a> {
     Entity(Entity<'a>),
     Relation(Relation<'a>),

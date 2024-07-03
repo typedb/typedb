@@ -5,6 +5,7 @@
  */
 
 use std::borrow::Cow;
+use std::cmp::Ordering;
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
 use chrono_tz::Tz;
@@ -33,6 +34,22 @@ pub enum Value<'a> {
 
 // TODO: should we implement our own Equality, which takes into account floating point EPSILON? Otherwise, we'll transmit rounding errors throughout the language
 impl<'a> Eq for Value<'a> {}
+
+impl<'a> PartialOrd for Value<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (self, other) {
+            (Self::Boolean(self_bool), Self::Boolean(other_bool)) => self_bool.partial_cmp(other_bool),
+            (Self::Long(self_long), Self::Long(other_long)) => self_long.partial_cmp(other_long),
+            (Self::Double(self_double), Self::Double(other_double)) => self_double.partial_cmp(other_double),
+            (Self::Decimal(self_decimal), Self::Decimal(other_decimal)) => self_decimal.partial_cmp(other_decimal),
+            (Self::Date(self_date), Self::Date(other_date)) => self_date.partial_cmp(other_date),
+            (Self::DateTime(self_date_time), Self::DateTime(other_date_time)) => self_date_time.partial_cmp(other_date_time),
+            (Self::DateTimeTZ(self_date_time_tz), Self::DateTimeTZ(other_date_time_tz)) => self_date_time_tz.partial_cmp(other_date_time_tz),
+            (Self::String(self_string), Self::String(other_string)) => self_string.partial_cmp(other_string),
+            _ => None
+        }
+    }
+}
 
 impl<'a> Value<'a> {
     pub fn as_reference(&self) -> Value<'_> {
