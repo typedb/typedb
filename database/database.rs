@@ -33,6 +33,7 @@ use storage::{
     MVCCStorage, StorageOpenError,
 };
 
+#[derive(Debug, Clone)]
 pub(super) struct Schema {
     pub(super) thing_statistics: Statistics,
     // TODO type cache goes here
@@ -46,7 +47,7 @@ pub struct Database<D> {
     pub(super) type_vertex_generator: Arc<TypeVertexGenerator>,
     pub(super) thing_vertex_generator: Arc<ThingVertexGenerator>,
 
-    pub(super) schema_commit_lock: RwLock<Schema>,
+    pub(super) schema: RwLock<Arc<Schema>>,
     pub(super) schema_txn_lock: RwLock<()>,
 }
 
@@ -106,7 +107,7 @@ impl Database<WALClient> {
             definition_key_generator,
             type_vertex_generator,
             thing_vertex_generator,
-            schema_commit_lock: RwLock::new(Schema { thing_statistics: statistics }),
+            schema: RwLock::new(Arc::new(Schema { thing_statistics: statistics })),
             schema_txn_lock: RwLock::default(),
         })
     }
@@ -149,7 +150,7 @@ impl Database<WALClient> {
             definition_key_generator,
             type_vertex_generator,
             thing_vertex_generator,
-            schema_commit_lock: RwLock::new(Schema { thing_statistics: statistics }),
+            schema: RwLock::new(Arc::new(Schema { thing_statistics: statistics })),
             schema_txn_lock: RwLock::default(),
         };
 
