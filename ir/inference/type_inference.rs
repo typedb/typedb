@@ -4,13 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use answer::{variable::Variable, Type};
-use encoding::graph::definition::definition_key::DefinitionKey;
+use concept::type_::{
+    attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType, role_type::RoleType,
+};
+use crate::pattern::constraint::Constraint;
 
-use crate::{pattern::constraint::Constraint, program::program::Program};
+use crate::program::{program::Program, block::FunctionalBlock};
 
 /*
 Design:
@@ -27,10 +30,14 @@ Note: On function call boundaries, can assume the current set of schema types pe
 
  */
 
+pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
+
 pub fn infer_types(program: &Program) {
-    let mut entry_type_annotations = TypeAnnotations::new(HashMap::new(), HashMap::new());
-    let mut function_type_annotations: HashMap<DefinitionKey<'static>, TypeAnnotations> = HashMap::new();
+    // let mut entry_type_annotations = TypeAnnotations::new(HashMap::new(), HashMap::new());
+    // let mut function_type_annotations: HashMap<DefinitionKey<'static>, TypeAnnotations> = HashMap::new();
+    todo!()
 }
+
 
 pub struct TypeAnnotations {
     variables: HashMap<Variable, Arc<HashSet<Type>>>,

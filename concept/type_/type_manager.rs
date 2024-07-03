@@ -530,6 +530,32 @@ impl TypeManager {
         }
     }
 
+    pub(crate) fn get_relates_for_role_type(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        role_type: RoleType<'static>,
+    ) -> Result<MaybeOwns<'_, Relates<'static>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_role_type_relates(role_type.clone())))
+        } else {
+            let relates = TypeReader::get_role_type_relates(snapshot, role_type.clone())?;
+            Ok(MaybeOwns::Owned(relates))
+        }
+    }
+
+    pub(crate) fn get_relates_for_role_type_transitive(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        role_type: RoleType<'static>,
+    ) -> Result<MaybeOwns<'_, HashSet<Relates<'static>>>, ConceptReadError> {
+        if let Some(cache) = &self.type_cache {
+            Ok(MaybeOwns::Borrowed(cache.get_role_type_relates_transitive(role_type.clone())))
+        } else {
+            let relates = TypeReader::get_role_type_relates_transitive(snapshot, role_type.clone())?;
+            Ok(MaybeOwns::Owned(relates))
+        }
+    }
+
     pub(crate) fn get_plays_for_role_type(
         &self,
         snapshot: &impl ReadableSnapshot,

@@ -44,6 +44,10 @@ impl<ID: IrID> FunctionCall<ID> {
         Self { function_id, call_variable_mapping, call_variable_categories, returns, return_is_stream }
     }
 
+    pub(crate) fn function_id(&self) -> DefinitionKey<'static> {
+        self.function_id.clone()
+    }
+
     pub(crate) fn call_id_mapping(&self) -> &BTreeMap<ID, Variable> {
         &self.call_variable_mapping
     }
