@@ -46,6 +46,12 @@ pub struct AnnotationUnique;
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationKey;
 
+impl AnnotationKey {
+    pub const fn cardinality() -> AnnotationCardinality {
+        AnnotationCardinality::key()
+    }
+}
+
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationIndependent;
 
@@ -64,6 +70,10 @@ impl AnnotationCardinality {
     }
 
     pub const fn default() -> Self {
+        Self::new(0, Some(1))
+    }
+
+    pub const fn key() -> Self {
         Self::new(0, Some(1))
     }
 

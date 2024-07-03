@@ -1826,7 +1826,7 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         if let Some(supertype) = TypeReader::get_supertype(snapshot, type_.clone())? {
-            OperationTimeValidation::validate_type_regex_narrows_annotation(snapshot, supertype, regex.clone())
+            OperationTimeValidation::validate_type_regex_narrows_inherited_regex(snapshot, supertype, regex.clone())
                 .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
@@ -2017,6 +2017,11 @@ impl TypeManager {
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        if let Some(override_owns) = TypeReader::get_implementation_override(snapshot, owns.clone())? {
+            OperationTimeValidation::validate_key_narrows_inherited_cardinality(snapshot, override_owns)
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
+
         TypeWriter::storage_put_type_edge_property::<AnnotationKey>(snapshot, owns, None);
         Ok(())
     }
@@ -2067,8 +2072,12 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         if let Some(override_edge) = TypeReader::get_implementation_override(snapshot, edge.clone())? {
-            OperationTimeValidation::validate_cardinality_narrows_annotation(snapshot, override_edge, cardinality)
-                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            OperationTimeValidation::validate_cardinality_narrows_inherited_cardinality(
+                snapshot,
+                override_edge,
+                cardinality,
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
         TypeWriter::storage_insert_type_edge_property::<AnnotationCardinality>(snapshot, edge, Some(cardinality));
@@ -2132,8 +2141,12 @@ impl TypeManager {
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         if let Some(override_edge) = TypeReader::get_implementation_override(snapshot, owns.clone())? {
-            OperationTimeValidation::validate_edge_regex_narrows_annotation(snapshot, override_edge, regex.clone())
-                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+            OperationTimeValidation::validate_edge_regex_narrows_inherited_regex(
+                snapshot,
+                override_edge,
+                regex.clone(),
+            )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
         }
 
         // TODO: Verify that there is no regex on subtypes (schema validation only)

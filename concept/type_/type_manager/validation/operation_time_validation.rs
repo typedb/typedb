@@ -26,7 +26,9 @@ use crate::{
         thing_manager::ThingManager,
     },
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationRegex},
+        annotation::{
+            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRegex,
+        },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::EntityType,
         object_type::ObjectType,
@@ -431,7 +433,22 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_cardinality_narrows_annotation<EDGE>(
+    pub(crate) fn validate_key_narrows_inherited_cardinality<EDGE>(
+        snapshot: &impl ReadableSnapshot,
+        supertype_edge: EDGE,
+    ) -> Result<(), SchemaValidationError>
+    where
+        EDGE: InterfaceImplementation<'static> + Clone,
+    {
+        match Self::get_conflicted_cardinality(snapshot, supertype_edge.clone(), AnnotationKey::cardinality())? {
+            Some(conflicted_cardinality) => {
+                Err(SchemaValidationError::KeyShouldNarrowInheritedCardinality(conflicted_cardinality.clone()))
+            }
+            None => Ok(()),
+        }
+    }
+
+    pub(crate) fn validate_cardinality_narrows_inherited_cardinality<EDGE>(
         snapshot: &impl ReadableSnapshot,
         supertype_edge: EDGE,
         cardinality: AnnotationCardinality,
@@ -439,28 +456,43 @@ impl OperationTimeValidation {
         where
             EDGE: InterfaceImplementation<'static> + Clone,
     {
+        match Self::get_conflicted_cardinality(snapshot, supertype_edge.clone(), cardinality.clone())? {
+            Some(conflicted_cardinality) => Err(SchemaValidationError::CardinalityShouldNarrowInheritedCardinality(
+                cardinality.clone(),
+                conflicted_cardinality.clone(),
+            )),
+            None => Ok(()),
+        }
+    }
+
+    fn get_conflicted_cardinality<EDGE, Snapshot>(
+        snapshot: &Snapshot,
+        supertype_edge: EDGE,
+        cardinality: AnnotationCardinality,
+    ) -> Result<Option<AnnotationCardinality>, SchemaValidationError>
+    where
+        Snapshot: ReadableSnapshot,
+        EDGE: InterfaceImplementation<'static> + Clone,
+    {
         if let Some(supertype_annotation) =
             Self::edge_get_annotation_by_category(snapshot, supertype_edge, AnnotationCategory::Cardinality)?
         {
             match supertype_annotation {
                 Annotation::Cardinality(supertype_cardinality) => {
                     if supertype_cardinality.narrowed_correctly_by(&cardinality) {
-                        Ok(())
+                        Ok(None)
                     } else {
-                        Err(SchemaValidationError::CardinalityShouldNarrowInheritedCardinality(
-                            cardinality.clone(),
-                            supertype_cardinality.clone(),
-                        ))
+                        Ok(Some(supertype_cardinality))
                     }
                 }
                 _ => unreachable!("Should not reach it for Cardinality-related function"),
             }
         } else {
-            Ok(())
+            Ok(None)
         }
     }
 
-    pub(crate) fn validate_type_regex_narrows_annotation(
+    pub(crate) fn validate_type_regex_narrows_inherited_regex(
         snapshot: &impl ReadableSnapshot,
         supertype: impl KindAPI<'static>,
         regex: AnnotationRegex,
@@ -486,7 +518,7 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_edge_regex_narrows_annotation<EDGE>(
+    pub(crate) fn validate_edge_regex_narrows_inherited_regex<EDGE>(
         snapshot: &impl ReadableSnapshot,
         supertype_edge: EDGE,
         regex: AnnotationRegex,
@@ -649,9 +681,11 @@ impl OperationTimeValidation {
             )?;
 
             match subtype_annotation {
-                Annotation::Regex(regex) => {
-                    OperationTimeValidation::validate_type_regex_narrows_annotation(snapshot, supertype.clone(), regex)?
-                }
+                Annotation::Regex(regex) => OperationTimeValidation::validate_type_regex_narrows_inherited_regex(
+                    snapshot,
+                    supertype.clone(),
+                    regex,
+                )?,
                 | Annotation::Abstract(_)
                 | Annotation::Distinct(_)
                 | Annotation::Independent(_)
@@ -685,22 +719,25 @@ impl OperationTimeValidation {
 
             match subtype_annotation {
                 Annotation::Cardinality(cardinality) => {
-                    OperationTimeValidation::validate_cardinality_narrows_annotation(
+                    OperationTimeValidation::validate_cardinality_narrows_inherited_cardinality(
                         snapshot,
                         overridden_edge.clone(),
                         cardinality,
                     )?
                 }
-                Annotation::Regex(regex) => OperationTimeValidation::validate_edge_regex_narrows_annotation(
+                Annotation::Regex(regex) => OperationTimeValidation::validate_edge_regex_narrows_inherited_regex(
                     snapshot,
                     overridden_edge.clone(),
                     regex,
+                )?,
+                Annotation::Key(_) => OperationTimeValidation::validate_key_narrows_inherited_cardinality(
+                    snapshot,
+                    overridden_edge.clone(),
                 )?,
                 | Annotation::Abstract(_)
                 | Annotation::Distinct(_)
                 | Annotation::Independent(_)
                 | Annotation::Unique(_)
-                | Annotation::Key(_)
                 | Annotation::Cascade(_) => {}
             }
         }
