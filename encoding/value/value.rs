@@ -32,8 +32,7 @@ pub enum Value<'a> {
 }
 
 // TODO: should we implement our own Equality, which takes into account floating point EPSILON? Otherwise, we'll transmit rounding errors throughout the language
-impl<'a> Eq for Value<'a> {
-}
+impl<'a> Eq for Value<'a> {}
 
 impl<'a> Value<'a> {
     pub fn as_reference(&self) -> Value<'_> {
@@ -195,4 +194,3 @@ impl<'a> ValueEncodable for Value<'a> {
         }
     }
 }
-

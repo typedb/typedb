@@ -4,21 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
-use concept::error::ConceptReadError;
-use concept::thing::thing_manager::ThingManager;
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::inference::type_inference::TypeAnnotations;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    executor::{function_executor::FunctionExecutor, pattern_executor::PatternExecutor},
+    executor::{
+        function_executor::FunctionExecutor,
+        pattern_executor::{ImmutableRow, PatternExecutor, Row},
+    },
     planner::program_plan::ProgramPlan,
 };
-use crate::executor::pattern_executor::{ImmutableRow, Row};
 
 pub struct ProgramExecutor {
     entry: PatternExecutor,
@@ -43,8 +43,8 @@ impl ProgramExecutor {
     pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(
         self,
         snapshot: Arc<Snapshot>,
-        thing_manager: Arc<ThingManager>
-    ) -> impl for<'a> LendingIterator<Item<'a>=Result<ImmutableRow<'a>, &'a ConceptReadError>> {
+        thing_manager: Arc<ThingManager>,
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>> {
         self.entry.into_iterator(snapshot, thing_manager)
     }
 }

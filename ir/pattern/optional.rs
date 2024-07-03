@@ -11,9 +11,10 @@ use std::{
 
 use answer::variable::Variable;
 
-use crate::pattern::{Scope, ScopeId};
-use crate::pattern::conjunction::Conjunction;
-use crate::program::block::BlockContext;
+use crate::{
+    pattern::{conjunction::Conjunction, Scope, ScopeId},
+    program::block::BlockContext,
+};
 
 #[derive(Debug)]
 pub struct Optional {
@@ -24,7 +25,7 @@ pub struct Optional {
 impl Optional {
     pub(crate) fn new_child(parent_scope_id: ScopeId, context: Arc<Mutex<BlockContext>>) -> Self {
         let scope_id = context.lock().unwrap().create_child_scope(parent_scope_id);
-        let conjunction = Conjunction::new(scope_id, context.clone() );
+        let conjunction = Conjunction::new(scope_id, context.clone());
         Self { context, conjunction }
     }
 

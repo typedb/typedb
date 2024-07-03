@@ -5,10 +5,11 @@
  */
 
 use ir::pattern::constraint::RolePlayer;
-use crate::executor::iterator::ConstraintIterator;
-use crate::executor::pattern_executor::Row;
-use crate::executor::Position;
-use crate::planner::pattern_plan::IterateMode;
+
+use crate::{
+    executor::{iterator::ConstraintIterator, pattern_executor::Row, Position},
+    planner::pattern_plan::IterateMode,
+};
 
 pub(crate) struct RolePlayerReverseProvider {
     role_player: RolePlayer<Position>,

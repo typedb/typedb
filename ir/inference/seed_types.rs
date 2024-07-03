@@ -17,10 +17,7 @@ use concept::{
 };
 use encoding::{
     graph::type_::Kind,
-    value::{
-        label::Label,
-        value_type::{ValueTypeCategory},
-    },
+    value::{label::Label, value_type::ValueTypeCategory},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
@@ -34,10 +31,10 @@ use crate::{
     pattern::{
         conjunction::Conjunction,
         constraint::{Comparison, Constraint, FunctionCallBinding, Has, Isa, RolePlayer, Sub, Type},
+        nested_pattern::NestedPattern,
         variable_category::VariableCategory,
     },
 };
-use crate::pattern::nested_pattern::NestedPattern;
 
 pub struct TypeSeeder<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
@@ -82,7 +79,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             some_vertex_was_directly_annotated =
                 self.annotate_unannotated_vertex(tig).map_err(|source| TypeInferenceError::ConceptRead { source })?;
         }
-        self.seed_edges(tig).map_err(|source| TypeInferenceError::ConceptRead { source } )?;
+        self.seed_edges(tig).map_err(|source| TypeInferenceError::ConceptRead { source })?;
 
         // Now we recurse into the nested negations & optionals
         let TypeInferenceGraph { vertices, nested_negations, nested_optionals, .. } = tig;
@@ -1020,14 +1017,12 @@ pub mod tests {
             seed_types::TypeSeeder,
             tests::{
                 managers,
-                schema_consts::{
-                    setup_types, LABEL_CAT, LABEL_NAME,
-                },
+                schema_consts::{setup_types, LABEL_CAT, LABEL_NAME},
                 setup_storage,
             },
         },
+        program::block::FunctionalBlock,
     };
-    use crate::program::block::FunctionalBlock;
 
     #[test]
     fn test_has() {

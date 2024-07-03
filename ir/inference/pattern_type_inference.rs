@@ -296,9 +296,9 @@ pub mod tests {
                 setup_storage,
             },
         },
-        pattern::{constraint::Constraint},
+        pattern::constraint::Constraint,
+        program::block::FunctionalBlock,
     };
-    use crate::program::block::FunctionalBlock;
 
     pub(crate) fn expected_edge(
         constraint: &Constraint<Variable>,

@@ -5,12 +5,10 @@
  */
 
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     fmt::{Display, Formatter},
-    hash::Hash,
+    hash::{Hash, Hasher},
 };
-use std::collections::BTreeMap;
-use std::hash::Hasher;
 
 use answer::variable::Variable;
 use encoding::graph::definition::definition_key::DefinitionKey;

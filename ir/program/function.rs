@@ -6,8 +6,7 @@
 
 use answer::variable::Variable;
 
-use crate::PatternDefinitionError;
-use crate::program::block::FunctionalBlock;
+use crate::{program::block::FunctionalBlock, PatternDefinitionError};
 
 pub struct FunctionIR {
     arguments: Vec<Variable>,
@@ -18,7 +17,7 @@ pub struct FunctionIR {
 impl FunctionIR {
     fn new<'a>(
         block: FunctionalBlock,
-        arguments: impl Iterator<Item=&'a str>,
+        arguments: impl Iterator<Item = &'a str>,
     ) -> Result<Self, PatternDefinitionError> {
         let mut argument_variables = Vec::new();
         {

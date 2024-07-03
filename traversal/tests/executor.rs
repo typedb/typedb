@@ -4,31 +4,42 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::borrow::Cow;
-use std::collections::{BTreeMap, HashMap, HashSet};
-use std::sync::Arc;
+use std::{
+    borrow::Cow,
+    collections::{BTreeMap, HashMap, HashSet},
+    sync::Arc,
+};
 
-use concept::thing::object::ObjectAPI;
-use concept::thing::thing_manager::ThingManager;
-use concept::type_::{Ordering, OwnerAPI};
-use concept::type_::type_manager::TypeManager;
+use concept::{
+    thing::{object::ObjectAPI, thing_manager::ThingManager},
+    type_::{type_manager::TypeManager, Ordering, OwnerAPI},
+};
 use durability::wal::WAL;
-use encoding::EncodingKeyspace;
-use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
-use encoding::graph::thing::vertex_generator::ThingVertexGenerator;
-use encoding::graph::type_::vertex_generator::TypeVertexGenerator;
-use encoding::value::label::Label;
-use encoding::value::value::Value;
-use encoding::value::value_type::ValueType;
-use ir::inference::type_inference::{ConstraintTypeAnnotations, LeftRightAnnotations, TypeAnnotations};
-use ir::program::block::FunctionalBlock;
-use storage::durability_client::WALClient;
-use storage::MVCCStorage;
-use storage::snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot};
+use encoding::{
+    graph::{
+        definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
+        type_::vertex_generator::TypeVertexGenerator,
+    },
+    value::{label::Label, value::Value, value_type::ValueType},
+    EncodingKeyspace,
+};
+use ir::{
+    inference::type_inference::{ConstraintTypeAnnotations, LeftRightAnnotations, TypeAnnotations},
+    program::block::FunctionalBlock,
+};
+use storage::{
+    durability_client::WALClient,
+    snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
+    MVCCStorage,
+};
 use test_utils::{create_tmp_dir, init_logging};
-use traversal::executor::program_executor::ProgramExecutor;
-use traversal::planner::pattern_plan::{Execution, Iterate, IterateMode, PatternPlan, Step};
-use traversal::planner::program_plan::ProgramPlan;
+use traversal::{
+    executor::program_executor::ProgramExecutor,
+    planner::{
+        pattern_plan::{Execution, Iterate, IterateMode, PatternPlan, Step},
+        program_plan::ProgramPlan,
+    },
+};
 
 fn setup_storage() -> Arc<MVCCStorage<WALClient>> {
     init_logging();
@@ -40,18 +51,12 @@ fn setup_storage() -> Arc<MVCCStorage<WALClient>> {
 
     let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
-    TypeManager::initialise_types(
-        storage.clone(),
-        definition_key_generator.clone(),
-        type_vertex_generator.clone(),
-    )
+    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
         .unwrap();
     storage
 }
 
-fn load_managers(
-    storage: Arc<MVCCStorage<WALClient>>,
-) -> (Arc<TypeManager>, ThingManager) {
+fn load_managers(storage: Arc<MVCCStorage<WALClient>>) -> (Arc<TypeManager>, ThingManager) {
     let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage).unwrap());
@@ -91,15 +96,15 @@ fn traverse_has() {
         let mut _age_4 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(13)).unwrap();
         let mut _age_5 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(14)).unwrap();
 
-        let mut _name_1 = thing_manager.create_attribute(
-            &mut snapshot, name_type.clone(), Value::String(Cow::Owned("John".to_string())),
-        ).unwrap();
-        let mut _name_2 = thing_manager.create_attribute(
-            &mut snapshot, name_type.clone(), Value::String(Cow::Owned("Alice".to_string())),
-        ).unwrap();
-        let mut _name_3 = thing_manager.create_attribute(
-            &mut snapshot, name_type.clone(), Value::String(Cow::Owned("Leila".to_string())),
-        ).unwrap();
+        let mut _name_1 = thing_manager
+            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("John".to_string())))
+            .unwrap();
+        let mut _name_2 = thing_manager
+            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("Alice".to_string())))
+            .unwrap();
+        let mut _name_3 = thing_manager
+            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned("Leila".to_string())))
+            .unwrap();
 
         _person_1.set_has_unordered(&mut snapshot, &thing_manager, _age_1.clone()).unwrap();
         _person_1.set_has_unordered(&mut snapshot, &thing_manager, _age_2.clone()).unwrap();
@@ -137,12 +142,13 @@ fn traverse_has() {
     let filter = block.add_filter(vec![&"person", &"age"]).unwrap().clone();
 
     // Plan
-    let steps = vec![
-        Step::new(Execution::SortedIterators(vec![
+    let steps = vec![Step::new(
+        Execution::SortedIterators(vec![
             Iterate::Has(has_age.clone(), IterateMode::UnboundSortedFrom),
             Iterate::Has(has_name.clone(), IterateMode::UnboundSortedFrom),
-        ]), &HashSet::new())
-    ];
+        ]),
+        &HashSet::new(),
+    )];
     // TODO: incorporate the filter
     let pattern_plan = PatternPlan::new(steps);
     let program_plan = ProgramPlan::new(pattern_plan, HashMap::new());
@@ -163,27 +169,21 @@ fn traverse_has() {
         variable_annotations.insert(var_age, Arc::new(HashSet::from([age_type.clone().into()])));
 
         let mut constraint_annotations = HashMap::new();
-        constraint_annotations.insert(has_age.into(), ConstraintTypeAnnotations::LeftRight(
-            LeftRightAnnotations::new(
-                BTreeMap::from([
-                    (person_type.clone().into(), vec![age_type.clone().into()])
-                ]),
-                BTreeMap::from([
-                    (age_type.clone().into(), vec![person_type.clone().into()]),
-                ]),
-            )
-        ));
+        constraint_annotations.insert(
+            has_age.into(),
+            ConstraintTypeAnnotations::LeftRight(LeftRightAnnotations::new(
+                BTreeMap::from([(person_type.clone().into(), vec![age_type.clone().into()])]),
+                BTreeMap::from([(age_type.clone().into(), vec![person_type.clone().into()])]),
+            )),
+        );
 
-        constraint_annotations.insert(has_name.into(), ConstraintTypeAnnotations::LeftRight(
-            LeftRightAnnotations::new(
-                BTreeMap::from([
-                    (person_type.clone().into(), vec![name_type.clone().into()])
-                ]),
-                BTreeMap::from([
-                    (name_type.clone().into(), vec![person_type.clone().into()]),
-                ]),
-            )
-        ));
+        constraint_annotations.insert(
+            has_name.into(),
+            ConstraintTypeAnnotations::LeftRight(LeftRightAnnotations::new(
+                BTreeMap::from([(person_type.clone().into(), vec![name_type.clone().into()])]),
+                BTreeMap::from([(name_type.clone().into(), vec![person_type.clone().into()])]),
+            )),
+        );
 
         let type_annotations = TypeAnnotations::new(variable_annotations, constraint_annotations);
         ProgramExecutor::new(program_plan, &type_annotations, &snapshot, &thing_manager).unwrap()

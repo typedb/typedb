@@ -8,11 +8,7 @@ use std::collections::HashMap;
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 
-use crate::program::block::FunctionalBlock;
-
-use crate::program::{
-    function::FunctionIR,
-};
+use crate::program::{block::FunctionalBlock, function::FunctionIR};
 
 pub struct Program {
     entry: FunctionalBlock,

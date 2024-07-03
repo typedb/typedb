@@ -9,12 +9,10 @@ use std::{
     sync::MutexGuard,
 };
 
-use crate::pattern::{
-    disjunction::Disjunction, negation::Negation,
-    optional::Optional,
+use crate::{
+    pattern::{disjunction::Disjunction, negation::Negation, optional::Optional},
+    program::block::BlockContext,
 };
-
-use crate::program::block::BlockContext;
 
 #[derive(Debug)]
 pub enum NestedPattern {

@@ -9,19 +9,17 @@ use std::{
     sync::{Arc, Mutex, MutexGuard},
 };
 
+use answer::variable::Variable;
 use itertools::Itertools;
 
-use answer::variable::Variable;
-
 use crate::{
-    pattern::{constraint::Constraints, Scope, ScopeId},
+    pattern::{
+        constraint::Constraints, disjunction::Disjunction, negation::Negation, nested_pattern::NestedPattern,
+        optional::Optional, Scope, ScopeId,
+    },
+    program::block::BlockContext,
     PatternDefinitionError,
 };
-use crate::pattern::disjunction::Disjunction;
-use crate::pattern::negation::Negation;
-use crate::pattern::nested_pattern::NestedPattern;
-use crate::pattern::optional::Optional;
-use crate::program::block::BlockContext;
 
 #[derive(Debug)]
 pub struct Conjunction {
@@ -68,11 +66,11 @@ impl Conjunction {
         &mut self.constraints
     }
 
-   pub(crate) fn add_disjunction(&mut self) -> &mut Disjunction {
+    pub(crate) fn add_disjunction(&mut self) -> &mut Disjunction {
         let disjunction = Disjunction::new_child(self.scope_id, self.context.clone());
         self.nested_patterns.push(NestedPattern::Disjunction(disjunction));
         self.nested_patterns.last_mut().unwrap().as_disjunction_mut().unwrap()
-   }
+    }
 
     pub(crate) fn add_negation(&mut self) -> &mut Negation {
         let negation = Negation::new_child(self.scope_id, self.context.clone());
@@ -86,7 +84,7 @@ impl Conjunction {
         self.nested_patterns.last_mut().unwrap().as_optional_mut().unwrap()
     }
 
-        pub(crate) fn context(&self) -> MutexGuard<BlockContext> {
+    pub(crate) fn context(&self) -> MutexGuard<BlockContext> {
         self.context.lock().unwrap()
     }
 

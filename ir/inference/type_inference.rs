@@ -4,16 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    sync::Arc,
+};
 
 use answer::{variable::Variable, Type};
 use concept::type_::{
     attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType, role_type::RoleType,
 };
-use crate::pattern::constraint::Constraint;
 
-use crate::program::{program::Program, block::FunctionalBlock};
+use crate::{
+    pattern::constraint::Constraint,
+    program::{block::FunctionalBlock, program::Program},
+};
 
 /*
 Design:
@@ -38,7 +42,6 @@ pub fn infer_types(program: &Program) {
     todo!()
 }
 
-
 pub struct TypeAnnotations {
     variables: HashMap<Variable, Arc<HashSet<Type>>>,
     constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
@@ -49,7 +52,7 @@ impl TypeAnnotations {
         variables: HashMap<Variable, Arc<HashSet<Type>>>,
         constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     ) -> Self {
-        TypeAnnotations { variables: variables, constraints:constraints }
+        TypeAnnotations { variables: variables, constraints: constraints }
     }
 
     pub fn variable_annotations(&self, variable: Variable) -> Option<Arc<HashSet<Type>>> {
@@ -64,14 +67,14 @@ impl TypeAnnotations {
 pub enum ConstraintTypeAnnotations {
     LeftRight(LeftRightAnnotations),
     LeftRightFiltered(LeftRightFilteredAnnotations), // note: function calls, comparators, and value assignments are not stored here, since they do not actually co-constrain Schema types possible.
-    //       in other words, they are always right to left or deal only in value types.
+                                                     //       in other words, they are always right to left or deal only in value types.
 }
 
 impl ConstraintTypeAnnotations {
     pub fn get_left_right(&self) -> &LeftRightAnnotations {
         match self {
             ConstraintTypeAnnotations::LeftRight(annotations) => annotations,
-            ConstraintTypeAnnotations::LeftRightFiltered(_) => panic!("Unexpected type.")
+            ConstraintTypeAnnotations::LeftRightFiltered(_) => panic!("Unexpected type."),
         }
     }
 }
@@ -82,7 +85,6 @@ pub struct LeftRightAnnotations {
 }
 
 impl LeftRightAnnotations {
-
     pub fn new(left_to_right: BTreeMap<Type, Vec<Type>>, right_to_left: BTreeMap<Type, Vec<Type>>) -> Self {
         Self { left_to_right: Arc::new(left_to_right), right_to_left: Arc::new(right_to_left) }
     }

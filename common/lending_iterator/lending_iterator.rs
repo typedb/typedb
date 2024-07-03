@@ -14,10 +14,9 @@ use adaptors::FilterMap;
 use higher_order::AdHocHkt;
 
 use crate::{
-    adaptors::{Filter, Map, TakeWhile},
+    adaptors::{Filter, FlatMap, Map, TakeWhile},
     higher_order::{FnHktHelper, FnMutHktHelper, Hkt},
 };
-use crate::adaptors::FlatMap;
 
 pub trait LendingIterator: 'static {
     type Item<'a>;
@@ -191,7 +190,7 @@ where
 }
 
 pub struct AsLendingIterator<I: Iterator> {
-    iter: I
+    iter: I,
 }
 
 impl<I: Iterator> AsLendingIterator<I> {
@@ -207,4 +206,3 @@ impl<I: Iterator + 'static> LendingIterator for AsLendingIterator<I> {
         self.iter.next()
     }
 }
-

@@ -22,9 +22,9 @@ use crate::{
         variable_category::{VariableCategory, VariableOptionality},
         IrID, ScopeId,
     },
+    program::block::BlockContext,
     PatternDefinitionError,
 };
-use crate::program::block::BlockContext;
 
 #[derive(Debug)]
 pub struct Constraints {
@@ -71,11 +71,7 @@ impl Constraints {
         self.constraints.last().unwrap()
     }
 
-    pub fn add_type(
-        &mut self,
-        variable: Variable,
-        type_: &str,
-    ) -> Result<&Type<Variable>, PatternDefinitionError> {
+    pub fn add_type(&mut self, variable: Variable, type_: &str) -> Result<&Type<Variable>, PatternDefinitionError> {
         debug_assert!(self.context.lock().unwrap().is_variable_available(self.scope, variable));
         let type_ = Type::new(variable, type_.to_string());
         self.context.lock().unwrap().set_variable_category(variable, VariableCategory::Type, type_.clone().into())?;
@@ -97,11 +93,7 @@ impl Constraints {
         Ok(as_ref.as_sub().unwrap())
     }
 
-    pub fn add_isa(
-        &mut self,
-        thing: Variable,
-        type_: Variable,
-    ) -> Result<&Isa<Variable>, PatternDefinitionError> {
+    pub fn add_isa(&mut self, thing: Variable, type_: Variable) -> Result<&Isa<Variable>, PatternDefinitionError> {
         debug_assert!(
             self.context.lock().unwrap().is_variable_available(self.scope, thing)
                 && self.context.lock().unwrap().is_variable_available(self.scope, type_),
@@ -113,11 +105,7 @@ impl Constraints {
         Ok(as_ref.as_isa().unwrap())
     }
 
-    pub fn add_has(
-        &mut self,
-        owner: Variable,
-        attribute: Variable,
-    ) -> Result<&Has<Variable>, PatternDefinitionError> {
+    pub fn add_has(&mut self, owner: Variable, attribute: Variable) -> Result<&Has<Variable>, PatternDefinitionError> {
         debug_assert!(
             self.context.lock().unwrap().is_variable_available(self.scope, owner)
                 && self.context.lock().unwrap().is_variable_available(self.scope, attribute)
@@ -620,7 +608,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
         empty()
     }
 
-    pub fn ids_assigned(&self) -> impl Iterator<Item=ID> {
+    pub fn ids_assigned(&self) -> impl Iterator<Item = ID> {
         [self.left].into_iter()
     }
 

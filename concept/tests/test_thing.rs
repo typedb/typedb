@@ -49,9 +49,7 @@ use storage::{
 };
 use test_utils::{create_tmp_dir, init_logging};
 
-fn load_managers(
-    storage: Arc<MVCCStorage<WALClient>>,
-) -> (Arc<TypeManager>, ThingManager) {
+fn load_managers(storage: Arc<MVCCStorage<WALClient>>) -> (Arc<TypeManager>, ThingManager) {
     let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     let thing_vertex_generator = Arc::new(ThingVertexGenerator::load(storage).unwrap());
@@ -783,7 +781,7 @@ fn attribute_struct_write_read() {
             type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap().clone(),
             instance_fields,
         )
-            .unwrap();
+        .unwrap();
 
         let attr_value_type = attr_type.get_value_type(&snapshot, &type_manager).unwrap().unwrap();
         assert_eq!(ValueTypeCategory::Struct, attr_value_type.category());
@@ -966,7 +964,7 @@ fn attribute_struct_errors() {
                 struct_def.clone(),
                 HashMap::from([("f_nested".to_owned(), Value::Long(0))]),
             )
-                .unwrap_err();
+            .unwrap_err();
             assert!(
                 err.len() == 1 && matches!(err.get(0).unwrap(), EncodingError::StructFieldValueTypeMismatch { .. })
             );

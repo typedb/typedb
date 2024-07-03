@@ -4,21 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use std::io::Read;
-use std::sync::Arc;
+use std::{collections::HashMap, io::Read, sync::Arc};
 
-use answer::variable::Variable;
-use answer::variable_value::VariableValue;
-use concept::error::ConceptReadError;
-use concept::thing::thing_manager::ThingManager;
+use answer::{variable::Variable, variable_value::VariableValue};
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::inference::type_inference::TypeAnnotations;
 use lending_iterator::{AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
-use crate::executor::iterator::{ConstraintIterator, ConstraintIteratorProvider};
-use crate::executor::Position;
-use crate::planner::pattern_plan::{Check, Execution, Iterate, PatternPlan, Single, Step};
+use crate::{
+    executor::{
+        iterator::{ConstraintIterator, ConstraintIteratorProvider},
+        Position,
+    },
+    planner::pattern_plan::{Check, Execution, Iterate, PatternPlan, Single, Step},
+};
 
 pub(crate) struct PatternExecutor {
     variable_positions: HashMap<Variable, Position>,
@@ -71,7 +71,7 @@ impl PatternExecutor {
         self,
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
-    ) -> impl for<'a> LendingIterator<Item<'a>=Result<ImmutableRow<'a>, &'a ConceptReadError>> {
+    ) -> impl for<'a> LendingIterator<Item<'a> = Result<ImmutableRow<'a>, &'a ConceptReadError>> {
         AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager))
             .flat_map(|batch| BatchRowIterator::new(batch))
     }
@@ -180,7 +180,14 @@ impl StepExecutor {
         let Step { execution: execution, .. } = step;
         match execution {
             Execution::SortedIterators(iterates) => {
-                let executor = SortedExecutor::new(iterates, vars_count, variable_positions, type_annotations, snapshot, thing_manager)?;
+                let executor = SortedExecutor::new(
+                    iterates,
+                    vars_count,
+                    variable_positions,
+                    type_annotations,
+                    snapshot,
+                    thing_manager,
+                )?;
                 Ok(Self::Sorted(executor))
             }
             Execution::UnsortedIterator(iterate, checks) => {
@@ -230,7 +237,7 @@ impl StepExecutor {
     ) -> Result<Option<Batch>, ConceptReadError> {
         match self {
             StepExecutor::Sorted(sorted) => sorted.batch_continue(snapshot, thing_manager),
-            StepExecutor::Unsorted(unsorted) => todo!(),// unsorted.batch_continue(snapshot, thing_manager),
+            StepExecutor::Unsorted(unsorted) => todo!(), // unsorted.batch_continue(snapshot, thing_manager),
             StepExecutor::Disjunction(disjunction) => todo!(),
             StepExecutor::Optional(optional) => todo!(),
             StepExecutor::Single(_) | StepExecutor::Negation(_) => Ok(None),
@@ -258,7 +265,9 @@ impl SortedExecutor {
     ) -> Result<Self, ConceptReadError> {
         let providers: Vec<ConstraintIteratorProvider> = iterates
             .into_iter()
-            .map(|iterate| ConstraintIteratorProvider::new(iterate, variable_positions, type_annotations, snapshot, thing_manager))
+            .map(|iterate| {
+                ConstraintIteratorProvider::new(iterate, variable_positions, type_annotations, snapshot, thing_manager)
+            })
             .collect::<Result<Vec<_>, ConceptReadError>>()?;
 
         Ok(Self {
@@ -542,7 +551,7 @@ impl LendingIterator for BatchRowIterator {
                     Some(Ok(row))
                 }
             }
-            Err(err) => Some(Err(err))
+            Err(err) => Some(Err(err)),
         }
     }
 }
@@ -565,13 +574,11 @@ impl<'a> Row<'a> {
         debug_assert!(*self.get(position) == VariableValue::Empty);
         self.row[position.as_usize()] = value;
     }
-
 }
-
 
 #[derive(Debug, Copy, Clone)]
 pub struct ImmutableRow<'a> {
-    row: &'a [VariableValue<'static>]
+    row: &'a [VariableValue<'static>],
 }
 
 impl<'a> ImmutableRow<'a> {

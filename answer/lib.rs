@@ -5,13 +5,12 @@
  */
 
 use concept::{
-    thing::{attribute::Attribute, entity::Entity, relation::Relation},
+    thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation},
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
         role_type::RoleType, ObjectTypeAPI,
     },
 };
-use concept::thing::object::Object;
 use encoding::value::value::Value;
 
 pub mod answer_map;
@@ -46,7 +45,7 @@ impl Type {
     pub fn as_attribute_type(&self) -> AttributeType<'static> {
         match self {
             Type::Attribute(attribute) => attribute.clone().into_owned(),
-            _ => panic!("Type is not an Attribute type.")
+            _ => panic!("Type is not an Attribute type."),
         }
     }
 }

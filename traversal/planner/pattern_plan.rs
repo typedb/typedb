@@ -5,10 +5,10 @@
  */
 
 use std::collections::HashSet;
-use itertools::Itertools;
 
 use answer::variable::Variable;
 use ir::pattern::constraint::{Comparison, ExpressionBinding, FunctionCallBinding, Has, RolePlayer};
+use itertools::Itertools;
 
 pub struct PatternPlan {
     steps: Vec<Step>,
@@ -24,7 +24,7 @@ impl PatternPlan {
         &self.steps
     }
 
-    pub(crate) fn into_steps(self) -> impl Iterator<Item=Step> {
+    pub(crate) fn into_steps(self) -> impl Iterator<Item = Step> {
         self.steps.into_iter()
     }
 }
@@ -44,10 +44,7 @@ pub struct Step {
 impl Step {
     pub fn new(execution: Execution, bound_variables: &HashSet<Variable>) -> Self {
         let generated_variables = execution.generated_variables(bound_variables);
-        Self {
-            execution,
-            output_variables: generated_variables,
-        }
+        Self { execution, output_variables: generated_variables }
     }
 
     pub(crate) fn generated_variables(&self) -> &Vec<Variable> {
@@ -70,34 +67,40 @@ impl Execution {
         let mut generated = Vec::new();
         match self {
             Execution::SortedIterators(iterates) => {
-                iterates.iter().for_each(|iterate|
-                    iterate.foreach_generated(bound_variables, |var| if !generated.contains(&var) {
-                        generated.push(var)
+                iterates.iter().for_each(|iterate| {
+                    iterate.foreach_generated(bound_variables, |var| {
+                        if !generated.contains(&var) {
+                            generated.push(var)
+                        }
                     })
-                );
+                });
             }
             Execution::UnsortedIterator(iterate, checks) => {
-                iterate.foreach_generated(bound_variables, |var| if !generated.contains(&var) {
-                    generated.push(var)
+                iterate.foreach_generated(bound_variables, |var| {
+                    if !generated.contains(&var) {
+                        generated.push(var)
+                    }
                 });
                 // TODO: this should be a debug as a whole
-                checks.iter().for_each(
-                    |check| check.foreach_variable(|var| debug_assert!(!bound_variables.contains(&var)))
-                );
+                checks
+                    .iter()
+                    .for_each(|check| check.foreach_variable(|var| debug_assert!(!bound_variables.contains(&var))));
             }
             Execution::Single(single, checks) => {
-                single.foreach_generated(bound_variables, |var| if !generated.contains(&var) {
-                    generated.push(var)
+                single.foreach_generated(bound_variables, |var| {
+                    if !generated.contains(&var) {
+                        generated.push(var)
+                    }
                 });
                 // TODO: this should be a debug as a whole
-                checks.iter().for_each(
-                    |check| check.foreach_variable(|var| debug_assert!(!bound_variables.contains(&var)))
-                );
+                checks
+                    .iter()
+                    .for_each(|check| check.foreach_variable(|var| debug_assert!(!bound_variables.contains(&var))));
             }
             Execution::Disjunction(disjunction) => {
                 todo!()
             }
-            Execution::Negation(negation) => {},
+            Execution::Negation(negation) => {}
             Execution::Optional(optional) => {
                 todo!()
             }
@@ -131,66 +134,62 @@ pub enum Iterate {
 impl Iterate {
     fn foreach_generated(&self, bound_variables: &HashSet<Variable>, mut apply: impl FnMut(Variable) -> ()) {
         match self {
-            Iterate::Has(has, mode) => {
-                match mode {
-                    IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
-                        debug_assert!(!has.ids().any(|var| bound_variables.contains(&var)));
-                        has.ids().for_each(apply)
-                    }
-                    IterateMode::BoundFromSortedTo => {
-                        debug_assert!(bound_variables.contains(&has.owner()));
-                        apply(has.attribute())
-                    }
+            Iterate::Has(has, mode) => match mode {
+                IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
+                    debug_assert!(!has.ids().any(|var| bound_variables.contains(&var)));
+                    has.ids().for_each(apply)
                 }
-            }
-            Iterate::HasReverse(has, mode) => {
-                match mode {
-                    IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
-                        debug_assert!(!has.ids().any(|var| bound_variables.contains(&var)));
-                        has.ids().for_each(apply);
-                    }
-                    IterateMode::BoundFromSortedTo => {
-                        debug_assert!(bound_variables.contains(&has.attribute()));
-                        apply(has.owner())
-                    }
+                IterateMode::BoundFromSortedTo => {
+                    debug_assert!(bound_variables.contains(&has.owner()));
+                    apply(has.attribute())
                 }
-            }
-            Iterate::RolePlayer(rp, mode) => {
-                match mode {
-                    IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
-                        debug_assert!(!rp.ids().any(|var| bound_variables.contains(&var)));
-                        rp.ids().for_each(apply);
-                    }
-                    IterateMode::BoundFromSortedTo => {
-                        debug_assert!(bound_variables.contains(&rp.relation()));
-                        apply(rp.player());
-                        rp.role_type().map(|role_type| apply(role_type));
-                    }
+            },
+            Iterate::HasReverse(has, mode) => match mode {
+                IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
+                    debug_assert!(!has.ids().any(|var| bound_variables.contains(&var)));
+                    has.ids().for_each(apply);
                 }
-            }
-            Iterate::RolePlayerReverse(rp, mode) => {
-                match mode {
-                    IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
-                        debug_assert!(!rp.ids().any(|var| bound_variables.contains(&var)));
-                        rp.ids().for_each(apply)
-                    }
-                    IterateMode::BoundFromSortedTo => {
-                        debug_assert!(bound_variables.contains(&rp.player()));
-                        apply(rp.player());
-                        rp.role_type().map(|role_type| apply(role_type));
-                    }
+                IterateMode::BoundFromSortedTo => {
+                    debug_assert!(bound_variables.contains(&has.attribute()));
+                    apply(has.owner())
                 }
-            }
+            },
+            Iterate::RolePlayer(rp, mode) => match mode {
+                IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
+                    debug_assert!(!rp.ids().any(|var| bound_variables.contains(&var)));
+                    rp.ids().for_each(apply);
+                }
+                IterateMode::BoundFromSortedTo => {
+                    debug_assert!(bound_variables.contains(&rp.relation()));
+                    apply(rp.player());
+                    rp.role_type().map(|role_type| apply(role_type));
+                }
+            },
+            Iterate::RolePlayerReverse(rp, mode) => match mode {
+                IterateMode::UnboundSortedFrom | IterateMode::UnboundSortedTo => {
+                    debug_assert!(!rp.ids().any(|var| bound_variables.contains(&var)));
+                    rp.ids().for_each(apply)
+                }
+                IterateMode::BoundFromSortedTo => {
+                    debug_assert!(bound_variables.contains(&rp.player()));
+                    apply(rp.player());
+                    rp.role_type().map(|role_type| apply(role_type));
+                }
+            },
             Iterate::FunctionCallBinding(call) => {
                 debug_assert!(!call.ids_assigned().any(|var| bound_variables.contains(&var)));
                 call.ids_assigned().for_each(apply)
             }
             Iterate::Comparison(comparison) => {
-                debug_assert!(bound_variables.contains(&comparison.rhs()) && !bound_variables.contains(&comparison.lhs()));
+                debug_assert!(
+                    bound_variables.contains(&comparison.rhs()) && !bound_variables.contains(&comparison.lhs())
+                );
                 apply(comparison.lhs());
             }
             Iterate::ComparisonReverse(comparison) => {
-                debug_assert!(bound_variables.contains(&comparison.lhs()) && !bound_variables.contains(&comparison.rhs()));
+                debug_assert!(
+                    bound_variables.contains(&comparison.lhs()) && !bound_variables.contains(&comparison.rhs())
+                );
                 apply(comparison.rhs());
             }
         }
@@ -225,8 +224,7 @@ pub enum Single {
 }
 
 impl Single {
-
-    fn foreach_generated(&self, bound_variables: &HashSet<Variable>, mut apply: impl FnMut(Variable) ->()) {
+    fn foreach_generated(&self, bound_variables: &HashSet<Variable>, mut apply: impl FnMut(Variable) -> ()) {
         match self {
             Single::ExpressionBinding(binding) => {
                 debug_assert!(!binding.ids_assigned().any(|var| bound_variables.contains(&var)));
