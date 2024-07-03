@@ -57,14 +57,14 @@ pub async fn transaction_commits(context: &mut Context, may_error: MayError) {
         ActiveTransaction::Read(_) => {}
         ActiveTransaction::Write(tx) => {
             if may_error.expects_error() {
-                return;
+                tx.close()
             } else {
                 may_error.check(&tx.commit())
             }
         }
         ActiveTransaction::Schema(tx) => {
             if may_error.expects_error() {
-                return;
+                tx.close()
             } else {
                 may_error.check(&tx.commit())
             }
