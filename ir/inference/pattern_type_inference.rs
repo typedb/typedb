@@ -192,36 +192,36 @@ impl<'this> TypeInferenceEdge<'this> {
     fn prune_vertices_from_self(&self, vertices: &mut VertexAnnotations) -> bool {
         let mut is_modified = false;
         {
-            let left_vertices = vertices.get_mut(&self.left).unwrap();
-            let size_before = left_vertices.len();
-            left_vertices.retain(|k| self.left_to_right.contains_key(k));
-            is_modified = is_modified || size_before != left_vertices.len();
+            let left_vertex_annotations = vertices.get_mut(&self.left).unwrap();
+            let size_before = left_vertex_annotations.len();
+            left_vertex_annotations.retain(|k| self.left_to_right.contains_key(k));
+            is_modified = is_modified || size_before != left_vertex_annotations.len();
         };
         {
-            let right_vertices = vertices.get_mut(&self.right).unwrap();
-            let size_before = right_vertices.len();
-            right_vertices.retain(|k| self.right_to_left.contains_key(k));
-            is_modified = is_modified || size_before != right_vertices.len();
+            let right_vertex_annotations = vertices.get_mut(&self.right).unwrap();
+            let size_before = right_vertex_annotations.len();
+            right_vertex_annotations.retain(|k| self.right_to_left.contains_key(k));
+            is_modified = is_modified || size_before != right_vertex_annotations.len();
         };
         is_modified
     }
 
     fn prune_self_from_vertices(&mut self, vertices: &VertexAnnotations) {
         {
-            let left_vertices = vertices.get(&self.left).unwrap();
+            let left_vertex_annotations = vertices.get(&self.left).unwrap();
             let prune_left: Vec<TypeAnnotation> = self
                 .left_to_right
                 .iter()
-                .filter_map(|(k, _)| if left_vertices.contains(k) { None } else { Some(k.clone()) })
+                .filter_map(|(k, _)| if left_vertex_annotations.contains(k) { None } else { Some(k.clone()) })
                 .collect();
             prune_left.into_iter().for_each(|type_| self.remove_type(self.left, type_));
         };
         {
-            let right_vertices = vertices.get(&self.right).unwrap();
+            let right_vertex_annotations = vertices.get(&self.right).unwrap();
             let prune_right: Vec<TypeAnnotation> = self
                 .right_to_left
                 .iter()
-                .filter_map(|(k, _)| if right_vertices.contains(k) { None } else { Some(k.clone()) })
+                .filter_map(|(k, _)| if right_vertex_annotations.contains(k) { None } else { Some(k.clone()) })
                 .collect();
             prune_right.into_iter().for_each(|type_| self.remove_type(self.right, type_))
         };
