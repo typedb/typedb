@@ -5,15 +5,19 @@
  */
 
 use std::collections::HashMap;
+use std::io::Read;
+use std::option::Iter;
+use std::sync::Arc;
 
 use itertools::Itertools;
+use log::warn;
 
 use answer::variable::Variable;
 use answer::variable_value::VariableValue;
 use concept::error::ConceptReadError;
 use concept::thing::thing_manager::ThingManager;
 use ir::inference::type_inference::TypeAnnotations;
-use lending_iterator::LendingIterator;
+use lending_iterator::{AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::executor::iterator::{ConstraintIterator, ConstraintIteratorProvider};
@@ -65,13 +69,20 @@ impl PatternExecutor {
         })
     }
 
-    pub fn into_iterator(self) {
-        // TODO: we could use a lending iterator here to avoid a malloc row/answer
-        // self.flat_map(|batch| batch.into_rows_cloned())
-        todo!()
+    pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(
+        self,
+        snapshot: Arc<Snapshot>,
+        thing_manager: Arc<ThingManager<Snapshot>>,
+    ) -> impl for<'a> LendingIterator<Item<'a>=Result<Row<'a>, &'a ConceptReadError>> {
+        AsLendingIterator::new(BatchIterator::new(self, snapshot, thing_manager))
+            .flat_map(|batch| BatchRowIterator::new(batch))
     }
 
-    fn compute_next_batch<Snapshot: ReadableSnapshot>(&mut self, snapshot: &Snapshot, thing_manager: &ThingManager<Snapshot>) -> Result<Option<Batch>, ConceptReadError> {
+    fn compute_next_batch<Snapshot: ReadableSnapshot>(
+        &mut self,
+        snapshot: &Snapshot,
+        thing_manager: &ThingManager<Snapshot>,
+    ) -> Result<Option<Batch>, ConceptReadError> {
         let steps_len = self.steps.len();
         let mut step_index = steps_len;
         let mut last_batch = None;
@@ -124,15 +135,24 @@ enum Direction {
     Backward,
 }
 
-impl Iterator for PatternExecutor {
-    type Item = Batch;
+struct BatchIterator<Snapshot> {
+    executor: PatternExecutor,
+    snapshot: Arc<Snapshot>,
+    thing_manager: Arc<ThingManager<Snapshot>>,
+}
+
+impl<Snapshot: ReadableSnapshot> BatchIterator<Snapshot> {
+    fn new(executor: PatternExecutor, snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager<Snapshot>>) -> Self {
+        Self { executor, snapshot, thing_manager }
+    }
+}
+
+impl<Snapshot: ReadableSnapshot> Iterator for BatchIterator<Snapshot> {
+    type Item = Result<Batch, ConceptReadError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // if self.outputs.is_none() {
-        //     self.outputs = self.compute_next_batch();
-        // }
-        // self.outputs.take()
-        todo!()
+        let batch = self.executor.compute_next_batch(self.snapshot.as_ref(), self.thing_manager.as_ref());
+        batch.transpose()
     }
 }
 
@@ -424,41 +444,48 @@ impl Batch {
         let slice = &mut self.data[index * self.width..(index + 1) * self.width];
         Row { row: slice }
     }
-
-    fn into_rows_cloned(self) -> RowsIterator {
-        RowsIterator { batch: self, index: 0 }
-    }
 }
 
-struct RowsIterator {
-    batch: Batch,
+struct BatchRowIterator {
+    batch: Result<Batch, ConceptReadError>,
     index: usize,
 }
 
-impl LendingIterator for RowsIterator {
-    type Item<'a> = Row<'a>;
+impl BatchRowIterator {
+    fn new(batch: Result<Batch, ConceptReadError>) -> Self {
+        Self { batch, index: 0 }
+    }
+}
+
+impl LendingIterator for BatchRowIterator {
+    type Item<'a> = Result<Row<'a>, &'a ConceptReadError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        if self.index > self.batch.rows_count() {
-            None
-        } else {
-            let slice = &mut self.batch.data[self.index * self.batch.width..(self.index + 1) * self.batch.width];
-            self.index += 1;
-            Some(Row { row: slice })
+        match self.batch.as_mut() {
+            Ok(batch) => {
+                if self.index > batch.rows_count() {
+                    None
+                } else {
+                    let slice = &mut batch.data[self.index * batch.width..(self.index + 1) * batch.width];
+                    self.index += 1;
+                    Some(Ok(Row { row: slice }))
+                }
+            }
+            Err(err) => Some(Err(err))
         }
     }
 }
 
-pub(crate) struct Row<'a> {
+pub struct Row<'a> {
     row: &'a mut [VariableValue<'static>],
 }
 
 impl<'a> Row<'a> {
-    pub(crate) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.row.len()
     }
 
-    pub(crate) fn get(&self, position: Position) -> &VariableValue {
+    pub fn get(&self, position: Position) -> &VariableValue {
         &self.row[position.as_usize()]
     }
 

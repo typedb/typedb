@@ -5,17 +5,20 @@
  */
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use concept::error::ConceptReadError;
 use concept::thing::thing_manager::ThingManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::inference::type_inference::TypeAnnotations;
+use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     executor::{function_executor::FunctionExecutor, pattern_executor::PatternExecutor},
     planner::program_plan::ProgramPlan,
 };
+use crate::executor::pattern_executor::Row;
 
 pub struct ProgramExecutor {
     entry: PatternExecutor,
@@ -37,7 +40,11 @@ impl ProgramExecutor {
         Ok(Self { entry: entry, functions: HashMap::new() })
     }
 
-    pub fn execute_entry(&self) {
-        self.entry.into_rows()
+    pub fn into_iterator<Snapshot: ReadableSnapshot + 'static>(
+        self,
+        snapshot: Arc<Snapshot>,
+        thing_manager: Arc<ThingManager<Snapshot>>
+    ) -> impl for<'a> LendingIterator<Item<'a>=Result<Row<'a>, &'a ConceptReadError>> {
+        self.entry.into_iterator(snapshot, thing_manager)
     }
 }
