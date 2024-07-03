@@ -135,24 +135,24 @@ impl ValueTypeCategory {
         category
     }
 
-    pub fn comparable_categories(category: ValueTypeCategory) -> Vec<ValueTypeCategory> {
+    pub fn comparable_categories(category: ValueTypeCategory) -> &'static [ValueTypeCategory] {
         match category {
-            ValueTypeCategory::Boolean => vec![ValueTypeCategory::Boolean],
+            ValueTypeCategory::Boolean => &[ValueTypeCategory::Boolean],
             ValueTypeCategory::Long => {
-                vec![ValueTypeCategory::Long, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
+                &[ValueTypeCategory::Long, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
             }
             ValueTypeCategory::Double => {
-                vec![ValueTypeCategory::Long, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
+                &[ValueTypeCategory::Long, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
             }
             ValueTypeCategory::Decimal => {
-                vec![ValueTypeCategory::Long, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
+                &[ValueTypeCategory::Long, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
             }
-            ValueTypeCategory::DateTime => vec![ValueTypeCategory::DateTime],
-            ValueTypeCategory::DateTimeTZ => vec![ValueTypeCategory::DateTimeTZ],
-            ValueTypeCategory::Duration => vec![],
-            ValueTypeCategory::String => vec![ValueTypeCategory::String],
-            ValueTypeCategory::Struct => vec![],
-            ValueTypeCategory::Date => vec![ValueTypeCategory::Date],
+            ValueTypeCategory::DateTime => &[ValueTypeCategory::DateTime],
+            ValueTypeCategory::DateTimeTZ => &[ValueTypeCategory::DateTimeTZ],
+            ValueTypeCategory::Duration => &[],
+            ValueTypeCategory::String => &[ValueTypeCategory::String],
+            ValueTypeCategory::Struct => &[],
+            ValueTypeCategory::Date => &[ValueTypeCategory::Date],
         }
     }
 }
