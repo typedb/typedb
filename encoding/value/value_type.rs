@@ -57,12 +57,13 @@ impl ValueType {
         match self {
             | ValueType::Boolean
             | ValueType::Long
+            | ValueType::Decimal
             | ValueType::DateTime
             | ValueType::DateTimeTZ
             | ValueType::Duration
             | ValueType::String => true,
 
-            | ValueType::Double | ValueType::Decimal | ValueType::Struct(_) => false,
+            | ValueType::Double | ValueType::Struct(_) => false,
         }
     }
 
