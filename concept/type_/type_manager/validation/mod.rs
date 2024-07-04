@@ -123,34 +123,3 @@ impl Error for SchemaValidationError {
         }
     }
 }
-
-#[derive(Debug, Clone)]
-pub enum AnnotationError {
-    UnsupportedAnnotationForEntityType(AnnotationCategory),
-    UnsupportedAnnotationForRelationType(AnnotationCategory),
-    UnsupportedAnnotationForAttributeType(AnnotationCategory),
-    UnsupportedAnnotationForRoleType(AnnotationCategory),
-    UnsupportedAnnotationForRelates(AnnotationCategory),
-    UnsupportedAnnotationForPlays(AnnotationCategory),
-    UnsupportedAnnotationForOwns(AnnotationCategory),
-}
-
-impl fmt::Display for AnnotationError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for AnnotationError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::UnsupportedAnnotationForEntityType(_) => None,
-            Self::UnsupportedAnnotationForRelationType(_) => None,
-            Self::UnsupportedAnnotationForAttributeType(_) => None,
-            Self::UnsupportedAnnotationForRoleType(_) => None,
-            Self::UnsupportedAnnotationForRelates(_) => None,
-            Self::UnsupportedAnnotationForPlays(_) => None,
-            Self::UnsupportedAnnotationForOwns(_) => None,
-        }
-    }
-}

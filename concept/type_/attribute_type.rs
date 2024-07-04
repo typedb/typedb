@@ -23,10 +23,10 @@ use super::annotation::{AnnotationCategory, AnnotationRegex};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationIndependent, DefaultFrom},
+        annotation::{Annotation, AnnotationAbstract, AnnotationError, AnnotationIndependent, DefaultFrom},
         object_type::ObjectType,
         owns::Owns,
-        type_manager::{validation::AnnotationError, TypeManager},
+        type_manager::TypeManager,
         KindAPI, TypeAPI,
     },
     ConceptAPI,
@@ -252,7 +252,7 @@ impl<'a> AttributeType<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let attribute_type_annotation = AttributeTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Conversion { source })?;
+            .map_err(|source| ConceptWriteError::Annotation { source })?;
         match attribute_type_annotation {
             AttributeTypeAnnotation::Abstract(_) => {
                 type_manager.unset_attribute_type_annotation_abstract(snapshot, self.clone().into_owned())?

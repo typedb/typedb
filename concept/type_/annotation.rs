@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::borrow::Cow;
+use std::{borrow::Cow, error::Error, fmt};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
@@ -19,8 +19,6 @@ use encoding::{
 };
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
-
-use crate::type_::type_manager::validation::AnnotationError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
@@ -152,25 +150,6 @@ pub enum AnnotationCategory {
     // TODO: Range
     // TODO: Replace
 }
-
-// trait ToDefault<DefaultType> {
-//     fn to_default(&self) -> DefaultType;
-// }
-//
-// impl ToDefault<Annotation> for AnnotationCategory {
-//     const fn to_default(&self) -> Annotation {
-//         match self {
-//             AnnotationCategory::Abstract => Annotation::Abstract(AnnotationAbstract),
-//             AnnotationCategory::Distinct => Annotation::Distinct(AnnotationDistinct),
-//             AnnotationCategory::Independent => Annotation::Independent(AnnotationIndependent),
-//             AnnotationCategory::Unique => Annotation::Unique(AnnotationUnique),
-//             AnnotationCategory::Key => Annotation::Key(AnnotationKey),
-//             AnnotationCategory::Cardinality => Annotation::Cardinality(AnnotationCardinality::default()),
-//             AnnotationCategory::Regex => Annotation::Regex(AnnotationRegex::default()),
-//             AnnotationCategory::Cascade => Annotation::Cascade(AnnotationCascade),
-//         }
-//     }
-// }
 
 impl AnnotationCategory {
     const fn to_default(&self) -> Annotation {
@@ -350,5 +329,36 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRegex {
 
     fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Array(ByteArray::copy(self.regex().as_bytes())))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum AnnotationError {
+    UnsupportedAnnotationForEntityType(AnnotationCategory),
+    UnsupportedAnnotationForRelationType(AnnotationCategory),
+    UnsupportedAnnotationForAttributeType(AnnotationCategory),
+    UnsupportedAnnotationForRoleType(AnnotationCategory),
+    UnsupportedAnnotationForRelates(AnnotationCategory),
+    UnsupportedAnnotationForPlays(AnnotationCategory),
+    UnsupportedAnnotationForOwns(AnnotationCategory),
+}
+
+impl fmt::Display for AnnotationError {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Error for AnnotationError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::UnsupportedAnnotationForEntityType(_) => None,
+            Self::UnsupportedAnnotationForRelationType(_) => None,
+            Self::UnsupportedAnnotationForAttributeType(_) => None,
+            Self::UnsupportedAnnotationForRoleType(_) => None,
+            Self::UnsupportedAnnotationForRelates(_) => None,
+            Self::UnsupportedAnnotationForPlays(_) => None,
+            Self::UnsupportedAnnotationForOwns(_) => None,
+        }
     }
 }

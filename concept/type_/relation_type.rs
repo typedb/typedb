@@ -27,14 +27,16 @@ use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, DefaultFrom},
+        annotation::{
+            Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, AnnotationError, DefaultFrom,
+        },
         attribute_type::AttributeType,
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
         relates::Relates,
         role_type::RoleType,
-        type_manager::{validation::AnnotationError, TypeManager},
+        type_manager::TypeManager,
         KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
     ConceptAPI,
@@ -216,7 +218,7 @@ impl<'a> RelationType<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let relation_type_annotation = RelationTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Conversion { source })?;
+            .map_err(|source| ConceptWriteError::Annotation { source })?;
         match relation_type_annotation {
             RelationTypeAnnotation::Abstract(_) => {
                 type_manager.unset_owner_annotation_abstract(snapshot, self.clone().into_owned())?

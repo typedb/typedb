@@ -27,13 +27,13 @@ use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationCategory, DefaultFrom},
+        annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
         attribute_type::AttributeType,
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
         role_type::RoleType,
-        type_manager::{validation::AnnotationError, TypeManager},
+        type_manager::TypeManager,
         KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
     ConceptAPI,
@@ -210,7 +210,7 @@ impl<'a> EntityType<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let entity_annotation = EntityTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Conversion { source })?;
+            .map_err(|source| ConceptWriteError::Annotation { source })?;
         match entity_annotation {
             EntityTypeAnnotation::Abstract(_) => {
                 type_manager.unset_owner_annotation_abstract(snapshot, self.clone().into_owned())?

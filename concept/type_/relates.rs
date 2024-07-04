@@ -13,10 +13,12 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, DefaultFrom},
+        annotation::{
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationError, DefaultFrom,
+        },
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::{validation::AnnotationError, TypeManager},
+        type_manager::TypeManager,
         InterfaceImplementation,
     },
 };
@@ -115,7 +117,7 @@ impl<'a> Relates<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let relates_annotation = RelatesAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Conversion { source })?;
+            .map_err(|source| ConceptWriteError::Annotation { source })?;
         match relates_annotation {
             RelatesAnnotation::Distinct(_) => {
                 type_manager.unset_edge_annotation_distinct(snapshot, self.clone().into_owned())?

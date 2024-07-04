@@ -29,11 +29,11 @@ use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationCategory, DefaultFrom},
+        annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
         object_type::ObjectType,
         plays::Plays,
         relates::Relates,
-        type_manager::{validation::AnnotationError, TypeManager},
+        type_manager::TypeManager,
         KindAPI, TypeAPI,
     },
     ConceptAPI,
@@ -228,7 +228,7 @@ impl<'a> RoleType<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let role_type_annotation = RoleTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Conversion { source })?;
+            .map_err(|source| ConceptWriteError::Annotation { source })?;
         match role_type_annotation {
             RoleTypeAnnotation::Abstract(_) => {
                 type_manager.unset_annotation_abstract(snapshot, self.clone().into_owned())?

@@ -13,10 +13,10 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationCardinality, AnnotationCategory, DefaultFrom},
+        annotation::{Annotation, AnnotationCardinality, AnnotationCategory, AnnotationError, DefaultFrom},
         object_type::ObjectType,
         role_type::RoleType,
-        type_manager::{validation::AnnotationError, TypeManager},
+        type_manager::TypeManager,
         InterfaceImplementation, TypeAPI,
     },
 };
@@ -102,7 +102,7 @@ impl<'a> Plays<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let plays_annotation = PlaysAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Conversion { source })?;
+            .map_err(|source| ConceptWriteError::Annotation { source })?;
         match plays_annotation {
             PlaysAnnotation::Cardinality(_) => {
                 type_manager.unset_edge_annotation_cardinality(snapshot, self.clone().into_owned())?

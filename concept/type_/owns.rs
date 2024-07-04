@@ -14,12 +14,12 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{
-            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationKey, AnnotationRegex,
-            AnnotationUnique, DefaultFrom,
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationError, AnnotationKey,
+            AnnotationRegex, AnnotationUnique, DefaultFrom,
         },
         attribute_type::AttributeType,
         object_type::ObjectType,
-        type_manager::{validation::AnnotationError, TypeManager},
+        type_manager::TypeManager,
         InterfaceImplementation, Ordering, TypeAPI,
     },
 };
@@ -165,7 +165,7 @@ impl<'a> Owns<'a> {
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
         let owns_annotation = OwnsAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Conversion { source })?;
+            .map_err(|source| ConceptWriteError::Annotation { source })?;
         match owns_annotation {
             OwnsAnnotation::Distinct(_) => {
                 type_manager.unset_edge_annotation_distinct(snapshot, self.clone().into_owned())?
