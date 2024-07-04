@@ -35,7 +35,7 @@ use crate::{
     type_::{
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct,
-            AnnotationIndependent, AnnotationKey, AnnotationRegex, AnnotationUnique,
+            AnnotationIndependent, AnnotationKey, AnnotationRegex, AnnotationUnique, AnnotationRange,
         },
         attribute_type::AttributeType,
         object_type::ObjectType,
@@ -456,6 +456,9 @@ impl TypeReader {
                         Annotation::Regex(<AnnotationRegex as TypeVertexPropertyEncoding>::from_value_bytes(value))
                     }
                     Infix::PropertyAnnotationCascade => Annotation::Cascade(AnnotationCascade),
+                    Infix::PropertyAnnotationRange => {
+                        Annotation::Range(<AnnotationRange as TypeVertexPropertyEncoding>::from_value_bytes(value))
+                    }
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationUnique
                     | Infix::PropertyAnnotationKey

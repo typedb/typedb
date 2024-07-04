@@ -185,6 +185,7 @@ impl From<Annotation> for Result<RelatesAnnotation, AnnotationError> {
             Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
             Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
             Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
+            Annotation::Range(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
         }
     }
 }

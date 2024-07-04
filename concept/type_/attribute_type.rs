@@ -25,7 +25,7 @@ use encoding::{
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use super::annotation::{AnnotationCategory, AnnotationRegex};
+use super::annotation::{AnnotationCategory, AnnotationRange, AnnotationRegex};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
@@ -248,6 +248,9 @@ impl<'a> AttributeType<'a> {
             AttributeTypeAnnotation::Regex(regex) => {
                 type_manager.set_annotation_regex(snapshot, self.clone().into_owned(), regex)?
             }
+            AttributeTypeAnnotation::Range(range) => {
+                type_manager.set_annotation_range(snapshot, self.clone().into_owned(), range)?
+            }
         };
         Ok(())
     }
@@ -269,6 +272,9 @@ impl<'a> AttributeType<'a> {
             }
             AttributeTypeAnnotation::Regex(_) => {
                 type_manager.unset_annotation_regex(snapshot, self.clone().into_owned())?
+            }
+            AttributeTypeAnnotation::Range(_) => {
+                type_manager.unset_annotation_range(snapshot, self.clone().into_owned())?
             }
         }
         Ok(())
@@ -309,11 +315,12 @@ impl<'a> AttributeType<'a> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum AttributeTypeAnnotation {
     Abstract(AnnotationAbstract),
     Independent(AnnotationIndependent),
     Regex(AnnotationRegex),
+    Range(AnnotationRange),
 }
 
 impl From<Annotation> for Result<AttributeTypeAnnotation, AnnotationError> {
@@ -322,6 +329,7 @@ impl From<Annotation> for Result<AttributeTypeAnnotation, AnnotationError> {
             Annotation::Abstract(annotation) => Ok(AttributeTypeAnnotation::Abstract(annotation)),
             Annotation::Independent(annotation) => Ok(AttributeTypeAnnotation::Independent(annotation)),
             Annotation::Regex(annotation) => Ok(AttributeTypeAnnotation::Regex(annotation)),
+            Annotation::Range(annotation) => Ok(AttributeTypeAnnotation::Range(annotation)),
 
             Annotation::Distinct(_) => {
                 Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
@@ -354,6 +362,7 @@ impl Into<Annotation> for AttributeTypeAnnotation {
             AttributeTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
             AttributeTypeAnnotation::Independent(annotation) => Annotation::Independent(annotation),
             AttributeTypeAnnotation::Regex(annotation) => Annotation::Regex(annotation),
+            AttributeTypeAnnotation::Range(annotation) => Annotation::Range(annotation),
         }
     }
 }

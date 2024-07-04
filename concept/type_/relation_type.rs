@@ -405,6 +405,7 @@ impl From<Annotation> for Result<RelationTypeAnnotation, AnnotationError> {
                 Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category()))
             }
             Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category())),
+            Annotation::Range(_) => Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category())),
         }
     }
 }

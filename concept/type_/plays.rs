@@ -166,6 +166,7 @@ impl From<Annotation> for Result<PlaysAnnotation, AnnotationError> {
             Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
             Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
             Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
+            Annotation::Range(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
         }
     }
 }
@@ -206,6 +207,7 @@ impl PartialEq<Annotation> for PlaysAnnotation {
             Annotation::Key(_) => false,
             Annotation::Regex(_) => false,
             Annotation::Cascade(_) => false,
+            Annotation::Range(_) => false,
         }
     }
 }

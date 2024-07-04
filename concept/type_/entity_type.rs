@@ -352,6 +352,7 @@ impl From<Annotation> for Result<EntityTypeAnnotation, AnnotationError> {
             }
             Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
             Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
+            Annotation::Range(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
         }
     }
 }

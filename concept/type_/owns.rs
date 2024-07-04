@@ -23,6 +23,7 @@ use crate::{
         InterfaceImplementation, Ordering, TypeAPI,
     },
 };
+use crate::type_::annotation::AnnotationRange;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<'a> {
@@ -154,6 +155,9 @@ impl<'a> Owns<'a> {
             OwnsAnnotation::Regex(regex) => {
                 type_manager.set_owns_annotation_regex(snapshot, self.clone().into_owned(), regex)?
             }
+            OwnsAnnotation::Range(range) => {
+                type_manager.set_owns_annotation_range(snapshot, self.clone().into_owned(), range)?
+            }
         }
         Ok(())
     }
@@ -179,6 +183,9 @@ impl<'a> Owns<'a> {
             }
             OwnsAnnotation::Regex(_) => {
                 type_manager.unset_edge_annotation_regex(snapshot, self.clone().into_owned())?
+            }
+            OwnsAnnotation::Range(_) => {
+                type_manager.unset_edge_annotation_range(snapshot, self.clone().into_owned())?
             }
         }
         Ok(())
@@ -239,13 +246,14 @@ impl<'a> InterfaceImplementation<'a> for Owns<'a> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum OwnsAnnotation {
     Distinct(AnnotationDistinct),
     Unique(AnnotationUnique),
     Key(AnnotationKey),
     Cardinality(AnnotationCardinality),
     Regex(AnnotationRegex),
+    Range(AnnotationRange),
 }
 
 impl From<Annotation> for Result<OwnsAnnotation, AnnotationError> {
@@ -256,6 +264,7 @@ impl From<Annotation> for Result<OwnsAnnotation, AnnotationError> {
             Annotation::Key(annotation) => Ok(OwnsAnnotation::Key(annotation)),
             Annotation::Cardinality(annotation) => Ok(OwnsAnnotation::Cardinality(annotation)),
             Annotation::Regex(annotation) => Ok(OwnsAnnotation::Regex(annotation)),
+            Annotation::Range(annotation) => Ok(OwnsAnnotation::Range(annotation)),
 
             Annotation::Abstract(_) => Err(AnnotationError::UnsupportedAnnotationForOwns(annotation.category())),
             Annotation::Independent(_) => Err(AnnotationError::UnsupportedAnnotationForOwns(annotation.category())),
@@ -282,6 +291,7 @@ impl Into<Annotation> for OwnsAnnotation {
             OwnsAnnotation::Key(annotation) => Annotation::Key(annotation),
             OwnsAnnotation::Cardinality(annotation) => Annotation::Cardinality(annotation),
             OwnsAnnotation::Regex(annotation) => Annotation::Regex(annotation),
+            OwnsAnnotation::Range(annotation) => Annotation::Range(annotation),
         }
     }
 }
@@ -298,7 +308,8 @@ impl PartialEq<Annotation> for OwnsAnnotation {
                 } else {
                     false
                 }
-            }
+            },
+            Annotation::Range(_) => todo!("What to do here?"),
 
             Annotation::Abstract(_) => false,
             Annotation::Independent(_) => false,

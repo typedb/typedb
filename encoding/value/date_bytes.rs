@@ -34,7 +34,7 @@ impl DateBytes {
         NaiveDate::from_num_days_from_ce_opt(days).unwrap()
     }
 
-    pub(crate) fn bytes(&self) -> [u8; Self::LENGTH] {
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
         self.bytes
     }
 }

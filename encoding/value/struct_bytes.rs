@@ -92,19 +92,22 @@ fn encode_struct_into<'a>(struct_value: &StructValue<'a>, buf: &mut Vec<u8>) -> 
         buf.extend_from_slice(&idx.to_be_bytes());
         buf.extend_from_slice(&value.value_type().category().to_bytes());
         match value {
-            Value::Boolean(value) => buf.extend_from_slice(&BooleanBytes::build(*value).bytes()),
-            Value::Long(value) => buf.extend_from_slice(&LongBytes::build(*value).bytes()),
-            Value::Double(value) => buf.extend_from_slice(&DoubleBytes::build(*value).bytes()),
-            Value::Decimal(value) => buf.extend_from_slice(&DecimalBytes::build(*value).bytes()),
-            Value::Date(value) => buf.extend_from_slice(&DateBytes::build(*value).bytes()),
-            Value::DateTime(value) => buf.extend_from_slice(&DateTimeBytes::build(*value).bytes()),
-            Value::DateTimeTZ(value) => buf.extend_from_slice(&DateTimeTZBytes::build(*value).bytes()),
-            Value::Duration(value) => buf.extend_from_slice(&DurationBytes::build(*value).bytes()),
             Value::String(value) => {
                 append_length_as_vle(value.len(), buf)?;
                 buf.extend_from_slice(StringBytes::<0>::build_ref(value.borrow()).bytes().bytes())
             }
             Value::Struct(value) => encode_struct_into(value.borrow(), buf)?,
+            | Value::Boolean(_)
+            | Value::Long(_)
+            | Value::Double(_)
+            | Value::Decimal(_)
+            | Value::Date(_)
+            | Value::DateTime(_)
+            | Value::DateTimeTZ(_)
+            | Value::Duration(_) => {
+                buf.extend_from_slice(value.encode_bytes::<128>().bytes())
+            },
+
         }
     }
     Ok(())

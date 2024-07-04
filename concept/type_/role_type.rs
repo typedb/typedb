@@ -320,6 +320,7 @@ impl From<Annotation> for Result<RoleTypeAnnotation, AnnotationError> {
             Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
             Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
             Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
+            Annotation::Range(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
         }
     }
 }

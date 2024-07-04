@@ -58,6 +58,7 @@ use crate::{
         InterfaceImplementation, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
+use crate::type_::annotation::AnnotationRange;
 
 pub mod type_cache;
 pub mod type_reader;
@@ -2017,6 +2018,44 @@ impl TypeManager {
         type_: impl KindAPI<'static>,
     ) -> Result<(), ConceptWriteError> {
         self.unset_annotation::<AnnotationCascade>(snapshot, type_, AnnotationCategory::Cascade)
+    }
+
+    pub(crate) fn set_annotation_range(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        type_: impl KindAPI<'static>,
+        range: AnnotationRange,
+    ) -> Result<(), ConceptWriteError> {
+        self.set_annotation::<AnnotationRange>(snapshot, type_, AnnotationCategory::Cascade, Some(range))
+    }
+
+    pub(crate) fn unset_annotation_range(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        type_: impl KindAPI<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        self.unset_annotation::<AnnotationRange>(snapshot, type_, AnnotationCategory::Range)
+    }
+
+    pub(crate) fn set_owns_annotation_range(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        owns: Owns<'static>,
+        range: AnnotationRange,
+    ) -> Result<(), ConceptWriteError> {
+        // TODO: Verify that there is no range on subtypes (schema validation only)
+        self.set_edge_annotation::<AnnotationRange>(snapshot, owns, AnnotationCategory::Range, Some(range))
+    }
+
+    pub(crate) fn unset_edge_annotation_range<EDGE>(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        edge: EDGE,
+    ) -> Result<(), ConceptWriteError>
+        where
+            EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+    {
+        self.unset_edge_annotation::<AnnotationRange>(snapshot, edge, AnnotationCategory::Range)
     }
 
     // TODO: Might want to be able to get AnnotationCategory from A (Annotation***) as well, so it's more error-prone!

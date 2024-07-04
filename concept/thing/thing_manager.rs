@@ -987,6 +987,7 @@ impl<'txn> ThingManager {
                                     });
                                 }
                             }
+                            AttributeTypeAnnotation::Range(_) => todo!("create attribute with range"),
                         }
                     }
                     let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);

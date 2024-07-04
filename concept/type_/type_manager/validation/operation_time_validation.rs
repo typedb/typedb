@@ -41,6 +41,7 @@ use crate::{
         InterfaceImplementation, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
+use crate::type_::annotation::AnnotationRange;
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -85,8 +86,8 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_: T,
     ) -> Result<(), SchemaValidationError>
-    where
-        T: KindAPI<'static>,
+        where
+            T: KindAPI<'static>,
     {
         let no_subtypes =
             TypeReader::get_subtypes(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?.is_empty();
@@ -101,8 +102,8 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_: T,
     ) -> Result<(), SchemaValidationError>
-    where
-        T: ObjectTypeAPI<'static>,
+        where
+            T: ObjectTypeAPI<'static>,
     {
         TypeReader::get_implemented_interfaces_declared(snapshot, type_)
             .map_err(SchemaValidationError::ConceptRead)?
@@ -315,13 +316,47 @@ impl OperationTimeValidation {
         }
     }
 
+    pub(crate) fn validate_annotation_range_compatible_value_type(
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'static>,
+        value_type: Option<ValueType>,
+    ) -> Result<(), SchemaValidationError> {
+        let is_compatible = match &value_type {
+            Some(value_type) => {
+                match &value_type {
+                    | ValueType::Boolean
+                    | ValueType::Long
+                    | ValueType::Double
+                    | ValueType::Decimal
+                    | ValueType::Date
+                    | ValueType::DateTime
+                    | ValueType::DateTimeTZ
+                    | ValueType::Duration
+                    | ValueType::String => true,
+
+                    | ValueType::Struct(_) => false,
+                }
+            }
+            _ => false,
+        };
+
+        if is_compatible {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::ValueTypeIsNotCompatibleWithRangeAnnotation(
+                get_label!(snapshot, attribute_type),
+                value_type,
+            ))
+        }
+    }
+
     pub(crate) fn validate_annotation_set_only_for_interface<IMPL>(
         snapshot: &impl ReadableSnapshot,
         interface: IMPL::InterfaceType,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError>
-    where
-        IMPL: InterfaceImplementation<'static, ObjectType = ObjectType<'static>> + Hash + Eq,
+        where
+            IMPL: InterfaceImplementation<'static, ObjectType=ObjectType<'static>> + Hash + Eq,
     {
         let implementations = TypeReader::get_implementations_for_interface::<IMPL>(snapshot, interface.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
@@ -351,8 +386,8 @@ impl OperationTimeValidation {
         interface_implementation: IMPL,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError>
-    where
-        IMPL: InterfaceImplementation<'static, ObjectType = ObjectType<'static>> + Hash + Eq,
+        where
+            IMPL: InterfaceImplementation<'static, ObjectType=ObjectType<'static>> + Hash + Eq,
     {
         let interface = interface_implementation.interface();
         let interface_annotations = TypeReader::get_type_annotations(snapshot, interface.clone())
@@ -363,7 +398,7 @@ impl OperationTimeValidation {
             .contains(&annotation_category)
         {
             return Err(SchemaValidationError::CannotSetAnnotationToInterfaceImplementationBecauseItAlreadyExistsForItsInterface(
-                get_label!(snapshot, interface), annotation_category
+                get_label!(snapshot, interface), annotation_category,
             ));
         }
 
@@ -382,8 +417,8 @@ impl OperationTimeValidation {
     }
 
     pub(crate) fn type_is_abstract<T>(snapshot: &impl ReadableSnapshot, type_: T) -> Result<bool, SchemaValidationError>
-    where
-        T: KindAPI<'static>,
+        where
+            T: KindAPI<'static>,
     {
         Self::type_has_declared_annotation(snapshot, type_.clone(), Annotation::Abstract(AnnotationAbstract))
     }
@@ -433,8 +468,8 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         supertype_edge: EDGE,
     ) -> Result<(), SchemaValidationError>
-    where
-        EDGE: InterfaceImplementation<'static> + Clone,
+        where
+            EDGE: InterfaceImplementation<'static> + Clone,
     {
         match Self::get_conflicted_cardinality(snapshot, supertype_edge.clone(), AnnotationKey::CARDINALITY)? {
             Some(conflicted_cardinality) => {
@@ -449,8 +484,8 @@ impl OperationTimeValidation {
         supertype_edge: EDGE,
         cardinality: AnnotationCardinality,
     ) -> Result<(), SchemaValidationError>
-    where
-        EDGE: InterfaceImplementation<'static> + Clone,
+        where
+            EDGE: InterfaceImplementation<'static> + Clone,
     {
         match Self::get_conflicted_cardinality(snapshot, supertype_edge.clone(), cardinality.clone())? {
             Some(conflicted_cardinality) => Err(SchemaValidationError::CardinalityShouldNarrowInheritedCardinality(
@@ -466,9 +501,9 @@ impl OperationTimeValidation {
         supertype_edge: EDGE,
         cardinality: AnnotationCardinality,
     ) -> Result<Option<AnnotationCardinality>, SchemaValidationError>
-    where
-        Snapshot: ReadableSnapshot,
-        EDGE: InterfaceImplementation<'static> + Clone,
+        where
+            Snapshot: ReadableSnapshot,
+            EDGE: InterfaceImplementation<'static> + Clone,
     {
         if let Some(supertype_annotation) =
             Self::edge_get_annotation_by_category(snapshot, supertype_edge, AnnotationCategory::Cardinality)?
@@ -519,8 +554,8 @@ impl OperationTimeValidation {
         supertype_edge: EDGE,
         regex: AnnotationRegex,
     ) -> Result<(), SchemaValidationError>
-    where
-        EDGE: InterfaceImplementation<'static> + Clone,
+        where
+            EDGE: InterfaceImplementation<'static> + Clone,
     {
         if let Some(supertype_annotation) =
             Self::edge_get_annotation_by_category(snapshot, supertype_edge.clone(), AnnotationCategory::Regex)?
@@ -544,13 +579,70 @@ impl OperationTimeValidation {
         }
     }
 
+    pub(crate) fn validate_type_range_narrows_inherited_regex(
+        snapshot: &impl ReadableSnapshot,
+        supertype: impl KindAPI<'static>,
+        range: AnnotationRange,
+    ) -> Result<(), SchemaValidationError> {
+        if let Some(supertype_annotation) =
+            Self::type_get_annotation_by_category(snapshot, supertype.clone(), AnnotationCategory::Range)?
+        {
+            match supertype_annotation {
+                Annotation::Range(supertype_range) => {
+                    if supertype_range.narrowed_correctly_by(&range) {
+                        Ok(())
+                    } else {
+                        Err(SchemaValidationError::RangeShouldNarrowInheritedRange(
+                            range.clone(),
+                            supertype_range.clone(),
+                        ))
+                    }
+                }
+                _ => unreachable!("Should not reach it for Regex-related function"),
+            }
+        } else {
+            Ok(())
+        }
+    }
+
+    // TODO: Implement trait NarrowableAnnotation, do this!
+    pub(crate) fn validate_edge_range_narrows_inherited_regex<EDGE>(
+        snapshot: &impl ReadableSnapshot,
+        supertype_edge: EDGE,
+        range: AnnotationRange,
+    ) -> Result<(), SchemaValidationError>
+        where
+            EDGE: InterfaceImplementation<'static> + Clone,
+    {
+        if let Some(supertype_annotation) =
+            Self::edge_get_annotation_by_category(snapshot, supertype_edge.clone(), AnnotationCategory::Range)?
+        {
+            match supertype_annotation {
+                Annotation::Range(supertype_range) => {
+                    if supertype_range.narrowed_correctly_by(&range) {
+                        Ok(())
+                    } else {
+                        let object = supertype_edge.object();
+                        Err(SchemaValidationError::RangeShouldNarrowInheritedRange(
+                            range.clone(),
+                            supertype_range.clone(),
+                        ))
+                    }
+                }
+                _ => unreachable!("Should not reach it for Range-related function"),
+            }
+        } else {
+            Ok(())
+        }
+    }
+
     pub(crate) fn validate_type_supertype_abstractness<T>(
         snapshot: &impl ReadableSnapshot,
         subtype: T,
         supertype: T,
     ) -> Result<(), SchemaValidationError>
-    where
-        T: KindAPI<'static>,
+        where
+            T: KindAPI<'static>,
     {
         let subtype_abstract =
             Self::type_has_declared_annotation_category(snapshot, subtype.clone(), AnnotationCategory::Abstract)?;
@@ -665,17 +757,22 @@ impl OperationTimeValidation {
         for subtype_annotation in subtype_declared_annotations {
             let subtype_annotation = subtype_annotation.clone().into();
             let category = subtype_annotation.category();
-            OperationTimeValidation::validate_set_annotation_is_compatible_with_inherited_annotations(
+            Self::validate_set_annotation_is_compatible_with_inherited_annotations(
                 snapshot,
                 supertype.clone(),
                 category,
             )?;
 
             match subtype_annotation {
-                Annotation::Regex(regex) => OperationTimeValidation::validate_type_regex_narrows_inherited_regex(
+                Annotation::Regex(regex) => Self::validate_type_regex_narrows_inherited_regex(
                     snapshot,
                     supertype.clone(),
                     regex,
+                )?,
+                Annotation::Range(range) => Self::validate_type_range_narrows_inherited_regex(
+                    snapshot,
+                    supertype.clone(),
+                    range,
                 )?,
                 | Annotation::Abstract(_)
                 | Annotation::Distinct(_)
@@ -695,14 +792,14 @@ impl OperationTimeValidation {
         edge: EDGE,
         overridden_edge: EDGE,
     ) -> Result<(), SchemaValidationError>
-    where
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        where
+            EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
     {
         let subtype_declared_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, edge)
             .map_err(SchemaValidationError::ConceptRead)?;
         for subtype_annotation in subtype_declared_annotations {
             let category = subtype_annotation.category();
-            OperationTimeValidation::validate_set_edge_annotation_is_compatible_with_inherited_annotations(
+            Self::validate_set_edge_annotation_is_compatible_with_inherited_annotations(
                 snapshot,
                 overridden_edge.clone(),
                 category,
@@ -710,20 +807,25 @@ impl OperationTimeValidation {
 
             match subtype_annotation {
                 Annotation::Cardinality(cardinality) => {
-                    OperationTimeValidation::validate_cardinality_narrows_inherited_cardinality(
+                    Self::validate_cardinality_narrows_inherited_cardinality(
                         snapshot,
                         overridden_edge.clone(),
                         cardinality,
                     )?
                 }
-                Annotation::Regex(regex) => OperationTimeValidation::validate_edge_regex_narrows_inherited_regex(
+                Annotation::Key(_) => Self::validate_key_narrows_inherited_cardinality(
+                    snapshot,
+                    overridden_edge.clone(),
+                )?,
+                Annotation::Regex(regex) => Self::validate_edge_regex_narrows_inherited_regex(
                     snapshot,
                     overridden_edge.clone(),
                     regex,
                 )?,
-                Annotation::Key(_) => OperationTimeValidation::validate_key_narrows_inherited_cardinality(
+                Annotation::Range(range) => Self::validate_edge_range_narrows_inherited_regex(
                     snapshot,
                     overridden_edge.clone(),
+                    range,
                 )?,
                 | Annotation::Abstract(_)
                 | Annotation::Distinct(_)
@@ -823,8 +925,8 @@ impl OperationTimeValidation {
         owner: T,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), SchemaValidationError>
-    where
-        T: ObjectTypeAPI<'static>,
+        where
+            T: ObjectTypeAPI<'static>,
     {
         let is_overridden = {
             let all_overridden = TypeReader::get_overridden_interfaces::<Owns<'static>, T>(snapshot, owner.clone())
@@ -843,8 +945,8 @@ impl OperationTimeValidation {
         player: T,
         role_type: RoleType<'static>,
     ) -> Result<(), SchemaValidationError>
-    where
-        T: ObjectTypeAPI<'static>,
+        where
+            T: ObjectTypeAPI<'static>,
     {
         let is_overridden = {
             let all_overridden = TypeReader::get_overridden_interfaces::<Plays<'static>, T>(snapshot, player.clone())
@@ -947,7 +1049,7 @@ impl OperationTimeValidation {
                     attribute_type,
                 )
                 // TODO: Re-enable when we get the thing_manager
-                // OperationTimeValidation::validate_exact_type_no_instances_attribute(snapshot, self, attribute.clone())
+                // Self::validate_exact_type_no_instances_attribute(snapshot, self, attribute.clone())
             }
             None => Ok(()),
         }
@@ -966,10 +1068,10 @@ impl OperationTimeValidation {
 
             if no_value_type
                 && !Self::type_has_declared_annotation_category(
-                    snapshot,
-                    subtype.clone(),
-                    AnnotationCategory::Abstract,
-                )?
+                snapshot,
+                subtype.clone(),
+                AnnotationCategory::Abstract,
+            )?
             {
                 let subtype = subtype.clone();
                 return Err(
@@ -992,13 +1094,12 @@ impl OperationTimeValidation {
 
         for (annotation, _) in annotations {
             match annotation {
-                AttributeTypeAnnotation::Regex(_) => {
-                    let res =
-                        Self::validate_annotation_regex_compatible_value_type(snapshot, attribute_type.clone(), None);
-                    if res.is_err() {
-                        return res;
-                    }
-                }
+                AttributeTypeAnnotation::Regex(_) => Self::validate_annotation_regex_compatible_value_type(
+                    snapshot, attribute_type.clone(), None,
+                )?,
+                AttributeTypeAnnotation::Range(_) => Self::validate_annotation_range_compatible_value_type(
+                    snapshot, attribute_type.clone(), None,
+                )?,
                 | AttributeTypeAnnotation::Abstract(_) | AttributeTypeAnnotation::Independent(_) => {}
             }
         }
@@ -1020,6 +1121,9 @@ impl OperationTimeValidation {
                     }
                     Annotation::Regex(_) => {
                         Self::validate_annotation_regex_compatible_value_type(snapshot, owns.attribute().clone(), None)?
+                    }
+                    Annotation::Range(_) => {
+                        Self::validate_annotation_range_compatible_value_type(snapshot, owns.attribute().clone(), None)?
                     }
                     | Annotation::Abstract(_)
                     | Annotation::Distinct(_)
@@ -1093,8 +1197,8 @@ impl OperationTimeValidation {
         type_: T,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError>
-    where
-        T: KindAPI<'static>,
+        where
+            T: KindAPI<'static>,
     {
         let annotations =
             TypeReader::get_type_annotations(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
@@ -1124,8 +1228,8 @@ impl OperationTimeValidation {
         edge: EDGE,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError>
-    where
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        where
+            EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
     {
         let annotations = TypeReader::get_type_edge_annotations(snapshot, edge.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
@@ -1177,8 +1281,8 @@ impl OperationTimeValidation {
         edge: EDGE,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError>
-    where
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        where
+            EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
     {
         let existing_annotations = TypeReader::get_type_edge_annotations(snapshot, edge.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
@@ -1225,8 +1329,8 @@ impl OperationTimeValidation {
         edge: EDGE,
         annotation_category: AnnotationCategory,
     ) -> Result<(), SchemaValidationError>
-    where
-        EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
+        where
+            EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
     {
         let existing_annotations = TypeReader::get_type_edge_annotations_declared(snapshot, edge.clone())
             .map_err(SchemaValidationError::ConceptRead)?;
@@ -1316,6 +1420,11 @@ impl OperationTimeValidation {
                     value_type.clone(),
                 )?,
                 Annotation::Regex(_) => Self::validate_annotation_regex_compatible_value_type(
+                    snapshot,
+                    owns.attribute().clone(),
+                    value_type.clone(),
+                )?,
+                Annotation::Range(_) => Self::validate_annotation_range_compatible_value_type(
                     snapshot,
                     owns.attribute().clone(),
                     value_type.clone(),
@@ -1433,8 +1542,8 @@ impl OperationTimeValidation {
         type_: T,
         annotation: Annotation,
     ) -> Result<bool, SchemaValidationError>
-    where
-        T: KindAPI<'static>,
+        where
+            T: KindAPI<'static>,
     {
         let has = TypeReader::get_type_annotations_declared(snapshot, type_.clone())
             .map_err(SchemaValidationError::ConceptRead)?
@@ -1447,8 +1556,8 @@ impl OperationTimeValidation {
         type_: T,
         annotation_category: AnnotationCategory,
     ) -> Result<bool, SchemaValidationError>
-    where
-        T: KindAPI<'static>,
+        where
+            T: KindAPI<'static>,
     {
         let has = TypeReader::get_type_annotations_declared(snapshot, type_.clone())
             .map_err(SchemaValidationError::ConceptRead)?
@@ -1463,8 +1572,8 @@ impl OperationTimeValidation {
         type_: T,
         annotation_category: AnnotationCategory,
     ) -> Result<bool, SchemaValidationError>
-    where
-        T: KindAPI<'static>,
+        where
+            T: KindAPI<'static>,
     {
         let has = TypeReader::get_type_annotations(snapshot, type_.clone())
             .map_err(SchemaValidationError::ConceptRead)?
@@ -1492,8 +1601,8 @@ impl OperationTimeValidation {
         edge: EDGE,
         annotation_category: AnnotationCategory,
     ) -> Result<Option<Annotation>, SchemaValidationError>
-    where
-        EDGE: InterfaceImplementation<'static> + Clone,
+        where
+            EDGE: InterfaceImplementation<'static> + Clone,
     {
         let annotation = TypeReader::get_type_edge_annotations(snapshot, edge.clone())
             .map_err(SchemaValidationError::ConceptRead)?

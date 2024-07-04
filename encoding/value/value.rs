@@ -12,6 +12,7 @@ use std::{
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
 use chrono_tz::Tz;
+use bytes::byte_array::ByteArray;
 
 use super::date_bytes::DateBytes;
 use crate::value::{
@@ -95,10 +96,24 @@ impl<'a> Value<'a> {
         }
     }
 
+    pub fn unwrap_date(self) -> NaiveDate {
+        match self {
+            Self::Date(date) => date,
+            _ => panic!("Cannot unwrap Date if not a date value."),
+        }
+    }
+
     pub fn unwrap_date_time(self) -> NaiveDateTime {
         match self {
             Self::DateTime(date_time) => date_time,
             _ => panic!("Cannot unwrap DateTime if not a datetime value."),
+        }
+    }
+
+    pub fn unwrap_date_time_tz(self) -> DateTime<Tz> {
+        match self {
+            Self::DateTimeTZ(date_time_tz) => date_time_tz,
+            _ => panic!("Cannot unwrap DateTimeTZ if not a datetime-tz value."),
         }
     }
 
@@ -215,6 +230,21 @@ impl<'a> ValueEncodable for Value<'a> {
         match self {
             Value::Struct(struct_) => StructBytes::build(struct_),
             _ => panic!("Cannot encode non-Struct as StructBytes"),
+        }
+    }
+
+    fn encode_bytes<const INLINE_LENGTH: usize>(&self) -> ByteArray<INLINE_LENGTH> {
+        match self {
+            Value::Boolean(_) => ByteArray::copy(&self.encode_boolean().bytes()),
+            Value::Long(_) => ByteArray::copy(&self.encode_boolean().bytes()),
+            Value::Double(_) => ByteArray::copy(&self.encode_boolean().bytes()),
+            Value::Decimal(_) => ByteArray::copy(&self.encode_boolean().bytes()),
+            Value::Date(_) => ByteArray::copy(&self.encode_boolean().bytes()),
+            Value::DateTime(_) => ByteArray::copy(&self.encode_boolean().bytes()),
+            Value::DateTimeTZ(_) => ByteArray::copy(&self.encode_boolean().bytes()),
+            Value::Duration(_) => ByteArray::copy(&self.encode_boolean().bytes()),
+            Value::String(_) => ByteArray::copy(&self.encode_boolean().bytes()),
+            Value::Struct(_) => ByteArray::copy(&self.encode_boolean().bytes()),
         }
     }
 }
