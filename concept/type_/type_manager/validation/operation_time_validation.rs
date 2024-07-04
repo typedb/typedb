@@ -1160,7 +1160,7 @@ impl OperationTimeValidation {
 
         for (existing_annotation, _) in existing_annotations {
             let existing_annotation_category = existing_annotation.clone().into().category();
-            if !existing_annotation_category.compatible_to_transitively_add(annotation_category) {
+            if !annotation_category.declarable_below(existing_annotation_category) {
                 return Err(SchemaValidationError::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(
                     annotation_category,
                     existing_annotation_category,
@@ -1185,7 +1185,7 @@ impl OperationTimeValidation {
 
         for (existing_annotation, _) in existing_annotations {
             let existing_annotation_category = existing_annotation.category();
-            if !existing_annotation_category.compatible_to_transitively_add(annotation_category) {
+            if !annotation_category.declarable_below(existing_annotation_category) {
                 let interface = edge.interface();
                 return Err(SchemaValidationError::DeclaredAnnotationIsNotCompatibleWithInheritedAnnotation(
                     annotation_category,
@@ -1208,7 +1208,7 @@ impl OperationTimeValidation {
 
         for existing_annotation in existing_annotations {
             let existing_annotation_category = existing_annotation.clone().into().category();
-            if !existing_annotation_category.compatible_to_declare_together(annotation_category) {
+            if !existing_annotation_category.declarable_alongside(annotation_category) {
                 return Err(SchemaValidationError::AnnotationIsNotCompatibleWithDeclaredAnnotation(
                     annotation_category,
                     existing_annotation_category,
@@ -1233,7 +1233,7 @@ impl OperationTimeValidation {
 
         for existing_annotation in existing_annotations {
             let existing_annotation_category = existing_annotation.category();
-            if !existing_annotation_category.compatible_to_declare_together(annotation_category) {
+            if !existing_annotation_category.declarable_alongside(annotation_category) {
                 let interface = edge.interface();
                 return Err(SchemaValidationError::AnnotationIsNotCompatibleWithDeclaredAnnotation(
                     annotation_category,

@@ -25,7 +25,7 @@ where
         if effective_category == supertype_category {
             return false;
         }
-        if !effective_category.compatible_to_transitively_add(supertype_category) {
+        if !supertype_category.inheritable_alongside(effective_category) {
             return false;
         }
     }

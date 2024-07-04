@@ -165,7 +165,7 @@ impl AnnotationCategory {
         }
     }
 
-    pub fn compatible_to_declare_together(&self, other: AnnotationCategory) -> bool {
+    pub fn declarable_alongside(&self, other: AnnotationCategory) -> bool {
         match self {
             AnnotationCategory::Unique => match other {
                 AnnotationCategory::Key => false,
@@ -187,16 +187,40 @@ impl AnnotationCategory {
         }
     }
 
-    pub fn compatible_to_transitively_add(&self, other_to_add: AnnotationCategory) -> bool {
+    pub fn declarable_below(&self, other: AnnotationCategory) -> bool {
         match self {
-            AnnotationCategory::Key => match other_to_add {
-                AnnotationCategory::Unique => false,
-                AnnotationCategory::Cardinality => false,
+            AnnotationCategory::Unique => match other {
+                AnnotationCategory::Key => false,
                 _ => true,
             },
-            | AnnotationCategory::Unique
-            | AnnotationCategory::Cardinality
+            AnnotationCategory::Cardinality => match other {
+                AnnotationCategory::Key => false,
+                _ => true,
+            },
             | AnnotationCategory::Abstract
+            | AnnotationCategory::Key
+            | AnnotationCategory::Distinct
+            | AnnotationCategory::Independent
+            | AnnotationCategory::Regex
+            | AnnotationCategory::Cascade => true,
+        }
+    }
+
+    pub fn inheritable_alongside(&self, other: AnnotationCategory) -> bool {
+        // Note: this function implies that all the compared annotations already processed
+        // the type manager validations (other "declarable" methods) and only considers
+        // valid inheritance scenarios.
+        match self {
+            AnnotationCategory::Unique => match other {
+                AnnotationCategory::Key => false,
+                _ => true,
+            },
+            AnnotationCategory::Cardinality => match other {
+                AnnotationCategory::Key => false,
+                _ => true,
+            },
+            | AnnotationCategory::Abstract
+            | AnnotationCategory::Key
             | AnnotationCategory::Distinct
             | AnnotationCategory::Independent
             | AnnotationCategory::Regex

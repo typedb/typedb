@@ -1079,7 +1079,7 @@ impl TypeManager {
 
         TypeWriter::storage_put_label(snapshot, role.clone(), label);
         TypeWriter::storage_put_relates(snapshot, relation_type, role.clone());
-        self.set_role_ordering_unconditional(snapshot, role.clone(), ordering)?;
+        TypeWriter::storage_put_type_vertex_property(snapshot, role.clone(), Some(ordering));
         if !is_root {
             self.set_role_type_root_supertype(snapshot, role.clone());
         }
@@ -1645,16 +1645,6 @@ impl TypeManager {
             None => {}
         }
 
-        self.set_role_ordering_unconditional(snapshot, role, ordering)
-    }
-
-    #[inline]
-    fn set_role_ordering_unconditional(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        role: RoleType<'_>,
-        ordering: Ordering,
-    ) -> Result<(), ConceptWriteError> {
         TypeWriter::storage_put_type_vertex_property(snapshot, role, Some(ordering));
         Ok(())
     }
