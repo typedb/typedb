@@ -629,7 +629,7 @@ impl BinaryConstraint for Has<Variable> {
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
         attribute
-            .get_owners_transitive(seeder.snapshot, seeder.type_manager)?
+            .get_owns(seeder.snapshot, seeder.type_manager)?
             .iter()
             .map(|(owner, _)| match owner {
                 ObjectType::Entity(entity) => TypeAnnotation::Entity(entity.clone()),

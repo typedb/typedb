@@ -158,8 +158,8 @@ pub mod tests {
         use concept::{
             thing::thing_manager::ThingManager,
             type_::{
-                annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation, type_manager::TypeManager,
-                Ordering, OwnerAPI, PlayerAPI,
+                annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation,
+                entity_type::EntityTypeAnnotation, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
             },
         };
         use encoding::{
@@ -220,6 +220,7 @@ pub mod tests {
             let dog = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_DOG), false).unwrap();
             cat.set_supertype(&mut snapshot, type_manager, animal.clone()).unwrap();
             dog.set_supertype(&mut snapshot, type_manager, animal.clone()).unwrap();
+            animal.set_annotation(&mut snapshot, &type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract));
 
             // Ownerships
             let animal_owns = animal.set_owns(&mut snapshot, type_manager, name.clone(), Ordering::Unordered).unwrap();
