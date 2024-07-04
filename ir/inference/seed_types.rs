@@ -14,7 +14,6 @@ use std::{
 use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::{
     error::ConceptReadError,
-    thing::attribute,
     type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
 };
 use encoding::{
@@ -172,25 +171,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             .get_local_variables(&tig.conjunction.context(), tig.conjunction.scope_id())
             .find(|v| !tig.vertices.contains_key(v));
         if let Some(v) = unannotated_vars {
-            let annotations = if let Some(variable_category) = tig.conjunction.context().get_variable_category(v) {
-                match variable_category {
-                    VariableCategory::Type => self.get_unbounded_type_annotations(true, true, true, true)?,
-                    VariableCategory::ThingType => self.get_unbounded_type_annotations(true, true, true, false)?,
-                    VariableCategory::RoleType => self.get_unbounded_type_annotations(false, false, false, true)?,
-                    VariableCategory::Thing => self.get_unbounded_type_annotations(true, true, true, false)?,
-                    VariableCategory::ObjectList | VariableCategory::Object => {
-                        self.get_unbounded_type_annotations(true, true, false, false)?
-                    }
-                    VariableCategory::AttributeList | VariableCategory::Attribute => {
-                        self.get_unbounded_type_annotations(false, false, true, false)?
-                    }
-                    VariableCategory::ValueList | VariableCategory::Value => {
-                        self.get_unbounded_type_annotations(false, false, true, false)?
-                    }
-                }
-            } else {
-                self.get_unbounded_type_annotations(true, true, true, true)?
-            };
+            let annotations = self.get_unbounded_type_annotations(
+                tig.conjunction.context().get_variable_category(v).unwrap_or(VariableCategory::Type),
+            )?;
             tig.vertices.insert(v, annotations);
             Ok(true)
         } else {
@@ -206,11 +189,19 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
 
     fn get_unbounded_type_annotations(
         &self,
-        include_entities: bool,
-        include_relations: bool,
-        include_attributes: bool,
-        include_roles: bool,
+        category: VariableCategory,
     ) -> Result<BTreeSet<TypeAnnotation>, ConceptReadError> {
+        let include_entities = category.narrowest(VariableCategory::ThingType).is_some()
+            || category.narrowest(VariableCategory::Object).is_some()
+            || category.narrowest(VariableCategory::ObjectList).is_some();
+        let include_relations = include_entities; // If we introduce categories for Entity & Relation, they will diverge
+
+        let include_attributes = category.narrowest(VariableCategory::ThingType).is_some()
+            | category.narrowest(VariableCategory::AttributeList).is_some()
+            || category.narrowest(VariableCategory::Attribute).is_some();
+
+        let include_roles = category.narrowest(VariableCategory::RoleType).is_some();
+
         let mut annotations = BTreeSet::new();
 
         if include_entities {
@@ -254,25 +245,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             );
         }
         Ok(annotations)
-    }
-
-    fn get_annotation_for_type_label(
-        &self,
-        type_: &Type<Variable>,
-    ) -> Result<Option<TypeAnnotation>, ConceptReadError> {
-        if let Some(attribute) = self.type_manager.get_attribute_type(self.snapshot, &Label::build(&type_.type_))? {
-            Ok(Some(TypeAnnotation::Attribute(attribute)))
-        } else if let Some(entity) = self.type_manager.get_entity_type(self.snapshot, &Label::build(&type_.type_))? {
-            Ok(Some(TypeAnnotation::Entity(entity)))
-        } else if let Some(relation) =
-            self.type_manager.get_relation_type(self.snapshot, &Label::build(&type_.type_))?
-        {
-            Ok(Some(TypeAnnotation::Relation(relation)))
-        } else if let Some(role) = self.type_manager.get_role_type(self.snapshot, &Label::build(&type_.type_))? {
-            Ok(Some(TypeAnnotation::RoleType(role)))
-        } else {
-            Ok(None)
-        }
     }
 
     // Phase 2: Use constraints to infer annotations on other vertices
