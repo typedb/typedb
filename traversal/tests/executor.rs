@@ -9,6 +9,8 @@ use std::{
     collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
 };
+use answer::variable_value::VariableValue;
+use concept::error::ConceptReadError;
 
 use concept::{
     thing::{object::ObjectAPI, thing_manager::ThingManager},
@@ -23,6 +25,7 @@ use encoding::{
     value::{label::Label, value::Value, value_type::ValueType},
     EncodingKeyspace,
 };
+use lending_iterator::LendingIterator;
 use ir::{
     inference::type_inference::{ConstraintTypeAnnotations, LeftRightAnnotations, TypeAnnotations},
     program::block::FunctionalBlock,
@@ -196,11 +199,10 @@ fn traverse_has() {
 
         let iterator = executor.into_iterator(snapshot, thing_manager);
 
-        // let rows: Vec<Result<Vec<VariableValue<'static>>, ConceptReadError>> = iterator
-        //     .map_static(|row| row.map(|row| row.to_vec()).map_err(|err| err.clone()))
-        //     .collect();
-        todo!()
+        let rows: Vec<Result<Vec<VariableValue<'static>>, ConceptReadError>> = iterator
+            .map_static(|row| row.map(|row| row.to_vec()).map_err(|err| err.clone()))
+            .collect();
 
-        // dbg!("{:?}", rows);
+        dbg!("{:?}", rows);
     }
 }

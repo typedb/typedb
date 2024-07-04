@@ -4,8 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::cmp::Ordering;
+use std::cmp::{max, min, Ordering};
 use std::{collections::HashMap, io::Read, sync::Arc};
+use std::thread::current;
 
 use answer::{variable::Variable, variable_value::VariableValue};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
@@ -92,17 +93,20 @@ impl PatternExecutor {
         };
 
         loop {
-            let step = &mut self.steps[current_step];
             match direction {
                 Direction::Forward => {
-                    if current_step > steps_len {
+                    if current_step >= steps_len {
                         return Ok(last_batch);
                     } else {
-                        let batch = step.batch_from(last_batch.take().unwrap(), snapshot, thing_manager)?;
+                        let batch = (&mut self.steps[current_step]).batch_from(last_batch.take().unwrap(), snapshot, thing_manager)?;
                         match batch {
                             None => {
                                 direction = Direction::Backward;
-                                current_step -= 1;
+                                if current_step == 0 {
+                                    return Ok(None);
+                                } else {
+                                    current_step -= 1;
+                                }
                             }
                             Some(batch) => {
                                 last_batch = Some(batch);
@@ -112,19 +116,19 @@ impl PatternExecutor {
                     }
                 }
                 Direction::Backward => {
-                    if current_step < 0 {
-                        return Ok(None);
-                    } else {
-                        let batch = step.batch_continue(snapshot, thing_manager)?;
-                        match batch {
-                            None => {
-                                direction = Direction::Backward;
+                    let batch = (&mut self.steps[current_step]).batch_continue(snapshot, thing_manager)?;
+                    match batch {
+                        None => {
+                            if current_step == 0 {
+                                return Ok(None);
+                            } else {
                                 current_step -= 1;
                             }
-                            Some(batch) => {
-                                last_batch = Some(batch);
-                                current_step += 1;
-                            }
+                        }
+                        Some(batch) => {
+                            direction = Direction::Forward;
+                            last_batch = Some(batch);
+                            current_step += 1;
                         }
                     }
                 }
@@ -313,17 +317,18 @@ impl SortedExecutor {
                 return Ok(());
             }
         }
-        // if self.compute_next_intersection() {
-        //     // don't allocate batch until 1 answer is confirmed
-        //     let mut batch = Batch::new(self.output_width);
-        //     batch.append(|mut row| self.write_into(&mut row))?;
-        //     while !batch.is_full() && self.compute_next_intersection() {
-        //         batch.append(|mut row| self.write_into(&mut row))?;
-        //     }
-        //     self.output = Some(batch);
-        // }
-        // Ok(())
-        todo!()
+        if self.compute_intersection()? {
+            // don't allocate batch until 1 answer is confirmed
+            let mut batch = Batch::new(self.output_width);
+            batch.append(|mut row| self.write_into(&mut row))?;
+            self.advance_iterators()?;
+            while !batch.is_full() && self.compute_intersection()? {
+                batch.append(|mut row| self.write_into(&mut row))?;
+                self.advance_iterators()?;
+            }
+            self.output = Some(batch);
+        }
+        Ok(())
     }
 
     fn create_iterators<Snapshot: ReadableSnapshot>(
@@ -344,42 +349,99 @@ impl SortedExecutor {
         }
     }
 
-    fn compute_next_intersection(&mut self) -> Result<bool, ConceptReadError> {
-        let mut current_max = match self.iterators[0].peek_sorted_value() {
-            None => return Ok(false),
-            Some(Ok(value)) => value,
-            Some(Err(err)) => return Err(err.clone()),
-        };
+    fn compute_intersection(&mut self) -> Result<bool, ConceptReadError> {
+        debug_assert!(self.iterators.len() > 0);
+        if self.iterators.len() == 1 {
+            return self.iterators[0].advance();
+        } else if self.iterators[0].peek_sorted_value().transpose().map_err(|err| err.clone())?.is_none() {
+            self.clear_iterators();
+            return Ok(false);
+        }
 
+        let mut current_max_index = 0;
         loop {
             let mut failed = false;
-            for iter in &mut self.iterators {
-                match iter.peek_sorted_value() {
+            let mut retry = false;
+            for mut i in 0..self.iterators.len() {
+                if i == current_max_index {
+                    continue;
+                }
+
+                let (containing_i, containing_max, i_index, max_index) = if current_max_index > i {
+                    let (containing_i, containing_max) = self.iterators.split_at_mut(current_max_index);
+                    (containing_i, containing_max, i, 0)
+                } else {
+                    let (containing_max, containing_i) = self.iterators.split_at_mut(i);
+                    (containing_i, containing_max, 0, current_max_index)
+                };
+                let max_cmp_peek = match containing_i[i_index].peek_sorted_value() {
                     None => {
-                        failed = false;
+                        failed = true;
+                        break;
                     }
                     Some(Ok(value)) => {
-                        let cmp = current_max.partial_cmp(&value).unwrap();
-                        match cmp {
-                            Ordering::Less => {
-                                // TODO: loop/seek until at equal or larger
-                            }
-                            Ordering::Equal => {
-                                continue
-                            }
-                            Ordering::Greater => {
-                                current_max = value;
-                            }
-                        }
+                        let max_peek = containing_max[max_index].peek_sorted_value().unwrap().unwrap();
+                        max_peek.partial_cmp(&value).unwrap()
                     }
                     Some(Err(err)) => {
                         return Err(err.clone());
                     }
+                };
+
+                match max_cmp_peek {
+                    Ordering::Less => current_max_index = i,
+                    Ordering::Equal => {}
+                    Ordering::Greater => {
+                        let current_max = &mut containing_max[0].peek_sorted_value().unwrap().unwrap();
+                        let iter_i = &mut containing_i[i];
+                        let iterator_status = iter_i.skip_to_sorted_value(current_max)?;
+                        match iterator_status {
+                            None => {
+                                failed = true;
+                                break;
+                            }
+                            Some(Ordering::Less) => unreachable!("Skip to should always be empty or equal/greater than the target"),
+                            Some(Ordering::Equal) => {}
+                            Some(Ordering::Greater) => {
+                                current_max_index = i;
+                                retry = true;
+                            }
+                        }
+                    }
                 }
             }
-            return Ok(true);
+            if failed {
+                self.clear_iterators();
+                return Ok(false);
+            } else if !retry {
+                debug_assert!(self.all_iterators_intersect());
+                return Ok(true);
+            }
         }
     }
+
+    fn advance_iterators(&mut self) -> Result<(), ConceptReadError> {
+        for iter in &mut self.iterators {
+            let _ = iter.advance()?;
+        }
+        Ok(())
+    }
+
+    fn clear_iterators(&mut self) {
+        self.iterators.clear()
+    }
+
+    fn all_iterators_intersect(&mut self) -> bool {
+        let (first, rest) = self.iterators.split_at_mut(1);
+        let peek_0 = first[0].peek_sorted_value().unwrap().unwrap();
+        for iter in rest {
+            if iter.peek_sorted_value().unwrap().unwrap() != peek_0 {
+                return false;
+            }
+        }
+        return true;
+    }
+
 
     fn write_into(&mut self, row: &mut Row<'_>) -> Result<(), ConceptReadError> {
         for iter in &mut self.iterators {
@@ -583,7 +645,7 @@ impl<'a> Row<'a> {
     }
 
     pub(crate) fn set(&mut self, position: Position, value: VariableValue<'static>) {
-        debug_assert!(*self.get(position) == VariableValue::Empty);
+        debug_assert!(*self.get(position) == VariableValue::Empty || *self.get(position) == value);
         self.row[position.as_usize()] = value;
     }
 }

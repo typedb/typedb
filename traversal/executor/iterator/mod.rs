@@ -143,21 +143,85 @@ impl ConstraintIterator {
         }
     }
 
-    pub(crate) fn advance(&mut self) {
+    pub(crate) fn skip_to_sorted_value(&mut self, value: &VariableValue<'_>) -> Result<Option<Ordering>, ConceptReadError> {
+        debug_assert!(self.is_sorted());
+        match self {
+            ConstraintIterator::HasUnboundedSortedOwner(iter, _) => {
+                let last = iter.next();
+                debug_assert!(VariableValue::Thing(Thing::from(last.unwrap().unwrap().0.owner())) < *value);
+                loop {
+                    let peek = iter.peek();
+                    match peek {
+                        None => return Ok(None),
+                        Some(Ok(peek_value)) => {
+                            let cmp = VariableValue::Thing(Thing::from(peek_value.0.owner())).partial_cmp(value).unwrap();
+                            match cmp {
+                                Ordering::Less => {}
+                                Ordering::Equal => return Ok(Some(Ordering::Equal)),
+                                Ordering::Greater => return Ok(Some(Ordering::Greater))
+                            }
+                        }
+                        Some(Err(err)) => return Err(err.clone()),
+                    }
+                    let _ = iter.next();
+                }
+            }
+            ConstraintIterator::HasUnboundedSortedAttributeSingle(iter, _) => {
+                let last = iter.next();
+                debug_assert!(VariableValue::Thing(Thing::Attribute(last.unwrap().unwrap().0.attribute())) < *value);
+                loop {
+                    let peek = iter.peek();
+                    match peek {
+                        None => return Ok(None),
+                        Some(Ok(peek_value)) => {
+                            let cmp = VariableValue::Thing(Thing::Attribute(peek_value.0.attribute())).partial_cmp(value).unwrap();
+                            match cmp {
+                                Ordering::Less => {}
+                                Ordering::Equal => return Ok(Some(Ordering::Equal)),
+                                Ordering::Greater => return Ok(Some(Ordering::Greater))
+                            }
+                        }
+                        Some(Err(err)) => return Err(err.clone()),
+                    }
+                    let _ = iter.next();
+                }
+            }
+            ConstraintIterator::HasBoundedSortedAttribute(iter, _) => {
+                let last = iter.next();
+                debug_assert!(VariableValue::Thing(Thing::Attribute(last.unwrap().unwrap().0.attribute())) < *value);
+                loop {
+                    let peek = iter.peek();
+                    match peek {
+                        None => return Ok(None),
+                        Some(Ok(peek_value)) => {
+                            let cmp = VariableValue::Thing(Thing::Attribute(peek_value.0.attribute())).partial_cmp(&value).unwrap();
+                            match cmp {
+                                Ordering::Less => {}
+                                Ordering::Equal => return Ok(Some(Ordering::Equal)),
+                                Ordering::Greater => return Ok(Some(Ordering::Greater))
+                            }
+                        }
+                        Some(Err(err)) => return Err(err.clone()),
+                    }
+                }
+            }
+        }
+    }
+
+    pub(crate) fn advance(&mut self) -> Result<bool, ConceptReadError> {
         assert!(self.has_value());
         match self {
             ConstraintIterator::HasUnboundedSortedOwner(iter, _) => {
-                let (_, count) = iter.next().unwrap().unwrap();
                 // TODO: how to handle multiple answers found in an iterator, eg (_, count > 1)?
-                debug_assert!(count == 1)
+                Ok(iter.next().transpose()?.map(|value| true).unwrap_or(false))
             }
             ConstraintIterator::HasUnboundedSortedAttributeSingle(iter, _) => {
-                let (_, count) = iter.next().unwrap().unwrap();
-                debug_assert!(count == 1)
+                // TODO: how to handle multiple answers found in an iterator, eg (_, count > 1)?
+                Ok(iter.next().transpose()?.map(|value| true).unwrap_or(false))
             }
             ConstraintIterator::HasBoundedSortedAttribute(iter, _) => {
-                let (_, count) = iter.next().unwrap().unwrap();
-                debug_assert!(count == 1)
+                // TODO: how to handle multiple answers found in an iterator, eg (_, count > 1)?
+                Ok(iter.next().transpose()?.map(|value| true).unwrap_or(false))
             }
         }
     }
