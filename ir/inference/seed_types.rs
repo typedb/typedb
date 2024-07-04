@@ -43,6 +43,7 @@ pub struct TypeSeeder<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
     type_manager: &'this TypeManager,
 }
+
 impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
     pub(crate) fn new(snapshot: &'this Snapshot, type_manager: &'this TypeManager) -> Self {
         TypeSeeder { snapshot, type_manager }
@@ -191,17 +192,15 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         &self,
         category: VariableCategory,
     ) -> Result<BTreeSet<TypeAnnotation>, ConceptReadError> {
-        let include_entities = category.narrowest(VariableCategory::ThingType).is_some()
-            || category.narrowest(VariableCategory::Object).is_some()
-            || category.narrowest(VariableCategory::ObjectList).is_some();
-        let include_relations = include_entities; // If we introduce categories for Entity & Relation, they will diverge
-
-        let include_attributes = category.narrowest(VariableCategory::ThingType).is_some()
-            | category.narrowest(VariableCategory::AttributeList).is_some()
-            || category.narrowest(VariableCategory::Attribute).is_some();
-
-        let include_roles = category.narrowest(VariableCategory::RoleType).is_some();
-
+        let (include_entities, include_relations, include_attributes, include_roles) = match category {
+            VariableCategory::Type => (true, true, true, true),
+            VariableCategory::ThingType => (true, true, true, false),
+            VariableCategory::RoleType => (false, false, false, true),
+            VariableCategory::Thing => (true, true, true, false),
+            VariableCategory::ObjectList | VariableCategory::Object => (true, true, false, false),
+            VariableCategory::AttributeList | VariableCategory::Attribute => (false, false, true, false),
+            VariableCategory::ValueList | VariableCategory::Value => (false, false, true, false),
+        };
         let mut annotations = BTreeSet::new();
 
         if include_entities {
