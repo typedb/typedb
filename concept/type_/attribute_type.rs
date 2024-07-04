@@ -19,11 +19,11 @@ use encoding::{
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use super::annotation::AnnotationRegex;
+use super::annotation::{AnnotationCategory, AnnotationRegex};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationIndependent},
+        annotation::{Annotation, AnnotationAbstract, AnnotationError, AnnotationIndependent, DefaultFrom},
         object_type::ObjectType,
         owns::Owns,
         type_manager::TypeManager,
@@ -87,7 +87,7 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         type_manager: &TypeManager,
     ) -> Result<bool, ConceptReadError> {
         let annotations = self.get_annotations(snapshot, type_manager)?;
-        Ok(annotations.contains(&AttributeTypeAnnotation::Abstract(AnnotationAbstract)))
+        Ok(annotations.contains_key(&AttributeTypeAnnotation::Abstract(AnnotationAbstract)))
     }
 
     fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError> {
@@ -118,6 +118,16 @@ impl<'a> AttributeType<'a> {
         type_manager.get_attribute_type_is_root(snapshot, self.clone().into_owned())
     }
 
+    pub fn get_value_type(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<Option<ValueType>, ConceptReadError> {
+        type_manager
+            .get_attribute_type_value_type(snapshot, self.clone().into_owned())
+            .map(|value_type_opt| value_type_opt.map(|(value_type, source)| value_type))
+    }
+
     pub fn set_value_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -127,12 +137,12 @@ impl<'a> AttributeType<'a> {
         type_manager.set_value_type(snapshot, self.clone().into_owned(), value_type)
     }
 
-    pub fn get_value_type(
+    pub fn unset_value_type(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<ValueType>, ConceptReadError> {
-        type_manager.get_attribute_type_value_type(snapshot, self.clone().into_owned())
+    ) -> Result<(), ConceptWriteError> {
+        type_manager.unset_value_type(snapshot, self.clone().into_owned())
     }
 
     pub fn set_label(
@@ -196,14 +206,22 @@ impl<'a> AttributeType<'a> {
     ) -> Result<bool, ConceptReadError> {
         Ok(self
             .get_annotations(snapshot, type_manager)?
-            .contains(&AttributeTypeAnnotation::Independent(AnnotationIndependent)))
+            .contains_key(&AttributeTypeAnnotation::Independent(AnnotationIndependent)))
+    }
+
+    pub fn get_annotations_declared<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashSet<AttributeTypeAnnotation>>, ConceptReadError> {
+        type_manager.get_attribute_type_annotations_declared(snapshot, self.clone().into_owned())
     }
 
     pub fn get_annotations<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<AttributeTypeAnnotation>>, ConceptReadError> {
+    ) -> Result<MaybeOwns<'m, HashMap<AttributeTypeAnnotation, AttributeType<'static>>>, ConceptReadError> {
         type_manager.get_attribute_type_annotations(snapshot, self.clone().into_owned())
     }
 
@@ -215,35 +233,38 @@ impl<'a> AttributeType<'a> {
     ) -> Result<(), ConceptWriteError> {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())
+                type_manager.set_annotation_abstract(snapshot, self.clone().into_owned())?
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.set_annotation_independent(snapshot, self.clone().into_owned())
+                type_manager.set_annotation_independent(snapshot, self.clone().into_owned())?
             }
             AttributeTypeAnnotation::Regex(regex) => {
-                type_manager.set_annotation_regex(snapshot, self.clone().into_owned(), regex)
+                type_manager.set_annotation_regex(snapshot, self.clone().into_owned(), regex)?
             }
         };
         Ok(())
     }
 
-    fn delete_annotation(
+    pub fn unset_annotation(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
-        annotation: AttributeTypeAnnotation,
-    ) {
-        match annotation {
+        annotation_category: AnnotationCategory,
+    ) -> Result<(), ConceptWriteError> {
+        let attribute_type_annotation = AttributeTypeAnnotation::try_getting_default(annotation_category)
+            .map_err(|source| ConceptWriteError::Annotation { source })?;
+        match attribute_type_annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.delete_annotation_abstract(snapshot, self.clone().into_owned())
+                type_manager.unset_attribute_type_annotation_abstract(snapshot, self.clone().into_owned())?
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.delete_annotation_independent(snapshot, self.clone().into_owned())
+                type_manager.unset_annotation_independent(snapshot, self.clone().into_owned())?
             }
             AttributeTypeAnnotation::Regex(_) => {
-                type_manager.delete_annotation_regex(snapshot, self.clone().into_owned())
+                type_manager.unset_annotation_regex(snapshot, self.clone().into_owned())?
             }
         }
+        Ok(())
     }
 
     pub fn into_owned(self) -> AttributeType<'static> {
@@ -253,20 +274,20 @@ impl<'a> AttributeType<'a> {
 
 // --- Owned API ---
 impl<'a> AttributeType<'a> {
-    pub fn get_owner_owns<'m>(
+    pub fn get_owns_declared<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owns_for_attribute(snapshot, self.clone().into_owned())
+        type_manager.get_owns_for_attribute_declared(snapshot, self.clone().into_owned())
     }
 
-    pub fn get_owners_transitive<'m>(
+    pub fn get_owns<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Owns<'static>>>, ConceptReadError> {
-        type_manager.get_owners_for_attribute_transitive(snapshot, self.clone().into_owned())
+        type_manager.get_owns_for_attribute(snapshot, self.clone().into_owned())
     }
 
     fn get_owns_owners(&self) {
@@ -282,17 +303,44 @@ pub enum AttributeTypeAnnotation {
     Regex(AnnotationRegex),
 }
 
+impl From<Annotation> for Result<AttributeTypeAnnotation, AnnotationError> {
+    fn from(annotation: Annotation) -> Result<AttributeTypeAnnotation, AnnotationError> {
+        match annotation {
+            Annotation::Abstract(annotation) => Ok(AttributeTypeAnnotation::Abstract(annotation)),
+            Annotation::Independent(annotation) => Ok(AttributeTypeAnnotation::Independent(annotation)),
+            Annotation::Regex(annotation) => Ok(AttributeTypeAnnotation::Regex(annotation)),
+
+            Annotation::Distinct(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
+            }
+            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category())),
+            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category())),
+            Annotation::Cardinality(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
+            }
+            Annotation::Cascade(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
+            }
+        }
+    }
+}
+
 impl From<Annotation> for AttributeTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
-        match annotation {
-            Annotation::Abstract(annotation) => AttributeTypeAnnotation::Abstract(annotation),
-            Annotation::Independent(annotation) => AttributeTypeAnnotation::Independent(annotation),
-            Annotation::Regex(annotation) => AttributeTypeAnnotation::Regex(annotation),
+        let into_annotation: Result<AttributeTypeAnnotation, AnnotationError> = annotation.into();
+        match into_annotation {
+            Ok(into_annotation) => into_annotation,
+            Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),
+        }
+    }
+}
 
-            Annotation::Distinct(_) => unreachable!("Distinct annotation not available for Attribute type."),
-            Annotation::Unique(_) => unreachable!("Unique annotation not available for Attribute type."),
-            Annotation::Key(_) => unreachable!("Key annotation not available for Attribute type."),
-            Annotation::Cardinality(_) => unreachable!("Cardinality annotation not available for Attribute type."),
+impl Into<Annotation> for AttributeTypeAnnotation {
+    fn into(self) -> Annotation {
+        match self {
+            AttributeTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
+            AttributeTypeAnnotation::Independent(annotation) => Annotation::Independent(annotation),
+            AttributeTypeAnnotation::Regex(annotation) => Annotation::Regex(annotation),
         }
     }
 }

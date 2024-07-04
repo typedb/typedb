@@ -15,7 +15,10 @@ use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 use crate::{
     thing::{object::Object, relation::Relation},
     type_::{
-        annotation::AnnotationCardinality, attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType,
+        annotation::{AnnotationCardinality, AnnotationError},
+        attribute_type::AttributeType,
+        object_type::ObjectType,
+        role_type::RoleType,
         type_manager::validation::SchemaValidationError,
     },
 };
@@ -107,6 +110,10 @@ pub enum ConceptWriteError {
 
     SetHasOrderedOwnsUnordered {},
     SetHasUnorderedOwnsOrdered {},
+
+    Annotation {
+        source: AnnotationError,
+    },
 }
 
 impl fmt::Display for ConceptWriteError {
@@ -135,6 +142,7 @@ impl Error for ConceptWriteError {
             Self::CardinalityViolation { .. } => None,
             Self::SetHasOrderedOwnsUnordered { .. } => None,
             Self::SetHasUnorderedOwnsOrdered { .. } => None,
+            Self::Annotation { .. } => None,
         }
     }
 }

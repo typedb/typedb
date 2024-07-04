@@ -40,8 +40,8 @@ pub mod attribute_type;
 pub mod entity_type;
 pub mod object_type;
 pub mod owns;
-mod plays;
-mod relates;
+pub mod plays;
+pub mod relates;
 pub mod relation_type;
 pub mod role_type;
 pub mod sub;
@@ -72,8 +72,8 @@ pub trait TypeAPI<'a>: ConceptAPI<'a> + TypeVertexEncoding<'a> + Sized + Clone +
     ) -> Result<MaybeOwns<'m, Label<'static>>, ConceptReadError>;
 }
 
-pub trait KindAPI<'a>: TypeAPI<'a> + PrefixedTypeVertexEncoding<'a> {
-    type AnnotationType: Hash + Eq + From<Annotation>;
+pub trait KindAPI<'a>: TypeAPI<'a> {
+    type AnnotationType: Hash + Eq + Clone + From<Annotation> + Into<Annotation>;
     const ROOT_KIND: Kind;
 }
 
@@ -90,18 +90,24 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         ordering: Ordering,
     ) -> Result<Owns<'static>, ConceptWriteError>;
 
-    fn delete_owns(
+    fn unset_owns(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError>;
 
-    fn get_owns<'m>(
+    fn get_owns_declared<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, ConceptReadError>;
+
+    fn get_owns<'m>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &'m TypeManager,
+    ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError>;
 
     fn get_owns_attribute(
         &self,
@@ -119,19 +125,13 @@ pub trait OwnerAPI<'a>: TypeAPI<'a> {
         Ok(self.get_owns_attribute(snapshot, type_manager, attribute_type)?.is_some())
     }
 
-    fn get_owns_transitive<'m>(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<AttributeType<'static>, Owns<'static>>>, ConceptReadError>;
-
     fn get_owns_attribute_transitive<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        Ok(self.get_owns_transitive(snapshot, type_manager)?.get(&attribute_type).map(|owns| owns.clone()))
+        Ok(self.get_owns(snapshot, type_manager)?.get(&attribute_type).map(|owns| owns.clone()))
     }
 
     fn has_owns_attribute_transitive(
@@ -152,14 +152,14 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         role_type: RoleType<'static>,
     ) -> Result<Plays<'static>, ConceptWriteError>;
 
-    fn delete_plays(
+    fn unset_plays(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError>;
 
-    fn get_plays<'m>(
+    fn get_plays_declared<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
@@ -181,29 +181,11 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         Ok(self.get_plays_role(snapshot, type_manager, role_type)?.is_some())
     }
 
-    fn get_plays_transitive<'m>(
+    fn get_plays<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError>;
-
-    fn get_plays_role_transitive(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        role_type: RoleType<'static>,
-    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
-        Ok(self.get_plays_transitive(snapshot, type_manager)?.get(&role_type).map(|plays| plays.clone()))
-    }
-
-    fn has_plays_role_transitive(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        role_type: RoleType<'static>,
-    ) -> Result<bool, ConceptReadError> {
-        Ok(self.get_plays_role_transitive(snapshot, type_manager, role_type)?.is_some())
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -249,8 +231,6 @@ pub(crate) trait InterfaceImplementation<'a>:
     fn object(&self) -> Self::ObjectType;
 
     fn interface(&self) -> Self::InterfaceType;
-
-    fn unwrap_annotation(annotation: Self::AnnotationType) -> Annotation;
 }
 
 pub struct EdgeOverride<EDGE: TypeEdgeEncoding<'static>> {
