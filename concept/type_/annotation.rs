@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::borrow::Cow;
+
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
     graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
@@ -17,6 +19,8 @@ use encoding::{
 };
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
+
+use crate::type_::type_manager::validation::AnnotationError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
@@ -47,9 +51,7 @@ pub struct AnnotationUnique;
 pub struct AnnotationKey;
 
 impl AnnotationKey {
-    pub const fn cardinality() -> AnnotationCardinality {
-        AnnotationCardinality::key()
-    }
+    pub const CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, Some(1));
 }
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
@@ -70,10 +72,6 @@ impl AnnotationCardinality {
     }
 
     pub const fn default() -> Self {
-        Self::new(0, Some(1))
-    }
-
-    pub const fn key() -> Self {
         Self::new(0, Some(1))
     }
 
@@ -104,16 +102,16 @@ impl AnnotationCardinality {
 
 #[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationRegex {
-    regex: String,
+    regex: Cow<'static, str>,
 }
 
 impl AnnotationRegex {
     pub const fn new(regex: String) -> Self {
-        Self { regex }
+        Self { regex: Cow::Owned(regex) }
     }
 
-    pub fn default() -> Self {
-        Self::new(".*".to_owned())
+    pub const fn default() -> Self {
+        Self { regex: Cow::Borrowed(".*") }
     }
 
     pub fn regex(&self) -> &str {
@@ -155,9 +153,27 @@ pub enum AnnotationCategory {
     // TODO: Replace
 }
 
+// trait ToDefault<DefaultType> {
+//     fn to_default(&self) -> DefaultType;
+// }
+//
+// impl ToDefault<Annotation> for AnnotationCategory {
+//     const fn to_default(&self) -> Annotation {
+//         match self {
+//             AnnotationCategory::Abstract => Annotation::Abstract(AnnotationAbstract),
+//             AnnotationCategory::Distinct => Annotation::Distinct(AnnotationDistinct),
+//             AnnotationCategory::Independent => Annotation::Independent(AnnotationIndependent),
+//             AnnotationCategory::Unique => Annotation::Unique(AnnotationUnique),
+//             AnnotationCategory::Key => Annotation::Key(AnnotationKey),
+//             AnnotationCategory::Cardinality => Annotation::Cardinality(AnnotationCardinality::default()),
+//             AnnotationCategory::Regex => Annotation::Regex(AnnotationRegex::default()),
+//             AnnotationCategory::Cascade => Annotation::Cascade(AnnotationCascade),
+//         }
+//     }
+// }
+
 impl AnnotationCategory {
-    pub fn to_default_annotation(&self) -> Annotation {
-        // TODO: fn const for regex default
+    const fn to_default(&self) -> Annotation {
         match self {
             AnnotationCategory::Abstract => Annotation::Abstract(AnnotationAbstract),
             AnnotationCategory::Distinct => Annotation::Distinct(AnnotationDistinct),
@@ -221,6 +237,22 @@ impl AnnotationCategory {
             | AnnotationCategory::Regex
             | AnnotationCategory::Cascade => true,
         }
+    }
+}
+
+pub trait DefaultFrom<FromType, ErrorType> {
+    fn try_getting_default(from: FromType) -> Result<Self, ErrorType>
+    where
+        Self: Sized;
+}
+
+impl<T> DefaultFrom<AnnotationCategory, AnnotationError> for T
+where
+    Result<T, AnnotationError>: From<Annotation>,
+{
+    // Note: creating default annotation from category is a workaround for creating new category types per Attribute/Entity/Relation/etc
+    fn try_getting_default(from: AnnotationCategory) -> Result<Self, AnnotationError> {
+        from.to_default().into()
     }
 }
 

@@ -5,7 +5,8 @@
  */
 
 use concept::type_::{
-    annotation, object_type::ObjectType, relates::RelatesAnnotation, role_type::RoleTypeAnnotation, Ordering, TypeAPI,
+    annotation, annotation::DefaultFrom, object_type::ObjectType, relates::RelatesAnnotation,
+    role_type::RoleTypeAnnotation, Ordering, TypeAPI,
 };
 use cucumber::gherkin::Step;
 use itertools::Itertools;

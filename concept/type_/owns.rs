@@ -15,11 +15,11 @@ use crate::{
     type_::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationKey, AnnotationRegex,
-            AnnotationUnique,
+            AnnotationUnique, DefaultFrom,
         },
         attribute_type::AttributeType,
         object_type::ObjectType,
-        type_manager::{validation::ConversionError, TypeManager},
+        type_manager::{validation::AnnotationError, TypeManager},
         InterfaceImplementation, Ordering, TypeAPI,
     },
 };
@@ -248,14 +248,8 @@ pub enum OwnsAnnotation {
     Regex(AnnotationRegex),
 }
 
-impl OwnsAnnotation {
-    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<OwnsAnnotation, ConversionError> {
-        annotation_category.to_default_annotation().into()
-    }
-}
-
-impl From<Annotation> for Result<OwnsAnnotation, ConversionError> {
-    fn from(annotation: Annotation) -> Result<OwnsAnnotation, ConversionError> {
+impl From<Annotation> for Result<OwnsAnnotation, AnnotationError> {
+    fn from(annotation: Annotation) -> Result<OwnsAnnotation, AnnotationError> {
         match annotation {
             Annotation::Distinct(annotation) => Ok(OwnsAnnotation::Distinct(annotation)),
             Annotation::Unique(annotation) => Ok(OwnsAnnotation::Unique(annotation)),
@@ -263,18 +257,16 @@ impl From<Annotation> for Result<OwnsAnnotation, ConversionError> {
             Annotation::Cardinality(annotation) => Ok(OwnsAnnotation::Cardinality(annotation)),
             Annotation::Regex(annotation) => Ok(OwnsAnnotation::Regex(annotation)),
 
-            Annotation::Abstract(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Independent(_) => {
-                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
-            }
-            Annotation::Cascade(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Abstract(_) => Err(AnnotationError::UnsupportedAnnotationForOwns(annotation.category())),
+            Annotation::Independent(_) => Err(AnnotationError::UnsupportedAnnotationForOwns(annotation.category())),
+            Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForOwns(annotation.category())),
         }
     }
 }
 
 impl From<Annotation> for OwnsAnnotation {
     fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<OwnsAnnotation, ConversionError> = annotation.into();
+        let into_annotation: Result<OwnsAnnotation, AnnotationError> = annotation.into();
         match into_annotation {
             Ok(into_annotation) => into_annotation,
             Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),

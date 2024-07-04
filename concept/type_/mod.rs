@@ -186,24 +186,6 @@ pub trait PlayerAPI<'a>: TypeAPI<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<RoleType<'static>, Plays<'static>>>, ConceptReadError>;
-
-    fn get_plays_role_transitive(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        role_type: RoleType<'static>,
-    ) -> Result<Option<Plays<'static>>, ConceptReadError> {
-        Ok(self.get_plays(snapshot, type_manager)?.get(&role_type).map(|plays| plays.clone()))
-    }
-
-    fn has_plays_role_transitive(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        role_type: RoleType<'static>,
-    ) -> Result<bool, ConceptReadError> {
-        Ok(self.get_plays_role_transitive(snapshot, type_manager, role_type)?.is_some())
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]

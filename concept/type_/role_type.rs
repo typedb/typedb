@@ -29,11 +29,11 @@ use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationCategory},
+        annotation::{Annotation, AnnotationAbstract, AnnotationCategory, DefaultFrom},
         object_type::ObjectType,
         plays::Plays,
         relates::Relates,
-        type_manager::{validation::ConversionError, TypeManager},
+        type_manager::{validation::AnnotationError, TypeManager},
         KindAPI, TypeAPI,
     },
     ConceptAPI,
@@ -279,35 +279,25 @@ pub enum RoleTypeAnnotation {
     Abstract(AnnotationAbstract),
 }
 
-impl RoleTypeAnnotation {
-    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<RoleTypeAnnotation, ConversionError> {
-        annotation_category.to_default_annotation().into()
-    }
-}
-
-impl From<Annotation> for Result<RoleTypeAnnotation, ConversionError> {
-    fn from(annotation: Annotation) -> Result<RoleTypeAnnotation, ConversionError> {
+impl From<Annotation> for Result<RoleTypeAnnotation, AnnotationError> {
+    fn from(annotation: Annotation) -> Result<RoleTypeAnnotation, AnnotationError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(RoleTypeAnnotation::Abstract(annotation)),
 
-            Annotation::Independent(_) => {
-                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
-            }
-            Annotation::Distinct(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Cardinality(_) => {
-                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
-            }
-            Annotation::Unique(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Key(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Regex(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Cascade(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Independent(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
+            Annotation::Distinct(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
+            Annotation::Cardinality(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
+            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
+            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
+            Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
+            Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
         }
     }
 }
 
 impl From<Annotation> for RoleTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<RoleTypeAnnotation, ConversionError> = annotation.into();
+        let into_annotation: Result<RoleTypeAnnotation, AnnotationError> = annotation.into();
         match into_annotation {
             Ok(into_annotation) => into_annotation,
             Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),

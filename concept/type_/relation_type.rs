@@ -27,14 +27,14 @@ use crate::{
     concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory},
+        annotation::{Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, DefaultFrom},
         attribute_type::AttributeType,
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
         relates::Relates,
         role_type::RoleType,
-        type_manager::{validation::ConversionError, TypeManager},
+        type_manager::{validation::AnnotationError, TypeManager},
         KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
     ConceptAPI,
@@ -317,12 +317,7 @@ impl<'a> OwnerAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager,
         attribute_type: AttributeType<'static>,
     ) -> Result<Option<Owns<'static>>, ConceptReadError> {
-        Ok(self
-            .get_owns(snapshot, type_manager)?
-            .iter()
-            .map(|(_, owns)| owns)
-            .find(|owns| owns.attribute() == attribute_type)
-            .cloned())
+        Ok(self.get_owns(snapshot, type_manager)?.get(&attribute_type).cloned())
     }
 }
 
@@ -367,12 +362,7 @@ impl<'a> PlayerAPI<'a> for RelationType<'a> {
         type_manager: &TypeManager,
         role_type: RoleType<'static>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError> {
-        Ok(self
-            .get_plays(snapshot, type_manager)?
-            .iter()
-            .map(|(_, plays)| plays)
-            .find(|plays| plays.role() == role_type)
-            .cloned())
+        Ok(self.get_plays(snapshot, type_manager)?.get(&role_type).cloned())
     }
 }
 
@@ -382,37 +372,31 @@ pub enum RelationTypeAnnotation {
     Cascade(AnnotationCascade),
 }
 
-impl RelationTypeAnnotation {
-    pub fn try_getting_default(
-        annotation_category: AnnotationCategory,
-    ) -> Result<RelationTypeAnnotation, ConversionError> {
-        annotation_category.to_default_annotation().into()
-    }
-}
-
-impl From<Annotation> for Result<RelationTypeAnnotation, ConversionError> {
-    fn from(annotation: Annotation) -> Result<RelationTypeAnnotation, ConversionError> {
+impl From<Annotation> for Result<RelationTypeAnnotation, AnnotationError> {
+    fn from(annotation: Annotation) -> Result<RelationTypeAnnotation, AnnotationError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(RelationTypeAnnotation::Abstract(annotation)),
             Annotation::Cascade(annotation) => Ok(RelationTypeAnnotation::Cascade(annotation)),
 
-            Annotation::Distinct(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Distinct(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category()))
+            }
             Annotation::Independent(_) => {
-                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
+                Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category()))
             }
-            Annotation::Unique(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Key(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category())),
+            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category())),
             Annotation::Cardinality(_) => {
-                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
+                Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category()))
             }
-            Annotation::Regex(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category())),
         }
     }
 }
 
 impl From<Annotation> for RelationTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<RelationTypeAnnotation, ConversionError> = annotation.into();
+        let into_annotation: Result<RelationTypeAnnotation, AnnotationError> = annotation.into();
         match into_annotation {
             Ok(into_annotation) => into_annotation,
             Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),

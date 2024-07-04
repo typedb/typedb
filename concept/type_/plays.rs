@@ -13,10 +13,10 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationCardinality, AnnotationCategory},
+        annotation::{Annotation, AnnotationCardinality, AnnotationCategory, DefaultFrom},
         object_type::ObjectType,
         role_type::RoleType,
-        type_manager::{validation::ConversionError, TypeManager},
+        type_manager::{validation::AnnotationError, TypeManager},
         InterfaceImplementation, TypeAPI,
     },
 };
@@ -154,33 +154,25 @@ pub enum PlaysAnnotation {
     Cardinality(AnnotationCardinality),
 }
 
-impl PlaysAnnotation {
-    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<PlaysAnnotation, ConversionError> {
-        annotation_category.to_default_annotation().into()
-    }
-}
-
-impl From<Annotation> for Result<PlaysAnnotation, ConversionError> {
-    fn from(annotation: Annotation) -> Result<PlaysAnnotation, ConversionError> {
+impl From<Annotation> for Result<PlaysAnnotation, AnnotationError> {
+    fn from(annotation: Annotation) -> Result<PlaysAnnotation, AnnotationError> {
         match annotation {
             Annotation::Cardinality(annotation) => Ok(PlaysAnnotation::Cardinality(annotation)),
 
-            Annotation::Abstract(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Independent(_) => {
-                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
-            }
-            Annotation::Distinct(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Unique(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Key(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Regex(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Cascade(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Abstract(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
+            Annotation::Independent(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
+            Annotation::Distinct(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
+            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
+            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
+            Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
+            Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
         }
     }
 }
 
 impl From<Annotation> for PlaysAnnotation {
     fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<PlaysAnnotation, ConversionError> = annotation.into();
+        let into_annotation: Result<PlaysAnnotation, AnnotationError> = annotation.into();
         match into_annotation {
             Ok(into_annotation) => into_annotation,
             Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),

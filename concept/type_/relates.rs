@@ -13,10 +13,10 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct},
+        annotation::{Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, DefaultFrom},
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::{validation::ConversionError, TypeManager},
+        type_manager::{validation::AnnotationError, TypeManager},
         InterfaceImplementation,
     },
 };
@@ -171,33 +171,25 @@ pub enum RelatesAnnotation {
     Cardinality(AnnotationCardinality),
 }
 
-impl RelatesAnnotation {
-    pub fn try_getting_default(annotation_category: AnnotationCategory) -> Result<RelatesAnnotation, ConversionError> {
-        annotation_category.to_default_annotation().into()
-    }
-}
-
-impl From<Annotation> for Result<RelatesAnnotation, ConversionError> {
-    fn from(annotation: Annotation) -> Result<RelatesAnnotation, ConversionError> {
+impl From<Annotation> for Result<RelatesAnnotation, AnnotationError> {
+    fn from(annotation: Annotation) -> Result<RelatesAnnotation, AnnotationError> {
         match annotation {
             Annotation::Distinct(annotation) => Ok(RelatesAnnotation::Distinct(annotation)),
             Annotation::Cardinality(annotation) => Ok(RelatesAnnotation::Cardinality(annotation)),
 
-            Annotation::Abstract(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Independent(_) => {
-                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
-            }
-            Annotation::Unique(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Key(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Regex(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Cascade(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Abstract(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
+            Annotation::Independent(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
+            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
+            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
+            Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
+            Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
         }
     }
 }
 
 impl From<Annotation> for RelatesAnnotation {
     fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<RelatesAnnotation, ConversionError> = annotation.into();
+        let into_annotation: Result<RelatesAnnotation, AnnotationError> = annotation.into();
         match into_annotation {
             Ok(into_annotation) => into_annotation,
             Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),

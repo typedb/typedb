@@ -194,7 +194,7 @@ impl TypeReader {
                 // We may encounter transitive implementations multiple times (relaxed schema validation
                 // or self-override for annotations narrowing)
                 if !overridden_interfaces.contains(&interface) && !transitive_implementations.contains_key(&interface) {
-                    transitive_implementations.insert(implementation.interface(), implementation.clone());
+                    transitive_implementations.insert(interface, implementation.clone());
                 }
                 if let Some(overridden) = Self::get_implementation_override(snapshot, implementation.clone())? {
                     overridden_interfaces.add(overridden.interface());

@@ -20,7 +20,7 @@ use crate::{
         object_type::ObjectType,
         role_type::RoleType,
         type_manager::validation::{
-            operation_time_validation::OperationTimeValidation, ConversionError, SchemaValidationError,
+            operation_time_validation::OperationTimeValidation, AnnotationError, SchemaValidationError,
         },
     },
 };
@@ -114,7 +114,7 @@ pub enum ConceptWriteError {
     SetHasUnorderedOwnsOrdered {},
 
     Conversion {
-        source: ConversionError,
+        source: AnnotationError,
     },
 }
 

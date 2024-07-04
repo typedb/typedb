@@ -436,7 +436,7 @@ impl OperationTimeValidation {
     where
         EDGE: InterfaceImplementation<'static> + Clone,
     {
-        match Self::get_conflicted_cardinality(snapshot, supertype_edge.clone(), AnnotationKey::cardinality())? {
+        match Self::get_conflicted_cardinality(snapshot, supertype_edge.clone(), AnnotationKey::CARDINALITY)? {
             Some(conflicted_cardinality) => {
                 Err(SchemaValidationError::KeyShouldNarrowInheritedCardinality(conflicted_cardinality.clone()))
             }
@@ -665,7 +665,7 @@ impl OperationTimeValidation {
         for subtype_annotation in subtype_declared_annotations {
             let subtype_annotation = subtype_annotation.clone().into();
             let category = subtype_annotation.category();
-            OperationTimeValidation::validate_type_declared_annotation_is_compatible_with_inherited_annotations(
+            OperationTimeValidation::validate_set_annotation_is_compatible_with_inherited_annotations(
                 snapshot,
                 supertype.clone(),
                 category,
@@ -702,7 +702,7 @@ impl OperationTimeValidation {
             .map_err(SchemaValidationError::ConceptRead)?;
         for subtype_annotation in subtype_declared_annotations {
             let category = subtype_annotation.category();
-            OperationTimeValidation::validate_declared_edge_annotation_is_compatible_with_inherited_annotations(
+            OperationTimeValidation::validate_set_edge_annotation_is_compatible_with_inherited_annotations(
                 snapshot,
                 overridden_edge.clone(),
                 category,
@@ -1150,7 +1150,7 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_type_declared_annotation_is_compatible_with_inherited_annotations(
+    pub(crate) fn validate_set_annotation_is_compatible_with_inherited_annotations(
         snapshot: &impl ReadableSnapshot,
         type_: impl KindAPI<'static>,
         annotation_category: AnnotationCategory,
@@ -1172,7 +1172,7 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_declared_edge_annotation_is_compatible_with_inherited_annotations<EDGE>(
+    pub(crate) fn validate_set_edge_annotation_is_compatible_with_inherited_annotations<EDGE>(
         snapshot: &impl ReadableSnapshot,
         edge: EDGE,
         annotation_category: AnnotationCategory,

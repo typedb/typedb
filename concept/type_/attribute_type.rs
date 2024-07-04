@@ -23,10 +23,10 @@ use super::annotation::{AnnotationCategory, AnnotationRegex};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
-        annotation::{Annotation, AnnotationAbstract, AnnotationIndependent},
+        annotation::{Annotation, AnnotationAbstract, AnnotationIndependent, DefaultFrom},
         object_type::ObjectType,
         owns::Owns,
-        type_manager::{validation::ConversionError, TypeManager},
+        type_manager::{validation::AnnotationError, TypeManager},
         KindAPI, TypeAPI,
     },
     ConceptAPI,
@@ -251,9 +251,9 @@ impl<'a> AttributeType<'a> {
         type_manager: &TypeManager,
         annotation_category: AnnotationCategory,
     ) -> Result<(), ConceptWriteError> {
-        let relation_type_annotation = AttributeTypeAnnotation::try_getting_default(annotation_category)
+        let attribute_type_annotation = AttributeTypeAnnotation::try_getting_default(annotation_category)
             .map_err(|source| ConceptWriteError::Conversion { source })?;
-        match relation_type_annotation {
+        match attribute_type_annotation {
             AttributeTypeAnnotation::Abstract(_) => {
                 type_manager.unset_attribute_type_annotation_abstract(snapshot, self.clone().into_owned())?
             }
@@ -303,35 +303,31 @@ pub enum AttributeTypeAnnotation {
     Regex(AnnotationRegex),
 }
 
-impl AttributeTypeAnnotation {
-    pub fn try_getting_default(
-        annotation_category: AnnotationCategory,
-    ) -> Result<AttributeTypeAnnotation, ConversionError> {
-        annotation_category.to_default_annotation().into()
-    }
-}
-
-impl From<Annotation> for Result<AttributeTypeAnnotation, ConversionError> {
-    fn from(annotation: Annotation) -> Result<AttributeTypeAnnotation, ConversionError> {
+impl From<Annotation> for Result<AttributeTypeAnnotation, AnnotationError> {
+    fn from(annotation: Annotation) -> Result<AttributeTypeAnnotation, AnnotationError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(AttributeTypeAnnotation::Abstract(annotation)),
             Annotation::Independent(annotation) => Ok(AttributeTypeAnnotation::Independent(annotation)),
             Annotation::Regex(annotation) => Ok(AttributeTypeAnnotation::Regex(annotation)),
 
-            Annotation::Distinct(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Unique(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Key(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
-            Annotation::Cardinality(_) => {
-                Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category()))
+            Annotation::Distinct(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
             }
-            Annotation::Cascade(_) => Err(ConversionError::UnsupportedAnnotationForTypeOrEdge(annotation.category())),
+            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category())),
+            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category())),
+            Annotation::Cardinality(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
+            }
+            Annotation::Cascade(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
+            }
         }
     }
 }
 
 impl From<Annotation> for AttributeTypeAnnotation {
     fn from(annotation: Annotation) -> Self {
-        let into_annotation: Result<AttributeTypeAnnotation, ConversionError> = annotation.into();
+        let into_annotation: Result<AttributeTypeAnnotation, AnnotationError> = annotation.into();
         match into_annotation {
             Ok(into_annotation) => into_annotation,
             Err(_) => unreachable!("Do not call this conversion from user-exposed code!"),
