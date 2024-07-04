@@ -203,6 +203,12 @@ fn traverse_has() {
             .map_static(|row| row.map(|row| row.to_vec()).map_err(|err| err.clone()))
             .collect();
 
-        dbg!("{:?}", rows);
+        for row in rows {
+            let r = row.unwrap();
+            for value in r {
+                print!("{}, ", value);
+            }
+            println!()
+        }
     }
 }

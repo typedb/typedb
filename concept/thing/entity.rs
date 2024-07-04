@@ -5,6 +5,7 @@
  */
 
 use std::collections::HashSet;
+use std::fmt::{Display, Formatter};
 
 use encoding::{
     graph::{thing::vertex_object::ObjectVertex, type_::vertex::PrefixedTypeVertexEncoding, Typed},
@@ -31,6 +32,7 @@ use crate::{
     type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
+use crate::type_::TypeAPI;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Entity<'a> {
@@ -164,3 +166,9 @@ fn storage_key_to_entity(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> Enti
 }
 
 concept_iterator!(EntityIterator, Entity, storage_key_to_entity);
+
+impl<'a> Display for Entity<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[Entity:{}:{}]", self.type_().vertex().type_id_(), self.vertex.object_id())
+    }
+}

@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fmt::{Display, Formatter};
 use concept::{
     thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation},
     type_::{
@@ -83,6 +84,17 @@ impl From<ObjectType<'static>> for Type {
     }
 }
 
+impl Display for Type {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Type::Entity(entity) => write!(f, "{}", entity),
+            Type::Relation(relation) => write!(f, "{}", relation),
+            Type::Attribute(attribute) =>write!(f, "{}", attribute),
+            Type::RoleType(role) =>write!(f, "{}", role),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Thing<'a> {
     Entity(Entity<'a>),
@@ -95,6 +107,16 @@ impl<'a> From<Object<'a>> for Thing<'a> {
         match object {
             Object::Entity(entity) => Thing::Entity(entity),
             Object::Relation(relation) => Thing::Relation(relation),
+        }
+    }
+}
+
+impl<'a> Display for Thing<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Thing::Entity(entity) => write!(f, "{}", entity),
+            Thing::Relation(relation) => write!(f, "{}", relation),
+            Thing::Attribute(attribute) => write!(f, "{}", attribute),
         }
     }
 }

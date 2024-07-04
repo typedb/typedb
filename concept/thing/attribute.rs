@@ -5,21 +5,18 @@
  */
 
 use std::{cmp::Ordering, marker::PhantomData, sync::Arc};
+use std::fmt::{Display, Formatter};
 
 use bytes::Bytes;
-use encoding::{
-    graph::{
-        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
-        type_::vertex::PrefixedTypeVertexEncoding,
-        Typed,
-    },
-    value::{
-        decode_value_u64,
-        value::Value,
-        value_struct::{StructIndexEntry, StructIndexEntryKey},
-    },
-    AsBytes, Keyable,
-};
+use encoding::{graph::{
+    thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
+    type_::vertex::PrefixedTypeVertexEncoding,
+    Typed,
+}, value::{
+    decode_value_u64,
+    value::Value,
+    value_struct::{StructIndexEntry, StructIndexEntryKey},
+}, AsBytes, Keyable, Prefixed};
 use iterator::State;
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -35,6 +32,8 @@ use crate::{
     type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
+use crate::thing::entity::Entity;
+use crate::type_::TypeAPI;
 
 #[derive(Debug, Clone)]
 pub struct Attribute<'a> {
@@ -397,3 +396,9 @@ edge_iterator!(
     'a -> (Object<'a>, u64);
     storage_key_to_owner
 );
+
+impl<'a> Display for Attribute<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[Attribute-{}:{}:{}]", self.vertex().value_type_category(), self.type_().vertex().type_id_(), self.vertex.attribute_id())
+    }
+}

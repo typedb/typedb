@@ -6,6 +6,7 @@
 
 use std::borrow::Cow;
 use std::cmp::Ordering;
+use std::fmt::{Display, Formatter};
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
 use chrono_tz::Tz;
@@ -209,5 +210,11 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::Struct(struct_) => StructBytes::build(struct_),
             _ => panic!("Cannot encode non-Struct as StructBytes"),
         }
+    }
+}
+
+impl<'a> Display for Value<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
     }
 }

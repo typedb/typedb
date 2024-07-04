@@ -5,6 +5,7 @@
  */
 
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 
 use bytes::Bytes;
 use encoding::{
@@ -41,6 +42,7 @@ use crate::{
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
+use crate::type_::TypeAPI;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Relation<'a> {
@@ -518,3 +520,9 @@ edge_iterator!(
     'a -> (RolePlayer<'a>, RolePlayer<'a>, Relation<'a>, u64);
     storage_key_to_indexed_players
 );
+
+impl<'a> Display for Relation<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[Relation:{}:{}]", self.type_().vertex().type_id_(), self.vertex.object_id())
+    }
+}

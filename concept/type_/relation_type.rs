@@ -5,17 +5,19 @@
  */
 
 use std::collections::{HashMap, HashSet};
+use std::fmt::{Display, Formatter};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::type_::{
-        vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
         Kind,
+        vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
     },
     layout::prefix::{Prefix, Prefix::VertexRelationType},
-    value::label::Label,
     Prefixed,
+    value::label::Label,
 };
+use encoding::graph::Typed;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -25,21 +27,21 @@ use storage::{
 
 use crate::{
     concept_iterator,
+    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, AnnotationError, DefaultFrom,
         },
         attribute_type::AttributeType,
+        KindAPI,
         object_type::ObjectType,
+        ObjectTypeAPI,
+        Ordering,
+        OwnerAPI,
         owns::Owns,
-        plays::Plays,
-        relates::Relates,
-        role_type::RoleType,
-        type_manager::TypeManager,
-        KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        PlayerAPI, plays::Plays, relates::Relates, role_type::RoleType, type_manager::TypeManager, TypeAPI,
     },
-    ConceptAPI,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -272,6 +274,12 @@ impl<'a> RelationType<'a> {
 
     pub fn into_owned(self) -> RelationType<'static> {
         RelationType { vertex: self.vertex.into_owned() }
+    }
+}
+
+impl<'a> Display for RelationType<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[RelationType:{}]", self.vertex.type_id_())
     }
 }
 

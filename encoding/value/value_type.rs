@@ -157,6 +157,12 @@ impl ValueTypeCategory {
     }
 }
 
+impl Display for ValueTypeCategory {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct ValueTypeBytes {
     bytes: [u8; Self::LENGTH],

@@ -56,7 +56,7 @@ impl fmt::Display for BytesError {
     }
 }
 
-pub(crate) struct HexBytesFormatter<'a>(pub(crate) &'a [u8]);
+pub struct HexBytesFormatter<'a>(pub &'a [u8]);
 
 impl fmt::Debug for HexBytesFormatter<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

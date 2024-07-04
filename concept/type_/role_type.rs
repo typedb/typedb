@@ -5,6 +5,7 @@
  */
 
 use std::collections::{HashMap, HashSet};
+use std::fmt::{Display, Formatter};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
@@ -16,6 +17,7 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
+use encoding::graph::Typed;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -270,6 +272,12 @@ impl<'a> RoleType<'a> {
 impl<'a> KindAPI<'a> for RoleType<'a> {
     type AnnotationType = RoleTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Role;
+}
+
+impl<'a> Display for RoleType<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[RoleType:{}]", self.vertex.type_id_())
+    }
 }
 
 // --- Played API ---

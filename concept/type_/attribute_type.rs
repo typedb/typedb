@@ -5,6 +5,7 @@
  */
 
 use std::collections::{HashMap, HashSet};
+use std::fmt::{Display, Formatter};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
@@ -16,6 +17,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     Prefixed,
 };
+use encoding::graph::Typed;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -31,6 +33,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::entity_type::EntityType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
@@ -269,6 +272,12 @@ impl<'a> AttributeType<'a> {
 
     pub fn into_owned(self) -> AttributeType<'static> {
         AttributeType { vertex: self.vertex.into_owned() }
+    }
+}
+
+impl<'a> Display for AttributeType<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[AttributeType:{}]", self.vertex.type_id_())
     }
 }
 

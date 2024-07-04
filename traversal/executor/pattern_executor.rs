@@ -362,7 +362,7 @@ impl SortedExecutor {
         loop {
             let mut failed = false;
             let mut retry = false;
-            for mut i in 0..self.iterators.len() {
+            for i in 0..self.iterators.len() {
                 if i == current_max_index {
                     continue;
                 }
@@ -389,11 +389,14 @@ impl SortedExecutor {
                 };
 
                 match max_cmp_peek {
-                    Ordering::Less => current_max_index = i,
+                    Ordering::Less => {
+                        current_max_index = i;
+                        retry = true;
+                    },
                     Ordering::Equal => {}
                     Ordering::Greater => {
-                        let current_max = &mut containing_max[0].peek_sorted_value().unwrap().unwrap();
-                        let iter_i = &mut containing_i[i];
+                        let current_max = &mut containing_max[max_index].peek_sorted_value().unwrap().unwrap();
+                        let iter_i = &mut containing_i[i_index];
                         let iterator_status = iter_i.skip_to_sorted_value(current_max)?;
                         match iterator_status {
                             None => {
