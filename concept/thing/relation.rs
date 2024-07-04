@@ -42,7 +42,6 @@ use crate::{
     },
     ByteReference, ConceptAPI, ConceptStatus,
 };
-use crate::type_::TypeAPI;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Relation<'a> {
