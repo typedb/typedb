@@ -32,6 +32,7 @@ use crate::{
     pattern::{
         conjunction::Conjunction,
         constraint::{Comparison, Constraint, FunctionCallBinding, Has, Isa, RolePlayer, Sub, Type},
+        disjunction::Disjunction,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
         ScopeId,
@@ -101,21 +102,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         for pattern in conjunction.nested_patterns() {
             match pattern {
                 NestedPattern::Disjunction(disjunction) => {
-                    let nested_tigs = disjunction.conjunctions().iter().map(|c| self.build_recursive(c)).collect();
-                    let context = conjunction.context(); // We know they're the same context
-                    let shared_variables: BTreeSet<Variable> = disjunction
-                        .conjunctions()
-                        .iter()
-                        .flat_map(|nested_conj| {
-                            self.get_local_variables(&context, nested_conj.scope_id())
-                                .filter(|variable| context.is_variable_available(conjunction.scope_id(), *variable))
-                        })
-                        .collect();
-                    nested_disjunctions.push(NestedTypeInferenceGraphDisjunction {
-                        disjunction: nested_tigs,
-                        shared_variables,
-                        shared_vertex_annotations: BTreeMap::new(),
-                    });
+                    nested_disjunctions.push(self.build_disjunction_recursive(conjunction, disjunction));
                 }
                 NestedPattern::Negation(negation) => {
                     nested_negations.push(self.build_recursive(negation.conjunction()));
@@ -133,6 +120,31 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             nested_disjunctions,
             nested_negations,
             nested_optionals,
+        }
+    }
+
+    fn build_disjunction_recursive<'conj>(
+        &self,
+        parent_conjunction: &'conj Conjunction,
+        disjunction: &'conj Disjunction,
+    ) -> NestedTypeInferenceGraphDisjunction<'conj> {
+        let nested_tigs: Vec<TypeInferenceGraph<'conj>> =
+            disjunction.conjunctions().iter().map(|c| self.build_recursive(c)).collect();
+        let context = parent_conjunction.context(); // We know they're the same context
+        let shared_variables: BTreeSet<Variable> = nested_tigs
+            .iter()
+            .flat_map(|nested_tig| {
+                Iterator::chain(
+                    self.get_local_variables(&context, nested_tig.conjunction.scope_id()),
+                    nested_tig.nested_disjunctions.iter().flat_map(|disj| disj.shared_variables.iter().map(|v| *v)),
+                )
+                .filter(|variable| context.is_variable_available(parent_conjunction.scope_id(), *variable))
+            })
+            .collect();
+        NestedTypeInferenceGraphDisjunction {
+            disjunction: nested_tigs,
+            shared_variables,
+            shared_vertex_annotations: BTreeMap::new(),
         }
     }
 
