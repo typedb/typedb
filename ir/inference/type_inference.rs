@@ -10,16 +10,13 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
-use concept::type_::{
-    attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType, role_type::RoleType,
-    type_manager::TypeManager,
-};
+use concept::type_::type_manager::TypeManager;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     inference::pattern_type_inference::{infer_types_for_conjunction, TypeInferenceGraph},
     pattern::{conjunction::Conjunction, constraint::Constraint, ScopeId},
-    program::{block::FunctionalBlock, program::Program},
+    program::program::Program,
 };
 
 /*

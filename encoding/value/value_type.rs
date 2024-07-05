@@ -4,8 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, fmt, ops::Range};
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::HashSet,
+    fmt,
+    fmt::{Display, Formatter},
+    ops::Range,
+};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;

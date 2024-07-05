@@ -202,6 +202,8 @@ fn traverse_has() {
         let rows: Vec<Result<Vec<VariableValue<'static>>, ConceptReadError>> =
             iterator.map_static(|row| row.map(|row| row.to_vec()).map_err(|err| err.clone())).collect();
 
+        assert_eq!(rows.len(), 7);
+
         for row in rows {
             let r = row.unwrap();
             for value in r {
