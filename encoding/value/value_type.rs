@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashSet, fmt, ops::Range};
+use std::fmt::{Display, Formatter};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;

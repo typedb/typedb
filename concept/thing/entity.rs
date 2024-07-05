@@ -4,8 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::HashSet,
+    fmt::{Display, Formatter},
+};
 
 use encoding::{
     graph::{thing::vertex_object::ObjectVertex, type_::vertex::PrefixedTypeVertexEncoding, Typed},
@@ -29,10 +31,9 @@ use crate::{
         thing_manager::ThingManager,
         ThingAPI,
     },
-    type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
+    type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
-use crate::type_::TypeAPI;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Entity<'a> {

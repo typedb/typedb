@@ -4,20 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::{Display, Formatter},
+};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
-    graph::type_::{
-        vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
-        Kind,
+    graph::{
+        type_::{
+            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            Kind,
+        },
+        Typed,
     },
     layout::prefix::Prefix,
     value::label::Label,
     Prefixed,
 };
-use encoding::graph::Typed;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;

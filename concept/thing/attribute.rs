@@ -4,19 +4,27 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, marker::PhantomData, sync::Arc};
-use std::fmt::{Display, Formatter};
+use std::{
+    cmp::Ordering,
+    fmt::{Display, Formatter},
+    marker::PhantomData,
+    sync::Arc,
+};
 
 use bytes::Bytes;
-use encoding::{graph::{
-    thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
-    type_::vertex::PrefixedTypeVertexEncoding,
-    Typed,
-}, value::{
-    decode_value_u64,
-    value::Value,
-    value_struct::{StructIndexEntry, StructIndexEntryKey},
-}, AsBytes, Keyable, Prefixed};
+use encoding::{
+    graph::{
+        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
+        type_::vertex::PrefixedTypeVertexEncoding,
+        Typed,
+    },
+    value::{
+        decode_value_u64,
+        value::Value,
+        value_struct::{StructIndexEntry, StructIndexEntryKey},
+    },
+    AsBytes, Keyable, Prefixed,
+};
 use iterator::State;
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -28,12 +36,10 @@ use storage::{
 use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{object::Object, thing_manager::ThingManager, ThingAPI},
-    type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI},
+    thing::{entity::Entity, object::Object, thing_manager::ThingManager, ThingAPI},
+    type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
-use crate::thing::entity::Entity;
-use crate::type_::TypeAPI;
 
 #[derive(Debug, Clone)]
 pub struct Attribute<'a> {
@@ -399,6 +405,12 @@ edge_iterator!(
 
 impl<'a> Display for Attribute<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[Attribute-{}:{}:{}]", self.vertex().value_type_category(), self.type_().vertex().type_id_(), self.vertex.attribute_id())
+        write!(
+            f,
+            "[Attribute-{}:{}:{}]",
+            self.vertex().value_type_category(),
+            self.type_().vertex().type_id_(),
+            self.vertex.attribute_id()
+        )
     }
 }

@@ -4,8 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, ops::Range};
-use std::fmt::{Display, Formatter};
+use std::{
+    fmt,
+    fmt::{Display, Formatter},
+    ops::Range,
+};
 
 use lending_iterator::higher_order::Hkt;
 use primitive::prefix::Prefix;

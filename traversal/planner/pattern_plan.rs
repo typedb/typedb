@@ -137,7 +137,9 @@ impl Iterate {
             Iterate::Has(has, mode) => Some(if mode.is_sorted_from() { has.owner() } else { has.attribute() }),
             Iterate::HasReverse(has, mode) => Some(if mode.is_sorted_from() { has.attribute() } else { has.owner() }),
             Iterate::RolePlayer(rp, mode) => Some(if mode.is_sorted_from() { rp.relation() } else { rp.player() }),
-            Iterate::RolePlayerReverse(rp, mode) => Some(if mode.is_sorted_from() { rp.player() } else { rp.relation() }),
+            Iterate::RolePlayerReverse(rp, mode) => {
+                Some(if mode.is_sorted_from() { rp.player() } else { rp.relation() })
+            }
             Iterate::FunctionCallBinding(_) => None,
             Iterate::Comparison(comparison) => Some(comparison.lhs()),
             Iterate::ComparisonReverse(comparison) => Some(comparison.rhs()),

@@ -4,20 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::{Display, Formatter},
+};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
-    graph::type_::{
-        Kind,
-        vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+    graph::{
+        type_::{
+            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            Kind,
+        },
+        Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexRelationType},
-    Prefixed,
     value::label::Label,
+    Prefixed,
 };
-use encoding::graph::Typed;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -27,21 +31,21 @@ use storage::{
 
 use crate::{
     concept_iterator,
-    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, AnnotationError, DefaultFrom,
         },
         attribute_type::AttributeType,
-        KindAPI,
         object_type::ObjectType,
-        ObjectTypeAPI,
-        Ordering,
-        OwnerAPI,
         owns::Owns,
-        PlayerAPI, plays::Plays, relates::Relates, role_type::RoleType, type_manager::TypeManager, TypeAPI,
+        plays::Plays,
+        relates::Relates,
+        role_type::RoleType,
+        type_manager::TypeManager,
+        KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
+    ConceptAPI,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]

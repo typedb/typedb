@@ -4,11 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
-use std::hash::Hash;
+use std::{
+    fmt::{Display, Formatter},
+    hash::Hash,
+};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
-use bytes::util::HexBytesFormatter;
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::{StorageKey, StorageKeyReference},

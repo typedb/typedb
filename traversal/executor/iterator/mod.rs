@@ -127,7 +127,6 @@ pub(crate) enum ConstraintIterator {
 }
 
 impl ConstraintIterator {
-
     pub(crate) fn peek_sorted_value_equals(&mut self, value: &VariableValue<'_>) -> Result<bool, ConceptReadError> {
         Ok(self.peek_sorted_value().transpose().map_err(|err| err.clone())?.is_some_and(|peek| peek == *value))
     }
@@ -148,62 +147,63 @@ impl ConstraintIterator {
         }
     }
 
-    pub(crate) fn skip_to_sorted_value(&mut self, value: &VariableValue<'_>) -> Result<Option<Ordering>, ConceptReadError> {
+    pub(crate) fn skip_to_sorted_value(
+        &mut self,
+        value: &VariableValue<'_>,
+    ) -> Result<Option<Ordering>, ConceptReadError> {
         debug_assert!(self.is_sorted());
         match self {
-            ConstraintIterator::HasUnboundedSortedOwner(iter, _) => {
-                loop {
-                    let peek = iter.peek();
-                    match peek {
-                        None => return Ok(None),
-                        Some(Ok(peek_value)) => {
-                            let cmp = VariableValue::Thing(Thing::from(peek_value.0.owner())).partial_cmp(value).unwrap();
-                            match cmp {
-                                Ordering::Less => {}
-                                Ordering::Equal => return Ok(Some(Ordering::Equal)),
-                                Ordering::Greater => return Ok(Some(Ordering::Greater))
-                            }
+            ConstraintIterator::HasUnboundedSortedOwner(iter, _) => loop {
+                let peek = iter.peek();
+                match peek {
+                    None => return Ok(None),
+                    Some(Ok(peek_value)) => {
+                        let cmp = VariableValue::Thing(Thing::from(peek_value.0.owner())).partial_cmp(value).unwrap();
+                        match cmp {
+                            Ordering::Less => {}
+                            Ordering::Equal => return Ok(Some(Ordering::Equal)),
+                            Ordering::Greater => return Ok(Some(Ordering::Greater)),
                         }
-                        Some(Err(err)) => return Err(err.clone()),
                     }
-                    let _ = iter.next();
+                    Some(Err(err)) => return Err(err.clone()),
                 }
-            }
-            ConstraintIterator::HasUnboundedSortedAttributeSingle(iter, _) => {
-                loop {
-                    let peek = iter.peek();
-                    match peek {
-                        None => return Ok(None),
-                        Some(Ok(peek_value)) => {
-                            let cmp = VariableValue::Thing(Thing::Attribute(peek_value.0.attribute())).partial_cmp(value).unwrap();
-                            match cmp {
-                                Ordering::Less => {}
-                                Ordering::Equal => return Ok(Some(Ordering::Equal)),
-                                Ordering::Greater => return Ok(Some(Ordering::Greater))
-                            }
+                let _ = iter.next();
+            },
+            ConstraintIterator::HasUnboundedSortedAttributeSingle(iter, _) => loop {
+                let peek = iter.peek();
+                match peek {
+                    None => return Ok(None),
+                    Some(Ok(peek_value)) => {
+                        let cmp = VariableValue::Thing(Thing::Attribute(peek_value.0.attribute()))
+                            .partial_cmp(value)
+                            .unwrap();
+                        match cmp {
+                            Ordering::Less => {}
+                            Ordering::Equal => return Ok(Some(Ordering::Equal)),
+                            Ordering::Greater => return Ok(Some(Ordering::Greater)),
                         }
-                        Some(Err(err)) => return Err(err.clone()),
                     }
-                    let _ = iter.next();
+                    Some(Err(err)) => return Err(err.clone()),
                 }
-            }
-            ConstraintIterator::HasBoundedSortedAttribute(iter, _) => {
-                loop {
-                    let peek = iter.peek();
-                    match peek {
-                        None => return Ok(None),
-                        Some(Ok(peek_value)) => {
-                            let cmp = VariableValue::Thing(Thing::Attribute(peek_value.0.attribute())).partial_cmp(&value).unwrap();
-                            match cmp {
-                                Ordering::Less => {}
-                                Ordering::Equal => return Ok(Some(Ordering::Equal)),
-                                Ordering::Greater => return Ok(Some(Ordering::Greater))
-                            }
+                let _ = iter.next();
+            },
+            ConstraintIterator::HasBoundedSortedAttribute(iter, _) => loop {
+                let peek = iter.peek();
+                match peek {
+                    None => return Ok(None),
+                    Some(Ok(peek_value)) => {
+                        let cmp = VariableValue::Thing(Thing::Attribute(peek_value.0.attribute()))
+                            .partial_cmp(&value)
+                            .unwrap();
+                        match cmp {
+                            Ordering::Less => {}
+                            Ordering::Equal => return Ok(Some(Ordering::Equal)),
+                            Ordering::Greater => return Ok(Some(Ordering::Greater)),
                         }
-                        Some(Err(err)) => return Err(err.clone()),
                     }
+                    Some(Err(err)) => return Err(err.clone()),
                 }
-            }
+            },
         }
     }
 

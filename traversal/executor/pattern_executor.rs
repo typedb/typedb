@@ -4,14 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::cmp::Ordering;
-use std::{collections::HashMap, io::Read, sync::Arc};
-
-use itertools::Itertools;
+use std::{cmp::Ordering, collections::HashMap, io::Read, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::inference::type_inference::TypeAnnotations;
+use itertools::Itertools;
 use lending_iterator::{AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
@@ -99,7 +97,11 @@ impl PatternExecutor {
                     if current_step >= steps_len {
                         return Ok(last_batch);
                     } else {
-                        let batch = (&mut self.steps[current_step]).batch_from(last_batch.take().unwrap(), snapshot, thing_manager)?;
+                        let batch = (&mut self.steps[current_step]).batch_from(
+                            last_batch.take().unwrap(),
+                            snapshot,
+                            thing_manager,
+                        )?;
                         match batch {
                             None => {
                                 direction = Direction::Backward;
@@ -437,7 +439,9 @@ impl SortedExecutor {
                                 failed = true;
                                 break;
                             }
-                            Some(Ordering::Less) => unreachable!("Skip to should always be empty or equal/greater than the target"),
+                            Some(Ordering::Less) => {
+                                unreachable!("Skip to should always be empty or equal/greater than the target")
+                            }
                             Some(Ordering::Equal) => {}
                             Some(Ordering::Greater) => {
                                 current_max_index = i;
@@ -519,7 +523,7 @@ impl SortedExecutor {
                 cartesian = true;
                 break;
             }
-        };
+        }
         if cartesian {
             self.cartesian_iterator.activate(
                 snapshot,
@@ -629,9 +633,8 @@ impl CartesianIterator {
         thing_manager: &ThingManager,
         provider: &ConstraintIteratorProvider,
     ) -> Result<ConstraintIterator, ConceptReadError> {
-        let mut reopened = provider.get_iterator(
-            snapshot, thing_manager, ImmutableRow::new(&self.intersection_source),
-        )?;
+        let mut reopened =
+            provider.get_iterator(snapshot, thing_manager, ImmutableRow::new(&self.intersection_source))?;
         let intersection = &self.intersection_source[self.sort_variable_position.as_usize()];
         reopened.skip_to_sorted_value(intersection)?;
         Ok(reopened)

@@ -5,6 +5,7 @@
  */
 
 use std::fmt::{Display, Formatter};
+
 use concept::{
     thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation},
     type_::{
@@ -89,8 +90,8 @@ impl Display for Type {
         match self {
             Type::Entity(entity) => write!(f, "{}", entity),
             Type::Relation(relation) => write!(f, "{}", relation),
-            Type::Attribute(attribute) =>write!(f, "{}", attribute),
-            Type::RoleType(role) =>write!(f, "{}", role),
+            Type::Attribute(attribute) => write!(f, "{}", attribute),
+            Type::RoleType(role) => write!(f, "{}", role),
         }
     }
 }

@@ -4,9 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::cmp::Ordering;
-use std::fmt::{Display, Formatter};
-use std::sync::Arc;
+use std::{
+    cmp::Ordering,
+    fmt::{Display, Formatter},
+    sync::Arc,
+};
 
 use encoding::value::value::Value;
 
@@ -28,7 +30,7 @@ impl<'a> PartialOrd for VariableValue<'a> {
             (Self::Type(self_type), Self::Type(other_type)) => self_type.partial_cmp(other_type),
             (Self::Thing(self_thing), Self::Thing(other_thing)) => self_thing.partial_cmp(other_thing),
             (Self::Value(self_value), Self::Value(other_value)) => self_value.partial_cmp(other_value),
-            _ => None
+            _ => None,
         }
     }
 }

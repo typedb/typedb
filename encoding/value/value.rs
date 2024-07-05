@@ -4,9 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::borrow::Cow;
-use std::cmp::Ordering;
-use std::fmt::{Display, Formatter};
+use std::{
+    borrow::Cow,
+    cmp::Ordering,
+    fmt::{Display, Formatter},
+};
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
 use chrono_tz::Tz;
@@ -44,10 +46,14 @@ impl<'a> PartialOrd for Value<'a> {
             (Self::Double(self_double), Self::Double(other_double)) => self_double.partial_cmp(other_double),
             (Self::Decimal(self_decimal), Self::Decimal(other_decimal)) => self_decimal.partial_cmp(other_decimal),
             (Self::Date(self_date), Self::Date(other_date)) => self_date.partial_cmp(other_date),
-            (Self::DateTime(self_date_time), Self::DateTime(other_date_time)) => self_date_time.partial_cmp(other_date_time),
-            (Self::DateTimeTZ(self_date_time_tz), Self::DateTimeTZ(other_date_time_tz)) => self_date_time_tz.partial_cmp(other_date_time_tz),
+            (Self::DateTime(self_date_time), Self::DateTime(other_date_time)) => {
+                self_date_time.partial_cmp(other_date_time)
+            }
+            (Self::DateTimeTZ(self_date_time_tz), Self::DateTimeTZ(other_date_time_tz)) => {
+                self_date_time_tz.partial_cmp(other_date_time_tz)
+            }
             (Self::String(self_string), Self::String(other_string)) => self_string.partial_cmp(other_string),
-            _ => None
+            _ => None,
         }
     }
 }

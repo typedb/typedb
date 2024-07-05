@@ -4,20 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::{Display, Formatter},
+};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
-    graph::type_::{
-        vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
-        Kind,
+    graph::{
+        type_::{
+            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            Kind,
+        },
+        Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexAttributeType},
     value::{label::Label, value_type::ValueType},
     Prefixed,
 };
-use encoding::graph::Typed;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -26,6 +30,7 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationError, AnnotationIndependent, DefaultFrom},
+        entity_type::EntityType,
         object_type::ObjectType,
         owns::Owns,
         type_manager::TypeManager,
@@ -33,7 +38,6 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::type_::entity_type::EntityType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType<'a> {
