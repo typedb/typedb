@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, ops::Range};
+use std::{collections::HashSet, fmt, ops::Range};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
@@ -87,7 +87,7 @@ impl ValueType {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum ValueTypeCategory {
     Boolean,
     Long,
@@ -133,6 +133,27 @@ impl ValueTypeCategory {
         };
         debug_assert_eq!(bytes, category.to_bytes());
         category
+    }
+
+    pub fn comparable_categories(category: ValueTypeCategory) -> &'static [ValueTypeCategory] {
+        match category {
+            ValueTypeCategory::Boolean => &[ValueTypeCategory::Boolean],
+            ValueTypeCategory::Long => {
+                &[ValueTypeCategory::Long, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
+            }
+            ValueTypeCategory::Double => {
+                &[ValueTypeCategory::Long, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
+            }
+            ValueTypeCategory::Decimal => {
+                &[ValueTypeCategory::Long, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
+            }
+            ValueTypeCategory::DateTime => &[ValueTypeCategory::DateTime],
+            ValueTypeCategory::DateTimeTZ => &[ValueTypeCategory::DateTimeTZ],
+            ValueTypeCategory::Duration => &[],
+            ValueTypeCategory::String => &[ValueTypeCategory::String],
+            ValueTypeCategory::Struct => &[],
+            ValueTypeCategory::Date => &[ValueTypeCategory::Date],
+        }
     }
 }
 

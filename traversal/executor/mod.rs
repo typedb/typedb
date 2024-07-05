@@ -9,9 +9,9 @@ use std::fmt::{Display, Formatter};
 use ir::pattern::IrID;
 
 mod function_executor;
+mod iterator;
 mod pattern_executor;
 pub mod program_executor;
-mod iterator;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub(crate) struct Position {

@@ -4,11 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use ir::{
-    pattern::variable_category::VariableCategory,
-    PatternDefinitionError,
-};
-use ir::program::block::FunctionalBlock;
+use ir::{pattern::variable_category::VariableCategory, program::block::FunctionalBlock, PatternDefinitionError};
 
 #[test]
 fn build_conjunction_constraints() {

@@ -8,8 +8,7 @@ use std::{collections::HashSet, error::Error, fmt};
 
 use answer::variable::Variable;
 
-use crate::{program::modifier::ModifierDefinitionError::SortVariableNotAvailable};
-use crate::program::block::BlockContext;
+use crate::program::{block::BlockContext, modifier::ModifierDefinitionError::SortVariableNotAvailable};
 
 #[derive(Debug, Clone)]
 pub enum Modifier {

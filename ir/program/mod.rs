@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub mod block;
 pub mod function;
 pub mod modifier;
 pub mod program;
-pub mod block;

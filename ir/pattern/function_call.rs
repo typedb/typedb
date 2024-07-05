@@ -5,12 +5,10 @@
  */
 
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     fmt::{Display, Formatter},
-    hash::Hash,
+    hash::{Hash, Hasher},
 };
-use std::collections::BTreeMap;
-use std::hash::Hasher;
 
 use answer::variable::Variable;
 use encoding::graph::definition::definition_key::DefinitionKey;
@@ -42,6 +40,10 @@ impl<ID: IrID> FunctionCall<ID> {
         return_is_stream: bool,
     ) -> Self {
         Self { function_id, call_variable_mapping, call_variable_categories, returns, return_is_stream }
+    }
+
+    pub(crate) fn function_id(&self) -> DefinitionKey<'static> {
+        self.function_id.clone()
     }
 
     pub(crate) fn call_id_mapping(&self) -> &BTreeMap<ID, Variable> {

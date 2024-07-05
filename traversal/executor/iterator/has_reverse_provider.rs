@@ -4,12 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-
 use ir::pattern::constraint::Has;
-use crate::executor::iterator::ConstraintIterator;
-use crate::executor::pattern_executor::Row;
-use crate::executor::Position;
-use crate::planner::pattern_plan::IterateMode;
+
+use crate::{
+    executor::{iterator::ConstraintIterator, pattern_executor::Row, Position},
+    planner::pattern_plan::IterateMode,
+};
 
 pub(crate) struct HasReverseProvider {
     has: Has<Position>,

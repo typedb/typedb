@@ -4,44 +4,44 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{collections::HashMap, sync::Arc};
 
-use std::{
-    collections::HashMap,
-    sync::Arc,
+use answer::{variable::Variable, variable_value::VariableValue, Thing};
+use concept::{
+    error::{ConceptError, ConceptReadError},
+    thing::{has::Has, thing_manager::ThingManager},
 };
-
-use answer::Thing;
-
-use answer::variable::Variable;
-use answer::variable_value::VariableValue;
-use concept::error::{ConceptError, ConceptReadError};
-use concept::thing::has::Has;
-use concept::thing::thing_manager::ThingManager;
 use ir::inference::type_inference::TypeAnnotations;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    executor::{pattern_executor::Row, Position},
-    planner::pattern_plan::Iterate,
+    executor::{
+        iterator::{
+            comparison_provider::ComparisonProvider,
+            comparison_reverse_provider::ComparisonReverseProvider,
+            function_call_binding_provier::FunctionCallBindingProvider,
+            has_provider::{
+                HasBoundedSortedToIterator, HasProvider, HasUnboundedSortedFromIterator,
+                HasUnboundedSortedToSingleIterator,
+            },
+            has_reverse_provider::HasReverseProvider,
+            role_player_provider::RolePlayerProvider,
+            role_player_reverse_provider::RolePlayerReverseProvider,
+        },
+        pattern_executor::{ImmutableRow, Row},
+        Position,
+    },
+    planner::pattern_plan::{Iterate, IterateMode},
 };
-use crate::executor::iterator::comparison_provider::ComparisonProvider;
-use crate::executor::iterator::comparison_reverse_provider::ComparisonReverseProvider;
-use crate::executor::iterator::function_call_binding_provier::FunctionCallBindingProvider;
-use crate::executor::iterator::has_provider::{HasBoundedSortedToIterator, HasProvider, HasUnboundedSortedFromIterator, HasUnboundedSortedToSingleIterator};
-use crate::executor::iterator::has_reverse_provider::HasReverseProvider;
-use crate::executor::iterator::role_player_provider::RolePlayerProvider;
-use crate::executor::iterator::role_player_reverse_provider::RolePlayerReverseProvider;
-use crate::executor::pattern_executor::ImmutableRow;
-use crate::planner::pattern_plan::IterateMode;
 
+mod comparison_provider;
+mod comparison_reverse_provider;
+mod function_call_binding_provier;
+mod has_provider;
 mod has_reverse_provider;
 mod role_player_provider;
 mod role_player_reverse_provider;
-mod function_call_binding_provier;
-mod comparison_provider;
-mod comparison_reverse_provider;
-mod has_provider;
 
 pub(crate) enum ConstraintIteratorProvider {
     Has(HasProvider),
@@ -64,7 +64,7 @@ impl ConstraintIteratorProvider {
         variable_to_position: &HashMap<Variable, Position>,
         type_annotations: &TypeAnnotations,
         snapshot: &Snapshot,
-        thing_manager: &ThingManager
+        thing_manager: &ThingManager,
     ) -> Result<Self, ConceptReadError> {
         match iterate {
             Iterate::Has(has, mode) => {
@@ -86,11 +86,8 @@ impl ConstraintIteratorProvider {
                 Ok(Self::RolePlayer(RolePlayerProvider::new(rp.into_ids(variable_to_position), mode)))
             }
             Iterate::RolePlayerReverse(rp, mode) => {
-                Ok(Self::RolePlayerReverse(RolePlayerReverseProvider::new(
-                    rp.into_ids(variable_to_position),
-                    mode,
-                )))
-            },
+                Ok(Self::RolePlayerReverse(RolePlayerReverseProvider::new(rp.into_ids(variable_to_position), mode)))
+            }
             Iterate::FunctionCallBinding(function_call) => {
                 todo!()
             }
@@ -107,7 +104,7 @@ impl ConstraintIteratorProvider {
         &self,
         snapshot: &Snapshot,
         thing_manager: &ThingManager,
-        row: ImmutableRow<'_>
+        row: ImmutableRow<'_>,
     ) -> Result<ConstraintIterator, ConceptReadError> {
         match self {
             ConstraintIteratorProvider::Has(provider) => provider.get_iterator(snapshot, thing_manager, row),
@@ -133,16 +130,16 @@ impl ConstraintIterator {
     pub(crate) fn peek_sorted_value(&mut self) -> Option<Result<VariableValue<'_>, &ConceptReadError>> {
         debug_assert!(self.is_sorted());
         match self {
-            ConstraintIterator::HasUnboundedSortedOwner(iter, _) => {
-                iter.peek().map(|result| result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::from(has.owner()))))
-            }
+            ConstraintIterator::HasUnboundedSortedOwner(iter, _) => iter
+                .peek()
+                .map(|result| result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::from(has.owner())))),
             // ConstraintIterator::HasUnboundedSortedAttributeMulti(iter) => {}
-            ConstraintIterator::HasUnboundedSortedAttributeSingle(iter, _) => {
-                iter.peek().map(|result| result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::Attribute(has.attribute()))))
-            }
-            ConstraintIterator::HasBoundedSortedAttribute(iter, _) => {
-                iter.peek().map(|result| result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::Attribute(has.attribute()))))
-            }
+            ConstraintIterator::HasUnboundedSortedAttributeSingle(iter, _) => iter.peek().map(|result| {
+                result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::Attribute(has.attribute())))
+            }),
+            ConstraintIterator::HasBoundedSortedAttribute(iter, _) => iter.peek().map(|result| {
+                result.as_ref().map(|(has, count)| VariableValue::Thing(Thing::Attribute(has.attribute())))
+            }),
         }
     }
 
@@ -172,19 +169,28 @@ impl ConstraintIterator {
             ConstraintIterator::HasUnboundedSortedOwner(iter, has) => {
                 let (has_value, _): &(Has<'_>, u64) = iter.peek().unwrap().as_ref()?;
                 row.set(has.owner(), VariableValue::Thing(Thing::from(has_value.owner().clone().into_owned())));
-                row.set(has.attribute(), VariableValue::Thing(Thing::Attribute(has_value.attribute().clone().into_owned())));
+                row.set(
+                    has.attribute(),
+                    VariableValue::Thing(Thing::Attribute(has_value.attribute().clone().into_owned())),
+                );
                 Ok(())
             }
             ConstraintIterator::HasUnboundedSortedAttributeSingle(iter, has) => {
                 let (has_value, _): &(Has<'_>, u64) = iter.peek().unwrap().as_ref()?;
                 row.set(has.owner(), VariableValue::Thing(Thing::from(has_value.owner().clone().into_owned())));
-                row.set(has.attribute(), VariableValue::Thing(Thing::Attribute(has_value.attribute().clone().into_owned())));
+                row.set(
+                    has.attribute(),
+                    VariableValue::Thing(Thing::Attribute(has_value.attribute().clone().into_owned())),
+                );
                 Ok(())
             }
             ConstraintIterator::HasBoundedSortedAttribute(iter, has) => {
                 let (has_value, _): &(Has<'_>, u64) = iter.peek().unwrap().as_ref()?;
                 debug_assert!(*row.get(has.owner()) == VariableValue::Thing(Thing::from(has_value.owner())));
-                row.set(has.attribute(), VariableValue::Thing(Thing::Attribute(has_value.attribute().clone().into_owned())));
+                row.set(
+                    has.attribute(),
+                    VariableValue::Thing(Thing::Attribute(has_value.attribute().clone().into_owned())),
+                );
                 Ok(())
             }
         }
@@ -192,15 +198,9 @@ impl ConstraintIterator {
 
     fn has_value(&mut self) -> bool {
         match self {
-            ConstraintIterator::HasUnboundedSortedOwner(iter, _) => {
-                iter.peek().is_some()
-            }
-            ConstraintIterator::HasUnboundedSortedAttributeSingle(iter, _) => {
-                iter.peek().is_some()
-            }
-            ConstraintIterator::HasBoundedSortedAttribute(iter, _) => {
-                iter.peek().is_some()
-            }
+            ConstraintIterator::HasUnboundedSortedOwner(iter, _) => iter.peek().is_some(),
+            ConstraintIterator::HasUnboundedSortedAttributeSingle(iter, _) => iter.peek().is_some(),
+            ConstraintIterator::HasBoundedSortedAttribute(iter, _) => iter.peek().is_some(),
         }
     }
 

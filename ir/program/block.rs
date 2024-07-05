@@ -4,18 +4,25 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+    sync::{Arc, Mutex, MutexGuard},
+};
 
-use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
-use std::sync::{Arc, Mutex, MutexGuard};
-use itertools::Itertools;
 use answer::variable::Variable;
-use crate::pattern::conjunction::Conjunction;
-use crate::pattern::constraint::Constraint;
-use crate::pattern::ScopeId;
-use crate::pattern::variable_category::{VariableCategory, VariableOptionality};
-use crate::PatternDefinitionError;
-use crate::program::modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort};
+use itertools::Itertools;
+
+use crate::{
+    pattern::{
+        conjunction::Conjunction,
+        constraint::Constraint,
+        variable_category::{VariableCategory, VariableOptionality},
+        ScopeId,
+    },
+    program::modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort},
+    PatternDefinitionError,
+};
 
 // A functional block is exactly 1 Conjunction + any number of modifiers
 pub struct FunctionalBlock {
@@ -30,11 +37,7 @@ impl FunctionalBlock {
         let root_scope = context.create_root_scope();
         let context = Arc::new(Mutex::new(context));
         let root = Conjunction::new(root_scope, context.clone());
-        Self {
-            conjunction: root,
-            modifiers: Vec::new(),
-            context: context,
-        }
+        Self { conjunction: root, modifiers: Vec::new(), context: context }
     }
 
     pub fn conjunction(&self) -> &Conjunction {
@@ -135,6 +138,10 @@ impl BlockContext {
         self.variable_declaration.keys().into_iter().cloned()
     }
 
+    pub(crate) fn get_variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
+        self.variable_declaration.iter()
+    }
+
     fn allocate_variable(&mut self) -> Variable {
         let variable = Variable::new(self.variable_id_allocator);
         self.variable_id_allocator += 1;
@@ -145,7 +152,7 @@ impl BlockContext {
         let variable_scope = self.variable_declaration.get(&variable);
         match variable_scope {
             None => false,
-            Some(variable_scope) => return Self::is_equal_or_parent_scope(&self.scope_parents, *variable_scope, scope),
+            Some(variable_scope) => return Self::is_equal_or_parent_scope(&self.scope_parents, scope, *variable_scope),
         }
     }
 
@@ -218,8 +225,8 @@ impl BlockContext {
     fn is_equal_or_parent_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_parent: ScopeId) -> bool {
         scope == maybe_parent
             || Self::get_scope_parent(parents, scope)
-            .map(|p| Self::is_equal_or_parent_scope(parents, p, maybe_parent))
-            .unwrap_or(false)
+                .map(|p| Self::is_equal_or_parent_scope(parents, p, maybe_parent))
+                .unwrap_or(false)
     }
 
     fn is_child_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_child: ScopeId) -> bool {

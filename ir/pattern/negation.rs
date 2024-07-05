@@ -9,17 +9,30 @@ use std::{
     sync::{Arc, Mutex, MutexGuard},
 };
 
-use crate::pattern::{Scope, ScopeId};
-use crate::program::block::BlockContext;
+use crate::{
+    pattern::{conjunction::Conjunction, Scope, ScopeId},
+    program::block::BlockContext,
+};
 
 #[derive(Debug)]
 pub(crate) struct Negation {
     context: Arc<Mutex<BlockContext>>,
+    conjunction: Conjunction,
 }
 
 impl Negation {
+    pub(crate) fn new_child(parent_scope_id: ScopeId, context: Arc<Mutex<BlockContext>>) -> Self {
+        let scope_id = context.lock().unwrap().create_child_scope(parent_scope_id);
+        let conjunction = Conjunction::new(scope_id, context.clone());
+        Self { context, conjunction }
+    }
+
     pub(crate) fn context(&self) -> MutexGuard<BlockContext> {
         self.context.lock().unwrap()
+    }
+
+    pub(crate) fn conjunction(&self) -> &Conjunction {
+        &self.conjunction
     }
 }
 

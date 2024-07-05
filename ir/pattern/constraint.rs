@@ -12,6 +12,7 @@ use std::{
 };
 
 use answer::variable::Variable;
+use encoding::value::label::Label;
 use itertools::Itertools;
 
 use crate::{
@@ -21,9 +22,9 @@ use crate::{
         variable_category::{VariableCategory, VariableOptionality},
         IrID, ScopeId,
     },
+    program::block::BlockContext,
     PatternDefinitionError,
 };
-use crate::program::block::BlockContext;
 
 #[derive(Debug)]
 pub struct Constraints {
@@ -47,6 +48,10 @@ impl Constraints {
             right_constrained_index: HashMap::new(),
             filter_constrained_index: HashMap::new(),
         }
+    }
+
+    pub(crate) fn constraints(&self) -> &Vec<Constraint<Variable>> {
+        &self.constraints
     }
 
     fn add_constraint(&mut self, constraint: impl Into<Constraint<Variable>> + Clone) -> &Constraint<Variable> {
@@ -74,10 +79,24 @@ impl Constraints {
         Ok(as_ref.as_type().unwrap())
     }
 
+    pub fn add_sub(
+        &mut self,
+        subtype: Variable,
+        supertype: Variable,
+    ) -> Result<&Sub<Variable>, PatternDefinitionError> {
+        debug_assert!(self.context.lock().unwrap().is_variable_available(self.scope, subtype));
+        debug_assert!(self.context.lock().unwrap().is_variable_available(self.scope, supertype));
+        let sub = Sub::new(subtype, supertype);
+        self.context.lock().unwrap().set_variable_category(subtype, VariableCategory::Type, sub.clone().into())?;
+        self.context.lock().unwrap().set_variable_category(supertype, VariableCategory::Type, sub.clone().into())?;
+        let as_ref = self.add_constraint(sub);
+        Ok(as_ref.as_sub().unwrap())
+    }
+
     pub fn add_isa(&mut self, thing: Variable, type_: Variable) -> Result<&Isa<Variable>, PatternDefinitionError> {
         debug_assert!(
             self.context.lock().unwrap().is_variable_available(self.scope, thing)
-                && self.context.lock().unwrap().is_variable_available(self.scope, type_)
+                && self.context.lock().unwrap().is_variable_available(self.scope, type_),
         );
         let isa = Isa::new(thing, type_);
         self.context.lock().unwrap().set_variable_category(thing, VariableCategory::Thing, isa.clone().into())?;
@@ -100,6 +119,57 @@ impl Constraints {
         )?;
         let as_ref = self.add_constraint(has);
         Ok(as_ref.as_has().unwrap())
+    }
+
+    pub fn add_role_player(
+        &mut self,
+        relation: Variable,
+        player: Variable,
+        role: Option<Variable>,
+    ) -> Result<&RolePlayer<Variable>, PatternDefinitionError> {
+        debug_assert!(
+            self.context.lock().unwrap().is_variable_available(self.scope, relation)
+                && self.context.lock().unwrap().is_variable_available(self.scope, player)
+                && (role.is_none() || self.context.lock().unwrap().is_variable_available(self.scope, role.unwrap()))
+        );
+        let role_player = RolePlayer::new(relation, player, role);
+        // TODO: Introduce relation category
+        self.context.lock().unwrap().set_variable_category(
+            relation,
+            VariableCategory::Object,
+            role_player.clone().into(),
+        )?;
+        self.context.lock().unwrap().set_variable_category(
+            player,
+            VariableCategory::Object,
+            role_player.clone().into(),
+        )?;
+        if let Some(role_type) = role {
+            self.context.lock().unwrap().set_variable_category(
+                role_type,
+                VariableCategory::RoleType,
+                role_player.clone().into(),
+            )?;
+        }
+        let as_ref = self.add_constraint(role_player);
+        Ok(as_ref.as_role_player().unwrap())
+    }
+
+    pub fn add_comparison(
+        &mut self,
+        lhs: Variable,
+        rhs: Variable,
+    ) -> Result<&Comparison<Variable>, PatternDefinitionError> {
+        debug_assert!(
+            self.context.lock().unwrap().is_variable_available(self.scope, lhs)
+                && self.context.lock().unwrap().is_variable_available(self.scope, rhs)
+        );
+        let comparison = Comparison::new(lhs, rhs);
+        self.context.lock().unwrap().set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
+        self.context.lock().unwrap().set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
+
+        let as_ref = self.add_constraint(comparison);
+        Ok(as_ref.as_comparison().unwrap())
     }
 
     pub fn add_function_call(
@@ -130,7 +200,6 @@ impl Constraints {
                 VariableOptionality::Optional => self.context.lock().unwrap().set_variable_is_optional(var),
             }
         }
-
         let as_ref = self.add_constraint(binding);
         Ok(as_ref.as_function_call_binding().unwrap())
     }
@@ -165,6 +234,7 @@ impl Display for Constraints {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Constraint<ID: IrID> {
     Type(Type<ID>),
+    Sub(Sub<ID>),
     Isa(Isa<ID>),
     RolePlayer(RolePlayer<ID>),
     Has(Has<ID>),
@@ -177,12 +247,13 @@ impl<ID: IrID> Constraint<ID> {
     pub fn ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
             Constraint::Type(type_) => Box::new(type_.ids()),
+            Constraint::Sub(sub) => Box::new(sub.ids()),
             Constraint::Isa(isa) => Box::new(isa.ids()),
             Constraint::RolePlayer(rp) => Box::new(rp.ids()),
             Constraint::Has(has) => Box::new(has.ids()),
             Constraint::ExpressionBinding(binding) => todo!(),
             Constraint::FunctionCallBinding(binding) => Box::new(binding.ids_assigned()),
-            Constraint::Comparison(comparison) => todo!(),
+            Constraint::Comparison(comparison) => Box::new(comparison.ids()),
         }
     }
 
@@ -192,51 +263,66 @@ impl<ID: IrID> Constraint<ID> {
     {
         match self {
             Constraint::Type(type_) => type_.ids_foreach(function),
+            Constraint::Sub(sub) => sub.ids_foreach(function),
             Constraint::Isa(isa) => isa.ids_foreach(function),
             Constraint::RolePlayer(rp) => rp.ids_foreach(function),
             Constraint::Has(has) => has.ids_foreach(function),
             Constraint::ExpressionBinding(binding) => todo!(),
             Constraint::FunctionCallBinding(binding) => binding.ids_foreach(function),
-            Constraint::Comparison(comparison) => todo!(),
+            Constraint::Comparison(comparison) => comparison.ids_foreach(function),
         }
     }
 
-    fn as_type(&self) -> Option<&Type<ID>> {
+    pub(crate) fn as_type(&self) -> Option<&Type<ID>> {
         match self {
             Constraint::Type(type_) => Some(type_),
             _ => None,
         }
     }
 
-    fn as_isa(&self) -> Option<&Isa<ID>> {
+    pub(crate) fn as_sub(&self) -> Option<&Sub<ID>> {
+        match self {
+            Constraint::Sub(sub) => Some(sub),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn as_isa(&self) -> Option<&Isa<ID>> {
         match self {
             Constraint::Isa(isa) => Some(isa),
             _ => None,
         }
     }
 
-    fn as_role_player(&self) -> Option<&RolePlayer<ID>> {
+    pub(crate) fn as_role_player(&self) -> Option<&RolePlayer<ID>> {
         match self {
             Constraint::RolePlayer(rp) => Some(rp),
             _ => None,
         }
     }
 
-    fn as_has(&self) -> Option<&Has<ID>> {
+    pub(crate) fn as_has(&self) -> Option<&Has<ID>> {
         match self {
             Constraint::Has(has) => Some(has),
             _ => None,
         }
     }
 
-    fn as_function_call_binding(&self) -> Option<&FunctionCallBinding<ID>> {
+    pub(crate) fn as_comparison(&self) -> Option<&Comparison<ID>> {
+        match self {
+            Constraint::Comparison(cmp) => Some(cmp),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn as_function_call_binding(&self) -> Option<&FunctionCallBinding<ID>> {
         match self {
             Constraint::FunctionCallBinding(binding) => Some(binding),
             _ => None,
         }
     }
 
-    fn as_expression_binding(&self) -> Option<&ExpressionBinding<ID>> {
+    pub(crate) fn as_expression_binding(&self) -> Option<&ExpressionBinding<ID>> {
         match self {
             Constraint::ExpressionBinding(binding) => Some(binding),
             _ => None,
@@ -248,6 +334,7 @@ impl<ID: IrID> Display for Constraint<ID> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Constraint::Type(constraint) => Display::fmt(constraint, f),
+            Constraint::Sub(constraint) => Display::fmt(constraint, f),
             Constraint::Isa(constraint) => Display::fmt(constraint, f),
             Constraint::RolePlayer(constraint) => Display::fmt(constraint, f),
             Constraint::Has(constraint) => Display::fmt(constraint, f),
@@ -266,8 +353,8 @@ enum ConstraintIDSide {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Type<ID: IrID> {
-    left: ID,
-    type_: String,
+    pub(crate) left: ID,
+    pub(crate) type_: String,
 }
 
 impl<ID: IrID> Type<ID> {
@@ -302,6 +389,50 @@ impl<ID: IrID> Display for Type<ID> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Sub<ID: IrID> {
+    subtype: ID,
+    supertype: ID,
+}
+
+impl<ID: IrID> Sub<ID> {
+    fn new(subtype: ID, supertype: ID) -> Self {
+        Sub { subtype, supertype }
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        [self.subtype, self.supertype].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+    where
+        F: FnMut(ID, ConstraintIDSide) -> (),
+    {
+        function(self.subtype, ConstraintIDSide::Left);
+        function(self.supertype, ConstraintIDSide::Right)
+    }
+
+    pub(crate) fn subtype(&self) -> ID {
+        self.subtype
+    }
+
+    pub(crate) fn supertype(&self) -> ID {
+        self.supertype
+    }
+}
+
+impl<ID: IrID> Into<Constraint<ID>> for Sub<ID> {
+    fn into(self) -> Constraint<ID> {
+        Constraint::Sub(self)
+    }
+}
+
+impl<ID: IrID> Display for Sub<ID> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} isa {}", self.subtype, self.supertype)
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Isa<ID: IrID> {
     thing: ID,
     type_: ID,
@@ -323,6 +454,14 @@ impl<ID: IrID> Isa<ID> {
         function(self.thing, ConstraintIDSide::Left);
         function(self.type_, ConstraintIDSide::Right)
     }
+
+    pub(crate) fn thing(&self) -> ID {
+        self.thing
+    }
+
+    pub(crate) fn type_(&self) -> ID {
+        self.type_
+    }
 }
 
 impl<ID: IrID> Into<Constraint<ID>> for Isa<ID> {
@@ -339,9 +478,9 @@ impl<ID: IrID> Display for Isa<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RolePlayer<ID: IrID> {
-    relation: ID,
-    player: ID,
-    role_type: Option<ID>,
+    pub(crate) relation: ID,
+    pub(crate) player: ID,
+    pub(crate) role_type: Option<ID>,
 }
 
 impl<ID: IrID> RolePlayer<ID> {
@@ -469,7 +608,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
         empty()
     }
 
-    pub fn ids_assigned(&self) -> impl Iterator<Item=ID> {
+    pub fn ids_assigned(&self) -> impl Iterator<Item = ID> {
         [self.left].into_iter()
     }
 
@@ -502,6 +641,10 @@ pub struct FunctionCallBinding<ID: IrID> {
 impl<ID: IrID> FunctionCallBinding<ID> {
     fn new(left: Vec<ID>, function_call: FunctionCall<ID>) -> Self {
         Self { assigned: left, function_call }
+    }
+
+    pub(crate) fn assigned(&self) -> &Vec<ID> {
+        &self.assigned
     }
 
     pub(crate) fn function_call(&self) -> &FunctionCall<ID> {

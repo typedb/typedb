@@ -13,13 +13,11 @@ use encoding::{
 };
 use ir::{
     pattern::{
-        function_call::FunctionCall
-        ,
+        function_call::FunctionCall,
         variable_category::{VariableCategory, VariableOptionality},
     },
-    program::{modifier::ModifierDefinitionError, program::Program},
+    program::{block::FunctionalBlock, modifier::ModifierDefinitionError, program::Program},
 };
-use ir::program::block::FunctionalBlock;
 
 #[test]
 fn build_program_modifiers() {

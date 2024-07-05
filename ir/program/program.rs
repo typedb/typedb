@@ -8,11 +8,7 @@ use std::collections::HashMap;
 
 use encoding::graph::definition::definition_key::DefinitionKey;
 
-use crate::program::block::FunctionalBlock;
-
-use crate::program::{
-    function::FunctionIR,
-};
+use crate::program::{block::FunctionalBlock, function::FunctionIR};
 
 pub struct Program {
     entry: FunctionalBlock,
@@ -26,7 +22,11 @@ impl Program {
         Self { entry: entry_block, functions: functions }
     }
 
-    pub fn entry(&mut self) -> &mut FunctionalBlock {
+    pub fn entry(&self) -> &FunctionalBlock {
+        &self.entry
+    }
+
+    pub fn entry_mut(&mut self) -> &mut FunctionalBlock {
         &mut self.entry
     }
 
@@ -34,5 +34,9 @@ impl Program {
         let context = block.context();
         let mut variables = context.get_variables();
         variables.all(|var| context.get_variable_category(var).is_some())
+    }
+
+    pub(crate) fn functions(&self) -> &HashMap<DefinitionKey<'static>, FunctionIR> {
+        &self.functions
     }
 }

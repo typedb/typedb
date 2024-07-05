@@ -11,15 +11,12 @@
  */
 
 use std::{
+    cmp::Ordering,
     collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
 };
-use std::cmp::Ordering;
 
-use itertools::Itertools;
-
-use answer::{Thing, Type, variable::Variable};
-use answer::variable_value::VariableValue;
+use answer::{variable::Variable, variable_value::VariableValue, Thing, Type};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -30,17 +27,19 @@ use concept::{
     type_::attribute_type::AttributeType,
 };
 use ir::pattern::constraint::{Comparison, FunctionCallBinding, Has, RolePlayer};
-use lending_iterator::{adaptors::Filter, higher_order::FnHktHelper, LendingIterator, Peekable};
-use lending_iterator::kmerge::KMergeBy;
+use itertools::Itertools;
+use lending_iterator::{adaptors::Filter, higher_order::FnHktHelper, kmerge::KMergeBy, LendingIterator, Peekable};
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::{
-    executor::{pattern_executor::Row, Position},
+    executor::{
+        iterator::ConstraintIterator,
+        pattern_executor::{ImmutableRow, Row},
+        Position,
+    },
     planner::pattern_plan::{Iterate, IterateMode},
 };
-use crate::executor::iterator::ConstraintIterator;
-use crate::executor::pattern_executor::ImmutableRow;
 
 pub(crate) struct HasProvider {
     has: Has<Position>,
@@ -63,11 +62,22 @@ pub(crate) type HasUnboundedSortedFromIterator = Peekable<Filter<HasIterator, Ar
 pub(crate) type HasUnboundedSortedToSingleIterator = Peekable<Filter<HasIterator, Arc<HasFilterAttributeFn>>>;
 pub(crate) type HasBoundedSortedToIterator = Peekable<Filter<HasIterator, Arc<HasFilterAttributeFn>>>;
 
-type HasFilterBothFn = dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
+type HasFilterBothFn =
+    dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
 type AttributeFilterFn = dyn for<'a, 'b> FnHktHelper<&'a Result<(Attribute<'b>, u64), ConceptReadError>, bool>;
-type HasFilterAttributeFn = dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
-type HasMergeByAttributeFnHkt = dyn for <'a, 'b> FnHktHelper<(&'a Result<(concept::thing::has::Has<'a>, u64), ConceptReadError>, &'b Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>), Ordering>;
-type HasOrderByAttributeFn = for<'a, 'b> fn(&'a Result<(concept::thing::has::Has<'a>, u64), ConceptReadError>, &'b Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>) -> Ordering;
+type HasFilterAttributeFn =
+    dyn for<'a, 'b> FnHktHelper<&'a Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>, bool>;
+type HasMergeByAttributeFnHkt = dyn for<'a, 'b> FnHktHelper<
+    (
+        &'a Result<(concept::thing::has::Has<'a>, u64), ConceptReadError>,
+        &'b Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>,
+    ),
+    Ordering,
+>;
+type HasOrderByAttributeFn = for<'a, 'b> fn(
+    &'a Result<(concept::thing::has::Has<'a>, u64), ConceptReadError>,
+    &'b Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>,
+) -> Ordering;
 
 impl HasProviderFilter {
     fn has_both_filter(&self) -> Arc<HasFilterBothFn> {
@@ -106,37 +116,31 @@ impl HasProvider {
     ) -> Result<Self, ConceptReadError> {
         debug_assert!(owner_attribute_types.len() > 0);
         let filter_fn = match &iterate_mode {
-            IterateMode::UnboundSortedFrom => {
-                HasProviderFilter::HasFilterBoth(Arc::new({
-                    let owner_att_types = owner_attribute_types.clone();
-                    let att_types = attribute_types.clone();
-                    move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
-                        Ok((has, _)) => {
-                            owner_att_types.contains_key(&Type::from(has.owner().type_()))
-                                && att_types.contains(&Type::Attribute(has.attribute().type_()))
-                        }
-                        Err(_) => true,
+            IterateMode::UnboundSortedFrom => HasProviderFilter::HasFilterBoth(Arc::new({
+                let owner_att_types = owner_attribute_types.clone();
+                let att_types = attribute_types.clone();
+                move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
+                    Ok((has, _)) => {
+                        owner_att_types.contains_key(&Type::from(has.owner().type_()))
+                            && att_types.contains(&Type::Attribute(has.attribute().type_()))
                     }
-                }))
-            }
-            IterateMode::UnboundSortedTo => {
-                HasProviderFilter::HasFilterAttribute(Arc::new({
-                    let att_types = attribute_types.clone();
-                    move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
-                        Ok((has, _)) => att_types.contains(&Type::Attribute(has.attribute().type_())),
-                        Err(_) => true,
-                    }
-                }))
-            }
-            IterateMode::BoundFromSortedTo => {
-                HasProviderFilter::AttributeFilter(Arc::new({
-                    let att_types = attribute_types.clone();
-                    move |result: &Result<(Attribute<'_>, u64), ConceptReadError>| match result {
-                        Ok((attribute, _)) => att_types.contains(&Type::Attribute(attribute.type_())),
-                        Err(_) => true,
-                    }
-                }))
-            }
+                    Err(_) => true,
+                }
+            })),
+            IterateMode::UnboundSortedTo => HasProviderFilter::HasFilterAttribute(Arc::new({
+                let att_types = attribute_types.clone();
+                move |result: &Result<(concept::thing::has::Has<'_>, u64), ConceptReadError>| match result {
+                    Ok((has, _)) => att_types.contains(&Type::Attribute(has.attribute().type_())),
+                    Err(_) => true,
+                }
+            })),
+            IterateMode::BoundFromSortedTo => HasProviderFilter::AttributeFilter(Arc::new({
+                let att_types = attribute_types.clone();
+                move |result: &Result<(Attribute<'_>, u64), ConceptReadError>| match result {
+                    Ok((attribute, _)) => att_types.contains(&Type::Attribute(attribute.type_())),
+                    Err(_) => true,
+                }
+            })),
         };
 
         let owner_cache = if matches!(iterate_mode, IterateMode::UnboundSortedTo) {
@@ -192,17 +196,30 @@ impl HasProvider {
                 debug_assert!(self.owner_cache.is_some());
                 if self.owner_cache.as_ref().unwrap().len() == 1 {
                     // no heap allocs needed if there is only 1 iterator
-                    let iterator: Filter<HasIterator, Arc<HasFilterAttributeFn>> = self.owner_cache.as_ref().unwrap()
-                        .get(0).unwrap()
-                        .get_has_types_range_unordered(snapshot, thing_manager, self.attribute_types.iter().map(|t| t.as_attribute_type()))?
+                    let iterator: Filter<HasIterator, Arc<HasFilterAttributeFn>> = self
+                        .owner_cache
+                        .as_ref()
+                        .unwrap()
+                        .get(0)
+                        .unwrap()
+                        .get_has_types_range_unordered(
+                            snapshot,
+                            thing_manager,
+                            self.attribute_types.iter().map(|t| t.as_attribute_type()),
+                        )?
                         .filter::<_, HasFilterAttributeFn>(self.filter_fn.has_attribute_filter());
                     Ok(ConstraintIterator::HasUnboundedSortedAttributeSingle(Peekable::new(iterator), self.has.clone()))
                 } else {
                     // TODO: we could create a reusable space for these temporarily held iterators so we don't have allocate again before the merging iterator
-                    let mut iterators: Vec<Peekable<HasIterator>> = Vec::with_capacity(self.owner_cache.as_ref().unwrap().len());
-                    for iter in self.owner_cache.as_ref().unwrap().iter().map(|object|
-                        object.get_has_types_range_unordered(snapshot, thing_manager, self.attribute_types.iter().map(|t| t.as_attribute_type()))
-                    ) {
+                    let mut iterators: Vec<Peekable<HasIterator>> =
+                        Vec::with_capacity(self.owner_cache.as_ref().unwrap().len());
+                    for iter in self.owner_cache.as_ref().unwrap().iter().map(|object| {
+                        object.get_has_types_range_unordered(
+                            snapshot,
+                            thing_manager,
+                            self.attribute_types.iter().map(|t| t.as_attribute_type()),
+                        )
+                    }) {
                         iterators.push(Peekable::new(iter?))
                     }
 
@@ -220,13 +237,17 @@ impl HasProvider {
                 debug_assert!(row.len() > self.has.owner().as_usize());
                 let owner = row.get(self.has.owner());
                 let iterator = match owner {
-                    VariableValue::Thing(Thing::Entity(entity)) => {
-                        entity.get_has_types_range_unordered(snapshot, thing_manager, self.attribute_types.iter().map(|t| t.as_attribute_type()))?
-                    }
-                    VariableValue::Thing(Thing::Relation(relation)) => {
-                        relation.get_has_types_range_unordered(snapshot, thing_manager, self.attribute_types.iter().map(|t| t.as_attribute_type()))?
-                    }
-                    _ => unreachable!("Has owner must be an entity or relation.")
+                    VariableValue::Thing(Thing::Entity(entity)) => entity.get_has_types_range_unordered(
+                        snapshot,
+                        thing_manager,
+                        self.attribute_types.iter().map(|t| t.as_attribute_type()),
+                    )?,
+                    VariableValue::Thing(Thing::Relation(relation)) => relation.get_has_types_range_unordered(
+                        snapshot,
+                        thing_manager,
+                        self.attribute_types.iter().map(|t| t.as_attribute_type()),
+                    )?,
+                    _ => unreachable!("Has owner must be an entity or relation."),
                 };
                 let filtered = iterator.filter::<_, HasFilterAttributeFn>(self.filter_fn.has_attribute_filter());
                 Ok(ConstraintIterator::HasBoundedSortedAttribute(Peekable::new(filtered), self.has.clone()))
@@ -236,11 +257,11 @@ impl HasProvider {
 
     fn compare_has_by_attribute<'a, 'b>(
         result_1: &'a Result<(concept::thing::has::Has<'a>, u64), ConceptReadError>,
-        result_2: &'b Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>
+        result_2: &'b Result<(concept::thing::has::Has<'b>, u64), ConceptReadError>,
     ) -> Ordering {
         match (result_1, result_2) {
             (Ok((has_1, _)), Ok((has_2, _))) => has_1.attribute().cmp(&has_2.attribute()),
-            _ => Ordering::Equal
+            _ => Ordering::Equal,
         }
     }
 }

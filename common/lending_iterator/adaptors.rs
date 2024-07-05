@@ -6,7 +6,10 @@
 
 use std::{borrow::Borrow, cmp::Ordering, marker::PhantomData, mem::transmute};
 
-use crate::{higher_order::{FnHktHelper, FnMutHktHelper, Hkt}, LendingIterator, Peekable, Seekable};
+use crate::{
+    higher_order::{FnHktHelper, FnMutHktHelper, Hkt},
+    LendingIterator, Peekable, Seekable,
+};
 
 pub struct Map<I, F, B> {
     iter: I,
@@ -26,10 +29,10 @@ impl<I, F, B> Map<I, F, B> {
 }
 
 impl<I, F, B> LendingIterator for Map<I, F, B>
-    where
-        B: Hkt,
-        I: LendingIterator,
-        F: for<'a> FnMutHktHelper<I::Item<'a>, B::HktSelf<'a>>,
+where
+    B: Hkt,
+    I: LendingIterator,
+    F: for<'a> FnMutHktHelper<I::Item<'a>, B::HktSelf<'a>>,
 {
     type Item<'a> = B::HktSelf<'a>;
 
@@ -47,12 +50,12 @@ pub struct SeekableMap<I, F, G, B, Cmp> {
 }
 
 impl<I, F, G, B, Cmp> LendingIterator for SeekableMap<I, F, G, B, Cmp>
-    where
-        B: Hkt,
-        I: LendingIterator,
-        F: for<'a> FnMutHktHelper<I::Item<'a>, B::HktSelf<'a>>,
-        G: 'static,
-        Cmp: 'static,
+where
+    B: Hkt,
+    I: LendingIterator,
+    F: for<'a> FnMutHktHelper<I::Item<'a>, B::HktSelf<'a>>,
+    G: 'static,
+    Cmp: 'static,
 {
     type Item<'a> = B::HktSelf<'a>;
 
@@ -62,11 +65,11 @@ impl<I, F, G, B, Cmp> LendingIterator for SeekableMap<I, F, G, B, Cmp>
 }
 
 impl<I, F, G, Cmp, B, M: ?Sized, K: ?Sized> Seekable<M> for SeekableMap<I, F, G, B, Cmp>
-    where
-        Self: LendingIterator,
-        I: Seekable<K>,
-        G: FnMut(&M) -> &K,
-        Cmp: Fn(&Self::Item<'_>, &M) -> Ordering,
+where
+    Self: LendingIterator,
+    I: Seekable<K>,
+    G: FnMut(&M) -> &K,
+    Cmp: Fn(&Self::Item<'_>, &M) -> Ordering,
 {
     fn seek(&mut self, key: &M) {
         self.iter.seek((self.unmapper)(key))
@@ -89,9 +92,9 @@ impl<I, F> Filter<I, F> {
 }
 
 impl<I, P> LendingIterator for Filter<I, P>
-    where
-        I: LendingIterator,
-        P: Borrow<dyn for<'a, 'b> FnHktHelper<&'a I::Item<'b>, bool>> + 'static,
+where
+    I: LendingIterator,
+    P: Borrow<dyn for<'a, 'b> FnHktHelper<&'a I::Item<'b>, bool>> + 'static,
 {
     type Item<'a> = I::Item<'a>;
 
@@ -116,9 +119,9 @@ impl<I, P> LendingIterator for Filter<I, P>
 }
 
 impl<I, F, K> Seekable<K> for Filter<I, F>
-    where
-        I: Seekable<K>,
-        F: Borrow<dyn for<'a, 'b> FnHktHelper<&'b I::Item<'a>, bool>> + 'static,
+where
+    I: Seekable<K>,
+    F: Borrow<dyn for<'a, 'b> FnHktHelper<&'b I::Item<'a>, bool>> + 'static,
 {
     fn seek(&mut self, key: &K) {
         self.iter.seek(key)
@@ -142,10 +145,10 @@ impl<I, F, B> FilterMap<I, F, B> {
 }
 
 impl<I, F, B> LendingIterator for FilterMap<I, F, B>
-    where
-        B: Hkt,
-        I: LendingIterator,
-        F: for<'a> FnMutHktHelper<I::Item<'a>, Option<B::HktSelf<'a>>>,
+where
+    B: Hkt,
+    I: LendingIterator,
+    F: for<'a> FnMutHktHelper<I::Item<'a>, Option<B::HktSelf<'a>>>,
 {
     type Item<'a> = B::HktSelf<'a>;
 
@@ -183,10 +186,10 @@ impl<I, J: LendingIterator, F> FlatMap<I, J, F> {
 }
 
 impl<I, J, F> LendingIterator for FlatMap<I, J, F>
-    where
-        I: LendingIterator,
-        J: LendingIterator,
-        F: for<'a> FnMutHktHelper<I::Item<'a>, J>,
+where
+    I: LendingIterator,
+    J: LendingIterator,
+    F: for<'a> FnMutHktHelper<I::Item<'a>, J>,
 {
     type Item<'a> = J::Item<'a>;
 
@@ -201,7 +204,7 @@ impl<I, J, F> LendingIterator for FlatMap<I, J, F>
         }
         match self.next_iter.as_mut().unwrap().next() {
             None => None,
-            Some(item) => Some(item)
+            Some(item) => Some(item),
         }
     }
 }
@@ -219,9 +222,9 @@ impl<I, F> TakeWhile<I, F> {
 }
 
 impl<I, F> LendingIterator for TakeWhile<I, F>
-    where
-        F: for<'a, 'b> FnMutHktHelper<&'b I::Item<'a>, bool>,
-        I: LendingIterator,
+where
+    F: for<'a, 'b> FnMutHktHelper<&'b I::Item<'a>, bool>,
+    I: LendingIterator,
 {
     type Item<'a> = I::Item<'a>;
 
@@ -249,9 +252,9 @@ impl<I, F> LendingIterator for TakeWhile<I, F>
 }
 
 impl<I, F, K: ?Sized> Seekable<K> for TakeWhile<I, F>
-    where
-        F: for<'a, 'b> FnMutHktHelper<&'b I::Item<'a>, bool>,
-        I: Seekable<K>,
+where
+    F: for<'a, 'b> FnMutHktHelper<&'b I::Item<'a>, bool>,
+    I: Seekable<K>,
 {
     /// Seeks the underlying iterator to next matching item, ignoring the predicate for the intermediate items.
     fn seek(&mut self, key: &K) {

@@ -9,12 +9,10 @@ use std::{
     sync::MutexGuard,
 };
 
-use crate::pattern::{
-    disjunction::Disjunction, negation::Negation,
-    optional::Optional,
+use crate::{
+    pattern::{disjunction::Disjunction, negation::Negation, optional::Optional},
+    program::block::BlockContext,
 };
-
-use crate::program::block::BlockContext;
 
 #[derive(Debug)]
 pub enum NestedPattern {
@@ -32,42 +30,42 @@ impl NestedPattern {
         }
     }
 
-    fn as_disjunction(&self) -> Option<&Disjunction> {
+    pub(crate) fn as_disjunction(&self) -> Option<&Disjunction> {
         match self {
             NestedPattern::Disjunction(disjunction) => Some(disjunction),
             _ => None,
         }
     }
 
-    fn as_disjunction_mut(&mut self) -> Option<&mut Disjunction> {
+    pub(crate) fn as_disjunction_mut(&mut self) -> Option<&mut Disjunction> {
         match self {
             NestedPattern::Disjunction(disjunction) => Some(disjunction),
             _ => None,
         }
     }
 
-    fn as_negation(&self) -> Option<&Negation> {
+    pub(crate) fn as_negation(&self) -> Option<&Negation> {
         match self {
             NestedPattern::Negation(negation) => Some(negation),
             _ => None,
         }
     }
 
-    fn as_negation_mut(&mut self) -> Option<&mut Negation> {
+    pub(crate) fn as_negation_mut(&mut self) -> Option<&mut Negation> {
         match self {
             NestedPattern::Negation(negation) => Some(negation),
             _ => None,
         }
     }
 
-    fn as_optional(&self) -> Option<&Optional> {
+    pub(crate) fn as_optional(&self) -> Option<&Optional> {
         match self {
             NestedPattern::Optional(optional) => Some(optional),
             _ => None,
         }
     }
 
-    fn as_optional_mut(&mut self) -> Option<&mut Optional> {
+    pub(crate) fn as_optional_mut(&mut self) -> Option<&mut Optional> {
         match self {
             NestedPattern::Optional(optional) => Some(optional),
             _ => None,
