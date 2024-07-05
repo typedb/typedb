@@ -338,7 +338,7 @@ impl<'a> ThingAPI<'a> for Relation<'a> {
             let cardinality = relates.get_cardinality(snapshot, thing_manager.type_manager())?;
             let role_type = relates.role();
             let player_count = role_player_count.get(&role_type).map_or(0, |c| *c);
-            if !cardinality.is_valid(player_count) {
+            if !cardinality.value_valid(player_count) {
                 errors.push(ConceptWriteError::RelationRoleCardinality {
                     relation: self.clone().into_owned(),
                     role_type: role_type.clone(),

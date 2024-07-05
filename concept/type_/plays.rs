@@ -159,14 +159,15 @@ impl From<Annotation> for Result<PlaysAnnotation, AnnotationError> {
         match annotation {
             Annotation::Cardinality(annotation) => Ok(PlaysAnnotation::Cardinality(annotation)),
 
-            Annotation::Abstract(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
-            Annotation::Independent(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
-            Annotation::Distinct(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
-            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
-            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
-            Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
-            Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
-            Annotation::Range(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
+            | Annotation::Abstract(_)
+            | Annotation::Independent(_)
+            | Annotation::Distinct(_)
+            | Annotation::Unique(_)
+            | Annotation::Key(_)
+            | Annotation::Regex(_)
+            | Annotation::Cascade(_)
+            | Annotation::Range(_)
+            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
         }
     }
 }
@@ -208,6 +209,7 @@ impl PartialEq<Annotation> for PlaysAnnotation {
             Annotation::Regex(_) => false,
             Annotation::Cascade(_) => false,
             Annotation::Range(_) => false,
+            Annotation::Values(_) => false,
         }
     }
 }

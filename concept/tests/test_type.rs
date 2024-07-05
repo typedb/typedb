@@ -20,7 +20,7 @@ use concept::type_::{
     type_manager::{type_cache::TypeCache, TypeManager},
     Ordering, OwnerAPI, PlayerAPI, TypeAPI,
 };
-use concept::type_::annotation::AnnotationRange;
+use concept::type_::annotation::{AnnotationRange, AnnotationValues};
 use concept::type_::attribute_type::AttributeTypeAnnotation;
 use concept::type_::owns::OwnsAnnotation;
 use durability::wal::WAL;
@@ -320,7 +320,7 @@ fn role_usage() {
 }
 
 #[test]
-fn annotations_with_value_arguments() {
+fn annotations_with_range_arguments() {
     init_logging();
     let storage_path = create_tmp_dir();
     let wal = WAL::create(&storage_path).unwrap();
@@ -740,6 +740,335 @@ fn annotations_with_value_arguments() {
                 None,
                 Some(Value::Boolean(true)),
             ))));
+    }
+}
+
+#[test]
+fn annotations_with_value_arguments() {
+    init_logging();
+    let storage_path = create_tmp_dir();
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
+    );
+
+    let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
+    let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
+    TypeManager::initialise_types(storage.clone(), definition_key_generator.clone(), type_vertex_generator.clone())
+        .unwrap();
+
+    let tz = Tz::Africa__Abidjan;
+    let now = chrono::offset::Local::now().with_timezone(&tz);
+
+    let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
+    {
+        let type_manager = type_manager_no_cache(storage.clone());
+
+        let age_label = Label::build("age");
+        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label, false).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, ValueType::Long).unwrap();
+
+        let name_label = Label::build("name");
+        let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label, false).unwrap();
+        name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+
+        let empty_name_label = Label::build("empty_name");
+        let empty_name_type = type_manager.create_attribute_type(&mut snapshot, &empty_name_label, false).unwrap();
+        empty_name_type.set_value_type(&mut snapshot, &type_manager, ValueType::String).unwrap();
+
+        let balance_label = Label::build("balance");
+        let balance_type = type_manager.create_attribute_type(&mut snapshot, &balance_label, false).unwrap();
+        balance_type.set_value_type(&mut snapshot, &type_manager, ValueType::Decimal).unwrap();
+
+        let measurement_label = Label::build("measurement");
+        let measurement_type = type_manager.create_attribute_type(&mut snapshot, &measurement_label, false).unwrap();
+        measurement_type.set_value_type(&mut snapshot, &type_manager, ValueType::Double).unwrap();
+
+        let empty_measurement_label = Label::build("empty_measurement");
+        let empty_measurement_type = type_manager.create_attribute_type(&mut snapshot, &empty_measurement_label, false).unwrap();
+        empty_measurement_type.set_value_type(&mut snapshot, &type_manager, ValueType::Double).unwrap();
+
+        let schedule_label = Label::build("schedule");
+        let schedule_type = type_manager.create_attribute_type(&mut snapshot, &schedule_label, false).unwrap();
+        schedule_type.set_value_type(&mut snapshot, &type_manager, ValueType::DateTimeTZ).unwrap();
+
+        let valid_label = Label::build("valid");
+        let valid_type = type_manager.create_attribute_type(&mut snapshot, &valid_label, false).unwrap();
+        valid_type.set_value_type(&mut snapshot, &type_manager, ValueType::Boolean).unwrap();
+
+        let empty_label = Label::build("empty");
+        let empty_type = type_manager.create_attribute_type(&mut snapshot, &empty_label, false).unwrap();
+        empty_type.set_value_type(&mut snapshot, &type_manager, ValueType::Boolean).unwrap();
+
+        assert_eq!(age_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
+        assert_eq!(name_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::String));
+        assert_eq!(empty_name_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::String));
+        assert_eq!(balance_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Decimal));
+        assert_eq!(measurement_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Double));
+        assert_eq!(empty_measurement_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Double));
+        assert_eq!(schedule_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::DateTimeTZ));
+        assert_eq!(valid_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Boolean));
+        assert_eq!(empty_type.get_value_type(&snapshot, &type_manager).unwrap(), Some(ValueType::Boolean));
+
+        let person_label = Label::build("person");
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
+
+        person_type.set_owns(&mut snapshot, &type_manager, age_type.clone().into_owned(), Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, name_type.clone().into_owned(), Ordering::Ordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, empty_name_type.clone().into_owned(), Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, balance_type.clone().into_owned(), Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, measurement_type.clone().into_owned(), Ordering::Ordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, empty_measurement_type.clone().into_owned(), Ordering::Ordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, schedule_type.clone().into_owned(), Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, valid_type.clone().into_owned(), Ordering::Ordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, empty_type.clone().into_owned(), Ordering::Unordered).unwrap();
+
+        let name_owns = person_type.get_owns_attribute(&snapshot, &type_manager, name_type.clone().into_owned()).unwrap().unwrap();
+        let empty_name_owns = person_type.get_owns_attribute(&snapshot, &type_manager, empty_name_type.clone().into_owned()).unwrap().unwrap();
+        let measurement_owns = person_type.get_owns_attribute(&snapshot, &type_manager, measurement_type.clone().into_owned()).unwrap().unwrap();
+        let empty_measurement_owns = person_type.get_owns_attribute(&snapshot, &type_manager, empty_measurement_type.clone().into_owned()).unwrap().unwrap();
+        let valid_owns = person_type.get_owns_attribute(&snapshot, &type_manager, valid_type.clone().into_owned()).unwrap().unwrap();
+        let empty_owns = person_type.get_owns_attribute(&snapshot, &type_manager, empty_type.clone().into_owned()).unwrap().unwrap();
+
+        // age_type
+        //     .set_annotation(
+        //         &mut snapshot,
+        //         &type_manager,
+        //         AttributeTypeAnnotation::Values(Values::new(vec![Value::Long(0), Value::Long(18)])))
+        //     .unwrap();
+        // name_owns
+        //     .set_annotation(
+        //         &mut snapshot,
+        //         &type_manager,
+        //         OwnsAnnotation::Values(Values::new(vec![
+        //             Value::String(Cow::Borrowed("A")),
+        //             Value::String(Cow::Borrowed("z"))
+        //         ])))
+        //     .unwrap();
+        // empty_name_owns
+        //     .set_annotation(
+        //         &mut snapshot,
+        //         &type_manager,
+        //         OwnsAnnotation::Values(AnnotationValues::new(vec![
+        //             Value::String(Cow::Borrowed(" ")
+        //         ])))
+        //     .unwrap();
+        // balance_type
+        //     .set_annotation(
+        //         &mut snapshot,
+        //         &type_manager,
+        //         AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
+        //             Value::Decimal(Decimal::MAX)
+        //         ])))
+        //     .unwrap();
+        // measurement_owns
+        //     .set_annotation(
+        //         &mut snapshot,
+        //         &type_manager,
+        //         OwnsAnnotation::Values(AnnotationValues::new(vec![
+        //             Value::Double(0.01),
+        //             Value::Double(0.3339848944)
+        //         ])))
+        //     .unwrap();
+        // empty_measurement_owns
+        //     .set_annotation(
+        //         &mut snapshot,
+        //         &type_manager,
+        //         OwnsAnnotation::Values(AnnotationValues::new(vec![
+        //             Value::Double(0.0)
+        //         ])))
+        //     .unwrap();
+        // schedule_type
+        //     .set_annotation(
+        //         &mut snapshot,
+        //         &type_manager,
+        //         AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
+        //             Value::DateTimeTZ(now.clone()),
+        //         ])))
+        //     .unwrap();
+        valid_owns
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                OwnsAnnotation::Values(AnnotationValues::new(vec![
+                    Value::Boolean(false),
+                    Value::Boolean(true)
+                ])))
+            .unwrap();
+        empty_owns
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                OwnsAnnotation::Values(AnnotationValues::new(vec![
+                    Value::Boolean(false),
+                ])))
+            .unwrap();
+    }
+    snapshot.commit().unwrap();
+
+    {
+        let snapshot: ReadSnapshot<_> = storage.clone().open_snapshot_read();
+        let type_manager = type_manager_at_snapshot(storage.clone(), &snapshot);
+
+        let person_label = Label::build("person");
+        let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
+
+        let age_label = Label::build("age");
+        let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
+
+        let name_label = Label::build("name");
+        let name_type = type_manager.get_attribute_type(&snapshot, &name_label).unwrap().unwrap();
+
+        let empty_name_label = Label::build("empty_name");
+        let empty_name_type = type_manager.get_attribute_type(&snapshot, &empty_name_label).unwrap().unwrap();
+
+        let balance_label = Label::build("balance");
+        let balance_type = type_manager.get_attribute_type(&snapshot, &balance_label).unwrap().unwrap();
+
+        let measurement_label = Label::build("measurement");
+        let measurement_type = type_manager.get_attribute_type(&snapshot, &measurement_label).unwrap().unwrap();
+
+        let empty_measurement_label = Label::build("empty_measurement");
+        let empty_measurement_type = type_manager.get_attribute_type(&snapshot, &empty_measurement_label).unwrap().unwrap();
+
+        let schedule_label = Label::build("schedule");
+        let schedule_type = type_manager.get_attribute_type(&snapshot, &schedule_label).unwrap().unwrap();
+
+        let valid_label = Label::build("valid");
+        let valid_type = type_manager.get_attribute_type(&snapshot, &valid_label).unwrap().unwrap();
+
+        let empty_label = Label::build("empty");
+        let empty_type = type_manager.get_attribute_type(&snapshot, &empty_label).unwrap().unwrap();
+
+        let age_owns = person_type.get_owns_attribute(&snapshot, &type_manager, age_type.clone().into_owned()).unwrap().unwrap();
+        let name_owns = person_type.get_owns_attribute(&snapshot, &type_manager, name_type.clone().into_owned()).unwrap().unwrap();
+        let empty_name_owns = person_type.get_owns_attribute(&snapshot, &type_manager, empty_name_type.clone().into_owned()).unwrap().unwrap();
+        let balance_owns = person_type.get_owns_attribute(&snapshot, &type_manager, balance_type.clone().into_owned()).unwrap().unwrap();
+        let measurement_owns = person_type.get_owns_attribute(&snapshot, &type_manager, measurement_type.clone().into_owned()).unwrap().unwrap();
+        let empty_measurement_owns = person_type.get_owns_attribute(&snapshot, &type_manager, empty_measurement_type.clone().into_owned()).unwrap().unwrap();
+        let schedule_owns = person_type.get_owns_attribute(&snapshot, &type_manager, schedule_type.clone().into_owned()).unwrap().unwrap();
+        let valid_owns = person_type.get_owns_attribute(&snapshot, &type_manager, valid_type.clone().into_owned()).unwrap().unwrap();
+        let empty_owns = person_type.get_owns_attribute(&snapshot, &type_manager, empty_type.clone().into_owned()).unwrap().unwrap();
+
+        // assert!(age_type
+        //     .get_annotations(&snapshot, &type_manager)
+        //     .unwrap()
+        //     .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
+        //         Value::Long(0),
+        //         Value::Long(18)
+        //     ]))));
+        // TODO: Add more checks for absent annotations to check that it is deserialized correctly
+        assert!(age_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+
+        assert!(name_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        // assert!(name_owns
+        //     .get_annotations(&snapshot, &type_manager)
+        //     .unwrap()
+        //     .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+        //         Value::String(Cow::Borrowed("A")),
+        //         Value::String(Cow::Borrowed("z"))
+        //     ]))));
+
+        assert!(empty_name_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        // assert!(empty_name_owns
+        //     .get_annotations(&snapshot, &type_manager)
+        //     .unwrap()
+        //     .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+        //         Value::String(Cow::Borrowed(" "))
+        //     ]))));
+
+        // assert!(balance_type
+        //     .get_annotations(&snapshot, &type_manager)
+        //     .unwrap()
+        //     .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
+        //         Value::Decimal(Decimal::MAX)
+        //     ]))));
+        assert!(balance_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+
+        assert!(measurement_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        // assert!(measurement_owns
+        //     .get_annotations(&snapshot, &type_manager)
+        //     .unwrap()
+        //     .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+        //         Value::Double(0.01),
+        //         Value::Double(0.3339848944)
+        //     ]))));
+
+        assert!(empty_measurement_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        // assert!(empty_measurement_owns
+        //     .get_annotations(&snapshot, &type_manager)
+        //     .unwrap()
+        //     .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+        //         Value::Double(0.0)
+        //     ]))));
+
+        // assert!(schedule_type
+        //     .get_annotations(&snapshot, &type_manager)
+        //     .unwrap()
+        //     .contains_key(&AttributeTypeAnnotation::Values(Values::new(vec![
+        //         Value::DateTimeTZ(now.clone()),
+        //     ]))));
+        assert!(schedule_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+
+        assert!(valid_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(valid_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::Boolean(false),
+                Value::Boolean(true)
+            ]))));
+        assert!(!valid_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::Boolean(false),
+                Value::Boolean(false)
+            ]))));
+        assert!(!valid_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::Boolean(false)
+            ]))));
+        assert!(!valid_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::Boolean(true),
+            ]))));
+        assert!(!valid_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::Boolean(true),
+                Value::Boolean(false),
+            ]))));
+
+        assert!(empty_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
+        assert!(empty_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::Boolean(false),
+            ]))));
+        assert!(!empty_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::Boolean(true),
+            ]))));
+        assert!(!empty_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![]))));
+        assert!(!empty_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::Boolean(false),
+                Value::Boolean(false),
+            ]))));
     }
 }
 

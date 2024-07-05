@@ -128,6 +128,13 @@ impl<'a> Value<'a> {
         }
     }
 
+    pub fn unwrap_duration(self) -> Duration {
+        match self {
+            Self::Duration(duration) => duration,
+            _ => panic!("Cannot unwrap DateTimeTZ if not a datetime-tz value."),
+        }
+    }
+
     pub fn unwrap_string(self) -> Cow<'a, str> {
         match self {
             Self::String(string) => string,

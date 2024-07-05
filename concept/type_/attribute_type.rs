@@ -25,7 +25,7 @@ use encoding::{
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use super::annotation::{AnnotationCategory, AnnotationRange, AnnotationRegex};
+use super::annotation::{AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues};
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
@@ -251,6 +251,9 @@ impl<'a> AttributeType<'a> {
             AttributeTypeAnnotation::Range(range) => {
                 type_manager.set_annotation_range(snapshot, self.clone().into_owned(), range)?
             }
+            AttributeTypeAnnotation::Values(values) => {
+                type_manager.set_annotation_values(snapshot, self.clone().into_owned(), values)?
+            }
         };
         Ok(())
     }
@@ -275,6 +278,9 @@ impl<'a> AttributeType<'a> {
             }
             AttributeTypeAnnotation::Range(_) => {
                 type_manager.unset_annotation_range(snapshot, self.clone().into_owned())?
+            }
+            AttributeTypeAnnotation::Values(_) => {
+                type_manager.unset_annotation_values(snapshot, self.clone().into_owned())?
             }
         }
         Ok(())
@@ -321,6 +327,7 @@ pub enum AttributeTypeAnnotation {
     Independent(AnnotationIndependent),
     Regex(AnnotationRegex),
     Range(AnnotationRange),
+    Values(AnnotationValues),
 }
 
 impl From<Annotation> for Result<AttributeTypeAnnotation, AnnotationError> {
@@ -330,18 +337,13 @@ impl From<Annotation> for Result<AttributeTypeAnnotation, AnnotationError> {
             Annotation::Independent(annotation) => Ok(AttributeTypeAnnotation::Independent(annotation)),
             Annotation::Regex(annotation) => Ok(AttributeTypeAnnotation::Regex(annotation)),
             Annotation::Range(annotation) => Ok(AttributeTypeAnnotation::Range(annotation)),
+            Annotation::Values(annotation) => Ok(AttributeTypeAnnotation::Values(annotation)),
 
-            Annotation::Distinct(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
-            }
-            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category())),
-            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category())),
-            Annotation::Cardinality(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
-            }
-            Annotation::Cascade(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
-            }
+            | Annotation::Distinct(_)
+            | Annotation::Unique(_)
+            | Annotation::Key(_)
+            | Annotation::Cardinality(_)
+            | Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
         }
     }
 }
@@ -363,6 +365,7 @@ impl Into<Annotation> for AttributeTypeAnnotation {
             AttributeTypeAnnotation::Independent(annotation) => Annotation::Independent(annotation),
             AttributeTypeAnnotation::Regex(annotation) => Annotation::Regex(annotation),
             AttributeTypeAnnotation::Range(annotation) => Annotation::Range(annotation),
+            AttributeTypeAnnotation::Values(annotation) => Annotation::Values(annotation),
         }
     }
 }

@@ -393,19 +393,14 @@ impl From<Annotation> for Result<RelationTypeAnnotation, AnnotationError> {
             Annotation::Abstract(annotation) => Ok(RelationTypeAnnotation::Abstract(annotation)),
             Annotation::Cascade(annotation) => Ok(RelationTypeAnnotation::Cascade(annotation)),
 
-            Annotation::Distinct(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category()))
-            }
-            Annotation::Independent(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category()))
-            }
-            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category())),
-            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category())),
-            Annotation::Cardinality(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category()))
-            }
-            Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category())),
-            Annotation::Range(_) => Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category())),
+            | Annotation::Distinct(_)
+            | Annotation::Independent(_)
+            | Annotation::Unique(_)
+            | Annotation::Key(_)
+            | Annotation::Cardinality(_)
+            | Annotation::Regex(_)
+            | Annotation::Range(_)
+            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category())),
         }
     }
 }

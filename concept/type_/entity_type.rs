@@ -341,18 +341,15 @@ impl From<Annotation> for Result<EntityTypeAnnotation, AnnotationError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(EntityTypeAnnotation::Abstract(annotation)),
 
-            Annotation::Distinct(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
-            Annotation::Independent(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category()))
-            }
-            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
-            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
-            Annotation::Cardinality(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category()))
-            }
-            Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
-            Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
-            Annotation::Range(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
+            | Annotation::Distinct(_)
+            | Annotation::Independent(_)
+            | Annotation::Unique(_)
+            | Annotation::Key(_)
+            | Annotation::Cardinality(_)
+            | Annotation::Regex(_)
+            | Annotation::Cascade(_)
+            | Annotation::Range(_)
+            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
         }
     }
 }

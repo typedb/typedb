@@ -27,7 +27,7 @@ use crate::{
     },
     type_::{
         annotation::{
-            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRegex,
+            Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationKey, AnnotationRegex, AnnotationValues
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         entity_type::EntityType,
@@ -301,6 +301,7 @@ impl OperationTimeValidation {
         attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
     ) -> Result<(), SchemaValidationError> {
+        // TODO: Move to AnnotationRegex "value_type_valid"
         let is_compatible = match &value_type {
             Some(ValueType::String) => true,
             _ => false,
@@ -321,6 +322,42 @@ impl OperationTimeValidation {
         attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
     ) -> Result<(), SchemaValidationError> {
+        // TODO: Move to AnnotationRange "value_type_valid"
+        let is_compatible = match &value_type {
+            Some(value_type) => {
+                match &value_type {
+                    | ValueType::Boolean
+                    | ValueType::Long
+                    | ValueType::Double
+                    | ValueType::Decimal
+                    | ValueType::Date
+                    | ValueType::DateTime
+                    | ValueType::DateTimeTZ
+                    | ValueType::String => true,
+
+                    | ValueType::Duration
+                    | ValueType::Struct(_) => false,
+                }
+            }
+            _ => false,
+        };
+
+        if is_compatible {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::ValueTypeIsNotCompatibleWithRangeAnnotation(
+                get_label!(snapshot, attribute_type),
+                value_type,
+            ))
+        }
+    }
+
+    pub(crate) fn validate_annotation_values_compatible_value_type(
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'static>,
+        value_type: Option<ValueType>,
+    ) -> Result<(), SchemaValidationError> {
+        // TODO: Move to AnnotationValues "value_type_valid"
         let is_compatible = match &value_type {
             Some(value_type) => {
                 match &value_type {
@@ -343,7 +380,7 @@ impl OperationTimeValidation {
         if is_compatible {
             Ok(())
         } else {
-            Err(SchemaValidationError::ValueTypeIsNotCompatibleWithRangeAnnotation(
+            Err(SchemaValidationError::ValueTypeIsNotCompatibleWithValuesAnnotation(
                 get_label!(snapshot, attribute_type),
                 value_type,
             ))
@@ -443,13 +480,7 @@ impl OperationTimeValidation {
     pub(crate) fn validate_cardinality_arguments(
         cardinality: AnnotationCardinality,
     ) -> Result<(), SchemaValidationError> {
-        let is_valid = match cardinality.end() {
-            Some(end) if cardinality.start() > end => false,
-            Some(end) if cardinality.start() == end && end == 0 => false,
-            _ => true,
-        };
-
-        if is_valid {
+        if cardinality.valid() {
             Ok(())
         } else {
             Err(SchemaValidationError::InvalidCardinalityArguments(cardinality))
@@ -457,10 +488,26 @@ impl OperationTimeValidation {
     }
 
     pub(crate) fn validate_regex_arguments(regex: AnnotationRegex) -> Result<(), SchemaValidationError> {
-        if !regex.regex().is_empty() {
+        if regex.valid() {
             Ok(())
         } else {
             Err(SchemaValidationError::InvalidRegexArguments(regex))
+        }
+    }
+
+    pub(crate) fn validate_range_arguments(range: AnnotationRange) -> Result<(), SchemaValidationError> {
+        if range.valid() {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::InvalidRangeArguments(range))
+        }
+    }
+
+    pub(crate) fn validate_values_arguments(values: AnnotationValues) -> Result<(), SchemaValidationError> {
+        if values.valid() {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::InvalidValuesArguments(values))
         }
     }
 
@@ -579,7 +626,7 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_type_range_narrows_inherited_regex(
+    pub(crate) fn validate_type_range_narrows_inherited_range(
         snapshot: &impl ReadableSnapshot,
         supertype: impl KindAPI<'static>,
         range: AnnotationRange,
@@ -598,15 +645,15 @@ impl OperationTimeValidation {
                         ))
                     }
                 }
-                _ => unreachable!("Should not reach it for Regex-related function"),
+                _ => unreachable!("Should not reach it for Range-related function"),
             }
         } else {
             Ok(())
         }
     }
 
-    // TODO: Implement trait NarrowableAnnotation, do this!
-    pub(crate) fn validate_edge_range_narrows_inherited_regex<EDGE>(
+    // TODO: Wrap into macro all these similar checks?
+    pub(crate) fn validate_edge_range_narrows_inherited_range<EDGE>(
         snapshot: &impl ReadableSnapshot,
         supertype_edge: EDGE,
         range: AnnotationRange,
@@ -630,6 +677,62 @@ impl OperationTimeValidation {
                     }
                 }
                 _ => unreachable!("Should not reach it for Range-related function"),
+            }
+        } else {
+            Ok(())
+        }
+    }
+
+    pub(crate) fn validate_type_values_narrows_inherited_values(
+        snapshot: &impl ReadableSnapshot,
+        supertype: impl KindAPI<'static>,
+        values: AnnotationValues,
+    ) -> Result<(), SchemaValidationError> {
+        if let Some(supertype_annotation) =
+            Self::type_get_annotation_by_category(snapshot, supertype.clone(), AnnotationCategory::Values)?
+        {
+            match supertype_annotation {
+                Annotation::Values(supertype_values) => {
+                    if supertype_values.narrowed_correctly_by(&values) {
+                        Ok(())
+                    } else {
+                        Err(SchemaValidationError::ValuesShouldNarrowInheritedValues(
+                            values.clone(),
+                            supertype_values.clone(),
+                        ))
+                    }
+                }
+                _ => unreachable!("Should not reach it for Values-related function"),
+            }
+        } else {
+            Ok(())
+        }
+    }
+
+    pub(crate) fn validate_edge_values_narrows_inherited_values<EDGE>(
+        snapshot: &impl ReadableSnapshot,
+        supertype_edge: EDGE,
+        values: AnnotationValues,
+    ) -> Result<(), SchemaValidationError>
+        where
+            EDGE: InterfaceImplementation<'static> + Clone,
+    {
+        if let Some(supertype_annotation) =
+            Self::edge_get_annotation_by_category(snapshot, supertype_edge.clone(), AnnotationCategory::Values)?
+        {
+            match supertype_annotation {
+                Annotation::Values(supertype_values) => {
+                    if supertype_values.narrowed_correctly_by(&values) {
+                        Ok(())
+                    } else {
+                        let object = supertype_edge.object();
+                        Err(SchemaValidationError::ValuesShouldNarrowInheritedValues(
+                            values.clone(),
+                            supertype_values.clone(),
+                        ))
+                    }
+                }
+                _ => unreachable!("Should not reach it for Values-related function"),
             }
         } else {
             Ok(())
@@ -769,10 +872,15 @@ impl OperationTimeValidation {
                     supertype.clone(),
                     regex,
                 )?,
-                Annotation::Range(range) => Self::validate_type_range_narrows_inherited_regex(
+                Annotation::Range(range) => Self::validate_type_range_narrows_inherited_range(
                     snapshot,
                     supertype.clone(),
                     range,
+                )?,
+                Annotation::Values(values) => Self::validate_type_values_narrows_inherited_values(
+                    snapshot,
+                    supertype.clone(),
+                    values,
                 )?,
                 | Annotation::Abstract(_)
                 | Annotation::Distinct(_)
@@ -822,10 +930,15 @@ impl OperationTimeValidation {
                     overridden_edge.clone(),
                     regex,
                 )?,
-                Annotation::Range(range) => Self::validate_edge_range_narrows_inherited_regex(
+                Annotation::Range(range) => Self::validate_edge_range_narrows_inherited_range(
                     snapshot,
                     overridden_edge.clone(),
                     range,
+                )?,
+                Annotation::Values(values) => Self::validate_edge_values_narrows_inherited_values(
+                    snapshot,
+                    overridden_edge.clone(),
+                    values,
                 )?,
                 | Annotation::Abstract(_)
                 | Annotation::Distinct(_)
@@ -1100,6 +1213,9 @@ impl OperationTimeValidation {
                 AttributeTypeAnnotation::Range(_) => Self::validate_annotation_range_compatible_value_type(
                     snapshot, attribute_type.clone(), None,
                 )?,
+                AttributeTypeAnnotation::Values(_) => Self::validate_annotation_values_compatible_value_type(
+                    snapshot, attribute_type.clone(), None,
+                )?,
                 | AttributeTypeAnnotation::Abstract(_) | AttributeTypeAnnotation::Independent(_) => {}
             }
         }
@@ -1124,6 +1240,9 @@ impl OperationTimeValidation {
                     }
                     Annotation::Range(_) => {
                         Self::validate_annotation_range_compatible_value_type(snapshot, owns.attribute().clone(), None)?
+                    }
+                    Annotation::Values(_) => {
+                        Self::validate_annotation_values_compatible_value_type(snapshot, owns.attribute().clone(), None)?
                     }
                     | Annotation::Abstract(_)
                     | Annotation::Distinct(_)
@@ -1425,6 +1544,11 @@ impl OperationTimeValidation {
                     value_type.clone(),
                 )?,
                 Annotation::Range(_) => Self::validate_annotation_range_compatible_value_type(
+                    snapshot,
+                    owns.attribute().clone(),
+                    value_type.clone(),
+                )?,
+                Annotation::Values(_) => Self::validate_annotation_values_compatible_value_type(
                     snapshot,
                     owns.attribute().clone(),
                     value_type.clone(),

@@ -48,6 +48,7 @@ use crate::{
         EdgeOverride, InterfaceImplementation, KindAPI, Ordering, TypeAPI,
     },
 };
+use crate::type_::annotation::AnnotationValues;
 
 pub struct TypeReader {}
 
@@ -459,6 +460,9 @@ impl TypeReader {
                     Infix::PropertyAnnotationRange => {
                         Annotation::Range(<AnnotationRange as TypeVertexPropertyEncoding>::from_value_bytes(value))
                     }
+                    Infix::PropertyAnnotationValues => {
+                        Annotation::Values(<AnnotationValues as TypeVertexPropertyEncoding>::from_value_bytes(value))
+                    }
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationUnique
                     | Infix::PropertyAnnotationKey
@@ -525,6 +529,9 @@ impl TypeReader {
                     ),
                     Infix::PropertyAnnotationRange => Annotation::Range(
                         <AnnotationRange as TypeEdgePropertyEncoding>::from_value_bytes(value)
+                    ),
+                    Infix::PropertyAnnotationValues => Annotation::Values(
+                        <AnnotationValues as TypeEdgePropertyEncoding>::from_value_bytes(value)
                     ),
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationAbstract

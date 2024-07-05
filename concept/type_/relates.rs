@@ -179,13 +179,14 @@ impl From<Annotation> for Result<RelatesAnnotation, AnnotationError> {
             Annotation::Distinct(annotation) => Ok(RelatesAnnotation::Distinct(annotation)),
             Annotation::Cardinality(annotation) => Ok(RelatesAnnotation::Cardinality(annotation)),
 
-            Annotation::Abstract(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
-            Annotation::Independent(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
-            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
-            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
-            Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
-            Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
-            Annotation::Range(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
+            | Annotation::Abstract(_)
+            | Annotation::Independent(_)
+            | Annotation::Unique(_)
+            | Annotation::Key(_)
+            | Annotation::Regex(_)
+            | Annotation::Cascade(_)
+            | Annotation::Range(_)
+            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
         }
     }
 }

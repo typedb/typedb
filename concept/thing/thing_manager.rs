@@ -850,7 +850,7 @@ impl<'txn> ThingManager {
 
         if let Some(cardinality) = owns.get_cardinality(snapshot, self.type_manager())? {
             let count = owner.get_has_type_unordered(snapshot, self, attribute_type.clone())?.count();
-            if !cardinality.is_valid(count as u64) {
+            if !cardinality.value_valid(count as u64) {
                 if owns.is_key(snapshot, &*self.type_manager)? {
                     if count == 0 {
                         errors
@@ -988,6 +988,7 @@ impl<'txn> ThingManager {
                                 }
                             }
                             AttributeTypeAnnotation::Range(_) => todo!("create attribute with range"),
+                            AttributeTypeAnnotation::Values(_) => todo!("create attribute with values"),
                         }
                     }
                     let encoded_string: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(&string);

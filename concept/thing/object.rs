@@ -224,7 +224,7 @@ pub trait ObjectAPI<'a>: ThingAPI<'a> + Clone + Debug {
                 .get_has_type_unordered(snapshot, thing_manager, owns.attribute())
                 .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
                 .count();
-            if !cardinality.is_valid(count as u64 + 1) {
+            if !cardinality.value_valid(count as u64 + 1) {
                 return Err(ConceptWriteError::MultipleKeys {
                     owner: self.clone().into_owned_object(),
                     key_type: owns.attribute(),

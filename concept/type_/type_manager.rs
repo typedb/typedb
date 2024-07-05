@@ -58,7 +58,7 @@ use crate::{
         InterfaceImplementation, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
-use crate::type_::annotation::AnnotationRange;
+use crate::type_::annotation::{AnnotationRange, AnnotationValues};
 
 pub mod type_cache;
 pub mod type_reader;
@@ -1743,47 +1743,6 @@ impl TypeManager {
         self.unset_annotation::<AnnotationIndependent>(snapshot, type_, AnnotationCategory::Independent)
     }
 
-    pub(crate) fn set_annotation_regex(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        type_: AttributeType<'static>,
-        regex: AnnotationRegex,
-    ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_regex_arguments(regex.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        OperationTimeValidation::validate_annotation_regex_compatible_value_type(
-            snapshot,
-            type_.clone(),
-            TypeReader::get_value_type_without_source(snapshot, type_.clone())?,
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        OperationTimeValidation::validate_annotation_set_only_for_interface::<Owns<'static>>(
-            snapshot,
-            type_.clone(),
-            AnnotationCategory::Regex,
-        )
-        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        if let Some(supertype) = TypeReader::get_supertype(snapshot, type_.clone())? {
-            OperationTimeValidation::validate_type_regex_narrows_inherited_regex(snapshot, supertype, regex.clone())
-                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-        }
-
-        // TODO: Verify that there is no regex on subtypes (for schema validation!)
-
-        self.set_annotation::<AnnotationRegex>(snapshot, type_, AnnotationCategory::Regex, Some(regex))
-    }
-
-    pub(crate) fn unset_annotation_regex(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        type_: AttributeType<'static>,
-    ) -> Result<(), ConceptWriteError> {
-        self.unset_annotation::<AnnotationRegex>(snapshot, type_, AnnotationCategory::Regex)
-    }
-
     pub(crate) fn set_relates_overridden(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -1957,6 +1916,47 @@ impl TypeManager {
         self.unset_edge_annotation::<AnnotationCardinality>(snapshot, edge, AnnotationCategory::Cardinality)
     }
 
+    pub(crate) fn set_annotation_regex(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        type_: AttributeType<'static>,
+        regex: AnnotationRegex,
+    ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_regex_arguments(regex.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_annotation_regex_compatible_value_type(
+            snapshot,
+            type_.clone(),
+            TypeReader::get_value_type_without_source(snapshot, type_.clone())?,
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_annotation_set_only_for_interface::<Owns<'static>>(
+            snapshot,
+            type_.clone(),
+            AnnotationCategory::Regex,
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        if let Some(supertype) = TypeReader::get_supertype(snapshot, type_.clone())? {
+            OperationTimeValidation::validate_type_regex_narrows_inherited_regex(snapshot, supertype, regex.clone())
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
+
+        // TODO: Verify that there is no regex on subtypes (for schema validation!)
+
+        self.set_annotation::<AnnotationRegex>(snapshot, type_, AnnotationCategory::Regex, Some(regex))
+    }
+
+    pub(crate) fn unset_annotation_regex(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        type_: AttributeType<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        self.unset_annotation::<AnnotationRegex>(snapshot, type_, AnnotationCategory::Regex)
+    }
+
     pub(crate) fn set_owns_annotation_regex(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -2023,9 +2023,35 @@ impl TypeManager {
     pub(crate) fn set_annotation_range(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        type_: impl KindAPI<'static>,
+        type_: AttributeType<'static>,
         range: AnnotationRange,
     ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_range_arguments(range.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_annotation_range_compatible_value_type(
+            snapshot,
+            type_.clone(),
+            TypeReader::get_value_type_without_source(snapshot, type_.clone())?,
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_annotation_set_only_for_interface::<Owns<'static>>(
+            snapshot,
+            type_.clone(),
+            AnnotationCategory::Range,
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        if let Some(supertype) = TypeReader::get_supertype(snapshot, type_.clone())? {
+            OperationTimeValidation::validate_type_range_narrows_inherited_range(snapshot, supertype, range.clone())
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
+
+        // TODO: Check if compatible with existing VALUES annotation
+
+        // TODO: Verify that there is no range on subtypes (for schema validation!)
+
         self.set_annotation::<AnnotationRange>(snapshot, type_, AnnotationCategory::Range, Some(range))
     }
 
@@ -2043,19 +2069,137 @@ impl TypeManager {
         owns: Owns<'static>,
         range: AnnotationRange,
     ) -> Result<(), ConceptWriteError> {
+
+        OperationTimeValidation::validate_range_arguments(range.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_annotation_range_compatible_value_type(
+            snapshot,
+            owns.attribute(),
+            TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?,
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_annotation_set_only_for_interface_implementation(
+            snapshot,
+            owns.clone(),
+            AnnotationCategory::Range,
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        if let Some(override_edge) = TypeReader::get_implementation_override(snapshot, owns.clone())? {
+            OperationTimeValidation::validate_edge_range_narrows_inherited_range(
+                snapshot,
+                override_edge,
+                range.clone(),
+            )
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
+
+        // TODO: Check if compatible with existing VALUES annotation
+
         // TODO: Verify that there is no range on subtypes (schema validation only)
         self.set_edge_annotation::<AnnotationRange>(snapshot, owns, AnnotationCategory::Range, Some(range))
     }
 
-    pub(crate) fn unset_edge_annotation_range<EDGE>(
+    pub(crate) fn unset_edge_annotation_range<EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone>(
         &self,
         snapshot: &mut impl WritableSnapshot,
         edge: EDGE,
     ) -> Result<(), ConceptWriteError>
-        where
-            EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone,
     {
         self.unset_edge_annotation::<AnnotationRange>(snapshot, edge, AnnotationCategory::Range)
+    }
+
+    pub(crate) fn set_annotation_values(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        type_: AttributeType<'static>,
+        values: AnnotationValues,
+    ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_values_arguments(values.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_annotation_values_compatible_value_type(
+            snapshot,
+            type_.clone(),
+            TypeReader::get_value_type_without_source(snapshot, type_.clone())?,
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_annotation_set_only_for_interface::<Owns<'static>>(
+            snapshot,
+            type_.clone(),
+            AnnotationCategory::Values,
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        if let Some(supertype) = TypeReader::get_supertype(snapshot, type_.clone())? {
+            OperationTimeValidation::validate_type_values_narrows_inherited_values(snapshot, supertype, values.clone())
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
+
+        // TODO: Check if compatible with existing RANGE annotation
+
+        // TODO: Verify that there is no values on subtypes (for schema validation!)
+
+        self.set_annotation::<AnnotationValues>(snapshot, type_, AnnotationCategory::Values, Some(values))
+    }
+
+    pub(crate) fn unset_annotation_values(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        type_: impl KindAPI<'static>,
+    ) -> Result<(), ConceptWriteError> {
+        self.unset_annotation::<AnnotationValues>(snapshot, type_, AnnotationCategory::Values)
+    }
+
+    pub(crate) fn set_owns_annotation_values(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        owns: Owns<'static>,
+        values: AnnotationValues,
+    ) -> Result<(), ConceptWriteError> {
+
+        OperationTimeValidation::validate_values_arguments(values.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_annotation_values_compatible_value_type(
+            snapshot,
+            owns.attribute(),
+            TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?,
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_annotation_set_only_for_interface_implementation(
+            snapshot,
+            owns.clone(),
+            AnnotationCategory::Values,
+        )
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        if let Some(override_edge) = TypeReader::get_implementation_override(snapshot, owns.clone())? {
+            OperationTimeValidation::validate_edge_values_narrows_inherited_values(
+                snapshot,
+                override_edge,
+                values.clone(),
+            )
+                .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        }
+
+        // TODO: Check if compatible with existing RANGE annotation
+
+        // TODO: Verify that there is no values on subtypes (schema validation only)
+        self.set_edge_annotation::<AnnotationValues>(snapshot, owns, AnnotationCategory::Values, Some(values))
+    }
+
+    pub(crate) fn unset_edge_annotation_values<EDGE: TypeEdgeEncoding<'static> + InterfaceImplementation<'static> + Clone>(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        edge: EDGE,
+    ) -> Result<(), ConceptWriteError>
+    {
+        self.unset_edge_annotation::<AnnotationValues>(snapshot, edge, AnnotationCategory::Values)
     }
 
     // TODO: Might want to be able to get AnnotationCategory from A (Annotation***) as well, so it's more error-prone!

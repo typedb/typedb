@@ -15,7 +15,7 @@ use crate::{
     type_::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationError, AnnotationKey,
-            AnnotationRegex, AnnotationUnique, DefaultFrom,
+            AnnotationRegex, AnnotationUnique, AnnotationValues, DefaultFrom,
         },
         attribute_type::AttributeType,
         object_type::ObjectType,
@@ -158,6 +158,9 @@ impl<'a> Owns<'a> {
             OwnsAnnotation::Range(range) => {
                 type_manager.set_owns_annotation_range(snapshot, self.clone().into_owned(), range)?
             }
+            OwnsAnnotation::Values(values) => {
+                type_manager.set_owns_annotation_values(snapshot, self.clone().into_owned(), values)?
+            }
         }
         Ok(())
     }
@@ -186,6 +189,9 @@ impl<'a> Owns<'a> {
             }
             OwnsAnnotation::Range(_) => {
                 type_manager.unset_edge_annotation_range(snapshot, self.clone().into_owned())?
+            }
+            OwnsAnnotation::Values(_) => {
+                type_manager.unset_edge_annotation_values(snapshot, self.clone().into_owned())?
             }
         }
         Ok(())
@@ -254,6 +260,7 @@ pub enum OwnsAnnotation {
     Cardinality(AnnotationCardinality),
     Regex(AnnotationRegex),
     Range(AnnotationRange),
+    Values(AnnotationValues),
 }
 
 impl From<Annotation> for Result<OwnsAnnotation, AnnotationError> {
@@ -265,10 +272,11 @@ impl From<Annotation> for Result<OwnsAnnotation, AnnotationError> {
             Annotation::Cardinality(annotation) => Ok(OwnsAnnotation::Cardinality(annotation)),
             Annotation::Regex(annotation) => Ok(OwnsAnnotation::Regex(annotation)),
             Annotation::Range(annotation) => Ok(OwnsAnnotation::Range(annotation)),
+            Annotation::Values(annotation) => Ok(OwnsAnnotation::Values(annotation)),
 
-            Annotation::Abstract(_) => Err(AnnotationError::UnsupportedAnnotationForOwns(annotation.category())),
-            Annotation::Independent(_) => Err(AnnotationError::UnsupportedAnnotationForOwns(annotation.category())),
-            Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForOwns(annotation.category())),
+            | Annotation::Abstract(_)
+            | Annotation::Independent(_)
+            | Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForOwns(annotation.category())),
         }
     }
 }
@@ -292,6 +300,7 @@ impl Into<Annotation> for OwnsAnnotation {
             OwnsAnnotation::Cardinality(annotation) => Annotation::Cardinality(annotation),
             OwnsAnnotation::Regex(annotation) => Annotation::Regex(annotation),
             OwnsAnnotation::Range(annotation) => Annotation::Range(annotation),
+            OwnsAnnotation::Values(annotation) => Annotation::Values(annotation),
         }
     }
 }
@@ -316,7 +325,13 @@ impl PartialEq<Annotation> for OwnsAnnotation {
                     false
                 }
             },
-
+            Annotation::Values(other_values) => {
+                if let Self::Values(values) = self {
+                    values == other_values
+                } else {
+                    false
+                }
+            },
             Annotation::Abstract(_) => false,
             Annotation::Independent(_) => false,
             Annotation::Regex(_) => false,

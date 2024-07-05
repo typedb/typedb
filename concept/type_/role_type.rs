@@ -313,14 +313,15 @@ impl From<Annotation> for Result<RoleTypeAnnotation, AnnotationError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(RoleTypeAnnotation::Abstract(annotation)),
 
-            Annotation::Independent(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
-            Annotation::Distinct(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
-            Annotation::Cardinality(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
-            Annotation::Unique(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
-            Annotation::Key(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
-            Annotation::Regex(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
-            Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
-            Annotation::Range(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
+            | Annotation::Independent(_)
+            | Annotation::Distinct(_)
+            | Annotation::Cardinality(_)
+            | Annotation::Unique(_)
+            | Annotation::Key(_)
+            | Annotation::Regex(_)
+            | Annotation::Cascade(_)
+            | Annotation::Range(_)
+            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
         }
     }
 }
