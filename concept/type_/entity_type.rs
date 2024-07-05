@@ -4,13 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::{Display, Formatter},
+};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
-    graph::type_::{
-        vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
-        Kind,
+    graph::{
+        type_::{
+            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            Kind,
+        },
+        Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexEntityType},
     value::label::Label,
@@ -51,6 +57,7 @@ impl<'a> ConceptAPI<'a> for EntityType<'a> {}
 impl<'a> PrefixedTypeVertexEncoding<'a> for EntityType<'a> {
     const PREFIX: Prefix = VertexEntityType;
 }
+
 impl<'a> TypeVertexEncoding<'a> for EntityType<'a> {
     fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
         debug_assert!(Self::PREFIX == VertexEntityType);
@@ -315,6 +322,12 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         role_type: RoleType<'static>,
     ) -> Result<Option<Plays<'static>>, ConceptReadError> {
         Ok(self.get_plays(snapshot, type_manager)?.get(&role_type).cloned())
+    }
+}
+
+impl<'a> Display for EntityType<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[EntityType:{}]", self.vertex.type_id_())
     }
 }
 

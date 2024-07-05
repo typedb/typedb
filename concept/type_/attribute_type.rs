@@ -4,13 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::{Display, Formatter},
+};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
-    graph::type_::{
-        vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
-        Kind,
+    graph::{
+        type_::{
+            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            Kind,
+        },
+        Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexAttributeType},
     value::{label::Label, value_type::ValueType},
@@ -24,6 +30,7 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     type_::{
         annotation::{Annotation, AnnotationAbstract, AnnotationError, AnnotationIndependent, DefaultFrom},
+        entity_type::EntityType,
         object_type::ObjectType,
         owns::Owns,
         type_manager::TypeManager,
@@ -269,6 +276,12 @@ impl<'a> AttributeType<'a> {
 
     pub fn into_owned(self) -> AttributeType<'static> {
         AttributeType { vertex: self.vertex.into_owned() }
+    }
+}
+
+impl<'a> Display for AttributeType<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[AttributeType:{}]", self.vertex.type_id_())
     }
 }
 

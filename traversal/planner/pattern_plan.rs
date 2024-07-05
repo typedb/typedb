@@ -132,6 +132,20 @@ pub enum Iterate {
 }
 
 impl Iterate {
+    pub(crate) fn sort_variable(&self) -> Option<Variable> {
+        match self {
+            Iterate::Has(has, mode) => Some(if mode.is_sorted_from() { has.owner() } else { has.attribute() }),
+            Iterate::HasReverse(has, mode) => Some(if mode.is_sorted_from() { has.attribute() } else { has.owner() }),
+            Iterate::RolePlayer(rp, mode) => Some(if mode.is_sorted_from() { rp.relation() } else { rp.player() }),
+            Iterate::RolePlayerReverse(rp, mode) => {
+                Some(if mode.is_sorted_from() { rp.player() } else { rp.relation() })
+            }
+            Iterate::FunctionCallBinding(_) => None,
+            Iterate::Comparison(comparison) => Some(comparison.lhs()),
+            Iterate::ComparisonReverse(comparison) => Some(comparison.rhs()),
+        }
+    }
+
     fn foreach_generated(&self, bound_variables: &HashSet<Variable>, mut apply: impl FnMut(Variable) -> ()) {
         match self {
             Iterate::Has(has, mode) => match mode {

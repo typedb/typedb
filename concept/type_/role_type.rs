@@ -4,13 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::{Display, Formatter},
+};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
-    graph::type_::{
-        vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
-        Kind,
+    graph::{
+        type_::{
+            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            Kind,
+        },
+        Typed,
     },
     layout::prefix::Prefix,
     value::label::Label,
@@ -270,6 +276,12 @@ impl<'a> RoleType<'a> {
 impl<'a> KindAPI<'a> for RoleType<'a> {
     type AnnotationType = RoleTypeAnnotation;
     const ROOT_KIND: Kind = Kind::Role;
+}
+
+impl<'a> Display for RoleType<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[RoleType:{}]", self.vertex.type_id_())
+    }
 }
 
 // --- Played API ---

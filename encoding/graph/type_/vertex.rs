@@ -4,9 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::hash::Hash;
+use std::{
+    fmt::{Display, Formatter},
+    hash::Hash,
+};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
@@ -112,6 +115,12 @@ impl TypeID {
 
     pub fn bytes(&self) -> [u8; TypeID::LENGTH] {
         self.bytes
+    }
+}
+
+impl Display for TypeID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", &HexBytesFormatter(&self.bytes()))
     }
 }
 

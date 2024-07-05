@@ -4,13 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::{Display, Formatter},
+};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
-    graph::type_::{
-        vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
-        Kind,
+    graph::{
+        type_::{
+            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            Kind,
+        },
+        Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexRelationType},
     value::label::Label,
@@ -272,6 +278,12 @@ impl<'a> RelationType<'a> {
 
     pub fn into_owned(self) -> RelationType<'static> {
         RelationType { vertex: self.vertex.into_owned() }
+    }
+}
+
+impl<'a> Display for RelationType<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[RelationType:{}]", self.vertex.type_id_())
     }
 }
 

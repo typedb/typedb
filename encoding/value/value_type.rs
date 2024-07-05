@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashSet, fmt, ops::Range};
+use std::fmt::{Display, Formatter};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
@@ -154,6 +155,12 @@ impl ValueTypeCategory {
             ValueTypeCategory::Struct => &[],
             ValueTypeCategory::Date => &[ValueTypeCategory::Date],
         }
+    }
+}
+
+impl Display for ValueTypeCategory {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 

@@ -4,9 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{ops::Range, sync::Arc};
+use std::{
+    fmt::{Display, Formatter},
+    ops::Range,
+    sync::Arc,
+};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -394,6 +398,12 @@ impl AttributeID {
             AttributeID::Struct(struct_id) => struct_id,
             _ => panic!("Cannot unwrap Struct ID from non-struct attribute ID."),
         }
+    }
+}
+
+impl Display for AttributeID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", &HexBytesFormatter(self.bytes()))
     }
 }
 

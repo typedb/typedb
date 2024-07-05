@@ -4,9 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{mem, ops::Range};
+use std::{
+    fmt::{Display, Formatter},
+    mem,
+    ops::Range,
+};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
@@ -160,5 +164,11 @@ impl ObjectID {
 
     pub fn as_u64(&self) -> u64 {
         u64::from_be_bytes(self.bytes)
+    }
+}
+
+impl Display for ObjectID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", &HexBytesFormatter(&self.bytes()))
     }
 }

@@ -4,7 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, marker::PhantomData, sync::Arc};
+use std::{
+    cmp::Ordering,
+    fmt::{Display, Formatter},
+    marker::PhantomData,
+    sync::Arc,
+};
 
 use bytes::Bytes;
 use encoding::{
@@ -18,7 +23,7 @@ use encoding::{
         value::Value,
         value_struct::{StructIndexEntry, StructIndexEntryKey},
     },
-    AsBytes, Keyable,
+    AsBytes, Keyable, Prefixed,
 };
 use iterator::State;
 use lending_iterator::LendingIterator;
@@ -31,8 +36,8 @@ use storage::{
 use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{object::Object, thing_manager::ThingManager, ThingAPI},
-    type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI},
+    thing::{entity::Entity, object::Object, thing_manager::ThingManager, ThingAPI},
+    type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 
@@ -397,3 +402,15 @@ edge_iterator!(
     'a -> (Object<'a>, u64);
     storage_key_to_owner
 );
+
+impl<'a> Display for Attribute<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "[Attribute-{}:{}:{}]",
+            self.vertex().value_type_category(),
+            self.type_().vertex().type_id_(),
+            self.vertex.attribute_id()
+        )
+    }
+}

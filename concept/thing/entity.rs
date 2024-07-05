@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    fmt::{Display, Formatter},
+};
 
 use encoding::{
     graph::{thing::vertex_object::ObjectVertex, type_::vertex::PrefixedTypeVertexEncoding, Typed},
@@ -28,7 +31,7 @@ use crate::{
         thing_manager::ThingManager,
         ThingAPI,
     },
-    type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
+    type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };
 
@@ -164,3 +167,9 @@ fn storage_key_to_entity(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> Enti
 }
 
 concept_iterator!(EntityIterator, Entity, storage_key_to_entity);
+
+impl<'a> Display for Entity<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[Entity:{}:{}]", self.type_().vertex().type_id_(), self.vertex.object_id())
+    }
+}

@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+};
 
 use bytes::Bytes;
 use encoding::{
@@ -518,3 +521,9 @@ edge_iterator!(
     'a -> (RolePlayer<'a>, RolePlayer<'a>, Relation<'a>, u64);
     storage_key_to_indexed_players
 );
+
+impl<'a> Display for Relation<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[Relation:{}:{}]", self.type_().vertex().type_id_(), self.vertex.object_id())
+    }
+}

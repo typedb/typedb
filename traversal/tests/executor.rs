@@ -10,7 +10,9 @@ use std::{
     sync::Arc,
 };
 
+use answer::variable_value::VariableValue;
 use concept::{
+    error::ConceptReadError,
     thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{type_manager::TypeManager, Ordering, OwnerAPI},
 };
@@ -27,6 +29,7 @@ use ir::{
     inference::type_inference::{ConstraintTypeAnnotations, LeftRightAnnotations, TypeAnnotations},
     program::block::FunctionalBlock,
 };
+use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, WriteSnapshot},
@@ -196,11 +199,15 @@ fn traverse_has() {
 
         let iterator = executor.into_iterator(snapshot, thing_manager);
 
-        // let rows: Vec<Result<Vec<VariableValue<'static>>, ConceptReadError>> = iterator
-        //     .map_static(|row| row.map(|row| row.to_vec()).map_err(|err| err.clone()))
-        //     .collect();
-        todo!()
+        let rows: Vec<Result<Vec<VariableValue<'static>>, ConceptReadError>> =
+            iterator.map_static(|row| row.map(|row| row.to_vec()).map_err(|err| err.clone())).collect();
 
-        // dbg!("{:?}", rows);
+        for row in rows {
+            let r = row.unwrap();
+            for value in r {
+                print!("{}, ", value);
+            }
+            println!()
+        }
     }
 }
