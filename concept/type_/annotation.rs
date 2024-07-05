@@ -5,6 +5,7 @@
  */
 
 use std::{borrow::Cow, error::Error, fmt};
+use std::hash::{Hash, Hasher};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
@@ -21,7 +22,7 @@ use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
 use encoding::value::value::Value;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
     Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),
@@ -50,7 +51,7 @@ pub struct AnnotationUnique;
 pub struct AnnotationKey;
 
 impl AnnotationKey {
-    pub const CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(0, Some(1));
+    pub const CARDINALITY: AnnotationCardinality = AnnotationCardinality::new(1, Some(1));
 }
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
@@ -121,7 +122,7 @@ impl AnnotationRegex {
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct AnnotationCascade;
 
-#[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct AnnotationRange {
     // ##########################################################################
     // ###### WARNING: any changes here may break backwards compatibility! ######
@@ -159,16 +160,19 @@ impl AnnotationRange {
         match self.start() {
             None => true,
             Some(start) => match &value {
-                Value::Boolean(value) => &start.unwrap().unwrap_boolean() <= value,
-                Value::Long(value) => &start.unwrap().unwrap_long() <= value,
-                Value::Double(value) => &start.unwrap().unwrap_double() <= value,
-                Value::Decimal(value) => &start.unwrap().unwrap_decimal() <= value,
-                Value::Date(value) => &start.unwrap().unwrap_date() <= value,
-                Value::DateTime(value) => &start.unwrap().unwrap_date_time() <= value,
-                Value::DateTimeTZ(value) => &start.unwrap().unwrap_date_time_tz() <= value,
-                Value::String(value) => &start.unwrap().unwrap_string() <= value,
-                Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
-                Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
+                None => false,
+                Some(value) => match value {
+                    Value::Boolean(value) => &start.unwrap_boolean() <= value,
+                    Value::Long(value) => &start.unwrap_long() <= value,
+                    Value::Double(value) => &start.unwrap_double() <= value,
+                    Value::Decimal(value) => &start.unwrap_decimal() <= value,
+                    Value::Date(value) => &start.unwrap_date() <= value,
+                    Value::DateTime(value) => &start.unwrap_date_time() <= value,
+                    Value::DateTimeTZ(value) => &start.unwrap_date_time_tz() <= value,
+                    Value::String(value) => &start.unwrap_string() <= value,
+                    Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
+                    Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
+                }
             }
         }
     }
@@ -177,18 +181,52 @@ impl AnnotationRange {
         match self.end() {
             None => true,
             Some(end) => match &value {
-                Value::Boolean(value) => &end.unwrap().unwrap_boolean() >= value,
-                Value::Long(value) => &end.unwrap().unwrap_long() >= value,
-                Value::Double(value) => &end.unwrap().unwrap_double() >= value,
-                Value::Decimal(value) => &end.unwrap().unwrap_decimal() >= value,
-                Value::Date(value) => &end.unwrap().unwrap_date() >= value,
-                Value::DateTime(value) => &end.unwrap().unwrap_date_time() >= value,
-                Value::DateTimeTZ(value) => &end.unwrap().unwrap_date_time_tz() >= value,
-                Value::String(value) => &end.unwrap().unwrap_string() >= value,
-                Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
-                Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
+                None => false,
+                Some(value) => match value {
+                    Value::Boolean(value) => &end.unwrap_boolean() >= value,
+                    Value::Long(value) => &end.unwrap_long() >= value,
+                    Value::Double(value) => &end.unwrap_double() >= value,
+                    Value::Decimal(value) => &end.unwrap_decimal() >= value,
+                    Value::Date(value) => &end.unwrap_date() >= value,
+                    Value::DateTime(value) => &end.unwrap_date_time() >= value,
+                    Value::DateTimeTZ(value) => &end.unwrap_date_time_tz() >= value,
+                    Value::String(value) => &end.unwrap_string() >= value,
+                    Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
+                    Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
+                }
             }
         }
+    }
+
+    // WARN: Use this function only for Annotations containing Values to allow its hashing,
+    // not while precisely working with real values.
+    fn hash_value<H: Hasher>(value: &Option<Value<'static>>, state: &mut H) {
+        const NONE_HASH_MARKER: u64 = 0xDEADBEEFDEADBEEF;
+
+        match value {
+            None => NONE_HASH_MARKER.hash(state),
+            Some(value) => {
+                match value {
+                    Value::Boolean(value) => value.hash(state),
+                    Value::Long(value) => value.hash(state),
+                    Value::Double(value) => value.to_bits().hash(state),
+                    Value::Decimal(value) => value.hash(state),
+                    Value::Date(value) => value.hash(state),
+                    Value::DateTime(value) => value.hash(state),
+                    Value::DateTimeTZ(value) => value.hash(state),
+                    Value::String(value) => value.hash(state),
+                    Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
+                    Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
+                }
+            }
+        }
+    }
+}
+
+impl Hash for AnnotationRange {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Self::hash_value(&self.start_inclusive, state);
+        Self::hash_value(&self.end_inclusive, state);
     }
 }
 
@@ -233,7 +271,7 @@ mod serialise_range {
 
     const INLINE_LENGTH: usize = 128;
 
-    fn serialize_optional_value_field(value: Option<Value>) -> Option<ByteArray<INLINE_LENGTH>> {
+    fn serialize_optional_value_field(value: Option<Value<'_>>) -> Option<ByteArray<INLINE_LENGTH>> {
         match &value {
             None => None,
             Some(start_inclusive) => Some(
@@ -244,9 +282,9 @@ mod serialise_range {
                     | Value::Decimal(_)
                     | Value::Date(_)
                     | Value::DateTime(_)
-                    | Value::DateTimeTZ(_) // TODO: Maybe unreachable!("Can't use datetime-tz for AnnotationRange")
-                    | Value::Duration(_) // TODO: Maybe unreachable!("Can't use duration for AnnotationRange")
+                    | Value::DateTimeTZ(_)
                     | Value::String(_) => start_inclusive.encode_bytes(),
+                    Value::Duration(_) => unreachable!("Can't use duration for AnnotationRange"),
                     Value::Struct(_) => unreachable!("Can't use struct for AnnotationRange"),
                 }
             )
@@ -278,9 +316,9 @@ mod serialise_range {
     //                 ValueType::Decimal => Value::Decimal(value),
     //                 ValueType::Date => Value::Date(value),
     //                 ValueType::DateTime => Value::DateTime(value),
-    //                 ValueType::DateTimeTZ => Value::DateTimeTZ(value), // TODO: Maybe unreachable!("Can't use datetime-tz for AnnotationRange")
-    //                 ValueType::Duration => Value::Duration(value), // TODO: Maybe unreachable!("Can't use duration for AnnotationRange")
+    //                 ValueType::DateTimeTZ => Value::DateTimeTZ(value),
     //                 ValueType::String => Value::String(value),
+    //                 ValueType::Duration(_) => unreachable!("Can't use duration for AnnotationRange"),
     //                 ValueType::Struct(_) => unreachable!("Can't use struct for AnnotationRange"),
     //             }
     //         )
@@ -519,13 +557,13 @@ impl AnnotationCategory {
 
 pub trait DefaultFrom<FromType, ErrorType> {
     fn try_getting_default(from: FromType) -> Result<Self, ErrorType>
-    where
-        Self: Sized;
+        where
+            Self: Sized;
 }
 
 impl<T> DefaultFrom<AnnotationCategory, AnnotationError> for T
-where
-    Result<T, AnnotationError>: From<Annotation>,
+    where
+        Result<T, AnnotationError>: From<Annotation>,
 {
     // Note: creating default annotation from category is a workaround for creating new category types per Attribute/Entity/Relation/etc
     fn try_getting_default(from: AnnotationCategory) -> Result<Self, AnnotationError> {
@@ -645,15 +683,16 @@ impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRegex {
 
 impl<'a> TypeEdgePropertyEncoding<'a> for AnnotationRange {
     const INFIX: Infix = Infix::PropertyAnnotationRange;
-    // fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
-    //     // TODO this .unwrap() should be handled as an error
-    //     // although it does indicate data corruption
-    //     bincode::deserialize(value.bytes()).unwrap()
-    // }
-    //
-    // fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
-    //     Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
-    // }
+    fn from_value_bytes<'b>(value: ByteReference<'b>) -> Self {
+        // TODO this .unwrap() should be handled as an error
+        // although it does indicate data corruption
+        todo!()
+        // bincode::deserialize(value.bytes()).unwrap()
+    }
+
+    fn to_value_bytes(self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(&self).unwrap().as_slice()))
+    }
 }
 
 #[derive(Debug, Clone)]

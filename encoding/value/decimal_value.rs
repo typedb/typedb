@@ -16,7 +16,7 @@ const _ASSERT: () = {
     assert!(FRACTIONAL_PART_DENOMINATOR > u64::MAX / 10);
 };
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Decimal {
     integer: i64,
     fractional: u64,

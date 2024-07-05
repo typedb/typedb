@@ -520,9 +520,12 @@ impl TypeReader {
                     Infix::PropertyAnnotationCardinality => Annotation::Cardinality(
                         <AnnotationCardinality as TypeEdgePropertyEncoding>::from_value_bytes(value),
                     ),
-                    Infix::PropertyAnnotationRegex => {
-                        Annotation::Regex(<AnnotationRegex as TypeEdgePropertyEncoding>::from_value_bytes(value))
-                    }
+                    Infix::PropertyAnnotationRegex => Annotation::Regex(
+                        <AnnotationRegex as TypeEdgePropertyEncoding>::from_value_bytes(value)
+                    ),
+                    Infix::PropertyAnnotationRange => Annotation::Range(
+                        <AnnotationRange as TypeEdgePropertyEncoding>::from_value_bytes(value)
+                    ),
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationAbstract
                     | Infix::PropertyAnnotationCascade

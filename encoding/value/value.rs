@@ -9,6 +9,7 @@ use std::{
     cmp::Ordering,
     fmt::{Display, Formatter},
 };
+use std::hash::Hash;
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
 use chrono_tz::Tz;
@@ -92,6 +93,13 @@ impl<'a> Value<'a> {
     pub fn unwrap_double(self) -> f64 {
         match self {
             Self::Double(double) => double,
+            _ => panic!("Cannot unwrap Double if not a double value."),
+        }
+    }
+
+    pub fn unwrap_decimal(self) -> Decimal {
+        match self {
+            Self::Decimal(decimal) => decimal,
             _ => panic!("Cannot unwrap Double if not a double value."),
         }
     }

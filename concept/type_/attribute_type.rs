@@ -315,7 +315,7 @@ impl<'a> AttributeType<'a> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AttributeTypeAnnotation {
     Abstract(AnnotationAbstract),
     Independent(AnnotationIndependent),

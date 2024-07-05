@@ -86,7 +86,7 @@ impl<'a> Owns<'a> {
         for annotation in annotations.keys() {
             match annotation {
                 OwnsAnnotation::Cardinality(cardinality) => return Ok(Some(*cardinality)),
-                OwnsAnnotation::Key(_) => return Ok(Some(AnnotationCardinality::new(1, Some(1)))),
+                OwnsAnnotation::Key(_) => return Ok(Some(AnnotationKey::CARDINALITY)),
                 _ => (),
             }
         }
