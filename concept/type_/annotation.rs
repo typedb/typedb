@@ -639,6 +639,7 @@ impl Error for AnnotationError {
 
 mod serialise_range {
     use std::borrow::Cow;
+    use std::collections::BTreeMap;
     use std::fmt;
     use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
     use serde::de::{MapAccess, SeqAccess, Visitor};
@@ -657,6 +658,9 @@ mod serialise_range {
     use encoding::value::ValueEncodable;
     use crate::type_::annotation::AnnotationRange;
     use bytes::Bytes;
+    use storage::keyspace::KeyspaceId;
+    use storage::snapshot::buffer::WriteBuffer;
+    use storage::snapshot::write::Write;
 
     enum Field {
         StartInclusive,
@@ -687,7 +691,7 @@ mod serialise_range {
 
     const INLINE_LENGTH: usize = 128;
 
-    fn serialize_optional_value_field(value: Option<Value<'_>>) -> Option<ByteArray<INLINE_LENGTH>> {
+    fn serialize_optional_value_field(value: Option<Value<'_>>) -> Option<Vec<u8>> {
         match &value {
             None => None,
             Some(start_inclusive) => Some(
@@ -699,7 +703,7 @@ mod serialise_range {
                     | Value::Date(_)
                     | Value::DateTime(_)
                     | Value::DateTimeTZ(_)
-                    | Value::String(_) => start_inclusive.encode_bytes(),
+                    | Value::String(_) => start_inclusive.encode_bytes::<INLINE_LENGTH>().bytes().to_owned(),
                     Value::Duration(_) => unreachable!("Can't use duration for AnnotationRange"),
                     Value::Struct(_) => unreachable!("Can't use struct for AnnotationRange"),
                 }
@@ -713,10 +717,8 @@ mod serialise_range {
                 S: Serializer,
         {
             let mut state = serializer.serialize_struct("AnnotationRange", Field::NAMES.len())?;
-
             state.serialize_field(Field::StartInclusive.name(), &serialize_optional_value_field(self.start_inclusive.clone()))?;
-            state.serialize_field(Field::EndInclusive.name(), &serialize_optional_value_field(self.start_inclusive.clone()))?;
-
+            state.serialize_field(Field::EndInclusive.name(), &serialize_optional_value_field(self.end_inclusive.clone()))?;
             state.end()
         }
     }
@@ -787,9 +789,6 @@ mod serialise_range {
                     where
                         V: SeqAccess<'de>,
                 {
-                    // // TODO: Is it saved automatically??
-                    // let _annotation_regex_version = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
-
                     let start_inclusive = deserialize_optional_value_field(
                         seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?,
                         self.value_type_category.clone()
@@ -804,43 +803,43 @@ mod serialise_range {
                         end_inclusive,
                     })
                 }
-                //
-                // fn visit_map<V>(self, mut map: V) -> Result<AnnotationRange, V::Error>
-                //     where
-                //         V: MapAccess<'de>,
-                // {
-                //     let mut start_inclusive: Option<Option<Value<'_>>> = None;
-                //     let mut end_inclusive: Option<Option<Value<'_>>> = None;
-                //     while let Some(key) = map.next_key()? {
-                //         match key {
-                //             Field::StartInclusive => {
-                //                 if start_inclusive.is_some() {
-                //                     return Err(de::Error::duplicate_field(Field::StartInclusive.name()));
-                //                 }
-                //                 start_inclusive = Some(deserialize_optional_value_field(
-                //                     map.next_value()?,
-                //                     self.value_type_category.clone()
-                //                 ));
-                //             }
-                //             Field::EndInclusive => {
-                //                 if end_inclusive.is_some() {
-                //                     return Err(de::Error::duplicate_field(Field::EndInclusive.name()));
-                //                 }
-                //                 end_inclusive = Some(deserialize_optional_value_field(
-                //                     map.next_value()?,
-                //                     self.value_type_category.clone()
-                //                 ));
-                //             }
-                //         }
-                //     }
-                //
-                //     Ok(AnnotationRange {
-                //         start_inclusive: start_inclusive
-                //             .ok_or_else(|| de::Error::missing_field(Field::StartInclusive.name()))?,
-                //         end_inclusive: end_inclusive
-                //             .ok_or_else(|| de::Error::missing_field(Field::EndInclusive.name()))?,
-                //     })
-                // }
+
+                fn visit_map<V>(self, mut map: V) -> Result<AnnotationRange, V::Error>
+                    where
+                        V: MapAccess<'de>,
+                {
+                    let mut start_inclusive: Option<Option<Value<'static>>> = None;
+                    let mut end_inclusive: Option<Option<Value<'static>>> = None;
+                    while let Some(key) = map.next_key()? {
+                        match key {
+                            Field::StartInclusive => {
+                                if start_inclusive.is_some() {
+                                    return Err(de::Error::duplicate_field(Field::StartInclusive.name()));
+                                }
+                                start_inclusive = Some(deserialize_optional_value_field(
+                                    map.next_value()?,
+                                    self.value_type_category.clone()
+                                ));
+                            }
+                            Field::EndInclusive => {
+                                if end_inclusive.is_some() {
+                                    return Err(de::Error::duplicate_field(Field::EndInclusive.name()));
+                                }
+                                end_inclusive = Some(deserialize_optional_value_field(
+                                    map.next_value()?,
+                                    self.value_type_category.clone()
+                                ));
+                            }
+                        }
+                    }
+
+                    Ok(AnnotationRange {
+                        start_inclusive: start_inclusive
+                            .ok_or_else(|| de::Error::missing_field(Field::StartInclusive.name()))?,
+                        end_inclusive: end_inclusive
+                            .ok_or_else(|| de::Error::missing_field(Field::EndInclusive.name()))?,
+                    })
+                }
             }
 
             deserializer.deserialize_struct("AnnotationRange", &Field::NAMES, AnnotationRangeVisitor{ value_type_category: ValueTypeCategory::Boolean })

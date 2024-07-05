@@ -309,7 +309,13 @@ impl PartialEq<Annotation> for OwnsAnnotation {
                     false
                 }
             },
-            Annotation::Range(_) => todo!("What to do here?"),
+            Annotation::Range(other_range) => {
+                if let Self::Range(range) = self {
+                    range == other_range
+                } else {
+                    false
+                }
+            },
 
             Annotation::Abstract(_) => false,
             Annotation::Independent(_) => false,

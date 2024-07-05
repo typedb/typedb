@@ -107,7 +107,6 @@ fn encode_struct_into<'a>(struct_value: &StructValue<'a>, buf: &mut Vec<u8>) -> 
             | Value::Duration(_) => {
                 buf.extend_from_slice(value.encode_bytes::<128>().bytes())
             },
-
         }
     }
     Ok(())

@@ -2026,7 +2026,7 @@ impl TypeManager {
         type_: impl KindAPI<'static>,
         range: AnnotationRange,
     ) -> Result<(), ConceptWriteError> {
-        self.set_annotation::<AnnotationRange>(snapshot, type_, AnnotationCategory::Cascade, Some(range))
+        self.set_annotation::<AnnotationRange>(snapshot, type_, AnnotationCategory::Range, Some(range))
     }
 
     pub(crate) fn unset_annotation_range(
