@@ -22,7 +22,11 @@ impl Program {
         Self { entry: entry_block, functions: functions }
     }
 
-    pub fn entry(&mut self) -> &mut FunctionalBlock {
+    pub fn entry(&self) -> &FunctionalBlock {
+        &self.entry
+    }
+
+    pub fn entry_mut(&mut self) -> &mut FunctionalBlock {
         &mut self.entry
     }
 

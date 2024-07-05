@@ -4,15 +4,29 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    sync::Arc,
+};
 
 use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    inference::{seed_types::TypeSeeder, type_inference::VertexAnnotations, TypeInferenceError},
-    pattern::{conjunction::Conjunction, constraint::Constraint},
+    inference::{
+        seed_types::TypeSeeder,
+        type_inference::{
+            ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations, ProgramAnnotations,
+            TypeAnnotations, VertexAnnotations,
+        },
+        TypeInferenceError,
+    },
+    pattern::{
+        conjunction::Conjunction,
+        constraint::{Constraint, RolePlayer},
+        ScopeId,
+    },
 };
 
 /*
@@ -93,6 +107,50 @@ impl<'this> TypeInferenceGraph<'this> {
             is_modified = is_modified || nested_graph.prune_vertices_from_self(&mut self.vertices);
         }
         is_modified
+    }
+
+    pub(crate) fn populate_scoped_annotations(self, scoped_annotations: &mut HashMap<ScopeId, TypeAnnotations>) {
+        let mut constraints = HashMap::with_capacity(self.edges.len());
+        let TypeInferenceGraph { vertices, edges, .. } = self;
+
+        let mut combine_role_player_edges = HashMap::new();
+        edges.into_iter().for_each(|edge| {
+            let TypeInferenceEdge { constraint, left, right, left_to_right, right_to_left, .. } = edge;
+            if let Constraint::RolePlayer(rp) = edge.constraint {
+                if let Some((other_left_right, other_right_left)) = combine_role_player_edges.remove(&edge.right) {
+                    let lrf_annotation = {
+                        if edge.left == rp.relation {
+                            LeftRightFilteredAnnotations::build(
+                                left_to_right,
+                                right_to_left,
+                                other_left_right,
+                                other_right_left,
+                            )
+                        } else {
+                            LeftRightFilteredAnnotations::build(
+                                other_left_right,
+                                other_right_left,
+                                left_to_right,
+                                right_to_left,
+                            )
+                        }
+                    };
+                    constraints
+                        .insert(constraint.clone(), ConstraintTypeAnnotations::LeftRightFiltered(lrf_annotation));
+                } else {
+                    combine_role_player_edges.insert(edge.right, (left_to_right, right_to_left));
+                }
+            } else {
+                let lr_annotations = LeftRightAnnotations::build(left_to_right, right_to_left);
+                constraints.insert(constraint.clone(), ConstraintTypeAnnotations::LeftRight(lr_annotations));
+            }
+        });
+
+        let variables = vertices
+            .into_iter()
+            .map(|(k, v)| (k, Arc::new(v.into_iter().collect::<HashSet<TypeAnnotation>>())))
+            .collect();
+        scoped_annotations.insert(self.conjunction.scope_id(), TypeAnnotations::new(variables, constraints));
     }
 }
 
