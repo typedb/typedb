@@ -301,13 +301,7 @@ impl OperationTimeValidation {
         attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
     ) -> Result<(), SchemaValidationError> {
-        // TODO: Move to AnnotationRegex "value_type_valid"
-        let is_compatible = match &value_type {
-            Some(ValueType::String) => true,
-            _ => false,
-        };
-
-        if is_compatible {
+        if AnnotationRegex::value_type_valid(value_type.clone()) {
             Ok(())
         } else {
             Err(SchemaValidationError::ValueTypeIsNotCompatibleWithRegexAnnotation(
@@ -322,24 +316,7 @@ impl OperationTimeValidation {
         attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
     ) -> Result<(), SchemaValidationError> {
-        // TODO: Move to AnnotationRange "value_type_valid"
-        let is_compatible = match &value_type {
-            Some(value_type) => match &value_type {
-                | ValueType::Boolean
-                | ValueType::Long
-                | ValueType::Double
-                | ValueType::Decimal
-                | ValueType::Date
-                | ValueType::DateTime
-                | ValueType::DateTimeTZ
-                | ValueType::String => true,
-
-                | ValueType::Duration | ValueType::Struct(_) => false,
-            },
-            _ => false,
-        };
-
-        if is_compatible {
+        if AnnotationRange::value_type_valid(value_type.clone()) {
             Ok(())
         } else {
             Err(SchemaValidationError::ValueTypeIsNotCompatibleWithRangeAnnotation(
@@ -354,25 +331,7 @@ impl OperationTimeValidation {
         attribute_type: AttributeType<'static>,
         value_type: Option<ValueType>,
     ) -> Result<(), SchemaValidationError> {
-        // TODO: Move to AnnotationValues "value_type_valid"
-        let is_compatible = match &value_type {
-            Some(value_type) => match &value_type {
-                | ValueType::Boolean
-                | ValueType::Long
-                | ValueType::Double
-                | ValueType::Decimal
-                | ValueType::Date
-                | ValueType::DateTime
-                | ValueType::DateTimeTZ
-                | ValueType::Duration
-                | ValueType::String => true,
-
-                | ValueType::Struct(_) => false,
-            },
-            _ => false,
-        };
-
-        if is_compatible {
+        if AnnotationValues::value_type_valid(value_type.clone()) {
             Ok(())
         } else {
             Err(SchemaValidationError::ValueTypeIsNotCompatibleWithValuesAnnotation(
@@ -490,16 +449,16 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_range_arguments(range: AnnotationRange) -> Result<(), SchemaValidationError> {
-        if range.valid() {
+    pub(crate) fn validate_range_arguments(range: AnnotationRange, value_type: Option<ValueType>) -> Result<(), SchemaValidationError> {
+        if range.valid(value_type) {
             Ok(())
         } else {
             Err(SchemaValidationError::InvalidRangeArguments(range))
         }
     }
 
-    pub(crate) fn validate_values_arguments(values: AnnotationValues) -> Result<(), SchemaValidationError> {
-        if values.valid() {
+    pub(crate) fn validate_values_arguments(values: AnnotationValues, value_type: Option<ValueType>) -> Result<(), SchemaValidationError> {
+        if values.valid(value_type) {
             Ok(())
         } else {
             Err(SchemaValidationError::InvalidValuesArguments(values))

@@ -5,8 +5,9 @@
  */
 
 use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr, sync::Arc};
+use std::error::Error;
 
-use chrono::NaiveDateTime;
+use chrono::{NaiveDate, NaiveDateTime};
 use concept::type_::{
     annotation::{
         Annotation as TypeDBAnnotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade,
@@ -81,9 +82,10 @@ use concept::type_::{
     annotation::{AnnotationDistinct, AnnotationUnique},
     type_manager::TypeManager,
 };
-use database::transaction::TransactionRead;
-use encoding::graph::definition::definition_key::DefinitionKey;
-use storage::{durability_client::WALClient, snapshot::ReadableSnapshot};
+use concept::type_::annotation::{AnnotationRange, AnnotationValues};
+use encoding::value::decimal_value::Decimal;
+use storage::snapshot::ReadableSnapshot;
+use crate::params::ParamsParsingError::{CannotParseAnnotation, CannotParseAnnotationsValue, CannotParseValue};
 
 impl FromStr for Boolean {
     type Err = String;
@@ -287,7 +289,10 @@ impl FromStr for ObjectRootLabel {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "value_type", regex = "(boolean|long|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)")]
+#[param(
+    name = "value_type",
+    regex = "(boolean|long|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)"
+)]
 pub(crate) enum ValueType {
     Boolean,
     Long,
@@ -353,8 +358,11 @@ impl Value {
             TypeDBValueType::Boolean => TypeDBValue::Boolean(self.raw_value.parse().unwrap()),
             TypeDBValueType::Long => TypeDBValue::Long(self.raw_value.parse().unwrap()),
             TypeDBValueType::Double => TypeDBValue::Double(self.raw_value.parse().unwrap()),
-            TypeDBValueType::Decimal => todo!(),
-            TypeDBValueType::Date => todo!(),
+            TypeDBValueType::Decimal => {
+                let (integer, fractional) = self.raw_value.split_once(".").unwrap();
+                TypeDBValue::Decimal(Decimal::new(integer.parse().unwrap(), fractional.parse().unwrap()))
+            }
+            TypeDBValueType::Date => TypeDBValue::Date(NaiveDate::parse_from_str(&self.raw_value, "%Y-%m-%d").unwrap()),
             TypeDBValueType::DateTime => {
                 TypeDBValue::DateTime(NaiveDateTime::parse_from_str(&self.raw_value, "%Y-%m-%d %H:%M:%S").unwrap())
             }
@@ -381,61 +389,18 @@ impl FromStr for Value {
 #[derive(Debug, Parameter)]
 #[param(name = "annotation", regex = r"@[a-z]+(?:\(.+\))?")]
 pub(crate) struct Annotation {
-    typedb_annotation: TypeDBAnnotation,
+    raw_annotation: String,
 }
 
 impl Annotation {
-    pub fn into_typedb(self) -> TypeDBAnnotation {
-        self.typedb_annotation
-    }
-}
-
-impl FromStr for Annotation {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // This will have to be smarter to parse annotations out.
-        let typedb_annotation = match s {
+    pub fn into_typedb(self, value_type: Option<TypeDBValueType>) -> Result<TypeDBAnnotation, dyn Error> {
+        Ok(match self.raw_annotation.as_str() {
             "@abstract" => TypeDBAnnotation::Abstract(AnnotationAbstract),
             "@independent" => TypeDBAnnotation::Independent(AnnotationIndependent),
             "@key" => TypeDBAnnotation::Key(AnnotationKey),
             "@unique" => TypeDBAnnotation::Unique(AnnotationUnique),
             "@distinct" => TypeDBAnnotation::Distinct(AnnotationDistinct),
             "@cascade" => TypeDBAnnotation::Cascade(AnnotationCascade),
-            "@replace" => return Err("Not implemented!".to_owned()), //TypeDBAnnotation::Replace(AnnotationReplace),
-            subkey if subkey.starts_with("@subkey") => {
-                return Err("Not implemented!".to_owned());
-                // assert!(
-                //     subkey.starts_with(r#"@subkey("#) && subkey.ends_with(r#")"#),
-                //     r#"Invalid @subkey format: {subkey:?}. Expected "@subkey(LABEL)""#
-                // );
-                // let label = &subkey[r#"@subkey("#.len()..subkey.len() - r#")"#.len()];
-                // TypeDBAnnotation::Subkey(AnnotationSubkey::new(label.to_owned()))
-            }
-            values if values.starts_with("@values") => {
-                return Err("Not implemented!".to_owned());
-                // assert!(
-                //     values.starts_with("@values(") && values.ends_with(')'),
-                //     r#"Invalid @values format: {values:?}. Expected "@values(val1, val2, ..., valN)""#
-                // );
-                // let values = values["@card(".len()..values.len() - ")".len()].trim();
-                // let values =
-                //     values.split(',');
-                // TypeDBAnnotation::Values(AnnotationValues::new(values))
-            }
-            range if range.starts_with("@range") => {
-                return Err("Not implemented!".to_owned());
-                // assert!(
-                //     range.starts_with("@range(") && range.ends_with(')'),
-                //     r#"Invalid @range format: {range:?}. Expected "@range(min, max)""#
-                // );
-                // let range = range["@range(".len()..range.len() - ")".len()].trim();
-                // let (min, max) =
-                //     range.split_once(',').map(|(min, max)| (min.trim(), Some(max.trim()))).unwrap_or((range, None));
-                // TypeDBAnnotation::Range(AnnotationRange::new(
-                //     min.parse().unwrap(),
-                //     max.map(str::parse).transpose().unwrap(),
-                // ))
-            }
             regex if regex.starts_with("@regex") => {
                 assert!(
                     regex.starts_with(r#"@regex(""#) && regex.ends_with(r#"")"#),
@@ -459,13 +424,56 @@ impl FromStr for Annotation {
                         "*" => Ok(None),
                         _ => val.parse().map(Some).map_err(|_| "Failed to parse max"),
                     })
-                    .unwrap()
-                    .unwrap(),
+                        .unwrap()
+                        .unwrap(),
                 ))
             }
-            _ => panic!("Unrecognised (or unimplemented) annotation: {s}"),
-        };
-        Ok(Self { typedb_annotation })
+            values if values.starts_with("@values") => {
+                assert!(
+                    values.starts_with("@values(") && values.ends_with(')'),
+                    r#"Invalid @values format: {values:?}. Expected "@values(val1, val2, ..., valN)""#
+                );
+                assert!(value_type.is_some(), "ValueType is expected to parse annotation @values");
+                let value_type = value_type.unwrap();
+                let values = values["@values(".len()..values.len() - ")".len()].trim();
+                let values = values.split(',');
+                TypeDBAnnotation::Values(AnnotationValues::new(
+                    values.map(|value| Value::from_str(value).unwrap().into_typedb(value_type.clone()).unwrap())
+                ))
+            }
+            range if range.starts_with("@range") => {
+                assert!(
+                    range.starts_with("@range(") && range.ends_with(')'),
+                    r#"Invalid @range format: {range:?}. Expected "@range(min..max)""#
+                );
+                assert!(value_type.is_some(), "ValueType is expected to parse annotation @range");
+                let value_type = value_type.unwrap();
+                let range = range["@range(".len()..range.len() - ")".len()].trim();
+                let (min, max) =
+                    range.split_once("..").map(|(min, max)| (min.trim(), max.trim()))?;
+                TypeDBAnnotation::Range(AnnotationRange::new(
+                    if min.is_empty() { None } else { Some(Value::from_str(min)?.into_typedb(value_type?.clone())?) },
+                    if max.is_empty() { None } else { Some(Value::from_str(max)?.into_typedb(value_type?)?) },
+                ))
+            }
+            subkey if subkey.starts_with("@subkey") => {
+                unreachable!("Subkey is not implemented for tests!");
+                // assert!(
+                //     subkey.starts_with(r#"@subkey("#) && subkey.ends_with(r#")"#),
+                //     r#"Invalid @subkey format: {subkey:?}. Expected "@subkey(LABEL)""#
+                // );
+                // let label = &subkey[r#"@subkey("#.len()..subkey.len() - r#")"#.len()];
+                // TypeDBAnnotation::Subkey(AnnotationSubkey::new(label.to_owned()))
+            }
+            _ => unreachable!("Cannot parse annotation {:?}", self.raw_annotation)
+        })
+    }
+}
+
+impl FromStr for Annotation {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self { raw_annotation: s.to_owned() })
     }
 }
 
@@ -494,10 +502,9 @@ impl FromStr for AnnotationCategory {
             "@cascade" => TypeDBAnnotationCategory::Cascade,
             "@regex" => TypeDBAnnotationCategory::Regex,
             "@card" => TypeDBAnnotationCategory::Cardinality,
+            "@range" => TypeDBAnnotationCategory::Range,
+            "@values" => TypeDBAnnotationCategory::Values,
             "@subkey" => return Err("Not implemented!".to_owned()), //TypeDBAnnotationCategory::Subkey,
-            "@values" => return Err("Not implemented!".to_owned()), //TypeDBAnnotationCategory::Values,
-            "@range" => return Err("Not implemented!".to_owned()),  //TypeDBAnnotationCategory::Range,
-            "@replace" => return Err("Not implemented!".to_owned()), //TypeDBAnnotationCategory::Replace,
             _ => panic!("Unrecognised (or unimplemented) annotation: {s}"),
         };
         Ok(Self { typedb_annotation_category })
@@ -528,10 +535,11 @@ impl FromStr for Annotations {
                 let next_at = if let Some(index) = s[cursor..].find('@') { cursor + index } else { s.len() };
                 let anno = s[cursor..next_at].trim();
                 cursor = next_at;
-                Some(anno.parse::<Annotation>().map(|anno| anno.typedb_annotation))
+                Some(anno.parse::<Annotation>().map(|anno| anno.into_typedb(None)?))
+                // TODO: Refactor parsing to support passing ValueTypes into anno.into_typedb
             }
         })
-        .try_collect()?;
+            .try_collect()?;
 
         Ok(Self { typedb_annotations })
     }

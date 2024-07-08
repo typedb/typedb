@@ -2025,15 +2025,18 @@ impl TypeManager {
         type_: AttributeType<'static>,
         range: AnnotationRange,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_range_arguments(range.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        let type_value_type =
+            TypeReader::get_value_type_without_source(snapshot, type_.clone())?;
 
         OperationTimeValidation::validate_annotation_range_compatible_value_type(
             snapshot,
             type_.clone(),
-            TypeReader::get_value_type_without_source(snapshot, type_.clone())?,
+            type_value_type.clone(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_range_arguments(range.clone(), type_value_type)
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_annotation_set_only_for_interface::<Owns<'static>>(
             snapshot,
@@ -2068,15 +2071,18 @@ impl TypeManager {
         owns: Owns<'static>,
         range: AnnotationRange,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_range_arguments(range.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        let owns_value_type =
+            TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?;
 
         OperationTimeValidation::validate_annotation_range_compatible_value_type(
             snapshot,
             owns.attribute(),
-            TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?,
+            owns_value_type.clone(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_range_arguments(range.clone(), owns_value_type)
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_annotation_set_only_for_interface_implementation(
             snapshot,
@@ -2116,15 +2122,18 @@ impl TypeManager {
         type_: AttributeType<'static>,
         values: AnnotationValues,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_values_arguments(values.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        let type_value_type =
+            TypeReader::get_value_type_without_source(snapshot, type_.clone())?;
 
         OperationTimeValidation::validate_annotation_values_compatible_value_type(
             snapshot,
             type_.clone(),
-            TypeReader::get_value_type_without_source(snapshot, type_.clone())?,
+            type_value_type.clone(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_values_arguments(values.clone(), type_value_type)
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_annotation_set_only_for_interface::<Owns<'static>>(
             snapshot,
@@ -2159,15 +2168,18 @@ impl TypeManager {
         owns: Owns<'static>,
         values: AnnotationValues,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_values_arguments(values.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        let owns_value_type =
+            TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?;
 
         OperationTimeValidation::validate_annotation_values_compatible_value_type(
             snapshot,
             owns.attribute(),
-            TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?,
+            owns_value_type.clone(),
         )
         .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_values_arguments(values.clone(), owns_value_type)
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_annotation_set_only_for_interface_implementation(
             snapshot,

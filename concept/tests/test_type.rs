@@ -927,64 +927,135 @@ fn annotations_with_value_arguments() {
         let empty_owns =
             person_type.get_owns_attribute(&snapshot, &type_manager, empty_type.clone().into_owned()).unwrap().unwrap();
 
-        // assert!(age_type
-        //     .get_annotations(&snapshot, &type_manager)
-        //     .unwrap()
-        //     .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
-        //         Value::Long(0),
-        //         Value::Long(18)
-        //     ]))));
-        // TODO: Add more checks for absent annotations to check that it is deserialized correctly
+        assert!(age_type
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
+                Value::Long(0),
+                Value::Long(18)
+            ]))));
+        assert!(!age_type
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![]))));
+        assert!(!age_type
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
+                Value::Long(1),
+                Value::Long(18)
+            ]))));
+        assert!(!age_type
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
+                Value::Long(18),
+                Value::Long(0)
+            ]))));
         assert!(age_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
 
         assert!(name_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
-        // assert!(name_owns
-        //     .get_annotations(&snapshot, &type_manager)
-        //     .unwrap()
-        //     .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
-        //         Value::String(Cow::Borrowed("A")),
-        //         Value::String(Cow::Borrowed("z"))
-        //     ]))));
+        assert!(name_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::String(Cow::Borrowed("A")),
+                Value::String(Cow::Borrowed("z"))
+            ]))));
+        assert!(!name_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::String(Cow::Borrowed("z")),
+                Value::String(Cow::Borrowed("A")),
+            ]))));
 
         assert!(empty_name_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
-        // assert!(empty_name_owns
-        //     .get_annotations(&snapshot, &type_manager)
-        //     .unwrap()
-        //     .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
-        //         Value::String(Cow::Borrowed(" "))
-        //     ]))));
+        assert!(empty_name_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::String(Cow::Borrowed(" "))
+            ]))));
+        assert!(!empty_name_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![]))));
 
-        // assert!(balance_type
-        //     .get_annotations(&snapshot, &type_manager)
-        //     .unwrap()
-        //     .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
-        //         Value::Decimal(Decimal::MAX)
-        //     ]))));
+        assert!(balance_type
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
+                Value::Decimal(Decimal::MAX)
+            ]))));
+        assert!(!balance_type
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![]))));
         assert!(balance_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
 
         assert!(measurement_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
-        // assert!(measurement_owns
-        //     .get_annotations(&snapshot, &type_manager)
-        //     .unwrap()
-        //     .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
-        //         Value::Double(0.01),
-        //         Value::Double(0.3339848944)
-        //     ]))));
+        assert!(measurement_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::Double(0.01),
+                Value::Double(0.3339848944)
+            ]))));
+        assert!(!measurement_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::Double(0.3339848944),
+                Value::Double(0.01),
+            ]))));
+        assert!(!measurement_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::Double(0.1),
+                Value::Double(0.3339848944)
+            ]))));
+        assert!(!measurement_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::Double(0.01),
+                Value::Double(0.3339848945)
+            ]))));
 
         assert!(empty_measurement_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
-        // assert!(empty_measurement_owns
-        //     .get_annotations(&snapshot, &type_manager)
-        //     .unwrap()
-        //     .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
-        //         Value::Double(0.0)
-        //     ]))));
+        assert!(empty_measurement_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::Double(0.0)
+            ]))));
+        assert!(!empty_measurement_owns
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&OwnsAnnotation::Values(AnnotationValues::new(vec![
+                Value::Double(0.0000000001)
+            ]))));
 
-        // assert!(schedule_type
-        //     .get_annotations(&snapshot, &type_manager)
-        //     .unwrap()
-        //     .contains_key(&AttributeTypeAnnotation::Values(Values::new(vec![
-        //         Value::DateTimeTZ(now.clone()),
-        //     ]))));
+        assert!(schedule_type
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
+                Value::DateTimeTZ(now.clone()),
+            ]))));
+        assert!(!schedule_type
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
+                Value::DateTimeTZ(now.clone()), Value::DateTimeTZ(now.clone()),
+            ]))));
+        assert!(!schedule_type
+            .get_annotations(&snapshot, &type_manager)
+            .unwrap()
+            .contains_key(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
+                Value::DateTimeTZ(chrono::offset::Local::now().with_timezone(&tz)),
+            ]))));
         assert!(schedule_owns.get_annotations(&snapshot, &type_manager).unwrap().is_empty());
 
         assert!(valid_type.get_annotations(&snapshot, &type_manager).unwrap().is_empty());

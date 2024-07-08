@@ -25,6 +25,7 @@ use encoding::{
 };
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
+use encoding::value::value_type::{ValueType, ValueTypeCategory};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
@@ -134,7 +135,16 @@ impl AnnotationRegex {
         !self.regex.is_empty()
     }
 
-    // TODO: value_valid
+    pub fn value_valid(&self, value: &str) -> bool {
+        todo!()
+    }
+
+    pub fn value_type_valid(value_type: Option<ValueType>) -> bool {
+        match value_type {
+            Some(ValueType::String) => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
@@ -167,18 +177,28 @@ impl AnnotationRange {
     }
 
     // TODO: We might want to return different errors for incorrect order / unmatched value types
-    pub fn valid(&self) -> bool {
+    pub fn valid(&self, value_type: Option<ValueType>) -> bool {
         match &self.start_inclusive {
             None => match &self.end_inclusive {
                 None => false,
-                Some(_) => true,
+                Some(end_inclusive) => {
+                    let end_value_type = end_inclusive.value_type();
+                    value_type.unwrap_or(end_value_type.clone()) == end_value_type
+                },
             },
             Some(start_inclusive) => match &self.end_inclusive {
-                None => true,
+                None => {
+                    let start_value_type = start_inclusive.value_type();
+                    value_type.unwrap_or(start_value_type.clone()) == start_value_type
+                },
                 Some(end_inclusive) => {
                     if start_inclusive.value_type() != end_inclusive.value_type() {
                         return false;
                     }
+                    if value_type.unwrap_or(start_inclusive.value_type()) != start_inclusive.value_type() {
+                        return false;
+                    }
+
                     match start_inclusive {
                         Value::Boolean(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_boolean(),
                         Value::Long(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_long(),
@@ -200,6 +220,24 @@ impl AnnotationRange {
 
     pub fn value_valid(&self, value: Value<'static>) -> bool {
         self.value_satisfies_start(Some(value.clone())) && self.value_satisfies_end(Some(value))
+    }
+
+    pub fn value_type_valid(value_type: Option<ValueType>) -> bool {
+        match value_type {
+            Some(value_type) => match &value_type {
+                | ValueType::Boolean
+                | ValueType::Long
+                | ValueType::Double
+                | ValueType::Decimal
+                | ValueType::Date
+                | ValueType::DateTime
+                | ValueType::DateTimeTZ
+                | ValueType::String => true,
+
+                | ValueType::Duration | ValueType::Struct(_) => false,
+            },
+            None => false,
+        }
     }
 
     pub fn narrowed_correctly_by(&self, other: &Self) -> bool {
@@ -278,12 +316,16 @@ impl AnnotationValues {
     }
 
     // TODO: We might want to return different errors for empty / unmatched value types
-    pub fn valid(&self) -> bool {
+    pub fn valid(&self, value_type: Option<ValueType>) -> bool {
         let first = self.values.first();
         match first {
             None => false,
             Some(first_value) => {
                 let first_value_type = first_value.value_type();
+                if &value_type.unwrap_or(first_value_type.clone()) != &first_value_type {
+                    return false;
+                }
+
                 for value in &self.values {
                     if value.value_type() != first_value_type {
                         return false;
@@ -296,6 +338,25 @@ impl AnnotationValues {
 
     pub fn value_valid(&self, value: Value<'static>) -> bool {
         self.contains(&value)
+    }
+
+    pub fn value_type_valid(value_type: Option<ValueType>) -> bool {
+        match value_type {
+            Some(value_type) => match &value_type {
+                | ValueType::Boolean
+                | ValueType::Long
+                | ValueType::Double
+                | ValueType::Decimal
+                | ValueType::Date
+                | ValueType::DateTime
+                | ValueType::DateTimeTZ
+                | ValueType::Duration
+                | ValueType::String => true,
+
+                | ValueType::Struct(_) => false,
+            },
+            None => false,
+        }
     }
 
     pub fn narrowed_correctly_by(&self, other: &Self) -> bool {
