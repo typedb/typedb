@@ -67,7 +67,7 @@ impl Constraints {
         let type_ = Label::new(variable, type_.to_string());
         context.set_variable_category(variable, VariableCategory::Type, type_.clone().into())?;
         let as_ref = self.add_constraint(type_);
-        Ok(as_ref.as_type().unwrap())
+        Ok(as_ref.as_label().unwrap())
     }
 
     pub fn add_sub(
@@ -410,7 +410,7 @@ impl fmt::Display for Constraints {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Constraint<ID: IrID> {
-    Type(Label<ID>),
+    Label(Label<ID>),
     Sub(Sub<ID>),
     Isa(Isa<ID>),
     RolePlayer(RolePlayer<ID>),
@@ -423,7 +423,7 @@ pub enum Constraint<ID: IrID> {
 impl<ID: IrID> Constraint<ID> {
     pub fn ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
-            Constraint::Type(type_) => Box::new(type_.ids()),
+            Constraint::Label(label) => Box::new(label.ids()),
             Constraint::Sub(sub) => Box::new(sub.ids()),
             Constraint::Isa(isa) => Box::new(isa.ids()),
             Constraint::RolePlayer(rp) => Box::new(rp.ids()),
@@ -439,7 +439,7 @@ impl<ID: IrID> Constraint<ID> {
         F: FnMut(ID, ConstraintIDSide),
     {
         match self {
-            Constraint::Type(type_) => type_.ids_foreach(function),
+            Constraint::Label(label) => label.ids_foreach(function),
             Constraint::Sub(sub) => sub.ids_foreach(function),
             Constraint::Isa(isa) => isa.ids_foreach(function),
             Constraint::RolePlayer(rp) => rp.ids_foreach(function),
@@ -450,9 +450,9 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn as_type(&self) -> Option<&Label<ID>> {
+    pub(crate) fn as_label(&self) -> Option<&Label<ID>> {
         match self {
-            Constraint::Type(type_) => Some(type_),
+            Constraint::Label(label) => Some(label),
             _ => None,
         }
     }
@@ -510,7 +510,7 @@ impl<ID: IrID> Constraint<ID> {
 impl<ID: IrID> fmt::Display for Constraint<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Constraint::Type(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::Label(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Sub(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::Isa(constraint) => fmt::Display::fmt(constraint, f),
             Constraint::RolePlayer(constraint) => fmt::Display::fmt(constraint, f),
@@ -553,7 +553,7 @@ impl<ID: IrID> Label<ID> {
 
 impl<ID: IrID> From<Label<ID>> for Constraint<ID> {
     fn from(val: Label<ID>) -> Self {
-        Constraint::Type(val)
+        Constraint::Label(val)
     }
 }
 
@@ -563,12 +563,6 @@ impl<ID: IrID> fmt::Display for Label<ID> {
         // write!(f, "{: >width$} {} type {}", "", self.left, self.type_, width=f.width().unwrap_or(0))
         write!(f, "{} label {}", self.left, self.type_)
     }
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum IsaKind {
-    Exact,
-    Subtype,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -658,6 +652,12 @@ impl<ID: IrID> fmt::Display for Isa<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} isa {}", self.thing, self.type_)
     }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum IsaKind {
+    Exact,
+    Subtype,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

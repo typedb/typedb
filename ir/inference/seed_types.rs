@@ -160,7 +160,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
         let TypeInferenceGraph { conjunction, vertices, .. } = tig;
         for constraint in tig.conjunction.constraints().constraints() {
             match constraint {
-                Constraint::Type(c) => c.apply(self, vertices)?,
+                Constraint::Label(c) => c.apply(self, vertices)?,
                 Constraint::FunctionCallBinding(c) => c.apply(self, vertices)?,
                 _ => {}
             }
@@ -298,7 +298,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
             }
             Constraint::Has(has) => self.try_propagating_vertex_annotation_impl(has, vertices)?,
             Constraint::Comparison(cmp) => self.try_propagating_vertex_annotation_impl(cmp, vertices)?,
-            Constraint::ExpressionBinding(_) | Constraint::FunctionCallBinding(_) | Constraint::Type(_) => false,
+            Constraint::ExpressionBinding(_) | Constraint::FunctionCallBinding(_) | Constraint::Label(_) => false,
         };
         Ok(any_modified)
     }
@@ -432,7 +432,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeSeeder<'this, Snapshot> {
                 }
                 Constraint::Has(has) => edges.push(self.seed_edge(constraint, has, vertices)?),
                 Constraint::Comparison(cmp) => edges.push(self.seed_edge(constraint, cmp, vertices)?),
-                Constraint::ExpressionBinding(_) | Constraint::FunctionCallBinding(_) | Constraint::Type(_) => {} // Do nothing
+                Constraint::ExpressionBinding(_) | Constraint::FunctionCallBinding(_) | Constraint::Label(_) => {} // Do nothing
             }
         }
         for disj in &mut tig.nested_disjunctions {
