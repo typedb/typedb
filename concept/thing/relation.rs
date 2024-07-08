@@ -13,7 +13,7 @@ use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{
-            edge::{ThingEdgeRelationIndex, ThingEdgeRolePlayer},
+            edge::{ThingEdgeRolePlayerIndex, ThingEdgeRolePlayer},
             vertex_object::ObjectVertex,
         },
         type_::vertex::PrefixedTypeVertexEncoding,
@@ -497,21 +497,21 @@ fn storage_key_to_indexed_players<'a>(
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (RolePlayer<'a>, RolePlayer<'a>, Relation<'a>, u64) {
     let from_role_player = RolePlayer {
-        player: Object::new(ThingEdgeRelationIndex::read_from(storage_key.as_reference().byte_ref())),
-        role_type: RoleType::build_from_type_id(ThingEdgeRelationIndex::read_from_role_id(
+        player: Object::new(ThingEdgeRolePlayerIndex::read_from(storage_key.as_reference().byte_ref())),
+        role_type: RoleType::build_from_type_id(ThingEdgeRolePlayerIndex::read_from_role_id(
             storage_key.as_reference().byte_ref(),
         )),
     };
     let to_role_player = RolePlayer {
-        player: Object::new(ThingEdgeRelationIndex::read_to(storage_key.as_reference().byte_ref())),
-        role_type: RoleType::build_from_type_id(ThingEdgeRelationIndex::read_to_role_id(
+        player: Object::new(ThingEdgeRolePlayerIndex::read_to(storage_key.as_reference().byte_ref())),
+        role_type: RoleType::build_from_type_id(ThingEdgeRolePlayerIndex::read_to_role_id(
             storage_key.as_reference().byte_ref(),
         )),
     };
     (
         from_role_player,
         to_role_player,
-        Relation::new(ThingEdgeRelationIndex::read_relation(storage_key.as_reference().byte_ref())),
+        Relation::new(ThingEdgeRolePlayerIndex::read_relation(storage_key.as_reference().byte_ref())),
         decode_value_u64(value.as_reference()),
     )
 }

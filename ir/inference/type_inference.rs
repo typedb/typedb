@@ -112,10 +112,10 @@ impl TypeAnnotations {
         TypeAnnotations { variables, constraints }
     }
 
-    pub(crate) fn build(root_type_inference_graph: TypeInferenceGraph<'_>) -> Self {
+    pub(crate) fn build(inference_graph: TypeInferenceGraph<'_>) -> Self {
         let mut vertex_annotations = HashMap::new();
         let mut constraint_annotations = HashMap::new();
-        root_type_inference_graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
+        inference_graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
         Self::new(vertex_annotations, constraint_annotations)
     }
 

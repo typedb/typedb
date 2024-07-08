@@ -26,8 +26,7 @@ pub struct Filter {
 impl Filter {
     pub(crate) fn new(variables: Vec<&str>, context: &BlockContext) -> Result<Self, ModifierDefinitionError> {
         use ModifierDefinitionError::FilterVariableNotAvailable;
-        // TODO: convert named to block variables
-        let mut filter_variables = HashSet::new();
+        let mut filter_variables = HashSet::with_capacity(variables.len());
         for name in variables {
             match context.get_variable(name) {
                 None => Err(FilterVariableNotAvailable { name: name.to_string() })?,
@@ -46,9 +45,7 @@ pub struct Sort {
 impl Sort {
     pub(crate) fn new(variables: Vec<(&str, bool)>, context: &BlockContext) -> Result<Self, ModifierDefinitionError> {
         use ModifierDefinitionError::SortVariableNotAvailable;
-        // TODO: convert vars to pattern variables
-
-        let mut sort_variables = Vec::new();
+        let mut sort_variables = Vec::with_capacity(variables.len());
         for (name, is_ascending) in variables {
             match context.get_variable(name) {
                 None => Err(SortVariableNotAvailable { name: name.to_string() })?,

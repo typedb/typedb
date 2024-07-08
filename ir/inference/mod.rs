@@ -45,8 +45,8 @@ use std::{
 use concept::error::ConceptReadError;
 
 pub mod pattern_type_inference;
-mod seed_types;
 pub mod type_inference;
+mod type_seeder;
 pub mod value_type_inference;
 
 #[derive(Debug)]

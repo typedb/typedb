@@ -23,7 +23,7 @@ use encoding::{
         value::Value,
         value_struct::{StructIndexEntry, StructIndexEntryKey},
     },
-    AsBytes, Keyable, Prefixed,
+    AsBytes, Keyable,
 };
 use iterator::State;
 use lending_iterator::LendingIterator;
@@ -36,7 +36,7 @@ use storage::{
 use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{entity::Entity, object::Object, thing_manager::ThingManager, ThingAPI},
+    thing::{object::Object, thing_manager::ThingManager, ThingAPI},
     type_::{attribute_type::AttributeType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI},
     ByteReference, ConceptAPI, ConceptStatus,
 };

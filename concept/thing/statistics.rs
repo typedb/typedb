@@ -15,7 +15,7 @@ use bytes::Bytes;
 use durability::DurabilityRecordType;
 use encoding::graph::{
     thing::{
-        edge::{ThingEdgeHas, ThingEdgeRelationIndex, ThingEdgeRolePlayer},
+        edge::{ThingEdgeHas, ThingEdgeRolePlayerIndex, ThingEdgeRolePlayer},
         vertex_attribute::AttributeVertex,
         vertex_object::ObjectVertex,
     },
@@ -205,8 +205,8 @@ impl Statistics {
                     Relation::new(edge.from()).type_(),
                     delta,
                 )
-            } else if ThingEdgeRelationIndex::is_index(key_reference) {
-                let edge = ThingEdgeRelationIndex::new(Bytes::Reference(key_reference.byte_ref()));
+            } else if ThingEdgeRolePlayerIndex::is_index(key_reference) {
+                let edge = ThingEdgeRolePlayerIndex::new(Bytes::Reference(key_reference.byte_ref()));
                 self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta)
             } else if EntityType::is_decodable_from_key(key_reference) {
                 let type_ = EntityType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());

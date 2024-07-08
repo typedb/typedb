@@ -24,6 +24,16 @@ pub enum VariableValue<'a> {
     ValueList(Arc<[Value<'a>]>),
 }
 
+impl<'a> VariableValue<'a> {
+
+    pub fn as_thing(&self) -> &Thing<'a> {
+        match self {
+            VariableValue::Thing(thing) => thing,
+            _ => panic!("VariableValue is not a THing")
+        }
+    }
+}
+
 impl<'a> PartialOrd for VariableValue<'a> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {

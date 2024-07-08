@@ -103,7 +103,7 @@ impl FunctionalBlockBuilder {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockContext {
     variable_names: HashMap<Variable, String>,
     variable_declaration: HashMap<Variable, ScopeId>,
@@ -129,6 +129,10 @@ impl BlockContext {
             variable_categories: HashMap::new(),
             variable_optionality: HashMap::new(),
         }
+    }
+
+    pub fn get_variables_named(&self) -> &HashMap<Variable, String> {
+        &self.variable_names
     }
 
     pub fn get_variable_named(&self, name: &str, scope: ScopeId) -> Option<&Variable> {

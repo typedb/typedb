@@ -103,6 +103,16 @@ pub enum Thing<'a> {
     Attribute(Attribute<'a>),
 }
 
+impl<'a> Thing<'a> {
+
+    pub fn as_attribute(&self) -> Attribute<'_> {
+        match self {
+            Thing::Attribute(attribute) => attribute.as_reference(),
+            _ => panic!("Thing is not an Attribute."),
+        }
+    }
+}
+
 impl<'a> From<Object<'a>> for Thing<'a> {
     fn from(object: Object<'a>) -> Self {
         match object {
@@ -121,6 +131,12 @@ impl<'a> From<Entity<'a>> for Thing<'a> {
 impl<'a> From<Relation<'a>> for Thing<'a> {
     fn from(relation: Relation<'a>) -> Self {
         Thing::Relation(relation)
+    }
+}
+
+impl<'a> From<Attribute<'a>> for Thing<'a> {
+    fn from(attribute: Attribute<'a>) -> Self {
+        Self::Attribute(attribute)
     }
 }
 

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub(super) trait HasCommonTypeCache<T: KindAPI<'static>> {
+pub(crate) trait HasCommonTypeCache<T: KindAPI<'static>> {
     fn common_type_cache(&self) -> &CommonTypeCache<T>;
 }
 

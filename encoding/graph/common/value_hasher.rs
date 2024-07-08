@@ -33,7 +33,7 @@ pub(crate) trait HashedID<const TOTAL_LENGTH: usize> {
     where
         Snapshot: ReadableSnapshot,
     {
-        let mut hash_bytes = &hasher(value_bytes).to_be_bytes()[0..Self::HASHID_HASH_LENGTH];
+        let hash_bytes = &hasher(value_bytes).to_be_bytes()[0..Self::HASHID_HASH_LENGTH];
         let key_without_tail_byte = ByteArray::copy_concat([key_without_hash.bytes(), hash_bytes]);
         match Self::disambiguate(snapshot, key_without_tail_byte, value_bytes)? {
             Either::First(tail) => Ok(Either::First(Self::concat_hash_and_tail(&hash_bytes, tail))),

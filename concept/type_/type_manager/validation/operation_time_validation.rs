@@ -1123,9 +1123,8 @@ impl OperationTimeValidation {
         let all_owns: HashMap<AttributeType<'static>, Owns<'static>> =
             TypeReader::get_capabilities(snapshot, owner.clone().into_owned_object_type())
                 .map_err(SchemaValidationError::ConceptRead)?;
-        let found_owns = all_owns
-            .iter()
-            .find(|(existing_owns_attribute_type, existing_owns)| **existing_owns_attribute_type == attribute_type);
+        let found_owns =
+            all_owns.iter().find(|(existing_owns_attribute_type, _)| **existing_owns_attribute_type == attribute_type);
 
         match found_owns {
             Some((_, owns)) => {
@@ -1135,7 +1134,7 @@ impl OperationTimeValidation {
                     let owns_owner = owns.owner();
                     Err(SchemaValidationError::CannotUnsetInheritedOwns(
                         get_label_or_schema_err(snapshot, attribute_type)?,
-                        get_label_or_schema_err(snapshot, owner)?,
+                        get_label_or_schema_err(snapshot, owns_owner)?,
                     ))
                 }
             }
@@ -1152,7 +1151,7 @@ impl OperationTimeValidation {
             TypeReader::get_capabilities(snapshot, player.clone().into_owned_object_type())
                 .map_err(SchemaValidationError::ConceptRead)?;
         let found_plays =
-            all_plays.iter().find(|(existing_plays_role_type, existing_plays)| **existing_plays_role_type == role_type);
+            all_plays.iter().find(|(existing_plays_role_type, _)| **existing_plays_role_type == role_type);
 
         match found_plays {
             Some((_, plays)) => {

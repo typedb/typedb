@@ -21,7 +21,7 @@ use encoding::{
         type_::{
             edge::TypeEdgeEncoding,
             property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
-            vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
+            vertex::TypeVertexEncoding,
             vertex_generator::TypeVertexGenerator,
             Kind,
         },
@@ -56,7 +56,7 @@ use crate::{
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
         type_manager::{type_reader::TypeReader, validation::SchemaValidationError},
-        Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        Capability, KindAPI, ObjectTypeAPI, Ordering, PlayerAPI, TypeAPI,
     },
 };
 

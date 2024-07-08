@@ -9,12 +9,12 @@ use std::fmt::{Display, Formatter};
 use ir::pattern::IrID;
 
 mod function_executor;
-mod iterator;
+mod instruction;
 mod pattern_executor;
 pub mod program_executor;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
-pub(crate) struct Position {
+pub struct Position {
     position: u32,
 }
 
@@ -23,7 +23,7 @@ impl Position {
         Position { position }
     }
 
-    pub(crate) fn as_usize(&self) -> usize {
+    pub fn as_usize(&self) -> usize {
         self.position as usize
     }
 }

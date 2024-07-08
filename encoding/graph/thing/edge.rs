@@ -470,13 +470,13 @@ impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeRolePlayer<'a> {
 ///
 /// [rp_index][from_object][to_object][relation][from_role_id][to_role_id]
 ///
-pub struct ThingEdgeRelationIndex<'a> {
+pub struct ThingEdgeRolePlayerIndex<'a> {
     bytes: Bytes<'a, BUFFER_KEY_INLINE>,
 }
 
-impl<'a> ThingEdgeRelationIndex<'a> {
+impl<'a> ThingEdgeRolePlayerIndex<'a> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
-    const PREFIX: Prefix = Prefix::EdgeRelationIndex;
+    const PREFIX: Prefix = Prefix::EdgeRolePlayerIndex;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
     const RANGE_FROM: Range<usize> = Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + ObjectVertex::LENGTH;
@@ -489,7 +489,7 @@ impl<'a> ThingEdgeRelationIndex<'a> {
     pub const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + 1 * ObjectVertex::LENGTH;
 
     pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
-        let index = ThingEdgeRelationIndex { bytes: bytes };
+        let index = ThingEdgeRolePlayerIndex { bytes: bytes };
         debug_assert_eq!(index.prefix(), Self::PREFIX);
         index
     }
@@ -500,7 +500,7 @@ impl<'a> ThingEdgeRelationIndex<'a> {
         relation: ObjectVertex<'_>,
         from_role_type_id: TypeID,
         to_role_type_id: TypeID,
-    ) -> ThingEdgeRelationIndex<'static> {
+    ) -> ThingEdgeRolePlayerIndex<'static> {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(from.bytes().bytes());
@@ -508,10 +508,10 @@ impl<'a> ThingEdgeRelationIndex<'a> {
         bytes.bytes_mut()[Self::RANGE_RELATION].copy_from_slice(relation.bytes().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM_ROLE_TYPE_ID].copy_from_slice(&from_role_type_id.bytes());
         bytes.bytes_mut()[Self::RANGE_TO_ROLE_TYPE_ID].copy_from_slice(&to_role_type_id.bytes());
-        ThingEdgeRelationIndex { bytes: Bytes::Array(bytes) }
+        ThingEdgeRolePlayerIndex { bytes: Bytes::Array(bytes) }
     }
 
-    pub fn prefix_from(from: ObjectVertex<'_>) -> StorageKey<'static, { ThingEdgeRelationIndex::LENGTH_PREFIX_FROM }> {
+    pub fn prefix_from(from: ObjectVertex<'_>) -> StorageKey<'static, { ThingEdgeRolePlayerIndex::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
         bytes.bytes_mut()[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
         bytes.bytes_mut()[Self::RANGE_FROM].copy_from_slice(from.bytes().bytes());
@@ -567,7 +567,7 @@ impl<'a> ThingEdgeRelationIndex<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ThingEdgeRelationIndex<'a> {
+impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ThingEdgeRolePlayerIndex<'a> {
     fn bytes(&'a self) -> ByteReference<'a> {
         self.bytes.as_reference()
     }
@@ -577,9 +577,9 @@ impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ThingEdgeRelationIndex<'a> {
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for ThingEdgeRelationIndex<'a> {}
+impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for ThingEdgeRolePlayerIndex<'a> {}
 
-impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeRelationIndex<'a> {
+impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ThingEdgeRolePlayerIndex<'a> {
     fn keyspace(&self) -> EncodingKeyspace {
         Self::KEYSPACE
     }

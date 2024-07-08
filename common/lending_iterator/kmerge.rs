@@ -26,9 +26,9 @@ enum State {
 impl<I: LendingIterator, F> KMergeBy<I, F>
 where
     I: LendingIterator,
-    F: Borrow<dyn for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering>> + Copy + 'static,
+    F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + Copy + 'static,
 {
-    pub fn new(mut iters: impl IntoIterator<Item = Peekable<I>>, compare_fn: F) -> Self {
+    pub fn new(iters: impl IntoIterator<Item = Peekable<I>>, cmp: F) -> Self {
         let iters = iters
             .into_iter()
             .map(|mut peekable| {
@@ -36,7 +36,8 @@ where
                 peekable
             })
             .filter(|peekable| peekable.get_peeked().is_some())
-            .map(|peekable| PeekWrapper { iter: peekable, cmp_fn: compare_fn });
+            .map(|peekable| PeekWrapper { iter: peekable, cmp_fn: cmp });
+        // Peek wrapper reverses the comparator to create a min heap
         let queue = BinaryHeap::from_iter(iters);
         Self { iterators: queue, next_iterator: None, state: State::Init, phantom_compare: PhantomData::default() }
     }
@@ -55,7 +56,7 @@ where
 impl<I, F> LendingIterator for KMergeBy<I, F>
 where
     I: LendingIterator,
-    F: Borrow<dyn for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering>> + Copy + 'static,
+    F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + Copy + 'static,
 {
     type Item<'a> = I::Item<'a>;
 
@@ -92,27 +93,28 @@ struct PeekWrapper<I: LendingIterator, F: ?Sized> {
 impl<I, F> PartialOrd for PeekWrapper<I, F>
 where
     I: LendingIterator,
-    F: Borrow<dyn for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering>> + 'static,
+    F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + 'static,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some((self.cmp_fn.borrow())((self.iter.get_peeked().unwrap(), other.iter.get_peeked().unwrap())))
+        Some(self.cmp(other))
     }
 }
 
 impl<I, F> Ord for PeekWrapper<I, F>
 where
     I: LendingIterator,
-    F: Borrow<dyn for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering>> + 'static,
+    F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + 'static,
 {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap()
+        // Reverse the comparator to create a min-ordered heap element
+        (self.cmp_fn.borrow())((self.iter.get_peeked().unwrap(), other.iter.get_peeked().unwrap())).reverse()
     }
 }
 
 impl<I, F> PartialEq for PeekWrapper<I, F>
 where
     I: LendingIterator,
-    F: Borrow<dyn for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering>> + 'static,
+    F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + 'static,
 {
     fn eq(&self, other: &Self) -> bool {
         self.partial_cmp(other).unwrap().is_eq()
@@ -122,6 +124,6 @@ where
 impl<I, F> Eq for PeekWrapper<I, F>
 where
     I: LendingIterator,
-    F: Borrow<dyn for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering>> + 'static,
+    F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + 'static,
 {
 }

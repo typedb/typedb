@@ -12,7 +12,7 @@ pub(crate) fn apply_optimisations(program: &mut Program) {
 
     // 1. apply role player indexing
 
-    // last: eliminate redundant constraints (eg. $x type person, $x isa $_generated -- both covered by type inference).
+    // last: eliminate redundant constraints (eg. $x type person, $x isa $_generated -- both covered by type inference and embeddable as a filter into an IR).
 
     // Ideas:
     // - we should move subtrees/graphs of a query that have no returned variables into a new pattern: "Check", which are only checked for a single answer

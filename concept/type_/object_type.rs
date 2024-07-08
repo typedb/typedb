@@ -11,7 +11,7 @@ use encoding::{
     graph::type_::vertex::{TypeVertex, TypeVertexEncoding},
     layout::prefix::Prefix,
     value::label::Label,
-    AsBytes, Prefixed,
+    Prefixed,
 };
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};

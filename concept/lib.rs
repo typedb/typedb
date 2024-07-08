@@ -18,10 +18,6 @@ pub mod type_;
 
 pub trait ConceptAPI<'a>: Eq + PartialEq {}
 
-pub(crate) trait GetStatus {
-    fn get_status(&self, key: StorageKeyReference<'_>) -> ConceptStatus;
-}
-
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ConceptStatus {
     Inserted,

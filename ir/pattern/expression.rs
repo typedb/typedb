@@ -8,12 +8,21 @@ use std::{
     fmt::{Display, Formatter},
     marker::PhantomData,
 };
+use std::iter::empty;
 
 use crate::pattern::IrID;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Expression<ID: IrID> {
     phantom: PhantomData<ID>,
+}
+
+impl<ID: IrID> Expression<ID> {
+
+    pub fn ids(&self) -> impl Iterator<Item=ID> {
+        todo!();
+        empty()
+    }
 }
 
 impl<ID: IrID> Display for Expression<ID> {

@@ -12,6 +12,7 @@ use std::{
 
 use answer::variable::Variable;
 use itertools::Itertools;
+use typeql;
 
 use crate::{
     pattern::{
@@ -138,7 +139,7 @@ impl<'cx> ConstraintsBuilder<'cx> {
         Ok(constraint.as_has().unwrap())
     }
 
-    pub fn add_role_player_(
+    pub fn add_role_player(
         &mut self,
         relation: Variable,
         player: Variable,
@@ -158,28 +159,6 @@ impl<'cx> ConstraintsBuilder<'cx> {
         }
         let constraint = self.constraints.add_constraint(role_player);
         Ok(constraint.as_role_player().unwrap())
-    }
-
-    pub fn add_role_player(
-        &mut self,
-        relation: Variable,
-        player: Variable,
-        role: Option<Variable>,
-    ) -> Result<&RolePlayer<Variable>, PatternDefinitionError> {
-        debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, relation)
-                && self.context.is_variable_available(self.constraints.scope, player)
-                && (role.is_none() || self.context.is_variable_available(self.constraints.scope, role.unwrap()))
-        );
-        let role_player = RolePlayer::new(relation, player, role);
-        // TODO: Introduce relation category
-        self.context.set_variable_category(relation, VariableCategory::Object, role_player.clone().into())?;
-        self.context.set_variable_category(player, VariableCategory::Object, role_player.clone().into())?;
-        if let Some(role_type) = role {
-            self.context.set_variable_category(role_type, VariableCategory::RoleType, role_player.clone().into())?;
-        }
-        let as_ref = self.constraints.add_constraint(role_player);
-        Ok(as_ref.as_role_player().unwrap())
     }
 
     pub fn add_comparison(
@@ -377,6 +356,12 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 }
+
+// impl<'a, T: Into<Constraint<ID>> + 'a, ID: IrID> Into<&'a Constraint<ID>> for &'a T {
+//     fn into(self) -> &'a Constraint<ID> {
+//         todo!()
+//     }
+// }
 
 impl<ID: IrID> fmt::Display for Constraint<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -661,20 +646,20 @@ impl<ID: IrID> ExpressionBinding<ID> {
         Self { left, expression }
     }
 
-    fn ids(&self) -> impl Iterator<Item = ID> {
-        panic!("Unimplemented");
-        empty()
+    pub fn expression(&self) -> &Expression<ID> {
+        &self.expression
     }
 
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> {
         [self.left].into_iter()
     }
 
-    pub fn ids_foreach<F>(&self, function: F)
+    pub fn ids_foreach<F>(&self, mut function: F)
     where
         F: FnMut(ID, ConstraintIDSide),
     {
-        todo!()
+        self.ids_assigned().for_each(|id| function(id, ConstraintIDSide::Left));
+        self.expression().ids().for_each(|id| function(id, ConstraintIDSide::Right));
     }
 }
 
@@ -705,7 +690,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         &self.assigned
     }
 
-    pub(crate) fn function_call(&self) -> &FunctionCall<ID> {
+    pub fn function_call(&self) -> &FunctionCall<ID> {
         &self.function_call
     }
 
@@ -726,8 +711,8 @@ impl<ID: IrID> FunctionCallBinding<ID> {
             function(*id, ConstraintIDSide::Left)
         }
 
-        for id in self.function_call.call_id_mapping().keys() {
-            function(*id, ConstraintIDSide::Right)
+        for id in self.function_call.argument_ids() {
+            function(id, ConstraintIDSide::Right)
         }
     }
 }

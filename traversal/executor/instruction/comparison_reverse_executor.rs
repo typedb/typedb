@@ -8,6 +8,6 @@ use ir::pattern::constraint::Comparison;
 
 use crate::executor::Position;
 
-pub(crate) struct ComparisonReverseProvider {
+pub(crate) struct ComparisonReverseIteratorExecutor {
     comparision: Comparison<Position>,
 }

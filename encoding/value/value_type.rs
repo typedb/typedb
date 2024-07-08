@@ -5,7 +5,6 @@
  */
 
 use std::{
-    collections::HashSet,
     fmt,
     fmt::{Display, Formatter},
     ops::Range,

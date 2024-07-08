@@ -16,10 +16,8 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     inference::{
-        seed_types::TypeSeeder,
-        type_inference::{
-            ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations, VertexAnnotations,
-        },
+        type_inference::{ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations},
+        type_seeder::TypeSeeder,
         TypeInferenceError,
     },
     pattern::{conjunction::Conjunction, constraint::Constraint},
@@ -55,6 +53,8 @@ It should also be possible to interleave the two phases, as in the original desi
         Pick a variable from the frontier.
         For each constraint attached, addOrIntersect types possible for the neighbor variable, add neighbor-var to frontier if it's annotations have changed
 */
+
+pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
 
 pub(crate) fn infer_types_for_block<'graph>(
     snapshot: &impl ReadableSnapshot,
@@ -165,7 +165,6 @@ impl<'this> TypeInferenceGraph<'this> {
 }
 
 #[derive(Debug)]
-
 pub struct TypeInferenceEdge<'this> {
     pub(crate) constraint: &'this Constraint<Variable>,
     pub(crate) left: Variable,

@@ -295,7 +295,7 @@ fn attribute_cleanup_on_concurrent_detach() {
             .iter()
             .find(|entity| {
                 entity
-                    .has_attribute(
+                    .has_attribute_with_value(
                         &snapshot_1,
                         &thing_manager,
                         name_type.clone(),
@@ -334,7 +334,7 @@ fn attribute_cleanup_on_concurrent_detach() {
             .iter()
             .find(|entity| {
                 entity
-                    .has_attribute(
+                    .has_attribute_with_value(
                         &snapshot_2,
                         &thing_manager,
                         name_type.clone(),

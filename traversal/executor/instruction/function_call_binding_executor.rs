@@ -4,10 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use ir::pattern::constraint::Comparison;
+use ir::pattern::constraint::FunctionCallBinding;
 
 use crate::executor::Position;
 
-pub(crate) struct ComparisonProvider {
-    comparison: Comparison<Position>,
+pub(crate) struct FunctionCallBindingIteratorExecutor {
+    function_call_binding: FunctionCallBinding<Position>,
 }

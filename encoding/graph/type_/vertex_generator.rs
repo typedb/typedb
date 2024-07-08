@@ -27,8 +27,6 @@ impl Default for TypeVertexGenerator {
 }
 
 impl TypeVertexGenerator {
-    const U16_LENGTH: usize = std::mem::size_of::<u16>();
-
     pub fn new() -> TypeVertexGenerator {
         TypeVertexGenerator {
             next_entity: TypeVertexAllocator::new(Prefix::VertexEntityType),
