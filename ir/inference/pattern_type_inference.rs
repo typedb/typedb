@@ -9,24 +9,20 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type as TypeAnnotation};
+use answer::{variable::Variable, Type as TypeAnnotation, Type};
 use concept::type_::type_manager::TypeManager;
+use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     inference::{
         seed_types::TypeSeeder,
         type_inference::{
-            ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations, ProgramAnnotations,
-            TypeAnnotations, VertexAnnotations,
+            ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations, VertexAnnotations,
         },
         TypeInferenceError,
     },
-    pattern::{
-        conjunction::Conjunction,
-        constraint::{Constraint, RolePlayer},
-        ScopeId,
-    },
+    pattern::{conjunction::Conjunction, constraint::Constraint},
 };
 
 /*
@@ -109,13 +105,16 @@ impl<'this> TypeInferenceGraph<'this> {
         is_modified
     }
 
-    pub(crate) fn populate_scoped_annotations(self, scoped_annotations: &mut HashMap<ScopeId, TypeAnnotations>) {
-        let mut constraints = HashMap::with_capacity(self.edges.len());
-        let TypeInferenceGraph { vertices, edges, .. } = self;
+    pub(crate) fn collect_type_annotations(
+        self,
+        variable_annotations: &mut HashMap<Variable, Arc<HashSet<Type>>>,
+        constraint_annotations: &mut HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
+    ) {
+        let TypeInferenceGraph { vertices, edges, nested_disjunctions, nested_negations, nested_optionals, .. } = self;
 
         let mut combine_role_player_edges = HashMap::new();
         edges.into_iter().for_each(|edge| {
-            let TypeInferenceEdge { constraint, left, right, left_to_right, right_to_left, .. } = edge;
+            let TypeInferenceEdge { constraint, left_to_right, right_to_left, .. } = edge;
             if let Constraint::RolePlayer(rp) = edge.constraint {
                 if let Some((other_left_right, other_right_left)) = combine_role_player_edges.remove(&edge.right) {
                     let lrf_annotation = {
@@ -135,22 +134,28 @@ impl<'this> TypeInferenceGraph<'this> {
                             )
                         }
                     };
-                    constraints
+                    constraint_annotations
                         .insert(constraint.clone(), ConstraintTypeAnnotations::LeftRightFiltered(lrf_annotation));
                 } else {
                     combine_role_player_edges.insert(edge.right, (left_to_right, right_to_left));
                 }
             } else {
                 let lr_annotations = LeftRightAnnotations::build(left_to_right, right_to_left);
-                constraints.insert(constraint.clone(), ConstraintTypeAnnotations::LeftRight(lr_annotations));
+                constraint_annotations.insert(constraint.clone(), ConstraintTypeAnnotations::LeftRight(lr_annotations));
             }
         });
 
-        let variables = vertices
-            .into_iter()
-            .map(|(k, v)| (k, Arc::new(v.into_iter().collect::<HashSet<TypeAnnotation>>())))
-            .collect();
-        scoped_annotations.insert(self.conjunction.scope_id(), TypeAnnotations::new(variables, constraints));
+        vertices.into_iter().for_each(|(variable, types)| {
+            if !variable_annotations.contains_key(&variable) {
+                variable_annotations.insert(variable, Arc::new(types.into_iter().collect::<HashSet<TypeAnnotation>>()));
+            }
+        });
+
+        chain(
+            chain(nested_negations, nested_optionals),
+            nested_disjunctions.into_iter().flat_map(|disjunction| disjunction.disjunction),
+        )
+        .for_each(|nested| nested.collect_type_annotations(variable_annotations, constraint_annotations));
     }
 }
 
