@@ -242,9 +242,10 @@ impl<'a> RelationType<'a> {
         type_manager: &TypeManager,
         name: &str,
         ordering: Ordering,
-    ) -> Result<RoleType<'static>, ConceptWriteError> {
+    ) -> Result<Relates<'static>, ConceptWriteError> {
         let label = Label::build_scoped(name, self.get_label(snapshot, type_manager).unwrap().name().as_str());
-        type_manager.create_role_type(snapshot, &label, self.clone().into_owned(), false, ordering)
+        let role_type = type_manager.create_role_type(snapshot, &label, self.clone().into_owned(), false, ordering)?;
+        Ok(Relates::new(self.clone().into_owned(), role_type))
     }
 
     pub fn get_relates_declared<'m>(

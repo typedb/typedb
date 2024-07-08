@@ -232,9 +232,11 @@ pub mod tests {
             // Relations
             let fears = type_manager.create_relation_type(&mut snapshot, &Label::build(LABEL_FEARS), false).unwrap();
             let has_fear =
-                fears.create_relates(&mut snapshot, &type_manager, LABEL_HAS_FEAR, Ordering::Unordered).unwrap();
-            let is_feared =
-                fears.create_relates(&mut snapshot, &type_manager, LABEL_IS_FEARED, Ordering::Unordered).unwrap();
+                fears.create_relates(&mut snapshot, &type_manager, LABEL_HAS_FEAR, Ordering::Unordered).unwrap().role();
+            let is_feared = fears
+                .create_relates(&mut snapshot, &type_manager, LABEL_IS_FEARED, Ordering::Unordered)
+                .unwrap()
+                .role();
             cat.set_plays(&mut snapshot, &type_manager, has_fear.clone());
             dog.set_plays(&mut snapshot, &type_manager, is_feared.clone());
 

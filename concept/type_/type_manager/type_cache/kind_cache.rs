@@ -278,7 +278,7 @@ impl RelatesCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Relates<'static>, RelatesCache> {
         let mut map = HashMap::new();
         let mut it = snapshot.iterate_range(KeyRange::new_within(
-            TypeEdge::build_prefix(Prefix::EdgePlays),
+            TypeEdge::build_prefix(Prefix::EdgeRelates),
             TypeEdge::FIXED_WIDTH_ENCODING,
         ));
 

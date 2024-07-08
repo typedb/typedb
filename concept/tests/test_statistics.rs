@@ -11,8 +11,8 @@ use std::{collections::BTreeMap, sync::Arc};
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager, ThingAPI},
     type_::{
-        annotation::AnnotationCardinality, role_type::RoleTypeAnnotation, type_manager::TypeManager, ObjectTypeAPI,
-        Ordering, OwnerAPI,
+        annotation::AnnotationCardinality, relates::RelatesAnnotation, role_type::RoleTypeAnnotation,
+        type_manager::TypeManager, ObjectTypeAPI, Ordering, OwnerAPI,
     },
 };
 use durability::wal::WAL;
@@ -311,13 +311,14 @@ fn put_plays() {
     let mut snapshot = storage.clone().open_snapshot_schema();
     let person_type = type_manager.create_entity_type(&mut snapshot, &person_label, false).unwrap();
     let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label, false).unwrap();
-    let friend_role =
+    let friend_relates =
         friendship_type.create_relates(&mut snapshot, &type_manager, friend_role_name, Ordering::Unordered).unwrap();
-    friend_role
+    let friend_role = friend_relates.role();
+    friend_relates
         .set_annotation(
             &mut snapshot,
             &type_manager,
-            RoleTypeAnnotation::Cardinality(AnnotationCardinality::new(1, Some(4))),
+            RelatesAnnotation::Cardinality(AnnotationCardinality::new(1, Some(4))),
         )
         .unwrap();
     let person = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
