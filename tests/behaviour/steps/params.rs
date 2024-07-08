@@ -85,7 +85,6 @@ use concept::type_::{
 use concept::type_::annotation::{AnnotationRange, AnnotationValues};
 use encoding::value::decimal_value::Decimal;
 use storage::snapshot::ReadableSnapshot;
-use crate::params::ParamsParsingError::{CannotParseAnnotation, CannotParseAnnotationsValue, CannotParseValue};
 
 impl FromStr for Boolean {
     type Err = String;
@@ -393,8 +392,8 @@ pub(crate) struct Annotation {
 }
 
 impl Annotation {
-    pub fn into_typedb(self, value_type: Option<TypeDBValueType>) -> Result<TypeDBAnnotation, dyn Error> {
-        Ok(match self.raw_annotation.as_str() {
+    pub fn into_typedb(self, value_type: Option<TypeDBValueType>) -> TypeDBAnnotation {
+        match self.raw_annotation.as_str() {
             "@abstract" => TypeDBAnnotation::Abstract(AnnotationAbstract),
             "@independent" => TypeDBAnnotation::Independent(AnnotationIndependent),
             "@key" => TypeDBAnnotation::Key(AnnotationKey),
@@ -438,7 +437,7 @@ impl Annotation {
                 let values = values["@values(".len()..values.len() - ")".len()].trim();
                 let values = values.split(',');
                 TypeDBAnnotation::Values(AnnotationValues::new(
-                    values.map(|value| Value::from_str(value).unwrap().into_typedb(value_type.clone()).unwrap())
+                    values.map(|value| Value::from_str(value).unwrap().into_typedb(value_type.clone())).collect_vec()
                 ))
             }
             range if range.starts_with("@range") => {
@@ -450,10 +449,10 @@ impl Annotation {
                 let value_type = value_type.unwrap();
                 let range = range["@range(".len()..range.len() - ")".len()].trim();
                 let (min, max) =
-                    range.split_once("..").map(|(min, max)| (min.trim(), max.trim()))?;
+                    range.split_once("..").map(|(min, max)| (min.trim(), max.trim())).unwrap();
                 TypeDBAnnotation::Range(AnnotationRange::new(
-                    if min.is_empty() { None } else { Some(Value::from_str(min)?.into_typedb(value_type?.clone())?) },
-                    if max.is_empty() { None } else { Some(Value::from_str(max)?.into_typedb(value_type?)?) },
+                    if min.is_empty() { None } else { Some(Value::from_str(min).unwrap().into_typedb(value_type.clone())) },
+                    if max.is_empty() { None } else { Some(Value::from_str(max).unwrap().into_typedb(value_type)) },
                 ))
             }
             subkey if subkey.starts_with("@subkey") => {
@@ -466,7 +465,7 @@ impl Annotation {
                 // TypeDBAnnotation::Subkey(AnnotationSubkey::new(label.to_owned()))
             }
             _ => unreachable!("Cannot parse annotation {:?}", self.raw_annotation)
-        })
+        }
     }
 }
 
@@ -535,7 +534,7 @@ impl FromStr for Annotations {
                 let next_at = if let Some(index) = s[cursor..].find('@') { cursor + index } else { s.len() };
                 let anno = s[cursor..next_at].trim();
                 cursor = next_at;
-                Some(anno.parse::<Annotation>().map(|anno| anno.into_typedb(None)?))
+                Some(anno.parse::<Annotation>().map(|anno| anno.into_typedb(None)))
                 // TODO: Refactor parsing to support passing ValueTypes into anno.into_typedb
             }
         })

@@ -11,6 +11,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use ::concept::thing::{attribute::Attribute, object::Object};
 use cucumber::{StatsWriter, World};
+use ::concept::type_::attribute_type::AttributeType;
 use database::Database;
 use server::typedb;
 use storage::durability_client::WALClient;

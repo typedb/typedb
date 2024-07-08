@@ -135,8 +135,9 @@ pub async fn get_owns_set_annotation(
     with_schema_tx!(context, |tx| {
         let attr_type =
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
-        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
-        let res = owns.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb().into());
+        let owns = object_type.get_owns_attribute(&tx.snapshot, &tx.type_manager, attr_type.clone()).unwrap().unwrap();
+        let value_type = attr_type.get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
+        let res = owns.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(value_type).into());
         may_error.check(&res);
     });
 }
@@ -181,10 +182,11 @@ pub async fn get_owns_annotations_contains(
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns =
             object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let value_type = owns.attribute().get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
         let actual_contains = owns
             .get_annotations(&tx.snapshot, &tx.type_manager)
             .unwrap()
-            .contains_key(&annotation.into_typedb().into());
+            .contains_key(&annotation.into_typedb(value_type).into());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -237,10 +239,11 @@ pub async fn get_owns_declared_annotations_contains(
             tx.type_manager.get_attribute_type(&tx.snapshot, &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns =
             object_type.get_owns_attribute_transitive(&tx.snapshot, &tx.type_manager, attr_type).unwrap().unwrap();
+        let value_type = owns.attribute().get_value_type(&tx.snapshot, &tx.type_manager).unwrap();
         let actual_contains = owns
             .get_annotations_declared(&tx.snapshot, &tx.type_manager)
             .unwrap()
-            .contains(&annotation.into_typedb().into());
+            .contains(&annotation.into_typedb(value_type).into());
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }

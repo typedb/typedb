@@ -431,7 +431,7 @@ pub async fn relation_role_set_annotation(
             .unwrap()
             .unwrap();
 
-        let parsed_annotation = annotation.into_typedb();
+        let parsed_annotation = annotation.into_typedb(None);
         let res;
         match parsed_annotation {
             annotation::Annotation::Abstract(_) => {
@@ -495,7 +495,7 @@ pub async fn relation_role_annotations_contain(
             .unwrap()
             .unwrap();
 
-        let parsed_annotation = annotation.into_typedb();
+        let parsed_annotation = annotation.into_typedb(None);
         let parsed_annotation_category = parsed_annotation.clone().category();
         let actual_contains;
         if RoleTypeAnnotation::try_getting_default(parsed_annotation_category).is_ok() {
@@ -582,7 +582,7 @@ pub async fn relation_role_declared_annotations_contain(
             .unwrap()
             .unwrap();
 
-        let parsed_annotation = annotation.into_typedb();
+        let parsed_annotation = annotation.into_typedb(None);
         let parsed_annotation_category = parsed_annotation.clone().category();
         let actual_contains;
         if RoleTypeAnnotation::try_getting_default(parsed_annotation_category).is_ok() {

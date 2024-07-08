@@ -14,6 +14,7 @@ use cucumber::gherkin::Step;
 use encoding::graph::type_::Kind;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
+use encoding::value::value_type::ValueType;
 
 use crate::{
     generic_step, params,
@@ -41,6 +42,33 @@ macro_rules! with_type {
             }
             Kind::Relation => {
                 let $assign_to =
+                    $tx.type_manager.get_relation_type(&$tx.snapshot, &$label.into_typedb()).unwrap().unwrap();
+                $block
+            }
+            Kind::Role => unreachable!("Can only address roles through relation(relation_label) get role(role_name)"),
+        };
+    };
+}
+
+#[macro_export]
+macro_rules! with_type_and_value_type {
+    ($tx:ident, $kind:expr, $label:ident, $assign_type_to:ident, $assign_value_type_to:ident, $block:block) => {
+        use encoding::graph::type_::Kind;
+        let mut $assign_value_type_to: Option<ValueType> = None;
+        match $kind.into_typedb() {
+            Kind::Attribute => {
+                let $assign_type_to =
+                    $tx.type_manager.get_attribute_type(&$tx.snapshot, &$label.into_typedb()).unwrap().unwrap();
+                $assign_value_type_to = $assign_type_to.get_value_type(&$tx.snapshot, &$tx.type_manager).unwrap();
+                $block
+            }
+            Kind::Entity => {
+                let $assign_type_to =
+                    $tx.type_manager.get_entity_type(&$tx.snapshot, &$label.into_typedb()).unwrap().unwrap();
+                $block
+            }
+            Kind::Relation => {
+                let $assign_type_to =
                     $tx.type_manager.get_relation_type(&$tx.snapshot, &$label.into_typedb()).unwrap().unwrap();
                 $block
             }
@@ -178,8 +206,8 @@ pub async fn type_set_annotation(
     may_error: MayError,
 ) {
     with_write_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
-            let res = type_.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb().into());
+        with_type_and_value_type!(tx, root_label, type_label, type_, value_type, {
+            let res = type_.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(value_type).into());
             may_error.check(&res);
         });
     });
@@ -213,11 +241,11 @@ pub async fn type_annotations_contain(
     annotation: Annotation,
 ) {
     with_read_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type_and_value_type!(tx, root_label, type_label, type_, value_type, {
             let actual_contains = type_
                 .get_annotations(&tx.snapshot, &tx.type_manager)
                 .unwrap()
-                .contains_key(&annotation.into_typedb().into());
+                .contains_key(&annotation.into_typedb(value_type).into());
             assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
         });
     });
@@ -287,11 +315,11 @@ pub async fn type_declared_annotations_contain(
     annotation: Annotation,
 ) {
     with_read_tx!(context, |tx| {
-        with_type!(tx, root_label, type_label, type_, {
+        with_type_and_value_type!(tx, root_label, type_label, type_, value_type, {
             let actual_contains = type_
                 .get_annotations_declared(&tx.snapshot, &tx.type_manager)
                 .unwrap()
-                .contains(&annotation.into_typedb().into());
+                .contains(&annotation.into_typedb(value_type).into());
             assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
         });
     });
