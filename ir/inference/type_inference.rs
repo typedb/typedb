@@ -36,37 +36,13 @@ Note: On function call boundaries, can assume the current set of schema types pe
 
 pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
 
-pub fn infer_types(
-    program: &Program,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-) -> ProgramAnnotations {
+pub fn infer_types(program: &Program, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> TypeAnnotations {
     // let mut entry_type_annotations = TypeAnnotations::new(HashMap::new(), HashMap::new());
     // let mut function_type_annotations: HashMap<DefinitionKey<'static>, TypeAnnotations> = HashMap::new();
     // todo!()
     // TODO: Extend to functions when we implement them
     let root_tig = infer_types_for_conjunction(snapshot, type_manager, program.entry().conjunction()).unwrap();
-
-    ProgramAnnotations::build(root_tig)
-}
-
-pub struct ProgramAnnotations {
-    pub(crate) scoped_annotations: HashMap<ScopeId, TypeAnnotations>,
-}
-
-impl ProgramAnnotations {
-    fn build(root_type_inference_graph: TypeInferenceGraph<'_>) -> Self {
-        let mut scoped_annotations = HashMap::new();
-        root_type_inference_graph.populate_scoped_annotations(&mut scoped_annotations);
-        ProgramAnnotations { scoped_annotations }
-    }
-
-    fn get_annotations_for<'conj, 'this>(
-        &'this self,
-        conjunction: &'conj Conjunction,
-    ) -> Option<&'this TypeAnnotations> {
-        self.scoped_annotations.get(&conjunction.scope_id())
-    }
+    TypeAnnotations::build(root_tig)
 }
 
 pub struct TypeAnnotations {
@@ -82,6 +58,13 @@ impl TypeAnnotations {
         TypeAnnotations { variables: variables, constraints: constraints }
     }
 
+    pub(crate) fn build(root_type_inference_graph: TypeInferenceGraph<'_>) -> Self {
+        let mut vertex_annotations = HashMap::new();
+        let mut constraint_annotations = HashMap::new();
+        root_type_inference_graph.populate_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
+        Self::new(vertex_annotations, constraint_annotations)
+    }
+
     pub fn variable_annotations(&self, variable: Variable) -> Option<Arc<HashSet<Type>>> {
         self.variables.get(&variable).map(|annotations| annotations.clone())
     }
@@ -91,6 +74,7 @@ impl TypeAnnotations {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum ConstraintTypeAnnotations {
     LeftRight(LeftRightAnnotations),
     LeftRightFiltered(LeftRightFilteredAnnotations), // note: function calls, comparators, and value assignments are not stored here, since they do not actually co-constrain Schema types possible.
@@ -106,6 +90,7 @@ impl ConstraintTypeAnnotations {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct LeftRightAnnotations {
     left_to_right: Arc<BTreeMap<Type, Vec<Type>>>,
     right_to_left: Arc<BTreeMap<Type, Vec<Type>>>,
@@ -136,6 +121,7 @@ impl LeftRightAnnotations {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct LeftRightFilteredAnnotations {
     // pub(crate) left_to_right: BTreeMap<Type, (BTreeSet<Type>, HashSet<Type>)>,
     // pub(crate) right_to_left: BTreeMap<Type, (BTreeSet<Type>, HashSet<Type>)>,
@@ -179,5 +165,137 @@ impl LeftRightFilteredAnnotations {
             filters_on_right.insert(player, role_set.into_iter().collect());
         }
         Self { left_to_right, filters_on_right, right_to_left, filters_on_left }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use std::{
+        collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+        sync::Arc,
+    };
+
+    use answer::{variable::Variable, Type};
+    use concept::type_::{entity_type::EntityType, relation_type::RelationType, role_type::RoleType};
+    use encoding::graph::type_::vertex::{PrefixedTypeVertexEncoding, TypeID};
+    use itertools::Itertools;
+
+    use crate::{
+        inference::{
+            pattern_type_inference::{tests::expected_edge, NestedTypeInferenceGraphDisjunction, TypeInferenceGraph},
+            type_inference::{ConstraintTypeAnnotations, LeftRightFilteredAnnotations, TypeAnnotations},
+        },
+        pattern::constraint::{Constraint, RolePlayer},
+        program::block::FunctionalBlock,
+    };
+
+    #[test]
+    fn test_translation() {
+        let (var_relation, var_role_type, var_player) = (0..3).map(|i| Variable::new(i)).collect_tuple().unwrap();
+        let type_rel_0 = Type::Relation(RelationType::build_from_type_id(TypeID::build(0)));
+        let type_rel_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(1)));
+        let type_role_0 = Type::RoleType(RoleType::build_from_type_id(TypeID::build(0)));
+        let type_role_1 = Type::RoleType(RoleType::build_from_type_id(TypeID::build(1)));
+        let type_player_0 = Type::Entity(EntityType::build_from_type_id(TypeID::build(0)));
+        let type_player_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(2)));
+
+        let dummy = FunctionalBlock::new();
+        let constraint1 = Constraint::RolePlayer(RolePlayer::new(var_relation, var_player, Some(var_role_type)));
+        let constraint2 = Constraint::RolePlayer(RolePlayer::new(var_relation, var_player, Some(var_role_type)));
+        let nested1 = TypeInferenceGraph {
+            conjunction: dummy.conjunction(),
+            vertices: BTreeMap::from([
+                (var_relation, BTreeSet::from([type_rel_0.clone()])),
+                (var_role_type, BTreeSet::from([type_role_0.clone()])),
+                (var_player, BTreeSet::from([type_player_0.clone()])),
+            ]),
+            edges: vec![
+                expected_edge(
+                    &constraint1,
+                    var_relation,
+                    var_role_type,
+                    vec![(type_rel_0.clone(), type_role_0.clone())],
+                ),
+                expected_edge(
+                    &constraint1,
+                    var_player,
+                    var_role_type,
+                    vec![(type_player_0.clone(), type_role_0.clone())],
+                ),
+            ],
+            nested_disjunctions: vec![],
+            nested_negations: vec![],
+            nested_optionals: vec![],
+        };
+        let vertex_annotations = BTreeMap::from([
+            (var_relation, BTreeSet::from([type_rel_1.clone()])),
+            (var_role_type, BTreeSet::from([type_role_1.clone()])),
+            (var_player, BTreeSet::from([type_player_1.clone()])),
+        ]);
+        let shared_variables: BTreeSet<Variable> = vertex_annotations.keys().map(|v| *v).collect();
+        let nested2 = TypeInferenceGraph {
+            conjunction: dummy.conjunction(),
+            vertices: vertex_annotations.clone(),
+            edges: vec![
+                expected_edge(
+                    &constraint1,
+                    var_relation,
+                    var_role_type,
+                    vec![(type_rel_1.clone(), type_role_1.clone())],
+                ),
+                expected_edge(
+                    &constraint1,
+                    var_player,
+                    var_role_type,
+                    vec![(type_player_1.clone(), type_role_1.clone())],
+                ),
+            ],
+            nested_disjunctions: vec![],
+            nested_negations: vec![],
+            nested_optionals: vec![],
+        };
+        let tig = TypeInferenceGraph {
+            conjunction: dummy.conjunction(),
+            vertices: BTreeMap::from([
+                (var_relation, BTreeSet::from([type_rel_0.clone(), type_rel_1.clone()])),
+                (var_role_type, BTreeSet::from([type_role_0.clone(), type_role_1.clone()])),
+                (var_player, BTreeSet::from([type_player_0.clone(), type_player_1.clone()])),
+            ]),
+            edges: vec![],
+            nested_disjunctions: vec![NestedTypeInferenceGraphDisjunction {
+                disjunction: vec![nested1, nested2],
+                shared_variables,
+                shared_vertex_annotations: vertex_annotations,
+            }],
+            nested_negations: vec![],
+            nested_optionals: vec![],
+        };
+        let type_annotations = TypeAnnotations::build(tig);
+
+        let lra1 = LeftRightFilteredAnnotations {
+            left_to_right: BTreeMap::from([(type_rel_0.clone(), vec![type_player_0.clone()])]),
+            filters_on_right: BTreeMap::from([(type_player_0.clone(), HashSet::from([type_role_0.clone()]))]),
+            right_to_left: BTreeMap::from([(type_player_0.clone(), vec![type_rel_0.clone()])]),
+            filters_on_left: BTreeMap::from([(type_rel_0.clone(), HashSet::from([type_role_0.clone()]))]),
+        };
+        let lra2 = LeftRightFilteredAnnotations {
+            left_to_right: BTreeMap::from([(type_rel_1.clone(), vec![type_player_1.clone()])]),
+            filters_on_right: BTreeMap::from([(type_player_1.clone(), HashSet::from([type_role_1.clone()]))]),
+            right_to_left: BTreeMap::from([(type_player_1.clone(), vec![type_rel_1.clone()])]),
+            filters_on_left: BTreeMap::from([(type_rel_1.clone(), HashSet::from([type_role_1.clone()]))]),
+        };
+        let expected_annotations = TypeAnnotations::new(
+            HashMap::from([
+                (var_relation, Arc::new(HashSet::from([type_rel_0.clone(), type_rel_1.clone()]))),
+                (var_role_type, Arc::new(HashSet::from([type_role_0.clone(), type_role_1.clone()]))),
+                (var_player, Arc::new(HashSet::from([type_player_0.clone(), type_player_1.clone()]))),
+            ]),
+            HashMap::from([
+                (constraint1, ConstraintTypeAnnotations::LeftRightFiltered(lra1)),
+                (constraint2, ConstraintTypeAnnotations::LeftRightFiltered(lra2)),
+            ]),
+        );
+        assert_eq!(expected_annotations.variables, type_annotations.variables);
+        assert_eq!(expected_annotations.constraints, type_annotations.constraints);
     }
 }
