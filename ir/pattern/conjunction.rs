@@ -26,14 +26,7 @@ impl Conjunction {
         Self { scope_id, constraints: Constraints::new(scope_id), nested_patterns: Vec::new() }
     }
 
-    pub(crate) fn build_from_typeql_match(
-        context: &mut BlockContext,
-        match_: &typeql::query::stage::Match,
-    ) -> Result<Self, PatternDefinitionError> {
-        Self::build_from_typeql_patterns(context, ScopeId::ROOT, &match_.patterns)
-    }
-
-    fn build_from_typeql_patterns(
+    pub(crate) fn build_from_typeql_patterns(
         context: &mut BlockContext,
         scope_id: ScopeId,
         patterns: &[typeql::Pattern],

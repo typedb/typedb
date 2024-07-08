@@ -42,7 +42,7 @@ impl FunctionalBlock {
 
     pub fn from_match(match_: &typeql::query::stage::Match) -> Result<Self, PatternDefinitionError> {
         let mut context = BlockContext::new();
-        let conjunction = Conjunction::build_from_typeql_match(&mut context, match_)?;
+        let conjunction = Conjunction::build_from_typeql_patterns(&mut context, ScopeId::ROOT, &match_.patterns)?;
         Ok(Self { conjunction, modifiers: Vec::new(), context })
     }
 
