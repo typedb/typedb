@@ -16,7 +16,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     inference::pattern_type_inference::{infer_types_for_conjunction, TypeInferenceGraph},
     pattern::constraint::Constraint,
-    program::program::Program,
+    program::{block::BlockContext, program::Program},
 };
 
 /*
@@ -36,12 +36,17 @@ Note: On function call boundaries, can assume the current set of schema types pe
 
 pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
 
-pub fn infer_types(program: &Program, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> TypeAnnotations {
+pub fn infer_types(
+    program: &Program,
+    snapshot: &impl ReadableSnapshot,
+    context: &BlockContext,
+    type_manager: &TypeManager,
+) -> TypeAnnotations {
     // let mut entry_type_annotations = TypeAnnotations::new(HashMap::new(), HashMap::new());
     // let mut function_type_annotations: HashMap<DefinitionKey<'static>, TypeAnnotations> = HashMap::new();
     // todo!()
     // TODO: Extend to functions when we implement them
-    let root_tig = infer_types_for_conjunction(snapshot, type_manager, program.entry().conjunction()).unwrap();
+    let root_tig = infer_types_for_conjunction(snapshot, context, type_manager, program.entry().conjunction()).unwrap();
     TypeAnnotations::build(root_tig)
 }
 

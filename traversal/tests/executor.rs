@@ -27,6 +27,7 @@ use encoding::{
 };
 use ir::{
     inference::type_inference::{ConstraintTypeAnnotations, LeftRightAnnotations, TypeAnnotations},
+    pattern::constraint::Has,
     program::block::FunctionalBlock,
 };
 use lending_iterator::LendingIterator;
@@ -127,22 +128,24 @@ fn traverse_has() {
     }
     snapshot.commit().unwrap();
 
-    // query:
-    //   match
-    //    $person has name $name, has age $age;
-    //   limit 3;
-    //   filter $person, $age;
+    let query = "match
+        $person has name $name, has age $age;
+        limit 3;
+        filter $person, $age;";
+
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
 
     // IR
-    let mut block = FunctionalBlock::new();
-    let mut conjunction = block.conjunction_mut();
-    let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
-    let var_age = conjunction.get_or_declare_variable(&"age").unwrap();
-    let var_name = conjunction.get_or_declare_variable(&"name").unwrap();
-    let has_age = conjunction.constraints_mut().add_has(var_person, var_age).unwrap().clone();
-    let has_name = conjunction.constraints_mut().add_has(var_person, var_name).unwrap().clone();
+    let mut block = FunctionalBlock::from_match(&match_).unwrap();
     block.add_limit(3);
-    let filter = block.add_filter(vec![&"person", &"age"]).unwrap().clone();
+    block.add_filter(vec!["person", "age"]).unwrap();
+
+    let var_person = *block.context().get_variable_named("person", block.scope_id()).unwrap();
+    let var_age = *block.context().get_variable_named("age", block.scope_id()).unwrap();
+    let var_name = *block.context().get_variable_named("name", block.scope_id()).unwrap();
+    // TODO `Constraints` accessor?
+    let has_age = Has::new(var_person, var_age);
+    let has_name = Has::new(var_person, var_name);
 
     // Plan
     let steps = vec![Step::new(
@@ -194,7 +197,7 @@ fn traverse_has() {
 
     {
         let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
-        let (type_manager, thing_manager) = load_managers(storage.clone());
+        let (_, thing_manager) = load_managers(storage.clone());
         let thing_manager = Arc::new(thing_manager);
 
         let iterator = executor.into_iterator(snapshot, thing_manager);

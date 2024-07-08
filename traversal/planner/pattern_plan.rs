@@ -8,7 +8,6 @@ use std::collections::HashSet;
 
 use answer::variable::Variable;
 use ir::pattern::constraint::{Comparison, ExpressionBinding, FunctionCallBinding, Has, RolePlayer};
-use itertools::Itertools;
 
 pub struct PatternPlan {
     steps: Vec<Step>,

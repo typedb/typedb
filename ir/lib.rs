@@ -4,11 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![deny(unused_must_use)]
+#![deny(elided_lifetimes_in_paths)]
+#![allow(unused_variables)]
+
 use std::{error::Error, fmt};
 
 use answer::variable::Variable;
 
-use crate::pattern::{constraint::Constraint, variable_category::VariableCategory, IrID};
+use crate::pattern::{constraint::Constraint, variable_category::VariableCategory};
 
 pub mod inference;
 mod optimisation;
@@ -49,7 +53,7 @@ impl Error for PatternDefinitionError {
             Self::DisjointVariableReuse { .. } => None,
             Self::VariableCategoryMismatch { .. } => None,
             Self::FunctionArgumentUnused { .. } => None,
-            PatternDefinitionError::FunctionCallReturnArgCountMismatch { .. } => None,
+            Self::FunctionCallReturnArgCountMismatch { .. } => None,
         }
     }
 }

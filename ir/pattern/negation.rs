@@ -15,20 +15,15 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub(crate) struct Negation {
-    context: Arc<Mutex<BlockContext>>,
+pub struct Negation {
     conjunction: Conjunction,
 }
 
 impl Negation {
-    pub(crate) fn new_child(parent_scope_id: ScopeId, context: Arc<Mutex<BlockContext>>) -> Self {
-        let scope_id = context.lock().unwrap().create_child_scope(parent_scope_id);
-        let conjunction = Conjunction::new(scope_id, context.clone());
-        Self { context, conjunction }
-    }
-
-    pub(crate) fn context(&self) -> MutexGuard<BlockContext> {
-        self.context.lock().unwrap()
+    pub(crate) fn new_child(parent_scope_id: ScopeId, context: &mut BlockContext) -> Self {
+        let scope_id = context.create_child_scope(parent_scope_id);
+        let conjunction = Conjunction::new(scope_id);
+        Self { conjunction }
     }
 
     pub(crate) fn conjunction(&self) -> &Conjunction {

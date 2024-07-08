@@ -759,7 +759,7 @@ impl Batch {
 
     fn new(width: u32) -> Self {
         let size = width * BATCH_ROWS_MAX;
-        Batch { width: width, data: vec![VariableValue::Empty; size as usize], entries: 0 }
+        Batch { width, data: vec![VariableValue::Empty; size as usize], entries: 0 }
     }
 
     fn rows_count(&self) -> u32 {

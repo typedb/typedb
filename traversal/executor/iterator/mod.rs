@@ -4,11 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, sync::Arc};
+use std::{cmp::Ordering, collections::HashMap};
 
 use answer::{variable::Variable, variable_value::VariableValue, Thing};
 use concept::{
-    error::{ConceptError, ConceptReadError},
+    error::ConceptReadError,
     thing::{has::Has, thing_manager::ThingManager},
 };
 use ir::inference::type_inference::TypeAnnotations;
@@ -32,7 +32,7 @@ use crate::{
         pattern_executor::{ImmutableRow, Row},
         Position,
     },
-    planner::pattern_plan::{Iterate, IterateMode},
+    planner::pattern_plan::Iterate,
 };
 
 mod comparison_provider;

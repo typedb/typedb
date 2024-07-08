@@ -12,6 +12,7 @@ rust_test(
     srcs =  ["pattern.rs"],
     deps = [
         "//ir:ir",
+        "@vaticle_typeql//rust:typeql",
     ],
 )
 
@@ -24,6 +25,7 @@ rust_test(
         "//common/bytes",
         "//encoding",
         "//ir:ir",
+        "@vaticle_typeql//rust:typeql",
     ],
 )
 

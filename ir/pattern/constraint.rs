@@ -4,15 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    fmt::{Debug, Display, Formatter},
-    iter::empty,
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashMap, fmt, iter::empty};
 
 use answer::variable::Variable;
-use encoding::value::label::Label;
 use itertools::Itertools;
 
 use crate::{
@@ -29,7 +23,6 @@ use crate::{
 #[derive(Debug)]
 pub struct Constraints {
     scope: ScopeId,
-    context: Arc<Mutex<BlockContext>>,
     constraints: Vec<Constraint<Variable>>,
 
     // TODO: could also store indexes into the Constraints vec? Depends how expensive Constraints are and if we delete
@@ -39,10 +32,9 @@ pub struct Constraints {
 }
 
 impl Constraints {
-    pub(crate) fn new(scope: ScopeId, context: Arc<Mutex<BlockContext>>) -> Self {
+    pub(crate) fn new(scope: ScopeId) -> Self {
         Self {
             scope,
-            context,
             constraints: Vec::new(),
             left_constrained_index: HashMap::new(),
             right_constrained_index: HashMap::new(),
@@ -50,106 +42,122 @@ impl Constraints {
         }
     }
 
-    pub(crate) fn constraints(&self) -> &Vec<Constraint<Variable>> {
+    pub(crate) fn constraints(&self) -> &[Constraint<Variable>] {
         &self.constraints
     }
 
-    fn add_constraint(&mut self, constraint: impl Into<Constraint<Variable>> + Clone) -> &Constraint<Variable> {
+    fn add_constraint(&mut self, constraint: impl Into<Constraint<Variable>>) -> &Constraint<Variable> {
         let constraint = constraint.into();
-        self.constraints.push(constraint.clone());
         constraint.ids_foreach(|var, side| match side {
-            ConstraintIDSide::Left => {
-                self.left_constrained_index.entry(var).or_insert_with(|| Vec::new()).push(constraint.clone());
-            }
-            ConstraintIDSide::Right => {
-                self.right_constrained_index.entry(var).or_insert_with(|| Vec::new()).push(constraint.clone());
-            }
-            ConstraintIDSide::Filter => {
-                self.filter_constrained_index.entry(var).or_insert_with(|| Vec::new()).push(constraint.clone());
-            }
+            ConstraintIDSide::Left => self.left_constrained_index.entry(var).or_default().push(constraint.clone()),
+            ConstraintIDSide::Right => self.right_constrained_index.entry(var).or_default().push(constraint.clone()),
+            ConstraintIDSide::Filter => self.filter_constrained_index.entry(var).or_default().push(constraint.clone()),
         });
+        self.constraints.push(constraint);
         self.constraints.last().unwrap()
     }
 
-    pub fn add_type(&mut self, variable: Variable, type_: &str) -> Result<&Type<Variable>, PatternDefinitionError> {
-        debug_assert!(self.context.lock().unwrap().is_variable_available(self.scope, variable));
-        let type_ = Type::new(variable, type_.to_string());
-        self.context.lock().unwrap().set_variable_category(variable, VariableCategory::Type, type_.clone().into())?;
+    pub fn add_label(
+        &mut self,
+        context: &mut BlockContext,
+        variable: Variable,
+        type_: &str,
+    ) -> Result<&Label<Variable>, PatternDefinitionError> {
+        debug_assert!(context.is_variable_available(self.scope, variable));
+        let type_ = Label::new(variable, type_.to_string());
+        context.set_variable_category(variable, VariableCategory::Type, type_.clone().into())?;
         let as_ref = self.add_constraint(type_);
-        Ok(as_ref.as_type().unwrap())
+        Ok(as_ref.as_label().unwrap())
     }
 
     pub fn add_sub(
         &mut self,
+        context: &mut BlockContext,
         subtype: Variable,
         supertype: Variable,
     ) -> Result<&Sub<Variable>, PatternDefinitionError> {
-        debug_assert!(self.context.lock().unwrap().is_variable_available(self.scope, subtype));
-        debug_assert!(self.context.lock().unwrap().is_variable_available(self.scope, supertype));
+        debug_assert!(context.is_variable_available(self.scope, subtype));
+        debug_assert!(context.is_variable_available(self.scope, supertype));
         let sub = Sub::new(subtype, supertype);
-        self.context.lock().unwrap().set_variable_category(subtype, VariableCategory::Type, sub.clone().into())?;
-        self.context.lock().unwrap().set_variable_category(supertype, VariableCategory::Type, sub.clone().into())?;
+        context.set_variable_category(subtype, VariableCategory::Type, sub.clone().into())?;
+        context.set_variable_category(supertype, VariableCategory::Type, sub.clone().into())?;
         let as_ref = self.add_constraint(sub);
         Ok(as_ref.as_sub().unwrap())
     }
 
-    pub fn add_isa(&mut self, thing: Variable, type_: Variable) -> Result<&Isa<Variable>, PatternDefinitionError> {
+    pub fn add_isa(
+        &mut self,
+        context: &mut BlockContext,
+        kind: IsaKind,
+        thing: Variable,
+        type_: Variable,
+    ) -> Result<&Isa<Variable>, PatternDefinitionError> {
         debug_assert!(
-            self.context.lock().unwrap().is_variable_available(self.scope, thing)
-                && self.context.lock().unwrap().is_variable_available(self.scope, type_),
+            context.is_variable_available(self.scope, thing) && context.is_variable_available(self.scope, type_)
         );
-        let isa = Isa::new(thing, type_);
-        self.context.lock().unwrap().set_variable_category(thing, VariableCategory::Thing, isa.clone().into())?;
-        self.context.lock().unwrap().set_variable_category(type_, VariableCategory::Type, isa.clone().into())?;
-        let as_ref = self.add_constraint(isa);
-        Ok(as_ref.as_isa().unwrap())
+        let isa = Isa::new(kind, thing, type_);
+        context.set_variable_category(thing, VariableCategory::Thing, isa.clone().into())?;
+        context.set_variable_category(type_, VariableCategory::Type, isa.clone().into())?;
+        let constraint = self.add_constraint(isa);
+        Ok(constraint.as_isa().unwrap())
     }
 
-    pub fn add_has(&mut self, owner: Variable, attribute: Variable) -> Result<&Has<Variable>, PatternDefinitionError> {
+    pub fn add_has(
+        &mut self,
+        context: &mut BlockContext,
+        owner: Variable,
+        attribute: Variable,
+    ) -> Result<&Has<Variable>, PatternDefinitionError> {
         debug_assert!(
-            self.context.lock().unwrap().is_variable_available(self.scope, owner)
-                && self.context.lock().unwrap().is_variable_available(self.scope, attribute)
+            context.is_variable_available(self.scope, owner) && context.is_variable_available(self.scope, attribute)
         );
-        let has = Has::new(owner, attribute);
-        self.context.lock().unwrap().set_variable_category(owner, VariableCategory::Object, has.clone().into())?;
-        self.context.lock().unwrap().set_variable_category(
-            attribute,
-            VariableCategory::Attribute,
-            has.clone().into(),
-        )?;
-        let as_ref = self.add_constraint(has);
-        Ok(as_ref.as_has().unwrap())
+        let has = Constraint::from(Has::new(owner, attribute));
+        context.set_variable_category(owner, VariableCategory::Object, has.clone())?;
+        context.set_variable_category(attribute, VariableCategory::Attribute, has.clone())?;
+        let constraint = self.add_constraint(has);
+        Ok(constraint.as_has().unwrap())
+    }
+
+    pub fn add_role_player_(
+        &mut self,
+        context: &mut BlockContext,
+        relation: Variable,
+        player: Variable,
+        role_type: Option<Variable>,
+    ) -> Result<&RolePlayer<Variable>, PatternDefinitionError> {
+        debug_assert!(
+            context.is_variable_available(self.scope, relation)
+                && context.is_variable_available(self.scope, player)
+                && !role_type.is_some_and(|role_type| !context.is_variable_available(self.scope, role_type))
+        );
+        let role_player = Constraint::from(RolePlayer::new(relation, player, role_type));
+        context.set_variable_category(relation, VariableCategory::Object, role_player.clone())?;
+        context.set_variable_category(player, VariableCategory::Object, role_player.clone())?;
+        if let Some(role_type) = role_type {
+            context.set_variable_category(role_type, VariableCategory::Type, role_player.clone())?;
+        }
+        let constraint = self.add_constraint(role_player);
+        Ok(constraint.as_role_player().unwrap())
     }
 
     pub fn add_role_player(
         &mut self,
+        context: &mut BlockContext,
         relation: Variable,
         player: Variable,
         role: Option<Variable>,
     ) -> Result<&RolePlayer<Variable>, PatternDefinitionError> {
         debug_assert!(
-            self.context.lock().unwrap().is_variable_available(self.scope, relation)
-                && self.context.lock().unwrap().is_variable_available(self.scope, player)
-                && (role.is_none() || self.context.lock().unwrap().is_variable_available(self.scope, role.unwrap()))
+            context.is_variable_available(self.scope, relation)
+                && context.is_variable_available(self.scope, player)
+                && (role.is_none() || context.is_variable_available(self.scope, role.unwrap()))
         );
         let role_player = RolePlayer::new(relation, player, role);
         // TODO: Introduce relation category
-        self.context.lock().unwrap().set_variable_category(
-            relation,
-            VariableCategory::Object,
-            role_player.clone().into(),
-        )?;
-        self.context.lock().unwrap().set_variable_category(
-            player,
-            VariableCategory::Object,
-            role_player.clone().into(),
-        )?;
+        context.set_variable_category(relation, VariableCategory::Object, role_player.clone().into())?;
+        context.set_variable_category(player, VariableCategory::Object, role_player.clone().into())?;
         if let Some(role_type) = role {
-            self.context.lock().unwrap().set_variable_category(
-                role_type,
-                VariableCategory::RoleType,
-                role_player.clone().into(),
-            )?;
+            context.set_variable_category(role_type, VariableCategory::RoleType, role_player.clone().into())?;
         }
         let as_ref = self.add_constraint(role_player);
         Ok(as_ref.as_role_player().unwrap())
@@ -157,16 +165,14 @@ impl Constraints {
 
     pub fn add_comparison(
         &mut self,
+        context: &mut BlockContext,
         lhs: Variable,
         rhs: Variable,
     ) -> Result<&Comparison<Variable>, PatternDefinitionError> {
-        debug_assert!(
-            self.context.lock().unwrap().is_variable_available(self.scope, lhs)
-                && self.context.lock().unwrap().is_variable_available(self.scope, rhs)
-        );
+        debug_assert!(context.is_variable_available(self.scope, lhs) && context.is_variable_available(self.scope, rhs));
         let comparison = Comparison::new(lhs, rhs);
-        self.context.lock().unwrap().set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
-        self.context.lock().unwrap().set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
+        context.set_variable_category(lhs, VariableCategory::Value, comparison.clone().into())?;
+        context.set_variable_category(rhs, VariableCategory::Value, comparison.clone().into())?;
 
         let as_ref = self.add_constraint(comparison);
         Ok(as_ref.as_comparison().unwrap())
@@ -174,11 +180,12 @@ impl Constraints {
 
     pub fn add_function_call(
         &mut self,
+        context: &mut BlockContext,
         assigned: Vec<Variable>,
         function_call: FunctionCall<Variable>,
     ) -> Result<&FunctionCallBinding<Variable>, PatternDefinitionError> {
         use PatternDefinitionError::FunctionCallReturnArgCountMismatch;
-        debug_assert!(assigned.iter().all(|var| self.context.lock().unwrap().is_variable_available(self.scope, *var)));
+        debug_assert!(assigned.iter().all(|var| context.is_variable_available(self.scope, *var)));
 
         if assigned.len() != function_call.returns().len() {
             Err(FunctionCallReturnArgCountMismatch {
@@ -190,14 +197,10 @@ impl Constraints {
         let binding = FunctionCallBinding::new(assigned, function_call);
 
         for (index, var) in binding.ids_assigned().enumerate() {
-            self.context.lock().unwrap().set_variable_category(
-                var,
-                binding.function_call().returns()[index].0,
-                binding.clone().into(),
-            )?;
+            context.set_variable_category(var, binding.function_call().returns()[index].0, binding.clone().into())?;
             match binding.function_call.returns()[index].1 {
                 VariableOptionality::Required => {}
-                VariableOptionality::Optional => self.context.lock().unwrap().set_variable_is_optional(var),
+                VariableOptionality::Optional => context.set_variable_is_optional(var),
             }
         }
         let as_ref = self.add_constraint(binding);
@@ -206,23 +209,197 @@ impl Constraints {
 
     pub fn add_expression(
         &mut self,
+        context: &mut BlockContext,
         variable: Variable,
         expression: Expression<Variable>,
     ) -> Result<&ExpressionBinding<Variable>, PatternDefinitionError> {
-        debug_assert!(self.context.lock().unwrap().is_variable_available(self.scope, variable));
+        debug_assert!(context.is_variable_available(self.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
-        self.context.lock().unwrap().set_variable_category(
-            variable,
-            VariableCategory::Value,
-            binding.clone().into(),
-        )?;
+        context.set_variable_category(variable, VariableCategory::Value, binding.clone().into())?;
         let as_ref = self.add_constraint(binding);
         Ok(as_ref.as_expression_binding().unwrap())
     }
 }
 
-impl Display for Constraints {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl Constraints {
+    pub(super) fn extend_from_typeql_statement(
+        &mut self,
+        context: &mut BlockContext,
+        stmt: &typeql::Statement,
+    ) -> Result<(), PatternDefinitionError> {
+        match stmt {
+            typeql::Statement::Is(_) => todo!(),
+            typeql::Statement::InStream(_) => todo!(),
+            typeql::Statement::Comparison(_) => todo!(),
+            typeql::Statement::Assignment(_) => todo!(),
+            typeql::Statement::Thing(thing) => self.extend_from_typeql_thing_statement(context, thing)?,
+            typeql::Statement::AttributeValue(_) => todo!(),
+            typeql::Statement::AttributeComparison(_) => todo!(),
+            typeql::Statement::Type(type_) => self.extend_from_typeql_type_statement(context, type_)?,
+        }
+        Ok(())
+    }
+
+    fn extend_from_typeql_thing_statement(
+        &mut self,
+        context: &mut BlockContext,
+        thing: &typeql::statement::Thing,
+    ) -> Result<(), PatternDefinitionError> {
+        let var = match &thing.head {
+            typeql::statement::thing::Head::Variable(var) => self.register_typeql_var(context, var)?,
+            typeql::statement::thing::Head::Relation(rel) => {
+                let relation = context.create_anonymous_variable(self.scope)?;
+                self.add_typeql_relation(context, relation, rel)?;
+                relation
+            }
+        };
+        for constraint in &thing.constraints {
+            match constraint {
+                typeql::statement::thing::Constraint::Isa(isa) => self.add_typeql_isa(context, var, isa)?,
+                typeql::statement::thing::Constraint::Iid(_) => todo!(),
+                typeql::statement::thing::Constraint::Has(has) => self.add_typeql_has(context, var, has)?,
+                typeql::statement::thing::Constraint::Links(links) => {
+                    self.add_typeql_relation(context, var, &links.relation)?
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn extend_from_typeql_type_statement(
+        &mut self,
+        context: &mut BlockContext,
+        type_: &typeql::statement::Type,
+    ) -> Result<(), PatternDefinitionError> {
+        let var = self.register_typeql_type_var(context, &type_.type_)?;
+        for constraint in &type_.constraints {
+            assert!(constraint.annotations.is_empty(), "TODO: handle type statement annotations");
+            match &constraint.base {
+                typeql::statement::type_::ConstraintBase::Sub(_) => todo!(),
+                typeql::statement::type_::ConstraintBase::Label(label) => match label {
+                    typeql::statement::type_::LabelConstraint::Name(label) => {
+                        self.add_label(context, var, label.as_str())?;
+                    }
+                    typeql::statement::type_::LabelConstraint::Scoped(_) => todo!(),
+                },
+                typeql::statement::type_::ConstraintBase::ValueType(_) => todo!(),
+                typeql::statement::type_::ConstraintBase::Owns(_) => todo!(),
+                typeql::statement::type_::ConstraintBase::Relates(_) => todo!(),
+                typeql::statement::type_::ConstraintBase::Plays(_) => todo!(),
+            }
+        }
+        Ok(())
+    }
+
+    fn register_typeql_var(
+        &mut self,
+        context: &mut BlockContext,
+        var: &typeql::Variable,
+    ) -> Result<Variable, PatternDefinitionError> {
+        match var {
+            typeql::Variable::Named(_, name) => context.get_or_declare_variable_named(name.as_str(), self.scope),
+            typeql::Variable::Anonymous(_) => context.create_anonymous_variable(self.scope),
+        }
+    }
+
+    fn register_typeql_type_var_any(
+        &mut self,
+        context: &mut BlockContext,
+        type_: &typeql::TypeAny,
+    ) -> Result<Variable, PatternDefinitionError> {
+        match type_ {
+            typeql::TypeAny::Type(type_) => self.register_typeql_type_var(context, type_),
+            typeql::TypeAny::Optional(_) => todo!(),
+            typeql::TypeAny::List(_) => todo!(),
+        }
+    }
+
+    fn register_typeql_type_var(
+        &mut self,
+        context: &mut BlockContext,
+        type_: &typeql::Type,
+    ) -> Result<Variable, PatternDefinitionError> {
+        match type_ {
+            typeql::Type::Label(label) => self.register_type_label_var(context, label),
+            typeql::Type::ScopedLabel(_) => todo!(),
+            typeql::Type::Variable(var) => self.register_typeql_var(context, var),
+            typeql::Type::BuiltinValue(_) => todo!(),
+        }
+    }
+
+    fn register_type_label_var(
+        &mut self,
+        context: &mut BlockContext,
+        label: &typeql::Label,
+    ) -> Result<Variable, PatternDefinitionError> {
+        let var = context.create_anonymous_variable(self.scope)?;
+        match label {
+            typeql::Label::Identifier(ident) => self.add_label(context, var, ident.as_str())?,
+            typeql::Label::Reserved(reserved) => todo!("Unhandled builtin type: {reserved}"),
+        };
+        Ok(var)
+    }
+
+    fn add_typeql_isa(
+        &mut self,
+        context: &mut BlockContext,
+        thing: Variable,
+        isa: &typeql::statement::thing::isa::Isa,
+    ) -> Result<(), PatternDefinitionError> {
+        let kind = match isa.kind {
+            typeql::statement::thing::isa::IsaKind::Exact => IsaKind::Exact,
+            typeql::statement::thing::isa::IsaKind::Subtype => IsaKind::Subtype,
+        };
+        let type_ = self.register_typeql_type_var(context, &isa.type_)?;
+        self.add_isa(context, kind, thing, type_)?;
+        Ok(())
+    }
+
+    fn add_typeql_has(
+        &mut self,
+        context: &mut BlockContext,
+        owner: Variable,
+        has: &typeql::statement::thing::Has,
+    ) -> Result<(), PatternDefinitionError> {
+        let attr = match &has.value {
+            typeql::statement::thing::HasValue::Variable(var) => var,
+            typeql::statement::thing::HasValue::Expression(_) => todo!(),
+            typeql::statement::thing::HasValue::Comparison(_) => todo!(),
+        };
+        let attribute = context.get_or_declare_variable_named(attr.name().unwrap(), self.scope)?;
+        self.add_has(context, owner, attribute)?;
+        if let Some(type_) = &has.type_ {
+            let attribute_type = self.register_typeql_type_var_any(context, type_)?;
+            self.add_isa(context, IsaKind::Subtype, attribute, attribute_type)?;
+        }
+        Ok(())
+    }
+
+    fn add_typeql_relation(
+        &mut self,
+        context: &mut BlockContext,
+        relation: Variable,
+        roleplayers: &typeql::statement::thing::Relation,
+    ) -> Result<(), PatternDefinitionError> {
+        for role_player in &roleplayers.role_players {
+            match role_player {
+                typeql::statement::thing::RolePlayer::Typed(type_, var) => {
+                    let player = self.register_typeql_var(context, var)?;
+                    let type_ = self.register_typeql_type_var_any(context, type_)?;
+                    self.add_role_player(context, relation, player, Some(type_))?;
+                }
+                typeql::statement::thing::RolePlayer::Untyped(var) => {
+                    let player = self.register_typeql_var(context, var)?;
+                    self.add_role_player(context, relation, player, None)?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+impl fmt::Display for Constraints {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for constraint in &self.constraints {
             let indent = (0..f.width().unwrap_or(0)).map(|_| " ").join("");
             writeln!(f, "{}{}", indent, constraint)?
@@ -233,7 +410,7 @@ impl Display for Constraints {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Constraint<ID: IrID> {
-    Type(Type<ID>),
+    Label(Label<ID>),
     Sub(Sub<ID>),
     Isa(Isa<ID>),
     RolePlayer(RolePlayer<ID>),
@@ -246,7 +423,7 @@ pub enum Constraint<ID: IrID> {
 impl<ID: IrID> Constraint<ID> {
     pub fn ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
-            Constraint::Type(type_) => Box::new(type_.ids()),
+            Constraint::Label(label) => Box::new(label.ids()),
             Constraint::Sub(sub) => Box::new(sub.ids()),
             Constraint::Isa(isa) => Box::new(isa.ids()),
             Constraint::RolePlayer(rp) => Box::new(rp.ids()),
@@ -259,10 +436,10 @@ impl<ID: IrID> Constraint<ID> {
 
     pub fn ids_foreach<F>(&self, function: F)
     where
-        F: FnMut(ID, ConstraintIDSide) -> (),
+        F: FnMut(ID, ConstraintIDSide),
     {
         match self {
-            Constraint::Type(type_) => type_.ids_foreach(function),
+            Constraint::Label(label) => label.ids_foreach(function),
             Constraint::Sub(sub) => sub.ids_foreach(function),
             Constraint::Isa(isa) => isa.ids_foreach(function),
             Constraint::RolePlayer(rp) => rp.ids_foreach(function),
@@ -273,9 +450,9 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn as_type(&self) -> Option<&Type<ID>> {
+    pub(crate) fn as_label(&self) -> Option<&Label<ID>> {
         match self {
-            Constraint::Type(type_) => Some(type_),
+            Constraint::Label(label) => Some(label),
             _ => None,
         }
     }
@@ -330,34 +507,34 @@ impl<ID: IrID> Constraint<ID> {
     }
 }
 
-impl<ID: IrID> Display for Constraint<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for Constraint<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Constraint::Type(constraint) => Display::fmt(constraint, f),
-            Constraint::Sub(constraint) => Display::fmt(constraint, f),
-            Constraint::Isa(constraint) => Display::fmt(constraint, f),
-            Constraint::RolePlayer(constraint) => Display::fmt(constraint, f),
-            Constraint::Has(constraint) => Display::fmt(constraint, f),
-            Constraint::ExpressionBinding(constraint) => Display::fmt(constraint, f),
-            Constraint::FunctionCallBinding(constraint) => Display::fmt(constraint, f),
-            Constraint::Comparison(constraint) => Display::fmt(constraint, f),
+            Constraint::Label(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::Sub(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::Isa(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::RolePlayer(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::Has(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::ExpressionBinding(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::FunctionCallBinding(constraint) => fmt::Display::fmt(constraint, f),
+            Constraint::Comparison(constraint) => fmt::Display::fmt(constraint, f),
         }
     }
 }
 
-enum ConstraintIDSide {
+pub enum ConstraintIDSide {
     Left,
     Right,
     Filter,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct Type<ID: IrID> {
+pub struct Label<ID: IrID> {
     pub(crate) left: ID,
     pub(crate) type_: String,
 }
 
-impl<ID: IrID> Type<ID> {
+impl<ID: IrID> Label<ID> {
     fn new(identifier: ID, type_: String) -> Self {
         Self { left: identifier, type_ }
     }
@@ -368,23 +545,23 @@ impl<ID: IrID> Type<ID> {
 
     pub fn ids_foreach<F>(&self, mut function: F)
     where
-        F: FnMut(ID, ConstraintIDSide) -> (),
+        F: FnMut(ID, ConstraintIDSide),
     {
         function(self.left, ConstraintIDSide::Left)
     }
 }
 
-impl<ID: IrID> Into<Constraint<ID>> for Type<ID> {
-    fn into(self) -> Constraint<ID> {
-        Constraint::Type(self)
+impl<ID: IrID> From<Label<ID>> for Constraint<ID> {
+    fn from(val: Label<ID>) -> Self {
+        Constraint::Label(val)
     }
 }
 
-impl<ID: IrID> Display for Type<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for Label<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO: implement indentation without rewriting it everywhere
         // write!(f, "{: >width$} {} type {}", "", self.left, self.type_, width=f.width().unwrap_or(0))
-        write!(f, "{} type {}", self.left, self.type_)
+        write!(f, "{} label {}", self.left, self.type_)
     }
 }
 
@@ -405,7 +582,7 @@ impl<ID: IrID> Sub<ID> {
 
     pub fn ids_foreach<F>(&self, mut function: F)
     where
-        F: FnMut(ID, ConstraintIDSide) -> (),
+        F: FnMut(ID, ConstraintIDSide),
     {
         function(self.subtype, ConstraintIDSide::Left);
         function(self.supertype, ConstraintIDSide::Right)
@@ -420,27 +597,28 @@ impl<ID: IrID> Sub<ID> {
     }
 }
 
-impl<ID: IrID> Into<Constraint<ID>> for Sub<ID> {
-    fn into(self) -> Constraint<ID> {
-        Constraint::Sub(self)
+impl<ID: IrID> From<Sub<ID>> for Constraint<ID> {
+    fn from(val: Sub<ID>) -> Self {
+        Constraint::Sub(val)
     }
 }
 
-impl<ID: IrID> Display for Sub<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for Sub<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} isa {}", self.subtype, self.supertype)
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Isa<ID: IrID> {
+    kind: IsaKind,
     thing: ID,
     type_: ID,
 }
 
 impl<ID: IrID> Isa<ID> {
-    fn new(thing: ID, type_: ID) -> Self {
-        Isa { thing, type_ }
+    fn new(kind: IsaKind, thing: ID, type_: ID) -> Self {
+        Self { kind, thing, type_ }
     }
 
     pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
@@ -449,7 +627,7 @@ impl<ID: IrID> Isa<ID> {
 
     pub fn ids_foreach<F>(&self, mut function: F)
     where
-        F: FnMut(ID, ConstraintIDSide) -> (),
+        F: FnMut(ID, ConstraintIDSide),
     {
         function(self.thing, ConstraintIDSide::Left);
         function(self.type_, ConstraintIDSide::Right)
@@ -464,16 +642,22 @@ impl<ID: IrID> Isa<ID> {
     }
 }
 
-impl<ID: IrID> Into<Constraint<ID>> for Isa<ID> {
-    fn into(self) -> Constraint<ID> {
-        Constraint::Isa(self)
+impl<ID: IrID> From<Isa<ID>> for Constraint<ID> {
+    fn from(val: Isa<ID>) -> Self {
+        Constraint::Isa(val)
     }
 }
 
-impl<ID: IrID> Display for Isa<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for Isa<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} isa {}", self.thing, self.type_)
     }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum IsaKind {
+    Exact,
+    Subtype,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -506,14 +690,13 @@ impl<ID: IrID> RolePlayer<ID> {
 
     pub fn ids_foreach<F>(&self, mut function: F)
     where
-        F: FnMut(ID, ConstraintIDSide) -> (),
+        F: FnMut(ID, ConstraintIDSide),
     {
         function(self.relation, ConstraintIDSide::Left);
         function(self.player, ConstraintIDSide::Right);
-        match self.role_type.clone() {
-            None => {}
-            Some(role) => function(role, ConstraintIDSide::Filter),
-        };
+        if let Some(role) = self.role_type {
+            function(role, ConstraintIDSide::Filter);
+        }
     }
 
     pub fn into_ids<T: IrID>(self, mapping: &HashMap<ID, T>) -> RolePlayer<T> {
@@ -525,14 +708,14 @@ impl<ID: IrID> RolePlayer<ID> {
     }
 }
 
-impl<ID: IrID> Into<Constraint<ID>> for RolePlayer<ID> {
-    fn into(self) -> Constraint<ID> {
-        Constraint::RolePlayer(self)
+impl<ID: IrID> From<RolePlayer<ID>> for Constraint<ID> {
+    fn from(role_player: RolePlayer<ID>) -> Self {
+        Constraint::RolePlayer(role_player)
     }
 }
 
-impl<ID: IrID> Display for RolePlayer<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for RolePlayer<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.role_type {
             None => {
                 write!(f, "{} rp {} (role: )", self.relation, self.player)
@@ -551,7 +734,7 @@ pub struct Has<ID: IrID> {
 }
 
 impl<ID: IrID> Has<ID> {
-    fn new(owner: ID, attribute: ID) -> Self {
+    pub fn new(owner: ID, attribute: ID) -> Self {
         Has { owner, attribute }
     }
 
@@ -569,7 +752,7 @@ impl<ID: IrID> Has<ID> {
 
     pub fn ids_foreach<F>(&self, mut function: F)
     where
-        F: FnMut(ID, ConstraintIDSide) -> (),
+        F: FnMut(ID, ConstraintIDSide),
     {
         function(self.owner, ConstraintIDSide::Left);
         function(self.attribute, ConstraintIDSide::Right);
@@ -580,14 +763,14 @@ impl<ID: IrID> Has<ID> {
     }
 }
 
-impl<ID: IrID> Into<Constraint<ID>> for Has<ID> {
-    fn into(self) -> Constraint<ID> {
-        Constraint::Has(self)
+impl<ID: IrID> From<Has<ID>> for Constraint<ID> {
+    fn from(has: Has<ID>) -> Self {
+        Constraint::Has(has)
     }
 }
 
-impl<ID: IrID> Display for Has<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for Has<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} has {}", self.owner, self.attribute)
     }
 }
@@ -614,20 +797,20 @@ impl<ID: IrID> ExpressionBinding<ID> {
 
     pub fn ids_foreach<F>(&self, function: F)
     where
-        F: FnMut(ID, ConstraintIDSide) -> (),
+        F: FnMut(ID, ConstraintIDSide),
     {
         todo!()
     }
 }
 
-impl<ID: IrID> Into<Constraint<ID>> for ExpressionBinding<ID> {
-    fn into(self) -> Constraint<ID> {
-        Constraint::ExpressionBinding(self)
+impl<ID: IrID> From<ExpressionBinding<ID>> for Constraint<ID> {
+    fn from(val: ExpressionBinding<ID>) -> Self {
+        Constraint::ExpressionBinding(val)
     }
 }
 
-impl<ID: IrID> Display for ExpressionBinding<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for ExpressionBinding<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} = {}", self.left, self.expression)
     }
 }
@@ -662,7 +845,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
 
     pub fn ids_foreach<F>(&self, mut function: F)
     where
-        F: FnMut(ID, ConstraintIDSide) -> (),
+        F: FnMut(ID, ConstraintIDSide),
     {
         for id in &self.assigned {
             function(*id, ConstraintIDSide::Left)
@@ -674,14 +857,14 @@ impl<ID: IrID> FunctionCallBinding<ID> {
     }
 }
 
-impl<ID: IrID> Into<Constraint<ID>> for FunctionCallBinding<ID> {
-    fn into(self) -> Constraint<ID> {
-        Constraint::FunctionCallBinding(self)
+impl<ID: IrID> From<FunctionCallBinding<ID>> for Constraint<ID> {
+    fn from(val: FunctionCallBinding<ID>) -> Self {
+        Constraint::FunctionCallBinding(val)
     }
 }
 
-impl<ID: IrID> Display for FunctionCallBinding<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for FunctionCallBinding<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.function_call.return_is_stream() {
             write!(f, "{} in {}", self.ids_assigned().map(|i| i.to_string()).join(", "), self.function_call())
         } else {
@@ -716,21 +899,21 @@ impl<ID: IrID> Comparison<ID> {
 
     pub fn ids_foreach<F>(&self, mut function: F)
     where
-        F: FnMut(ID, ConstraintIDSide) -> (),
+        F: FnMut(ID, ConstraintIDSide),
     {
         function(self.lhs, ConstraintIDSide::Left);
         function(self.rhs, ConstraintIDSide::Right);
     }
 }
 
-impl<ID: IrID> Into<Constraint<ID>> for Comparison<ID> {
-    fn into(self) -> Constraint<ID> {
-        Constraint::Comparison(self)
+impl<ID: IrID> From<Comparison<ID>> for Constraint<ID> {
+    fn from(val: Comparison<ID>) -> Self {
+        Constraint::Comparison(val)
     }
 }
 
-impl<ID: IrID> Display for Comparison<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<ID: IrID> fmt::Display for Comparison<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

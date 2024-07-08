@@ -4,54 +4,50 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt::{Display, Formatter},
-    sync::{Arc, Mutex, MutexGuard},
-};
+use std::fmt;
 
 use answer::variable::Variable;
-use itertools::Itertools;
 
-use crate::{
-    pattern::{
-        constraint::Constraints, disjunction::Disjunction, negation::Negation, nested_pattern::NestedPattern,
-        optional::Optional, Scope, ScopeId,
-    },
-    program::block::BlockContext,
-    PatternDefinitionError,
+use super::{
+    constraint::Constraints, disjunction::Disjunction, negation::Negation, nested_pattern::NestedPattern,
+    optional::Optional, Scope, ScopeId,
 };
+use crate::{program::block::BlockContext, PatternDefinitionError};
 
 #[derive(Debug)]
 pub struct Conjunction {
     scope_id: ScopeId,
-    context: Arc<Mutex<BlockContext>>,
-
     constraints: Constraints,
     nested_patterns: Vec<NestedPattern>,
 }
 
 impl Conjunction {
-    pub fn new(scope_id: ScopeId, context: Arc<Mutex<BlockContext>>) -> Self {
-        Conjunction {
-            scope_id,
-            context: context.clone(),
-            constraints: Constraints::new(scope_id, context.clone()),
-            nested_patterns: Vec::new(),
-        }
+    pub fn new(scope_id: ScopeId) -> Self {
+        Self { scope_id, constraints: Constraints::new(scope_id), nested_patterns: Vec::new() }
     }
 
-    pub(crate) fn new_child(parent_scope_id: ScopeId, context: Arc<Mutex<BlockContext>>) -> Self {
-        let scope_id = context.lock().unwrap().create_child_scope(parent_scope_id);
-        Conjunction {
-            scope_id,
-            context: context.clone(),
-            constraints: Constraints::new(scope_id, context.clone()),
-            nested_patterns: Vec::new(),
+    pub(crate) fn build_from_typeql_patterns(
+        context: &mut BlockContext,
+        scope_id: ScopeId,
+        patterns: &[typeql::Pattern],
+    ) -> Result<Self, PatternDefinitionError> {
+        let mut constraints = Constraints::new(scope_id);
+        let nested_patterns = Vec::new();
+        for item in patterns {
+            match item {
+                typeql::Pattern::Conjunction(_) => todo!(),
+                typeql::Pattern::Disjunction(_) => todo!(),
+                typeql::Pattern::Negation(_) => todo!(),
+                typeql::Pattern::Try(_) => todo!(),
+                typeql::Pattern::Statement(stmt) => constraints.extend_from_typeql_statement(context, stmt)?,
+            }
         }
+        Ok(Self { scope_id, constraints, nested_patterns })
     }
 
-    pub(crate) fn scope_id(&self) -> ScopeId {
-        self.scope_id
+    pub(crate) fn new_child(parent_scope_id: ScopeId, context: &mut BlockContext) -> Self {
+        let scope_id = context.create_child_scope(parent_scope_id);
+        Conjunction { scope_id, constraints: Constraints::new(scope_id), nested_patterns: Vec::new() }
     }
 
     pub fn constraints(&self) -> &Constraints {
@@ -66,30 +62,30 @@ impl Conjunction {
         &mut self.constraints
     }
 
-    pub(crate) fn add_disjunction(&mut self) -> &mut Disjunction {
-        let disjunction = Disjunction::new_child(self.scope_id, self.context.clone());
+    pub(crate) fn add_disjunction(&mut self, context: &mut BlockContext) -> &mut Disjunction {
+        let disjunction = Disjunction::new_child(self.scope_id, context);
         self.nested_patterns.push(NestedPattern::Disjunction(disjunction));
         self.nested_patterns.last_mut().unwrap().as_disjunction_mut().unwrap()
     }
 
-    pub(crate) fn add_negation(&mut self) -> &mut Negation {
-        let negation = Negation::new_child(self.scope_id, self.context.clone());
+    pub(crate) fn add_negation(&mut self, context: &mut BlockContext) -> &mut Negation {
+        let negation = Negation::new_child(self.scope_id, context);
         self.nested_patterns.push(NestedPattern::Negation(negation));
         self.nested_patterns.last_mut().unwrap().as_negation_mut().unwrap()
     }
 
-    pub(crate) fn add_optional(&mut self) -> &mut Optional {
-        let optional = Optional::new_child(self.scope_id, self.context.clone());
+    pub(crate) fn add_optional(&mut self, context: &mut BlockContext) -> &mut Optional {
+        let optional = Optional::new_child(self.scope_id, context);
         self.nested_patterns.push(NestedPattern::Optional(optional));
         self.nested_patterns.last_mut().unwrap().as_optional_mut().unwrap()
     }
 
-    pub(crate) fn context(&self) -> MutexGuard<BlockContext> {
-        self.context.lock().unwrap()
-    }
-
-    pub fn get_or_declare_variable(&mut self, name: &str) -> Result<Variable, PatternDefinitionError> {
-        self.context.lock().unwrap().get_or_declare_variable_named(name, self)
+    pub fn get_or_declare_variable(
+        &mut self,
+        context: &mut BlockContext,
+        name: &str,
+    ) -> Result<Variable, PatternDefinitionError> {
+        context.get_or_declare_variable_named(name, self.scope_id())
     }
 }
 
@@ -99,16 +95,16 @@ impl Scope for Conjunction {
     }
 }
 
-impl Display for Conjunction {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Conjunction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let current_width = f.width().unwrap_or(0);
-        let indent = (0..current_width).map(|_| " ").join("");
+        let indent = " ".repeat(current_width);
         writeln!(f, "{}{} Conjunction", indent, self.scope_id)?;
         write!(f, "{:>width$}", &self.constraints, width = current_width + 2)?;
         for pattern in &self.nested_patterns {
             write!(f, "{:>width$}", pattern, width = current_width + 2)?;
         }
-        write!(f, "{}", self.context.lock().unwrap())?;
+        // write!(f, "{}", self.constraints.context())?;
         Ok(())
     }
 }

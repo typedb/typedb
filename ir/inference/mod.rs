@@ -220,7 +220,9 @@ pub mod tests {
             let dog = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_DOG), false).unwrap();
             cat.set_supertype(&mut snapshot, type_manager, animal.clone()).unwrap();
             dog.set_supertype(&mut snapshot, type_manager, animal.clone()).unwrap();
-            animal.set_annotation(&mut snapshot, &type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract));
+            animal
+                .set_annotation(&mut snapshot, &type_manager, EntityTypeAnnotation::Abstract(AnnotationAbstract))
+                .unwrap();
 
             // Ownerships
             let animal_owns = animal.set_owns(&mut snapshot, type_manager, name.clone(), Ordering::Unordered).unwrap();
@@ -237,8 +239,8 @@ pub mod tests {
                 .create_relates(&mut snapshot, &type_manager, LABEL_IS_FEARED, Ordering::Unordered)
                 .unwrap()
                 .role();
-            cat.set_plays(&mut snapshot, &type_manager, has_fear.clone());
-            dog.set_plays(&mut snapshot, &type_manager, is_feared.clone());
+            cat.set_plays(&mut snapshot, &type_manager, has_fear.clone()).unwrap();
+            dog.set_plays(&mut snapshot, &type_manager, is_feared.clone()).unwrap();
 
             snapshot.commit().unwrap();
 
