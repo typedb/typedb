@@ -22,6 +22,8 @@ rust_test(
         "//storage",
 
         "//util/test:test_utils",
+
+        "@vaticle_typeql//rust:typeql",
     ],
 )
 

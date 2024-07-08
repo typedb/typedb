@@ -23,6 +23,7 @@ use crate::{
         TypeInferenceError,
     },
     pattern::{conjunction::Conjunction, constraint::Constraint},
+    program::block::BlockContext,
 };
 
 /*
@@ -54,15 +55,16 @@ It should also be possible to interleave the two phases, as in the original desi
 
 pub(crate) fn infer_types_for_conjunction<'graph>(
     snapshot: &impl ReadableSnapshot,
+    context: &BlockContext,
     type_manager: &TypeManager,
     conjunction: &'graph Conjunction,
 ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
-    let mut tig = TypeSeeder::new(snapshot, type_manager).seed_types(conjunction)?;
+    let mut tig = TypeSeeder::new(snapshot, type_manager).seed_types(context, conjunction)?;
     run_type_inference(&mut tig);
     Ok(tig)
 }
 
-fn run_type_inference<'graph>(tig: &mut TypeInferenceGraph<'graph>) {
+fn run_type_inference(tig: &mut TypeInferenceGraph<'_>) {
     let mut is_modified = tig.prune_vertices_from_constraints();
     while is_modified {
         tig.prune_constraints_from_vertices();
@@ -196,9 +198,7 @@ impl<'this> TypeInferenceEdge<'this> {
         keys_from: &BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
         values_from: &BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
     ) -> BTreeSet<TypeAnnotation> {
-        let mut types: BTreeSet<TypeAnnotation> = values_from.iter().flat_map(|(_, v)| v.clone().into_iter()).collect();
-        types.retain(|v| keys_from.contains_key(&v));
-        types
+        values_from.values().flatten().filter(|v| keys_from.contains_key(v)).cloned().collect()
     }
 
     fn prune_keys_not_in_first_and_values_not_in_second(
@@ -207,7 +207,7 @@ impl<'this> TypeInferenceEdge<'this> {
         allowed_values: &BTreeSet<TypeAnnotation>,
     ) {
         prune_from.retain(|type_, _| allowed_keys.contains(type_));
-        for (_, v) in prune_from {
+        for v in prune_from.values_mut() {
             v.retain(|type_| allowed_values.contains(type_));
         }
     }
@@ -218,11 +218,11 @@ impl<'this> TypeInferenceEdge<'this> {
         remove_from_values_of: &mut BTreeMap<TypeAnnotation, BTreeSet<TypeAnnotation>>,
     ) {
         for other_type in keys_to_look_under {
-            let value_set_to_remove_from = remove_from_values_of.get_mut(&other_type).unwrap();
-            value_set_to_remove_from.remove(&type_);
+            let value_set_to_remove_from = remove_from_values_of.get_mut(other_type).unwrap();
+            value_set_to_remove_from.remove(type_);
             let remaining_size = value_set_to_remove_from.len();
             if 0 == remaining_size {
-                remove_from_values_of.remove(&other_type);
+                remove_from_values_of.remove(other_type);
             }
         }
     }
@@ -252,14 +252,14 @@ impl<'this> TypeInferenceEdge<'this> {
             left_to_right.iter().filter(|(left_type, _)| !left_vertex_annotations.contains(*left_type)).for_each(
                 |(left_type, right_keys)| Self::remove_type_from_values_of(left_type, right_keys, right_to_left),
             );
-            left_to_right.retain(|left_type, _| left_vertex_annotations.contains(&left_type));
+            left_to_right.retain(|left_type, _| left_vertex_annotations.contains(left_type));
         };
         {
             let right_vertex_annotations = vertices.get(&self.right).unwrap();
             right_to_left.iter().filter(|(right_type, _)| !right_vertex_annotations.contains(*right_type)).for_each(
                 |(right_type, left_keys)| Self::remove_type_from_values_of(right_type, left_keys, left_to_right),
             );
-            right_to_left.retain(|left_type, _| right_vertex_annotations.contains(&left_type));
+            right_to_left.retain(|left_type, _| right_vertex_annotations.contains(left_type));
         };
     }
 }
@@ -272,18 +272,18 @@ pub(crate) struct NestedTypeInferenceGraphDisjunction<'this> {
 }
 
 impl<'this> NestedTypeInferenceGraphDisjunction<'this> {
-    fn prune_self_from_vertices<'a>(&mut self, parent_vertices: &VertexAnnotations) {
+    fn prune_self_from_vertices(&mut self, parent_vertices: &VertexAnnotations) {
         for nested_graph in &mut self.disjunction {
             for (vertex, vertex_types) in &mut nested_graph.vertices {
-                if let Some(parent_vertex_types) = parent_vertices.get(&vertex) {
-                    vertex_types.retain(|type_| parent_vertex_types.contains(&type_))
+                if let Some(parent_vertex_types) = parent_vertices.get(vertex) {
+                    vertex_types.retain(|type_| parent_vertex_types.contains(type_))
                 }
             }
             nested_graph.prune_constraints_from_vertices();
         }
     }
 
-    fn prune_vertices_from_self<'a>(&mut self, parent_vertices: &mut VertexAnnotations) -> bool {
+    fn prune_vertices_from_self(&mut self, parent_vertices: &mut VertexAnnotations) -> bool {
         let mut is_modified = false;
         for nested_graph in &mut self.disjunction {
             nested_graph.prune_vertices_from_constraints();
@@ -295,12 +295,12 @@ impl<'this> NestedTypeInferenceGraphDisjunction<'this> {
                 self.disjunction.iter().any(|nested_graph| {
                     nested_graph
                         .vertices
-                        .get(&parent_vertex)
-                        .map(|nested_types| nested_types.contains(&type_))
+                        .get(parent_vertex)
+                        .map(|nested_types| nested_types.contains(type_))
                         .unwrap_or(true)
                 })
             });
-            is_modified = is_modified || size_before != parent_vertex_types.len();
+            is_modified |= size_before != parent_vertex_types.len();
         }
         is_modified
     }
@@ -309,14 +309,10 @@ impl<'this> NestedTypeInferenceGraphDisjunction<'this> {
 #[cfg(test)]
 pub mod tests {
 
-    use std::{
-        borrow::Borrow,
-        collections::{BTreeMap, BTreeSet},
-    };
+    use std::collections::{BTreeMap, BTreeSet};
 
     use answer::{variable::Variable, Type as TypeAnnotation};
     use itertools::Itertools;
-    use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
     use crate::{
         inference::{
@@ -332,8 +328,12 @@ pub mod tests {
                 setup_storage,
             },
         },
-        pattern::constraint::Constraint,
-        program::block::FunctionalBlock,
+        pattern::{
+            conjunction::Conjunction,
+            constraint::{Constraint, IsaKind},
+            ScopeId,
+        },
+        program::block::BlockContext,
     };
 
     pub(crate) fn expected_edge(
@@ -341,7 +341,7 @@ pub mod tests {
         left: Variable,
         right: Variable,
         left_right_type_pairs: Vec<(TypeAnnotation, TypeAnnotation)>,
-    ) -> TypeInferenceEdge {
+    ) -> TypeInferenceEdge<'_> {
         let mut left_to_right = BTreeMap::new();
         let mut right_to_left = BTreeMap::new();
         for (l, r) in left_right_type_pairs {
@@ -372,22 +372,22 @@ pub mod tests {
         {
             // Case 1: $a isa cat, has animal-name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut block = FunctionalBlock::new();
-            let mut conjunction = block.conjunction_mut();
+            let mut context = BlockContext::new();
+            let mut conjunction = Conjunction::new(ScopeId::ROOT);
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
-                .iter()
-                .map(|name| conjunction.get_or_declare_variable(*name).unwrap())
+                .into_iter()
+                .map(|name| conjunction.get_or_declare_variable(&mut context, name).unwrap())
                 .collect_tuple()
                 .unwrap();
 
-            conjunction.constraints_mut().add_isa(var_animal, var_animal_type).unwrap();
-            conjunction.constraints_mut().add_type(var_animal_type, LABEL_CAT).unwrap();
-            conjunction.constraints_mut().add_isa(var_name, var_name_type).unwrap();
-            conjunction.constraints_mut().add_type(var_name_type, LABEL_NAME).unwrap();
-            conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
+            conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_animal, var_animal_type).unwrap();
+            conjunction.constraints_mut().add_label(&mut context, var_animal_type, LABEL_CAT).unwrap();
+            conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_name, var_name_type).unwrap();
+            conjunction.constraints_mut().add_label(&mut context, var_name_type, LABEL_NAME).unwrap();
+            conjunction.constraints_mut().add_has(&mut context, var_animal, var_name).unwrap();
             let constraints = conjunction.constraints().constraints();
 
-            let tig = infer_types_for_conjunction(&snapshot, type_manager.borrow(), &conjunction).unwrap();
+            let tig = infer_types_for_conjunction(&snapshot, &context, &type_manager, &conjunction).unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: &conjunction,
@@ -417,9 +417,9 @@ pub mod tests {
                         vec![(type_cat.clone(), type_catname.clone())],
                     ),
                 ],
-                nested_disjunctions: vec![],
-                nested_negations: vec![],
-                nested_optionals: vec![],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
             };
 
             assert_eq!(expected_tig, tig);
@@ -428,21 +428,21 @@ pub mod tests {
         {
             // Case 2: $a isa animal, has cat-name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut block = FunctionalBlock::new();
-            let mut conjunction = block.conjunction_mut();
+            let mut context = BlockContext::new();
+            let mut conjunction = Conjunction::new(ScopeId::ROOT);
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
-                .iter()
-                .map(|name| conjunction.get_or_declare_variable(*name).unwrap())
+                .into_iter()
+                .map(|name| conjunction.get_or_declare_variable(&mut context, name).unwrap())
                 .collect_tuple()
                 .unwrap();
 
-            conjunction.constraints_mut().add_isa(var_animal, var_animal_type).unwrap();
-            conjunction.constraints_mut().add_type(var_animal_type, LABEL_ANIMAL).unwrap();
-            conjunction.constraints_mut().add_isa(var_name, var_name_type).unwrap();
-            conjunction.constraints_mut().add_type(var_name_type, LABEL_CATNAME).unwrap();
-            conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
+            conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_animal, var_animal_type).unwrap();
+            conjunction.constraints_mut().add_label(&mut context, var_animal_type, LABEL_ANIMAL).unwrap();
+            conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_name, var_name_type).unwrap();
+            conjunction.constraints_mut().add_label(&mut context, var_name_type, LABEL_CATNAME).unwrap();
+            conjunction.constraints_mut().add_has(&mut context, var_animal, var_name).unwrap();
             let constraints = conjunction.constraints().constraints();
-            let tig = infer_types_for_conjunction(&snapshot, type_manager.borrow(), &conjunction).unwrap();
+            let tig = infer_types_for_conjunction(&snapshot, &context, &type_manager, &conjunction).unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: &conjunction,
@@ -472,9 +472,9 @@ pub mod tests {
                         vec![(type_cat.clone(), type_catname.clone())],
                     ),
                 ],
-                nested_disjunctions: vec![],
-                nested_negations: vec![],
-                nested_optionals: vec![],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_tig, tig);
         }
@@ -482,22 +482,22 @@ pub mod tests {
         {
             // Case 3: $a isa cat, has dog-name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut block = FunctionalBlock::new();
-            let mut conjunction = block.conjunction_mut();
+            let mut context = BlockContext::new();
+            let mut conjunction = Conjunction::new(ScopeId::ROOT);
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
-                .iter()
-                .map(|name| conjunction.get_or_declare_variable(*name).unwrap())
+                .into_iter()
+                .map(|name| conjunction.get_or_declare_variable(&mut context, name).unwrap())
                 .collect_tuple()
                 .unwrap();
 
-            conjunction.constraints_mut().add_isa(var_animal, var_animal_type).unwrap();
-            conjunction.constraints_mut().add_type(var_animal_type, LABEL_CAT).unwrap();
-            conjunction.constraints_mut().add_isa(var_name, var_name_type).unwrap();
-            conjunction.constraints_mut().add_type(var_name_type, LABEL_DOGNAME).unwrap();
-            conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
+            conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_animal, var_animal_type).unwrap();
+            conjunction.constraints_mut().add_label(&mut context, var_animal_type, LABEL_CAT).unwrap();
+            conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_name, var_name_type).unwrap();
+            conjunction.constraints_mut().add_label(&mut context, var_name_type, LABEL_DOGNAME).unwrap();
+            conjunction.constraints_mut().add_has(&mut context, var_animal, var_name).unwrap();
 
             let constraints = conjunction.constraints().constraints();
-            let tig = infer_types_for_conjunction(&snapshot, type_manager.borrow(), &conjunction).unwrap();
+            let tig = infer_types_for_conjunction(&snapshot, &context, &type_manager, &conjunction).unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: &conjunction,
@@ -508,13 +508,13 @@ pub mod tests {
                     (var_name_type, BTreeSet::new()),
                 ]),
                 edges: vec![
-                    expected_edge(&constraints[0], var_animal, var_animal_type, vec![]),
-                    expected_edge(&constraints[2], var_name, var_name_type, vec![]),
-                    expected_edge(&constraints[4], var_animal, var_name, vec![]),
+                    expected_edge(&constraints[0], var_animal, var_animal_type, Vec::new()),
+                    expected_edge(&constraints[2], var_name, var_name_type, Vec::new()),
+                    expected_edge(&constraints[4], var_animal, var_name, Vec::new()),
                 ],
-                nested_disjunctions: vec![],
-                nested_negations: vec![],
-                nested_optionals: vec![],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_tig, tig);
         }
@@ -524,21 +524,21 @@ pub mod tests {
             let types_a = all_animals.clone();
             let types_n = all_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
-            let mut block = FunctionalBlock::new();
-            let mut conjunction = block.conjunction_mut();
+            let mut context = BlockContext::new();
+            let mut conjunction = Conjunction::new(ScopeId::ROOT);
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
-                .iter()
-                .map(|name| conjunction.get_or_declare_variable(*name).unwrap())
+                .into_iter()
+                .map(|name| conjunction.get_or_declare_variable(&mut context, name).unwrap())
                 .collect_tuple()
                 .unwrap();
 
-            conjunction.constraints_mut().add_isa(var_animal, var_animal_type).unwrap();
-            conjunction.constraints_mut().add_type(var_animal_type, LABEL_ANIMAL).unwrap();
-            conjunction.constraints_mut().add_isa(var_name, var_name_type).unwrap();
-            conjunction.constraints_mut().add_type(var_name_type, LABEL_NAME).unwrap();
-            conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
+            conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_animal, var_animal_type).unwrap();
+            conjunction.constraints_mut().add_label(&mut context, var_animal_type, LABEL_ANIMAL).unwrap();
+            conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_name, var_name_type).unwrap();
+            conjunction.constraints_mut().add_label(&mut context, var_name_type, LABEL_NAME).unwrap();
+            conjunction.constraints_mut().add_has(&mut context, var_animal, var_name).unwrap();
             let constraints = conjunction.constraints().constraints();
-            let tig = infer_types_for_conjunction(&snapshot, type_manager.borrow(), &conjunction).unwrap();
+            let tig = infer_types_for_conjunction(&snapshot, &context, &type_manager, &conjunction).unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: &conjunction,
@@ -580,9 +580,9 @@ pub mod tests {
                         ],
                     ),
                 ],
-                nested_disjunctions: vec![],
-                nested_negations: vec![],
-                nested_optionals: vec![],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_tig, tig);
         }
@@ -600,76 +600,82 @@ pub mod tests {
         let all_animals = BTreeSet::from([type_animal.clone(), type_cat.clone(), type_dog.clone()]);
         let all_names = BTreeSet::from([type_name.clone(), type_catname.clone(), type_dogname.clone()]);
 
-        let mut block = FunctionalBlock::new();
-        let mut conjunction = block.conjunction_mut();
+        let mut context = BlockContext::new();
+        let mut conjunction = Conjunction::new(ScopeId::ROOT);
         let (var_animal, var_name, var_name_type) = ["animal", "name", "name_type"]
-            .iter()
-            .map(|name| conjunction.get_or_declare_variable(*name).unwrap())
+            .into_iter()
+            .map(|name| conjunction.get_or_declare_variable(&mut context, name).unwrap())
             .collect_tuple()
             .unwrap();
         {
             // Case 1: {$a isa cat;} or {$a isa dog;} $a has animal-name $n;
 
             let (b1_var_animal_type, b2_var_animal_type) = {
-                let disj = conjunction.add_disjunction();
+                let disj = conjunction.add_disjunction(&mut context);
 
-                let mut branch1 = disj.add_conjunction();
-                let b1_var_animal_type = branch1.get_or_declare_variable("b1_animal_type").unwrap();
-                branch1.constraints_mut().add_isa(var_animal, b1_var_animal_type).unwrap();
-                branch1.constraints_mut().add_type(b1_var_animal_type, LABEL_CAT).unwrap();
+                let branch1 = disj.add_conjunction(&mut context);
+                let b1_var_animal_type = branch1.get_or_declare_variable(&mut context, "b1_animal_type").unwrap();
+                branch1
+                    .constraints_mut()
+                    .add_isa(&mut context, IsaKind::Subtype, var_animal, b1_var_animal_type)
+                    .unwrap();
+                branch1.constraints_mut().add_label(&mut context, b1_var_animal_type, LABEL_CAT).unwrap();
 
-                let mut branch2 = disj.add_conjunction();
-                let b2_var_animal_type = branch2.get_or_declare_variable("b2_animal_type").unwrap();
-                branch2.constraints_mut().add_isa(var_animal, b2_var_animal_type).unwrap();
-                branch2.constraints_mut().add_type(b2_var_animal_type, LABEL_DOG).unwrap();
+                let branch2 = disj.add_conjunction(&mut context);
+                let b2_var_animal_type = branch2.get_or_declare_variable(&mut context, "b2_animal_type").unwrap();
+                branch2
+                    .constraints_mut()
+                    .add_isa(&mut context, IsaKind::Subtype, var_animal, b2_var_animal_type)
+                    .unwrap();
+                branch2.constraints_mut().add_label(&mut context, b2_var_animal_type, LABEL_DOG).unwrap();
 
                 (b1_var_animal_type, b2_var_animal_type)
             };
-            conjunction.constraints_mut().add_type(var_name_type, "name").unwrap();
-            conjunction.constraints_mut().add_isa(var_name, var_name_type).unwrap();
-            conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
+            conjunction.constraints_mut().add_label(&mut context, var_name_type, "name").unwrap();
+            conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_name, var_name_type).unwrap();
+            conjunction.constraints_mut().add_has(&mut context, var_animal, var_name).unwrap();
 
             let snapshot = storage.clone().open_snapshot_write();
-            let tig = infer_types_for_conjunction(&snapshot, type_manager.borrow(), &conjunction).unwrap();
+            let tig = infer_types_for_conjunction(&snapshot, &context, &type_manager, &conjunction).unwrap();
 
-            let disj = conjunction.nested_patterns().get(0).unwrap().as_disjunction().unwrap();
-            let b1 = disj.conjunctions().get(0).unwrap();
-            let b2 = disj.conjunctions().get(1).unwrap();
+            let disj = conjunction.nested_patterns().first().unwrap().as_disjunction().unwrap();
+            let [b1, b2] = &disj.conjunctions()[..] else { unreachable!() };
             let b1_isa = &b1.constraints().constraints()[0];
             let b2_isa = &b2.constraints().constraints()[0];
-            let mut expected_nested_graphs: Vec<TypeInferenceGraph> = Vec::new();
-            expected_nested_graphs.push(TypeInferenceGraph {
-                conjunction: b1,
-                vertices: BTreeMap::from([
-                    (var_animal, BTreeSet::from([type_cat.clone()])),
-                    (b1_var_animal_type, BTreeSet::from([type_cat.clone()])),
-                ]),
-                edges: vec![expected_edge(
-                    b1_isa,
-                    var_animal,
-                    b1_var_animal_type,
-                    vec![(type_cat.clone(), type_cat.clone())],
-                )],
-                nested_disjunctions: vec![],
-                nested_negations: vec![],
-                nested_optionals: vec![],
-            });
-            expected_nested_graphs.push(TypeInferenceGraph {
-                conjunction: b2,
-                vertices: BTreeMap::from([
-                    (var_animal, BTreeSet::from([type_dog.clone()])),
-                    (b2_var_animal_type, BTreeSet::from([type_dog.clone()])),
-                ]),
-                edges: vec![expected_edge(
-                    b2_isa,
-                    var_animal,
-                    b2_var_animal_type,
-                    vec![(type_dog.clone(), type_dog.clone())],
-                )],
-                nested_disjunctions: vec![],
-                nested_negations: vec![],
-                nested_optionals: vec![],
-            });
+            let expected_nested_graphs = vec![
+                TypeInferenceGraph {
+                    conjunction: b1,
+                    vertices: BTreeMap::from([
+                        (var_animal, BTreeSet::from([type_cat.clone()])),
+                        (b1_var_animal_type, BTreeSet::from([type_cat.clone()])),
+                    ]),
+                    edges: vec![expected_edge(
+                        b1_isa,
+                        var_animal,
+                        b1_var_animal_type,
+                        vec![(type_cat.clone(), type_cat.clone())],
+                    )],
+                    nested_disjunctions: Vec::new(),
+                    nested_negations: Vec::new(),
+                    nested_optionals: Vec::new(),
+                },
+                TypeInferenceGraph {
+                    conjunction: b2,
+                    vertices: BTreeMap::from([
+                        (var_animal, BTreeSet::from([type_dog.clone()])),
+                        (b2_var_animal_type, BTreeSet::from([type_dog.clone()])),
+                    ]),
+                    edges: vec![expected_edge(
+                        b2_isa,
+                        var_animal,
+                        b2_var_animal_type,
+                        vec![(type_dog.clone(), type_dog.clone())],
+                    )],
+                    nested_disjunctions: Vec::new(),
+                    nested_negations: Vec::new(),
+                    nested_optionals: Vec::new(),
+                },
+            ];
             let expected_graph = TypeInferenceGraph {
                 conjunction: &conjunction,
                 vertices: BTreeMap::from([
@@ -696,8 +702,8 @@ pub mod tests {
                     shared_variables: BTreeSet::new(),
                     shared_vertex_annotations: BTreeMap::new(),
                 }],
-                nested_negations: vec![],
-                nested_optionals: vec![],
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
             };
 
             assert_eq!(expected_graph, tig);
@@ -718,18 +724,18 @@ pub mod tests {
         {
             // Case 1: $a has $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut block = FunctionalBlock::new();
-            let mut conjunction = block.conjunction_mut();
+            let mut context = BlockContext::new();
+            let mut conjunction = Conjunction::new(ScopeId::ROOT);
             let (var_animal, var_name) = ["animal", "name"]
-                .iter()
-                .map(|name| conjunction.get_or_declare_variable(*name).unwrap())
+                .into_iter()
+                .map(|name| conjunction.get_or_declare_variable(&mut context, name).unwrap())
                 .collect_tuple()
                 .unwrap();
 
-            conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
+            conjunction.constraints_mut().add_has(&mut context, var_animal, var_name).unwrap();
 
             let constraints = conjunction.constraints().constraints();
-            let tig = infer_types_for_conjunction(&snapshot, type_manager.borrow(), &conjunction).unwrap();
+            let tig = infer_types_for_conjunction(&snapshot, &context, &type_manager, &conjunction).unwrap();
 
             let expected_tig = TypeInferenceGraph {
                 conjunction: &conjunction,
@@ -747,9 +753,9 @@ pub mod tests {
                         (type_dog, type_dogname.clone()),
                     ],
                 )],
-                nested_disjunctions: vec![],
-                nested_negations: vec![],
-                nested_optionals: vec![],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
             };
 
             assert_eq!(expected_tig, tig);
@@ -767,8 +773,8 @@ pub mod tests {
         {
             // With roles specified
             let snapshot = storage.clone().open_snapshot_write();
-            let mut block = FunctionalBlock::new();
-            let mut conjunction = block.conjunction_mut();
+            let mut context = BlockContext::new();
+            let mut conjunction = Conjunction::new(ScopeId::ROOT);
             let (
                 var_has_fear,
                 var_is_feared,
@@ -788,24 +794,30 @@ pub mod tests {
                 "role_has_fear_type",
                 "role_is_feared_type",
             ]
-            .iter()
-            .map(|name| conjunction.get_or_declare_variable(*name).unwrap())
+            .into_iter()
+            .map(|name| conjunction.get_or_declare_variable(&mut context, name).unwrap())
             .collect_tuple()
             .unwrap();
 
-            conjunction.constraints_mut().add_isa(var_fears, var_fears_type).unwrap();
-            conjunction.constraints_mut().add_type(var_fears_type, LABEL_FEARS).unwrap();
-            conjunction.constraints_mut().add_role_player(var_fears, var_has_fear, Some(var_role_has_fear)).unwrap();
-            conjunction.constraints_mut().add_role_player(var_fears, var_is_feared, Some(var_role_is_feared)).unwrap();
+            conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_fears, var_fears_type).unwrap();
+            conjunction.constraints_mut().add_label(&mut context, var_fears_type, LABEL_FEARS).unwrap();
+            conjunction
+                .constraints_mut()
+                .add_role_player(&mut context, var_fears, var_has_fear, Some(var_role_has_fear))
+                .unwrap();
+            conjunction
+                .constraints_mut()
+                .add_role_player(&mut context, var_fears, var_is_feared, Some(var_role_is_feared))
+                .unwrap();
 
-            conjunction.constraints_mut().add_sub(var_role_has_fear, var_role_has_fear_type).unwrap();
-            conjunction.constraints_mut().add_type(var_role_has_fear_type, "fears:has-fear").unwrap();
-            conjunction.constraints_mut().add_sub(var_role_is_feared, var_role_is_feared_type).unwrap();
-            conjunction.constraints_mut().add_type(var_role_is_feared_type, "fears:is-feared").unwrap();
+            conjunction.constraints_mut().add_sub(&mut context, var_role_has_fear, var_role_has_fear_type).unwrap();
+            conjunction.constraints_mut().add_label(&mut context, var_role_has_fear_type, "fears:has-fear").unwrap();
+            conjunction.constraints_mut().add_sub(&mut context, var_role_is_feared, var_role_is_feared_type).unwrap();
+            conjunction.constraints_mut().add_label(&mut context, var_role_is_feared_type, "fears:is-feared").unwrap();
 
             let constraints = conjunction.constraints().constraints();
 
-            let tig = infer_types_for_conjunction(&snapshot, type_manager.borrow(), &conjunction).unwrap();
+            let tig = infer_types_for_conjunction(&snapshot, &context, &type_manager, &conjunction).unwrap();
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: &conjunction,
@@ -866,9 +878,9 @@ pub mod tests {
                         vec![(type_is_feared.clone(), type_is_feared.clone())],
                     ),
                 ],
-                nested_disjunctions: vec![],
-                nested_negations: vec![],
-                nested_optionals: vec![],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
             };
 
             assert_eq!(expected_graph, tig);

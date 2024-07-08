@@ -7,7 +7,6 @@
 use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
-    sync::{Arc, Mutex, MutexGuard},
 };
 
 use answer::variable::Variable;
@@ -18,7 +17,7 @@ use crate::{
         conjunction::Conjunction,
         constraint::Constraint,
         variable_category::{VariableCategory, VariableOptionality},
-        ScopeId,
+        Scope, ScopeId,
     },
     program::modifier::{Filter, Limit, Modifier, ModifierDefinitionError, Offset, Sort},
     PatternDefinitionError,
@@ -26,18 +25,25 @@ use crate::{
 
 // A functional block is exactly 1 Conjunction + any number of modifiers
 pub struct FunctionalBlock {
+    context: BlockContext,
     conjunction: Conjunction,
     modifiers: Vec<Modifier>,
-    context: Arc<Mutex<BlockContext>>,
 }
 
 impl FunctionalBlock {
     pub fn new() -> Self {
+        let root = Conjunction::new(ScopeId::ROOT);
+        Self { conjunction: root, modifiers: Vec::new(), context: BlockContext::new() }
+    }
+
+    pub fn from_raw_parts(context: BlockContext, conjunction: Conjunction, modifiers: Vec<Modifier>) -> Self {
+        Self { conjunction, modifiers, context }
+    }
+
+    pub fn from_match(match_: &typeql::query::stage::Match) -> Result<Self, PatternDefinitionError> {
         let mut context = BlockContext::new();
-        let root_scope = context.create_root_scope();
-        let context = Arc::new(Mutex::new(context));
-        let root = Conjunction::new(root_scope, context.clone());
-        Self { conjunction: root, modifiers: Vec::new(), context: context }
+        let conjunction = Conjunction::build_from_typeql_match(&mut context, match_)?;
+        Ok(Self { conjunction, modifiers: Vec::new(), context })
     }
 
     pub fn conjunction(&self) -> &Conjunction {
@@ -48,8 +54,12 @@ impl FunctionalBlock {
         &mut self.conjunction
     }
 
-    pub(crate) fn context(&self) -> MutexGuard<BlockContext> {
-        self.context.lock().unwrap()
+    pub fn context(&self) -> &BlockContext {
+        &self.context
+    }
+
+    pub fn context_mut(&mut self) -> &mut BlockContext {
+        &mut self.context
     }
 
     pub fn add_limit(&mut self, limit: u64) {
@@ -61,15 +71,31 @@ impl FunctionalBlock {
     }
 
     pub fn add_sort(&mut self, sort_variables: Vec<(&str, bool)>) -> Result<&Modifier, ModifierDefinitionError> {
-        let sort = Sort::new(sort_variables, &self.context())?;
+        let sort = Sort::new(sort_variables, &self.context)?;
         self.modifiers.push(Modifier::Sort(sort));
         Ok(self.modifiers.last().unwrap())
     }
 
     pub fn add_filter(&mut self, variables: Vec<&str>) -> Result<&Modifier, ModifierDefinitionError> {
-        let filter = Filter::new(variables, &self.context())?;
+        let filter = Filter::new(variables, &self.context)?;
         self.modifiers.push(Modifier::Filter(filter));
         Ok(self.modifiers.last().unwrap())
+    }
+
+    pub fn scope_id(&self) -> ScopeId {
+        Scope::scope_id(self)
+    }
+}
+
+impl Default for FunctionalBlock {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Scope for FunctionalBlock {
+    fn scope_id(&self) -> ScopeId {
+        ScopeId::ROOT
     }
 }
 
@@ -88,40 +114,44 @@ pub struct BlockContext {
 }
 
 impl BlockContext {
-    pub(crate) fn new() -> BlockContext {
+    pub fn new() -> BlockContext {
         Self {
             variable_names: HashMap::new(),
             variable_declaration: HashMap::new(),
             variable_names_index: HashMap::new(),
             variable_id_allocator: 0,
-            scope_id_allocator: 0,
+            scope_id_allocator: 1, // `0` is reserved for ROOT
             scope_parents: HashMap::new(),
             variable_categories: HashMap::new(),
             variable_optionality: HashMap::new(),
         }
     }
 
+    pub fn get_variable_named(&self, name: &str, scope: ScopeId) -> Option<&Variable> {
+        self.variable_names_index.get(name)
+    }
+
     pub(crate) fn get_or_declare_variable_named(
         &mut self,
         name: &str,
-        scope: &impl crate::pattern::Scope,
+        scope: ScopeId,
     ) -> Result<Variable, PatternDefinitionError> {
         match self.variable_names_index.get(name) {
             None => {
                 let variable = self.allocate_variable();
                 self.variable_names.insert(variable, name.to_string());
-                self.variable_declaration.insert(variable, scope.scope_id());
+                self.variable_declaration.insert(variable, scope);
                 self.variable_names_index.insert(name.to_string(), variable);
                 Ok(variable)
             }
             Some(existing_variable) => {
                 let existing_scope = self.variable_declaration.get_mut(existing_variable).unwrap();
-                if Self::is_equal_or_parent_scope(&self.scope_parents, scope.scope_id(), *existing_scope) {
+                if is_equal_or_parent_scope(&self.scope_parents, scope, *existing_scope) {
                     // Parent defines same name: ok, reuse the variable
                     Ok(*existing_variable)
-                } else if Self::is_child_scope(&self.scope_parents, scope.scope_id(), *existing_scope) {
+                } else if is_child_scope(&self.scope_parents, scope, *existing_scope) {
                     // Child defines the same name: ok, reuse the variable, and change the declaration scope to the current one
-                    *existing_scope = scope.scope_id();
+                    *existing_scope = scope;
                     Ok(*existing_variable)
                 } else {
                     Err(PatternDefinitionError::DisjointVariableReuse { variable_name: name.to_string() })
@@ -130,12 +160,18 @@ impl BlockContext {
         }
     }
 
+    pub(crate) fn create_anonymous_variable(&mut self, scope: ScopeId) -> Result<Variable, PatternDefinitionError> {
+        let variable = self.allocate_variable();
+        self.variable_declaration.insert(variable, scope);
+        Ok(variable)
+    }
+
     pub(crate) fn get_variable(&self, name: &str) -> Option<Variable> {
         self.variable_names_index.get(name).cloned()
     }
 
     pub(crate) fn get_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_declaration.keys().into_iter().cloned()
+        self.variable_declaration.keys().cloned()
     }
 
     pub(crate) fn get_variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
@@ -152,26 +188,20 @@ impl BlockContext {
         let variable_scope = self.variable_declaration.get(&variable);
         match variable_scope {
             None => false,
-            Some(variable_scope) => return Self::is_equal_or_parent_scope(&self.scope_parents, scope, *variable_scope),
+            Some(variable_scope) => is_equal_or_parent_scope(&self.scope_parents, scope, *variable_scope),
         }
-    }
-
-    pub(crate) fn create_root_scope(&mut self) -> ScopeId {
-        debug_assert!(self.scope_id_allocator == 0);
-        let scope = ScopeId::new(self.scope_id_allocator);
-        self.scope_id_allocator += 1;
-        scope
     }
 
     pub(crate) fn create_child_scope(&mut self, parent: ScopeId) -> ScopeId {
         let scope = ScopeId::new(self.scope_id_allocator);
+        debug_assert_ne!(scope, ScopeId::ROOT);
         self.scope_id_allocator += 1;
         self.scope_parents.insert(scope, parent);
         scope
     }
 
     pub(crate) fn get_variable_category(&self, variable: Variable) -> Option<VariableCategory> {
-        self.variable_categories.get(&variable).map(|(category, optionality)| *category)
+        self.variable_categories.get(&variable).map(|(category, _optionality)| *category)
     }
 
     pub(crate) fn set_variable_category(
@@ -180,7 +210,7 @@ impl BlockContext {
         category: VariableCategory,
         source: Constraint<Variable>,
     ) -> Result<(), PatternDefinitionError> {
-        let mut existing_category = self.variable_categories.get_mut(&variable);
+        let existing_category = self.variable_categories.get_mut(&variable);
         match existing_category {
             None => {
                 self.variable_categories.insert(variable, (category, source));
@@ -221,38 +251,35 @@ impl BlockContext {
             VariableOptionality::Optional => true,
         }
     }
+}
 
-    fn is_equal_or_parent_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_parent: ScopeId) -> bool {
-        scope == maybe_parent
-            || Self::get_scope_parent(parents, scope)
-                .map(|p| Self::is_equal_or_parent_scope(parents, p, maybe_parent))
-                .unwrap_or(false)
-    }
+fn is_equal_or_parent_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_parent: ScopeId) -> bool {
+    scope == maybe_parent || parents.get(&scope).is_some_and(|&p| is_equal_or_parent_scope(parents, p, maybe_parent))
+}
 
-    fn is_child_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_child: ScopeId) -> bool {
-        Self::get_scope_parent(parents, maybe_child)
-            .map(|c| c == scope || Self::is_child_scope(parents, scope, c))
-            .unwrap_or(false)
-    }
+fn is_child_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_child: ScopeId) -> bool {
+    parents.get(&maybe_child).is_some_and(|&c| c == scope || is_child_scope(parents, scope, c))
+}
 
-    fn get_scope_parent(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId) -> Option<ScopeId> {
-        parents.get(&scope).cloned()
+impl Default for BlockContext {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
 impl Display for BlockContext {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Named variables:")?;
-        for entry in self.variable_names.iter().sorted_by_key(|e| e.0) {
-            writeln!(f, "  {}: ${}", entry.0, entry.1)?;
+        for var in self.variable_names.keys().sorted_unstable() {
+            writeln!(f, "  {}: ${}", var, self.variable_names[var])?;
         }
         writeln!(f, "Variable categories:")?;
-        for entry in self.variable_categories.iter().sorted_by_key(|e| e.0) {
-            writeln!(f, "  {}: {}", entry.0, entry.1 .0)?;
+        for var in self.variable_categories.keys().sorted_unstable() {
+            writeln!(f, "  {}: {}", var, self.variable_categories[var].0)?;
         }
         writeln!(f, "Optional variables:")?;
-        for entry in self.variable_optionality.iter().sorted_by_key(|e| e.0) {
-            writeln!(f, "  {}", entry.0)?;
+        for var in self.variable_optionality.keys().sorted_unstable() {
+            writeln!(f, "  {}", var)?;
         }
         Ok(())
     }

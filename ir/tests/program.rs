@@ -13,28 +13,36 @@ use encoding::{
 };
 use ir::{
     pattern::{
+        conjunction::Conjunction,
+        constraint::IsaKind,
         function_call::FunctionCall,
         variable_category::{VariableCategory, VariableOptionality},
+        ScopeId,
     },
-    program::{block::FunctionalBlock, modifier::ModifierDefinitionError, program::Program},
+    program::{
+        block::{BlockContext, FunctionalBlock},
+        modifier::ModifierDefinitionError,
+        program::Program,
+    },
 };
 
 #[test]
 fn build_program_modifiers() {
-    let mut block = FunctionalBlock::new();
-    {
-        let mut conjunction = block.conjunction_mut();
-        let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
-        let var_name = conjunction.get_or_declare_variable(&"name").unwrap();
-        let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
-        let var_name_type = conjunction.get_or_declare_variable(&"name_type").unwrap();
+    let mut context = BlockContext::new();
+    let mut conjunction = Conjunction::new(ScopeId::ROOT);
 
-        conjunction.constraints_mut().add_isa(var_person, var_person_type).unwrap();
-        conjunction.constraints_mut().add_has(var_person, var_name).unwrap();
-        conjunction.constraints_mut().add_isa(var_name, var_name_type).unwrap();
-        conjunction.constraints_mut().add_type(var_person_type, "person").unwrap();
-        conjunction.constraints_mut().add_type(var_name_type, "name").unwrap();
-    }
+    let var_person = conjunction.get_or_declare_variable(&mut context, "person").unwrap();
+    let var_name = conjunction.get_or_declare_variable(&mut context, "name").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable(&mut context, "person_type").unwrap();
+    let var_name_type = conjunction.get_or_declare_variable(&mut context, "name_type").unwrap();
+
+    conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_person, var_person_type).unwrap();
+    conjunction.constraints_mut().add_has(&mut context, var_person, var_name).unwrap();
+    conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_name, var_name_type).unwrap();
+    conjunction.constraints_mut().add_label(&mut context, var_person_type, "person").unwrap();
+    conjunction.constraints_mut().add_label(&mut context, var_name_type, "name").unwrap();
+
+    let mut block = FunctionalBlock::from_raw_parts(context, conjunction, Vec::new());
     block.add_limit(10);
     block.add_sort(vec![("person", true), ("name", false)]).unwrap();
 
@@ -43,58 +51,61 @@ fn build_program_modifiers() {
 
 #[test]
 fn build_invalid_program_modifiers() {
-    let mut block = FunctionalBlock::new();
-    {
-        let mut conjunction = block.conjunction_mut();
-        let person_name = String::from("bob");
-        let var_person = conjunction.get_or_declare_variable(&person_name).unwrap();
-        let var_name = conjunction.get_or_declare_variable(&"name").unwrap();
-        let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
-        let var_name_type = conjunction.get_or_declare_variable(&"name_type").unwrap();
+    let person_name = String::from("bob");
 
-        conjunction.constraints_mut().add_isa(var_person, var_person_type).unwrap();
-        conjunction.constraints_mut().add_has(var_person, var_name).unwrap();
-        conjunction.constraints_mut().add_isa(var_name, var_name_type).unwrap();
-        conjunction.constraints_mut().add_type(var_person_type, "person").unwrap();
-        conjunction.constraints_mut().add_type(var_name_type, "name").unwrap();
-    }
+    let mut context = BlockContext::new();
+    let mut conjunction = Conjunction::new(ScopeId::ROOT);
+
+    let var_person = conjunction.get_or_declare_variable(&mut context, &person_name).unwrap();
+    let var_name = conjunction.get_or_declare_variable(&mut context, "name").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable(&mut context, "person_type").unwrap();
+    let var_name_type = conjunction.get_or_declare_variable(&mut context, "name_type").unwrap();
+
+    conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_person, var_person_type).unwrap();
+    conjunction.constraints_mut().add_has(&mut context, var_person, var_name).unwrap();
+    conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_name, var_name_type).unwrap();
+    conjunction.constraints_mut().add_label(&mut context, var_person_type, "person").unwrap();
+    conjunction.constraints_mut().add_label(&mut context, var_name_type, "name").unwrap();
+
+    let mut block = FunctionalBlock::from_raw_parts(context, conjunction, Vec::new());
     let result = block.add_sort(vec![("bob", true), ("jane", false)]);
-    assert!(matches!(result, Err(ModifierDefinitionError::SortVariableNotAvailable { name: person_name })));
+    assert!(
+        matches!(&result, Err(ModifierDefinitionError::SortVariableNotAvailable { name }) if name == "jane"),
+        "{result:?}"
+    );
     let _ = Program::new(block, HashMap::new());
 }
 
 #[test]
 fn build_program_with_functions() {
-    let mut block = FunctionalBlock::new();
-    {
-        let mut conjunction = block.conjunction_mut();
+    let mut context = BlockContext::new();
+    let mut conjunction = Conjunction::new(ScopeId::ROOT);
 
-        let var_person = conjunction.get_or_declare_variable(&"person").unwrap();
-        let var_person_type = conjunction.get_or_declare_variable(&"person_type").unwrap();
+    let var_person = conjunction.get_or_declare_variable(&mut context, "person").unwrap();
+    let var_person_type = conjunction.get_or_declare_variable(&mut context, "person_type").unwrap();
 
-        let var_count = conjunction.get_or_declare_variable(&"count").unwrap();
-        let var_mean = conjunction.get_or_declare_variable(&"sum").unwrap();
+    let var_count = conjunction.get_or_declare_variable(&mut context, "count").unwrap();
+    let var_mean = conjunction.get_or_declare_variable(&mut context, "sum").unwrap();
 
-        conjunction.constraints_mut().add_isa(var_person, var_person_type).unwrap();
+    conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_person, var_person_type).unwrap();
 
-        let mut function_call_var_mapping = BTreeMap::new();
-        function_call_var_mapping.insert(var_person, Variable::new(1000));
-        let mut function_call_var_categories = HashMap::new();
-        function_call_var_categories.insert(var_person, VariableCategory::Object);
-        let function_call = FunctionCall::new(
-            DefinitionKey::build(Prefix::DefinitionStruct, DefinitionID::build(1000)),
-            function_call_var_mapping,
-            function_call_var_categories,
-            vec![
-                (VariableCategory::Value, VariableOptionality::Required),
-                (VariableCategory::Value, VariableOptionality::Optional),
-            ],
-            false,
-        );
-        conjunction.constraints_mut().add_function_call(vec![var_count, var_mean], function_call).unwrap();
+    let mut function_call_var_mapping = BTreeMap::new();
+    function_call_var_mapping.insert(var_person, Variable::new(1000));
+    let mut function_call_var_categories = HashMap::new();
+    function_call_var_categories.insert(var_person, VariableCategory::Object);
+    let function_call = FunctionCall::new(
+        DefinitionKey::build(Prefix::DefinitionStruct, DefinitionID::build(1000)),
+        function_call_var_mapping,
+        function_call_var_categories,
+        vec![
+            (VariableCategory::Value, VariableOptionality::Required),
+            (VariableCategory::Value, VariableOptionality::Optional),
+        ],
+        false,
+    );
+    conjunction.constraints_mut().add_function_call(&mut context, vec![var_count, var_mean], function_call).unwrap();
 
-        println!("{}", &conjunction);
-    }
+    println!("{}", &conjunction);
 
     // TODO: incomplete, since we don't have the called function IR
     // let program = Program::new(Pattern::Conjunction(conjunction), HashMap::new());

@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt::{Debug, Display, Formatter},
-    sync::MutexGuard,
-};
+use std::{fmt, sync::MutexGuard};
 
 use crate::{
     pattern::{disjunction::Disjunction, negation::Negation, optional::Optional},
@@ -22,14 +19,6 @@ pub enum NestedPattern {
 }
 
 impl NestedPattern {
-    pub(crate) fn context(&self) -> MutexGuard<BlockContext> {
-        match self {
-            NestedPattern::Disjunction(disjunction) => disjunction.context(),
-            NestedPattern::Negation(negation) => negation.context(),
-            NestedPattern::Optional(optional) => optional.context(),
-        }
-    }
-
     pub(crate) fn as_disjunction(&self) -> Option<&Disjunction> {
         match self {
             NestedPattern::Disjunction(disjunction) => Some(disjunction),
@@ -73,12 +62,12 @@ impl NestedPattern {
     }
 }
 
-impl Display for NestedPattern {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for NestedPattern {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            NestedPattern::Disjunction(pattern) => Display::fmt(pattern, f),
-            NestedPattern::Negation(pattern) => Display::fmt(pattern, f),
-            NestedPattern::Optional(pattern) => Display::fmt(pattern, f),
+            NestedPattern::Disjunction(pattern) => fmt::Display::fmt(pattern, f),
+            NestedPattern::Negation(pattern) => fmt::Display::fmt(pattern, f),
+            NestedPattern::Optional(pattern) => fmt::Display::fmt(pattern, f),
         }
     }
 }

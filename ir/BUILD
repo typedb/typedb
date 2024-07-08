@@ -23,9 +23,9 @@ rust_library(
         "//encoding",
         "//storage",
 
-        "//util/test:test_utils",
+        "@vaticle_typeql//rust:typeql",
 
-        "@crates//:itertools"
+        "@crates//:itertools",
     ],
 )
 

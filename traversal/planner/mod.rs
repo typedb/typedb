@@ -12,6 +12,7 @@ A Plan should have an order over the Variables in a Pattern's constraint, for ea
 We may need to be able to indicate which constraints are 'Seekable (+ ordered)' and therefore can be utilised in an intersection.
 For example, function stream outputs are probably not seekable since we won't have traversals be seekable (at least to start!).
  */
+
 pub mod function_plan;
 pub mod pattern_plan;
 pub mod program_plan;

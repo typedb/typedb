@@ -16,10 +16,10 @@ pub struct Program {
 }
 
 impl Program {
-    pub fn new(entry_block: FunctionalBlock, functions: HashMap<DefinitionKey<'static>, FunctionIR>) -> Self {
+    pub fn new(entry: FunctionalBlock, functions: HashMap<DefinitionKey<'static>, FunctionIR>) -> Self {
         // TODO: verify exactly the required functions are provided
-        debug_assert!(Self::all_variables_categorised(&entry_block));
-        Self { entry: entry_block, functions: functions }
+        debug_assert!(Self::all_variables_categorised(&entry));
+        Self { entry, functions }
     }
 
     pub fn entry(&self) -> &FunctionalBlock {
@@ -28,6 +28,11 @@ impl Program {
 
     pub fn entry_mut(&mut self) -> &mut FunctionalBlock {
         &mut self.entry
+    }
+
+    pub fn compile(match_: &typeql::query::stage::Match) -> Self {
+        let _entry = FunctionalBlock::from_match(match_);
+        todo!()
     }
 
     fn all_variables_categorised(block: &FunctionalBlock) -> bool {

@@ -22,6 +22,7 @@ rust_library(
         "//ir",
         "//resource",
         "//storage",
+        "@vaticle_typeql//rust:typeql",
 
         "@crates//:itertools",
     ],
