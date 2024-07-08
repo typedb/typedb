@@ -311,8 +311,7 @@ pub mod tests {
 
     use std::{
         borrow::Borrow,
-        collections::{BTreeMap, BTreeSet, HashMap, HashSet},
-        sync::Arc,
+        collections::{BTreeMap, BTreeSet},
     };
 
     use answer::{variable::Variable, Type as TypeAnnotation};
@@ -332,7 +331,6 @@ pub mod tests {
                 },
                 setup_storage,
             },
-            type_inference::TypeAnnotations,
         },
         pattern::constraint::Constraint,
         program::block::FunctionalBlock,

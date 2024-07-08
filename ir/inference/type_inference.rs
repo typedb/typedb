@@ -15,7 +15,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     inference::pattern_type_inference::{infer_types_for_conjunction, TypeInferenceGraph},
-    pattern::{conjunction::Conjunction, constraint::Constraint, ScopeId},
+    pattern::constraint::Constraint,
     program::program::Program,
 };
 
@@ -55,7 +55,7 @@ impl TypeAnnotations {
         variables: HashMap<Variable, Arc<HashSet<Type>>>,
         constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     ) -> Self {
-        TypeAnnotations { variables: variables, constraints: constraints }
+        TypeAnnotations { variables, constraints }
     }
 
     pub(crate) fn build(root_type_inference_graph: TypeInferenceGraph<'_>) -> Self {
