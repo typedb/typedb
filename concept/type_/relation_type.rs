@@ -400,7 +400,9 @@ impl From<Annotation> for Result<RelationTypeAnnotation, AnnotationError> {
             | Annotation::Cardinality(_)
             | Annotation::Regex(_)
             | Annotation::Range(_)
-            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category())),
+            | Annotation::Values(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category()))
+            }
         }
     }
 }

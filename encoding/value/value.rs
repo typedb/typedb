@@ -8,22 +8,22 @@ use std::{
     borrow::Cow,
     cmp::Ordering,
     fmt::{Display, Formatter},
+    hash::Hash,
 };
-use std::hash::Hash;
 
+use bytes::byte_array::ByteArray;
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
 use chrono_tz::Tz;
-use bytes::byte_array::ByteArray;
 
 use super::date_bytes::DateBytes;
 use crate::{
-    AsBytes,
     value::{
         boolean_bytes::BooleanBytes, date_time_bytes::DateTimeBytes, date_time_tz_bytes::DateTimeTZBytes,
         decimal_bytes::DecimalBytes, decimal_value::Decimal, double_bytes::DoubleBytes, duration_bytes::DurationBytes,
         duration_value::Duration, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
         value_struct::StructValue, value_type::ValueType, ValueEncodable,
-    }
+    },
+    AsBytes,
 };
 
 #[derive(Debug, Clone, PartialEq)]

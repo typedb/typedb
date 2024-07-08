@@ -343,7 +343,9 @@ impl From<Annotation> for Result<AttributeTypeAnnotation, AnnotationError> {
             | Annotation::Unique(_)
             | Annotation::Key(_)
             | Annotation::Cardinality(_)
-            | Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
+            | Annotation::Cascade(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
+            }
         }
     }
 }

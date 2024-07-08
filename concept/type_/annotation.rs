@@ -4,8 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, error::Error, fmt};
-use std::hash::{Hash, Hasher};
+use std::{
+    borrow::Cow,
+    error::Error,
+    fmt,
+    hash::{Hash, Hasher},
+};
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
@@ -17,11 +21,10 @@ use encoding::{
             PropertyAnnotationIndependent, PropertyAnnotationKey, PropertyAnnotationUnique,
         },
     },
+    value::{value::Value, ValueEncodable},
 };
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
-use encoding::value::value::Value;
-use encoding::value::ValueEncodable;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
@@ -169,7 +172,7 @@ impl AnnotationRange {
             None => match &self.end_inclusive {
                 None => false,
                 Some(_) => true,
-            }
+            },
             Some(start_inclusive) => match &self.end_inclusive {
                 None => true,
                 Some(end_inclusive) => {
@@ -183,13 +186,15 @@ impl AnnotationRange {
                         Value::Decimal(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_decimal(),
                         Value::Date(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date(),
                         Value::DateTime(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date_time(),
-                        Value::DateTimeTZ(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date_time_tz(),
+                        Value::DateTimeTZ(start_inclusive) => {
+                            start_inclusive < &end_inclusive.clone().unwrap_date_time_tz()
+                        }
                         Value::String(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_string(),
                         Value::Duration(start_inclusive) => unreachable!("Cannot use duration for AnnotationRange"),
                         Value::Struct(start_inclusive) => unreachable!("Cannot use structs for AnnotationRange"),
                     }
                 }
-            }
+            },
         }
     }
 
@@ -217,8 +222,8 @@ impl AnnotationRange {
                     Value::String(value) => &start.unwrap_string() <= value,
                     Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
                     Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
-                }
-            }
+                },
+            },
         }
     }
 
@@ -238,8 +243,8 @@ impl AnnotationRange {
                     Value::String(value) => &end.unwrap_string() >= value,
                     Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
                     Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
-                }
-            }
+                },
+            },
         }
     }
 }
@@ -450,13 +455,13 @@ impl AnnotationCategory {
 
 pub trait DefaultFrom<FromType, ErrorType> {
     fn try_getting_default(from: FromType) -> Result<Self, ErrorType>
-        where
-            Self: Sized;
+    where
+        Self: Sized;
 }
 
 impl<T> DefaultFrom<AnnotationCategory, AnnotationError> for T
-    where
-        Result<T, AnnotationError>: From<Annotation>,
+where
+    Result<T, AnnotationError>: From<Annotation>,
 {
     // Note: creating default annotation from category is a workaround for creating new category types per Attribute/Entity/Relation/etc
     fn try_getting_default(from: AnnotationCategory) -> Result<Self, AnnotationError> {
@@ -646,6 +651,7 @@ impl Error for AnnotationError {
 
 mod hash_value {
     use std::hash::{Hash, Hasher};
+
     use encoding::value::value::Value;
 
     // WARN: Use this function only for Annotations containing Values to allow its hashing,
@@ -670,7 +676,7 @@ mod hash_value {
 
         match value_opt {
             None => NONE_HASH_MARKER.hash(state),
-            Some(value) => hash_value(value, state)
+            Some(value) => hash_value(value, state),
         }
     }
 
@@ -679,280 +685,39 @@ mod hash_value {
     }
 }
 
-mod serialise_range {
-    use std::borrow::Cow;
-    use std::fmt;
-    use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-    use serde::de::{MapAccess, SeqAccess, Visitor};
-    use serde::ser::SerializeStruct;
-    use encoding::value::boolean_bytes::BooleanBytes;
-    use encoding::value::date_bytes::DateBytes;
-    use encoding::value::date_time_bytes::DateTimeBytes;
-    use encoding::value::date_time_tz_bytes::DateTimeTZBytes;
-    use encoding::value::decimal_bytes::DecimalBytes;
-    use encoding::value::double_bytes::DoubleBytes;
-    use encoding::value::long_bytes::LongBytes;
-    use encoding::value::string_bytes::StringBytes;
-    use encoding::value::value::Value;
-    use encoding::value::value_type::ValueTypeCategory;
-    use encoding::value::ValueEncodable;
-    use crate::type_::annotation::AnnotationRange;
+mod serialize_annotation {
+    use std::{borrow::Cow, fmt};
+
     use bytes::Bytes;
+    use encoding::value::{
+        boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
+        date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
+        duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value::Value,
+        value_type::ValueTypeCategory, ValueEncodable,
+    };
+    use serde::{
+        de,
+        de::{MapAccess, SeqAccess, Visitor},
+        ser::SerializeStruct,
+        Deserialize, Deserializer, Serialize, Serializer,
+    };
 
-    enum Field {
-        StartInclusive,
-        EndInclusive,
-    }
-
-    impl Field {
-        const NAMES: [&'static str; 2] = [
-            Self::StartInclusive.name(),
-            Self::EndInclusive.name(),
-        ];
-
-        const fn name(&self) -> &str {
-            match self {
-                Field::StartInclusive => "StartInclusive",
-                Field::EndInclusive => "EndInclusive",
-            }
-        }
-
-        fn from(string: &str) -> Option<Self> {
-            match string {
-                "StartInclusive" => Some(Field::StartInclusive),
-                "EndInclusive" => Some(Field::EndInclusive),
-                _ => None,
-            }
-        }
-    }
+    use crate::type_::annotation::{AnnotationRange, AnnotationValues};
 
     const INLINE_LENGTH: usize = 128;
 
-    fn serialize_optional_value_field(value: Option<Value<'_>>) -> Option<Vec<u8>> {
-        match &value {
-            None => None,
-            Some(start_inclusive) => Some(
-                match start_inclusive {
-                    | Value::Boolean(_)
-                    | Value::Long(_)
-                    | Value::Double(_)
-                    | Value::Decimal(_)
-                    | Value::Date(_)
-                    | Value::DateTime(_)
-                    | Value::DateTimeTZ(_)
-                    | Value::String(_) => start_inclusive.encode_bytes::<INLINE_LENGTH>().bytes().to_owned(),
-                    Value::Duration(_) => unreachable!("Can't use duration for AnnotationRange"),
-                    Value::Struct(_) => unreachable!("Can't use struct for AnnotationRange"),
-                }
-            )
-        }
-    }
-
-    impl Serialize for AnnotationRange {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: Serializer,
-        {
-            let mut state = serializer.serialize_struct("AnnotationRange", Field::NAMES.len())?;
-            state.serialize_field(Field::StartInclusive.name(), &serialize_optional_value_field(self.start_inclusive.clone()))?;
-            state.serialize_field(Field::EndInclusive.name(), &serialize_optional_value_field(self.end_inclusive.clone()))?;
-            state.end()
-        }
-    }
-
-    fn deserialize_optional_value_field(bytes_opt: Option<&[u8]>, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
-        match bytes_opt {
-            None => None,
-            Some(bytes) => Some(
-                match &value_type_category {
-                    ValueTypeCategory::Boolean => Value::Boolean(BooleanBytes::new(bytes.try_into().unwrap()).as_bool()),
-                    ValueTypeCategory::Long => Value::Long(LongBytes::new(bytes.try_into().unwrap()).as_i64()),
-                    ValueTypeCategory::Double => Value::Double(DoubleBytes::new(bytes.try_into().unwrap()).as_f64()),
-                    ValueTypeCategory::Decimal => Value::Decimal(DecimalBytes::new(bytes.try_into().unwrap()).as_decimal()),
-                    ValueTypeCategory::Date => Value::Date(DateBytes::new(bytes.try_into().unwrap()).as_naive_date()),
-                    ValueTypeCategory::DateTime => Value::DateTime(DateTimeBytes::new(bytes.try_into().unwrap()).as_naive_date_time()),
-                    ValueTypeCategory::DateTimeTZ => Value::DateTimeTZ(DateTimeTZBytes::new(bytes.try_into().unwrap()).as_date_time()),
-                    ValueTypeCategory::String => Value::String(Cow::Owned(StringBytes::new(Bytes::<INLINE_LENGTH>::copy(bytes)).as_str().to_owned())),
-                    ValueTypeCategory::Duration => unreachable!("Can't use duration for AnnotationRange"),
-                    ValueTypeCategory::Struct => unreachable!("Can't use struct for AnnotationRange"),
-                }
-            )
-        }
-    }
-
-    impl<'de> Deserialize<'de> for AnnotationRange {
-        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where
-                D: Deserializer<'de>,
-        {
-            impl<'de> Deserialize<'de> for Field {
-                fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
-                    where
-                        D: Deserializer<'de>,
-                {
-                    struct FieldVisitor;
-
-                    impl<'de> Visitor<'de> for FieldVisitor {
-                        type Value = Field;
-
-                        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                            formatter.write_str("Unrecognised field")
-                        }
-
-                        fn visit_str<E>(self, value: &str) -> Result<Field, E>
-                            where
-                                E: de::Error,
-                        {
-                            Field::from(value).ok_or_else(|| de::Error::unknown_field(value, &Field::NAMES))
-                        }
-                    }
-
-                    deserializer.deserialize_identifier(FieldVisitor)
-                }
-            }
-
-            struct AnnotationRangeVisitor {
-                value_type_category: ValueTypeCategory,
-            }
-
-            impl<'de> Visitor<'de> for AnnotationRangeVisitor {
-                type Value = AnnotationRange;
-
-                fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    formatter.write_str("struct AnnotationRangeVisitor")
-                }
-
-                fn visit_seq<V>(self, mut seq: V) -> Result<AnnotationRange, V::Error>
-                    where
-                        V: SeqAccess<'de>,
-                {
-                    let start_inclusive = deserialize_optional_value_field(
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?,
-                        self.value_type_category.clone(),
-                    );
-                    let end_inclusive = deserialize_optional_value_field(
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?,
-                        self.value_type_category.clone(),
-                    );
-
-                    Ok(AnnotationRange {
-                        start_inclusive,
-                        end_inclusive,
-                    })
-                }
-
-                fn visit_map<V>(self, mut map: V) -> Result<AnnotationRange, V::Error>
-                    where
-                        V: MapAccess<'de>,
-                {
-                    let mut start_inclusive: Option<Option<Value<'static>>> = None;
-                    let mut end_inclusive: Option<Option<Value<'static>>> = None;
-                    while let Some(key) = map.next_key()? {
-                        match key {
-                            Field::StartInclusive => {
-                                if start_inclusive.is_some() {
-                                    return Err(de::Error::duplicate_field(Field::StartInclusive.name()));
-                                }
-                                start_inclusive = Some(deserialize_optional_value_field(
-                                    map.next_value()?,
-                                    self.value_type_category.clone(),
-                                ));
-                            }
-                            Field::EndInclusive => {
-                                if end_inclusive.is_some() {
-                                    return Err(de::Error::duplicate_field(Field::EndInclusive.name()));
-                                }
-                                end_inclusive = Some(deserialize_optional_value_field(
-                                    map.next_value()?,
-                                    self.value_type_category.clone(),
-                                ));
-                            }
-                        }
-                    }
-
-                    Ok(AnnotationRange {
-                        start_inclusive: start_inclusive
-                            .ok_or_else(|| de::Error::missing_field(Field::StartInclusive.name()))?,
-                        end_inclusive: end_inclusive
-                            .ok_or_else(|| de::Error::missing_field(Field::EndInclusive.name()))?,
-                    })
-                }
-            }
-
-            deserializer.deserialize_struct("AnnotationRange", &Field::NAMES, AnnotationRangeVisitor { value_type_category: ValueTypeCategory::Boolean })
-        }
-    }
-}
-
-mod serialise_values {
-    use std::borrow::Cow;
-    use std::fmt;
-    use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-    use serde::de::{MapAccess, SeqAccess, Visitor};
-    use serde::ser::SerializeStruct;
-    use encoding::value::boolean_bytes::BooleanBytes;
-    use encoding::value::date_bytes::DateBytes;
-    use encoding::value::date_time_bytes::DateTimeBytes;
-    use encoding::value::date_time_tz_bytes::DateTimeTZBytes;
-    use encoding::value::decimal_bytes::DecimalBytes;
-    use encoding::value::double_bytes::DoubleBytes;
-    use encoding::value::long_bytes::LongBytes;
-    use encoding::value::string_bytes::StringBytes;
-    use encoding::value::value::Value;
-    use encoding::value::value_type::ValueTypeCategory;
-    use encoding::value::ValueEncodable;
-    use crate::type_::annotation::AnnotationValues;
-    use bytes::Bytes;
-    use encoding::value::duration_bytes::DurationBytes;
-
-    enum Field {
-        Values,
-    }
-
-    impl Field {
-        const NAMES: [&'static str; 1] = [
-            Self::Values.name(),
-        ];
-
-        const fn name(&self) -> &str {
-            match self {
-                Field::Values => "Values",
-            }
-        }
-
-        fn from(string: &str) -> Option<Self> {
-            match string {
-                "Values" => Some(Field::Values),
-                _ => None,
-            }
-        }
-    }
-
-    const INLINE_LENGTH: usize = 128;
-
-    fn serialize_value_vec_field(values: &Vec<Value<'_>>) -> Vec<Vec<u8>> {
-        values.iter().map(|value| match value {
-            | Value::Boolean(_)
-            | Value::Long(_)
-            | Value::Double(_)
-            | Value::Decimal(_)
-            | Value::Date(_)
-            | Value::DateTime(_)
-            | Value::DateTimeTZ(_)
-            | Value::String(_)
-            | Value::Duration(_) => value.encode_bytes::<INLINE_LENGTH>().bytes().to_owned(),
-            Value::Struct(_) => unreachable!("Can't use struct for AnnotationValues"),
-        }).collect()
-    }
-
-    impl Serialize for AnnotationValues {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: Serializer,
-        {
-            let mut state = serializer.serialize_struct("AnnotationValues", Field::NAMES.len())?;
-            state.serialize_field(Field::Values.name(), &serialize_value_vec_field(&self.values))?;
-            state.end()
+    fn serialize_value(value: Value<'_>) -> Vec<u8> {
+        match value.value_type().category() {
+            | ValueTypeCategory::Boolean
+            | ValueTypeCategory::Long
+            | ValueTypeCategory::Double
+            | ValueTypeCategory::Decimal
+            | ValueTypeCategory::Date
+            | ValueTypeCategory::DateTime
+            | ValueTypeCategory::DateTimeTZ
+            | ValueTypeCategory::Duration
+            | ValueTypeCategory::String => value.encode_bytes::<INLINE_LENGTH>().bytes().to_owned(),
+            ValueTypeCategory::Struct => unreachable!("Structs are not supported in annotation serialization"),
         }
     }
 
@@ -963,42 +728,139 @@ mod serialise_values {
             ValueTypeCategory::Double => Value::Double(DoubleBytes::new(bytes.try_into().unwrap()).as_f64()),
             ValueTypeCategory::Decimal => Value::Decimal(DecimalBytes::new(bytes.try_into().unwrap()).as_decimal()),
             ValueTypeCategory::Date => Value::Date(DateBytes::new(bytes.try_into().unwrap()).as_naive_date()),
-            ValueTypeCategory::DateTime => Value::DateTime(DateTimeBytes::new(bytes.try_into().unwrap()).as_naive_date_time()),
-            ValueTypeCategory::DateTimeTZ => Value::DateTimeTZ(DateTimeTZBytes::new(bytes.try_into().unwrap()).as_date_time()),
+            ValueTypeCategory::DateTime => {
+                Value::DateTime(DateTimeBytes::new(bytes.try_into().unwrap()).as_naive_date_time())
+            }
+            ValueTypeCategory::DateTimeTZ => {
+                Value::DateTimeTZ(DateTimeTZBytes::new(bytes.try_into().unwrap()).as_date_time())
+            }
             ValueTypeCategory::Duration => Value::Duration(DurationBytes::new(bytes.try_into().unwrap()).as_duration()),
-            ValueTypeCategory::String => Value::String(Cow::Owned(StringBytes::new(Bytes::<INLINE_LENGTH>::copy(bytes)).as_str().to_owned())),
-            ValueTypeCategory::Struct => unreachable!("Can't use struct for AnnotationValues"),
+            ValueTypeCategory::String => {
+                Value::String(Cow::Owned(StringBytes::new(Bytes::<INLINE_LENGTH>::copy(bytes)).as_str().to_owned()))
+            }
+            ValueTypeCategory::Struct => unreachable!("Structs are not supported in annotation deserialization"),
         }
     }
 
-    fn deserialize_value_vec_field(bytes_vec: &Vec<&[u8]>, value_type_category: ValueTypeCategory) -> Vec<Value<'static>> {
-        bytes_vec.iter().map(|bytes| deserialize_value(bytes, value_type_category)).collect()
+    enum RangeField {
+        ValueTypeCategory,
+        StartInclusive,
+        EndInclusive,
     }
 
-    impl<'de> Deserialize<'de> for AnnotationValues {
-        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where
-                D: Deserializer<'de>,
+    impl RangeField {
+        const NAMES: [&'static str; 3] =
+            [Self::ValueTypeCategory.name(), Self::StartInclusive.name(), Self::EndInclusive.name()];
+
+        const fn name(&self) -> &str {
+            match self {
+                RangeField::ValueTypeCategory => "ValueTypeCategory",
+                RangeField::StartInclusive => "StartInclusive",
+                RangeField::EndInclusive => "EndInclusive",
+            }
+        }
+
+        fn from(string: &str) -> Option<Self> {
+            match string {
+                "ValueTypeCategory" => Some(RangeField::ValueTypeCategory),
+                "StartInclusive" => Some(RangeField::StartInclusive),
+                "EndInclusive" => Some(RangeField::EndInclusive),
+                _ => None,
+            }
+        }
+    }
+
+    fn serialize_annotation_range_value_field(value: Option<Value<'_>>) -> Option<Vec<u8>> {
+        match &value {
+            None => None,
+            Some(value) => Some(match value.value_type().category() {
+                | ValueTypeCategory::Boolean
+                | ValueTypeCategory::Long
+                | ValueTypeCategory::Double
+                | ValueTypeCategory::Decimal
+                | ValueTypeCategory::Date
+                | ValueTypeCategory::DateTime
+                | ValueTypeCategory::DateTimeTZ
+                | ValueTypeCategory::String => serialize_value(value.clone()),
+                ValueTypeCategory::Duration => unreachable!("Can't use duration for AnnotationRange"),
+                ValueTypeCategory::Struct => unreachable!("Can't use struct for AnnotationRange"),
+            }),
+        }
+    }
+
+    fn deserialize_annotation_range_value_field(
+        bytes_opt: Option<&[u8]>,
+        value_type_category: ValueTypeCategory,
+    ) -> Option<Value<'static>> {
+        match bytes_opt {
+            None => None,
+            Some(bytes) => Some(match &value_type_category {
+                | ValueTypeCategory::Boolean
+                | ValueTypeCategory::Long
+                | ValueTypeCategory::Double
+                | ValueTypeCategory::Decimal
+                | ValueTypeCategory::Date
+                | ValueTypeCategory::DateTime
+                | ValueTypeCategory::DateTimeTZ
+                | ValueTypeCategory::String => deserialize_value(bytes, value_type_category),
+                ValueTypeCategory::Duration => unreachable!("Can't use duration for AnnotationRange"),
+                ValueTypeCategory::Struct => unreachable!("Can't use struct for AnnotationRange"),
+            }),
+        }
+    }
+
+    impl Serialize for AnnotationRange {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
         {
-            impl<'de> Deserialize<'de> for Field {
-                fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
-                    where
-                        D: Deserializer<'de>,
+            let mut state = serializer.serialize_struct("AnnotationRange", RangeField::NAMES.len())?;
+
+            assert!(self.start_inclusive.is_some() || self.end_inclusive.is_some());
+            let value_type_category = self
+                .start_inclusive
+                .clone()
+                .unwrap_or(self.end_inclusive.clone().unwrap_or(Value::Boolean(false)))
+                .value_type()
+                .category();
+            state.serialize_field(RangeField::ValueTypeCategory.name(), &value_type_category.to_bytes())?;
+
+            state.serialize_field(
+                RangeField::StartInclusive.name(),
+                &serialize_annotation_range_value_field(self.start_inclusive.clone()),
+            )?;
+            state.serialize_field(
+                RangeField::EndInclusive.name(),
+                &serialize_annotation_range_value_field(self.end_inclusive.clone()),
+            )?;
+            state.end()
+        }
+    }
+
+    impl<'de> Deserialize<'de> for AnnotationRange {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            impl<'de> Deserialize<'de> for RangeField {
+                fn deserialize<D>(deserializer: D) -> Result<RangeField, D::Error>
+                where
+                    D: Deserializer<'de>,
                 {
                     struct FieldVisitor;
 
                     impl<'de> Visitor<'de> for FieldVisitor {
-                        type Value = Field;
+                        type Value = RangeField;
 
                         fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                             formatter.write_str("Unrecognised field")
                         }
 
-                        fn visit_str<E>(self, value: &str) -> Result<Field, E>
-                            where
-                                E: de::Error,
+                        fn visit_str<E>(self, value: &str) -> Result<RangeField, E>
+                        where
+                            E: de::Error,
                         {
-                            Field::from(value).ok_or_else(|| de::Error::unknown_field(value, &Field::NAMES))
+                            RangeField::from(value).ok_or_else(|| de::Error::unknown_field(value, &RangeField::NAMES))
                         }
                     }
 
@@ -1006,9 +868,188 @@ mod serialise_values {
                 }
             }
 
-            struct AnnotationValuesVisitor {
-                value_type_category: ValueTypeCategory,
+            struct AnnotationRangeVisitor;
+
+            impl<'de> Visitor<'de> for AnnotationRangeVisitor {
+                type Value = AnnotationRange;
+
+                fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    formatter.write_str("struct AnnotationRangeVisitor")
+                }
+
+                fn visit_seq<V>(self, mut seq: V) -> Result<AnnotationRange, V::Error>
+                where
+                    V: SeqAccess<'de>,
+                {
+                    let value_type_category = ValueTypeCategory::from_bytes(
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?,
+                    );
+
+                    let start_inclusive = deserialize_annotation_range_value_field(
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?,
+                        value_type_category.clone(),
+                    );
+                    let end_inclusive = deserialize_annotation_range_value_field(
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?,
+                        value_type_category,
+                    );
+
+                    Ok(AnnotationRange { start_inclusive, end_inclusive })
+                }
+
+                fn visit_map<V>(self, mut map: V) -> Result<AnnotationRange, V::Error>
+                where
+                    V: MapAccess<'de>,
+                {
+                    let mut value_type_category: Option<ValueTypeCategory> = None;
+                    let mut start_inclusive: Option<Option<Value<'static>>> = None;
+                    let mut end_inclusive: Option<Option<Value<'static>>> = None;
+                    while let Some(key) = map.next_key()? {
+                        match key {
+                            RangeField::ValueTypeCategory => {
+                                if value_type_category.is_some() {
+                                    return Err(de::Error::duplicate_field(ValuesField::ValueTypeCategory.name()));
+                                }
+                                value_type_category = Some(ValueTypeCategory::from_bytes(map.next_value()?));
+                            }
+                            RangeField::StartInclusive => {
+                                if value_type_category.is_none() {
+                                    return Err(de::Error::missing_field(ValuesField::ValueTypeCategory.name()));
+                                }
+                                if start_inclusive.is_some() {
+                                    return Err(de::Error::duplicate_field(RangeField::StartInclusive.name()));
+                                }
+                                start_inclusive = Some(deserialize_annotation_range_value_field(
+                                    map.next_value()?,
+                                    value_type_category.unwrap(),
+                                ));
+                            }
+                            RangeField::EndInclusive => {
+                                if value_type_category.is_none() {
+                                    return Err(de::Error::missing_field(ValuesField::ValueTypeCategory.name()));
+                                }
+                                if end_inclusive.is_some() {
+                                    return Err(de::Error::duplicate_field(RangeField::EndInclusive.name()));
+                                }
+                                end_inclusive = Some(deserialize_annotation_range_value_field(
+                                    map.next_value()?,
+                                    value_type_category.unwrap(),
+                                ));
+                            }
+                        }
+                    }
+
+                    Ok(AnnotationRange {
+                        start_inclusive: start_inclusive
+                            .ok_or_else(|| de::Error::missing_field(RangeField::StartInclusive.name()))?,
+                        end_inclusive: end_inclusive
+                            .ok_or_else(|| de::Error::missing_field(RangeField::EndInclusive.name()))?,
+                    })
+                }
             }
+
+            deserializer.deserialize_struct("AnnotationRange", &RangeField::NAMES, AnnotationRangeVisitor)
+        }
+    }
+
+    enum ValuesField {
+        ValueTypeCategory,
+        Values,
+    }
+
+    impl ValuesField {
+        const NAMES: [&'static str; 2] = [Self::ValueTypeCategory.name(), Self::Values.name()];
+
+        const fn name(&self) -> &str {
+            match self {
+                ValuesField::ValueTypeCategory => "ValueTypeCategory",
+                ValuesField::Values => "Values",
+            }
+        }
+
+        fn from(string: &str) -> Option<Self> {
+            match string {
+                "ValueTypeCategory" => Some(ValuesField::ValueTypeCategory),
+                "Values" => Some(ValuesField::Values),
+                _ => None,
+            }
+        }
+    }
+
+    fn serialize_annotation_values_value_field(values: &Vec<Value<'_>>) -> Vec<Vec<u8>> {
+        values
+            .iter()
+            .map(|value| match value {
+                | Value::Boolean(_)
+                | Value::Long(_)
+                | Value::Double(_)
+                | Value::Decimal(_)
+                | Value::Date(_)
+                | Value::DateTime(_)
+                | Value::DateTimeTZ(_)
+                | Value::String(_)
+                | Value::Duration(_) => value.encode_bytes::<INLINE_LENGTH>().bytes().to_owned(),
+                Value::Struct(_) => unreachable!("Can't use struct for AnnotationValues"),
+            })
+            .collect()
+    }
+
+    fn deserialize_annotation_values_value_field(
+        bytes_vec: &Vec<&[u8]>,
+        value_type_category: ValueTypeCategory,
+    ) -> Vec<Value<'static>> {
+        bytes_vec.iter().map(|bytes| deserialize_value(bytes, value_type_category)).collect()
+    }
+
+    impl Serialize for AnnotationValues {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct("AnnotationValues", ValuesField::NAMES.len())?;
+
+            assert!(!self.values.is_empty());
+            let value_type_category = self.values.first().unwrap_or(&Value::Boolean(false)).value_type().category();
+            state.serialize_field(ValuesField::ValueTypeCategory.name(), &value_type_category.to_bytes())?;
+
+            state
+                .serialize_field(ValuesField::Values.name(), &serialize_annotation_values_value_field(&self.values))?;
+            state.end()
+        }
+    }
+
+    impl<'de> Deserialize<'de> for AnnotationValues {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            impl<'de> Deserialize<'de> for ValuesField {
+                fn deserialize<D>(deserializer: D) -> Result<ValuesField, D::Error>
+                where
+                    D: Deserializer<'de>,
+                {
+                    struct FieldVisitor;
+
+                    impl<'de> Visitor<'de> for FieldVisitor {
+                        type Value = ValuesField;
+
+                        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                            formatter.write_str("Unrecognised field")
+                        }
+
+                        fn visit_str<E>(self, value: &str) -> Result<ValuesField, E>
+                        where
+                            E: de::Error,
+                        {
+                            ValuesField::from(value).ok_or_else(|| de::Error::unknown_field(value, &ValuesField::NAMES))
+                        }
+                    }
+
+                    deserializer.deserialize_identifier(FieldVisitor)
+                }
+            }
+
+            struct AnnotationValuesVisitor;
 
             impl<'de> Visitor<'de> for AnnotationValuesVisitor {
                 type Value = AnnotationValues;
@@ -1018,46 +1059,57 @@ mod serialise_values {
                 }
 
                 fn visit_seq<V>(self, mut seq: V) -> Result<AnnotationValues, V::Error>
-                    where
-                        V: SeqAccess<'de>,
+                where
+                    V: SeqAccess<'de>,
                 {
-                    let values = deserialize_value_vec_field(
-                        &seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?,
-                        self.value_type_category.clone(),
+                    let value_type_category = ValueTypeCategory::from_bytes(
+                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?,
                     );
 
-                    Ok(AnnotationValues {
-                        values,
-                    })
+                    let values = deserialize_annotation_values_value_field(
+                        &seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?,
+                        value_type_category,
+                    );
+
+                    Ok(AnnotationValues { values })
                 }
 
                 fn visit_map<V>(self, mut map: V) -> Result<AnnotationValues, V::Error>
-                    where
-                        V: MapAccess<'de>,
+                where
+                    V: MapAccess<'de>,
                 {
+                    let mut value_type_category: Option<ValueTypeCategory> = None;
                     let mut values: Option<Vec<Value<'static>>> = None;
                     while let Some(key) = map.next_key()? {
                         match key {
-                            Field::Values => {
-                                if values.is_some() {
-                                    return Err(de::Error::duplicate_field(Field::Values.name()));
+                            ValuesField::ValueTypeCategory => {
+                                if value_type_category.is_some() {
+                                    return Err(de::Error::duplicate_field(ValuesField::ValueTypeCategory.name()));
                                 }
-                                values = Some(deserialize_value_vec_field(
+                                value_type_category = Some(ValueTypeCategory::from_bytes(map.next_value()?));
+                            }
+                            ValuesField::Values => {
+                                if value_type_category.is_none() {
+                                    return Err(de::Error::missing_field(ValuesField::ValueTypeCategory.name()));
+                                }
+                                if values.is_some() {
+                                    return Err(de::Error::duplicate_field(ValuesField::Values.name()));
+                                }
+                                values = Some(deserialize_annotation_values_value_field(
                                     &map.next_value()?,
-                                    self.value_type_category.clone(),
+                                    value_type_category.unwrap(),
                                 ));
                             }
                         }
                     }
 
                     Ok(AnnotationValues {
-                        values: values
-                            .ok_or_else(|| de::Error::missing_field(Field::Values.name()))?,
+                        values: values.ok_or_else(|| de::Error::missing_field(ValuesField::Values.name()))?,
                     })
                 }
             }
 
-            deserializer.deserialize_struct("AnnotationValues", &Field::NAMES, AnnotationValuesVisitor { value_type_category: ValueTypeCategory::Boolean })
+            deserializer.deserialize_struct("AnnotationValues", &ValuesField::NAMES, AnnotationValuesVisitor)
         }
     }
 }

@@ -11,7 +11,7 @@ use encoding::value::{label::Label, value_type::ValueType};
 use crate::{
     error::ConceptReadError,
     type_::{
-        annotation::{AnnotationCardinality, AnnotationCategory, AnnotationRegex, AnnotationRange, AnnotationValues},
+        annotation::{AnnotationCardinality, AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues},
         attribute_type::AttributeType,
         object_type::ObjectType,
         relation_type::RelationType,

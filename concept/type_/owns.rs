@@ -15,7 +15,7 @@ use crate::{
     type_::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationError, AnnotationKey,
-            AnnotationRegex, AnnotationUnique, AnnotationValues, DefaultFrom,
+            AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues, DefaultFrom,
         },
         attribute_type::AttributeType,
         object_type::ObjectType,
@@ -23,7 +23,6 @@ use crate::{
         InterfaceImplementation, Ordering, TypeAPI,
     },
 };
-use crate::type_::annotation::AnnotationRange;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Owns<'a> {
@@ -274,9 +273,9 @@ impl From<Annotation> for Result<OwnsAnnotation, AnnotationError> {
             Annotation::Range(annotation) => Ok(OwnsAnnotation::Range(annotation)),
             Annotation::Values(annotation) => Ok(OwnsAnnotation::Values(annotation)),
 
-            | Annotation::Abstract(_)
-            | Annotation::Independent(_)
-            | Annotation::Cascade(_) => Err(AnnotationError::UnsupportedAnnotationForOwns(annotation.category())),
+            | Annotation::Abstract(_) | Annotation::Independent(_) | Annotation::Cascade(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForOwns(annotation.category()))
+            }
         }
     }
 }
@@ -317,21 +316,21 @@ impl PartialEq<Annotation> for OwnsAnnotation {
                 } else {
                     false
                 }
-            },
+            }
             Annotation::Range(other_range) => {
                 if let Self::Range(range) = self {
                     range == other_range
                 } else {
                     false
                 }
-            },
+            }
             Annotation::Values(other_values) => {
                 if let Self::Values(values) = self {
                     values == other_values
                 } else {
                     false
                 }
-            },
+            }
             Annotation::Abstract(_) => false,
             Annotation::Independent(_) => false,
             Annotation::Regex(_) => false,

@@ -107,7 +107,7 @@ pub enum ValueTypeCategory {
 }
 
 impl ValueTypeCategory {
-    pub(crate) fn to_bytes(&self) -> [u8; ValueTypeBytes::CATEGORY_LENGTH] {
+    pub fn to_bytes(&self) -> [u8; ValueTypeBytes::CATEGORY_LENGTH] {
         match self {
             Self::Boolean => [0],
             Self::Long => [1],
@@ -122,7 +122,7 @@ impl ValueTypeCategory {
         }
     }
 
-    pub(crate) fn from_bytes(bytes: [u8; ValueTypeBytes::CATEGORY_LENGTH]) -> Self {
+    pub fn from_bytes(bytes: [u8; ValueTypeBytes::CATEGORY_LENGTH]) -> Self {
         let category = match bytes {
             [0] => ValueTypeCategory::Boolean,
             [1] => ValueTypeCategory::Long,

@@ -35,7 +35,7 @@ use crate::{
     type_::{
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct,
-            AnnotationIndependent, AnnotationKey, AnnotationRegex, AnnotationUnique, AnnotationRange,
+            AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
         attribute_type::AttributeType,
         object_type::ObjectType,
@@ -48,7 +48,6 @@ use crate::{
         EdgeOverride, InterfaceImplementation, KindAPI, Ordering, TypeAPI,
     },
 };
-use crate::type_::annotation::AnnotationValues;
 
 pub struct TypeReader {}
 
@@ -524,15 +523,15 @@ impl TypeReader {
                     Infix::PropertyAnnotationCardinality => Annotation::Cardinality(
                         <AnnotationCardinality as TypeEdgePropertyEncoding>::from_value_bytes(value),
                     ),
-                    Infix::PropertyAnnotationRegex => Annotation::Regex(
-                        <AnnotationRegex as TypeEdgePropertyEncoding>::from_value_bytes(value)
-                    ),
-                    Infix::PropertyAnnotationRange => Annotation::Range(
-                        <AnnotationRange as TypeEdgePropertyEncoding>::from_value_bytes(value)
-                    ),
-                    Infix::PropertyAnnotationValues => Annotation::Values(
-                        <AnnotationValues as TypeEdgePropertyEncoding>::from_value_bytes(value)
-                    ),
+                    Infix::PropertyAnnotationRegex => {
+                        Annotation::Regex(<AnnotationRegex as TypeEdgePropertyEncoding>::from_value_bytes(value))
+                    }
+                    Infix::PropertyAnnotationRange => {
+                        Annotation::Range(<AnnotationRange as TypeEdgePropertyEncoding>::from_value_bytes(value))
+                    }
+                    Infix::PropertyAnnotationValues => {
+                        Annotation::Values(<AnnotationValues as TypeEdgePropertyEncoding>::from_value_bytes(value))
+                    }
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationAbstract
                     | Infix::PropertyAnnotationCascade
