@@ -105,7 +105,7 @@ impl<'this> TypeInferenceGraph<'this> {
         is_modified
     }
 
-    pub(crate) fn populate_type_annotations(
+    pub(crate) fn collect_type_annotations(
         self,
         variable_annotations: &mut HashMap<Variable, Arc<HashSet<Type>>>,
         constraint_annotations: &mut HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
@@ -155,7 +155,7 @@ impl<'this> TypeInferenceGraph<'this> {
             chain(nested_negations, nested_optionals),
             nested_disjunctions.into_iter().flat_map(|disjunction| disjunction.disjunction),
         )
-        .for_each(|nested| nested.populate_type_annotations(variable_annotations, constraint_annotations));
+        .for_each(|nested| nested.collect_type_annotations(variable_annotations, constraint_annotations));
     }
 }
 
