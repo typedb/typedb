@@ -4,14 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt::{Display, Formatter},
-    sync::{Arc, Mutex, MutexGuard},
-};
+use std::fmt;
 
 use crate::{
     pattern::{conjunction::Conjunction, Scope, ScopeId},
     program::block::BlockContext,
+    PatternDefinitionError,
 };
 
 #[derive(Debug)]
@@ -20,10 +18,14 @@ pub struct Negation {
 }
 
 impl Negation {
-    pub(crate) fn new_child(parent_scope_id: ScopeId, context: &mut BlockContext) -> Self {
+    pub(crate) fn build_child_from_typeql_patterns(
+        context: &mut BlockContext,
+        parent_scope_id: ScopeId,
+        patterns: &[typeql::Pattern],
+    ) -> Result<Self, PatternDefinitionError> {
         let scope_id = context.create_child_scope(parent_scope_id);
-        let conjunction = Conjunction::new(scope_id);
-        Self { conjunction }
+        let conjunction = Conjunction::build_from_typeql_patterns(context, scope_id, patterns)?;
+        Ok(Self { conjunction })
     }
 
     pub(crate) fn conjunction(&self) -> &Conjunction {
@@ -37,8 +39,8 @@ impl Scope for Negation {
     }
 }
 
-impl Display for Negation {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Negation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
     }
 }

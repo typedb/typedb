@@ -4,12 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, sync::MutexGuard};
+use std::fmt;
 
-use crate::{
-    pattern::{disjunction::Disjunction, negation::Negation, optional::Optional},
-    program::block::BlockContext,
-};
+use crate::pattern::{disjunction::Disjunction, negation::Negation, optional::Optional};
 
 #[derive(Debug)]
 pub enum NestedPattern {

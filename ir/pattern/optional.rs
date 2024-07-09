@@ -8,9 +8,11 @@ use std::fmt::{Display, Formatter};
 
 use answer::variable::Variable;
 
+use super::conjunction::ConjunctionBuilder;
 use crate::{
     pattern::{conjunction::Conjunction, Scope, ScopeId},
     program::block::BlockContext,
+    PatternDefinitionError,
 };
 
 #[derive(Debug)]
@@ -19,10 +21,15 @@ pub struct Optional {
 }
 
 impl Optional {
-    pub(crate) fn new_child(parent_scope_id: ScopeId, context: &mut BlockContext) -> Self {
+    pub(crate) fn build_child_from_typeql_patterns(
+        context: &mut BlockContext,
+        parent_scope_id: ScopeId,
+        patterns: &[typeql::Pattern],
+    ) -> Result<Self, PatternDefinitionError> {
         let scope_id = context.create_child_scope(parent_scope_id);
-        let conjunction = Conjunction::new(scope_id);
-        Self { conjunction }
+        let mut conjunction = Conjunction::new(scope_id);
+        ConjunctionBuilder::new(context, &mut conjunction).and_typeql_patterns(patterns)?;
+        Ok(Self { conjunction })
     }
 
     pub(crate) fn conjunction(&self) -> &Conjunction {

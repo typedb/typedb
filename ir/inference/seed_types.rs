@@ -1055,8 +1055,8 @@ pub mod tests {
                 setup_storage,
             },
         },
-        pattern::{conjunction::Conjunction, constraint::IsaKind, ScopeId},
-        program::block::{BlockContext, FunctionalBlock},
+        pattern::constraint::IsaKind,
+        program::block::FunctionalBlock,
     };
 
     #[test]
@@ -1071,25 +1071,25 @@ pub mod tests {
             setup_types(storage.clone().open_snapshot_write(), &type_manager);
 
         {
-            // // Case 1: $a isa cat, has animal-name $n;
-            let mut context = BlockContext::new();
-            let mut conjunction = Conjunction::new(ScopeId::ROOT);
-            let var_animal = conjunction.get_or_declare_variable(&mut context, "animal").unwrap();
-            let var_name = conjunction.get_or_declare_variable(&mut context, "name").unwrap();
-            let var_animal_type = conjunction.get_or_declare_variable(&mut context, "animal_type").unwrap();
-            let var_name_type = conjunction.get_or_declare_variable(&mut context, "name_type").unwrap();
+            // Case 1: $a isa cat, has animal-name $n;
+            let mut builder = FunctionalBlock::builder();
+            let mut conjunction = builder.conjunction_mut();
+            let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
+            let var_name = conjunction.get_or_declare_variable("name").unwrap();
+            let var_animal_type = conjunction.get_or_declare_variable("animal_type").unwrap();
+            let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
 
             // Try seeding
             {
-                conjunction
-                    .constraints_mut()
-                    .add_isa(&mut context, IsaKind::Subtype, var_animal, var_animal_type)
-                    .unwrap();
-                conjunction.constraints_mut().add_label(&mut context, var_animal_type, &LABEL_CAT).unwrap();
-                conjunction.constraints_mut().add_isa(&mut context, IsaKind::Subtype, var_name, var_name_type).unwrap();
-                conjunction.constraints_mut().add_label(&mut context, var_name_type, &LABEL_NAME).unwrap();
-                conjunction.constraints_mut().add_has(&mut context, var_animal, var_name).unwrap();
+                conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type).unwrap();
+                conjunction.constraints_mut().add_label(var_animal_type, &LABEL_CAT).unwrap();
+                conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type).unwrap();
+                conjunction.constraints_mut().add_label(var_name_type, &LABEL_NAME).unwrap();
+                conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
             }
+
+            let block = builder.finish();
+            let conjunction = block.conjunction();
 
             let expected_tig = {
                 let types_ta = BTreeSet::from([type_cat.clone()]);
@@ -1138,7 +1138,7 @@ pub mod tests {
 
             let snapshot = storage.clone().open_snapshot_write();
             let seeder = TypeSeeder::new(&snapshot, &type_manager);
-            let tig = seeder.seed_types(&mut context, &conjunction).unwrap();
+            let tig = seeder.seed_types(block.context(), &conjunction).unwrap();
             assert_eq!(expected_tig, tig);
         }
     }
@@ -1154,14 +1154,17 @@ pub mod tests {
 
         {
             // // Case 1: $a has $n;
-            let mut context = BlockContext::new();
-            let mut conjunction = Conjunction::new(ScopeId::ROOT);
-            let var_animal = conjunction.get_or_declare_variable(&mut context, "animal").unwrap();
-            let var_name = conjunction.get_or_declare_variable(&mut context, "name").unwrap();
+            let mut builder = FunctionalBlock::builder();
+            let mut conjunction = builder.conjunction_mut();
+            let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
+            let var_name = conjunction.get_or_declare_variable("name").unwrap();
             // Try seeding
             {
-                conjunction.constraints_mut().add_has(&mut context, var_animal, var_name).unwrap();
+                conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
             }
+
+            let block = builder.finish();
+            let conjunction = block.conjunction();
 
             let mut expected_tig = {
                 let types_a = BTreeSet::from([type_cat.clone(), type_dog.clone(), type_animal.clone()]);
@@ -1189,7 +1192,7 @@ pub mod tests {
 
             let snapshot = storage.clone().open_snapshot_write();
             let seeder = TypeSeeder::new(&snapshot, &type_manager);
-            let tig = seeder.seed_types(&mut context, &conjunction).unwrap();
+            let tig = seeder.seed_types(block.context(), &conjunction).unwrap();
             if expected_tig != tig {
                 // We need this because of non-determinism
                 expected_tig.vertices.get_mut(&var_animal).unwrap().insert(type_fears.clone());
@@ -1213,15 +1216,17 @@ pub mod tests {
         };
         {
             // // Case 1: $a > $b;
-            let mut block = FunctionalBlock::new();
-            let context = block.context_mut();
-            let mut conjunction = Conjunction::new(ScopeId::ROOT);
-            let var_a = conjunction.get_or_declare_variable(context, "a").unwrap();
-            let var_b = conjunction.get_or_declare_variable(context, "b").unwrap();
+            let mut builder = FunctionalBlock::builder();
+            let mut conjunction = builder.conjunction_mut();
+            let var_a = conjunction.get_or_declare_variable("a").unwrap();
+            let var_b = conjunction.get_or_declare_variable("b").unwrap();
             // Try seeding
             {
-                conjunction.constraints_mut().add_comparison(context, var_a, var_b).unwrap();
+                conjunction.constraints_mut().add_comparison(var_a, var_b).unwrap();
             }
+
+            let block = builder.finish();
+            let conjunction = block.conjunction();
 
             let expected_tig = {
                 let types_a =
@@ -1258,7 +1263,7 @@ pub mod tests {
 
             let snapshot = storage.clone().open_snapshot_write();
             let seeder = TypeSeeder::new(&snapshot, &type_manager);
-            let tig = seeder.seed_types(context, &conjunction).unwrap();
+            let tig = seeder.seed_types(block.context(), &conjunction).unwrap();
             assert_eq!(expected_tig.vertices, tig.vertices);
             assert_eq!(expected_tig, tig);
         }

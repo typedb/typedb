@@ -7,32 +7,42 @@
 use std::fmt;
 
 use answer::variable::Variable;
+use itertools::Itertools;
 
+use super::conjunction::ConjunctionBuilder;
 use crate::{
     pattern::{conjunction::Conjunction, Scope, ScopeId},
     program::block::BlockContext,
+    PatternDefinitionError,
 };
 
 #[derive(Debug)]
 pub struct Disjunction {
-    scope_id: ScopeId,
     conjunctions: Vec<Conjunction>,
 }
 
 impl Disjunction {
-    pub(crate) fn new_child(parent_scope_id: ScopeId, context: &mut BlockContext) -> Self {
-        let scope_id = context.create_child_scope(parent_scope_id);
-        Self { scope_id, conjunctions: Vec::new() }
+    pub fn new() -> Self {
+        Self { conjunctions: Vec::new() }
+    }
+
+    pub(crate) fn build_child_from_typeql_patterns(
+        context: &mut BlockContext,
+        parent_scope_id: ScopeId,
+        patterns: &[Vec<typeql::Pattern>],
+    ) -> Result<Self, PatternDefinitionError> {
+        let conjunctions = patterns
+            .iter()
+            .map(|patterns| {
+                let conj_scope_id = context.create_child_scope(parent_scope_id);
+                Conjunction::build_from_typeql_patterns(context, conj_scope_id, patterns)
+            })
+            .try_collect()?;
+        Ok(Self { conjunctions })
     }
 
     pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = Variable>> {
         todo!()
-    }
-
-    pub(crate) fn add_conjunction(&mut self, context: &mut BlockContext) -> &mut Conjunction {
-        let disjunction = Conjunction::new_child(self.scope_id, context);
-        self.conjunctions.push(disjunction);
-        self.conjunctions.last_mut().unwrap()
     }
 
     pub(crate) fn conjunctions(&self) -> &Vec<Conjunction> {
@@ -49,5 +59,23 @@ impl Scope for Disjunction {
 impl fmt::Display for Disjunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
+    }
+}
+
+pub struct DisjunctionBuilder<'cx> {
+    context: &'cx mut BlockContext,
+    disjunction: &'cx mut Disjunction,
+    scope_id: ScopeId,
+}
+
+impl<'cx> DisjunctionBuilder<'cx> {
+    pub fn new(context: &'cx mut BlockContext, scope_id: ScopeId, disjunction: &'cx mut Disjunction) -> Self {
+        Self { context, disjunction, scope_id }
+    }
+
+    pub fn add_conjunction(&mut self) -> ConjunctionBuilder<'_> {
+        let conj_scope_id = self.context.create_child_scope(self.scope_id);
+        self.disjunction.conjunctions.push(Conjunction::new(conj_scope_id));
+        ConjunctionBuilder::new(self.context, self.disjunction.conjunctions.last_mut().unwrap())
     }
 }
