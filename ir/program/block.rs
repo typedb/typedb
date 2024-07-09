@@ -14,7 +14,7 @@ use itertools::Itertools;
 
 use crate::{
     pattern::{
-        conjunction::Conjunction,
+        conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
         variable_category::{VariableCategory, VariableOptionality},
         Scope, ScopeId,
@@ -31,31 +31,53 @@ pub struct FunctionalBlock {
 }
 
 impl FunctionalBlock {
-    pub fn new() -> Self {
-        let root = Conjunction::new(ScopeId::ROOT);
-        Self { conjunction: root, modifiers: Vec::new(), context: BlockContext::new() }
-    }
-
-    pub fn from_raw_parts(context: BlockContext, conjunction: Conjunction, modifiers: Vec<Modifier>) -> Self {
-        Self { conjunction, modifiers, context }
+    pub fn builder() -> FunctionalBlockBuilder {
+        FunctionalBlockBuilder::new()
     }
 
     pub fn from_match(match_: &typeql::query::stage::Match) -> Result<Self, PatternDefinitionError> {
-        let mut context = BlockContext::new();
-        let conjunction = Conjunction::build_from_typeql_patterns(&mut context, ScopeId::ROOT, &match_.patterns)?;
-        Ok(Self { conjunction, modifiers: Vec::new(), context })
+        let mut builder = Self::builder();
+        builder.conjunction_mut().and_typeql_patterns(&match_.patterns)?;
+        Ok(builder.finish())
     }
 
     pub fn conjunction(&self) -> &Conjunction {
         &self.conjunction
     }
 
-    pub fn conjunction_mut(&mut self) -> &mut Conjunction {
-        &mut self.conjunction
-    }
-
     pub fn context(&self) -> &BlockContext {
         &self.context
+    }
+
+    pub fn scope_id(&self) -> ScopeId {
+        Scope::scope_id(self)
+    }
+}
+
+impl Scope for FunctionalBlock {
+    fn scope_id(&self) -> ScopeId {
+        ScopeId::ROOT
+    }
+}
+
+pub struct FunctionalBlockBuilder {
+    context: BlockContext,
+    conjunction: Conjunction,
+    modifiers: Vec<Modifier>,
+}
+
+impl FunctionalBlockBuilder {
+    fn new() -> Self {
+        Self { conjunction: Conjunction::new(ScopeId::ROOT), modifiers: Vec::new(), context: BlockContext::new() }
+    }
+
+    pub fn finish(self) -> FunctionalBlock {
+        let Self { context, conjunction, modifiers } = self;
+        FunctionalBlock { context, conjunction, modifiers }
+    }
+
+    pub fn conjunction_mut(&mut self) -> ConjunctionBuilder<'_> {
+        ConjunctionBuilder::new(&mut self.context, &mut self.conjunction)
     }
 
     pub fn context_mut(&mut self) -> &mut BlockContext {
@@ -80,22 +102,6 @@ impl FunctionalBlock {
         let filter = Filter::new(variables, &self.context)?;
         self.modifiers.push(Modifier::Filter(filter));
         Ok(self.modifiers.last().unwrap())
-    }
-
-    pub fn scope_id(&self) -> ScopeId {
-        Scope::scope_id(self)
-    }
-}
-
-impl Default for FunctionalBlock {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Scope for FunctionalBlock {
-    fn scope_id(&self) -> ScopeId {
-        ScopeId::ROOT
     }
 }
 

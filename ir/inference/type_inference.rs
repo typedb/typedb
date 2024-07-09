@@ -13,10 +13,9 @@ use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
 use storage::snapshot::ReadableSnapshot;
 
+use super::pattern_type_inference::infer_types_for_block;
 use crate::{
-    inference::pattern_type_inference::{infer_types_for_conjunction, TypeInferenceGraph},
-    pattern::constraint::Constraint,
-    program::{block::BlockContext, program::Program},
+    inference::pattern_type_inference::TypeInferenceGraph, pattern::constraint::Constraint, program::program::Program,
 };
 
 /*
@@ -36,17 +35,12 @@ Note: On function call boundaries, can assume the current set of schema types pe
 
 pub(crate) type VertexAnnotations = BTreeMap<Variable, BTreeSet<Type>>;
 
-pub fn infer_types(
-    program: &Program,
-    snapshot: &impl ReadableSnapshot,
-    context: &BlockContext,
-    type_manager: &TypeManager,
-) -> TypeAnnotations {
+pub fn infer_types(program: &Program, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> TypeAnnotations {
     // let mut entry_type_annotations = TypeAnnotations::new(HashMap::new(), HashMap::new());
     // let mut function_type_annotations: HashMap<DefinitionKey<'static>, TypeAnnotations> = HashMap::new();
     // todo!()
     // TODO: Extend to functions when we implement them
-    let root_tig = infer_types_for_conjunction(snapshot, context, type_manager, program.entry().conjunction()).unwrap();
+    let root_tig = infer_types_for_block(snapshot, program.entry(), type_manager).unwrap();
     TypeAnnotations::build(root_tig)
 }
 
@@ -71,7 +65,7 @@ impl TypeAnnotations {
     }
 
     pub fn variable_annotations(&self, variable: Variable) -> Option<Arc<HashSet<Type>>> {
-        self.variables.get(&variable).map(|annotations| annotations.clone())
+        self.variables.get(&variable).cloned()
     }
 
     pub fn constraint_annotations(&self, constraint: Constraint<Variable>) -> Option<&ConstraintTypeAnnotations> {
@@ -165,7 +159,7 @@ impl LeftRightFilteredAnnotations {
 
         for (player, role_set) in player_to_role {
             for role in &role_set {
-                right_to_left.insert(player.clone(), role_to_relation.remove(&role).unwrap().into_iter().collect());
+                right_to_left.insert(player.clone(), role_to_relation.remove(role).unwrap().into_iter().collect());
             }
             filters_on_right.insert(player, role_set.into_iter().collect());
         }
@@ -196,7 +190,7 @@ pub mod tests {
 
     #[test]
     fn test_translation() {
-        let (var_relation, var_role_type, var_player) = (0..3).map(|i| Variable::new(i)).collect_tuple().unwrap();
+        let (var_relation, var_role_type, var_player) = (0..3).map(Variable::new).collect_tuple().unwrap();
         let type_rel_0 = Type::Relation(RelationType::build_from_type_id(TypeID::build(0)));
         let type_rel_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(1)));
         let type_role_0 = Type::RoleType(RoleType::build_from_type_id(TypeID::build(0)));
@@ -204,7 +198,7 @@ pub mod tests {
         let type_player_0 = Type::Entity(EntityType::build_from_type_id(TypeID::build(0)));
         let type_player_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(2)));
 
-        let dummy = FunctionalBlock::new();
+        let dummy = FunctionalBlock::builder().finish();
         let constraint1 = Constraint::RolePlayer(RolePlayer::new(var_relation, var_player, Some(var_role_type)));
         let constraint2 = Constraint::RolePlayer(RolePlayer::new(var_relation, var_player, Some(var_role_type)));
         let nested1 = TypeInferenceGraph {
@@ -237,7 +231,7 @@ pub mod tests {
             (var_role_type, BTreeSet::from([type_role_1.clone()])),
             (var_player, BTreeSet::from([type_player_1.clone()])),
         ]);
-        let shared_variables: BTreeSet<Variable> = vertex_annotations.keys().map(|v| *v).collect();
+        let shared_variables: BTreeSet<Variable> = vertex_annotations.keys().copied().collect();
         let nested2 = TypeInferenceGraph {
             conjunction: dummy.conjunction(),
             vertices: vertex_annotations.clone(),

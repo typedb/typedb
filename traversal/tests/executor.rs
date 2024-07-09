@@ -136,9 +136,11 @@ fn traverse_has() {
     let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
 
     // IR
-    let mut block = FunctionalBlock::from_match(&match_).unwrap();
-    block.add_limit(3);
-    block.add_filter(vec!["person", "age"]).unwrap();
+    let mut builder = FunctionalBlock::builder();
+    builder.conjunction_mut().and_typeql_patterns(&match_.patterns).unwrap();
+    builder.add_limit(3);
+    builder.add_filter(vec!["person", "age"]).unwrap();
+    let block = builder.finish();
 
     let var_person = *block.context().get_variable_named("person", block.scope_id()).unwrap();
     let var_age = *block.context().get_variable_named("age", block.scope_id()).unwrap();
