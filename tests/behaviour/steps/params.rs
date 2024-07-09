@@ -380,10 +380,13 @@ impl Value {
                         (self.raw_value.as_str(), "0")
                     };
 
-                assert!(Self::FRACTIONAL_ZEROES >= fractional.len());
-                let fractional = 10_u64.pow((Self::FRACTIONAL_ZEROES - fractional.len() + 1) as u32) * fractional.trim().parse::<u64>().unwrap();
-
-                TypeDBValue::Decimal(Decimal::new(integer.trim().parse().unwrap(), fractional))
+                let integer_parsed = integer.trim().parse().unwrap();
+                let fractional_parsed = Self::parse_decimal_fraction_part(fractional);
+                if integer.starts_with('-') && integer_parsed == 0 {
+                    TypeDBValue::Decimal(Decimal::new(-1, 0) + Decimal::new(0, fractional_parsed))
+                } else {
+                    TypeDBValue::Decimal(Decimal::new(integer_parsed, fractional_parsed))
+                }
             }
             TypeDBValueType::Date => TypeDBValue::Date(NaiveDate::parse_from_str(&self.raw_value, Self::DATE_FORMAT).unwrap()),
             TypeDBValueType::DateTime => {
@@ -412,9 +415,21 @@ impl Value {
                 }
             }
             TypeDBValueType::Duration => TypeDBValue::Duration(self.raw_value.parse().unwrap()),
-            TypeDBValueType::String => TypeDBValue::String(Cow::Owned(self.raw_value)),
+            TypeDBValueType::String => {
+                let value = if self.raw_value.starts_with('"') && self.raw_value.ends_with('"') {
+                    &self.raw_value[1..&self.raw_value.len() - 1]
+                } else {
+                    self.raw_value.as_str()
+                };
+                TypeDBValue::String(Cow::Owned(value.to_string()))
+            },
             TypeDBValueType::Struct(_) => todo!(),
         }
+    }
+
+    fn parse_decimal_fraction_part(value: &str) -> u64 {
+        assert!(Self::FRACTIONAL_ZEROES >= value.len());
+        10_u64.pow((Self::FRACTIONAL_ZEROES - value.len() + 1) as u32) * value.trim().parse::<u64>().unwrap()
     }
 
     fn parse_date_time_and_remainder(value: &str) -> (NaiveDateTime, &str) {

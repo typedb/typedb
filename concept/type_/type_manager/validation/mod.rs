@@ -28,6 +28,7 @@ pub mod operation_time_validation;
 pub enum SchemaValidationError {
     ConceptRead(ConceptReadError),
     CannotModifyRoot,
+    RootHasBeenCorrupted(Label<'static>),
     LabelShouldBeUnique(Label<'static>),
     StructNameShouldBeUnique(String),
     RoleNameShouldBeUnique(Label<'static>),
@@ -87,10 +88,11 @@ impl Error for SchemaValidationError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::ConceptRead(source) => Some(source),
+            Self::CannotModifyRoot => None,
+            Self::RootHasBeenCorrupted(_) => None,
             Self::LabelShouldBeUnique(_) => None,
             Self::StructNameShouldBeUnique(_) => None,
             Self::RoleNameShouldBeUnique(_) => None,
-            Self::CannotModifyRoot => None,
             Self::CycleFoundInTypeHierarchy(_, _) => None,
             Self::CannotChangeValueTypeOfAttributeType(_, _) => None,
             Self::CannotDeleteTypeWithExistingSubtypes(_) => None,
