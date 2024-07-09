@@ -124,11 +124,9 @@ impl<'cx> ConjunctionBuilder<'cx> {
     }
 
     pub fn add_disjunction(&mut self) -> DisjunctionBuilder<'_> {
-        let disjunction = Disjunction::new();
-        self.conjunction.nested_patterns.push(NestedPattern::Disjunction(disjunction));
-        let Some(NestedPattern::Disjunction(disjunction)) = self.conjunction.nested_patterns.last_mut() else {
-            unreachable!()
-        };
+        self.conjunction.nested_patterns.push(NestedPattern::Disjunction(Disjunction::new()));
+        let disjunction =
+            self.conjunction.nested_patterns.last_mut().and_then(NestedPattern::as_disjunction_mut).unwrap();
         DisjunctionBuilder::new(self.context, self.conjunction.scope_id, disjunction)
     }
 
