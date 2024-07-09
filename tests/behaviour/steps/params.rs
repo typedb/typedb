@@ -365,6 +365,8 @@ impl Value {
     ];
     const DATE_FORMAT: &'static str = "%Y-%m-%d";
 
+    const FRACTIONAL_ZEROES: usize = 18;
+
     pub fn into_typedb(self, value_type: TypeDBValueType) -> TypeDBValue<'static> {
         match value_type {
             TypeDBValueType::Boolean => TypeDBValue::Boolean(self.raw_value.parse().unwrap()),
@@ -377,7 +379,11 @@ impl Value {
                     } else {
                         (self.raw_value.as_str(), "0")
                     };
-                TypeDBValue::Decimal(Decimal::new(integer.trim().parse().unwrap(), fractional.trim().parse().unwrap()))
+
+                assert!(Self::FRACTIONAL_ZEROES >= fractional.len());
+                let fractional = 10_u64.pow((Self::FRACTIONAL_ZEROES - fractional.len() + 1) as u32) * fractional.trim().parse::<u64>().unwrap();
+
+                TypeDBValue::Decimal(Decimal::new(integer.trim().parse().unwrap(), fractional))
             }
             TypeDBValueType::Date => TypeDBValue::Date(NaiveDate::parse_from_str(&self.raw_value, Self::DATE_FORMAT).unwrap()),
             TypeDBValueType::DateTime => {

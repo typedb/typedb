@@ -1429,6 +1429,8 @@ impl TypeManager {
         OperationTimeValidation::validate_attribute_type_supertype_is_abstract(snapshot, supertype.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
+        // TODO: Add check that if we have inherited independent and set supertype without independent (lose independence), we reject it with a specific error!
+
         Self::set_supertype(self, snapshot, subtype, supertype)
     }
 
@@ -1447,6 +1449,7 @@ impl TypeManager {
         subtype: RelationType<'static>,
         supertype: RelationType<'static>,
     ) -> Result<(), ConceptWriteError> {
+        // TODO: Add check that if we have inherited cascade and set supertype without cascade (lose cascade), we reject it with a specific error!
         Self::set_supertype(self, snapshot, subtype, supertype)
     }
 

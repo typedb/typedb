@@ -10,6 +10,7 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
 };
+use std::collections::HashSet;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
@@ -316,24 +317,32 @@ impl AnnotationValues {
     }
 
     // TODO: We might want to return different errors for empty / unmatched value types
-    pub fn valid(&self, value_type: Option<ValueType>) -> bool {
-        let first = self.values.first();
-        match first {
-            None => false,
-            Some(first_value) => {
-                let first_value_type = first_value.value_type();
-                if &value_type.unwrap_or(first_value_type.clone()) != &first_value_type {
+    pub fn valid(&self, expected_value_type: Option<ValueType>) -> bool {
+        if self.values.is_empty() {
+            return false;
+        }
+
+        let unique_value_types: HashSet<ValueType> = self.values.iter().map(|value| value.value_type()).collect();
+        assert!(!unique_value_types.is_empty());
+        if unique_value_types.len() > 1 {
+            return false;
+        }
+        if expected_value_type.is_some()
+            && unique_value_types.iter().any(|value_type| value_type != &expected_value_type.clone().unwrap()) {
+            return false;
+        }
+
+        // Value does not implement Hash, so we run a N^2 loop here expecting a limited number of values
+        let values = &self.values;
+        for i in 0..values.len() {
+            for j in i + 1..values.len() {
+                if values[i] == values[j] {
                     return false;
                 }
-
-                for value in &self.values {
-                    if value.value_type() != first_value_type {
-                        return false;
-                    }
-                }
-                true
             }
         }
+
+        true
     }
 
     pub fn value_valid(&self, value: Value<'static>) -> bool {
