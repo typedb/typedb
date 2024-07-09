@@ -7,7 +7,7 @@ load("@rules_rust//rust:defs.bzl", "rust_test")
 # TODO: Add test_ prefix to target names
 
 rust_test(
-    name = "database-test",
+    name = "test_database",
     srcs = ["database.rs"],
     deps = [
         "//tests/behaviour/steps:steps",

@@ -727,8 +727,8 @@ mod hash_value {
             Value::DateTime(value) => value.hash(state),
             Value::DateTimeTZ(value) => value.hash(state),
             Value::String(value) => value.hash(state),
-            Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
-            Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
+            Value::Duration(value) => value.hash(state),
+            Value::Struct(value) => unreachable!("Cannot hash a struct"),
         }
     }
 
