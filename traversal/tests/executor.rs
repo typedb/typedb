@@ -28,7 +28,7 @@ use encoding::{
 use ir::{
     inference::type_inference::{ConstraintTypeAnnotations, LeftRightAnnotations, TypeAnnotations},
     pattern::constraint::Has,
-    program::block::{self, FunctionalBlock},
+    program::block::FunctionalBlock,
 };
 use lending_iterator::LendingIterator;
 use storage::{
