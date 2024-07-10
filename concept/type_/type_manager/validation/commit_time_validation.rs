@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashSet;
+
 use encoding::graph::type_::Kind;
+use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -13,6 +16,8 @@ use crate::{
         attribute_type::AttributeType,
         entity_type::EntityType,
         owns::Owns,
+        plays::Plays,
+        relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::{
@@ -76,6 +81,14 @@ impl CommitTimeValidation {
             errors.push(error)
         }
 
+        if let Err(error) = Self::validate_overridden_owns(snapshot, type_.clone()) {
+            errors.push(error)
+        }
+
+        if let Err(error) = Self::validate_overridden_plays(snapshot, type_.clone()) {
+            errors.push(error)
+        }
+
         Ok(errors)
     }
 
@@ -90,6 +103,18 @@ impl CommitTimeValidation {
         }
 
         if let Err(error) = Self::validate_abstractness_matches_with_owns(snapshot, type_.clone()) {
+            errors.push(error)
+        }
+
+        if let Err(error) = Self::validate_overridden_relates(snapshot, type_.clone()) {
+            errors.push(error)
+        }
+
+        if let Err(error) = Self::validate_overridden_owns(snapshot, type_.clone()) {
+            errors.push(error)
+        }
+
+        if let Err(error) = Self::validate_overridden_plays(snapshot, type_.clone()) {
             errors.push(error)
         }
 
@@ -132,17 +157,17 @@ impl CommitTimeValidation {
         type_: T,
     ) -> Result<(), SchemaValidationError>
     where
-        T: ObjectTypeAPI<'static> + KindAPI<'static> + Clone,
+        T: ObjectTypeAPI<'static> + KindAPI<'static>,
     {
         if type_is_abstract(snapshot, type_.clone())? {
             return Ok(());
         }
 
-        TypeReader::get_implemented_interfaces(snapshot, type_.clone())
+        TypeReader::get_implemented_interfaces::<Owns<'static>, T>(snapshot, type_.clone())
             .map_err(SchemaValidationError::ConceptRead)?
-            .values()
-            .map(Owns::attribute)
-            .try_for_each(|attribute_type: AttributeType<'static>| {
+            .keys()
+            .try_for_each(|attribute_type: &AttributeType<'static>| {
+                let attribute_type = attribute_type.clone();
                 if type_is_abstract(snapshot, attribute_type.clone())? {
                     let owner = type_.clone();
                     Err(SchemaValidationError::NonAbstractCannotOwnAbstract(
@@ -153,6 +178,169 @@ impl CommitTimeValidation {
                     Ok(())
                 }
             })?;
+
+        Ok(())
+    }
+
+    fn validate_overridden_relates(
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let supertype =
+            TypeReader::get_supertype(snapshot, relation_type.clone()).map_err(SchemaValidationError::ConceptRead)?;
+
+        let relates_declared: HashSet<Relates<'static>> =
+            TypeReader::get_implemented_interfaces_declared(snapshot, relation_type.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+
+        for relates in relates_declared {
+            let relates_override_opt = TypeReader::get_implementation_override(snapshot, relates.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+
+            if let Some(relates_override) = relates_override_opt {
+                let role_type_overridden = relates_override.role();
+
+                let role = relates.role();
+                let role_supertype =
+                    TypeReader::get_supertype(snapshot, role.clone()).map_err(SchemaValidationError::ConceptRead)?;
+                match role_supertype {
+                    None => {
+                        return Err(SchemaValidationError::RelatesOverrideDoesNotMatchWithRoleSubtype(
+                            get_label!(snapshot, relation_type),
+                            get_label!(snapshot, role),
+                            get_label!(snapshot, role_type_overridden),
+                            None,
+                        ))
+                    }
+                    Some(role_supertype) => {
+                        if role_type_overridden != role_supertype {
+                            return Err(SchemaValidationError::RelatesOverrideDoesNotMatchWithRoleSubtype(
+                                get_label!(snapshot, relation_type),
+                                get_label!(snapshot, role),
+                                get_label!(snapshot, role_type_overridden),
+                                Some(get_label!(snapshot, role_supertype)),
+                            ));
+                        }
+                    }
+                }
+
+                match &supertype {
+                    None => {
+                        return Err(SchemaValidationError::RelatesOverrideIsNotInherited(
+                            get_label!(snapshot, relation_type),
+                            get_label!(snapshot, role_type_overridden),
+                        ))
+                    }
+                    Some(supertype) => {
+                        let contains =
+                            TypeReader::get_implemented_interfaces::<Relates<'static>, RelationType<'static>>(
+                                snapshot,
+                                supertype.clone(),
+                            )
+                            .map_err(SchemaValidationError::ConceptRead)?
+                            .keys()
+                            .contains(&role_type_overridden);
+
+                        if !contains {
+                            return Err(SchemaValidationError::RelatesOverrideIsNotInherited(
+                                get_label!(snapshot, relation_type),
+                                get_label!(snapshot, role_type_overridden),
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn validate_overridden_owns<T>(snapshot: &impl ReadableSnapshot, type_: T) -> Result<(), SchemaValidationError>
+    where
+        T: ObjectTypeAPI<'static> + KindAPI<'static>,
+    {
+        let supertype =
+            TypeReader::get_supertype(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
+
+        let owns_declared: HashSet<Owns<'static>> =
+            TypeReader::get_implemented_interfaces_declared(snapshot, type_.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+
+        for owns in owns_declared {
+            let owns_override_opt =
+                TypeReader::get_implementation_override(snapshot, owns).map_err(SchemaValidationError::ConceptRead)?;
+
+            if let Some(owns_override) = owns_override_opt {
+                let attribute_type_overridden = owns_override.attribute();
+                match &supertype {
+                    None => {
+                        return Err(SchemaValidationError::OwnsOverrideIsNotInherited(
+                            get_label!(snapshot, type_),
+                            get_label!(snapshot, attribute_type_overridden),
+                        ))
+                    }
+                    Some(supertype) => {
+                        let contains =
+                            TypeReader::get_implemented_interfaces::<Owns<'static>, T>(snapshot, supertype.clone())
+                                .map_err(SchemaValidationError::ConceptRead)?
+                                .keys()
+                                .contains(&attribute_type_overridden);
+
+                        if !contains {
+                            return Err(SchemaValidationError::OwnsOverrideIsNotInherited(
+                                get_label!(snapshot, type_),
+                                get_label!(snapshot, attribute_type_overridden),
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn validate_overridden_plays<T>(snapshot: &impl ReadableSnapshot, type_: T) -> Result<(), SchemaValidationError>
+    where
+        T: ObjectTypeAPI<'static> + KindAPI<'static>,
+    {
+        let supertype =
+            TypeReader::get_supertype(snapshot, type_.clone()).map_err(SchemaValidationError::ConceptRead)?;
+
+        let plays_declared: HashSet<Plays<'static>> =
+            TypeReader::get_implemented_interfaces_declared(snapshot, type_.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+
+        for plays in plays_declared {
+            let plays_override_opt =
+                TypeReader::get_implementation_override(snapshot, plays).map_err(SchemaValidationError::ConceptRead)?;
+
+            if let Some(plays_override) = plays_override_opt {
+                let role_type_overridden = plays_override.role();
+                match &supertype {
+                    None => {
+                        return Err(SchemaValidationError::PlaysOverrideIsNotInherited(
+                            get_label!(snapshot, type_),
+                            get_label!(snapshot, role_type_overridden),
+                        ))
+                    }
+                    Some(supertype) => {
+                        let contains =
+                            TypeReader::get_implemented_interfaces::<Plays<'static>, T>(snapshot, supertype.clone())
+                                .map_err(SchemaValidationError::ConceptRead)?
+                                .keys()
+                                .contains(&role_type_overridden);
+
+                        if !contains {
+                            return Err(SchemaValidationError::PlaysOverrideIsNotInherited(
+                                get_label!(snapshot, type_),
+                                get_label!(snapshot, role_type_overridden),
+                            ));
+                        }
+                    }
+                }
+            }
+        }
 
         Ok(())
     }

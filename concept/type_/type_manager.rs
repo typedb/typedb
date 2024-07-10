@@ -1181,9 +1181,9 @@ impl TypeManager {
         // OperationTimeValidation::validate_exact_type_no_instances_relation(snapshot, relation_type.clone())
         //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
-        let declared_relates = TypeReader::get_relates(snapshot, relation_type.clone()).unwrap();
+        let declared_relates = TypeReader::get_relates(snapshot, relation_type.clone())?;
         for (_role_type, relates) in declared_relates.iter() {
-            self.delete_role_type(snapshot, relates.role().clone())?; // TODO: Should we replace it with individual calls?
+            self.delete_role_type(snapshot, relates.role().clone())?;
         }
 
         TypeWriter::storage_delete_label(snapshot, relation_type.clone());
@@ -1202,12 +1202,15 @@ impl TypeManager {
         OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, attribute_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_no_owns_for_attribute_type_deletion(snapshot, attribute_type.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
         // TODO: Re-enable when we get the thing_manager
         // OperationTimeValidation::validate_exact_type_no_instances_attribute(snapshot, self, attribute.clone())
         //     .map_err(|source| ConceptWriteError::SchemaValidation {  source } )?;
+
+        for owns in
+            TypeReader::get_implementations_for_interface_declared::<Owns<'static>>(snapshot, attribute_type.clone())?
+        {
+            self.unset_owns(snapshot, owns.owner(), owns.attribute())?
+        }
 
         TypeWriter::storage_delete_label(snapshot, attribute_type.clone());
         TypeWriter::storage_delete_supertype(snapshot, attribute_type);
@@ -1219,13 +1222,11 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
+        // TODO: Check/clean overrides?
         OperationTimeValidation::validate_can_modify_type(snapshot, role_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, role_type.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
-
-        OperationTimeValidation::validate_no_plays_for_role_type_deletion(snapshot, role_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: More validation
@@ -1233,13 +1234,16 @@ impl TypeManager {
         // OperationTimeValidation::validate_exact_type_no_instances_role(snapshot, role_type.clone().into_owned())
         //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
-        let relates = TypeReader::get_role_type_relates(snapshot, role_type.clone())?;
-        let relation = relates.relation();
-        let role = relates.role();
+        for plays in
+            TypeReader::get_implementations_for_interface_declared::<Plays<'static>>(snapshot, role_type.clone())?
+        {
+            self.unset_plays(snapshot, plays.player(), plays.role())?
+        }
 
-        TypeWriter::storage_delete_relates(snapshot, relation.clone(), role.clone());
-        TypeWriter::storage_delete_label(snapshot, role.clone());
-        TypeWriter::storage_delete_supertype(snapshot, role);
+        let relates = TypeReader::get_role_type_relates(snapshot, role_type.clone())?;
+        TypeWriter::storage_delete_relates(snapshot, relates.relation().clone(), role_type.clone());
+        TypeWriter::storage_delete_label(snapshot, role_type.clone());
+        TypeWriter::storage_delete_supertype(snapshot, role_type);
         Ok(())
     }
 
@@ -1449,6 +1453,20 @@ impl TypeManager {
         subtype: EntityType<'static>,
         supertype: EntityType<'static>,
     ) -> Result<(), ConceptWriteError> {
+        OperationTimeValidation::validate_owns_overrides_compatible_with_new_supertype(
+            snapshot,
+            subtype.clone(),
+            supertype.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_plays_overrides_compatible_with_new_supertype(
+            snapshot,
+            subtype.clone(),
+            supertype.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
         Self::set_supertype(self, snapshot, subtype, supertype)
     }
 
@@ -1459,6 +1477,27 @@ impl TypeManager {
         supertype: RelationType<'static>,
     ) -> Result<(), ConceptWriteError> {
         OperationTimeValidation::validate_roles_compatible_with_new_relation_supertype(
+            snapshot,
+            subtype.clone(),
+            supertype.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_relates_overrides_compatible_with_new_supertype(
+            snapshot,
+            subtype.clone(),
+            supertype.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_owns_overrides_compatible_with_new_supertype(
+            snapshot,
+            subtype.clone(),
+            supertype.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_plays_overrides_compatible_with_new_supertype(
             snapshot,
             subtype.clone(),
             supertype.clone(),
@@ -1500,6 +1539,7 @@ impl TypeManager {
         owner: ObjectType<'static>,
         attribute: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
+        // TODO: Check/clean overrides?
         OperationTimeValidation::validate_unset_owns_is_not_inherited(snapshot, owner.clone(), attribute.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
@@ -1588,6 +1628,7 @@ impl TypeManager {
         player: ObjectType<'static>,
         role: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
+        // TODO: Check/clean overrides?
         OperationTimeValidation::validate_unset_plays_is_not_inherited(snapshot, player.clone(), role.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 

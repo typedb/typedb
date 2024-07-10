@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, hash::Hash};
+use std::{
+    collections::{HashMap, HashSet},
+    hash::Hash,
+};
 
 use encoding::{
     graph::{
@@ -104,34 +107,6 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_no_owns_for_attribute_type_deletion(
-        snapshot: &impl ReadableSnapshot,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<(), SchemaValidationError> {
-        let no_owns = TypeReader::get_implementations_for_interface::<Owns<'static>>(snapshot, attribute_type.clone())
-            .map_err(SchemaValidationError::ConceptRead)?
-            .is_empty();
-        if no_owns {
-            Ok(())
-        } else {
-            Err(SchemaValidationError::CannotDeleteAttributeTypeWithExistingOwns(get_label!(snapshot, attribute_type)))
-        }
-    }
-
-    pub(crate) fn validate_no_plays_for_role_type_deletion(
-        snapshot: &impl ReadableSnapshot,
-        role_type: RoleType<'static>,
-    ) -> Result<(), SchemaValidationError> {
-        let no_plays = TypeReader::get_implementations_for_interface::<Plays<'static>>(snapshot, role_type.clone())
-            .map_err(SchemaValidationError::ConceptRead)?
-            .is_empty();
-        if no_plays {
-            Ok(())
-        } else {
-            Err(SchemaValidationError::CannotDeleteRoleTypeWithExistingPlays(get_label!(snapshot, role_type)))
-        }
-    }
-
     pub(crate) fn validate_no_abstract_attribute_types_owned_to_unset_abstractness<T>(
         snapshot: &impl ReadableSnapshot,
         type_: T,
@@ -179,7 +154,7 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_new_role_name_uniqueness<'a>(
+    pub(crate) fn validate_new_role_name_uniqueness(
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType<'static>,
         label: &Label<'static>,
@@ -195,7 +170,7 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_roles_compatible_with_new_relation_supertype<'a>(
+    pub(crate) fn validate_roles_compatible_with_new_relation_supertype(
         snapshot: &impl ReadableSnapshot,
         relation_subtype: RelationType<'static>,
         relation_supertype: RelationType<'static>,
@@ -219,7 +194,113 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_struct_name_uniqueness<'a>(
+    pub(crate) fn validate_relates_overrides_compatible_with_new_supertype(
+        snapshot: &impl ReadableSnapshot,
+        relation_subtype: RelationType<'static>,
+        relation_supertype: RelationType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let supertype_relates_with_roles: HashMap<RoleType<'static>, Relates<'static>> =
+            TypeReader::get_implemented_interfaces(snapshot, relation_supertype.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+
+        let subtype_relates_declared: HashSet<Relates<'static>> =
+            TypeReader::get_implemented_interfaces_declared(snapshot, relation_subtype.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+
+        for subtype_relates in subtype_relates_declared {
+            if let Some(old_relates_override) = TypeReader::get_implementation_override(snapshot, subtype_relates)
+                .map_err(SchemaValidationError::ConceptRead)?
+            {
+                if !supertype_relates_with_roles
+                    .iter()
+                    .any(|(_, supertype_relates)| supertype_relates == &old_relates_override)
+                {
+                    let role_type_overridden = old_relates_override.role();
+                    return Err(SchemaValidationError::CannotChangeSupertypeAsRelatesOverrideIsImplicitlyLost(
+                        get_label!(snapshot, relation_subtype),
+                        get_label!(snapshot, relation_supertype),
+                        get_label!(snapshot, role_type_overridden),
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn validate_owns_overrides_compatible_with_new_supertype<T>(
+        snapshot: &impl ReadableSnapshot,
+        owner_subtype: T,
+        owner_supertype: T,
+    ) -> Result<(), SchemaValidationError>
+    where
+        T: ObjectTypeAPI<'static> + KindAPI<'static>,
+    {
+        let supertype_owns_with_attributes: HashMap<AttributeType<'static>, Owns<'static>> =
+            TypeReader::get_implemented_interfaces(snapshot, owner_supertype.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+
+        let subtype_owns_declared: HashSet<Owns<'static>> =
+            TypeReader::get_implemented_interfaces_declared(snapshot, owner_subtype.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+
+        for subtype_owns in subtype_owns_declared {
+            if let Some(old_owns_override) = TypeReader::get_implementation_override(snapshot, subtype_owns)
+                .map_err(SchemaValidationError::ConceptRead)?
+            {
+                if !supertype_owns_with_attributes
+                    .iter()
+                    .any(|(_, supertype_owns)| supertype_owns == &old_owns_override)
+                {
+                    let attribute_type_overridden = old_owns_override.attribute();
+                    return Err(SchemaValidationError::CannotChangeSupertypeAsOwnsOverrideIsImplicitlyLost(
+                        get_label!(snapshot, owner_subtype),
+                        get_label!(snapshot, owner_supertype),
+                        get_label!(snapshot, attribute_type_overridden),
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn validate_plays_overrides_compatible_with_new_supertype<T>(
+        snapshot: &impl ReadableSnapshot,
+        player_subtype: T,
+        player_supertype: T,
+    ) -> Result<(), SchemaValidationError>
+    where
+        T: ObjectTypeAPI<'static> + KindAPI<'static>,
+    {
+        let supertype_plays_with_roles: HashMap<RoleType<'static>, Plays<'static>> =
+            TypeReader::get_implemented_interfaces(snapshot, player_supertype.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+
+        let subtype_plays_declared: HashSet<Plays<'static>> =
+            TypeReader::get_implemented_interfaces_declared(snapshot, player_subtype.clone())
+                .map_err(SchemaValidationError::ConceptRead)?;
+
+        for subtype_plays in subtype_plays_declared {
+            if let Some(old_plays_override) = TypeReader::get_implementation_override(snapshot, subtype_plays)
+                .map_err(SchemaValidationError::ConceptRead)?
+            {
+                if !supertype_plays_with_roles.iter().any(|(_, supertype_plays)| supertype_plays == &old_plays_override)
+                {
+                    let role_type_overridden = old_plays_override.role();
+                    return Err(SchemaValidationError::CannotChangeSupertypeAsPlaysOverrideIsImplicitlyLost(
+                        get_label!(snapshot, player_subtype),
+                        get_label!(snapshot, player_supertype),
+                        get_label!(snapshot, role_type_overridden),
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn validate_struct_name_uniqueness(
         snapshot: &impl ReadableSnapshot,
         name: &String,
     ) -> Result<(), SchemaValidationError> {
