@@ -40,12 +40,20 @@ use crate::{
         role_type::RoleType,
         type_manager::{
             type_reader::TypeReader,
-            validation::{SchemaValidationError, get_label, validation::validate_role_name_uniqueness_non_transitive}
+            validation::{
+                get_label,
+                validation::{
+                    edge_get_annotation_by_category, is_ordering_compatible_with_distinct_annotation,
+                    type_get_annotation_by_category, type_has_annotation_category,
+                    type_has_declared_annotation_category, type_is_abstract,
+                    validate_role_name_uniqueness_non_transitive,
+                },
+                SchemaValidationError,
+            },
         },
         InterfaceImplementation, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
-use crate::type_::type_manager::validation::validation::{edge_get_annotation_by_category, is_ordering_compatible_with_distinct_annotation, type_get_annotation_by_category, type_has_annotation_category, type_has_declared_annotation_category, type_is_abstract};
 
 macro_rules! object_type_match {
     ($obj_var:ident, $block:block) => {
@@ -93,6 +101,34 @@ impl OperationTimeValidation {
             Ok(())
         } else {
             Err(SchemaValidationError::CannotDeleteTypeWithExistingSubtypes(get_label!(snapshot, type_)))
+        }
+    }
+
+    pub(crate) fn validate_no_owns_for_attribute_type_deletion(
+        snapshot: &impl ReadableSnapshot,
+        attribute_type: AttributeType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let no_owns = TypeReader::get_implementations_for_interface::<Owns<'static>>(snapshot, attribute_type.clone())
+            .map_err(SchemaValidationError::ConceptRead)?
+            .is_empty();
+        if no_owns {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::CannotDeleteAttributeTypeWithExistingOwns(get_label!(snapshot, attribute_type)))
+        }
+    }
+
+    pub(crate) fn validate_no_plays_for_role_type_deletion(
+        snapshot: &impl ReadableSnapshot,
+        role_type: RoleType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let no_plays = TypeReader::get_implementations_for_interface::<Plays<'static>>(snapshot, role_type.clone())
+            .map_err(SchemaValidationError::ConceptRead)?
+            .is_empty();
+        if no_plays {
+            Ok(())
+        } else {
+            Err(SchemaValidationError::CannotDeleteRoleTypeWithExistingPlays(get_label!(snapshot, role_type)))
         }
     }
 
@@ -164,16 +200,17 @@ impl OperationTimeValidation {
         relation_subtype: RelationType<'static>,
         relation_supertype: RelationType<'static>,
     ) -> Result<(), SchemaValidationError> {
-        let subtype_relates_declared = TypeReader::get_relates_declared(snapshot, relation_subtype)
-            .map_err(SchemaValidationError::ConceptRead)?;
+        let subtype_relates_declared =
+            TypeReader::get_relates_declared(snapshot, relation_subtype).map_err(SchemaValidationError::ConceptRead)?;
 
         for subtype_relates in subtype_relates_declared {
             let role = subtype_relates.role();
             let role_label = get_label!(snapshot, role);
             validate_role_name_uniqueness_non_transitive(snapshot, relation_supertype.clone(), &role_label)?;
 
-            let relation_supertype_supertypes = TypeReader::get_supertypes(snapshot, relation_supertype.clone().into_owned())
-                .map_err(SchemaValidationError::ConceptRead)?;
+            let relation_supertype_supertypes =
+                TypeReader::get_supertypes(snapshot, relation_supertype.clone().into_owned())
+                    .map_err(SchemaValidationError::ConceptRead)?;
             for supertype in relation_supertype_supertypes {
                 validate_role_name_uniqueness_non_transitive(snapshot, supertype, &role_label)?;
             }
@@ -413,8 +450,8 @@ impl OperationTimeValidation {
         owner: T,
         attribute: AttributeType<'static>,
     ) -> Result<(), SchemaValidationError>
-        where
-            T: KindAPI<'static>,
+    where
+        T: KindAPI<'static>,
     {
         let is_owner_abstract = type_is_abstract(snapshot, owner.clone())?;
         let is_attribute_abstract = type_is_abstract(snapshot, attribute.clone())?;
@@ -446,7 +483,10 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_range_arguments(range: AnnotationRange, value_type: Option<ValueType>) -> Result<(), SchemaValidationError> {
+    pub(crate) fn validate_range_arguments(
+        range: AnnotationRange,
+        value_type: Option<ValueType>,
+    ) -> Result<(), SchemaValidationError> {
         if range.valid(value_type) {
             Ok(())
         } else {
@@ -454,7 +494,10 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_values_arguments(values: AnnotationValues, value_type: Option<ValueType>) -> Result<(), SchemaValidationError> {
+    pub(crate) fn validate_values_arguments(
+        values: AnnotationValues,
+        value_type: Option<ValueType>,
+    ) -> Result<(), SchemaValidationError> {
         if values.valid(value_type) {
             Ok(())
         } else {
@@ -722,9 +765,8 @@ impl OperationTimeValidation {
         let ordering = ordering.unwrap_or(
             TypeReader::get_type_ordering(snapshot, role.clone()).map_err(SchemaValidationError::ConceptRead)?,
         );
-        let distinct_set = distinct_set.unwrap_or(
-            edge_get_annotation_by_category(snapshot, relates, AnnotationCategory::Distinct)?.is_some(),
-        );
+        let distinct_set = distinct_set
+            .unwrap_or(edge_get_annotation_by_category(snapshot, relates, AnnotationCategory::Distinct)?.is_some());
 
         if is_ordering_compatible_with_distinct_annotation(ordering, distinct_set) {
             Ok(())
@@ -1116,11 +1158,7 @@ impl OperationTimeValidation {
                 .is_none();
 
             if no_value_type
-                && !type_has_declared_annotation_category(
-                    snapshot,
-                    subtype.clone(),
-                    AnnotationCategory::Abstract,
-                )?
+                && !type_has_declared_annotation_category(snapshot, subtype.clone(), AnnotationCategory::Abstract)?
             {
                 let subtype = subtype.clone();
                 return Err(

@@ -6,11 +6,11 @@
 
 use std::{
     borrow::Cow,
+    collections::HashSet,
     error::Error,
     fmt,
     hash::{Hash, Hasher},
 };
-use std::collections::HashSet;
 
 use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
 use encoding::{
@@ -22,11 +22,14 @@ use encoding::{
             PropertyAnnotationIndependent, PropertyAnnotationKey, PropertyAnnotationUnique,
         },
     },
-    value::{value::Value, ValueEncodable},
+    value::{
+        value::Value,
+        value_type::{ValueType, ValueTypeCategory},
+        ValueEncodable,
+    },
 };
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
-use encoding::value::value_type::{ValueType, ValueTypeCategory};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Annotation {
@@ -185,13 +188,13 @@ impl AnnotationRange {
                 Some(end_inclusive) => {
                     let end_value_type = end_inclusive.value_type();
                     value_type.unwrap_or(end_value_type.clone()) == end_value_type
-                },
+                }
             },
             Some(start_inclusive) => match &self.end_inclusive {
                 None => {
                     let start_value_type = start_inclusive.value_type();
                     value_type.unwrap_or(start_value_type.clone()) == start_value_type
-                },
+                }
                 Some(end_inclusive) => {
                     if start_inclusive.value_type() != end_inclusive.value_type() {
                         return false;
@@ -328,7 +331,8 @@ impl AnnotationValues {
             return false;
         }
         if expected_value_type.is_some()
-            && unique_value_types.iter().any(|value_type| value_type != &expected_value_type.clone().unwrap()) {
+            && unique_value_types.iter().any(|value_type| value_type != &expected_value_type.clone().unwrap())
+        {
             return false;
         }
 

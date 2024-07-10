@@ -11,10 +11,9 @@ use concept::type_::{
     relation_type::RelationTypeAnnotation, PlayerAPI, TypeAPI,
 };
 use cucumber::gherkin::Step;
-use encoding::graph::type_::Kind;
+use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use itertools::Itertools;
 use macro_rules_attribute::apply;
-use encoding::value::value_type::ValueType;
 
 use crate::{
     generic_step, params,
@@ -207,7 +206,8 @@ pub async fn type_set_annotation(
 ) {
     with_write_tx!(context, |tx| {
         with_type_and_value_type!(tx, root_label, type_label, type_, value_type, {
-            let res = type_.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(value_type).into());
+            let res =
+                type_.set_annotation(&mut tx.snapshot, &tx.type_manager, annotation.into_typedb(value_type).into());
             may_error.check(&res);
         });
     });

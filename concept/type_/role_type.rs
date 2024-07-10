@@ -147,7 +147,7 @@ impl<'a> TypeAPI<'a> for RoleType<'a> {
     }
 
     fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError> {
-        type_manager.delete_role_type(snapshot, self)
+        type_manager.delete_role_type(snapshot, self.clone().into_owned())
     }
 
     fn get_label<'m>(

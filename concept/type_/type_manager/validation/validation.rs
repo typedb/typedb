@@ -38,12 +38,13 @@ use crate::{
         relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::{type_reader::TypeReader, validation::SchemaValidationError},
+        type_manager::{
+            type_reader::TypeReader,
+            validation::{get_label, SchemaValidationError},
+        },
         InterfaceImplementation, KindAPI, ObjectTypeAPI, Ordering, TypeAPI,
     },
 };
-use crate::type_::type_manager::validation::get_label;
-
 
 pub(crate) fn validate_role_name_uniqueness_non_transitive<'a>(
     snapshot: &impl ReadableSnapshot,
@@ -65,8 +66,10 @@ pub(crate) fn validate_role_name_uniqueness_non_transitive<'a>(
     }
 }
 
-pub(crate) fn type_is_abstract(snapshot: &impl ReadableSnapshot, type_: impl KindAPI<'static>) -> Result<bool, SchemaValidationError>
-{
+pub(crate) fn type_is_abstract(
+    snapshot: &impl ReadableSnapshot,
+    type_: impl KindAPI<'static>,
+) -> Result<bool, SchemaValidationError> {
     type_has_declared_annotation(snapshot, type_.clone(), Annotation::Abstract(AnnotationAbstract))
 }
 
@@ -89,8 +92,8 @@ pub(crate) fn type_has_declared_annotation_category<T>(
     type_: T,
     annotation_category: AnnotationCategory,
 ) -> Result<bool, SchemaValidationError>
-    where
-        T: KindAPI<'static>,
+where
+    T: KindAPI<'static>,
 {
     let has = TypeReader::get_type_annotations_declared(snapshot, type_.clone())
         .map_err(SchemaValidationError::ConceptRead)?
@@ -105,8 +108,8 @@ pub(crate) fn type_has_annotation_category<T>(
     type_: T,
     annotation_category: AnnotationCategory,
 ) -> Result<bool, SchemaValidationError>
-    where
-        T: KindAPI<'static>,
+where
+    T: KindAPI<'static>,
 {
     let has = TypeReader::get_type_annotations(snapshot, type_.clone())
         .map_err(SchemaValidationError::ConceptRead)?
@@ -134,8 +137,8 @@ pub(crate) fn edge_get_annotation_by_category<EDGE>(
     edge: EDGE,
     annotation_category: AnnotationCategory,
 ) -> Result<Option<Annotation>, SchemaValidationError>
-    where
-        EDGE: InterfaceImplementation<'static> + Clone,
+where
+    EDGE: InterfaceImplementation<'static> + Clone,
 {
     let annotation = TypeReader::get_type_edge_annotations(snapshot, edge.clone())
         .map_err(SchemaValidationError::ConceptRead)?

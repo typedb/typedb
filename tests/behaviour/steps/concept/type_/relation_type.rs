@@ -172,11 +172,7 @@ pub async fn relation_declared_roles_contain(
 
 #[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) get declared roles {is_empty_or_not}")]
-pub async fn relation_declared_roles_is_empty(
-    context: &mut Context,
-    type_label: Label,
-    is_empty_or_not: IsEmptyOrNot,
-) {
+pub async fn relation_declared_roles_is_empty(context: &mut Context, type_label: Label, is_empty_or_not: IsEmptyOrNot) {
     with_read_tx!(context, |tx| {
         let type_ = tx.type_manager.get_relation_type(&tx.snapshot, &type_label.into_typedb()).unwrap().unwrap();
         let actual_labels = type_

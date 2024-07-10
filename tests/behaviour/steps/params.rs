@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr, sync::Arc};
-use std::error::Error;
+use std::{borrow::Cow, convert::Infallible, error::Error, fmt, str::FromStr, sync::Arc};
 
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
 use chrono_tz::Tz;
@@ -80,10 +79,9 @@ macro_rules! check_boolean {
 }
 pub(crate) use check_boolean;
 use concept::type_::{
-    annotation::{AnnotationDistinct, AnnotationUnique},
+    annotation::{AnnotationDistinct, AnnotationRange, AnnotationUnique, AnnotationValues},
     type_manager::TypeManager,
 };
-use concept::type_::annotation::{AnnotationRange, AnnotationValues};
 use encoding::value::decimal_value::Decimal;
 use storage::snapshot::ReadableSnapshot;
 
@@ -289,10 +287,7 @@ impl FromStr for ObjectRootLabel {
 }
 
 #[derive(Debug, Parameter)]
-#[param(
-    name = "value_type",
-    regex = "(boolean|long|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)"
-)]
+#[param(name = "value_type", regex = "(boolean|long|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)")]
 pub(crate) enum ValueType {
     Boolean,
     Long,
@@ -373,12 +368,11 @@ impl Value {
             TypeDBValueType::Long => TypeDBValue::Long(self.raw_value.parse().unwrap()),
             TypeDBValueType::Double => TypeDBValue::Double(self.raw_value.parse().unwrap()),
             TypeDBValueType::Decimal => {
-                let (integer, fractional) =
-                    if let Some(split) = self.raw_value.split_once(".") {
-                        split
-                    } else {
-                        (self.raw_value.as_str(), "0")
-                    };
+                let (integer, fractional) = if let Some(split) = self.raw_value.split_once(".") {
+                    split
+                } else {
+                    (self.raw_value.as_str(), "0")
+                };
 
                 let integer_parsed = integer.trim().parse().unwrap();
                 let fractional_parsed = Self::parse_decimal_fraction_part(fractional);
@@ -388,10 +382,17 @@ impl Value {
                     TypeDBValue::Decimal(Decimal::new(integer_parsed, fractional_parsed))
                 }
             }
-            TypeDBValueType::Date => TypeDBValue::Date(NaiveDate::parse_from_str(&self.raw_value, Self::DATE_FORMAT).unwrap()),
+            TypeDBValueType::Date => {
+                TypeDBValue::Date(NaiveDate::parse_from_str(&self.raw_value, Self::DATE_FORMAT).unwrap())
+            }
             TypeDBValueType::DateTime => {
                 let (datetime, remainder) = Self::parse_date_time_and_remainder(self.raw_value.as_str());
-                assert!(remainder.is_empty(), "Unexpected remainder when parsing {:?} with result of {:?}", self.raw_value, datetime);
+                assert!(
+                    remainder.is_empty(),
+                    "Unexpected remainder when parsing {:?} with result of {:?}",
+                    self.raw_value,
+                    datetime
+                );
                 TypeDBValue::DateTime(datetime)
             }
             TypeDBValueType::DateTimeTZ => {
@@ -409,7 +410,9 @@ impl Value {
                     } else {
                         FixedOffset::west_opt(total_minutes * 60)
                     };
-                    TypeDBValue::DateTimeTZ(datetime.and_local_timezone(Self::fixed_offset_to_tz(fixed_offset.unwrap()).unwrap()).unwrap())
+                    TypeDBValue::DateTimeTZ(
+                        datetime.and_local_timezone(Self::fixed_offset_to_tz(fixed_offset.unwrap()).unwrap()).unwrap(),
+                    )
                 } else {
                     TypeDBValue::DateTimeTZ(datetime.and_local_timezone(timezone.parse().unwrap()).unwrap())
                 }
@@ -422,7 +425,7 @@ impl Value {
                     self.raw_value.as_str()
                 };
                 TypeDBValue::String(Cow::Owned(value.to_string()))
-            },
+            }
             TypeDBValueType::Struct(_) => todo!(),
         }
     }
@@ -439,11 +442,13 @@ impl Value {
             }
         }
         if let Ok((date, remainder)) = NaiveDate::parse_and_remainder(&value, Self::DATE_FORMAT) {
-            return (date.and_time(NaiveTime::default()), remainder.trim())
+            return (date.and_time(NaiveTime::default()), remainder.trim());
         }
         panic!(
             "Cannot parse DateTime: none of the formats {:?} or {:?} fits for {:?}",
-            Self::DATETIME_FORMATS, Self::DATE_FORMAT, value
+            Self::DATETIME_FORMATS,
+            Self::DATE_FORMAT,
+            value
         )
     }
 
@@ -453,23 +458,23 @@ impl Value {
         // This is a simplified example and may not cover all cases
         let offset_seconds = offset.local_minus_utc();
         match offset_seconds {
-            0 => Some(chrono_tz::UTC), // UTC
-            3600 => Some(chrono_tz::Europe::London), // GMT+1
-            7200 => Some(chrono_tz::Europe::Berlin), // GMT+2
-            36000 => Some(chrono_tz::Australia::Brisbane), // GMT+10
-            -36000 => Some(chrono_tz::Pacific::Honolulu), // GMT-10
-            600 => Some(chrono_tz::Australia::Adelaide), // GMT+10:00 (Common in Oceania)
-            -600 => Some(chrono_tz::Pacific::Pago_Pago), // GMT-10:00 (Common in Pacific)
-            3600 => Some(chrono_tz::Europe::Paris), // GMT+1:00 (Common in Europe)
+            0 => Some(chrono_tz::UTC),                      // UTC
+            3600 => Some(chrono_tz::Europe::London),        // GMT+1
+            7200 => Some(chrono_tz::Europe::Berlin),        // GMT+2
+            36000 => Some(chrono_tz::Australia::Brisbane),  // GMT+10
+            -36000 => Some(chrono_tz::Pacific::Honolulu),   // GMT-10
+            600 => Some(chrono_tz::Australia::Adelaide),    // GMT+10:00 (Common in Oceania)
+            -600 => Some(chrono_tz::Pacific::Pago_Pago),    // GMT-10:00 (Common in Pacific)
+            3600 => Some(chrono_tz::Europe::Paris),         // GMT+1:00 (Common in Europe)
             -3600 => Some(chrono_tz::Atlantic::Cape_Verde), // GMT-1:00 (Common in Atlantic)
-            600 => Some(chrono_tz::Etc::GMTPlus1), // GMT+00:10 (Example for custom mapping)
-            -600 => Some(chrono_tz::Etc::GMTMinus1), // GMT-00:10 (Example for custom mapping)
-            180 => Some(chrono_tz::Etc::GMTPlus3), // GMT+00:03
-            -180 => Some(chrono_tz::Etc::GMTMinus3), // GMT-00:03
-            120 => Some(chrono_tz::Etc::GMTPlus2), // GMT+00:02
-            -120 => Some(chrono_tz::Etc::GMTMinus2), // GMT-00:02
-            60 => Some(chrono_tz::Etc::GMTPlus0), // GMT+00:01 (Example for custom mapping)
-            -60 => Some(chrono_tz::Etc::GMTMinus0), // GMT-00:01 (Example for custom mapping)
+            600 => Some(chrono_tz::Etc::GMTPlus1),          // GMT+00:10 (Example for custom mapping)
+            -600 => Some(chrono_tz::Etc::GMTMinus1),        // GMT-00:10 (Example for custom mapping)
+            180 => Some(chrono_tz::Etc::GMTPlus3),          // GMT+00:03
+            -180 => Some(chrono_tz::Etc::GMTMinus3),        // GMT-00:03
+            120 => Some(chrono_tz::Etc::GMTPlus2),          // GMT+00:02
+            -120 => Some(chrono_tz::Etc::GMTMinus2),        // GMT-00:02
+            60 => Some(chrono_tz::Etc::GMTPlus0),           // GMT+00:01 (Example for custom mapping)
+            -60 => Some(chrono_tz::Etc::GMTMinus0),         // GMT-00:01 (Example for custom mapping)
             // Add more mappings as needed
             _ => None,
         }
@@ -521,8 +526,8 @@ impl Annotation {
                         "*" => Ok(None),
                         _ => val.parse().map(Some).map_err(|_| "Failed to parse max"),
                     })
-                        .unwrap()
-                        .unwrap(),
+                    .unwrap()
+                    .unwrap(),
                 ))
             }
             values if values.starts_with("@values") => {
@@ -535,7 +540,9 @@ impl Annotation {
                 let values = values["@values(".len()..values.len() - ")".len()].trim();
                 let values = values.split(',');
                 TypeDBAnnotation::Values(AnnotationValues::new(
-                    values.map(|value| Value::from_str(value.trim()).unwrap().into_typedb(value_type.clone())).collect_vec()
+                    values
+                        .map(|value| Value::from_str(value.trim()).unwrap().into_typedb(value_type.clone()))
+                        .collect_vec(),
                 ))
             }
             range if range.starts_with("@range") => {
@@ -546,10 +553,13 @@ impl Annotation {
                 assert!(value_type.is_some(), "ValueType is expected to parse annotation @range");
                 let value_type = value_type.unwrap();
                 let range = range["@range(".len()..range.len() - ")".len()].trim();
-                let (min, max) =
-                    range.split_once("..").map(|(min, max)| (min.trim(), max.trim())).unwrap();
+                let (min, max) = range.split_once("..").map(|(min, max)| (min.trim(), max.trim())).unwrap();
                 TypeDBAnnotation::Range(AnnotationRange::new(
-                    if min.is_empty() { None } else { Some(Value::from_str(min).unwrap().into_typedb(value_type.clone())) },
+                    if min.is_empty() {
+                        None
+                    } else {
+                        Some(Value::from_str(min).unwrap().into_typedb(value_type.clone()))
+                    },
                     if max.is_empty() { None } else { Some(Value::from_str(max).unwrap().into_typedb(value_type)) },
                 ))
             }
@@ -562,7 +572,7 @@ impl Annotation {
                 // let label = &subkey[r#"@subkey("#.len()..subkey.len() - r#")"#.len()];
                 // TypeDBAnnotation::Subkey(AnnotationSubkey::new(label.to_owned()))
             }
-            _ => unreachable!("Cannot parse annotation {:?}", self.raw_annotation)
+            _ => unreachable!("Cannot parse annotation {:?}", self.raw_annotation),
         }
     }
 }
@@ -636,7 +646,7 @@ impl FromStr for Annotations {
                 // TODO: Refactor parsing to support passing ValueTypes into anno.into_typedb
             }
         })
-            .try_collect()?;
+        .try_collect()?;
 
         Ok(Self { typedb_annotations })
     }

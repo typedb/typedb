@@ -98,8 +98,7 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
     }
 
     fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError> {
-        // TODO: Validation
-        type_manager.delete_attribute_type(snapshot, self)
+        type_manager.delete_attribute_type(snapshot, self.clone().into_owned())
     }
 
     fn get_label<'m>(

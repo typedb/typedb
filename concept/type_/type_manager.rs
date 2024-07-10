@@ -1149,74 +1149,83 @@ impl TypeManager {
     pub(crate) fn delete_entity_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        entity_type: EntityType<'_>,
+        entity_type: EntityType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_can_modify_type(snapshot, entity_type.clone().into_owned())
+        OperationTimeValidation::validate_can_modify_type(snapshot, entity_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, entity_type.clone().into_owned())
+        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, entity_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: Re-enable when we get the thing_manager
-        // OperationTimeValidation::validate_exact_type_no_instances_entity(snapshot, entity_type.clone().into_owned())
+        // OperationTimeValidation::validate_exact_type_no_instances_entity(snapshot, entity_type.clone())
         //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
-        TypeWriter::storage_delete_label(snapshot, entity_type.clone().into_owned());
-        TypeWriter::storage_delete_supertype(snapshot, entity_type.clone().into_owned());
+        TypeWriter::storage_delete_label(snapshot, entity_type.clone());
+        TypeWriter::storage_delete_supertype(snapshot, entity_type);
         Ok(())
     }
 
     pub(crate) fn delete_relation_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        relation_type: RelationType<'_>,
+        relation_type: RelationType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_can_modify_type(snapshot, relation_type.clone().into_owned())
+        OperationTimeValidation::validate_can_modify_type(snapshot, relation_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, relation_type.clone().into_owned())
+        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, relation_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: Re-enable when we get the thing_manager
-        // OperationTimeValidation::validate_exact_type_no_instances_relation(snapshot, relation_type.clone().into_owned())
+        // OperationTimeValidation::validate_exact_type_no_instances_relation(snapshot, relation_type.clone())
         //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
-        let declared_relates = TypeReader::get_relates(snapshot, relation_type.clone().into_owned()).unwrap();
+        let declared_relates = TypeReader::get_relates(snapshot, relation_type.clone()).unwrap();
         for (_role_type, relates) in declared_relates.iter() {
             self.delete_role_type(snapshot, relates.role().clone())?; // TODO: Should we replace it with individual calls?
         }
 
-        TypeWriter::storage_delete_label(snapshot, relation_type.clone().into_owned());
-        TypeWriter::storage_delete_supertype(snapshot, relation_type.clone().into_owned());
+        TypeWriter::storage_delete_label(snapshot, relation_type.clone());
+        TypeWriter::storage_delete_supertype(snapshot, relation_type);
         Ok(())
     }
 
     pub(crate) fn delete_attribute_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        attribute_type: AttributeType<'_>,
+        attribute_type: AttributeType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_can_modify_type(snapshot, attribute_type.clone().into_owned())
+        OperationTimeValidation::validate_can_modify_type(snapshot, attribute_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
-        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, attribute_type.clone().into_owned())
+        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, attribute_type.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_no_owns_for_attribute_type_deletion(snapshot, attribute_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: Re-enable when we get the thing_manager
         // OperationTimeValidation::validate_exact_type_no_instances_attribute(snapshot, self, attribute.clone())
         //     .map_err(|source| ConceptWriteError::SchemaValidation {  source } )?;
 
-        TypeWriter::storage_delete_label(snapshot, attribute_type.clone().into_owned());
-        TypeWriter::storage_delete_supertype(snapshot, attribute_type.clone().into_owned());
+        TypeWriter::storage_delete_label(snapshot, attribute_type.clone());
+        TypeWriter::storage_delete_supertype(snapshot, attribute_type);
         Ok(())
     }
 
     pub(crate) fn delete_role_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        role_type: RoleType<'_>,
+        role_type: RoleType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_can_modify_type(snapshot, role_type.clone().into_owned())
+        OperationTimeValidation::validate_can_modify_type(snapshot, role_type.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, role_type.clone())
+            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+
+        OperationTimeValidation::validate_no_plays_for_role_type_deletion(snapshot, role_type.clone())
             .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: More validation
@@ -1224,13 +1233,13 @@ impl TypeManager {
         // OperationTimeValidation::validate_exact_type_no_instances_role(snapshot, role_type.clone().into_owned())
         //     .map_err(|source| ConceptWriteError::SchemaValidation {source})?;
 
-        let relates = TypeReader::get_role_type_relates(snapshot, role_type.clone().into_owned()).unwrap(); // TODO: Unwrap -> error?
+        let relates = TypeReader::get_role_type_relates(snapshot, role_type.clone())?;
         let relation = relates.relation();
         let role = relates.role();
 
         TypeWriter::storage_delete_relates(snapshot, relation.clone(), role.clone());
-        TypeWriter::storage_delete_label(snapshot, role.clone().into_owned());
-        TypeWriter::storage_delete_supertype(snapshot, role.clone().into_owned());
+        TypeWriter::storage_delete_label(snapshot, role.clone());
+        TypeWriter::storage_delete_supertype(snapshot, role);
         Ok(())
     }
 
@@ -1449,8 +1458,12 @@ impl TypeManager {
         subtype: RelationType<'static>,
         supertype: RelationType<'static>,
     ) -> Result<(), ConceptWriteError> {
-        OperationTimeValidation::validate_roles_compatible_with_new_relation_supertype(snapshot, subtype.clone(), supertype.clone())
-            .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
+        OperationTimeValidation::validate_roles_compatible_with_new_relation_supertype(
+            snapshot,
+            subtype.clone(),
+            supertype.clone(),
+        )
+        .map_err(|source| ConceptWriteError::SchemaValidation { source })?;
 
         // TODO: Add check that if we have inherited cascade and set supertype without cascade (lose cascade), we reject it with a specific error!
 
@@ -2032,8 +2045,7 @@ impl TypeManager {
         type_: AttributeType<'static>,
         range: AnnotationRange,
     ) -> Result<(), ConceptWriteError> {
-        let type_value_type =
-            TypeReader::get_value_type_without_source(snapshot, type_.clone())?;
+        let type_value_type = TypeReader::get_value_type_without_source(snapshot, type_.clone())?;
 
         OperationTimeValidation::validate_annotation_range_compatible_value_type(
             snapshot,
@@ -2078,8 +2090,7 @@ impl TypeManager {
         owns: Owns<'static>,
         range: AnnotationRange,
     ) -> Result<(), ConceptWriteError> {
-        let owns_value_type =
-            TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?;
+        let owns_value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?;
 
         OperationTimeValidation::validate_annotation_range_compatible_value_type(
             snapshot,
@@ -2129,8 +2140,7 @@ impl TypeManager {
         type_: AttributeType<'static>,
         values: AnnotationValues,
     ) -> Result<(), ConceptWriteError> {
-        let type_value_type =
-            TypeReader::get_value_type_without_source(snapshot, type_.clone())?;
+        let type_value_type = TypeReader::get_value_type_without_source(snapshot, type_.clone())?;
 
         OperationTimeValidation::validate_annotation_values_compatible_value_type(
             snapshot,
@@ -2175,8 +2185,7 @@ impl TypeManager {
         owns: Owns<'static>,
         values: AnnotationValues,
     ) -> Result<(), ConceptWriteError> {
-        let owns_value_type =
-            TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?;
+        let owns_value_type = TypeReader::get_value_type_without_source(snapshot, owns.attribute().clone())?;
 
         OperationTimeValidation::validate_annotation_values_compatible_value_type(
             snapshot,

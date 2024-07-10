@@ -7,16 +7,25 @@
 use encoding::graph::type_::Kind;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{error::ConceptReadError, type_::type_manager::validation::SchemaValidationError};
-use crate::type_::attribute_type::AttributeType;
-use crate::type_::entity_type::EntityType;
-use crate::type_::owns::Owns;
-use crate::type_::relation_type::RelationType;
-use crate::type_::role_type::RoleType;
-use crate::type_::type_manager::type_reader::TypeReader;
-use crate::type_::type_manager::validation::get_label;
-use crate::type_::type_manager::validation::validation::{type_is_abstract, validate_role_name_uniqueness_non_transitive};
-use crate::type_::{KindAPI, ObjectTypeAPI, TypeAPI};
+use crate::{
+    error::ConceptReadError,
+    type_::{
+        attribute_type::AttributeType,
+        entity_type::EntityType,
+        owns::Owns,
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::{
+            type_reader::TypeReader,
+            validation::{
+                get_label,
+                validation::{type_is_abstract, validate_role_name_uniqueness_non_transitive},
+                SchemaValidationError,
+            },
+        },
+        KindAPI, ObjectTypeAPI, TypeAPI,
+    },
+};
 
 pub struct CommitTimeValidation {}
 
@@ -37,16 +46,15 @@ macro_rules! validate_types {
                     }
 
                     Ok(errors)
-                },
-                Err(error) => Ok(vec![error])
+                }
+                Err(error) => Ok(vec![error]),
             }
         }
     };
 }
 
 impl CommitTimeValidation {
-    pub(crate) fn validate(snapshot: &impl ReadableSnapshot) -> Result<Vec<SchemaValidationError>, ConceptReadError>
-    {
+    pub(crate) fn validate(snapshot: &impl ReadableSnapshot) -> Result<Vec<SchemaValidationError>, ConceptReadError> {
         let mut errors = Vec::new();
         errors.append(&mut Self::validate_entity_types(snapshot)?);
         errors.append(&mut Self::validate_relation_types(snapshot)?);
@@ -58,7 +66,10 @@ impl CommitTimeValidation {
     validate_types!(validate_relation_types, Kind::Relation, RelationType, Self::validate_relation_type);
     validate_types!(validate_attribute_types, Kind::Attribute, AttributeType, Self::validate_attribute_type);
 
-    fn validate_entity_type(snapshot: &impl ReadableSnapshot, type_: EntityType<'static>) -> Result<Vec<SchemaValidationError>, ConceptReadError> {
+    fn validate_entity_type(
+        snapshot: &impl ReadableSnapshot,
+        type_: EntityType<'static>,
+    ) -> Result<Vec<SchemaValidationError>, ConceptReadError> {
         let mut errors = Vec::new();
 
         if let Err(error) = Self::validate_abstractness_matches_with_owns(snapshot, type_.clone()) {
@@ -68,7 +79,10 @@ impl CommitTimeValidation {
         Ok(errors)
     }
 
-    fn validate_relation_type(snapshot: &impl ReadableSnapshot, type_: RelationType<'static>) -> Result<Vec<SchemaValidationError>, ConceptReadError> {
+    fn validate_relation_type(
+        snapshot: &impl ReadableSnapshot,
+        type_: RelationType<'static>,
+    ) -> Result<Vec<SchemaValidationError>, ConceptReadError> {
         let mut errors = Vec::new();
 
         if let Err(error) = Self::validate_relation_type_has_relates(snapshot, type_.clone()) {
@@ -84,13 +98,20 @@ impl CommitTimeValidation {
         Ok(errors)
     }
 
-    fn validate_relation_type_role_types(snapshot: &impl ReadableSnapshot, relation_type: RelationType<'static>) -> Result<Vec<SchemaValidationError>, ConceptReadError> {
+    fn validate_relation_type_role_types(
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType<'static>,
+    ) -> Result<Vec<SchemaValidationError>, ConceptReadError> {
         let mut errors = Vec::new();
 
         let relates_declared = TypeReader::get_relates_declared(snapshot, relation_type.clone())?;
 
         for relates in relates_declared {
-            if let Err(error) = Self::validate_role_is_unique_for_relation_type_hierarchy(snapshot, relation_type.clone(), relates.role()) {
+            if let Err(error) = Self::validate_role_is_unique_for_relation_type_hierarchy(
+                snapshot,
+                relation_type.clone(),
+                relates.role(),
+            ) {
                 errors.push(error)
             }
         }
@@ -98,14 +119,20 @@ impl CommitTimeValidation {
         Ok(errors)
     }
 
-    fn validate_attribute_type(snapshot: &impl ReadableSnapshot, type_: AttributeType<'static>) -> Result<Vec<SchemaValidationError>, ConceptReadError> {
+    fn validate_attribute_type(
+        snapshot: &impl ReadableSnapshot,
+        type_: AttributeType<'static>,
+    ) -> Result<Vec<SchemaValidationError>, ConceptReadError> {
         let mut errors = Vec::new();
         Ok(errors)
     }
 
-    fn validate_abstractness_matches_with_owns<T>(snapshot: &impl ReadableSnapshot, type_: T) -> Result<(), SchemaValidationError>
-        where
-            T: ObjectTypeAPI<'static> + KindAPI<'static> + Clone,
+    fn validate_abstractness_matches_with_owns<T>(
+        snapshot: &impl ReadableSnapshot,
+        type_: T,
+    ) -> Result<(), SchemaValidationError>
+    where
+        T: ObjectTypeAPI<'static> + KindAPI<'static> + Clone,
     {
         if type_is_abstract(snapshot, type_.clone())? {
             return Ok(());
@@ -118,7 +145,10 @@ impl CommitTimeValidation {
             .try_for_each(|attribute_type: AttributeType<'static>| {
                 if type_is_abstract(snapshot, attribute_type.clone())? {
                     let owner = type_.clone();
-                    Err(SchemaValidationError::NonAbstractCannotOwnAbstract(get_label!(snapshot, owner), get_label!(snapshot, attribute_type)))
+                    Err(SchemaValidationError::NonAbstractCannotOwnAbstract(
+                        get_label!(snapshot, owner),
+                        get_label!(snapshot, attribute_type),
+                    ))
                 } else {
                     Ok(())
                 }
@@ -127,9 +157,12 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_relation_type_has_relates(snapshot: &impl ReadableSnapshot, relation_type: RelationType<'static>) -> Result<(), SchemaValidationError> {
-        let relates = TypeReader::get_relates(snapshot, relation_type.clone())
-            .map_err(SchemaValidationError::ConceptRead)?;
+    fn validate_relation_type_has_relates(
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType<'static>,
+    ) -> Result<(), SchemaValidationError> {
+        let relates =
+            TypeReader::get_relates(snapshot, relation_type.clone()).map_err(SchemaValidationError::ConceptRead)?;
 
         if !relates.is_empty() {
             Ok(())
@@ -138,7 +171,11 @@ impl CommitTimeValidation {
         }
     }
 
-    fn validate_role_is_unique_for_relation_type_hierarchy(snapshot: &impl ReadableSnapshot, relation_type: RelationType<'static>, role_type: RoleType<'static>) -> Result<(), SchemaValidationError> {
+    fn validate_role_is_unique_for_relation_type_hierarchy(
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType<'static>,
+        role_type: RoleType<'static>,
+    ) -> Result<(), SchemaValidationError> {
         let role_label = get_label!(snapshot, role_type);
         let relation_supertypes = TypeReader::get_supertypes(snapshot, relation_type.clone().into_owned())
             .map_err(SchemaValidationError::ConceptRead)?;

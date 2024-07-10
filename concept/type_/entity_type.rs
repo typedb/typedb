@@ -93,8 +93,7 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
     }
 
     fn delete(self, snapshot: &mut impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), ConceptWriteError> {
-        // todo!("Validation");
-        type_manager.delete_entity_type(snapshot, self)
+        type_manager.delete_entity_type(snapshot, self.clone().into_owned())
     }
 
     fn get_label<'m>(
